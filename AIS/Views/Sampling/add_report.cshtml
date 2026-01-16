@@ -1,0 +1,176 @@
+﻿@{
+    var page_id = ViewData["PageId"] as int? ?? 0;
+}
+
+@{
+    ViewData["Title"] = "Manage Exception Reports";
+    Layout = "_Layout";
+}
+
+<script type="text/javascript">
+    var g_engID = 0;
+    var g_reportId = 0;
+    var g_action = "A";
+    $(document).ready(function () {
+        var url_string = window.location;
+        var url = new URL(url_string);
+        g_engID = url.searchParams.get("engId");
+        CommonValidation.attachAlnumOnly("#reportName", { allowSpace: true, maxLen: 100 });
+        loadReports();
+    });
+
+    function loadReports() {
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/get_list_of_reports",
+            type: "POST",
+            cache: false,
+            data: { 'ENG_ID': g_engID },
+            success: function (data) {
+                if (data.length > 0) {
+                    populateTable(data);
+                }
+            },
+            dataType: "json"
+        });
+    }
+
+    function populateTable(data) {
+        $('#wait').show();
+        destroyDatatable('reportList');
+        let tableBody = $("#reportList tbody");
+        tableBody.empty();
+        data.forEach((item, index) => {
+            let row = `<tr>
+                <td>${index + 1}</td>
+                <td>${item.reporT_TITLE}</td>
+                <td class="text-center">${item.discription}</td>
+    <td class="text-center"><button class="btn btn-primary btn-sm" onclick="openUpdateModal(${item.reporT_ID}, '${item.reporT_TITLE}', '${item.discription}', '${item.reporT_INDICATOR}', ${item.loaN_STATUS})">Update</button></td>            </tr>`;
+            tableBody.append(row);
+        });
+        initializeDataTable("reportList");
+        $('#wait').hide();
+    }
+
+    function openAddModal() {
+        g_reportId = 0;
+        g_action = 'A';
+        $('#modalTitle').text('Add Exception Report');
+        $('#reportName').val('');
+        $('#thingsCheck').val('');
+        $('#reportType').val('L');
+        $('#addReportModal').modal('show');
+    }
+
+    function openUpdateModal(id, title, desc, type, statusId) {
+        g_reportId = id;
+        g_action = 'U';
+        $('#modalTitle').text('Update Exception Report');
+        $('#reportName').val(title);
+        $('#thingsCheck').val(desc);
+        $('#reportType').val(type);
+        $('#loanStatus').val(statusId);
+        $('#addReportModal').modal('show');
+    }
+
+    function saveReport() {
+        if (!CommonValidation.isAlnumOk("#reportName", { allowSpace: true, required: true })) {
+            alert("Report Name List must contain only letters, numbers, and spaces.");
+            return;
+        }
+
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/add_exception_account_report",
+            type: "POST",
+            data: {
+                'IND': g_action,
+                'REPORT_ID': g_reportId,
+                'REPORT_TITLE': $('#reportName').val(),
+                'DESCRIPTION': $('#thingsCheck').val(),
+                'TYPE': $('#reportType').val(),
+                'LOAN_STATUS_ID': $('#loanStatus').val()
+            },
+            success: function (data) {
+                if (data && data.Status) {
+                    $('#addReportModal').modal('hide');
+                    loadReports();
+                }
+            },
+            error: function (xhr) {
+                var message = (xhr.responseJSON && xhr.responseJSON.Message) ? xhr.responseJSON.Message : "Unable to save report. Please check your input.";
+                alert(message);
+            }
+        });
+    }
+</script>
+<link rel="stylesheet" href="~/css/sampling.css" />
+<div class="container-fluid mt-4">
+    <div class="card card-sample shadow-sm">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h4 class="mb-0">Exception Reports</h4>
+            <button class="btn btn-success btn-sm" onclick="openAddModal()">Add</button>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table id="reportList" class="table table-hover table-bordered table-striped">
+                    <thead>
+                        <tr>
+                            <th class="col-md-auto">Sr. No.</th>
+                            <th class="col-md-auto">Report Name List</th>
+                            <th class="col-md-auto">Things to be checked</th>
+                            <th class="col-md-auto text-center">Update</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="addReportModal" class="modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalTitle">Add Exception Report</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label">Report Name List <small class="text-muted">(A-Z, 0-9, space, &amp;, ?)</small></label>
+                    <input id="reportName" type="text" class="form-control alnum-only" maxlength="100" pattern="^[A-Za-z0-9 &,?]+$" title="Enter only Alphabets (A-Z), numbers (0-9), spaces, ampersand (&amp;), comma (,), and question mark (?)" data-allow-amp="true" required placeholder="Report name (Alphabets, numbers, spaces, ampersand (&amp;), comma (,), and question mark (?) only)" />
+                    <small class="form-text text-muted">Enter only Alphabets (A-Z), numbers (0-9), spaces, ampersand (&amp;), comma (,), and question mark (?).</small>
+                    <div class="invalid-feedback">Enter only Alphabets (A-Z), numbers (0-9), spaces, ampersand (&amp;), comma (,), and question mark (?).</div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Things to be checked</label>
+                    <textarea id="thingsCheck" class="form-control" rows="4"></textarea>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Report Type</label>
+                    <select id="reportType" class="form-select">
+                        <option value="L">Loan</option>
+                        <option value="A">Account</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Loan Status</label>
+                    <select id="loanStatus" class="form-select">
+                        @{
+                            if (ViewData["LoanStatusList"] != null)
+                            {
+                                foreach (var st in (dynamic)(ViewData["LoanStatusList"]))
+                                {
+                                    <option value="@st.CODE">@st.NAME</option>
+                                }
+                            }
+                        }
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-success" onclick="saveReport()">Save</button>
+            </div>
+        </div>
+    </div>
+</div>

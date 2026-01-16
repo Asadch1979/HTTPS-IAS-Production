@@ -1,0 +1,312 @@
+PAGE_ID,VIEW_NAME,VIEW_PATH,PAGE_KEY
+1,para ,setup/para_migration,para_migration
+2,risk assessment of entities,riskassessment/risk_assessment_entities,risk_assessment_entities
+3,audit criteria,planning/audit_criteria,audit_criteria
+4,reffered back audit criteria,planning/refferedback_audit_criteria,refferedback_audit_criteria
+5,audit criteria for approval,planning/audit_criteria_approval,audit_criteria_approval
+6,tentative audit plan,planning/tentative_audit_plan,tentative_audit_plan
+7,approved criteria / generate plan,planning/post_changes_criteria,post_changes_criteria
+9,post changes in team members,planning/post_changes_team_members,post_changes_team_members
+11,constitute teams,planning/team_members,team_members
+12,tentative engagement plan,planning/tentative_engagement_plan,tentative_engagement_plan
+13,submission for review,engagement/submission_for_review,submission_for_review
+14,approval of engagement plan,engagement/submission_for_approval,submission_for_approval
+15,engagement task list,engagement/task_list,task_list
+17,branch observation,execution/audit_observation,audit_observation
+18,departmental observation,execution/audit_execution,audit_execution
+19,joining,engagement/join,join
+20,approved plan,reports/approved_plan,approved_plan
+21,user activity graph,reports/user_activity_graph,user_activity_graph
+22,role wise users,reports/role_wise_user,role_wise_user
+23,department performance,reports/department_performance,department_performance
+24,significant findings,reports/significant_finding,significant_finding
+25,risk wise observations,reports/riskwise_observations,riskwise_observations
+26,aging of observations,reports/aging_observations,aging_observations
+27,control violation,setup/control_violation,control_violation
+28,processes,setup/processes,processes
+29,sub entities,setup/sub_entities,sub_entities
+30,review checklist detail,setup/process_detail_review,process_detail_review
+31,auhtorize checklist detail,setup/process_detail_authorize,process_detail_authorize
+34,audit period,planning/audit_period,audit_period
+40,holiday calendar,planning/holiday_calendar,holiday_calendar
+41,setup auditee entities,administrationpanel/setup_auditee_entities,setup_auditee_entities
+42,risk model,administrationpanel/risk_grouping,risk_grouping
+43,manage users,administrationpanel/manage_user,manage_user
+44,audit template,administrationpanel/audit_template,audit_template
+45,audit observation text,administrationpanel/audit_observation_text,audit_observation_text
+46,user roles,administrationpanel/user_roles,user_roles
+47,staff position,planning/staff_position,staff_position
+48,old outstanding paras,auditeeportal/old_outstanding_paras,old_outstanding_paras
+50,observation status,administrationpanel/memo_status,memo_status
+51,observation assigned,auditeeportal/observation_assigned,observation_assigned
+53,ccqs of departments ,auditeeportal/ccqs,ccqs
+54,ais/legacy branch & annexure wise paras,dashboard/zone_wise_paras,zone_wise_paras
+55,reply for compliance division,auditeeportal/reply_new,reply_new
+56,groups,administrationpanel/groups,groups
+57,group menu/page assignment,administrationpanel/group_role_assignment,group_role_assignment
+58,menu assignment,administrationpanel/menu_assignment,menu_assignment
+59,pages management,administrationpanel/pages_management,pages_management
+60,pre audit/inspection data,execution/annexureb,annexureb
+61,audit criteria approval,planning/submission_for_review,submission_for_review
+62,coso based inherited risk of departments ,riskassessment/inherited_risk_dept,inherited_risk_dept
+63,engagement plan,engagement/engagement_plan,engagement_plan
+64,air 2018,riskassessment/risk_assessment_ho_units,risk_assessment_ho_units
+65,audit plan submission for approval,planning/submission_for_approval,submission_for_approval
+66,initial risk on audit of branch,riskassessment/inherited_risk_branches,inherited_risk_branches
+67,audit plan approval,planning/plan_approvals,plan_approvals
+68,gl heads (graphs),riskassessment/risk_assessment_functions,risk_assessment_functions
+69,post changes in approved plan,planning/post_changes_approved_plan,post_changes_approved_plan
+70,arpse for the year,engagement/change_request,change_request
+71,reffered back engagement plans,engagement/eng_plan_ref_list,eng_plan_ref_list
+72,post changes in approved engagement plan,engagement/post_changes_approved_plan,post_changes_approved_plan
+73,engagement plan list,engagement/eng_plan_list,eng_plan_list
+74,inspection criteria,engagement/create_audit_plan,create_audit_plan
+75,checklist,execution/checklist,checklist
+76,sub checklist,execution/subchecklist,subchecklist
+77,checklist details,execution/checklist_details,checklist_details
+78,pre audit/inspection information,execution/pre_audit_info,pre_audit_info
+79,manage observations,execution/manage_observations,manage_observations
+80,pre audit infrormation detail,execution/pre_audit_info_detail,pre_audit_info_detail
+81,gl head summary,reports/glhead_summary,glhead_summary
+82,income expenditure report,reports/income_expenditure,income_expenditure
+83,finalize draft audit report,execution/draft_audit_report,draft_audit_report
+84,closing / exit ,execution/closing,closing
+85,gl head details,reports/glhead_details,glhead_details
+86,manage draft report paras ,execution/manage_draft_report_paras,manage_draft_report_paras
+87,loan case details,execution/loan_case_details,loan_case_details
+88,branch deposit information,execution/branch_deposit_info,branch_deposit_info
+89,disbursement information,execution/disb_info,disb_info
+90,ca process,cau/om/om_assignment,om
+91,om response,cau/om/om_response,om
+96,cia analysis,bac/cia_analysis,cia_analysis
+103,audit report,reports/audit_report,audit_report
+104,loan report,reports/loan_report,loan_report
+105,employee information,reports/emp_info,emp_info
+106,branch audit position,reports/br_au_pos,br_au_pos
+107,settlement of old paras,reports/settlement_old_paras,settlement_old_paras
+108,zonewise settlement of paras,reports/zonewise_settlement_paras,zonewise_settlement_paras
+109,monthwise breakup of settlement of paras,reports/monthwise_settlement_paras,monthwise_settlement_paras
+110,management audit report (zone wise),reports/management_au_report_zonewise,management_au_report_zonewise
+111,annexure of violation,reports/annex_violation,annex_violation
+112,div wise outstanding para,reports/div_out_paras,div_out_paras
+113,div wise list of segregated para,reports/div_seg_paras,div_seg_paras
+114,cad/ isad performance achievement,reports/cad_isad_achievement,cad_isad_achievement
+115,joining / completion report,reports/join_comp_report,join_comp_report
+116,execution/ statistics,reports/exec_stats,exec_stats
+117,audit type wise report,reports/audit_typewise_report,audit_typewise_report
+118,user wise performance,reports/user_wise_performance,user_wise_performance
+119,zone wise performancre,reports/zone_wise_performance,zone_wise_performance
+120,dashboard,hm/dashboard,dashboard
+121,manage observations fad,execution/manage_observations_branches,manage_observations_branches
+123,staff position,execution/staff_pos_info,staff_pos_info
+124,loan documents,execution/loan_case_document,loan_case_document
+125,functional resposibility wise paras,dashboard/functional_resp_wise_paras,functional_resp_wise_paras
+142,cau observation,execution/cau_observation,cau_observation
+144,glhead transaction details,reports/glhead_transaction_details,glhead_transaction_details
+145,audit plan engagement,reports/audit_plan_engagement,audit_plan_engagement
+147,glhead year wise summary,reports/glhead_yearwise_summary,glhead_yearwise_summary
+148,deposit account,execution/deposit_account,deposit_account
+149,deposit account details,execution/deposit_account_details,deposit_account_details
+150,concluding closing audit,execution/concluding_closing_audit,concluding_closing_audit
+151,loan schemes,execution/loan_scheme,loan_scheme
+152,loan schemes yearly,execution/loan_scheme_yearly,loan_scheme_yearly
+153,violation wise total paras,reports/fad_para_res,fad_para_res
+154,current audit progress,reports/current_audit_progress,current_audit_progress
+155,active users,reports/current_sessions,current_sessions
+156,manage draft audit report fad,execution/manage_draft_report_paras_branch,manage_draft_report_paras_branch
+157,finalize draft audit report fad,execution/draft_audit_report_branch,draft_audit_report_branch
+161,manage legacy paras,execution/manage_legacy_paras,manage_legacy_paras
+162,auditee observations report,execution/auditee_observations_report,auditee_observations_report
+163,auditee observations report cau,execution/auditee_observations_report_cau,auditee_observations_report_cau
+164,default loan report,reports/cnic_default_loan_report,cnic_default_loan_report
+165,outstanding paras details,hm/old_paras_monitoring,old_paras_monitoring
+166,old para monitoring ppno wise,hm/old_paras_monitoring_ppno,old_paras_monitoring_ppno
+167,marking of legacy para as settle / un-settle,execution/settled_para,settled_para
+168,audit period or entity wise report,reports/audit_period_or_entity_wise_report,audit_period_or_entity_wise_report
+169,authorize marking of legacy para as settle/ un-settle,execution/authorize_change_settle_para_status,authorize_change_settle_para_status
+170,zone branch wise para position,reports/zone_branch_wise_para_position_report,zone_branch_wise_para_position_report
+172,fad monthly review,reports/fad_monthly_review,fad_monthly_review
+173,fad gistwise details monthly,reports/fad_gistwise_details_monthly,fad_gistwise_details_monthly
+174,fad aging of audit paras monthly,reports/fad_aging_of_audit_paras_monthly,fad_aging_of_audit_paras_monthly
+175,fad audit plan,reports/fad_audit_plan,fad_audit_plan
+176,analysis of settlement of audit paras,reports/analysis_of_settlement_paras,analysis_of_settlement_paras
+177,fad compliance position fortnightly (zone level),reports/fad_compliance_pos_fortnightly_zone_level,fad_compliance_pos_fortnightly_zone_level
+178,fad branch risk rating,reports/fad_branch_risk_rating,fad_branch_risk_rating
+179,fad branch audit status,reports/fad_branch_audit_status,fad_branch_audit_status
+180,fad compliance position fortnightly(fad level),reports/fad_compliance_pos_fortnightly_fad_level,fad_compliance_pos_fortnightly_fad_level
+181,quality review of audit paras,execution/pre_concluding_audit,pre_concluding_audit
+182,review gist and recommendaiton,fad/review_gist_recommendation,review_gist_recommendation
+183,update text of legacy paras ,execution/update_legacy_paras,update_legacy_paras
+184,review gist and recommendaiton,fad/review_gist_recommendation,review_gist_recommendation
+185,fad legacy para performance,reports/fad_legacy_para_performance,fad_legacy_para_performance
+186,fad new para performance,reports/fad_new_para_performance,fad_new_para_performance
+187,violation wise paras of current year,reports/fad_new_old_para_performance,fad_new_old_para_performance
+188,fad update legacy paras,execution/update_legacy_paras_fad,update_legacy_paras_fad
+189,fad legacy para user wise performance,reports/fad_legacy_user_wise_performance,fad_legacy_user_wise_performance
+190,fad legacy para zone wise performance,reports/fad_legacy_zone_wise_performance,fad_legacy_zone_wise_performance
+191,status reversal of audit entities,administrationpanel/status_reversal_audit_entities,status_reversal_audit_entities
+192,add legacy para,execution/add_legacy_para,add_legacy_para
+193,authorize legacy para addition,execution/authorize_adding_legacy_para,authorize_adding_legacy_para
+194,update gist/para no in legacy data ,execution/update_gist_para_no,update_gist_para_no
+195,authorize update of legacy para gist para,execution/authorize_update_legacy_para_gist_para,authorize_update_legacy_para_gist_para
+196,fad ho user legacy para user wise performance ,reports/fad_ho_user_legacy_para_performance,fad_ho_user_legacy_para_performance
+197,update legacy paras ho,execution/update_legacy_paras_ho,update_legacy_paras_ho
+198,dashborad,dashboard/dashboard,dashboard
+199,violation wise paras,dashboard/violation_wise_paras,violation_wise_paras
+200,risk based planning criteria,dashboard/no_entities_risk_based_planning,no_entities_risk_based_planning
+201,risk based planning (no of entities),dashboard/no_entities_risk_based_planning_b,no_entities_risk_based_planning_b
+202,audit quick glance,dashboard/audit_performance,audit_performance
+203,update/add sub process,setup/manage_sub_checklist,manage_sub_checklist
+204,update/add check list,setup/manage_checklist_detail,manage_checklist_detail
+205,para position,reports/para_position,para_position
+206,review audit checklist,administrationpanel/review_audit_checklist,review_audit_checklist
+207,authorize audit checklist,administrationpanel/authorize_audit_checklist,authorize_audit_checklist
+212,update/add main process,setup/manage_checklist,manage_checklist
+213,referred back checklist detail,setup/ref_checklist_detail,ref_checklist_detail
+214,auhtorize sub process,setup/sub_process_authorize,sub_process_authorize
+215,observation reversal / re-numbering,administrationpanel/setup_observation_reversal,setup_observation_reversal
+216,entity relationship,administrationpanel/entity_relationship,entity_relationship
+217,entity addition,administrationpanel/entity_addition,entity_addition
+218,entity shifting,administrationpanel/entity_shifting,entity_shifting
+220,marking of new/ais para as settle/un-settle,postcompliance/change_status_new_para,change_status_new_para
+221,review settle new/ais paras,postcompliance/change_status_new_para_reviewer,change_status_new_para_reviewer
+222,authorize marking of new/ais para as settle/ un-settle,postcompliance/change_status_new_para_authorize,change_status_new_para_authorize
+223,functional resposibility wise paras for ho,dashboard/functional_resp_wise_paras_ho,functional_resp_wise_paras_ho
+224,total para details ho,reports/ho_total_paras_details,ho_total_paras_details
+225,engagement reversal,administrationpanel/setup_engagement_reversal,setup_engagement_reversal
+226,risk assessment of entity types,riskassessment/risk_assessment_ent_types,risk_assessment_ent_types
+227,search / find check list,execution/search_checklistdetails,search_checklistdetails
+228,user activity logs,reports/user_activity_logs,user_activity_logs
+229,role activity logs,reports/role_activity_logs,role_activity_logs
+230,cnic wise all loans,reports/cnic_loan_report,cnic_loan_report
+231,summary of checklist,execution/checklist_summary,checklist_summary
+232,bucket in bucket out,reports/loan_transfer_report,loan_transfer_report
+233,loan case file,workingpaper/loan_case_file,loan_case_file
+234,voucher checking,workingpaper/voucher_checking,voucher_checking
+235,account opening form,workingpaper/account_opening,account_opening
+236,fixed asset form,workingpaper/fixed_assets,fixed_assets
+237,cash count,workingpaper/cash_count,cash_count
+239,cia analysis,bac/cia_analysis,cia_analysis
+240,cia analysis detail,bac/cia_analysis_detail,cia_analysis_detail
+241,root cause analysis,dashboard/annex_wise_obs,annex_wise_obs
+242,entity wise observations,dashboard/entity_wise_obs,entity_wise_obs
+243,para view,dashboard/para_view,para_view
+244,reporting office wise observations,dashboard/reporting_wise_obs,reporting_wise_obs
+245,annexure assignment with audit para,setup/annexure_assignment_para,annexure_assignment_para
+246,remove duplicate/redundant checklists,setup/remove_duplicate_checklists,remove_duplicate_checklists
+247,authorize duplicate/redundant checklists,setup/authorize_remove_duplicate_checklists,authorize_remove_duplicate_checklists
+248,entity wise observations detail,dashboard/entity_wise_obs_detail,entity_wise_obs_detail
+249,monitoring of settlement of para,postcompliance/monitoring_of_para_settlement,monitoring_of_para_settlement
+250,status wise compliance,reports/status_wise_compliance,status_wise_compliance
+251,manage user rights,administrationpanel/manage_user_rights,manage_user_rights
+252,annexure exercise status,reports/annexure_exercise_status,annexure_exercise_status
+253,manage observation revised,execution/obs_management,obs_management
+254,compliance summary,dashboard/compliance_summary,compliance_summary
+255,post compliance,postcompliance/post_compliance,post_compliance
+258,post compliance flow,administrationpanel/compliance_flow,compliance_flow
+259,group wise pages,reports/group_wise_pages,group_wise_pages
+261,entity wise aging of paras,reports/dept_wise_outstanding_paras,dept_wise_outstanding_paras
+262,sub menu management,administrationpanel/sub_menu_management,sub_menu_management
+263,create dsa,execution/create_dsa,create_dsa
+264,list draft dsas,execution/list_dsa,list_dsa
+265,manage audit and compliance offices,administrationpanel/audit_comp_management,audit_comp_management
+266,field audit department,,
+267,gist wise report,reports/gist_wise_report,gist_wise_report
+268,audit para reconciliation,reports/audit_para_recon,audit_para_recon
+269,manage annexure,setup/manage_annexure,manage_annexure
+270,manage reporting offices,setup/manage_reporting_offices,manage_reporting_offices
+271,risk rating model for branches,riskassessment/risk_rating_annex_wise,risk_rating_annex_wise
+272,merge main processes,setup/remove_duplicate_process,remove_duplicate_process
+273,authorize main process,setup/authorize_remove_duplicate_process,authorize_remove_duplicate_process
+274,merge sub processes,setup/remove_duplicate_sub_process,remove_duplicate_sub_process
+275,authorize merge sub process,setup/authorize_remove_duplicate_sub_process,authorize_remove_duplicate_sub_process
+276,compliance progress report,reports/compliance_progress_report,compliance_progress_report
+277,compliance hierarchy,setup/compliance_hierarchy,compliance_hierarchy
+278,manage public holidays,administrationpanel/managepublicholidays,managepublicholidays
+279,paras settlement report,reports/settled_paras_report,settled_paras_report
+280,update audit paras,execution/manage_audit_paras,manage_audit_paras
+281,monitoring of settled paras,postcompliance/post_compliance_ho_monitoring,post_compliance_ho_monitoring
+282,post compliance for review,postcompliance/post_compliance_review,post_compliance_review
+283,engagment plan delay analysis report,reports/eng_plan_delay_analysis_report,eng_plan_delay_analysis_report
+284,review of cau paras branch reply,postcompliance/cau_post_compliance_to_branches_review,cau_post_compliance_to_branches_review
+285,cau paras branch reply,postcompliance/cau_post_compliance_to_branches_reply,cau_post_compliance_to_branches_reply
+286,cau paras submission to branch,postcompliance/cau_post_compliance_to_branches,cau_post_compliance_to_branches
+287,special audit plan,planning/special_audit_criteria,special_audit_criteria
+288,special audit plan approval,planning/special_audit_criteria_approval,special_audit_criteria_approval
+289,authorize delete duplicate para,execution/auth_del_dup_para,auth_del_dup_para
+290,update audit paras,execution/manage_audit_paras,manage_audit_paras
+291,authorize update audit paras,execution/manage_audit_paras_authorized,manage_audit_paras_authorized
+292,"authorize delete duplicate para	","execution/auth_del_dup_para	","auth_del_dup_para	"
+293,serious / fraudulent observations general manager,dashboard/serious_fraudulent_obs_gm,serious_fraudulent_obs_gm
+294,quality review of ho paras,execution/pre_concluding_audit_ho,pre_concluding_audit_ho
+295,list of samples,sampling/list_samples,list_samples
+296,account documents,sampling/account_document,account_document
+297,biomet,sampling/biomet,biomet
+298,account transaction master,sampling/account_transaction_master,account_transaction_master
+299,account transactions,sampling/account_transaction,account_transaction
+300,loan applications,sampling/loans,loans
+301,year wise outstanding paras,reports/year_wise_outstanding_paras,year_wise_outstanding_paras
+302,search text in audit paras,reports/search_para_text_report,search_para_text_report
+303,loan transactions,sampling/loan_transactions,loan_transactions
+304,loan documents,sampling/loan_documents,loan_documents
+305,monitoring of samples,sampling/sample_monitoring,sample_monitoring
+306,master cdms transactions,reports/master_cdms_trns,master_cdms_trns
+315,account related exception,sampling/account_exception,account_exception
+316,add new report,sampling/add_report,add_report
+317,exception reports,sampling/list_reports,list_reports
+318,fad reports,fad/observation_review,observation_review
+319,exception loan reports,sampling/loans_exception,loans_exception
+320,para shifting,fad/para_shifting,para_shifting
+321,ais post compliance,administrationpanel/ais_post_compliance,ais_post_compliance
+322,new risk register,fad/risk_register,risk_register
+323,update audit entities,administrationpanel/update_auditee_entities,update_auditee_entities
+324,authorize update audit entities,administrationpanel/authorize_auditee_entities_update,authorize_auditee_entities_update
+325,financial budget,fad/financial_budget,financial_budget
+326,manpower,fad/manpower_position,manpower_position
+327,staff position,fad/staff_position,staff_position
+328,add observation,fad/addobservation,addobservation
+329,assign department,fad/assigndepartment,assigndepartment
+330,assign division,fad/assigndivision,assigndivision
+331,enter response,fad/enterresponse,enterresponse
+332,review response,fad/reviewresponse,reviewresponse
+333,forward to compliance,fad/forwardtocompliance,forwardtocompliance
+334,review history,fad/reviewhistory,reviewhistory
+335,view history,fad/viewhistory,viewhistory
+336,audit validation,fad/auditvalidation,auditvalidation
+337,manpower demand create,fad/manpowerdemandcreate,manpowerdemandcreate
+338,manpower demand summary,fad/manpowerdemandindex,manpowerdemandindex
+339,manpower demand review,fad/manpowerdemandreview,manpowerdemandreview
+340,staff position create,fad/staffpositioncreate,staffpositioncreate
+341,staff position summary,fad/staffpositionindex,staffpositionindex
+342,case study,iid/casestudy,casestudy
+343,analysis,iid/analysis,analysis
+344,final approval,iid/finalapproval,finalapproval
+345,head review,iid/headreview,headreview
+346,initial assessment,iid/initialassessment,initialassessment
+347,inquiry report,iid/inquiryreport,inquiryreport
+348,investigation plan,iid/investigationplan,investigationplan
+349,plan approval,iid/planapproval,planapproval
+350,reports,iid/reports,reports
+351,submit complaint,iid/submitcomplaint,submitcomplaint
+352,para status change,postcompliance/change_para_status,change_para_status
+353,authorize para status change,postcompliance/change_para_status_authorize,change_para_status_authorize
+354,email edit,email/edit,edit
+355,email send,email/send,send
+356,field audit paras desk,fad/fad_desk_rpt,fad_desk_rpt
+367,allocatetask,fad/allocateentitytoauditor,allocateentitytoauditor
+368,referenceupdateedit,fad/referenceupdateedit,referenceupdateedit
+369,reference update tasks,fad/referenceupdatelist,referenceupdatelist
+370,reference update log,fad/referenceupdatelog,referenceupdatelog
+371,upload circular document,fad/upload_circular_document,upload_circular_document
+372,reference entity summary,fad/referenceentitysummary,referenceentitysummary
+373,view all circulars,fad/viewparareferences,viewparareferences
+374,version history,administrationpanel/manageversionhistory,manageversionhistory
+375,para status change,fad/changeparastatus,changeparastatus
+376,authorize para status,fad/authorizeparastatus,authorizeparastatus
+377,email settings,administrationpanel/manageemailtriggers,manageemailtriggers
+378,sbp observation register,hm/sbpobservationregister,sbpobservationregister
+379,sbp observation history,hm/sbpobservationhistory,sbpobservationhistory
+380,manage sbp password,hm/managesbppassword,managesbppassword
+381,system status,administrationpanel/systemstatus,systemstatus
+382,manage exception report format.,sampling/manageexceptionreportformat,manageexceptionreportformat
+383,monitoring of exception ,sampling/exceptionmonitoring,exceptionmonitoring

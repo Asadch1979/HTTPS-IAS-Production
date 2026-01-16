@@ -1,0 +1,170 @@
+﻿@{
+    ViewData["Title"] = "Audit Plan";
+    Layout = "_Layout";
+}
+<style type="text/css">
+    .action_edit:hover{
+        cursor:pointer;
+        font-size:20px;
+    }
+    .action_delete:hover {
+        cursor: pointer;
+        font-size: 20px;
+    }
+</style>
+<script type="text/javascript">
+    $(document).ready(function () {
+        $('#sidebar_policy').hide();
+    });
+    function ShowDepartmentAuditPeriods() {
+        if ($('#deptSelectionBox option:selected').val() == 0)
+            $('#listOfAuditPeriodsContainer').hide();
+        else {
+            $('#listOfAuditPeriodsContainer').show();
+
+            $.ajax({
+                url: g_asiBaseURL + "/Planning/audit_periods",
+                type: "POST",
+                data: {
+                    'dept_code': $('#deptSelectionBox option:selected').val()
+                },
+                cache: false,
+                success: function (data) {
+                    $('#listOfAuditPeriods tbody').empty();
+                    //console.log(data);
+                    var srNo = 1;
+                    $.each(data, function (index, period) {
+                        var status = 'Approved';
+                        period.starT_DATE = period.starT_DATE.split('T')[0];
+                        period.enD_DATE = period.enD_DATE.split('T')[0];
+                        $('#listOfAuditPeriods tbody').append('<tr id=teamcode_' + period.id + '><td class="searchable"><p class="fw-normal mb-1">' + srNo + '</p></td><td class="searchable"><p class="fw-normal mb-1">' + period.description + ' </p></td><td class="searchable"><p class="empName fw-normal mb-1">' + period.starT_DATE + ' </p></td><td class="searchable"><p class="empName fw-normal mb-1">' + period.enD_DATE + ' </p></td><td class="searchable"><p class="empName fw-normal mb-1">' + status + ' </p></td><td><small onclick="event.preventDefault();getAuditPlan(' + period.id + ')" class="text-danger deleteTeam">Details</small></td></tr>');
+                        srNo++;
+                    });
+
+                },
+                dataType: "json",
+            });
+        }
+    }
+    function setupNewAuditPlanItem() {
+        var url = window.location.href;
+        var newUrl = url.replace('audit_plan', 'tentative_audit_plan');
+        window.location.href = newUrl;
+    }
+</script>
+<div class="row mt-3">
+    <div class="row col-md-12">
+        <div class="col-md-6">
+            <h2 style="color: #be0e43">AUDIT PLAN</h2>
+        </div>
+        <div class="col-md-6">
+            <button onclick="setupNewAuditPlanItem();" class="btn btn-danger" style="float:right;">Add New Item</button>
+        </div>
+    </div>
+</div>
+<div id="listOfAuditPlansContainer" class="row mt-3 hide">
+    
+    <br />
+    <table id="listOfAuditPlans" class="table align-middle mb-0 mt-2 bg-white table-hover table-striped">
+        <thead class="bg-light">
+            <tr>
+                <th class="col-md-1">Sr No.</th>
+                <th class="col-md-2">Description</th>
+                <th class="col-md-1">Start Date</th>
+                <th class="col-md-1">End Date</th>
+                <th class="col-md-1">Team</th>
+                <th class="col-md-1">Division/Audit Cluster</th>
+                <th class="col-md-1">Department / Branch</th>
+                <th class="col-md-1">Status</th>
+                <th class="col-md-1"></th>
+            </tr>
+        </thead>
+        <tbody>
+            @{
+                if (ViewData["AuditPlan"] != null)
+                {
+
+                    var index = 1;
+                    foreach (var item in (dynamic)(ViewData["AuditPlan"]))
+                    {
+                        var sDate = item.AUDIT_STARTDATE.ToString();
+                        var eDate = item.AUDIT_ENDDATE.ToString();
+
+                        <tr>
+                            <td>@index</td>
+                            <td>@item.DESCRIPTION</td>
+                            <td>@sDate.Split(" ")[0]</td>
+                            <td>@eDate.Split(" ")[0]</td>
+                            <td>@item.TEAM_NAME</td>
+                            @{
+                                if (@item.DIVISION_NAME == "" && @item.DEPARTMENT_NAME == "")
+                                {
+                                    <td>@item.AUDITZONE_NAME</td>
+                                    <td>@item.BRANCH_NAME</td>
+                                }
+                                else if (@item.AUDITZONE_NAME == "" && @item.BRANCH_NAME == "")
+                                {
+                                    <td>@item.DIVISION_NAME</td>
+                                    <td>@item.DEPARTMENT_NAME</td>
+                                }
+                            }
+                            <td>@item.STATUS</td>
+                            <td class="text-danger"><i class="action_edit fa fa-pencil"></i><i style="margin-left:20px;" class="action_delete fa fa-trash"></i></td>
+                        </tr>
+                        index++;
+                    }
+                }
+            }
+        </tbody>
+    </table>
+</div>
+
+<div id="setupAuditPlan" class="modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">Audit Plan</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form>
+                    <div class="form-group">
+                        <label for="planDescriptionModalField">Description</label>
+                        <input type="text" class="form-control" id="planDescriptionModalField" aria-describedby="brcode" placeholder="Team Name">
+                    </div>
+                    <div class="form-group">
+                        <label for="planStartModalField">Start Date</label>
+                        <input type="date" class="form-control" id="planStartModalField" aria-describedby="brcode" placeholder="Team Name">
+                    </div>
+                    <div class="form-group">
+                        <label for="planEndModalField">End Date</label>
+                        <input type="date" class="form-control" id="planEndModalField" aria-describedby="brcode" placeholder="Team Name">
+                    </div>
+                    <div class="form-group">
+                            <label for="planTeamModalField">Audit Conducted By</label>
+                            <select class="form-control form-select">
+                                <option value="0" id="0">--Select Audit Team--</option>
+                                @{
+                                    if (ViewData["AuditTeams"] != null)
+                                    {
+                                        foreach (var item in (dynamic)(ViewData["AuditTeams"]))
+                                        {
+                                            <option value="0" id="0">Team</option>
+                                        }
+                                    }
+                                }
+                            </select>
+                        </div>
+
+                    </form>
+            </div>
+            <div class="modal-footer">
+                <button onclick="publishNewTeamChanges();" type="button" class="btn btn-danger">Save changes</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+

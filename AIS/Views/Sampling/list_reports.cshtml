@@ -1,0 +1,106 @@
+﻿@{
+    var page_id = ViewData["PageId"] as int? ?? 0;
+}
+
+@{
+    ViewData["Title"] = "Exception Reports";
+    Layout = "_Layout";
+}
+
+<script type="text/javascript">
+    
+    var g_engID = 0;
+    $(document).ready(function () {
+        var url_string = window.location;
+        var url = new URL(url_string);
+        g_engID = url.searchParams.get("engId");
+        listSamples();
+     
+    });
+    function listSamples(){
+
+
+        $.ajax({
+             url: g_asiBaseURL + "/ApiCalls/get_list_of_reports",
+            type: "POST",
+               cache: false,
+
+            data: { 
+            'ENG_ID':g_engID
+            },
+            success: function (data) {
+                if (data.length > 0) {
+                    populateTable(data);
+                }
+            },
+            dataType: "json",
+        });
+    }
+        function populateTable(data) {
+            $('#wait').show();
+             destroyDatatable('listOfSamples');
+        let tableBody = $("#listOfSamples tbody");
+                 
+
+                data.forEach((item, index) => {
+        let row = `<tr>
+            <td>${index + 1}</td>
+            <td>${item.reporT_TITLE}</td>
+            <td class="text-center">${item.discription}</td>
+            <td class="text-center">
+                <button class="btn btn-danger btn-sm" onclick="viewSample(${item.reporT_ID}, ${item.loaN_STATUS}, '${item.reporT_INDICATOR}', '${item.reporT_TITLE.replace(/'/g, "\\'")}', '${item.discription.replace(/'/g, "\\'")}')">
+                    View
+                </button>
+            </td>
+        </tr>`;
+
+        tableBody.append(row);
+    });      
+
+        // Reinitialize DataTable after populating data
+        initializeDataTable("listOfSamples");
+        $('#wait').hide();
+    }
+
+    function viewSample(reportId, loanStatus, indicator, reportTitle, reportDescription) {
+        if(indicator=="A"){
+            redirectToAccount(reportId, loanStatus, reportTitle, reportDescription);
+        }else if(indicator=="L"){
+            redirectToLoan(reportId, loanStatus, reportTitle, reportDescription);
+        }
+    }
+
+
+
+    function redirectToAccount(reportId, loanStatus, title, desc){
+        window.location.href = g_asiBaseURL + "/Sampling/Account_exception?engId="+g_engID+"&report_id="+reportId+"&loan_status="+loanStatus+"&title="+encodeURIComponent(title)+"&desc="+encodeURIComponent(desc);
+    }
+      function redirectToLoan(reportId, loanStatus, title, desc){
+        window.location.href = g_asiBaseURL + "/Sampling/loans_exception?engId="+g_engID+"&reporT_ID="+reportId+"&loaN_STATUS="+loanStatus+"&title="+encodeURIComponent(title)+"&desc="+encodeURIComponent(desc);
+    }
+
+</script>
+<link rel="stylesheet" href="~/css/sampling.css" />
+<div class="container-fluid mt-4">
+    <div class="card card-sample shadow-sm">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h4 class="mb-0">List of Exception Reports</h4>
+            
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table id="listOfSamples" class="table table-hover table-bordered table-striped">
+                    <thead>
+                        <tr>
+                            <th class="col-md-auto">Sr. No.</th>
+                            <th class="col-md-auto">Report Name List</th>
+                            <th class="col-md-auto">Things to be checked</th>
+                            <th class="col-md-auto text-center">View</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>

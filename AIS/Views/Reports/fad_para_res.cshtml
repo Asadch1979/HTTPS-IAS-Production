@@ -1,0 +1,251 @@
+﻿@{
+    var page_id = ViewData["PageId"] as int? ?? 0;
+}
+
+@{
+    ViewData["Title"] = "Branch Observation";
+    Layout = "_Layout";
+}
+
+<script type="text/javascript">
+
+    var g_obsList = [];
+    var g_id = 0;
+    function div_risksubcategoryShowHide() {
+        if ($('#riskGroupSelectBox option:selected').val() == 0) {
+            $('#div_risksubcategory').hide();
+            $('#div_activityContainer').hide();
+        }
+        else {
+            $('#div_risksubcategory').show();
+            $('#div_activityContainer').hide();
+            $('#riskSubGroupSelectBox').empty();
+            $.ajax({
+                url: g_asiBaseURL + "/Setup/process_details",
+                type: "POST",
+                data: {
+                    'ProcessId': $('#riskGroupSelectBox option:selected').val(),
+                },
+                cache: false,
+                success: function (data) {
+                    $('#riskSubGroupSelectBox').append("<option value=\"0\" id=\"0\">--Select Sub Group--</option>");
+                    $.each(data, function (index, item) {
+                        $('#riskSubGroupSelectBox').append("<option value=\"" + item.id + "\"> " + item.title + " </option > ");
+                    });
+
+                },
+                dataType: "json",
+            });
+        }
+    }
+    function div_activityContainerShowHide() {
+        if ($('#riskSubGroupSelectBox option:selected').val() == 0)
+            $('#div_activityContainer').hide();
+        else
+            $('#div_activityContainer').show();
+        $('#riskActivitiesSelectBox').empty();
+        $.ajax({
+            url: g_asiBaseURL + "/Setup/process_transactions",
+            type: "POST",
+            data: {
+                'ProcessDetailId': $('#riskSubGroupSelectBox option:selected').val(),
+            },
+            cache: false,
+            success: function (data) {
+                $('#riskActivitiesSelectBox').append("<option value=\"0\" id=\"0\">--Select Sub Group--</option>");
+                $.each(data, function (index, item) {
+                    $('#riskActivitiesSelectBox').append("<option value=\"" + item.id + "\"> " + item.description + "</option>");
+                });
+
+            },
+            dataType: "json",
+        });
+    }
+
+    function getEntityObservation() {
+
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/get_fad_paras",
+            type: "POST",
+            data: {
+                'PROCESS_ID': $('#riskGroupSelectBox option:selected').val(),
+                'SUB_PROCESS_ID': $('#riskSubGroupSelectBox option:selected').val(),
+                'PROCESS_DETAIL_ID': $('#riskActivitiesSelectBox option:selected').val()
+            },
+            cache: false,
+            success: function (data) {
+                g_obsList = data;
+                $('#observation_panel tbody').empty();
+                $.each(data, function (i, v) {
+                    $('#observation_panel tbody').append('<tr><td>' + v.period + '</td><td>' + v.entitY_NAME + '</td><td>' + v.process + '</td><td>' + v.suB_PROCESS + '</td><td>' + v.violation + '</td><td>' + v.obS_TEXT + '</td><td>' + v.obS_RISK + '</td><td>' + v.obS_STATUS + '</td></tr>');
+                 });
+
+
+            },
+            dataType: "json",
+        });
+    }
+
+    function ShowMemo(id) {
+        g_id = id;
+        $('#viewMemoModel').modal('show');
+        $.each(g_obsList, function (i, v) {
+            if (v.obS_ID == id) {
+                $('#viewMemo_memo').html(v.obS_TEXT);
+            }
+        })
+    }
+    function ShowComments(id) {
+        g_id = id;
+        $('#commentsBox').modal('show');
+       
+    }
+    function reloadLocation() {
+        location.reload();
+    }
+    function finalCommentsButtonSave() {
+        if ($('#concernedDeptInCommentsBox').val() == 0) {
+            alert("Please select Concerned Department");
+            return;
+        }
+        if ($('#commentAreaInCommentsBox').val() == "") {
+            alert("Comments are Mandatory");
+            return;
+        }
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/divisional_head_remarks_on_functional_legacy_para",
+            type: "POST",
+            data: {
+                'CONCERNED_DEPT_ID': $('#concernedDeptInCommentsBox').val(),
+                'COMMENTS': $('#commentAreaInCommentsBox').val(),
+                'REF_PARA_ID': g_id
+            },
+            cache: false,
+            success: function (data) {
+               alert("Successfully done");
+                    onAlertCallback(reloadLocation);
+            },
+            dataType: "json",
+        });
+    }
+
+</script>
+<div class="row col-md-12">
+    <div class="col-md-12 mt-3">
+        <center class="w-100"><h3>Violation Wise Paras</h3></center>
+        <div>
+            <h5>Process</h5>
+        </div>
+        <select id="riskGroupSelectBox" onchange="div_risksubcategoryShowHide();" class="form-select form-control" aria-label="Default select example">
+            <option value="0" id="0" selected="selected">--Select Voilation Category--</option>
+            @{
+                if (ViewData["ProcessList"] != null)
+                {
+                    foreach (var item in (dynamic)(ViewData["ProcessList"]))
+                    {
+                        <option id="@item.P_ID" value="@item.P_ID">@item.P_NAME</option>
+                    }
+                }
+            }
+        </select>
+    </div>
+    <div id="div_risksubcategory" style="display:none;" class="col-md-12 mt-3">
+        <h5>Sub Process</h5>
+        <select id="riskSubGroupSelectBox" onchange="div_activityContainerShowHide();" class="form-select form-control" aria-label="Default select example">
+        </select>
+    </div>
+    <div id="div_activityContainer" style="display:none;" class="col-md-12 mt-3">
+        <h5>Process Detail</h5>
+        <select id="riskActivitiesSelectBox" onchange="getAuditObservationTemplate();" class="form-select form-control" aria-label="Default select example">
+        </select>
+    </div>
+    <div class="col-md-12 mt-3">
+        <button onclick="getEntityObservation();" class="btn btn-primary">Search Para</button>
+    </div>
+
+    <div class="mt-3 col-md-12">
+        <table id="observation_panel" class="table table-hover table-bordered table-hover mt-3 table-striped">
+            <thead style="background-color: #19875478 !important; ">
+                <tr>
+                    <th>Audit Year</th>
+                    <th>Entity Name</th>
+                    <th>CheckList</th>
+                    <th>Sub CHecklist</th>
+                    <th>Violation</th>
+                    <th>Gist of Para</th>
+                    <th>Risk Category</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+            </tbody>
+        </table>
+    </div>
+
+</div>
+
+<div id="viewMemoModel" class="modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-xl" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">Observation</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form>
+
+
+                    <div class="form-group">
+                        <label for="viewMemo_memo">Observation</label>
+                        <div id="viewMemo_memo" disabled="disabled" style="height: auto; overflow-y: auto;" class="form-control"></div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="commentsBox" class="modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">Divisional Head Comments</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form>
+                    <div class="form-group">
+                        <label for="commentAreaInCommentsBox">Concerned Department</label>
+                        <select id="concernedDeptInCommentsBox" class="form-control form-select">
+                            <option>--Select Concerned Department--</option>
+                            @{
+                                if (ViewData["ReportingDepartmentList"] != null)
+                                {
+                                    foreach (var item in (dynamic)(ViewData["ReportingDepartmentList"]))
+                                    {
+                                        <option id="@item.ENTITY_ID" value="@item.ENTITY_ID">@item.C_NAME</option>
+                                    }
+                                }
+                            }
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="commentAreaInCommentsBox">Comments</label>
+                        <textarea class="form-control" rows="4" id="commentAreaInCommentsBox" placeholder="Enter Comments here.."></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button onclick="finalCommentsButtonSave();" id="finalCommentsButtonSave" type="button" class="btn btn-danger">Submit</button>
+            </div>
+        </div>
+    </div>
+</div>

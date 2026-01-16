@@ -1,0 +1,146 @@
+﻿@{
+    ViewData["Title"] = "Post Changes Approved Plan";
+    Layout = "_Layout";
+}
+
+
+<script type="text/javascript">
+    $(document).ready(function () {
+        $('#sidebar_policy').hide();
+    })
+</script>
+
+<div class="row text-center" style="margin-top:50px;">
+    <p>POST CHANGES IN APPROVED PLANS</p>
+
+</div>
+<div>
+    <div class="row" style="margin-top:50px;">
+        <div class="row w-100">
+            <center>
+                <h6 style="display:block;">Plan Review</h6>
+            </center>
+        </div>
+
+        <table class="table table-bordered table mb-0 mt-3 bg-white table-hover table-striped" id="Plan Review">
+            <thead>
+                <tr>
+                    <td>SR</td>
+                    <td>Operation Zone</td>
+                    <td>Branch</td>
+                    <td>Size</td>
+                    <td>Risk</td>
+                    <td>Operation Period Start</td>
+                    <td>Operation Period End</td>
+                    <td>Execution Period Start</td>
+                    <td>Execution Period End</td>
+                    <td>Team Lead</td>
+                    <td>Travelling Day Allowed</td>
+                    <td></td>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td><input type="checkbox" /></td>
+                </tr>
+                <tr>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td><input type="checkbox" /></td>
+                </tr>
+                <tr>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td><input type="checkbox" /></td>
+                </tr>
+                <tr>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td><input type="checkbox" /></td>
+                </tr>
+                <tr>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td><input type="checkbox" /></td>
+                </tr>
+                <tr>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td><input type="checkbox" /></td>
+                </tr>
+            </tbody>
+        </table>
+        <div class="row w-100 mt-3">
+            <h4>Audit Cluster Head Remarks</h4>
+            <select id="deptSelectionBox" class="form-select form-control" aria-label="Default select example">
+                <option value="0" selected>Remarks</option>
+                <option value="1">1. Recommended for Approval</option>
+                <option value="2">2. Refer back for changes in the above marked plans</option>
+            </select>
+        </div>
+        <div class="row w-100 col-md-12 mt-3">
+            <div class="col-md-6 mt-5">
+                <button onclick="window.location.href = './AnnexureB_3';" class="btn-primary">Submit</button>
+            </div>
+            <div class="col-md-6 mt-5">
+                <button onclick="window.location.href = './AnnexureB_3';" class="btn-primary">Refer Back</button>
+            </div>
+        </div>
+    </div>
+</div>

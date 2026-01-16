@@ -1,0 +1,115 @@
+﻿@{
+    var page_id = ViewData["PageId"] as int? ?? 0;
+}
+
+@{
+    ViewData["Title"] = "Risk Assessment Table";
+    Layout = "_Layout";
+}
+
+<script type="text/javascript">  
+
+    function getAuditeeRiskForEntTypes() {
+        $('#auditeeRiskAreaPanel tbody').empty();
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/get_auditee_risk_for_entity_types",
+            type: "POST",
+            data: {
+                'ENT_TYPE_ID': $('#entTypesList option:selected').val(),
+                    'PERIOD': $('#periodSelectionBox option:selected').val()
+                
+            },
+
+            cache: false,
+            success: function (data) {
+                var sr = 1;
+                var total_count_mx = 0;
+                var total_count_m = 0;
+                $.each(data, function (index, v) {
+                    total_count_mx += parseInt(v.maX_NUMBER);
+                    total_count_m += parseFloat(v.marks);
+                    m = parseFloat(v.marks);
+
+                    $('#auditeeRiskAreaPanel tbody').append('<tr><td>' + sr + '</td><td>' + v.parenT_OFFICE + '</td><td>' + v.name + '</td><td align="right">' + v.brancH_CODE + '</td><td align="right">' + v.risK_RATING + '</td><td>' + v.risK_CATEGORY + '</td></tr>')
+                    sr++
+                });
+
+                
+            },
+            dataType: "json",
+        });
+        getAuditeeRiskDetails();
+    }
+
+ 
+</script>
+
+
+<div class="col-md-12">
+    <h3 style=" display:block;color: #be0e43">Risk Assessment of Entity Types</h3>
+    <div class="row col-md-12 mt-3">
+        <div class="col-md-2">
+            <label class="font-weight-normal">Audit Period</label>
+        </div>
+        <div class="col-md-10">
+            <select id="periodSelectionBox" class="form-select form-control" aria-label="Default select example">
+                <option value="0" selected>--Select Audit Period--</option>
+                @{
+                    if (ViewData["PeriodList"] != null)
+                    {
+                        foreach (var item in (dynamic)(ViewData["PeriodList"]))
+                        {
+                            <option value="@item.AUDITPERIODID" id="@item.AUDITPERIODID">@item.DESCRIPTION</option>
+                        }
+                    }
+                }
+            </select>
+        </div>
+    </div>
+    <div class="row col-md-12 mt-3">
+        <div class="col-md-2">
+            <label>Entity Types</label>
+        </div>
+        <div class="col-md-10">
+            <select id="entTypesList" onchange="getAuditeeRiskForEntTypes();" class="form-control form-select">
+                <option id="0" value="0" selected="selected">--Select Relationship Type--</option>
+
+
+                @{
+                    if (ViewData["EntTypeList"] != null)
+                    {
+                        foreach (var item in (dynamic)(ViewData["EntTypeList"]))
+                        {
+                            <option value="@item.CODE" id="@item.CODE">@item.NAME</option>
+                        }
+                    }
+                }
+
+
+
+            </select>
+        </div>
+    </div>
+
+    <div class="row col-md-12 mt-3">
+        <div class="row col-md-12">
+            <table id="auditeeRiskAreaPanel" class="table table-hover table-bordered table-hover mt-3 table-striped">
+                <thead style="background-color: #19875478 !important; ">
+                    <tr>
+                        <th class="col-md-1">Sr. No.</th>
+                        <th class="col-md-auto">Parent Offie</th>
+                        <th class="col-md-auto">Entity Name</th>
+                        <th class="col-md-auto">Entity Code</th>
+                        <th class="col-md-auto">Risk Rating</th>
+                        <th class="col-md-auto">Risk Category</th>
+                    </tr>
+                </thead>
+                <tbody>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+  
+
+</div>

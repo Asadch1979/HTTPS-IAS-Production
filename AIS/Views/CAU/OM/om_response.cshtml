@@ -1,0 +1,96 @@
+﻿@{
+    ViewData["Title"] = "OM Response ACU";
+    Layout = "_Layout";
+}
+
+<script type="text/javascript">
+    var g_oms = '';
+    $('#document').ready(function () {
+        $('#template_box').richText({
+            imageUpload: false,
+            fileUpload: false,
+            videoEmbed: false,
+            urls: false
+        });
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/CAU_Get_OMs",
+            type: "POST",
+            cache: false,
+            success: function (data) {
+                g_oms = data;
+               // $('#assignedOM_box').empty();
+                $.each(g_oms, function (i, v) {
+                    $('#assignedOM_box').append('<option id="' + v.id + '" value="' + v.oM_NO + '">' + v.oM_NO + '</option>');
+                });
+            },
+            dataType: "json",
+        });
+    });
+
+    function getOMContents() {
+        var selectedOm = $('#assignedOM_box option:selected').attr('id');
+        $.each(g_oms, function (i, v) {
+            if (v.id == selectedOm) {
+                $('#omContentAreaBox').html(v.contentS_OF_OM);
+            }            
+        });
+    }
+    function forwardOmToDept() {
+
+    }
+
+</script>
+<div class="row mt-3 col-md-12">
+    <h3 style="color: #be0e43">OM Assignment To Department</h3>
+</div>
+
+<div class="row col-md-12 mt-4">
+    <div class="row col-md-12">
+        <label class="font-weight-bold">O.M/Para No.</label>
+    </div>
+    <div class="row col-md-12">
+        <select id="assignedOM_box" onchange="getOMContents();" class="form-select form-control">
+            <option value="0" id="0" selected="selected" >--Select O.M/Para No--</option>
+        </select>
+    </div>
+</div>
+<div class="row col-md-10 mt-4">
+    <label class="font-weight-bold">Content of Para/OM</label>
+</div>
+<div class="row col-md-12">
+    <div id="omContentAreaBox" style="height: auto; width:100%; margin-right:30px; border: 1px solid #ced4da; border-radius: 0.25rem; padding: 10px; text-align: justify; "> </div>
+</div>
+
+<div class="row col-md-12 mt-4">
+    <div class="row col-md-12">
+        <label class="font-weight-bold">Department</label>
+    </div>
+    <div class="row col-md-12">
+        <select id="auditTeam_box" class="form-select form-control">
+            <option value="0" id="0" selected>--Select Department--</option>
+          
+
+            @{if (ViewData["DepartmentList"] != null)
+                {
+
+                    foreach (var item in (dynamic)(ViewData["DepartmentList"]))
+                    {
+                    <option>@item.NAME</option>
+                        }
+                    }
+
+                }
+
+
+        </select>
+    </div>
+</div>
+
+
+<div class="row col-md-12 mt-4">
+    <div class="col-md-12 mt-3 mb-4">
+        <button onclick="forwardOmToDept();" style="float:right;" class="btn btn-danger col-md-2">Forward</button>
+
+    </div>
+
+</div>

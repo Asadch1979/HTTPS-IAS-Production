@@ -1,0 +1,151 @@
+﻿@{
+    var page_id = ViewData["PageId"] as int? ?? 0;
+}
+
+@{
+    ViewData["Title"] = "Overview of Serious/Fraudulent Observations in Field Functionaries";
+    Layout = "_Layout";
+}
+
+<script type="text/javascript">
+
+    function getDetails( indicator, parent_ent_id, annex_ind ){
+        $('#DetailsA1Paras').modal('show');
+          destroyDatatable('paraDetailsGrid');
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/get_serious_entities_details",
+            type: "POST",
+            data: {
+                'INDICATOR': indicator,
+                'PARENT_ENT_ID': parent_ent_id,
+                'ANNEX_IND': annex_ind
+            },
+            cache: false,
+            success: function (data) {
+
+                $.each(data, function (i, v) {
+
+                    $('#paraDetailsGrid tbody').append('<tr><td>' + ++i + '</td><td>' + v.p_NAME + '</td><td>' + v.c_NAME + '</td><td>' + v.audiT_PERIOD + '</td><td>' + v.parA_NO + '</td><td>' + v.anneX_HEADING + '</td><td>' + v.risk + '</td><td>' + v.gisT_OF_PARAS + '</td><td>' + v.amounT_INVOLVED + '</td></tr>');
+                });
+
+                   initializeDataTable('paraDetailsGrid');
+            },
+            dataType: "json",
+        });
+
+
+    }
+</script>
+<div class="row col-md-12">
+    <h3 style="color: #be0e43;">Overview of Serious/Fraudulent Observations in Field Functionaries</h3>
+</div>
+@{
+
+    var bgClasses = new List<string> { "bg-primary", "bg-secondary", "bg-danger", "bg-warning", "bg-info", "bg-success", "bg-dark" };
+    var index = 0;
+}
+
+<div class="row col-md-12">
+
+    <div class="row">
+        @{
+            if (ViewData["GMWiseSeriousObs"] != null)
+            {
+                foreach (var rec in (dynamic)(ViewData["GMWiseSeriousObs"]))
+                {
+                    // Get a background class, cycling through the list
+                    var bgClass = bgClasses[index % bgClasses.Count];
+                    index++;
+
+                    <div class="col-md-4 mb-4">
+                        <div class="card">
+                            <div class="card-header @bgClass p-1">
+                                <div class="row w-100">
+                                    <div class="col-6">
+                                        <h5 style="font-size:15px;" class="card-title text-light mb-0">@rec.P_NAME</h5>
+                                    </div>
+                                    <div class="col-3 pr-0 text-right">
+                                        <h5 style="font-size:15px;" class="text-light mb-0">STOCK</h5>
+                                    </div>
+                                    <div class="col-3 pr-0 text-right">
+                                        <h5 style="font-size:15px;" class="text-light mb-0">CURRENT</h5>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="card-body p-1">
+                                <div class="row">
+                                    <div class="col-6" style="border-right: 1px solid #ccc;">
+                                        <p class="mb-0">Serious Observations</p>
+                                        <p class="mb-0">Fraudulent (A-1) Total</p>
+                                        <p class="mb-0">Amount</p>
+                                        <p class="mb-0">Person Involved</p>
+                                    </div>
+                                    <div class="col-3 text-center">
+
+                                        <p class="mb-0"><a style="text-decoration:underline;" href="#" onclick="getDetails('S', @rec.PARENT_ID,'ALL')">@rec.TOTAL_NO</a></p>
+
+                                        <p class="mb-0"><a style="text-decoration:underline;" href="#" onclick="getDetails('S', @rec.PARENT_ID,'A1')">@rec.A1</a></p>
+                                        <p class="mb-0">@rec.AMOUNT</p>
+                                        <p class="mb-0">@rec.PER_INV</p>
+                                    </div>
+                                    <div class="col-3 text-center">
+                                        <p class="mb-0"><a style="text-decoration:underline;" href="#" onclick="getDetails('C', @rec.PARENT_ID,'ALL')">@rec.C_TOTAL_NO</a></p>
+                                        <p class="mb-0"><a style="text-decoration:underline;" href="#" onclick="getDetails('C', @rec.PARENT_ID,'A1')">@rec.C_A1</a></p>
+                                        <p class="mb-0">@rec.C_AMOUNT</p>
+                                        <p class="mb-0">@rec.C_PER_INV</p>
+
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+            }
+        }
+    </div>
+
+</div>
+
+
+<div id="DetailsA1Paras" class="modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-xl" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title">Details of Fraudulent A1 Para</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+                    
+                </button>
+            </div>
+            <div class="modal-body">
+                <form>
+                    <div class="form-group">
+                        <div class="row col-sm-12">
+                            <table id="paraDetailsGrid" class="table table-hover table-bordered table-hover mt-3 table-striped">
+                                <thead style="background-color: #19875478 !important; ">
+                                    <tr>
+                                        <th class="col-md- auto font-weight-bold">Sr.No</th>
+                                        <th class="col-md- auto font-weight-bold">Reporting Office</th>
+                                        <th class="col-md- auto font-weight-bold">Entity Name</th>
+                                        <th class="col-md- auto font-weight-bold">Audit Period</th>
+                                        <th class="col-md- auto font-weight-bold">Para No.</th>
+                                        <th class="col-md- auto font-weight-bold">Annexure</th>
+                                        <th class="col-md- auto font-weight-bold">Risk Category</th>
+                                        <th class="col-md- auto font-weight-bold">Gist of Para</th>
+                                        <th class="col-md- auto font-weight-bold">Amount</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+

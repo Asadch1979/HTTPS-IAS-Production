@@ -1,0 +1,623 @@
+﻿@{
+    var page_id = ViewData["PageId"] as int? ?? 0;
+}
+
+@{
+    ViewData["Title"] = "Update Audit Paras";
+    Layout = "_Layout";
+}
+<script type="text/javascript">
+        var g_com_id = 0;
+        var g_np_id = 0;
+        var g_op_id = 0;
+        var g_ind = "";
+        var g_allObs = [];
+        var g_index = 0;
+        var auditParaSection = null;
+        var respSectionUpdate = null;
+        var g_annexList = @Json.Serialize(ViewData["AnnexList"]);
+        var g_selectedRiskId = 0;
+
+        $(document).ready(function () {
+            $('#entitySelectField').select2();
+            $('#paraTextViewer').richText({
+                imageUpload: false,
+                fileUpload: false,
+                videoEmbed: false,
+                urls: false
+            });
+                const currentYear = new Date().getFullYear();
+    for (var i = 1970; i <= currentYear; i++) {
+        $('#auditPara_Period').append(
+            '<option value="' + i + '">Audit Year ' + i + '</option>'
+        );
+    }
+            auditParaSection = initFieldAuditParaSection({
+                containerSelector: '#viewMemoModel',
+                annexList: g_annexList,
+                readOnly: false
+            });
+            respSectionUpdate = initResponsibilitySection({
+                tableSelector: '#listofRespPersons',
+                changesTableSelector: '#c_listofRespPersons',
+                modalSelector: '#ResponsiblePPModel',
+                status: 1,
+                indicator: 'O',
+                directSaveMode: false
+            });
+
+        });
+        function getrelation(parentEntityId = 0, userEntityId = 0) {
+
+
+            $('#controlingsearch').empty();
+            $('#childposting').empty();
+            $.ajax({
+                url: g_asiBaseURL + "/ApiCalls/getparentrelForParaPositionReport",
+                type: "POST",
+                data: {
+                    'ENTITY_REALTION_ID': $('#RelationshipField option:selected').val()
+                },
+
+
+                cache: false,
+                success: function (data) {
+
+
+                    $('#controlingsearch').append('<option id="0" value="0">--Select Controlling/Reporting Office--</option>');
+                    $.each(data, function (index, contof) {
+
+                        var selected = '';
+                        if (contof.entitY_ID == parentEntityId)
+                            selected = 'selected="selected"';
+
+                        $('#controlingsearch').append('<option ' + selected + ' value="' + contof.entitY_ID + '" id="' + contof.entitY_REALTION_ID + '">' + contof.description + '</option>')
+                    });
+                    if (userEntityId != 0)
+                        getplacepost(userEntityId)
+
+                    // console.log(data);
+
+                },
+                dataType: "json",
+            });
+
+
+
+        }
+
+        function getplacepost(userEntityId = 0) {
+            $('#childposting').empty();
+
+            $.ajax({
+                url: g_asiBaseURL + "/ApiCalls/getpostplaceForParaPositionReport",
+                type: "POST",
+                data: {
+                    'E_R_ID': $('#controlingsearch option:selected').val()
+                },
+
+
+                cache: false,
+                success: function (data) {
+                    $('#childposting').append('<option id="0" value="0" selected="selected">--Select Place of Posting--</option>');
+                    $.each(data, function (index, gpp) {
+
+                        var selected = '';
+                        if (gpp.entitY_ID == userEntityId)
+                            selected = 'selected="selected"';
+                        $('#childposting').append('<option ' + selected + ' value="' + gpp.entitY_ID + '" id="' + gpp.entitY_ID + '">' + gpp.c_NAME + '</option>')
+                    });
+                },
+                dataType: "json",
+            });
+
+        }
+        function reloadLocation() {
+            getEntityObservation();
+        }
+        function getEntityObservation() {
+            destroyDatatable('manageObsPanel');
+            if ($('#childposting option:selected').val() != 0) {
+                $.ajax({
+                    url: g_asiBaseURL + "/ApiCalls/get_observations_for_manage_paras",
+                    type: "POST",
+                    data: {
+                        'ENTITY_ID': $('#childposting option:selected').val()
+                    },
+                    cache: false,
+                    success: function (data) {
+                        g_allObs = data;
+                        $.each(data, function (i, v) {
+                            var row = '<tr index="' + i + '"><td class="text-center">' + (i + 1) + '</td><td class="text-center">' + v.audiT_PERIOD + '</td><td>' + v.parA_NO + '</td><td>' + v.annex + '</td><td>' + v.obS_RISK + '</td><td>' + v.obS_GIST + '</td><td class="text-center"><a onclick="event.preventDefault();ObservationViewerPanel(\'' + i + '\')" href="#" class="text-hover">Update Para Details</a></td><td class="text-center"><a onclick="event.preventDefault();DeleteDuplicatePara(\'' + v.neW_PARA_ID + '\',\'' + v.olD_PARA_ID + '\', \'' + v.p_TYPE_IND + '\')" href="#" class="text-hover">Delete Duplicate Para</a></td>';
+                            if($('#userGroupField').val()==1)
+                                row += '<td><input type="checkbox" class="selectedParasToShift"/></td>';
+                            row += '</tr>';
+                            $('#manageObsPanel tbody').append(row);
+                        });
+                        initializeDataTable('manageObsPanel');
+                    },
+                    dataType: "json",
+                });
+            }
+        }
+
+        function selectAllParasShift(){
+            if($('#selectAllChkBox').is("checked"))
+            {
+                $('.selectedParasToShift').attr("checked",true);
+            }else{
+                $('.selectedParasToShift').attr("checked",false);
+            }
+
+        }
+
+        function ObservationViewerPanel(index) {
+            g_index = index;
+            var item = g_allObs[index];
+            g_com_id = item.coM_ID || item.COM_ID || item.com_id;
+            $('#viewMemoModel').modal('show');
+            $.ajax({
+                url: g_asiBaseURL + "/ApiCalls/get_observations_details_for_manage_paras",
+                type: "POST",
+                data: { 'COM_ID': g_com_id },
+                cache: false,
+                success: function (v) {
+                    g_np_id = v.neW_PARA_ID;
+                    g_op_id = v.olD_PARA_ID;
+                    g_ind = v.indicator;
+                    $('#auditPara_Period').val(v.audiT_PERIOD);
+                    $('#auditPara_ParaNO').val(v.parA_NO);
+                    $('#auditPara_Annex').val(v.anneX_ID || v.annex);
+                    updateRiskDisplay();
+                    $('#auditPara_Gist').val(v.obS_GIST);
+                    $('#paraTextViewer').val(v.parA_TEXT).trigger('change');
+                    $('#auditPara_AmountInv').val(v.amounT_INV);
+                    $('#auditPara_InstNO').val(v.nO_INSTANCES);
+                    if (respSectionUpdate) {
+                        respSectionUpdate.updateContext({ comId: g_com_id, newParaId: g_np_id, oldParaId: g_op_id, indicator: 'O' });
+                    }
+                    if (window.ReferenceSection) {
+                        ReferenceSection.init({ comId: g_com_id });
+                    }
+                },
+                dataType: "json"
+            });
+        }
+
+        // reference search handlers removed
+
+
+    function updateObservationStatus() {
+            if (g_ind != "N") {
+                if ($('#auditPara_Period').val() == "") {
+                    alert("Please enter Audit Period");
+                    return false;
+                }
+            }
+
+            if (!g_selectedRiskId || g_selectedRiskId == 0) {
+                alert("Please select Audit Risk");
+                return false;
+            }
+            if ($('#auditPara_Annex').val() == "") {
+                alert("Please select Annexure");
+                return false;
+            }
+            if ($('#auditPara_ParaNO').val() == "") {
+                alert("Please enter Para No");
+                return false;
+            }
+            if ($('#auditPara_Gist').val() == "") {
+                alert("Please enter Para Gist");
+                return false;
+            }
+            const payload = {
+              COM_ID: Number(g_com_id) || 0,
+              NEW_PARA_ID: Number(g_np_id) || 0,
+              OLD_PARA_ID: Number(g_op_id) || 0,
+
+              INDICATOR: g_ind || "",
+              AUDIT_PERIOD: ($('#auditPara_Period').val() || "").trim(),
+
+              OBS_GIST: $('#auditPara_Gist').val() || "",
+              PARA_TEXT: $('#paraTextViewer').val() || "",
+              PARA_NO: ($('#auditPara_ParaNO').val() || "").trim(),
+
+              OBS_RISK_ID: Number(g_selectedRiskId) || 0,
+              ANNEX_ID: Number($('#auditPara_Annex').val()) || 0,
+
+              AMOUNT_INV: $('#auditPara_AmountInv').val() || "0",
+              NO_INSTANCES: $('#auditPara_InstNO').val() || "0"
+            };
+
+            $.ajax({
+              url: g_asiBaseURL + "/ApiCalls/update_para_for_manage_audit_paras",
+              type: "POST",
+              contentType: "application/json; charset=utf-8",
+              dataType: "json",
+              data: JSON.stringify(payload),
+              cache: false,
+              success: function (res) {
+                $('#viewMemoModel').modal('hide');
+                alert(res.message || res.Message);
+                onAlertCallback(getEntityObservation);
+              },
+              error: function (xhr) {
+                console.log("update_para_for_manage_audit_paras failed", xhr.responseText);
+                alert("Update failed. Check console for details.");
+              }
+            });
+
+
+
+        }
+
+
+        function DeleteDuplicatePara(np_id, op_id, ind) {
+              g_np_id = np_id;
+                g_op_id = op_id;
+                g_ind = ind;
+                $('#DuplicateParaModel').modal('show');
+
+
+        }
+
+        function ProceedDeleteDuplicatePara() {
+              $.ajax({
+                url: g_asiBaseURL + "/ApiCalls/request_delete_duplicate_para",
+                type: "POST",
+                data: {
+                    'COM_ID': g_com_id,
+                    'NEW_PARA_ID': g_np_id,
+                    'OLD_PARA_ID': g_op_id,
+                    'INDICATOR': g_ind,
+                    'REMARKS': $('#textarea_justification').val()
+                },
+                cache: false,
+                success: function (data) {
+                    $("#DuplicateParaModel").modal('hide');
+                    alert(data.message);
+                    onAlertCallback(getEntityObservation);
+                },
+                dataType: "json",
+            });
+        }
+
+        function openResponsiblePPs() {
+            $('#ResponsiblePPModel').modal('show');
+        }
+              function updateRiskDisplay() {
+                var annexId = $('#auditPara_Annex').val();
+                var riskName = '';
+                g_selectedRiskId = 0;
+                $.each(g_annexList, function (i, v) {
+                    var id = v.ID || v.id;
+                    if (id == annexId) {
+                        riskName = v.RISK || v.risk;
+                        g_selectedRiskId = v.RISK_ID || v.risK_ID;
+                    }
+                });
+                $('#viewMemo_risk_display').val(riskName);
+                var color = '';
+                if (riskName.toLowerCase() === 'high') {
+                    color = 'red';
+                } else if (riskName.toLowerCase() === 'medium') {
+                    color = 'gold';
+                } else if (riskName.toLowerCase() === 'low') {
+                    color = 'green';
+                }
+                $('#viewMemo_risk_display').css('color', color);
+            }
+
+
+</script>
+
+<div class="row">
+    <div class="col-md-12 mt-3">
+        <h3 style=" display:block;color: #be0e43">Update Audit Paras</h3>
+    </div>
+    <div class="row col-md-12 mt-3">
+        <div class="col-md-2">
+            <label>Relationship Type</label>
+        </div>
+        <div class="col-md-10">
+            <select id="RelationshipField" onchange="getrelation();" class="form-control form-select">
+                <option id="0" value="0" selected="selected">--Select Relationship Type--</option>
+
+
+                @{
+                    if (ViewData["Userrelationship"] != null)
+                    {
+                        foreach (var item in (dynamic)(ViewData["Userrelationship"]))
+                        {
+                            <option value="@item.ENTITY_REALTION_ID" id="@item.ENTITY_REALTION_ID">@item.FIELD_NAME</option>
+                        }
+                    }
+                }
+
+
+
+            </select>
+        </div>
+    </div>
+
+    <div class="row col-md-12 mt-3">
+        <div class="col-md-2">
+            <label>Controlling/Reporting Office</label>
+        </div>
+        <div class="col-md-4">
+            <select id="controlingsearch" onchange="getplacepost();" class="form-control form-select">
+                <option id="0" value="0" selected="selected">--Select Controlling/Reporting Office--</option>
+            </select>
+        </div>
+
+
+        <div class="col-md-2">
+            <label>Place of Posting</label>
+        </div>
+        <div class="col-md-4">
+            <select id="childposting" onchange="getEntityObservation()" class="form-control form-select">
+                <option id="0" value="0" selected="selected">--Select Place of Posting--</option>
+
+            </select>
+        </div>
+    </div>
+
+
+
+    <div class="row col-md-12 mt-3">
+        <table id="manageObsPanel" class="table table-hover table-bordered table-hover mt-3 table-striped">
+            <thead style="background-color: #19875478 !important; ">
+                <tr>
+                    <th class="col-md-auto">Sr. No.</th>
+                    <th class="col-md-auto">Audit Period</th>
+                    <th class="col-md-auto">Para No.</th>
+                    <th class="col-md-auto">Annexure</th>
+                    <th class="col-md-auto">Risk Category</th>
+                    <th class="col-md-auto">Gist of Para</th>
+                    <th class="col-md-auto text-center">Action</th>
+                    <th class="col-md-auto text-center">Action</th>
+                    @{
+                        if ((dynamic)ViewData["LoggedInUserGroupId"] == 1)
+                        {
+                            <th class="col-md-auto text-center"><input type="checkbox" id="selectAllChkBox" onclick="selectAllParasShift();" /></th>
+                        }
+                    }
+                </tr>
+            </thead>
+            <tbody>
+            </tbody>
+
+        </table>
+        @{
+            if ((dynamic)ViewData["LoggedInUserGroupId"] == 1)
+            {
+                <button class="col-md-3 offset-md-9 btn btn-danger">Shift Selected Paras</button>
+            }
+        }
+    </div>
+
+</div>
+
+<!-- Circular Selection Modal -->
+
+<div id="viewMemoModel" class="modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-xl" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">Update Audit Para</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form>
+                    <div class="form-group">
+                        <label for="auditPara_Period" class="font-weight-bold">Audit Period (YYYY)</label>
+
+                        <select id="auditPara_Period" class="form-control">
+                            <option value="">--Select Audit Period--</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="auditPara_ParaNO" class="font-weight-bold">Para No <span class="text-muted small">Please enter only numbers</span></label>
+                        <input id="auditPara_ParaNO" class="form-control" type="text" inputmode="decimal" pattern="[0-9.,]*" oninput="this.value = this.value.replace(/[^0-9.,]/g, '');" />
+                    </div>
+                    <div class="form-group">
+                        <label for="auditPara_Annex" class="font-weight-bold">Annexure</label>
+                        <select id="auditPara_Annex" class="form-select form-control">
+                            <option selected="selected" value="" id="">--Select Annexure--</option>
+                            @{
+                                if (ViewData["AnnexList"] != null)
+                                {
+
+                                    foreach (var item in (dynamic)(ViewData["AnnexList"]))
+                                    {
+                                        <option id="@item.ID" value="@item.ID">@item.ANNEX</option>
+                                    }
+
+                                }
+                            }
+
+                        </select>
+                    </div>
+
+                    <div class="form-group mt-2">
+                        <label for="viewMemo_risk_display">Risk will be assigned on the basis of Selected Annexure</label>
+                        <input id="viewMemo_risk_display" class="form-control" readonly />
+                    </div>
+
+                    <div class="form-group">
+                        <label for="auditPara_Gist" class="font-weight-bold">Gist of Para</label>
+                        <textarea id="auditPara_Gist" class="form-control"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="paraTextViewer" class="font-weight-bold">Para Text</label>
+                        <textarea class="form-control" id="paraTextViewer"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="auditPara_AmountInv" class="font-weight-bold">Amount Involved <span class="text-muted small">Please enter only numbers</span></label>
+                        <input id="auditPara_AmountInv" class="form-control" type="text" inputmode="decimal" pattern="[0-9.,]*" oninput="this.value = this.value.replace(/[^0-9.,]/g, '');" />
+                    </div>
+                    <div class="form-group">
+                        <label for="auditPara_InstNO" class="font-weight-bold">No. of Instances <span class="text-muted small">Please enter only numbers</span></label>
+                        <input id="auditPara_InstNO" class="form-control" type="text" inputmode="decimal" pattern="[0-9.,]*" oninput="this.value = this.value.replace(/[^0-9.,]/g, '');" />
+                    </div>
+
+                    <hr />
+                    <center><h3>Responsible Personals</h3></center>
+                    <hr />
+                    <div class="form-group">
+
+                        <div class="row col-sm-12">
+                            <table id="listofRespPersons" class="table table-hover table-bordered table-hover mt-3 table-striped">
+                                <thead style="background-color: #19875478 !important; ">
+                                    <tr>
+                                        <th class="col-md- auto font-weight-bold">Sr.No</th>
+                                        <th class="col-md- auto font-weight-bold">P.P. No</th>
+                                        <th class="col-md- auto font-weight-bold">Name</th>
+                                        <th class="col-md- auto font-weight-bold">Loan Case</th>
+                                        <th class="col-md- auto font-weight-bold">LC Amount</th>
+                                        <th class="col-md- auto font-weight-bold">Account No.</th>
+                                        <th class="col-md- auto font-weight-bold">ACC Amount</th>
+                                        <th class="col-md- auto font-weight-bold">Remarks</th>
+                                        <th class="col-md- auto text-center font-weight-bold"><center><button type="button" onclick="openResponsiblePPs();" class="rounded-circle btn btn-danger btn-sm"><i class="fa fa-plus text-white"></i></button></center></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <center><h6>Changes in Responsibilities</h6></center>
+                        <div class="row col-sm-12">
+                            <table id="c_listofRespPersons" class="table table-hover table-bordered table-hover mt-3 table-striped">
+                                <thead style="background-color: #19875478 !important; ">
+                                    <tr>
+                                        <th class="col-md- auto font-weight-bold">Sr.No</th>
+                                        <th class="col-md- auto font-weight-bold">P.P. No</th>
+                                        <th class="col-md- auto font-weight-bold">Name</th>
+                                        <th class="col-md- auto font-weight-bold">Loan Case</th>
+                                        <th class="col-md- auto font-weight-bold">LC Amount</th>
+                                        <th class="col-md- auto font-weight-bold">Account No.</th>
+                                        <th class="col-md- auto font-weight-bold">ACC Amount</th>
+                                        <th class="col-md- auto font-weight-bold">Remarks</th>
+                                        <th class="col-md- auto font-weight-bold">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button id="updateParaStatus" onclick="updateObservationStatus();" type="button" class="btn btn-danger">Update</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+@section Scripts {
+    <script src="~/js/referenceSection.js"></script>
+    <script src="~/js/responsibilitySectionUpdate.js"></script>
+}
+
+<div id="ResponsiblePPModel" class="modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-lg" style="min-width:95% !important" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title">Responsible Person</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form>
+                    <div class="form-group">
+                        <label class="form-control text-bold fw-bold text-center">Search Responsible By LC Number</label>
+                        <div class="row col-sm-12">
+                            <div class="col-sm-5">
+                                <label for="viewMemo_memo">Loan Case No.</label>
+                                <input type="text" class="form-control" id="responsibleLCNoEntryField" />
+                            </div>
+                            <div class="col-sm-5">
+                                <label for="responsibleBrCodeEntryField">Branch Code <small class="text-muted">(A-Z, 0-9, space, &amp;, ?)</small></label>
+                                <input type="text" class="form-control alnum-only" id="responsibleBrCodeEntryField" aria-describedby="brcode" placeholder="Branch Code (Alphabets, numbers, spaces, ampersand (&amp;), comma (,), and question mark (?) only)" data-allow-space="true" data-allow-amp="true" maxlength="200" title="Enter only Alphabets (A-Z), numbers (0-9), spaces, ampersand (&amp;), comma (,), and question mark (?)" />
+                            </div>
+                            <div class="col-sm-2 d-flex align-items-end">
+                                <button onclick="respSectionUpdate.getLCDetails();" type="button" class="btn btn-danger w-100">Find</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <div id="matchedPPNoPanels" style="padding:20px;">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-control text-bold fw-bold text-center">Search Responsible By PP No.</label>
+                        <div id="findBYPPNOPanel" class="mt-2 row col-md-12">
+                            <div class="col-md-2">
+                                <input id="responsiblePPNoEntryField" class="form-control" type="text"
+                                       placeholder="Enter PP. No." />
+                            </div>
+                            <div class="col-md-2">
+                                <input id="responsibleAccountNumberEntryField" class="form-control" type="number"
+                                       placeholder="Enter Account Number" />
+                            </div>
+                            <div class="col-md-2">
+                                <input id="responsibleAccountAmountEntryField" class="form-control" type="number"
+                                       placeholder="Enter Account Amount" />
+                            </div>
+                            <div class="col-md-2">
+                                <input id="loanCaseNumber" class="form-control" type="text" placeholder="Enter LC No." />
+                            </div>
+                            <div class="col-md-2">
+                                <input id="loanCaseAmount" class="form-control" type="text"
+                                       placeholder="Enter LC Amount" />
+                            </div>
+                            <button type="button" onclick="respSectionUpdate.getMatchedPP();" class="col-md-2 btn btn-success">Search</button>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <div id="matchedPPNoPanelsBYPP" style="padding:20px;">
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button id="addResponsibleButton" type="button" class="btn btn-danger">Add Responsibility</button>
+                <button id="updateResponsibleButton" type="button" class="btn btn-success d-none">Update Responsibility</button>
+                <button id="deleteResponsibleButton" type="button" class="btn btn-danger d-none">Delete Responsibility</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<div id="DuplicateParaModel" class="modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title">Deletion of Duplicate Para</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form>
+
+                    <div class="form-group">
+                        <label for="viewMemo_memo">Remarks / Justification</label>
+                        <textarea id="textarea_justification" class="form-control"></textarea>
+
+                    </div>
+
+
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button id="addResponsibleButton" onclick="ProceedDeleteDuplicatePara();" type="button" class="btn btn-danger">Request Deletion</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>

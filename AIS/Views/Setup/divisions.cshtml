@@ -1,0 +1,192 @@
+﻿@{
+    ViewData["Title"] = "Divisions";
+    Layout = "_Layout";
+}
+
+<script type="text/javascript">
+    $(document).ready(function () {
+        var g_divId = 0;
+        $('#sidebar_policy').hide();
+        $("#searchTableRecord").on("keyup", function () {
+            var value = $(this).val().toLowerCase();
+            $("#listOfDivision tbody tr").filter(function () {
+                $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1)
+            });
+        });
+    });
+
+    function newDivSetup() {
+        g_divId = 0;
+        $('#setupDivModal').modal('show');
+        $('#divCodeModalField').val('');
+        $('#divNameModalField').val('');
+        $('#divAddressModalField').val('');
+    }
+
+    function setupDivision(code, name, desc, status, id) {
+        g_divId = id;
+        //console.log(code, name, desc, status,id);
+        $('#divCodeModalField').val(code);
+        $('#divNameModalField').val(name);
+        $('#divAddressModalField').val(desc);
+        if (status == "Active")
+            $('#divActiveModalField').click();
+        else if (status == "InActive")
+            $('#divInactiveModalField').click();
+
+        $('#setupDivModal').modal('show');
+    }
+
+    function publishDivisionChanges() {
+               
+        var code=$('#divCodeModalField').val();
+        var name= $('#divNameModalField').val();
+        var desc = $('#divAddressModalField').val();
+        var status;
+        var badge;
+        if ($('#divActiveModalField').is(':checked')) {
+            status = 'Active';
+            badge = 'text-bg-success ';
+        }
+        else {
+            status = 'InActive';
+            badge = 'text-bg-danger ';
+        }
+        if (g_divId == 0)
+            var row = "<tr id=\"div_" + g_divId + "\"><td class=\"div_code\"><p class=\"fw-normal mb-1\">" + code + "</p></td><td class=\"div_name\"><p class=\"fw-normal mb-1\">" + name + "</p></td ><td class=\"div_desc\"><p class=\"fw-normal mb-1\">" + desc + "</p></td><td class=\"div_status\"><span class=\"badge " + badge+" rounded-pill d-inline\">" + status + "</span></td><td class=\"div_action\"><button type=\"button\" class=\"btn btn-link text-danger btn-sm btn-rounded\" onclick=\"setupDivision('" + code + "','" + name + "','" + desc + "','" + status + "','" + g_divId + "');\">Edit</button></td></tr>";
+        else
+            $('#div_' + g_divId).html("<td class=\"div_code\"><p class=\"fw-normal mb-1\">" + code + "</p></td><td class=\"div_name\"><p class=\"fw-normal mb-1\">" + name + "</p></td ><td class=\"div_desc\"><p class=\"fw-normal mb-1\">" + desc + "</p></td><td class=\"div_status\"><span class=\"badge " + badge +" rounded-pill d-inline\">" + status + "</span></td><td class=\"div_action\"><button type=\"button\" class=\"btn btn-link text-danger btn-sm btn-rounded\" onclick=\"setupDivision('" + code + "','" + name + "','" + desc + "','" + status + "','" + g_divId + "');\">Edit</button></td>");
+        $('#listOfDivision tbody').append(row);
+        $('#setupDivModal').modal('hide');
+        $.ajax({
+            url: g_asiBaseURL + "/Setup/division_add",
+            type: "POST",
+            data: {
+                'id':g_divId,
+                'code': code,
+                'name': name,
+                'description': desc,
+                'status': status
+            },
+            cache: false,
+            success: function (data) {
+                //console.log(data);
+                window.location = window.location.pathname;
+                
+            },
+            dataType:"json",
+        });
+    }
+</script>
+
+<div class="col-md-12" style="margin-top:20px;">
+    <h3>List of Divisions</h3>
+    <div class="row">
+        <div class="col-md-10">
+            <input class="form-control" id="searchTableRecord" type="text" placeholder="Search..">
+        </div>
+        <div class="col-md-2">
+            <button onclick="newDivSetup();" class="btn btn-danger w-100">Add New Division</button>
+        </div>
+    </div>
+    <br>
+    <table id="listOfDivision" class="table align-middle mb-0 bg-white table-hover table-striped">
+        <thead class="bg-light">
+            <tr>
+                <th>Code</th>
+                <th>Name</th>
+                <th>Description</th>
+                <th>Status</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            @{
+                if (ViewData["DivisionList"] != null)
+                {
+                    foreach (var item in (dynamic)(ViewData["DivisionList"]))
+                    {
+
+                        <tr id="div_@item.DIVISIONID">
+                            <td class="div_code">
+                                <p class="fw-normal mb-1">@item.CODE</p>
+                            </td>
+                            <td class="div_name">
+                                <p class="fw-normal mb-1">@item.NAME</p>
+                                <!--<p class="text-muted mb-0">IT department</p>-->
+                            </td>
+                            <td class="div_desc">
+                                <p class="fw-normal mb-1">@item.DESCRIPTION</p>
+                            </td>
+                            
+                            <td class="div_status">
+                                @{
+                                    if (item.ISACTIVE == "Active")
+
+                                    {  <span class="badge text-bg-success rounded-pill d-inline">@item.ISACTIVE</span>}
+                                    else
+                                    {  <span class="badge text-bg-danger rounded-pill d-inline" style="color: red">@item.ISACTIVE</span>}
+                                    }
+                                    </td>
+                            <td class="div_action">
+                                <button type="button" class="btn btn-link text-danger btn-sm btn-rounded" onclick="setupDivision('@item.CODE','@item.NAME','@item.DESCRIPTION','@item.ISACTIVE','@item.DIVISIONID');">
+                                    Edit
+                                </button>
+                            </td>
+                        </tr>
+                    }
+                }}
+        </tbody>
+    </table>
+</div>
+
+<div id="setupDivModal" class="modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">Division Setup</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form>
+                    <div class="form-group">
+                        <label for="branchCodeModalField">Code</label>
+                        <input type="text" class="form-control" id="divCodeModalField" aria-describedby="brcode" placeholder="Division Code">
+
+                    </div>
+                    <div class="form-group">
+                        <label for="branchNameModalField">Name</label>
+                        <input type="text" class="form-control" id="divNameModalField" placeholder="Division Name">
+                    </div>
+                    <div class="form-group">
+                        <label for="branchAddressModalField">Address</label>
+                        <textarea rows="3" class="form-control" id="divAddressModalField" placeholder="Division Address" draggable="false"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="branchAddressModalField">Status</label>
+                        <div class="row col-md-12">
+                            <div class="form-check form-check-inline">
+                                <input class="form-check-input" type="radio" name="inlineRadioOptions" id="divActiveModalField" value="option1" />
+                                <label class="form-check-label" for="divActiveModalField">Active</label>
+                            </div>
+
+                            <div class="form-check form-check-inline">
+                                <input class="form-check-input" type="radio" name="inlineRadioOptions" id="divInactiveModalField" value="option2" />
+                                <label class="form-check-label" for="divInactiveModalField">Inactive</label>
+                            </div>
+                        </div>
+                    </div>
+
+
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button onclick="publishDivisionChanges();" type="button" class="btn btn-danger">Save changes</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+

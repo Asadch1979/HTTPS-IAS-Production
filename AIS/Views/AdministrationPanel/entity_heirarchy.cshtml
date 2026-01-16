@@ -1,0 +1,219 @@
+﻿@{
+    ViewData["Title"] = "Entity Hierarchy";
+    Layout = "_Layout";
+}
+
+<div class="container mt-5">
+    <h2 class="mb-4">Entity Hierarchy</h2>
+    <div id="divisionAccordion">
+        <!-- Audit Division -->
+        <div class="card">
+            <div class="card-header" id="headingAuditDivision">
+                <h5 class="mb-0">
+                    <button class="btn btn-link"
+                            data-bs-toggle="collapse"
+                            data-bs-target="#collapseAuditDivision"
+                            aria-expanded="true"
+                            aria-controls="collapseAuditDivision">
+                        Audit Division
+                    </button>
+                </h5>
+            </div>
+            <div id="collapseAuditDivision"
+                 class="collapse show"
+                 aria-labelledby="headingAuditDivision"
+                 data-parent="#divisionAccordion">
+                <div class="card-body">
+                    <!-- Departments -->
+                    <div id="departmentAccordion1">
+                        <!-- Information System Audit -->
+                        <div class="card">
+                            <div class="card-header" id="headingISAudit">
+                                <h5 class="mb-0">
+                                    <button class="btn btn-link collapsed"
+                                            data-bs-toggle="collapse"
+                                            data-bs-target="#collapseISAudit"
+                                            aria-expanded="false"
+                                            aria-controls="collapseISAudit">
+                                        Information System Audit
+                                    </button>
+                                </h5>
+                            </div>
+                            <div id="collapseISAudit"
+                                 class="collapse"
+                                 aria-labelledby="headingISAudit"
+                                 data-parent="#departmentAccordion1">
+                                <div class="card-body">
+                                    <ul>
+                                        <li>Audit Unit</li>
+                                        <li>Planning and Implementation Unit</li>
+                                        <li>Compliance Unit</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Corporate Audit -->
+                        <div class="card">
+                            <div class="card-header" id="headingCorporateAudit">
+                                <h5 class="mb-0">
+                                    <button class="btn btn-link collapsed"
+                                            data-bs-toggle="collapse"
+                                            data-bs-target="#collapseCorporateAudit"
+                                            aria-expanded="false"
+                                            aria-controls="collapseCorporateAudit">
+                                        Corporate Audit
+                                    </button>
+                                </h5>
+                            </div>
+                            <div id="collapseCorporateAudit"
+                                 class="collapse"
+                                 aria-labelledby="headingCorporateAudit"
+                                 data-parent="#departmentAccordion1">
+                                <div class="card-body">
+                                    <ul>
+                                        <li>Internal Control Unit</li>
+                                        <li>Risk Assessment Unit</li>
+                                        <li>Policy Review Unit</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Field Audit -->
+                        <div class="card">
+                            <div class="card-header" id="headingFieldAudit">
+                                <h5 class="mb-0">
+                                    <button class="btn btn-link collapsed"
+                                            data-bs-toggle="collapse"
+                                            data-bs-target="#collapseFieldAudit"
+                                            aria-expanded="false"
+                                            aria-controls="collapseFieldAudit">
+                                        Field Audit
+                                    </button>
+                                </h5>
+                            </div>
+                            <div id="collapseFieldAudit"
+                                 class="collapse"
+                                 aria-labelledby="headingFieldAudit"
+                                 data-parent="#departmentAccordion1">
+                                <div class="card-body">
+                                    <ul>
+                                        <li>Regional Audit Unit</li>
+                                        <li>Branch Audit Unit</li>
+                                        <li>Special Investigations Unit</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- HR Division -->
+        <div class="card">
+            <div class="card-header" id="headingHRDivision">
+                <h5 class="mb-0">
+                    <button class="btn btn-link"
+                            data-bs-toggle="collapse"
+                            data-bs-target="#collapseHRDivision"
+                            aria-expanded="false"
+                            aria-controls="collapseHRDivision">
+                        HR Division
+                    </button>
+                </h5>
+            </div>
+            <div id="collapseHRDivision"
+                 class="collapse"
+                 aria-labelledby="headingHRDivision"
+                 data-parent="#divisionAccordion">
+                <div class="card-body">
+                    <!-- Departments -->
+                    <div id="departmentAccordion2">
+                        <!-- Recruitment -->
+                        <div class="card">
+                            <div class="card-header" id="headingRecruitment">
+                                <h5 class="mb-0">
+                                    <button class="btn btn-link collapsed"
+                                            data-bs-toggle="collapse"
+                                            data-bs-target="#collapseRecruitment"
+                                            aria-expanded="false"
+                                            aria-controls="collapseRecruitment">
+                                        Recruitment
+                                    </button>
+                                </h5>
+                            </div>
+                            <div id="collapseRecruitment"
+                                 class="collapse"
+                                 aria-labelledby="headingRecruitment"
+                                 data-parent="#departmentAccordion2">
+                                <div class="card-body">
+                                    <ul>
+                                        <li>Talent Acquisition Unit</li>
+                                        <li>Interview Scheduling Unit</li>
+                                        <li>Onboarding Unit</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Employee Relations -->
+                        <div class="card">
+                            <div class="card-header" id="headingEmployeeRelations">
+                                <h5 class="mb-0">
+                                    <button class="btn btn-link collapsed"
+                                            data-bs-toggle="collapse"
+                                            data-bs-target="#collapseEmployeeRelations"
+                                            aria-expanded="false"
+                                            aria-controls="collapseEmployeeRelations">
+                                        Employee Relations
+                                    </button>
+                                </h5>
+                            </div>
+                            <div id="collapseEmployeeRelations"
+                                 class="collapse"
+                                 aria-labelledby="headingEmployeeRelations"
+                                 data-parent="#departmentAccordion2">
+                                <div class="card-body">
+                                    <ul>
+                                        <li>Conflict Resolution Unit</li>
+                                        <li>Policy Management Unit</li>
+                                        <li>Wellness Programs Unit</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Training and Development -->
+                        <div class="card">
+                            <div class="card-header" id="headingTrainingDevelopment">
+                                <h5 class="mb-0">
+                                    <button class="btn btn-link collapsed"
+                                            data-bs-toggle="collapse"
+                                            data-bs-target="#collapseTrainingDevelopment"
+                                            aria-expanded="false"
+                                            aria-controls="collapseTrainingDevelopment">
+                                        Training and Development
+                                    </button>
+                                </h5>
+                            </div>
+                            <div id="collapseTrainingDevelopment"
+                                 class="collapse"
+                                 aria-labelledby="headingTrainingDevelopment"
+                                 data-parent="#departmentAccordion2">
+                                <div class="card-body">
+                                    <ul>
+                                        <li>Learning Management Unit</li>
+                                        <li>Performance Improvement Unit</li>
+                                        <li>Leadership Development Unit</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

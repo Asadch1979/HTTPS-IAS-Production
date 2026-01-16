@@ -1,0 +1,112 @@
+﻿@{
+    var page_id = ViewData["PageId"] as int? ?? 0;
+}
+
+@{
+    ViewData["Title"] = "Main GL Head Summary";
+    Layout = "_Layout";
+}
+<style type="text/css">
+    .container {
+        max-width: 100%;
+    }
+
+    .card-header {
+        background-color: transparent !important;
+        font-size: 20px;
+        height: 100px;
+    }
+
+    .icon-card {
+        margin: 10px;
+    }
+</style>
+
+<script type="text/javascript">
+
+
+    $(document).ready(function () {
+        var gl_Id = 0;
+        $('#sidebar_policy').hide();
+        $("#searchTableRecord").on("keyup", function () {
+            var value = $(this).val().toLowerCase();
+            $("#listOfGlHead tbody tr").filter(function () {
+                $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1)
+            });
+        });
+    });
+
+</script>
+
+<div class="row col-md-12 mt-3">
+    <h4 style="display: block; color: #be0e43">GL Head Summary</h4>
+</div>
+<div class="row col-md-12">
+    <input class="form-control" id="searchTableRecord" type="text" placeholder="Search..">
+</div>
+<div class="row col-md-12 mt-3">
+   
+        <table id="listOfGlHead" class="col-md-12 table table-hover table-bordered mb-0 mt-3 bg-white table-striped">
+            <thead style="background-color: #19875478 !important; ">
+                <tr>
+                    <th width="100">GL Type</th>
+                    <th width="300">GL Description</th>
+                    <!-- <th width="150">Date</th>-->
+                    <th width="100">Credit</th>
+                    <th width="100">Debit</th>
+                    <th width="100">Balance</th>
+                    <th width="100">Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                @{
+                    if (ViewData["GlHeadDetails"] != null)
+                    {
+
+
+                        foreach (var item in (dynamic)(ViewData["GlHeadDetails"]))
+                        {
+
+                            String date = @item.DATETIME.ToString();
+
+                                <tr id="Branch_@item.BRANCHID">
+                                    <td class="gl_id; text-right">
+                                        <p class="fw-normal mb-1">@item.GL_TYPEID</p>
+                                    </td>
+                                    <td class="gl_des">
+                                        <p class="fw-normal mb-1">@item.DESCRIPTION</p>
+                                    </td>
+                                    <!-- <td class="date">
+    <p class="fw-normal mb-1">@date.Split(" ")[0]</p>
+                             </td>-->
+                                    <td class="run_cr; text-right">
+                                        <p class="fw-normal mb-1">@item.CREDIT</p>
+
+                                    </td>
+                                    <td class="run_deb; text-right">
+                                        <p class="fw-normal mb-1">@item.DEBIT</p>
+                                    </td>
+                                    <td class="bal; text-right">
+                                        <p class="fw-normal mb-1">@item.BALANCE</p>
+
+                                    </td>
+
+
+                                    <td>
+                                        <a href='../Reports/glhead_details?glcode=@item.GL_TYPEID'>Details</a>
+                                    </td>
+
+                                </tr>
+                        }
+                    }}
+            </tbody>
+
+
+        </table>
+    </div>
+
+<div class="row col-md-12 mt-3">
+
+    <button onclick="history.back()" class="btn btn-primary" style="color:white">Return</button>
+
+</div>

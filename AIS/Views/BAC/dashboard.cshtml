@@ -1,0 +1,575 @@
+﻿@{
+    ViewData["Title"] = "Dashboard ~ Home";
+    Layout = "_Layout";
+}
+
+<style type="text/css">
+
+    .widget-chart {
+    text-align: center;
+    padding: 1rem;
+    height: 170px !important;
+    }
+
+    .widget-chart .progress-sub-label {
+    opacity: .8;
+    padding: 5px 0 0
+    }
+
+    .widget-chart .progress-circle-wrapper {
+    min-width: 68px;
+    margin-right: 1rem
+    }
+
+    .widget-chart .progress-circle-wrapper .react-sweet-progress-symbol {
+    font-size: .81818rem
+    }
+
+    .widget-chart .widget-chart-content {
+    position: relative;
+    z-index: 5
+    }
+
+    .widget-chart .widget-chart-content-lg {
+    padding: 2rem 0 1rem 2rem
+    }
+
+    .widget-chart .widget-chart-content-lg .widget-numbers {
+    margin-bottom: 0
+    }
+
+    .widget-chart .widget-chart-wrapper {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    opacity: .25;
+    z-index: 4;
+    border-bottom-right-radius: .25rem;
+    border-bottom-left-radius: .25rem;
+    overflow: hidden
+    }
+
+    .widget-chart .widget-numbers {
+    font-weight: 700;
+    font-size: 25px;
+    display: block;
+    line-height: 1;
+    margin: 1rem auto
+    }
+
+    .widget-chart .widget-numbers + .widget-chart-flex, .widget-chart .widget-numbers + .widget-description, .widget-chart .widget-numbers + .widget-subheading {
+    margin-top: -.5rem
+    }
+
+    .widget-chart .widget-subheading {
+    margin: -.5rem 0 0;
+    display: block;
+    opacity: .6
+    }
+
+    .widget-chart .widget-subheading:first-child {
+    margin-top: 0
+    }
+
+    .widget-chart .widget-subheading + .widget-numbers {
+    margin-top: .5rem
+    }
+
+    .widget-chart .widget-description {
+    margin: 1rem 0 0
+    }
+
+    .widget-chart.widget-chart-hover {
+    transition: all .2s
+    }
+
+    .widget-chart.widget-chart-hover:hover {
+    z-index: 15;
+    transform: scale(1.15);
+    box-shadow: 0 .46875rem 4.1875rem rgba(31,10,6,.05),0 .9375rem 2.40625rem rgba(31,10,6,.05),0 .25rem 1.3125rem rgba(31,10,6,.06),0 .125rem 1.1875rem rgba(31,10,6,.06);
+    cursor: pointer;
+    background: #fff
+    }
+
+    .widget-chart .widget-chart-actions {
+    position: absolute;
+    right: .5rem;
+    top: .5rem;
+    z-index: 12
+    }
+
+    .widget-chart .widget-chart-actions .btn-link {
+    font-size: 1.1rem;
+    padding-top: 0;
+    padding-bottom: 0;
+    opacity: .6
+    }
+
+    .widget-chart .widget-progress-wrapper {
+    margin-top: 1rem
+    }
+
+    .widget-chart .widget-progress-wrapper.progress-wrapper-bottom {
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    width: 100%
+    }
+
+    .widget-chart .widget-progress-wrapper.progress-wrapper-bottom .progress {
+    margin: 0 -1px -1px
+    }
+
+    .widget-chart .widget-progress-wrapper.progress-wrapper-bottom .progress {
+    border-top-left-radius: 0;
+    border-top-right-radius: 0;
+    border-bottom-right-radius: .25rem;
+    border-bottom-left-radius: .25rem
+    }
+
+    .widget-chart .widget-progress-wrapper.progress-wrapper-bottom .progress .progress-bar {
+        border-bottom-left-radius: .25rem
+    }
+
+    .widget-chart .widget-chart-flex {
+    display: flex;
+    align-items: center;
+    align-content: center;
+    margin-bottom: 1rem
+    }
+
+    .widget-chart .widget-chart-flex:last-child {
+    margin-bottom: 0
+    }
+
+    .widget-chart .widget-chart-flex .widget-subheading {
+    margin: 0
+    }
+
+    .widget-chart .widget-chart-flex .widget-description {
+    margin-top: 0
+    }
+
+    .widget-chart.text-left {
+    flex-direction: row;
+    align-items: center
+    }
+
+    .widget-chart.text-left .icon-wrapper {
+    min-width: 54px;
+    margin: 0 1rem 0 0
+    }
+
+    .widget-chart.text-left .widget-numbers {
+    margin-left: 0
+    }
+
+    .widget-chart.text-left .widget-chart-content {
+    display: flex;
+    flex-direction: column;
+    align-content: center;
+    flex: 1;
+    position: relative
+    }
+
+    .widget-chart.text-left .widget-chart-content > .widget-numbers:first-child {
+    margin-top: 0
+    }
+
+    .widget-chart.text-left .widget-chart-content .widget-description {
+    align-self: flex-start
+    }
+
+    .widget-chart.text-left .widget-chart-wrapper {
+    height: 35%
+    }
+
+    .widget-chart.widget-chart-left {
+    padding-bottom: 15%
+    }
+
+    .widget-chart .chart-wrapper-relative {
+    position: relative;
+    opacity: 1;
+    margin-top: 1rem
+    }
+
+    .widget-chart-actions {
+    position: absolute;
+    right: 1rem;
+    top: 1rem;
+    z-index: 12
+    }
+
+    .widget-chart-actions .btn-link {
+    font-size: 1.1rem;
+    padding-top: 0;
+    padding-bottom: 0;
+    opacity: .6
+    }
+
+    .widget-chart:hover .widget-chart-actions .btn-link, .widget-content:hover .widget-chart-actions .btn-link {
+    opacity: 1
+    }
+
+    .grid-menu .widget-chart.widget-chart-hover:hover {
+    background: #fff;
+    border-radius: .35rem
+    }
+
+    .card-btm-border {
+    border-bottom: 18px solid transparent;
+    }
+
+    .circle-progress small {
+    height: 100%;
+    width: 100%;
+    font-weight: 700;
+    left: 0px;
+    top: 0px;
+    vertical-align: middle;
+    text-align: center;
+    align-items: center;
+    align-content: center;
+    }
+
+    .widget-title {
+    font-size: 25px !important;
+    font-weight: 400;
+    }
+
+
+
+    .mt-100 {
+    margin-top: 200px;
+    }
+
+    .progress {
+    width: 90px;
+    height: 90px !important;
+    float: right;
+    left: -4px;
+    top: -24px;
+    line-height: 80px;
+    background: none;
+    margin: 10px;
+    box-shadow: none;
+    position: relative;
+    }
+
+    .progress:after {
+    content: "";
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    border: 12px solid #fff;
+    position: absolute;
+    top: 0;
+    left: 0;
+    }
+
+    .progress > span {
+    width: 50%;
+    height: 100%;
+    overflow: hidden;
+    position: absolute;
+    top: 0;
+    z-index: 1;
+    }
+
+    .progress .progress-left {
+    left: 0;
+    margin-left: 1px;
+    margin-top: -0.5px;
+    }
+
+    .progress .progress-bar {
+    width: 100%;
+    height: 100%;
+    background: none;
+    border-width: 12px;
+    border-style: solid;
+    position: absolute;
+    top: 0;
+    }
+
+    .progress .progress-left .progress-bar {
+    left: 100%;
+    border-top-right-radius: 80px;
+    border-bottom-right-radius: 80px;
+    border-left: 0;
+    -webkit-transform-origin: center left;
+    transform-origin: center left;
+    }
+
+    .progress .progress-right {
+    right: 0;
+    }
+
+    .progress .progress-right .progress-bar {
+    left: -100%;
+    border-top-left-radius: 80px;
+    border-bottom-left-radius: 80px;
+    border-right: 0;
+    -webkit-transform-origin: center right;
+    transform-origin: center right;
+    }
+
+    .progress .progress-value {
+    width: 90%;
+    height: 90%;
+    border-radius: 50%;
+    background: #fff;
+    font-size: 22px;
+    color: #000;
+    line-height: 100px;
+    text-align: center;
+    position: absolute;
+    top: -4%;
+    left: 2%;
+    }
+
+    .progress.blue .progress-bar {
+    border-color: #6c757d !important;
+    }
+
+    .progress.red .progress-right .progress-bar {
+    animation: loading-1 1.0s linear forwards !important;
+    }
+
+    .progress.red .progress-left .progress-bar {
+    animation: loading-2 2.5s linear forwards;
+    }
+
+    .progress.yellow .progress-right .progress-bar {
+    animation: loading-3 1.0s linear forwards !important;
+    }
+
+    .progress.yellow .progress-left .progress-bar {
+    animation: loading-3b 2.5s linear forwards !important;
+    }
+
+
+    .progress.blue .progress-right .progress-bar {
+    animation: loading-4 1.8s linear forwards !important;
+    }
+
+    .progress.blue .progress-left .progress-bar {
+    animation: none;
+    }
+
+    .progress.sky .progress-right .progress-bar {
+    animation: loading-5 1.8s linear forwards !important;
+    }
+
+    .progress.sky .progress-left .progress-bar {
+    animation: none;
+    }
+
+    .progress.green .progress-right .progress-bar {
+    animation: loading-5 1.8s linear forwards !important;
+    }
+
+    .progress.green .progress-left .progress-bar {
+    animation: none;
+    }
+
+    .progress.red .progress-bar {
+    border-color: #c14450 !important
+    }
+
+    .progress.yellow .progress-bar {
+    border-color: #ffc107 !important;
+    }
+
+    .progress.green .progress-bar {
+    border-color: #28a745 !important;
+    }
+
+    .progress.sky .progress-bar {
+    border-color: #17a2b8 !important;
+    }
+
+</style>
+
+<script type="text/javascript">
+
+</script>
+<div class="row w-100">
+
+    <div class="row text-center col-md-12 mt-3">
+        <h1 class="w-100 text-center" style="color: #be0e43">BAC Score Card <br /> 2023 (April – June)</h1>
+    </div>
+    <center class="w-100 container-fluid mt-4">
+        <div class="row col-md-12">
+
+            <div class="col-md-4 col-lg-4">
+                <div class="widget-chart widget-chart2 text-left mb-3 card-btm-border card-shadow-secondary border-secondary card">
+                    <div class="widget-chat-wrapper-outer w-100">
+                        <div class="widget-chart-content">
+                            <div class="widget-title opacity-5 text-uppercase">
+                                Field Audit
+                            </div>
+                            <div class="widget-numbers mt-2 fsize-4 mb-0 w-100">
+                                <div class="row widget-chart-flex align-items-center">
+                                    <div class="col-md-6" style="top:-9px !important;">
+                                        <span class="opacity-10 text-success pr-2">
+                                            <i class="fa fa-angle-up"></i>
+                                        </span>
+                                        296/607
+                                        <small class="opacity-5 pl-1">Entities</small><br />
+                                        <small style="font-size:15px; color:red;" class="opacity-5 pl-1">CAU are audited quarterly</small>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="progress blue">
+                                            <span class="progress-right">
+                                                <span class="progress-bar"></span>
+                                            </span>
+                                            <div class="progress-value">49%</div>
+                                        </div>
+                                    </div>
+
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 col-lg-4">
+                <div class="widget-chart widget-chart2 text-left mb-3 card-btm-border card-shadow-warning border-warning card">
+                    <div class="widget-chat-wrapper-outer w-100">
+                        <div class="widget-chart-content">
+                            <div class="widget-title opacity-5 text-uppercase">
+                                Management Audit
+                            </div>
+                            <div class="widget-numbers mt-2 fsize-4 mb-0 w-100">
+                                <div class="row widget-chart-flex align-items-center">
+                                    <div class="col-md-6" style="top:-23px !important;">
+                                        <span class="opacity-10 text-success pr-2">
+                                            <i class="fa fa-angle-up"></i>
+                                        </span>
+                                        28 / 53
+                                        <small class="opacity-5 pl-1">Entities</small>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="progress yellow">
+                                            <span class="progress-left">
+                                                <span class="progress-bar"></span>
+                                            </span>
+                                            <span class="progress-right">
+                                                <span class="progress-bar"></span>
+                                            </span>
+                                            <div class="progress-value">53%</div>
+                                        </div>
+                                    </div>
+
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 col-lg-4">
+                <div class="widget-chart widget-chart2 text-left mb-3 card-btm-border card-shadow-info border-info card">
+                    <div class="widget-chat-wrapper-outer w-100">
+                        <div class="widget-chart-content">
+                            <div class="widget-title opacity-5 text-uppercase">
+                                I.S Audit
+                            </div>
+                            <div class="widget-numbers mt-2 fsize-4 mb-0 w-100">
+                                <div class="row widget-chart-flex align-items-center">
+                                    <div class="col-md-6" style="top:-23px !important;">
+                                        <span class="opacity-10 text-success pr-2">
+                                            <i class="fa fa-angle-up"></i>
+                                        </span>
+                                        6/12
+                                        <small class="opacity-5 pl-1">Entities</small>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="progress sky">
+
+                                            <span class="progress-right">
+                                                <span class="progress-bar"></span>
+                                            </span>
+                                            <div class="progress-value">50%</div>
+                                        </div>
+                                    </div>
+
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="offset-md-2 col-md-4 col-lg-4 mt-3">
+                <div class="widget-chart widget-chart2 text-left mb-3 card-btm-border card-shadow-danger border-danger card">
+                    <div class="widget-chat-wrapper-outer w-100">
+                        <div class="widget-chart-content">
+                            <div class="widget-title opacity-5 text-uppercase">
+                                Inspections
+                            </div>
+                            <div class="widget-numbers mt-2 fsize-4 mb-0 w-100">
+                                <div class="row widget-chart-flex align-items-center">
+                                    <div class="col-md-6" style="top:-23px !important;">
+                                        <span class="opacity-10 text-success pr-2">
+                                            <i class="fa fa-angle-up"></i>
+                                        </span>
+                                        287/502
+                                        <small class="opacity-5 pl-1">Branches</small>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="progress red">
+                                            <span class="progress-left">
+                                                <span class="progress-bar"></span>
+                                            </span>
+                                            <span class="progress-right">
+                                                <span class="progress-bar"></span>
+                                            </span>
+                                            <div class="progress-value">57%</div>
+                                        </div>
+                                    </div>
+
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 col-lg-4 mt-3">
+                <div class="widget-chart widget-chart2 text-left mb-3 card-btm-border card-shadow-success border-success card">
+                    <div class="widget-chat-wrapper-outer w-100">
+                        <div class="widget-chart-content">
+                            <div class="widget-title opacity-5 text-uppercase">
+                                Sharia Audit
+                            </div>
+                            <div class="widget-numbers mt-2 fsize-4 mb-0 w-100">
+                                <div class="row widget-chart-flex align-items-center">
+                                    <div class="col-md-6" style="top:-23px !important;">
+                                        <span class="opacity-10 text-success pr-2">
+                                            <i class="fa fa-angle-up"></i>
+                                        </span><br />
+
+                                        <small style="font-size:15px; color:red;" class="opacity-5 pl-1">Pool Management is audited quarterly</small>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="progress green">
+
+                                            <span class="progress-right">
+                                                <span class="progress-bar"></span>
+                                            </span>
+                                            <div class="progress-value">50%</div>
+                                        </div>
+                                    </div>
+
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </center>
+</div>
+

@@ -1,0 +1,295 @@
+﻿/* Please see documentation at https://docs.microsoft.com/aspnet/core/client-side/bundling-and-minification
+for details on configuring this project to bundle and minify static web assets. */
+.table td {
+    word-break: break-word !important;
+}
+.container-clob {
+    width: 100% !important;
+    margin: 10px auto !important;
+    padding: 20px !important; /* Adjust padding */
+    border: 1px solid #ccc !important;
+    border-radius: 8px !important;
+    background-color: #f9f9f9 !important;
+    overflow: auto !important;
+    height: auto !important;
+    max-height: 500px !important;
+    box-sizing: border-box !important; /* Include padding and border in width and height */
+}
+
+.container-clob table {
+    margin-left: 0px !important;
+}
+.dt-container {
+    width: 100% !important;
+}
+.buttons-excel {
+    background-color: #0ac8ac !important; /* Bootstrap success color */
+    color: white !important;
+    border: none !important;
+}
+.buttons-pdf {
+    background-color: #c14450 !important; /* Bootstrap danger color */
+    color: white !important;
+    border: none !important;
+}
+.dt-container .dt-search {
+    text-align: end !important;
+}
+
+    .dt-container .dt-length {
+        text-align: end !important;
+    }
+
+    .dt-container .bottom {
+        text-align: end !important;
+    }
+
+
+.modal-header, .modal-footer {
+    cursor: move !important;
+}
+
+.header-section {
+    min-height: 40px !important;
+    padding: 10px !important;
+}
+
+a.navbar-brand {
+    white-space: normal;
+    text-align: center;
+    word-break: break-all;
+}
+
+.cursor-pointer {
+    cursor: pointer !important;
+}
+
+.menu-user-entity {
+    display: block;
+    line-height: 11px;
+}
+
+.modal-xxl {
+    max-width: 1400px !important;
+}
+
+/* Generic modal width helper for medium-large dialogs */
+.modal-lg-fixed {
+    max-width: 900px !important;
+}
+
+/* Preserve whitespace and wrapping for multiline text blocks */
+.text-prewrap {
+    white-space: pre-wrap !important;
+    word-break: break-word !important;
+}
+
+/* Provide sufficient contrast against white background */
+a {
+    color: #0366d6;
+}
+
+.text-hover:hover {
+    cursor: pointer !important;
+    text-decoration: underline !important;
+}
+
+.btn-primary {
+    color: #fff;
+    background-color: #1b6ec2;
+    border-color: #1861ac;
+}
+
+.nav-pills .nav-link.active, .nav-pills .show > .nav-link {
+    color: #fff;
+    background-color: #1b6ec2;
+    border-color: #1861ac;
+}
+
+navImg .dropdown-toggle::after {
+    display: none !important;
+}
+
+.dropdown-submenu {
+    position: relative;
+}
+
+.dropdown-submenu .dropdown-menu {
+    top: 0;
+    left: 100%;
+    margin-top: -1px;
+}
+
+.modal-body label {
+    font-weight: bold !important;
+}
+
+/* Sticky footer styles
+-------------------------------------------------- */
+html {
+    font-size: 14px;
+    position: relative;
+    min-height: 100%;
+}
+
+@media (min-width: 768px) {
+    html {
+        font-size: 16px;
+    }
+}
+
+.border-top {
+    border-top: 1px solid #e5e5e5;
+}
+
+.border-bottom {
+    border-bottom: 1px solid #e5e5e5;
+}
+
+.navbar-gradient {
+    background: linear-gradient(45deg, #b1e9b9, #96c3ef);
+}
+
+.box-shadow {
+    box-shadow: 0 .25rem .75rem rgba(0, 0, 0, .05);
+}
+
+button.accept-policy {
+    font-size: 1rem;
+    line-height: inherit;
+}
+
+body {
+    font-family: 'DejaVu Sans', sans-serif;
+    /* Margin bottom by footer height */
+    margin-bottom: 20px;
+}
+
+.footer {
+    position: absolute;
+    bottom: 0;
+    width: 100%;
+    white-space: nowrap;
+    line-height: 20px; /* Vertically center the text there */
+    padding: 5px 0;
+}
+
+.footer-version {
+    float: right;
+}
+
+#wait,
+.loading-overlay {
+    display: none;
+    width: 69px;
+    height: 89px;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    padding: 2px;
+    z-index: 1060;
+    transform: translate(-50%, -50%);
+}
+
+@keyframes loading-1 {
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(180deg);
+    }
+}
+
+@keyframes loading-2 {
+    0% {
+        transform: rotate(180deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+/* Ensure table headers are visible */
+table.dataTable thead th {
+    background-color: #6c5fd978;
+    color: #000;
+}
+
+/* Custom top menu styles */
+.navbar-brand { margin-left: 1rem; }
+
+/* Welcome text color */
+#navImg small {
+    color: #9c5a5a;
+    font-size:11px;
+}
+
+/* Stylish dropdown menu */
+.navbar .dropdown-menu {
+    border-radius: 0.5rem;
+    box-shadow: 0 0.5rem 1rem rgba(0,0,0,0.15);
+}
+
+.navbar .dropdown-menu .dropdown-item:hover {
+    background-color: #e9ecef;
+}
+
+/* Color for top menu buttons */
+.navbar .btn-link {
+    --bs-btn-color: #3a5681;
+}
+
+/* Rounded modals for cleaner look */
+.modal-content {
+    border-radius: 0.75rem;
+}
+
+/* Sleek card edges */
+.card {
+    border-radius: 0.75rem;
+}
+/* Ensure circular modal stays above other modals */
+#circularModal {
+    z-index: 1065;
+}
+
+.navbar-gradient {
+    background: linear-gradient(45deg, #b1e9b9, #96c3ef);
+}
+
+#navImg .dropdown-toggle::after {
+    display: none !important;
+}
+
+.dropdown-submenu {
+    position: relative;
+}
+
+.dropdown-submenu .dropdown-menu {
+    top: 0;
+    left: 100%;
+    margin-top: -1px;
+}
+
+.dropdown-entity-name {
+    display: block;
+    line-height: 11px;
+}
+
+.version-text {
+    float: right;
+}
+
+.loading-overlay {
+    display: none;
+    width: 69px;
+    height: 89px;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    padding: 2px;
+    z-index: 1060;
+}
+

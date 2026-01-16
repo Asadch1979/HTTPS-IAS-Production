@@ -1,0 +1,156 @@
+@{
+    ViewData["Title"] = "System Logs";
+    Layout = "_Layout";
+}
+
+<div class="container-fluid">
+    <div class="row mb-3">
+        <div class="col-12">
+            <h2>System Logs</h2>
+            <p class="text-muted">Use filters to review application log activity. Results are read-only.</p>
+        </div>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-3 mb-3">
+                    <label for="logStartTime">Start time</label>
+                    <input id="logStartTime" type="datetime-local" class="form-control" />
+                </div>
+                <div class="col-md-3 mb-3">
+                    <label for="logEndTime">End time</label>
+                    <input id="logEndTime" type="datetime-local" class="form-control" />
+                </div>
+                <div class="col-md-2 mb-3">
+                    <label for="logLevel">Level</label>
+                    <select id="logLevel" class="form-control">
+                        <option value="">All</option>
+                        <option value="INFO">Info</option>
+                        <option value="WARNING">Warning</option>
+                        <option value="ERROR">Error</option>
+                    </select>
+                </div>
+                <div class="col-md-2 mb-3">
+                    <label for="logModule">Module</label>
+                    <input id="logModule" type="text" class="form-control" placeholder="Module" />
+                </div>
+                <div class="col-md-2 mb-3">
+                    <label for="logUserPpno">User PPNO</label>
+                    <input id="logUserPpno" type="text" class="form-control" placeholder="User" />
+                </div>
+                <div class="col-md-2 mb-3">
+                    <label for="logEngId">Engagement ID</label>
+                    <input id="logEngId" type="number" class="form-control" placeholder="Engagement" />
+                </div>
+                <div class="col-md-2 mb-3 d-flex align-items-end">
+                    <button id="loadSystemLogs" class="btn btn-primary w-100" type="button">Load Logs</button>
+                </div>
+            </div>
+            <div id="systemLogsMessage" class="text-danger"></div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-body table-responsive">
+            <table class="table table-bordered table-striped" id="systemLogsTable">
+                <thead>
+                    <tr>
+                        <th>Time</th>
+                        <th>Level</th>
+                        <th>Module</th>
+                        <th>Controller</th>
+                        <th>Action</th>
+                        <th>Message</th>
+                        <th>Tech Details</th>
+                        <th>Page</th>
+                        <th>Engagement</th>
+                        <th>User</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script type="text/javascript">
+    $(document).ready(function () {
+        $('#loadSystemLogs').on('click', function () {
+            fetchSystemLogs();
+        });
+
+        fetchSystemLogs();
+    });
+
+    function fetchSystemLogs() {
+        $('#systemLogsMessage').text('');
+        $.ajax({
+            url: g_asiBaseURL + "/AdministrationPanel/GetSystemLogs",
+            type: "POST",
+            data: {
+                startTime: $('#logStartTime').val(),
+                endTime: $('#logEndTime').val(),
+                logLevel: $('#logLevel').val(),
+                module: $('#logModule').val(),
+                userPpno: $('#logUserPpno').val(),
+                engId: $('#logEngId').val()
+            },
+            cache: false,
+            success: function (response) {
+                if (!response || response.status !== true) {
+                    $('#systemLogsMessage').text('Unable to load system logs.');
+                    renderSystemLogs([]);
+                    return;
+                }
+
+                renderSystemLogs(response.data || []);
+            },
+            error: function () {
+                $('#systemLogsMessage').text('Unable to load system logs.');
+                renderSystemLogs([]);
+            }
+        });
+    }
+
+    function renderSystemLogs(logs) {
+        var tbody = $('#systemLogsTable tbody');
+        tbody.empty();
+
+        if (!logs || logs.length === 0) {
+            tbody.append('<tr><td colspan="10" class="text-center">No logs found.</td></tr>');
+            return;
+        }
+
+        $.each(IAS.unwrap(logs), function (index, log) {
+
+
+            log = IAS.normaliseRow(log);
+            var row = $('<tr></tr>');
+            row.append($('<td></td>').text(formatLogTime(log.LOG_TIME)));
+            row.append($('<td></td>').text(log.LOG_LEVEL || ''));
+            row.append($('<td></td>').text(log.MODULE || ''));
+            row.append($('<td></td>').text(log.CONTROLLER || ''));
+            row.append($('<td></td>').text(log.ACTION || ''));
+            row.append($('<td></td>').text(log.MESSAGE || ''));
+            row.append($('<td></td>').text(log.TECH_DETAILS || ''));
+            row.append($('<td></td>').text(log.PAGE_ID || ''));
+            row.append($('<td></td>').text(log.ENG_ID || ''));
+            row.append($('<td></td>').text(log.USER_PPNO || ''));
+            tbody.append(row);
+        });
+    }
+
+    function formatLogTime(value) {
+        if (!value) {
+            return '';
+        }
+
+        var parsed = new Date(value);
+        if (isNaN(parsed.getTime())) {
+            return value;
+        }
+
+        return parsed.toLocaleString();
+    }
+</script>

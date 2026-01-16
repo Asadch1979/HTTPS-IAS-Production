@@ -1,0 +1,262 @@
+﻿@{
+    var page_id = ViewData["PageId"] as int? ?? 0;
+}
+
+﻿@{
+    ViewData["Title"] = "Sub Menu Management";
+    Layout = "_Layout";
+}
+
+<script type="text/javascript">
+    var g_menuId = 0;
+    var g_subMenuId = 0;
+    var g_subMenuArr = [];
+    function getSubMenus() {
+
+        if ($('#menuDropDownField').val() == 0) {
+            $('#listofSubMenus tbody').empty();
+            return;
+        }
+
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/get_sub_menu_for_admin_panel",
+            type: "POST",
+            data: {
+                "M_ID": $('#menuDropDownField').val()
+            },
+            cache: false,
+            success: function (data) {
+                g_subMenuArr = data;
+                $('#listofSubMenus tbody').empty();
+                $.each(data, function (i, v) {
+                    $('#listofSubMenus tbody').append('<tr><td>' + ++i + '</td><td>' + v.suB_MENU_NAME + '</td><td>' + v.description + '</td><td>' + v.suB_MENU_ORDER + '</td><td>' + v.status + '</td><td><a href="#" onclick="event.preventDefault();updateSubMenuAssignment(' + v.menU_ID + ', ' + v.suB_MENU_ID + ');">Update</a></td></tr>');
+
+                });
+            },
+            dataType: "json",
+        });
+
+    }
+
+    function setupNewMenuPage() {
+        g_pageId = 0;
+        $('#subMenuDetailModel').modal('show');
+        $('#sub_menu_modal_menu_dd').val(0);
+        $('#page_menu_sub_field').val(0);
+        $('#sub_menu_modal_submenu_tb').val("");
+        $('#page_path_field').val("");
+        $('#sub_menu_modal_submenu_order_tb').val("");
+        $('#sub_menu_modal_submenu_status_tb').val("");
+        $('#sub_menu_modal_submenu_desc_tb').val(0);
+
+    }
+
+    function updateSubMenuAssignment(menuId, menuSubId) {
+        $('#subMenuDetailModel').modal('show');
+        g_menuId = menuId;
+        g_subMenuId = menuSubId;
+        $.each(g_subMenuArr, function (i, v) {
+            if (v.suB_MENU_ID == g_subMenuId && v.menU_ID == g_menuId) {
+                $('#sub_menu_modal_menu_dd').val(v.menU_ID);
+                $('#sub_menu_modal_submenu_tb').val(v.suB_MENU_NAME);
+                $('#sub_menu_modal_submenu_order_tb').val(v.suB_MENU_ORDER);
+                $('#sub_menu_modal_submenu_status_tb').val(v.status);
+                $('#sub_menu_modal_submenu_desc_tb').val(v.description);
+
+            }
+        })
+    }
+    function reloadLocation() {
+        getSubMenus();
+    }
+
+    function publishUpdateSubMenuChanges() {
+
+        if ($('#sub_menu_modal_menu_dd').val() == 0) {
+            alert("Select Menu to proceed");
+            return;
+        }
+        if ($('#sub_menu_modal_submenu_tb').val() == "") {
+            alert("Enter Sub Menu Name to proceed");
+            return;
+        }
+      
+        if ($('#sub_menu_modal_submenu_order_tb').val() == "") {
+            alert("Enter Order to proceed");
+            return;
+        }
+        if ($('#sub_menu_modal_submenu_status_tb').val() == "") {
+            alert("Enter Status to proceed");
+            return;
+        }
+        if (g_subMenuId == 0) {
+            $.ajax({
+                url: g_asiBaseURL + "/ApiCalls/add_sub_menu_for_admin_panel",
+                type: "POST",
+                data: {
+                    'MENU_ID': $('#sub_menu_modal_menu_dd').val(),
+                    'SUB_MENU_ID': g_subMenuId,
+                    'SUB_MENU_NAME': $('#sub_menu_modal_submenu_tb').val(),
+                    'SUB_MENU_ORDER': $('#sub_menu_modal_submenu_order_tb').val(),
+                    'STATUS': $('#sub_menu_modal_submenu_status_tb').val(),
+                    'DESCRIPTION': $('#sub_menu_modal_submenu_desc_tb').val()
+                },
+                cache: false,
+                success: function (data) {
+                    alert(data.message);
+                    onAlertCallback(reloadLocation);
+                },
+                dataType: "json",
+            });
+        } else {
+            $.ajax({
+                url: g_asiBaseURL + "/ApiCalls/update_sub_menu_for_admin_panel",
+                type: "POST",
+                data: {
+                    'MENU_ID': $('#sub_menu_modal_menu_dd').val(),
+                    'SUB_MENU_ID': g_subMenuId,
+                    'SUB_MENU_NAME': $('#sub_menu_modal_submenu_tb').val(),
+                    'SUB_MENU_ORDER': $('#sub_menu_modal_submenu_order_tb').val(),
+                    'STATUS': $('#sub_menu_modal_submenu_status_tb').val(),
+                    'DESCRIPTION': $('#sub_menu_modal_submenu_desc_tb').val()
+                },
+                cache: false,
+                success: function (data) {
+                    alert(data.message);
+                    onAlertCallback(reloadLocation);
+                },
+                dataType: "json",
+            });
+        }
+
+
+    }
+    function getSubMenusForModel() {
+
+        if ($('#sub_menu_modal_menu_dd').val() == 0) {
+            $('#page_sub_menu_field').empty();
+            $('#page_sub_menu_field').append('<option value="0">--All--</option>');
+            return;
+        }
+
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/get_sub_menu_for_admin_panel",
+            type: "POST",
+            data: {
+                "M_ID": $('#sub_menu_modal_menu_dd').val()
+            },
+            cache: false,
+            success: function (data) {
+                $.each(data, function (i, v) {
+                    $('#page_sub_menu_field').append('<option value="' + v.suB_MENU_ID + '">' + v.suB_MENU_NAME + '</option>');
+
+                });
+
+                if (g_subMenuId != 0) {
+                    $('#page_sub_menu_field').val(g_subMenuId);
+                }
+
+            },
+            dataType: "json",
+        });
+
+    }
+</script>
+<div class="row mt-3">
+    <h2 style="color: #be0e43">Sub Menu Management</h2>
+</div>
+
+<div class="row col-md-12 mt-3">
+    <button onclick="setupNewMenuPage();" class="btn btn-danger offset-md-10 col-md-2">Add New</button>
+</div>
+
+<div class="row col-md-12 mt-3">
+
+    <h5>Menu </h5>
+    <select onchange="getSubMenus();" id="menuDropDownField" class="form-control">
+        <option value="0">--Select Menu--</option>
+        @if (ViewData["MenuList"] != null)
+        {
+            foreach (var item in (dynamic)(ViewData["MenuList"]))
+            {
+                <option value="@item.Menu_Id">@item.Menu_Name</option>
+            }
+        }
+    </select>
+
+</div>
+
+
+
+<div class="row col-md-12 mt-3">
+    <table id="listofSubMenus" class="table table-hover table-bordered table-hover mt-3 table-striped">
+        <thead style="background-color: #19875478 !important;">
+            <tr>
+                <th class="col-md-auto">Sr No.</th>
+                <th class="col-md-auto">Name</th>
+                <th class="col-md-auto">Description</th>
+                <th class="col-md-auto">Order</th>
+                <th class="col-md-auto">Status</th>
+                <th class="col-md-auto">Action</th>
+            </tr>
+        </thead>
+        <tbody>
+        </tbody>
+    </table>
+</div>
+
+
+
+<div id="subMenuDetailModel" class="modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-dialog-scrollable modal-xl" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Menu Page Detail</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form>
+
+                    <div class="form-group">
+                        <label>Menu</label>
+                        <select onchange="getSubMenusForModel();" id="sub_menu_modal_menu_dd" class="form-control">
+                            <option value="0">--Select Menu--</option>
+                            @if (ViewData["MenuList"] != null)
+                            {
+                                foreach (var item in (dynamic)(ViewData["MenuList"]))
+                                {
+                                    <option value="@item.Menu_Id">@item.Menu_Name</option>
+                                }
+                            }
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Sub Menu Name</label>
+                        <input class="form-control" id="sub_menu_modal_submenu_tb" />
+                    </div>
+                    <div class="form-group">
+                        <label>Description</label>
+                        <textarea class="form-control" id="sub_menu_modal_submenu_desc_tb"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>Order</label>
+                        <input class="form-control" id="sub_menu_modal_submenu_order_tb" />
+                    </div>
+                    <div class="form-group">
+                        <label>Status</label>
+                        <input class="form-control" id="sub_menu_modal_submenu_status_tb" />
+                    </div>
+                  
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" onclick="publishUpdateSubMenuChanges();" class="btn btn-danger">Save Changes</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+

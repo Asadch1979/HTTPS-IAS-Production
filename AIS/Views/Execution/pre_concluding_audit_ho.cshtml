@@ -1,0 +1,533 @@
+﻿@{
+    var page_id = ViewData["PageId"] as int? ?? 0;
+}
+
+@{
+    ViewData["Title"] = "Quality Assurance of Audit Para HO";
+    Layout = "_Layout";
+}
+<script type="text/javascript">
+    var g_observationId = 0;
+     var g_engId = 0;
+     var g_respUsersArr = [];
+        var g_procId = 0;
+      var g_subProcId=0;
+      var g_procDetailId=0;
+
+     $(document).ready(function () {
+         $('#preConcludingActionHandler').addClass("d-none");
+             $('#viewMemo_memo_ObSent').richText({
+              imageUpload: false,
+              fileUpload: false,
+              videoEmbed: false,
+              urls: false
+          });
+     });
+
+     function getEntityObservations() {
+          var flag = 0;
+         if($('#entitySelectField').val()==0){
+              $('#checklistDetailsPanel tbody').empty();
+             $('#preConcludingActionHandler').addClass("d-none");
+              return;
+         }
+         $.ajax({
+             url: g_asiBaseURL + "/ApiCalls/get_obs_for_pre_concluding",
+             type: "POST",
+             data: {
+                 'ENG_ID': $('#entitySelectField').val()
+             },
+             cache: false,
+             success: function (data) {
+                 $('#checklistDetailsPanel tbody').empty();
+                 var sr = 1;
+                 $.each(data, function (i, v) {
+
+                     if (v.status.toLowerCase() == "completed")
+                     {
+                        $('#checklistDetailsPanel tbody').append('<tr id="obs_' + v.id + '"><td class="text-center">' + v.finaL_PARA_NO + '</td><td class="branchfield">' + v.heading + '</td><td>' + v.obS_RISK + '</td><td>' + v.obS_STATUS + '</td><td class="preconcludingStatusField">' + v.status + '</td><td><a href="#" onclick="viewObservationDetails(' + v.obS_ID + ', \''+v.status+'\');" class="text-hover text-success ml-5px"><small>View Details</small></a></td></tr>');
+                     }
+                     else{
+                        $('#checklistDetailsPanel tbody').append('<tr id="obs_' + v.id + '"><td class="text-center">' + v.finaL_PARA_NO + '</td><td class="branchfield">' + v.heading + '</td><td>' + v.obS_RISK + '</td><td>' + v.obS_STATUS + '</td><td class="preconcludingStatusField">' + v.status + '</td><td><a href="#" onclick="viewObservationDetails(' + v.obS_ID + ', \''+v.status+'\');" class="text-hover text-success ml-5px"><small>View Details</small></a></td></tr>');
+                        flag++;
+                     }
+                     sr++;
+                 });
+
+                 if (flag > 0) {
+                     $('#preConcludingActionHandler').addClass("d-none");
+                 } else if(flag==0  && data.length >0)  {
+                     $('#preConcludingActionHandler').removeClass("d-none");
+                 }
+                 else{
+                     $('#preConcludingActionHandler').addClass("d-none");
+                 }
+             },
+             dataType: "json",
+         });
+     }
+
+     function reloadLocation() {
+         getEntityObservations();
+     }
+
+      function viewObservationDetails(obsId, status){
+          g_obsId=obsId;
+          $('#viewMemoDetailsModel').modal('show');
+
+          if(status=="Pending"){
+              $('#update_audit_obs_button').removeClass("d-none");
+              $('#gist_recom_inc_pre_con').removeClass("d-none");
+
+          }else{
+              $('#update_audit_obs_button').addClass("d-none");
+              $('#gist_recom_inc_pre_con').addClass("d-none");
+          }
+
+           $('#viewMemo_heading_ObSent').val('');
+           $('#viewMemo_memo_ObSent').val('').trigger('change');
+           $('#viewMemo_response_ObSent').html('');
+           $('#viewMemo_aud_reply_ObSent').html('');
+           $('#viewMemo_head_reply_ObSent').html('');
+           $('#viewMemo_head_reply_ObSent').html('');
+           $('#viewMemo_annex_ObSent').val(0);
+           $('#viewMemo_risk_ObSent').val(0);
+           $('#viewMemo_process_ObSent').val(0);
+            $('#viewMemo_amount_ObSent').val(0);
+           $('#viewMemo_inst_ObSent').val(0);
+
+             $('#gistPara_response_ObSent').val('');
+           $('#audRecommend_response_ObSent').val('');
+
+            $.ajax({
+               url: g_asiBaseURL + "/ApiCalls/get_obs_details_by_id_pre_con_ho",
+              type: "POST",
+              data: {
+                  'OBS_ID': g_obsId
+              },
+              cache: false,
+              success: function (data) {
+           $('#viewMemo_heading_ObSent').val(data.heading);
+           $('#viewMemo_memo_ObSent').val(data.observatioN_TEXT).trigger('change');
+           $('#viewMemo_response_ObSent').html(data.auditeE_REPLY);
+           ViewAuditeeAttachedEvidences();
+           $('#viewMemo_aud_reply_ObSent').html(data.auditoR_RECOM);
+            $('#viewMemo_head_reply_ObSent').html(data.heaD_RECOM);
+           $('#viewMemo_annex_ObSent').val(data.annexurE_ID);
+           $('#viewMemo_risk_ObSent').val(data.riskmodeL_ID);
+           $('#viewMemo_process_ObSent').val(data.procesS_ID);
+           $('#viewMemo_amount_ObSent').val(data.amounT_INVOLVED);
+           $('#viewMemo_inst_ObSent').val(data.nO_OF_INSTANCES);
+
+           $('#gistPara_response_ObSent').val(data.qA_GIST);
+           $('#audRecommend_response_ObSent').val(data.qA_RECOM);
+
+           g_procId=data.procesS_ID;
+           g_subProcId=data.subchecklisT_ID;
+           g_procDetailId=data.checklistdetaiL_ID;
+           getViolationNatureOfProcess();
+
+                 },
+              dataType: "json",
+          });
+      }
+     function getViolationNatureOfProcess() {
+        $('#viewMemo_subprocess_ObSent').empty();
+        $.ajax({
+           url: g_asiBaseURL + "/Execution/sub_voilation",
+            type: "POST",
+            data: {
+                'V_ID': $('#viewMemo_process_ObSent').val()
+            },
+            cache: false,
+            success: function (data) {
+                $('#viewMemo_subprocess_ObSent').append('<option value="0">--Select Violation Nature--</option>');
+                $.each(data, function (i, v) {
+                    $('#viewMemo_subprocess_ObSent').append('<option value="' + v.id + '">' + v.suB_V_NAME + '</option>');
+                });
+                if(g_subProcId!=0)
+                    {
+                        $('#viewMemo_subprocess_ObSent').val(g_subProcId);
+                    }
+
+
+            },
+            dataType: "json",
+        });
+
+    }
+    function ViewAuditeeAttachedEvidences() {
+          $.ajax({
+              url: g_asiBaseURL + "/ApiCalls/get_responded_obs_evidences",
+              type: "POST",
+              data: {
+                  'OBS_ID': g_obsId
+              },
+              cache: false,
+              success: function (data) {
+
+                  $('#complianceCycleEvidences').empty();
+                  if (data.length > 0) {
+                      $.each(data, function (i, pp) {
+
+                          var extension = pp.imagE_NAME.split('.').pop().toLowerCase();
+                          const contentType = getContentType(extension);
+
+                          // Create and append the attachment item
+                          const container = document.createElement('div');
+                          container.className = 'evidence-link';
+
+                          // Add icon
+                          const icon = document.createElement('i');
+                          icon.className = getIconClass(extension) + ' evidence-icon mr-1';
+                          container.appendChild(icon);
+
+                          // Add label
+                          const label = document.createElement('span');
+                          label.innerText = pp.imagE_NAME;
+                          label.classList.add('text-primary');
+
+                          // Add cursor style to make it look like a link
+                          label.style.cursor = 'pointer';
+                          container.appendChild(label);
+
+                          // Add click event to download file on selection
+                          container.addEventListener('click', function () {
+                              downloadFile(pp.filE_ID);
+                          });
+
+                          $('#complianceCycleEvidences').append(container);
+                      });
+                  }
+                  else {
+                      $('#complianceCycleEvidences').append("<i>No evidence is attached </i>");
+                  }
+
+              },
+              dataType: "json",
+          });
+      }
+      function downloadFile(id) {
+          $.ajax({
+              url: g_asiBaseURL + "/ApiCalls/get_auditee_evidence_data",
+              type: "POST",
+              data: {
+                  'FILE_ID': id,
+              },
+              cache: false,
+              success: function (data) {
+                  var extension = data.imagE_NAME.split('.').pop().toLowerCase();
+                  const contentType = getContentType(extension);
+
+                  const blob = base64ToBlob(data.imagE_DATA, contentType);
+                  const link = document.createElement('a');
+                  link.href = URL.createObjectURL(blob);
+                  link.download = data.imagE_NAME;
+                  link.click(); // Trigger the download
+
+              },
+              dataType: "json",
+          });
+
+
+      }
+      function getFileExtension(file) {
+          var fileName = file.name;
+          var extension = fileName.substring(fileName.lastIndexOf('.') + 1).toLowerCase();
+          return extension;
+      }
+      function getIconClass(extension) {
+          switch (extension) {
+              case 'pdf': return 'fa fa-file-pdf';
+              case 'zip': return 'fa fa-file-archive';
+              case 'png':
+              case 'jpg':
+              case 'jpeg':
+              case 'bmp': return 'fa fa-file-image';
+              case 'doc':
+              case 'docx': return 'fa fa-file-word';
+              default: return 'fa fa-file';
+          }
+      }
+      function getContentType(extension) {
+          switch (extension) {
+              case 'pdf': return 'application/pdf';
+              case 'zip': return 'application/zip';
+              case 'png': return 'image/png';
+              case 'doc': return 'application/msword';
+              case 'docx': return 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+              default: return 'application/octet-stream';
+          }
+      }
+      function base64ToBlob(base64, contentType) {
+          const byteCharacters = atob(base64);
+          const byteArrays = [];
+
+          for (let offset = 0; offset < byteCharacters.length; offset += 512) {
+              const slice = byteCharacters.slice(offset, offset + 512);
+
+              const byteNumbers = new Array(slice.length);
+              for (let i = 0; i < slice.length; i++) {
+                  byteNumbers[i] = slice.charCodeAt(i);
+              }
+
+              const byteArray = new Uint8Array(byteNumbers);
+              byteArrays.push(byteArray);
+          }
+
+          const blob = new Blob(byteArrays, { type: contentType });
+          return blob;
+      }
+       function updateObservationDetails(obsId){
+
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/update_audit_para_for_finalization_ho",
+            type: "POST",
+            data: {
+                'OBS_ID': obsId,
+                'ANNEX_ID': $('#viewMemo_annex_ObSent').val(),
+                'VIOLATION_ID': $('#viewMemo_process_ObSent').val(),
+                'VIOLATION_NATURE_ID': $('#viewMemo_subprocess_ObSent').val(),
+                'RISK_ID': $('#viewMemo_risk_ObSent').val(),
+                'GIST_OF_PARA': $('#viewMemo_heading_ObSent').val(),
+                'TEXT_PARA': $('#viewMemo_memo_ObSent').val()
+
+            },
+            cache: false,
+            success: function (data) {
+                alert(data.message);
+                 onAlertCallback(reloadModel);
+            },
+            dataType: "json",
+        });
+        return;
+    }
+
+      function reloadModel(){
+          getEntityObservations();
+          viewObservationDetails(g_obsId);
+      }
+     function saveObservationGistandRecommendation(){
+
+         if ($('#gistPara_response_ObSent').val() == 0) {
+             alert("Please enter Title of the Para to proceed");
+             return;
+         }
+
+         if ($('#audRecommend_response_ObSent').val() == 0) {
+             alert("Please enter Remarks / Root Cause/Corrective Measures to proceed");
+              return;
+         }
+
+         $('#viewMemoModel_ObSent').modal('hide');
+
+         $.ajax({
+             url: g_asiBaseURL + "/ApiCalls/add_observation_gist_and_recommendation",
+             type: "POST",
+             data: {
+                 'OBS_ID': g_obsId,
+                 'AUDITOR_RECOMMENDATION': $('#audRecommend_response_ObSent').val(),
+                 'GIST_OF_PARA': $('#gistPara_response_ObSent').val()
+
+             },
+             cache: false,
+             success: function (data) {
+                alert(data.message);
+                   onAlertCallback(reloadModel);
+             },
+             dataType: "json",
+         });
+
+     }
+     function submitPreConcluding() {
+
+         var flag = 0;
+         $('.preconcludingStatusField').each(function (i, v) {
+
+             if ($(v).html() == "Pending")
+                 flag++;
+         });
+
+         if (flag > 0) {
+             alert("Please add Audit Observation Gist and Recommendation for all observations first to proceed");
+             return;
+         }
+
+         $.ajax({
+             url: g_asiBaseURL + "/ApiCalls/submit_pre_concluding",
+             type: "POST",
+             data: {
+                 'ENG_ID': $('#entitySelectField option:selected').val()
+
+             },
+             cache: false,
+             success: function (data) {
+                 alert(data.message);
+                  onAlertCallback(reloadLocation);
+
+             },
+             dataType: "json",
+         });
+     }
+</script>
+<div class="row mt-3">
+    <div>
+        <center>
+            <h3 style="color: #be0e43">Quality Assurance of Audit Para</h3>
+        </center>
+    </div>
+    <div class="row col-md-12 mt-3">
+        <div class="col-md-2">
+            <label><b>Entity:</b></label>
+        </div>
+        <div class="col-md-10">
+            <input id="entityNameField" disabled="disabled" class="form-control ml-1 d-none" type="text" />
+            <select id="entitySelectField" onchange="getEntityObservations()" class="form-control form-select">
+                <option value="0" id="0">--Select Audit Entity--</option>
+                @{
+                    if (ViewData["EntitiesList"] != null)
+                    {
+                        foreach (var item in (dynamic)(ViewData["EntitiesList"]))
+                        {
+                            <option value="@item.ENG_ID" id="@item.ENG_ID">@item.NAME</option>
+                        }
+                    }
+                }
+
+            </select>
+        </div>
+    </div>
+
+    <table id="checklistDetailsPanel" class="table table-hover table-bordered table-hover mt-3 table-striped">
+        <thead style="background-color: #19875478 !important; ">
+            <tr>
+
+                <th class="col-md-auto">Final Para No.</th>
+                <th class="col-md-auto branchfield">Title of Para</th>
+                <th class="col-md-auto">Risk Category</th>
+                <th class="col-md-auto">Observation Status</th>
+                <th class="col-md-auto">Pre Concluding Status</th>
+                <th class="col-md-auto">Action</th>
+
+            </tr>
+        </thead>
+        <tbody>
+        </tbody>
+    </table>
+
+    <div class="row col-md-12 mt-3" id="preConcludingActionHandler">
+        <button onclick="submitPreConcluding();" class="col-md-3 btn btn-success" style="margin-left:10px;">Submit Pre Concluding</button>
+    </div>
+</div>
+
+
+
+<div id="viewMemoDetailsModel" class="modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-xl" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">Observation</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form>
+
+                    <div class="form-group">
+                        <label for="viewMemo_process_ObSent" class="font-weight-bold">Process</label>
+                        <select id="viewMemo_process_ObSent" onchange="getSubCheckListOfProcess();" class="form-select form-control">
+                            <option value="0" id="0" selected="selected">--Select Voilation Category--</option>
+                            @{
+                                if (ViewData["Voilation_Cat"] != null)
+                                {
+                                    foreach (var item in (dynamic)(ViewData["Voilation_Cat"]))
+                                    {
+                                        <option id="@item.ID" value="@item.ID">@item.V_NAME</option>
+                                    }
+                                }
+                            }
+
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="viewMemo_subprocess_ObSent" class="font-weight-bold">Sub Process</label>
+                        <select id="viewMemo_subprocess_ObSent" class="form-select form-control">
+                        </select>
+
+                    </div>
+
+
+                    <div class="form-group">
+                        <label for="viewMemo_risk">Risk</label>
+                        <select id="viewMemo_risk_ObSent" class="form-select form-control" aria-label="Default select example">
+                            <option value="0" id="0" selected>--Select Risk Category--</option>
+                            @{
+                                if (ViewData["RiskList"] != null)
+                                {
+
+                                    foreach (var risk in (dynamic)(ViewData["RiskList"]))
+                                    {
+                                        <option id="@risk.R_ID" value="@risk.R_ID">@risk.DESCRIPTION</option>
+                                    }
+
+                                }
+                            }
+                        </select>
+
+
+                    </div>
+                    <div class="form-group">
+                        <label for="viewMemo_heading_ObSent" class="font-weight-bold">Gist of Para <small class="text-muted">(A-Z, 0-9, space, &amp;, ?)</small></label>
+                        <input id="viewMemo_heading_ObSent" type="text" class="form-control alnum-only" placeholder="Gist of Para (Alphabets, numbers, spaces, ampersand (&amp;), comma (,), and question mark (?) only)" data-allow-space="true" data-allow-amp="true" data-maxlen="500" maxlength="500" title="Enter only Alphabets (A-Z), numbers (0-9), spaces, ampersand (&amp;), comma (,), and question mark (?)" />
+                        <small class="form-text text-muted">Enter only Alphabets (A-Z), numbers (0-9), spaces, ampersand (&amp;), comma (,), and question mark (?).</small>
+                        <div class="invalid-feedback">Enter only Alphabets (A-Z), numbers (0-9), spaces, ampersand (&amp;), comma (,), and question mark (?).</div>
+                    </div>
+                    <div class="form-group">
+                        <label for="viewMemo_memo_ObSent" class="font-weight-bold">Para Text</label>
+                        <input id="viewMemo_memo_ObSent" type="text" class="form-control" />
+                    </div>
+
+                    <div class="form-group">
+                    </div>
+                    <hr class="w-100 mt-2 mb-2" />
+                    <div class="form-group">
+                        <label for="viewMemo_response_ObSent" class="font-weight-bold">Auditee Response</label>
+                        <div id="viewMemo_response_ObSent" disabled="disabled" style="height: auto; overflow-y: auto;" class="form-control"></div>
+                    </div>
+                    <div id="evidenceViewer" class="input-field">
+                        <label class="font-weight-bold">Evidences</label>
+                        <div class="row col-md-12 mt-3 mb-3">
+                            <div id="complianceCycleEvidences">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="viewMemo_aud_reply_ObSent" class="font-weight-bold">Auditor Remarks</label>
+                        <div id="viewMemo_aud_reply_ObSent" disabled="disabled" style="height: auto; overflow-y: auto;" class="form-control"></div>
+                    </div>
+                    <div class="form-group">
+                        <label for="viewMemo_head_reply_ObSent" class="font-weight-bold">Head Remarks</label>
+                        <div id="viewMemo_head_reply_ObSent" disabled="disabled" style="height: auto; overflow-y: auto;" class="form-control"></div>
+                    </div>
+                    <div class="form-group">
+                        <label for="gistPara_response_ObSent" class="font-weight-bold">Title of the Para <small class="text-muted">(Plain text only)</small></label>
+                        <textarea type="text" id="gistPara_response_ObSent" class="form-control" maxlength="4000" placeholder="Enter Title of the Para"></textarea>
+                        <small class="form-text text-muted">Use plain text only; HTML is not allowed.</small>
+
+                    </div>
+                    <div class="form-group">
+                        <label for="audRecommend_response_ObSent" class="font-weight-bold">Root Cause/ Recommendation / Corrective Measure <small class="text-muted">(Rich text sanitized)</small></label>
+                        <textarea type="text" id="audRecommend_response_ObSent" class="form-control" maxlength="4000" placeholder="Enter Root Cause / Recommendation / Corrective Measure"></textarea>
+                        <small class="form-text text-muted">Formatting is sanitized before saving.</small>
+
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button id="gist_recom_inc_pre_con" onclick="saveObservationGistandRecommendation(g_obsId);" type="button" class="btn btn-primary">Save Title & Recommendation</button>
+                <button id="update_audit_obs_button" onclick="updateObservationDetails(g_obsId);" type="button" class="btn btn-danger">Update Para Details</button>
+
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>

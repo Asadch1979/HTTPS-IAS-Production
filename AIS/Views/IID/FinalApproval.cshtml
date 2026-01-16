@@ -1,0 +1,77 @@
+@{
+    ViewData["Title"] = "Final Approval";
+    Layout = "_Layout";
+    var reportId = ViewData["ReportId"];
+}
+<h4>Final Approval</h4>
+<div class="mb-3" id="reportFiles">
+    <h6>Report Downloads</h6>
+    <div id="reportLinks" class="small text-muted">Loading...</div>
+</div>
+<form id="approvalForm">
+    <input type="hidden" name="ReportId" value="@reportId" />
+    <div class="mb-2">
+        <label class="form-label">Comments</label>
+        <textarea class="form-control" name="Comments"></textarea>
+    </div>
+    <div class="mb-2">
+        <label class="form-label">Decision</label>
+        <select class="form-select" name="Decision">
+            <option value="APPROVE">Approve</option>
+            <option value="REFER_BACK">Refer Back</option>
+        </select>
+    </div>
+    <button type="submit" class="btn btn-primary">Submit</button>
+</form>
+@section Scripts{
+<script>
+    $(function(){
+        function loadReportFiles(){
+            $.ajax({
+                url: g_asiBaseURL + '/ApiCalls/GetInquiryReportFiles',
+                method: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({ ReportId: $('#approvalForm [name="ReportId"]').val() }),
+                success: function(d){
+                    var links = [];
+                    if(d && d.uploadedReport){
+                        links.push('<a href="'+g_asiBaseURL+'/Uploads/'+d.uploadedReport+'" target="_blank">Report</a>');
+                    }
+                    if(d && d.uploadedEvidence){
+                        var evidences = d.uploadedEvidence.split(';');
+                        $.each(evidences, function(i,f){
+                            if(f){
+                                links.push('<a href="'+g_asiBaseURL+'/Uploads/'+f+'" target="_blank">Evidence '+(i+1)+'</a>');
+                            }
+                        });
+                    }
+                    if(d && d.uploadedDsa){
+                        links.push('<a href="'+g_asiBaseURL+'/Uploads/'+d.uploadedDsa+'" target="_blank">DSA</a>');
+                    }
+                    $('#reportLinks').html(links.length ? links.join('<br/>') : 'No files available.');
+                }
+            });
+        }
+
+        loadReportFiles();
+
+        $('#approvalForm').on('submit', function(e){
+            e.preventDefault();
+            var data = {
+                ReportId: $('#approvalForm [name="ReportId"]').val(),
+                Comments: $('#approvalForm [name="Comments"]').val(),
+                Decision: $('#approvalForm [name="Decision"]').val()
+            };
+            $.ajax({
+                url: g_asiBaseURL + '/ApiCalls/AddFinalApproval',
+                method: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify(data),
+                success: function(){
+                    alert('Action saved');
+                }
+            });
+        });
+    });
+</script>
+}

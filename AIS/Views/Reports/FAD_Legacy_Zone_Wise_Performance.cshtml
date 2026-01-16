@@ -1,0 +1,95 @@
+﻿@{
+    var page_id = ViewData["PageId"] as int? ?? 0;
+}
+
+@{
+    ViewData["Title"] = "FAD Legacy Zone Wise Performance";
+    Layout = "_Layout";
+}
+
+<script type="text/javascript">
+
+    $(document).ready(function () {
+        $("#searchTableRecord").on("keyup", function () {
+            var value = $(this).val().toLowerCase();
+            $("#zoneiwseperformance tbody tr").filter(function () {
+                $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1)
+            });
+        });
+        getLegacyUserWisePerformance();
+    });
+
+
+    function getLegacyUserWisePerformance() {
+
+        $('#zoneiwseperformance tbody').empty();
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/get_legacy_zone_wise_performance",
+            type: "POST",
+            data: {
+                'FILTER_DATE': $('#updateDateFilter').val()
+            },
+            cache: false,
+            success: function (data) {
+                $.each(data, function (index, child) {
+                    var srNo = ++index;
+                    var onlyDate = "";
+                    if (child.date != "") {
+                        onlyDate = child.date.split(' ')[0];
+                    }
+                    $('#zoneiwseperformance tbody').append('<tr><td><p class="fw-normal mb-1">' + srNo + '</p></td><td><p class="fw-normal mb-1">' + child.zonename + '</p></td><td><p class="fw-normal mb-1">' + child.ppno + '</p></td><td><p class="fw-normal mb-1">' + child.emP_NAME + '</p></td><td><p class="fw-normal mb-1">' + onlyDate + '</p></td><td><p class="fw-normal mb-1">' + child.parA_ENTERED + '</p></td></tr>')
+                });
+
+            },
+
+            dataType: "json",
+        });
+    }
+
+
+</script>
+
+
+<div class="row">
+    <div class="col-md-12 mt-3">
+        <h3 style=" display:block;color: #be0e43">Zone Wise Performance</h3>
+    </div>
+
+    <div class="row col-md-12 mt-3">
+        <table id="zoneiwseperformance" class="table table-hover table-bordered table-hover mt-3 table-striped">
+            <thead style="background-color: #19875478 !important; ">
+                <tr>
+                    <th class="col-md-2">Sr. No</th>
+                    <th class="col-md-4">Zone Name</th>
+                    <th class="col-md-2">Total Paras</th>
+                    <th class="col-md-2">Para Pending</th>
+                    <th class="col-md-2">Paras Completed</th>
+
+                </tr>
+            </thead>
+            <tbody>
+                @{
+                    if (ViewData["ZONEWISEPERFORMANCE"] != null)
+                    {
+
+                        var index = 1;
+                        foreach (var item in (dynamic)(ViewData["ZONEWISEPERFORMANCE"]))
+                        {
+                            
+                                <tr>
+                                    <td>@index</td>
+                                    <td>@item.ZONENAME</td>
+                                    <td>@item.PARA_TOTAL</td>
+                                    <td>@item.PARA_PENDING</td>
+                                    <td>@item.PARA_ENTERED</td>
+                                </tr>
+                            index++;
+                        }
+                    }
+                }
+            </tbody>
+
+        </table>
+    </div>
+
+</div>

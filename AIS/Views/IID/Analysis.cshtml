@@ -1,0 +1,113 @@
+@{
+    ViewData["Title"] = "Analysis";
+    Layout = "_Layout";
+    var reportId = ViewData["ReportId"];
+}
+<h4>Analysis</h4>
+<div class="mb-3" id="reportFiles">
+    <h6>Report Downloads</h6>
+    <div id="reportLinks" class="small text-muted">Loading...</div>
+</div>
+<form id="analysisForm">
+    <input type="hidden" name="ReportId" value="@reportId" />
+    <div class="mb-2">
+        <label class="form-label">Policy Gaps</label>
+        <textarea class="form-control" name="PolicyGaps"></textarea>
+    </div>
+    <div class="mb-2">
+        <label class="form-label">Control Gaps</label>
+        <textarea class="form-control" name="ControlGaps"></textarea>
+    </div>
+    <div class="mb-2">
+        <label class="form-label">Procedural Violations</label>
+        <textarea class="form-control" name="ProceduralViolations"></textarea>
+    </div>
+    <div class="mb-2">
+        <label class="form-label">Forward To</label>
+        <input type="text" class="form-control" name="ForwardTo" />
+    </div>
+    <div class="mb-2">
+        <label class="form-label">Comments</label>
+        <textarea class="form-control" name="Comments"></textarea>
+    </div>
+    <div class="mb-2">
+        <label class="form-label">Decision</label>
+        <select class="form-select" name="Decision" id="Decision">
+            <option value="FORWARD">Forward</option>
+            <option value="REFER_BACK">Refer Back</option>
+        </select>
+    </div>
+    <div class="mb-2 d-none" id="referBackDiv">
+        <label class="form-label">Refer Back Comments</label>
+        <textarea class="form-control" name="ReferBackComments"></textarea>
+    </div>
+    <button type="submit" class="btn btn-primary">Submit Analysis</button>
+</form>
+@section Scripts{
+<script>
+    $(function(){
+        function loadReportFiles(){
+            $.ajax({
+                url: g_asiBaseURL + '/ApiCalls/GetInquiryReportFiles',
+                method: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({ ReportId: $('#analysisForm [name="ReportId"]').val() }),
+                success: function(d){
+                    var links = [];
+                    if(d && d.uploadedReport){
+                        links.push('<a href="'+g_asiBaseURL+'/Uploads/'+d.uploadedReport+'" target="_blank">Report</a>');
+                    }
+                    if(d && d.uploadedEvidence){
+                        var evidences = d.uploadedEvidence.split(';');
+                        $.each(evidences, function(i,f){
+                            if(f){
+                                links.push('<a href="'+g_asiBaseURL+'/Uploads/'+f+'" target="_blank">Evidence '+(i+1)+'</a>');
+                            }
+                        });
+                    }
+                    if(d && d.uploadedDsa){
+                        links.push('<a href="'+g_asiBaseURL+'/Uploads/'+d.uploadedDsa+'" target="_blank">DSA</a>');
+                    }
+                    $('#reportLinks').html(links.length ? links.join('<br/>') : 'No files available.');
+                }
+            });
+        }
+
+        function toggleDecision(){
+            if($('#Decision').val() === 'REFER_BACK'){
+                $('#referBackDiv').removeClass('d-none');
+            } else {
+                $('#referBackDiv').addClass('d-none');
+                $('#referBackDiv textarea').val('');
+            }
+        }
+
+        loadReportFiles();
+        $('#Decision').on('change', toggleDecision);
+        toggleDecision();
+
+        $('#analysisForm').on('submit', function(e){
+            e.preventDefault();
+            var data = {
+                ReportId: $('#analysisForm [name="ReportId"]').val(),
+                PolicyGaps: $('#analysisForm [name="PolicyGaps"]').val(),
+                ControlGaps: $('#analysisForm [name="ControlGaps"]').val(),
+                ProceduralViolations: $('#analysisForm [name="ProceduralViolations"]').val(),
+                ForwardTo: $('#analysisForm [name="ForwardTo"]').val(),
+                Comments: $('#analysisForm [name="Comments"]').val(),
+                Decision: $('#analysisForm [name="Decision"]').val(),
+                ReferBackComments: $('#analysisForm [name="ReferBackComments"]').val()
+            };
+            $.ajax({
+                url: g_asiBaseURL + '/ApiCalls/AddAnalysis',
+                method: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify(data),
+                success: function(){
+                    alert('Analysis submitted');
+                }
+            });
+        });
+    });
+</script>
+}

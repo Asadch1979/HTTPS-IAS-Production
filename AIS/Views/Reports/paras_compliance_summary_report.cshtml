@@ -1,0 +1,103 @@
+﻿@{
+    ViewData["Title"] = "Paras Compliance Summary Report ";
+    Layout = "_Layout";
+}
+
+<script type="text/javascript">
+
+    $(document).ready(function () {
+
+        getSettledParas();
+
+    });
+
+    function getSettledParas() {
+        if ($.fn.DataTable.isDataTable('#compliance_paras')) {
+            $('#compliance_paras').DataTable().clear().destroy();
+        }
+        $('#compliance_paras tbody').empty();
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/get_paras_for_compliance_summary_report",
+            type: "POST",
+            data: {
+            },
+            cache: false,
+            success: function (data) {
+
+                $.each(data, function (index, row) {
+
+                    row.settlemenT_PERCENTAGE = parseFloat((parseInt(row.totaL_SETTLED_PARAS) / parseInt(row.totaL_PARAS)) * 100).toFixed(2);
+                    row.outstandinG_PERCENTAGE = parseFloat((parseInt(row.totaL_OUTSTANDING_PARAS) / parseInt(row.totaL_PARAS)) * 100).toFixed(2);
+                    row.compliancE_PENDING_OS_PARAS = parseInt(row.totaL_OUTSTANDING_PARAS) - parseInt(row.zerO_COMPLIANCE_PARAS);
+                    $('#compliance_paras tbody').append('<tr><td>' + ++index + '</td><td>' + row.reportinG_OFFICE + '</td><td>' + row.entitY_NAME + '</td><td>' + row.totaL_PARAS + '</td><td>' + row.totaL_SETTLED_PARAS + '</td><td>' + row.totaL_OUTSTANDING_PARAS + '</td><td>' + row.settlemenT_PERCENTAGE + '%</td><td>' + row.outstandinG_PERCENTAGE + '%</td><td>' + row.compliancE_PENDING_OS_PARAS + '</td><td>' + row.zerO_COMPLIANCE_PARAS + '</td></tr>');
+
+                });
+               
+
+                $('#compliance_paras').DataTable({
+                    dom: '<"top"lfB>rt<"bottom"ip><"clear">',
+                    buttons: [
+                        {
+                            extend: 'excelHtml5',
+                            text: 'Export to Excel',
+                            className: 'btn btn-success',
+                            exportOptions: {
+                                columns: function (idx, data, node) {
+                                    // Exclude columns with the class 'hide-export'
+                                    return !$(node).hasClass('hide-export');
+                                }
+                            }
+                        },
+                        {
+                            extend: 'pdfHtml5',
+                            text: 'Export To PDF',
+                            className: 'btn btn-danger',
+                            exportOptions: {
+                                columns: function (idx, data, node) {
+                                    // Exclude columns with the class 'hide-export'
+                                    return !$(node).hasClass('hide-export');
+                                }
+                            }
+                        }
+                    ],
+                    lengthMenu: [
+                        [10, 50, 100, -1],
+                        [10, 50, 100, "All"]
+                    ]
+                });
+
+            },
+            dataType: "json",
+        });
+
+
+    }
+</script>
+
+<div class="row col-md-12 mt-3">
+    <h3 style="color: #be0e43">Paras Compliance Summary Report</h3>
+</div>
+
+<div class="row col-md-12 mt-3">
+
+    <table id="compliance_paras" class="table table-hover table-bordered table-hover mt-3 table-striped">
+        <thead style="background-color: #19875478 !important; ">
+            <tr>
+                <th class="col-md-auto">Sr. No.</th>
+                <th class="col-md-auto">Reporting Office</th>
+                <th class="col-md-auto">Entity Name</th>
+                <th class="col-md-auto">Total Paras</th>
+                <th class="col-md-auto">Settled Paras</th>
+                <th class="col-md-auto">Outstanding Paras</th>
+                <th class="col-md-auto">Settlement Percentage</th>
+                <th class="col-md-auto">Outstanding Paras Percentage</th>
+                <th class="col-md-auto">Compliance Submitted (Outstanding Paras) </th>
+                <th class="col-md-auto">Paras Count (Compliance never submitted)</th>
+
+            </tr>
+        </thead>
+        <tbody>
+        </tbody>
+    </table>
+</div>
+

@@ -1,0 +1,260 @@
+@{
+    ViewData["Title"] = "Submit Complaint";
+    Layout = "_Layout";
+}
+<h4>Submit Complaint</h4>
+<form id="complaintForm" enctype="multipart/form-data">
+    <div class="mb-2">
+        <label class="form-label">Complaint No.</label>
+        <input type="text" class="form-control" name="ComplaintNo" required />
+    </div>
+    <div class="mb-2">
+        <label class="form-label">Nature of Complaint</label>
+        <select class="form-select" name="Nature" required>
+            <option value="">--Select--</option>
+            <option>Fraud & Forgery</option>
+            <option>Embezzlement of loan/partial loan amount</option>
+            <option>Embezzlement of recovery amount</option>
+            <option>Embezzlement of deposits</option>
+            <option>Loan processing issues</option>
+            <option>Fake/disputed collaterals</option>
+            <option>Getting illegal gratification</option>
+            <option>NOC/ Redemption issues</option>
+            <option>Recovery/ Repayment issues</option>
+            <option>Service Charges issues</option>
+            <option>Misbehavior</option>
+            <option>Miscellaneous</option>
+            <option>Short payment of cash</option>
+            <option>Timings related issues</option>
+        </select>
+    </div>
+    <div class="mb-2">
+        <label class="form-label">Category</label>
+        <select class="form-select" name="Category" required>
+            <option value="">--Select--</option>
+            <option>Complaint</option>
+            <option>Reference</option>
+            <option>Whistle Blow</option>
+        </select>
+    </div>
+    <div class="mb-2">
+        <label class="form-label">Source</label>
+        <select class="form-select" id="Source" name="Source" required>
+            <option value="">--Select--</option>
+            <option>Internal</option>
+            <option>External</option>
+            <option>Anonymous</option>
+            <option>Regulatory</option>
+            <option>Other</option>
+        </select>
+    </div>
+    <div class="mb-2 d-none" id="sourceOtherDiv">
+        <label class="form-label">Source (Other)</label>
+        <input type="text" class="form-control" name="SourceOtherText" />
+    </div>
+    <div class="mb-2">
+        <label class="form-label">Pertains To</label>
+        <select class="form-select" id="PertainsTo" name="PertainsTo" required>
+            <option value="">--Select--</option>
+            <option value="HO">HO</option>
+            <option value="FIELD">Field</option>
+        </select>
+    </div>
+    <div class="mb-2 d-none" id="fieldTypeDiv">
+        <label class="form-label">Field Type</label>
+        <select class="form-select" id="FieldType" name="FieldType">
+            <option value="">--Select--</option>
+            <option value="HO_UNIT">HO Units</option>
+            <option value="BRANCH">Branch</option>
+        </select>
+    </div>
+    <div class="mb-2 d-none" id="hoUnitTypeDiv">
+        <label class="form-label">HO Unit Type</label>
+        <select class="form-select" id="HOUnitTypeId" name="HOUnitTypeId">
+            <option value="">--Select HO Unit Type--</option>
+        </select>
+    </div>
+    <div class="mb-2 d-none" id="hoUnitDiv">
+        <label class="form-label">HO Unit</label>
+        <select class="form-select" id="HOUnitId" name="HOUnitId">
+            <option value="">--Select HO Unit--</option>
+        </select>
+    </div>
+    <div class="mb-2 d-none" id="regionDiv">
+        <label class="form-label">Region</label>
+        <select class="form-select" id="RegionId" name="RegionId">
+            <option value="">--Select Region--</option>
+            @{
+                if (ViewData["RegionList"] != null)
+                {
+                    foreach (var item in (dynamic)(ViewData["RegionList"]))
+                    {
+                        <option value="@item.CODE">@item.NAME</option>
+                    }
+                }
+            }
+        </select>
+    </div>
+    <div class="mb-2 d-none" id="branchDiv">
+        <label class="form-label">Branch</label>
+        <select class="form-select" id="BranchId" name="BranchId">
+            <option value="">--Select Branch--</option>
+        </select>
+    </div>
+    <div class="mb-2">
+        <label class="form-label">Name of Complainant</label>
+        <input type="text" class="form-control" name="ComplainantName" required />
+    </div>
+    <div class="mb-2">
+        <label class="form-label">CNIC</label>
+        <input type="text" class="form-control" name="CNIC" pattern="\d{5}-\d{7}-\d{1}" placeholder="12345-1234567-1" required />
+    </div>
+    <div class="mb-2">
+        <label class="form-label">Cellular Number</label>
+        <input type="text" class="form-control" name="CellularNumber" pattern="03\d{9}" placeholder="03XXXXXXXXX" required />
+    </div>
+    <div class="mb-2">
+        <label class="form-label">Mailing Address</label>
+        <input type="text" class="form-control" name="MailingAddress" required />
+    </div>
+    <div class="mb-2">
+        <label class="form-label">Gender</label>
+        <select class="form-select" name="Gender" required>
+            <option value="">--Select Gender--</option>
+            <option>Male</option>
+            <option>Female</option>
+        </select>
+    </div>
+    <div class="mb-2">
+        <label class="form-label">Contents of Complaint</label>
+        <textarea class="form-control" name="Contents" required></textarea>
+    </div>
+    <div class="mb-2">
+        <label class="form-label">Upload Complaint (PDF)</label>
+        <input type="file" class="form-control" name="UploadedComplaint" />
+    </div>
+    <div class="mb-2">
+        <label class="form-label">Upload FFR (PDF)</label>
+        <input type="file" class="form-control" name="UploadedFFR" />
+    </div>
+    <div class="mb-2">
+        <label class="form-label">Upload Other Evidence</label>
+        <input type="file" class="form-control" name="UploadedEvidence" multiple />
+    </div>
+    <div class="mb-2">
+        <label class="form-label">Action Required from I&ID</label>
+        <textarea class="form-control" name="ActionRequired"></textarea>
+    </div>
+    <button type="submit" class="btn btn-primary">Submit</button>
+</form>
+@section Scripts{
+<script>
+    $(function(){
+        function toggleSource(){
+            var val = $('#Source').val();
+            if(val === 'Other'){
+                $('#sourceOtherDiv').removeClass('d-none');
+                $('#sourceOtherDiv input').prop('disabled', false);
+            } else {
+                $('#sourceOtherDiv').addClass('d-none');
+                $('#sourceOtherDiv input').prop('disabled', true).val('');
+            }
+        }
+
+        function togglePertainsTo(){
+            var pertainsTo = $('#PertainsTo').val();
+            $('#fieldTypeDiv,#hoUnitTypeDiv,#hoUnitDiv,#regionDiv,#branchDiv').addClass('d-none');
+            $('#FieldType,#HOUnitTypeId,#HOUnitId,#RegionId,#BranchId').prop('disabled', true);
+
+            if(pertainsTo === 'FIELD'){
+                $('#fieldTypeDiv').removeClass('d-none');
+                $('#FieldType').prop('disabled', false);
+                toggleFieldType();
+            }
+        }
+
+        function toggleFieldType(){
+            var fieldType = $('#FieldType').val();
+            $('#hoUnitTypeDiv,#hoUnitDiv,#regionDiv,#branchDiv').addClass('d-none');
+            $('#HOUnitTypeId,#HOUnitId,#RegionId,#BranchId').prop('disabled', true);
+
+            if(fieldType === 'HO_UNIT'){
+                $('#hoUnitTypeDiv,#hoUnitDiv').removeClass('d-none');
+                $('#HOUnitTypeId,#HOUnitId').prop('disabled', false);
+                loadHoUnitTypes();
+            } else if(fieldType === 'BRANCH'){
+                $('#regionDiv,#branchDiv').removeClass('d-none');
+                $('#RegionId,#BranchId').prop('disabled', false);
+            }
+        }
+
+        function loadHoUnitTypes(){
+            if($('#HOUnitTypeId option').length > 1){
+                return;
+            }
+            $.post(g_asiBaseURL + '/ApiCalls/get_ho_unit_types', {}, function(d){
+                $('#HOUnitTypeId').empty().append('<option value="">--Select HO Unit Type--</option>');
+                $.each(d, function(i,v){
+                    var id = v.divisionid || v.DIVISIONID;
+                    var name = v.name || v.NAME;
+                    $('#HOUnitTypeId').append('<option value="'+id+'">'+name+'</option>');
+                });
+            });
+        }
+
+        function loadHoUnits(){
+            var typeId = $('#HOUnitTypeId').val();
+            $('#HOUnitId').empty().append('<option value="">--Select HO Unit--</option>');
+            if(!typeId){
+                return;
+            }
+            $.post(g_asiBaseURL + '/ApiCalls/get_ho_units', { divisionId: typeId }, function(d){
+                $.each(d, function(i,v){
+                    var id = v.id || v.ID;
+                    var name = v.name || v.NAME;
+                    $('#HOUnitId').append('<option value="'+id+'">'+name+'</option>');
+                });
+            });
+        }
+
+        $('#Source').on('change', toggleSource);
+        $('#PertainsTo').on('change', togglePertainsTo);
+        $('#FieldType').on('change', toggleFieldType);
+        $('#HOUnitTypeId').on('change', loadHoUnits);
+
+        $('#RegionId').on('change', function(){
+            if($(this).val()){
+                $('#BranchId').empty().append('<option value="">--Select Branch--</option>');
+                $.post(g_asiBaseURL + '/ApiCalls/get_zone_Branches', { ZONEID: $(this).val() }, function(d){
+                    $.each(d, function(i,v){
+                        $('#BranchId').append('<option value="'+v.branchid+'">'+v.branchname+'</option>');
+                    });
+                });
+            }
+        });
+
+
+        toggleSource();
+        togglePertainsTo();
+
+        $('#complaintForm').on('submit', function(e){
+            e.preventDefault();
+            var fd = new FormData(this);
+            $.ajax({
+                url: g_asiBaseURL + '/ApiCalls/SubmitComplaint',
+                type: 'POST',
+                data: fd,
+                processData:false,
+                contentType:false,
+                success: function(d){
+                    alert('Complaint submitted');
+                    location.reload();
+                },
+                error: function(){
+                    alert('Error submitting complaint');
+                }
+            });
+        });
+    });
+</script>
+}

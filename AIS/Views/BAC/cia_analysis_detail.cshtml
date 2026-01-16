@@ -1,0 +1,123 @@
+﻿@{
+    ViewData["Title"] = "CIA Analysis Detail";
+    Layout = "_Layout";
+}
+
+<script>
+
+    $(document).ready(function () {
+       
+    });
+
+    function getBACSubProcess() {
+
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/get_bac_analysis",
+            type: "POST",
+            data: {
+                'PROCESS_ID': $('#BACAnalysisOptionBox option:selected').val(),
+            },
+            cache: false,
+            success: function (data) {
+                var sr = 1;
+                var currentT = 0;
+                var legacyT = 0;
+                var totalT = 0;
+                $.each(data, function (index, item) {
+                    currentT += parseInt(item.newcount);
+                    legacyT += parseInt(item.oldcount);
+                    totalT += parseInt(item.count);
+                    $('#bacanalysis_panel tbody').append("<tr><td>" + sr + "</td><td>" + item.heading + "</td><td class=\"text-right\">" + item.newcount + "</td><td class=\"text-right\">" + item.oldcount + "</td><td class=\"text-right\">" + item.count + "</td><td>" + item.auditcomments + "</td></tr>");
+                    sr++;
+                });
+
+                $('#bacanalysis_panel tbody').append("<tr><td colspan=\"2\">Total</td><td class=\"text-right text-bold\">" + currentT + "</td><td class=\"text-right text-bold\">" + legacyT + "</td><td class=\"text-right text-bold\">" + totalT + "</td><td></td></tr>");
+
+            },
+            dataType: "json",
+        });
+
+    }
+
+    function getBACAnalysis(){
+
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/get_bac_analysis",
+            type: "POST",
+            data: {
+                'PROCESS_ID': $('#BACAnalysisOptionBox option:selected').val(),
+            },
+            cache: false,
+            success: function (data) {
+                var sr = 1;
+                var currentT = 0;
+                var legacyT = 0;
+                var totalT = 0;
+                $.each(data, function (index, item) {
+                    currentT += parseInt(item.newcount);
+                    legacyT += parseInt(item.oldcount);
+                    totalT += parseInt(item.count);
+                    $('#bacanalysis_panel tbody').append("<tr><td>" + sr + "</td><td>" + item.heading + "</td><td class=\"text-right\">" + item.newcount + "</td><td class=\"text-right\">" + item.oldcount + "</td><td class=\"text-right\">" + item.count + "</td><td>" + item.auditcomments + "</td></tr>");
+                    sr++;
+                });
+
+                $('#bacanalysis_panel tbody').append("<tr><td colspan=\"2\">Total</td><td class=\"text-right text-bold\">" + currentT + "</td><td class=\"text-right text-bold\">" + legacyT + "</td><td class=\"text-right text-bold\">" + totalT + "</td><td></td></tr>");
+
+            },
+            dataType: "json",
+        });
+
+    }
+   
+</script>
+<div class="row col-md-12">
+
+    <h3 style="color: #be0e43;">CIA Analysis Detail</h3>
+</div>
+<div class="row col-md-12 mt-3">
+    <div class="col-md-12">
+           <select onchange="getBACSubProcess();" id="BACAnalysisOptionBox" class="form-control">
+               <option>--Select Process--</option>
+                @{
+                    if (ViewData["OptionList"] != null)
+                    {
+                        foreach (var item in (dynamic)(ViewData["OptionList"]))
+                        {
+                                            <option value="@item.ID">@item.HEADING</option>
+                       
+                        }
+                    }
+                }
+               
+           </select>
+    </div>    
+</div>
+<div class="row col-md-12 mt-3">
+    <div class="col-md-12">
+        <select onchange="getBACChecklist();" id="BACAnalysisOptionBox" class="form-control">
+            <option>--Select Syb Process--</option>
+          
+
+        </select>
+    </div>
+</div>
+<div class="row col-md-12 mt-3">
+    <div class="mt-3 col-md-12">
+        <table id="bacanalysis_panel" class="table table-hover table-bordered table-hover mt-3 table-striped">
+            <thead style="background-color: #19875478 !important; ">
+                <tr>
+                    <th class="col-md-auto">Sr. No.</th>
+                    <th class="col-md-auto">Heading</th>
+                    <th class="col-md-auto text-center">Current</th>                    
+                    <th class="col-md-auto text-center">Legacy</th>                    
+                    <th class="col-md-auto text-center">Total</th>                    
+                    <th class="col-md-auto text-center">Audit Comments</th>                    
+                </tr>
+               
+
+            </thead>
+            <tbody>
+            </tbody>
+        </table>
+    </div>
+</div>

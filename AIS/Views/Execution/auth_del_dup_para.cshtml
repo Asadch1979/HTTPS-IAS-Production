@@ -1,0 +1,107 @@
+﻿@{
+    var page_id = ViewData["PageId"] as int? ?? 0;
+}
+
+@{
+    ViewData["Title"] = "Update Audit Paras";
+    Layout = "_Layout";
+}
+<script type="text/javascript">
+    var g_np_id = 0;
+    var g_op_id = 0;
+    var g_ind = "";
+    var g_allObs = [];
+    $(document).ready(function () {
+       getEntityObservation();
+    });
+    function reloadLocation() {
+        getEntityObservation();
+    }
+    function getEntityObservation() {
+        destroyDatatable('manageObsPanel');
+        if ($('#entitySelectField option:selected').val() != 0) {
+            $.ajax({
+                url: g_asiBaseURL + "/ApiCalls/get_duplicate_paras_for_authorize",
+                type: "POST",
+                data: {
+                    'ENTITY_ID': $('#entitySelectField option:selected').val()
+                },
+                cache: false,
+                success: function (data) {
+                    g_allObs = data;
+                    $.each(data, function (i, v) {
+                        $('#manageObsPanel tbody').append('<tr><td class="text-center">' + ++i + '</td><td class="text-center">' + v.entityName + '</td><td class="text-center">' + v.auditPeriod + '</td><td>' + v.paraNo + '</td><td>' + v.annex + '</td><td>' + v.risk + '</td><td>' + v.paraGist + '</td><td>' + v.remarks + '</td><td class="text-center"><a onclick="event.preventDefault();rejectDeleteDuplicateRequest(\'' + v.dId + '\')" href="#" class="text-hover">Reject</a></td><td class="text-center"><a onclick="event.preventDefault();authorizeDeleteDuplicateRequest(\'' + v.dId + '\')" href="#" class="text-hover">Authorize</a></td></tr>');
+                    });
+
+                    initializeDataTable('manageObsPanel');
+                },
+                dataType: "json",
+            });
+        }
+    }
+    function rejectDeleteDuplicateRequest(did) {
+           $.ajax({
+                url: g_asiBaseURL + "/ApiCalls/reject_delete_duplicate_para",
+                type: "POST",
+                data: {
+                    'D_ID':did
+                },
+                cache: false,
+                success: function (data) {
+                  alert(data.message);
+                      onAlertCallback(getEntityObservation)
+                },
+                dataType: "json",
+            });
+
+    }
+
+      function authorizeDeleteDuplicateRequest(did) {
+
+            $.ajax({
+                url: g_asiBaseURL + "/ApiCalls/authorize_delete_duplicate_para",
+                type: "POST",
+                data: {
+                    'D_ID':did
+                },
+                cache: false,
+                success: function (data) {
+                  alert(data.message);
+                      onAlertCallback(getEntityObservation)
+                },
+                dataType: "json",
+            });
+
+
+    }
+
+</script>
+
+<div class="row">
+    <div class="col-md-12 mt-3">
+        <h3 style=" display:block;color: #be0e43">Authorize/Reject Delete Duplicate Paras</h3>
+    </div>
+
+    <div class="row col-md-12 mt-3">
+        <table id="manageObsPanel" class="table table-hover table-bordered table-hover mt-3 table-striped">
+            <thead style="background-color: #19875478 !important; ">
+                <tr>
+                    <th class="col-md-auto">Sr. No.</th>
+                    <th class="col-md-auto">Entity Name</th>
+                    <th class="col-md-auto">Audit Period</th>
+                    <th class="col-md-auto">Para No.</th>
+                    <th class="col-md-auto">Annexure</th>
+                    <th class="col-md-auto">Risk Category</th>
+                    <th class="col-md-auto">Gist of Para</th>
+                    <th class="col-md-auto">Remarks/Justification</th>
+                    <th class="col-md-auto text-center">Action</th>
+                    <th class="col-md-auto text-center">Action</th>
+                </tr>
+            </thead>
+            <tbody>
+            </tbody>
+
+        </table>
+    </div>
+
+</div>

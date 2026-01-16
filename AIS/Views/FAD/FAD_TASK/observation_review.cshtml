@@ -1,0 +1,365 @@
+﻿@{
+    ViewData["Title"] = "Manage Observation Status";
+    Layout = "_Layout";
+}
+
+<script type="text/javascript">
+
+
+    var g_memoStatusReversalIds = [];
+    var g_engId = 0;
+    var g_obsId = 0;
+    var g_obsIndex = 0;
+    var g_rptid =   0;
+
+    function escapeHtml(text) {
+        return $('<div>').text(text).html();
+    }
+
+    function getrelation(parentEntityId = 0, userEntityId = 0) {
+
+
+        $('#controlingsearch').empty();
+        $('#childposting').empty();
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/getparentrel",
+            type: "POST",
+            data: {
+                'ENTITY_REALTION_ID': $('#RelationshipField option:selected').val()
+            },
+
+
+            cache: false,
+            success: function (data) {
+
+
+                $('#controlingsearch').append('<option id="0" value="0">--Select Controlling/Reporting Office--</option>');
+                $.each(data, function (index, contof) {
+
+                    var selected = '';
+                    if (contof.entitY_ID == parentEntityId)
+                        selected = 'selected="selected"';
+
+                    $('#controlingsearch').append('<option ' + selected + ' value="' + contof.entitY_ID + '" id="' + contof.entitY_REALTION_ID + '">' + contof.description + '</option>')
+                });
+                if (userEntityId != 0)
+                    getplacepost(userEntityId)
+
+                // console.log(data);
+
+            },
+            dataType: "json",
+        });
+
+
+    }
+
+    function getplacepost(userEntityId = 0) {
+        $('#childposting').empty();
+
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/getpostplace",
+            type: "POST",
+            data: {
+                'E_R_ID': $('#controlingsearch option:selected').val()
+            },
+
+
+            cache: false,
+            success: function (data) {
+                $('#childposting').append('<option id="0" value="0" selected="selected">--Select Place of Posting--</option>');
+                $.each(data, function (index, gpp) {
+
+                    var selected = '';
+                    if (gpp.entitY_ID == userEntityId)
+                        selected = 'selected="selected"';
+                    $('#childposting').append('<option ' + selected + ' value="' + gpp.entitY_ID + '" id="' + gpp.entitY_ID + '">' + gpp.c_NAME + '</option>')
+                });
+            },
+            dataType: "json",
+        });
+        //  getrelation();
+
+    }
+
+    function getEngagementDetails() {
+        destroyDatatable('engsListPanel');
+        $('#engsListPanel tbody').empty();
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/get_engagements_details_for_fad_review",
+            type: "POST",
+            data: {
+                'ENTITY_ID': $('#childposting option:selected').val()
+            },
+            cache: false,
+            success: function (engs) {
+                $.each(engs, function (i, v) {
+                    if (v.audiT_START_DATE != null)
+                        v.audiT_START_DATE = v.audiT_START_DATE.split(' ')[0];
+                    if (v.audiT_END_DATE != null)
+                        v.audiT_END_DATE = v.audiT_END_DATE.split(' ')[0];
+                    if (v.oP_START_DATE != null)
+                        v.oP_START_DATE = v.oP_START_DATE.split(' ')[0];
+                    if (v.oP_END_DATE != null)
+                        v.oP_END_DATE = v.oP_END_DATE.split(' ')[0];
+
+                    $('#engsListPanel tbody').append('<tr><td class="text-center">' + (i + 1) + '</td><td>' + v.enG_ID + '</td><td>' + v.teaM_NAME + '</td><td>' + v.audiT_START_DATE + '</td><td>' + v.audiT_END_DATE + '</td><td>' + v.oP_START_DATE + '</td><td>' + v.oP_END_DATE + '</td><td>' + v.status + '</td><td class="text-center"><a href="#" class="text-primary" onclick="loadObservationDetails(' + v.enG_ID + ');">View Details</a></td><td class="text-center"><a href="#" class="text-primary" onclick="viewReport(' + v.rpT_ID + ',' + v.enG_ID + ');">View Report</a></td></tr>');
+                });
+                initializeDataTable('engsListPanel');
+            },
+            dataType: "json",
+        });
+
+    }
+
+    function loadObservationDetails(engId) {
+        g_engId = parseInt(engId);
+        destroyDatatable('obsListPanel');
+        $('#obsListPanel tbody').empty();
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/get_observation_details_for_report",
+            type: "POST",
+            data: {
+                'ENG_ID': g_engId
+            },
+            cache: false,
+            success: function (data) {
+                $.each(data, function (i, v) {
+                   if (v.memO_DATE != null)
+                        v.memO_DATE = v.memO_DATE.split(' ')[0];
+                    $('#obsListPanel tbody').append('<tr>' +
+                        '<td class="text-center">' + (i + 1) + '</td>' +
+                        '<td>' + v.memO_NO + '</td>' +
+                        '<td>' + v.finaL_PARA + '</td>' +
+                        '<td>' + v.gist + '</td>' +
+                        '<td>' + v.memO_DATE + '</td>' +
+                        '<td>' + v.risk + '</td>' +
+                        '<td>' + v.status + '</td>' +
+                        '<td class="text-center"><a href="#" class="text-primary" onclick="viewPara(' + v.id + ');">View Para</a></td>' +
+                        '</tr>');
+                 });
+                initializeDataTable('obsListPanel');
+            },
+            dataType: "json",
+        });
+    }
+
+        function viewReport(rpt_id, eng_id) {
+            g_rptid = parseInt(rpt_id);
+            var g_eng = parseInt(eng_id);
+            $.ajax({
+                url: g_asiBaseURL + "/ApiCalls/get_audit_report_for_fad_review",
+                type: "POST",
+                data: {
+                    'RPT_ID': g_rptid,
+                    'ENG_ID': g_eng
+                },
+                cache: false,
+                success: function (data) {
+                    if (data && data.length > 0) {
+                        var rep = data[0].audiT_REPORT || data[0].audit_report;
+                        var docType = data[0].doC_TYPE || data[0].doc_type || '';
+                        if (rep) {
+                            var extension = '.pdf';
+                            var contentType = 'application/pdf';
+                            if (docType) {
+                                docType = docType.toLowerCase();
+                                if (docType.indexOf('doc') !== -1) {
+                                    contentType = docType.indexOf('openxml') !== -1 ?
+                                        'application/vnd.openxmlformats-officedocument.wordprocessingml.document' :
+                                        'application/msword';
+                                    extension = docType.indexOf('openxml') !== -1 ? '.docx' : '.doc';
+                                }
+                            }
+
+                            const blob = base64ToBlob(rep, contentType);
+                            const link = document.createElement("a");
+                            link.href = URL.createObjectURL(blob);
+                            link.download = "Audit_Report_" + g_rptid + extension;
+                            document.body.appendChild(link);
+                            link.click();
+                            document.body.removeChild(link);
+                            URL.revokeObjectURL(link.href);
+                        } else {
+                            alert('Audit report not found');
+                        }
+                    } else {
+                        alert('Audit report not found');
+                    }
+                },
+                dataType: "json",
+            });
+        }
+
+        function base64ToBlob(base64, contentType) {
+            const byteCharacters = atob(base64);
+            const byteArrays = [];
+
+            for (let offset = 0; offset < byteCharacters.length; offset += 512) {
+                const slice = byteCharacters.slice(offset, offset + 512);
+                const byteNumbers = new Array(slice.length);
+                for (let i = 0; i < slice.length; i++) {
+                    byteNumbers[i] = slice.charCodeAt(i);
+                }
+                const byteArray = new Uint8Array(byteNumbers);
+                byteArrays.push(byteArray);
+            }
+            return new Blob(byteArrays, { type: contentType });
+        }
+
+
+    function viewPara(id) {
+         g_obsId = parseInt(id);
+        destroyDatatable('paraViewTable');
+        $('#paraViewTable tbody').empty();
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/get_observation_details_for_fad",
+            type: "POST",
+            data: {
+                'OBS_ID': g_obsId
+            },
+            cache: false,
+            success: function (data) {
+                $.each(data, function (i, v) {
+                    var rows = '';
+                    rows += '<tr><th>Memo No</th><td>' + escapeHtml(v.memO_NO) + '</td></tr>';
+                    rows += '<tr><th>Para No</th><td>' + escapeHtml(v.parA_NO) + '</td></tr>';
+                    rows += '<tr><th>Annex</th><td>' + escapeHtml(v.annex) + '</td></tr>';
+                    rows += '<tr><th>Process</th><td>' + escapeHtml(v.process) + '</td></tr>';
+                    rows += '<tr><th>Sub Process</th><td>' + escapeHtml(v.suB_PROCESS) + '</td></tr>';
+                    rows += '<tr><th>Check List</th><td>' + escapeHtml(v.checK_LIST) + '</td></tr>';
+                    rows += '<tr><th>Observation Gist</th><td>' + escapeHtml(v.obS_GIST) + '</td></tr>';
+                    rows += '<tr><th>Para Text</th><td>' + v.parA_TEXT + '</td></tr>';
+                    rows += '<tr><th>Amount Inv</th><td>' + escapeHtml(v.amounT_INV) + '</td></tr>';
+                    rows += '<tr><th>No Instances</th><td>' + escapeHtml(v.nO_INSTANCES) + '</td></tr>';
+                    rows += '<tr><th>PPNO</th><td>' + escapeHtml(v.ppno) + '</td></tr>';
+                    rows += '<tr><th>Resp Role</th><td>' + escapeHtml(v.resP_ROLE) + '</td></tr>';
+                    rows += '<tr><th>Resp Amount</th><td>' + escapeHtml(v.resP_AMOUNT) + '</td></tr>';
+                    rows += '<tr><th>Auditee Reply</th><td>' + v.auditeE_REPLY + '</td></tr>';
+                    rows += '<tr><th>Auditor Comments</th><td>' + v.auditoR_COMMENTS + '</td></tr>';
+                    rows += '<tr><th>Head Comments</th><td>' + v.headcomments + '</td></tr>';
+                    rows += '<tr><th>Action Required</th><td>' + v.rooT_CAUSE + '</td></tr>';
+                    $('#paraViewTable tbody').append(rows);
+                });
+                initializeDataTable('paraViewTable');
+                $('#paraViewModal').modal('show');
+            },
+            dataType: "json",
+        });
+    }
+
+</script>
+<div class="row col-md-12 mt-3">
+    <h3 style=" display:block;color: #be0e43">Observation Review</h3>
+</div>
+
+
+<div class="row col-md-12 mt-1">
+    <div class="col-md-2">
+        <label>Relationship Type</label>
+    </div>
+    <div class="col-md-10">
+        <select id="RelationshipField" onchange="getrelation();" class="form-control form-select">
+            <option id="0" value="0" selected="selected">--Select Relationship Type--</option>
+
+
+            @{
+                if (ViewData["Userrelationship"] != null)
+                {
+                    foreach (var item in (dynamic)(ViewData["Userrelationship"]))
+                    {
+                        <option value="@item.ENTITY_REALTION_ID" id="@item.ENTITY_REALTION_ID">@item.FIELD_NAME</option>
+                    }
+                }
+            }
+
+
+
+        </select>
+    </div>
+</div>
+
+<div class="row col-md-12 mt-1">
+    <div class="col-md-2">
+        <label>Controlling/Reporting Office</label>
+    </div>
+    <div class="col-md-4">
+        <select id="controlingsearch" onchange="getplacepost();" class="form-control form-select">
+            <option id="0" value="0" selected="selected">--Select Controlling/Reporting Office--</option>
+        </select>
+    </div>
+
+
+    <div class="col-md-2">
+        <label>Place of Posting</label>
+    </div>
+    <div class="col-md-4">
+        <select id="childposting" onchange="getEngagementDetails();" class="form-control form-select">
+            <option id="0" value="0" selected="selected">--Select Place of Posting--</option>
+
+        </select>
+    </div>
+</div>
+
+<div class="row col-md-12 mt-3">
+    <table id="engsListPanel" class="table table-bordered table mb-0 mt-3 bg-white table-hover table-striped">
+        <thead>
+            <tr style="background-color: #19875478 !important; ">
+                <th class="col-md-auto">Sr No.</th>
+                <th class="col-md-auto">Engagement ID</th>
+                <th class="col-md-auto">Team Members</th>
+                <th class="col-md-auto">Audit Start Date</th>
+                <th class="col-md-auto">Audit End Date</th>
+                <th class="col-md-auto">Operational Start Date</th>
+                <th class="col-md-auto">Operational End Date</th>
+                <th class="col-md-auto">Status</th>
+                <th class="col-md-auto text-center">View Details</th>
+                <th class="col-md-auto text-center">View Report</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+</div>
+
+<div class="row col-md-12 mt-3">
+    <table id="obsListPanel" class="table table-bordered table mb-0 mt-3 bg-white table-hover table-striped">
+        <thead>
+            <tr style="background-color: #19875478 !important; ">
+                <th class="col-md-auto">Sr No.</th>
+                <th class="col-md-auto">Memo No</th>
+                <th class="col-md-auto">Para No</th>
+                <th class="col-md-auto">Gist</th>
+                <th class="col-md-auto">Memo Date</th>
+                <th class="col-md-auto">Risk</th>
+                <th class="col-md-auto">Status</th>
+                <th class="col-md-auto text-center">View Para</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+</div>
+
+<div id="paraViewModal" class="modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-xl" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">Para Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row col-md-12 mt-3">
+                    <table id="paraViewTable" class="table table-bordered table mb-0 mt-3 bg-white table-hover table-striped">
+                        <thead>
+                            <tr style="background-color: #19875478 !important;">
+                                <th class="col-md-2">Field</th>
+                                <th class="col-md-8">Value</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+

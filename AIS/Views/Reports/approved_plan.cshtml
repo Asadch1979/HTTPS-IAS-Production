@@ -1,0 +1,83 @@
+﻿@{
+    var page_id = ViewData["PageId"] as int? ?? 0;
+}
+
+@{
+    ViewData["Title"] = "Audit Criterai";
+    Layout = "_Layout";
+}
+
+<script type="text/javascript">
+    $('#document').ready(function () {
+        $('#sidebar_policy').hide();
+    });
+</script>
+
+<div class="row text-center" style="margin-top:50px;">
+   <h3>AUDIT CRITERIA</h3>
+</div>
+
+<div>
+    <div class="row" style="margin-top:50px;">
+        <div class="row w-100">
+            <center>
+                <h6 style="display:block;">Criteria For Chalking Out Audit Plan</h6>
+            </center>
+        </div>
+
+        <table class="table table-bordered table mb-0 mt-1 bg-white table-hover table-striped" id="Audit Criteria">
+            <tbody>
+                <tr>
+                    <td>1</td>
+                    <td>Branch Size (small)</td>
+                    <td>04 Days</td>
+                </tr>
+                <tr>
+                    <td>2</td>
+                    <td>Branch Size (medium)</td>
+                    <td>05 Days</td>
+                </tr>
+                <tr>
+                    <td>3</td>
+                    <td>Branch Size (large)</td>
+                    <td>07 Days</td>
+                </tr>
+                <tr>
+                    <td>4</td>
+                    <td>For Management Audit of Zonal Office</td>
+                    <td>02 Days</td>
+                </tr>
+                <tr>
+                    <td>5</td>
+                    <td>For Audit of HO Units</td>
+                    <td>01 Day</td>
+                </tr>
+                <tr>
+                    <td>6</td>
+                    <td>For Checking of utilization/spot visits</td>
+                    <td>01 to 02 Days (Keeping in view the volume of work in branch)</td>
+                </tr>
+                <tr>
+                    <td>7</td>
+                    <td>For Checking of Revenue Record</td>
+                    <td>01 to 02 Days (Keeping in view the volume of work in branch)</td>
+                </tr>
+                <tr>
+                    <td>8</td>
+                    <td>Discussion of Audit Report</td>
+                    <td>One Day (*)</td>
+                </tr>
+                <tr>
+                    <td>9</td>
+                    <td colspan="2">Journey time may also kept in view and an additional day be allowed where justified.</td>
+                </tr>
+                <tr>
+                    <td colspan="3">(*) Discussion may be held on the last day of audit or next day keeping in view the volume of work. <br /> (SVP/Incharge, Audit Cluster may reduce No. of days, if work can be completed in lesser days)</td>
+                </tr>
+            </tbody>
+        </table>
+        <label>
+            (Criteria for Audit of CAD Hub) = No of Days (Workload will be allocated on the basis of 50 loan cases per member per day)
+        </label>
+    </div>
+</div>

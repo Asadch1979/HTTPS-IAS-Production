@@ -1,0 +1,25 @@
+﻿@{
+    ViewData["Title"] = "Account With STR";
+    Layout = "_Layout";
+}
+
+<script type="text/javascript">
+    var g_engId = 0;
+    var g_reportID = 0;
+    var g_rID = 0;
+    $(document).ready(function() {
+        $('#wait').show();
+        var url_string = window.location;
+        var url = new URL(url_string);
+        g_engId = url.searchParams.get("engId");
+        g_reportID  = url.searchParams.get("report_id");
+        loadexceptionReport();
+    });
+
+    function loadexceptionReport(){
+        // existing ajax logic should be here
+        $('#wait').hide();
+    }
+
+
+</script>

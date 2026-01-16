@@ -1,0 +1,461 @@
+﻿@{
+    var page_id = ViewData["PageId"] as int? ?? 0;
+}
+
+@{
+    ViewData["Title"] = "Manage Checklist Detail";
+    Layout = "_Layout";
+}
+<style type="text/css">
+    .container {
+        max-width: 100%;
+    }
+
+    .card-header {
+        background-color: transparent !important;
+        font-size: 20px;
+        height: 100px;
+    }
+
+    .icon-card {
+        margin: 10px;
+    }
+</style>
+<script type="text/javascript">
+    var g_procId = 0;
+    var g_subProcId = 0;
+    var g_procDetailId = 0;
+    var g_procDetailList=[];
+    $(document).ready(function () {
+        ShowSubChecklist();
+       
+    });
+    
+    function openUpdateSubCheclist(id, sId) {
+        g_procDetailId = id;
+        g_subProcId = sId;
+        $('#updateEntityModal').modal('show');      
+
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/get_checklist_detail_comparison_by_Id_for_referredBack",
+            type: "POST",
+            data: {
+                'CHECKLIST_DETAIL_ID': id
+            },
+            cache: false,
+            success: function (data) {
+                var tr = data[0];
+                g_procId=tr.procesS_ID;
+                $('#updatedChecklist').val(tr.procesS_ID);
+                getSubChecklistOfProcess();
+                $('#updatedSubChecklist').val(tr.neW_SUB_PROCESS);
+                $('#updatedProcDetailHeading').val(tr.neW_PROCESS_DETAIL);
+                $('#updatedViolationlist').val(tr.neW_VIOLATION);
+                $('#updatedProcOwnerlist').val(tr.neW_FUNCTIONAL_RESP);
+                $('#updatedRoleResplist').val(tr.neW_ROLE_RESP);
+                $('#updatedRisklist').val(tr.neW_RISK);
+                $('#updatedAnnexlist').val(tr.neW_ANNEXURE);
+
+                $('#oldProcessLabel').val(tr.process);
+                $('#oldViolationLabel').val(tr.violation);
+                $('#oldProcessOwnerLabel').val(tr.functionaL_RESP);
+                $('#oldRoleRespLabel').val(tr.rolE_RESP);
+                $('#oldRiskLabel').val(tr.risk);
+                $('#oldAnnexureLabel').val(tr.annexure);
+                $('#oldProcessDetailLabel').val(tr.procesS_DETAIL);
+                $('#oldSubProcessLabel').val(tr.suB_PROCESS);
+
+            },
+            dataType: "json",
+        });
+        
+    }
+    function updateSubProcess() {
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/update_audit_checklist_detail",
+            type: "POST",
+            data: {
+                'PROCESS_ID': $('#updatedChecklist').val(),
+                'SUB_PROCESS_ID': $('#updatedSubChecklist').val(),
+                'PROCESS_DETAIL_ID': g_procDetailId,
+                'HEADING': $('#updatedProcDetailHeading').val(),
+                'V_ID': $('#updatedViolationlist').val(),
+                'CONTROL_ID': $('#updatedProcOwnerlist').val(),
+                'ROLE_ID': $('#updatedRoleResplist').val(),
+                'RISK_ID': $('#updatedRisklist').val(),
+                'ANNEX_CODE': $('#updatedAnnexlist').val()
+            },
+            cache: false,
+            success: function (data) {
+               alert(data.message);
+                ShowSubChecklist();
+            },
+            dataType: "json",
+        });
+      
+
+    }
+    function getAuditSubChecklist() {
+        var processId = $('#checklistSelectField').val();
+        if (processId != 0) {
+            $('#subchecklistSelectField').empty();
+            $.ajax({
+                url: g_asiBaseURL + "/ApiCalls/get_audit_sub_checklist",
+                type: "POST",
+                data: {
+                    'PROCESS_ID': processId
+                },
+                cache: false,
+                success: function (data) {
+                    var sr = 0;
+                    $('#subchecklistSelectField').append('<option value="0">--Select Audit Sub-Checklist--</option>');
+                    $.each(data, function (i, v) {
+                        sr++;
+                        $('#subchecklistSelectField').append('<option value="' + v.s_ID + '">'+v.heading+'</option>');
+
+                    });
+                },
+                dataType: "json",
+            });
+        } else {
+            g_entList = [];
+            $('#subchecklistSelectField').empty();
+            $('#subchecklistSelectField').append('<option value="0">--Select Audit Sub-Checklist--</option>');
+        }
+
+    }
+    function getAuditSubChecklistForModal() {
+        var processId = $('#newChecklist').val();
+        if (processId != 0) {
+            $('#newSubChecklist').empty();
+            $.ajax({
+                url: g_asiBaseURL + "/ApiCalls/get_audit_sub_checklist",
+                type: "POST",
+                data: {
+                    'PROCESS_ID': processId
+                },
+                cache: false,
+                success: function (data) {
+                    $('#newSubChecklist').append('<option value="0">--Select Audit Sub-Checklist--</option>');
+                    $.each(data, function (i, v) {
+                        var className="";
+                        if (v.s_ID == g_subProcId)
+                            className = "selected=\"selected\"";
+
+                        $('#newSubChecklist').append('<option ' + className + ' value="' + v.s_ID + '">' + v.heading + '</option>');
+
+                    });
+                },
+                dataType: "json",
+            });
+        } else {
+            g_entList = [];
+            $('#newSubChecklist').empty();
+            $('#newSubChecklist').append('<option value="0">--Select Audit Sub-Checklist--</option>');
+        }
+
+    }
+    function ShowSubChecklist() {
+          $('#auditeeEntitiesList tbody').empty();
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/get_ref_audit_checklist_detail",
+            type: "POST",
+            data: {
+
+            },
+            cache: false,
+            success: function (data) {
+                g_procDetailList = data;
+                var sr = 0;
+                $.each(data, function (i, v) {
+                    sr++;
+                    $('#auditeeEntitiesList tbody').append('<tr id="tr_' + v.s_ID + '"><td>' + sr + '</td><td>' + v.heading + '</td><td>' + v.comments + '</td><td style="cursor:pointer;"><a class="text-danger" onclick="event.preventDefault();openUpdateSubCheclist(' + v.s_ID + ', ' + v.id + ')">Update</a></td></tr>');
+
+                });
+            },
+            dataType: "json",
+        });
+       
+
+    }
+    function getSubChecklistForNewEntry() {
+        var processId = $('#newChecklist').val();
+        if (processId != 0) {
+             $('#newSubChecklist').empty();
+            $.ajax({
+                url: g_asiBaseURL + "/ApiCalls/get_audit_sub_checklist",
+                type: "POST",
+                data: {
+                    'PROCESS_ID': processId
+                },
+                cache: false,
+                success: function (data) {
+                    $('#newSubChecklist').append('<option value="0">--Select Sub-Checklist--</option>');
+                    $.each(data, function (i, v) {
+                        $('#newSubChecklist').append('<option value="' + v.s_ID + '">' + v.heading + '</option>');
+                    });
+                },
+                dataType: "json",
+            });
+        } 
+
+    }
+    function getSubChecklistOfProcess() {
+        $('#updatedSubChecklist').empty();
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/get_audit_sub_checklist",
+            type: "POST",
+            data: {
+                'PROCESS_ID': g_procId
+            },
+            cache: false,
+            success: function (data) {
+                $('#updatedSubChecklist').append('<option value="0">--Select Sub-Checklist--</option>');
+                $.each(data, function (i, v) {
+                    $('#updatedSubChecklist').append('<option value="' + v.s_ID + '">' + v.heading + '</option>');
+                });
+                $('#updatedSubChecklist').val(g_subProcId); },
+            dataType: "json",
+        });
+
+    }   
+  
+</script>
+<div class="row mt-3">
+    <div class="col-md-12 text-left">
+        <h3 style=" display:block;color: #be0e43">Referred Back Checklist Detail</h3>
+    </div>
+     
+</div>
+
+
+<div class="row col-md-12 mt-3">
+    <table id="auditeeEntitiesList" class="table table-bordered table mb-0 mt-3 bg-white table-hover table-striped">
+        <thead>
+            <tr style="background-color: #19875478 !important; ">
+                <th class="col-md-auto">Sr No.</th>
+                <th class="col-md-auto">Checklist Detail</th>
+                <th class="col-md-auto">Comments</th>
+                <th class="col-md-auto">Action</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+</div>
+
+
+<div id="updateEntityModal" class="modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-xl" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">Update Checklist Detail</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="row col-md-12">
+                    <div class="col-md-6">
+                        <form>
+                            <h6 class="text-center"><b>Existing Details</b></h6>
+                            <div class="form-group">
+                                    <label>Process</label>
+                                    <input disabled="disabled" class="form-control" style="font-weight:normal !important" id="oldProcessLabel" />
+                            </div>
+                            <div class="form-group">
+                                    <label>Sub Process</label>
+                                <input disabled="disabled" class="form-control" style="font-weight:normal !important" id="oldSubProcessLabel" />
+                            </div>
+                            <div class="form-group">
+                                <label>Process Detail</label>
+                                <textarea disabled="disabled" class="form-control" style="font-weight:normal !important" id="oldProcessDetailLabel"></textarea>
+                            </div>
+                            <div class="form-group">
+                                  <label>Violation</label>
+                                <input disabled="disabled" class="form-control" style="font-weight:normal !important" id="oldViolationLabel" />
+                                
+                            </div>
+                            <div class="form-group">
+                                 <label>Process Owner</label>
+                                <input disabled="disabled" class="form-control" style="font-weight:normal !important" id="oldProcessOwnerLabel" />
+                                    
+                            </div>
+                            <div class="form-group">
+                                <label>Role Responsible</label>
+
+                                <input disabled="disabled" class="form-control" style="font-weight:normal !important" id="oldRoleRespLabel" />
+                                   
+                            </div>
+                            <div class="form-group">
+                                 <label>Risk</label>
+                                <input disabled="disabled" class="form-control" style="font-weight:normal !important" id="oldRiskLabel" />
+                                
+                            </div>
+                            <div class="form-group">
+                                <label>Annexure</label>
+                                <input disabled="disabled" class="form-control" style="font-weight:normal !important" id="oldAnnexureLabel" />
+
+                            </div>
+                           
+                        </form>
+                    </div>
+                    <div class="col-md-6">
+                        <form>
+                            <h6 class="text-center"><b>Proposed Changes</b></h6>
+                            <div class="form-group">
+                              
+                                    <label>Process</label>
+                               
+                                    <select disabled="disabled" id="updatedChecklist" class="form-select form-control">
+                                        <option value="0" id="0" selected>--Select Checklist--</option>
+                                        @{
+                                            if (ViewData["ChecklistTypes"] != null)
+                                            {
+                                                foreach (var item in (dynamic)(ViewData["ChecklistTypes"]))
+                                                {
+                                                    <option value="@item.T_ID" id="@item.T_ID">@item.HEADING</option>
+
+                                                }
+                                            }
+                                        }
+
+                                    </select>
+                              
+                            </div>
+                            <div class="form-group">
+                               
+                                    <label>Sub Process</label>
+                               
+                                    <select id="updatedSubChecklist" class="form-select form-control">
+                                        <option value="0" id="0" selected>--Select Sub-Checklist--</option>
+
+                                    </select>
+                                
+                            </div>
+                            <div class="form-group">
+
+                                <label>Process Detail</label>
+
+                                <textarea id="updatedProcDetailHeading" class="form-control"></textarea>
+
+                            </div>
+                            <div class="form-group">
+                              
+                                    <label>Violation</label>
+                              
+                                    <select id="updatedViolationlist" class="form-select form-control">
+                                        <option selected="selected" value="0" id="0">--Select Control Violation--</option>
+                                        @{
+                                            if (ViewData["ViolationsList"] != null)
+                                            {
+
+                                                foreach (var item in (dynamic)(ViewData["ViolationsList"]))
+                                                {
+                                                    <option max-number="@item.MAX_NUMBER" id="@item.ID" value="@item.ID">@item.V_NAME</option>
+                                                }
+
+                                            }
+                                        }
+
+                                    </select>
+                               
+                            </div>
+                            <div class="form-group">
+                              
+                                    <label>Process Owner</label>
+                              
+                                    <select id="updatedProcOwnerlist" class="form-select form-control">
+                                        <option selected="selected" value="0" id="0">--Select Process Owner--</option>
+                                        @{
+                                            if (ViewData["ProcOwnerList"] != null)
+                                            {
+
+                                                foreach (var item in (dynamic)(ViewData["ProcOwnerList"]))
+                                                {
+                                                    <option id="@item.ENTITY_ID" value="@item.ENTITY_ID">@item.NAME</option>
+                                                }
+
+                                            }
+                                        }
+
+                                    </select>
+                              
+                            </div>
+                            <div class="form-group">
+                               
+                                    <label>Role Responsible</label>
+                              
+                                    <select id="updatedRoleResplist" class="form-select form-control">
+                                        <option selected="selected" value="0" id="0">--Select Role Responsible--</option>
+                                        @{
+                                            if (ViewData["RoleRespList"] != null)
+                                            {
+
+                                                foreach (var item in (dynamic)(ViewData["RoleRespList"]))
+                                                {
+                                                    <option id="@item.DESIGNATIONCODE" value="@item.DESIGNATIONCODE">@item.DESCRIPTION</option>
+                                                }
+
+                                            }
+                                        }
+
+                                    </select>
+                             
+                            </div>
+                            <div class="form-group">
+                              
+                                    <label>Risk</label>
+                              
+                                    <select id="updatedRisklist" class="form-select form-control">
+                                        <option selected="selected" value="0" id="0">--Select Risk--</option>
+                                        @{
+                                            if (ViewData["RiskList"] != null)
+                                            {
+
+                                                foreach (var item in (dynamic)(ViewData["RiskList"]))
+                                                {
+                                                    <option id="@item.R_ID" value="@item.R_ID">@item.DESCRIPTION</option>
+                                                }
+
+                                            }
+                                        }
+
+                                    </select>
+                              
+                            </div>
+                            <div class="form-group">
+                              
+                                    <label>Annexure</label>
+                                
+                                    <select id="updatedAnnexlist" class="form-select form-control">
+                                        <option selected="selected" value="0" id="0">--Select Annexure--</option>
+                                        @{
+                                            if (ViewData["AnnexList"] != null)
+                                            {
+
+                                                foreach (var item in (dynamic)(ViewData["AnnexList"]))
+                                                {
+                                                    <option id="@item.ID" value="@item.ID">@item.ANNEX</option>
+                                                }
+
+                                            }
+                                        }
+
+                                    </select>
+                               
+                            </div>
+                           
+                        </form>
+                      
+                    </div>
+                </div>
+                
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button onclick="updateSubProcess();" type="button" data-bs-dismiss="modal" class="btn btn-success">Update Sub Process</button>
+
+            </div>
+        </div>
+    </div>
+</div>

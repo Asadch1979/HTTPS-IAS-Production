@@ -1,0 +1,195 @@
+﻿@{
+    var page_id = ViewData["PageId"] as int? ?? 0;
+}
+
+@{
+    ViewData["Title"] = "Review Change Status Request for Current Paras";
+    Layout = "_Layout";
+}
+<script>
+    var g_paraId = 0;
+    var refp = 0;
+    var g_obsList = [];
+    var g_action = "A";
+    var g_ind = "";
+
+    $(document).ready(function () {
+        getLegacyPara();
+    });
+
+    function getLegacyPara() {
+
+        $('#manageObsPanel tbody').empty();
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/get_current_paras_for_status_change_request_review",
+            type: "POST",
+            data: {
+                'ENTITY_ID': $('#entitySelectField').val()
+            },
+            cache: false,
+            success: function (data) {
+                g_obsList = data;
+
+                $.each(data, function (index, child) {
+                    $('#manageObsPanel tbody').append('<tr id="div_' + child.id + '"><td><p class="fw-normal mb-1">' + child.entitY_NAME + '</p></td><td><p class="fw-normal mb-1">' + child.audiT_PERIOD + '</p></td><td><p class="fw-normal mb-1">' + child.parA_NO + '</p></td><td><p class="fw-normal mb-1">' + child.gisT_OF_PARAS + '</p></td><td><p class="fw-normal mb-1">' + child.amounT_INVOLVED + '</p></td><td><p class="fw-normal mb-1">' + child.parA_RISK + '</p></td><td class="col-md-1"><p  class="fw-normal mb-1" >' + child.parA_STATUS + '</p></td><td class="col-md-1"><p  class="fw-normal mb-1" >' + child.makeR_REMARKS + '</p></td><td class="text-center"><a class="text-center text-primary" style="cursor:pointer;" onclick="event.preventDefault();paraText(\'' + child.id + '\');">View Para Text</a></td><td><a class="text-danger" style="cursor:pointer;" onclick="parastatuschange(\'' + child.id + '\',\'' + child.ind + '\');">Recommend</a> | <a class="text-danger" style="cursor:pointer;" onclick="rejectPara(\'' + child.id + '\',\'' + child.ind + '\');">Reject</a></td></tr>');
+                });
+
+            },
+
+            dataType: "json",
+        });
+
+    }
+    function parastatuschange(id, ind) {
+        g_action = 'A';
+        refp = id;
+        g_ind = ind;
+        $('#process_detail').modal('show');
+    }
+
+    function rejectPara(id, ind) {
+        g_action = 'R';
+        refp = id;
+        g_ind = ind;
+        $('#process_detail').modal('show');
+    }
+
+    function Publishchange() {
+
+        if ($('#Reason_Unsettle').val() == "") {
+            alert("Please enter Reply");
+            return;
+        }
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/Add_Old_Para_Change_status_Review",
+            type: "POST",
+            data: {
+                'REFID': refp,
+                'REMARKS': $('#Reason_Unsettle').val(),
+                'Action_IND': g_action,
+                'IND': g_ind
+            },
+            cache: false,
+            success: function (data) {
+                alert(data.message);
+                onAlertCallback(reloadLocation);
+                $('#process_detail').modal('hide');
+            },
+            dataType: "json",
+        });
+    }
+    function reloadLocation() {
+        getLegacyPara();
+    }
+
+
+    function paraText(id) {
+        $('#paraTextDisplayModel').modal('show');
+        $('#paraTextModelPanel').empty();
+
+        $.get(g_asiBaseURL + "/ApiCalls/GetIASPARATEXT", { comId: id }, function (data) {
+            $('#paraTextModelPanel').html(data);
+        });
+
+    }
+
+</script>
+
+<div class="row">
+    <div class="col-md-12 mt-3">
+        <h3 style=" display:block;color: #be0e43">Review Change Status Request For Current Paras</h3>
+    </div>
+
+    <div class="row col-md-12 mt-3">
+        <table id="manageObsPanel" class="table table-hover table-bordered table-hover mt-3 table-striped">
+            <thead style="background-color: #19875478 !important; ">
+                <tr>
+                    <th class="col-md-auto">Entity</th>
+                    <th class="col-md-auto">Audit Year</th>
+                    <th class="col-md-auto">Para No.</th>
+                    <th class="col-md-auto">Observation</th>
+                    <th class="col-md-auto">Amount</th>
+                    <th class="col-md-auto">Risk</th>
+                    <th class="col-md-auto">Para Status</th>
+                    <th class="col-md-3">Maker Remarks</th>
+                    <th class="col-md-auto">Para Text</th>
+                    <th class="col-md-auto">Action</th>
+
+
+                </tr>
+            </thead>
+            <tbody></tbody>
+
+        </table>
+    </div>
+
+</div>
+
+
+<div id="process_detail" class="modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog  modal-xl" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">Reviewer Remarks</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+                    
+                </button>
+            </div>
+            <div class="mt-3 modal-body">
+                <form>
+                    <div class="mt-3 col-md-12">
+                        <label class="font-weight-bold text-danger">Recommendation on the basis of Physical records along with date on which settlement was made <br /> Please Provide all relevant details </label>
+
+                    </div>
+                    <div class="mt-2 col-md-12">
+                        <textarea class="form-control" id="Reason_Unsettle"></textarea>
+
+                    </div>
+
+
+                </form>
+            </div>
+
+            <div class="mt-3 modal-footer">
+                <button id="Publishchange" type="button" class="btn btn-danger" onclick="Publishchange();">Recommend</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+
+
+<div id="paraTextDisplayModel" class="modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog  modal-xl" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">Para Text</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+                    
+                </button>
+            </div>
+            <div class="mt-3 modal-body">
+                <form>
+
+
+                    <div class="mt-2 col-md-12">
+                        <div id="paraTextModelPanel"></div>
+
+                    </div>
+
+
+                </form>
+            </div>
+
+            <div class="mt-3 modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+

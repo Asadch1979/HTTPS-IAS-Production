@@ -1,0 +1,196 @@
+@{
+    ViewData["Title"] = "Para Shifting";
+    Layout = "_Layout";
+}
+
+<script type="text/javascript">
+    function getZoneBranches() {
+        destroyDatatable('manageObsPanel');
+        $('#branchSelectField').empty();
+        if ($('#zoneSelectField option:selected').val() != 0) {
+            $.ajax({
+                url: g_asiBaseURL + "/ApiCalls/get_zone_Branches",
+                type: "POST",
+                data: {
+                    'ZONEID': $('#zoneSelectField option:selected').val()
+    },
+                    cache: false,
+                    success: function (data) {
+                        $('#branchSelectField').append('<option value="0" id="0">--Select Branch--</option>');
+                        $.each(data, function (i, v) {
+                            $('#branchSelectField').append('<option value="' + v.branchid + '" id="' + v.branchid + '">' + v.branchname + '</option>');
+                        })
+                    },
+                    dataType: "json",
+                });
+            }
+        }
+
+        function getEntityObservation() {
+            destroyDatatable('manageObsPanel');
+            if ($('#branchSelectField option:selected').val() != 0) {
+                $.ajax({
+                    url: g_asiBaseURL + "/ApiCalls/get_old_paras_for_monitoring",
+                    type: "POST",
+                    data: {
+                        'ENTITY_ID': $('#branchSelectField option:selected').val()
+                    },
+                    cache: false,
+                    success: function (data) {
+                        $.each(data, function (i, v) {
+                            $('#manageObsPanel tbody').append('<tr data-category="' + v.parA_CATEGORY + '" id="assignedObRow_' + v.id + '"><td>' + (++i) + '</td><td>' + v.entitY_NAME + '</td><td>' + v.audiT_PERIOD + '</td><td>' + v.memO_NO + '</td><td>' + v.gisT_OF_PARAS + '</td><td class="text-center"><input type="checkbox" class="shift-check" value="' + v.obS_ID + '"></td></tr>');
+                        });
+                        initializeDataTable('manageObsPanel');
+                    },
+                    dataType: "json",
+                });
+            }
+        }
+
+        function getShiftZoneBranches() {
+            $('#shiftBranchSelect').empty();
+            if ($('#shiftZoneSelect option:selected').val() != 0) {
+                $.ajax({
+                    url: g_asiBaseURL + "/ApiCalls/get_zone_Branches",
+                    type: "POST",
+                    data: {
+                        'ZONEID': $('#shiftZoneSelect option:selected').val()
+                    },
+                    cache: false,
+                    success: function (data) {
+                        $('#shiftBranchSelect').append('<option value="0" id="0">--Select Branch--</option>');
+                        $.each(data, function (i, v) {
+                            $('#shiftBranchSelect').append('<option value="' + v.branchid + '" id="' + v.branchid + '">' + v.branchname + '</option>');
+                        })
+                    },
+                    dataType: "json",
+                });
+            }
+        }
+
+        function shiftParas() {
+            var selected = $('.shift-check:checked');
+            if (selected.length === 0) {
+                alert('Please select at least one para to shift');
+                return;
+            }
+            var ids = [];
+            var categories = [];
+            selected.each(function () {
+                ids.push(parseInt($(this).val()));
+                categories.push($(this).closest('tr').data('category'));
+            });
+            if ($('#shiftBranchSelect option:selected').val() == 0) {
+                alert('Please select entity to shift para');
+                return;
+            }
+            $.ajax({
+                url: g_asiBaseURL + "/ApiCalls/Para_Shifted_To",
+                type: "POST",
+                traditional: true,
+                data: {
+                    'OBS_IDS': ids,
+                    'NEW_ENT_ID': $('#shiftBranchSelect option:selected').val(),
+                    'OLD_ENT_ID': $('#branchSelectField option:selected').val(),
+                    'P_INDS': categories
+                },
+                cache: false,
+                success: function (data) {
+                    alert(data.message);
+                    getEntityObservation();
+                },
+                dataType: "json",
+            });
+        }
+
+        $(document).on('change', '#selectAllShift', function () {
+            $('.shift-check').prop('checked', $(this).prop('checked'));
+        });
+
+        $(document).on('change', '.shift-check', function () {
+            $('#selectAllShift').prop('checked', $('.shift-check').length === $('.shift-check:checked').length);
+        });
+</script>
+
+<h3 style=" display:block;color: #be0e43" class="mt-3">@ViewData["Title"]</h3>
+<div class="row col-md-12 mt-3">
+    <div class="col-md-2">
+        <label><b>Reporting Office:</b></label>
+    </div>
+    <div class="col-md-10">
+        <select id="zoneSelectField" onchange="getZoneBranches()" class="form-control form-select">
+            <option value="0" id="0">--Select Reporting Office--</option>
+            @{
+                if (ViewData["ZonesList"] != null)
+                {
+                    foreach (var item in (dynamic)(ViewData["ZonesList"]))
+                    {
+                        <option value="@item.ZONEID" id="@item.ZONEID">@item.ZONENAME</option>
+                    }
+                }
+            }
+        </select>
+    </div>
+</div>
+<div class="row col-md-12 mt-3">
+    <div class="col-md-2">
+        <label><b>Entity:</b></label>
+    </div>
+    <div class="col-md-10">
+        <select id="branchSelectField" onchange="getEntityObservation();" class="form-control form-select">
+            <option value="0" id="0">--Select Entity--</option>
+        </select>
+    </div>
+</div>
+<div class="row col-md-12 mt-4">
+    <table id="manageObsPanel" class="table table-hover table-bordered table-hover mt-3 table-striped">
+        <thead style="background-color: #19875478 !important; ">
+            <tr>
+                <th class="col-md-1">Sr. No.</th>
+                <th class="col-md-2">Entity Name</th>
+                <th class="col-md-1">Audit Year</th>
+                <th class="col-md-1">Para Number</th>
+                <th class="col-md-6">Heading</th>
+                <th class="col-md-1 text-center">
+                    <input type="checkbox" id="selectAllShift" /> Select
+                </th>
+            </tr>
+        </thead>
+        <tbody>
+        </tbody>
+    </table>
+</div>
+<div class="row col-md-12 mt-3">
+    <div class="col-md-2">
+        <label><b>Para to be shifted to:</b></label>
+    </div>
+    <div class="col-md-10">
+        <div class="row">
+            <div class="col-md-6 mb-2">
+                <select id="shiftZoneSelect" onchange="getShiftZoneBranches();" class="form-control form-select">
+                    <option value="0" id="0">--Select Reporting Office--</option>
+                    @{
+                        if (ViewData["ZonesList"] != null)
+                        {
+                            foreach (var item in (dynamic)(ViewData["ZonesList"]))
+                            {
+                                <option value="@item.ZONEID" id="@item.ZONEID">@item.ZONENAME</option>
+                            }
+                        }
+                    }
+                </select>
+            </div>
+            <div class="col-md-6">
+                <select id="shiftBranchSelect" class="form-control form-select">
+                    <option value="0" id="0">--Select Entity--</option>
+                </select>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="row col-md-12 mt-3">
+    <div class="col-md-12 text-end">
+        <button class="btn btn-danger" onclick="shiftParas();">Shift Para</button>
+    </div>
+</div>
+

@@ -1,0 +1,262 @@
+﻿@{
+    var page_id = ViewData["PageId"] as int? ?? 0;
+}
+
+@{
+    ViewData["Title"] = "Report ~ Para Position Analysis";
+    Layout = "_Layout";
+}
+
+<script type="text/javascript">
+    var g_engArr = [];
+    $(document).ready(function () {
+        $("#searchTableRecord").on("keyup", function () {
+            var value = $(this).val().toLowerCase();
+            $("#observation_panel tbody tr").filter(function () {
+                $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1)
+            });
+        });
+    })
+
+
+    function engagementPlanDetail(engId) {
+        $('#engagementPlanDetailModel').modal('show');
+        $('#engID_UpdateModelField').val('');
+        $('#entName_UpdateModelField').val('');
+        $('#RepOffice_UpdateModelField').val('');
+        $('#audStart_UpdateModelField').val('');
+        $('#audTeam_UpdateModelField').val('');
+        $('#audEnd_UpdateModelField').val('');
+        $('#opStart_UpdateModelField').val('');
+        $('#opEnd_UpdateModelField').val('');
+        $('#engStatus_UpdateModelField').val('');
+        $('#discussionDays_UpdateModelField').val('');
+        $('#weekendDays_UpdateModelField').val('');
+        $('#revRecDays_UpdateModelField').val('');
+        $('#travelDays_UpdateModelField').val('');
+        $('#totalDays_UpdateModelField').val('');
+        $.each(g_engArr, function (i, v) {
+            if (v.enG_ID == engId) {
+                $('#engID_UpdateModelField').val(v.enG_ID);
+                $('#entName_UpdateModelField').val(v.entitY_NAME);
+                $('#RepOffice_UpdateModelField').val(v.reportinG_OFFICE);
+                $('#audTeam_UpdateModelField').val(v.audiT_TEAM);
+                $('#audStart_UpdateModelField').val(v.audiT_START_DATE.split(" ")[0]);
+                $('#audEnd_UpdateModelField').val(v.audiT_END_DATE.split(" ")[0]);
+                $('#opStart_UpdateModelField').val(v.oP_START_DATE.split(" ")[0]);
+                $('#opEnd_UpdateModelField').val(v.oP_END_DATE.split(" ")[0]);
+                $('#engStatus_UpdateModelField').val(v.enG_STATUS);
+                $('#travelDays_UpdateModelField').val(v.traveL_DAYS);
+                $('#discussionDays_UpdateModelField').val(v.discussioN_DAYS);
+                $('#weekendDays_UpdateModelField').val(v.weekenD_DAYS);
+                $('#revRecDays_UpdateModelField').val(v.revenuE_RECORD_DAYS);
+                $('#totalDays_UpdateModelField').val(v.totaL_DAYS);
+            }
+        });
+
+    }
+
+    function getAuditEngagementDetials() {
+
+        if ($('#auditedByField').val() == "-1") {
+            alert("Select Audited By Department");
+            return;
+        }
+
+        if ($('#auditPeriodField').val() == 0) {
+            alert("Select Audit Period");
+            return;
+        }
+
+        $('#observation_panel tbody').empty();
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/get_audit_plan_engagement_detailed_report",
+            type: "POST",
+            data: {
+                'AUDITED_BY': $('#auditedByField').val(),
+                'PERIOD_ID': $('#auditPeriodField').val()
+            },
+            cache: false,
+            success: function (data) {
+                g_engArr = data;
+                $.each(data, function (i, v) {
+                    $('#observation_panel tbody').append('<tr><td align="center"> ' + ++i + '</td><td  align="left">' + v.enG_ID + '</td><td  align="left">' + v.reportinG_OFFICE + '</td><td align="left">' + v.entitY_NAME + '</td><td align="left">' + v.audiT_START_DATE.split(" ")[0] + '</td><td align="left">' + v.audiT_END_DATE.split(" ")[0] + '</td><td align="left">' + v.totaL_DAYS + '</td><td align="left">' + v.delaY_DAYS + '</td><td align="left">' + v.enG_STATUS + '</td><td><small onclick="event.preventDefault();engagementPlanDetail(' + v.enG_ID + ')" class="text-danger cursor-pointer">Details</small></td></tr>');
+
+                });
+
+            },
+            dataType: "json",
+        });
+
+
+    }
+
+
+</script>
+<div class="row col-md-12 mt-1">
+
+    <h3 style="color: #be0e43">Audit Plan Engagements Detail</h3>
+
+</div>
+
+
+
+<div class="row col-md-12 mt-3">
+    <div class="col-md-2">
+        <label><b>Audited By</b></label>
+    </div>
+    <div class="col-md-4">
+        <select id="auditedByField" class="form-control form-select">
+            <option id="-1" value="0" selected="selected">--Select Audited By Department--</option>
+            <option id="0" value="0" >All</option>
+
+
+            @{
+                if (ViewData["AuditDepartmentList"] != null)
+                {
+                    foreach (var item in (dynamic)(ViewData["AuditDepartmentList"]))
+                    {
+                        <option value="@item.ENTITY_ID">@item.NAME</option>
+                    }
+                }
+            }
+
+
+
+        </select>
+    </div>
+
+
+    <div class="col-md-2">
+        <label><b>Audit Period</b></label>
+    </div>
+    <div class="col-md-4">
+        <select id="auditPeriodField" class="form-control form-select">
+            <option id="0" value="0" selected="selected">--Select Audit Period--</option>
+
+
+            @{
+                if (ViewData["AuditPeriodList"] != null)
+                {
+                    foreach (var item in (dynamic)(ViewData["AuditPeriodList"]))
+                    {
+                        <option value="@item.AUDITPERIODID">@item.DESCRIPTION</option>
+                    }
+                }
+            }
+
+
+
+        </select>
+    </div>
+</div>
+
+
+<div class="row col-md-12 mt-3">
+
+    <button onclick="getAuditEngagementDetials();" class="btn btn-danger offset-md-9 col-md-3">Search</button>
+</div>
+
+<div class="row col-md-12 mt-3">
+    <input class="form-control" id="searchTableRecord" type="text" placeholder="Search..">
+</div>
+
+<div class="row mt-3 col-md-auto">
+    <table id="observation_panel" class="table table-hover table-bordered table-hover mt-3 table-striped">
+        <thead style="background-color: #19875478 !important;">
+            <tr>
+                <th class="col-md-auto">Sr. No.</th>
+                <th class="col-md-auto ">ENG ID</th>
+                <th class="col-md-auto ">Reporting Office</th>
+                <th class="col-md-auto ">Entity Name</th>
+                <th class="col-md-auto text-center">Audit Start Date</th>
+                <th class="col-md-auto text-center">Audit End Date</th>
+                <th class="col-md-auto text-center">Total Days</th>
+                <th class="col-md-auto text-center">Delay Days</th>
+                <th class="col-md-auto text-center">Status</th>
+                <th class="col-md-auto"></th>
+
+            </tr>
+        </thead>
+        <tbody>
+        </tbody>
+    </table>
+</div>
+
+
+<div id="engagementPlanDetailModel" class="modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-dialog-scrollable modal-xl" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Audit Plan Engagements Detail</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form>
+                    <div class="form-group">
+                        <label>Engagement ID</label>
+                        <input disabled="disabled" class="form-control" id="engID_UpdateModelField" />
+                    </div>
+                    <div class="form-group">
+                        <label>Reporting Office</label>
+                        <input disabled="disabled" class="form-control" id="RepOffice_UpdateModelField" />
+                    </div>
+                    <div class="form-group">
+                        <label>Entity Name</label>
+                        <input disabled="disabled" class="form-control" id="entName_UpdateModelField" />
+                    </div>
+                    <div class="form-group">
+                        <label>Audit Team</label>
+                        <input disabled="disabled" class="form-control" id="audTeam_UpdateModelField" />
+                    </div>
+                    <div class="form-group">
+                        <label>Operation Start Date</label>
+                        <input disabled="disabled" class="form-control" id="opStart_UpdateModelField" />
+                    </div>
+                    <div class="form-group">
+                        <label>Operation End Date</label>
+                        <input disabled="disabled" class="form-control" id="opEnd_UpdateModelField" />
+                    </div>
+                    <div class="form-group">
+                        <label>Audit Start Date</label>
+                        <input disabled="disabled" class="form-control" id="audStart_UpdateModelField" />
+                    </div>
+                    <div class="form-group">
+                        <label>Audit End Date</label>
+                        <input disabled="disabled" class="form-control" id="audEnd_UpdateModelField" />
+                    </div>
+                    <div class="form-group">
+                        <label>Travel Days</label>
+                        <input disabled="disabled" class="form-control" id="travelDays_UpdateModelField" />
+                    </div>
+                    <div class="form-group">
+                        <label>Discussion Days</label>
+                        <input disabled="disabled" class="form-control" id="discussionDays_UpdateModelField" />
+                    </div>
+                    <div class="form-group">
+                        <label>Revenue Record/ Utilization / Contact With Defaulter</label>
+                        <input disabled="disabled" class="form-control" id="revRecDays_UpdateModelField" />
+                    </div>
+                    <div class="form-group">
+                        <label>Weekend Days</label>
+                        <input disabled="disabled" class="form-control" id="weekendDays_UpdateModelField" />
+                    </div>
+                    <div class="form-group">
+                        <label>Total  Days</label>
+                        <input disabled="disabled" class="form-control" id="totalDays_UpdateModelField" />
+                    </div>
+                    <div class="form-group">
+                        <label>Status</label>
+                        <input disabled="disabled" class="form-control" id="engStatus_UpdateModelField" />
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+

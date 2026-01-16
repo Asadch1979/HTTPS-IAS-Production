@@ -1,0 +1,184 @@
+@{
+    ViewData["Title"] = "Change Para Status";
+    Layout = "_Layout";
+}
+<script type="text/javascript">
+    var g_comId = 0;
+    var g_newStatus = 0;
+    function getrelation(parentEntityId = 0, userEntityId = 0) {
+        $('#controlingsearch').empty();
+        $('#childposting').empty();
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/getparentrel",
+            type: "POST",
+            data: {
+                'ENTITY_REALTION_ID': $('#RelationshipField option:selected').val()
+            },
+            success: function (data) {
+                $('#controlingsearch').append('<option id="0" value="0">--Select Controlling/Reporting Office--</option>');
+                $.each(data, function (index, contof) {
+                    $('#controlingsearch').append('<option value="' + contof.entitY_ID + '" id="' + contof.entitY_REALTION_ID + '">' + contof.description + '</option>');
+                });
+            },
+            dataType: "json",
+        });
+    }
+    function getplacepost() {
+        $('#childposting').empty();
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/getpostplace",
+            type: "POST",
+            data: {
+                'E_R_ID': $('#controlingsearch option:selected').val()
+            },
+            success: function (data) {
+                $('#childposting').append('<option id="0" value="0" selected="selected">--Select Place of Posting--</option>');
+                $.each(data, function (index, gpp) {
+                    $('#childposting').append('<option value="' + gpp.entitY_ID + '" id="' + gpp.entitY_ID + '">' + gpp.c_NAME + '</option>');
+                });
+            },
+            dataType: "json",
+        });
+    }
+    function findParas() {
+        if ($('#childposting').val() == 0) {
+            alert('Please select Entity');
+            return;
+        }
+        $('#paraStatusTableDiv').html('');
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/GET_PARA_STATUS_CHANGE_REQUEST",
+            type: "GET",
+            data: {
+                entityId: $('#childposting').val(),
+                status: $('#paraStatusField').val()
+            },
+            success: function (data) {
+                $('#paraStatusTableDiv').html(data);
+            }
+        });
+    }
+    function viewParaText(comId) {
+        $('#paraTextDisplayModel').modal('show');
+        $('#paraTextModelPanel').empty();
+        $.get(g_asiBaseURL + "/ApiCalls/GetIASPARATEXT", { comId: comId }, function (data) {
+            $('#paraTextModelPanel').html(data);
+        });
+    }
+    function openChangeStatusModal(comId, status) {
+        g_comId = comId;
+        g_newStatus = status == 9 ? 8 : 9;
+        var text = status == 9 ? 'Settled to Unsettled' : 'Unsettled to Settled';
+        $('#changeStatusText').text('Do you want to change status from ' + text + '?');
+        $('#statusChangeRemarks').val('');
+        $('#changeStatusModal').modal('show');
+    }
+    function submitStatusChange() {
+        if ($('#statusChangeRemarks').val().trim() == '') {
+            alert('Please enter remarks.');
+            return;
+        }
+    $.ajax({
+        url: '@Url.Action("ADD_PARA_STATUS_CHANGE_REQUEST", "ApiCalls")',
+        type: "POST",
+        data: {
+            comId: g_comId,
+            newStatus: g_newStatus,
+            makerRemarks: $('#statusChangeRemarks').val()
+        },
+        success: function (resp) {
+            alert(resp.message);
+            $('#changeStatusModal').modal('hide');
+            findParas();
+        },
+        error: function (xhr) {
+            alert("Status change failed: " + xhr.status + " " + xhr.statusText);
+        }
+    });
+    }
+</script>
+
+    <div class="col-md-12 mt-3">
+        <h3 style=" display:block;color: #be0e43">Change Para Status</h3>
+    </div>
+    <div class="row col-md-12 mt-1">
+        <div class="col-md-3 mb-3">
+            <label>Relationship Type</label>
+            <select id="RelationshipField" onchange="getrelation();" class="form-control form-select">
+                <option id="0" value="0" selected="selected">--Select Relationship Type--</option>
+                @{
+                    if (ViewData["Userrelationship"] != null)
+                    {
+                        foreach (var item in (dynamic)(ViewData["Userrelationship"]))
+                        {
+                            <option value="@item.ENTITY_REALTION_ID" id="@item.ENTITY_REALTION_ID">@item.FIELD_NAME</option>
+                        }
+                    }
+                }
+            </select>
+        </div>
+        <div class="col-md-3 mb-3">
+            <label>Controlling/Reporting Office</label>
+            <select id="controlingsearch" onchange="getplacepost();" class="form-control form-select">
+                <option id="0" value="0" selected="selected">--Select Controlling/Reporting Office--</option>
+            </select>
+        </div>
+        <div class="col-md-3 mb-3">
+            <label>Place of Posting</label>
+            <select id="childposting" class="form-control form-select">
+                <option id="0" value="0" selected="selected">--Select Place of Posting--</option>
+            </select>
+        </div>
+        <div class="col-md-3 mb-3">
+            <label>Para Status</label>
+            <select id="paraStatusField" class="form-control form-select">
+                <option value="9">Settled</option>
+                <option value="8">Unsettled</option>
+            </select>
+        </div>
+    </div>
+   
+    <div class="row col-md-12 mt-3">
+        <div class="col-md-12">
+            <button class="btn btn-primary" onclick="findParas();">Search</button>
+        </div>
+    </div>
+    <div class="row col-md-12 mt-3" id="paraStatusTableDiv"></div>
+</div>
+<div id="paraTextDisplayModel" class="modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog  modal-xl" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">Para Text</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="mt-3 modal-body">
+                <div id="paraTextModelPanel"></div>
+            </div>
+            <div class="mt-3 modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+<div id="changeStatusModal" class="modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">Change Status</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p id="changeStatusText"></p>
+                <div class="form-group mt-2">
+                    <label>Remarks</label>
+                    <textarea id="statusChangeRemarks" class="form-control"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" onclick="submitStatusChange();">Submit</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+            </div>
+        </div>
+    </div>
+</div>

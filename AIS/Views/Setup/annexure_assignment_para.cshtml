@@ -1,0 +1,230 @@
+﻿@{
+    var page_id = ViewData["PageId"] as int? ?? 0;
+}
+
+@{
+    ViewData["Title"] = "Annexure Assignment With Para";
+    Layout = "_Layout";
+}
+
+<script type="text/javascript">
+
+    var g_refP = "";
+    var g_obsId = "";
+    var g_pc = "";
+    $('#document').ready(function () {
+
+    });
+
+    function getZoneBranches() {
+        $('#manageObsPanel tbody').empty();
+        $('#branchSelectField').empty();
+
+        if ($('#zoneSelectField option:selected').val() != 0) {
+            $.ajax({
+                url: g_asiBaseURL + "/ApiCalls/get_zone_Branches_for_Annexure_Assignment",
+                type: "POST",
+                data: {
+                    'ENTITY_ID': $('#zoneSelectField option:selected').val()
+                },
+                cache: false,
+                success: function (data) {
+
+                    $('#branchSelectField').append('<option value="0" id="0">--Select Branch--</option>');
+                    $.each(data, function (i, v) {
+                        $('#branchSelectField').append('<option value="' + v.branchid + '" id="' + v.branchid + '">' + v.branchname + '</option>');
+                    })
+
+                },
+                dataType: "json",
+            });
+
+        }
+    }
+
+    function getEntityObservation() {
+        $('#manageObsPanel tbody').empty();
+        if ($('#branchSelectField option:selected').val() != 0) {
+            $.ajax({
+                url: g_asiBaseURL + "/ApiCalls/get_all_paras_for_annexure_assignment",
+                type: "POST",
+                data: {
+                    'ENTITY_ID': $('#branchSelectField option:selected').val()
+                },
+                cache: false,
+                success: function (data) {
+                    $.each(data, function (i, v) {
+                        $('#manageObsPanel tbody').append('<tr id="assignedObRow_' + v.anneX_ID + '"><td>' + v.audiT_PERIOD + '</td><td class="text-right">' + v.parA_NO + '</td><td class="text-right">' + v.anneX_CODE + '</td><td>' + v.annexure + '</td><td>' + v.gisT_OF_PARAS + '</td><td><a hre="#" class="text-danger text-center" style="cursor:pointer;" onclick="event.preventDefault();viewParaText(\'' + v.parA_CATEGORY + '\', \'' + v.obS_ID + '\',\'' + v.reF_P + '\',\'' + v.anneX_ID + '\')"> View Para</a></td></tr>');
+
+                    });
+                },
+                dataType: "json",
+            });
+
+        }
+    }
+
+    function viewParaText(pc, obsId, ref_p, annex_id) {
+        g_refP = ref_p;
+        g_obsId = obsId;
+        g_pc = pc;
+
+
+        $('#viewMemoModel').modal('show');
+        $('#updatedAnnexlist').val(annex_id);
+        $('#viewMemo_memo').html("");
+        if (pc == "A") {
+            $.get(g_asiBaseURL + "/ApiCalls/GetIASPARATEXT", { comId: obsId }, function (data) {
+                $('#viewMemo_memo').html(data);
+            });
+        } else {
+            $.ajax({
+                url: g_asiBaseURL + "/ApiCalls/get_para_text",
+                type: "POST",
+                data: {
+                    'ref_p': ref_p,
+                    'OBS_ID': obsId
+                },
+                cache: false,
+                success: function (data) {
+                    $('#viewMemo_memo').html(data);
+                }
+            });
+        }
+    }
+    function assignAnnexureWithPara() {
+
+        if ($('#updatedAnnexlist').val() == 0) {
+            alert("Select Annexure to proceed");
+            return;
+        }
+
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/assign_annexure_with_para",
+            type: "POST",
+            data: {
+                'REF_P': g_refP,
+                'OBS_ID': g_obsId,
+                'PARA_CATEGORY': g_pc,
+                'ANNEX_ID': $('#updatedAnnexlist').val()
+            },
+            cache: false,
+            success: function (data) {
+
+                alert(data.message);
+                onAlertCallback(getEntityObservation);
+                $('#viewMemoModel').modal('hide');
+
+            },
+            dataType: "json"
+        });
+    }
+
+    function reloadLocation() {
+        window.location.reload();
+    }
+
+</script>
+<div class="row col-md-12">
+    <h3 style="color: #be0e43;">Annexure Assignment with Audit Paras</h3>
+</div>
+<div class="row col-md-12 mt-3">
+    <div class="col-md-12">
+        <label class="text-bold"><b>Zones</b></label>
+    </div>
+    <div class="col-md-12 mt-1">
+        <select id="zoneSelectField" onchange="getZoneBranches()" class="form-control form-select">
+            <option value="0" id="0">--Select Zone--</option>
+            @{
+                if (ViewData["ZonesList"] != null)
+                {
+                    foreach (var item in (dynamic)(ViewData["ZonesList"]))
+                    {
+                        <option value="@item.ZONEID" id="@item.ZONEID">@item.ZONENAME</option>
+                    }
+                }
+            }
+
+        </select>
+    </div>
+</div>
+<div class="row col-md-12 mt-3">
+    <div class="col-md-12">
+        <label><b>Branch</b></label>
+    </div>
+    <div class="col-md-12">
+        <select id="branchSelectField" onchange="getEntityObservation();" class="form-control form-select">
+            <option value="0" id="0">--Select Branch--</option>
+
+
+        </select>
+    </div>
+</div>
+
+<div class="row col-md-12 mt-3">
+    <table id="manageObsPanel" class="table table-hover table-bordered table-hover mt-3 table-striped" style="font-size:12px !important;">
+        <thead style="background-color: #19875478 !important; ">
+            <tr>
+                <th class="col-md-2">Audit Year</th>
+                <th class="col-md-1">Para Number</th>
+                <th class="col-md-1">Annexure Code</th>
+                <th class="col-md-3">Annexure</th>
+                <th class="col-md-4">Gist of Para</th>
+                <th class="col-md-1 text-center"></th>
+            </tr>
+        </thead>
+        <tbody>
+        </tbody>
+    </table>
+
+</div>
+
+<div id="viewMemoModel" class="modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-xl" role="document" style="min-width:90%;">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">Annexure Assignment</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form>
+                    <div class="form-group">
+                        <div id="viewMemo_memo" style="height: auto; overflow-y: auto;" class="form-control"></div>
+                    </div>
+                    <div class="form-group">
+
+                        <label>Annexure</label>
+
+                        <select id="updatedAnnexlist" class="form-select form-control">
+                            <option selected="selected" value="0" id="0">--Select Annexure--</option>
+                            @{
+                                if (ViewData["AnnexList"] != null)
+                                {
+
+                                    foreach (var item in (dynamic)(ViewData["AnnexList"]))
+                                    {
+                                        <option id="@item.ID" value="@item.ID">@item.ANNEX</option>
+                                    }
+
+                                }
+                            }
+
+                        </select>
+
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" onclick="assignAnnexureWithPara();" class="btn btn-danger">Save</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+
+

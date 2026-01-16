@@ -1,0 +1,66 @@
+@{
+    ViewData["Title"] = "FAD Desk Officer Report";
+    Layout = "_Layout";
+}
+
+<script type="text/javascript">
+    $(document).ready(function () {
+        $('#searchDeskReport').click(function () {
+            if ($('#startDate').val() && $('#endDate').val()) {
+                loadDeskReport();
+            }
+        });
+    });
+
+    function loadDeskReport() {
+        destroyDatatable('fadDeskOfficerTable');
+        $('#fadDeskOfficerTable tbody').empty();
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/get_fad_desk_officer_rpt_by_date_range",
+            type: "POST",
+            data: {
+                "startDate": $('#startDate').val(),
+                "endDate": $('#endDate').val()
+            },
+            cache: false,
+            success: function (data) {
+                $.each(data, function (i, v) {
+                $('#fadDeskOfficerTable tbody').append('<tr><td>' + v.auditPeriod + '</td><td>' + v.childCode + '</td><td>' + v.cName + '</td><td>' + v.az + '</td><td>' + v.pName + '</td><td>' + v.annex + '</td><td>' + v.gistOfParas + '</td><td>' + v.paraNo + '</td><td>' + v.noOfInstances + '</td><td>' + v.risk + '</td><td>' + v.amount + '</td><td>' + v.status + '</td></tr>');                });
+                initializeDataTable('fadDeskOfficerTable');
+            },
+            dataType: "json"
+        });
+    }
+</script>
+
+<div style="display: flex; align-items: center; gap: 10px; margin-bottom: 15px;">
+    <label for="startDate" style="white-space: nowrap; font-weight: 600;">Start Date:</label>
+    <input type="date" id="startDate" class="form-control" style="max-width: 180px;">
+
+    <label for="endDate" style="white-space: nowrap; font-weight: 600;">End Date:</label>
+    <input type="date" id="endDate" class="form-control" style="max-width: 180px;">
+
+    <button id="searchDeskReport" type="button" class="btn btn-danger" style="min-width: 120px;">Search</button>
+</div>
+<div class="row col-md-12 mt-3">
+    <table id="fadDeskOfficerTable" class="table table-hover table-bordered table-striped">
+        <thead style="background-color: #19875478;">
+            <tr>
+                <th>Year</th>
+                <th>Br Code</th>
+                <th>Branch</th>
+                <th>Audit</th>
+                <th>Region</th>
+                <th>Annex</th>
+                <th>Gist Of Paras</th>
+                <th>Para No</th>
+                <th>Instances</th>
+                <th>Risk</th>
+                <th>Amount</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+        </tbody>
+    </table>
+</div>

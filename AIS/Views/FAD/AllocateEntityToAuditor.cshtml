@@ -1,0 +1,116 @@
+﻿@{
+    var page_id = ViewData["PageId"] as int? ?? 0;
+}
+
+@{
+    ViewData["Title"] = "Allocate Entity To Auditor";
+    Layout = "_Layout";
+}
+<h4>Allocate Entity To Auditor</h4>
+<table id="auditorsTable" class="table table-bordered table-striped">
+    <thead class="table-success">
+        <tr>
+            <th>PPNO</th>
+            <th>First Name</th>
+            <th>Last Name</th>
+            <th>Position</th>
+            <th>Task Allocated</th>
+            <th>Action</th>
+        </tr>
+    </thead>
+    <tbody></tbody>
+</table>
+
+<!-- Allocation Modal -->
+<div class="modal fade" id="allocateModal" tabindex="-1">
+    <div class="modal-dialog modal-xl" style="min-width:95% !important;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Allocate Entity</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <select id="relationType" class="form-select mb-2"></select>
+                <select id="reportingOffice" class="form-select mb-2"></select>
+                <table class="table" id="entitiesTable">
+                    <thead>
+                        <tr>
+                            <th></th>
+                            <th>Entity Code</th>
+                            <th>Name</th>
+                            <th>Type</th>
+                            <th>Allocated To</th>
+                            <th>Total Paras</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+            <div class="modal-footer">
+                <button id="allocateBtn" class="btn btn-primary" disabled>Allocate</button>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+$(function(){
+    var selectedAuditor = 0;
+
+    loadAuditors();
+
+    function loadAuditors(){
+        $.post(g_asiBaseURL+'/ApiCalls/get_audit_emp',function(data){
+            var body=$('#auditorsTable tbody');
+            body.empty();
+            $.each(data,function(i,v){
+                    body.append('<tr><td>'+v.ppno+'</td><td>'+v.employeefirstname+'</td><td>'+v.employeelastname+'</td><td>'+v.fuN_DESIGNATION+'</td><td>'+v.tasK_ALLOCATED+'</td>'+
+                    '<td><button type="button" class="btn btn-sm btn-primary assign-btn" data-ppno="'+v.ppno+'">Assign Entity</button></td></tr>');
+            });
+            initializeDataTable('auditorsTable');
+        });
+    }
+
+    $(document).on('click','.assign-btn',function(){
+        selectedAuditor=$(this).data('ppno');
+        $('#allocateModal').modal('show');
+        $.post(g_asiBaseURL+'/ApiCalls/GetRelationTypes',function(d){
+            var sel=$('#relationType'); sel.empty().append('<option value="">Relation Type</option>');
+            $.each(d,function(i,it){ sel.append('<option value="'+it.id+'">'+it.name+'</option>');});
+        });
+    });
+    $('#relationType').change(function(){
+        var id=$(this).val();
+        $('#reportingOffice').empty().append('<option value="">Reporting Office</option>');
+        if(id){
+            $.post(g_asiBaseURL+'/ApiCalls/GetReportingOffices',{relationTypeId:id},function(d){
+                $.each(d,function(i,it){$('#reportingOffice').append('<option value="'+it.id+'">'+it.name+'</option>');});
+            });
+        }
+    });
+    $('#reportingOffice').change(function(){
+        var id=$(this).val();
+        $('#entitiesTable tbody').empty();
+        if(id){
+            $.post(g_asiBaseURL+'/ApiCalls/GetEntitiesForOffice',{reportingOfficeId:id},function(d){
+                $.each(d,function(i,it){
+                            $('#entitiesTable tbody').append('<tr><td><input type="checkbox" class="entChk" value="'+it.entityId+'"/></td><td>'+it.entityId+'</td><td>'+it.name+'</td><td>'+it.type+'</td><td>'+it.allocatedto+'</td><td>'+it.totalParas+'</td></tr>');
+                });
+            });
+        }
+    });
+    $(document).on('change','.entChk',function(){
+        $('#allocateBtn').prop('disabled',$('.entChk:checked').length==0);
+    });
+    $('#allocateBtn').click(function(){
+        var ent=$('.entChk:checked').first().val();
+        if(!ent || !selectedAuditor) return;
+        $.post(g_asiBaseURL+'/ApiCalls/AllocateEntitiesToAuditor',
+            { azId: 0, entId: ent, auditorPPNO: selectedAuditor },
+            function (data) {
+                alert(data);
+                $('#allocateModal').modal('hide');
+                loadAuditors();
+            });
+    });
+});
+</script>

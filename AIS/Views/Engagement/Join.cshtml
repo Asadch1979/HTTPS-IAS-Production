@@ -1,0 +1,209 @@
+﻿@{
+    var page_id = ViewData["PageId"] as int? ?? 0;
+}
+
+@{
+    ViewData["Title"] = "Join";
+    Layout = "_Layout";
+}
+
+<script type="text/javascript">
+    var g_joinRes = null;
+
+    $(document).ready(function () {
+        var url_string = window.location;
+        var url = new URL(url_string);
+        var eng_id = url.searchParams.get("engId");
+
+        $.ajax({
+            url: g_asiBaseURL + "/Engagement/get_joining_details",
+            type: "POST",
+            data: {
+                engId: eng_id
+            },
+            cache: false,
+            dataType: "json",
+            success: function (data) {
+                g_joinRes = data;
+
+                $('#ent_name_field').html(data.entitY_NAME);
+                $('#ent_risk_field').html(data.risk);
+                $('#ent_size_field').html(data.size);
+
+                var today = new Date().toISOString().split("T")[0];
+                var jDate = today.split('-')[2] + "/" + today.split('-')[1] + "/" + today.split('-')[0];
+
+                var sDate = data.starT_DATE.split('T')[0];
+                var sfromat = sDate.split('-')[2] + "/" + sDate.split('-')[1] + "/" + sDate.split('-')[0];
+
+                var eDate = data.enD_DATE.split('T')[0];
+                var efromat = eDate.split('-')[2] + "/" + eDate.split('-')[1] + "/" + eDate.split('-')[0];
+
+                $('#ent_start_field').html(sfromat);
+                $('#ent_end_field').html(efromat);
+                $('#ent_team_name_field').html(data.teaM_NAME);
+                $('#ent_period_field').html(data.audiT_PERIOD);
+
+                $.each(data.teaM_DETAILS, function (i, v) {
+                    $('#teamDetailsPanel tbody').append(
+                        '<tr>' +
+                        '<td>' + v.emP_NAME + '</td>' +
+                        '<td>' + v.pP_NO + '</td>' +
+                        '<td id="joiningDateFieldValue">' + jDate + '</td>' +
+                        '<td id="completionDateFieldValue">' + efromat + '</td>' +
+                        '<td>' + v.iS_TEAM_LEAD + '</td>' +
+                        '</tr>'
+                    );
+                });
+            }
+        });
+    });
+
+    function toIsoDate(dmy) {
+        if (!dmy) return null;
+
+        var parts = dmy.split('/');
+        if (parts.length !== 3) return null;
+
+        return parts[2] + '-' + parts[1] + '-' + parts[0];
+    }
+
+    function publishJoinReport() {
+        $.ajax({
+            url: g_asiBaseURL + "/Engagement/add_joining_report",
+            type: "POST",
+            data: {
+                ID: 0,
+                ENG_PLAN_ID: g_joinRes.enG_PLAN_ID,
+                TEAM_MEM_PPNO: g_joinRes.teaM_DETAILS[0].pP_NO,
+                JOINING_DATE: toIsoDate($('#joiningDateFieldValue').text()),
+                COMPLETION_DATE: toIsoDate($('#completionDateFieldValue').text())
+            },
+            cache: false,
+            dataType: "json",
+            success: function (data) {
+                alert(data.message);
+                onAlertCallback(redirectToTaskList);
+            }
+        });
+    }
+
+    function redirectToTaskList() {
+        window.location.href = g_asiBaseURL + "/Engagement/task_list";
+    }
+</script>
+
+
+<div class="row mt-3">
+        <h4 style="display: block; color: #be0e43">Joining Report</h4>
+</div>
+<div class="row col-md-12">
+    <div class="col-md-6">
+
+        <table class="table table-bordered mb-0 mt-3 bg-white table-hover table-striped" >
+            <thead>
+                <tr>
+                    <td><h6>Audit Plan</h6></td>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Audit Period</td>
+                    <td id="ent_period_field"></td>
+                </tr>
+                <tr>
+                    <td width="150">Entity</td>
+                    <td id="ent_name_field" width="200"></td>
+                </tr>
+                <tr>
+                    <td>Entity Risk</td>
+                    <td id="ent_risk_field"></td>
+                </tr>
+                <tr>
+                    <td>Entity Size</td>
+                    <td id="ent_size_field"></td>
+                </tr>
+
+                <tr>
+                    <td>Start Date</td>
+                    <td id="ent_start_field"></td>
+                </tr>
+                <tr>
+                    <td>End Date</td>
+                    <td id="ent_end_field"></td>
+                </tr>
+
+                <tr>
+                    <td>Audit Conducted by</td>
+                    <td id="ent_team_name_field"></td>
+                </tr>
+
+            </tbody>
+        </table>
+
+    </div>
+
+    <div class="col-md-6 d-none">
+
+        <table class="table table-bordered mb-0 mt-3 bg-white table-hover table-striped" >
+            <thead>
+                <tr>
+                    <th><h6>Sample Criteria</h6></th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td width="150">Branch Code</td>
+                    <td width="200">22301</td>
+                </tr>
+                <tr>
+                    <td>Branch Name</td>
+                    <td>Bahawalpur</td>
+                </tr>
+                <tr>
+                    <td>Loan Case</td>
+                    <td>585598</td>
+                </tr>
+                <tr>
+                    <td>Principle Amount</td>
+                    <td>80000</td>
+                </tr>
+                <tr>
+                    <td>Interest</td>
+                    <td>10679</td>
+                </tr>
+                <tr>
+                    <td>Outstanding</td>
+                    <td>90679</td>
+                </tr>
+                <tr>
+                    <td>Disbursement Date</td>
+                    <td>19/01/2018</td>
+                </tr>
+
+            </tbody>
+        </table>
+    </div>
+
+</div>
+
+    <div class="mt-3">
+        <table id="teamDetailsPanel" class="table table-bordered mb-0 mt-3 bg-white table-hover table-striped" >
+            <thead>
+                <tr>
+                    <th class="font-weight-bold">Name</th>
+                    <th class="font-weight-bold">P.P. No</th>
+                    <th class="font-weight-bold">Joining Date</th>
+                    <th class="font-weight-bold">Completion Date</th>
+                    <th class="font-weight-bold">Is team Lead</th>
+                </tr>
+</thead>
+           <tbody></tbody>
+        </table>
+    </div>
+    <div class="row">
+       
+        <div class="col-md-6 mt-5">
+            <button onclick="publishJoinReport();" class="btn btn-primary" style="float:left;">Submit</button>
+        </div>
+    </div>

@@ -1,0 +1,206 @@
+@{
+    ViewData["Title"] = "Catalog Uploads";
+    Layout = ViewData.ContainsKey("Layout") ? ViewData["Layout"] as string : "_Layout";
+    var canUpload = (ViewData["CanUploadCatalogs"] as bool?) ?? false;
+}
+
+@if (!canUpload)
+    {
+    <div class="alert alert-warning mb-0">
+        Only Super Admins can manage catalog uploads.
+    </div>
+    }
+else
+    {
+    <div class="alert alert-warning">
+        Existing permissions are not modified automatically.
+    </div>
+
+    <div class="row g-4">
+        <div class="col-lg-6">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h5 class="card-title">All Appicalls.csv</h5>
+                    <p class="text-muted">Upload and sync API catalog entries.</p>
+                    <input class="form-control mb-2" type="file" id="apiCatalogFile" accept=".csv" />
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-outline-primary" type="button" onclick="validateCatalog('api');">Validate</button>
+                        <button class="btn btn-primary" type="button" id="apiCatalogApplyBtn" onclick="applyCatalog('api');" disabled>Apply</button>
+                    </div>
+                    <div class="mt-3" id="apiCatalogSummary"></div>
+                    <div class="table-responsive mt-3">
+                        <table class="table table-sm" id="apiCatalogPreviewTable">
+                            <thead>
+                                <tr>
+                                    <th>Action</th>
+                                    <th>API Name</th>
+                                    <th>Path</th>
+                                    <th>Method</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-6">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h5 class="card-title">Page ID.xlsx</h5>
+                    <p class="text-muted">Upload and sync page ID mappings.</p>
+                    <input class="form-control mb-2" type="file" id="pageCatalogFile" accept=".xlsx" />
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-outline-primary" type="button" onclick="validateCatalog('page');">Validate</button>
+                        <button class="btn btn-primary" type="button" id="pageCatalogApplyBtn" onclick="applyCatalog('page');" disabled>Apply</button>
+                    </div>
+                    <div class="mt-3" id="pageCatalogSummary"></div>
+                    <div class="table-responsive mt-3">
+                        <table class="table table-sm" id="pageCatalogPreviewTable">
+                            <thead>
+                                <tr>
+                                    <th>Action</th>
+                                    <th>Page ID</th>
+                                    <th>Page Name</th>
+                                    <th>Page Path</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="text/javascript">
+        var catalogTokens = {};
+
+        function validateCatalog(type) {
+            var fileInput = type === 'api' ? $('#apiCatalogFile')[0] : $('#pageCatalogFile')[0];
+            if (!fileInput.files || fileInput.files.length === 0) {
+                alert("Select a file to validate.");
+                return;
+            }
+
+            var formData = new FormData();
+            formData.append('file', fileInput.files[0]);
+            formData.append('catalogType', type);
+
+            $.ajax({
+                url: g_asiBaseURL + "/Administration/Catalog/Validate",
+                type: "POST",
+                data: formData,
+                processData: false,
+                contentType: false,
+                success: function (response) {
+                    if (!response || !response.success) {
+                        alert(response && response.message ? response.message : "Unable to validate catalog.");
+                        return;
+                    }
+
+                    var preview = response.preview;
+                    catalogTokens[type] = preview.token;
+                    renderCatalogPreview(type, preview);
+                    toggleApplyButton(type, true);
+                },
+                error: function () {
+                    alert("Unable to validate catalog.");
+                }
+            });
+        }
+
+        function applyCatalog(type) {
+            if (!catalogTokens[type]) {
+                alert("Validate the catalog before applying.");
+                return;
+            }
+
+            var formData = new FormData();
+            formData.append('catalogType', type);
+            formData.append('token', catalogTokens[type]);
+
+            $.ajax({
+                url: g_asiBaseURL + "/Administration/Catalog/Apply",
+                type: "POST",
+                data: formData,
+                processData: false,
+                contentType: false,
+                success: function (response) {
+                    if (!response || !response.success) {
+                        alert(response && response.message ? response.message : "Unable to apply catalog.");
+                        return;
+                    }
+
+                    alert("Catalog sync completed.");
+                    toggleApplyButton(type, false);
+                },
+                error: function () {
+                    alert("Unable to apply catalog.");
+                }
+            });
+        }
+
+        function toggleApplyButton(type, enabled) {
+            var button = type === 'api' ? $('#apiCatalogApplyBtn') : $('#pageCatalogApplyBtn');
+            button.prop('disabled', !enabled);
+        }
+
+        function renderCatalogPreview(type, preview) {
+            var summaryTarget = type === 'api' ? $('#apiCatalogSummary') : $('#pageCatalogSummary');
+            var tableBody = type === 'api' ? $('#apiCatalogPreviewTable tbody') : $('#pageCatalogPreviewTable tbody');
+            tableBody.empty();
+
+            summaryTarget.html(
+                '<span class="badge bg-success me-2">New: ' + preview.newCount + '</span>'
+                + '<span class="badge bg-info text-dark me-2">Updated: ' + preview.updatedCount + '</span>'
+                + '<span class="badge bg-secondary">Inactive: ' + preview.inactiveCount + '</span>'
+            );
+
+            if (type === 'api') {
+                appendApiPreviewRows(tableBody, preview.newApiRecords, 'New');
+                appendApiPreviewRows(tableBody, preview.updatedApiRecords, 'Update');
+                appendApiPreviewRows(tableBody, preview.inactiveApiRecords, 'Inactive');
+            } else {
+                appendPagePreviewRows(tableBody, preview.newPageRecords, 'New');
+                appendPagePreviewRows(tableBody, preview.updatedPageRecords, 'Update');
+                appendPagePreviewRows(tableBody, preview.inactivePageRecords, 'Inactive');
+            }
+
+            if (tableBody.children().length === 0) {
+                tableBody.append('<tr><td colspan="4" class="text-muted">No changes detected.</td></tr>');
+            }
+        }
+
+        function appendApiPreviewRows(target, records, label) {
+            if (!records || records.length === 0) {
+                return;
+            }
+
+            $.each(records, function (i, item) {
+                target.append('<tr>'
+                    + '<td>' + label + '</td>'
+                    + '<td>' + (item.apiName || '') + '</td>'
+                    + '<td>' + (item.apiPath || '') + '</td>'
+                    + '<td>' + (item.httpMethod || '') + '</td>'
+                    + '</tr>');
+            });
+        }
+
+        function appendPagePreviewRows(target, records, label) {
+            if (!records || records.length === 0) {
+                return;
+            }
+
+            $.each(records, function (i, item) {
+                target.append('<tr>'
+                    + '<td>' + label + '</td>'
+                    + '<td>' + (item.pageId || '') + '</td>'
+                    + '<td>' + (item.pageName || '') + '</td>'
+                    + '<td>' + (item.pagePath || '') + '</td>'
+                    + '</tr>');
+            });
+        }
+    </script>
+    }

@@ -1,0 +1,285 @@
+﻿@{
+    var page_id = ViewData["PageId"] as int? ?? 0;
+}
+
+@{
+    ViewData["Title"] = "Change Request";
+    Layout = "_Layout";
+}
+<script type="text/javascript">
+    (function () {
+        // Ensure base url exists (layout/site.js usually defines it)
+        var baseUrl = window.g_asiBaseURL || (document.querySelector('meta[name="base-url"]') && document.querySelector('meta[name="base-url"]').content) || "";
+        window.g_asiBaseURL = baseUrl;
+
+        var g_engId = 0;
+        var g_planId = 0;
+        var g_entityId = 0;
+        var g_auditById = 0;
+
+        function toDateInputValue(d) {
+            if (!d) return "";
+            d = ("" + d).trim();
+
+            // Already yyyy-mm-dd (HTML date input format)
+            if (/^\d{4}-\d{2}-\d{2}$/.test(d)) return d;
+
+            // dd/mm/yyyy or dd-mm-yyyy (with or without time portion)
+            var m = d.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{4})/);
+            if (!m) return "";
+
+            var dd = m[1].padStart(2, "0");
+            var mm = m[2].padStart(2, "0");
+            var yyyy = m[3];
+            return yyyy + "-" + mm + "-" + dd;
+        }
+
+        function showCommentsModal() {
+            var el = document.getElementById("commentsBox");
+            if (window.bootstrap && window.bootstrap.Modal && el) {
+                window.bootstrap.Modal.getOrCreateInstance(el).show();
+                return;
+            }
+            // Bootstrap 4 fallback
+            if (window.jQuery && jQuery.fn && jQuery.fn.modal) {
+                $("#commentsBox").modal("show");
+            }
+        }
+
+        function loadTeams(deptCode, selectedTeamId) {
+            var $team = $("#teamSelectionBox");
+            $team.empty().append('<option value="0">Loading...</option>');
+
+            return $.ajax({
+                url: baseUrl + "/ApiCalls/GetAuditTeams",
+                type: "POST",
+                data: { dept_code: deptCode }, // matches original endpoint usage
+                cache: false,
+                dataType: "json"
+            }).done(function (data) {
+                $team.empty().append('<option value="0">--Select Audit Team--</option>');
+
+                if (Array.isArray(data)) {
+                    data.forEach(function (team) {
+                        var isLead = (team.iS_TEAMLEAD ?? team.IS_TEAMLEAD ?? team.is_TEAMLEAD ?? team.is_teamlead ?? team.isTeamLead);
+                        var code = (team.code ?? team.CODE ?? team.team_id ?? team.TEAM_ID);
+                        var name = (team.name ?? team.NAME ?? team.team_name ?? team.TEAM_NAME);
+
+                        if (String(isLead).toUpperCase() === "Y") {
+                            $team.append('<option value="' + code + '">' + name + '</option>');
+                        }
+                    });
+                }
+
+                if (selectedTeamId !== undefined && selectedTeamId !== null) {
+                    $team.val(String(selectedTeamId));
+                }
+            }).fail(function (xhr) {
+                console.log("Error loading teams:", xhr && (xhr.responseText || xhr));
+                $team.empty().append('<option value="0">--Select Audit Team--</option>');
+                alert("Unable to load audit teams.");
+            });
+        }
+
+        // Global so handlers can call it
+        window.reRecommendEngagementPlan = function (
+            engId, planId, entityId,
+            startDate, endDate,
+            op_startDate, op_endDate,
+            teamId, auditById,
+            comments
+        ) {
+            g_engId = Number(engId) || 0;
+            g_planId = Number(planId) || 0;
+            g_entityId = Number(entityId) || 0;
+            g_auditById = Number(auditById) || 0;
+
+            $("#commentsAreaEnteredBox").val(comments || "");
+
+            $("#selectOPDateInputField").val(toDateInputValue(op_startDate));
+            $("#selectOPEndDateInputField").val(toDateInputValue(op_endDate));
+            $("#selectDateInputField").val(toDateInputValue(startDate));
+            $("#selectEndDateInputField").val(toDateInputValue(endDate));
+
+            showCommentsModal();
+
+            if (g_auditById) {
+                loadTeams(g_auditById, teamId);
+            } else {
+                $("#teamSelectionBox").empty().append('<option value="0">--Select Audit Team--</option>').val(String(teamId || "0"));
+            }
+        };
+
+        window.finalreRecommendEngagementPlan = function () {
+            var comments = $("#commentsAreaEnteredBox").val();
+            if (!comments || !comments.trim()) { alert("Enter Comments to Proceed"); return false; }
+
+            var ops = $("#selectOPDateInputField").val();
+            var ope = $("#selectOPEndDateInputField").val();
+            var s = $("#selectDateInputField").val();
+            var se = $("#selectEndDateInputField").val();
+
+            if (!ops || !ope || !s || !se) { alert("Please select all dates to proceed."); return false; }
+
+            var teamId = $("#teamSelectionBox").val();
+            if (!teamId || teamId === "0") { alert("Select Team to Proceed"); return false; }
+
+            $.ajax({
+                url: baseUrl + "/ApiCalls/rerecommend_engagement_plan",
+                type: "POST",
+                data: {
+                    ENG_ID: g_engId,
+                    PLAN_ID: g_planId,
+                    ENTITY_ID: g_entityId,
+                    COMMENTS: comments,
+                    OP_START_DATE: ops,
+                    OP_END_DATE: ope,
+                    START_DATE: s,
+                    END_DATE: se,
+                    TEAM_ID: teamId
+                },
+                cache: false,
+                dataType: "json"
+            }).done(function (data) {
+                alert((data && data.Message) ? data.Message : "Saved successfully.");
+                if (typeof onAlertCallback === "function") {
+                    onAlertCallback(function () { location.reload(); });
+                } else {
+                    location.reload();
+                }
+            }).fail(function (xhr) {
+                console.log("Submit error:", xhr && (xhr.responseText || xhr));
+                alert("Unable to submit. Please try again.");
+            });
+        };
+
+        window.approveEngagementPlan = function (engId) {
+            $.ajax({
+                url: baseUrl + "/ApiCalls/approve_engagement_plan",
+                type: "POST",
+                data: { ENG_ID: engId },
+                cache: false,
+                dataType: "json"
+            }).done(function () {
+                alert("Successfully approved Engagement Plan");
+                if (typeof onAlertCallback === "function") {
+                    onAlertCallback(function () { location.reload(); });
+                } else {
+                    location.reload();
+                }
+            }).fail(function (xhr) {
+                console.log("Approve error:", xhr && (xhr.responseText || xhr));
+                alert("Unable to approve. Please try again.");
+            });
+        };
+
+        // Delegated click handler (no inline JS needed)
+        $(document).on("click", "a.js-recommend-again", function (e) {
+            e.preventDefault();
+            var d = this.dataset;
+
+            window.reRecommendEngagementPlan(
+                d.engId, d.planId, d.entityId,
+                d.startDate, d.endDate,
+                d.opStartDate, d.opEndDate,
+                d.teamId, d.auditById,
+                d.comments
+            );
+        });
+    })();
+</script>
+<div class="row w-100" style="margin-top:50px;">
+    <h3 style="color: #be0e43">Reffered Back Engagement Plan List</h3>
+</div>
+<div class="row col-md-12 mt-3">
+    <table id="observation_panel" class="table table-hover table-bordered table-hover mt-3 table-striped">
+        <thead style="background-color: #19875478 !important; ">
+            <tr>
+                <th>Entity Name</th>
+                <th>Team Name</th>
+                <th>Operation Start Date</th>
+                <th>Operation End Date</th>
+                <th>Start Date</th>
+                <th>End Date</th>
+                <th>Remarks</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            @{
+                if (ViewData["EngagementPlans"] != null)
+                {
+                    foreach (var item in (dynamic)(ViewData["EngagementPlans"]))
+                    {
+                        string sDate = @item.AUDIT_STARTDATE.ToString();
+                        sDate = sDate.Split(" ")[0];
+                        string eDate = @item.AUDIT_ENDDATE.ToString();
+                        eDate = eDate.Split(" ")[0];
+                        string osDate = @item.OP_STARTDATE.ToString();
+                        osDate = osDate.Split(" ")[0];
+                        string oeDate = @item.OP_ENDDATE.ToString();
+                        oeDate = oeDate.Split(" ")[0];
+                        <tr id="@item.ENG_ID">
+                            <td class="col-md-auto">@item.ENTITY_NAME</td>
+                            <td class="col-md-auto">@item.TEAM_NAME</td>
+                            <td class="col-md-auto">@osDate</td>
+                            <td class="col-md-auto">@oeDate</td>
+                            <td class="col-md-auto">@sDate</td>
+                            <td class="col-md-auto">@eDate</td>
+                            <td class="col-md-auto">@item.COMMENTS</td>
+                            <td class="col-md-auto"><a href="#" class="text-danger text-hover js-recommend-again" data-eng-id="@item.ENG_ID" data-plan-id="@item.PLAN_ID" data-entity-id="@item.ENTITY_ID" data-start-date="@sDate" data-end-date="@eDate" data-op-start-date="@osDate" data-op-end-date="@oeDate" data-team-id="@item.TEAM_ID" data-audit-by-id="@item.AUDIT_BY_ID" data-comments="@item.COMMENTS">Recommend Again</a></td>
+                        </tr>
+
+                    }
+                }
+            }
+        </tbody>
+    </table>
+</div>
+<div id="commentsBox" class="modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">Comments</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form>
+                    <div class="form-group">
+                        <label for="selectOPDateInputField">Operational Start Date</label>
+                        <input id="selectOPDateInputField" data-inputmask="'alias': 'date'" class="form-control" type="date" />
+                    </div>
+                    <div class="form-group">
+                        <label for="selectOPEndDateInputField">Operational End Date</label>
+                        <input id="selectOPEndDateInputField" data-inputmask="'alias': 'date'" class="form-control" type="date" />
+                    </div>
+                    <div class="form-group">
+                        <label for="selectDateInputField">Start Date</label>
+                        <input id="selectDateInputField" data-inputmask="'alias': 'date'" class="form-control" type="date" data-allow-future="true" />
+                    </div>
+                    <div class="form-group">
+                        <label for="selectEndDateInputField">End Date</label>
+                        <input id="selectEndDateInputField" data-inputmask="'alias': 'date'" class="form-control" type="date" data-allow-future="true" />
+                    </div>
+
+                    <div class="form-group">
+                        <label for="teamSelectionBox">Audit Team</label>
+                        <select id="teamSelectionBox" class="form-select form-control" aria-label="Default select example">
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="commentsAreaEnteredBox">Comments</label>
+                        <textarea class="form-control" id="commentsAreaEnteredBox"></textarea>
+                    </div>
+
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button onclick="finalreRecommendEngagementPlan();" type="button" class="btn btn-danger">Submit</button>
+            </div>
+        </div>
+    </div>
+</div>

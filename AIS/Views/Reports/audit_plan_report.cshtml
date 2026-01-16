@@ -1,0 +1,141 @@
+﻿@{
+    ViewData["Title"] = "Audit_Plan_Report";
+    Layout = "_Layout";
+}
+
+
+<style type="text/css">
+    .container {
+        max-width: 100%;
+    }
+
+    .card-header {
+        background-color: transparent !important;
+        font-size: 20px;
+        height: 100px;
+    }
+
+    .icon-card {
+        margin: 10px;
+    }
+</style>
+
+<script type="text/javascript">
+    function createAuditEngagement(planId, name, size, risk, freq, days, auditperiod, periodId, code, zoneId, entity_id, ent_type_id) {
+        window.location.href = g_asiBaseURL + '/planning/tentative_engagement_plan?planId=' + planId + '&name=' + name + '&size=' + size + '&risk=' + risk + '&freq=' + freq + '&period=' + auditperiod + '&days=' + days + '&periodId=' + periodId + '&code=' + code + '&entityType=' + ent_type_id + '&zoneId=' + zoneId + '&entityId=' + entity_id;
+    }
+    $(document).ready(function () {
+        $("#searchTableRecord").on("keyup", function () {
+            var value = $(this).val().toLowerCase();
+            $("#tentative_plan_list tbody tr").filter(function () {
+                $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1)
+            });
+        });
+    });
+      
+</script>
+<div class="row col-md-12 mt-3">
+    <h3 style="color: #be0e43">Audit Plan Report</h3>
+</div>
+<div>
+    
+        <div class="row col-md-12">
+            <input class="form-control" id="searchTableRecord" type="text" placeholder="Search..">
+        </div>
+ 
+    <br>
+    <div class="row col-md-12 mt-3">
+        <table  id="tentative_plan_list" class="table table-hover table-bordered table-hover mt-3 table-striped" >
+        <thead style="background-color: #19875478 !important; ">
+            <tr style="text-align:center">
+                <th class="col-md-auto" style="font-size: x-small" rowspan="2">Sr No</th>
+                <th class="col-md-auto" style="font-size: x-small" rowspan="2">Auditable Entity</th>
+                <th class="col-md-auto" style="font-size: x-small" rowspan="2">Branch Code</th>
+                    <th class="col-md-auto" style="font-size: x-small" rowspan="2">Audit Cluster</th>
+                <th class="col-md-auto" style="font-size: x-small" rowspan="2">Operational Zone</th>
+                <th class="col-md-auto" style="font-size: x-small" rowspan="2">Last Audit Period End (Operational Period)</th>
+                <th class="col-md-auto" style="font-size: x-small" rowspan="2">Branch Rating (High, Low, Medium)</th>
+                <th class="col-md-auto" style="font-size: x-small" rowspan="2">Branch Size (Small/Medium/Large)</th>
+                <th class="col-md-auto" style="font-size: x-small" colspan="4">Working days</th>
+                <th class="col-md-auto" style="font-size: x-small" colspan="2">Schedule of Audit</th>
+                <th class="col-md-auto" style="font-size: x-small"  colspan="2">Constitution of  Team</th>
+                
+            </tr>
+            <tr style="text-align:center"
+                >
+                <td class="col-md-auto" style="font-size: x-small" rowspan="1">Days for Normal Audit</td>
+                <td class="col-md-auto" style="font-size: x-small" rowspan="1">Days for Checking of revenue Record/ Utilization/Spot Visit  </td>
+                <td class="col-md-auto" style="font-size: x-small" rowspan="1">Journey Day</td>
+                <td class="col-md-auto" style="font-size: x-small" rowspan="1">Discussion Day</td>
+
+
+
+
+                <td class="col-md-auto" style="font-size: x-small" rowspan="1">Start date (From)</td>
+                <td class="col-md-auto" style="font-size: x-small" rowspan="1">To</td>
+
+                <td class="col-md-auto" style="font-size: x-small" rowspan="1">Team Name</td>
+                <td class="col-md-auto" style="font-size: x-small" rowspan="1">Team Lead</td>
+
+
+            </tr>
+            </thead>
+            <tbody>
+                @{
+                    if (ViewData["auditplanreport"] != null)
+                    {
+                        int sr = 1;
+
+                        foreach (var item in (dynamic)(ViewData["auditplanreport"]))
+                        {
+                            String sDate = item.AUDITSTARTDATE != "" && item.AUDITSTARTDATE != null ? item.AUDITSTARTDATE.Split(" ")[0] : item.AUDITSTARTDATE;
+                            String eDate = item.AUDITENDDATE != "" && item.AUDITENDDATE != null ? item.AUDITENDDATE.Split(" ")[0] : item.AUDITENDDATE;
+                            String aoeDate = item.LASTAUDITOPSENDATE != "" && item.LASTAUDITOPSENDATE != null ? item.LASTAUDITOPSENDATE.Split(" ")[0] : item.LASTAUDITOPSENDATE;
+
+                                <tr>
+                                    <td align="center" style="font-size: x-small">@sr</td>
+                                    <td align="justify" style="font-size: x-small">@item.AUDITEENAME</td>
+                                    <td align="left" style="font-size: x-small">@item.ENTITYCODE</td>
+                                    <td align="justify" style="font-size: x-small">@item.AUDITEDBY</td>
+                                    <td align="justify" style="font-size: x-small">@item.PARRENTOFFICE</td>
+                                    <td align="center" style="font-size: x-small">@aoeDate</td>
+                                    <td align="justify" style="font-size: x-small">@item.ENTITYRISK</td>
+                                    <td align="justify" style="font-size: x-small">@item.ENTITYSIZE</td>
+
+                                    <td align="left" style="font-size: x-small">@item.NORMALDAYS</td>
+                                    <td align="left" style="font-size: x-small">@item.REVENUEDAYS</td>
+                                    <td align="left" style="font-size: x-small">@item.TRAVELDAY</td>
+                                    <td align="left" style="font-size: x-small">@item.DISCUSSIONDAY</td>
+                                    <td align="justify" style="font-size: x-small">@sDate</td>
+                                    <td align="justify" style="font-size: x-small">@eDate</td>
+                                    
+
+                                    <td align="justify" style="font-size: x-small">@item.TNAME</td>
+                                    <td align="justify" style="font-size: x-small">@item.TEAMLEAD</td>
+
+                                </tr>
+                            sr = sr + 1;
+                        }
+
+                    }
+                }
+            </tbody>
+        </table>
+        <div class="row w-100 mt-3 d-none">
+            <h4>Audit Cluster Head Remarks</h4>
+            <select id="deptSelectionBox" class="form-select form-control" aria-label="Default select example">
+                <option value="0" selected>Remarks</option>
+                <option value="1">1. Recommended for Approval</option>
+                <option value="2">2. Refer back for changes in the above marked plans</option>
+            </select>
+        </div>
+        <div class="row w-100 col-md-12 mt-3 d-none">
+            <div class="col-md-6 mt-5">
+                <button onclick="window.location.href = '';" class="btn-primary">Submit</button>
+            </div>
+            <div class="col-md-6 mt-5">
+                <button onclick="window.location.href = '';" class="btn-primary">Refer Back</button>
+            </div>
+        </div>
+    </div>
+</div>

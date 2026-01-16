@@ -1,0 +1,118 @@
+﻿@{
+    var page_id = ViewData["PageId"] as int? ?? 0;
+}
+
+@{
+    ViewData["Title"] = "UserRoles";
+    Layout = "_Layout";
+
+}
+
+<script type="text/javascript">
+    $(document).ready(function () {
+        $('.menu_page_selectAll').on('click', function () {
+
+            if ($('.menu_page_selectAll').is(':checked'))
+                $('.menu_page_tick').attr('checked', true);
+            else
+                $('.menu_page_tick').attr('checked', false);
+
+        });
+       
+    });
+</script>
+
+<div class="col-md-12" style="margin-top:20px;">
+    <h5>User Roles</h5>
+    <div class="row col-md-12">
+        <div class="col-md-3 mt-3">
+            <label>User</label>
+        </div>
+        <div class="col-md-9 mt-3">
+            <select id="userSelectionBox" class="form-control select-picker" data-live-search="true" aria-label="Default select example">
+                <option value="0" selected>--Select User--</option>
+                @{
+                    if (ViewData["UserList"] != null)
+                    {
+                        foreach (var item in (dynamic)(ViewData["UserList"]))
+                        {
+                            <option value="@item.PPNO" id="@item.PPNO">@item.PPNO &nbsp;--&nbsp; @item.EMPLOYEEFIRSTNAME &nbsp; &nbsp; @item.EMPLOYEELASTNAME</option>
+                        }
+                    }
+                }
+            </select>
+        </div>
+    </div>
+    <div class="row col-md-12 d-none-1">
+        <div class="col-md-3 mt-2">
+            <label>Group/Role</label>
+        </div>
+        <div class="col-md-9 mt-2">
+            <select id="groupSelectionBox" class="form-select form-control" aria-label="Default select example">
+                <option value="0" selected>--Select Group/Roles--</option>
+                @{
+                    if (ViewData["GroupList"] != null)
+                    {
+                        foreach (var item in (dynamic)(ViewData["GroupList"]))
+                        {
+                            <option value="@item.GROUP_ID" id="@item.GROUP_ID">@item.GROUP_NAME</option>
+                        }
+                    }
+                }
+            </select>
+        </div>
+    </div>
+    <div class="row col-md-12 d-none-1">
+        <div class="col-md-3 mt-2">
+            <label>Menu</label>
+        </div>
+        <div class="col-md-9 mt-2">
+            <select id="menuSelectionBox" class="form-select form-control" aria-label="Default select example">
+                <option value="0" selected>--Select Menu--</option>
+                @{
+                    if (ViewData["MenuList"] != null)
+                    {
+                        foreach (var item in (dynamic)(ViewData["MenuList"]))
+                        {
+                            <option value="@item.Menu_Id" id="@item.Menu_Id">@item.Menu_Name</option>
+                        }
+                    }
+                }
+            </select>
+        </div>
+    </div>
+    <div class="row col-md-12 d-none-1">
+        <div class="col-md-3 mt-2">
+            <label>Pages</label>
+        </div>
+        <div class="col-md-9 mt-2">
+            <div class="row col-md-12">
+                <div style="margin-left:auto;">
+                    <input class="menu_page_selectAll" type="checkbox" /> <label class="font-weight-normal ml-2">Select All</label>
+                </div>
+            </div>
+            <div class="row col-md-12">
+                @{
+                    if (ViewData["MenuPagesList"] != null)
+                    {
+
+                        foreach (var item in (dynamic)(ViewData["MenuPagesList"]))
+                        {
+
+                            <div class="col-md-6">
+                                <input id="@item.Id" class="menu_page_tick" type="checkbox" /> <label class="font-weight-normal ml-2">@item.Page_Name</label>
+                            </div>
+                        }
+                    }
+                }
+            </div>
+        </div>
+    </div>
+    <div class="row col-md-12 d-none-1">
+        <div style="margin-left:auto;">
+            <button class="btn btn-secondary">Cancel</button>
+            <button class="btn btn-danger ml-2">Save Changes</button>
+        </div>
+    </div>
+
+ </div>

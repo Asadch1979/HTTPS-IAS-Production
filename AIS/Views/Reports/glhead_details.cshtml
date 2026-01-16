@@ -1,0 +1,74 @@
+﻿@{
+    var page_id = ViewData["PageId"] as int? ?? 0;
+}
+
+@{
+    ViewData["Title"] = "GL Head Detials";
+    Layout = "_Layout";
+}
+
+<script type="text/javascript">
+
+    $('#document').ready(function () {
+        var url_string = window.location;
+        var url = new URL(url_string);
+        var gl_id = url.searchParams.get("glcode");
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/Glhead_Sub_Details",
+            type: "POST",
+            data: {
+                'GLTYPEID': gl_id
+            },
+            cache: false,
+            success: function (data) {
+
+                $.each(data.gL_SUBDETAILS, function (i, v) {
+
+                    console.log(data);
+
+                    /**/
+                    $('#gldetailtab tbody').append('<tr><td class="text-right">' + v.glsubcode + '</td><td>' + v.description + '</td><td>' + v.glsubname + '</td>  <td class="text-right">' + v.credit + '</td><td class="text-right">' + v.debit + '</td> <td class="text-right">' + v.balance + '</td></td> <td>  <a href="'+g_asiBaseURL+'/Reports/glhead_transaction_details?glsubcode=' + v.glsubcode + '">Details</a></td> </tr>')
+    /**/
+});
+},
+dataType: "json",
+});
+});
+
+
+</script>
+
+<div class="row col-md-12 mt-3">
+    <h4 style="display: block; color: #be0e43">GL Head Details</h4>
+</div>
+
+<div class="row col-md-12 mt-3">
+    <div class="row col-md-12">
+        <table id="gldetailtab" class="col-md-12 table table-bordered table-hover mt-1 table-striped">
+            <thead style="background-color: #19875478 !important; ">
+                <tr>
+                    <th class="col-md-auto">GL Head</th>
+                    <th class="col-md-auto">GL Description</th>
+                    <th class="col-md-auto">GL Sub-Name</th>
+                    <th class="col-md-auto">Credit</th>
+                    <th class="col-md-auto">Debit</th>
+                    <th class="col-md-auto">Balance</th>
+                    <th class="col-md-auto">Action</th>
+              
+
+
+                </tr>
+            </thead>
+            <tbody>
+            </tbody>
+
+
+        </table>
+        <div class="row col-md-12 mt-3">
+
+           <button onclick="history.back()" class="btn btn-primary" >Return</button>
+
+            </div>
+
+        </div>
+    </div>

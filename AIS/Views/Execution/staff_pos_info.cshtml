@@ -1,0 +1,141 @@
+﻿@{
+    var page_id = ViewData["PageId"] as int? ?? 0;
+}
+
+@{
+    ViewData["Title"] = "Staff Position Information";
+    Layout = "_Layout";
+}
+
+
+<style type="text/css">
+    .container {
+        max-width: 100%;
+    }
+
+    .card-header {
+        background-color: transparent !important;
+        font-size: 20px;
+        height: 100px;
+    }
+
+    .icon-card {
+        margin: 10px;
+    }
+</style>
+
+<script type="text/javascript">
+
+    $(document).ready(function () {
+
+        getb_depositinfo();
+
+        $('#sidebar_policy').hide();
+        $("#searchTableRecord").on("keyup", function () {
+            var value = $(this).val().toLowerCase();
+            $("#b_d_T tbody tr").filter(function () {
+                $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1)
+            });
+        });
+
+
+    });
+
+ 
+
+
+
+
+</script>
+<div class="row col-md-12 mt-3">
+    <h4 style="display: block; color: #be0e43">Staff Position Information</h4>
+</div>
+
+
+<!--<div class="row col-md-12 mt-1">
+
+    <div class="row col-md-6 mt-1">
+        <label><b>Branch ID</b></label>
+        <input id="b_i" class="form-control ml-1" type="number" />
+    </div>
+</div>
+<div class="row col-md-12 mt-3">
+    <button onclick="getb_depositinfo();" class="btn btn-primary">Find</button>
+</div>
+-->
+
+
+<div class="row col-md-12">
+    <input class="form-control" id="searchTableRecord" type="text" placeholder="Search..">
+</div>
+
+<div class="row col-md-12 mt-3">
+    <table  class="table table-hover table-bordered table-hover mt-3 table-striped">
+        <thead style="background-color: #19875478 !important; ">
+            <tr>
+                <th class="col-md-auto">PP. No.</th>
+                <th class="col-md-auto">Name</th>
+                <th class="col-md-auto">Qualification</th>
+
+                <th class="col-md-auto">Designation</th>
+                <th class="col-md-auto">Rank Desc</th>
+                <th class="col-md-auto">Zone Desc</th>
+                <th class="col-md-auto">Date Of Posting</th>
+
+
+            </tr>
+        </thead>
+        <tbody>
+
+            @{
+
+                if (ViewData["staffpos"] != null)
+                { 
+
+                foreach (var item in (dynamic)(ViewData["staffpos"]))
+                {
+
+                        <tr>
+                            <td>
+                                <p>@item.PPNO</p>
+                            </td>
+                            <td>
+                                <p>@item.EMPLOYEE_NAME</p>
+                            </td>
+                            <td>
+                                <p>@item.QUALIFICATION</p>
+                            </td>
+                            <td>
+                                <p>@item.DESIGNATION</p>
+
+                            </td>
+                            <td>
+                                <p>@item.RANK_DESC</p>
+
+                            </td>
+
+                            <td>
+                                <p>@item.PLACE_OF_POSTING</p>
+
+                            </td>
+
+                            <td>
+                                <p>@item.DATE_OF_POSTING</p>
+
+                            </td>
+
+
+
+                        </tr>
+                    }
+                }
+            }
+        </tbody>
+    </table>
+
+    <div class="row col-md-12 mt-3">
+
+        <button onclick="history.back()" class="btn btn-primary" style="color:white">Return</button>
+
+    </div>
+</div>

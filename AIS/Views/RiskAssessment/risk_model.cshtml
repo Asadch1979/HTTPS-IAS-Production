@@ -1,0 +1,323 @@
+﻿@{
+    ViewData["Title"] = "Risk Model";
+    Layout = "_Layout";
+}
+
+<style type="text/css">
+    .container {
+        max-width: 100%;
+    }
+
+    .card-header {
+        background-color: transparent !important;
+        font-size: 20px;
+        height: 100px;
+    }
+
+    .icon-card {
+        margin: 10px;
+    }
+</style>
+
+<div class="row text-center mt-3 pl-2">
+    <h4 style=" display:block;color: #be0e43">Risk Model</h4>
+</div>
+<div class="row col-md-12 mt-3">
+    <div class="row col-md-2">
+        <h5>Audit Period</h5>
+    </div>
+<div class="row col-md-6">
+        <select id="auditCriteriaPeriodField" class="form-select form-control" aria-label="Default select example">
+            <option value="0" id="0" selected>--Select Audit Period--</option>
+            @{
+                if (ViewData["AuditPeriodList"] != null)
+                {
+
+                    foreach (var period in (dynamic)(ViewData["AuditPeriodList"]))
+                    {
+                        <option id="@period.AUDITPERIODID" value="@period.AUDITPERIODID">@period.DESCRIPTION</option>
+                    }
+
+                }
+            }
+        </select>
+    </div>
+</div>
+<!--  <div class="row col-md-12">
+        <center class="w-100">
+            <table class="table ml-3 table-bordered table-sm mb-0 mt-3 bg-white table-hover table-striped" style="width:600px;" id="portfolio">
+                <thead>
+                    <tr>
+                        <th class="bg-primary" style="text-align:center;" colspan="8">Enter Portfolio (Mn)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td class="bg-primary" width="100">
+</td>
+<td class="bg-success" width="600"><input class="form-select form-control" type="number" /></td>
+                    </tr>
+                </tbody>
+            </table>
+        </center>
+    </div>
+<div class="row col-md-12">
+    <center class="w-100">
+        <table class="table ml-3 table-bordered mb-0 mt-3 bg-white table-hover table-striped" style="width:600px;" id="risk control assessment">
+            <thead>
+                <tr>
+                    <th style="text-align:center;">Risk Control Assessment</th>
+                    <th style="text-align:center;">Weighted Average Score</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><b>Internal Control Risk Assessment</b></>
+                    <td><input class="form-select form-control" type="number" /></td>
+                </tr>
+                <tr>
+                    <td><b>Shortfall/ Risks in Key Perforamance Indicators</b></>
+                    <td><input class="form-select form-control" type="number" /></td>
+                </tr>
+                <tr>
+                    <td><b>Operatinal Risks Assessments</b></>
+                    <td><input class="form-select form-control" type="number" /></td>
+                </tr>
+            </tbody>
+        </table>
+    </center>
+</div>
+
+
+<div class="row col-md-12 mt-3">
+    <table class="table table-bordered mb-0 table-sm mt-3 bg-white table-hover table-striped" id="Risk Rating">
+        <thead>
+            <tr>
+                <th class="bg-primary" style="text-align:center;" colspan="4">Final Risk Rating</th>
+                <th>Portfolio</th>
+                <th>Branch Size</th>
+                <th>Low Risk</th>
+                <th>Medium Risk</th>
+                <th>High Risk</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td class="bg-primary" style="text-align:center;">Branch Size</td>
+                <td style="text-align:center;" class="bg-primary" colspan="3">Risk Rating</td>
+                <td class="bg-primary">Upto 300Mn.</td>
+                <td class="bg-primary">Small</td>
+                <td class="bg-primary">Upto 10</td>
+                <td class="bg-primary">11 - 40</td>
+                <td class="bg-primary"> > 40 </td>
+            </tr>
+            <tr>
+                <td class="bg-success" style="text-align:center;">
+                    <select id="branchsize" class="form-select form-control"></select>
+                </td>
+                <td class="bg-danger"><input class="form-select form-control" type="number" /></td>
+                <td>
+                    <select id="risktype" class="form-select form-control"></select>
+                </td>
+                <td class="bg-danger"><input class="form-select form-control" type="number" /></td>
+                <td class="bg-danger">Rs.301Mn. to Rs.699Mn</td>
+                <td class="bg-danger">Medium</td>
+                <td class="bg-danger">Upto 15</td>
+                <td class="bg-danger">16 - 50</td>
+                <td class="bg-danger"> > 60 </td>
+            </tr>
+            <tr>
+                <td style="text-align:center;">
+                    <select id="branchsize" class="form-select form-control"></select>
+                </td>
+                <td><input class="form-select form-control" type="number" /></td>
+                <td>
+                    <select id="risktype" class="form-select form-control"></select>
+                </td>
+                <td><input class="form-select form-control" type="number" /></td>
+                <td class="bg-light">Rs.700Mn. & Above</td>
+                <td class="bg-light">Large</td>
+                <td class="bg-light">Upto 20</td>
+                <td class="bg-light">21 - 70</td>
+                <td class="bg-light"> > 70 </td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+-->
+<div class="row w-100 mt-3 pl-2">
+    <table class="table table-bordered bg-white table-hover table-striped" id="criteria">
+        <thead>
+            <tr style="background-color: #19875478 !important; ">
+                <th width="600px" rowspan="3" style="text-align:center;">Audit Entity</th>
+                <th colspan="7" style="text-align:center;">Internal Control Risk Assessment</th>
+                <!--<th colspan="5" style="text-align:center;">Risks in Key Perforamance Indicators</th>
+    <th style="text-align:center;">Non Rectification of Previous Audit Irregularities</th>
+    <th style="text-align:center;" colspan="3">Loss Making Branch</th>
+    <th style="text-align:center;">Security Arrangements</th>-->
+                <th colspan="6" style="text-align:center;">Preventive & Detection Risk</th>
+            </tr>
+            <tr style="background-color: #19875478 !important; ">
+                <td colspan="4" style="text-align:center;">Non Compliance of Bank’s policies /procedures /SBP directives</td>
+                <td rowspan="2" style="text-align:center;">Lapses in Management Information System (MIS)</td>
+                <td rowspan="2" style="text-align:center;">Cash Related Violations</td>
+                <td rowspan="2" style="text-align:center;">Branch Control violations</td>
+                <!--<td rowspan="2" style="text-align:center;">i.Increase in NPL</td>
+    <td rowspan="2" style="text-align:center;">ii.Increase in SAM</td>
+    <td rowspan="2" style="text-align:center;">iii.Recovery Lapses</td>
+    <td rowspan="2" style="text-align:center;">iv.Disbursement Target Shortfall Vs Budget</td>
+    <td rowspan="2" style="text-align:center;">v.Deposit Target Shortfall Vs Budget</td>
+    <td rowspan="2" style="text-align:center;">Vol. 1 Outstanding Observation</td>
+    <td rowspan="2" style="text-align:center;">if Up to Rs 0.100</td>
+    <td rowspan="2" style="text-align:center;">if From Rs 0.101 to Rs 1.000</td>
+    <td rowspan="2" style="text-align:center;">Rs 1.001-10.00, Rs.10.001 Mn. To 50 Mn., Rs. 50.001 Mn-above</td>
+    <td rowspan="2" style="text-align:center;">Installation & use of CCTV</td>-->
+                <td rowspan="2" style="text-align:center;">Fraud & Forgery</td>
+                <td rowspan="2" style="text-align:center;">Redemption of Land in alive loan cases</td>
+                <td rowspan="2" style="text-align:center;">Misuse of Credit powers</td>
+                <td rowspan="2" style="text-align:center;">Instances Where Bank's Funds are Not Safe</td>
+                <td rowspan="2" style="text-align:center;">Non Balancing of Branches</td>
+                <td rowspan="2" style="text-align:center;">SBP Penalty</td>
+            </tr>
+            <tr style="background-color: #19875478 !important; ">
+                <td>NON  Compliance of SBP Directives</td>
+                <td>NON Compliance of   ZTBL directives</td>
+                <td>Violations in  Authorization and Approval Procedures</td>
+                <td>Internal Controls Violations</td>
+                
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <!--<td></td>
+    <td></td>
+    <td></td>
+    <td></td>
+    <td></td>
+    <td></td>
+    <td></td>
+    <td></td>
+    <td></td>
+    <td></td>-->
+            </tr>
+            <tr>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <!--<td></td>
+    <td></td>
+    <td></td>
+    <td></td>
+    <td></td>
+    <td></td>
+    <td></td>
+    <td></td>
+    <td></td>
+    <td></td>-->
+            </tr>
+            <tr>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <!--<td></td>
+    <td></td>
+    <td></td>
+    <td></td>
+    <td></td>
+    <td></td>
+    <td></td>
+    <td></td>
+    <td></td>
+    <td></td>-->
+            </tr>
+            <tr>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <!--<td></td>
+    <td></td>
+    <td></td>
+    <td></td>
+    <td></td>
+    <td></td>
+    <td></td>
+    <td></td>
+    <td></td>
+    <td></td>-->
+            </tr>
+            <tr>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <!--<td></td>
+    <td></td>
+    <td></td>
+    <td></td>
+    <td></td>
+    <td></td>
+    <td></td>
+    <td></td>
+    <td></td>
+    <td></td>-->
+            </tr>
+        </tbody>
+    </table>
+</div>

@@ -1,0 +1,75 @@
+﻿@{
+    var page_id = ViewData["PageId"] as int? ?? 0;
+}
+
+@{
+    ViewData["Title"] = "Active Users";
+    Layout = "_Layout";
+}
+
+
+<script type="text/javascript">
+
+    $(document).ready(function () {
+        GetCurrentActiveSessions();
+    });
+    function GetCurrentActiveSessions() {
+        $('#CurrentActiveSessionsGrid tbody').empty();
+        if ($('#auditDepartmentSelectBox').val() != 0) {
+            $.ajax({
+                url: g_asiBaseURL + "/ApiCalls/get_active_users",
+                type: "POST",
+                data: {
+                   
+                },
+                cache: false,
+                success: function (data) {
+                    var sr = 1;
+                    $.each(data, function (i, v) {
+                        v.sessioN_TIME = v.sessioN_TIME.replace('.', ':');
+                        v.sessioN_TIME = v.sessioN_TIME.split('.')[0];
+                        v.sessioN_TIME = v.sessioN_TIME.split(':')[0] + ':' + v.sessioN_TIME.split(':')[1] + ':' + v.sessioN_TIME.split(':')[2];
+                        v.loggeD_IN_DATE = v.loggeD_IN_DATE.replace('T', ' ');
+
+                        $('#CurrentActiveSessionsGrid tbody').append('<tr><td class="text-center">' + sr + '</td><td>' + v.departmenT_NAME + '</td><td>' + v.name + '</td><td class="text-center">' + v.pP_NUMBER + '</td><td>' + v.loggeD_IN_DATE + '</td><td class="text-center">' + v.sessioN_TIME + '</td></tr>');
+                        sr++;
+
+                    });
+                },
+                dataType: "json",
+            });
+        }
+        
+       
+    }
+
+
+</script>
+
+<div class="mt-3 mb-4">
+    <h3 style="color: #be0e43">Active Users</h3>
+
+
+</div>
+
+
+<div class="mt-3">
+    <table id="CurrentActiveSessionsGrid" class="table table-hover table-bordered table-hover mt-3 table-striped">
+        <thead style="background-color: #19875478 !important; ">
+            <tr>
+                <th class="col-md-auto text-center">Sr. No.</th>
+                <th class="col-md-auto">Department <br /> Audit Cluster</th>
+                <th class="col-md-auto">Employee Name</th>
+                <th class="col-md-auto text-center">Employee PP Number</th>
+                <th class="col-md-auto">Logged In At</th>
+                <th class="col-md-auto text-center align-items-center">Session Time <br/> (hh:mm:ss)</th>
+
+            </tr>
+        </thead>
+        <tbody>
+
+        </tbody>
+    </table>
+</div>
+
+

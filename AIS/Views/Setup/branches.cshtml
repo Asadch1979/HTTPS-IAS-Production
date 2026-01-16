@@ -1,0 +1,253 @@
+﻿@{
+
+    ViewData["Title"] = "Branch Setup";
+    Layout = "_Layout";
+}
+
+
+<script type="text/javascript">
+    $(document).ready(function () {
+        var g_branchId = 0;
+        $("#searchTableRecord").on("keyup", function () {
+            var value = $(this).val().toLowerCase();
+            $("#listOfBranches tbody tr").filter(function () {
+                $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1)
+            });
+        });
+    });
+
+    function newBranchSetup() {
+        g_branchId = 0;
+        $('#setupBranchModal').modal('show');
+        $('#branchCodeModalField').val('');
+        $('#branchNameModalField').val('');
+        $('#branchZoneModalField').val('');
+        $('#branchSizeModalField').val('');
+        $('#branchRiskModalField').val('');
+    }
+
+    function setupBranch(code, name, zone, zoneId, size, sizeId,risk, status,brId ) {
+        g_branchId = brId;
+        $('#branchCodeModalField').val(code);
+        $('#branchNameModalField').val(name);
+        $('#branchZoneModalField').val(zoneId);
+        $('#branchSizeModalField').val(sizeId);
+        $('#branchRiskModalField').val(risk);
+        if (status == "Active")
+            $('#branchActiveModalField').click();
+        else if (status == "InActive")
+            $('#branchInactiveModalField').click();
+
+        $('#setupBranchModal').modal('show');
+    }
+
+    function publishBranchChanges() {
+
+        var code = $('#branchCodeModalField').val();
+        var name = $('#branchNameModalField').val();
+        var zoneId = $('#branchZoneModalField').val();
+        var zone_name = $('#branchZoneModalField option:selected').text();
+        var sizeId = $('#branchSizeModalField').val();
+        var size = $('#branchSizeModalField option:selected').text();
+        var risk = $('#branchRiskModalField').val();
+        var status;
+        var badge;
+        if ($('#branchActiveModalField').is(':checked')) {
+            status = 'Active';
+            badge = 'text-bg-success ';
+        }
+        else {
+            status = 'InActive';
+            badge = 'text-bg-danger ';
+        }
+        if (g_branchId == 0)
+            var row = "<tr id=\"div_" + g_branchId + " \"><td><p class=\"fw - normal mb - 1\">" + code + "</p></td><td><p class=\"fw - normal mb - 1\">" + name + "</p></td><td><p class=\"fw - normal mb - 1\">" + zone_name + "</p></td><td><p class=\"fw - normal mb - 1\">" + size + "</p></td><td><p class=\"fw - normal mb - 1\">" + risk + "</p></td><td><span class=\"badge " + badge + " rounded - pill d - inline\">" + status + "</span></td><td><button type=\"button\" class=\"btn btn - link text - danger btn - sm btn - rounded\" onclick=\"setupBranch('" + code + "', '" + name + "', '" + zone_name + "', '" + zoneId + "', '" + size + "', '" + sizeId + "', '" + risk + "', '" + status + "', '" + g_branchId + "'); \" > Edit</button></td ></tr >";
+        else
+            $('#div_' + g_branchId).html("<td><p class=\"fw - normal mb - 1\">" + code + "</p></td><td><p class=\"fw - normal mb - 1\">" + name + "</p></td><td><p class=\"fw - normal mb - 1\">" + zone_name + "</p></td><td><p class=\"fw - normal mb - 1\">" + size + "</p></td><td><p class=\"fw - normal mb - 1\">" + risk + "</p></td><td><span class=\"badge " + badge + " rounded - pill d - inline\">" + status + "</span></td><td><button type=\"button\" class=\"btn btn - link text - danger btn - sm btn - rounded\" onclick=\"setupBranch('" + code + "', '" + name + "', '" + zone_name + "', '" + zoneId + "', '" + size + "', '" + sizeId + "', '" + risk + "', '" + status + "', '" + g_branchId + "'); \" > Edit</button></td >");
+        $('#listOfBranches tbody').append(row);
+        $('#setupBranchModal').modal('hide');
+        $.ajax({
+            url: g_asiBaseURL + "/Setup/branch_add",
+            type: "POST",
+            data: {
+                'BRANCHID': g_branchId,
+                'BRANCHCODE': code,
+                'BRANCHNAME': name,
+                'ZONEID': zoneId,
+                'BRANCH_SIZE_ID': sizeId,
+                'BRANCH_SIZE': size,
+                'ZONE_NAME': zone_name,
+                'ISACTIVE': status
+            },
+            cache: false,
+            success: function (data) {
+                //console.log(data);
+                window.location = window.location.pathname;
+
+            },
+            dataType: "json",
+        });
+    }
+</script>
+
+<div class="col-md-12" style="margin-top:20px;">
+    <h3>List of Branches</h3>
+    <div class="row">
+        <div class="col-md-10">
+            <input class="form-control" id="searchTableRecord" type="text" placeholder="Search..">
+        </div>
+        <div class="col-md-2">
+            <button onclick="newBranchSetup();" class="btn btn-danger w-100">Add New</button>
+        </div>
+    </div>
+    <br>
+    <table id="listOfBranches" class="table align-middle mb-0 bg-white table-hover table-striped">
+        <thead class="bg-light">
+            <tr>
+                <th>Branch Code</th>
+                <th>Branch Name</th>
+                <th>Zone Name</th>
+                <th>Size</th>
+                <th>Risk Ratting</th>
+                <th>Status</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            @{
+                if (ViewData["BranchList"] != null)
+                {
+                    foreach (var item in (dynamic)(ViewData["BranchList"]))
+                    {
+
+                        <tr id="div_@item.BRANCHID">
+                            <td>
+                                <p class="fw-normal mb-1">@item.BRANCHCODE</p>
+                            </td>
+                            <td>
+                                <p class="fw-normal mb-1">@item.BRANCHNAME</p>
+                            </td>
+                            <td>
+                                <p class="fw-normal mb-1">@item.ZONE_NAME</p>
+                            </td>
+                            <td>
+                                <p class="fw-normal mb-1">@item.BRANCH_SIZE</p>
+                            </td>
+                            <td>
+                                @{
+                                    string risk = "Low";
+                                    if (item.BRANCH_SIZE.Replace(@"\t|\n|\r", String.Empty)  == "Medium")
+                                        risk = "Medium";
+                                    else if (item.BRANCH_SIZE.Replace(@"\t|\n|\r", String.Empty) == "Large")
+                                        risk = "High";
+                                }
+                                <p class="fw-normal mb-1">@risk</p>
+                            </td>
+                            <td class="dept_status">
+                                @{
+                                    if (item.ISACTIVE == "Active")
+
+                                    {
+                                        <span class="badge text-bg-success rounded-pill d-inline" style="color: green">@item.ISACTIVE</span>
+                                    }
+                                else
+                                { <span class="badge text-bg-danger rounded-pill d-inline" style="color: red">@item.ISACTIVE</span>}
+                                }
+                            </td>
+                            <td>
+                                <button type="button" class="btn btn-link text-danger btn-sm btn-rounded" onclick="setupBranch('@item.BRANCHCODE','@item.BRANCHNAME','@item.ZONE_NAME','@item.ZONEID','@item.BRANCH_SIZE','@item.BRANCH_SIZE_ID','@risk','@item.ISACTIVE','@item.BRANCHID');">
+                                    Edit
+                                </button>
+                            </td>
+                        </tr>
+                    }
+                }}
+        </tbody>
+    </table>
+</div>
+
+<div id="setupBranchModal" class="modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">Branch Setup</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form>
+                    <div class="form-group">
+                        <label for="branchCodeModalField">Branch Code</label>
+                        <input type="text" class="form-control" id="branchCodeModalField" aria-describedby="brcode" placeholder="Branch Code">
+
+                    </div>
+                    <div class="form-group">
+                        <label for="branchNameModalField">Branch Name</label>
+                        <input type="text" class="form-control" id="branchNameModalField" placeholder="Branch Name">
+                    </div>
+                    <div class="form-group">
+                        <label for="branchZoneModalField">Zone</label>
+                        <select id="branchZoneModalField" class="form-select form-control">
+                            @{
+                                if (ViewData["ZoneList"] != null)
+                                {
+                                    foreach (var item in (dynamic)(ViewData["ZoneList"]))
+                                    {
+                                        <option value="@item.ZONEID" id="@item.ZONEID">@item.ZONENAME</option>
+                                    }
+                                }
+                            }
+
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="branchSizeModalField">Zone</label>
+                        <select id="branchSizeModalField" class="form-select form-control">
+                            @{
+                                if (ViewData["BranchSizeList"] != null)
+                                {
+                                    foreach (var item in (dynamic)(ViewData["BranchSizeList"]))
+                                    {
+                                        <option value="@item.BR_SIZE_ID" id="@item.BR_SIZE_ID">@item.DESCRIPTION</option>
+                                    }
+                                }
+                            }
+
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="branchRiskModalField">Zone</label>
+                        <select id="branchRiskModalField" class="form-select form-control">
+                            <option value="Low" id="Low">Low</option>
+                            <option value="Medium" id="Medium">Medium</option>
+                            <option value="High" id="High">High</option>
+                        </select>
+                    </div>
+                  
+                    <div class="form-group">
+                        <label for="branchAddressModalField">Status</label>
+                        <div class="row col-md-12">
+                            <div class="form-check form-check-inline">
+                                <input class="form-check-input" type="radio" name="inlineRadioOptions" id="branchActiveModalField" value="option1" />
+                                <label class="form-check-label" for="branchActiveModalField">Active</label>
+                            </div>
+
+                            <div class="form-check form-check-inline">
+                                <input class="form-check-input" type="radio" name="inlineRadioOptions" id="branchInactiveModalField" value="option2" />
+                                <label class="form-check-label" for="branchInactiveModalField">Inactive</label>
+                            </div>
+                        </div>
+                    </div>
+
+
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button onclick="publishBranchChanges();" type="button" class="btn btn-danger">Save changes</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+

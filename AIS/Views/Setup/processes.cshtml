@@ -1,0 +1,634 @@
+﻿@{
+    var page_id = ViewData["PageId"] as int? ?? 0;
+}
+
+@{
+    ViewData["Title"] = "Processes";
+    Layout = "_Layout";
+}
+<style type="text/css">
+    /* Remove default bullets */
+    ul, #processList {
+        list-style-type: none;
+    }
+    .childLevel::before {
+        content: "";
+        display: block;
+        position: absolute;
+        background-color: grey;
+        width: 5px;
+    }
+    .grandchildLevel::before {
+        content: "";
+        display: block;
+        position: absolute;
+        background-color: grey;
+        width: 5px;
+    }
+
+    /* Remove margins and padding from the parent ul */
+    #processList {
+        margin: 0;
+        padding: 0;
+    }
+
+    /* Style the caret/arrow */
+    .caret {
+        cursor: pointer;
+        user-select: none; /* Prevent text selection */
+    }
+
+        /* Create the caret/arrow with a unicode, and style it */
+        .caret::before {
+            content: "\25B6";
+            color: black;
+            display: inline-block;
+            margin-right: 6px;
+        }
+
+    /* Rotate the caret/arrow icon when clicked on (using JavaScript) */
+    .caret-down::before {
+        transform: rotate(90deg);
+    }
+
+    /* Hide the nested list */
+    .nested {
+        display: none;
+    }
+
+    /* Show the nested list when the user clicks on the caret/arrow (with JavaScript) */
+    .active {
+        display: block;
+    }
+
+    .icon {
+        cursor: pointer;
+        user-select: none; /* Prevent text selection */
+    }
+        /* Create the caret/arrow with a unicode, and style it */
+        .icon::before {
+            content: "•";
+            color: black;
+            display: inline-block;
+            margin-right: 6px;
+        }
+
+    .listItems-selected {
+        color: blue;
+        text-decoration: none;
+    }
+
+    .listItems:hover {
+        color: blue;
+        text-decoration: underline;
+    }
+    .newitemaddmenu:hover{
+        font-size:120%;
+        cursor:pointer;
+        font-weight:600;
+    }
+    .container{
+        min-width:80% !important;
+    }
+</style>
+<script type="text/javascript" src="~/lib/rich-text-editor/jquery.richtext.js"></script>
+<script type="text/javascript">
+    var g_proc_id = 0;
+    var g_sub_proc_id = 0;
+   
+    function getProcessChilds(procId) {
+        if (!$('#procItem_' + procId + ' >span').hasClass('caret-down')) {
+
+            $.ajax({
+                url: g_asiBaseURL + "/Setup/process_details",
+                type: "POST",
+                data: {
+                    'ProcessId': procId
+                },
+                cache: false,
+                success: function (data) {
+                    $.each(data, function (index, child) {
+                        $('#procItem_' + procId).append('<ul class="childLevel"><li id="procTrans_' + child.id + '"><span onclick="event.preventDefault();getProcessTransactions(' + child.id + ')"  class="caret">' + child.title + '</span></li></ul>');
+
+                    });
+                    $('#procItem_' + procId + ' >span').after('<ul class="childLevel"><li><span onclick="event.preventDefault();addNewSubProcess(' + procId + ')" class="newitemaddmenu text-success" >-- Add New Sub Process--</span></li></ul>')
+                    $('#procItem_' + procId + ' >span').addClass('caret-down');
+
+                },
+                dataType: "json",
+            });
+        } else {
+            $('#procItem_' + procId + ' >span').removeClass('caret-down');
+            // $('#procItem_' + procId + ' >span').addClass('caret');
+            $('#procItem_' + procId + ' .childLevel').remove();
+        }
+    }
+    function getProcessTransactions(procDetailId) {
+        if (!$('#procTrans_' + procDetailId + ' >span').hasClass('caret-down')) {
+
+            $.ajax({
+                url: g_asiBaseURL + "/Setup/process_transactions",
+                type: "POST",
+                data: {
+                    'ProcessDetailId': procDetailId
+                },
+                cache: false,
+                success: function (data) {
+
+                    console.log('tranc', data);
+                    $.each(data, function (index, child) {
+                        $('#procTrans_' + procDetailId).append('<ul class="grandchildLevel"><li  class="listItems"><span id="transactionspan_' + child.id + '" onclick="event.preventDefault();showTransactionDetail(this);" class="icon">' + child.description + '</span></li></ul>');
+
+                    });
+                    $('#procTrans_' + procDetailId + ' >span').after('<ul class="grandchildLevel"><li><span onclick="event.preventDefault();addNewSubProcessTransaction(' + procDetailId + ');" class="newitemaddmenu text-success" >-- Add New Transaction--</span></li></ul>')
+                    $('#procTrans_' + procDetailId + ' >span').addClass('caret-down');
+
+                },
+                dataType: "json",
+            });
+        } else {
+            $('#procTrans_' + procDetailId + ' >span').removeClass('caret-down');
+            $('.grandchildLevel').remove();
+        }
+    }
+
+    function showTransactionDetail(e) {
+        var trId = $(e).attr('id');
+        trId = trId.replace('transactionspan_', '')
+
+        if ($('#' + $(e).attr('id')).hasClass('listItems-selected')) {
+            $('.icon').removeClass('listItems-selected');
+            $('#processTransactionViewer').hide();
+        } else {
+            $('.icon').removeClass('listItems-selected');
+            $('#' + $(e).attr('id')).addClass('listItems-selected');
+            $('#processTransactionViewer').show();
+            $.ajax({
+                url: g_asiBaseURL + "/Setup/process_transactions",
+                type: "POST",
+                data: {
+                    'transactionId': trId
+                },
+                cache: false,
+                success: function (data) {
+                    g_trList = data;
+                    var tr = data[0];
+                    $('#viewerNameModalField').val(tr.procesS_NAME);
+                    $('#viewerViolationNameModalField').val(tr.violatioN_NAME);
+                    $('#viewerDescModalField').val(tr.description);
+                    $('#viewerControlModalField').val(tr.controL_OWNER);
+                    $('#viewerDivModalField').val(tr.diV_NAME);
+                   // $('#viewerActionModalField').val(tr.action);
+                    $('#viewerRiskModalField').val(tr.risk);
+                   // $('#viewerRiskMaxModalField').val(tr.risK_MAX_NUMBER);
+                },
+                dataType: "json",
+            });
+        }
+    }
+    function addNewProcess() {
+        $('#addNewProcess').modal('show');
+        $('#procNameModalField').val('');
+        $('#procRiskModalField').val(0)
+    }
+    function publishNewProcess() {
+        var name = $('#procNameModalField').val();
+        var risk = $('#procRiskModalField option:selected').val();
+        if (name == "" || risk == 0 ) {
+            alert('Please provide all the details');
+            return false;
+        }
+        $('#addNewProcess').modal('hide');
+        $.ajax({
+            url: g_asiBaseURL + "/Setup/process_add",
+            type: "POST",
+            data: {
+                'P_NAME': name,
+                'RISK_ID': risk
+            },
+            cache: false,
+            success: function (data) {
+                //console.log(data);
+                window.location = window.location.pathname;
+
+            },
+            dataType: "json",
+        });
+    }
+    function addNewSubProcess(procId) {
+        g_proc_id = procId;
+        $('#addNewSubProcess').modal('show');
+        $('#subProcNameModalField').val($('#procItem_' + procId+'>span').text());
+        $('#subProcTitleModalField').val('');
+    }
+    function publishNewSubProcess() {
+        var title = $('#subProcTitleModalField').val();
+        var ent_type = $('#subProcRiskModalField option:selected').val();
+        if (title == "" || ent_type==0) {
+            alert('Please provide all the details');
+            return false;
+        }
+        $('#addNewSubProcess').modal('hide');
+        $.ajax({
+            url: g_asiBaseURL + "/Setup/sub_process_add",
+            type: "POST",
+            data: {
+                'TITLE': title,
+                'P_ID': g_proc_id,
+                'ENTITY_TYPE': $('#subProcRiskModalField option:selected').val()
+            },
+            cache: false,
+            success: function (data) {
+                //console.log(data);
+                window.location = window.location.pathname;
+
+            },
+            dataType: "json",
+        });
+    }
+    function addNewSubProcessTransaction(subProcId) {
+        g_sub_proc_id = subProcId;
+        $('#addNewProcessTransaction').modal('show');
+        $('#tranSubProcNameModalField').val($('#procTrans_' + subProcId + '>span').text());
+        $('#tranDescModalField').val('');
+        $('#tranControlOwnerModalField').val(0);
+        $('#tranDivModalField').val(0);
+        $('#tranActionModalField').val(0);
+        $('#tranRiskModalField').val(0);
+        $('#tranRiskMaxNumberModalField').val(0);
+    }
+    function publishNewSubProcessTransaction() {
+        var desc = $('#tranDescModalField').val();
+        var control = $('#tranControlOwnerModalField').val();
+        var div_id = $('#tranDivModalField option:selected').val();
+        var action = $('#tranActionModalField').val();
+        var div_name = $('#tranDivModalField option:selected').text();
+        var risk = $('#tranRiskModalField option:selected').val();
+        if (control == 0|| action == 0 || risk == 0 || div_id == 0) {
+            alert('Please provide all the details');
+            return false;
+        }
+        $('#addNewProcessTransaction').modal('hide');
+        $.ajax({
+            url: g_asiBaseURL + "/Setup/sub_process_transaction_add",
+            type: "POST",
+            data: {
+                'PD_ID': g_sub_proc_id,
+                'V_ID': control,
+                'DESCRIPTION': desc,
+                'CONTROL_OWNER': div_id,
+                'DIV_ID': div_id,
+                'DIV_NAME': div_name,
+                'ACTION': action,
+                'RISK_WEIGHTAGE': risk
+            },
+            cache: false,
+            success: function (data) {
+                //console.log(data);
+                window.location = window.location.pathname;
+
+            },
+            dataType: "json",
+        });
+    }
+    function getControlViolationMaxNumber() {
+        if ($('#tranControlOwnerModalField option:selected').val() == 0) {
+            $('#tranRiskMaxNumberModalField').val(0);
+        } else {
+            $('#tranRiskMaxNumberModalField').val($('#tranControlOwnerModalField option:selected').attr('max-number'));
+        }
+    }
+   
+</script>
+<div class="row col-md-12">
+    <div class="col-md-6 mt-4">
+        <div class="treeview-colorful w-20 border border-secondary mx-4 my-4" style="margin:0px !important">
+            <button onclick="addNewProcess();" class="btn btn-md btn-success ml-4 mt-4">Add New Process</button>
+            <hr>
+            <ul id="processList" class="mt-4 ml-4 mb-4">
+                @{
+                    if (ViewData["ProcessList"] != null)
+                    {
+
+                        foreach (var item in (dynamic)(ViewData["ProcessList"]))
+                        {
+                            <li id="procItem_@item.P_ID">
+                                <span onclick="getProcessChilds(@item.P_ID)" class="caret">@item.P_NAME</span>
+                            </li>
+                        }
+
+                    }
+                }
+            </ul>
+        </div>
+    </div>
+    <div class="col-md-6 mt-4">
+        <div id="processTransactionViewer" style="display:none; border:1px solid grey; padding:10px;">
+            <h5>Process Transaction Detail</h5>
+            <form>
+                <div class="form-group">
+                    <label for="viewerNameModalField">Process Name</label>
+                    <select id="viewerNameModalField" class="form-select form-control">
+                        <option selected="selected" value="0" id="0">--Select Process--</option>
+                        @{
+                            if (ViewData["ProcessList"] != null)
+                            {
+
+                                foreach (var item in (dynamic)(ViewData["ProcessList"]))
+                                {
+                                    <option id="@item.P_ID" value="@item.P_ID">@item.P_NAME</option>
+                                }
+
+                            }
+                        }
+                    </select>
+                    <input type="text"  class="form-control" id="" aria-describedby="Process Name" placeholder="Process Name">
+
+                </div>
+                <div class="form-group">
+                    <label for="viewerViolationNameModalField">Violation</label>
+                    <select id="viewerViolationNameModalField" onchange="getControlViolationMaxNumber();" class="form-select form-control">
+                        <option selected="selected" value="0" id="0">--Select Control Violation--</option>
+                        @{
+                            if (ViewData["ControlViolationsList"] != null)
+                            {
+
+                                foreach (var item in (dynamic)(ViewData["ControlViolationsList"]))
+                                {
+                                    <option max-number="@item.MAX_NUMBER" id="@item.ID" value="@item.ID">@item.V_NAME</option>
+                                }
+
+                            }
+                        }
+                    </select>
+                  
+
+                </div>
+                <div class="form-group">
+                    <label for="viewerDescModalField">Description</label>
+                    <textarea class="form-control"  id="viewerDescModalField" aria-describedby="Enter Description here..." placeholder="Enter Description here..."></textarea>
+
+                </div>
+                <div class="form-group">
+                    <label for="viewerControlModalField">Function Responsible</label>
+                    <select id="viewerControlModalField" class="form-select form-control">
+                        <option value="0" id="0" selected="selected">--Select Division--</option>
+                        @{
+                            if (ViewData["DivisionList"] != null)
+                            {
+                                foreach (var item in (dynamic)(ViewData["DivisionList"]))
+                                {
+                                    <option value="@item.DIVISIONID" id="@item.DIVISIONID">@item.NAME</option>
+                                }
+                            }
+                        }
+
+                    </select>
+                    
+                </div>
+                <div class="form-group">
+                    <label for="viewerDivModalField">Role Responsible</label>
+                    <select id="viewerDivModalField" class="form-select form-control">
+                        <option selected="selected" value="0" id="0">--Select Role Responsible--</option>
+                        @{
+                            if (ViewData["RoleRespList"] != null)
+                            {
+
+                                foreach (var item in (dynamic)(ViewData["RoleRespList"]))
+                                {
+                                    <option id="@item.DESIGNATIONCODE" value="@item.DESIGNATIONCODE">@item.DESCRIPTION</option>
+                                }
+
+                            }
+                        }
+                    </select>
+                  
+                </div>
+                <div class="form-group d-none">
+                    <label for="viewerActionModalField">Action</label>
+                    <input type="text"  class="form-control" id="viewerActionModalField" aria-describedby="Action" placeholder="Action">
+                </div>
+                <div class="form-group">
+                    <label for="viewerRiskModalField">Risk Weightage</label>
+                    <select id="viewerRiskModalField" class="form-select form-control">
+                        <option value="0" id="0" selected="selected">--Select Process Risk--</option>
+                        @{
+                            if (ViewData["RiskList"] != null)
+                            {
+
+                                foreach (var item in (dynamic)(ViewData["RiskList"]))
+                                {
+                                    <option id="@item.R_ID" value="@item.R_ID">@item.DESCRIPTION</option>
+                                }
+
+                            }
+                        }
+                    </select>                    
+                </div>
+                <div class="form-group d-none">
+                    <label for="viewerRiskMaxModalField">Risk Max Number</label>
+                    <input type="text"  class="form-control" id="viewerRiskMaxModalField" aria-describedby="Control Owner">
+                </div>
+                <div class="form-group" style="height:40px; margin-bottom:0px;">
+                    <button class="btn btn-success col-md-3 float-right">Update Details</button>
+                </div>
+                
+            </form>
+        </div>
+    </div>
+</div>
+<div id="addNewProcess" class="modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">New Process</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form>
+                    <div class="form-group">
+                        <label for="procNameModalField">Process Name</label>
+                        <input type="text" class="form-control" id="procNameModalField" aria-describedby="brcode" placeholder="Process Name">
+
+                    </div>
+                  
+                    <div class="form-group">
+                        <label for="procRiskModalField">Entity Type</label>
+                        <select id="procRiskModalField" class="form-select form-control">
+                            <option value="0">--Select Entity Type--</option>
+                            @{
+                                if (ViewData["AuditableEntityTypes"] != null)
+                                {
+
+                                    foreach (var item in (dynamic)(ViewData["AuditableEntityTypes"]))
+                                    {
+                                       <option value="@item.AUTID">@item.ENTITYTYPEDESC</option>
+                                    }
+
+                                }
+                            }
+                        </select>
+                    </div>
+
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button onclick="publishNewProcess();" type="button" class="btn btn-danger">Save changes</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+<div id="addNewSubProcess" class="modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">New Sub Process</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form>
+                    <div class="form-group">
+                        <label for="subProcNameModalField">Process Name</label>
+                        <input type="text" disabled class="form-control" id="subProcNameModalField" aria-describedby="brcode" placeholder="Process Name">
+
+                    </div>
+                    <div class="form-group">
+                        <label for="subProcTitleModalField">Sub Process Title</label>
+                        <input type="text" class="form-control" id="subProcTitleModalField" aria-describedby="brcode" placeholder="Sub Process Title">
+                    </div>
+                    <div class="form-group">
+                        <label for="subProcRiskModalField">Entity Type</label>
+                        <select id="subProcRiskModalField" class="form-select form-control">
+                            <option value="0">--Select Entity Type--</option>
+                            @{
+                                if (ViewData["AuditableEntityTypes"] != null)
+                                {
+
+                                    foreach (var item in (dynamic)(ViewData["AuditableEntityTypes"]))
+                                    {
+                                        <option value="@item.AUTID">@item.ENTITYTYPEDESC</option>
+                                    }
+
+                                }
+                            }
+                        </select>
+                    </div>
+
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button onclick="publishNewSubProcess();" type="button" class="btn btn-danger">Save changes</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+<div id="addNewProcessTransaction" class="modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">New Process Transaction</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form>
+                    <div class="form-group">
+                        <label for="tranSubProcNameModalField">Sub Process Name</label>
+                        <input type="text" disabled class="form-control" id="tranSubProcNameModalField" aria-describedby="Process Name" placeholder="Process Name">
+
+                    </div>
+                    <div class="form-group">
+                        <label for="tranDescModalField">Description</label>
+                        <textarea class="form-control" id="tranDescModalField" aria-describedby="Enter Description here..." placeholder="Enter Description here..."></textarea>
+
+                    </div>
+                    <div class="form-group">
+                        <label for="tranControlOwnerModalField">Control Violation</label>
+                        <select id="tranControlOwnerModalField" onchange="getControlViolationMaxNumber();" class="form-select form-control">
+                            <option selected="selected" value="0" id="0">--Select Control Violation--</option>
+                            @{
+                                if (ViewData["ControlViolationsList"] != null)
+                                {
+
+                                    foreach (var item in (dynamic)(ViewData["ControlViolationsList"]))
+                                    {
+                                        <option max-number="@item.MAX_NUMBER" id="@item.ID" value="@item.ID">@item.V_NAME</option>
+                                    }
+
+                                }
+                            }
+                        </select>
+
+                    </div>
+                    <div class="form-group">
+                        <label for="tranDivModalField">Function Responsible</label>
+                        <select id="tranDivModalField" class="form-select form-control">
+                            <option value="0" id="0" selected="selected">--Select Division--</option>
+                            @{
+                                if (ViewData["DivisionList"] != null)
+                                {
+                                    foreach (var item in (dynamic)(ViewData["DivisionList"]))
+                                    {
+                                        <option value="@item.DIVISIONID" id="@item.DIVISIONID">@item.NAME</option>
+                                    }
+                                }
+                            }
+
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="tranActionModalField">Role Responsible</label>
+                        <select id="tranActionModalField" class="form-select form-control">
+                            <option selected="selected" value="0" id="0">--Select Role Responsible--</option>
+                            @{
+                                if (ViewData["RoleRespList"] != null)
+                                {
+
+                                    foreach (var item in (dynamic)(ViewData["RoleRespList"]))
+                                    {
+                                        <option id="@item.DESIGNATIONCODE" value="@item.DESIGNATIONCODE">@item.DESCRIPTION</option>
+                                    }
+
+                                }
+                            }
+                        </select>
+
+                    </div>                   
+                    <div class="form-group">
+                        <label for="tranRiskModalField">Risk Weightage</label>
+                        <select id="tranRiskModalField" class="form-select form-control">
+                            <option value="0" id="0" selected="selected">--Select Process Risk--</option>
+                            @{
+                                if (ViewData["RiskList"] != null)
+                                {
+
+                                    foreach (var item in (dynamic)(ViewData["RiskList"]))
+                                    {
+                                        <option  id="@item.R_ID" value="@item.R_ID">@item.DESCRIPTION</option>
+                                    }
+
+                                }
+                            }
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="tranRiskMaxNumberModalField">Risk Max Number</label>
+                        <input type="number" disabled="disabled" class="form-control" id="tranRiskMaxNumberModalField" aria-describedby="Control Owner">
+                    </div>
+
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button onclick="publishNewSubProcessTransaction();" type="button" class="btn btn-danger">Save changes</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>

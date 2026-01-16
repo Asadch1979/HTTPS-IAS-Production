@@ -1,0 +1,281 @@
+﻿@{
+    var page_id = ViewData["PageId"] as int? ?? 0;
+}
+
+@{
+    ViewData["Title"] = "CAU Paras forwarding to Branches";
+    Layout = "_Layout";
+}
+<head>
+
+
+</head>
+<script type="text/javascript">
+    var g_newParaId = 0;
+    var g_comId = 0;
+    var g_oldParaId = 0;
+
+    $(document).ready(function () {
+        getOwnParasForCompliance();
+    });
+    function getOwnParasForCompliance() {
+        $('#manageObsPanel tbody').empty();
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/get_cau_paras_for_compliance",
+            type: "POST",
+            data: {
+
+            },
+            cache: false,
+            success: function (data) {
+                g_obsList = data;
+
+                $.each(data, function (index, child) {
+
+                    $('#manageObsPanel tbody').append('<tr id="div_' + child.id + '"><td>' + ++index + '</td><td><p class="fw-normal mb-1">' + child.audiT_PERIOD + '</p></td><td><p class="fw-normal mb-1">' + child.parA_NO + '</p></td><td><p class="fw-normal mb-1">' + child.gisT_OF_PARAS + '</p></td><td class="text-center"><a href="#" onclick="event.preventDefault();viewParaDetails(' + child.neW_PARA_ID + ',' + child.olD_PARA_ID + ',\'' + child.coM_ID + '\',\'' + child.indicator + '\',\'' + child.parA_NO + '\' );" class="text-hover text-danger mr-5px"><small>Forward</small></a></td></tr>');
+                });
+
+                $('#manageObsPanel').DataTable({
+                    dom: '<"top"lfB>rt<"bottom"ip><"clear">',
+                    buttons: [
+                        {
+                            extend: 'excelHtml5',
+                            text: 'Export to Excel',
+                            className: 'btn btn-success',
+                            exportOptions: {
+                                columns: function (idx, data, node) {
+                                    // Exclude columns with the class 'hide-export'
+                                    return !$(node).hasClass('hide-export');
+                                }
+                            }
+                        },
+                        {
+                            extend: 'pdfHtml5',
+                            text: 'Export To PDF',
+                            className: 'btn btn-danger',
+                            exportOptions: {
+                                columns: function (idx, data, node) {
+                                    // Exclude columns with the class 'hide-export'
+                                    return !$(node).hasClass('hide-export');
+                                }
+                            }
+                        }
+                    ],
+                    lengthMenu: [
+                        [10, 50, 100, -1],
+                        [10, 50, 100, "All"]
+                    ]
+                });
+
+            },
+
+            dataType: "json",
+        });
+    }
+    function viewParaDetails(newParaId = 0, oldParaId = 0, comID, indicator, paraNo) {
+
+        g_newParaId = newParaId;
+        g_oldParaId = oldParaId;
+        g_comId = comID;
+        g_indicator = indicator;
+        $('#viewParaComplianceModel').modal('show');
+        $('#viewParaNoModelField').val(paraNo);
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/get_cau_para_to_branch_para_text",
+            type: "POST",
+            data: {
+                'COM_ID': g_comId,
+                'INDICATOR': g_indicator
+            },
+            cache: false,
+            success: function (data) {
+                $('#viewParaTextModelField').html(data.memO_TXT);
+            },
+            dataType: "json",
+        });
+
+    }
+    function reloadLocation() {
+        $('#viewParaComplianceModel').modal('hide');
+        window.location.reload();
+    }
+    function getrelation(parentEntityId = 0, userEntityId = 0) {
+        $('#controlingsearch').empty();
+        $('#childposting').empty();
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/get_parent_relationship_for_CAU",
+            type: "POST",
+            data: {
+                'ENTITY_REALTION_ID': $('#RelationshipField option:selected').val()
+            },
+
+
+            cache: false,
+            success: function (data) {
+
+                $('#controlingsearch').append('<option id="0" value="0">--Select Controlling/Reporting Office--</option>');
+                $.each(data, function (index, contof) {
+
+                    var selected = '';
+                    if (contof.entitY_ID == parentEntityId)
+                        selected = 'selected="selected"';
+
+                    $('#controlingsearch').append('<option ' + selected + ' value="' + contof.entitY_ID + '" id="' + contof.entitY_REALTION_ID + '">' + contof.description + '</option>')
+                });
+                if (userEntityId != 0)
+                    getplacepost(userEntityId)
+
+            },
+            dataType: "json",
+        });
+
+
+
+    }
+    function getplacepost(userEntityId = 0) {
+        $('#childposting').empty();
+
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/get_child_relationship_for_CAU",
+            type: "POST",
+            data: {
+                'E_R_ID': $('#controlingsearch option:selected').val()
+            },
+
+
+            cache: false,
+            success: function (data) {
+                $('#childposting').append('<option id="0" value="0" selected="selected">--Select Place of Posting--</option>');
+                $.each(data, function (index, gpp) {
+
+                    var selected = '';
+                    if (gpp.entitY_ID == userEntityId)
+                        selected = 'selected="selected"';
+                    $('#childposting').append('<option ' + selected + ' value="' + gpp.entitY_ID + '" id="' + gpp.entitY_ID + '">' + gpp.c_NAME + '</option>')
+                });
+            },
+            dataType: "json",
+        });
+        //  getrelation();
+
+    }
+    function CAUSubmitParaToBranch() {
+
+        if ($('#childposting').val() == "0") {
+            alert("Please select Branch to proceed");
+            return;
+        }
+
+        if ($('#cauInstructionToBranch').val() == "") {
+            alert("Please provide instructions to proceed");
+            return;
+        }
+        $('#submitCAUParaResponseHandler').attr("disabled", true);
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/submit_cau_para_to_branch",
+            type: "POST",
+            data: {
+                'COM_ID': g_comId,
+                'BR_ENT_ID': $('#childposting').val(),
+                'CAU_COMMENTS': $('#cauInstructionToBranch').val()
+            },
+            cache: false,
+            success: function (data) {
+                alert(data.message);
+                $('#submitCAUParaResponseHandler').attr("disabled", false);
+                onAlertCallback(reloadLocation);
+            }, error: function (jqXHR, textStatus, errorThrown) {
+                $('#submitCAUParaResponseHandler').attr("disabled", false);
+                alert("An error occurred: " + jqXHR.status + " " + errorThrown);
+
+
+            },
+            dataType: "json",
+        });
+    }
+</script>
+
+
+<div class="row">
+    <div id="ownCompliancePanel" class="row col-md-12 mt-3">
+        <h3 style=" display:block;color: #be0e43">LIST OF OUTSTANADING @ViewData["UserEntityName"] COMPLIANCES </h3>
+        <table id="manageObsPanel" class="display">
+            <thead style="background-color: #19875478 !important; ">
+                <tr>
+                    <th class="col-md-auto">Sr No.</th>
+                    <th class="col-md-auto">Audit Period</th>
+                    <th class="col-md-auto">Para No.</th>
+                    <th class="col-md-auto">Title / Gist</th>
+                    <th class="col-md-auto hide-export">Action</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+
+        </table>
+    </div>
+</div>
+
+<div id="viewParaComplianceModel" class="modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-xl" role="document" style="min-width:95% !important;">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">Para Submission to Branch</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+                    
+                </button>
+            </div>
+            <div class="modal-body">
+                <form>
+                    <div class="form-group">
+                        <label for="viewParaNoModelField">Para Number</label>
+                        <input id="viewParaNoModelField" class="form-control" disabled="disabled" />
+                    </div>
+                    <div class="form-group">
+                        <label for="viewParaTextModelField">Para Text</label>
+                        <div id="viewParaTextModelField" disabled="disabled" class="form-control container-clob"></div>
+                    </div>
+                    <div class="form-group">
+                        <label for="RelationshipField">Relationship Type</label>
+                        <select id="RelationshipField" onchange="getrelation();" class="form-control form-select">
+                            <option id="0" value="0" selected="selected">--Select Relationship Type--</option>
+
+                            @{
+                                if (ViewData["Userrelationship"] != null)
+                                    {
+                                    foreach (var item in (dynamic)(ViewData["Userrelationship"]))
+                                        {
+                                        <option value="@item.ENTITY_REALTION_ID" id="@item.ENTITY_REALTION_ID">@item.FIELD_NAME</option>
+                                        }
+                                    }
+                            }
+
+
+
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="controlingsearch">Controlling/Reporting Office</label>
+                        <select id="controlingsearch" onchange="getplacepost();" class="form-control form-select">
+                            <option id="0" value="0" selected="selected">--Select Controlling/Reporting Office--</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="controlingsearch">Entity Name</label>
+                        <select id="childposting" class="form-control form-select">
+                            <option id="0" value="0" selected="selected">--Select Place of Posting--</option>
+
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="controlingsearch">CAU Comments</label>
+                        <textarea id="cauInstructionToBranch" class="form-control" rows="3"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button id="submitCAUParaResponseHandler" onclick="CAUSubmitParaToBranch();" type="button" class="btn btn-danger">Submit</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>

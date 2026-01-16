@@ -1,0 +1,510 @@
+﻿@{
+    var page_id = ViewData["PageId"] as int? ?? 0;
+}
+
+@{
+    ViewData["Title"] = "Tentative Engagement Plan";
+    Layout = "_Layout";
+}
+
+<script type="text/javascript">
+    var g_teams = [];
+    var g_branches = [];
+    var g_code = 0;
+    var g_planId = 0;
+    var g_periodId = 0;
+    var g_entityType = 0;
+    var g_zoneId = 0;
+    var g_entityId = 0;
+    var g_entityName = '';
+    var g_public_days = []; // Will be filled from DB as MM-DD
+
+
+     function loadPublicDays(year, cb) {
+        $.ajax({
+            url: g_asiBaseURL + '/ApiCalls/get_all_public_holidays',
+            method: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({ year: year }),
+            success: function (data) {
+                data.forEach(function (item) {
+                    var dateObj = new Date(item.holidaY_DATE);
+                    // Convert to MM-DD for comparison
+                    var mmdd = ("0" + (dateObj.getMonth() + 1)).slice(-2) + '-' + ("0" + dateObj.getDate()).slice(-2);
+                    g_public_days.push(mmdd);
+                });
+                if (cb) cb();
+            }
+        });
+    }
+
+        // Helper: Check if a date is a public day (from DB)
+    function isPublicDay(dateObj) {
+        var mmdd = ("0" + (dateObj.getMonth() + 1)).slice(-2) + '-' + ("0" + dateObj.getDate()).slice(-2);
+        return g_public_days.indexOf(mmdd) !== -1;
+    }
+
+
+
+    $(document).ready(function () {
+         var url_string = window.location;
+         var url = new URL(url_string);
+         var periodName = url.searchParams.get("period");
+         var risk = url.searchParams.get("risk");
+         var size = url.searchParams.get("size");
+         var entityName = url.searchParams.get("name");
+         g_entityName = entityName;
+         var freq = url.searchParams.get("freq");
+         var days = url.searchParams.get("days");
+         g_planId = url.searchParams.get("planId");
+         g_code = url.searchParams.get("code");
+         g_periodId = url.searchParams.get("periodId");
+         g_entityType = url.searchParams.get("entityType");
+         g_zoneId = url.searchParams.get("zoneId");
+         g_entityId = url.searchParams.get("entityId");
+
+        // Public holidays will be fetched on demand when calculating end date
+
+         if (g_entityType == 25 || g_entityType == 6) {
+             $('#travellingDayWrapper').removeClass('d-none');
+             $('#revenueCollWrapper').removeClass('d-none');
+             $('#discussionDayWrapper').removeClass('d-none');
+         } else {
+             $('#travellingDayWrapper').addClass('d-none');
+             $('#revenueCollWrapper').addClass('d-none');
+             $('#discussionDayWrapper').addClass('d-none');
+         }
+
+         $('#auditperiod_label').text(periodName);
+         $('#auditentity_label').text(entityName);
+         $('#risk_label').text(risk);
+         $('#size_label').text(size);
+         $('#frequency_label').text(freq);
+         $('#days_label').text(days);
+         $('#btnCalcEndDate').on('click', calculateEndDate);
+     });
+
+    function isWeekend(dateObj) {
+        var saturdayWorking = [5, 6, 17, 21, 22, 25, 28];
+        if (saturdayWorking.includes(parseInt(g_entityType)))
+            return dateObj.getDay() === 0;
+        return dateObj.getDay() === 6 || dateObj.getDay() === 0;
+    }
+
+    function calculateEndDate() {
+        var startVal = $('#startplan_date').val();
+        if (!startVal) {
+            alert('Select Audit Start Date');
+            return;
+        }
+        var year = new Date(startVal).getFullYear();
+        g_public_days = [];
+        loadPublicDays(year, function () {
+            loadPublicDays(year + 1, getAutoEndDate);
+        });
+    }
+
+    function getAutoEndDate() {
+        var numAdd = parseInt($('#days_label').text());
+        if (g_entityType == 25 || g_entityType == 6) {
+            var addDays = parseInt($('#discussionDaysSelectField').val()) + parseInt($('#revenueDaysSelectField').val()) + parseInt($('#travellingDaysSelectField').val());
+            numAdd = parseInt(numAdd) + addDays;
+        }
+
+        var curDate = new Date($('#startplan_date').val());
+        if (isNaN(curDate)) return;
+
+        if (isWeekend(curDate) || isPublicDay(curDate)) {
+            alert('Start date cannot be a weekend or public holiday');
+            return;
+        }
+
+        var added = 1;
+        while (added < numAdd) {
+            curDate.setDate(curDate.getDate() + 1);
+            if (isWeekend(curDate) || isPublicDay(curDate)) {
+                continue;
+            }
+            added++;
+        }
+
+        // Set End Date field
+        var month = (curDate.getMonth() + 1);
+        var day = curDate.getDate();
+        if (month < 10)
+            month = "0" + month;
+        if (day < 10)
+            day = "0" + day;
+        var today = curDate.getFullYear() + '-' + month + '-' + day;
+        $('#endplan_date').val(today);
+
+        // Set operational period end date (last day of previous month)
+        var startVal = $('#startplan_date').val();
+        if (!startVal) return;
+        var date = new Date(startVal);
+        const lastDayPrevMonth = new Date(date.getFullYear(), date.getMonth(), 0);
+        var month2 = (lastDayPrevMonth.getMonth() + 1);
+        var day2 = lastDayPrevMonth.getDate();
+        if (month2 < 10)
+            month2 = "0" + month2;
+        if (day2 < 10)
+            day2 = "0" + day2;
+        var prevMonthDay = lastDayPrevMonth.getFullYear() + '-' + month2 + '-' + day2;
+        $('#endop_date').val(prevMonthDay);
+
+        // Fetch operational start date from server as before
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/GetOperationalStartDate",
+            type: "POST",
+            data: {
+                'periodId': g_periodId,
+                'entityCode': g_code
+            },
+            cache: false,
+            success: function (data) {
+                if (data != "" && data.length > 0) {
+                    var date = new Date(data);
+                    date.setDate(date.getDate() + 1)
+                    var month = (date.getMonth() + 1);
+                    var day = date.getDate();
+                    if (month < 10)
+                        month = "0" + month;
+                    if (day < 10)
+                        day = "0" + day;
+                    var today = date.getFullYear() + '-' + month + '-' + day;
+                    $('#startop_date').val(today);
+                }
+            }
+        });
+    }
+   
+    function previewAuditPlan() {
+
+        $('#previewAuditPlan').modal('show');
+        $('#auditorDept').text($('#deptSelectionBox option:selected').text());
+        $('#auditorPlan').text($('#periodSelectionBox option:selected').text());
+        $('#descModal_field').html($('#entitySelectionBox option:selected').text());
+        if ($('#deptSelectionBox option:selected').val() == '473') {
+            $('#divzone_field').text($('#auditZoneSelectionBox option:selected').text());
+            $('#deptBranch_field').text($('#branchSelectionBox option:selected').text());
+
+        } else {
+            $('#divzone_field').text($('#divSelectionBox option:selected').text());
+            $('#deptBranch_field').text($('#divDeptSelectionBox option:selected').text());
+
+        }
+        $('#exeFrom_field').html($('#executionPeriodFromField').val());
+        $('#exeTo_field').html($('#executionPeriodToField').val());
+        $('#operationalFrom_field').html($('#auditPeriodFromField').val());
+        $('#operationalTo_field').html($('#auditPeriodToField').val());
+        //
+        if ($('#isTravelingRequiredField').is(":checked"))
+            $('#travelingReq_field').html('Yes');
+        else
+            $('#travelingReq_field').html('No');
+        $('#remarksAddtn_field').html($('#remarksAdditionalInfoField').val());
+        $('#teamName_field').text($('#teamSelectionBox option:selected').text());
+        //
+        var teamMembersFields = "";
+        $.each(g_teams, function (index, team) {
+            if (team.name == $('#teamSelectionBox option:selected').text()) {
+                if (team.iS_TEAMLEAD == "Y")
+                    teamMembersFields += team.employeename + " " + team.teammembeR_ID + " (L)<br>";
+                else
+                    teamMembersFields += team.employeename + " " + team.teammembeR_ID + " (M)<br>";
+            }
+        });
+        $('#teamMembers_field').html(teamMembersFields);
+
+    }
+    function publishNewAuditPlanChanges() {
+
+        if ($('#auditTeam_box').val() == 0) {
+            alert('Select audit team');
+            return;
+        }
+
+
+         if ($('#startop_date').val() == '') {
+            alert('Select Operational Start Date');
+            return;
+        }
+
+        if ($('#endop_date').val() == '') {
+            alert('Select Operational End Date');
+            return;
+        }
+
+        if ($('#startplan_date').val() == '') {
+            alert('Select Audit Start Date');
+            return;
+        }
+        if ($('#endplan_date').val() == '') {
+            alert('Select Audit End Date');
+            return;
+        }
+
+
+        var status = 1;
+        var desc = $('#descriptionAuditPlanField').val();
+
+
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/AddEngagementPlan",
+            type: "POST",
+            data: {
+                'PERIOD_ID': g_periodId,
+                'ENTITY_TYPE': g_entityType,
+                'PLAN_ID': g_planId,
+                'ENTITY_CODE': g_code,
+                'ENTITY_ID': g_entityId,
+                'ENTITY_NAME': g_entityName,
+                'AUDITBY_ID': g_zoneId,
+                'AUDIT_STARTDATE': $('#startplan_date').val(),
+                'AUDIT_ENDDATE': $('#endplan_date').val(),
+                'OP_STARTDATE': $('#startop_date').val(),
+                'OP_ENDDATE': $('#endop_date').val(),
+                'TRAVELDAY': $('#travellingDaysSelectField').val(),
+                'RRDAY': $('#revenueDaysSelectField').val(),
+                'D_Day': $('#discussionDaysSelectField').val(),
+                'TEAM_NAME': $('#auditTeam_box option:selected').text(),
+                'STATUS': 1,
+                'TEAM_ID': $('#auditTeam_box').val(),                
+            },
+            cache: false,
+            success: function (data) {
+                alert(data.remarkS_OUT);
+                if(data.iS_SUCCESS=="Yes")
+                    onAlertCallback(redirectToLocation);
+                
+            },
+            dataType: "json",
+        });
+    }
+    function redirectToLocation() {
+        window.location.href = g_asiBaseURL + "/Planning/tentative_audit_plan";
+    }
+
+    function previewSelectedTeaM() {
+        if ($('#auditTeam_box').val() == 0) {
+            $('#teamPreview').addClass('d-none');
+            $('#listOfEmployeeTeam tbody').empty();
+        } else {
+            $('#teamPreview').removeClass('d-none');
+            $('#listOfEmployeeTeam tbody').empty();
+            $.ajax({
+                url: g_asiBaseURL + "/ApiCalls/GetAuditTeam",
+                type: "POST",
+                data: {
+                   
+                },
+                cache: false,
+                success: function (data) {
+                    var teamId = 0;
+                    var teamMembers = [];
+                    $.each(data, function (index, team) {
+                        if (team.code == $('#auditTeam_box').val()) {
+
+                            if (team.iS_TEAMLEAD == "Y") {
+                                $('#listOfEmployeeTeam tbody').append('<tr id=teamcode_' + team.code + '><td class="searchable"><p class="fw-normal mb-1">' + team.name + ' </p></td><td class="searchable"><p class="empName fw-normal mb-1">' + team.employeename + ' (' + team.teammembeR_ID + ') </p></td><td class="empMembers"></td></tr>');
+                             } else {
+                                teamMembers.push(team);
+                                if (team.code != teamId) {
+                                    teamId = team.code;
+                                }
+                            }
+                        }
+                    });
+                    $.each(teamMembers, function (index, team) {
+                        if (team.iS_TEAMLEAD != "Y") {
+                            prevText = $('#listOfEmployeeTeam tbody #teamcode_' + team.code + ' .empMembers').html();
+                            if (prevText != '')
+                                prevText += ", ";
+                            $('#listOfEmployeeTeam tbody #teamcode_' + team.code + ' .empMembers').text(prevText + team.employeename + '(' + team.teammembeR_ID + ')');
+                        }
+                    });
+                },
+                dataType: "json",
+            });
+        }
+        
+
+    }
+  
+</script>
+<div class="row mt-3 col-md-12">
+    <h3 style="color: #be0e43">Tentative Engagement Plan</h3>
+</div>
+<div class="row col-md-12  mt-3">
+    <div class="col-md-3">
+        <h5>Audit Period</h5>
+    </div>
+    <div class="col-md-9">
+       <label id="auditperiod_label"></label>
+    </div>
+</div>
+<div class="row col-md-12  mt-3">
+    <div class="col-md-3">
+        <h5>Audit Entity</h5>
+    </div>
+    <div class="col-md-9">
+        <label id="auditentity_label"></label>
+    </div>
+</div>
+<div class="row col-md-12  mt-3">
+    <div class="col-md-3">
+        <h5>Entity Risk</h5>
+    </div>
+    <div class="col-md-9">
+        <label id="risk_label"></label>
+    </div>
+</div>
+<div class="row col-md-12  mt-3">
+    <div class="col-md-3">
+        <h5>Entity Size</h5>
+    </div>
+    <div class="col-md-9">
+        <label id="size_label"></label>
+    </div>
+</div>
+
+<div class="row col-md-12  mt-3">
+    <div class="col-md-3">
+        <h5>No of Days</h5>
+    </div>
+    <div class="col-md-9">
+        <label id="days_label"></label>
+    </div>
+</div>
+<div class="row col-md-12  mt-3">
+    <div class="col-md-3">
+        <h5>Frequency</h5>
+    </div>
+    <div class="col-md-9">
+        <label id="frequency_label"></label>
+    </div>
+</div>.
+
+<div class="row col-md-12 mt-3">
+    <div class="col-md-3">
+        <h5>Start Date</h5>
+    </div>
+    <div class="col-md-9">
+        <input id="startplan_date" type="date" data-allow-future="true" class="form-control form-select">
+    </div>
+</div>
+<div id="travellingDayWrapper" class="row col-md-12 mt-3 d-none">
+    <div class="col-md-3">
+        <h5>Travelling Day</h5>
+    </div>
+    <div class="col-md-9">
+        <select id="travellingDaysSelectField" type="date" class="form-control form-select">
+            <option selected="selected" value="0">-- Not Required --</option>
+            <option value="1">1 Day</option>
+        </select>
+    </div>
+</div>
+<div id="revenueCollWrapper" class="row col-md-12 mt-3 d-none">
+    <div class="col-md-3">
+        <h5>Revenue Record/ Utilization / Contact With Defaulter</h5>
+    </div>
+    <div class="col-md-9">
+        <select id="revenueDaysSelectField" type="date" class=" form-control form-select">
+            <option selected="selected" value="0">-- Not Required --</option>
+            <option value="1">1 Day</option>
+            <option value="2">2 Days</option>
+            <option value="3">3 Days</option>
+            <option value="4">4 Days</option>
+            <option value="5">5 Days</option>
+            <option value="6">6 Days</option>
+        </select>
+    </div>
+</div>
+<div id="discussionDayWrapper" class="row col-md-12 mt-3 d-none">
+    <div class="col-md-3">
+        <h5>Discussion Day</h5>
+    </div>
+    <div class="col-md-6">
+        <select id="discussionDaysSelectField" type="date" class="form-control form-select">
+            <option selected="selected" value="0">-- Not Required --</option>
+            <option value="1">1 Day</option>
+        </select>
+    </div>
+    <div class="col-md-3"></div>
+</div>
+
+<div class="row col-md-12 mt-3">
+    <div class="col-md-9"></div>
+    <div class="col-md-3">
+        <button id="btnCalcEndDate" type="button" class="btn btn-primary btn-sm w-100">Calculate Audit End Date</button>
+    </div>
+</div>
+
+<div class="row col-md-12 mt-3">
+    <div class="col-md-3">
+        <h5>End Date</h5>
+    </div>
+    <div class="col-md-9">
+        <input disabled="disabled" id="endplan_date" type="date"  class="form-control form-select">
+    </div>
+</div>
+<div class="row col-md-12 mt-3">
+    <div class="col-md-3">
+        <h5>Operational Period Start Date</h5>
+    </div>
+    <div class="col-md-9">
+        <input id="startop_date"  type="date" class="form-control form-select">
+    </div>
+</div>
+<div class="row col-md-12 mt-3">
+    <div class="col-md-3">
+        <h5>Operational Period End Date</h5>
+    </div>
+    <div class="col-md-9">
+        <input id="endop_date"  type="date" class="form-control form-select">
+    </div>
+</div>
+
+<div class="row col-md-12 mt-3">
+    <div class="col-md-3">
+        <h5>Team Assigned</h5>
+    </div>
+    <div class="col-md-9">
+        <select id="auditTeam_box" onchange="previewSelectedTeaM();" class="form-select form-control">
+            <option value="0" id="0" selected>Select Audit Team</option>
+            @{
+                if (ViewData["AuditTeamsList"] != null)
+                {
+                    foreach (var item in (dynamic)(ViewData["AuditTeamsList"]))
+                    {
+                        if (item.IS_TEAMLEAD == "Y" && item.STATUS == "Y")
+                        {
+                            <option value="@item.T_ID" id="@item.T_ID">@item.NAME</option>
+                        }
+                    }
+                }
+            }
+
+        </select>
+        <div id="teamPreview" class="w-100 d-none mt-3">
+            <h5 style="color: #be0e43">Team Formation</h5>
+            <table id="listOfEmployeeTeam" class="table table-hover table-bordered table-hover mt-3 table-striped">
+                <thead style="background-color: #19875478 !important; ">
+                    <tr>
+                        <th class="col-md-auto">Team Name</th>
+                        <th class="col-md-auto">Team Lead</th>
+                        <th class="col-md-auto">Team Members</th>
+                    </tr>
+                </thead>
+                <tbody>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+
+<div class="row col-md-12 mt-4">
+   <button onclick="publishNewAuditPlanChanges();" class="col-md-2 btn btn-success">Save Changes</button>
+  </div>
+

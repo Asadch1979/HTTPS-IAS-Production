@@ -1,0 +1,183 @@
+﻿@{
+    var page_id = ViewData["PageId"] as int? ?? 0;
+}
+
+@{
+
+    ViewData["Title"] = "Branch Setup";
+    Layout = "_Layout";
+}
+
+
+<script type="text/javascript">
+    $(document).ready(function () {
+        var g_controlViolationId = 0;
+        $("#searchTableRecord").on("keyup", function () {
+            var value = $(this).val().toLowerCase();
+            $("#listofControlViolations tbody tr").filter(function () {
+                $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1)
+            });
+        });
+    });
+
+    function newControlViolationSetup() {
+        g_controlViolationId = 0;
+        $('#setupControlViolationModal').modal('show');
+        $('#controlViolationNameModelField').val('');
+        $('#controlViolationMaxNumberModelField').val(0);
+        $('#controlViolationActiveModelField').attr('checked', true);
+        $('#controlViolationInactiveModelField').attr('checked', false);      
+    }
+
+    function setupControlViolation(name, number, status, id ) {
+        g_controlViolationId = id;
+        $('#controlViolationNameModelField').val(name);
+        $('#controlViolationMaxNumberModelField').val(number);
+      if (status == "Y")
+            $('#controlViolationActiveModelField').click();
+        else 
+            $('#controlViolationInactiveModelField').click();
+
+        $('#setupControlViolationModal').modal('show');
+    }
+
+    function publishControlViolationChanges() {
+
+        var name = $('#controlViolationNameModelField').val();
+        var max_number = $('#controlViolationMaxNumberModelField').val();
+        var status;
+        var badge;
+        if ($('#controlViolationActiveModelField').is(':checked')) {
+            status = 'Y';
+            badge = 'text-bg-success ';
+        }
+        else {
+            status = 'N';
+            badge = 'text-bg-danger ';
+        }
+        
+        $.ajax({
+            url: g_asiBaseURL + "/Setup/add_control_violation",
+            type: "POST",
+            data: {
+                'ID': g_controlViolationId,
+                'V_NAME': name,
+                'MAX_NUMBER': max_number,
+                'STATUS': status
+            },
+            cache: false,
+            success: function (data) {
+                $('#setupControlViolationModal').modal('hide');
+                //console.log(data);
+                window.location = window.location.pathname;
+
+            },
+            dataType: "json",
+        });
+    }
+</script>
+
+<div class="row col-md-12 mb-4" style="margin-top:20px;">
+        <div class="col-md-10">
+            <h3 style=" display:block;color: #be0e43">Control Violations</h3>   
+        </div>
+        <div class="col-md-2">
+            <button onclick="newControlViolationSetup();" style="float:right;"class="btn btn-danger w-100">Add New</button>
+        </div>
+    
+    <br>
+    <div class="col-md-12">
+         <table id="controlviolation" class="table table-hover table-bordered table-hover mt-3 table-striped">
+            <thead style="background-color: #19875478 !important; ">
+                    <tr>
+                        <th>Name</th>
+                        <th>Maximum Number</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @{
+                        if (ViewData["ControlViolationList"] != null)
+                        {
+                            foreach (var item in (dynamic)(ViewData["ControlViolationList"]))
+                            {
+
+                                <tr id="div_@item.ID">
+
+                                    <td>
+                                        <p class="fw-normal mb-1">@item.V_NAME</p>
+                                    </td>
+                                    <td>
+                                        <p class="fw-normal mb-1">@item.MAX_NUMBER</p>
+                                    </td>
+
+                                    <td class="cv_status">
+                                        @{
+                                            if (item.STATUS == "Y")
+
+                                            { <span class="badge text-bg-success rounded-pill d-inline">@item.STATUS</span>}
+                                        else
+                                        { <span class="badge text-bg-danger rounded-pill d-inline" style="color: red">@item.STATUS</span>}
+                                        }
+                                    </td>
+                                    <td>
+                                        <button type="button" class="btn btn-link text-danger btn-sm btn-rounded" onclick="setupControlViolation('@item.V_NAME','@item.MAX_NUMBER','@item.STATUS','@item.ID');">
+                                            Edit
+                                        </button>
+                                    </td>
+                                </tr>
+                            }
+                        }}
+                </tbody>
+            </table>
+       
+    </div>
+</div>
+
+<div id="setupControlViolationModal" class="modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content" style="padding:10px;">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">Control Violation</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="form-group">
+                <label for="controlViolationNameModelField">Name</label>
+                <input type="text" class="form-control" id="controlViolationNameModelField" placeholder="Name">
+            </div>
+            <div class="form-group">
+                <label for="controlViolationMaxNumberModelField">Maximum Number</label>
+                <input type="number" class="form-control" id="controlViolationMaxNumberModelField" placeholder="Maximum Number">
+            </div>
+            <div class="modal-body">
+                <form>
+
+                    <div class="form-group">
+                        <label for="controlViolationStatusModalField">Status</label>
+                        <div class="row col-md-12">
+                            <div class="form-check form-check-inline">
+                                <input class="form-check-input" type="radio" name="inlineRadioOptions" id="controlViolationActiveModelField" value="option1" />
+                                <label class="form-check-label" for="controlViolationActiveModelField">Active</label>
+                            </div>
+
+                            <div class="form-check form-check-inline">
+                                <input class="form-check-input" type="radio" name="inlineRadioOptions" id="controlViolationInactiveModelField" value="option2" />
+                                <label class="form-check-label" for="controlViolationInactiveModelField">Inactive</label>
+                            </div>
+                        </div>
+                    </div>
+
+
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button onclick="publishControlViolationChanges();" type="button" class="btn btn-danger">Save changes</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+

@@ -1,0 +1,246 @@
+﻿@{
+    var page_id = ViewData["PageId"] as int? ?? 0;
+}
+
+@{
+    ViewData["Title"] = "CCQs";
+    Layout = "_Layout";
+}
+
+<script type="text/javascript">
+    var g_id = 0;
+    var g_response = [];
+
+    document.addEventListener("DOMContentLoaded", function () {
+        if (window.CommonValidation && CommonValidation.attachAlnumOnly) {
+            CommonValidation.attachAlnumOnly("textarea.alnum-only", { allowSpace: true, maxLen: 1000 });
+        }
+    });
+    function updateCCQBinding(id, question, cv_id, risk_id,status) {
+        g_id = id;
+        var question = '';
+        $.each(g_response, function (i, e) {
+            if (e.id == id) {
+                question = e.questions;
+            }
+        });
+        $('#updateCCQModal').modal('show');
+        $('#CCQquestion_textarea').val(question);
+        $('#CCQcontrolViolation_selectarea').val(cv_id);
+        $('#CCQrisk_selectarea').val(risk_id);
+        $('#CCQstatus_selectarea').val(status);
+    }
+    function getEntityObservation() {
+        $('#ccqs_panel tbody').empty();
+        if ($('#entitySelectField option:selected').val() != 0) {
+            $.ajax({
+                url: g_asiBaseURL + "/ApiCalls/get_ccqs",
+                type: "POST",
+                data: {
+                    'ENTITY_ID': $('#entitySelectField option:selected').val()
+                },
+                cache: false,
+                success: function (data) {
+                    g_response = data;
+                    var sr = 1;
+                    $.each(data, function (i, v) {
+                        $('#ccqs_panel tbody').append('  <tr id="' + v.id + '"><td align="justify"> ' + sr + '</td> <td align="left">' + v.questions + '</td> <td align="left">' + v.controL_VIOLATION + '</td> <td align="left">' + v.risk + '</td> <td align="left">' + v.status + '</td><td align="justify"><a onclick="event.preventDefault();updateCCQBinding(' + v.id + ', \'\',' + v.controL_VIOLATION_ID + ' , ' + v.risK_ID + ', \'' + v.status + '\');" href="#">Edit</a></td> </tr>');
+                        sr++;
+                    });
+
+                },
+                dataType: "json",
+            });
+
+        }
+    }
+
+    function addCCQsUpdateToTable() {
+        $('#updateCCQModal').modal('hide');
+        $($('#ccqs_panel tbody tr#' + g_id).find('td').eq(1)).html($('#CCQquestion_textarea').val());
+        $($('#ccqs_panel tbody tr#' + g_id).find('td').eq(2)).html($('#CCQcontrolViolation_selectarea option:selected').text());
+        $($('#ccqs_panel tbody tr#' + g_id).find('td').eq(3)).html($('#CCQrisk_selectarea option:selected').text());
+        $($('#ccqs_panel tbody tr#' + g_id).find('td').eq(4)).html($('#CCQstatus_selectarea option:selected').text());
+        $($('#ccqs_panel tbody tr#' + g_id).find('td').eq(5)).html('<a onclick="event.preventDefault();updateCCQBinding(' + g_id + ', \'\',' + $('#CCQcontrolViolation_selectarea option:selected').text() + ' , ' + $('#CCQrisk_selectarea option:selected').text() + ', \'' + $('#CCQstatus_selectarea option:selected').text() + '\');" href="#">Edit</a>');
+       
+        $.each(g_response, function (i, e) {
+            if (e.id == id) {
+                e.questions = $('#CCQquestion_textarea').val();
+            }
+        });
+       
+    }
+    function reloadLocation() {
+        addCCQsUpdateToTable();
+    }
+    function finalUpdateCCQHandler() {
+        if ($('#CCQquestion_textarea').val() == "") {
+            alert('Please Enter Question');
+            return true;            
+
+        }
+        if ($('#CCQcontrolViolation_selectarea').val() == 0) {
+            alert('Please Select Control Violation');
+            return true;
+
+        }
+        if ($('#CCQrisk_selectarea').val() == 0) {
+            alert('Please Select Risk');
+            return true;
+
+        }
+        if ($('#CCQstatus_selectarea').val() == 0) {
+            alert('Please Select Status');
+            return true;
+
+        }
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/update_ccq",
+            type: "POST",
+            data: {
+                'ID': g_id,
+                'QUESTIONS': $('#CCQquestion_textarea').val(),
+                'CONTROL_VIOLATION_ID': $('#CCQcontrolViolation_selectarea').val(),
+                'RISK_ID': $('#CCQrisk_selectarea').val(),
+                'STATUS': $('#CCQstatus_selectarea').val()
+            },
+            cache: false,
+            success: function (data) {
+                alert('Record Updated Successfully');
+                onAlertCallback(addCCQsUpdateToTable);
+            },
+            dataType: "json",
+        });
+
+    }
+
+   
+</script>
+<h3 style=" display:block;color: #be0e43" class="mt-3">Compliance & Control Questionnaire</h3>
+
+<div class="row col-md-12 mt-3">
+    <label class="col-form-label"><b>Audit Entity</b></label>
+    <select id="entitySelectField" onchange="getEntityObservation()" class="form-control form-select">
+        <option value="0" id="0">--Select Audit Entity--</option>
+        @{
+            if (ViewData["EntitiesList"] != null)
+            {
+                foreach (var item in (dynamic)(ViewData["EntitiesList"]))
+                {
+                    <option value="@item.ENTITY_ID" id="@item.ENTITY_ID">@item.NAME</option>
+                }
+            }
+        }
+    </select>
+
+</div>
+<div class="row col-md-12 mt-3">
+    <table id="ccqs_panel" class="table table-hover table-bordered table-hover mt-3 table-striped">
+        <thead style="background-color: #19875478 !important; ">
+            <tr>
+                <th class="col-md-auto">SR No</th>
+                <!-- <th class="col-md-2">Reference</th>-->
+                <th class="col-md-auto">Questions</th>
+                <th class="col-md-auto">Control Violation</th>
+                <th class="col-md-auto">Risk</th>
+                <th class="col-md-auto">Status</th>
+                <th class="col-md-auto">Action</th>
+
+            </tr>
+        </thead>
+
+        <tbody>
+
+            @{
+                int sr = 1;
+
+                foreach (var item in (dynamic)(ViewData["AUDITCCQ"]))
+                {
+                    <tr>
+                        <td align="justify">@sr</td>
+                        <td align="left">@item.ENTITY_NAME</td>
+                        <td align="left">@item.QUESTIONS</td>
+                        <td align="left">@item.CONTROL_VIOLATION</td>
+                        <td align="left">@item.RISK</td>
+                        <td align="left">@item.STATUS</td>
+
+                    </tr>
+                    sr = sr + 1;
+
+                }
+
+                
+            }
+
+        </tbody>
+    </table>
+</div>
+
+<div id="updateCCQModal" class="modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">Update CCQ</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form>
+                    <div class="form-group">
+
+                        <label for="CCQquestion_textarea">Question <small class="text-muted">(A-Z, 0-9, space, &amp;, ?)</small></label>
+                        <textarea class="form-control alnum-only" rows="4" id="CCQquestion_textarea" aria-describedby="ccqQuestionHelp" placeholder="Enter question" data-allow-space="true" data-allow-amp="true" data-maxlen="1000" maxlength="1000"></textarea>
+                        <small id="ccqQuestionHelp" class="form-text text-muted">Enter only Alphabets (A-Z), numbers (0-9), spaces, ampersand (&amp;), comma (,), and question mark (?).</small>
+                        <div class="invalid-feedback">Enter only Alphabets (A-Z), numbers (0-9), spaces, ampersand (&amp;), comma (,), and question mark (?).</div>
+
+                    </div>
+                    <div class="form-group">
+                        <label for="CCQcontrolViolation_selectarea">Control Violation</label>
+                        <select id="CCQcontrolViolation_selectarea" class="form-control">
+                            <option value="0" id="0">--Select Control Violation--</option>
+                            @{
+                                if (ViewData["ControlViolationList"] != null)
+                                {
+                                    foreach (var item in (dynamic)(ViewData["ControlViolationList"]))
+                                    {
+                                        <option value="@item.ID" id="@item.ID">@item.V_NAME</option>
+                                    }
+                                }
+                            }
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="CCQrisk_selectarea">Risk</label>
+                        <select id="CCQrisk_selectarea" class="form-control">
+                            <option value="0" id="0">--Select Risk--</option>
+                            @{
+                                if (ViewData["RiskList"] != null)
+                                {
+                                    foreach (var item in (dynamic)(ViewData["RiskList"]))
+                                    {
+                                        <option value="@item.R_ID" id="@item.R_ID">@item.DESCRIPTION</option>
+                                    }
+                                }
+                            }
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="CCQstatus_selectarea">Status</label>
+                        <select id="CCQstatus_selectarea" class="form-control">
+                            <option value="0" id="0">--Select Status--</option>
+                            <option value="N" id="N">N</option>
+                            <option value="Y" id="Y">Y</option>
+
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button onclick="finalUpdateCCQHandler();" id="finalCommentsButtonSave" type="button" class="btn btn-danger">Submit</button>
+            </div>
+        </div>
+    </div>
+</div>
+

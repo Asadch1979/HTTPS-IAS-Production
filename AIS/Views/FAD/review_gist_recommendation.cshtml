@@ -1,0 +1,275 @@
+﻿@{
+    var page_id = ViewData["PageId"] as int? ?? 0;
+}
+
+@{
+    ViewData["Title"] = "Review Gist and Audit Recommendation";
+    Layout = "_Layout";
+}
+<script type="text/javascript">
+   var g_observationId = 0;
+    var g_engId = 0;
+    var g_respUsersArr = [];
+   
+
+    function getEntityObservations() {
+        if($('#entitySelectField').val()==0){
+             destroyDatatable('checklistDetailsPanel');
+             $('#checklistDetailsPanel tbody').empty();
+             return;
+        }
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/get_obs_for_pre_concluding",
+            type: "POST",
+            data: {
+                'ENG_ID': $('#entitySelectField').val()
+            },
+            cache: false,
+            success: function (data) {
+                console.log('subhcekclist', data);
+                destroyDatatable('checklistDetailsPanel');
+                $('#checklistDetailsPanel tbody').empty();
+                var sr = 1;
+                $.each(data, function (i, v) {
+                    
+                    if (v.status == "Completed")
+                        $('#checklistDetailsPanel tbody').append('<tr id="obs_' + v.id + '"><td>' + sr + '</td><td>' + v.s_NAME + '</td><td>' + v.heading + '</td><td>' + v.oB_STATUS + '</td><td></td><td class="preconcludingStatusField">' + v.status + '</td></tr>');
+                    else
+                        $('#checklistDetailsPanel tbody').append('<tr id="obs_' + v.id + '"><td>' + sr + '</td><td>' + v.s_NAME + '</td><td>' + v.heading + '</td><td>' + v.oB_STATUS + '</td><td id="actionTd_' + v.id + '" class="text-center"><a class="text-center text-danger" onclick="event.preventDefault();ObservationViewerPanel(' + v.id + ')">View Memo</a></td><td class="preconcludingStatusField">' + v.status + '</td></tr>');
+                    sr++;
+                });
+
+                setTimeout(function () {
+                    if (g_observationId != 0) {
+                        var rowpos = $('#checklistDetailsPanel tbody tr#obs_' + g_observationId).position();
+                        $('html').scrollTop(rowpos.top);
+                    }
+                }, 200)
+                initializeDataTable('checklistDetailsPanel');
+
+            },
+            dataType: "json",
+        });
+    }
+ 
+    function reloadLocation() {
+        window.location.reload();
+    }
+   
+
+    function ObservationViewerPanel(obs_id) {
+
+
+        g_observationId=obs_id;
+
+
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/get_observation_text_branches",
+            type: "POST",
+            data: {
+                'OBS_ID': obs_id
+            },
+            cache: false,
+            success: function (data) {
+
+                $('#viewMemoModel_ObSent').modal('show');
+                $('#viewMemo_memo_ObSent').html(data[0].obS_TEXT);
+                $('#viewMemo_response_ObSent').html(data[0].obS_REPLY);
+
+                $('#viewMemo_process_ObSent').html(data[0].process);
+                $('#viewMemo_subprocess_ObSent').html(data[0].suB_PROCESS);
+                $('#viewMemo_violation_ObSent').html(data[0].checklist_Details);
+                destroyDatatable('listofRespPersons_ObSent');
+                $('#listofRespPersons_ObSent tbody').empty();
+                if (data[0].responsiblE_PPs.length > 0) {
+                    $.each(data[0].responsiblE_PPs, function (j, pp) {
+                        var srNo = $('#listofRespPersons_ObSent tbody tr').length;
+                        srNo++;
+                        $('#listofRespPersons_ObSent tbody').append('<tr id="tr__ObSent_' + pp.pP_NO + '"><td>' + srNo + '</td><td>' + pp.pP_NO + '</td><td>' + pp.emP_NAME + '</td><td>' + pp.loaN_CASE + '</td><td>' + pp.lC_AMOUNT + '</td><td>' + pp.accounT_NUMBER + '</td><td>' + pp.acC_AMOUNT + '</td></tr>');
+                    });
+                    initializeDataTable('listofRespPersons_ObSent');
+                }
+            },
+            dataType: "json",
+        });
+
+    }
+
+    function saveObservationGistandRecommendation(){
+
+        if ($('#gistPara_response_ObSent').val() == 0) {
+            alert("Please enter Auditor Recommendation to proceed");
+            return;
+        }
+
+        if ($('#audRecommend_response_ObSent').val() == 0) {
+            alert("Please enter Auditor Recommendation to proceed");
+             return;
+        }
+
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/add_observation_gist_and_recommendation",
+            type: "POST",
+            data: {
+                'OBS_ID': g_observationId,
+                'AUDITOR_RECOMMENDATION': $('#audRecommend_response_ObSent').val(),
+                'GIST_OF_PARA': $('#gistPara_response_ObSent').val()
+
+            },
+            cache: false,
+            success: function (data) {
+
+                alert(data.message);
+                onAlertCallback(getEntityObservations);
+            },
+            dataType: "json",
+        });
+
+    }
+
+    function submitPreConcluding() {
+        var flag = 0;
+        $('.preconcludingStatusField').each(function (i, v) {
+
+            if ($(v).html() == "Pending")
+                flag++;
+
+        });
+
+        if (flag > 0) {
+            alert("Please add Audit Observation Gist and Recommendation for all observations first to proceed");
+            return;
+        }
+
+
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/submit_pre_concluding",
+            type: "POST",
+            data: {
+                'ENG_ID': $('#entitySelectField').val()
+
+            },
+            cache: false,
+            success: function (data) {
+
+                alert(data.message);
+            },
+            dataType: "json",
+        });
+    }
+</script>
+<div class="row mt-3">
+    <div>
+        <center>
+            <h3 style="color: #be0e43">Review Gist and Audit Recommendation</h3>
+        </center>
+    </div>
+     <div class="row col-md-12 mt-3">
+        <div class="col-md-2">
+            <label><b>Entity:</b></label>
+        </div>
+        <div class="col-md-10">
+            <input id="entityNameField" disabled="disabled" class="form-control ml-1 d-none" type="text" />
+            <select id="entitySelectField" onchange="getEntityObservations()" class="form-control form-select">
+                <option value="0" id="0">--Select Audit Entity--</option>
+                @{
+                    if (ViewData["EntitiesList"] != null)
+                    {
+                        foreach (var item in (dynamic)(ViewData["EntitiesList"]))
+                        {
+                            <option value="@item.ENG_ID" id="@item.ENG_ID">@item.NAME</option>
+                        }
+                    }
+                }
+
+            </select>
+        </div>
+    </div>
+
+    <table id="checklistDetailsPanel" class="table table-hover table-bordered table-hover mt-3 table-striped">
+        <thead style="background-color: #19875478 !important; ">
+            <tr>
+                <th class="col-md-auto font-weight-bold">Sr. No</th>
+                <th class="col-md-auto font-weight-bold">Parent/Sub Process</th>
+                <th class="col-md-auto font-weight-bold">Heading/Sublist Detail</th>                
+                <th class="col-md-auto font-weight-bold">Observation Status</th>                
+                <th class="col-md-auto font-weight-bold">Action</th>
+                <th class="col-md-auto font-weight-bold text-center">Status</th>
+            </tr>
+        </thead>
+        <tbody>
+        </tbody>
+    </table>
+</div>
+<div id="viewMemoModel_ObSent" class="modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-xl" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">Observation</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form>
+                    <div class="form-group">
+                        <label for="viewMemo_process_ObSent" class="font-weight-bold">Process</label>
+                        <div id="viewMemo_process_ObSent" disabled="disabled" style="max-height: 100px; height: auto; overflow-y: auto;" class="form-control"></div>
+                    </div>
+                    <div class="form-group">
+                        <label for="viewMemo_subprocess_ObSent" class="font-weight-bold">Sub Process</label>
+                        <div id="viewMemo_subprocess_ObSent" disabled="disabled" style="max-height: 100px; height: auto; overflow-y: auto;" class="form-control"></div>
+                    </div>
+                    <div class="form-group">
+                        <label for="viewMemo_violation_ObSent" class="font-weight-bold">Checklist Details</label>
+                        <div id="viewMemo_violation_ObSent" disabled="disabled" style="max-height: 100px; height: auto; overflow-y: auto;" class="form-control"></div>
+                    </div>
+                    <div class="form-group">
+                        <label for="viewMemo_respPP_ObSent" class="font-weight-bold">Responsible Personals</label>
+                        <div class="col-md-12 pl-0 pr-0">
+                            <table id="listofRespPersons_ObSent" class="table table-hover table-bordered table-hover mt-3 table-striped">
+                                <thead style="background-color: #19875478 !important; ">
+                                    <tr>
+                                        <th class="col-md- auto font-weight-bold">Sr.No</th>
+                                        <th class="col-md- auto font-weight-bold">P.P. No</th>
+                                        <th class="col-md- auto font-weight-bold">Name</th>
+                                        <th class="col-md- auto font-weight-bold">Loan Case</th>
+                                        <th class="col-md- auto font-weight-bold">LC Amount</th>
+                                        <th class="col-md- auto font-weight-bold">Account No.</th>
+                                        <th class="col-md- auto font-weight-bold">ACC Amount</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="viewMemo_memo_ObSent" class="font-weight-bold">Memo</label>
+                        <div id="viewMemo_memo_ObSent" disabled="disabled" style="height: auto; overflow-y: auto;" class="form-control"></div>
+                    </div>
+                    <div class="form-group">
+                        <label for="viewMemo_response_ObSent" class="font-weight-bold">Auditee Response</label>
+                        <div id="viewMemo_response_ObSent" disabled="disabled" style="height: auto; overflow-y: auto;" class="form-control"></div>
+                    </div>
+                     <div class="form-group">
+                        <label for="viewMemo_response_ObSent" class="font-weight-bold">Gist of Para <small class="text-muted">(Plain text only)</small></label>
+                        <textarea id="gistPara_response_ObSent" class="form-control" maxlength="4000" placeholder="Enter Gist of Para"></textarea>
+                        <small class="form-text text-muted">Use plain text only; HTML is not allowed.</small>
+                    </div>
+                    <div class="form-group">
+                        <label for="viewMemo_response_ObSent" class="font-weight-bold">Auditor Recommendation <small class="text-muted">(Rich text sanitized)</small></label>
+                        <textarea id="audRecommend_response_ObSent" class="form-control" maxlength="4000" placeholder="Enter Auditor Recommendation"></textarea>
+                        <small class="form-text text-muted">Formatting is sanitized before saving.</small>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button onclick="saveObservationGistandRecommendation();" type="button" class="btn btn-danger" >Save</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+

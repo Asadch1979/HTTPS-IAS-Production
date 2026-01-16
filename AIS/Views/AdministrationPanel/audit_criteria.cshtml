@@ -1,0 +1,94 @@
+﻿@{
+
+    ViewData["Title"] = "Audit criteria";
+    Layout = "_Layout";
+}
+
+
+<script type="text/javascript">
+    $(document).ready(function () {
+        var g_branchId = 0;
+        $('#sidebar_policy').hide();
+        $("#searchTableRecord").on("keyup", function () {
+            var value = $(this).val().toLowerCase();
+            $("#listOfBranches tbody tr").filter(function () {
+                $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1)
+            });
+        });
+    });
+
+    function newBranchSetup() {
+        g_branchId = 0;
+        $('#setupBranchModal').modal('show');
+        $('#branchCodeModalField').val('');
+        $('#branchNameModalField').val('');
+        $('#branchZoneModalField').val('');
+        $('#branchSizeModalField').val('');
+        $('#branchRiskModalField').val('');
+    }
+
+    function setupBranch(code, name, zone, zoneId, size, sizeId,risk, status,brId ) {
+        g_branchId = brId;
+        $('#branchCodeModalField').val(code);
+        $('#branchNameModalField').val(name);
+        $('#branchZoneModalField').val(zoneId);
+        $('#branchSizeModalField').val(sizeId);
+        $('#branchRiskModalField').val(risk);
+        if (status == "Active")
+            $('#branchActiveModalField').click();
+        else if (status == "InActive")
+            $('#branchInactiveModalField').click();
+
+        $('#setupBranchModal').modal('show');
+    }
+
+    function publishBranchChanges() {
+
+        var code = $('#branchCodeModalField').val();
+        var name = $('#branchNameModalField').val();
+        var zoneId = $('#branchZoneModalField').val();
+        var zone_name = $('#branchZoneModalField option:selected').text();
+        var sizeId = $('#branchSizeModalField').val();
+        var size = $('#branchSizeModalField option:selected').text();
+        var risk = $('#branchRiskModalField').val();
+        var status;
+        var badge;
+        if ($('#branchActiveModalField').is(':checked')) {
+            status = 'Active';
+            badge = 'text-bg-success ';
+        }
+        else {
+            status = 'InActive';
+            badge = 'text-bg-danger ';
+        }
+        if (g_branchId == 0)
+            var row = "<tr id=\"div_" + g_branchId + " \"><td><p class=\"fw - normal mb - 1\">" + code + "</p></td><td><p class=\"fw - normal mb - 1\">" + name + "</p></td><td><p class=\"fw - normal mb - 1\">" + zone_name + "</p></td><td><p class=\"fw - normal mb - 1\">" + size + "</p></td><td><p class=\"fw - normal mb - 1\">" + risk + "</p></td><td><span class=\"badge " + badge + " rounded - pill d - inline\">" + status + "</span></td><td><button type=\"button\" class=\"btn btn - link text - danger btn - sm btn - rounded\" onclick=\"setupBranch('" + code + "', '" + name + "', '" + zone_name + "', '" + zoneId + "', '" + size + "', '" + sizeId + "', '" + risk + "', '" + status + "', '" + g_branchId + "'); \" > Edit</button></td ></tr >";
+        else
+            $('#div_' + g_branchId).html("<td><p class=\"fw - normal mb - 1\">" + code + "</p></td><td><p class=\"fw - normal mb - 1\">" + name + "</p></td><td><p class=\"fw - normal mb - 1\">" + zone_name + "</p></td><td><p class=\"fw - normal mb - 1\">" + size + "</p></td><td><p class=\"fw - normal mb - 1\">" + risk + "</p></td><td><span class=\"badge " + badge + " rounded - pill d - inline\">" + status + "</span></td><td><button type=\"button\" class=\"btn btn - link text - danger btn - sm btn - rounded\" onclick=\"setupBranch('" + code + "', '" + name + "', '" + zone_name + "', '" + zoneId + "', '" + size + "', '" + sizeId + "', '" + risk + "', '" + status + "', '" + g_branchId + "'); \" > Edit</button></td >");
+        $('#listOfBranches tbody').append(row);
+        $('#setupBranchModal').modal('hide');
+        $.ajax({
+            url: g_asiBaseURL + "/Setup/branch_add",
+            type: "POST",
+            data: {
+                'BRANCHID': g_branchId,
+                'BRANCHCODE': code,
+                'BRANCHNAME': name,
+                'ZONEID': zoneId,
+                'BRANCH_SIZE_ID': sizeId,
+                'BRANCH_SIZE': size,
+                'ZONE_NAME': zone_name,
+                'ISACTIVE': status
+            },
+            cache: false,
+            success: function (data) {
+                window.location = window.location.pathname;
+
+            },
+            dataType: "json",
+        });
+    }
+</script>
+
+
+

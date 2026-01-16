@@ -1,0 +1,193 @@
+﻿@model int
+@{
+    var page_id = ViewData["PageId"] as int? ?? 0;
+}
+
+@{
+    ViewData["Title"] = "Update Reference";
+    Layout = "_Layout";
+}
+<h4>Update Reference</h4>
+<div id="paraText" class="mb-3 border p-3"></div>
+<ul id="refList" class="list-group mb-3"></ul>
+<button class="btn btn-success mb-3" id="saveBtn">Save</button>
+
+<div id="searchSection">
+    <select id="refType" class="form-select mb-2">
+        <option value="0" selected>Please select reference</option>
+        <option value="Manual">Manual</option>
+        <option value="Policy">Policy</option>
+        <option value="Circular">Circular</option>
+    </select>
+    <div id="searchInputs" style="display:none;">
+        <input id="keyword" class="form-control mb-2" placeholder="keyword" />
+        <button class="btn btn-primary" id="searchBtn">Search</button>
+    </div>
+    <div id="manualInputs" style="display:none;">
+        <input id="manualName" class="form-control mb-2" placeholder="Manual/Policy Name" />
+        <input id="chapterSection" class="form-control mb-2" placeholder="Chapter No + Section" />
+        <button class="btn btn-primary" id="addManualBtn">Add</button>
+    </div>
+</div>
+<table class="table" id="resultTbl" style="display:none;">
+    <thead>
+        <tr>
+            <th>TITLE</th>
+            <th>Circular Date</th>
+            <th>INSTRUCTIONS DETAILS</th>
+            <th>KEYWORDS</th>
+            <th>View Circular</th>
+            <th>Action</th>
+
+        </tr>
+    </thead>
+    <tbody></tbody>
+</table>
+<script>
+    $(function(){
+        var comId = @Model;
+        var refs = [];
+        var refDetails = [];
+        var refLinks = [];
+        var manualCounter = -1;
+
+        $.get(g_asiBaseURL + '/ApiCalls/GetParaReferenceData', { comId: comId }, function(d){
+            $('#paraText').html(d.paraText);
+            refs = d.references || [];
+            refDetails = d.referenceDetails || [];
+            refLinks = d.referenceLinks || [];
+            renderRefs();
+        });
+
+        $('#searchBtn').click(function(){
+            $.post(g_asiBaseURL+'/ApiCalls/SearchReferences',{referenceType:$('#refType').val(),keyword:$('#keyword').val()},function(d){
+                var body=$('#resultTbl tbody');body.empty();
+                $.each(d,function(i,it){
+                    body.append('<tr>'+
+                        '<td>'+it.title+'</td>'+
+                        '<td>'+it.instructionsDate+'</td>'+
+                        '<td>'+it.instructionsdetails+'</td>'+
+                        '<td>'+it.keywords+'</td>'+
+                        '<td><button class="view btn btn-sm btn-secondary" data-url="'+it.referenceurl+'">View</button></td>'+
+                        '<td><button type="button" class="attach btn btn-sm btn-primary" data-id="'+it.id+'">Attach</button></td>'+
+                        '</tr>');
+                });
+            });
+        });
+
+        $('#addManualBtn').click(function(){
+            var name = $('#manualName').val();
+            var chap = $('#chapterSection').val();
+            if(!name) return;
+            refDetails.push({
+                id: manualCounter--,
+                instructionsTitle: name,
+                instructionsDate: null,
+                referenceType: $('#refType').val(),
+                division: chap,
+                divisionEntId: 0,
+                linkId: null
+            });
+            $('#manualName').val('');
+            $('#chapterSection').val('');
+            renderRefs();
+        });
+
+        $('#refType').change(toggleInputMode);
+        toggleInputMode();
+
+        function toggleInputMode(){
+            var t = $('#refType').val();
+            if(t === 'Circular'){
+                $('#searchInputs').show();
+                $('#resultTbl').show();
+                $('#manualInputs').hide();
+            } else if(t === 'Manual' || t === 'Policy') {
+                $('#searchInputs').hide();
+                $('#resultTbl').hide();
+                $('#manualInputs').show();
+            } else {
+                $('#searchInputs').hide();
+                $('#resultTbl').hide();
+                $('#manualInputs').hide();
+            }
+        }
+
+        $(document).on('click','.attach',function(){
+            var ref=parseInt($(this).data('id'),10);
+            if($.inArray(ref, refs) === -1){
+                refs.push(ref);
+                $.get(g_asiBaseURL + '/ApiCalls/GetReferenceDetail', { refId: ref }, function(d){
+                    if(d){
+                        d.linkId = null;
+                        refDetails.push(d);
+                    }
+                    renderRefs();
+                });
+            }
+        });
+
+        $(document).on('click','.remove-ref',function(){
+            var id=parseInt($(this).data('id'),10);
+            refs = $.grep(refs,function(v){ return v!=id; });
+            refDetails = $.grep(refDetails,function(v){ return v.id!=id; });
+            renderRefs();
+        });
+
+        $(document).on('click','.view',function(){
+            var url=$(this).data('url');
+            window.open(url,'_blank');
+        });
+
+        $('#saveBtn').click(function(){
+            var payload = { comId: comId, references: [] };
+            $.each(refDetails, function(i,r){
+                var lnk = r.linkId !== undefined && r.linkId !== null ? r.linkId : null;
+                if(lnk === null){
+                    var found = refLinks.find(function(fl){ return fl.instructionsDate === r.instructionsDate; });
+                    if(found) lnk = found.linkId;
+                }
+                payload.references.push({
+                    linkId: lnk,
+                    entityId: r.divisionEntId || 0,
+                    oldParaId: 0,
+                    newParaId: 0,
+                    paraId: comId,
+                    instructionsDate: r.instructionsDate,
+                    referenceTitle: r.instructionsTitle,
+                    creditManualId: null,
+                    opManualId: null,
+                    manualType: r.referenceType,
+                    chapter: r.division,
+                    matchedText: null,
+                    linkType: r.referenceType
+                });
+            });
+
+            $.ajax({
+                url: g_asiBaseURL + '/ApiCalls/SaveParaReferences',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify(payload),
+                success: function(msg){
+                    alert(msg);
+                    window.location.href = g_asiBaseURL + '/FAD/ReferenceEntitySummary';
+                }
+            });
+        });
+
+        function renderRefs(){
+            var ul=$('#refList'); ul.empty();
+            $.each(refDetails,function(i,r){
+                var dateTxt = r.instructionsDate ? r.instructionsDate.split('T')[0] : '';
+                ul.append('<li class="list-group-item">'
+                    +'<div><strong>Reference No '+(i+1)+'</strong></div>'
+                    +'<div>'+r.instructionsTitle+'</div>'
+                    +'<div>Issuance Date: '+dateTxt+'</div>'
+                    +'<div>Reference Type: '+r.referenceType+'</div>'
+                    +'<div>Division Code: '+r.division+'</div>'
+                    +' <button type="button" class="btn btn-danger btn-sm float-end remove-ref" data-id="'+r.id+'">Delete</button></li>');
+            });
+        }
+    });
+</script>

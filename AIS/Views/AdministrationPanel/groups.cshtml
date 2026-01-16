@@ -1,0 +1,174 @@
+﻿@{
+    ViewData["Title"] = "Groups";
+    Layout = "_Layout";
+
+}
+
+
+<script type="text/javascript">
+    $(document).ready(function () {
+        var g_groupId = 0;
+        $("#searchTableRecord").on("keyup", function () {
+            var value = $(this).val().toLowerCase();
+            $("#listOfGroups tbody tr").filter(function () {
+                $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1)
+            });
+        });
+    });
+
+    function newGroupSetup() {
+        g_groupId = 0;
+        $('#setupGroupModal').modal('show');
+        $('#groupNameModalField').val('');
+        $('#groupDescModalField').val('');
+    }
+
+    function setupGroup(name, description, active, grpId) {
+        g_groupId = grpId;
+        $('#groupNameModalField').val(name);
+        $('#groupDescModalField').val(description);
+       
+        if (active == "Y")
+            $('#groupActiveModalField').click();
+        else 
+            $('#groupInactiveModalField').click();
+
+        $('#setupGroupModal').modal('show');
+    }
+
+    function publishGroupChanges() {
+
+        var name = $('#groupNameModalField').val();
+        var desc = $('#groupDescModalField').val();
+        var status;
+        var badge;
+        if ($('#groupActiveModalField').is(':checked')) {
+            status = 'Y';
+            badge = 'text-bg-success ';
+        }
+        else {
+            status = 'N';
+            badge = 'text-bg-danger ';
+        }
+        $.ajax({
+            url: g_asiBaseURL + "/AdministrationPanel/group_add",
+            type: "POST",
+            data: {
+                'GROUP_ID': g_groupId,
+                'GROUP_NAME': name,
+                'GROUP_DESCRIPTION': desc,
+                'ISACTIVE': status
+            },
+            cache: false,
+            success: function (data) {
+                $('#setupGroupModal').modal('hide');
+                //console.log(data);
+                window.location = window.location.pathname;
+
+            },
+            dataType: "json",
+        });
+    }
+</script>
+
+<div class="col-md-12" style="margin-top:20px;">
+    <h3>List of Groups</h3>
+    <div class="row">
+        <div class="col-md-10">
+            <input class="form-control" id="searchTableRecord" type="text" placeholder="Search..">
+        </div>
+        <div class="col-md-2">
+            <button onclick="newGroupSetup();" class="btn btn-danger w-100">Add New</button>
+        </div>
+    </div>
+    <br>
+    <table id="listOfGroups" class="table align-middle mb-0 bg-white table-hover table-striped">
+        <thead class="bg-light">
+            <tr>
+                <th>Group Name</th>
+                <th>Group Description</th>
+                <th>Status</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            @{
+                if (ViewData["GroupsList"] != null)
+                {
+                    foreach (var item in (dynamic)(ViewData["GroupsList"]))
+                    {
+
+                        <tr id="div_@item.GROUP_ID">
+                            <td>
+                                <p class="fw-normal mb-1">@item.GROUP_NAME</p>
+                            </td>
+                            <td>
+                                <p class="fw-normal mb-1">@item.GROUP_DESCRIPTION</p>
+                            </td>
+                            <td class="dept_status">
+                                @{
+                                    if (item.ISACTIVE == "Y")
+
+                                    { <span class="badge text-bg-success rounded-pill d-inline">Active</span>}
+                                else
+                                { <span class="badge text-bg-danger rounded-pill d-inline" style="color: red">InActive</span>}
+                                }
+                            </td>
+                            <td>
+                                <button type="button" class="btn btn-link text-danger btn-sm btn-rounded" onclick="setupGroup('@item.GROUP_NAME','@item.GROUP_DESCRIPTION','@item.ISACTIVE','@item.GROUP_ID');">
+                                    Edit
+                                </button>
+                            </td>
+                        </tr>
+                    }
+                }}
+        </tbody>
+    </table>
+</div>
+
+<div id="setupGroupModal" class="modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">Group Setup</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form>
+                    <div class="form-group">
+                        <label for="groupNameModalField">Group Name</label>
+                        <input type="text" class="form-control" id="groupNameModalField" aria-describedby="brcode" placeholder="Group Name">
+
+                    </div>
+                    <div class="form-group">
+                        <label for="groupDescModalField">Group Description</label>
+                        <textarea rows="3"  class="form-control" id="groupDescModalField" placeholder="Group Description"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="groupStatusModalField">Status</label>
+                        <div class="row col-md-12">
+                            <div class="form-check form-check-inline">
+                                <input class="form-check-input" type="radio" name="inlineRadioOptions" id="groupActiveModalField" value="option1" />
+                                <label class="form-check-label" for="groupActiveModalField">Active</label>
+                            </div>
+
+                            <div class="form-check form-check-inline">
+                                <input class="form-check-input" type="radio" name="inlineRadioOptions" id="groupInactiveModalField" value="option2" />
+                                <label class="form-check-label" for="groupInactiveModalField">Inactive</label>
+                            </div>
+                        </div>
+                    </div>
+
+
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button onclick="publishGroupChanges();" type="button" class="btn btn-danger">Save changes</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+

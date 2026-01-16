@@ -1,0 +1,225 @@
+﻿@{
+    var page_id = ViewData["PageId"] as int? ?? 0;
+}
+
+@{
+    ViewData["Title"] = "FAD_Monthly_Review";
+    Layout = "_Layout";
+}
+
+<script type="text/javascript">
+
+    $(document).ready(function () {
+        $('#entityTypeSelectionField').select2();
+
+    });
+
+    function toNumber(value) {
+        if (value === null || value === undefined) {
+            return 0;
+        }
+
+        if (typeof value === 'string') {
+            value = value.replace(/,/g, '').trim();
+        }
+
+        var numeric = parseFloat(value);
+        return isNaN(numeric) ? 0 : numeric;
+    }
+
+    function formatNumber(value) {
+        if (value === 0) {
+            return '0';
+        }
+
+        return value % 1 === 0
+            ? value.toLocaleString('en-IN')
+            : value.toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+    }
+
+    function resetTotals() {
+        $('#totalOpeningBalance').text('0');
+        $('#totalParaAdded').text('0');
+        $('#totalCombined').text('0');
+        $('#totalSettledAudit').text('0');
+        $('#totalSettledCompliance').text('0');
+        $('#totalOutstanding').text('0');
+        $('#totalHighRisk').text('0');
+        $('#totalMediumRisk').text('0');
+        $('#totalLowRisk').text('0');
+    }
+
+    function updateTotals(totals) {
+        $('#totalOpeningBalance').text(formatNumber(totals.openingBalance));
+        $('#totalParaAdded').text(formatNumber(totals.paraAdded));
+        $('#totalCombined').text(formatNumber(totals.totalCombined));
+        $('#totalSettledAudit').text(formatNumber(totals.settledAudit));
+        $('#totalSettledCompliance').text(formatNumber(totals.settledCompliance));
+        $('#totalOutstanding').text(formatNumber(totals.outstanding));
+        $('#totalHighRisk').text(formatNumber(totals.highRisk));
+        $('#totalMediumRisk').text(formatNumber(totals.mediumRisk));
+        $('#totalLowRisk').text(formatNumber(totals.lowRisk));
+    }
+
+    function entityTypeSelectionChangeEvent() {
+        if ($('#entityTypeSelectionField').val() != 0) {
+            destroyDatatable('fadMonthlyReviewGrid');
+
+            $('#fadMonthlyReviewGrid tbody').empty();
+            resetTotals();
+
+            $.ajax({
+                url: g_asiBaseURL + "/ApiCalls/get_fad_monthly_review_paras_for_entity_type_id",
+                type: "POST",
+                data: {
+                    "ENT_TYPE_ID": $('#entityTypeSelectionField').val(),
+                    "S_DATE": $('#periodStartModalField').val(),
+                    "E_DATE": $('#periodEndModalField').val()
+                },
+                cache: false,
+                success: function (data) {
+                    var totals = {
+                        openingBalance: 0,
+                        paraAdded: 0,
+                        totalCombined: 0,
+                        settledAudit: 0,
+                        settledCompliance: 0,
+                        outstanding: 0,
+                        highRisk: 0,
+                        mediumRisk: 0,
+                        lowRisk: 0
+                    };
+
+                    $.each(data, function (index, record) {
+                        var rowNumber = index + 1;
+                        var openingBalance = toNumber(record.openinG_BALANCE);
+                        var paraAdded = toNumber(record.parA_ADDED);
+                        var totalCombined = openingBalance + paraAdded;
+                        var settledAudit = toNumber(record.settleD_AUDIT);
+                        var settledCompliance = toNumber(record.settleD_COM);
+                        var outstanding = toNumber(record.outstanding);
+                        var highRisk = toNumber(record.r1);
+                        var mediumRisk = toNumber(record.r2);
+                        var lowRisk = toNumber(record.r3);
+
+                        totals.openingBalance += openingBalance;
+                        totals.paraAdded += paraAdded;
+                        totals.totalCombined += totalCombined;
+                        totals.settledAudit += settledAudit;
+                        totals.settledCompliance += settledCompliance;
+                        totals.outstanding += outstanding;
+                        totals.highRisk += highRisk;
+                        totals.mediumRisk += mediumRisk;
+                        totals.lowRisk += lowRisk;
+
+                        $('#fadMonthlyReviewGrid tbody').append(
+                            '<tr>' +
+                            '<td>' + rowNumber + '</td>' +
+                            '<td>' + record.reportinG_OFFICE + '</td>' +
+                            '<td>' + record.chilD_CODE + '</td>' +
+                            '<td>' + record.placE_OF_POSTING + '</td>' +
+                            '<td class="text-end">' + formatNumber(openingBalance) + '</td>' +
+                            '<td class="text-end">' + formatNumber(paraAdded) + '</td>' +
+                            '<td class="text-end">' + formatNumber(totalCombined) + '</td>' +
+                            '<td class="text-end">' + formatNumber(settledAudit) + '</td>' +
+                            '<td class="text-end">' + formatNumber(settledCompliance) + '</td>' +
+                            '<td class="text-end">' + formatNumber(outstanding) + '</td>' +
+                            '<td class="text-end">' + formatNumber(highRisk) + '</td>' +
+                            '<td class="text-end">' + formatNumber(mediumRisk) + '</td>' +
+                            '<td class="text-end">' + formatNumber(lowRisk) + '</td>' +
+                            '</tr>'
+                        );
+                    });
+
+                    updateTotals(totals);
+                    initializeDataTable('fadMonthlyReviewGrid');
+                },
+                dataType: "json",
+            });
+        }
+    }
+
+   
+
+</script>
+
+<div class="row col-md-12">
+
+    <div class="row col-md-12 mt-3">
+        <h3 style=" display:block;color: #be0e43">FAD Monthly Review-Operational Zone Wise Settlement Position</h3>
+    </div>
+    <div class="row col-md-12 mt-3">
+        <label>Entity Type</label>
+    </div>
+    <div class="row col-md-12 mt-1">
+        <select id="entityTypeSelectionField" class="form-select form-control" aria-label="Default select example">
+            <option value="0" selected>--Select Entity Type--</option>
+            @{
+                if (ViewData["EntitiesList"] != null)
+                    {
+                    foreach (var item in (dynamic)(ViewData["EntitiesList"]))
+                        {
+                        <option value="@item.CODE" id="@item.CODE">@item.NAME</option>
+                        }
+                    }
+            }
+        </select>
+
+    </div>
+    <div class="row col-md-12 mt-3">
+
+        <label for="periodStartModalField"><b>Report Period From</b><span class="text-danger">*</span></label>
+        <input required type="date" class="form-control" id="periodStartModalField" aria-describedby="brcode" placeholder="Start Date">
+    </div>
+    <div class="row col-md-12 mt-3">
+
+        <label for="periodEndModalField"><b>Report Period To</b><span class="text-danger">*</span></label>
+        <input required type="date" class="form-control" id="periodEndModalField" aria-describedby="brcode" placeholder="End Date">
+
+    </div>
+    <div class="row col-md-12 mt-3">
+
+        <button onclick="entityTypeSelectionChangeEvent();" class="btn btn-danger col-md-2 offset-md-10">Search</button>
+
+    </div>
+    <div class="row col-md-12 mt-3">
+        <table id="fadMonthlyReviewGrid" class="table table-hover table-bordered table-hover mt-3 table-striped">
+            <thead style="background-color: #19875478 !important; ">
+                <tr>
+                    <th class="col-md-auto">Sr. No</th>
+                    <th class="col-md-auto">Reporting Office</th>
+                    <th class="col-md-auto">Entity Code</th>
+                    <th class="col-md-auto">Entity Name</th>
+                    <th class="col-md-auto">Opening Balance</th>
+                    <th class="col-md-auto">Para Added</th>
+                    <th class="col-md-auto">Total</th>
+                    <th class="col-md-auto">Settled By Audit</th>
+                    <th class="col-md-auto">Settled By Compliance</th>
+                    <th class="col-md-auto">Paras Outstanding</th>
+                    <th class="col-md-auto">High Risk</th>
+                    <th class="col-md-auto">Medium Risk</th>
+                    <th class="col-md-auto">Low Risk</th>
+
+                </tr>
+            </thead>
+            <tbody>
+            </tbody>
+            <tfoot>
+                <tr class="table-secondary fw-bold">
+                    <td colspan="4" class="text-end">Total</td>
+                    <td id="totalOpeningBalance" class="text-end">0</td>
+                    <td id="totalParaAdded" class="text-end">0</td>
+                    <td id="totalCombined" class="text-end">0</td>
+                    <td id="totalSettledAudit" class="text-end">0</td>
+                    <td id="totalSettledCompliance" class="text-end">0</td>
+                    <td id="totalOutstanding" class="text-end">0</td>
+                    <td id="totalHighRisk" class="text-end">0</td>
+                    <td id="totalMediumRisk" class="text-end">0</td>
+                    <td id="totalLowRisk" class="text-end">0</td>
+                </tr>
+            </tfoot>
+
+        </table>
+    </div>
+
+</div>

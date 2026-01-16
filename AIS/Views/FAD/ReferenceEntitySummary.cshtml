@@ -1,0 +1,89 @@
+﻿@{
+    var page_id = ViewData["PageId"] as int? ?? 0;
+}
+
+@{
+    ViewData["Title"] = "Reference Entity Summary";
+    Layout = "_Layout";
+}
+<h4>Reference Update Summary</h4>
+<table id="summaryTable" class="table table-bordered table-striped">
+    <thead class="table-success">
+        <tr>
+            <th>Entity Code</th>
+            <th>Entity Name</th>
+            <th>Audit Period</th>
+            <th>Total Paras</th>
+            <th>Updated</th>
+            <th>Pendency</th>
+            <th>Action</th>
+        </tr>
+    </thead>
+    <tbody></tbody>
+</table>
+
+<div class="modal fade" id="paraModal" tabindex="-1">
+    <div class="modal-dialog modal-xl" style="min-width:95% !important;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Pending Paras</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <table class="table" id="paraTable">
+                    <thead>
+                        <tr>
+                            <th>Para No</th>
+                            <th>Gist</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+$(function(){
+    loadSummary();
+});
+
+function loadSummary(){
+    $.get(g_asiBaseURL + '/ApiCalls/GetReferenceEntitySummary', function(data){
+        var body = $('#summaryTable tbody');
+        body.empty();
+        $.each(data, function(i, it){
+            body.append('<tr>'+
+                '<td>'+it.entityCode+'</td>'+
+                '<td>'+it.entityName+'</td>'+
+                '<td>'+it.auditPeriod+'</td>'+
+                '<td>'+it.totalParas+'</td>'+
+                '<td>'+it.updatedParas+'</td>'+
+                '<td>'+it.pendency+'</td>'+
+                '<td><button class="btn btn-sm btn-primary" onclick="loadParas('+it.entityId+',\''+it.auditPeriod+'\')">Assign Reference</button></td>'+
+                '</tr>');
+        });
+    });
+}
+
+function loadParas(entId, year){
+    $.get(g_asiBaseURL + '/ApiCalls/GetPendingParas', { entityId: entId, auditYear: year }, function(d){
+        var body = $('#paraTable tbody');
+        body.empty();
+        $.each(d, function(i, p){
+            body.append('<tr>'+
+                '<td>'+p.paraNo+'</td>'+
+                '<td>'+p.gist+'</td>'+
+                '<td><button class="btn btn-sm btn-primary" onclick="openEdit('+p.paraId+')">Update</button></td>'+
+                '</tr>');
+        });
+        $('#paraModal').modal('show');
+    });
+}
+
+function openEdit(id){
+    window.location.href = g_asiBaseURL + '/FAD/ReferenceUpdateEdit?comId=' + id;
+}
+</script>

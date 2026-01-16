@@ -1,0 +1,44 @@
+﻿@{
+    ViewData["Title"] = "BranchSetup";
+    Layout = "_Layout";
+
+}
+<script type="text/javascript">
+    $(document).ready(function () {
+        $('#sidebar_policy').hide();
+        $("#searchTableRecord").on("keyup", function () {
+            var value = $(this).val().toLowerCase();
+            $("#listOfBranches tbody tr").filter(function () {
+                $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1)
+            });
+        });
+    });
+
+    function newBranchSetup() {
+        $('#setupBranchModal').modal('show');
+        $('#branchCodeModalField').val('');
+        $('#branchNameModalField').val('');
+        $('#branchZoneModalField').val('');
+        $('#branchAddressModalField').val('');
+    }
+
+    function setupBranch(code, name, zone, address, status) {
+        $('#branchCodeModalField').val(code);
+        $('#branchNameModalField').val(name);
+        $('#branchZoneModalField').val(zone);
+        $('#branchAddressModalField').val(address);
+        if (status == "Active")
+            $('#branchActiveModalField').click();
+        else if (status == "Inactive")
+            $('#branchInactiveModalField').click();
+
+        $('#setupBranchModal').modal('show');
+    }
+
+    function publishBranchChanges() {
+        
+        //$('#listOfBranches tbody').append('<tr><td></td>');
+    }
+</script>
+
+

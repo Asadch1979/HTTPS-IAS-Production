@@ -1,0 +1,265 @@
+﻿@{
+    var page_id = ViewData["PageId"] as int? ?? 0;
+}
+
+@{
+    ViewData["Title"] = "Dashboard";
+    Layout = "_Layout";
+}
+<style type="text/css">
+    .container{
+        max-width:100%;
+    }
+    .card-header {
+        background-color: transparent !important;
+        font-size: 20px;
+        height: 100px;
+    }
+    .icon-card{
+        margin:10px;
+    }
+</style>
+<script type="text/javascript">
+    $(document).ready(function () {
+        getPieChartData();
+    });
+
+    var y=[100,200,300,400]
+    function getPieChartData() {
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/get_pie_chart_data",
+            type: "POST",
+            data: {
+               
+            },
+            cache: false,
+            success: function (res) {
+                var total_count = parseInt(res.inactive_Count) + parseInt(res.active_Count);
+                console.log(total_count);
+                var activePer = parseFloat((parseInt(res.active_Count) / total_count) * 100).toFixed(2);
+                var InactivePer = parseFloat((parseInt(res.inactive_Count) / total_count) * 100).toFixed(2);
+
+                console.log(activePer, InactivePer);
+                var chart = new CanvasJS.Chart("countrywide_oldParas", {
+                    animationEnabled: true,
+                    title: {
+                        text: "Country Wise Old Para Performance"
+                    },
+                    data: [{
+                        type: "pie",
+                        startAngle: 240,
+                        yValueFormatString: "##0.00'%'",
+                        indexLabel: "{label} {y}",
+                        dataPoints: [
+                            { y: InactivePer, label: "Pending" },
+                            { y: activePer, label: "Completed" }
+                        ]
+                    }]
+                });
+                chart.render();
+            },
+            dataType: "json",
+        });
+
+    }
+window.onload = function() {
+
+   /* var chart = new CanvasJS.Chart("countrywide_oldParas", {
+	animationEnabled: true,
+	title: {
+        text: "Country Wise Old Para Performance"
+	},
+	data: [{
+		type: "pie",
+		startAngle: 240,
+		yValueFormatString: "##0.00'%'",
+		indexLabel: "{label} {y}",
+		dataPoints: [
+			{y: 65, label: "Pending"},
+			{y: 35, label: "Completed"}
+		]
+	}]
+});
+    chart.render();
+    */
+  
+    const labels = ["light1", "light1", "light2", "dark1", "dark2", "dark2", "dark2"];
+    const data = {
+        labels: labels,
+        datasets: [{
+            label: 'My First Dataset',
+            data: [65, 59, 80, 81, 56, 55, 40],
+            backgroundColor: [
+                'rgba(255, 99, 132, 0.2)',
+                'rgba(255, 159, 64, 0.2)',
+                'rgba(255, 205, 86, 0.2)',
+                'rgba(75, 192, 192, 0.2)',
+                'rgba(54, 162, 235, 0.2)',
+                'rgba(153, 102, 255, 0.2)',
+                'rgba(201, 203, 207, 0.2)'
+            ],
+            borderColor: [
+                'rgb(255, 99, 132)',
+                'rgb(255, 159, 64)',
+                'rgb(255, 205, 86)',
+                'rgb(75, 192, 192)',
+                'rgb(54, 162, 235)',
+                'rgb(153, 102, 255)',
+                'rgb(201, 203, 207)'
+            ],
+            borderWidth: 1
+        }]
+    };
+
+
+    var chartB = new CanvasJS.Chart("zonewide_oldParas", {
+        animationEnabled: true,
+        exportEnabled: true,
+        theme: "light2", // "light1", "light2", "dark1", "dark2"
+        title: {
+            text: "Zone Wise Old Para Performance"
+        },
+        data: [{
+            type: "column",
+            yValueFormatString: "#,##0.0#\"%\"",
+            dataPoints: [
+                { label: "Bahawalpur", y: 7.1 },
+                { label: "Islamabad", y: 6.70 },
+                { label: "Karachi", y: 5.00 },
+                { label: "Lahore", y: 2.50 },
+                { label: "Sukkur", y: 2.30 },
+                { label: "Quetta", y: 9.80 },
+                { label: "Multan", y: 5.60 },
+                { label: "Peshawar", y: 6.60 },
+                { label: "Faisalabad", y: 4.60 }
+
+            ]
+        }]
+    });
+    chartB.render();
+
+    var chartC = new CanvasJS.Chart("countrywide_volivolii", {
+        animationEnabled: true,
+        title: {
+            text: "FAD VOL-I & VOL-II Paras"
+        },
+        axisX: {
+            valueFormatString: "DD MMM,YY"
+        },
+        axisY: {
+            title: "Para Count",
+            includeZero: false,
+            suffix: ""
+        },
+        legend: {
+            cursor: "pointer",
+            fontSize: 16,
+            itemclick: toggleDataSeries
+        },
+        toolTip: {
+            shared: true
+        },
+        data: [{
+            name: "ASSEST_CR",
+            type: "spline",
+            yValueFormatString: "#0.##",
+            showInLegend: true,
+            dataPoints: [
+                { x: new Date(2018, 12, 31), y: y[0] },
+                { x: new Date(2019, 6, 30), y: y[1] },
+                { x: new Date(2019, 12, 31), y: y[2] },
+                { x: new Date(2020, 6, 30), y: y[3] },
+                { x: new Date(2020, 12, 31), y: 1589 },
+                { x: new Date(2021, 6, 30), y: 1612 },
+                { x: new Date(2021, 12, 31), y: 1688 },
+                { x: new Date(2022, 6, 30), y: 1712 },
+            ]
+        },
+        {
+            name: "ASSEST_DR",
+            type: "spline",
+            yValueFormatString: "#0.##",
+            showInLegend: true,
+            dataPoints: [
+                { x: new Date(2018, 12, 31), y: 200 },
+                { x: new Date(2019, 6, 30), y: 350 },
+                { x: new Date(2019, 12, 31), y: 410 },
+                { x: new Date(2020, 6, 30), y: 507 },
+                { x: new Date(2020, 12, 31), y: 589 },
+                { x: new Date(2021, 6, 30), y: 612 },
+                { x: new Date(2021, 12, 31), y: 688 },
+                { x: new Date(2022, 6, 30), y: 712 },
+                
+            ]
+            },
+         {
+                name: "VOL-III",
+                type: "spline",
+                yValueFormatString: "#0.##",
+                showInLegend: true,
+                dataPoints: [
+                    { x: new Date(2018, 12, 31), y: 100 },
+                    { x: new Date(2019, 6, 30), y: 250 },
+                    { x: new Date(2019, 12, 31), y: 310 },
+                    { x: new Date(2020, 6, 30), y: 407 },
+                    { x: new Date(2020, 12, 31), y: 389 },
+                    { x: new Date(2021, 6, 30), y: 612 },
+                    { x: new Date(2021, 12, 31), y: 488 },
+                    { x: new Date(2022, 6, 30), y: 912 },
+
+                ]
+            },
+            {
+                name: "VOL-IV",
+                type: "spline",
+                yValueFormatString: "#0.##",
+                showInLegend: true,
+                dataPoints: [
+                    { x: new Date(2018, 12, 31), y: 130 },
+                    { x: new Date(2019, 6, 30), y: 170 },
+                    { x: new Date(2019, 12, 31), y: 220 },
+                    { x: new Date(2020, 6, 30), y: 315 },
+                    { x: new Date(2020, 12, 31), y: 415 },
+                    { x: new Date(2021, 6, 30), y: 715 },
+                    { x: new Date(2021, 12, 31), y: 588 },
+                    { x: new Date(2022, 6, 30), y: 488 },
+
+                ]
+            }
+        ]
+    });
+    chartC.render();
+    function toggleDataSeries(e) {
+        if (typeof (e.dataSeries.visible) === "undefined" || e.dataSeries.visible) {
+            e.dataSeries.visible = false;
+        }
+        else {
+            e.dataSeries.visible = true;
+        }
+        chartC.render();
+    }
+
+}
+</script>
+
+
+<div class="row col-md-12">
+
+    <div class="col-md-6 mt-3 p-10">
+        <div id="countrywide_oldParas" style="height: 370px; margin: 0px auto;"></div>
+
+    </div>
+    <div class="col-md-6 mt-3 p-10">
+        <div id="zonewide_oldParas" style="height: 370px; margin: 0px auto;"></div>
+
+    </div>
+    <div class="col-md-6 mt-3 p-10">
+        <div id="countrywide_volivolii" style="height: 370px; margin: 0px auto;"></div>
+
+    </div>
+    <div class="col-md-6 mt-3 p-10">
+        <div id="countrywide_oldParas" style="height: 370px; margin: 0px auto;"></div>
+
+    </div>
+
+</div>

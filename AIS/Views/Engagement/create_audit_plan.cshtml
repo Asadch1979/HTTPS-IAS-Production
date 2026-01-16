@@ -1,0 +1,335 @@
+﻿@{
+    ViewData["Title"] = "Inspection Criteria";
+    Layout = "_Layout";
+}
+
+
+<script type="text/javascript">
+    g_status = 'Created';
+
+    function addRecordToauditCriteriaListBox() {
+        var entityName = '';
+        if ($('#auditCriteriaEntityField option:selected').val() != 0)
+            entityName = $('#auditCriteriaEntityField option:selected').text();
+
+        var period = '';
+        if ($('#auditCriteriaPeriodField option:selected').val() != 0)
+            period = $('#auditCriteriaPeriodField option:selected').text();
+
+        var days = $('#auditCriteriaDaysField').val();
+        var risk = '';
+        if ($('#auditCriteriaRiskField option:selected').val() != 0)
+            risk = $('#auditCriteriaRiskField option:selected').text();
+
+        var freq = '';
+        if ($('#auditCriteriaFreqField option:selected').val() != 0)
+            freq = $('#auditCriteriaFreqField option:selected').text();
+
+
+        var size = '';
+        if ($('#auditCriteriaSizeField option:selected').val() != 0)
+            size = $('#auditCriteriaSizeField option:selected').text();
+
+        var visit = 'No';
+        if ($('#auditCriteriaVisitField').is(':checked'))
+            visit = "Yes";
+
+        $('#auditCriteriaListBox tbody').append('<tr><td value="' + $('#auditCriteriaPeriodField option:selected').val() + '">' + period + '</td><td value="' + $('#auditCriteriaEntityField option:selected').val() + '">' + entityName + '</td><td value="' + $('#auditCriteriaRiskField option:selected').val() + '">' + risk + '</td><td value="' + $('#auditCriteriaFreqField option:selected').val() + '">' + freq + '</td><td value="' + $('#auditCriteriaSizeField option:selected').val() + '">' + size + '</td><td value="' + days + '">' + days + '</td><td value="' + visit + '">' + visit + '</td><td><a class="text-hover text-danger">' + g_status + '</a></td><td><a onclick=DeleteCriteriaRecordFromGrid(this); class="text-hover text-danger">Delete</a></td></tr>')
+
+    }
+    function DeleteCriteriaRecordFromGrid(e) {
+        $(e).parent().parent().remove();
+    }
+    function enitityChangeEvent() {
+        if ($('#auditCriteriaEntityField option:selected').val() == 6) {
+            // $('.brField').removeClass('d-none');
+            $('#auditCriteriaSizeField option:selected').val(0);
+        } else
+            // $('.brField').addClass('d-none');
+            $('#auditCriteriaSizeField option:selected').val(0);
+    }
+    function addAuditEntitiesModal() {
+        $('#setupAuditEntitiesModal').modal('show');
+    }
+    function submitAuditCriteria() {
+
+        var criteria_list = [];
+        $.each($('#auditCriteriaListBox tbody tr'), function (index, row) {
+            var criteria = [];
+            $.each($(row).find('td'), function (i, d) {
+                if (typeof $(d).attr('value') != "undefined" && $(d).attr('value') != null) {
+                    criteria.push($(d).attr('value'));
+                }
+            });
+            criteria.push($($(row).find('td').eq(0)).html()); //[period]
+            criteria.push($($(row).find('td').eq(1)).html()); //[entname]
+            criteria.push($($(row).find('td').eq(2)).html()); //[risk]
+            criteria.push($($(row).find('td').eq(4)).html()); //[size]
+            criteria.push($($(row).find('td').eq(3)).html()); //[freq]
+            criteria_list.push(criteria);
+        });
+        //console.log(criteria_list);
+        //  return;
+        if (criteria_list.length > 0) {
+            $.ajax({
+                url: g_asiBaseURL + "/Engagement/add_audit_criteria",
+                type: "POST",
+                data: {
+                    'CRITERIA_LIST': criteria_list
+                },
+                cache: false,
+                success: function (data) {
+                    var row = "";
+                    $.each(data, function (i, v) {
+                        row += "<p>Criteria = " + v[0] + " | " + v[1] + " | " + v[2] + " | " + v[3] + " | " + v[4] + "  " + v[5] + "</p>";
+                    });
+
+                    //console.log('criteria res=',row);
+                    alert(row);
+                    //location.reload();
+
+                },
+                dataType: "json",
+            });
+        }
+    }
+    function publishAuditeeEntity() {
+        var code = $('#auditeeEntTypesCodeModelField').val();
+        var desc = $('#auditeeEntTypesDescModelField').val();
+        var isactive = $('#auditeeEntTypesIsActiveModelField').is(':checked');
+        var isauditable = $('#auditeeEntTypesIsAuditableModelField').is(':checked');
+        if (isactive)
+            isactive = 'Y';
+        else
+            isactive = 'N';
+
+        if (isauditable)
+            isauditable = 'A';
+        else
+            isauditable = 'N';
+
+        $.ajax({
+            url: g_asiBaseURL + "/Engagement/add_auditee_entity",
+            type: "POST",
+            data: {
+                'ENTITYCODE': code,
+                'ENTITYTYPEDESC': desc,
+                'ACTIVE': isactive,
+                'AUDITABLE': isauditable
+            },
+            cache: false,
+            success: function (data) {
+                alert('Entity Added Successfully');
+                location.reload();
+
+            },
+            dataType: "json",
+        });
+    }
+</script>
+
+<div class="row col-md-12">
+    <h3 style="color: #be0e43">Inspection Criteria</h3>
+</div>
+<div class="row col-md-12 mt-3">
+    <div class="row col-md-4">
+        <h5>Inspection Period</h5>
+    </div>
+    <div class="row col-md-8">
+        <select id="auditCriteriaPeriodField" class="form-select form-control" aria-label="Default select example">
+            <option value="0" id="0" selected>--Select Inspection Period--</option>
+            @{
+            if (ViewData["AuditPeriodList"] != null)
+            {
+
+            foreach (var period in (dynamic)(ViewData["AuditPeriodList"]))
+            {
+            <option id="@period.AUDITPERIODID" value="@period.AUDITPERIODID">@period.DESCRIPTION</option>
+            }
+
+            }
+            }
+        </select>
+    </div>
+</div>
+<div class="row mt-3 col-md-12">
+    <div class="row col-md-4">
+        <h5>Select Entity</h5>
+    </div>
+    <div class="row col-md-8">
+        <div class="col-md-9 pl-0">
+            <select id="auditCriteriaEntityField" onchange="enitityChangeEvent();" class="form-select form-control">
+                <option value="0" id="0" selected>--Select Entity--</option>
+                @{
+                if (ViewData["AuditEntities"] != null)
+                {
+                foreach (var item in (dynamic)(ViewData["AuditEntities"]))
+                {
+                <option value="@item.AUTID" id="@item.AUTID">@item.ENTITYTYPEDESC</option>
+                }
+                }
+                }
+            </select>
+        </div>
+        <div class="col-md-3 pr-0">
+            <button onclick="addAuditEntitiesModal();" class="btn btn-danger float-right">Add New Entity</button>
+        </div>
+    </div>
+</div>
+
+
+
+<div class="row col-md-12 mt-3">
+    <div class="row col-md-4">
+        <h5>Risk Category</h5>
+    </div>
+    <div class="row col-md-8">
+        <select id="auditCriteriaRiskField" class="form-select form-control" aria-label="Default select example">
+            <option value="0" id="0" selected>--Select Risk Category--</option>
+            @{
+            if (ViewData["RiskList"] != null)
+            {
+
+            foreach (var risk in (dynamic)(ViewData["RiskList"]))
+            {
+            <option id="@risk.R_ID" value="@risk.R_ID">@risk.DESCRIPTION</option>
+            }
+
+            }
+            }
+        </select>
+    </div>
+</div>
+
+
+<div class="row col-md-12 mt-3 brField">
+    <div class="row col-md-4">
+        <h5>Size</h5>
+    </div>
+    <div class="row col-md-8">
+        <select id="auditCriteriaSizeField" class="form-select form-control" aria-label="Default select example">
+            <option value="0" id="0" selected>--Select Size--</option>
+            @{
+            if (ViewData["BranchSizesList"] != null)
+            {
+            foreach (var item in (dynamic)(ViewData["BranchSizesList"]))
+            {
+            <option value="@item.BR_SIZE_ID" id="@item.BR_SIZE_ID">@item.DESCRIPTION</option>
+            }
+            }
+            }
+        </select>
+    </div>
+</div>
+<div class="row col-md-12 mt-3">
+    <div class="row col-md-4">
+        <h5>No. of Days</h5>
+    </div>
+    <div class="row col-md-8">
+        <input id="auditCriteriaDaysField" class="form-control" type="number" />
+    </div>
+</div>
+
+<div class="row col-md-12 mt-3">
+    <div class="row col-md-4">
+        <h5>Frequency</h5>
+    </div>
+    <div class="row col-md-8">
+        <select id="auditCriteriaFreqField" class="form-select form-control" aria-label="Default select example">
+            <option value="0" id="0" selected>--Select Frequency--</option>
+            @{
+            if (ViewData["AuditFrequencies"] != null)
+            {
+
+            foreach (var period in (dynamic)(ViewData["AuditFrequencies"]))
+            {
+            <option id="@period.FREQUENCY_ID" value="@period.FREQUENCY_ID">@period.FREQUENCY_DISCRIPTION</option>
+            }
+
+            }
+            }
+        </select>
+    </div>
+</div>
+<div class="row col-md-12 mt-3">
+    <div class="row col-md-4">
+        <h5>Field Visit</h5>
+    </div>
+    <div class="row col-md-8">
+        <input id="auditCriteriaVisitField" class="form-check" type="checkbox" />
+    </div>
+</div>
+<div class="row col-md-12 mt-3">
+    <button onclick="addRecordToauditCriteriaListBox();" class="col-md-2 btn btn-danger">Save</button>
+</div>
+
+<div class="row w-100">
+    <table id="auditCriteriaListBox" class="table table-bordered mb-0 mt-3 bg-white table-hover table-striped">
+        <thead>
+            <tr>
+                <th class="col-md-2">Period</th>
+                <th class="col-md-2">Entity</th>
+                <th class="col-md-1">Risk Category</th>
+                <th class="col-md-2">Frequency</th>
+                <th class="col-md-1">Size</th>
+                <th class="col-md-1">No. of Days</th>
+                <th class="col-md-1">Field Visit</th>
+                <th class="col-md-1">Status</th>
+                <th class="col-md-1"></th>
+            </tr>
+        </thead>
+        <tbody>
+        </tbody>
+    </table>
+</div>
+<div class="row col-md-12 mt-3">
+    <button onclick="submitAuditCriteria();" class="col-md-2 btn btn-success">Submit</button>
+</div>
+
+
+<div id="setupAuditEntitiesModal" class="modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">Audit Entities</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form>
+                    <!--  <div class="form-group">
+                        <label for="auditeeEntTypesCodeModelField">Code</label>
+                        <input type="text" class="form-control" id="auditeeEntTypesCodeModelField" aria-describedby="brcode" placeholder="Entity Code">
+
+                    </div> -->
+                    <div class="form-group">
+                        <label for="auditeeEntTypesDescModelField">Description</label>
+                        <textarea id="auditeeEntTypesDescModelField" class="form-control" rows="3"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="auditeeEntTypesIsAuditableModelField">Is Auditable</label>  <div class="row col-md-12">
+                            <div class="form-check form-check-inline">
+                                <input class="form-check-input" type="radio" name="inlineRadioOptions" id="auditeeEntTypesIsAuditableModelField" value="option1" />
+                                <label class="form-check-label" for="branchActiveModalField">Yes</label>
+                            </div>
+
+                            <div class="form-check form-check-inline">
+                                <input class="form-check-input" type="radio" name="inlineRadioOptions" id="auditeeEntTypesIsNotAuditableModelField" value="option2" />
+                                <label class="form-check-label" for="branchInactiveModalField">No</label>
+                            </div>
+                        </div>
+
+                    </div>
+
+
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button onclick="publishAuditeeEntity();" type="button" class="btn btn-danger">Save changes</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+

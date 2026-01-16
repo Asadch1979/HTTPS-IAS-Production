@@ -1,0 +1,102 @@
+﻿@{
+    var page_id = ViewData["PageId"] as int? ?? 0;
+}
+
+@{
+    ViewData["Title"] = "AIS|Summary of Checklist Performed by Audit Teams";
+    Layout = "_Layout";
+}
+<script type="text/javascript">
+   
+    $(document).ready(function () {
+
+        $('#detailsPanelMain').addClass('d-none');
+        $('#detailsPanelMainGrid').addClass('d-none');
+        
+    });
+  
+    function showDetailsCount() {
+        
+        $('#detailsPanelMain').removeClass('d-none');
+        $('#detailsPanelGrid').addClass('d-none');
+     
+    }
+
+    function detailsGridPanel(){
+        $('#detailsPanelGrid').removeClass('d-none');
+    }
+
+</script>
+<div class="row mt-3">
+    <div class="row col-md-12">
+        <center>
+            <h3 style="color: #be0e43">Summary of Checklist Performed by Audit Teams</h3>
+        </center>
+    </div>
+
+    <div class="row col-md-12 mt-3">
+        <div class="col-md-4">
+            Entities
+        </div>
+        <div class="col-md-4">
+            <select onchange="showDetailsCount();" class="form-control">
+                <option>--select Entity--</option>
+                <option>Entity 1</option>
+                <option>Entity 2</option>
+            </select>
+        </div>
+    </div>
+    <div id="detailsPanelMain" class="row col-md-12 mt-3">
+        <div class="row col-md-12">
+            <div class="col-md-6">
+                <label>No of Test /Checklist on which observation Assigned</label>
+            
+            </div>
+
+            <div class="col-md-3">
+                <input class="form-control" disabled="disabled" value="10" />
+            </div>
+            
+            <div class="col-md-3">
+                <button onclick="detailsGridPanel();" class="btn btn-primary">Details</button>
+            </div>
+            
+            
+
+        </div>
+        <div class="row col-md-12 mt-3">
+
+            <div class="col-md-6">
+                <label>No of Test /Checklist not checked /found compliant</label>
+
+            </div>
+
+            <div class="col-md-3">
+                <input class="form-control" disabled="disabled" value="10" />
+            </div>
+
+            <div class="col-md-3">
+                <button onclick="detailsGridPanel();" class="btn btn-primary">Details</button>
+            </div>
+
+          
+        </div>
+    </div>
+
+    <div id="detailsPanelGrid" class="row col-md-12 mt-3">
+    <table id="checklistDetailsPanel" class="table table-hover table-bordered table-hover mt-3 table-striped">
+        <thead style="background-color: #19875478 !important; ">
+            <tr>
+                <th class="col-md-1 font-weight-bold">Sr. No</th>
+                <th class="col-md-2 font-weight-bold">Process</th>
+                <th class="col-md-2 font-weight-bold">Sub Process</th>
+                <th class="col-md-3 font-weight-bold">Checklist Detail</th>
+                <th class="col-md-3 font-weight-bold">Risk</th>                
+                <th class="col-md-2 font-weight-bold"></th>                
+            </tr>
+        </thead>
+        <tbody>
+        </tbody>
+    </table>
+    </div>
+</div>

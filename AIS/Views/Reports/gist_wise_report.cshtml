@@ -1,0 +1,70 @@
+﻿@{
+    var page_id = ViewData["PageId"] as int? ?? 0;
+}
+
+
+﻿@{
+    ViewData["Title"] = "Gist Wise Audit Report";
+    Layout = "_Layout";
+}
+<head>
+<script type="text/javascript">
+    var g_cnic = 0;
+    $('#document').ready(function () {
+    });   
+    function findParaByGistKeyword() {        
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/get_report_para_by_gist_keyword",
+            type: "POST",
+            data: {
+                'GIST': $('#gistkeywordSearch').val(),
+            },
+            cache: false,
+            success: function (data) {
+
+                $.each(data, function (i, v) {
+
+                    $('#gldetailtab tbody').append('<tr><td class="text-center">' + ++i + '</td><td class="text-center">' + v.audiT_ZONE + '</td><td class="text-center">' + v.region + '</td><td class="text-center">' + v.brancH_CODE + '</td><td class="text-center">' + v.branch + '</td><td class="text-right">' + v.parA_NO+ '</td><td class="text-center">' + v.e_DATE.split(" ")[0] + '</td><td class="text-left">' + v.gisT_OF_PARAS + '</td><td class="text-right">' + v.nO_OF_INSTANCES + '</td><td class="text-right">' + v.amounT_INVOLVED + '</td></tr>')
+
+                });
+            },
+            dataType: "json",
+        });
+    }
+</script>
+</head>
+<div class="row col-md-12">
+    <h4 style="display: block; color: #be0e43">Gist Wise Audit Report</h4>
+</div>
+
+<div class="row col-md-12 mt-3">
+    <label class="font-bold">Gist keyword</label>
+    <input type="text" class="form-control" id="gistkeywordSearch"  />
+</div>
+<div class="row col-md-12 mt-3">
+    <button onclick="findParaByGistKeyword();" class="btn btn-danger col-md-2 offset-md-10">Search</button>
+</div>
+
+ <div class="row col-md-12 mt-3">
+        <table id="gldetailtab" class="table table-hover table-bordered table-hover mt-3 table-striped">
+            <thead style="background-color: #19875478 !important; ">
+                <tr>
+                    
+                    <th class="col-md-auto">Sr No.</th>
+                    <th class="col-md-auto">Audit Zone</th>
+                    <th class="col-md-auto">Region</th>
+                    <th class="col-md-auto">Branch Code</th>
+                    <th class="col-md-auto">Branch</th>
+                    <th class="col-md-auto">Para No.</th>
+                    <th class="col-md-auto">Entered Date</th>
+                    <th class="col-md-3">Gist of Para</th>
+                    <th class="col-md-auto">No of Instances</th>
+                    <th class="col-md-auto">Amount Involved</th>
+                </tr>
+            </thead>
+            <tbody>
+            </tbody>
+
+
+        </table>
+</div>

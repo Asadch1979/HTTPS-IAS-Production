@@ -1,0 +1,202 @@
+@{
+    ViewData["Title"] = "Inquiry Reports";
+    Layout = "_Layout";
+}
+<h4>Inquiry Reports</h4>
+<form id="filterForm" class="row g-2">
+    <div class="col">
+        <input class="form-control" type="date" placeholder="Date From" name="DateFrom" />
+    </div>
+    <div class="col">
+        <input class="form-control" type="date" placeholder="Date To" name="DateTo" />
+    </div>
+    <div class="col">
+        <input class="form-control" placeholder="Nature" name="Nature" />
+    </div>
+    <div class="col">
+        <select class="form-select" name="Source">
+            <option value="">Source</option>
+            <option>Internal</option>
+            <option>External</option>
+            <option>Anonymous</option>
+            <option>Regulatory</option>
+            <option>Other</option>
+        </select>
+    </div>
+    <div class="col">
+        <select class="form-select" name="Category">
+            <option value="">Category</option>
+            <option>Complaint</option>
+            <option>Reference</option>
+            <option>Whistle Blow</option>
+        </select>
+    </div>
+    <div class="col">
+        <select class="form-select" name="PertainsTo" id="PertainsTo">
+            <option value="">Pertains To</option>
+            <option value="HO">HO</option>
+            <option value="FIELD">Field</option>
+        </select>
+    </div>
+    <div class="col">
+        <select class="form-select" id="HOUnitTypeId" name="HOUnitTypeId">
+            <option value="">HO Unit Type</option>
+        </select>
+    </div>
+    <div class="col">
+        <select class="form-select" id="HOUnitId" name="HOUnitId">
+            <option value="">HO Unit</option>
+        </select>
+    </div>
+    <div class="col">
+        <select class="form-select" id="RegionId" name="RegionId">
+            <option value="">Region</option>
+        </select>
+    </div>
+    <div class="col">
+        <select class="form-select" id="BranchId" name="BranchId">
+            <option value="">Branch</option>
+        </select>
+    </div>
+    <div class="col">
+        <input class="form-control" placeholder="Status" name="Status" />
+    </div>
+    <div class="col-auto">
+        <button type="submit" class="btn btn-primary">Search</button>
+    </div>
+</form>
+<table class="table table-sm mt-3" id="resultTable">
+    <thead>
+        <tr>
+            <th>Complaint ID</th>
+            <th>Submitted On</th>
+            <th>Source</th>
+            <th>Category</th>
+            <th>Pertains To</th>
+            <th>Status</th>
+        </tr>
+    </thead>
+    <tbody></tbody>
+</table>
+@section Scripts{
+<script>
+    $(function(){
+        function loadRegions(){
+            $.post(g_asiBaseURL + '/ApiCalls/get_region_zone_office', { RGM_ID: 0 }, function(d){
+                $('#RegionId').empty().append('<option value="">Region</option>');
+                $.each(d, function(i,v){
+                    var code = v.code || v.CODE;
+                    var name = v.name || v.NAME;
+                    $('#RegionId').append('<option value="'+code+'">'+name+'</option>');
+                });
+            });
+        }
+
+        function loadHoUnitTypes(){
+            $.post(g_asiBaseURL + '/ApiCalls/get_ho_unit_types', {}, function(d){
+                $('#HOUnitTypeId').empty().append('<option value="">HO Unit Type</option>');
+                $.each(d, function(i,v){
+                    var id = v.divisionid || v.DIVISIONID;
+                    var name = v.name || v.NAME;
+                    $('#HOUnitTypeId').append('<option value="'+id+'">'+name+'</option>');
+                });
+            });
+        }
+
+        function loadHoUnits(){
+            var typeId = $('#HOUnitTypeId').val();
+            $('#HOUnitId').empty().append('<option value="">HO Unit</option>');
+            if(!typeId){
+                return;
+            }
+            $.post(g_asiBaseURL + '/ApiCalls/get_ho_units', { divisionId: typeId }, function(d){
+                $.each(d, function(i,v){
+                    var id = v.id || v.ID;
+                    var name = v.name || v.NAME;
+                    $('#HOUnitId').append('<option value="'+id+'">'+name+'</option>');
+                });
+            });
+        }
+
+        function togglePertainsTo(){
+            var pertainsTo = $('#PertainsTo').val();
+            if(pertainsTo === 'HO'){
+                $('#HOUnitTypeId,#HOUnitId').prop('disabled', false);
+                $('#RegionId,#BranchId').prop('disabled', true).val('');
+            } else if(pertainsTo === 'FIELD'){
+                $('#RegionId,#BranchId').prop('disabled', false);
+                $('#HOUnitTypeId,#HOUnitId').prop('disabled', true).val('');
+            } else {
+                $('#HOUnitTypeId,#HOUnitId,#RegionId,#BranchId').prop('disabled', false);
+            }
+        }
+
+        function getFieldValue(row, keys){
+            for(var i = 0; i < keys.length; i++){
+                var key = keys[i];
+                if(row[key] !== undefined && row[key] !== null){
+                    return row[key];
+                }
+                var lowerKey = key.toLowerCase();
+                if(row[lowerKey] !== undefined && row[lowerKey] !== null){
+                    return row[lowerKey];
+                }
+            }
+            return '';
+        }
+
+        loadRegions();
+        loadHoUnitTypes();
+        togglePertainsTo();
+
+        $('#HOUnitTypeId').on('change', loadHoUnits);
+        $('#PertainsTo').on('change', togglePertainsTo);
+        $('#RegionId').on('change', function(){
+            if($(this).val()){
+                $('#BranchId').empty().append('<option value="">Branch</option>');
+                $.post(g_asiBaseURL + '/ApiCalls/get_zone_Branches', { ZONEID: $(this).val() }, function(d){
+                    $.each(d, function(i,v){
+                        $('#BranchId').append('<option value="'+v.branchid+'">'+v.branchname+'</option>');
+                    });
+                });
+            }
+        });
+
+        $('#filterForm').on('submit', function(e){
+            e.preventDefault();
+            var data = {
+                DateFrom: $('#filterForm [name="DateFrom"]').val(),
+                DateTo: $('#filterForm [name="DateTo"]').val(),
+                Nature: $('#filterForm [name="Nature"]').val(),
+                Source: $('#filterForm [name="Source"]').val(),
+                Category: $('#filterForm [name="Category"]').val(),
+                PertainsTo: $('#filterForm [name="PertainsTo"]').val(),
+                RegionId: $('#filterForm [name="RegionId"]').val(),
+                BranchId: $('#filterForm [name="BranchId"]').val(),
+                HOUnitTypeId: $('#filterForm [name="HOUnitTypeId"]').val(),
+                HOUnitId: $('#filterForm [name="HOUnitId"]').val(),
+                Status: $('#filterForm [name="Status"]').val()
+            };
+            $.ajax({
+                url: g_asiBaseURL + '/ApiCalls/GetReports',
+                method: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify(data),
+                success: function(d){
+                    var body = $('#resultTable tbody');
+                    body.empty();
+                    $.each(d, function(i,v){
+                        var complaintId = getFieldValue(v, ['ComplaintId','COMPLAINT_ID']);
+                        var submittedOn = getFieldValue(v, ['SubmittedOn','SUBMITTED_ON']);
+                        var source = getFieldValue(v, ['Source','SOURCE']);
+                        var category = getFieldValue(v, ['Category','CATEGORY']);
+                        var pertainsTo = getFieldValue(v, ['PertainsToSummary','PERTAINS_TO_SUMMARY','PERTAINS_TO']);
+                        var status = getFieldValue(v, ['Status','STATUS']);
+                        body.append('<tr><td>'+complaintId+'</td><td>'+submittedOn+'</td><td>'+source+'</td><td>'+category+'</td><td>'+pertainsTo+'</td><td>'+status+'</td></tr>');
+                    });
+                }
+            });
+        });
+    });
+</script>
+}

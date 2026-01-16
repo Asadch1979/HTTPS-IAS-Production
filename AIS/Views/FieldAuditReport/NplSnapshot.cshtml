@@ -1,0 +1,336 @@
+@model AIS.Models.FieldAuditReport.FieldAuditInputSectionViewModel
+@using System
+@using System.Linq
+
+@{
+    ViewData["Title"] = "NPL Snapshot";
+    Layout = "_Layout";
+    var engagementSelector = ViewData["EngagementSelector"] as AIS.Models.FieldAuditReport.FieldAuditEngagementSelectorViewModel;
+    var hasEngagement = engagementSelector?.HasActiveEngagement ?? false;
+}
+
+@functions {
+    private string FieldValue(string key)
+        {
+        return Model?.Fields != null && Model.Fields.TryGetValue(key, out var value) ? value : string.Empty;
+        }
+}
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <h3 class="mb-3">NPL Snapshot</h3>
+        </div>
+    </div>
+
+    @await Html.PartialAsync("_GetEngagementSelector", engagementSelector)
+
+    @if (!hasEngagement)
+    {
+        <div class="alert alert-warning">Select an engagement to work with NPL snapshot data.</div>
+    }
+
+    @if (TempData["FieldAuditReportMessage"] != null)
+    {
+        <div class="alert alert-info">@TempData["FieldAuditReportMessage"]</div>
+    }
+
+    @if (Model.IsReadOnly)
+    {
+        <div class="alert alert-warning">This report is FINAL and cannot be edited.</div>
+    }
+
+    @if (hasEngagement)
+    {
+        var extraPeriodIndices = Model.Fields.Keys
+            .Where(key => key.StartsWith("NPL_PERIOD_", StringComparison.OrdinalIgnoreCase))
+            .Select(key => key.Split('_'))
+            .Where(parts => parts.Length >= 5 && int.TryParse(parts[2], out _))
+            .Select(parts => int.Parse(parts[2]))
+            .Distinct()
+            .OrderBy(index => index)
+            .ToList();
+
+        var extraRowIndices = Model.Fields.Keys
+            .Where(key => key.StartsWith("NPL_EXTRA_ROW_", StringComparison.OrdinalIgnoreCase))
+            .Select(key => key.Split('_'))
+            .Where(parts => parts.Length >= 4 && int.TryParse(parts[3], out _))
+            .Select(parts => int.Parse(parts[3]))
+            .Distinct()
+            .OrderBy(index => index)
+            .ToList();
+
+        var allPeriodIndices = new List<int> { 1, 2 };
+        allPeriodIndices.AddRange(extraPeriodIndices);
+
+        <form method="post" asp-action="SaveFieldAuditInputs">
+            <input type="hidden" name="EngagementId" value="@Model.EngagementId" />
+            <input type="hidden" name="EntityId" value="@Model.EntityId" />
+            <input type="hidden" name="SectionCode" value="@Model.SectionCode" />
+            <input type="hidden" name="returnAction" value="NplSnapshot" />
+
+            <div class="d-flex justify-content-end gap-2 mb-2">
+                <button type="button" class="btn btn-outline-primary" id="add-npl-period" @(Model.IsReadOnly ? "disabled" : string.Empty)>
+                    <i class="fa-solid fa-plus"></i>
+                </button>
+                <button type="button" class="btn btn-outline-primary" id="add-npl-row" @(Model.IsReadOnly ? "disabled" : string.Empty)>
+                    <i class="fa-solid fa-plus"></i>
+                </button>
+            </div>
+
+            <div class="table-responsive mb-4">
+                <table class="table table-bordered align-middle">
+                    <thead>
+                        <tr>
+                            <th>NPL Portfolio</th>
+                            <th colspan="3">Jun 30, 2024</th>
+                            <th colspan="3">Jun 30, 2025</th>
+                            @foreach (var periodIndex in extraPeriodIndices)
+                            {
+                                <th colspan="3">Period @periodIndex</th>
+                            }
+                            <th colspan="4">Impact During the Period</th>
+                        </tr>
+                        <tr>
+                            <th></th>
+                            <th>Cases</th>
+                            <th>Outstanding Principal (Rs.)</th>
+                            <th>Provision Amount (Rs.)</th>
+                            <th>Cases</th>
+                            <th>Outstanding Principal (Rs.)</th>
+                            <th>Provision Amount (Rs.)</th>
+                            @foreach (var periodIndex in extraPeriodIndices)
+                            {
+                                <th>Cases</th>
+                                <th>Outstanding Principal (Rs.)</th>
+                                <th>Provision Amount (Rs.)</th>
+                            }
+                            <th>Cases</th>
+                            <th>Total Amount (Rs.)</th>
+                            <th>Provision Amount (Rs.)</th>
+                            <th>Impact (%age)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr data-row-key="OAEM">
+                            <td>OAEM</td>
+                            <td><input class="form-control" name="Fields[FIELD_111]" value="@FieldValue("FIELD_111")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                            <td><input class="form-control" name="Fields[FIELD_112]" value="@FieldValue("FIELD_112")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                            <td><input class="form-control" name="Fields[FIELD_113]" value="@FieldValue("FIELD_113")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                            <td><input class="form-control" name="Fields[FIELD_114]" value="@FieldValue("FIELD_114")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                            <td><input class="form-control" name="Fields[FIELD_115]" value="@FieldValue("FIELD_115")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                            <td><input class="form-control" name="Fields[FIELD_116]" value="@FieldValue("FIELD_116")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                            @foreach (var periodIndex in extraPeriodIndices)
+                            {
+                                <td><input class="form-control" name="Fields[NPL_PERIOD_@(periodIndex)_OAEM_CASES]" value="@FieldValue($"NPL_PERIOD_{periodIndex}_OAEM_CASES")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                                <td><input class="form-control" name="Fields[NPL_PERIOD_@(periodIndex)_OAEM_OUTSTANDING]" value="@FieldValue($"NPL_PERIOD_{periodIndex}_OAEM_OUTSTANDING")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                                <td><input class="form-control" name="Fields[NPL_PERIOD_@(periodIndex)_OAEM_PROVISION]" value="@FieldValue($"NPL_PERIOD_{periodIndex}_OAEM_PROVISION")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                            }
+                            <td><input class="form-control" name="Fields[FIELD_117]" value="@FieldValue("FIELD_117")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                            <td><input class="form-control" name="Fields[FIELD_118]" value="@FieldValue("FIELD_118")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                            <td><input class="form-control" name="Fields[FIELD_119]" value="@FieldValue("FIELD_119")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                            <td><input class="form-control" name="Fields[FIELD_120]" value="@FieldValue("FIELD_120")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                        </tr>
+                        <tr data-row-key="SUBSTANDARD">
+                            <td>Substandard</td>
+                            <td><input class="form-control" name="Fields[FIELD_121]" value="@FieldValue("FIELD_121")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                            <td><input class="form-control" name="Fields[FIELD_122]" value="@FieldValue("FIELD_122")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                            <td><input class="form-control" name="Fields[FIELD_123]" value="@FieldValue("FIELD_123")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                            <td><input class="form-control" name="Fields[FIELD_124]" value="@FieldValue("FIELD_124")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                            <td><input class="form-control" name="Fields[FIELD_125]" value="@FieldValue("FIELD_125")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                            <td><input class="form-control" name="Fields[FIELD_126]" value="@FieldValue("FIELD_126")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                            @foreach (var periodIndex in extraPeriodIndices)
+                            {
+                                <td><input class="form-control" name="Fields[NPL_PERIOD_@(periodIndex)_SUBSTANDARD_CASES]" value="@FieldValue($"NPL_PERIOD_{periodIndex}_SUBSTANDARD_CASES")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                                <td><input class="form-control" name="Fields[NPL_PERIOD_@(periodIndex)_SUBSTANDARD_OUTSTANDING]" value="@FieldValue($"NPL_PERIOD_{periodIndex}_SUBSTANDARD_OUTSTANDING")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                                <td><input class="form-control" name="Fields[NPL_PERIOD_@(periodIndex)_SUBSTANDARD_PROVISION]" value="@FieldValue($"NPL_PERIOD_{periodIndex}_SUBSTANDARD_PROVISION")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                            }
+                            <td><input class="form-control" name="Fields[FIELD_127]" value="@FieldValue("FIELD_127")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                            <td><input class="form-control" name="Fields[FIELD_128]" value="@FieldValue("FIELD_128")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                            <td><input class="form-control" name="Fields[FIELD_129]" value="@FieldValue("FIELD_129")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                            <td><input class="form-control" name="Fields[FIELD_130]" value="@FieldValue("FIELD_130")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                        </tr>
+                        <tr data-row-key="DOUBTFUL">
+                            <td>Doubtful</td>
+                            <td><input class="form-control" name="Fields[FIELD_131]" value="@FieldValue("FIELD_131")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                            <td><input class="form-control" name="Fields[FIELD_132]" value="@FieldValue("FIELD_132")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                            <td><input class="form-control" name="Fields[FIELD_133]" value="@FieldValue("FIELD_133")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                            <td><input class="form-control" name="Fields[FIELD_134]" value="@FieldValue("FIELD_134")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                            <td><input class="form-control" name="Fields[FIELD_135]" value="@FieldValue("FIELD_135")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                            <td><input class="form-control" name="Fields[FIELD_136]" value="@FieldValue("FIELD_136")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                            @foreach (var periodIndex in extraPeriodIndices)
+                            {
+                                <td><input class="form-control" name="Fields[NPL_PERIOD_@(periodIndex)_DOUBTFUL_CASES]" value="@FieldValue($"NPL_PERIOD_{periodIndex}_DOUBTFUL_CASES")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                                <td><input class="form-control" name="Fields[NPL_PERIOD_@(periodIndex)_DOUBTFUL_OUTSTANDING]" value="@FieldValue($"NPL_PERIOD_{periodIndex}_DOUBTFUL_OUTSTANDING")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                                <td><input class="form-control" name="Fields[NPL_PERIOD_@(periodIndex)_DOUBTFUL_PROVISION]" value="@FieldValue($"NPL_PERIOD_{periodIndex}_DOUBTFUL_PROVISION")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                            }
+                            <td><input class="form-control" name="Fields[FIELD_137]" value="@FieldValue("FIELD_137")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                            <td><input class="form-control" name="Fields[FIELD_138]" value="@FieldValue("FIELD_138")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                            <td><input class="form-control" name="Fields[FIELD_139]" value="@FieldValue("FIELD_139")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                            <td><input class="form-control" name="Fields[FIELD_140]" value="@FieldValue("FIELD_140")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                        </tr>
+                        <tr data-row-key="LOSS">
+                            <td>Loss</td>
+                            <td><input class="form-control" name="Fields[FIELD_141]" value="@FieldValue("FIELD_141")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                            <td><input class="form-control" name="Fields[FIELD_142]" value="@FieldValue("FIELD_142")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                            <td><input class="form-control" name="Fields[FIELD_143]" value="@FieldValue("FIELD_143")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                            <td><input class="form-control" name="Fields[FIELD_144]" value="@FieldValue("FIELD_144")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                            <td><input class="form-control" name="Fields[FIELD_145]" value="@FieldValue("FIELD_145")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                            <td><input class="form-control" name="Fields[FIELD_146]" value="@FieldValue("FIELD_146")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                            @foreach (var periodIndex in extraPeriodIndices)
+                            {
+                                <td><input class="form-control" name="Fields[NPL_PERIOD_@(periodIndex)_LOSS_CASES]" value="@FieldValue($"NPL_PERIOD_{periodIndex}_LOSS_CASES")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                                <td><input class="form-control" name="Fields[NPL_PERIOD_@(periodIndex)_LOSS_OUTSTANDING]" value="@FieldValue($"NPL_PERIOD_{periodIndex}_LOSS_OUTSTANDING")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                                <td><input class="form-control" name="Fields[NPL_PERIOD_@(periodIndex)_LOSS_PROVISION]" value="@FieldValue($"NPL_PERIOD_{periodIndex}_LOSS_PROVISION")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                            }
+                            <td><input class="form-control" name="Fields[FIELD_147]" value="@FieldValue("FIELD_147")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                            <td><input class="form-control" name="Fields[FIELD_148]" value="@FieldValue("FIELD_148")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                            <td><input class="form-control" name="Fields[FIELD_149]" value="@FieldValue("FIELD_149")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                            <td><input class="form-control" name="Fields[FIELD_150]" value="@FieldValue("FIELD_150")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                        </tr>
+                        @foreach (var rowIndex in extraRowIndices)
+                        {
+                            <tr data-extra-row-index="@rowIndex">
+                                <td><input class="form-control" name="Fields[NPL_EXTRA_ROW_@(rowIndex)_CATEGORY]" value="@FieldValue($"NPL_EXTRA_ROW_{rowIndex}_CATEGORY")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                                @foreach (var periodIndex in allPeriodIndices)
+                                {
+                                    <td><input class="form-control" name="Fields[NPL_EXTRA_ROW_@(rowIndex)_PERIOD_@(periodIndex)_CASES]" value="@FieldValue($"NPL_EXTRA_ROW_{rowIndex}_PERIOD_{periodIndex}_CASES")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                                    <td><input class="form-control" name="Fields[NPL_EXTRA_ROW_@(rowIndex)_PERIOD_@(periodIndex)_OUTSTANDING]" value="@FieldValue($"NPL_EXTRA_ROW_{rowIndex}_PERIOD_{periodIndex}_OUTSTANDING")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                                    <td><input class="form-control" name="Fields[NPL_EXTRA_ROW_@(rowIndex)_PERIOD_@(periodIndex)_PROVISION]" value="@FieldValue($"NPL_EXTRA_ROW_{rowIndex}_PERIOD_{periodIndex}_PROVISION")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                                }
+                                <td><input class="form-control" name="Fields[NPL_EXTRA_ROW_@(rowIndex)_IMPACT_CASES]" value="@FieldValue($"NPL_EXTRA_ROW_{rowIndex}_IMPACT_CASES")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                                <td><input class="form-control" name="Fields[NPL_EXTRA_ROW_@(rowIndex)_IMPACT_AMOUNT]" value="@FieldValue($"NPL_EXTRA_ROW_{rowIndex}_IMPACT_AMOUNT")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                                <td><input class="form-control" name="Fields[NPL_EXTRA_ROW_@(rowIndex)_IMPACT_PROVISION]" value="@FieldValue($"NPL_EXTRA_ROW_{rowIndex}_IMPACT_PROVISION")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                                <td><input class="form-control" name="Fields[NPL_EXTRA_ROW_@(rowIndex)_IMPACT_PERCENT]" value="@FieldValue($"NPL_EXTRA_ROW_{rowIndex}_IMPACT_PERCENT")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                            </tr>
+                        }
+                        <tr data-row-key="TOTAL">
+                            <td>Total</td>
+                            <td><input class="form-control" name="Fields[FIELD_151]" value="@FieldValue("FIELD_151")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                            <td><input class="form-control" name="Fields[FIELD_152]" value="@FieldValue("FIELD_152")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                            <td><input class="form-control" name="Fields[FIELD_153]" value="@FieldValue("FIELD_153")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                            <td><input class="form-control" name="Fields[FIELD_154]" value="@FieldValue("FIELD_154")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                            <td><input class="form-control" name="Fields[FIELD_155]" value="@FieldValue("FIELD_155")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                            <td><input class="form-control" name="Fields[FIELD_156]" value="@FieldValue("FIELD_156")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                            @foreach (var periodIndex in extraPeriodIndices)
+                            {
+                                <td><input class="form-control" name="Fields[NPL_PERIOD_@(periodIndex)_TOTAL_CASES]" value="@FieldValue($"NPL_PERIOD_{periodIndex}_TOTAL_CASES")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                                <td><input class="form-control" name="Fields[NPL_PERIOD_@(periodIndex)_TOTAL_OUTSTANDING]" value="@FieldValue($"NPL_PERIOD_{periodIndex}_TOTAL_OUTSTANDING")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                                <td><input class="form-control" name="Fields[NPL_PERIOD_@(periodIndex)_TOTAL_PROVISION]" value="@FieldValue($"NPL_PERIOD_{periodIndex}_TOTAL_PROVISION")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                            }
+                            <td><input class="form-control" name="Fields[FIELD_157]" value="@FieldValue("FIELD_157")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                            <td><input class="form-control" name="Fields[FIELD_158]" value="@FieldValue("FIELD_158")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                            <td><input class="form-control" name="Fields[FIELD_159]" value="@FieldValue("FIELD_159")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                            <td><input class="form-control" name="Fields[FIELD_160]" value="@FieldValue("FIELD_160")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="d-flex flex-wrap gap-2">
+                <a class="btn btn-outline-secondary" href="@Url.Action("KpiSnapshot")">Back</a>
+                <button type="submit" class="btn btn-primary" name="submitAction" value="save" @(Model.IsReadOnly ? "disabled" : string.Empty)>Save Draft</button>
+                <button type="submit" class="btn btn-outline-success" name="submitAction" value="complete" @(Model.IsReadOnly ? "disabled" : string.Empty)>Mark Section Complete</button>
+                <a class="btn btn-outline-secondary" href="@Url.Action("FinalizeReport")">Next Section</a>
+            </div>
+        </form>
+    }
+</div>
+
+@section Scripts {
+    <script>
+        (() => {
+            const addPeriodButton = document.getElementById('add-npl-period');
+            const addRowButton = document.getElementById('add-npl-row');
+            const table = document.querySelector('table');
+            if (!table) {
+                return;
+            }
+
+            const headerRow = table.tHead?.rows[0];
+            const subHeaderRow = table.tHead?.rows[1];
+            const body = table.tBodies[0];
+                    @{
+                var allPeriodIndices = Model.Fields.Keys
+                        .Where(k => k.StartsWith("NPL_"))
+                        .Select(k => int.Parse(k.Split('_')[2]))
+                        .Distinct()
+                        .OrderBy(x => x)
+                        .ToList();
+        }
+
+
+            const insertCellBeforeImpact = (row, html) => {
+                const impactStartIndex = row.cells.length - 4;
+                const cell = row.insertCell(impactStartIndex);
+                cell.innerHTML = html;
+                return cell;
+            };
+
+            const addPeriod = () => {
+                if (addPeriodButton?.disabled) {
+                    return;
+                }
+
+                periodIndex += 1;
+
+                const headerCell = document.createElement('th');
+                headerCell.colSpan = 3;
+                headerCell.textContent = `Period ${periodIndex}`;
+                headerRow.insertBefore(headerCell, headerRow.cells[headerRow.cells.length - 1]);
+
+                ['Cases', 'Outstanding Principal (Rs.)', 'Provision Amount (Rs.)'].forEach(label => {
+                    const th = document.createElement('th');
+                    th.textContent = label;
+                    subHeaderRow.insertBefore(th, subHeaderRow.cells[subHeaderRow.cells.length - 4]);
+                });
+
+                Array.from(body.rows).forEach(row => {
+                    const rowKey = row.dataset.rowKey;
+                    const extraIndex = row.dataset.extraRowIndex;
+                    if (extraIndex) {
+                        insertCellBeforeImpact(row, `<input class="form-control" name="Fields[NPL_EXTRA_ROW_${extraIndex}_PERIOD_${periodIndex}_CASES]" />`);
+                        insertCellBeforeImpact(row, `<input class="form-control" name="Fields[NPL_EXTRA_ROW_${extraIndex}_PERIOD_${periodIndex}_OUTSTANDING]" />`);
+                        insertCellBeforeImpact(row, `<input class="form-control" name="Fields[NPL_EXTRA_ROW_${extraIndex}_PERIOD_${periodIndex}_PROVISION]" />`);
+                        return;
+                    }
+
+                    if (!rowKey) {
+                        return;
+                    }
+
+                    insertCellBeforeImpact(row, `<input class="form-control" name="Fields[NPL_PERIOD_${periodIndex}_${rowKey}_CASES]" />`);
+                    insertCellBeforeImpact(row, `<input class="form-control" name="Fields[NPL_PERIOD_${periodIndex}_${rowKey}_OUTSTANDING]" />`);
+                    insertCellBeforeImpact(row, `<input class="form-control" name="Fields[NPL_PERIOD_${periodIndex}_${rowKey}_PROVISION]" />`);
+                });
+            };
+
+            const addRow = () => {
+                if (addRowButton?.disabled) {
+                    return;
+                }
+
+                const extraRows = Array.from(body.querySelectorAll('[data-extra-row-index]'));
+                const nextIndex = extraRows.length ? Math.max(...extraRows.map(row => Number(row.dataset.extraRowIndex))) + 1 : 1;
+                const row = body.insertRow(body.rows.length - 1);
+                row.dataset.extraRowIndex = nextIndex;
+
+                row.insertCell(0).innerHTML = `<input class="form-control" name="Fields[NPL_EXTRA_ROW_${nextIndex}_CATEGORY]" />`;
+
+                for (let i = 1; i <= periodIndex; i += 1) {
+                    row.insertCell(row.cells.length).innerHTML = `<input class="form-control" name="Fields[NPL_EXTRA_ROW_${nextIndex}_PERIOD_${i}_CASES]" />`;
+                    row.insertCell(row.cells.length).innerHTML = `<input class="form-control" name="Fields[NPL_EXTRA_ROW_${nextIndex}_PERIOD_${i}_OUTSTANDING]" />`;
+                    row.insertCell(row.cells.length).innerHTML = `<input class="form-control" name="Fields[NPL_EXTRA_ROW_${nextIndex}_PERIOD_${i}_PROVISION]" />`;
+                }
+
+                row.insertCell(row.cells.length).innerHTML = `<input class="form-control" name="Fields[NPL_EXTRA_ROW_${nextIndex}_IMPACT_CASES]" />`;
+                row.insertCell(row.cells.length).innerHTML = `<input class="form-control" name="Fields[NPL_EXTRA_ROW_${nextIndex}_IMPACT_AMOUNT]" />`;
+                row.insertCell(row.cells.length).innerHTML = `<input class="form-control" name="Fields[NPL_EXTRA_ROW_${nextIndex}_IMPACT_PROVISION]" />`;
+                row.insertCell(row.cells.length).innerHTML = `<input class="form-control" name="Fields[NPL_EXTRA_ROW_${nextIndex}_IMPACT_PERCENT]" />`;
+            };
+
+            addPeriodButton?.addEventListener('click', addPeriod);
+            addRowButton?.addEventListener('click', addRow);
+        })();
+    </script>
+}

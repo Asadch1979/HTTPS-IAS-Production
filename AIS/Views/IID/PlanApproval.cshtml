@@ -1,0 +1,49 @@
+@{
+    ViewData["Title"] = "Plan Approval";
+    Layout = "_Layout";
+    var planId = ViewData["PlanId"];
+}
+<h4>Plan Approval</h4>
+<form id="approvalForm">
+    <input type="hidden" name="PlanId" value="@planId" />
+    <div class="mb-2">
+        <label class="form-label">Edit Plan</label>
+        <textarea class="form-control" name="EditedPlan"></textarea>
+    </div>
+    <div class="mb-2">
+        <label class="form-label">Further Line of Action</label>
+        <textarea class="form-control" name="FurtherActions"></textarea>
+    </div>
+    <div class="mb-2">
+        <label class="form-label">Action</label>
+        <select class="form-select" name="IsApproved">
+            <option value="Y">Approve</option>
+            <option value="N">Reject</option>
+        </select>
+    </div>
+    <button type="submit" class="btn btn-primary">Submit</button>
+</form>
+@section Scripts{
+<script>
+    $(function(){
+        $('#approvalForm').on('submit', function(e){
+            e.preventDefault();
+            var data = {
+                PlanId: $('#approvalForm [name="PlanId"]').val(),
+                EditedPlan: $('#approvalForm [name="EditedPlan"]').val(),
+                FurtherActions: $('#approvalForm [name="FurtherActions"]').val(),
+                IsApproved: $('#approvalForm [name="IsApproved"]').val()
+            };
+            $.ajax({
+                url: g_asiBaseURL + '/ApiCalls/AddPlanApproval',
+                method: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify(data),
+                success: function(){
+                    alert('Action recorded');
+                }
+            });
+        });
+    });
+</script>
+}

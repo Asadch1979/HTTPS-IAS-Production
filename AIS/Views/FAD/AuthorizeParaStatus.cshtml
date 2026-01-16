@@ -1,0 +1,81 @@
+@{
+    ViewData["Title"] = "Authorize Para Status Change";
+    Layout = "_Layout";
+}
+<script type="text/javascript">
+    var g_logId = 0;
+    var g_action = '';
+    $(document).ready(function () {
+        loadRequests();
+    });
+    function loadRequests() {
+        $('#authorizeTableDiv').html('');
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/GET_PARA_STATUS_AUTHORIZATION",
+            type: "GET",
+            success: function (data) {
+                $('#authorizeTableDiv').html(data);
+            }
+        });
+    }
+    function authorizeRequest(id) {
+        g_logId = id;
+        g_action = 'A';
+        $('#authModalTitle').text('Authorize');
+        $('#authRemarks').val('');
+        $('#authModal').modal('show');
+    }
+    function rejectRequest(id) {
+        g_logId = id;
+        g_action = 'R';
+        $('#authModalTitle').text('Reject');
+        $('#authRemarks').val('');
+        $('#authModal').modal('show');
+    }
+    function submitAuthorization() {
+            $.ajax({
+        url: '@Url.Action("AUTHORIZE_PARA_STATUS_CHANGE_REQUEST", "ApiCalls")',
+        type: "POST",
+        data: {
+            logId: g_logId,
+            action: g_action,
+            authRemarks: $('#authRemarks').val()
+        },
+        success: function (resp) {
+            alert(resp.message);
+            $('#authModal').modal('hide');
+            loadRequests();
+        },
+        error: function (xhr) {
+            alert("Authorization failed: " + xhr.status + " " + xhr.statusText);
+        }
+    });
+
+    }
+</script>
+<div class="row">
+    <div class="col-md-12 mt-3">
+        <h3 style=" display:block;color: #be0e43">Authorize Para Status Change</h3>
+    </div>
+    <div class="row col-md-12 mt-3" id="authorizeTableDiv"></div>
+</div>
+<div id="authModal" class="modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title" id="authModalTitle">Authorize</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Authorizer Remarks (optional)</label>
+                    <textarea id="authRemarks" class="form-control"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" onclick="submitAuthorization();">Confirm</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+            </div>
+        </div>
+    </div>
+</div>

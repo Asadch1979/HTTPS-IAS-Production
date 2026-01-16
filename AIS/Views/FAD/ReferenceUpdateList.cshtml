@@ -1,0 +1,45 @@
+﻿@{
+    var page_id = ViewData["PageId"] as int? ?? 0;
+}
+
+@{
+    ViewData["Title"] = "Reference Update";
+    Layout = "_Layout";
+}
+<h4>Pending Reference Paras</h4>
+<table id="pendingTable" class="table table-bordered table-striped">
+    <thead class="table-success">
+        <tr>
+            <th>Audit Period</th>
+            <th>Para No</th>
+            <th>Gist</th>
+            <th>Action</th>
+        </tr>
+    </thead>
+    <tbody></tbody>
+</table>
+
+<script>
+$(function(){
+    loadPending();
+});
+
+function loadPending(){
+    $.get(g_asiBaseURL + '/ApiCalls/GetPendingReferenceParas', function(data){
+        var body = $('#pendingTable tbody');
+        body.empty();
+        $.each(data, function(i,item){
+            body.append('<tr>'+
+                '<td>'+item.auditPeriod+'</td>'+
+                '<td>'+item.paraNo+'</td>'+
+                '<td>'+item.gistOfParas+'</td>'+
+                '<td><button class="btn btn-primary btn-sm" onclick="openEdit('+item.comId+')">Update</button></td>'+
+                '</tr>');
+        });
+    });
+}
+
+function openEdit(id){
+    window.location.href = g_asiBaseURL + '/FAD/ReferenceUpdateEdit?comId=' + id;
+}
+</script>

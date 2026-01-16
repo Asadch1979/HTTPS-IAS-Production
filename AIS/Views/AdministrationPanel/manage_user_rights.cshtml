@@ -1,0 +1,223 @@
+﻿@{
+    var page_id = ViewData["PageId"] as int? ?? 0;
+}
+
+@{
+    ViewData["Title"] = "Manage User Rights";
+    Layout = "_Layout";
+
+}
+
+
+<script type="text/javascript">
+
+   
+    $(document).ready(function () {
+        
+    });  
+    
+  
+    function getNewUsersInAIS() {
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/admin_get_new_users",
+            type: "POST",
+            data: {
+
+            },
+            cache: false,
+            success: function (data) {
+                $('#newUsersGrid tbody').empty();
+                $.each(data, function (i, v) {
+                    if (v.entitY_ID.trim().length > 0)
+                        $('#newUsersGrid tbody').append('<tr><td>' + ++i + '</td><td>' + v.ppno + '</td><td>' + v.emP_NAME + '</td><td>' + v.designatioN_CODE + '</td><td>' + v.designation + '</td><td>' + v.employeE_TYPE + '</td><td>' + v.postinG_TYPE + '</td><td>' + v.code + '</td><td>' + v.entitY_NAME + '</td><td>' + v.entitY_ID + '</td><td><a href="#" onclick="event.preventDefault();AddUserDetails(' + v.designatioN_CODE + ',\'' + v.designation + '\');" class="text-danger">Update User</a></td><td><input type="checkbox" ppno="' + v.ppno + '" class="selectBoxForUpdate" /></td></tr>');
+                    else
+                        $('#newUsersGrid tbody').append('<tr><td>' + ++i + '</td><td>' + v.ppno + '</td><td>' + v.emP_NAME + '</td><td>' + v.designatioN_CODE + '</td><td>' + v.designation + '</td><td>' + v.employeE_TYPE + '</td><td>' + v.postinG_TYPE + '</td><td>' + v.code + '</td><td>' + v.entitY_NAME + '</td><td>' + v.entitY_ID + '</td><td><a href="#" onclick="event.preventDefault();addNewEntityInAIS(\'' + v.code + '\',\'' + v.entitY_NAME + '\');" class="text-danger">Add New Entity</a></td><td></td></tr>');
+                                               
+                });
+
+                if (data.length > 0) 
+                    $('#updateButtonAtEnd').removeClass('d-none');
+                else
+                    $('#updateButtonAtEnd').addClass('d-none');
+              
+            },
+            dataType: "json",
+        });
+    }
+
+    function viewUserDetails(){
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/admin_get_user_details",
+            type: "POST",
+            data: {
+
+            },
+            cache: false,
+            success: function (data) {
+                alert(data.message);
+                $('.step1').show();
+                $('#deleteUser').hide();
+
+            },
+            dataType: "json",
+        });
+    }
+    function AddUserDetails(code,name) {
+
+        $('#addUserModel').modal('show');
+        $('#modalDesignationCode').val(code);
+        $('#modalDesignationName').val(name);
+        $('#modalRoleName').empty();
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/admin_get_user_details",
+            type: "POST",
+            data: {
+                "DESIGNATION_CODE": code
+            },
+            cache: false,
+            success: function (data) {
+                $('#modalRoleName').append('<option value="0">--Select Group--</option>');
+                var selIndex = 0;
+                if (data.length == 1)
+                    selIndex = 0;
+                else
+                    selIndex = data.length;
+                $.each(data, function (i, v) {
+                    var selected = "";
+                    if (selIndex==i && selIndex==0)
+                        selected = "selected=\"selected\"";
+                    $('#modalRoleName').append('<option ' + selected + ' value=' + v.grouP_ID + '>' + v.grouP_NAME + '</option>');
+                });
+               
+            },
+            dataType: "json",
+        });
+    }
+
+    function addNewEntityInAIS(code,name) {
+        window.location.href = g_asiBaseURL + "/AdministrationPanel/entity_addition?code=" + code + "&name=" + name;
+    }
+
+    function updateAllSelectedUsers(){
+        var ppNos = [];
+        $.each($('.selectBoxForUpdate'),function (i,v) {
+            if ($(v).is(':checked')) {
+                ppNos.push($(v).attr('ppno'));
+
+            }
+        });
+
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/update_new_user_admin_panel",
+            type: "POST",
+            data: {
+                'PPNOArr': ppNos
+            },
+            cache: false,
+            success: function (data) {
+                alert(data.message);
+            },
+            dataType: "json",
+        });
+    }
+
+    function selectAllUserRows(){
+
+        if ($('#selectAllChkBox').is(':checked'))
+        {
+            $('.selectBoxForUpdate').prop('checked', true);
+
+        } else {
+            $('.selectBoxForUpdate').prop('checked', false);
+        }
+        
+
+    }
+
+</script>
+
+
+<div class="row">
+    <div class="col-md-12 row">
+        <div class="col-md-12 text-center">
+            
+            <button type="button" id="deleteUser" onclick="getNewUsersInAIS();" class="btn btn-danger col-md-4">Find New Users</button>
+            <button type="button" id="deleteUser" onclick="getOldUsersInAIS();" class="btn btn-danger offset-md-1 col-md-4">Find Old Users</button>
+        </div>    
+
+    </div>
+</div>
+
+<div class="row col-md-12 mt-3">
+    <table id="newUsersGrid" class="table table-hover table-bordered table-hover mt-3 table-striped">
+        <thead style="background-color: #19875478 !important; ">
+            <tr>
+                <th class="col-md-1 text-center">Sr. No.</th>
+                <th class="col-md-1">PP No</th>
+                <th class="col-md-2">Employee Name</th>
+                <th class="col-md-1">Designation Code</th>
+                <th class="col-md-2">Designation</th>
+                <th class="col-md-1">Employee Type</th>
+                <th class="col-md-2">Posting Type</th>
+                <th class="col-md-2">Code</th>
+                <th class="col-md-2">Entity Name</th>
+                <th class="col-md-2">Entity Id</th>
+                <th class="col-md-2">Action</th>             
+                <th class="col-md-2"><input type="checkbox" id="selectAllChkBox" onclick="selectAllUserRows();" /></th>             
+                
+
+            </tr>
+        </thead>
+        <tbody>
+        </tbody>
+    </table>
+    <div class="col-md-12 row">
+        <button id="updateButtonAtEnd" class="btn btn-primary d-none offset-md-9 col-md-3" onclick="updateAllSelectedUsers();">Update Selected Users</button>
+    </div>
+    
+</div>
+
+
+
+<div id="addUserModel" class="modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-xl" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">Add Checklist Detail</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="row col-md-12">
+                  <div class="col-md-6">
+                      <h5>Current Situation</h5>
+                      <div class="form-group">
+                          <label>Designation Code</label>
+                          <input disabled="disabled" id="modalDesignationCode" type="text" class="form-control" />
+                      </div>
+                        <div class="form-group">
+                            <label>Designation Name</label>
+                            <input disabled="disabled" id="modalDesignationName" type="text" class="form-control" />
+                        </div>
+                  </div>
+                  <div class="col-md-6">
+
+                        <h5>New Situation</h5>
+                        <div class="form-group">
+                            <label>Role Name</label>
+                            <select id="modalRoleName" class="form-control">
+                             
+                            </select>
+                        </div>
+                  </div>                 
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button onclick="addProcessDetail();" type="button" data-bs-dismiss="modal" class="btn btn-success">Save Changes</button>
+
+            </div>
+        </div>
+    </div>
+</div>

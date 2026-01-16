@@ -1,0 +1,108 @@
+﻿@{
+    ViewData["Title"] = "Detail Of Loan And Documentation";
+    Layout = "_Layout";
+}
+<style type="text/css">
+    .container {
+        max-width: 100%;
+    }
+
+    .card-header {
+        background-color: transparent !important;
+        font-size: 20px;
+        height: 100px;
+    }
+
+    .icon-card {
+        margin: 10px;
+    }
+</style>
+<script type="text/javascript">
+
+    /*   $('#document').ready(function () {
+           var url_string = window.location;
+           var url = new URL(url_string);
+           var gl_id = url.searchParams.get("GLCODE");
+           $.ajax({
+               url: g_asiBaseURL + "/Reports/Get_Glhead_Sub_Details",
+               type: "POST",
+               data: {
+                   'gl_code': gl_id
+               },
+               cache: false,
+               success: function (data) {
+                   //v = data;
+
+                  // console.log(data);
+
+                   $.each(data.gL_SUBDETAILS, function (i, v) {
+
+                       $('#gldetailtab tbody').append('<tr><td>' + v.glcode + '</td><td>' + v.glsubname + '</td><td>' + v.datetime.split('T')[0] + '</td>  <td>' + v.runninG_CR + '</td><td>' + v.runninG_DR + '</td> <td>' + v.balance + '</td> </tr>')
+                   });
+               },
+               dataType: "json",
+           });
+       });
+
+   */
+
+    $(document).ready(function () {
+        $("#searchTableRecord").on("keyup", function () {
+            var value = $(this).val().toLowerCase();
+            $("#d_l_d_d tbody tr").filter(function () {
+                $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1)
+            });
+        });
+    });
+</script>
+
+<div class="row col-md-12 mt-3">
+    <h3 style="color: #be0e43">Detail Of Loan And Documentation</h3>
+</div>
+<div class="row">
+    <div class="col-md-12 mt-3">
+        <input class="form-control" id="searchTableRecord" type="text" placeholder="Search..">
+    </div>
+</div>
+<br>
+<div class="row">
+
+    <div class="col-md-12 mt-4">
+        <table id="d_l_d_d" class="col-md-12 table-bordered table-hover mt-1 table-striped">
+            <thead style="background-color: #19875478 !important; ">
+                <tr>
+                   
+                    <th class="col-md-2">Loan Application</th>
+                    <th class="col-md-1">CNIC</th>
+                    <th class="col-md-2">Customer Name</th>
+                    <th class="col-md-1">Loan Case #</th>
+                    <th class="col-md-2">GL Head</th>
+                    <th class="col-md-2">Loan Disbursement</th>
+                    <th class="col-md-2">Loan Document</th>
+
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                 <td></td>
+                 <td></td>
+                 <td></td>
+                 <td></td>
+                 <td></td>
+               
+                 <td></td>
+                 <td><select> <option value="0" id="0" selected>--Loan Documents--</option></select></td>
+              
+                
+                </tr>
+                
+
+
+
+            </tbody>
+
+
+        </table>
+        </div>
+
+    </div>

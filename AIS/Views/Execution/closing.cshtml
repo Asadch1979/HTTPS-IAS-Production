@@ -1,0 +1,107 @@
+﻿@{
+    var page_id = ViewData["PageId"] as int? ?? 0;
+}
+
+@{
+    ViewData["Title"] = "Closing";
+    Layout = "_Layout";
+}
+
+<script type="text/javascript">
+    var g_teamMembers = [];
+    var g_engId = 0;
+    $(document).ready(function () {
+        var url_string = window.location;
+        var url = new URL(url_string);
+        var eng_id = url.searchParams.get("engId");
+        if (typeof eng_id != 'undefined')
+            g_engId = eng_id;
+
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/closing_draft_report_status",
+            type: "POST",
+            data: {
+                'ENG_ID': g_engId
+            },
+            cache: false,
+            success: function (data) {
+                if(data.length>0)
+                    $('#entityNameField').html(data[0].entitY_NAME);
+                $.each(data, function (i, v) {
+                    $('#joiningAuditorDetailsTable tbody').append('<tr><td>' + v.teaM_MEM_PPNO + '</td><td>' + v.membeR_NAME + '</td><td>' + v.joininG_DATE.split('T')[0] + '</td><td>' + v.completioN_DATE.split('T')[0] + '</td></tr>');
+                    $('#auditorWiseProgessTable tbody').append('<tr><td class="text-center">' + v.membeR_NAME + '</td><td class="text-center">' + v.isteamlead + '</td><td class="text-center">' + v.totaL_NO_OB + '</td><td class="text-center">' + v.dropped + '</td><td class="text-center">' + v.submitteD_TO_AUDITEE + '</td><td class="text-center">' + v.responded + '</td><td class="text-center">' + v.resolved + '</td><td class="text-center">' + v.addeD_TO_DRAFT + '</td></tr>');
+                });   
+                },
+            dataType: "json",
+        });
+        });
+    function reloadLocationToUrl() {
+        window.location.href = g_asiBaseURL + "/Engagement/task_list"
+    }
+    function closeDraftAudit() {
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/close_draft_audit",
+            type: "POST",
+            data: {
+                'ENG_ID': g_engId
+            },
+            cache: false,
+            success: function (data) {
+                alert(data.message);
+                onAlertCallback(reloadLocationToUrl);
+            },
+            dataType: "json",
+        });
+    }
+</script>
+<div class="row col-md-12 mt-3">
+    <h4 style="display: block; color: #be0e43">Close Audit of <span id="entityNameField"></span></h4>
+</div>
+
+
+
+<div class="row col-md-12 mt-3">
+    <div>
+        <h5 style="display: block; color: #be0e43">Auditor Wise Memo Status</h5>
+    </div>
+    <table id="auditorWiseProgessTable" class="table table-bordered mb-0 mt-3 bg-white table-striped">
+        <thead style="background-color: #19875478 !important; ">
+            <tr>
+                <th class="col-md-auto">Auditor</th>
+                <th class="col-md-auto">Team Lead</th>
+                <th class="col-md-auto">Total Memos</th>
+                <th class="col-md-auto">Observation Dropped</th>
+                <th class="col-md-auto">Submitted to Auditee</th>
+                <th class="col-md-auto">Responded by Auditee</th>
+                <th class="col-md-auto">Resolved</th>
+                <th class="col-md-auto">Add to Draft Report</th>
+            </tr>
+        </thead>
+        <tbody>
+        </tbody>
+    </table>
+</div>
+
+<div class="row col-md-12 mt-3">
+    <div class="row col-md-12 mt-3">
+        <h5 style="display: block; color: #be0e43">Joining and Closing Dates</h5>
+    </div>
+   <table id="joiningAuditorDetailsTable" class="table table-bordered mb-0 mt-3 bg-white table-striped">
+            <thead style="background-color: #19875478 !important; ">
+                <tr>
+                    <th class="col-md-3">P.P. Number</th>
+                    <th class="col-md-3">Name</th>
+                    <th class="col-md-3">Joining Date</th>
+                    <th class="col-md-3">Completion Date </th>
+                </tr>
+            </thead>
+            <tbody>
+            </tbody>
+        </table>
+        <div class="w-100">
+            <button onclick="closeDraftAudit();" class="col-md-2 mt-3 mb-3 btn btn-danger float-right"> Close Audit</button>
+        </div>
+</div>
+
+
+

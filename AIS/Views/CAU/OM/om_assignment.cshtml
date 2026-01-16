@@ -1,0 +1,624 @@
+﻿@{
+    ViewData["Title"] = "OM Assigning";
+    Layout = "_Layout";
+}
+
+
+<style type="text/css">
+    .btn-link{
+        font-weight:bold;
+    }
+</style>
+
+<script type="text/javascript">
+    var g_omID=0;
+    var g_paraID=0;
+    $(document).ready(function () {
+        $('#KeyMatchModel').modal({ backdrop: 'static', keyboard: false })
+        $('#KeyMatchModel').modal('show');                
+    });
+
+    function bindEvents(){
+        $('#template_box').richText({
+            imageUpload: false,
+            fileUpload: false,
+            videoEmbed: false,
+            urls: false
+        });
+        $('#template_box_reply').richText({
+            imageUpload: false,
+            fileUpload: false,
+            videoEmbed: false,
+            urls: false
+        });
+        $('#template_box_stage2').richText({
+            imageUpload: false,
+            fileUpload: false,
+            videoEmbed: false,
+            urls: false
+        });
+        $('#template_box_reply_stage2').richText({
+            imageUpload: false,
+            fileUpload: false,
+            videoEmbed: false,
+            urls: false
+        });
+        $('#template_box_stage3Model').richText({
+            imageUpload: false,
+            fileUpload: false,
+            videoEmbed: false,
+            urls: false
+        });
+        $('#template_box_stage4Model').richText({
+            imageUpload: false,
+            fileUpload: false,
+            videoEmbed: false,
+            urls: false
+        });
+    }
+   
+
+    function saveOMAssignment() {
+        if ($('#division_box').val() == 0) {
+            alert('Select Division');
+            return;
+        }
+        if ($('#omNumber_box').val() == "") {
+            alert('Please enter OM Number');
+            return;
+        }      
+       
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/CAU_OM_assignment",
+            type: "POST",
+            data: {
+                'ID': 0,
+                'DIV_ID': $('#division_box').val(),
+                'OM_NO': $('#omNumber_box').val(),
+                'INS_YEAR': $('#inspectionYear_box').val(),
+                'CONTENTS_OF_OM': $('#template_box').val(),
+                'OM_REPLY': $('#template_box_reply').val(),
+                'STATUS': 1
+
+            },
+            cache: false,
+            success: function (data) {
+
+                alert(data.response);
+
+                g_omID=data.id;
+               // $('#saveOMAssignmentStage1').attr('disabled', true);
+                $('#omNumber_box_stage2').val($('#omNumber_box').val());
+            },
+            dataType: "json",
+        });
+
+    }
+    function saveOMAssignment_Stage2() {
+       
+        if ($('#paraNumber_box_stage2').val() == "") {
+            alert('Please enter Para Number');
+            return;
+        }
+
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/CAU_OM_assignmentAIR",
+            type: "POST",
+            data: {
+                'ID': 0,
+                'PARA_NO': $('#paraNumber_box_stage2').val(),
+                'OM_NO': g_omID,
+                'DIV_ID': $('#division_box').val(),
+                'CONTENTS_OF_OM': $('#template_box_stage2').val(),
+                'OM_REPLY': $('#template_box_reply_stage2').val(),
+                'Key': $('#keyPasswordOMStage1').val()
+            },
+            cache: false,
+            success: function (data) {
+                alert(data.response);
+                g_paraID=data.id;
+                $('#paraNumber_box_stage3').val($('#paraNumber_box_stage2').val());
+
+            },
+            dataType: "json",
+        });
+
+    }
+    function saveOMAssignment_Stage3() {
+
+        var dacP = [];
+        $.each($('#listofDACattached tbody tr'), function (i, v) {
+            dacP.push({
+                'PARA_ID': g_paraID,
+                'REPORT_FREQUENCY': $(v).find('td').eq(3).html(),
+                'DAC_DATES': $(v).find('td').eq(1).html(),
+                'CONTENTS_OF_OM': $(v).find('td').eq(2).html()               
+            });
+        });
+
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/CAU_OM_assignmentPDP",
+            type: "POST",
+            data: {
+                'DAC_LIST': dacP
+            },
+            cache: false,
+            success: function (data) {
+                alert(data.response);
+                //$('#saveOMAssignmentStage3').attr('disabled', true);
+                $('#omNumber_box_stage4').val($('#omNumber_box_stage3').val());
+
+            },
+            dataType: "json",
+        });
+
+    }
+    function saveOMAssignment_Stage4() {
+
+        var dacP = [];
+        $.each($('#listofPACattached tbody tr'), function (i, v) {
+            dacP.push({
+                'PARA_ID': g_paraID,
+                'STATUS': $(v).find('td').eq(4).html(),
+                'PAC_DATES': $(v).find('td').eq(1).html(),             
+                'PRINTING_DATE': $(v).find('td').eq(2).attr('periodId'),
+                'CONTENTS_OF_OM': $(v).find('td').eq(3).html()
+            });
+        });
+
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/CAU_OM_assignmentARPSE",
+            type: "POST",
+            data: {
+                'PAC_LIST': dacP
+            },
+            cache: false,
+            success: function (data) {
+                alert(data.response);                
+            },
+            dataType: "json",
+        });
+
+    }
+
+    function gotoNextStage(source, destination) {
+        $('#' + source).removeClass('show');
+        $('#' + destination).addClass('show');
+        
+    }
+
+    function openDACAssignments() {
+
+        $('#viewModalDACAssignment').modal('show');
+        $('#paraNumber_box_stage3Model').val($('#paraNumber_box_stage2').val());
+        
+    }
+     function openPACAssignments() {
+
+        $('#viewModalDACAssignment_stage4').modal('show');
+        $('#paraNumber_box_stage4Model').val($('#paraNumber_box_stage2').val());
+        
+    }
+    function deleteRespRow(e) {
+        $(e).parent().parent().remove();
+    }
+
+    function addDACAssignmentRecordtoGrid(){
+        var row = $('#listofDACattached tbody tr').length == 0 ? 1 : $('#listofDACattached tbody tr').length+1;        
+        $('#listofDACattached tbody').append('<tr><td>' + row + '</td><td>' + $('#dacDates_box_stage3Model').val() + '</td><td>' + $('#template_box_stage3Model').val() + '</td><td>' + $('#reportFreq_box_stage3Model option:selected').val() + '</td><td class="text-center"><a href="#" onclick="event.preventDefault();deleteRespRow(this);">Delete</a></td></tr>');
+    }
+    function addPACAssignmentRecordtoGrid() {
+        var row = $('#listofPACattached tbody tr').length == 0 ? 1 : $('#listofPACattached tbody tr').length + 1;
+        $('#listofPACattached tbody').append('<tr><td>' + row + '</td><td>' + $('#dacDates_box_stage4Model').val() + '</td><td periodId="' + $('#printingDates_box_stage4Model').val() + '">' + $('#printingDates_box_stage4Model option:selected').text() + '</td><td>' + $('#template_box_stage4Model').val() + '</td><td>' + $('#reportFreq_box_stage4Model option:selected').val() + '</td><td class="text-center"><a href="#" onclick="event.preventDefault();deleteRespRow(this);">Delete</a></td></tr>');
+    }
+    function getPreAddedOM(){
+        if ($('#omNumber_box').val() == "" && $('#inspectionYear_box').val() == "")
+        {
+            alert("Please enter OM No. and Inspection Year to search");
+            return;
+        }
+
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/CAU_get_Pre_Added_OM",
+            type: "POST",
+            data: {
+                'OM_NO': $('#omNumber_box').val(),
+                'INS_YEAR': $('#inspectionYear_box').val()
+            },
+            cache: false,
+            success: function (data) {
+                alert(data.response);
+            },
+            dataType: "json",
+        });
+    }
+
+    function crossCheckSecurityKey() {
+        if ($('#protectedKey_input').val()=="123"){
+            $('#KeyMatchModel').modal('hide');
+            bindEvents();
+            $('#mainPanelOfCAU').removeClass('d-none');
+
+        }else{
+            alert("You have entered Wrong Key");
+            onAlertCallback(backToHome);
+        }
+        
+    }
+    function backToHome() {
+        window.location.href = g_asiBaseURL + '/Home/Index';
+        return;
+    }
+
+</script>
+<div class="mt-3 col-md-12">
+    <h3 style="color: #be0e43">Commercial Audit Memo/Para Assigning</h3>
+</div>
+
+
+
+<div id="mainPanelOfCAU" class="d-none col-md-12">
+    <div id="accordion">
+        <div class="card">
+            <div class="card-header" id="headingOne">
+                <h5 class="mb-0">
+                    <button class="btn btn-link" data-bs-toggle="collapse" data-bs-target="#collapseOne" aria-expanded="true" aria-controls="collapseOne">
+                        OM STAGE
+                    </button>
+                </h5>
+            </div>
+
+            <div id="collapseOne" class="collapse show" aria-labelledby="headingOne" data-parent="#accordion">
+                <div class="card-body">
+                    <div class="row col-md-12 mt-3">
+                        <div class="col-md-5 mt-3">
+
+                            <label class="font-weight-bold">O.M No.</label>
+                            <input id="omNumber_box" type="text" class="form-select form-control">
+
+                        </div>
+                        <div class="col-md-5 mt-3">
+
+                            <label class="font-weight-bold">Inspection Year</label>
+                            <select id="inspectionYear_box" class="form-select form-control">
+                            <option value="0" id="0" selected>--Select Inspection Year--</option>
+                            @{
+                                if (ViewData["InsYearList"] != null)
+                                {
+                                    foreach (var item in (dynamic)(ViewData["InsYearList"]))
+                                    {
+                                        <option value="@item.AUDITPERIODID" id="@item.AUDITPERIODID">@item.DESCRIPTION</option>
+                                    }
+                                }
+                            }
+                            </select>
+                        </div>
+                      
+                        <div class="col-md-2 mt-3">
+                           <button onclick="getPreAddedOM();" style="margin-top:16%;" class="btn w-100 btn-danger">Search OM</button>
+                        </div>
+                    </div>
+                   
+                    <div class="col-md-12 mt-3">
+                        <label class="font-weight-bold">OM Content</label>
+                        <div class="page-wrapper box-content">
+                            <textarea id="template_box" class="content" name="example"></textarea>
+                        </div>
+                    </div>
+                    <div class="col-md-12 mt-3">
+                        <label class="font-weight-bold">OM Reply</label>
+                        <div class="page-wrapper box-content">
+                            <textarea id="template_box_reply" class="content" name="example"></textarea>
+                        </div>
+                    </div>
+                    <div class="col-md-12 mt-3 mb-4">
+
+                        <label class="font-weight-bold">Division</label>
+
+                        <select id="division_box" class="form-select form-control">
+                            <option value="0" id="0" selected>--Select Division--</option>
+                            @{
+                                if (ViewData["DivisionList"] != null)
+                                {
+                                    foreach (var item in (dynamic)(ViewData["DivisionList"]))
+                                    {
+                                        <option value="@item.DIVISIONID" id="@item.DIVISIONID">@item.DESCRIPTION</option>
+                                    }
+                                }
+                            }
+                        </select>
+                    </div>
+
+                    <div class="row col-md-12 mt-3">
+                        <div class="col-md-12 mt-3 mb-4">
+                            <button onclick="gotoNextStage('collapseOne','collapseTwo');" style="float:right; margin-left:20px;" class="btn btn-success col-md-2">Next</button>
+                            <button id="saveOMAssignmentStage1" onclick="saveOMAssignment();" style="float:right; " class="btn btn-danger col-md-2">Save</button>
+
+                        </div>
+
+                    </div>
+
+                </div>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-header" id="headingTwo">
+                <h5 class="mb-0">
+                    <button class="btn btn-link collapsed" data-bs-toggle="collapse" data-bs-target="#collapseTwo" aria-expanded="false" aria-controls="collapseTwo">
+                        AIR STAGE
+                    </button>
+                </h5>
+            </div>
+            <div id="collapseTwo" class="collapse" aria-labelledby="headingTwo" data-parent="#accordion">
+                <div class="card-body">
+                    <label class="font-weight-bold">O.M No.</label>
+                    <input disabled="disabled" id="omNumber_box_stage2" type="text" class="form-select form-control">
+                </div>
+                <div class="card-body">
+                    <label class="font-weight-bold">Para No.</label>
+                    <input id="paraNumber_box_stage2" type="text" class="form-select form-control">
+                </div>
+                <div class="col-md-12 mt-3">
+                    <label class="font-weight-bold">Para Content</label>
+                    <div class="page-wrapper box-content">
+                        <textarea id="template_box_stage2" class="content" name="example"></textarea>
+                    </div>
+                </div>
+                <div class="col-md-12 mt-3">
+                    <label class="font-weight-bold">Para Reply</label>
+                    <div class="page-wrapper box-content">
+                        <textarea id="template_box_reply_stage2" class="content" name="example"></textarea>
+                    </div>
+                </div>
+                <div class="row col-md-12 mt-3">
+                    <div class="col-md-12 mt-3 mb-4">
+                        <button onclick="gotoNextStage('collapseTwo','collapseThree');" style="float:right; margin-left:20px;" class="btn btn-success col-md-2">Next</button>
+                        <button id="saveOMAssignmentStage2" onclick="saveOMAssignment_Stage2();" style="float:right; " class="btn btn-danger col-md-2">Save</button>
+                    </div>
+
+                </div>
+
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-header" id="headingThree">
+                <h5 class="mb-0">
+                    <button class="btn btn-link collapsed" data-bs-toggle="collapse" data-bs-target="#collapseThree" aria-expanded="false" aria-controls="collapseThree">
+                        PDP STAGE
+                    </button>
+                </h5>
+            </div>
+            <div id="collapseThree" class="collapse" aria-labelledby="headingThree" data-parent="#accordion">
+                <div class="card-body">
+                    <label class="font-weight-bold">ARP Para No.</label>
+                    <input disabled="disabled" id="paraNumber_box_stage3" type="text" class="form-select form-control">
+                </div>
+                
+                <div class="card-body">
+                    <label class="font-weight-bold">PDP Para No.</label>
+                    <input id="pdp_paraNumber_box_stage3" type="text" class="form-select form-control">
+                </div>
+                <div class="card-body">
+                    <label for="viewMemo_respPP" class="font-weight-bold">DAC Details</label>
+                    <div class="col-md-12 pl-0 pr-0">
+                        <table id="listofDACattached" class="table table-hover table-bordered table-hover mt-3 table-striped">
+                            <thead style="background-color: #19875478 !important; ">
+                                <tr>
+                                    <th class="col-md- auto font-weight-bold">Sr.No</th>
+                                    <th class="col-md- auto font-weight-bold">DAC Date</th>
+                                    <th class="col-md- auto font-weight-bold">Report Frequency</th>
+                                    <th class="col-md- auto font-weight-bold">DAC Recommendation</th>
+                                    <th class="col-md- auto text-center font-weight-bold"><center><button type="button" onclick="openDACAssignments();" class="rounded-circle btn btn-danger btn-sm"><i class="fa fa-plus text-white"></i></button></center></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="row col-md-12 mt-3">
+                    <div class="col-md-12 mt-3 mb-4">
+                        <button onclick="gotoNextStage('collapseThree','collapseFour');" style="float:right; margin-left:20px;" class="btn btn-success col-md-2">Next</button>
+                        <button id="saveOMAssignmentStage3" onclick="saveOMAssignment_Stage3();" style="float:right; " class="btn btn-danger col-md-2">Save</button>
+
+                    </div>
+
+                </div>
+                
+                   
+            </div>
+        </div>
+      
+        <div class="card">
+            <div class="card-header" id="headingfive">
+                <h5 class="mb-0">
+                    <button class="btn btn-link collapsed" data-bs-toggle="collapse" data-bs-target="#collapseFour" aria-expanded="false" aria-controls="collapseThree">
+                        ARPSE STAGE
+                    </button>
+                </h5>
+            </div>
+            <div id="collapseFour" class="collapse" aria-labelledby="headingThree" data-parent="#accordion">
+                <div class="card-body">
+                    <label class="font-weight-bold">Para No.</label>
+                    <input disabled="disabled" id="paraNumber_box_stage4" type="text" class="form-select form-control">
+                </div>
+                <div class="card-body">
+                    <label for="viewMemo_respPP" class="font-weight-bold">PAC Details</label>
+                    <div class="col-md-12 pl-0 pr-0">
+                        <table id="listofPACattached" class="table table-hover table-bordered table-hover mt-3 table-striped">
+                            <thead style="background-color: #19875478 !important; ">
+                                <tr>
+                                    <th class="col-md- auto font-weight-bold">Sr.No</th>
+                                    <th class="col-md- auto font-weight-bold">PAC Date</th>
+                                    <th class="col-md- auto font-weight-bold">Para Printing Date</th>
+                                    <th class="col-md- auto font-weight-bold">PAC Recommendation</th>
+                                    <th class="col-md- auto font-weight-bold">Status</th>                                    
+                                    <th class="col-md- auto text-center font-weight-bold"><center><button type="button" onclick="openPACAssignments();" class="rounded-circle btn btn-danger btn-sm"><i class="fa fa-plus text-white"></i></button></center></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="row col-md-12 mt-3">
+                    <div class="col-md-12 mt-3 mb-4">
+                        <div class="col-md-12 mt-3 mb-4">                            
+                            <button id="saveOMAssignmentStage4" onclick="saveOMAssignment_Stage4();" style="float:right; " class="btn btn-danger col-md-2">Save</button>
+
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+
+<div id="viewModalDACAssignment" class="modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-xl" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">DAC Assignments</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form>
+                    <div class="form-group">
+                        <label class="font-weight-bold">Para No.</label>
+                        <input disabled="disabled" id="paraNumber_box_stage3Model" type="text" class="form-select form-control">
+                    </div>
+                    <div class="form-group">
+                        <label class="font-weight-bold">DAC Dates</label>
+                        <input id="dacDates_box_stage3Model" type="date" class="form-select form-control">
+                    </div>
+                    <div class="form-group">
+                        <label class="font-weight-bold">DAC Recommendation</label>
+                        <div class="page-wrapper box-content">
+                            <textarea id="template_box_stage3Model" class="content" name="example"></textarea>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="font-weight-bold">Report Frequency</label>
+                        <select id="reportFreq_box_stage3Model" class="form-control form-select">
+                            <option value="Monthly">Monthly</option>
+                            <option value="Quaterly">Quaterly</option>
+                        </select>
+                    </div>
+                    
+                    
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button onclick="addDACAssignmentRecordtoGrid();" type="button" class="btn btn-danger">Add DAC Assignment</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+
+<div id="viewModalDACAssignment_stage4" class="modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-xl" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">DAC Assignments</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form>
+                    <div class="form-group">
+                        <label class="font-weight-bold">Para No.</label>
+                        <input disabled="disabled" id="paraNumber_box_stage4Model" type="text" class="form-select form-control">
+                    </div>
+                    <div class="form-group">
+                        <label class="font-weight-bold">PAC Dates</label>
+                        <input id="dacDates_box_stage4Model" type="date" class="form-select form-control">
+                    </div>
+                    <div class="form-group">
+                        <label class="font-weight-bold">Para Printing Date</label>
+                        <select id="printingDates_box_stage4Model" class="form-select form-control">
+                            <option value="0" id="0" selected>--Select Para Printing Year--</option>
+                            @{
+                                if (ViewData["ParaPrintingYearList"] != null)
+                                {
+                                    foreach (var item in (dynamic)(ViewData["ParaPrintingYearList"]))
+                                    {
+                                        <option value="@item.AUDITPERIODID" id="@item.AUDITPERIODID">@item.DESCRIPTION</option>
+                                    }
+                                }
+                            }
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="font-weight-bold">PAC Recommendation</label>
+                        <div class="page-wrapper box-content">
+                            <textarea id="template_box_stage4Model" class="content" name="example"></textarea>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="font-weight-bold">Status</label>
+                        <select id="reportFreq_box_stage4Model" class="form-control form-select">
+                            <option value="Y">Settled</option>
+                            <option value="N">Unsettled</option>
+                        </select>
+                    </div>
+
+
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button onclick="addPACAssignmentRecordtoGrid();" type="button" class="btn btn-danger">Add DAC Assignment</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+
+<div id="KeyMatchModel" class="modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-xl" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">Warning</h5>
+                <button type="button" class="btn-close" onclick="backToHome();" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form>
+                    <div class="form-group">
+                        <label class="font-weight-bold">Protected Key</label>
+                        <input id="protectedKey_input" type="text" class="form-select form-control">
+                    </div>
+                    <div class="form-group">
+                        <label class="font-weight-bold">Disclaimer</label>
+                        <p class="text-danger">
+                            This is highly confidential area. All activities are logged. Serious disclipnary action can be taken if proven guilty.
+                        </p>
+                        </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button onclick="backToHome();" type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button onclick="crossCheckSecurityKey();" type="button" class="btn btn-danger">Submit</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+

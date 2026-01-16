@@ -1,0 +1,794 @@
+﻿@{
+    var page_id = ViewData["PageId"] as int? ?? 0;
+}
+
+@{
+    ViewData["Title"] = "Merge Duplicate/Redundant Process";
+    Layout = "_Layout";
+}
+<style type="text/css">
+    .container {
+        max-width: 100%;
+    }
+
+    .card-header {
+        background-color: transparent !important;
+        font-size: 20px;
+        height: 100px;
+    }
+
+    .icon-card {
+        margin: 10px;
+    }
+</style>
+<script type="text/javascript">
+    var g_procId = 0;
+    var g_subProcId = 0;
+    var g_procDetailId = 0;
+    var g_subProcList = [];    
+    var g_procDetailList = [];
+    $(document).ready(function () {
+        $("#searchTableRecord").on("keyup", function () {
+            var value = $(this).val().toLowerCase();
+            $("#checkListDetailsPanel tbody tr").filter(function () {
+                if ($(this).text().toLowerCase().indexOf(value) > -1) {
+                    $(this).addClass('matched');
+                } else {
+                    $(this).removeClass('matched');
+                    $(this).find('.chkbox').eq(0).attr('checked', false);
+                }
+                $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1)
+                
+            });
+        });
+
+        $('#selectAllHeaderCheckbox').on('click',function(){
+            if ($('#selectAllHeaderCheckbox').is(':checked')){
+                
+                $.each($('#checkListDetailsPanel tbody tr.matched'), function (i, tr) {
+                    $(tr).find('.chkbox').eq(0).prop('checked', true)
+                });
+            }else{
+                $.each($('#checkListDetailsPanel tbody tr.matched'), function (i, tr) {
+                    $(tr).find('.chkbox').eq(0).prop('checked', false);
+
+                });
+            }
+        })
+    });
+
+    function getAuditSubChecklist() {
+        var processId = $('#checklistSelectField').val();
+        if (processId != 0) {
+            $('#subchecklistSelectField').empty();
+            $.ajax({
+                url: g_asiBaseURL + "/ApiCalls/get_audit_sub_checklist",
+                type: "POST",
+                data: {
+                    'PROCESS_ID': processId
+                },
+                cache: false,
+                success: function (data) {
+                    g_subProcList = data;
+                    $('#subchecklistSelectField').append('<option value="0">--Select Audit Sub-Checklist--</option>');
+                    $.each(data, function (i, v) {
+                       $('#subchecklistSelectField').append('<option value="' + v.s_ID + '">' + v.heading + '</option>');
+                    });
+                },
+                dataType: "json",
+            });
+        } else {
+            g_entList = [];
+            $('#subchecklistSelectField').empty();
+            $('#subchecklistSelectField').append('<option value="0">--Select Audit Sub-Checklist--</option>');
+        }
+
+    }
+    function getAuditChecklistDetail() {
+        var processId = $('#checklistSelectField').val();
+        var subProcessId = $('#subchecklistSelectField').val();
+        $('#checklistDetailSelectField').empty();
+        $('#checklistDetailSelectField').append('<option value="0">--Select Checklist Detail--</option>');
+        if (processId != 0 && subProcessId != 0) {
+            $.ajax({
+                url: g_asiBaseURL + "/ApiCalls/get_audit_checklist_detail_for_remove_duplicate",
+                type: "POST",
+                data: {
+                    'SUB_PROCESS_ID': subProcessId
+                },
+                cache: false,
+                success: function (data) {
+                    g_procDetailList = data;
+                    $.each(data, function (i, v) {
+                        $('#checklistDetailSelectField').append('<option value="' + v.s_ID + '">' + v.heading + '</option>');
+
+                    });
+                },
+                dataType: "json",
+            });
+        }
+    }
+
+    function openUpdateProcess(id, text) {
+        g_ProcId = $('#checklistSelectField').val();
+        $('#updateProcessModal').modal('show');
+        $('#processCodeField').val($('#checklistSelectField option:selected').text());
+
+    }
+    function updateProcess() {
+        if ($('#processCodeField').val() == "") {
+            alert("Please enter Checklist Title");
+            return;
+        }
+       
+            $.ajax({
+                url: g_asiBaseURL + "/ApiCalls/update_audit_checklist",
+                type: "POST",
+                data: {
+                'PROCESS_ID': g_ProcId,
+                    'HEADING': $('#processCodeField').val(),
+                    'ACTIVE': $('#entActiveField').val()
+                },
+                cache: false,
+                success: function (data) {
+                    alert(data.message);
+                    $('#updateProcessModal').modal('hide');
+                },
+                dataType: "json",
+            });
+        
+
+    }
+    function openUpdateSubCheclist() {
+        g_subProcId = $('#subchecklistSelectField').val();
+        $('#updateSubProcessModal').modal('show');
+        $('#subchecklist_DetailsList').empty();
+        $.each(g_subProcList, function (i, v) {
+            if (v.s_ID == g_subProcId) {
+                g_procId = v.t_ID;
+                $('#newChecklist').val(v.t_ID);
+                $('#subprocessCodeField').val(v.heading);
+            }
+        });
+
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/get_checklist_details_for_sub_process",
+            type: "POST",
+            data: {
+                'SUB_PROCESS_ID': g_subProcId
+            },
+            cache: false,
+            success: function (data) {
+                //g_procDetailList = data;
+                var sr = 0;
+                $.each(data, function (i, v) {
+                    $('#subchecklist_DetailsList').append('<li>' + v.heading + '</li>');
+                });
+            },
+            dataType: "json",
+        });
+    }
+
+    function updateSubProcess() {
+        if ($('#newChecklist').val() == 0) {
+            alert("Please select Process");
+            return;
+        }
+        if ($('#subprocessCodeField').val() == "") {
+            alert("Please enter Sub Process Title");
+            return;
+        }
+      
+            $.ajax({
+                url: g_asiBaseURL + "/ApiCalls/update_audit_sub_checklist",
+                type: "POST",
+                data: {
+                    'OLD_PROCESS_ID': g_procId,
+                    'PROCESS_ID': $('#newChecklist').val(),
+                    'SUB_PROCESS_ID': g_subProcId,
+                    'HEADING': $('#subprocessCodeField').val(),
+                    'ENTITY_TYPE_ID': 6
+                },
+                cache: false,
+                success: function (data) {
+                    alert(data.message);
+                },
+                dataType: "json",
+            });
+        
+
+
+    }
+
+    function openUpdadateCheclist(id, sId) {
+        g_procDetailId = $('#checklistDetailSelectField').val();
+        g_subProcId = $('#subchecklistSelectField').val();
+        $('#updateProcessDetailModal').modal('show');
+        $.each(g_procDetailList, function (i, v) {
+            if (v.s_ID == g_procDetailId) {
+                $('#updatedChecklist').val($('#checklistSelectField').val());
+                getSubChecklistOfProcess();
+                $('#updatedProcDetailHeading').val(v.heading);
+                $('#updatedViolationlist').val(v.v_ID);
+                $('#updatedProcOwnerlist').val(v.procesS_OWNER_ID);
+                $('#updatedRoleResplist').val(v.rolE_RESP_ID);
+                $('#updatedRisklist').val(v.risK_ID);
+                $('#updatedAnnexlist').val(v.anneX_ID);
+
+                if ($('#updatedChecklist').val() != 0)
+                    $('#oldProcessLabel').val($('#updatedChecklist option:selected').text());
+                else
+                    $('#oldProcessLabel').val('');
+
+                if ($('#updatedViolationlist').val() != 0)
+                    $('#oldViolationLabel').val($('#updatedViolationlist option:selected').text());
+                else
+                    $('#oldViolationLabel').val('');
+
+                if ($('#updatedProcOwnerlist').val() != 0)
+                    $('#oldProcessOwnerLabel').val($('#updatedProcOwnerlist option:selected').text());
+                else
+                    $('#oldProcessOwnerLabel').val('');
+
+
+
+                if ($('#updatedRoleResplist').val() != 0)
+                    $('#oldRoleRespLabel').val($('#updatedRoleResplist option:selected').text());
+                else
+                    $('#oldRoleRespLabel').val('');
+
+
+                if ($('#updatedRisklist').val() != 0)
+                    $('#oldRiskLabel').val($('#updatedRisklist option:selected').text());
+                else
+                    $('#oldRiskLabel').val("");
+
+                if ($('#updatedAnnexlist').val() != 0)
+                    $('#oldAnnexureLabel').val($('#updatedAnnexlist option:selected').text());
+                else
+                    $('#oldAnnexureLabel').val("");
+
+                $('#oldProcessDetailLabel').val(v.heading);
+            }
+        });
+    }
+    function updateProcessDetail() {
+
+        if ($('#updatedChecklist').val() == 0) {
+            alert("please select Process to proceed");
+            return;
+        }
+        if ($('#updatedSubChecklist').val() == 0) {
+            alert("please select Sub Process to Proceed");
+            return;
+        }
+        if ($('#updatedProcDetailHeading').val() == "") {
+            alert("please provide Process Detail Heading to Proceed");
+            return;
+        }
+
+        if ($('#updatedViolationlist').val() == 0) {
+            alert("please select Vilation to Proceed");
+            return;
+        }
+
+        if ($('#updatedProcOwnerlist').val() == 0) {
+            alert("please select Process Owner to Proceed");
+            return;
+        }
+
+
+        if ($('#updatedRoleResplist').val() == 0) {
+            alert("please select Role Responsible to Proceed");
+            return;
+        }
+
+
+        if ($('#updatedRisklist').val() == 0) {
+            alert("please select Risk to Proceed");
+            return;
+        }
+
+
+        if ($('#updatedAnnexlist').val() == 0) {
+            alert("please select Annexure to Proceed");
+            return;
+        }
+
+
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/update_audit_checklist_detail",
+            type: "POST",
+            data: {
+                'PROCESS_ID': $('#updatedChecklist').val(),
+                'SUB_PROCESS_ID': $('#updatedSubChecklist').val(),
+                'PROCESS_DETAIL_ID': g_procDetailId,
+                'HEADING': $('#updatedProcDetailHeading').val(),
+                'V_ID': $('#updatedViolationlist').val(),
+                'CONTROL_ID': $('#updatedProcOwnerlist').val(),
+                'ROLE_ID': $('#updatedRoleResplist').val(),
+                'RISK_ID': $('#updatedRisklist').val(),
+                'ANNEX_CODE': $('#updatedAnnexlist').val()
+            },
+            cache: false,
+            success: function (data) {
+                alert(data.message);
+                $('#updateProcessDetailModal').modal('hide');
+            },
+            dataType: "json",
+        });
+
+
+    }
+    function getSubChecklistOfProcess() {
+        $('#updatedSubChecklist').empty();
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/get_audit_sub_checklist",
+            type: "POST",
+            data: {
+                'PROCESS_ID': $('#checklistSelectField').val()
+            },
+            cache: false,
+            success: function (data) {
+                $('#updatedSubChecklist').append('<option value="0">--Select Sub-Checklist--</option>');
+                $.each(data, function (i, v) {
+                    $('#updatedSubChecklist').append('<option value="' + v.s_ID + '">' + v.heading + '</option>');
+                });
+                $('#updatedSubChecklist').val(g_subProcId);
+                $('#oldSubProcessLabel').val($('#updatedSubChecklist option:selected').text());
+
+            },
+            dataType: "json",
+        });
+
+    }
+
+    function mergeDuplicate(){
+        if ($('#checklistSelectField').val() == "0") {
+            alert("Select Process to proceed");
+            return;
+        }
+
+        var ids_arr = [];
+        $('#checkListDetailsPanel tbody tr.matched').each(function (i, tr) {
+            var $checkbox = $(tr).find('.chkbox').eq(0);
+            if ($checkbox.is(':checked')) {
+                ids_arr.push($checkbox.attr('id'));
+            }
+        });
+
+        if(ids_arr.length>0){
+            $.ajax({
+                url: g_asiBaseURL + "/ApiCalls/merge_duplicate_process",
+                type: "POST",
+                data: {
+                    'MAIN_PROCESS_ID': $('#checklistSelectField').val(),
+                    'MERGE_PROCESS_IDs': ids_arr
+                },
+                cache: false,
+                success: function (data) {
+                    alert(data.message);
+                    onAlertCallback(reloadLocation);
+                },
+                dataType: "json",
+            });
+        }else{
+            alert("Please select atleast one Process to merge with above selected process");
+            return;
+        }
+       
+    }
+
+    function removeSelectedProcFromGrid() {
+        var selProc = $('#checklistSelectField').val();
+        $('#checkListDetailsPanel tbody tr td.prIdCol').each(function (i, tr) {
+
+            if ($(tr).attr('id') == selProc) {
+                $(tr).parent().hide();
+                $(tr).parent().find('.chkbox').eq(0).prop("checked", false);
+                $(tr).parent().removeClass("matched");
+            } else {
+                $(tr).parent().show();
+                $(tr).parent().addClass("matched");
+            }
+            
+        });
+
+
+    }
+
+    function reloadLocation(){
+        getAuditSubChecklist();
+    }
+
+</script>
+<div class="row text-center mt-3">
+    <h3 style=" display:block;color: #be0e43">Merge Duplicate/Redundant Process</h3>
+</div>
+
+<div class="row col-md-12">
+    <label class="form-label font-weight-bold">Please select the Main process in which you want to merge into</label>
+    <select id="checklistSelectField" onchange="removeSelectedProcFromGrid();" class="form-select form-control">
+        <option value="0" id="0" selected>--Select Process--</option>
+        @{
+            if (ViewData["ProcessList"] != null)
+            {
+                foreach (var item in (dynamic)(ViewData["ProcessList"]))
+                {
+                                    <option value="@item.T_ID" id="@item.T_ID">@item.HEADING</option>
+
+                }
+            }
+        }
+
+    </select>
+</div>
+
+
+<div class="row col-md-12 mt-1">
+    <label class="form-label font-weight-bold">Please select Main Processes from below table you want to merge</label>
+    <table id="checkListDetailsPanel" class="table table-bordered table mb-0 mt-3 bg-white table-hover table-striped">
+        <thead>
+            <tr style="background-color: #19875478 !important; ">
+                <th class="col-md-1 font-weight-bold">ID</th>
+                <th class="col-md-2 font-weight-bold">Process</th>
+                <th class="col-md-4 font-weight-bold">Risk Sequence</th>
+                <th class="col-md-4 font-weight-bold">Risk Weightage</th>
+                <th class="col-md-auto"><input id="selectAllHeaderCheckbox" type="checkbox"/></th>
+            </tr>
+        </thead>
+        <tbody>
+            @{
+                if (ViewData["ProcessList"] != null)
+                {
+
+                    foreach (var item in (dynamic)(ViewData["ProcessList"]))
+                    {
+                                                                        <tr class="matched">
+                                                                            <td class="prIdCol" id="@item.T_ID">@item.T_ID</td>
+                                                                            <td>@item.HEADING</td>
+                                                                            <td>@item.RISK_SEQUENCE</td>
+                                                                            <td>@item.RISK_WEIGHTAGE</td>
+                                                                            <td class="text-center"><input id="@item.T_ID" class="chkbox" type="checkbox" /></td>
+                                                                        </tr>
+                       
+                    }
+                }
+            }
+        </tbody>
+    </table>
+</div>
+<div class="row col-md-12 mt-3">
+    <button onclick="mergeDuplicate();" class="btn btn-danger col-md-3 offset-md-9">Merge Duplicates</button>
+</div>
+
+
+<div id="updateProcessModal" class="modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">Add/Update Process</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form>
+
+                    <div class="row col-md-12 mt-3">
+                        <div class="row col-md-4">
+                            <label>Heading</label>
+                        </div>
+                        <div class="row col-md-8">
+                            <textarea id="processCodeField" class="form-control" type="text"></textarea>
+                        </div>
+                    </div>
+                    <div class="row col-md-12 mt-3">
+                        <div class="row col-md-4">
+                            <label>Is Active</label>
+                        </div>
+                        <div class="row col-md-8">
+                            <select id="entActiveField" class="form-control">
+                                <option value="Y">Yes</option>
+                                <option value="N">No</option>
+                            </select>
+
+                        </div>
+                    </div>
+
+
+
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button onclick="updateProcess();" type="button" data-bs-dismiss="modal" class="btn btn-success">Save Changes</button>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<div id="updateSubProcessModal" class="modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">Add/Update Sub Process</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form>
+                    <div class="row col-md-12 mt-3">
+                        <div class="row col-md-4">
+                            <label>Checklist</label>
+                        </div>
+                        <div class="row col-md-8">
+                            <select id="newChecklist" class="form-select form-control">
+                                <option value="0" id="0" selected>--Select Checklist Type--</option>
+                                @{
+                                    if (ViewData["ProcessList"] != null)
+                                    {
+                                        foreach (var item in (dynamic)(ViewData["ProcessList"]))
+                                        {
+                                                                                        <option value="@item.T_ID" id="@item.T_ID">@item.HEADING</option>
+
+                                        }
+                                    }
+                                }
+
+                            </select>
+                        </div>
+                    </div>
+                    <div class="row col-md-12 mt-3">
+                        <div class="row col-md-4">
+                            <label>Heading</label>
+                        </div>
+                        <div class="row col-md-8">
+                            <textarea id="subprocessCodeField" class="form-control" type="text"></textarea>
+                        </div>
+                    </div>
+
+                    <div class="row col-md-12 mt-3">
+                        <div class="row col-md-4">
+                            <label>Checklist Details</label>
+                        </div>
+                        <div class="row col-md-8">
+                            <ul id="subchecklist_DetailsList">
+                            </ul>
+
+                        </div>
+                    </div>
+
+
+
+
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button onclick="updateSubProcess();" type="button" data-bs-dismiss="modal" class="btn btn-success">Save Changes</button>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+<div id="updateProcessDetailModal" class="modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-xl" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">Update Checklist Detail</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="row col-md-12">
+                    <div class="col-md-6">
+                        <form>
+                            <h6 class="text-center"><b>Existing Details</b></h6>
+                            <div class="form-group">
+                                <label>Process</label>
+                                <input disabled="disabled" class="form-control" style="font-weight:normal !important" id="oldProcessLabel" />
+                            </div>
+                            <div class="form-group">
+                                <label>Sub Process</label>
+                                <input disabled="disabled" class="form-control" style="font-weight:normal !important" id="oldSubProcessLabel" />
+                            </div>
+                            <div class="form-group">
+                                <label>Process Detail</label>
+                                <textarea disabled="disabled" class="form-control" style="font-weight:normal !important" id="oldProcessDetailLabel"></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label>Violation</label>
+                                <input disabled="disabled" class="form-control" style="font-weight:normal !important" id="oldViolationLabel" />
+
+                            </div>
+                            <div class="form-group">
+                                <label>Process Owner</label>
+                                <input disabled="disabled" class="form-control" style="font-weight:normal !important" id="oldProcessOwnerLabel" />
+
+                            </div>
+                            <div class="form-group">
+                                <label>Role Responsible</label>
+
+                                <input disabled="disabled" class="form-control" style="font-weight:normal !important" id="oldRoleRespLabel" />
+
+                            </div>
+                            <div class="form-group">
+                                <label>Risk</label>
+                                <input disabled="disabled" class="form-control" style="font-weight:normal !important" id="oldRiskLabel" />
+
+                            </div>
+                            <div class="form-group">
+                                <label>Annexure</label>
+                                <input disabled="disabled" class="form-control" style="font-weight:normal !important" id="oldAnnexureLabel" />
+
+                            </div>
+                        </form>
+                    </div>
+                    <div class="col-md-6">
+                        <form>
+                            <h6 class="text-center"><b>Proposed Changes</b></h6>
+                            <div class="form-group">
+
+                                <label>Process</label>
+
+                                <select disabled="disabled" id="updatedChecklist" class="form-select form-control">
+                                    <option value="0" id="0" selected>--Select Checklist--</option>
+                                    @{
+                                        if (ViewData["ProcessList"] != null)
+                                        {
+                                            foreach (var item in (dynamic)(ViewData["ProcessList"]))
+                                            {
+                                                                                            <option value="@item.T_ID" id="@item.T_ID">@item.HEADING</option>
+
+                                            }
+                                        }
+                                    }
+
+                                </select>
+
+                            </div>
+                            <div class="form-group">
+
+                                <label>Sub Process</label>
+
+                                <select id="updatedSubChecklist" class="form-select form-control">
+                                    <option value="0" id="0" selected>--Select Sub-Checklist--</option>
+
+                                </select>
+
+                            </div>
+                            <div class="form-group">
+
+                                <label>Process Detail</label>
+
+                                <textarea id="updatedProcDetailHeading" class="form-control"></textarea>
+
+                            </div>
+                            <div class="form-group">
+
+                                <label>Violation</label>
+
+                                <select id="updatedViolationlist" class="form-select form-control">
+                                    <option selected="selected" value="0" id="0">--Select Control Violation--</option>
+                                    @{
+                                        if (ViewData["ViolationsList"] != null)
+                                        {
+
+                                            foreach (var item in (dynamic)(ViewData["ViolationsList"]))
+                                            {
+                                                                                            <option max-number="@item.MAX_NUMBER" id="@item.ID" value="@item.ID">@item.V_NAME</option>
+                                            }
+
+                                        }
+                                    }
+
+                                </select>
+
+                            </div>
+                            <div class="form-group">
+
+                                <label>Process Owner</label>
+
+                                <select id="updatedProcOwnerlist" class="form-select form-control">
+                                    <option selected="selected" value="0" id="0">--Select Control Violation--</option>
+                                    @{
+                                        if (ViewData["ProcOwnerList"] != null)
+                                        {
+
+                                            foreach (var item in (dynamic)(ViewData["ProcOwnerList"]))
+                                            {
+                                                                                            <option id="@item.ENTITY_ID" value="@item.ENTITY_ID">@item.NAME</option>
+                                            }
+
+                                        }
+                                    }
+
+                                </select>
+
+                            </div>
+                            <div class="form-group">
+
+                                <label>Role Responsible</label>
+
+                                <select id="updatedRoleResplist" class="form-select form-control">
+                                    <option selected="selected" value="0" id="0">--Select Control Violation--</option>
+                                    @{
+                                        if (ViewData["RoleRespList"] != null)
+                                        {
+
+                                            foreach (var item in (dynamic)(ViewData["RoleRespList"]))
+                                            {
+                                                                                            <option id="@item.DESIGNATIONCODE" value="@item.DESIGNATIONCODE">@item.DESCRIPTION</option>
+                                            }
+
+                                        }
+                                    }
+
+                                </select>
+
+                            </div>
+                            <div class="form-group">
+
+                                <label>Risk</label>
+
+                                <select id="updatedRisklist" class="form-select form-control">
+                                    <option selected="selected" value="0" id="0">--Select Control Violation--</option>
+                                    @{
+                                        if (ViewData["RiskList"] != null)
+                                        {
+
+                                            foreach (var item in (dynamic)(ViewData["RiskList"]))
+                                            {
+                                                                                            <option id="@item.R_ID" value="@item.R_ID">@item.DESCRIPTION</option>
+                                            }
+
+                                        }
+                                    }
+
+                                </select>
+
+                            </div>
+                            <div class="form-group">
+
+                                <label>Annexure</label>
+
+                                <select id="updatedAnnexlist" class="form-select form-control">
+                                    <option selected="selected" value="0" id="0">--Select Annexure--</option>
+                                    @{
+                                        if (ViewData["AnnexList"] != null)
+                                        {
+
+                                            foreach (var item in (dynamic)(ViewData["AnnexList"]))
+                                            {
+                                                                <option id="@item.ID" value="@item.ID">@item.ANNEX</option>
+                                            }
+
+                                        }
+                                    }
+
+                                </select>
+
+                            </div>
+
+                        </form>
+
+                    </div>
+                </div>
+
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button onclick="updateProcessDetail();" type="button" data-bs-dismiss="modal" class="btn btn-success">Submit Changes</button>
+
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,80 @@
+﻿@{
+    var page_id = ViewData["PageId"] as int? ?? 0;
+}
+
+@{
+    ViewData["Title"] = "CDMS Transactions Details";
+    Layout = "_Layout";
+}
+
+
+<script type="text/javascript">
+    function populateTable() {
+        var selectedValue = $('#auditPeriodSelectBox').val();
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/audit_periods",
+            type: "POST",
+            data: {
+                'AUDIT_PERIOD_ID': selectedValue
+            },
+            cache: false,
+            success: function (data) {
+                console.log(data);
+                //$.each(data, function (index, row) {
+                //    $('#settled_paras tbody').append('<tr><td>' + ++index + '</td><td>' + row.reportinG_OFFICE + '</td><td>' + row.placE_OF_POSTING + '</td> <td>' + row.audiT_PERIOD + '</td><td>' + row.parA_NO + '</td><td>' + row.gist + '</td><td>' + row.auditeD_BY + '</td><td>' + row.settleD_ON + '</td></tr>');
+
+                //});
+
+               
+
+            },
+            dataType: "json",
+        });
+       
+
+        alert(selectedValue);
+    }
+
+</script>
+
+<div class="row col-md-12">
+    <div class="col-md-12">
+        <label class="">
+            Audit Period
+        </label>
+    </div>
+    
+
+    <select id="auditPeriodSelectBox" onchange="populateTable();" class="form-control col-md-4">
+        <option value="0">--Select Audit Period--</option>
+        @{
+        if (ViewData["AuditPeriodList"] != null)
+        {
+        foreach (var item in (dynamic)(ViewData["AuditPeriodList"]))
+        {
+        <option value="@item.AUDITPERIODID" id="@item.AUDITPERIODID">@item.DESCRIPTION</option>
+        }
+        }
+        }
+
+    </select>
+
+
+</div>
+
+<div class="row col-md-12">
+    <table class="table table-hover table-bordered table-hover mt-3 table-striped">
+        <thead style="background-color: #19875478 !important; ">
+            <tr>
+                <th class="col-md-auto">Sr No.</th>
+                <th class="col-md-auto">Description</th>
+                <th class="col-md-auto">Start Date</th>
+                <th class="col-md-auto">End Date</th>
+                <th class="col-md-auto">Status</th>
+            </tr>
+        </thead>
+        <tbody>
+
+        </tbody>
+    </table>
+</div>

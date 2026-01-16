@@ -1,0 +1,215 @@
+﻿@{
+    ViewData["Title"] = "Manage Observation Status";
+    Layout = "_Layout";
+
+}
+
+
+<script type="text/javascript">
+
+
+
+       
+
+
+
+    var g_statusId = 0;
+    var g_statusRecord = [];
+
+
+    $(document).ready(function () {
+
+
+        $("#searchTableRecord").on("keyup", function () {
+            var value = $(this).val().toLowerCase();
+            $("#manageObservationStatusGrid tbody tr").filter(function () {
+                $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1)
+            });
+        });
+        getObservationStatus();
+
+    });
+
+    function getObservationStatus() {
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/get_maange_obs_status",
+            type: "POST",
+            data: {
+
+            },
+            cache: false,
+            success: function (data) {
+                g_statusRecord = data;
+                $('#manageObservationStatusGrid tbody').empty();
+                $.each(data, function (i, v) {
+
+                    $('#manageObservationStatusGrid tbody').append('<tr><td>' + ++i + '</td><td>' + v.statuS_ID + '</td><td>' + v.statuS_NAME + '</td><td>' + v.iS_ACTIVE + '</td><td>' + v.code + '</td><td>' + v.satisfied + '</td><td><a href="#" onclick="event.preventDefault();UpdateManageObservation(' + v.statuS_ID + ');" class="text-danger">Update</a></td></tr>');
+
+                });
+
+            },
+            dataType: "json",
+        });
+    }
+    function reloadLocation() {
+        $('#UpdateManageObservation').modal('hide');
+      //  getEntityTypes();
+        getObservationStatus();
+    }
+
+    function addNewObsStatus(){
+        g_statusId = 0;
+        $('#updateManageObservationStatus').modal('show');
+        $('#modalStatusName').val('');
+        $('#modalIsActive').val('');
+        $('#modalCode').val('');
+        $('#modalSatisfied').val('Y');
+    }
+
+    function UpdateManageObservation(statusId) {
+        g_statusId = statusId;
+        $('#updateManageObservationStatus').modal('show');
+
+       
+        $('#modalStatusName').val('');
+        $('#modalIsActive').val('');
+        $('#modalCode').val('');
+        $('#modalSatisfied').val('Y');
+     
+        $.each(g_statusRecord, function (i, v) {
+            if (v.statuS_ID == g_statusId) {
+
+          
+                $('#modalStatusName').val(v.statuS_NAME);
+                $('#modalIsActive').val(v.iS_ACTIVE);
+                $('#modalCode').val(v.code);
+                $('#modalSatisfied').val(v.satisfied);
+              
+
+            }
+        })
+
+    }
+    function saveChangesManageObservationStatus() {
+        var manageObservationStatusModel = {
+
+            'STATUS_ID': g_statusId,
+            'STATUS_NAME': $('#modalStatusName').val(),
+            'IS_ACTIVE': $('#modalIsActive').val(),
+            'CODE': $('#modalCode').val(),
+            'SATISFIED': $('#modalSatisfied').val(),
+
+        }
+        if (g_statusId == 0) {
+            $.ajax({
+                url: g_asiBaseURL + "/ApiCalls/add_manage_observatiton_status",
+                type: "POST",
+                data: {
+                    OBS_STATUS_MODEL: manageObservationStatusModel
+                },
+                cache: false,
+                success: function (data) {
+                    alert(data.message);
+                    onAlertCallback(reloadLocation);
+
+                },
+                dataType: "json",
+            });
+        } else {
+            $.ajax({
+                url: g_asiBaseURL + "/ApiCalls/update_manage_observatiton_status",
+                type: "POST",
+                data: {
+                    OBS_STATUS_MODEL: manageObservationStatusModel
+                },
+                cache: false,
+                success: function (data) {
+                    alert(data.message);
+                    onAlertCallback(reloadLocation);
+
+                },
+                dataType: "json",
+            });
+        }
+      
+       
+    }
+
+</script>
+
+<div class="mt-3 mb-4">
+    <h3 style="color: #be0e43">Manage Observation Status</h3>
+</div>
+<div class="row col-md-12">
+    <button onclick="addNewObsStatus();" class="btn btn-primary offset-md-9 col-md-3">Add New Status</button>
+</div>
+<div class="mt-3">
+    <div class="col-md-12 px-0">
+        <input class="form-control" id="searchTableRecord" type="text" placeholder="Search..">
+    </div>
+</div>
+
+<div class="row col-md-12 mt-3">
+    <table id="manageObservationStatusGrid" class="table table-hover table-bordered table-hover mt-3 table-striped">
+        <thead style="background-color: #19875478 !important; ">
+            <tr>
+                <th class="col-md-auto text-center">Sr. No.</th>
+                <th class="col-md-auto">STATUS ID</th>
+                <th class="col-md-auto">STATUS NAME</th>
+                <th class="col-md-auto">IS ACTIVE</th>
+                <th class="col-md-auto">CODE</th>
+                <th class="col-md-auto">SATISFIED</th>
+                <th class="col-md-auto"></th>
+
+
+            </tr>
+        </thead>
+        <tbody>
+        </tbody>
+    </table>
+
+</div>
+
+
+
+<div id="updateManageObservationStatus" class="modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-xl" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">Add Checklist Detail</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+
+
+                <div class="form-group">
+                    <label>Status Name</label>
+                        <input id="modalStatusName" type="text" class="form-control" />
+                </div>
+                <div class="form-group">
+                    <label>Is Active</label>
+                        <input id="modalIsActive" type="text" class="form-control" />
+                </div>
+                <div class="form-group">
+                    <label>Code</label>
+                        <input id="modalCode" type="text" class="form-control" />
+                </div>
+                    <div class="form-group">
+                        <label>Satisfied</label>
+                        <input id="modalSatisfied" type="text" class="form-control" />
+                    </div>
+
+          
+          
+
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button onclick="saveChangesManageObservationStatus();" type="button" data-bs-dismiss="modal" class="btn btn-success">Save Changes</button>
+
+            </div>
+        </div>
+    </div>
+</div>

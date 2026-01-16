@@ -1,0 +1,326 @@
+﻿@{
+    var page_id = ViewData["PageId"] as int? ?? 0;
+}
+
+@{
+    ViewData["Title"] = "Compliance Hierarchy";
+    Layout = "_Layout";
+}
+
+<script type="text/javascript">
+    var g_comKey = 0;
+    var g_revPP = 0;
+    var g_authPP = 0;
+    var g_entityID = 0;
+    $(document).ready(function () {
+        getComplianceHierarchy();
+    });
+
+    function getComplianceHierarchy() {
+        $('#listOfComplianceHierarchy tbody').empty();
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/get_compliance_hierarchy",
+            type: "POST",
+            data: {
+
+            },
+            cache: false,
+            success: function (data) {
+                $.each(data, function (i, v) {
+                    $('#listOfComplianceHierarchy tbody').append('<tr><td>' + ++i + '</td><td>' + v.compliancE_UNIT + '</td><td>' + v.approveR_NAME + ' ( ' + v.approveR_PPNO + ')</td><td>' + v.revieweR_NAME + ' ( ' + v.revieweR_PPNO + ')</td><td><a href="#" onclick="event.preventDefault();updateComplianceHierarchy(' + v.entitY_ID + ', ' + v.revieweR_PPNO + ', ' + v.approveR_PPNO + ', \'' + v.coM_KEY + '\', \'' + v.revieweR_NAME + '\', \'' + v.approveR_NAME + '\');">Update</a></td></tr>');
+
+                });
+
+            },
+            dataType: "json",
+        });
+
+    }
+    function setupNewComplianceHierarchy(){
+        $('#addNewcomplianceUnit').modal('show');
+        $('#addNewComplianceUnitsDropDown').val('0');
+        $('#addnew_settlementPPNo').val('');
+        $('#addnew_inchargePPNo').val('');
+        $('#addnew_inchargeEmpName').html();
+        $('#addnew_settlementEmpName').html();
+    }
+    function updateComplianceHierarchy(entID, revPP, authPP, comKey, revName, authName) {
+        g_revPP = revPP;
+        g_entityID = entID;
+        g_authPP = authPP;
+        g_comKey = comKey;
+        $('#complianceUnit').modal('show');
+        $('#inchargePPNo').val(authPP);
+        $('#settlementPPNo').val(revPP);
+        $('#inchargeEmpName').html(authName + ' (' + authPP + ')');
+        $('#settlementEmpName').html(revName + ' (' + revPP + ')');
+
+    }
+    function publishAddNewComplianceHierarchy() {
+
+        if ($('#addNewComplianceUnitsDropDown').val() == "0") {
+            alert("Please select Compliance Unit to proceed");
+            return;
+        }
+
+
+        if ($('#addnew_inchargePPNo').val() == "") {
+            alert("Please enter Incharge Compliance Unit PP No. to proceed");
+            return;
+        }
+
+        if ($('#addnew_settlementPPNo').val() == "") {
+            alert("Please enter Settlement Officer PP No. to proceed");
+            return;
+        }     
+
+
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/add_compliance_hierarchy",
+            type: "POST",
+            data: {
+                'ENTITY_ID': $('#addNewComplianceUnitsDropDown').val(),
+                'REVIEWER_PP': $('#addnew_settlementPPNo').val(),
+                'AUTHORIZER_PP': $('#addnew_inchargePPNo').val()
+            },
+            cache: false,
+            success: function (data) {
+                alert(data.message);
+                onAlertCallback(reloadLocation);
+            },
+            dataType: "json",
+        });
+    }
+    function publishUpdateComplianceHierarchy() {
+
+        if ($('#inchargePPNo').val() == "") {
+            alert("Please enter Incharge Compliance Unit PP No. to proceed");
+            return;
+        }
+        if ($('#settlementPPNo').val() == "") {
+            alert("Please enter Settlement Officer PP No. to proceed");
+            return;
+        }
+
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/update_compliance_hierarchy",
+            type: "POST",
+            data: {
+                'ENTITY_ID': g_entityID,
+                'REVIEWER_PP': $('#settlementPPNo').val(),
+                'AUTHORIZER_PP': $('#inchargePPNo').val(),
+                'COMPLIANCE_KEY': g_comKey,
+            },
+            cache: false,
+            success: function (data) {
+                alert(data.message);
+                onAlertCallback(reloadLocation);
+            },
+            dataType: "json",
+        });
+    }
+    function getMatchedPP(ppno, labelId) {
+        $('#matchedPPNoPanels').empty();
+        g_respUser = [];
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/get_employee_name_from_pp",
+            type: "POST",
+            data: {
+                'PP_NO': ppno
+            },
+            cache: false,
+            success: function (data) {
+                g_respUser.push(data);
+                if (data.ppNumber > 0) {
+                    $('#' + labelId).html(data.name + ' (' + data.ppNumber + ')');
+                }
+                else
+                    $('#' + labelId).html('No record found..');
+            },
+            dataType: "json",
+        });
+    }
+    function reloadLocation() {
+        $('#complianceUnit').modal('hide');
+        $('#addNewcomplianceUnit').modal('hide');
+        getComplianceHierarchy();
+    }
+</script>
+<div class="row mt-3">
+    <div class="row col-md-12">
+        <div class="col-md-6" style="padding-left:0px;">
+            <h2 style="color: #be0e43">Compliance Unit</h2>
+        </div>
+    </div>
+</div>
+
+<div class="row col-md-12 mt-3">
+    <button onclick="setupNewComplianceHierarchy();" class="btn btn-danger col-md-4 offset-md-8">Setup New Compliance Hierarchy</button>
+</div>
+<div id="listOfComplianceHierarchyContainer" class="row mt-3">
+
+    <br />
+    <table id="listOfComplianceHierarchy" class="table table-hover table-bordered table-hover mt-3 table-striped">
+        <thead style="background-color: #19875478 !important;">
+            <tr>
+                <th class="col-md-1">Sr No.</th>
+                <th class="col-md-4">Compliance Unit</th>
+                <th class="col-md-2">Incharge Unit</th>
+                <th class="col-md-2">Settelement Officer</th>
+                <th class="col-md-1"></th>
+            </tr>
+        </thead>
+        <tbody>
+        </tbody>
+    </table>
+</div>
+
+
+<div id="complianceUnit" class="modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-dialog-scrollable modal-xl" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">Compliance Unit</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+
+
+                <div class="row col-md-12 mt-3">
+                    <div class="row col-md-12">
+                        <h4 class="text-bold">Incharge Compliance Unit</h4>
+                    </div>
+                    <div class="row col-md-12 mt-3">
+                        <div class="col-md-2">
+                            <label>P.P.No.</label>
+                        </div>
+                        <div class="col-md-8">
+                            <input id="inchargePPNo" type="text" class="form-control" placeholder="P.P.Number" aria-label="P.P.Number" aria-describedby="basic-addon2">
+                        </div>
+                        <div class="col-md-2">
+                            <button id="searchbtn" onclick="getMatchedPP($('#inchargePPNo').val(),'inchargeEmpName');" class="btn btn-danger w-100">Search</button>
+                        </div>
+                        <div class="row col-md-12 mt-2">
+                            <div class="col-md-2"> <label>Employee Name</label></div>
+                            <div class="col-md-10">
+                                <span id="inchargeEmpName"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <hr class="w-100 mt-3" />
+                <div class="row col-md-12 mt-3">
+                    <div class="row col-md-12">
+                        <h4 class="text-bold">Settelement Officer</h4>
+                    </div>
+                    <div class="row col-md-12 mt-1">
+                        <div class="col-md-2">
+                            <label>P.P.No.</label>
+                        </div>
+                        <div class="col-md-8">
+                            <input id="settlementPPNo" type="text" class="form-control" placeholder="P.P.Number" aria-label="P.P.Number" aria-describedby="basic-addon2">
+                        </div>
+                        <div class="col-md-2">
+                            <button id="searchbtn" onclick="getMatchedPP($('#settlementPPNo').val(),'settlementEmpName');" class="btn btn-danger w-100">Search</button>
+                        </div>
+                        <div class="row col-md-12 mt-2">
+                            <div class="col-md-2"> <label>Employee Name</label></div>
+                            <div class="col-md-10">
+                                <span id="settlementEmpName"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-footer mt-2">
+                    <button type="button" onclick="publishUpdateComplianceHierarchy();" class="btn btn-danger">Update</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="addNewcomplianceUnit" class="modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-dialog-scrollable modal-xl" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">Setup New Compliance Unit</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="row col-md-12">
+                    <label>Compliance Unit</label>
+                    <select id="addNewComplianceUnitsDropDown" class="form-control">
+                        <option value="0" id="0" selected>--Select Compliance Unit--</option>
+                        @{
+                            if (ViewData["complianceUnitList"] != null)
+                            {
+                                foreach (var item in (dynamic)(ViewData["complianceUnitList"]))
+                                {
+                                    <option value="@item.ENTITY_ID" id="@item.ENTITY_ID">@item.COMPLIANCE_UNIT</option>
+
+                                }
+                            }
+                        }
+                    </select>
+                </div>
+                <hr class="w-100 mt-3" />
+                <div class="row col-md-12 mt-3">
+                    <div class="row col-md-12">
+                        <h4 class="text-bold">Incharge Compliance Unit</h4>
+                    </div>
+                    <div class="row col-md-12 mt-3">
+                        <div class="col-md-2">
+                            <label>P.P.No.</label>
+                        </div>
+                        <div class="col-md-8">
+                            <input id="addnew_inchargePPNo" type="text" class="form-control" placeholder="P.P.Number" aria-label="P.P.Number" aria-describedby="basic-addon2">
+                        </div>
+                        <div class="col-md-2">
+                            <button id="addnew_searchbtn" onclick="getMatchedPP($('#addnew_inchargePPNo').val(),'addnew_inchargeEmpName');" class="btn btn-danger w-100">Search</button>
+                        </div>
+                        <div class="row col-md-12 mt-2">
+                            <div class="col-md-2"> <label>Employee Name</label></div>
+                            <div class="col-md-10">
+                                <span id="addnew_inchargeEmpName"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <hr class="w-100 mt-3" />
+                <div class="row col-md-12 mt-3">
+                    <div class="row col-md-12">
+                        <h4 class="text-bold">Settelement Officer</h4>
+                    </div>
+                    <div class="row col-md-12 mt-1">
+                        <div class="col-md-2">
+                            <label>P.P.No.</label>
+                        </div>
+                        <div class="col-md-8">
+                            <input id="addnew_settlementPPNo" type="text" class="form-control" placeholder="P.P.Number" aria-label="P.P.Number" aria-describedby="basic-addon2">
+                        </div>
+                        <div class="col-md-2">
+                            <button id="searchbtn" onclick="getMatchedPP($('#addnew_settlementPPNo').val(),'addnew_settlementEmpName');" class="btn btn-danger w-100">Search</button>
+                        </div>
+                        <div class="row col-md-12 mt-2">
+                            <div class="col-md-2"> <label>Employee Name</label></div>
+                            <div class="col-md-10">
+                                <span id="addnew_settlementEmpName"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-footer mt-2">
+                    <button type="button" onclick="publishAddNewComplianceHierarchy();" class="btn btn-danger">Add</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

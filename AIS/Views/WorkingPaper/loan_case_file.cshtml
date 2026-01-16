@@ -1,0 +1,196 @@
+﻿@{
+    var page_id = ViewData["PageId"] as int? ?? 0;
+}
+
+@{
+    ViewData["Title"] = "Loan Case File";
+    Layout = "_Layout";
+}
+
+
+
+<script>
+    var g_paraId = 0;
+    var g_engID = 0;
+    $(document).ready(function () {
+
+        var url_string = window.location;
+        var url = new URL(url_string);
+        g_engID = url.searchParams.get("engId");
+
+        getLoanCaseFiles();
+
+    });
+
+    function openLoanCaseFile() {
+        $('#newLoanCaseFileDialog').modal('show');
+    }
+
+    function getLoanCaseFiles() {
+
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/Get_Working_Paper_Loan_Cases",
+            type: "POST",
+            data: {
+                'ENGID': g_engID
+            },
+            cache: false,
+            success: function (data) {
+                console.log(data);
+                $.each(data,function(i,v){
+
+                    $('#manageObsPanel').append('<tr><td>' + ++i + '</td><td>' + v.lC_NUMBER + '</td><td>' + v.amount + '</td><td>' + v.disB_DATE + '</td><td>' + v.category + '</td><td>' + v.observation + '</td><td>' + v.parA_NO + '</td><td><a href="#" onclick="event.preventDefault();updateLoanCaseFile(' + v.lC_ID + ');"></a></td></tr>');
+
+                })
+
+            },
+
+            dataType: "json",
+        });
+    }
+
+    function updateLoanCaseFile(lcId){
+
+        $('#newLoanCaseFileDialog').modal('show');
+
+    }
+
+    function AddNewLoanCaseFile() {
+
+        if($('#loancasenumber_txtField').val()==""){
+            alert("Provide LC Number to proceed");
+            return;
+        }
+
+        if ($('#osamount_txtField').val() == "") {
+            alert("Provide LC Amount to proceed");
+            return;
+        }
+
+        if ($('#dateofdisb_txtField').val() == "") {
+            alert("Provide Disb Date to proceed");
+            return;
+        }
+
+
+        if ($('#lccategory_selectField').val() == "") {
+            alert("Provide Loan Category to proceed");
+            return;
+        }
+
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/Add_Working_Paper_Loan_Cases",
+            type: "POST",
+            data: {
+                'ENGID': g_engID,
+                'LCNUMBER': $('#loancasenumber_txtField').val(),
+                'LCAMOUNT': $('#osamount_txtField').val(),
+                'DISBDATE': $('#dateofdisb_txtField').val(),
+                'LCAT': $('#lccategory_selectField').val(),
+                'OBS': $('#ob_txtField').val(),
+                'PARA_NO': $('#pno_txtField').val()
+            },
+            cache: false,
+            success: function (data) {
+                alert(data.message);
+                onAlertCallback(reloadLocation);
+
+            },
+
+            dataType: "json",
+        });
+    }
+
+    function reloadLocation() {
+        window.location.reload();
+    }
+
+    function redirectToNexPage() {
+        window.location.href = g_asiBaseURL + '/WorkingPaper/voucher_checking?engId=' + g_engID;
+    }
+</script>
+
+<div class="row">
+    <div class="col-md-12 mt-3">
+        <h3 style=" display:block;color: #be0e43">Working Paper for Loan Case File</h3>
+    </div>
+
+    <div class="row col-md-12 mt-3">
+        <table id="manageObsPanel" class="table table-hover table-bordered table-hover mt-3 table-striped">
+            <thead style="background-color: #19875478 !important; ">
+                <tr>
+                    <th class="col-md-auto">Sr. No</th>
+                    <th class="col-md-auto">LC No</th>
+                    <th class="col-md-auto">Outstanding Amount</th>
+                    <th class="col-md-auto">Date of Disbursement</th>
+                    <th class="col-md-auto">Category of LC (General/NPL/SAM)</th>
+                    <th class="col-md-auto">Discrepency/Observation</th>
+                    <th class="col-md-auto">Memo/Para No reference</th>
+                    <th class="col-md- auto text-center font-weight-bold"><center><button type="button" onclick="openLoanCaseFile();" class="rounded-circle btn btn-danger btn-sm"><i class="fa fa-plus text-white"></i></button></center></th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+
+        </table>
+    </div>
+
+    <div class="row col-md-12 mt-3">
+        <button onclick="redirectToNexPage();" class="btn btn-success col-md-2 offset-md-10">Voucher Checking</button>
+    </div>
+
+</div>
+
+
+<div id="newLoanCaseFileDialog" class="modal" tabindex="-1" role="dialog">
+    <div class="modal-xl modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">New Loan Case Record</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form>
+                    <div class="form-group">
+                        <label for="commentAreaInCommentsBox">Loan Case Number</label>
+                        <input type="text" class="form-control" id="loancasenumber_txtField" />
+                    </div>
+                    <div class="form-group">
+                        <label for="commentAreaInCommentsBox">Outstanding Amount</label>
+                        <input type="number" class="form-control" id="osamount_txtField" />
+                    </div>
+                    <div class="form-group">
+                        <label for="commentAreaInCommentsBox">Date of Disbursement</label>
+                        <input type="date" class="form-control" id="dateofdisb_txtField" />
+                    </div>
+                    <div class="form-group">
+                        <label for="commentAreaInCommentsBox">Loan Category</label>
+                        <select class="form-control" id="lccategory_selectField">
+                            <option value="0">--Select Loan Category--</option>
+                            <option value="General">General</option>
+                            <option value="NPL">NPL</option>
+                            <option value="SAM">SAM</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="commentAreaInCommentsBox">Observation (if any)</label>
+                        <textarea class="form-control" id="ob_txtField"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="commentAreaInCommentsBox">Memo No (if any)</label>
+                        <input type="text" class="form-control" id="pno_txtField" />
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button onclick="AddNewLoanCaseFile();" type="button" class="btn btn-danger">Add New</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+

@@ -1,0 +1,96 @@
+﻿@{
+    var page_id = ViewData["PageId"] as int? ?? 0;
+}
+
+@{
+    ViewData["Title"] = "Report ~ Annexure Exercise Status";
+    Layout = "_Layout";
+}
+
+<script type="text/javascript">
+
+    $(document).ready(function () {
+        $("#searchTableRecord").on("keyup", function () {
+            var value = $(this).val().toLowerCase();
+            $("#observation_panel tbody tr").filter(function () {
+                $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1)
+            });
+        });
+        getParaPosition();
+    })
+
+    function getParaPosition() {
+        $('#observation_panel tbody').empty();
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/get_annexure_exercise_status",
+            type: "POST",
+            data: {
+
+            },
+            cache: false,
+            success: function (data) {
+                g_response = data;
+
+                var sr = 1;
+                var t_tparas = 0;
+                var t_pparas = 0;
+                var t_cparas = 0;
+                var t_percentage = 0;
+                
+                if (g_response.length > 0) {
+                    $.each(data, function (i, v) {
+
+                   
+                        t_tparas += parseInt(v.total);
+                        t_pparas += parseInt(v.pending);
+                        t_cparas += parseInt(v.completed);
+                        t_percentage = ((parseInt(v.completed) / parseInt(v.total)) * 100).toFixed(2);
+                        //  v.percentage = 
+                        $('#observation_panel tbody').append('<tr><td align="center"> ' + sr + '</td><td align="left">' + v.ppno + '</td><td align="left">' + v.name + '</td><td align="left">' + v.audiT_ZONE + '</td><td align="right">' + v.total + '</td><td align="right">' + v.pending + '</td><td align="right">' + v.completed + '</td><td align="right">' + t_percentage + '%</td></tr>');
+                        sr++;
+                    });
+                  
+                }
+
+                t_percentage = ((parseInt(t_cparas) / parseInt(t_tparas)) * 100).toFixed(2);
+                $('#observation_panel tbody').append('<tr><td colspan="4" align="right">Total</td><td align="right">' + t_tparas + '</td><td align="right">' + t_pparas + '</td><td align="right">' + t_cparas + '</td><td align="right">' + t_percentage + '%</td></tr>')
+
+            },
+            dataType: "json",
+        });
+
+
+    }
+
+
+</script>
+<div class="row w-100">
+
+    <div class="col-md-12 mt-3">
+
+        <h3 style="color: #be0e43">Status of Annexure Exercise</h3>
+        <div class="row col-md-12 mt-3">
+            <input class="form-control" id="searchTableRecord" type="text" placeholder="Search..">
+        </div>
+
+        <div class="mt-3 col-md-12">
+            <table id="observation_panel" class="table table-hover table-bordered table-hover mt-3 table-striped">
+                <thead style="background-color: #19875478 !important;">
+                    <tr>
+                        <th class="col-md-auto">Sr. No.</th>
+                        <th class="col-md-auto">PP NO</th>
+                        <th class="col-md-auto">Name</th>
+                        <th class="col-md-auto">Audit Cluster</th>
+                        <th class="col-md-auto">Total</th>
+                        <th class="col-md-auto">Pending</th>
+                        <th class="col-md-auto">Completed</th>
+                        <th class="col-md-auto">Percentage</th>
+                    </tr>
+                </thead>
+                <tbody>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+

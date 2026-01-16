@@ -1,0 +1,327 @@
+﻿@{
+    var page_id = ViewData["PageId"] as int? ?? 0;
+}
+
+@{
+    ViewData["Title"] = "Monitoring of Para Settlement";
+    Layout = "_Layout";
+}
+<script>
+    var g_paraId = 0;
+    var refp = 0;
+    var g_obsList = [];
+    var g_obsId = 0;
+    var g_paraRefP = 0;
+
+    function getSettledParasForMonitoring() {
+
+       
+         destroyDatatable("manageObsPanel");
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/get_settled_paras_for_monitoring",
+            type: "POST",
+            data: {
+                'ENTITY_ID': $('#entitySelectField').val()
+            },
+            cache: false,
+            success: function (data) {
+                g_obsList = data;
+
+                $.each(data, function (index, child) {
+                    $('#manageObsPanel tbody').append('<tr><td><p class="fw-normal mb-1">' + child.reportinG_OFFICE + '</p><td><p class="fw-normal mb-1">' + child.entitY_NAME + '</p></td><td><p class="fw-normal mb-1">' + child.audiT_PERIOD + '</p></td><td><p class="fw-normal mb-1">' + child.parA_NO + '</p></td><td><p class="fw-normal mb-1">' + child.settleD_BY + '</p></td><td><p class="fw-normal mb-1">' + child.settleD_ON + '</p></td><td><p class="fw-normal mb-1">' + child.risk + '</p></td><td><a href="#" onclick="event.preventDefault();getParaText(\'' + child.coM_ID + '\');">View Para Text</a></td><td><a href="#" onclick="viewParaCompliance(\'' + child.reF_P + '\',\'' + child.aU_OBS_ID + '\' );" >View Compliance</a></td><td><a href="#" onclick="markActionComments(\'' + child.reF_P + '\',\'' + child.aU_OBS_ID + '\' );" >Comments</a></td></tr>')
+                });
+                 initializeDataTable("manageObsPanel");
+
+            },
+
+            dataType: "json",
+        });
+
+    }
+
+    function getParaText(comId) {
+        if (!comId || comId === "0") return;
+        $('#paraTextViewerModel').modal("show");
+        $('#paraTextDivField').empty();
+
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/get_all_para_text",
+            type: "POST",
+            data: {
+                'COM_ID': comId
+            },
+            cache: false,
+            success: function (data) {
+                $('#paraTextDivField').html(data);
+            }
+        });
+    }
+
+    function viewParaCompliance(paraREF, obsID) {
+        g_paraRefP = paraREF;
+        g_obsId = obsID;
+        $('#viewParaComplianceModel').modal('show');
+        $('#manageComplianceHistPanel tbody').empty();
+
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/get_settled_para_compliance_history",
+            type: "POST",
+            data: {
+                'REF_P': paraREF,
+                'OBS_ID': obsID
+            },
+            cache: false,
+            success: function (data) {
+                var rowSpan = data.length;
+                $.each(data, function (i, v) {
+                    var lastCol = '';
+
+                    if (i == 0)
+                        lastCol = '<td rowspan="' + rowSpan + '"><a href=\"#\" onclick=\"getComplianceText(' + v.coM_SEQ_NO + ');;\">View Compliance</a></td>';
+
+                    $('#manageComplianceHistPanel tbody').append('<tr><td><div>' + v.attendeD_BY + '</div></td><td><div>' + v.name + '</div></td><td><div>' + v.designation + '</div></td><td>' + v.remarks + '</td>' + lastCol + '</tr>');
+
+                });
+
+            },
+
+            dataType: "json",
+        });
+
+
+
+
+    }
+
+    function getComplianceText(comSeq) {
+        $('#viewParaComplianceTextModel').modal('show');
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/get_old_para_compliance_cycle_text",
+            type: "POST",
+            data: {
+                'REF_P': g_paraRefP,
+                'OBS_ID': g_obsId,
+                'COM_SEQ': comSeq
+
+            },
+            cache: false,
+            success: function (data) {
+                $('#complianceCycleTextPanel').html(data.parA_TEXT);
+            },
+
+            dataType: "json",
+        });
+
+
+
+    }
+    function markActionComments(refP, obsId) {
+
+        g_obsId = obsId;
+        g_paraRefP = refP;
+        $('#viewParaComplianceCommentsModel').modal('show');
+        $('#commentsOnCompliance').val('');
+    }
+
+    function saveCommentsOnSettledCompliance() {
+
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/submit_settled_para_compliance_comments",
+            type: "POST",
+            data: {
+                'REF_P': g_paraRefP,
+                'OBS_ID': g_obsId,
+                'COMMENTS': $('#commentsOnCompliance').val()
+
+            },
+            cache: false,
+            success: function (data) {
+                alert(data.message);
+                onAlertCallback(reloadLocation);
+            },
+
+            dataType: "json",
+        });
+
+
+    }
+
+    function reloadLocation() {
+        getSettledParasForMonitoring();
+    }
+</script>
+
+<div class="row">
+    <div class="col-md-12 mt-3">
+        <h3 style=" display:block;color: #be0e43">Monitoring of Settlement of Paras</h3>
+    </div>
+    <div class="row col-md-12 mt-3">
+        <div class="col-md-2">
+            <label><b>Entity:</b></label>
+        </div>
+        <div class="col-md-10">
+            <select id="entitySelectField" onchange="getSettledParasForMonitoring();" class="form-control form-select">
+                <option value="0" id="0">--Select Audit Entity--</option>
+                @{
+                    if (ViewData["EntitiesList"] != null)
+                        {
+                        foreach (var item in (dynamic)(ViewData["EntitiesList"]))
+                            {
+                            <option value="@item.ID" id="@item.ID">@item.ENTITY_NAME</option>
+                            }
+                        }
+                }
+
+            </select>
+        </div>
+    </div>
+    <div class="row col-md-12 mt-3">
+        <table id="manageObsPanel" class="table table-hover table-bordered table-hover mt-3 table-striped">
+            <thead style="background-color: #19875478 !important; ">
+                <tr>
+                    <th class="col-md-auto">Reporting/Controlling Office</th>
+                    <th class="col-md-auto">Entity Name</th>
+                    <th class="col-md-auto">Audit Year</th>
+                    <th class="col-md-auto">Para No.</th>
+                    <th class="col-md-auto">Settled By</th>
+                    <th class="col-md-auto">Settled On</th>
+                    <th class="col-md-auto">Risk</th>
+                    <th class="col-md-auto">Para Text</th>
+                    <th class="col-md-auto">View Compliance</th>
+                    <th class="col-md-auto">Action</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+
+        </table>
+    </div>
+
+</div>
+
+
+<div id="paraTextViewerModel" class="modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog  modal-xl" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">Para Text</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+                    
+                </button>
+            </div>
+            <div class="mt-3 modal-body">
+                <form>
+                    <div class="row mt-3 col-md-12">
+                        <div id="paraTextDivField" style="max-width:100%; overflow-y:auto;" class="col-md-12"></div>
+
+                    </div>
+
+
+                </form>
+            </div>
+
+            <div class="mt-3 modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+<div id="viewParaComplianceModel" class="modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-xl" role="document" style="min-width:95% !important;">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">Compliance History</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+                    
+                </button>
+            </div>
+            <div class="modal-body">
+                <form>
+
+                    <div class="row col-md-12 mt-3">
+                        <table id="manageComplianceHistPanel" class="table table-hover table-bordered table-hover mt-3 table-striped">
+                            <thead style="background-color: #19875478 !important; ">
+                                <tr>
+                                    <th class="col-md-auto">PP Number</th>
+                                    <th class="col-md-auto">Designation</th>
+                                    <th class="col-md-auto">Name</th>
+                                    <th class="col-md-auto">Remarks</th>
+                                    <th class="col-md-auto">View Compliance</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+
+                        </table>
+                    </div>
+
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<div id="viewParaComplianceTextModel" class="modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-xl" role="document" style="min-width:85% !important;">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">Compliance Text</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+                    
+                </button>
+            </div>
+            <div class="modal-body">
+                <form>
+
+                    <div class="row col-md-12 mt-3">
+                        <div id="complianceCycleTextPanel" class="col-md-12"></div>
+                    </div>
+
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+<div id="viewParaComplianceCommentsModel" class="modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-xl" role="document" style="min-width:85% !important;">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">Comments</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+                    
+                </button>
+            </div>
+            <div class="modal-body">
+                <form>
+
+                    <div class="form-group">
+                        <textarea id="commentsOnCompliance" class="form-control"></textarea>
+                    </div>
+
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button onclick="saveCommentsOnSettledCompliance();" type="button" class="btn btn-danger" data-bs-dismiss="modal">Save Comments</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+
+
+
+

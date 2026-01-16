@@ -1,0 +1,314 @@
+﻿
+@{
+    ViewData["Title"] = "Concluding_Closing_Audit";
+    Layout = "_Layout";
+}
+
+
+
+<script type="text/javascript">
+    var g_teamMembers = [];
+    var g_engId = 0;
+    var g_type_id = 0;
+    $(document).ready(function () {
+        $('#reportheading1').empty;
+        $('#reportheading2').empty;
+
+      
+
+      
+    });
+    function reloadLocationToUrl() {
+        window.location.href = g_asiBaseURL + "/Engagement/task_list"
+    }
+
+
+
+    function getaddress() {
+        
+        $('#auditorWiseProgessTable tbody').empty();
+        $('#joiningAuditorDetailsTable tbody').empty();
+        //getParas();
+        g_engId = $('#entitySelectField').val();
+        g_type_id = $('#entitySelectField option:selected').attr("ent_type_id");
+        $('#conoffice').empty();
+        $('#EntN').empty();
+        $('#ADD').empty();
+        $('#a_s_d').empty();
+        $('#a_e_d').empty();
+        $('#o_s_d').empty();
+        $('#o_e_d').empty();
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/get_address",
+            type: "POST",
+            data: {
+                'ENT_ID': g_engId
+            },
+            cache: false,
+            success: function (data) {
+                $.each(data, function (i, v) {
+                    console.log(v);
+                    g_teamMembers.push(v.teaM_MEM_PPNO);
+                    // $('#joiningAuditorDetailsTable tbody').append('<tr><td class="text-center" style="font-size:xx-small">' + v.teaM_MEM_PPNO + '</td><td class="text-center" style="font-size:xx-small">' + v.membeR_NAME + '</td><td class="text-center" style="font-size:xx-small">' + v.joininG_DATE.split('T')[0] + '</td><td class="text-center" style="font-size:xx-small">' + (new Date().toISOString()).split("T")[0] + '</td></tr>');
+                    $('#conoffice').html(v.p_NAME);
+                    $('#EntN').html(v.name);
+                    $('#ADD').html(v.address);
+                    $('#a_s_d').html(v.audiT_STARTDATE.split('T')[0]);
+                    $('#a_e_d').html(v.audiT_ENDDATE.split('T')[0]);
+                    $('#o_s_d').html(v.operatioN_STARTDATE.split('T')[0]);
+                    $('#o_e_d').html(v.operatioN_ENDDATE.split('T')[0]);
+
+
+
+                });
+
+
+            },
+            dataType: "json",
+        });
+
+          $.ajax({
+              url: g_asiBaseURL + "/ApiCalls/GetTeamDetails",
+            type: "POST",
+            data: {
+                'ENG_ID': g_engId
+            },
+            cache: false,
+              success: function (data) {
+
+                  console.log(data);
+                $.each(data, function (i, v) {
+                    g_teamMembers.push(v.teaM_MEM_PPNO);
+                    $('#joiningAuditorDetailsTable tbody').append('<tr><td class="text-center" style="font-size:xx-small">' + v.membeR_PPNO + '</td><td class="text-center" style="font-size:xx-small">' + v.membeR_NAME + '</td><td class="text-center" style="font-size:xx-small">' + v.audiT_START_DATE + '</td><td class="text-center" style="font-size:xx-small">' + v.audiT_END_DATE + '</td></tr>');
+                 // 
+                });
+
+             
+
+
+
+            },
+            dataType: "json",
+        });
+
+  
+  
+    }
+
+    function auditeereport() {
+        g_engId = $('#entitySelectField').val();
+
+        $('#conoffice').html();
+        $('#EntN').html();
+        $('#ADD').html();
+        $('#a_s_d').html();
+        $('#a_e_d').html();
+        $('#o_s_d').html();
+        $('#o_e_d').html();
+
+       // if (g_type_id == 6)
+        window.location.href = g_asiBaseURL + '/Execution/auditee_observations_report?engid=' + g_engId + '&conOffice=' + $('#conoffice').html() + '&entName=' + $('#EntN').html() + '&startDate=' + $('#a_s_d').html() + '&endDate=' + $('#a_e_d').html() + '&ostart=' + $('#o_s_d').html() + '&oend=' + $('#o_e_d').html();
+      //  else
+       //     window.location.href = '/Execution/auditee_observations_report_cau?engid=' + g_engId + '&conOffice=' + $('#conoffice').html() + '&entName=' + $('#EntN').html() + '&startDate=' + $('#a_s_d').html() + '&endDate=' + $('#a_e_d').html() + '&ostart=' + $('#o_s_d').html() + '&oend=' + $('#o_e_d').html();
+
+
+       
+            
+
+    }
+
+    function getreportstatus()
+    {
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/get_report_status",
+            type: "POST",
+            data: {
+                'ENG_ID': g_engId
+            },
+            cache: false,
+            success: function (data) {
+                if (data[0].reF_OUT == "0") {
+                 //   auditeereport();
+                   // onAlertCallback(auditeereport);
+                   if (g_engId == 0)
+                        alert("Audit Entity Not Selected");
+
+                  
+                    else {
+                    alert(data[0].message);
+                    return;
+                }
+                }
+                else {
+                    if (g_engId == 0)
+                        alert("Audit Entity Not Selected");
+
+                    else {
+                        alert(data[0].message);
+                        onAlertCallback(auditeereport);
+                        //auditeereport();
+                    }
+
+
+                }
+
+
+            },
+            dataType: "json",
+        });
+
+    }
+
+
+    function closeDraftAudit() {
+
+        $.ajax({
+
+            url: g_asiBaseURL + "/ApiCalls/close_draft_audit",
+            type: "POST",
+            data: {
+                'ENG_ID': g_engId
+            },
+            cache: false,
+            success: function (data) {
+                alert(data.message);
+            
+            },
+            dataType: "json",
+        });
+    }
+</script>
+<div class="row col-md-12 mt-3">
+    <h4 style="display: block; color: #be0e43">Close Audit Report</h4>
+</div>
+
+<div class="row col-md-12 mt-3">
+    <div class="col-md-2">
+        <label><b>Entity:</b></label>
+    </div>
+    <div class="col-md-10">
+        <input id="entityNameField" disabled="disabled" class="form-control ml-1 d-none" type="text" />
+        <select id="entitySelectField" onchange="getaddress();" class="form-control form-select">
+            <option value="0" id="0">--Select Audit Entity--</option>
+            @{
+                if (ViewData["EntitiesList"] != null)
+                {
+                    foreach (var item in (dynamic)(ViewData["EntitiesList"]))
+                    {
+                        <option value="@item.ENG_ID" ent_type_id="@item.TYPE_ID">@item.ENTITY_NAME</option>
+                    }
+                }
+            }
+
+        </select>
+    </div>
+</div>
+<div class="col-md-12 mt-3">
+
+    <div class="row col-md-6">
+        <div>
+            <h5 style="display: block; color: #be0e43">Auditee Information</h5>
+        </div>
+        <table id="reportheading1" class="table table-bordered mb-0 mt-3 bg-white table-striped" style="font-size:xx-small">
+            <thead style="background-color: #19875478 !important;">
+                <tr>
+                    <th class="col-md-1" style="font-size:xx-small">Controling Office</th>
+                    <th id="conoffice" Class="col-md-5" style="background-color: #19875478 !important"></th>
+                </tr>
+                <tr>
+                    <th class="col-md-1" style="font-size:xx-small">Entity Name</th>
+                    <th id="EntN" Class="col-md-5" style="background-color: #19875478 !important"></th>
+                </tr>
+                <tr>
+                    <th class="col-md-aut-1" style="font-size:xx-small">Address</th>
+                    <th id="ADD" Class="col-md-5" style="background-color: #19875478 !important"></th>
+                </tr>
+
+
+
+            </thead>
+            <tbody>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="row col-md-6">
+
+        <table id="reportheading2" class="table table-bordered mb-0  bg-white table-striped" style="font-size:xx-small">
+            <thead style="background-color: #19875478 !important;">
+
+                <tr>
+
+                    <th class="col-md-1" style="font-size:xx-small">Audit S-Date</th>
+                    <th id="a_s_d" Class="col-md-2" style="background-color: #19875478 !important"></th>
+                    <th class="col-md-1" style="font-size:xx-small">Audit E-Date</th>
+                    <th id="a_e_d" Class="col-md-2" style="background-color: #19875478 !important"></th>
+                </tr>
+
+                <tr>
+                    <th class="col-md-1" style="font-size:xx-small">Operational S-Date</th>
+                    <th id="o_s_d" Class="col-md-2" style="background-color: #19875478 !important"></th>
+                    <th class="col-md-1" style="font-size:xx-small">Operational E-Date</th>
+                    <th id="o_e_d" Class="col-md-2" style="background-color: #19875478 !important"></th>
+                </tr>
+
+
+            </thead>
+            <tbody>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="row col-md-12 mt-3">
+    <div class="col-md-6">
+        <div>
+            <h5 style="display: block; color: #be0e43">Auditor Wise Memo Status</h5>
+        </div>
+        <table id="auditorWiseProgessTable" class="table table-bordered mb-0 mt-3 bg-white table-striped" style="font-size:xx-small">
+            <thead style="background-color: #19875478 !important;">
+                <tr>
+                    <th class="col-md-auto" style="font-size:xx-small">Auditor</th>
+                    <th class="col-md-auto" style="font-size:xx-small">Team Lead</th>
+                    <th class="col-md-auto" style="font-size:xx-small">Total Memos</th>
+                    <th class="col-md-auto" style="font-size:xx-small">Submitted to Auditee</th>
+                    <th class="col-md-auto" style="font-size:xx-small">Responded by Auditee</th>
+                    <th class="col-md-auto" style="font-size:xx-small">Resolved</th>
+                    <th class="col-md-auto" style="font-size:xx-small">Add to Draft Report</th>
+                </tr>
+            </thead>
+            <tbody>
+            </tbody>
+        </table>
+
+
+    </div>
+
+    <div class=" col-md-6">
+        <div>
+            <h5 style="display: block; color: #be0e43">Joining and Closing Dates</h5>
+        </div>
+        <table id="joiningAuditorDetailsTable" class="table table-bordered mb-0 mt-3 bg-white table-striped">
+            <thead style="background-color: #19875478 !important; ">
+                <tr>
+                    <th class="col-md-auto" style="font-size:xx-small">P.P. Number</th>
+                    <th class="col-md-auto" style="font-size:xx-small">Name</th>
+                    <th class="col-md-auto" style="font-size:xx-small">Joining Date</th>
+                    <th class="col-md-auto" style="font-size:xx-small">Completion Date </th>
+                </tr>
+            </thead>
+            <tbody>
+            </tbody>
+        </table>
+       
+    </div>
+</div>
+<div class="row col-md-12 mt-3 ml-5">
+    <button onclick="closeDraftAudit();" class="col-md-3 mr-5 btn btn-danger float-right d-none">Generate Risk Rating</button>
+    <button onclick="window.location.href='../Execution/auditee_position_outlook';" class="col-md-2 mr-5 d-none  btn btn-success float-right">Auditee position/Outlook</button>
+    
+    <button onclick="getreportstatus();" class="col-md-3 mr-5  btn btn-success float-right"> Auditee observations report</button>
+        <button onclick="closeDraftAudit();" class="col-md-3 btn btn-danger float-right"> Close Audit</button>
+
+</div>
+

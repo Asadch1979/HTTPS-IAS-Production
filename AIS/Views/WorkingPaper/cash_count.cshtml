@@ -1,0 +1,226 @@
+﻿@{
+    var page_id = ViewData["PageId"] as int? ?? 0;
+}
+
+@{
+    ViewData["Title"] = "Voucher Checking";
+    Layout = "_Layout";
+}
+
+
+
+<script>
+    var g_paraId = 0;
+    var g_engID = 0;
+    $(document).ready(function () {
+        var url_string = window.location;
+        var url = new URL(url_string);
+        g_engID = url.searchParams.get("engId");
+        getCashCounters();
+    });
+
+    function openVoucherCheckingFile() {
+        $('#newVoucherCheckingDialog').modal('show');
+    }
+    function getCashCounters() {
+
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/Get_Working_Paper_Cash_Counter",
+            type: "POST",
+            data: {
+                'ENGID': g_engID
+            },
+            cache: false,
+            success: function (data) {
+                console.log(data);
+                $.each(data, function (i, v) {
+                    $('#manageObsPanel').append('<tr><td>' + ++i + '</td><td>' + v.denominatioN_VAULT + '</td><td>' + v.nO_CURRENCY_NOTES_VAULT + '</td><td>' + v.totaL_AMOUNT_VAULT + '</td><td>' + v.denominatioN_SAFE_REGISTER + '</td><td>' + v.nO_CURRENCY_NOTES_SAFE_REGISTER + '</td><td>' + v.totaL_AMOUNT_SAFE_REGISTER + '</td><td>' + v.difference + '</td><td><a href="#" onclick="event.preventDefault();updateVoucherChecking(' + v.V_ID + ');"></a></td></tr>');
+
+                })
+
+            },
+
+            dataType: "json",
+        });
+    }
+
+    function redirectToPreviousPage() {
+        window.location.href = g_asiBaseURL + '/WorkingPaper/fixed_assets?engId=' + g_engID;
+    }
+
+    function updateFixedAssets(fId) {
+
+    }
+
+    function AddNewCashCounter() {
+
+        if ($('#dVault_txtField').val() == "") {
+            alert("Provide Denomination as per Vault to proceed");
+            return;
+        }
+
+        if ($('#cVault_txtField').val() == "") {
+            alert("Provide Currency Notes as Per Vault to proceed");
+            return;
+        }
+
+        if ($('#tVault_txtField').val() == "") {
+            alert("Provide Total Amount as per Vault to proceed");
+            return;
+        }
+
+        if ($('#dSafe_txtField').val() == "") {
+            alert("Provide Denomination as per Safe Register to proceed");
+            return;
+        }
+
+        if ($('#cSafe_txtField').val() == "") {
+            alert("Provide Currency Notes as Per Safe Register to proceed");
+            return;
+        }
+
+        if ($('#tSafe_txtField').val() == "") {
+            alert("Provide Total Amount as per Safe Register to proceed");
+            return;
+        }
+
+        if ($('#diff_txtField').val() == "") {
+            alert("Provide Difference to proceed");
+            return;
+        }
+
+         
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/Add_Working_Paper_Cash_Counter",
+            type: "POST",
+            data: {
+                'ENGID': g_engID,
+                'DVAULT': $('#dVault_txtField').val(),
+                'NOVAULT': $('#cVault_txtField').val(),
+                'TOTVAULT': $('#tVault_txtField').val(),
+                'DSR': $('#dSafe_txtField').val(),
+                'NOSR': $('#cSafe_txtField').val(),
+                'TOTSR': $('#tSafe_txtField').val(),
+                'DIFF': $('#diff_txtField').val()             
+            },
+            cache: false,
+            success: function (data) {
+                alert(data.message);
+                onAlertCallback(reloadLocation);
+
+            },
+
+            dataType: "json",
+        });
+    }
+
+    function reloadLocation() {
+        window.location.reload();
+    }
+
+
+</script>
+
+<div class="row">
+    <div class="col-md-12 mt-3">
+        <h3 style=" display:block;color: #be0e43">Working Paper for Cash Count</h3>
+    </div>
+
+    <div class="row col-md-12 mt-3">
+        <table id="manageObsPanel" class="table table-hover table-bordered table-hover mt-3 table-striped">
+            <thead style="background-color: #19875478 !important; ">
+                <tr>
+                    <th class="col-md-auto" colspan="1"></th>
+                    <th class="col-md-auto text-center" colspan="3">Cash Found in Vault</th>
+                    <th class="col-md-auto text-center" colspan="3">Cash as per Night save Register</th>
+                    <th class="col-md- auto text-center font-weight-bold"><center><button type="button" onclick="openVoucherCheckingFile();" class="rounded-circle btn btn-danger btn-sm"><i class="fa fa-plus text-white"></i></button></center></th>
+                </tr>
+                <tr>
+                    <th class="col-md-auto">Sr. No</th>
+                    <th class="col-md-auto">Denomination</th>
+                    <th class="col-md-auto">No of Currency Notes</th>
+                    <th class="col-md-auto">Total Amount</th>
+                    <th class="col-md-auto">Denomination</th>
+                    <th class="col-md-auto">No of Currency Notes</th>
+                    <th class="col-md-auto">Total Amount</th>
+                    <th class="col-md-auto">Difference</th>
+                    <th class="col-md-auto"></th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+
+        </table>
+    </div>
+    <div class="row col-md-12 mt-3">
+        <button onclick="redirectToPreviousPage();" class="btn btn-danger col-md-2 offset-md-10">Fixed Assets</button>
+    </div>
+
+</div>
+
+
+
+
+<div id="newVoucherCheckingDialog" class="modal" tabindex="-1" role="dialog">
+    <div class="modal-xl modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">New Cash Counter Record</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form>
+                    <hr />
+                    <h5 class="text-center">Cash Found in Vault</h5>
+                    <hr />
+                    <div class="row col-md-12">
+                        <div class="form-group col-md-12">
+                            <label for="commentAreaInCommentsBox">Denomination</label>
+                            <input type="text" class="form-control" id="dVault_txtField" />
+                        </div>
+                        <div class="form-group col-md-12">
+                            <label for="commentAreaInCommentsBox">No of Currency Notes</label>
+                            <input type="text" class="form-control" id="cVault_txtField" />
+                        </div>
+                        <div class="form-group col-md-12">
+                            <label for="commentAreaInCommentsBox">Total Amount</label>
+                            <input type="text" class="form-control" id="tVault_txtField" />
+                        </div>                    
+
+                    </div>
+                    <hr />
+                    <h5 class="text-center"> Cash as per Night Save Vault</h5>
+                    <hr />
+                    <div class="row col-md-12">
+                        <div class="form-group col-md-12">
+                            <label for="commentAreaInCommentsBox">Denomination</label>
+                            <input type="text" class="form-control" id="dSafe_txtField" />
+                        </div>
+                        <div class="form-group col-md-12">
+                            <label for="commentAreaInCommentsBox">No of Currency Notes</label>
+                            <input type="text" class="form-control" id="cSafe_txtField" />
+                        </div>
+                        <div class="form-group col-md-12">
+                            <label for="commentAreaInCommentsBox">Total Amount</label>
+                            <input type="text" class="form-control" id="tSafe_txtField" />
+                        </div>
+
+                    </div>
+                    <div class="form-group">
+                        <label for="commentAreaInCommentsBox">Difference</label>
+                        <input type="text" class="form-control" id="diff_txtField" />
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button onclick="AddNewCashCounter();" type="button" class="btn btn-danger">Add New</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+

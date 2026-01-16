@@ -1,0 +1,66 @@
+@{
+    ViewData["Title"] = "Inquiry Report";
+    Layout = "_Layout";
+    var complaintId = ViewData["ComplaintId"];
+}
+<h4>Inquiry Report</h4>
+<form id="reportForm" enctype="multipart/form-data">
+    <input type="hidden" name="ComplaintId" value="@complaintId" />
+    <div class="mb-2">
+        <label class="form-label">Name of Complainant</label>
+        <input type="text" class="form-control" name="NameComplainant" required />
+    </div>
+    <div class="mb-2">
+        <label class="form-label">Name of Accused</label>
+        <input type="text" class="form-control" name="NameAccused" required />
+    </div>
+    <div class="mb-2">
+        <label class="form-label">Gist</label>
+        <textarea class="form-control" name="Gist" required></textarea>
+    </div>
+    <div class="mb-2">
+        <label class="form-label">Proceedings</label>
+        <textarea class="form-control" name="Proceedings" required></textarea>
+    </div>
+    <div class="mb-2">
+        <label class="form-label">Findings</label>
+        <textarea class="form-control" name="Findings" required></textarea>
+    </div>
+    <div class="mb-2">
+        <label class="form-label">Recommendation</label>
+        <textarea class="form-control" name="Recommendation" required></textarea>
+    </div>
+    <div class="mb-2">
+        <label class="form-label">Upload Inquiry Report (PDF)</label>
+        <input type="file" class="form-control" name="UploadedReport" accept="application/pdf" required />
+    </div>
+    <div class="mb-2">
+        <label class="form-label">Upload Evidence (PDF)</label>
+        <input type="file" class="form-control" name="UploadedEvidence" accept="application/pdf" multiple required />
+    </div>
+    <div class="mb-2">
+        <label class="form-label">Upload DSA (Word)</label>
+        <input type="file" class="form-control" name="UploadedDsa" accept=".doc,.docx,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document" required />
+    </div>
+    <button type="submit" class="btn btn-primary">Submit Report</button>
+</form>
+@section Scripts{
+<script>
+    $(function(){
+        $('#reportForm').on('submit', function(e){
+            e.preventDefault();
+            var fd = new FormData(this);
+            $.ajax({
+                url: g_asiBaseURL + '/ApiCalls/AddInquiryReport',
+                type: 'POST',
+                data: fd,
+                processData:false,
+                contentType:false,
+                success: function(){
+                    alert('Report submitted');
+                }
+            });
+        });
+    });
+</script>
+}

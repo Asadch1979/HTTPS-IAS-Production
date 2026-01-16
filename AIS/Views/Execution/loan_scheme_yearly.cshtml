@@ -1,0 +1,121 @@
+﻿@{
+    var page_id = ViewData["PageId"] as int? ?? 0;
+}
+
+@{
+    ViewData["Title"] = "Loan_Schemes";
+    Layout = "_Layout";
+}
+<style type="text/css">
+    .container {
+        max-width: 100%;
+    }
+
+    .card-header {
+        background-color: transparent !important;
+        font-size: 20px;
+        height: 100px;
+    }
+
+    .icon-card {
+        margin: 10px;
+    }
+</style>
+
+<script type="text/javascript">
+
+
+    $(document).ready(function () {
+        var gl_Id = 0;
+        $('#sidebar_policy').hide();
+        $("#searchTableRecord").on("keyup", function () {
+            var value = $(this).val().toLowerCase();
+            $("#listOfGlHead tbody tr").filter(function () {
+                $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1)
+            });
+        });
+    });
+
+</script>
+
+<div class="row col-md-12 mt-3">
+    <h4 style="display: block; color: #be0e43">Loan Schemes Details</h4>
+</div>
+<div class="row col-md-12">
+    <input class="form-control" id="searchTableRecord" type="text" placeholder="Search..">
+</div>
+<div class="row col-md-12 mt-3">
+   
+        <table id="listOfGlHead" class="col-md-12 table table-hover table-bordered mb-0 mt-3 bg-white table-striped">
+            <thead style="background-color: #19875478 !important; ">
+                <tr>
+                    <th class="col-md-auto">GL Sub Code</th>
+                    <th class="col-md-auto">GL Sub Name</th>
+
+                    <th class="col-md-auto">Disbursed Amount 2021</th>
+                    <th class="col-md-auto">Principle Out 2021</th>
+                    <th class="col-md-auto">Markup Out 2021</th>
+                    <th class="col-md-auto">Disbursed Amount 2022</th>
+                    <th class="col-md-auto">Principle Out 2022</th>
+                    <th class="col-md-auto">Markup Out 2022</th>
+
+                </tr>
+            </thead>
+            <tbody>
+                @{
+                    if (ViewData["GetLoanScheme"] != null)
+                    {
+
+
+                        foreach (var item in (dynamic)(ViewData["GetLoanScheme"]))
+                        {
+
+                   
+
+                                <tr>
+                                    <td class="gl_id; text-right">
+                                        <p class="fw-normal mb-1">@item.GLSUBCODE</p>
+                                    </td>
+                                    <td class="gl_des">
+                                        <p class="fw-normal mb-1">@item.GLSUBNAME</p>
+                                    </td>
+
+                                    <td class="run_cr; text-right">
+                                        <p class="fw-normal mb-1">@item.DISBURSED_AMOUNT_2021</p>
+
+                                    </td>
+                                    <td class="run_deb; text-right">
+                                        <p class="fw-normal mb-1">@item.PRIN_OUT_2021</p>
+                                    </td>
+                                    <td class="bal; text-right">
+                                        <p class="fw-normal mb-1">@item.MARKUP_OUT_2021</p>
+
+                                    </td>
+                                    <td class="run_cr; text-right">
+                                        <p class="fw-normal mb-1">@item.DISBURSED_AMOUNT_2022</p>
+
+                                    </td>
+                                    <td class="run_deb; text-right">
+                                        <p class="fw-normal mb-1">@item.PRIN_OUT_2022</p>
+                                    </td>
+                                    <td class="bal; text-right">
+                                        <p class="fw-normal mb-1">@item.MARKUP_OUT_2022</p>
+
+                                    </td>
+
+
+
+                                </tr>
+                        }
+                    }}
+            </tbody>
+
+
+        </table>
+    </div>
+
+<div class="row col-md-12 mt-3">
+
+    <button onclick="history.back()" class="btn btn-primary" style="color:white">Return</button>
+
+</div>

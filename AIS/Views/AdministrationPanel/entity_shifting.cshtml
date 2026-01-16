@@ -1,0 +1,1110 @@
+﻿@{
+    var page_id = ViewData["PageId"] as int? ?? 0;
+}
+
+@{
+    ViewData["Title"] = "Entity Shifting";
+    Layout = "_Layout";
+
+}
+
+<script type="text/javascript">
+    var g_aisEntitiesRec = [];
+    var g_entIdToUpdate = 0;
+    var g_entIdtoUpdateMapping = 0;
+    var g_mappingExists = [];
+    var url_string = window.location;
+    var url = new URL(url_string);
+    var ent_code = url.searchParams.get("code");
+    var ent_name = url.searchParams.get("name");
+    var g_uploadedAttachment="";
+
+    $(document).ready(function () {
+        $('#summaryPanel').addClass('d-none');
+        $('#entityNameTextBar').val(ent_name);
+        $('#entityCodeTextBar').val(ent_code);
+        $('#AISentityNameTextBar').val(ent_name);
+        $('#AISentityCodeTextBar').val(ent_code);
+
+
+         $('#circularRefField').on('change', function (e) {
+        var file = e.target.files[0];
+
+        if (file) {
+          // Use FileReader to read the file and get base64 encoding
+          var reader = new FileReader();
+
+          reader.onload = function (readerEvent) {
+            g_uploadedAttachment = readerEvent.target.result;
+
+          };
+
+          // Read the file as Data URL (base64)
+          reader.readAsDataURL(file);
+        }
+      });
+
+
+    });
+
+
+    function getEntityDetailsByName() {
+
+
+        $('#entity_find_panel tbody').empty();
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/get_ais_entities_for_admin_panel_entity_addition",
+            type: "POST",
+            data: {
+                'ENTITY_NAME': $('#entityNameTextBar').val(),
+                'ENTITY_CODE': ""
+            },
+            cache: false,
+            success: function (data) {
+
+                $.each(data, function (i, v) {
+
+                    $('#entity_find_panel tbody').append('<tr><td>' + ++i + '</td><td>' + v.entitY_ID + '</td><td>' + v.entitY_CODE + '</td><td>' + v.entitY_NAME + '</td><td>' + v.typE_ID + '</td><td>' + v.audiT_BY + '</td><td>' + v.auditable + '</td><td>' + v.status + '</td><td><a onclick="event.preventDefault();updateAISEntity(' + v.entitY_ID + ');" href="#">Update Entity</a></td><td><a onclick="updateAISEntityMapping(' + v.entitY_ID + ');" href="#">Update Entity Mapping</a></td></tr>');
+                });
+
+
+            },
+            dataType: "json",
+        });
+
+
+
+    }
+
+    function getEntityDetailsByCode() {
+
+        $('#entity_find_panel tbody').empty();
+
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/get_ais_entities_for_admin_panel_entity_addition",
+            type: "POST",
+            data: {
+                'ENTITY_CODE': $('#entityCodeTextBar').val(),
+                'ENTITY_NAME': ""
+            },
+            cache: false,
+            success: function (data) {
+
+                $.each(data, function (i, v) {
+
+                    $('#entity_find_panel tbody').append('<tr><td>' + ++i + '</td><td>' + v.entitY_ID + '</td><td>' + v.entitY_CODE + '</td><td>' + v.entitY_NAME + '</td><td>' + v.typE_ID + '</td><td>' + v.audiT_BY + '</td><td>' + v.auditable + '</td><td>' + v.status + '</td><td><a onclick="event.preventDefault();updateAISEntity(' + v.entitY_ID + ');" href="#">Update Entity</a></td><td><a onclick="updateAISEntityMapping(' + v.entitY_ID + ');" href="#">Update Entity Mapping</a></td></tr>');
+                });
+
+            },
+            dataType: "json",
+        });
+
+
+    }
+
+    //////////////////////////////////////////////////
+
+
+    function getAISEntityDetailsByName() {
+        $('#ais_entity_find_panel tbody').empty();
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/get_ais_entities_for_admin_panel_entity_addition",
+            type: "POST",
+            data: {
+                'ENTITY_NAME': $('#AISentityNameTextBar').val(),
+                'ENTITY_CODE': ""
+            },
+            cache: false,
+            success: function (data) {
+                g_aisEntitiesRec = data;
+                $.each(data, function (i, v) {
+
+                    $('#ais_entity_find_panel tbody').append('<tr><td>' + ++i + '</td><td>' + v.entitY_ID + '</td><td>' + v.entitY_CODE + '</td><td>' + v.entitY_NAME + '</td><td>' + v.typE_ID + '</td><td>' + v.audiT_BY + '</td><td>' + v.auditable + '</td><td>' + v.status + '</td><td><a onclick="event.preventDefault();updateAISEntity(' + v.entitY_ID + ');" href="#">Update Entity</a></td><td><a onclick="updateAISEntityMapping(' + v.entitY_ID + ');" href="#">Update Entity Mapping</a></td></tr>');
+                });
+
+
+
+            },
+            dataType: "json",
+        });
+    }
+
+    function getAISEntityDetailsByCode() {
+
+        $('#ais_entity_find_panel tbody').empty();
+
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/get_ais_entities_for_admin_panel_entity_addition",
+            type: "POST",
+            data: {
+                'ENTITY_CODE': $('#AISentityCodeTextBar').val(),
+                'ENTITY_NAME': ""
+            },
+            cache: false,
+            success: function (data) {
+                g_aisEntitiesRec = data;
+                $.each(data, function (i, v) {
+
+                    $('#ais_entity_find_panel tbody').append('<tr><td>' + ++i + '</td><td>' + v.entitY_ID + '</td><td>' + v.entitY_CODE + '</td><td>' + v.entitY_NAME + '</td><td>' + v.typE_ID + '</td><td>' + v.audiT_BY + '</td><td>' + v.auditable + '</td><td>' + v.status + '</td><td><a onclick="event.preventDefault();updateAISEntity(' + v.entitY_ID + ');" href="#">Update Entity</a></td><td><a onclick="updateAISEntityMapping(' + v.entitY_ID + ');" href="#">Update Entity Mapping</a></td></tr>');
+                });
+
+            },
+            dataType: "json",
+        });
+
+
+    }
+
+
+
+    ///////////////////////////////////////////////////
+    function getFromEntityDetail() {
+
+        if ($('#inputFromEntityId').val() == "") {
+            alert("Enter Old Entity ID to proceed");
+            return;
+        }
+        if ($('#inputToEntityId').val() == "") {
+            alert("Enter New Entity ID to proceed");
+            return;
+        }
+
+
+        getToEntityDetail();
+    }
+    function getToEntityDetail() {
+        $('#summaryPanel').removeClass('d-none');
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/get_entity_shifting_details",
+            type: "POST",
+            data: {
+                'ENTITY_ID': $('#inputFromEntityId').val()
+            },
+            cache: false,
+            success: function (data) {
+                if (data.length > 0) {
+                    var val = data[0];
+                    $('#entityNameFrom').html(val.name);
+                    $('#entitySizeFrom').html(val.e_SIZE);
+                    $('#entityRiskFrom').html(val.risk);
+                    $('#engIDFrom').html(val.enG_ID);
+                    $('#engStartFrom').html(val.starT_DATE);
+                    $('#engEndFrom').html(val.enD_DATE);
+                    $('#totParaFrom').html(val.totaL_PARA);
+                    $('#totLegFrom').html(val.legacY_PARA);
+                    $('#totLegOpenFrom').html(val.legacY_OPEN);
+                    $('#totLegCloseFrom').html(val.legacY_CLOSE);
+                    $('#totAISFrom').html(val.aiS_PARA);
+                    $('#totAISOpenFrom').html(val.aiS_OPEN);
+                    $('#totAISCloseFrom').html(val.aiS_CLOSE);
+                    $('#compFrom').html(val.comP_SUB);
+                } else {
+                    $('#entityNameFrom').html('');
+                    $('#entitySizeFrom').html('');
+                    $('#entityRiskFrom').html('');
+                    $('#engIDFrom').html('');
+                    $('#engStartFrom').html('');
+                    $('#engEndFrom').html('');
+                    $('#totParaFrom').html('');
+                    $('#totLegFrom').html('');
+                    $('#totLegOpenFrom').html('');
+                    $('#totLegCloseFrom').html('');
+                    $('#totAISFrom').html('');
+                    $('#totAISOpenFrom').html('');
+                    $('#totAISCloseFrom').html('');
+                    $('#compFrom').html('');
+                }
+
+
+            },
+            dataType: "json",
+        });
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/get_entity_shifting_details",
+            type: "POST",
+            data: {
+                'ENTITY_ID': $('#inputToEntityId').val()
+            },
+            cache: false,
+            success: function (data) {
+                if (data.length > 0) {
+                    var val = data[0];
+
+                    $('#entityNameTo').html(val.name);
+                    $('#entitySizeTo').html(val.e_SIZE);
+                    $('#entityRiskTo').html(val.risk);
+                    $('#engIDTo').html(val.enG_ID);
+                    $('#engStartTo').html(val.starT_DATE);
+                    $('#engEndTo').html(val.enD_DATE);
+                    $('#totParaTo').html(val.totaL_PARA);
+                    $('#totLegTo').html(val.legacY_PARA);
+                    $('#totLegOpenTo').html(val.legacY_OPEN);
+                    $('#totLegCloseTo').html(val.legacY_CLOSE);
+                    $('#totAISTo').html(val.aiS_PARA);
+                    $('#totAISOpenTo').html(val.aiS_OPEN);
+                    $('#totAISCloseTo').html(val.aiS_CLOSE);
+                    $('#compTo').html(val.comP_SUB);
+                } else {
+                    $('#entityNameTo').html('');
+                    $('#entitySizeTo').html('');
+                    $('#entityRiskTo').html('');
+                    $('#engIDTo').html('');
+                    $('#engStartTo').html('');
+                    $('#engEndTo').html('');
+                    $('#totParaTo').html('');
+                    $('#totLegTo').html('');
+                    $('#totLegOpenTo').html('');
+                    $('#totLegCloseTo').html('');
+                    $('#totAISTo').html('');
+                    $('#totAISOpenTo').html('');
+                    $('#totAISCloseTo').html('');
+                    $('#compTo').html('');
+                }
+
+
+            },
+            dataType: "json",
+        });
+    }
+
+
+    function updateAISEntity(entId) {
+        g_entIdToUpdate = entId;
+        $('#updateEntityModal').modal('show');
+        $.each(g_aisEntitiesRec, function (i, v) {
+            if (v.entitY_ID == entId) {
+                if (v.auditable == "")
+                    v.auditable = 'N';
+                if (v.status == "")
+                    v.status = 'N';
+                $('#entTypeField').val(v.typE_ID);
+                $('#entCodeField').val(v.entitY_CODE);
+                $('#entNameField').val(v.entitY_NAME);
+                $('#entDescField').val(v.description);
+                $('#entActiveField').val(v.status);
+                $('#entAuditableField').val(v.auditable);
+                $('#entAuditbyField').val(v.audiT_BY_ID);
+            }
+        })
+
+    }
+
+    function AddNewAISEntity(name, code) {
+
+        $('#addEntityModal').modal('show');
+        $('#addentTypeField').val('');
+        $('#addentCodeField').val(code);
+        $('#addentNameField').val(name);
+
+        $('#addentDescField').val('');
+        $('#addentActiveField').val('');
+        $('#addentAuditableField').val('');
+        $('#addentAuditbyField').val('');
+
+    }
+
+
+    function saveUpdateChangesInAISEntity() {
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/update_ais_entity_for_admin_panel_entity_addition",
+            type: "POST",
+            data: {
+                'ENTITY_ID': g_entIdToUpdate,
+                'ENTITY_NAME': $('#entNameField').val(),
+                'ENTITY_CODE': $('#entCodeField').val(),
+                'ENT_DESC': $('#entDescField').val(),
+                'AUDITABLE': $('#entAuditableField').val(),
+                'AUDIT_BY_ID': $('#entAuditbyField').val(),
+                'ENTITY_TYPE_ID': $('#entTypeField').val(),
+                'STATUS': $('#entActiveField').val()
+
+            },
+            cache: false,
+            success: function (data) {
+                alert(data.message);
+
+            },
+            dataType: "json",
+        });
+    }
+
+    function saveAddInAISEntity() {
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/add_ais_entity_for_admin_panel_entity_addition",
+            type: "POST",
+            data: {
+                'ENTITY_ID': 0,
+                'ENTITY_NAME': $('#addentNameField').val(),
+                'ENTITY_CODE': $('#addentCodeField').val(),
+                'ENT_DESC': $('#addentDescField').val(),
+                'AUDITABLE': $('#addentAuditableField').val(),
+                'AUDIT_BY_ID': $('#addentAuditbyField').val(),
+                'ENTITY_TYPE_ID': $('#addentTypeField').val(),
+                'STATUS': $('#addentActiveField').val()
+
+            },
+            cache: false,
+            success: function (data) {
+                alert(data.message);
+
+            },
+            dataType: "json",
+        });
+    }
+
+    function clearHREntitiesPanel() {
+        $('#entity_find_panel tbody').empty();
+    }
+
+    function clearAISEntitiesPanel() {
+        $('#ais_entity_find_panel tbody').empty();
+    }
+
+
+    function getEntityExistingMapping(entId) {
+        g_entIdToUpdate = entId;
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/get_ais_entity_existing_mapping_for_admin_panel_entity_addition",
+            type: "POST",
+            data: {
+                'ENTITY_ID': entId,
+
+            },
+            cache: false,
+            success: function (data) {
+                g_mappingExists = data;
+                if (data.length > 0) {
+                    data = data[0];
+                    $('#mapentTypeField').val(data.parenT_TYPE_ID);
+                    $('#mapentRelationshipField').val(data.relatioN_TYPE_ID);
+                    $('#entity_mapping_panel tbody').empty();
+                    $('#entity_mapping_panel tbody').append('<tr><td>' + data.parenT_ID + '</td><td>' + data.parenT_TYPE_ID + '</td><td>' + data.parenT_CODE + '</td><td>' + data.parenT_NAME + '</td><td>' + data.chilD_ID + '</td><td>' + data.chilD_TYPE_ID + '</td><td>' + data.chilD_CODE + '</td><td>' + data.chilD_NAME + '</td><td>' + data.auditeD_BY + '</td><td>' + data.relatioN_TYPE_ID + '</td></tr>');
+
+                    getEntitiesListByTypeId(data.parenT_TYPE_ID, data.parenT_ID);
+                } else {
+                    $('#entity_mapping_panel tbody').empty();
+                    $('#mapentTypeField').val(0);
+                    $('#mapentParentField').val(0);
+                    $('#mapentRelationshipField').val(0);
+                }
+
+
+            },
+            dataType: "json",
+        });
+
+    }
+
+    function getEntitiesListByTypeId(typeId, parentId) {
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/get_ais_entities_for_admin_panel_entity_addition",
+            type: "POST",
+            data: {
+                'ENT_TYPE_ID': typeId,
+
+            },
+            cache: false,
+            success: function (data) {
+
+                $('#mapentParentField').empty();
+                $('#mapentParentField').append('<option value="0">--Select Parent Entity--</option>');
+
+                $.each(data, function (i, v) {
+                    var selected = "";
+                    if (v.entitY_ID == parentId)
+                        selected = "selected=\"selected\"";
+                    $('#mapentParentField').append('<option ' + selected + ' value="' + v.entitY_ID + '">' + v.entitY_NAME + '</option>');
+                });
+
+            },
+            dataType: "json",
+        });
+    }
+
+    function updateAISEntityMapping(entId) {
+        $('#updateMappingEntityModal').modal('show');
+        getEntityExistingMapping(entId);
+    }
+
+    function getOnChageList() {
+
+        getEntitiesListByTypeId($('#mapentTypeField').val(), 0);
+    }
+
+    function saveInsertAISEntityMapping() {
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/add_ais_entity_mapping_for_admin_panel_entity_addition",
+            type: "POST",
+            data: {
+                'ENTITY_ID': g_entIdToUpdate,
+                'P_ENTITY_ID': $('#mapentParentField').val(),
+                'RELATION_TYPE_ID': $('#mapentRelationshipField').val()
+
+            },
+            cache: false,
+            success: function (data) {
+                alert(data.message);
+
+            },
+            dataType: "json",
+        });
+
+
+    }
+    function saveUpdateAISEntityMapping() {
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/update_ais_entity_mapping_for_admin_panel_entity_addition",
+            type: "POST",
+            data: {
+                'ENTITY_ID': g_entIdToUpdate,
+                'P_ENTITY_ID': $('#mapentParentField').val(),
+                'RELATION_TYPE_ID': $('#mapentRelationshipField').val()
+
+            },
+            cache: false,
+            success: function (data) {
+                alert(data.message);
+
+            },
+            dataType: "json",
+        });
+
+    }
+
+    function proceedToEntityShifting() {
+        $('#proceedToEntityShift').modal('show');
+    }
+
+    function proceedConvToIslamic(){
+      
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/submit_entity_conv_to_islamic_from_admin_panel",
+            type: "POST",
+            data: {
+               'FROM_ENT_ID': $('#inputFromEntityId').val(),
+                'TO_ENT_ID': $('#inputToEntityId').val(),
+
+            },
+            cache: false,
+            success: function (data) {
+                alert(data.message);
+
+            },
+            dataType: "json",
+        });
+
+    }
+
+    function saveInsertAISEntityShifting() {
+
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/submit_entity_shifting_from_admin_panel",
+            type: "POST",
+            data: {
+                'FROM_ENT_ID': $('#inputFromEntityId').val(),
+                'TO_ENT_ID': $('#inputToEntityId').val(),
+                'CIR_REF': $('#circularRefNoField').val() ,
+                'CIR_DATE': $('#circularRefDateField').val(),
+                'CIR': g_uploadedAttachment
+
+            },
+            cache: false,
+            success: function (data) {
+                alert(data.message);
+
+            },
+            dataType: "json",
+        });
+
+    }
+
+
+</script>
+
+<div class="row col-md-12">
+    <h3 style=" display:block;color: #be0e43">Entity Addition</h3>
+</div>
+
+<div class="col-md-12 row mt-3">
+    <h3 class="text-center" style="display:block;color:chocolate ;">AIS Entities</h3>
+
+    <div class="row col-md-12 mt-3">
+        <div class="col-md-6">
+            <div class="col-md-12 row">
+                <div class="col-md-3">
+                    <label>Entity Name</label>
+                </div>
+                <div class="col-md-7">
+                    <input class="form-control" id="entityNameTextBar" type="text" />
+                </div>
+                <div class="col-md-2">
+                    <button onclick="getEntityDetailsByName();" class="btn btn-danger w-100"> Find</button>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="col-md-12 row">
+                <div class="col-md-3">
+                    <label>Entity Code</label>
+                </div>
+                <div class="col-md-7">
+                    <input id="entityCodeTextBar" class="form-control" type="text" />
+                </div>
+                <div class="col-md-2">
+                    <button onclick="getEntityDetailsByCode();" class="btn btn-danger w-100"> Find</button>
+                </div>
+            </div>
+        </div>
+        <div class="mt-3 col-md-12">
+            <table id="entity_find_panel" class="table table-hover table-bordered table-hover mt-3 table-striped">
+                <thead style="background-color: #19875478 !important;">
+                    <tr>
+                        <th class="col-md-auto">Sr. No.</th>
+                        <th class="col-md-auto">Entity ID</th>
+                        <th class="col-md-auto">Entity Code</th>
+                        <th class="col-md-auto">Entity Name </th>
+                        <th class="col-md-auto">Entity Type ID</th>
+                        <th class="col-md-auto">Audit By</th>
+                        <th class="col-md-auto">Auditable</th>
+                        <th class="col-md-auto">Status</th>
+                        <th class="col-md-auto"></th>
+                        <th class="col-md-auto"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                </tbody>
+            </table>
+            <button onclick="clearHREntitiesPanel();" class="btn btn-sm btn-success offset-md-11 col-md-1 mt-1"> Clear Table</button>
+        </div>
+    </div>
+</div>
+
+<div class="row col-md-12 mt-3">
+    <div class="col-md-12 row">
+        <div class="col-md-2">
+            <label>Old/From AIS Entity ID</label>
+        </div>
+        <div class="col-md-4">
+            <input class="form-control" id="inputFromEntityId" type="text" placeholder="Enter Old/From AIS Entity" />
+        </div>
+        <div class="col-md-4">
+            <input class="form-control" id="inputToEntityId" type="text" placeholder="Enter New/To AIS Entity" />
+        </div>
+        <div class="col-md-2">
+            <button onclick="getFromEntityDetail();" class="btn btn-danger">Summary Details</button>
+        </div>
+
+    </div>
+
+</div>
+
+<div id="summaryPanel" class="row col-md-12 mt-3">
+    <div class="mt-3 col-md-12">
+        <table id="summary_table" class="table table-hover table-bordered table-hover mt-3 table-striped">
+            <thead style="background-color: #19875478 !important;">
+                <tr>
+                    <th class="col-md-auto"></th>
+                    <th class="col-md-auto">Old/From AIS Entity</th>
+                    <th class="col-md-auto">New/To AIS Entity</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Entity Name</td>
+                    <td id="entityNameFrom"> </td>
+                    <td id="entityNameTo"> </td>
+
+                </tr>
+                <tr>
+                    <td>Entity Size</td>
+                    <td id="entitySizeFrom"> </td>
+                    <td id="entitySizeTo"> </td>
+
+                </tr>
+                <tr>
+                    <td>Entity Risk</td>
+                    <td id="entityRiskFrom"> </td>
+                    <td id="entityRiskTo"> </td>
+
+                </tr>
+                <tr>
+                    <td>Engagement ID</td>
+                    <td id="engIDFrom"> </td>
+                    <td id="engIDTo"> </td>
+
+                </tr>
+                <tr>
+                    <td>Engagement Start Date</td>
+                    <td id="engStartFrom"> </td>
+                    <td id="engStartTo"> </td>
+
+                </tr>
+                <tr>
+                    <td>Engagement End Date</td>
+                    <td id="engEndFrom"> </td>
+                    <td id="engEndTo"> </td>
+
+                </tr>
+                <tr>
+                    <td>Total Para</td>
+                    <td id="totParaFrom"> </td>
+                    <td id="totParaTo"> </td>
+
+                </tr>
+                <tr>
+                    <td>Legacy Para</td>
+                    <td id="totLegFrom"> </td>
+                    <td id="totLegTo"> </td>
+
+                </tr>
+                <tr>
+                    <td>Legacy Para Open</td>
+                    <td id="totLegOpenFrom"> </td>
+                    <td id="totLegOpenTo"> </td>
+
+                </tr>
+                <tr>
+                    <td>Legacy Para Close</td>
+                    <td id="totLegCloseFrom"> </td>
+                    <td id="totLegCloseTo"> </td>
+
+                </tr>
+                <tr>
+                    <td>AIS Para</td>
+                    <td id="totAISFrom"> </td>
+                    <td id="totAISTo"> </td>
+
+                </tr>
+                <tr>
+                    <td>AIS Para Open</td>
+                    <td id="totAISOpenFrom"> </td>
+                    <td id="totAISOpenTo"> </td>
+
+                </tr>
+                <tr>
+                    <td>AIS Para Close</td>
+                    <td id="totAISCloseFrom"> </td>
+                    <td id="totAISCloseTo"> </td>
+
+                </tr>
+                <tr>
+                    <td>Compliance Submitted</td>
+                    <td id="compFrom"> </td>
+                    <td id="compTo"> </td>
+
+                </tr>
+            </tbody>
+        </table>
+
+    </div>
+</div>
+
+<div class="row col-md-12 mt-3">
+    <button class="col-md-3 offset-md-4 btn btn-danger" onclick="proceedToEntityShifting();">Proceed to Shift Entity</button>
+    <button class="col-md-4 offset-md-1 btn btn-danger" onclick="proceedConvToIslamic();">Convert Conventional Branch to Islamic</button> 
+
+</div>
+
+
+
+<div id="buttonsPanel" class="row col-md-12 mt-3 d-none">
+    <center class="w-100 row col-md-12">
+        <div class="col-md-2">
+            <button class="btn btn-primary col-md-12">Update Plan</button>
+        </div>
+        <div class="col-md-2">
+            <button class="btn btn-success col-md-12">Update Engagement</button>
+        </div>
+        <div class="col-md-2">
+            <button class="btn btn-danger col-md-12">Move Legacy Para</button>
+        </div>
+        <div class="col-md-2">
+            <button class="btn btn-warning col-md-12">Move AIS Para</button>
+        </div>
+        <div class="col-md-2">
+            <button class="btn btn-info col-md-12">Move Compliance</button>
+        </div>
+    </center>
+</div>
+
+
+
+<div id="updateEntityModal" class="modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-xl" style="min-width:90%" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">Update AIS Entity</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form>
+                    <div class="row col-md-12 mt-3">
+                        <div class="row col-md-4">
+                            <label>Entity Type</label>
+                        </div>
+                        <div class="row col-md-8">
+                            <select id="entTypeField" class="form-select form-control">
+                                <option value="0" id="0" selected>--Select Entity--</option>
+                                @{
+                                    if (ViewData["AuditEntitiesType"] != null)
+                                    {
+                                        foreach (var item in (dynamic)(ViewData["AuditEntitiesType"]))
+                                        {
+                                            <option value="@item.AUTID">@item.ENTITYTYPEDESC</option>
+                                        }
+                                    }
+                                }
+                            </select>
+                        </div>
+                    </div>
+                    <div class="row col-md-12 mt-3">
+                        <div class="row col-md-4">
+                            <label>Entity Code</label>
+                        </div>
+                        <div class="row col-md-8">
+                            <input id="entCodeField" class="form-control" type="text" />
+                        </div>
+                    </div>
+                    <div class="row col-md-12 mt-3">
+                        <div class="row col-md-4">
+                            <label>Entity Name</label>
+                        </div>
+                        <div class="row col-md-8">
+                            <input id="entNameField" class="form-control" type="text" />
+                        </div>
+                    </div>
+                    <div class="row col-md-12 mt-3">
+                        <div class="row col-md-4">
+                            <label>Entity Description</label>
+                        </div>
+                        <div class="row col-md-8">
+                            <textarea class="form-control" id="entDescField"> </textarea>
+                        </div>
+                    </div>
+
+                    <div class="row col-md-12 mt-3">
+                        <div class="row col-md-4">
+                            <label>Is Active</label>
+                        </div>
+                        <div class="row col-md-8">
+                            <select id="entActiveField" class="form-control">
+                                <option value="Y">Yes</option>
+                                <option value="N">No</option>
+                            </select>
+
+                        </div>
+                    </div>
+
+                    <div class="row col-md-12 mt-3">
+                        <div class="row col-md-4">
+                            <label>Auditable</label>
+                        </div>
+                        <div class="row col-md-8">
+                            <select id="entAuditableField" class="form-control">
+                                <option value="Y">Yes</option>
+                                <option value="N">No</option>
+                            </select>
+
+                        </div>
+                    </div>
+
+                    <div class="row col-md-12 mt-3">
+                        <div class="row col-md-4">
+                            <label>Audit By</label>
+                        </div>
+                        <div class="row col-md-8">
+                            <select id="entAuditbyField" class="form-control">
+                                <option value="0" id="0" selected>--Select Entity--</option>
+                                @{
+                                    if (ViewData["Audit_By"] != null)
+                                    {
+                                        foreach (var item in (dynamic)(ViewData["Audit_By"]))
+                                        {
+                                            <option value="@item.AUTID">@item.ENTITYTYPEDESC</option>
+                                        }
+                                    }
+                                }
+
+                            </select>
+
+                        </div>
+                    </div>
+
+
+
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button onclick="saveUpdateChangesInAISEntity();" type="button" data-bs-dismiss="modal" class="btn btn-success">Save Changes</button>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<div id="addEntityModal" class="modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-xl" style="min-width:90%" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">Update AIS Entity</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form>
+                    <div class="row col-md-12 mt-3">
+                        <div class="row col-md-4">
+                            <label>Entity Type</label>
+                        </div>
+                        <div class="row col-md-8">
+                            <select id="addentTypeField" class="form-select form-control">
+                                <option value="0" id="0" selected>--Select Entity--</option>
+                                @{
+                                    if (ViewData["AuditEntitiesType"] != null)
+                                    {
+                                        foreach (var item in (dynamic)(ViewData["AuditEntitiesType"]))
+                                        {
+                                            <option value="@item.AUTID">@item.ENTITYTYPEDESC</option>
+                                        }
+                                    }
+                                }
+                            </select>
+                        </div>
+                    </div>
+                    <div class="row col-md-12 mt-3">
+                        <div class="row col-md-4">
+                            <label>Entity Code</label>
+                        </div>
+                        <div class="row col-md-8">
+                            <input id="addentCodeField" class="form-control" type="text" />
+                        </div>
+                    </div>
+                    <div class="row col-md-12 mt-3">
+                        <div class="row col-md-4">
+                            <label>Entity Name</label>
+                        </div>
+                        <div class="row col-md-8">
+                            <input id="addentNameField" class="form-control" type="text" />
+                        </div>
+                    </div>
+                    <div class="row col-md-12 mt-3">
+                        <div class="row col-md-4">
+                            <label>Entity Description</label>
+                        </div>
+                        <div class="row col-md-8">
+                            <textarea class="form-control" id="addentDescField"> </textarea>
+                        </div>
+                    </div>
+
+                    <div class="row col-md-12 mt-3">
+                        <div class="row col-md-4">
+                            <label>Is Active</label>
+                        </div>
+                        <div class="row col-md-8">
+                            <select id="addentActiveField" class="form-control">
+                                <option value="Y">Yes</option>
+                                <option value="N">No</option>
+                            </select>
+
+                        </div>
+                    </div>
+
+                    <div class="row col-md-12 mt-3">
+                        <div class="row col-md-4">
+                            <label>Auditable</label>
+                        </div>
+                        <div class="row col-md-8">
+                            <select id="addentAuditableField" class="form-control">
+                                <option value="Y">Yes</option>
+                                <option value="N">No</option>
+                            </select>
+
+                        </div>
+                    </div>
+
+                    <div class="row col-md-12 mt-3">
+                        <div class="row col-md-4">
+                            <label>Audit By</label>
+                        </div>
+                        <div class="row col-md-8">
+                            <select id="addentAuditbyField" class="form-control">
+                                <option value="0" id="0" selected>--Select Entity--</option>
+                                @{
+                                    if (ViewData["Audit_By"] != null)
+                                    {
+                                        foreach (var item in (dynamic)(ViewData["Audit_By"]))
+                                        {
+                                            <option value="@item.AUTID">@item.ENTITYTYPEDESC</option>
+                                        }
+                                    }
+                                }
+
+                            </select>
+
+                        </div>
+                    </div>
+
+
+
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button onclick="saveAddInAISEntity();" type="button" data-bs-dismiss="modal" class="btn btn-success">Save Changes</button>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<div id="updateMappingEntityModal" class="modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-xl" style="min-width:90%" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">Update AIS Entity</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form>
+                    <div class="row col-md-12 mt-3">
+                        <div class="row col-md-12">
+                            <label class="text-center">Existing Entity Mapping</label>
+                        </div>
+                        <div class="row col-md-12 mt-2">
+                            <table id="entity_mapping_panel" class="table table-hover table-bordered table-hover mt-3 table-striped">
+                                <thead style="background-color: #19875478 !important;">
+                                    <tr>
+
+                                        <th class="col-md-auto">Parent ID</th>
+                                        <th class="col-md-auto">Parent Type ID</th>
+                                        <th class="col-md-auto ">Parent Code</th>
+                                        <th class="col-md-auto">Parent Name</th>
+                                        <th class="col-md-auto">Child ID</th>
+                                        <th class="col-md-auto">Child Type ID</th>
+                                        <th class="col-md-auto">Child Code</th>
+                                        <th class="col-md-auto">Child Name </th>
+                                        <th class="col-md-auto"> Audit By</th>
+                                        <th class="col-md-auto">Relationship ID</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                </tbody>
+                            </table>
+
+                        </div>
+                    </div>
+
+                    <div class="row col-md-12 mt-3">
+                        <div class="row col-md-4">
+                            <label>Parent Entity Type</label>
+                        </div>
+                        <div class="row col-md-8">
+                            <select onchange="getOnChageList();" id="mapentTypeField" class="form-select form-control">
+                                <option value="0" id="0" selected>--Select Entity--</option>
+                                @{
+                                    if (ViewData["AuditEntitiesType"] != null)
+                                    {
+                                        foreach (var item in (dynamic)(ViewData["AuditEntitiesType"]))
+                                        {
+                                            <option value="@item.AUTID">@item.ENTITYTYPEDESC</option>
+                                        }
+                                    }
+                                }
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="row col-md-12 mt-3">
+                        <div class="row col-md-4">
+                            <label>Parent Entity</label>
+                        </div>
+                        <div class="row col-md-8">
+                            <select id="mapentParentField" class="form-control">
+                                <option value="0">--Select Parent Entity--</option>
+                            </select>
+
+                        </div>
+                    </div>
+
+
+                    <div class="row col-md-12 mt-3">
+                        <div class="row col-md-4">
+                            <label>RelationShip</label>
+                        </div>
+                        <div class="row col-md-8">
+                            <select id="mapentRelationshipField" class="form-select form-control">
+                                <option value="0" id="0" selected>--Select Entity--</option>
+                                @{
+                                    if (ViewData["RelationshipList"] != null)
+                                    {
+                                        foreach (var item in (dynamic)(ViewData["RelationshipList"]))
+                                        {
+                                            <option value="@item.ENTITY_REALTION_ID">@item.FIELD_NAME</option>
+                                        }
+                                    }
+                                }
+                            </select>
+                        </div>
+                    </div>
+
+
+
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button onclick="saveInsertAISEntityMapping();" type="button" data-bs-dismiss="modal" class="btn btn-danger">Add Mapping</button>
+                <button onclick="saveUpdateAISEntityMapping();" type="button" data-bs-dismiss="modal" class="btn btn-success">Update Mapping</button>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<div id="proceedToEntityShift" class="modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-xl" style="min-width:90%" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">Entity Shifting</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form>
+                    <div class="form-group">
+                        <label>Circular Reference No</label>
+                        <input id="circularRefNoField" type="text" class="form-control" />
+                    </div>
+
+                    <div class="form-group">
+                        <label>Circular Reference Date</label>
+                        <input id="circularRefDateField" type="date" class="form-control" />
+                    </div>
+
+                    <div class="form-group">
+                        <label>Circular Reference Attachment</label>
+                        <input id="circularRefField" type="file" class="form-control" />
+                    </div>
+
+
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button onclick="saveInsertAISEntityShifting();" type="button" data-bs-dismiss="modal" class="btn btn-danger">Submit</button>
+
+            </div>
+        </div>
+    </div>
+</div>
+

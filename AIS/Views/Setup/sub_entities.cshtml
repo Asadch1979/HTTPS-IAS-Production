@@ -1,0 +1,224 @@
+﻿@{
+    var page_id = ViewData["PageId"] as int? ?? 0;
+}
+
+@{
+
+    ViewData["Title"] = "Sub Entities";
+    Layout = "_Layout";
+}
+
+
+<script type="text/javascript">
+    $(document).ready(function () {
+        var g_entityId = 0;
+        $("#searchTableRecord").on("keyup", function () {
+            var value = $(this).val().toLowerCase();
+            $("#listofSubEntities tbody tr").filter(function () {
+                $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1)
+            });
+        });
+    });
+
+    function newSubEntitySetup() {
+        g_entityId = 0;
+        $('#setupSubEntityModal').modal('show');
+        $('#divCodeModalField').val('0');
+        $('#entityNameModalField').val('');
+        $('#deptCodeModalField').val('0');
+    }
+
+    function setupSubEntity(divCode, deptCode,entName, status, entId) {
+        g_entityId = entId;
+        $('#divCodeModalField').val(divCode);
+        $('#entityNameModalField').val(entName);
+        $('#deptCodeModalField').val(deptCode);
+        if (status == "Active")
+            $('#activeModalField').click();
+        else if (status == "InActive")
+            $('#inActiveModalField').click();
+
+        $('#setupSubEntityModal').modal('show');
+    }
+
+    function publishSubEntityChanges() {
+
+        var divCode = $('#divCodeModalField option:selected').val();
+        var divName = $('#divCodeModalField option:selected').text();
+        var entityName = $('#entityNameModalField').val();
+        var deptCode = $('#deptCodeModalField option:selected').val();
+        var deptName = $('#deptCodeModalField option:selected').text();
+        
+        var status;
+        var badge;
+        if ($('#activeModalField').is(':checked')) {
+            status = 'Active';
+            badge = 'text-bg-success ';
+        }
+        else {
+            status = 'InActive';
+            badge = 'text-bg-danger ';
+        }
+        if (g_entityId == 0)
+            var row = "<tr id=\"div_" + g_entityId + " \"><td><p class=\"fw - normal mb - 1\">" + divName + "</p></td><td><p class=\"fw - normal mb - 1\">" + deptName + "</p></td><td><p class=\"fw - normal mb - 1\">" + entityName + "</p></td><td><span class=\"badge " + badge + " rounded - pill d - inline\">" + status + "</span></td><td><button type=\"button\" class=\"btn btn - link text - danger btn - sm btn - rounded\" onclick=\"setupSubEntity('" + divCode + "', '" + deptCode + "', '" + entityName + "', '" + status + "', '" + g_entityId + "'); \" > Edit</button></td ></tr >";
+        else
+            $('#div_' + g_entityId).html("<td><p class=\"fw - normal mb - 1\">" + divName + "</p></td><td><p class=\"fw - normal mb - 1\">" + deptName + "</p></td><td><p class=\"fw - normal mb - 1\">" + entityName + "</p></td><td><span class=\"badge " + badge + " rounded - pill d - inline\">" + status + "</span></td><td><button type=\"button\" class=\"btn btn - link text - danger btn - sm btn - rounded\" onclick=\"setupSubEntity('" + divCode + "', '" + deptCode + "', '" + entityName + "', '" + status + "','" + g_entityId + "'); \" > Edit</button></td >");
+        $('#listofSubEntities tbody').append(row);
+        $('#setupSubEntityModal').modal('hide');
+        $.ajax({
+            url: g_asiBaseURL + "/Setup/add_sub_entity",
+            type: "POST",
+            data: {
+                'ID': g_entityId,
+                'NAME': entityName,
+                'DIV_ID': divCode,
+                'DEP_ID': deptCode,
+                'STATUS': status
+                
+            },
+            cache: false,
+            success: function (data) {
+                //console.log(data);
+                window.location = window.location.pathname;
+            },
+            dataType: "json",
+        });
+    }
+</script>
+
+<div class="col-md-12 mb-4" style="margin-top:20px;">
+    <h3 style=" display:block;color: #be0e43">List of Sub Entities</h3>
+    <div class="row">
+        <div class="col-md-10">
+            <input class="form-control" id="searchTableRecord" type="text" placeholder="Search..">
+        </div>
+        <div class="col-md-2">
+            <button onclick="newSubEntitySetup();" class="btn btn-danger w-100">Add New</button>
+        </div>
+    </div>
+    <br>
+    <table id="listofSubEntities" class="table table-hover table-bordered table-hover mt-3 table-striped">
+            <thead style="background-color: #19875478 !important; ">
+            <tr>
+                <th>Division Name</th>
+                <th>Branch Name</th>
+                <th>Sub Entity Name</th>
+                <th>Status</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            @{
+                if (ViewData["SubEntitiesList"] != null)
+                {
+                    foreach (var item in (dynamic)(ViewData["SubEntitiesList"]))
+                    {
+
+                        <tr id="div_@item.ID">
+                            <td>
+                                <p class="fw-normal mb-1">@item.Division_Name</p>
+                            </td>
+                            <td>
+                                <p class="fw-normal mb-1">@item.Department_Name</p>
+                            </td>
+                            <td>
+                                <p class="fw-normal mb-1">@item.NAME</p>
+                            </td>
+                           
+                            <td class="dept_status">
+                                @{
+                                    if (item.STATUS == "Active")
+
+                                    { <span class="badge text-bg-success rounded-pill d-inline">@item.STATUS</span>}
+                                else
+                                { <span class="badge text-bg-danger rounded-pill d-inline" style="color: red">@item.STATUS</span>}
+                                }
+                            </td>
+                            <td>
+                                <button type="button" class="btn btn-link text-danger btn-sm btn-rounded" onclick="setupSubEntity('@item.DIV_ID','@item.DEP_ID','@item.NAME','@item.STATUS','@item.ID');">
+                                    Edit
+                                </button>
+                            </td>
+                        </tr>
+                    }
+                }}
+        </tbody>
+    </table>
+</div>
+
+<div id="setupSubEntityModal" class="modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">Add Sub Entity</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form>
+                    <div class="form-group">
+                        <label for="divCodeModalField">Division</label>
+                        <select id="divCodeModalField"  class="form-select form-control">
+                            <option value="0" id="0" selected="selected">--Select Division--</option>
+                            @{
+                                if (ViewData["DivisionList"] != null)
+                                {
+                                    foreach (var item in (dynamic)(ViewData["DivisionList"]))
+                                    {
+                                        <option value="@item.DIVISIONID" id="@item.DIVISIONID">@item.NAME</option>
+                                    }
+                                }
+                            }
+
+                        </select>
+
+                    </div>
+                   
+                    <div class="form-group">
+                        <label for="deptCodeModalField">Department</label>
+                        <select id="deptCodeModalField" class="form-select form-control">
+                            <option id="0" value="0" selected="selected">--Select Department--</option>
+                            @{
+                                if (ViewData["DepartmentList"] != null)
+                                {
+                                    foreach (var item in (dynamic)(ViewData["DepartmentList"]))
+                                    {
+                                        <option value="@item.ID" id="@item.ID">@item.NAME</option>
+                                    }
+                                }
+                            }
+
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="entityNameModalField">Name</label>
+                        <input id="entityNameModalField" class="form-control form-text"  />
+                        
+                    </div>
+                    <div class="form-group">
+                        <label for="isActiveModalField">Status</label>
+                        <div class="row col-md-12">
+                            <div class="form-check form-check-inline">
+                                <input class="form-check-input" type="radio" name="inlineRadioOptions" id="activeModalField" value="option1" />
+                                <label class="form-check-label" for="activeModalField">Active</label>
+                            </div>
+
+                            <div class="form-check form-check-inline">
+                                <input class="form-check-input" type="radio" name="inlineRadioOptions" id="inActiveModalField" value="option2" />
+                                <label class="form-check-label" for="inActiveModalField">Inactive</label>
+                            </div>
+                        </div>
+                    </div>
+
+
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button onclick="publishSubEntityChanges();" type="button" class="btn btn-danger">Save changes</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+

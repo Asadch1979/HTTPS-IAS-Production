@@ -1,0 +1,258 @@
+﻿@{
+    ViewData["Title"] = "Audit Execution";
+    Layout = "_Layout";
+}
+
+<script type="text/javascript">
+    var g_engId = 0;
+    $('#document').ready(function () {
+        var url_string = window.location;
+        var url = new URL(url_string);
+        g_engId= url.searchParams.get("engId");
+        $('#template_box').richText({
+            imageUpload: false,
+            fileUpload: false,
+            videoEmbed: false,
+            urls: false
+        });
+        $('#otherDepSelectField').select2();
+    });
+
+    function div_risksubcategoryShowHide() {
+        if ($('#riskGroupSelectBox option:selected').val() == 0) {
+            $('#div_risksubcategory').hide();
+            $('#div_activityContainer').hide();
+        }
+        else {
+            $('#div_risksubcategory').show();
+            $('#div_activityContainer').hide();
+            $('#riskSubGroupSelectBox').empty();
+            $.ajax({
+                url: g_asiBaseURL + "/Execution/sub_voilation",
+                type: "POST",
+                data: {
+                    'V_ID': $('#riskGroupSelectBox option:selected').val(),
+                },
+                cache: false,
+                success: function (data) {
+                    $('#riskSubGroupSelectBox').append("<option value=\"0\" id=\"0\">--Select Sub Group--</option>");
+                    $.each(data, function (index, item) {
+                        $('#riskSubGroupSelectBox').append("<option value=\"" + item.id + "\"> " + item.suB_V_NAME + " </option> ");
+                    });
+
+                },
+                dataType: "json",
+            });
+        }
+    }
+    function div_activityContainerShowHide() {
+        if ($('#riskSubGroupSelectBox option:selected').val() == 0)
+            $('#div_activityContainer').hide();
+        else
+            $('#div_activityContainer').show();
+        $('#riskActivitiesSelectBox').empty();
+        $.ajax({
+            url: g_asiBaseURL + "/Execution/risk_activities",
+            type: "POST",
+            data: {
+                'S_GR_ID': $('#riskSubGroupSelectBox option:selected').val(),
+            },
+            cache: false,
+            success: function (data) {
+                //console.log(data);
+                $('#riskActivitiesSelectBox').append("<option value=\"0\" id=\"0\">--Select Sub Group--</option>");
+                $.each(data, function (index, item) {
+                    $('#riskActivitiesSelectBox').append("<option value=\"" + item.activitY_ID + "\"> " + item.description + "</option>");
+                });
+
+            },
+            dataType: "json",
+        });
+    }
+   
+    function reloadPage(){
+        window.location.reload();
+    }
+    function saveChecklistObservations() {
+        if ($('#riskGroupSelectBox').val() == 0) {
+            alert('Select Violation Category');
+            return;
+        }
+        if ($('#riskSubGroupSelectBox').val() == 0) {
+            alert('Select Violation Nature');
+            return;
+        }
+        if ($('#auditCriteriaRiskField').val() == 0) {
+            alert('Select Risk');
+            return;
+        }
+        if ($('#viewMemo_heading').val() == 0) {
+            alert('Please Enter Para Heading');
+            return;
+        }
+        var g_memoObj = [];
+        var memo = {
+            'MEMO': $('.richText-editor').html(),
+            'ID': 'obs_0',
+            'HEADING': $('#viewMemo_heading').val(),
+            'RISK': $('#auditCriteriaRiskField').val(),
+            'DAYS': $('#viewMemo_replydays option:selected').val(),
+            'LOANCASE': '',
+            'NO_OF_INSTANCES': $('#viewMemo_noinstances').val(),
+            'AMOUNT_INVOLVED': '0',
+            'ATTACHMENTS': ''
+        };
+        g_memoObj.push(memo);
+        var engIdValue = parseInt(g_engId, 10);
+        if (Number.isNaN(engIdValue)) {
+            engIdValue = null;
+        }
+        var violationCategoryId = parseInt($('#riskGroupSelectBox').val(), 10);
+        if (Number.isNaN(violationCategoryId) || violationCategoryId === 0) {
+            violationCategoryId = null;
+        }
+        var violationNatureId = parseInt($('#riskSubGroupSelectBox').val(), 10);
+        if (Number.isNaN(violationNatureId) || violationNatureId === 0) {
+            violationNatureId = null;
+        }
+        var otherEntityId = parseInt($('#otherDepSelectField').val(), 10);
+        if (Number.isNaN(otherEntityId) || otherEntityId === 0) {
+            otherEntityId = null;
+        }
+        var payload = {
+            'LIST_OBS': g_memoObj,
+            'ENG_ID': engIdValue,
+            'S_ID': null,
+            'V_CAT_NATURE_ID': violationNatureId,
+            'V_CAT_ID': violationCategoryId,
+            'OTHER_ENTITY_ID': otherEntityId,
+            'IS_FINAL': false
+        };
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/save_observations",
+            type: "POST",
+            contentType: "application/json",
+            data: JSON.stringify(payload),
+            cache: false,
+            success: function (data) { 
+                    alert(data.message);
+                onAlertCallback(reloadPage);
+            },
+            dataType: "json",
+        });
+
+    }
+
+</script>
+<div class="row col-md-12">
+    <div class="col-md-12 mt-3">
+        <center class="w-100"><h3>Observation</h3></center>
+        <div>
+            <h5>Violation</h5>
+        </div>
+        <select id="riskGroupSelectBox" onchange="div_risksubcategoryShowHide();" class="form-select form-control" aria-label="Default select example">
+            <option value="0" id="0" selected="selected">--Select Voilation Category--</option>
+            @{
+                if (ViewData["Voilation_Cat"] != null)
+                {
+                    foreach (var item in (dynamic)(ViewData["Voilation_Cat"]))
+                    {
+                                <option id="@item.ID" value="@item.ID">@item.V_NAME</option>
+                    }
+                }
+            }
+        </select>
+        
+    </div>
+    <div id="div_risksubcategory" style="display:none;" class="col-md-12 mt-3">
+        <h5>Nature/Area</h5>
+        <select id="riskSubGroupSelectBox" onchange="div_activityContainerShowHide();" class="form-select form-control" aria-label="Default select example">
+        </select>
+    </div>
+    <div id="div_activityContainer" style="display:none;" class="col-md-12 mt-3">
+        <h5>Risk</h5>
+       
+        <select id="auditCriteriaRiskField" class="form-select form-control" aria-label="Default select example">
+            <option value="0" id="0" selected>--Select Risk Category--</option>
+            @{
+                if (ViewData["RiskList"] != null)
+                {
+
+                    foreach (var risk in (dynamic)(ViewData["RiskList"]))
+                    {
+                                <option id="@risk.R_ID" value="@risk.R_ID">@risk.DESCRIPTION</option>
+                    }
+
+                }
+            }
+        </select>
+
+    </div>
+    <div id="div_headingPanel" class="col-md-12 mt-3">
+        <h5>Heading/Title <small class="text-muted">(A-Z, 0-9, space, &amp;, ?, comma)</small></h5>
+        <input type="text" class="form-control alnum-only" id="viewMemo_heading" placeholder="Heading/Title (Alphabets, numbers, spaces, ampersand (&amp;), comma (,), and question mark (?) only)" data-allow-amp="true" data-allow-question="true" data-maxlen="500" maxlength="500" />
+    </div>
+    <div class="col-md-12 mt-3">
+        <div class="page-wrapper box-content">
+            <textarea id="template_box" class="content" name="example"></textarea>
+        </div>
+    </div>
+    <p class="text-center text-red heading mt-3" style="font-weight:bold; color:red;">
+        Please select Entity only in case you want to send this observation to other Entity.
+        In case of forwarding/submitting the observation to Default Auditee, Do Not Select any Entity Name
+    </p>
+    <div class="col-md-12 mt-3">
+        <label>Entity Name</label>
+        <select id="otherDepSelectField" class="form-select form-control" aria-label="Default select example">
+            <option value="0" id="0" selected="selected">--Select Entity--</option>
+            @{
+                if (ViewData["OtherEntityList"] != null)
+                {
+                    foreach (var item in (dynamic)(ViewData["OtherEntityList"]))
+                    {
+                                <option id="@item.AUTID" value="@item.AUTID">@item.ENTITYTYPEDESC</option>
+                    }
+                }
+            }
+        </select>
+    </div>
+    <div class="row col-md-12 mt-3">
+
+        <div class="row col-md-12 mt-3">
+            <div class="col-md-3">
+                <h5>No of Instances</h5>
+            </div>
+            <div class="col-md-3">
+                <input id="viewMemo_noinstances" class="form-control" type="number" min="1" value="1" />
+            </div>
+            <div class="col-md-3">
+                <h5>No. of Days to Reply</h5>
+            </div>
+            <div class="col-md-3">
+                <select id="viewMemo_replydays" class="form-control form-select">
+                    <option value="1">1</option>
+                    <option value="2">2</option>
+                    <option value="3">3</option>
+                    <option value="4">4</option>
+                    <option value="5">5</option>
+                    <option value="6">6</option>
+                    <option value="7">7</option>
+                </select>
+            </div>
+
+            <div class="col-md-3 mt-3">
+                <h5>Attachments</h5>
+            </div>
+            <div class="col-md-3 mt-3">
+                <input class="form-control" type="file" multiple="multiple" style="padding-top:3px;" />
+            </div>
+        </div>
+
+
+        <div class="row col-md-12 mt-5">
+            <button onclick="saveChecklistObservations();" class="btn btn-success" style="margin-left: 10px;">Save Observation</button>
+        </div>
+
+    </div>
+
+</div>

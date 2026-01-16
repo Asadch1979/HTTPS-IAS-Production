@@ -1,0 +1,433 @@
+﻿@{
+    var page_id = ViewData["PageId"] as int? ?? 0;
+}
+
+@{
+    ViewData["Title"] = "Manage Annexures";
+    Layout = "_Layout";
+}
+<script type="text/javascript">
+    var g_annexList = @Json.Serialize(ViewData["AnnexList"]);
+    var g_procId = 0;
+    var g_annexId = 0;
+    var g_subProcList = [];
+    $(document).ready(function () {
+        $("#searchTableRecord").on("keyup", function () {
+            var value = $(this).val().toLowerCase();
+            $("#auditeeEntitiesList tbody tr").filter(function () {
+                $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1)
+            });
+        });
+    });
+    /*    function getAnnexures() {
+            $.ajax({
+                url: g_asiBaseURL + "/ApiCalls/get_annexures",
+                type: "POST",
+                data: {
+
+                },
+                cache: false,
+                success: function (data) {
+                    $('#annexureContainerGrid tbody').empty();
+                    var mxTotal = 0;
+                    var gravTotal = 0;
+                    var weightTotal = 0;
+                    $.each(data, function (i, v) {
+                        if (v.gravity != "")
+                            gravTotal += v.gravity;
+                        if (v.maX_NUMBER != "")
+                            mxTotal += v.maX_NUMBER;
+                        if (v.weightage != "")
+                            weightTotal += v.weightage;
+                        $('#annexureContainerGrid tbody').append('<tr><td>' + ++i + '</td><td>' + v.process + '</td><td>' + v.code + '</td><td>' + v.heading + '</td><td>' + v.functioN_OWNER + '</td><td>' + v.risk + '</td><td>' + v.maX_NUMBER + '</td><td>' + v.weightage + '</td><td>' + v.gravity + '</td><td>  <a class="text-danger" onclick="openUpdateAnnexure( '+v.id+', '+v.risK_ID+', '+v.risK_MODEL_ID+', '+v.procesS_ID +', '+ v.functioN_OWNER_ID +', '+ v.heading+', '+ v.code+'   'item.RISK_ID'', 'item.RISK_MODEL_ID', 'item.PROCESS_ID','item.FUNCTION_OWNER_ID', 'item.HEADING', 'item.CODE', 'item.MAX_NUMBER', 'item.WEIGHTAGE', 'item.GRAVITY' )">Update</a></td></tr>');
+                    })
+
+                },
+                dataType: "json",
+            });
+        }
+        */
+    function openUpdateAnnexure(id) {
+        g_annexId = id;
+        $('#updateAnnexureModel').modal('show');
+        $.each(g_annexList, function (i,v) { 
+            if (id == v.id) {
+                $('#annexProcField').val(v.procesS_ID);
+                $('#annexFuncOwnerField').val(v.functioN_OWNER_ID);
+                $('#annexCoFuncField1').val(v.functioN_ID_1);
+                $('#annexCoFuncField2').val(v.functioN_ID_2);
+                $('#annexCodeField').val(v.code);
+                $('#annexRiskField').val(v.risK_ID);
+                $('#annexHeadingField').val(v.heading);
+                $('#annexMaxNumberField').val(v.maX_NUMBER);
+                $('#annexGravityField').val(v.gravity);
+                $('#annexWeightageField').val(v.weightage);
+                $('#annexCodeField').attr("disabled", true);
+            }        
+        });
+    }
+    function reloadLocation() {
+        window.location.reload();
+
+    }
+
+    function updateAnnexure() {
+
+        if (document.querySelectorAll('input.alnum-only.is-invalid').length > 0) {
+            Swal.fire({ icon: "error", title: "Validation error", text: "Please correct highlighted fields." });
+            return;
+        }
+
+        if ($('#annexProcField').val() == "") {
+            alert("Please select Process  to proceed");
+            return;
+        }
+
+        if ($('#annexFuncOwnerField').val() == "") {
+            alert("Please select Function Owner to proceed");
+            return;
+        }
+
+        if ($('#annexRiskField').val() == "0") {
+            alert("Please select Risk to proceed");
+            return;
+        }
+
+        if ($('#annexHeadingField').val() == "") {
+            alert("Please enter Heading to proceed");
+            return;
+        }
+
+        if ($('#annexMaxNumberField').val() == "") {
+            alert("Please enter Max Number to proceed");
+            return;
+        }
+
+
+        if ($('#annexGravityField').val() == "") {
+            alert("Please enter Gravity to proceed");
+            return;
+        }
+
+
+        if ($('#annexWeightageField').val() == "") {
+            alert("Please enter Weightage to proceed");
+            return;
+        }
+
+        if (g_annexId != 0) {
+            $.ajax({
+                url: g_asiBaseURL + "/ApiCalls/update_annexure",
+                type: "POST",
+                data: {
+                    'ANNEX_ID': g_annexId,
+                    'PROCESS_ID': $('#annexProcField').val(),
+                    'FUNCTION_OWNER_ID': $('#annexFuncOwnerField').val(),
+                    'FUNCTION_ID_1': $('#annexCoFuncField1').val(),
+                    'FUNCTION_ID_2': $('#annexCoFuncField2').val(),
+                    'RISK_ID': $('#annexRiskField').val(),
+                    'MAX_NUMBER': $('#annexMaxNumberField').val(),
+                    'WEIGHTAGE': $('#annexWeightageField').val(),
+                    'GRAVITY': $('#annexGravityField').val(),
+                    'HEADING': $('#annexHeadingField').val()
+                },
+                cache: false,
+                success: function (data) {
+                    alert(data.message);
+                    onAlertCallback(reloadLocation);
+                },
+                dataType: "json",
+            });
+        } else {
+            $.ajax({
+                url: g_asiBaseURL + "/ApiCalls/add_annexure",
+                type: "POST",
+                data: {
+                    'ANNEX_CODE': $('#annexCodeField').val(),
+                    'PROCESS_ID': $('#annexProcField').val(),
+                    'FUNCTION_OWNER_ID': $('#annexFuncOwnerField').val(),
+                    'FUNCTION_ID_1': $('#annexCoFuncField1').val(),
+                    'FUNCTION_ID_2': $('#annexCoFuncField2').val(),
+                    'RISK_ID': $('#annexRiskField').val(),
+                    'MAX_NUMBER': $('#annexMaxNumberField').val(),
+                    'WEIGHTAGE': $('#annexWeightageField').val(),
+                    'GRAVITY': $('#annexGravityField').val(),
+                    'HEADING': $('#annexHeadingField').val()
+                },
+                cache: false,
+                success: function (data) {
+                    alert(data.message);
+                    onAlertCallback(reloadLocation);
+                },
+                dataType: "json",
+            });
+        }
+
+    }
+
+    function addNewAnnexure(id) {
+        g_annexId = id;
+        $('#updateAnnexureModel').modal('show');
+        $('#annexProcField').val('');
+        $('#annexFuncOwnerField').val('');
+        $('#annexCoFuncField1').val('');
+        $('#annexCoFuncField2').val('');
+        $('#annexRiskField').val(0);
+        $('#annexHeadingField').val('');
+        $('#annexCodeField').val('');
+        $('#annexMaxNumberField').val('');
+        $('#annexGravityField').val('');
+        $('#annexWeightageField').val('');
+        $('#annexCodeField').attr("disabled", false);
+    }
+</script>
+<div class="row mt-3">
+    <div class="col-md-6 text-left">
+        <h3 style=" display:block;color: #be0e43">Annexure </h3>
+    </div>
+    <div class="col-md-6 text-right" style="padding-right:45px;">
+        <button onclick="addNewAnnexure(0);" class="btn btn-danger">Add New Annexure</button>
+    </div>
+
+</div>
+<div class="row col-md-12 mt-3">
+    <input id="searchTableRecord" class="form-control" placeholder="search here..." />
+    <table id="annexureContainerGrid" class="table table-bordered table mb-0 mt-3 bg-white table-hover table-striped">
+        <thead>
+            <tr style="background-color: #19875478 !important; ">
+                <th class="col-md-auto">Sr No.</th>
+                <th class="col-md-auto">Main Process</th>
+                <th class="col-md-auto">Code</th>
+                <th class="col-md-auto">Heading</th>
+                <th class="col-md-auto">Functional Owner</th>
+                <th class="col-md-auto">Co Function 1</th>
+                <th class="col-md-auto">Co Function 2</th>
+                <th class="col-md-auto">Risk</th>
+                <th class="col-md-auto">Max Number</th>
+                <th class="col-md-auto">Weightage</th>
+                <th class="col-md-auto">Gravity</th>
+                <th class="col-md-auto"></th>
+            </tr>
+        </thead>
+        <tbody>
+            @{
+                if (ViewData["AnnexList"] != null)
+                    {
+                    int SrNo = 1;
+                    decimal max = 0;
+                    decimal weight = 0;
+                    decimal gravity = 0;
+
+                    foreach (var item in (dynamic)(ViewData["AnnexList"]))
+                        {
+
+                                <tr>
+                                    <td class="text-center">@SrNo</td>
+                                    <td class="col-md-auto">@item.PROCESS</td>
+                                    <td class="col-md-auto">@item.CODE</td>
+                                    <td class="col-md-auto">@item.HEADING</td>
+                                    <td class="col-md-auto">@item.FUNCTION_OWNER</td>
+                                    <td class="col-md-auto">@item.FUNCTION_1</td>
+                                    <td class="col-md-auto">@item.FUNCTION_2</td>
+                                    <td class="col-md-auto">@item.RISK</td>
+                                    <td class="col-md-auto text-right">@item.MAX_NUMBER</td>
+                                    <td class="col-md-auto text-right">@item.WEIGHTAGE</td>
+                                    <td class="col-md-auto text-right">@item.GRAVITY</td>
+                                    <td style="cursor:pointer;">
+                                        <a class="text-danger" onclick="openUpdateAnnexure( @item.ID)">Update</a>
+                                    </td>
+                                </tr>
+                        SrNo = @SrNo + 1;
+                        max += @item.MAX_NUMBER != "" ? Convert.ToDecimal(@item.MAX_NUMBER) : 0;
+                        weight += @item.WEIGHTAGE != "" ? Convert.ToDecimal(@item.WEIGHTAGE) : 0;
+                        gravity += @item.GRAVITY != "" ? Convert.ToDecimal(@item.GRAVITY) : 0;
+
+
+                        }
+                            <tr>
+                                <td colspan="8" class="text-center">Total</td>
+                                <td class="col-md-auto text-right">@max</td>
+                                <td class="col-md-auto text-right">@weight</td>
+                                <td class="col-md-auto text-right">@gravity</td>
+                                <td></td>
+                            </tr>
+
+                    }
+            }
+        </tbody>
+
+    </table>
+</div>
+
+
+<div id="updateAnnexureModel" class="modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">Add/Update Annexure</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form>
+                    <div class="row col-md-12 mt-3">
+                        <div class="row col-md-4">
+                            <label>Code <small class="text-muted">(A-Z, 0-9, space, &amp;, ?)</small></label>
+                        </div>
+                        <div class="row col-md-8">
+                            <input id="annexCodeField" class="form-control alnum-only" type="text" data-allow-space="true" data-allow-amp="true" maxlength="500" title="Enter only Alphabets (A-Z), numbers (0-9), spaces, ampersand (&amp;), comma (,), and question mark (?)" placeholder="Alphabets, numbers, spaces, ampersand (&amp;), comma (,), and question mark (?) only" />
+                            <small class="form-text text-muted">Enter only Alphabets (A-Z), numbers (0-9), spaces, ampersand (&amp;), comma (,), and question mark (?).</small>
+                            <div class="invalid-feedback">Enter only Alphabets (A-Z), numbers (0-9), spaces, ampersand (&amp;), comma (,), and question mark (?).</div>
+                        </div>
+                    </div>
+                    <div class="row col-md-12 mt-3">
+                        <div class="row col-md-4">
+                            <label>Heading <small class="text-muted">(A-Z, 0-9, space, &amp;, ?)</small></label>
+                        </div>
+                        <div class="row col-md-8">
+                            <input id="annexHeadingField" class="form-control alnum-only" type="text" data-allow-space="true" data-allow-amp="true" maxlength="150" title="Enter only Alphabets (A-Z), numbers (0-9), spaces, ampersand (&amp;), comma (,), and question mark (?)" placeholder="Alphabets, numbers, spaces, ampersand (&amp;), comma (,), and question mark (?) only" />
+                            <small class="form-text text-muted">Enter only Alphabets (A-Z), numbers (0-9), spaces, ampersand (&amp;), comma (,), and question mark (?).</small>
+                            <div class="invalid-feedback">Enter only Alphabets (A-Z), numbers (0-9), spaces, ampersand (&amp;), comma (,), and question mark (?).</div>
+                        </div>
+                    </div>
+
+                    <div class="row col-md-12 mt-3">
+                        <div class="row col-md-4">
+                            <label>Main Process</label>
+                        </div>
+                        <div class="row col-md-8">
+                            <select id="annexProcField" class="form-select form-control">
+                                <option selected="selected" value="" id="0">--Select Process--</option>
+                                @{
+                                    if (ViewData["ProcList"] != null)
+                                        {
+
+                                        foreach (var item in (dynamic)(ViewData["ProcList"]))
+                                            {
+                                                    <option id="@item.T_ID" value="@item.T_ID">@item.HEADING</option>
+                                            }
+
+                                        }
+                                }
+
+                            </select>
+                        </div>
+                    </div>
+                    <div class="row col-md-12 mt-3">
+                        <div class="row col-md-4">
+                            <label>Function Owner</label>
+                        </div>
+                        <div class="row col-md-8">
+                            <select id="annexFuncOwnerField" class="form-select form-control">
+                                <option selected="selected" value="" id="0">--Select Process Owner--</option>
+                                @{
+                                    if (ViewData["ProcOwnerList"] != null)
+                                        {
+
+                                        foreach (var item in (dynamic)(ViewData["ProcOwnerList"]))
+                                            {
+                                                    <option id="@item.ENTITY_ID" value="@item.ENTITY_ID">@item.NAME</option>
+                                            }
+
+                                        }
+                                }
+
+                            </select>
+                        </div>
+                    </div>
+                    <div class="row col-md-12 mt-3">
+                        <div class="row col-md-4">
+                            <label>Co Function 1</label>
+                        </div>
+                        <div class="row col-md-8">
+                            <select id="annexCoFuncField1" class="form-select form-control">
+                                <option selected="selected" value="" id="0">--Select Co Function--</option>
+                                @{
+                                    if (ViewData["ProcOwnerList"] != null)
+                                        {
+                                        foreach (var item in (dynamic)(ViewData["ProcOwnerList"]))
+                                            {
+                                                <option id="@item.ENTITY_ID" value="@item.ENTITY_ID">@item.NAME</option>
+                                            }
+                                        }
+                                }
+                            </select>
+                        </div>
+                    </div>
+                    <div class="row col-md-12 mt-3">
+                        <div class="row col-md-4">
+                            <label>Co Function 2</label>
+                        </div>
+                        <div class="row col-md-8">
+                            <select id="annexCoFuncField2" class="form-select form-control">
+                                <option selected="selected" value="" id="0">--Select Co Function--</option>
+                                @{
+                                    if (ViewData["ProcOwnerList"] != null)
+                                        {
+                                        foreach (var item in (dynamic)(ViewData["ProcOwnerList"]))
+                                            {
+                                                <option id="@item.ENTITY_ID" value="@item.ENTITY_ID">@item.NAME</option>
+                                            }
+                                        }
+                                }
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="row col-md-12 mt-3">
+                        <div class="row col-md-4">
+                            <label>Risk</label>
+                        </div>
+                        <div class="row col-md-8">
+                            <select id="annexRiskField" class="form-select form-control">
+                                <option selected="selected" value="0" id="0">--Select Risk--</option>
+                                @{
+                                    if (ViewData["RiskList"] != null)
+                                        {
+
+                                        foreach (var item in (dynamic)(ViewData["RiskList"]))
+                                            {
+                                                    <option id="@item.R_ID" value="@item.R_ID">@item.DESCRIPTION</option>
+                                            }
+
+                                        }
+                                }
+
+                            </select>
+                        </div>
+                    </div>
+                    <div class="row col-md-12 mt-3">
+                        <div class="row col-md-4">
+                            <label>Max Number</label>
+                        </div>
+                        <div class="row col-md-8">
+                            <input type="number" class="form-control" id="annexMaxNumberField" />
+                        </div>
+                    </div>
+                    <div class="row col-md-12 mt-3">
+                        <div class="row col-md-4">
+                            <label>Weightage</label>
+                        </div>
+                        <div class="row col-md-8">
+                            <input type="number" class="form-control" id="annexWeightageField" />
+                        </div>
+                    </div>
+                    <div class="row col-md-12 mt-3">
+                        <div class="row col-md-4">
+                            <label>Gravity</label>
+                        </div>
+                        <div class="row col-md-8">
+                            <input type="number" class="form-control" id="annexGravityField" />
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button onclick="updateAnnexure();" type="button" class="btn btn-success">Save Changes</button>
+
+            </div>
+        </div>
+    </div>
+</div>

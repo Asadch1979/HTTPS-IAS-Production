@@ -1,0 +1,149 @@
+﻿@{
+    var page_id = ViewData["PageId"] as int? ?? 0;
+}
+
+@{
+    ViewData["Title"] = "Functional Para View";
+    Layout = "_Layout";
+}
+
+<script>
+
+    var g_entId = 0;
+    $(document).ready(function () {
+        var url_string = window.location;
+        var url = new URL(url_string);
+        g_entId = url.searchParams.get("entId");
+        getObservations();
+    });
+
+    function getObservations() {
+       
+        destroyDatatable('entitywise_panel');
+        if (g_entId == 0)
+            return;       
+
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/get_entity_wise_observation_detail",
+            type: "POST",
+            data: {
+                'ENTITY_ID': g_entId
+            },
+            cache: false,
+            success: function (data) {
+                var sr = 1;
+
+                $.each(data, function (index, item) {
+                    var $row = $('<tr />');
+                    $row.append('<td>' + sr + '</td>');
+                    $row.append('<td>' + item.name + '</td>');
+                    $row.append('<td>' + item.audiT_PERIOD + '</td>');
+                    $row.append('<td class="text-right">' + item.parA_NO + '</td>');
+                    $row.append('<td class="text-left">' + item.parA_GIST + '</td>');
+                    $row.append('<td class="text-left">' + item.p_RISK + '</td>');
+
+                    var comId = item.coM_ID || item.com_ID || item.COM_ID || '';
+                    var $link = $('<a />', {
+                        href: '#',
+                        text: 'View Para Text',
+                        class: 'view-para-text',
+                        'data-com-id': comId
+                    });
+
+                    $row.append($('<td />').append($link));
+                    $('#entitywise_panel tbody').append($row);
+                    sr++;
+                });
+                initializeDataTable('entitywise_panel');
+            },
+            dataType: "json",
+        });
+    }
+
+    $(document).on('click', '.view-para-text', function (event) {
+        event.preventDefault();
+        var $link = $(this);
+        var comID = $link.data('comId');
+
+        if (!comID) {
+            $('#paraTextDivField').html('<p class="text-center">Para information is unavailable.</p>');
+            $('#paraTextViewerModel').modal("show");
+            return;
+        }
+
+        getParaText(comID);
+    });
+
+    function getParaText(comID) {
+        $('#paraTextViewerModel').modal("show");
+        $('#paraTextDivField').empty();
+
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/get_all_para_text",
+            type: "POST",
+            data: {
+                'COM_ID': comID
+            },
+            cache: false,
+            success: function (data) {
+                if (data) {
+                    $('#paraTextDivField').html(data);
+                } else {
+                    $('#paraTextDivField').html('<p class="text-center">No para text available.</p>');
+                }
+            }
+        });
+    }
+
+</script>
+<div class="row col-md-12">
+    <h3 style="color: #be0e43;">Entity / Field Functionaries Wise Observation Details</h3>
+</div>
+
+
+<div class="row col-md-12">
+    <div class="mt-3 col-md-12">
+        <table id="entitywise_panel" class="table table-hover table-bordered table-hover mt-3 table-striped">
+            <thead style="background-color: #19875478 !important; ">
+                <tr>
+                    <th class="col-md-auto text-light">Sr. No.</th>
+                    <th class="col-md-auto text-light">Entity Name</th>
+                    <th class="col-md-auto text-center text-light">Audit Period</th>
+                    <th class="col-md-auto text-center text-light">Para No</th>
+                    <th class="col-md-auto text-center text-light">Gist of ParaS</th>
+                    <th class="col-md-auto text-center text-light">Risk</th>
+                    <th class="col-md-auto text-center text-light"></th>
+                </tr>
+            </thead>
+            <tbody>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div id="paraTextViewerModel" class="modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog  modal-xl" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">Para Text</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+                    
+                </button>
+            </div>
+            <div class="mt-3 modal-body">
+                <form>
+                    <div class="row mt-3 col-md-12">
+                        <div id="paraTextDivField" style="max-width:100%; overflow-y:auto;" class="col-md-12"></div>
+
+                    </div>
+
+
+                </form>
+            </div>
+
+            <div class="mt-3 modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>

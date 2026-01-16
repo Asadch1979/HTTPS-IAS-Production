@@ -1,0 +1,76 @@
+﻿@{
+    var page_id = ViewData["PageId"] as int? ?? 0;
+}
+
+@{
+    ViewData["Title"] = "User Wise Performance";
+    Layout = "_Layout";
+}
+
+<script type="text/javascript">
+
+    function getActivityLog() {
+         destroyDatatable('userWiseActivityLog');
+
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/get_user_activity_log",
+            type: "POST",
+            data: {
+                'PP_NO': $('#ppNumField').val()
+            },
+            cache: false,
+            success: function (data) {
+                $('#userWiseActivityLog tbody').empty();
+                var sr = 1;
+                $.each(data, function (i, v) {
+                    $('#userWiseActivityLog tbody').append('<tr><td>' + sr + '</td><td>' + v.useR_PP_NUMBER + '</td><td>' + v.useR_NAME + '</td><td>' + v.starT_DATE + '</td><td>' + v.enD_DATE + '</td><td>' + v.actions + '</td><td>' + v.duration + '</td></tr>');
+                    sr++;
+                });
+                 initializeDataTable('userWiseActivityLog');
+
+            },
+            dataType: "json",
+        });
+    }
+</script>
+
+<div class="row">
+    <div class="col-md-12 mt-3">
+        <h3 style=" display:block;color: #be0e43">User Wise Activity Logs / Actions Performed</h3>
+    </div>
+    <div class="row col-md-12 mt-3">
+        <div class="col-md-2">
+            <label class="text-bold">PP Number</label>
+        </div>
+        <div class="col-md-10">
+          <input class="form-control" id="ppNumField" />
+        </div>
+    </div>
+   
+    <div class="row col-md-12 mt-3">
+        <div class="col-md-12">
+            <button class="offset-md-8 col-md-4 btn btn-primary" onclick="getActivityLog();">Search</button>
+        </div>
+       
+    </div>
+    <div class="row col-md-12 mt-3">
+        <table id="userWiseActivityLog" class="table table-hover table-bordered table-hover mt-3 table-striped">
+            <thead style="background-color: #19875478 !important; ">
+                <tr>
+                    <th class="col-md-auto">Sr. No</th>
+                    <th class="col-md-auto">P.P</dr>Number</th>
+                    <th class="col-md-auto">Name</th>
+                    <th class="col-md-auto">Start Time</th>
+                    <th class="col-md-auto">End Time</th>                    
+                    <th class="col-md-auto">Actions</th>
+                    <th class="col-md-auto">Duration (Mins)</th>
+                </tr>
+            </thead>
+            <tbody>
+              
+            </tbody>
+
+        </table>
+    </div>
+
+</div>

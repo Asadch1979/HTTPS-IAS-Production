@@ -1,0 +1,248 @@
+@model AIS.Models.FieldAuditReport.FieldAuditInputSectionViewModel
+@using System
+@using System.Linq
+
+@{
+    ViewData["Title"] = "KPI Snapshot";
+    Layout = "_Layout";
+    var engagementSelector = ViewData["EngagementSelector"] as AIS.Models.FieldAuditReport.FieldAuditEngagementSelectorViewModel;
+    var hasEngagement = engagementSelector?.HasActiveEngagement ?? false;
+}
+
+@functions {
+    private string FieldValue(string key)
+        {
+        return Model?.Fields != null && Model.Fields.TryGetValue(key, out var value) ? value : string.Empty;
+        }
+}
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <h3 class="mb-3">KPI Snapshot</h3>
+        </div>
+    </div>
+
+    @await Html.PartialAsync("_GetEngagementSelector", engagementSelector)
+
+    @if (!hasEngagement)
+    {
+        <div class="alert alert-warning">Select an engagement to work with KPI snapshot data.</div>
+    }
+
+    @if (TempData["FieldAuditReportMessage"] != null)
+    {
+        <div class="alert alert-info">@TempData["FieldAuditReportMessage"]</div>
+    }
+
+    @if (Model.IsReadOnly)
+    {
+        <div class="alert alert-warning">This report is FINAL and cannot be edited.</div>
+    }
+
+    @if (hasEngagement)
+    {
+        var extraRowIndices = Model.Fields.Keys
+            .Where(key => key.StartsWith("KPI_EXTRA_ROW_", StringComparison.OrdinalIgnoreCase))
+            .Select(key => key.Split('_'))
+            .Where(parts => parts.Length >= 5 && int.TryParse(parts[3], out _))
+            .Select(parts => int.Parse(parts[3]))
+            .Distinct()
+            .OrderBy(index => index)
+            .ToList();
+
+        <form method="post" asp-action="SaveFieldAuditInputs">
+            <input type="hidden" name="EngagementId" value="@Model.EngagementId" />
+            <input type="hidden" name="EntityId" value="@Model.EntityId" />
+            <input type="hidden" name="SectionCode" value="@Model.SectionCode" />
+            <input type="hidden" name="returnAction" value="KpiSnapshot" />
+
+            <div class="d-flex justify-content-end mb-2">
+                <button type="button" class="btn btn-outline-primary" id="add-kpi-row" @(Model.IsReadOnly ? "disabled" : string.Empty)>
+                    <i class="fa-solid fa-plus"></i>
+                </button>
+            </div>
+
+            <div class="table-responsive mb-4">
+                <table class="table table-bordered align-middle">
+                    <thead>
+                        <tr>
+                            <th rowspan="2">Sr. No.</th>
+                            <th rowspan="2">KPIs</th>
+                            <th colspan="2">As on Date of Audit</th>
+                            <th colspan="2">Audit Operation Period Start date(Rs. in Millions)</th>
+                            <th colspan="3">Audit Operation Period End Date (Rs. in Millions)</th>
+                        </tr>
+                        <tr>
+                            <th>Actual</th>
+                            <th>Target</th>
+                            <th>Actual</th>
+                            <th>%age</th>
+                            <th>Target</th>
+                            <th>Actual</th>
+                            <th>%age</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>1.</td>
+                            <td>Deposits</td>
+                            <td>100.000 <input class="form-control d-inline-block w-auto" name="Fields[FIELD_053]" value="@FieldValue("FIELD_053")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                            <td>100.000 <input class="form-control d-inline-block w-auto" name="Fields[FIELD_054]" value="@FieldValue("FIELD_054")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                            <td>100.000 <input class="form-control d-inline-block w-auto" name="Fields[FIELD_055]" value="@FieldValue("FIELD_055")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                            <td><input class="form-control" name="Fields[FIELD_056]" value="@FieldValue("FIELD_056")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                            <td>100.000 <input class="form-control d-inline-block w-auto" name="Fields[FIELD_057]" value="@FieldValue("FIELD_057")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                            <td>100.000 <input class="form-control d-inline-block w-auto" name="Fields[FIELD_058]" value="@FieldValue("FIELD_058")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                            <td><input class="form-control" name="Fields[FIELD_059]" value="@FieldValue("FIELD_059")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                        </tr>
+                        <tr>
+                            <td>2.</td>
+                            <td>Advances (General + SAM)</td>
+                            <td>100.000<input class="form-control d-inline-block w-auto" name="Fields[FIELD_060]" value="@FieldValue("FIELD_060")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                            <td>100.000 <input class="form-control d-inline-block w-auto" name="Fields[FIELD_061]" value="@FieldValue("FIELD_061")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                            <td>100.000 <input class="form-control d-inline-block w-auto" name="Fields[FIELD_062]" value="@FieldValue("FIELD_062")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                            <td><input class="form-control" name="Fields[FIELD_063]" value="@FieldValue("FIELD_063")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                            <td>100.000 <input class="form-control d-inline-block w-auto" name="Fields[FIELD_064]" value="@FieldValue("FIELD_064")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                            <td>100.000 <input class="form-control d-inline-block w-auto" name="Fields[FIELD_065]" value="@FieldValue("FIELD_065")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                            <td><input class="form-control" name="Fields[FIELD_066]" value="@FieldValue("FIELD_066")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                        </tr>
+                        <tr>
+                            <td>3.</td>
+                            <td>NPLs (ALL)</td>
+                            <td>100.000<input class="form-control d-inline-block w-auto" name="Fields[FIELD_067]" value="@FieldValue("FIELD_067")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                            <td>100.000 <input class="form-control d-inline-block w-auto" name="Fields[FIELD_068]" value="@FieldValue("FIELD_068")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                            <td>100.000 <input class="form-control d-inline-block w-auto" name="Fields[FIELD_069]" value="@FieldValue("FIELD_069")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                            <td><input class="form-control" name="Fields[FIELD_070]" value="@FieldValue("FIELD_070")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                            <td>100.000 <input class="form-control d-inline-block w-auto" name="Fields[FIELD_071]" value="@FieldValue("FIELD_071")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                            <td>100.000 <input class="form-control d-inline-block w-auto" name="Fields[FIELD_072]" value="@FieldValue("FIELD_072")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                            <td><input class="form-control" name="Fields[FIELD_073]" value="@FieldValue("FIELD_073")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                        </tr>
+                        <tr>
+                            <td>4.</td>
+                            <td>Profit/Loss</td>
+                            <td>100.000<input class="form-control d-inline-block w-auto" name="Fields[FIELD_074]" value="@FieldValue("FIELD_074")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                            <td>100.000 <input class="form-control d-inline-block w-auto" name="Fields[FIELD_075]" value="@FieldValue("FIELD_075")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                            <td>100.000 <input class="form-control d-inline-block w-auto" name="Fields[FIELD_076]" value="@FieldValue("FIELD_076")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                            <td><input class="form-control" name="Fields[FIELD_077]" value="@FieldValue("FIELD_077")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                            <td>100.000 <input class="form-control d-inline-block w-auto" name="Fields[FIELD_078]" value="@FieldValue("FIELD_078")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                            <td>100.000 <input class="form-control d-inline-block w-auto" name="Fields[FIELD_079]" value="@FieldValue("FIELD_079")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                            <td><input class="form-control" name="Fields[FIELD_080]" value="@FieldValue("FIELD_080")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                        </tr>
+                        <tr>
+                            <td>5.</td>
+                            <td>NTB</td>
+                            <td>(No of Accounts) <input class="form-control d-inline-block w-auto" name="Fields[FIELD_081]" value="@FieldValue("FIELD_081")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                            <td><input class="form-control" name="Fields[FIELD_082]" value="@FieldValue("FIELD_082")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                            <td><input class="form-control" name="Fields[FIELD_083]" value="@FieldValue("FIELD_083")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                            <td><input class="form-control" name="Fields[FIELD_084]" value="@FieldValue("FIELD_084")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                            <td><input class="form-control" name="Fields[FIELD_085]" value="@FieldValue("FIELD_085")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                            <td><input class="form-control" name="Fields[FIELD_086]" value="@FieldValue("FIELD_086")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                            <td><input class="form-control" name="Fields[FIELD_087]" value="@FieldValue("FIELD_087")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                        </tr>
+                        <tr>
+                            <td>6.</td>
+                            <td>Recovery</td>
+                            <td><input class="form-control" name="Fields[FIELD_088]" value="@FieldValue("FIELD_088")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                            <td><input class="form-control" name="Fields[FIELD_089]" value="@FieldValue("FIELD_089")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                            <td><input class="form-control" name="Fields[FIELD_090]" value="@FieldValue("FIELD_090")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                            <td><input class="form-control" name="Fields[FIELD_091]" value="@FieldValue("FIELD_091")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                            <td><input class="form-control" name="Fields[FIELD_092]" value="@FieldValue("FIELD_092")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                            <td><input class="form-control" name="Fields[FIELD_093]" value="@FieldValue("FIELD_093")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                            <td><input class="form-control" name="Fields[FIELD_094]" value="@FieldValue("FIELD_094")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                        </tr>
+                        <tr>
+                            <td>7.</td>
+                            <td><input class="form-control d-inline-block w-auto" name="Fields[FIELD_095]" value="@FieldValue("FIELD_095")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                            <td><input class="form-control" name="Fields[FIELD_096]" value="@FieldValue("FIELD_096")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                            <td><input class="form-control" name="Fields[FIELD_097]" value="@FieldValue("FIELD_097")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                            <td><input class="form-control" name="Fields[FIELD_098]" value="@FieldValue("FIELD_098")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                            <td><input class="form-control" name="Fields[FIELD_099]" value="@FieldValue("FIELD_099")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                            <td><input class="form-control" name="Fields[FIELD_100]" value="@FieldValue("FIELD_100")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                            <td><input class="form-control" name="Fields[FIELD_101]" value="@FieldValue("FIELD_101")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                            <td><input class="form-control" name="Fields[FIELD_102]" value="@FieldValue("FIELD_102")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                        </tr>
+                        <tr>
+                            <td>8.</td>
+                            <td><input class="form-control d-inline-block w-auto" name="Fields[FIELD_103]" value="@FieldValue("FIELD_103")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                            <td><input class="form-control" name="Fields[FIELD_104]" value="@FieldValue("FIELD_104")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                            <td><input class="form-control" name="Fields[FIELD_105]" value="@FieldValue("FIELD_105")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                            <td><input class="form-control" name="Fields[FIELD_106]" value="@FieldValue("FIELD_106")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                            <td><input class="form-control" name="Fields[FIELD_107]" value="@FieldValue("FIELD_107")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                            <td><input class="form-control" name="Fields[FIELD_108]" value="@FieldValue("FIELD_108")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                            <td><input class="form-control" name="Fields[FIELD_109]" value="@FieldValue("FIELD_109")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                            <td><input class="form-control" name="Fields[FIELD_110]" value="@FieldValue("FIELD_110")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                        </tr>
+                        @foreach (var index in extraRowIndices)
+                        {
+                            <tr>
+                                <td>@(index + 8).</td>
+                                <td><input class="form-control d-inline-block w-auto" name="Fields[KPI_EXTRA_ROW_@(index)_LABEL]" value="@FieldValue($"KPI_EXTRA_ROW_{index}_LABEL")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                                <td><input class="form-control" name="Fields[KPI_EXTRA_ROW_@(index)_AS_OF_ACTUAL]" value="@FieldValue($"KPI_EXTRA_ROW_{index}_AS_OF_ACTUAL")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                                <td><input class="form-control" name="Fields[KPI_EXTRA_ROW_@(index)_AS_OF_TARGET]" value="@FieldValue($"KPI_EXTRA_ROW_{index}_AS_OF_TARGET")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                                <td><input class="form-control" name="Fields[KPI_EXTRA_ROW_@(index)_START_ACTUAL]" value="@FieldValue($"KPI_EXTRA_ROW_{index}_START_ACTUAL")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                                <td><input class="form-control" name="Fields[KPI_EXTRA_ROW_@(index)_START_PERCENT]" value="@FieldValue($"KPI_EXTRA_ROW_{index}_START_PERCENT")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                                <td><input class="form-control" name="Fields[KPI_EXTRA_ROW_@(index)_END_TARGET]" value="@FieldValue($"KPI_EXTRA_ROW_{index}_END_TARGET")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                                <td><input class="form-control" name="Fields[KPI_EXTRA_ROW_@(index)_END_ACTUAL]" value="@FieldValue($"KPI_EXTRA_ROW_{index}_END_ACTUAL")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                                <td><input class="form-control" name="Fields[KPI_EXTRA_ROW_@(index)_END_PERCENT]" value="@FieldValue($"KPI_EXTRA_ROW_{index}_END_PERCENT")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="d-flex flex-wrap gap-2">
+                <a class="btn btn-outline-secondary" href="@Url.Action("StaffSnapshot")">Back</a>
+                <button type="submit" class="btn btn-primary" name="submitAction" value="save" @(Model.IsReadOnly ? "disabled" : string.Empty)>Save Draft</button>
+                <button type="submit" class="btn btn-outline-success" name="submitAction" value="complete" @(Model.IsReadOnly ? "disabled" : string.Empty)>Mark Section Complete</button>
+                <a class="btn btn-outline-secondary" href="@Url.Action("NplSnapshot")">Next Section</a>
+            </div>
+        </form>
+    }
+</div>
+
+@section Scripts {
+    <script>
+        (() => {
+            const addButton = document.getElementById('add-kpi-row');
+            const tableBody = document.querySelector('table tbody');
+            if (!addButton || !tableBody) {
+                return;
+            }
+
+        let nextIndex = 0;
+
+        // Detect max existing KPI_EXTRA_ROW index from rendered inputs
+        tableBody.querySelectorAll('input[name^="Fields[KPI_EXTRA_ROW_"]').forEach(el => {
+            const match = el.name.match(/KPI_EXTRA_ROW_(\d+)_/);
+            if (match) {
+                const idx = parseInt(match[1], 10);
+                if (idx >= nextIndex) {
+                    nextIndex = idx + 1;
+                }
+            }
+        });
+
+            addButton.addEventListener('click', () => {
+                if (addButton.disabled) {
+                    return;
+                }
+
+                const rowNumber = nextIndex + 8;
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${rowNumber}.</td>
+                    <td><input class="form-control d-inline-block w-auto" name="Fields[KPI_EXTRA_ROW_${nextIndex}_LABEL]" /></td>
+                    <td><input class="form-control" name="Fields[KPI_EXTRA_ROW_${nextIndex}_AS_OF_ACTUAL]" /></td>
+                    <td><input class="form-control" name="Fields[KPI_EXTRA_ROW_${nextIndex}_AS_OF_TARGET]" /></td>
+                    <td><input class="form-control" name="Fields[KPI_EXTRA_ROW_${nextIndex}_START_ACTUAL]" /></td>
+                    <td><input class="form-control" name="Fields[KPI_EXTRA_ROW_${nextIndex}_START_PERCENT]" /></td>
+                    <td><input class="form-control" name="Fields[KPI_EXTRA_ROW_${nextIndex}_END_TARGET]" /></td>
+                    <td><input class="form-control" name="Fields[KPI_EXTRA_ROW_${nextIndex}_END_ACTUAL]" /></td>
+                    <td><input class="form-control" name="Fields[KPI_EXTRA_ROW_${nextIndex}_END_PERCENT]" /></td>
+                `;
+                tableBody.appendChild(row);
+                nextIndex += 1;
+            });
+        })();
+    </script>
+}

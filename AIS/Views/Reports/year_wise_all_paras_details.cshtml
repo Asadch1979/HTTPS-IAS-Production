@@ -1,0 +1,101 @@
+﻿@{
+    ViewData["Title"] = "Report ~ Year Wise Audit Paras";
+    Layout = "_Layout";
+}
+
+<script type="text/javascript">
+
+    $(document).ready(function () {
+
+    })
+
+    function getAuditParas() {
+        destroyDatatable('year_wise_paras_grid');
+        if($('#auditPeriodSelectBox').val()=="0"){
+            return false;
+        }
+        
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/get_year_wise_all_audit_paras",
+            type: "POST",
+            data: {
+                "AUDIT_PERIOD": $('#auditPeriodSelectBox').val()
+            },
+            cache: false,
+            success: function (data) {
+                   $.each(data, function (i, v) {
+        $('#year_wise_paras_grid tbody').append(
+            '<tr>' +
+                '<td class="text-center">' + (i + 1) + '</td>' +
+                '<td class="text-center">' + (v.entitY_TYPE) + '</td>' +
+                '<td class="text-center">' + (v.reportinG_OFFICE) + '</td>' +
+                '<td class="text-center">' + (v.entitY_NAME) + '</td>' +
+                '<td class="text-center">' + (v.entitY_RISK_LEVEL) + '</td>' +
+                '<td class="text-center">' + (v.audiT_ZONE) + '</td>' +
+                '<td class="text-center">' + (v.annexure) + '</td>' +
+                '<td class="text-center">' + (v.parA_NO) + '</td>' +
+                '<td class="text-center">' + (v.risk) + '</td>' +
+                '<td class="text-center">' + (v.gisT_OF_PARAS) + '</td>' +
+                '<td class="text-center">' + (v.nO_OF_INSTANCES) + '</td>' +
+                '<td class="text-center">' + (v.amounT_INVOLVED) + '</td>' +
+                '<td class="text-center">' + (v.functioN_RESP) + '</td>' +
+                '<td class="text-center">' + (v.parA_STATUS) + '</td>' +
+               
+            '</tr>'
+        );
+    });
+
+                initializeDataTable('year_wise_paras_grid');
+
+            },
+            dataType: "json",
+        });
+    }
+
+ 
+</script>
+
+<div class="row col-md-12 mt-3">
+
+    <h3 style="color: #be0e43">Year Wise Audit Paras</h3>
+
+    <div class="row col-md-12">
+        <label class="font-weight-bold">Audit Period</label>
+        <select id="auditPeriodSelectBox" class="form-control" onchange="getAuditParas();">
+            <option value="0" id="0" selected>--Select Audit Period--</option>
+            @{
+                if (ViewData["AuditPeriodList"] != null)
+                    {
+                        foreach (var p in (dynamic)(ViewData["AuditPeriodList"]))
+                        {
+                        <option value="@p.AUDITPERIODID">@p.AUDITPERIODID</option>
+                        }
+                    }
+            }
+        </select>
+    </div>
+    <div class="row mt-3 col-md-12">
+        <table id="year_wise_paras_grid" class="table table-hover table-bordered table-hover mt-3 table-striped">
+            <thead style="background-color: #19875478 !important;">
+                <tr>
+                    <th class="col-md-auto">Sr. No.</th>
+                    <th class="col-md-auto">Entity Type</th>
+                    <th class="col-md-auto">Reporting Office</th>
+                    <th class="col-md-auto">Entity Name</th>
+                    <th class="col-md-auto">Entity Risk Level</th>
+                    <th class="col-md-auto">Audit Zone</th>
+                    <th class="col-md-auto">Annexure</th>
+                    <th class="col-md-auto">Para No</th>
+                    <th class="col-md-auto">Risk Category</th>
+                    <th class="col-md-auto">Gist of Para</th>
+                    <th class="col-md-auto">No. of Instances</th>
+                    <th class="col-md-auto">Amount Involved</th>
+                    <th class="col-md-auto">Function Responsible</th>
+                    <th class="col-md-auto">Para Status</th>
+                </tr>
+            </thead>
+            <tbody>
+            </tbody>
+        </table>
+    </div>
+</div>

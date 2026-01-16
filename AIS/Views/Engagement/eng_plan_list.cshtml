@@ -1,0 +1,165 @@
+﻿@{
+    var page_id = ViewData["PageId"] as int? ?? 0;
+}
+
+@{
+    ViewData["Title"] = "Change Request";
+    Layout = "_Layout";
+}
+
+<script type="text/javascript">
+    var g_engId=0;
+    $('#document').ready(function () {
+    });
+    function referredBackEngagementPlan(engId) {
+        g_engId = engId;
+        $('#commentsBox').modal('show');
+    }
+      function reloadLocation() {
+        location.reload();
+    }
+    function finalReferredBackEngagementPlan() {
+         if ($('#commentAreaInCommentsBox').val() == "") {
+            alert("Enter Comments to Proceed"); return false;
+        }
+        
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/reject_engagement_plan",
+                type: "POST",
+                data: {
+                    'ENG_ID': g_engId,
+                    'COMMENTS': $('#commentAreaInCommentsBox').val()
+                },
+                cache: false,
+                success: function (data) {
+                    alert("Successfully rejected Engagement Plan");
+                    onAlertCallback(reloadLocation);
+                },
+                dataType: "json",
+            });
+
+    }
+    function approveEngagementPlan(engId) {
+        g_engId=engId;
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/approve_engagement_plan",
+                type: "POST",
+                data: {
+                    'ENG_ID': g_engId
+                },
+                cache: false,
+                success: function (data) {
+                    alert("Successfully approved Engagement Plan");
+                    createSampleRecord();
+                    onAlertCallback(reloadLocation);
+                },
+                dataType: "json",
+            });
+    }
+    function createSampleRecord(){
+          $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/create_engagement_sample_data",
+                type: "POST",
+                data: {
+                    'ENG_ID': g_engId
+                },
+                cache: false,
+                success: function (data) {
+                  createExceptionRecord();
+                  onAlertCallback(reloadLocation);
+                },
+                dataType: "json",
+            });
+    }
+
+        function createExceptionRecord(){
+          $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/create_engagement_Exception_data",
+                type: "POST",
+                data: {
+                    'ENG_ID': g_engId
+                },
+                cache: false,
+                success: function (data) {
+
+                },
+                dataType: "json",
+            });
+    }
+</script>
+<div class="row w-100" style="margin-top:50px;">
+    <h3 style="color: #be0e43">Engagement Plan List</h3>
+</div>
+<div class="row col-md-12 mt-3">
+    <table id="observation_panel" class="table table-hover table-bordered table-hover mt-3 table-striped">
+        <thead style="background-color: #19875478 !important; ">
+            <tr>
+                <th>Entity Name</th>
+                <th>Team Name</th>
+                <th>Operation Start Date</th>
+                <th>Operation End Date</th>
+                <th>Start Date</th>
+                <th>End Date</th>
+                <th>Reject</th>
+                <th>Approve</th>
+            </tr>
+        </thead>
+        <tbody>
+            @{
+                if (ViewData["EngagementPlans"] != null)
+                {
+                    foreach (var item in (dynamic)(ViewData["EngagementPlans"]))
+                    {
+                        string sDate = @item.AUDIT_STARTDATE.ToString();
+                        sDate = sDate.Split(" ")[0];
+                        string eDate = @item.AUDIT_ENDDATE.ToString();
+                        eDate = eDate.Split(" ")[0];
+                        string osDate = @item.OP_STARTDATE.ToString();
+                        osDate = osDate.Split(" ")[0];
+                        string oeDate = @item.OP_ENDDATE.ToString();
+                        oeDate = oeDate.Split(" ")[0];
+                        <tr id="@item.ENG_ID">
+                            <td class="col-md-auto">@item.ENTITY_NAME</td>
+                            <td class="col-md-auto">@item.TEAM_NAME</td>
+                            <td class="col-md-auto">@osDate</td>
+                            <td class="col-md-auto">@oeDate</td>
+                            <td class="col-md-auto">@sDate</td>
+                            <td class="col-md-auto">@eDate</td>
+                            <td class="col-md-auto"><a onclick="referredBackEngagementPlan(@item.ENG_ID);" href="#" class="text-danger text-hover">Reject</a></td>
+                            <td class="col-md-auto"><a onclick="approveEngagementPlan(@item.ENG_ID);" href="#" class="text-success text-hover ml-5">Approve</a></td>
+                            
+                        </tr>
+
+                    }
+                }
+            }
+        </tbody>
+    </table>
+</div>
+<div id="commentsBox" class="modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">Comments</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form>
+                    <div class="form-group">
+                        <label for="commentAreaInCommentsBox">Comments</label>
+                        <textarea class="form-control" rows="4" id="commentAreaInCommentsBox" placeholder="Enter Comments here.."></textarea>
+
+
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button onclick="finalReferredBackEngagementPlan();" type="button" class="btn btn-danger">Submit</button>
+            </div>
+        </div>
+    </div>
+</div>
+  

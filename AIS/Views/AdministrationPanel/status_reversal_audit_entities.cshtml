@@ -1,0 +1,332 @@
+﻿@{
+    var page_id = ViewData["PageId"] as int? ?? 0;
+}
+
+@{
+    ViewData["Title"] = "Status Reversal of Audit Entities";
+    Layout = "_Layout";
+
+}
+
+<script type="text/javascript">
+
+    function getrelation(parentEntityId = 0, userEntityId = 0) {
+
+
+        $('#controlingsearch').empty();
+        $('#childposting').empty();
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/getparentrel",
+            type: "POST",
+            data: {
+                'ENTITY_REALTION_ID': $('#RelationshipField option:selected').val()
+            },
+
+
+            cache: false,
+            success: function (data) {
+
+
+                $('#controlingsearch').append('<option id="0" value="0">--Select Controlling/Reporting Office--</option>');
+                $.each(data, function (index, contof) {
+
+                    var selected = '';
+                    if (contof.entitY_ID == parentEntityId)
+                        selected = 'selected="selected"';
+
+                    $('#controlingsearch').append('<option ' + selected + ' value="' + contof.entitY_ID + '" id="' + contof.entitY_REALTION_ID + '">' + contof.description + '</option>')
+                });
+                if (userEntityId != 0)
+                    getplacepost(userEntityId)
+
+                // console.log(data);
+
+            },
+            dataType: "json",
+        });
+
+
+
+    }
+
+    function getplacepost(userEntityId = 0) {
+        $('#childposting').empty();
+
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/getpostplace",
+            type: "POST",
+            data: {
+                'E_R_ID': $('#controlingsearch option:selected').val()
+            },
+
+
+            cache: false,
+            success: function (data) {
+                $('#childposting').append('<option id="0" value="0" selected="selected">--Select Place of Posting--</option>');
+                $.each(data, function (index, gpp) {
+
+                    var selected = '';
+                    if (gpp.entitY_ID == userEntityId)
+                        selected = 'selected="selected"';
+                    $('#childposting').append('<option ' + selected + ' value="' + gpp.entitY_ID + '" id="' + gpp.entitY_ID + '">' + gpp.c_NAME + '</option>')
+                });
+            },
+            dataType: "json",
+        });
+        //  getrelation();
+
+    }
+    function getAISEntities(){
+        $('#auditeeEntitiesList tbody').empty();
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/getAISEntities",
+            type: "POST",
+            data: {
+                'ENTITY_ID': $('#childposting').val(),
+                'TYPE_ID': $('#EntTypeField').val()
+            },
+
+            cache: false,
+            success: function (data) {
+                var sr = 0;
+                $.each(data, function (i, v) {
+                    sr++;
+                    $('#auditeeEntitiesList tbody').append('<tr><td>' + sr + '</td><td>' + v.entitY_ID + '</td><td>' + v.code + '</td><td>' + v.typE_NAME + '</td><td>' + v.cosT_CENTER + '</td><td>' + v.name + '</td><td>' + v.auditbY_NAME + '</td><td>' + v.status + '</td></tr>');
+
+                });
+
+            },
+            dataType: "json",
+        });
+    }
+
+    function getEntities() {
+
+        getCBASEntities();
+        getERPEntities();
+        getHREntities();
+    
+    }
+    function getCBASEntities() {
+        $('#auditeeEntitiesList tbody').empty();
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/getCBASEntities",
+            type: "POST",
+            data: {
+                'E_ID': $('#childposting').val(),
+                'E_CODE': $('#childposting option:selected').text()
+            },
+
+            cache: false,
+            success: function (data) {
+                $.each(data, function (i, v) {
+                    sr++;
+                    $('#auditeeEntitiesList tbody').append('<tr><td>' + sr + '</td><td>' + v.entitY_ID + '</td><td>' + v.name + '</td><td><a class="text-danger" onclick="event.preventDefault();updateAuditeeEntities(' + v.entitY_ID + ')">Update</a></td></tr>');
+
+                });
+              
+            },
+            dataType: "json",
+        });
+        //  getrelation();
+
+    }
+    function getERPEntities() {
+        $('#auditeeEntitiesList_erp tbody').empty();
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/getERPEntities",
+            type: "POST",
+            data: {
+                'E_ID': $('#childposting').val(),
+                'E_CODE': $('#childposting option:selected').text()
+            },
+
+            cache: false,
+            success: function (data) {
+                $.each(data, function (i, v) {
+                    sr++;
+                    $('#auditeeEntitiesList_erp tbody').append('<tr><td>' + sr + '</td><td>' + v.entitY_ID + '</td><td>' + v.name + '</td><td><a class="text-danger" onclick="event.preventDefault();updateAuditeeEntities(' + v.entitY_ID + ')">Update</a></td></tr>');
+
+                });
+
+            },
+            dataType: "json",
+        });
+        //  getrelation();
+
+    }
+    function getHREntities() {
+        $('#auditeeEntitiesList_hr tbody').empty();
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/getHREntities",
+            type: "POST",
+            data: {
+                'E_ID': $('#childposting').val(),
+                'E_CODE': $('#childposting option:selected').text()
+            },
+
+            cache: false,
+            success: function (data) {
+                $.each(data, function (i, v) {
+                    sr++;
+                    $('#auditeeEntitiesList_hr tbody').append('<tr><td>' + sr + '</td><td>' + v.entitY_ID + '</td><td>' + v.name + '</td><td><a class="text-danger" onclick="event.preventDefault();updateAuditeeEntities(' + v.entitY_ID + ')">Update</a></td></tr>');
+
+                });
+
+            },
+            dataType: "json",
+        });
+        //  getrelation();
+
+    }
+</script>
+
+<div class="row col-md-12">
+    <h3 style=" display:block;color: #be0e43">Status Reversal of Audit Entities</h3>
+
+    <div class="row col-md-12 mt-3">
+        <div class="col-md-2">
+            <label>Relationship Type</label>
+        </div>
+        <div class="col-md-10">
+            <select id="RelationshipField" onchange="getrelation();" class="form-control form-select">
+                <option id="0" value="0" selected="selected">--Select Relationship Type--</option>
+
+
+                @{
+                    if (ViewData["Userrelationship"] != null)
+                    {
+                        foreach (var item in (dynamic)(ViewData["Userrelationship"]))
+                        {
+                                    <option value="@item.ENTITY_REALTION_ID" id="@item.ENTITY_REALTION_ID">@item.FIELD_NAME</option>
+                        }
+                    }
+                }
+
+
+
+            </select>
+        </div>
+    </div>
+
+    <div class="row col-md-12 mt-3">
+        <div class="col-md-2">
+            <label>Controlling/Reporting Office</label>
+        </div>
+        <div class="col-md-4">
+            <select id="controlingsearch" onchange="getplacepost();" class="form-control form-select">
+                <option id="0" value="0" selected="selected">--Select Controlling/Reporting Office--</option>
+            </select>
+        </div>
+
+
+        <div class="col-md-2">
+            <label>Place of Posting</label>
+        </div>
+        <div class="col-md-4">
+            <select id="childposting" onchange="getAISEntities();" class="form-control form-select">
+                <option id="0" value="0" selected="selected">--Select Place of Posting--</option>
+
+            </select>
+        </div>
+    </div>
+
+
+</div>
+
+<div class="row col-md-12 mt-3">
+    <div class="col-md-2">
+        <label>Relationship Type</label>
+    </div>
+    <div class="col-md-6">
+        <select id="EntTypeField" class="form-control form-select">
+            <option id="0" value="0" selected="selected">--Select Entity Type--</option>
+
+
+            @{
+                if (ViewData["EntTypeList"] != null)
+                {
+                    foreach (var item in (dynamic)(ViewData["EntTypeList"]))
+                    {
+                        <option value="@item.CODE" id="@item.CODE">@item.NAME</option>
+                    }
+                }
+            }
+
+
+
+        </select>
+    </div>
+    <div class="col-md-4">
+        <input onclick="getAISEntities();" type="button" value="Search" class="btn btn-danger" />
+    </div>
+</div>
+
+<div class="row col-md-12 mt-3">
+    <h3>AIS Entities</h3>
+    <table id="auditeeEntitiesList" class="table table-bordered table mb-0 mt-3 bg-white table-hover table-striped">
+        <thead>
+            <tr style="background-color: #19875478 !important;">
+                <th class="col-md-auto">Sr No.</th>
+                <th class="col-md-auto">Entity ID</th>
+                <th class="col-md-auto">Entity Code</th>                
+                <th class="col-md-auto">Entity Type</th>                
+                <th class="col-md-auto">Cost Center</th>
+                <th class="col-md-auto">Entity Name</th>                
+                <th class="col-md-auto">Audit Department</th>
+                <th class="col-md-auto">Status</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+
+    </table>
+</div>
+
+
+<div class="row col-md-12 mt-3">
+    <h3>CBAS Entities</h3>
+    <table id="auditeeEntitiesList_cbas" class="table table-bordered table mb-0 mt-3 bg-white table-hover table-striped">
+        <thead>
+            <tr style="background-color: #19875478 !important; ">
+                <th class="col-md-auto">Sr No.</th>
+                <th class="col-md-auto">ID</th>
+                <th class="col-md-auto">Entity Name</th>
+                <th class="col-md-auto">Action</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+
+    </table>
+</div>
+
+<div class="row col-md-12 mt-3">
+    <h3>ERP Entities</h3>
+    <table id="auditeeEntitiesList_erp" class="table table-bordered table mb-0 mt-3 bg-white table-hover table-striped">
+        <thead>
+            <tr style="background-color: #19875478 !important; ">
+                <th class="col-md-auto">Sr No.</th>
+                <th class="col-md-auto">ID</th>
+                <th class="col-md-auto">Entity Name</th>
+                <th class="col-md-auto">Action</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+
+    </table>
+</div>
+
+<div class="row col-md-12 mt-3">
+    <h3>HR Entities</h3>
+    <table id="auditeeEntitiesList_hr" class="table table-bordered table mb-0 mt-3 bg-white table-hover table-striped">
+        <thead>
+            <tr style="background-color: #19875478 !important; ">
+                <th class="col-md-auto">Sr No.</th>
+                <th class="col-md-auto">ID</th>
+                <th class="col-md-auto">Entity Name</th>
+                <th class="col-md-auto">Action</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+
+    </table>
+</div>

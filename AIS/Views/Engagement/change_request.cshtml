@@ -1,0 +1,76 @@
+﻿@{
+    ViewData["Title"] = "GL HEAD DETAILS";
+    Layout = "_Layout";
+}
+
+<script type="text/javascript">
+
+    $('#document').ready(function () {
+        var url_string = window.location;
+        var url = new URL(url_string);
+        var gl_id = url.searchParams.get("GLCODE");
+        $.ajax({
+            url: g_asiBaseURL + "/Reports/Get_Glhead_Sub_Details",
+            type: "POST",
+            data: {
+                'gl_code': gl_id
+            },
+            cache: false,
+            success: function (data) {
+                //v = data;
+
+                // console.log(data);
+
+                $.each(data.gL_SUBDETAILS, function (i, v) {
+
+                    $('#gldetailtab tbody').append('<tr><td>' + v.glcode + '</td><td>' + v.glsubname + '</td><td>' + v.datetime.split('T')[0] + '</td>  <td>' + v.runninG_CR + '</td><td>' + v.runninG_DR + '</td> <td>' + v.balance + '</td> </tr>')
+                });
+            },
+            dataType: "json",
+        });
+    });
+
+
+</script>
+
+<div class="row col-md-12 mt-3">
+    <h4 style="display: block; color: #be0e43">ARPSE for the Year </h4>
+</div>
+<div class="row mt-3 col-md-12">
+    <div class="row col-md-2">
+        <label><b>Select Year</b></label>
+    </div>
+    <div class="row col-md-10">
+        <div class="col-md-12 pl-0 pr-0">
+            <select id="auditCriteriaEntityField" class="form-select form-control">
+                <option value="0" id="0" selected>--Select Year--</option>
+            </select>
+        </div>
+        <div class="col-md-3 pr-0 d-none">
+            <button onclick="addAuditEntitiesModal();" class="btn btn-danger float-right d-none">Add New Entity</button>
+        </div>
+    </div>
+</div>
+<div class="row col-md-12 mt-3">
+    <div class="row col-md-12">
+        <table id="gldetailtab" class="col-md-12 table-bordered table-hover mt-1 table-striped">
+            <thead style="background-color: #19875478 !important; ">
+                <tr>
+                    <th class="col-md-2">Reference to the Para Item</th>
+                    <th class="col-md-3">Content of the Para/Item</th>
+                    <th class="col-md-2">Reply of Ministry</th>
+                    <th class="col-md-2">DAC Recommendation</th>
+                    <th class="col-md-2">PAC Directives</th>
+                    <th class="col-md-2">Progress</th>
+
+                </tr>
+            </thead>
+          
+
+            <tbody>
+            </tbody>
+
+
+        </table>
+    </div>
+</div>

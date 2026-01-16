@@ -1,0 +1,233 @@
+﻿@{
+    var page_id = ViewData["PageId"] as int? ?? 0;
+}
+
+@{
+    ViewData["Title"] = "Authorize Sub Processes";
+    Layout = "_Layout";
+}
+<style type="text/css">
+
+    .listItems:hover {
+        color: blue;
+        text-decoration: underline;
+    }
+
+    .action:hover {
+        font-size: 110%;
+        cursor: pointer;
+        font-weight: 600;
+    }
+</style>
+
+<script type="text/javascript">
+    var g_trId = 0;
+    $(document).ready(function () {
+        $("#searchTableRecord").on("keyup", function () {
+            var value = $(this).val().toLowerCase();
+            $("#listOfProcTransactions tbody tr").filter(function () {
+                $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1)
+            });
+        });
+    });
+
+    function reloadLocation() {
+        window.location = window.location.pathname;
+    }
+    function recommendReferProcTransaction(id) {
+        g_trId = id;
+        $('#recommendReferProcTransactionModal').modal('show');
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/get_sub_checklist_comparison_by_Id",
+            type: "POST",
+            data: {
+                'SUB_PROCESS_ID': id
+            },
+            cache: false,
+            success: function (data) {
+
+                var v = data[0];
+                $('#oldProcessLabel').val(v.procesS_NAME);
+                $('#oldSubProcessLabel').val(v.suB_PROCESS_NAME);
+
+                $('#viewerMainProcNameModalField').val(v.neW_SUB_PROCESS_NAME);
+                $('#viewerNameModalField').val(v.neW_PROCESS_NAME);
+            },
+            dataType: "json",
+        });
+    }
+    function recommendProcTransaction() {
+        $('#commentsBox').modal('show');
+        $('#finalCommentsButtonSave').attr('onclick', 'finalRecommendProcessTransaction()');
+       
+    }
+    function refferedBackProcTransaction() {
+        $('#commentsBox').modal('show');
+        $('#finalCommentsButtonSave').attr('onclick', 'finalRefferedBackProcessTransaction()');
+       
+    }
+    function finalRecommendProcessTransaction() {
+       
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/authorize_sub_process_by_authorizer",
+            type: "POST",
+            data: {
+                'T_ID': g_trId,
+                'COMMENTS': $('#commentAreaInCommentsBox').val()
+            },
+            cache: false,
+            success: function (data) {
+                $('#recommendReferProcTransactionModal').modal('hide');
+                alert(data.message);
+                onAlertCallback(reloadLocation);
+               
+            },
+            dataType: "json",
+        });
+    }
+    function finalRefferedBackProcessTransaction() {
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/reffered_back_sub_process_by_authorizer",
+            type: "POST",
+            data: {
+                'T_ID': g_trId,
+                'COMMENTS': $('#commentAreaInCommentsBox').val()
+            },
+            cache: false,
+            success: function (data) {
+                $('#recommendReferProcTransactionModal').modal('hide');
+                alert(data.message);
+                onAlertCallback(reloadLocation);
+            },
+            dataType: "json",
+        });
+    }
+</script>
+
+<div class="col-md-12 mb-4" style="margin-top:20px;">
+    <h3 style=" display:block;color: #be0e43">List of Sub Process to Authorize </h3>
+    <div class="row">
+        <div class="col-md-12">
+            <input class="form-control" id="searchTableRecord" type="text" placeholder="Search..">
+        </div>
+    </div>
+    <br>
+    <table id="listOfProcTransactions" class="table table-hover table-bordered table-hover mt-3 table-striped">
+            <thead style="background-color: #19875478 !important; ">
+            <tr>
+                <th>Process</th>
+                <th>Sub Process</th>                
+                <th>Status</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            @{
+            if (ViewData["TransactionsList"] != null)
+            {
+            foreach (var item in (dynamic)(ViewData["TransactionsList"]))
+            {
+
+                        <tr id="div_@item.SP_ID">
+                            <td>
+                                <p class="fw-normal mb-1">@item.PROCESS_NAME</p>
+                            </td>
+                            <td>
+                                <p class="fw-normal mb-1">@item.SUB_PROCESS_NAME</p>
+                            </td>
+                            
+                            <td>
+                                <p class="fw-normal mb-1">@item.COMMENTS</p>
+                            </td>
+                            <td>
+                                <button type="button" class="btn text-danger btn-sm btn-rounded" onclick="recommendReferProcTransaction('@item.SP_ID');">
+                                    Details
+                                </button>
+                            </td>
+                        </tr>
+            }
+            }}
+        </tbody>
+    </table>
+</div>
+
+<div id="recommendReferProcTransactionModal" class="modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-xl" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">Transaction Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="row col-md-12">
+                    <div class="col-md-6">
+                        <form>
+                            <h6 class="text-center"><b>Existing Details</b></h6>
+                            <div class="form-group">
+                                <label>Process</label>
+                                <input disabled="disabled" class="form-control" style="font-weight:normal !important" id="oldProcessLabel" />
+                            </div>
+                            <div class="form-group">
+                                <label>Sub Process</label>
+                                <input disabled="disabled" class="form-control" style="font-weight:normal !important" id="oldSubProcessLabel" />
+                            </div>  
+                           
+                        </form>
+                    </div>
+                    <div class="col-md-6">
+                        <form>
+                            <h6 class="text-center"><b>Proposed Changes</b></h6>
+                    <div class="form-group">
+                        <label for="viewerMainProcNameModalField">Process</label>
+                        <input type="text" disabled class="form-control" id="viewerMainProcNameModalField" />
+
+                    </div>
+                    <div class="form-group">
+                        <label for="viewerNameModalField">Sub Process</label>
+                        <input type="text" disabled class="form-control" id="viewerNameModalField" />
+
+                    </div>
+                    
+                   
+                        </form>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button onclick="refferedBackProcTransaction();" type="button" class="btn btn-danger">Refer Back</button>
+                <button onclick="recommendProcTransaction();" type="button" class="btn btn-success">Approve</button>
+
+            </div>
+        </div>
+    </div>
+</div>
+<div id="commentsBox" class="modal" tabindex="-1" role="dialog">
+    <div class="modal-xl modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">Comments</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form>
+                    <div class="form-group">
+                        <label for="commentAreaInCommentsBox">Comments</label>
+                        <textarea class="form-control" rows="4" id="commentAreaInCommentsBox" placeholder="Enter Comments here.."></textarea>
+                        
+
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button id="finalCommentsButtonSave" type="button" class="btn btn-danger">Submit</button>
+            </div>
+        </div>
+    </div>
+</div>
+

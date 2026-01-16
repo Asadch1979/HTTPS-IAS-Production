@@ -1,0 +1,445 @@
+﻿@{
+    var page_id = ViewData["PageId"] as int? ?? 0;
+}
+
+@{
+    ViewData["Title"] = "Review Checklist";
+    Layout = "_Layout";
+}
+<style type="text/css">
+
+    .listItems:hover {
+        color: blue;
+        text-decoration: underline;
+    }
+
+    .action:hover {
+        font-size: 110%;
+        cursor: pointer;
+        font-weight: 600;
+    }
+</style>
+
+<script type="text/javascript">
+    var g_trId = 0;
+    var g_sId = 0;
+    var g_dId = 0;
+    var g_pId = 0;
+    var g_selectedChecklistDetailRecord = {};
+    $(document).ready(function () {
+        $("#searchTableRecord").on("keyup", function () {
+            var value = $(this).val().toLowerCase();
+            $("#listOfProcTransactions tbody tr").filter(function () {
+                $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1)
+            });
+        });
+    });
+
+
+    function recommendReferProcTransaction(id) {
+        g_trId = id;
+        $('#recommendReferProcTransactionModal').modal('show');
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/get_checklist_detail_comparison_by_Id",
+            type: "POST",
+            data: {
+                'CHECKLIST_DETAIL_ID': id
+            },
+            cache: false,
+            success: function (data) {
+                var tr = data[0];
+                g_sId = tr.n_S_ID;
+                g_selectedChecklistDetailRecord = data[0];
+                 $('#viewerMainProcNameModalField').val(tr.process);
+                $('#viewerSubProcNameModalField').val(tr.neW_SUB_PROCESS);
+                $('#processDetailNewField').val(tr.neW_PROCESS_DETAIL);  
+
+                $('#updatedViolationlist').val(tr.n_V_ID);
+                $('#updatedProcOwnerlist').val(tr.n_OWNER_ID);
+                $('#updatedRoleResplist').val(tr.n_ROLE_RESP_ID);
+                $('#updatedRisklist').val(tr.n_RISK_ID);
+                $('#updatedAnnexlist').val(tr.n_ANNEX_ID);    
+                
+                $('#oldProcessLabel').val(tr.process);
+                $('#oldViolationLabel').val(tr.violation);
+                $('#oldProcessOwnerLabel').val(tr.functionaL_RESP);
+                $('#oldRoleRespLabel').val(tr.rolE_RESP);
+                $('#oldRiskLabel').val(tr.risk);
+                $('#oldAnnexureLabel').val(tr.annexure);
+                $('#oldProcessDetailLabel').val(tr.procesS_DETAIL);
+                $('#oldSubProcessLabel').val(tr.suB_PROCESS);
+
+            },
+            dataType: "json",
+        });
+    }
+    function recommendProcTransaction() {
+        $('#commentsBox').modal('show');
+        $('#finalCommentsButtonSave').attr('onclick', 'finalRecommendProcessTransaction()');
+
+    }
+    function refferedBackProcTransaction() {
+        $('#commentsBox').modal('show');
+        $('#finalCommentsButtonSave').attr('onclick', 'finalRefferedBackProcessTransaction()');
+
+    }
+    function finalRecommendProcessTransaction() {
+
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/recommend_process_transaction_by_reviewer",
+            type: "POST",
+            data: {
+                'T_ID': g_trId,
+                'COMMENTS': $('#commentAreaInCommentsBox').val(),               
+                'SUB_PROCESS_ID': g_sId,
+                'PROCESS_DETAIL_ID': g_selectedChecklistDetailRecord.n_D_ID,
+                'HEADING': $('#processDetailNewField').val(),
+                'V_ID': $('#updatedViolationlist').val(),
+                'CONTROL_ID': $('#updatedProcOwnerlist').val(),
+                'ROLE_ID': $('#updatedRoleResplist').val(),
+                'RISK_ID': $('#updatedRisklist').val(),
+                'ANNEX_CODE': $('#updatedAnnexlist').val()
+            },
+            cache: false,
+            success: function (data) {
+                $('#recommendReferProcTransactionModal').modal('hide');
+                $('#commentsBox').modal('hide');
+                alert(data.message);
+                onAlertCallback(reloadLocation);              
+            },
+            dataType: "json",
+        });
+    }
+    function finalRefferedBackProcessTransaction() {
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/reffered_back_process_transaction_by_reviewer",
+            type: "POST",
+            data: {
+                'T_ID': g_trId,
+                'COMMENTS': $('#commentAreaInCommentsBox').val()              
+            },
+            cache: false,
+            success: function (data) {
+                $('#recommendReferProcTransactionModal').modal('hide');
+                $('#commentsBox').modal('hide');
+                alert(data.message);
+                onAlertCallback(reloadLocation);
+            },
+            dataType: "json",
+        });
+    }
+
+    function reloadLocation(){
+        window.location = window.location.pathname;
+    }
+</script>
+
+<div class="col-md-12 mb-4" style="margin-top:20px;">
+    <h3 style=" display:block;color: #be0e43">List of Checklist Details to Review </h3>
+    <div class="row">
+        <div class="col-md-12">
+            <input class="form-control" id="searchTableRecord" type="text" placeholder="Search..">
+        </div>
+    </div>
+    <br>
+    <table id="listOfProcTransactions" class="table table-hover table-bordered table-hover mt-3 table-striped">
+        <thead style="background-color: #19875478 !important; ">
+            <tr>
+                <th>Process</th>
+                <th>Sub Process</th>
+                <th>Checlist Detail</th>
+                <th>Status</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            @{
+                if (ViewData["TransactionsList"] != null)
+                {
+                    foreach (var item in (dynamic)(ViewData["TransactionsList"]))
+                    {
+
+                                        <tr id="div_@item.ID">
+                                            <td>
+                                                <p class="fw-normal mb-1">@item.PROCESS_NAME</p>
+                                            </td>
+                                            <td>
+                                                <p class="fw-normal mb-1">@item.SUB_PROCESS_NAME</p>
+                                            </td>
+                                            <td>
+                                                <p class="fw-normal mb-1">@item.DESCRIPTION</p>
+                                            </td>
+                                            <td>
+                                                <p class="fw-normal mb-1">@item.PROCESS_STATUS</p>
+                                            </td>
+                                            <td>
+                                                <button type="button" class="btn text-danger btn-sm btn-rounded" onclick="recommendReferProcTransaction('@item.ID');">
+                                                    Details
+                                                </button>
+                                            </td>
+                                        </tr>
+                    }
+                }
+            }
+        </tbody>
+    </table>
+</div>
+
+<div id="recommendReferProcTransactionModal" class="modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-xl" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">Transaction Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="row col-md-12">
+                    <div class="col-md-6">
+                        <form>
+                            <h6 class="text-center"><b>Existing Details</b></h6>
+                            <div class="form-group">
+                                <label>Process</label>
+                                <input disabled="disabled" class="form-control" style="font-weight:normal !important" id="oldProcessLabel" />
+                            </div>
+                            <div class="form-group">
+                                <label>Sub Process</label>
+                                <input disabled="disabled" class="form-control" style="font-weight:normal !important" id="oldSubProcessLabel" />
+                            </div>
+                            <div class="form-group">
+                                <label>Process Detail</label>
+                                <textarea disabled="disabled" class="form-control" style="font-weight:normal !important" id="oldProcessDetailLabel"></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label>Violation</label>
+                                <input disabled="disabled" class="form-control" style="font-weight:normal !important" id="oldViolationLabel" />
+
+                            </div>
+                            <div class="form-group">
+                                <label>Process Owner</label>
+                                <input disabled="disabled" class="form-control" style="font-weight:normal !important" id="oldProcessOwnerLabel" />
+
+                            </div>
+                            <div class="form-group">
+                                <label>Role Responsible</label>
+
+                                <input disabled="disabled" class="form-control" style="font-weight:normal !important" id="oldRoleRespLabel" />
+
+                            </div>
+                            <div class="form-group">
+                                <label>Risk</label>
+                                <input disabled="disabled" class="form-control" style="font-weight:normal !important" id="oldRiskLabel" />
+
+                            </div>
+                            <div class="form-group">
+                                <label>Annexure</label>
+                                <input disabled="disabled" class="form-control" style="font-weight:normal !important" id="oldAnnexureLabel" />
+
+                            </div>
+
+                        </form>
+                    </div>
+                    <div class="col-md-6">
+                        <form>
+                            <h6 class="text-center"><b>Proposed Changes</b></h6>
+                            <div class="form-group">
+                                <label for="viewerMainProcNameModalField">Process</label>
+                                <input type="text" class="form-control" id="viewerMainProcNameModalField" />
+
+                            </div>
+                            <div class="form-group">
+
+                                <label>Sub Process</label>
+                                <input disabled type="text" class="form-control" id="viewerSubProcNameModalField" />
+
+                            </div>
+                            <div class="form-group">
+                                <label>Process Detail</label>
+                                <textarea disabled id="processDetailNewField" class="form-control"></textarea>
+                            </div>
+                            <div class="form-group">
+
+                                <label>Violation</label>
+
+                                <select id="updatedViolationlist" class="form-select form-control">
+                                    <option selected="selected" value="0" id="0">--Select Control Violation--</option>
+                                    @{
+                                        if (ViewData["ViolationsList"] != null)
+                                        {
+
+                                            foreach (var item in (dynamic)(ViewData["ViolationsList"]))
+                                            {
+                                                                <option max-number="@item.MAX_NUMBER" id="@item.ID" value="@item.ID">@item.V_NAME</option>
+                                            }
+
+                                        }
+                                    }
+
+                                </select>
+
+                            </div>
+                            <div class="form-group">
+
+                                <label>Process Owner</label>
+
+                                <select id="updatedProcOwnerlist" class="form-select form-control">
+                                    <option selected="selected" value="0" id="0">--Select Process Owner--</option>
+                                    @{
+                                        if (ViewData["ProcOwnerList"] != null)
+                                        {
+
+                                            foreach (var item in (dynamic)(ViewData["ProcOwnerList"]))
+                                            {
+                                                                <option id="@item.ENTITY_ID" value="@item.ENTITY_ID">@item.NAME</option>
+                                            }
+
+                                        }
+                                    }
+
+                                </select>
+
+                            </div>
+                            <div class="form-group">
+
+                                <label>Role Responsible</label>
+
+                                <select id="updatedRoleResplist" class="form-select form-control">
+                                    <option selected="selected" value="0" id="0">--Select Role Responsible--</option>
+                                    @{
+                                        if (ViewData["RoleRespList"] != null)
+                                        {
+
+                                            foreach (var item in (dynamic)(ViewData["RoleRespList"]))
+                                            {
+                                                                <option id="@item.DESIGNATIONCODE" value="@item.DESIGNATIONCODE">@item.DESCRIPTION</option>
+                                            }
+
+                                        }
+                                    }
+
+                                </select>
+
+                            </div>
+                            <div class="form-group">
+
+                                <label>Risk</label>
+
+                                <select id="updatedRisklist" class="form-select form-control">
+                                    <option selected="selected" value="0" id="0">--Select Risk--</option>
+                                    @{
+                                        if (ViewData["RiskList"] != null)
+                                        {
+
+                                            foreach (var item in (dynamic)(ViewData["RiskList"]))
+                                            {
+                                                                <option id="@item.R_ID" value="@item.R_ID">@item.DESCRIPTION</option>
+                                            }
+
+                                        }
+                                    }
+
+                                </select>
+
+                            </div>
+                            <div class="form-group">
+
+                                <label>Annexure</label>
+
+                                <select id="updatedAnnexlist" class="form-select form-control">
+                                    <option selected="selected" value="0" id="0">--Select Annexure--</option>
+                                    @{
+                                        if (ViewData["AnnexList"] != null)
+                                        {
+
+                                            foreach (var item in (dynamic)(ViewData["AnnexList"]))
+                                            {
+                                                <option id="@item.ID" value="@item.ID">@item.ANNEX</option>
+                                            }
+
+                                        }
+                                    }
+
+                                </select>
+
+                            </div>
+
+                        </form>
+                        @*    <form>
+                        <h6 class="text-center"><b>Proposed Changes</b></h6>
+                        <div class="form-group">
+                        <label for="viewerMainProcNameModalField">Process</label>
+                        <input type="text"  class="form-control" id="viewerMainProcNameModalField" />
+
+                        </div>
+                        <div class="form-group">
+                        <label for="viewerNameModalField">Sub Process</label>
+                        <input type="text"  class="form-control" id="viewerNameModalField" />
+
+                        </div>
+                        <div class="form-group">
+                        <label for="viewerDescModalField">Process Detail</label>
+                        <textarea class="form-control"  id="viewerDescModalField"></textarea>
+
+                        </div>
+                        <div class="form-group">
+                        <label for="viewerViolationNameModalField">Violation</label>
+                        <input class="form-control"  id="viewerViolationNameModalField" />
+
+                        </div>
+                        <div class="form-group">
+                        <label for="viewerControlModalField">Process Owner</label>
+                        <input type="text"  class="form-control" id="viewerControlModalField" />
+                        </div>
+                        <div class="form-group">
+                        <label for="viewerDivModalField">Role Responsible</label>
+                        <input type="text"  class="form-control" id="viewerDivModalField"  />
+                        </div>
+                        <div class="form-group">
+                        <label for="viewerRiskModalField">Risk</label>
+                        <input type="text"  class="form-control" id="viewerRiskModalField" />
+                        </div>
+                        <div class="form-group">
+                        <label for="viewerRiskModalField">Annexure</label>
+                        <input type="text"  class="form-control" id="viewerAnnexModalField" />
+                        </div>
+                        </form> *@
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button onclick="refferedBackProcTransaction();" type="button" class="btn btn-danger">Refer Back</button>
+                <button onclick="recommendProcTransaction();" type="button" class="btn btn-success">Recommend</button>
+
+            </div>
+        </div>
+    </div>
+</div>
+<div id="commentsBox" class="modal" tabindex="-1" role="dialog">
+    <div class="modal-xl modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">Comments</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form>
+                    <div class="form-group">
+                        <label for="commentAreaInCommentsBox">Comments</label>
+                        <textarea class="form-control" rows="4" id="commentAreaInCommentsBox" placeholder="Enter Comments here.."></textarea>
+
+
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button id="finalCommentsButtonSave" type="button" class="btn btn-danger">Submit</button>
+            </div>
+        </div>
+    </div>
+</div>
+

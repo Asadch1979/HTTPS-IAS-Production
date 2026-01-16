@@ -1,0 +1,219 @@
+﻿@{
+    ViewData["Title"] = "Departmental Audit Report";
+    Layout = "_Layout";
+}
+
+
+
+<script type="text/javascript">
+    $('#document').ready(function () {
+       
+        $('.template_box').richText({
+            imageUpload: false,
+            fileUpload: false,
+            videoEmbed: false,
+            urls: false
+        });
+    });
+</script>
+
+
+
+
+<div class="row">
+    <div class="col-md-4 offset-md-8">
+        <button class="btn btn-danger" style="float:right; margin-bottom:10px; " onclick="CreatePDFfromHTML();">Download Report</button>
+    </div>
+</div>
+
+
+
+<div class="WordSection1">
+
+    <div class="col-md-12" style="font-family:'Times New Roman'">
+        <br />  <br />  
+
+        <h1 style="text-transform: uppercase; font-weight: bold; text-decoration: underline; text-align: right; float: right !important" class="entNameField pr-3"></h1>
+
+      <div > <center> <a class="navbar-brand" href="#" ><img height="500" src="~/Images/ztbllogo.png" alt="Logo"></a>
+            </center>
+        </div>
+       
+
+        <h1 style="text-align:center";  !important"><b>ZARAI TARAQIATI BANK LIMITED &nbsp;</b> </h1>
+        <div   class="border-dark" style="border:solid">
+        <h1 style="text-align:center" ; !important"><b>Internal Audit Report Of &nbsp;</b> </h1>
+        <h1 style="text-align:center" ; !important"><b>ZTBL,(</b>branch name<b>),(</b>Operational Zone<b>)</b>; </h1>
+        <h1 style="text-align:center" ; !important"><b>For the period from &nbsp;</b> </h1>
+
+        <h1 style="text-align:center" ; !important"><b>(</b>mm dd, yyyy<b> to (</b>mm dd, yyyy<b>)</b> &nbsp;</b> </h1>
+
+        <h1 style="text-align:center" ; !important"><b>Report Issuance Date: (</b>mm dd, yyyy<b>)</b> &nbsp; </h1>
+            <br /><br /><br />
+        </div>
+    </div>
+        <br />  <br />
+
+    <div class="border-dark" style="border:solid">
+        <p style="text-align:left" ; !important"><b><u>Restriction Clause;</u></b> </p>
+     <p> "Please note that confidentiality of the report must be maintained and it must not be distributed to the third parties unless otherwise approved by Chief Internal Auditor or required by any regulation"</p>
+    </div>
+    <br /><br /><br />
+    <div>
+        <h3 style="text-align:center" ; !important"><b>Controlling Office ____________</b> </h3>
+        <h3 style="text-align:center" ; !important"><b> Internal Audit Divsion</b> </h3>
+        <br /><br />
+    </div>
+</div>
+    
+      
+
+<div class="mt-3 mb-4">
+    <h3 style="color: #be0e43">Information Systems Audit Report</h3>
+</div>
+
+
+
+
+
+
+<div>
+    <div class="row col-md-12 mt-3">
+    <div class="col-md-2">
+        <label class="text-bold">To</label>
+    </div>
+    <div class="col-md-10">
+        <input class="form-control" id="ToField" />
+    </div>
+    </div>
+    <div class="row col-md-12 mt-3">
+    <div class="col-md-2">
+        <label class="text-bold">CC:</label>
+    </div>
+    <div class="col-md-10">
+        <textarea class="form-control" style="width:100%" id="CCtextarea"></textarea>
+    </div>
+    </div>
+
+<div class="row col-md-12 mt-3">
+    <div class="col-md-2">
+        <label class="text-bold">From:</label>
+    </div>
+    <div class="col-md-10">
+        <input class="form-control" type="text" id="FromField" />
+    </div>
+</div>
+
+
+<div class="row col-md-12 mt-3">
+    <div class="col-md-2">
+        <label class="text-bold">Subject</label>
+    </div>
+    <div class="col-md-10">
+        <input class="form-control" type="text" id="SubjectField" />
+    </div>
+</div>
+</div>
+
+<br/><br/>
+<hr />
+<br/>
+
+<div class="col-md-12">
+    <textarea class="form-control" style="width:100%" id="template_box"></textarea>
+</div>
+<br />
+<br />
+
+<h3 style="color: #be0e43">Audit Summary</h3>
+<textarea class="form-control" rows="3">
+
+</textarea>
+
+<table class="table table-hover table-bordered table-hover mt-3 table-striped">
+    <thead style="background-color: #19875478 !important; ">
+        <tr>
+            <th colspan="4">AUditee Department Profile / Key Statistics</th>
+        </tr>
+
+    </thead>
+    <tbody>
+        <tr>
+            <td colspan="2">Staff Strength</td>
+            <td colspan="2">Operational Date of AUditee Department</td>
+            <td colspan="3"><input class="form-control" /></td>
+        </tr>
+        <tr>
+            <td>VP</td>
+            <td><input class="form-control" /></td>
+            <td>Current Audit Rating</td>
+            <td><input class="form-control" /></td>
+        </tr>
+        <tr>
+            <td>AVP</td>
+            <td><input class="form-control" /></td>
+            <td>Previous Audit Rating</td>
+            <td><input class="form-control" /></td>
+        </tr>
+        <tr>
+            <td>OG-I</td>
+            <td><input class="form-control" /></td>
+            <td>Audit Period</td>
+            <td><input class="form-control" type="date" /> <span class="mx-2 text-center">to </span> <input class="form-control" type="date" /></td>
+        </tr>
+        <tr>
+            <td>OG-II</td>
+            <td><input class="form-control" /></td>
+            <td>Audit Fieldwork Date</td>
+            <td><input class="form-control" type="date" /> <span class="mx-2 text-center">to </span> <input class="form-control" type="date" /></td>
+        </tr>
+        <tr>
+            <td>OG-III</td>
+            <td><input class="form-control" /></td>
+            <td rowspan="2">Audit cutoff Date or Audit Period</td>
+            <td rowspan="2"><input class="form-control" type="date" /> <span class="mx-2 text-center">to </span> <input class="form-control" type="date" /></td>
+        </tr>
+        <tr>
+            <td>Sr. Assistant</td>
+            <td><input class="form-control" /></td>
+        </tr>
+
+    </tbody>
+</table>
+
+
+<div class="col-md-12">
+    <h4 style="text-align:left" ; !important"><b><u>Risk Analysis of Auditee Department</u></b> </h4>
+    <textarea class="form-control" style="width:100%"></textarea>
+</div>
+<br />
+<br />
+
+<hr/>
+
+
+
+<div class="col-md-12">
+    <h4 style="text-align:left" ; !important"><b><u>Contents</u></b> </h4>
+    <textarea class="form-control" style="width:100%"></textarea>
+</div>
+<br />
+<br />
+<hr />
+
+
+
+<div class="col-md-12">
+    <h4 style="text-align:center" ; !important"><b>Executive Summary</b> </h4>
+    <textarea class="form-control template_box" style="width:100%" rows="7" id=""></textarea>
+</div>
+
+<br />
+<br />
+<hr />
+<div class="col-md-12">
+    <h4 style="text-align:center" ; !important"><b>Operation Performance</b> </h4>
+    <textarea class="form-control template_box" style="width:100%" rows="7" id=""></textarea>
+</div>
+
+<hr />

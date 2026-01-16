@@ -1,0 +1,12 @@
+.card-sample {
+    border: 1px solid #b5e575;
+    border-radius: 0.25rem;
+}
+.card-sample .card-header {
+    background-color: #b5e575;
+    color: #1b1b1b;
+    font-weight: 600;
+}
+.card-sample .table-responsive {
+    margin-top: 1rem;
+}

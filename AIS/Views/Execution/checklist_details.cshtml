@@ -1,0 +1,815 @@
+﻿@{
+    var page_id = ViewData["PageId"] as int? ?? 0;
+}
+
+@{
+    ViewData["Title"] = "Sub Checklist";
+    Layout = "_Layout";
+}
+<script type="text/javascript">
+    var g_respUser = [];
+    var g_memoObj = [];
+    var g_observationId = 0;
+    var g_engId = 0;
+    var S_ID = 0;
+    var g_respUsersArr = [];
+
+    var g_selectedRiskId = 0;
+    var g_annexList = @Json.Serialize(ViewData["AnnexList"]);
+    $(document).ready(function () {
+        var url_string = window.location;
+        var url = new URL(url_string);
+        var checklistsub_id = url.searchParams.get("id");
+        S_ID = checklistsub_id;
+        g_engId = url.searchParams.get("engId");
+        $('#updatedAnnexlist').select2({ dropdownParent: $('#viewMemoModel') });
+        $('#updatedAnnexlist').on('change', updateRiskDisplay);
+
+
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/checklist_details",
+            type: "POST",
+            data: {
+                'S_ID': checklistsub_id
+            },
+            cache: false,
+            success: function (data) {
+                console.log('subhcekclist', data);
+                $('#checklistDetailsPanel tbody').empty();
+                var sr = 1;
+                $.each(data, function (i, v) {
+                    $('#checklistDetailsPanel tbody').append('<tr id="obs_' + v.id + '"><td>' + sr + '</td><td>' + v.s_NAME + '</td><td>' + v.v_NAME + '</td><td>' + v.heading + '</td><td><select id="checklistaction_' + v.id + '" class="checklistaction form-select form-control" onchange="showObservationArea($(this).val(),\'obs_' + v.id + '\');" aria-label="Default select example"><option value="-1" id="-1" selected>--Please Select--</option><option value="0" id="0">No</option><option value="1" id="1">Yes</option></select></td><td id="actionTd_' + v.id + '" class="text-center"><a class="text-center text-danger" onclick="event.preventDefault();viewCreatedMemo(this,\'obs_' + v.id + '\')">View Memo</a></td></tr>');
+                    sr++;
+                });
+                getSubCheckListStatus();
+            },
+            dataType: "json",
+        });
+        $('#viewMemo_memo').richText({
+            bold: true,
+            italic: true,
+            underline: true,
+            leftAlign: true,
+            centerAlign: true,
+            rightAlign: true,
+            justify: true,
+            ol: true,
+            ul: true,
+            heading: true,
+            fonts: true,
+            fontColor: true,
+            fontSize: true,
+            table: true,
+            removeStyles: true,
+            code: true,
+            imageUpload: false,
+            fileUpload: false,
+            videoEmbed: false,
+            urls: false
+        });
+            document.getElementById('viewMemo_amountInv').addEventListener('input', function (e) {
+        this.value = this.value.replace(/\D|^0(?=\d)/g, ''); // Removes decimals and leading zeros
+    });
+    });
+    function showObservationArea(value, id) {
+        g_observationId = id;
+        if (value == 1) {
+            $('#viewMemoModel').modal('show');
+            $('.richText-editor').html('');
+            $('#viewMemo_heading').val('');
+            $('#updatedAnnexlist').val('0');
+            g_selectedRiskId = 0;
+            $('#viewMemo_risk_display').val('');
+            $('#viewMemo_replydays').val(1);
+            $('#viewMemo_loancase').val('');
+            $('#listofRespPersons tbody').empty();
+            $('#viewMemo_attachments').val('');
+        }
+    }
+
+
+    function reloadLocation() {
+        window.location.reload();
+    }
+
+    function updateRiskDisplay() {
+        var annexId = $('#updatedAnnexlist').val();
+        var riskName = '';
+        g_selectedRiskId = 0;
+        $.each(g_annexList, function (i, v) {
+            var id = v.ID || v.id;
+            if (id == annexId) {
+                riskName = v.RISK || v.risk;
+                g_selectedRiskId = v.RISK_ID || v.risK_ID;
+            }
+        });
+        $('#viewMemo_risk_display').val(riskName);
+        var color = '';
+        if (riskName.toLowerCase() === 'high') {
+            color = 'red';
+        } else if (riskName.toLowerCase() === 'medium') {
+            color = 'gold';
+        } else if (riskName.toLowerCase() === 'low') {
+            color = 'green';
+        }
+        $('#viewMemo_risk_display').css('color', color);
+    }
+    function saveMemoContent() {
+        if ($('#updatedAnnexlist').val() == 0) {
+            alert("Please select Annexure");
+            return false;
+        }
+        if ($('#viewMemo_heading').val()==""){
+            alert("Please Enter Para Heading");
+            return false;
+        }
+        updateRiskDisplay();
+        if (g_selectedRiskId == 0) {
+            alert("Risk not available for selected Annexure");
+            return false;
+        }
+         if($('#viewMemo_amountInv').val()  == ""){
+            alert('Please Enter Amount Involved, in case of blank please enter 0');
+
+            return;
+        }
+
+         if($('#viewMemo_noinstances').val()  ==""){
+            alert('Please Enter No. of Instances, in case of blank please enter 0');
+            return;
+        }
+        var resP = [];
+        $.each($('#listofRespPersons tbody tr'), function (i, v) {
+            resP.push({
+                'PP_NO': $(v).attr('id').split('tr_')[1],
+                'EMP_NAME': $(v).find('td').eq(2).html(),
+                'LOAN_CASE': $(v).find('td').eq(3).html(),
+                'LC_AMOUNT': $(v).find('td').eq(4).html(),
+                'ACCOUNT_NUMBER': $(v).find('td').eq(5).html(),
+                'ACC_AMOUNT': $(v).find('td').eq(6).html()
+            });
+        });
+        var memo = {
+            'HEADING': $('#viewMemo_heading').val(),
+            'RISK': g_selectedRiskId,
+            'ANNEXURE_ID': $('#updatedAnnexlist').val(),
+            'MEMO': $('.richText-editor').html(),
+            'ID': g_observationId,
+            'DAYS': $('#viewMemo_replydays option:selected').val(),
+            'NO_OF_INSTANCES': $('#viewMemo_noinstances').val(),
+            'AMOUNT_INVOLVED': $('#viewMemo_amountInv').val(),
+            'LOANCASE': $('#viewMemo_loancase').val(),
+            'ATTACHMENTS': $('#viewMemo_attachments').val(),
+            'RESPONSIBLE_PPNO': resP,
+            'RESP_TABLE_ROWS': g_respUsersArr
+        };
+        var isFound = false;
+        $.each(g_memoObj, function (i, v) {
+            if (v.ID == g_observationId) {
+                isFound = true;
+                g_memoObj[i].MEMO = memo.MEMO;
+                g_memoObj[i].HEADING = memo.HEADING;
+                g_memoObj[i].RISK = memo.RISK;
+                g_memoObj[i].ANNEXURE_ID = memo.ANNEXURE_ID;
+                g_memoObj[i].ID = memo.ID;
+                g_memoObj[i].LOANCASE = memo.LOANCASE;
+                g_memoObj[i].NO_OF_INSTANCES = memo.NO_OF_INSTANCES;
+                g_memoObj[i].AMOUNT_INVOLVED = memo.AMOUNT_INVOLVED;
+                g_memoObj[i].DAYS = memo.DAYS;
+                g_memoObj[i].ATTACHMENTS = memo.ATTACHMENTS;
+                g_memoObj[i].RESPONSIBLE_PPNO = memo.RESPONSIBLE_PPNO;
+                g_memoObj[i].RESP_TABLE_ROWS = memo.RESP_TABLE_ROWS;
+            }
+        });
+
+        if (!isFound)
+            g_memoObj.push(memo);
+
+        $('#viewMemoModel').modal('hide');
+        var payload = {
+            'LIST_OBS': [memo],
+            'ENG_ID': g_engId,
+            'S_ID': S_ID
+        };
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/save_observations",
+            type: "POST",
+            contentType: "application/json",
+            data: JSON.stringify(payload),
+            cache: false,
+            success: function (data) {
+                alert(data.message);
+                onAlertCallback(reloadLocation);
+            },
+            dataType: "json",
+        });
+    }
+
+    function viewCreatedMemo(e, id) {
+        g_observationId = id;
+        var value = $($(e).parent().parent().find('.checklistaction').eq(0)).val();
+
+        var tempobj = {
+            ID: '0',
+            'MEMO': '',
+            'ANNEXURE_ID': '0',
+            'HEADING': '',
+            'RISK': '',
+            'DAYS': '',
+            'LOANCASE': '',
+            'NO_OF_INSTANCES': '0',
+            'AMOUNT_INVOLVED': '0',
+            'ATTACHMENTS': '',
+            'RESPONSIBLE_PPNO': [],
+            'RESP_TABLE_ROWS': [],
+        };
+        if (value == 1) {
+            $.each(g_memoObj, function (i, v) {
+                if (v.ID == id) {
+                    tempobj = v;
+                }
+            });
+        }
+        if (tempobj.ID != 0) {
+            $('#viewMemoModel').modal('show');
+            $('.richText-editor').html(tempobj.MEMO);
+            $('#viewMemo_heading').val(tempobj.HEADING);
+            $('#updatedAnnexlist').val(tempobj.ANNEXURE_ID).trigger('change');
+            $('#viewMemo_replydays').val(tempobj.DAYS);
+            $('#viewMemo_loancase').val(tempobj.LOANCASE);
+            $('#viewMemo_noinstances').val(tempobj.NO_OF_INSTANCES);
+            $('#viewMemo_amountInv').val(tempobj.AMOUNT_INVOLVED);
+            $('#viewMemo_attachments').val(tempobj.ATTACHMENTS);
+            if (tempobj.RESPONSIBLE_PPNO.length > 0) {
+                $.each(tempobj.RESPONSIBLE_PPNO, function (j, pp) {
+                    var srNo = $('#listofRespPersons tbody tr').length;
+                    srNo++;
+                    $('#listofRespPersons tbody').append('<tr id="tr_' + pp.PP_NO + '"><td>' + srNo + '</td><td>' + pp.PP_NO + '</td><td>' + pp.EMP_NAME + '</td><td>' + pp.LOAN_CASE + '</td><td>' + pp.LC_AMOUNT + '</td><td>' + pp.ACCOUNT_NUMBER + '</td><td>' + pp.ACC_AMOUNT + '</td><td class="text-center"><a href="#" onclick="event.preventDefault();deleteRespRow(this);">Delete</a></td></tr>');
+                });
+            }
+        } else {
+            alert("Please select Yes to create Observation");
+            return;
+        }
+    }
+    function openResponsiblePPs() {
+        $('#ResponsiblePPModel').modal('show');
+        $('#matchedPPNoPanels').empty();
+        $('#matchedPPNoPanelsBYPP').empty();
+      //  $('#findBYPPNOPanel').addClass('d-none');
+        return false;
+    }
+    function getMatchedPP() {
+          $('#matchedPPNoPanelsBYPP').empty();
+          if($('#responsiblePPNoEntryField')==""){
+              alert("Please enter PP Number to proceed");
+              return;
+          }
+          g_respUser = [];
+          $.ajax({
+              url: g_asiBaseURL + "/ApiCalls/get_employee_name_from_pp",
+              type: "POST",
+              data: {
+                  'PP_NO': $('#responsiblePPNoEntryField').val()
+              },
+              cache: false,
+              success: function (data) {
+                  g_respUser.push(data);
+                  if (data.ppNumber > 0) {
+                       $('#matchedPPNoPanelsBYPP').append(`
+                        <!-- Responsible Persons Heading -->
+            <div class="row col-md-12 mt-2">
+                <div class="col-sm-1 font-weight-bold">P.P. No</div>
+                <div class="col-sm-3 font-weight-bold">Name</div>
+                <div class="col-sm-2 font-weight-bold">Acc No.</div>
+                <div class="col-sm-2 font-weight-bold">Acc Amount</div>
+                <div class="col-sm-1 font-weight-bold">LC No.</div>
+                <div class="col-sm-2 font-weight-bold">LC Amount</div>
+                <div class="col-sm-1 font-weight-bold">Action</div>
+            </div>
+            <hr class="row col-md-12 mt-3" />
+          <div class="row col-md-12 mt-2">
+           <div class="col-sm-1"><span>${$('#responsiblePPNoEntryField').val()}</span></div>
+              <div class="col-sm-3"><span>${data.name}</span></div>
+              <div class="col-sm-2"><span>${$('#responsibleAccountNumberEntryField').val()}</span></div>
+              <div class="col-sm-2"><span>${$('#responsibleAccountAmountEntryField').val()}</span></div>
+              <div class="col-sm-1"><span>${$('#responsibleLoanNumberEntryField').val()}</span></div>
+              <div class="col-sm-2"><span>${$('#responsibleLoanAmountEntryField').val()}</span></div>
+              <div class="col-sm-1">
+                  <input style="margin-left:10px;" class="respCheckBOXBYPP" type="checkbox" />
+              </div>
+          </div>
+      `);                  }
+
+              },
+              dataType: "json",
+          });
+      }
+
+      function getLCDetails(){
+         $('#matchedPPNoPanels').empty();
+        // $('#findBYPPNOPanel').removeClass('d-none');
+        g_respUser = [];
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/get_lc_details",
+            type: "POST",
+            data: {
+                'LC_NO': $('#responsibleLCNoEntryField').val(),
+                'BR_CODE': $('#responsibleBrCodeEntryField').val()
+            },
+            cache: false,
+            success: function (data) {
+                var response =data;
+
+                      response.forEach((data) => {
+        const responsiblePersons = [
+            { label: "MCO", ppno: data.mcoPPNo, name:data.mcoName },
+            { label: "Manager", ppno: data.managerPPNo, name:data.managerName },
+            { label: "RGM", ppno: data.rgmPPNo, name:data.rgmName },
+            { label: "CAD Reviewer", ppno: data.cadReviewerPPNo, name:data.cadReviewerName },
+            { label: "CAD Authorizer", ppno: data.cadAuthorizerPPNo , name:data.cadAuthorizerName }
+        ].filter(person => person.ppno);
+          const formatDate = (dateString) => {
+        if (!dateString) return 'N/A';
+        const [year, month, day] = dateString.split("T")[0].split("-");
+        return `${day}/${month}/${year}`;
+    };
+
+        $('#matchedPPNoPanels').append(`
+        <hr class="row col-md-12 mt-1"/> <div class="row loan-case-panel">
+            <!-- Loan Case Details -->
+            <div class="row col-md-12 mt-2">
+                <div class="col-md-4"><label>Name</label></div>
+                <div class="col-md-8"><input class="form-control" type="text" value="${data.name}" readonly /></div>
+            </div>
+            <div class="row col-md-12 mt-2">
+                <div class="col-md-4"><label>CNIC</label></div>
+                <div class="col-md-8"><input class="form-control" type="text" value="${data.cnic}" readonly /></div>
+            </div>
+            <div class="row col-md-12 mt-2">
+                <div class="col-md-4"><label>Loan Case No</label></div>
+                <div class="col-md-8"><input id="resp_loan_case" class="form-control" type="text" value="${data.loanCaseNo}" readonly /></div>
+            </div>
+
+            <div class="row col-md-12 mt-2">
+                <div class="col-md-4"><label>Application Date</label></div>
+                <div class="col-md-8"><input class="form-control" type="text" value="${formatDate(data.appDate)}" readonly /></div>
+            </div>
+            <div class="row col-md-12 mt-2">
+                <div class="col-md-4"><label>CAD Receive Date</label></div>
+                <div class="col-md-8"><input class="form-control" type="text" value="${formatDate(data.cadReceiveDate)}" readonly /></div>
+            </div>
+            <div class="row col-md-12 mt-2">
+                <div class="col-md-4"><label>Sanction Date</label></div>
+                <div class="col-md-8"><input class="form-control" type="text" value="${formatDate(data.sanctionDate)}" readonly /></div>
+            </div>
+
+            <div class="row col-md-12 mt-2">
+                <div class="col-md-4"><label>Disbursed Amount</label></div>
+                <div class="col-md-8"><input  class="form-control" type="text" value="${data.disbursedAmount}" readonly /></div>
+            </div>
+            <div class="row col-md-12 mt-2">
+                <div class="col-md-4"><label>Outstanding Amount</label></div>
+                <div class="col-md-8"><input id="resp_loan_amount" class="form-control" type="text" value="${data.outstandingAmount}" readonly /></div>
+            </div>
+            <hr class="row col-md-12 mt-3" />
+            <!-- Responsible Persons Heading -->
+            <div class="row col-md-12 mt-2">
+                <div class="col-sm-3 font-weight-bold">Role</div>
+                <div class="col-sm-3 font-weight-bold">P.P. No</div>
+                <div class="col-sm-3 font-weight-bold">Name</div>
+                <div class="col-sm-3 font-weight-bold">Action</div>
+            </div>
+            <hr class="row col-md-12 mt-3" />
+            <!-- Responsible Persons -->
+            ${responsiblePersons.map(person => `
+                <div class="row col-md-12 mt-2">
+                    <div class="col-sm-3"><label>${person.label}</label></div>
+                    <div class="col-sm-3"><span>${person.ppno}</span></div>
+                    <div class="col-sm-3"><span>${person.name}</span></div>
+                    <div class="col-sm-3">
+                        <input style="margin-left:10px;" class="respCheckBOX" type="checkbox" />
+                    </div>
+                </div>
+            `).join('')}
+        </div>
+    `);
+    });
+            },
+            dataType: "json",
+        });
+    }
+    function deleteRespRow(e) {
+        $(e).parent().parent().remove();
+    }
+    function addResponsibilityToMainTable() {
+        g_respUser = []; // Clear the existing user array for fresh addition
+
+        // Loop through each checked checkbox
+        $('.respCheckBOX:checked').each(function() {
+            const row = $(this).closest('.row'); // Get the closest row to the checkbox
+            const ppNumber = row.find('span').eq(0).text(); // Get P.P. No (second span)
+            const name = row.find('span').eq(1).text(); // Get Name (third span)
+
+            var srNo = $('#listofRespPersons tbody tr').length + 1; // Increment Serial Number
+                $('#listofRespPersons tbody').append(`
+                    <tr id="tr_${ppNumber}">
+                        <td>${srNo}</td>
+                        <td>${ppNumber}</td>
+                        <td>${name}</td>
+                        <td>${$('#resp_loan_case').val()}</td>
+                        <td>${$('#resp_loan_amount').val()}</td>
+                        <td></td>
+                        <td></td>
+                        <td class="text-center">
+                            <a href="#" onclick="event.preventDefault(); deleteRespRow(this);">Delete</a>
+                        </td>
+                    </tr>
+                `);
+                g_respUser.push({ ppNumber, name }); // Store the user details if needed
+
+        });
+
+         $('.respCheckBOXBYPP:checked').each(function() {
+            const row = $(this).closest('.row');
+            const ppNumber = row.find('span').eq(0).text();
+            const name = row.find('span').eq(1).text();
+            const acc_no = row.find('span').eq(2).text();
+            const acc_amt = row.find('span').eq(3).text();
+            const lc_no = row.find('span').eq(4).text();
+            const lc_amt = row.find('span').eq(5).text();
+            var srNo = $('#listofRespPersons tbody tr').length + 1; // Increment Serial Number
+                $('#listofRespPersons tbody').append(`
+                    <tr id="tr_${ppNumber}">
+                        <td>${srNo}</td>
+                        <td>${ppNumber}</td>
+                        <td>${name}</td>
+                        <td>${lc_no}</td>
+                        <td>${lc_amt}</td>
+                         <td>${acc_no}</td>
+                        <td>${acc_amt}</td>
+                        <td class="text-center">
+                            <a href="#" onclick="event.preventDefault(); deleteRespRow(this);">Delete</a>
+                        </td>
+                    </tr>
+                `);
+                g_respUser.push({ ppNumber, name }); // Store the user details if needed
+
+        });
+    }
+    function getSubCheckListStatus() {
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/get_subchecklist_status",
+            type: "POST",
+            data: {
+                'ENG_ID': g_engId,
+                'S_ID': S_ID
+            },
+            cache: false,
+            success: function (data) {
+                $.each(data, function (i, v) {
+                    if (v.status == 'Y') {
+                        $('#checklistaction_' + v.cD_ID).val(1);
+                        $('#checklistaction_' + v.cD_ID).attr('disabled', true);
+                        $('#actionTd_'+v.cD_ID).empty();
+                        $('#actionTd_' + v.cD_ID).append('<a class="text-center text-danger" onclick = "ObservationViewerPanel(' + v.obS_ID + ')"> View Memo </a>');
+
+                    }
+                    else if (v.status == 'N') {
+                        $('#checklistaction_' + v.cD_ID).val(0);
+                        $('#checklistaction_' + v.cD_ID).attr('disabled', false);
+                    }
+                    else {
+                        $('#checklistaction_' + v.cD_ID).val(-1);
+                        $('#checklistaction_' + v.cD_ID).attr('disabled', false);
+                    }
+                });
+            },
+            dataType: "json",
+        });
+    }
+    function ObservationViewerPanel(obs_id) {
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/get_observation_text_branches",
+            type: "POST",
+            data: {
+                'OBS_ID': obs_id,
+                'ENG_ID': g_engId
+            },
+            cache: false,
+            success: function (data) {
+
+                $('#viewMemoModel_ObSent').modal('show');
+                $('#viewMemo_memo_ObSent').html(data[0].obS_TEXT);
+                $('#viewMemo_response_ObSent').html(data[0].obS_REPLY);
+                $('#viewMemo_process_ObSent').html(data[0].process);
+                $('#viewMemo_annex_ObSent').val(data[0].annexurE_ID);
+                $('#viewMemo_subprocess_ObSent').html(data[0].suB_PROCESS);
+                $('#viewMemo_violation_ObSent').html(data[0].checklist_Details);
+                $('#viewMemo_risk_ObSent').val(data[0].obS_RISK_ID);
+                $('#listofRespPersons_ObSent tbody').empty();
+                  if(data[0].responsiblE_PPs != null){
+                       if (data[0].responsiblE_PPs.length > 0) {
+                    $.each(data[0].responsiblE_PPs, function (j, pp) {
+                        var srNo = $('#listofRespPersons_ObSent tbody tr').length;
+                        srNo++;
+                        $('#listofRespPersons_ObSent tbody').append('<tr id="tr__ObSent_' + pp.pP_NO + '"><td>' + srNo + '</td><td>' + pp.pP_NO + '</td><td>' + pp.emP_NAME + '</td><td>' + pp.loaN_CASE + '</td><td>' + pp.lC_AMOUNT + '</td><td>' + pp.accounT_NUMBER + '</td><td>' + pp.acC_AMOUNT + '</td></tr>');
+                    });
+                }
+                }
+            },
+            dataType: "json",
+        });
+
+    }
+</script>
+<div class="row mt-3">
+    <div>
+        <center>
+            <h3 style="color: #be0e43">Sub List Details</h3>
+        </center>
+    </div>
+
+    <table id="checklistDetailsPanel" class="table table-hover table-bordered table-hover mt-3 table-striped">
+        <thead style="background-color: #19875478 !important; ">
+            <tr>
+                <th class="col-md-1 font-weight-bold">Sr. No</th>
+                <th class="col-md-2 font-weight-bold">Parent/Sub Process</th>
+                <th class="col-md-3 font-weight-bold">Voilation</th>
+                <th class="col-md-3 font-weight-bold">Heading/Sublist Detail</th>
+                <th class="col-md-2 font-weight-bold text-center">Yes/No</th>
+                <th class="col-md-2 font-weight-bold"></th>
+            </tr>
+        </thead>
+        <tbody>
+        </tbody>
+    </table>
+</div>
+<div class="row mt-3">
+    <button onclick="history.back()" class="col-md-3 btn btn-secondary">Back to Sub Process</button>
+</div>
+
+
+
+
+<div id="viewMemoModel" class="modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-xl" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">Memo</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form>
+                    <div class="form-group">
+                        <label>Annexure</label>
+                        <div class="row col-md-12 w-100 m-0 p-0">
+                            <select id="updatedAnnexlist" class="form-select form-control">
+                                <option selected="selected" value="0" id="0">--Select Annexure--</option>
+                                @{
+                                    if (ViewData["AnnexList"] != null)
+                                    {
+
+                                        foreach (var item in (dynamic)(ViewData["AnnexList"]))
+                                        {
+                                            <option id="@item.ID" value="@item.ID">@item.ANNEX</option>
+                                        }
+
+                                    }
+                                }
+
+                            </select>
+                        </div>
+
+                    </div>
+                    <div class="form-group mt-2">
+                        <label for="viewMemo_risk_display">Risk will be assigned on the basis of Selected Annexure</label>
+                        <input id="viewMemo_risk_display" class="form-control" readonly />
+                    </div>
+
+                    <div class="form-group">
+                        <label for="viewMemo_heading">Heading/Title of Para <small class="text-muted">(A-Z, 0-9, space, &amp;, ?, comma)</small></label>
+                        <input id="viewMemo_heading" type="text" class="form-control alnum-only" placeholder="Heading/Title of Para (Alphabets, numbers, spaces, ampersand (&amp;), comma (,), and question mark (?) only)" data-allow-amp="true" data-allow-question="true" data-maxlen="500" maxlength="500" />
+                    </div>
+                    <div class="form-group">
+                        <label for="viewMemo_memo">Memo</label>
+                        <textarea id="viewMemo_memo" style="height:300px;" class="form-control"></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="viewMemo_loancase">Responsible PP NO.</label>
+                        <div class="row col-sm-12">
+                            <table id="listofRespPersons" class="table table-hover table-bordered table-hover mt-3 table-striped">
+                                <thead style="background-color: #19875478 !important; ">
+                                    <tr>
+                                        <th class="col-md- auto font-weight-bold">Sr.No</th>
+                                        <th class="col-md- auto font-weight-bold">P.P. No</th>
+                                        <th class="col-md- auto font-weight-bold">Name</th>
+                                        <th class="col-md- auto font-weight-bold">Loan Case</th>
+                                        <th class="col-md- auto font-weight-bold">LC Amount</th>
+                                        <th class="col-md- auto font-weight-bold">Account No.</th>
+                                        <th class="col-md- auto font-weight-bold">ACC Amount</th>
+                                        <th class="col-md- auto text-center font-weight-bold"><center><button type="button" onclick="openResponsiblePPs();" class="rounded-circle btn btn-danger btn-sm"><i class="fa fa-plus text-white"></i></button></center></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <div class="row">
+                            <div class="col-md-4">
+                                <label for="viewMemo_amountInv">Amount Involved <small class="text-danger fw-bold">(Non Decimal Numbers only) </small></label>
+                                <input id="viewMemo_amountInv" class="form-control" type="number" min="0" value="1" />
+                            </div>
+                            <div class="col-md-4">
+                                <label for="viewMemo_noinstances">No of Instances</label>
+                                <input id="viewMemo_noinstances" class="form-control" type="number" min="0" value="1" />
+                            </div>
+
+                            <div class="col-md-4">
+                                <label for="viewMemo_replydays">No of Days to reply</label>
+                                <select id="viewMemo_replydays" class="form-control form-select">
+                                    <option id="1" value="1">1</option>
+                                    <option id="2" value="2">2</option>
+                                    <option id="3" value="3">3</option>
+                                    <option id="4" value="4">4</option>
+                                    <option id="5" value="5">5</option>
+                                    <option id="6" value="6">6</option>
+                                    <option value="7">7</option>
+                                </select>
+
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="viewMemo_attachments">Attachments</label>
+                        <input id="viewMemo_attachments" class="form-control" type="file" multiple="multiple" style="padding-top:3px;" />
+                    </div>
+
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button onclick="saveMemoContent();" type="button" class="btn btn-danger">Save Memo</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<div id="ResponsiblePPModel" class="modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-lg" style="min-width:95% !important" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title">Responsible Person</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form>
+                    <div class="form-group">
+
+                        <label class="form-control text-bold fw-bold text-center">Search Responsible By LC Number</label>
+
+                        <div class="row col-sm-12">
+                            <div class="col-sm-5">
+                                <label for="viewMemo_memo">Loan Case No.</label>
+                                <input type="text" class="form-control" id="responsibleLCNoEntryField" />
+                            </div>
+                            <div class="col-sm-5">
+                                <label for="responsibleBrCodeEntryField">Branch Code <small class="text-muted">(A-Z, 0-9, space, &amp;, ?)</small></label>
+                                <input type="text" class="form-control alnum-only" id="responsibleBrCodeEntryField" aria-describedby="brcode" placeholder="Branch Code (Alphabets, numbers, spaces, ampersand (&amp;), comma (,), and question mark (?) only)" data-allow-space="true" data-allow-amp="true" maxlength="200" title="Enter only Alphabets (A-Z), numbers (0-9), spaces, ampersand (&amp;), comma (,), and question mark (?)" />
+                            </div>
+                            <div class="col-sm-2 d-flex align-items-end">
+                                <button onclick="getLCDetails();" type="button" class="btn btn-danger w-100">Find</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <div id="matchedPPNoPanels" style="padding:20px;">
+                        </div>
+                    </div>
+                    <div class="form-group">
+
+                        <label class="form-control text-bold fw-bold text-center">Search Responsible By PP No.</label>
+
+                        <div id="findBYPPNOPanel" class="mt-2 row col-md-12">
+                            <div class="col-md-2">
+                                <input id="responsiblePPNoEntryField" class="form-control" type="text" placeholder="Enter PP. No." />
+                            </div>
+                            <div class="col-md-2">
+                                <input id="responsibleAccountNumberEntryField" class="form-control" type="number" placeholder="Enter Account Number" />
+                            </div>
+                            <div class="col-md-2">
+                                <input id="responsibleAccountAmountEntryField" class="form-control" type="number" placeholder="Enter Account Amount" />
+                            </div>
+                            <div class="col-md-2">
+                                <input id="responsibleLoanNumberEntryField" class="form-control" type="text" placeholder="Enter LC No." />
+                            </div>
+                            <div class="col-md-2">
+                                <input id="responsibleLoanAmountEntryField" class="form-control" type="text" placeholder="Enter LC Amount" />
+                            </div>
+
+                            <button type="button" onclick="getMatchedPP();" class="col-md-2 btn btn-success">Search</button>
+
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <div id="matchedPPNoPanelsBYPP" style="padding:20px;">
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button onclick="addResponsibilityToMainTable();" type="button" data-bs-dismiss="modal" class="btn btn-danger">Add Responsibility</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+<div id="viewMemoModel_ObSent" class="modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-xl" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">Observation</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form>
+                    <div class="form-group">
+                        <label for="viewMemo_annex_ObSent" class="font-weight-bold">Annexure</label>
+                        <select id="viewMemo_annex_ObSent" disabled="disabled" class="form-select form-control">
+                            <option selected="selected" value="0" id="0">--Select Annexure--</option>
+                            @{
+                                if (ViewData["AnnexList"] != null)
+                                {
+
+                                    foreach (var item in (dynamic)(ViewData["AnnexList"]))
+                                    {
+                                        <option id="@item.ID" value="@item.ID">@item.ANNEX</option>
+                                    }
+
+                                }
+                            }
+
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="viewMemo_process_ObSent" class="font-weight-bold">Process</label>
+                        <div id="viewMemo_process_ObSent" disabled="disabled" style="max-height: 100px; height: auto; overflow-y: auto;" class="form-control"></div>
+                    </div>
+                    <div class="form-group">
+                        <label for="viewMemo_subprocess_ObSent" class="font-weight-bold">Sub Process</label>
+                        <div id="viewMemo_subprocess_ObSent" disabled="disabled" style="max-height: 100px; height: auto; overflow-y: auto;" class="form-control"></div>
+                    </div>
+                    <div class="form-group">
+                        <label for="viewMemo_violation_ObSent" class="font-weight-bold">Checklist Details</label>
+                        <div id="viewMemo_violation_ObSent" disabled="disabled" style="max-height: 100px; height: auto; overflow-y: auto;" class="form-control"></div>
+                    </div>
+                    <div class="form-group">
+                        <label for="viewMemo_respPP_ObSent" class="font-weight-bold">Responsible Personals</label>
+                        <div class="col-md-12 pl-0 pr-0">
+                            <table id="listofRespPersons_ObSent" class="table table-hover table-bordered table-hover mt-3 table-striped">
+                                <thead style="background-color: #19875478 !important; ">
+                                    <tr>
+                                        <th class="col-md- auto font-weight-bold">Sr.No</th>
+                                        <th class="col-md- auto font-weight-bold">P.P. No</th>
+                                        <th class="col-md- auto font-weight-bold">Name</th>
+                                        <th class="col-md- auto font-weight-bold">Loan Case</th>
+                                        <th class="col-md- auto font-weight-bold">LC Amount</th>
+                                        <th class="col-md- auto font-weight-bold">Account No.</th>
+                                        <th class="col-md- auto font-weight-bold">ACC Amount</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="viewMemo_memo_ObSent" class="font-weight-bold">Memo</label>
+                        <div id="viewMemo_memo_ObSent" disabled="disabled" style="height: auto; overflow-y: auto;" class="form-control"></div>
+                    </div>
+                    <div class="form-group">
+                        <label for="viewMemo_risk_ObSent">Risk</label>
+                        <input id="viewMemo_risk_ObSent" class="form-control" readonly />
+                    </div>
+
+                    <div class="form-group">
+                        <label for="viewMemo_response_ObSent" class="font-weight-bold">Auditee Response</label>
+                        <div id="viewMemo_response_ObSent" disabled="disabled" style="height: auto; overflow-y: auto;" class="form-control"></div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+

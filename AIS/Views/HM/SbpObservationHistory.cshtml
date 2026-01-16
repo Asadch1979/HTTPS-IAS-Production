@@ -1,0 +1,886 @@
+@using Microsoft.AspNetCore.Mvc.ViewFeatures
+@inject IJsonHelper Json
+@{ 
+    ViewData["Title"] = "SBP Observation History";
+    Layout = "_Layout";
+    var requestedParaId = ViewBag.ParaId is long l ? l : 0L;
+}
+
+<div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center mb-4 gap-3">
+    <div>
+        <h2 class="mb-0">SBP Observation History</h2>
+        <p class="text-muted mb-0">Complete response timeline for Para ID <span class="fw-semibold" id="pageParaId">@requestedParaId</span>.</p>
+    </div>
+    <a id="backToRegister" class="btn btn-outline-secondary" href="~/HM/SbpObservationRegister">
+        <i class="fa fa-arrow-left me-1"></i>
+        Back to Register
+    </a>
+</div>
+
+<style>
+    .rich-text-container .richText,
+    .rich-text-container .richText .richText-editor {
+        width: 100%;
+    }
+
+    .rich-text-container .richText {
+        border: 1px solid #ced4da;
+        border-radius: 0.375rem;
+        background-color: #fff;
+    }
+
+    .rich-text-container .richText .richText-editor {
+        min-height: 260px;
+        border: 1px solid #ced4da;
+    }
+
+    .rich-text-container .richText .richText-editor table,
+    .rich-text-viewer table,
+    .rich-text-table-content table {
+        border-collapse: collapse;
+        width: 100%;
+    }
+
+    .rich-text-container .richText .richText-editor th,
+    .rich-text-container .richText .richText-editor td,
+    .rich-text-viewer th,
+    .rich-text-viewer td,
+    .rich-text-table-content th,
+    .rich-text-table-content td {
+        border: 1px solid #adb5bd;
+        padding: 0.5rem;
+        vertical-align: top;
+    }
+
+    .rich-text-viewer {
+        border: 1px solid #ced4da;
+        border-radius: 0.375rem;
+        padding: 0.75rem;
+        background-color: #fff;
+        min-height: 120px;
+        max-height: 420px;
+        overflow: auto;
+        word-break: break-word;
+    }
+</style>
+
+<div class="card shadow-sm mb-4" id="summaryCard">
+    <div class="card-header bg-white">
+        <h5 class="card-title mb-0">Observation Summary</h5>
+    </div>
+    <div class="card-body">
+        <div class="row g-3">
+            <div class="col-md-3">
+                <h6 class="text-muted mb-1">Para ID</h6>
+                <p class="fw-semibold mb-0" id="summaryParaId">-</p>
+            </div>
+            <div class="col-md-3">
+                <h6 class="text-muted mb-1">Reference No</h6>
+                <p class="fw-semibold mb-0" id="summaryRefNo">-</p>
+            </div>
+            <div class="col-md-3">
+                <h6 class="text-muted mb-1">Function Name</h6>
+                <p class="fw-semibold mb-0" id="summaryFunction">-</p>
+            </div>
+            <div class="col-md-3">
+                <h6 class="text-muted mb-1">Para No</h6>
+                <p class="fw-semibold mb-0" id="summaryPara">-</p>
+            </div>
+            <div class="col-12">
+                <h6 class="text-muted mb-1">SBP Observation</h6>
+                <div class="rich-text-viewer" id="summaryObservation">-</div>
+            </div>
+            <div class="col-12">
+                <h6 class="text-muted mb-1">SBP Directions</h6>
+                <div class="rich-text-viewer" id="summaryDirections">-</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="dt-container card shadow-sm">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table id="historyTable" class="table table-hover table-bordered table-striped align-middle w-100">
+                <thead>
+                    <tr>
+                        <th>Reply Date</th>
+                        <th>Bank Response</th>
+                        <th>Compliance Status</th>
+                        <th>IAD Validation</th>
+                        <th>Entered By</th>
+                        <th>Entered On</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="complianceModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg" style="min-width:95% !important;">
+        <div class="modal-content">
+
+            <div class="modal-header">
+                <h5 class="modal-title">Update Management Response</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+
+            <!-- SCROLLABLE BODY  single instance -->
+            <div class="modal-body" style="max-height:80vh; overflow-y:auto;">
+
+                <div class="mb-3">
+                    <label class="form-label">Reference No</label>
+                    <input type="text" id="complianceRefNo" class="form-control" readonly />
+                </div>
+
+                <input type="hidden" id="complianceParaId" value="0" />
+
+                <div class="mb-3">
+                    <label class="form-label" for="bankResponseEditor">Management Response</label>
+                    <textarea id="bankResponseEditor" class="form-control" style="height:260px;"></textarea>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Reply Date</label>
+                    <input type="date" id="replyDate" class="form-control" required />
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Compliance Status</label>
+                    <select id="complianceStatus" class="form-select" required>
+                        <option value="">--Select--</option>
+                        <option>Complied</option>
+                        <option>Non-Complied</option>
+                        <option>In Process</option>
+                    </select>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">IAD Validation</label>
+                    <select id="iadValidation" class="form-select" required>
+                        <option value="">--Select--</option>
+                        <option>Validated</option>
+                        <option>Non-Validated</option>
+                    </select>
+                </div>
+
+            </div>
+
+            <div class="modal-footer">
+                <button class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button class="btn btn-success" onclick="saveCompliance()">Update Response</button>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script type="text/javascript">
+        (function () {
+            const AUTH_KEY = 'SBP_AUTH';
+            const RETAIN_KEY = 'SBP_AUTH_RETAIN';
+            const COMPLIANCE_EDITOR_SELECTOR = '#bankResponseEditor';
+            const RICH_TEXT_EDITOR_OPTIONS = {
+                bold: true,
+                italic: true,
+                underline: true,
+                leftAlign: true,
+                centerAlign: true,
+                rightAlign: true,
+                justify: true,
+                ol: true,
+                ul: true,
+                heading: true,
+                fonts: true,
+                fontColor: true,
+                fontSize: true,
+                table: true,
+                removeStyles: true,
+                code: true,
+                imageUpload: false,
+                fileUpload: false,
+                videoEmbed: false,
+                urls: false
+            };
+            const requestedParaId = Number(@Json.Serialize(requestedParaId));
+            const queryParams = new URLSearchParams(window.location.search);
+            const queryParaId = parseInt(queryParams.get('paraId'), 10) || 0;
+            const API_BASE_URL = (typeof g_aisBaseURL === 'string' && g_aisBaseURL)
+                ? g_aisBaseURL
+                : ((typeof g_asiBaseURL === 'string' && g_asiBaseURL) ? g_asiBaseURL : '');
+            let currentParaId = queryParaId > 0 ? queryParaId : (requestedParaId > 0 ? requestedParaId : 0);
+            let currentRefNo = '';
+            let historyTable = null;
+            let historyResponses = [];
+
+            function initRichTextEditor(selector) {
+                const $textarea = $(selector);
+                if (!$textarea.length || $textarea.data('richTextInit')) {
+                    return;
+                }
+
+                $textarea.richText(RICH_TEXT_EDITOR_OPTIONS);
+                $textarea.data('richTextInit', true);
+            }
+
+            function destroyRichTextEditor(selector) {
+                const $textarea = $(selector);
+                if (!$textarea.length || !$textarea.data('richTextInit')) {
+                    return;
+                }
+
+                const $wrapper = $textarea.closest('.richText');
+                if ($wrapper.length) {
+                    const $editor = $wrapper.find('.richText-editor');
+                    if ($editor.length) {
+                        $textarea.val($editor.html());
+                    }
+                    $wrapper.find('.richText-toolbar').remove();
+                    $wrapper.find('.richText-editor').remove();
+                    $textarea.unwrap('.richText');
+                }
+
+                $textarea.removeClass('richText-initial');
+                $textarea.removeData('richTextInit');
+                $textarea.show();
+            }
+
+            function setEditorContent(selector, html) {
+                const $textarea = $(selector);
+                if (!$textarea.length) {
+                    return;
+                }
+
+                const content = typeof html === 'string' ? html : '';
+
+                if ($textarea.data('richTextInit')) {
+                    const $editor = $textarea.closest('.richText').find('.richText-editor');
+                    if ($editor.length) {
+                        $editor.html(content);
+                    }
+                }
+
+                $textarea.val(content);
+            }
+
+            function clearEditorContent(selector) {
+                setEditorContent(selector, '');
+            }
+
+            function getEditorContent(selector) {
+                const $textarea = $(selector);
+                if (!$textarea.length) {
+                    return '';
+                }
+
+                if ($textarea.data('richTextInit')) {
+                    const $editor = $textarea.closest('.richText').find('.richText-editor');
+                    if ($editor.length) {
+                        return $editor.html();
+                    }
+                }
+
+                return $textarea.val() || '';
+            }
+
+            function extractTextFromHtml(html) {
+                if (!html) {
+                    return '';
+                }
+
+                const container = document.createElement('div');
+                container.innerHTML = html;
+                return (container.textContent || container.innerText || '')
+                    .replace(/\u00A0/g, ' ')
+                    .replace(/\s+/g, ' ')
+                    .trim();
+            }
+
+            function setViewerHtml(selector, html) {
+                const element = document.querySelector(selector);
+                if (!element) {
+                    return;
+                }
+
+                if (html) {
+                    element.innerHTML = html;
+                } else {
+                    element.innerHTML = '<p class="text-muted mb-0">-</p>';
+                }
+            }
+
+            $(document).ready(function () {
+                $('#pageParaId').text(currentParaId > 0 ? currentParaId : '-');
+
+                if (!currentParaId) {
+                    alert('Para ID is missing. Please return to the register and try again.');
+                    return;
+                }
+
+                initialiseEventHandlers();
+                loadHistory();
+            });
+
+            window.addEventListener('beforeunload', function () {
+                if (sessionStorage.getItem(RETAIN_KEY) === 'true') {
+                    return;
+                }
+
+                sessionStorage.removeItem(AUTH_KEY);
+            });
+
+            function initialiseEventHandlers() {
+                $('#complianceModal').on('shown.bs.modal', function () {
+                    initRichTextEditor(COMPLIANCE_EDITOR_SELECTOR);
+                });
+
+                $('#complianceModal').on('hidden.bs.modal', function () {
+                    const $modal = $(this);
+                    destroyRichTextEditor(COMPLIANCE_EDITOR_SELECTOR);
+                    clearEditorContent(COMPLIANCE_EDITOR_SELECTOR);
+                    $modal.data('responseId', null);
+                    $modal.find('#replyDate').val('');
+                    $modal.find('#complianceStatus').val('');
+                    $modal.find('#iadValidation').val('');
+                    $modal.find('#complianceParaId').val('0');
+                    $modal.find('#complianceRefNo').val('');
+                });
+
+                $('#backToRegister').on('click', function () {
+                    if (hasRegisterAccess()) {
+                        sessionStorage.setItem(RETAIN_KEY, 'true');
+                    } else {
+                        sessionStorage.removeItem(RETAIN_KEY);
+                    }
+                });
+            }
+
+            function hasRegisterAccess() {
+                return sessionStorage.getItem(AUTH_KEY) === 'true';
+            }
+
+            function ensureRegisterAccess(callback) {
+                if (hasRegisterAccess()) {
+                    if (typeof callback === 'function') {
+                        callback();
+                    }
+                    return;
+                }
+
+                alert('Please open the SBP Observation Register and authenticate before performing this action.');
+            }
+
+            function loadHistory() {
+                if (!currentParaId) {
+                    return;
+                }
+
+                const url = API_BASE_URL + '/ApiCalls/GetSbpObservationHistory?paraId=' + encodeURIComponent(currentParaId);
+
+                fetchWithPageId(url, { method: 'GET' })
+                    .then(parseApiResponse)
+                    .then(function (data) {
+                        renderHistoryData(data);
+                    })
+                    .catch(function (error) {
+                        console.error('History fetch error', error);
+                        renderHistoryData(null);
+                        const message = (error && error.message) ? error.message : 'Unable to load observation history at the moment.';
+                        alert(message);
+                    });
+            }
+
+            function renderHistoryData(data) {
+                const normalized = normalizeHistoryPayload(data);
+                const header = normalized.header;
+                const responses = normalized.responses;
+
+                if (header) {
+                    if (header.Ref_No) {
+                        currentRefNo = header.Ref_No;
+                    }
+
+                    if (header.ParaId && header.ParaId > 0) {
+                        currentParaId = header.ParaId;
+                        $('#pageParaId').text(currentParaId);
+                    }
+
+                    populateSummary(header);
+                } else {
+                    resetSummary();
+                }
+
+                renderResponses(responses);
+            }
+
+            function normalizeHistoryPayload(raw) {
+                if (!raw) {
+                    return { header: null, responses: [] };
+                }
+
+                const containers = [];
+                if (typeof raw === 'object') {
+                    containers.push(raw);
+                    ['data', 'Data', 'result', 'Result', 'payload', 'Payload'].forEach(function (key) {
+                        if (raw[key]) {
+                            containers.push(raw[key]);
+                        }
+                    });
+                }
+
+                let headerSource = null;
+                let responsesSource = null;
+
+                containers.forEach(function (container) {
+                    if (!container) {
+                        return;
+                    }
+
+                    if (!headerSource && typeof container === 'object' && !Array.isArray(container)) {
+                        headerSource = container.header || container.Header || container.observation || container.Observation || container.details || container.Details || null;
+                        if (!headerSource) {
+                            const keys = Object.keys(container).map(function (key) {
+                                return key.toString().replace(/[^a-z0-9]/gi, '').toLowerCase();
+                            });
+                            const headerKeys = ['refno', 'functionname', 'parano', 'sbpobservation', 'sbpdirections'];
+                            const hasHeaderShape = headerKeys.some(function (key) {
+                                return keys.indexOf(key) !== -1;
+                            });
+
+                            if (hasHeaderShape) {
+                                headerSource = container;
+                            }
+                        }
+                    }
+
+                    if (!responsesSource && typeof container === 'object') {
+                        responsesSource = container.responses || container.Responses || container.history || container.History || container.responseList || container.ResponseList || container.managementResponses || container.ManagementResponses || null;
+                    }
+                });
+
+                if (!responsesSource && headerSource && typeof headerSource === 'object') {
+                    responsesSource = headerSource.responses || headerSource.Responses || null;
+                }
+
+                const header = headerSource ? normalizeHeader(headerSource) : null;
+                const responses = Array.isArray(responsesSource) ? responsesSource.map(normalizeResponse).filter(Boolean) : [];
+
+                return { header: header, responses: responses };
+            }
+
+            function parseApiResponse(response) {
+                return response.text().then(function (text) {
+                    if (!response.ok) {
+                        const message = extractErrorMessage(text) || 'Unable to process request.';
+                        throw new Error(message);
+                    }
+
+                    if (!text) {
+                        return {};
+                    }
+
+                    try {
+                        return JSON.parse(text);
+                    } catch (error) {
+                        return {};
+                    }
+                });
+            }
+
+            function extractErrorMessage(text) {
+                if (!text) {
+                    return '';
+                }
+
+                try {
+                    const parsed = JSON.parse(text);
+                    if (parsed && typeof parsed === 'object') {
+                        return parsed.message || parsed.Message || parsed.error || parsed.Error || '';
+                    }
+                } catch (error) {
+                    // ignore JSON parse errors and fall back to raw text
+                }
+
+                return text;
+            }
+
+            function normalizeHeader(item) {
+                if (!item) {
+                    return null;
+                }
+
+                const paraId = parseNumeric(getValue(item, 'Para_Id') || getValue(item, 'ParaId') || getValue(item, 'ParaID'));
+                const resolvedParaId = paraId > 0 ? paraId : currentParaId;
+
+                const header = {
+                    ParaId: resolvedParaId,
+                    Ref_No: getValue(item, 'Ref_No') || currentRefNo,
+                    Function_Name: getValue(item, 'Function_Name'),
+                    Para_No: getValue(item, 'Para_No'),
+                    SBP_Observation: decodeValue(getValue(item, 'SBP_Observation')),
+                    SBP_Directions: decodeValue(getValue(item, 'SBP_Directions')),
+                    Compliance_Quarter: getValue(item, 'Compliance_Quarter')
+                };
+
+                return header;
+            }
+
+            function normalizeResponse(item) {
+                if (!item) {
+                    return null;
+                }
+
+                const responseId = getValue(item, 'Response_Id') || getValue(item, 'ResponseId') || getValue(item, 'Id');
+                const replyDate = getValue(item, 'Reply_Date') || getValue(item, 'ReplyDate');
+                const enteredOn = getValue(item, 'Entered_On') || getValue(item, 'EnteredOn');
+                const paraId = parseNumeric(getValue(item, 'Para_Id') || getValue(item, 'ParaId') || getValue(item, 'ParaID'));
+                const resolvedParaId = paraId > 0 ? paraId : currentParaId;
+
+                return {
+                    Response_Id: responseId ? String(responseId) : '',
+                    ParaId: resolvedParaId,
+                    Ref_No: getValue(item, 'Ref_No') || currentRefNo,
+                    Reply_Date: replyDate,
+                    Bank_Response: decodeValue(getValue(item, 'Bank_Response') || getValue(item, 'BankResponse')),
+                    Compliance_Status: getValue(item, 'Compliance_Status'),
+                    IAD_Validation: getValue(item, 'IAD_Validation'),
+                    Entered_By: getValue(item, 'Entered_By'),
+                    Entered_On: enteredOn
+                };
+            }
+
+            function decodeValue(value) {
+                if (value === null || value === undefined) {
+                    return '';
+                }
+
+                if (typeof value !== 'string') {
+                    return value;
+                }
+
+                if (typeof decryptText === 'function') {
+                    try {
+                        const decrypted = decryptText(value);
+                        if (decrypted) {
+                            return decrypted;
+                        }
+                    } catch (error) {
+                        // ignore decryption errors and fall back to original value
+                    }
+                }
+
+                return value;
+            }
+
+            function renderResponses(responses) {
+                const tbody = $('#historyTable tbody');
+                if (historyTable) {
+                    historyTable.destroy();
+                    historyTable = null;
+                }
+                tbody.empty();
+
+                if (!Array.isArray(responses) || !responses.length) {
+                    historyResponses = [];
+                    tbody.append('<tr><td colspan="7" class="text-center text-muted">No history found for this reference.</td></tr>');
+                    return;
+                }
+
+                const sorted = responses.slice().sort(function (a, b) {
+                    const firstDate = parseDate(a?.Reply_Date);
+                    const secondDate = parseDate(b?.Reply_Date);
+                    const firstValue = firstDate ? firstDate.getTime() : 0;
+                    const secondValue = secondDate ? secondDate.getTime() : 0;
+                    return firstValue - secondValue;
+                });
+
+                historyResponses = sorted;
+
+                sorted.forEach(function (item) {
+                    const rowHtml = [
+                        wrapText(formatDate(item?.Reply_Date)),
+                        createMultilineCell(item?.Bank_Response),
+                        wrapText(item?.Compliance_Status),
+                        wrapText(item?.IAD_Validation),
+                        wrapText(item?.Entered_By),
+                        wrapText(formatDate(item?.Entered_On)),
+                        createActionsCell(item)
+                    ].join('');
+                    tbody.append('<tr>' + rowHtml + '</tr>');
+                });
+
+                historyTable = $('#historyTable').DataTable({
+                    order: [[0, 'asc']],
+                    autoWidth: false,
+                    pageLength: 25,
+                    lengthMenu: [10, 25, 50, 100],
+                    columnDefs: [
+                        { targets: -1, orderable: false, searchable: false, className: 'text-center text-nowrap align-middle' },
+                        { targets: '_all', className: 'align-top text-break' }
+                    ]
+                });
+            }
+
+            function populateSummary(item) {
+                const paraIdValue = parseNumeric(item?.ParaId);
+                const effectiveParaId = paraIdValue > 0 ? paraIdValue : currentParaId;
+                $('#summaryParaId').text(effectiveParaId > 0 ? effectiveParaId : '-');
+                $('#summaryRefNo').text(item?.Ref_No || currentRefNo || '-');
+                $('#summaryFunction').text(item?.Function_Name || '-');
+                $('#summaryPara').text(item?.Para_No || '-');
+                setViewerHtml('#summaryObservation', item?.SBP_Observation);
+                setViewerHtml('#summaryDirections', item?.SBP_Directions);
+            }
+
+            function resetSummary() {
+                $('#summaryParaId').text('-');
+                $('#summaryRefNo').text('-');
+                $('#summaryFunction').text('-');
+                $('#summaryPara').text('-');
+                setViewerHtml('#summaryObservation', '');
+                setViewerHtml('#summaryDirections', '');
+            }
+
+            function wrapText(value) {
+                return '<td>' + encodeHtml(hasValue(value) ? value : '-') + '</td>';
+            }
+
+            function createMultilineCell(value) {
+                const cell = document.createElement('td');
+                cell.className = 'align-top';
+
+                if (hasValue(value)) {
+                    const wrapper = document.createElement('div');
+                    wrapper.className = 'rich-text-table-content text-break';
+                    wrapper.innerHTML = value;
+                    cell.appendChild(wrapper);
+                } else {
+                    cell.innerHTML = '<span class="text-muted">-</span>';
+                }
+
+                return cell.outerHTML;
+            }
+
+            function createActionsCell(item) {
+                const responseId = item && item.Response_Id ? String(item.Response_Id) : '';
+                if (!responseId) {
+                    return '<td>-</td>';
+                }
+
+                const encodedId = encodeHtml(responseId);
+                return '<td class="text-center text-nowrap"><button class="btn btn-sm btn-primary" data-response-id="' + encodedId + '" onclick="editResponse(this.dataset.responseId)">Edit</button></td>';
+            }
+
+            function formatDate(value) {
+                const date = parseDate(value);
+                if (!date) {
+                    return '';
+                }
+                return date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+            }
+
+            function formatDateForInput(value) {
+                if (!value) {
+                    return '';
+                }
+
+                if (value instanceof Date) {
+                    return value.toISOString().split('T')[0];
+                }
+
+                const raw = typeof value === 'string' ? value.trim() : value.toString();
+                if (!raw) {
+                    return '';
+                }
+
+                const isoMatch = raw.match(/^\d{4}-\d{2}-\d{2}/);
+                if (isoMatch && isoMatch[0]) {
+                    return isoMatch[0];
+                }
+
+                if (raw.startsWith('/Date(')) {
+                    const ticks = parseInt(raw.replace(/[^0-9+-]/g, ''), 10);
+                    if (!isNaN(ticks)) {
+                        const parsedTicks = new Date(ticks);
+                        if (!isNaN(parsedTicks.getTime())) {
+                            return parsedTicks.toISOString().split('T')[0];
+                        }
+                    }
+                }
+
+                const parsed = new Date(raw);
+                if (!isNaN(parsed.getTime())) {
+                    return parsed.toISOString().split('T')[0];
+                }
+
+                return '';
+            }
+
+            function openComplianceModal(response) {
+                const normalized = response || {};
+                const resolvedParaId = parseNumeric(normalized.ParaId) || currentParaId || 0;
+                const $modal = $('#complianceModal');
+                $modal.data('responseId', normalized.Response_Id || '');
+                $modal.find('#complianceParaId').val(resolvedParaId > 0 ? resolvedParaId : '');
+                $modal.find('#complianceRefNo').val(normalized.Ref_No || currentRefNo || '');
+                setEditorContent(COMPLIANCE_EDITOR_SELECTOR, normalized.Bank_Response || '');
+                $modal.find('#replyDate').val(formatDateForInput(normalized.Reply_Date));
+                $modal.find('#complianceStatus').val(normalized.Compliance_Status || '');
+                $modal.find('#iadValidation').val(normalized.IAD_Validation || '');
+                $modal.find('.modal-title').text('Update Management Response');
+                $modal.find('.btn-success').text('Update Response');
+                $modal.modal('show');
+            }
+
+            function getCurrentUser() {
+                const fromWindow = (window.currentUser || '').toString().trim();
+                if (fromWindow) {
+                    return fromWindow;
+                }
+
+                const fromDom = ($('#avatarEmpName').text() || '').trim();
+                return fromDom || 'SYSTEM';
+            }
+
+            window.editResponse = function (responseId) {
+                ensureRegisterAccess(function () {
+                    const normalizedId = (responseId || '').toString();
+                    if (!normalizedId) {
+                        alert('Unable to load the selected response.');
+                        return;
+                    }
+
+                    const match = historyResponses.find(function (entry) {
+                        const value = entry?.Response_Id || entry?.ResponseId || entry?.Id;
+                        return value && value.toString() === normalizedId;
+                    });
+
+                    if (!match) {
+                        alert('Unable to load the selected response.');
+                        return;
+                    }
+
+                    openComplianceModal(match);
+                });
+            };
+
+            window.saveCompliance = function () {
+                ensureRegisterAccess(function () {
+                    const $modal = $('#complianceModal');
+                    const responseId = ($modal.data('responseId') || '').toString().trim();
+                    const paraIdValue = parseInt($modal.find('#complianceParaId').val(), 10) || currentParaId || 0;
+                    const refNo = ($modal.find('#complianceRefNo').val() || currentRefNo || '').trim();
+                    const responseHtml = getEditorContent(COMPLIANCE_EDITOR_SELECTOR);
+                    const responseText = extractTextFromHtml(responseHtml);
+                    const replyDate = $modal.find('#replyDate').val();
+                    const status = $modal.find('#complianceStatus').val();
+                    const validation = $modal.find('#iadValidation').val();
+
+                    if (!responseId) {
+                        alert('Response identifier is missing.');
+                        return;
+                    }
+
+                    if (paraIdValue <= 0) {
+                        alert('Para ID is missing.');
+                        return;
+                    }
+
+                    if (!refNo || !responseText || !replyDate || !status || !validation) {
+                        alert('Please fill all required fields.');
+                        return;
+                    }
+
+                    const currentUser = (window.currentUser || '').toString().trim() || getCurrentUser();
+                    const encryptedResponse = encryptText(responseHtml);
+                    const payload = {
+                        response_id: responseId,
+                        para_id: paraIdValue,
+                        ref_no: refNo,
+                        bank_response: encryptedResponse,
+                        reply_date: replyDate,
+                        compliance_status: status,
+                        iad_validation: validation,
+                        user: currentUser,
+                        ResponseId: responseId,
+                        ParaId: paraIdValue,
+                        paraId: paraIdValue,
+                        PARA_ID: paraIdValue,
+                        RefNo: refNo,
+                        BankResponse: encryptedResponse,
+                        ReplyDate: replyDate,
+                        ComplianceStatus: status,
+                        IADValidation: validation,
+                        User: currentUser
+                    };
+
+                    fetchWithPageId(API_BASE_URL + '/ApiCalls/UpdateSbpObservationResponse', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    })
+                        .then(parseApiResponse)
+                        .then(function () {
+                            alert('Management response updated successfully.');
+                            $modal.modal('hide');
+                            loadHistory();
+                        })
+                        .catch(function (error) {
+                            const message = (error && error.message) ? error.message : 'Unable to process request.';
+                            alert(message);
+                        });
+                });
+            };
+
+            function parseDate(value) {
+                if (!value) {
+                    return null;
+                }
+                const date = new Date(value);
+                return isNaN(date.getTime()) ? null : date;
+            }
+
+            function encodeHtml(value) {
+                return $('<div/>').text(value ?? '').html();
+            }
+
+            function hasValue(value) {
+                return value !== undefined && value !== null && value !== '';
+            }
+
+            function getValue(item, propertyName) {
+                if (!item || typeof item !== 'object') {
+                    return '';
+                }
+
+                const normalizedTarget = (propertyName || '').toString().replace(/[^a-z0-9]/gi, '').toLowerCase();
+                if (!normalizedTarget) {
+                    return '';
+                }
+
+                for (const key in item) {
+                    if (!Object.prototype.hasOwnProperty.call(item, key)) {
+                        continue;
+                    }
+
+                    const normalizedKey = key.toString().replace(/[^a-z0-9]/gi, '').toLowerCase();
+                    if (normalizedKey === normalizedTarget) {
+                        return item[key];
+                    }
+                }
+
+                return '';
+            }
+
+            function parseNumeric(value) {
+                const number = Number(value);
+                return Number.isFinite(number) ? number : 0;
+            }
+        })();
+    </script>
+}

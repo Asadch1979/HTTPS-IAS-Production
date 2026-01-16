@@ -1,0 +1,75 @@
+.login-bg {
+    min-height: 100vh;
+    background: linear-gradient(160deg, hsl(233.72deg 96.28% 29.2%), #a4a2a2bf);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px 0;
+}
+
+.login-card {
+    background: rgba(255, 255, 255, 0.85);
+    border: none;
+    border-radius: 1rem;
+    box-shadow: 0 0.5rem 1rem rgba(0,0,0,.15);
+    max-width: 420px;
+    width: 100%;
+    padding: 1.5rem;
+}
+
+.login-btn {
+    background: #4e54c8;
+    color: #fff;
+}
+
+.kill-btn {
+    background: #c14450;
+    color: #fff;
+    transition: background-color .2s ease;
+}
+
+.kill-btn:hover {
+    background: #b52a37;
+    color: #fff;
+}
+
+.login-btn:hover {
+    background: #3b49a1;
+    color: #fff;
+}
+
+.login-logo {
+    height: 200px;
+}
+
+.login-subtitle {
+    color: #51515d;
+}
+.login-subtitle-dev {
+    color: red !important;
+}
+
+
+.login-alert {
+    max-width: 480px;
+}
+
+.maintenance-hero {
+    height: 350px;
+    background: linear-gradient(160deg, hsl(233deg 96% 29% / 95%), #a4a2a2bf);
+}
+
+.maintenance-logo {
+    height: 126px;
+}
+
+.maintenance-card {
+    margin-top: -100px;
+    backdrop-filter: blur(20px);
+    background: linear-gradient(292deg, #2257b8, #ef8691);
+}
+
+.maintenance-heading {
+    color: white;
+}
+

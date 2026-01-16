@@ -1,0 +1,196 @@
+﻿@{
+    var page_id = ViewData["PageId"] as int? ?? 0;
+}
+
+@{
+    ViewData["Title"] = "Loan Case Details";
+    Layout = "_Layout";
+}
+
+<script type="text/javascript">
+    $('#document').ready(function () {
+        $('#sidebar_policy').hide();
+    });
+</script>
+<div class="row col-md-12 mt-3">
+    <h4 style="display: block; color: #be0e43">Loan Case Details</h4>
+</div>
+
+<div class="row col-md-12 mt-3">
+    <div class="row col-md-12 mt-3">
+        <label><b>Applicant</b></label>
+    </div>
+    <div class="row col-md-12">
+        <table class="col-md-12 table table-hover table-bordered table-hover mt-1 table-striped">
+            <thead style="background-color: #19875478 !important; ">
+                <tr>
+                    <th class="col-md-3">CNIC</th>
+                    <th class="col-md-3">Name</th>
+                    <th class="col-md-3">Father Name</th>
+                    <th class="col-md-3">Date of Birth</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="row col-md-12 mt-3">
+    <div class="row col-md-12 mt-3">
+        <label><b>Purpose</b></label>
+    </div>
+    <div class="row col-md-12">
+        <table class="col-md-12 table table-hover table-bordered table-hover mt-1 table-striped">
+            <thead style="background-color: #19875478 !important;">
+                <tr>
+                    <th class="col-md-4">GL Description</th>
+                    <th class="col-md-2">Crop</th>
+                    <th class="col-md-3">Estimated Cost</th>
+                    <th class="col-md-3">Amount Required</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="row col-md-12 mt-3">
+    <div class="row col-md-12 mt-3">
+        <label><b>Land Information</b></label>
+    </div>
+    <div class="row col-md-12">
+        <table class="col-md-12 table table-hover table-bordered table-hover mt-1 table-striped">
+            <thead style="background-color: #19875478 !important; ">
+                <tr>
+                    <th class="col-md-2">Passbook No.</th>
+                    <th class="col-md-3">Category</th>
+                    <th class="col-md-3">Area (Marla)</th>
+                    <th class="col-md-2">Attachment</th>
+                    <th class="col-md-2">Redeemed</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="row col-md-12 mt-3">
+    <div class="row col-md-12 mt-3">
+        <label><b>Loan Securities</b></label>
+    </div>
+    <div class="row col-md-12">
+        <table class="col-md-12 table table-hover table-bordered table-hover mt-1 table-striped">
+            <thead style="background-color: #19875478 !important; ">
+                <tr>
+                    <th class="col-md-3">Security Type</th>
+                    <th class="col-md-3">Basis of Valuation</th>
+                    <th class="col-md-1">Qty</th>
+                    <th class="col-md-1">Unit Price</th>
+                    <th class="col-md-2">Accepted Value</th>
+                    <th class="col-md-2">Max Credit Limit</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+<div class="row col-md-12 mt-3">
+    <div class="row col-md-12 mt-3">
+        <label><b>Loan Document</b></label>
+    </div>
+    <div class="row col-md-12">
+        <table class="col-md-12 table table-hover table-bordered table-hover mt-1 table-striped">
+            <thead style="background-color: #19875478 !important; ">
+                <tr>
+                    <th class="col-md-3">Loan Case No.</th>
+                    <th class="col-md-3">Loan Type</th>
+                    <th class="col-md-3">Document</th>
+                    <th class="col-md-2">Status</th>
+                    <th class="col-md-1">View</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="row col-md-12 mt-3">
+    <div class="row col-md-12 mt-3">
+        <label><b>Disbursement/Recoveries</b></label>
+    </div>
+    <div class="row col-md-12">
+        <table class="table table-hover table-bordered table-hover table-striped">
+            <thead style="background-color: #19875478 !important; ">
+                <tr>
+                    <th class="col-md-1">GL</th>
+                    <th class="col-md-1">SCM</th>
+                    <th class="col-md-1">CRP</th>
+                    <th class="col-md-1">Rate</th>
+                    <th class="col-md-1">Disb Amount</th>
+                    <th class="col-md-1">Disb Date</th>
+                    <th class="col-md-1">Principle Recovery</th>
+                    <th class="col-md-1">Total Markup</th>
+                    <th class="col-md-1">Markup Recovery</th>
+                    <th class="col-md-1">Balance</th>
+                    <th class="col-md-1">Due Date</th>
+                    <th class="col-md-1">Last Rec on</th>
+                    <th class="col-md-1">T.Accrued</th>
+                    <th class="col-md-1">Status</th>
+                    <th class="col-md-1">Details</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>

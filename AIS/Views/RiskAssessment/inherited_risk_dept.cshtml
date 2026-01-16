@@ -1,0 +1,129 @@
+﻿@{
+    var page_id = ViewData["PageId"] as int? ?? 0;
+}
+
+@{
+    ViewData["Title"] = "COSO Base Inherited Risk Model For Departments";
+    Layout = "_Layout";
+}
+
+<script type="text/javascript">
+    function getCOSORisk() {
+        if ($('#auditCriteriaPeriodField').val() != 0) {
+
+            $.ajax({
+                url: g_asiBaseURL + "/ApiCalls/GetCOSORiskForDepartment",
+                type: "POST",
+                data: {
+                    'PERIOD_ID': $('#auditCriteriaPeriodField').val()
+                },
+                cache: false,
+                success: function (data) {
+                    $('#COSORiskTable tbody').empty();
+                    if (data.length > 0) {
+                        
+                        var rowSpan = 1;
+                        var unique = 1;
+                        entity = data[0].depT_NAME;
+                        var sf_total = 0;
+                        var ms_total = 0;
+                        var wa_total = 0;
+                        var nob_total = 0;
+                        var was_total = 0;
+                        $('#COSORiskTable tbody').append('<tr id="rowspan_' + unique + '"><td class="rowspancol" rowspan="' + rowSpan + '">' + entity + '</td></tr>');
+                        $.each(data, function (i, v) {
+                            sf_total += v.suB_FACTORS;
+                            ms_total += v.maX_SCORE;
+                            wa_total += v.weighT_ASSIGNED;
+                            nob_total += v.nO_OF_OBSERVATIONS;
+                            was_total += v.weighteD_AVERAGE_SCORE;
+                            if (entity != v.depT_NAME) {
+                                $('#COSORiskTable tbody').append('<tr><td><b>Total</b></td><td colspan=5><center>'+v.finaL_SCORE+'</center></td><td>'+v.finaL_AUDIT_RATING+'</td></tr>');
+                                rowSpan++;
+                                $('#COSORiskTable #rowspan_' + unique + ' .rowspancol').attr('rowspan', rowSpan);
+
+                                ////////////NEW ROW ENTRY//////////////
+                                rowSpan = 1;
+                                unique++;
+                                entity = v.depT_NAME;
+                                sf_total = 0;
+                                ms_total = 0;
+                                wa_total = 0;
+                                nob_total = 0;
+                                was_total = 0;
+                                sf_total += v.suB_FACTORS;
+                                ms_total += v.maX_SCORE;
+                                wa_total += v.weighT_ASSIGNED;
+                                nob_total += v.nO_OF_OBSERVATIONS;
+                                was_total += v.weighteD_AVERAGE_SCORE;
+                                $('#COSORiskTable tbody').append('<tr id="rowspan_' + unique + '"><td class="rowspancol" rowspan="' + rowSpan + '">' + v.depT_NAME + '</td></tr>');
+                                $('#COSORiskTable tbody').append('<tr><td>' + v.ratinG_FACTORS + '</td><td>' + v.suB_FACTORS + '</td><td>' + v.maX_SCORE + '</td><td>' + v.weighT_ASSIGNED + '</td><td>' + v.nO_OF_OBSERVATIONS + '</td><td>' + v.weighteD_AVERAGE_SCORE + '</td><td>' + v.audiT_RATING + '</td></tr>');
+                                rowSpan++;
+                            }
+                            else {
+                                $('#COSORiskTable tbody').append('<tr><td>' + v.ratinG_FACTORS + '</td><td>' + v.suB_FACTORS + '</td><td>' + v.maX_SCORE + '</td><td>' + v.weighT_ASSIGNED + '</td><td>' + v.nO_OF_OBSERVATIONS + '</td><td>' + v.weighteD_AVERAGE_SCORE + '</td><td>' + v.audiT_RATING + '</td></tr>');
+                                rowSpan++;
+                            }
+                        });
+                        $('#COSORiskTable tbody').append('<tr><td><b>Total</b></td><td colspan=5><center>' + data[data.length - 1].finaL_SCORE + '</center></td><td>'+data[data.length - 1].finaL_AUDIT_RATING +'</td></tr>');
+                        rowSpan++;
+                        $('#COSORiskTable #rowspan_' + unique + ' .rowspancol').attr('rowspan', rowSpan);
+                    }
+                },
+                dataType: "json",
+            });
+        }
+        else {
+            $('#COSORiskTable tbody').empty();
+        }
+    }
+</script>
+
+<div class="row col-md-12 text-center mt-3">
+    <h4 style=" display:block;color: #be0e43">COSO Based Risk Model</h4>
+</div>
+
+
+<div class="row col-md-12 mt-2">
+    <div class="row col-md-4">
+        <h5>Audit Period</h5>
+    </div>
+    <div class="row col-md-8">
+        <select id="auditCriteriaPeriodField" onchange="getCOSORisk();" class="form-select form-control" aria-label="Default select example">
+            <option value="0" id="0" selected>--Select Audit Period--</option>
+            @{
+                if (ViewData["AuditPeriodList"] != null)
+                {
+
+                    foreach (var period in (dynamic)(ViewData["AuditPeriodList"]))
+                    {
+                        <option id="@period.AUDITPERIODID" value="@period.AUDITPERIODID">@period.DESCRIPTION</option>
+                    }
+
+                }
+            }
+        </select>
+    </div>
+</div>
+<div class="row col-md-12 mt-3">
+    
+    <table class="table table-bordered bg-white table-hover table-striped" id="COSORiskTable">
+        <thead>
+            <tr style="background-color: #19875478 !important; " class="text-center">
+                <th width="400" class="text-center pt-0" style="margin-bottom:10px;">Entity</th>
+                <th class="text-center pt-0" width="700">COSO Base
+                <br />Rating Factors</th>
+                <th class="text-center pt-0" >Sub Factors</th>
+                <th class="text-center pt-0">Maximum Score of Sub-Factors</th>
+                <th class="text-center pt-0">Overall Weight Assigned</th>
+                <th class="text-center pt-0">Score Assigned by Auditor</th>
+                <th class="text-center pt-0">Weighted Average Score</th>
+                <th class="text-center pt-0">Audit Rating</th>
+            </tr>
+        </thead>
+        <tbody>
+            
+        </tbody>
+    </table>
+</div>
+

@@ -1,0 +1,38 @@
+@{
+    ViewData["Title"] = "Investigation Plan";
+    Layout = "_Layout";
+    var complaintId = ViewData["ComplaintId"];
+}
+<h4>Investigation Plan</h4>
+<form id="planForm">
+    <input type="hidden" name="ComplaintId" value="@complaintId" />
+    <input type="hidden" name="Status" value="Submitted" />
+    <div class="mb-2">
+        <label class="form-label">Investigation Plan</label>
+        <textarea class="form-control" name="PlanDetails"></textarea>
+    </div>
+    <button type="submit" class="btn btn-primary">Submit Plan</button>
+</form>
+@section Scripts{
+<script>
+    $(function(){
+        $('#planForm').on('submit', function(e){
+            e.preventDefault();
+            var data = {
+                ComplaintId: $('#planForm [name="ComplaintId"]').val(),
+                PlanDetails: $('#planForm [name="PlanDetails"]').val(),
+                Status: $('#planForm [name="Status"]').val()
+            };
+            $.ajax({
+                url: g_asiBaseURL + '/ApiCalls/AddInvestigationPlan',
+                method: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify(data),
+                success: function(){
+                    alert('Plan submitted');
+                }
+            });
+        });
+    });
+</script>
+}

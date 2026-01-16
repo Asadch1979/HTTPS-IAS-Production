@@ -1,0 +1,57 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+@inject Microsoft.Extensions.Configuration.IConfiguration Configuration
+@{
+    var nonce = Context.Items["CSPNonce"]?.ToString();
+    var baseUrl = (ViewBag.BaseURL as string) ?? Configuration["BaseURL"] ?? Context.Request.PathBase.Value ?? string.Empty;
+    if (!string.IsNullOrWhiteSpace(baseUrl) && !baseUrl.StartsWith("/"))
+    {
+        baseUrl = "/" + baseUrl;
+    }
+
+    baseUrl = baseUrl?.TrimEnd('/') ?? string.Empty;
+}
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/x-icon" href="~/Images/ztbllogo.png">
+    <script nonce="@nonce">
+        window.PAGE_ID = Number(@((int?)ViewData["PageId"] ?? 0)) || 0;
+    </script>
+    <title>@ViewData["Title"] - IAS</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" nonce="@nonce" />
+    <link rel="stylesheet" href="~/css/site.css" nonce="@nonce" />
+    <meta name="base-url" content="@baseUrl" />
+    <script src="~/lib/jquery/dist/jquery.min.js" nonce="@nonce"></script>
+
+</head>
+<body data-page-id="@((int?)ViewData["PageId"] ?? 0)">
+    <header>
+        
+    </header>
+    <div class="container">
+        <main role="main" class="pb-3">
+            @RenderBody()
+        </main>
+    </div>
+
+    <footer class="border-top footer text-muted">
+        <div class="row col-md-12">
+            <div class="container-fluid text-center">
+                &copy; ZTBL INTERNAL AUDIT DIVISION (Developed By A.A.C)
+            </div>
+        </div>
+
+    </footer>
+      <div id="wait" class="loading-overlay">
+        <img src='~/Images/ajax_loader.gif' width="64" height="64" /><br>Loading..
+    </div>
+    <script src="~/lib/draggable/jquery-ui.js" nonce="@nonce"></script>
+    <script src="~/js/pageContext.js" asp-append-version="true" nonce="@nonce"></script>
+    <script src="~/js/site.js" nonce="@nonce"></script>
+    <script src="~/js/circular.js" nonce="@nonce"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js" nonce="@nonce"></script>
+
+    @RenderSection("Scripts", required: false)
+</body>
+</html>

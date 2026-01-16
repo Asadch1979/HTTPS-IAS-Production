@@ -1,0 +1,87 @@
+﻿@{
+    var page_id = ViewData["PageId"] as int? ?? 0;
+}
+
+@{
+    ViewData["Title"] = "FAD_Gistwise_Details_Monthly";
+    Layout = "_Layout";
+}
+<script>
+    $(document).ready(function () {
+        $("#searchTableRecord").on("keyup", function () {
+            var value = $(this).val().toLowerCase();
+            $("#A_P_E_T tbody tr").filter(function () {
+                $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1)
+            });
+        });
+
+
+    });
+</script>
+
+<div class="row col-md-12 mt-3">
+    <h3 style=" display:block;color: #be0e43">FAD Monthly Gistwise Details</h3>
+</div>
+<div class="row col-md-12 mt-3">
+    <div class="col-md-6 row">
+        <label for="periodStartModalField"><b>Date From</b><span class="text-danger">*</span></label>
+        <input required type="date" class="form-control" id="periodStartModalField" aria-describedby="brcode" placeholder="Start Date">
+
+    </div>
+    <div class="col-md-6 row">
+        <label for="periodEndModalField"><b>Date To</b><span class="text-danger">*</span></label>
+        <input required type="date" class="form-control" id="periodEndModalField" aria-describedby="brcode" placeholder="End Date">
+
+    </div>
+
+</div>
+<div class="row col-md-12 mt-2">
+    <label for="periodStartModalField"><b>Region</b><span class="text-danger">*</span></label>
+    <select class="form-control">
+        <option>--select Region--</option>
+    </select>
+</div>
+
+<div class="row col-md-12 mt-3">
+    <label for="periodEndModalField"><b>Gist</b><span class="text-danger">*</span></label>
+    <input class="form-control" />
+</div>
+
+
+<div class="row col-md-12 mt-1">
+    <button id="findButton" onclick="" class="btn btn-danger" style="margin-left:auto;">Search</button>
+</div>
+
+
+
+
+<div class="row col-md-12 mt-3">
+    <input class="form-control" id="searchTableRecord" type="text" placeholder="Search Results..">
+</div>
+<div class="row col-md-12">
+    <table id="zoneiwseperformance" class="table table-hover table-bordered table-hover mt-3 table-striped" style="font-size:small">
+        <thead style="background-color: #19875478 !important; ">
+            <tr>
+
+                <th class="col-md-auto">Sr No.</th>
+                <th class="col-md-auto">Audit Zone</th>
+                <th class="col-md-auto">Region</th>
+                <th class="col-md-auto">Branch Code</th>
+                <th class="col-md-auto">Branch</th>
+                <th class="col-md-auto">Para No.</th>
+                <th class="col-md-auto">Entered Date</th>
+                <th class="col-md-3">Gist of Para</th>
+                <th class="col-md-auto">No of Instances</th>
+                <th class="col-md-auto">Amount Involved</th>
+            </tr>
+        </thead>
+        <tbody>
+        </tbody>
+
+
+    </table>
+</div>
+
+<div class="col-md-12 offset-md-12 mt-4">
+    <button id="printPreview_btn" class="btn btn-danger" style="float:right; margin-bottom:10px;">Download Report/Print</button>
+</div>

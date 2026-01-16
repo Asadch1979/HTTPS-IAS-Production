@@ -1,0 +1,578 @@
+﻿@{
+    var page_id = ViewData["PageId"] as int? ?? 0;
+}
+
+@{
+    ViewData["Title"] = "Finalized Draft Audit Report";
+    Layout = "_Layout";
+}
+<style type="text/css">
+    .evidence-link {
+        display: flex;
+        align-items: center;
+        margin-bottom: 10px;
+    }
+
+    .evidence-icon {
+        margin-right: 10px;
+    }
+</style>
+
+
+<script type="text/javascript">
+    var g_obsId = 0;
+    var g_newStatusId = 0;
+    var g_riskId = 0;
+    var g_obsList = [];
+     var g_procId = 0;
+    var g_subProcId=0;
+    $(document).ready(function () {
+        $('#entitySelectField').select2();
+        var entName = $('#manageObsPanel tbody .entity_name_field:first').text();
+        $('#entityNameField').val(entName);
+        var periodName = $('#manageObsPanel tbody .period_name_field:first').text();
+        $('#auditPeriodNameField').val(periodName);
+
+           $('#viewMemo_memo_ObSent').richText({
+            imageUpload: false,
+            fileUpload: false,
+            videoEmbed: false,
+            urls: false
+        });
+
+    });
+
+    function reloadLocation() {
+        getEntityObservation();
+    }
+
+
+    function ViewAuditeeAttachedEvidences(id) {
+        $('#viewMemoResponseModel').modal('show');
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/get_responded_obs_evidences",
+            type: "POST",
+            data: {
+                'OBS_ID': id
+            },
+            cache: false,
+            success: function (data) {
+
+                $('#complianceCycleEvidences').empty();
+                if (data.length > 0) {
+                    $.each(data, function (i, pp) {
+
+                        var extension = pp.imagE_NAME.split('.').pop().toLowerCase();
+                        const contentType = getContentType(extension);
+
+                        // Create and append the attachment item
+                        const container = document.createElement('div');
+                        container.className = 'evidence-link';
+
+                        // Add icon
+                        const icon = document.createElement('i');
+                        icon.className = getIconClass(extension) + ' evidence-icon mr-1';
+                        container.appendChild(icon);
+
+                        // Add label
+                        const label = document.createElement('span');
+                        label.innerText = pp.imagE_NAME;
+                        label.classList.add('text-primary');
+
+                        // Add cursor style to make it look like a link
+                        label.style.cursor = 'pointer';
+                        container.appendChild(label);
+
+                        // Add click event to download file on selection
+                        container.addEventListener('click', function () {
+                            downloadFile(pp.filE_ID);
+                        });
+
+                        $('#complianceCycleEvidences').append(container);
+                    });
+                }
+                else {
+                    $('#complianceCycleEvidences').append("<i>No evidence is attached </i>");
+                }
+
+            },
+            dataType: "json",
+        });
+    }
+    function getEntityObservation() {
+
+        $('#entitySelectField').attr('disabled', 'disabled');
+        $('#manageObsPanel tbody').empty();
+        if ($('#entitySelectField option:selected').val() != 0) {
+            $.ajax({
+                url: g_asiBaseURL + "/ApiCalls/get_finalized_observations_draft",
+                type: "POST",
+                data: {
+                    'ENG_ID': $('#entitySelectField option:selected').val()
+                },
+                cache: false,
+                success: function (data) {
+                    $('#entitySelectField').removeAttr('disabled');
+                    g_obsList = data;
+
+                    $.each(data, function (i, v) {
+                        $('#auditPeriodNameField').val(v.period);
+                        if (v.obS_STATUS_ID == 5)
+                            $('#manageObsPanel tbody').append('<tr id="' + v.obS_ID + '"><td class="text-center">' + v.memO_NO + '</td><td class="text-center">' + v.drafT_PARA_NO + '</td><td class="text-center">' + v.finaL_PARA_NO + '</td><td class="branchfield">' + v.heading + '</td><td>' + v.obS_RISK + '</td><td>' + v.obS_STATUS + '</td><td><a href="#" onclick="viewObservationDetails(' + v.obS_ID + ', '+v.obS_STATUS_ID+');" class="text-hover text-success ml-5px"><small>View Details</small></a></td></tr></tr>');
+                        else
+                            $('#manageObsPanel tbody').append('<tr id="' + v.obS_ID + '"><td class="text-center">' + v.memO_NO + '</td><td class="text-center">' + v.drafT_PARA_NO + '</td><td class="text-center">' + v.finaL_PARA_NO + '</td><td class="branchfield">' + v.heading + '</td><td>' + v.obS_RISK + '</td><td>' + v.obS_STATUS + '</td><td>-</td></tr></tr>');
+
+                    });
+
+
+                },
+                dataType: "json",
+            });
+            getReportSummary();
+        }
+    }
+
+    function getViolationNatureOfProcess() {
+        $('#viewMemo_subprocess_ObSent').empty();
+        $.ajax({
+           url: g_asiBaseURL + "/Execution/sub_voilation",
+            type: "POST",
+            data: {
+                'V_ID': $('#viewMemo_process_ObSent').val()
+            },
+            cache: false,
+            success: function (data) {
+                $('#viewMemo_subprocess_ObSent').append('<option value="0">--Select Violation Nature--</option>');
+                $.each(data, function (i, v) {
+                    $('#viewMemo_subprocess_ObSent').append('<option value="' + v.id + '">' + v.suB_V_NAME + '</option>');
+                });
+                if(g_subProcId!=0)
+                    {
+                        $('#viewMemo_subprocess_ObSent').val(g_subProcId);
+                    }
+
+
+            },
+            dataType: "json",
+        });
+
+    }
+
+     function viewObservationDetails(obsId,status_id){
+        g_obsId=obsId;
+        $('#viewMemoDetailsModel').modal('show');
+
+
+        if(status_id !=5){
+            $('#update_audit_obs_button').addClass("d-none");
+            $('#un_settle_audit_obs_button').addClass("d-none");
+            $('#settle_audit_obs_button').addClass("d-none");
+
+        }else{
+            $('#update_audit_obs_button').removeClass("d-none");
+            $('#un_settle_audit_obs_button').removeClass("d-none");
+            $('#settle_audit_obs_button').removeClass("d-none");
+        }
+
+         $('#viewMemo_heading_ObSent').val('');
+         $('#viewMemo_memo_ObSent').val('').trigger('change');
+         $('#viewMemo_response_ObSent').html('');
+         $('#viewMemo_aud_reply_ObSent').html('');
+         $('#viewMemo_head_reply_ObSent').html('');
+         $('#viewMemo_risk_ObSent').val(0);
+         $('#viewMemo_process_ObSent').val(0);
+
+          $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/get_obs_details_by_id_ho",
+            type: "POST",
+            data: {
+                'OBS_ID': g_obsId
+            },
+            cache: false,
+            success: function (data) {
+         $('#viewMemo_heading_ObSent').val(data.heading);
+         $('#viewMemo_memo_ObSent').val(data.observatioN_TEXT).trigger('change');
+         $('#viewMemo_response_ObSent').html(data.auditeE_REPLY);
+         ViewAuditeeAttachedEvidences();
+         $('#viewMemo_aud_reply_ObSent').html(data.auditoR_RECOM);
+         $('#viewMemo_risk_ObSent').val(data.riskmodeL_ID);
+         $('#viewMemo_process_ObSent').val(data.procesS_ID);
+         g_procId=data.procesS_ID;
+         g_subProcId=data.subchecklisT_ID;
+         getViolationNatureOfProcess();
+
+               },
+            dataType: "json",
+        });
+    }
+
+
+    function getReportSummary() {
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/draft_report_summary",
+            type: "POST",
+            data:
+            {
+                'ENG_ID': $('#entitySelectField option:selected').val()
+            },
+            cache: false,
+            success: function (data)
+            {
+                g_obsList = data;
+                $('#totalObsLabel').text(data.total);
+                $('#highObsLabel').text(data.high);
+                $('#mediumObsLabel').text(data.medium);
+                $('#lowObsLabel').text(data.low);
+                $('#resolvedObsLabel').text(data.settled);
+                $('#addToDraftLabel').text(data.addtoDraft);
+            },
+            dataType: "json",
+        });
+    }
+    function finalCommentsButtonSave() {
+        var svpComments = "";
+
+        if ($('#finalNoInCommentsBox').val() == "") {
+            alert("Please enter Final Para No to proceed");
+            return;
+        }
+
+
+
+        svpComments = $('#commentAreaInCommentsBox').val();
+        if ($('#commentAreaInCommentsBox').val() == "") {
+            alert("Please enter the Comments First");
+            return;
+        }
+
+
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/update_observation_status",
+            type: "POST",
+            data: {
+                'OBS_ID': g_obsId,
+                'NEW_STATUS_ID': g_newStatusId,
+                'DRAFT_PARA_NO': $('#finalNoInCommentsBox').val(),
+                'RISK_ID': g_riskId,
+                'AUDITOR_COMMENT': svpComments
+            },
+            cache: false,
+            success: function (data) {
+                alert(data.message);
+                onAlertCallback(reloadLocation);
+                $('#commentsBox').modal('hide');
+            },
+            dataType: "json",
+        });
+
+    }
+    function updateObservationStatus(obs_id, new_status_id, risk_id, audRem) {
+        g_obsId = obs_id;
+        g_newStatusId = new_status_id;
+        g_riskId = risk_id;
+        $('#commentsBox').modal('show');
+        if (g_newStatusId == 9) {
+            $('#finalNoInCommentsBox').val(0);
+            $('#finalNoInCommentsBox').attr("disabled", true);
+
+        }
+        else {
+            $('#finalNoInCommentsBox').val('');
+            $('#finalNoInCommentsBox').attr("disabled", false);
+        }
+
+        if (g_newStatusId == 9) {
+            $('#commentAreaInCommentsBox').val("Settled on the recommendation of Audit Team and compliance submitted by auditee");
+        } else if (g_newStatusId == 8) {
+            $('#commentAreaInCommentsBox').val(audRem);
+        }
+
+    }
+    function downloadFile(id) {
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/get_auditee_evidence_data",
+            type: "POST",
+            data: {
+                'FILE_ID': id,
+            },
+            cache: false,
+            success: function (data) {
+                var extension = data.imagE_NAME.split('.').pop().toLowerCase();
+                const contentType = getContentType(extension);
+
+                const blob = base64ToBlob(data.imagE_DATA, contentType);
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(blob);
+                link.download = data.imagE_NAME;
+                link.click(); // Trigger the download
+
+            },
+            dataType: "json",
+        });
+
+
+    }
+    function getFileExtension(file) {
+        var fileName = file.name;
+        var extension = fileName.substring(fileName.lastIndexOf('.') + 1).toLowerCase();
+        return extension;
+    }
+    function getIconClass(extension) {
+        switch (extension) {
+            case 'pdf': return 'fa fa-file-pdf';
+            case 'zip': return 'fa fa-file-archive';
+            case 'png':
+            case 'jpg':
+            case 'jpeg':
+            case 'bmp': return 'fa fa-file-image';
+            case 'doc':
+            case 'docx': return 'fa fa-file-word';
+            default: return 'fa fa-file';
+        }
+    }
+    function getContentType(extension) {
+        switch (extension) {
+            case 'pdf': return 'application/pdf';
+            case 'zip': return 'application/zip';
+            case 'png': return 'image/png';
+            case 'doc': return 'application/msword';
+            case 'docx': return 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+            default: return 'application/octet-stream';
+        }
+    }
+    function base64ToBlob(base64, contentType) {
+        const byteCharacters = atob(base64);
+        const byteArrays = [];
+
+        for (let offset = 0; offset < byteCharacters.length; offset += 512) {
+            const slice = byteCharacters.slice(offset, offset + 512);
+
+            const byteNumbers = new Array(slice.length);
+            for (let i = 0; i < slice.length; i++) {
+                byteNumbers[i] = slice.charCodeAt(i);
+            }
+
+            const byteArray = new Uint8Array(byteNumbers);
+            byteArrays.push(byteArray);
+        }
+
+        const blob = new Blob(byteArrays, { type: contentType });
+        return blob;
+    }
+      function updateObservationDetails(obsId){
+
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/update_audit_para_for_finalization_ho",
+            type: "POST",
+            data: {
+                'OBS_ID': obsId,
+                'ANNEX_ID': $('#viewMemo_annex_ObSent').val(),
+                'VIOLATION_ID': $('#viewMemo_process_ObSent').val(),
+                'VIOLATION_NATURE_ID': $('#viewMemo_subprocess_ObSent').val(),
+                'RISK_ID': $('#viewMemo_risk_ObSent').val(),
+                'GIST_OF_PARA': $('#viewMemo_heading_ObSent').val(),
+                'TEXT_PARA': $('#viewMemo_memo_ObSent').val()
+
+            },
+            cache: false,
+            success: function (data) {
+                alert(data.message);
+                 onAlertCallback(getEntityObservation);
+            },
+            dataType: "json",
+        });
+        return;
+    }
+
+</script>
+
+<div class="row">
+    <div class="row col-md-12 mt-3">
+        <div class="col-md-2">
+            <label><b>Entity:</b></label>
+        </div>
+        <div class="col-md-10">
+            <input id="entityNameField" disabled="disabled" class="form-control ml-1 d-none" type="text" />
+            <select id="entitySelectField" onchange="getEntityObservation()" class="form-control form-select">
+                <option value="0" id="0">--Select Audit Entity--</option>
+                @{
+                    if (ViewData["EntitiesList"] != null)
+                    {
+                        foreach (var item in (dynamic)(ViewData["EntitiesList"]))
+                        {
+                            <option value="@item.ENG_ID" id="@item.ENG_ID">@item.NAME</option>
+                        }
+                    }
+                }
+
+            </select>
+        </div>
+    </div>
+    <div class="row col-md-12 mt-3">
+        <h3 style=" display:block;color: #be0e43">Report Summary</h3>
+        <table id="reportSummaryTable" class="table table-bordered mb-0 mt-3 bg-white table-striped">
+            <thead style="background-color: #19875478 !important;">
+                <tr>
+                    <th>Total Observations</th>
+                    <th>High Risk</th>
+                    <th>Medium Risk</th>
+                    <th>Low Risk</th>
+                    <th>Resolved</th>
+                    <th>Add to Draft</th>
+                </tr>
+            </thead>
+            <tr>
+                <td id="totalObsLabel" class="text-center"></td>
+                <td id="highObsLabel" class="text-center"></td>
+                <td id="mediumObsLabel" class="text-center"></td>
+                <td id="lowObsLabel" class="text-center"></td>
+                <td id="resolvedObsLabel" class="text-center"></td>
+                <td id="addToDraftLabel" class="text-center"></td>
+            </tr>
+        </table>
+    </div>
+
+    <div class="row col-md-12 mt-3">
+        <h3 style=" display:block;color: #be0e43">Audit Observations</h3>
+        <table id="manageObsPanel" class="table table-hover table-bordered table-hover mt-3 table-striped">
+            <thead style="background-color: #19875478 !important; ">
+                <tr>
+                    <th class="col-md-auto">Memo No.</th>
+                    <th class="col-md-auto">Draft Para No.</th>
+                    <th class="col-md-auto">Final Para No.</th>
+
+                    <th class="col-md-auto branchfield">Title of Para</th>
+
+                    <th class="col-md-auto">Risk Category</th>
+                    <th class="col-md-auto">Status</th>
+                    <th class="col-md-auto">Action</th>
+                </tr>
+
+            </thead>
+            <tbody>
+            </tbody>
+        </table>
+    </div>
+
+</div>
+
+<div id="commentsBox" class="modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">Auditor Comments</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form>
+                    <div class="form-group">
+                        <label for="commentAreaInCommentsBox">Final Para No</label>
+                        <input class="form-control" id="finalNoInCommentsBox" placeholder="Final Para No" />
+                    </div>
+                    <div class="form-group">
+                        <label for="commentAreaInCommentsBox">Comments</label>
+                        <textarea class="form-control" rows="4" id="commentAreaInCommentsBox" placeholder="Enter Comments here.."></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button onclick="finalCommentsButtonSave();" id="finalCommentsButtonSave" type="button" class="btn btn-danger">Submit</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+<div id="viewMemoDetailsModel" class="modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-xl" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">Observation</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form>
+
+                    <div class="form-group">
+                        <label for="viewMemo_process_ObSent" class="font-weight-bold">Violation</label>
+                        <select id="viewMemo_process_ObSent" onchange="getViolationNatureOfProcess();" class="form-select form-control">
+                            <option value="0" id="0" selected="selected">--Select Voilation Category--</option>
+                            @{
+                                if (ViewData["Voilation_Cat"] != null)
+                                {
+                                    foreach (var item in (dynamic)(ViewData["Voilation_Cat"]))
+                                    {
+                                        <option id="@item.ID" value="@item.ID">@item.V_NAME</option>
+                                    }
+                                }
+                            }
+
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="viewMemo_subprocess_ObSent" class="font-weight-bold">Sub Process</label>
+                        <select id="viewMemo_subprocess_ObSent" class="form-select form-control">
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="viewMemo_risk">Risk</label>
+                        <select id="viewMemo_risk_ObSent" class="form-select form-control" aria-label="Default select example">
+                            <option value="0" id="0" selected>--Select Risk Category--</option>
+                            @{
+                                if (ViewData["RiskList"] != null)
+                                {
+
+                                    foreach (var risk in (dynamic)(ViewData["RiskList"]))
+                                    {
+                                        <option id="@risk.R_ID" value="@risk.R_ID">@risk.DESCRIPTION</option>
+                                    }
+
+                                }
+                            }
+                        </select>
+
+
+                    </div>
+                    <div class="form-group">
+                        <label for="viewMemo_heading_ObSent" class="font-weight-bold">Gist of Para <small class="text-muted">(A-Z, 0-9, space, &amp;, ?)</small></label>
+                        <input id="viewMemo_heading_ObSent" type="text" class="form-control alnum-only" placeholder="Gist of Para (Alphabets, numbers, spaces, ampersand (&amp;), comma (,), and question mark (?) only)" data-allow-space="true" data-allow-amp="true" data-maxlen="500" maxlength="500" title="Enter only Alphabets (A-Z), numbers (0-9), spaces, ampersand (&amp;), comma (,), and question mark (?)" />
+                        <small class="form-text text-muted">Enter only Alphabets (A-Z), numbers (0-9), spaces, ampersand (&amp;), comma (,), and question mark (?).</small>
+                        <div class="invalid-feedback">Enter only Alphabets (A-Z), numbers (0-9), spaces, ampersand (&amp;), comma (,), and question mark (?).</div>
+                    </div>
+                    <div class="form-group">
+                        <label for="viewMemo_memo_ObSent" class="font-weight-bold">Para Text</label>
+                        <input id="viewMemo_memo_ObSent" type="text" class="form-control" />
+                    </div>
+
+
+                    <div class="form-group">
+                        <label for="viewMemo_response_ObSent" class="font-weight-bold">Auditee Response</label>
+                        <div id="viewMemo_response_ObSent" disabled="disabled" style="height: auto; overflow-y: auto;" class="form-control"></div>
+                    </div>
+                    <div id="evidenceViewer" class="input-field">
+                        <label class="font-weight-bold">Evidences</label>
+                        <div class="row col-md-12 mt-3 mb-3">
+                            <div id="complianceCycleEvidences">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="viewMemo_aud_reply_ObSent" class="font-weight-bold">Auditor Reply</label>
+                        <div id="viewMemo_aud_reply_ObSent" disabled="disabled" style="height: auto; overflow-y: auto;" class="form-control"></div>
+                    </div>
+
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button id="update_audit_obs_button" onclick="updateObservationDetails(g_obsId);" type="button" class="btn btn-primary">Update Para Details</button>
+                <button id="un_settle_audit_obs_button" onclick="updateObservationStatus(g_obsId,8);" type="button" data-bs-dismiss="modal" class="btn btn-danger">Add to Final Report</button>
+                <button id="settle_audit_obs_button" onclick="updateObservationStatus(g_obsId, 9);" type="button" data-bs-dismiss="modal" class="btn btn-success">Settle</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+

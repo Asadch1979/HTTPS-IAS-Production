@@ -1,0 +1,136 @@
+@{
+    ViewData["Title"] = "Master Admin Control Panel";
+    Layout = "_Layout";
+
+    var adminMenuList = ViewData["AdminMenuList"];
+    var menuList = ViewData["MenuList"] ?? adminMenuList;
+    var topMenuList = ViewData["TopMenuList"];
+    var menuPagesList = ViewData["MenuPagesList"];
+}
+
+<div class="container-fluid">
+    <div class="row mt-3">
+        <div class="col-12">
+            <h2 style="color: #be0e43">Master Admin Control Panel</h2>
+            <p class="text-muted mb-4">Phase 1 structural cleanup only. Disabled areas are clearly marked as not implemented yet.</p>
+        </div>
+    </div>
+
+    <div class="accordion" id="masterAdminControlPanels">
+        <div class="accordion-item">
+            <h2 class="accordion-header" id="pageMasterHeading">
+                <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#pageMasterPanel" aria-expanded="true" aria-controls="pageMasterPanel">
+                    Page Master
+                </button>
+            </h2>
+            <div id="pageMasterPanel" class="accordion-collapse collapse show" aria-labelledby="pageMasterHeading" data-bs-parent="#masterAdminControlPanels">
+                <div class="accordion-body">
+                    @await Html.PartialAsync(
+                        "pages_management",
+                        new Microsoft.AspNetCore.Mvc.ViewFeatures.ViewDataDictionary(ViewData)
+                            {
+                            ["Layout"] = null,
+                            ["MenuList"] = menuList
+                            })
+                </div>
+            </div>
+        </div>
+
+        <div class="accordion-item">
+            <h2 class="accordion-header" id="menuStructureHeading">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#menuStructurePanel" aria-expanded="false" aria-controls="menuStructurePanel">
+                    Menu Structure
+                </button>
+            </h2>
+            <div id="menuStructurePanel" class="accordion-collapse collapse" aria-labelledby="menuStructureHeading" data-bs-parent="#masterAdminControlPanels">
+                <div class="accordion-body">
+                    @await Html.PartialAsync(
+                        "menu_management",
+                        new Microsoft.AspNetCore.Mvc.ViewFeatures.ViewDataDictionary(ViewData)
+                            {
+                            ["Layout"] = null,
+                            ["MenuList"] = adminMenuList
+                            })
+                </div>
+            </div>
+        </div>
+
+        <div class="accordion-item">
+            <h2 class="accordion-header" id="pageAssignmentHeading">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#pageAssignmentPanel" aria-expanded="false" aria-controls="pageAssignmentPanel">
+                    Page Assignment
+                </button>
+            </h2>
+            <div id="pageAssignmentPanel" class="accordion-collapse collapse" aria-labelledby="pageAssignmentHeading" data-bs-parent="#masterAdminControlPanels">
+                <div class="accordion-body">
+                    @await Html.PartialAsync(
+                        "menu_assignment",
+                        new Microsoft.AspNetCore.Mvc.ViewFeatures.ViewDataDictionary(ViewData)
+                            {
+                            ["Layout"] = null,
+                            ["MenuList"] = topMenuList,
+                            ["MenuPagesList"] = menuPagesList
+                            })
+                </div>
+            </div>
+        </div>
+
+        <div class="accordion-item">
+            <h2 class="accordion-header" id="dashboardLayoutHeading">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#dashboardLayoutPanel" aria-expanded="false" aria-controls="dashboardLayoutPanel">
+                    Dashboard Layout
+                </button>
+            </h2>
+            <div id="dashboardLayoutPanel" class="accordion-collapse collapse" aria-labelledby="dashboardLayoutHeading" data-bs-parent="#masterAdminControlPanels">
+                <div class="accordion-body">
+                    @await Html.PartialAsync(
+                        "dashboard_layout",
+                        new Microsoft.AspNetCore.Mvc.ViewFeatures.ViewDataDictionary(ViewData)
+                            {
+                            ["Layout"] = null,
+                            ["MenuList"] = menuList,
+                            ["RoleList"] = ViewData["RoleList"]
+                            })
+                </div>
+            </div>
+        </div>
+
+        <div class="accordion-item">
+            <h2 class="accordion-header" id="apiMasterHeading">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#apiMasterPanel" aria-expanded="false" aria-controls="apiMasterPanel">
+                    API Master
+                </button>
+            </h2>
+            <div id="apiMasterPanel" class="accordion-collapse collapse" aria-labelledby="apiMasterHeading" data-bs-parent="#masterAdminControlPanels">
+                <div class="accordion-body">
+                    @await Html.PartialAsync(
+                        "api_master",
+                        new Microsoft.AspNetCore.Mvc.ViewFeatures.ViewDataDictionary(ViewData)
+                            {
+                            ["Layout"] = null,
+                            ["IsAdvancedUser"] = ViewData["IsAdvancedUser"]
+                            })
+                </div>
+            </div>
+        </div>
+
+        <div class="accordion-item">
+            <h2 class="accordion-header" id="catalogUploadsHeading">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#catalogUploadsPanel" aria-expanded="false" aria-controls="catalogUploadsPanel">
+                    Catalog Uploads
+                </button>
+            </h2>
+            <div id="catalogUploadsPanel" class="accordion-collapse collapse" aria-labelledby="catalogUploadsHeading" data-bs-parent="#masterAdminControlPanels">
+                <div class="accordion-body">
+                    @await Html.PartialAsync(
+                        "catalog_uploads",
+                        new Microsoft.AspNetCore.Mvc.ViewFeatures.ViewDataDictionary(ViewData)
+                            {
+                            ["Layout"] = null,
+                            ["CanUploadCatalogs"] = ViewData["CanUploadCatalogs"]
+                            })
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

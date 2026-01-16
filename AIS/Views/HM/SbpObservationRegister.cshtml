@@ -1,0 +1,1920 @@
+@model AIS.Models.HM.SbpObservationRegisterViewModel
+@using System.Collections.Generic
+@using System.Text.Json
+@{ 
+    ViewData["Title"] = "SBP Observation Register";
+    Layout = "_Layout";
+}
+
+<style>
+    .table-state-overlay {
+        position: absolute;
+        inset: 0;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        background-color: rgba(255, 255, 255, 0.92);
+        text-align: center;
+        padding: 1.5rem;
+        z-index: 2;
+        pointer-events: none;
+    }
+
+    .table-state-overlay.active {
+        display: flex;
+    }
+
+    .table-state-overlay .table-state-message {
+        max-width: 420px;
+    }
+
+    .table-state-overlay .spinner-border {
+        width: 2.5rem;
+        height: 2.5rem;
+    }
+
+    .table-responsive.table-register-wrapper {
+        position: relative;
+        min-height: 320px;
+    }
+
+    .truncate-cell {
+        display: inline-block;
+        width: 100%;
+        max-width: 280px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        vertical-align: top;
+    }
+</style>
+
+<div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center mb-4 gap-3">
+    <div>
+        <h2 class="mb-0">SBP Observation Register</h2>
+        <p class="text-muted mb-0">Monitor observations, add responses, and review history.</p>
+    </div>
+    @if (Model.IsUnlocked)
+    {
+        <button id="btnAddObservation" class="btn btn-success shadow-sm" disabled="disabled">
+            <i class="fa fa-plus-circle me-1"></i>
+            Add New Observation
+        </button>
+    }
+</div>
+
+@if (!string.IsNullOrWhiteSpace(Model.StatusMessage))
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        @Model.StatusMessage
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+
+@if (!Model.IsUnlocked)
+{
+    <div class="card shadow-sm mb-4">
+        <div class="card-body">
+            <h5 class="card-title">Authenticate Access</h5>
+            <p class="text-muted">Please enter the SBP observation password to continue.</p>
+            <form asp-action="SbpObservationRegister" method="post" class="row g-3">
+                @Html.AntiForgeryToken()
+                <div class="col-12 col-md-6 col-lg-4">
+                    <label class="form-label" for="registerPassword">Password</label>
+                    <input type="password" class="form-control" id="registerPassword" name="Password" autocomplete="off" required />
+                    <div id="sbpAuthError" class="text-danger small mt-1 d-none"></div>
+                </div>
+                <div class="col-12">
+                    <button type="button" id="btnUnlockRegister" class="btn btn-primary">Authenticate</button>
+                </div>
+                @if (!string.IsNullOrWhiteSpace(Model.PasswordError))
+                {
+                    <div class="col-12">
+                        <div class="alert alert-danger mb-0" role="alert">@Model.PasswordError</div>
+                    </div>
+                }
+            </form>
+        </div>
+    </div>
+}
+else
+{
+    <div class="card shadow-sm mb-4">
+        <div class="card-body">
+            <div class="row g-3 align-items-end">
+                <div class="col-12 col-md-6 col-lg-4">
+                    <label class="form-label" for="observationTypeSelect">SBP Observation Type</label>
+                    <select id="observationTypeSelect" class="form-select" data-selected-id="@(Model.SelectedObservationTypeId?.ToString() ?? string.Empty)">
+                        <option value="">Select an observation type</option>
+                        @if (Model.ObservationTypes != null)
+                        {
+                            foreach (var option in Model.ObservationTypes)
+                            {
+                                var isSelected = Model.SelectedObservationTypeId == option.ObservationTypeId;
+                                <option value="@option.ObservationTypeId" selected="@(isSelected)">
+                                    @option.ObservationTypeName
+                                </option>
+                            }
+                        }
+
+                    </select>
+                    <div class="form-text text-muted">Data will load after you pick a type.</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="dt-container card shadow-sm">
+        <div class="card-body">
+            <div class="table-responsive table-register-wrapper">
+                <div id="registerTableOverlay" class="table-state-overlay">
+                    <div class="table-state-message w-100">
+                        <div class="d-flex flex-column align-items-center gap-3">
+                            <div class="spinner-border text-primary d-none" id="registerTableSpinner" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                            <p id="registerTableMessage" class="text-muted mb-0">Select an observation type to load the register.</p>
+                        </div>
+                    </div>
+                </div>
+                <table id="observationRegisterTable" class="table table-hover table-bordered table-striped align-middle w-100">
+                    <thead>
+                        <tr>
+                            <th>Para ID</th>
+                            <th>Reference No</th>
+                            <th>Function/Dept</th>
+                            <th>Para No</th>
+                            <th>SBP Observation</th>
+                            <th>SBP Directions</th>
+                            <th>Latest Response</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="card shadow-sm mt-4" id="pendingRequestsCard">
+        <div class="card-body">
+            <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-3 gap-2">
+                <div>
+                    <h5 class="mb-1">Pending Action Requests</h5>
+                    <p class="text-muted mb-0">Approve or reject submitted observation actions.</p>
+                </div>
+                <div class="text-md-end">
+                    <button type="button" id="refreshRequestsBtn" class="btn btn-outline-secondary btn-sm">
+                        <i class="fa fa-refresh me-1"></i>
+                        Refresh
+                    </button>
+                </div>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-sm table-bordered align-middle" id="requestsTable">
+                    <thead class="table-light">
+                        <tr>
+                            <th scope="col">Request ID</th>
+                            <th scope="col">Entity</th>
+                            <th scope="col">Type</th>
+                            <th scope="col">Requested By</th>
+                            <th scope="col" class="text-center">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td colspan="5" class="text-center text-muted">No pending requests.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+<!-- Add Observation Modal -->
+    <div class="modal fade" id="observationModal" tabindex="-1" aria-labelledby="observationModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg" style="min-width:95% !important;">
+            <div class="modal-content">
+
+                <div class="modal-header">
+                    <h5 class="modal-title">Add SBP Observation</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+
+                <form id="observationForm">
+                    <input type="hidden" id="editMode" value="false" />
+                    <input type="hidden" id="paraId" value="0" />
+
+                    <!-- SCROLLABLE BODY — single instance only -->
+                    <div class="modal-body" style="max-height: 80vh; overflow-y: auto;">
+
+                        <div class="mb-4">
+                            <h6 class="text-primary">Observation Details</h6>
+
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label">Reference No</label>
+                                    <input type="text" class="form-control" id="refNo" required />
+                                </div>
+
+                                <div class="col-md-6">
+                                    <label class="form-label">Function/Department</label>
+                                    <input type="text" class="form-control" id="functionName" required />
+                                </div>
+
+                                <div class="col-md-6">
+                                    <label class="form-label">Para No</label>
+                                    <input type="text" class="form-control" id="paraNo" required />
+                                </div>
+
+                                <div class="col-md-6">
+                                    <label class="form-label">Compliance Quarter</label>
+                                    <input type="text" class="form-control" id="complianceQuarter" />
+                                </div>
+
+                                <div class="col-md-6">
+                                    <label class="form-label">Observation Type</label>
+                                    <input type="text" class="form-control" id="observationTypeDisplay" readonly />
+                                    <input type="hidden" id="modalObservationTypeId" />
+                                </div>
+
+                                <div class="col-12">
+                                    <label class="form-label">SBP Observation</label>
+                                    <textarea id="sbpObservationEditor" class="form-control" rows="4" required></textarea>
+                                </div>
+
+                                <div class="col-12">
+                                    <label class="form-label">SBP Directions</label>
+                                    <textarea id="sbpDirectionsEditor" class="form-control" rows="3"></textarea>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Update Observation</button>
+                    </div>
+
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="complianceModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg" style="min-width:95% !important;">
+            <div class="modal-content">
+
+                <div class="modal-header">
+                    <h5 class="modal-title">Add Management Response (Compliance)</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+
+                <!-- SCROLLABLE BODY — SINGLE INSTANCE -->
+                <div class="modal-body" style="max-height:80vh; overflow-y:auto;">
+
+                    <div class="mb-3">
+                        <label class="form-label">Reference No</label>
+                        <input type="text" id="complianceRefNo" class="form-control" readonly />
+                    </div>
+
+                    <input type="hidden" id="complianceParaId" value="0" />
+
+                    <div class="mb-3">
+                        <label class="form-label" for="bankResponseEditor">Management Response</label>
+                        <textarea id="bankResponseEditor" class="form-control" rows="4" required></textarea>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Reply Date</label>
+                        <input type="date" id="replyDate" class="form-control" required />
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Compliance Status</label>
+                        <select id="complianceStatus" class="form-select" required>
+                            <option value="">--Select--</option>
+                            <option>Complied</option>
+                            <option>Non-Complied</option>
+                            <option>In Process</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">IAD Validation</label>
+                        <select id="iadValidation" class="form-select" required>
+                            <option value="">--Select--</option>
+                            <option>Validated</option>
+                            <option>Non-Validated</option>
+                        </select>
+                    </div>
+
+                </div>
+
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button class="btn btn-success" onclick="saveCompliance()">Save Response</button>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+}
+
+@section Scripts {
+    <script type="text/javascript">
+        (function () {
+            const IS_UNLOCKED = @Model.IsUnlocked.ToString().ToLowerInvariant();
+            const API_BASE_URL = (typeof g_aisBaseURL === 'string' && g_aisBaseURL)
+                ? g_aisBaseURL
+                : ((typeof g_asiBaseURL === 'string' && g_asiBaseURL) ? g_asiBaseURL : '');
+            let registerTable = null;
+            let observationData = [];
+            let selectedObservationTypeId = null;
+            let selectedObservationTypeName = '';
+            let activeObservationTypeId = null;
+            let observationTypeRequest = null;
+            let rowActionsEnabled = false;
+            let pendingSelectionConfirmation = false;
+            let inactivityTimerId = null;
+            let $typeSelect = null;
+            let $tableOverlay = null;
+            let $tableMessage = null;
+            let $tableSpinner = null;
+            let $addButton = null;
+            let $requestsTable = null;
+            let $requestsTableBody = null;
+            let $refreshRequestsBtn = null;
+            const OBSERVATION_TYPE_STORAGE_KEY = 'SBP_OBS_TYPE';
+            const AUTH_STORAGE_KEY = 'SBP_AUTH';
+            const AUTH_RETAIN_STORAGE_KEY = 'SBP_AUTH_RETAIN';
+            const INACTIVITY_TIMEOUT_MS = 30 * 60 * 1000;
+            const OBSERVATION_EDITOR_SELECTOR = '#sbpObservationEditor';
+            const DIRECTIONS_EDITOR_SELECTOR = '#sbpDirectionsEditor';
+            const BANK_RESPONSE_EDITOR_SELECTOR = '#bankResponseEditor';
+            const RICH_TEXT_EDITOR_OPTIONS = {
+                imageUpload: false,
+                fileUpload: false,
+                videoEmbed: false,
+                urls: false
+            };
+            const RICH_TEXT_TARGETS = {
+                observation: OBSERVATION_EDITOR_SELECTOR,
+                directions: DIRECTIONS_EDITOR_SELECTOR,
+                response: BANK_RESPONSE_EDITOR_SELECTOR
+            };
+            const RICH_TEXT_INIT_STATE = {
+                observation: false,
+                directions: false,
+                response: false
+            };
+            const observationModalState = {
+                mode: 'add',
+                paraId: 0,
+                dataLoaded: false,
+                observationHtml: '',
+                directionsHtml: '',
+                observationTypeId: null,
+                observationTypeName: ''
+            };
+            const complianceModalState = {
+                responseHtml: ''
+            };
+
+            if (!IS_UNLOCKED) {
+                try {
+                    sessionStorage.removeItem(AUTH_STORAGE_KEY);
+                    sessionStorage.removeItem(AUTH_RETAIN_STORAGE_KEY);
+                    sessionStorage.removeItem(OBSERVATION_TYPE_STORAGE_KEY);
+                } catch (error) {
+                    // ignore storage errors
+                }
+
+                $(document).ready(function () {
+                    const $unlockButton = $('#btnUnlockRegister');
+                    const $passwordInput = $('#registerPassword');
+                    const $authError = $('#sbpAuthError');
+                    const originalHtml = $unlockButton.html();
+
+                    const clearAuthError = function () {
+                        if (!$authError.length) {
+                            return;
+                        }
+                        $authError.text('').addClass('d-none');
+                    };
+
+                    const showAuthError = function (message) {
+                        if (!$authError.length) {
+                            return;
+                        }
+                        const text = (typeof message === 'string' && message.trim().length)
+                            ? message.trim()
+                            : '';
+                        $authError.text(text).toggleClass('d-none', !text);
+                    };
+
+                    if (!$unlockButton.length || !$passwordInput.length) {
+                        return;
+                    }
+
+                    $passwordInput.on('input', function () {
+                        clearAuthError();
+                    });
+
+                    $unlockButton.on('click', function (event) {
+                        event.preventDefault();
+
+                        const password = ($passwordInput.val() || '').trim();
+                        if (!password) {
+                            showAuthError('Password is required');
+                            $passwordInput.focus();
+                            return;
+                        }
+
+                        clearAuthError();
+
+                        $unlockButton.prop('disabled', true)
+                            .html('<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Authenticating...');
+
+                        $.ajax({
+                            url: API_BASE_URL + '/ApiCalls/Authenticate',
+                            type: 'POST',
+                            contentType: 'application/json',
+                            data: JSON.stringify(password),
+                            success: function (res) {
+                                const rawSuccess = res ? res.success : null;
+                                const isOk = rawSuccess === true
+                                    || rawSuccess === 1
+                                    || rawSuccess === '1'
+                                    || (typeof rawSuccess === 'string' && rawSuccess.toLowerCase() === 'true');
+                                const msg = res && res.message ? res.message : '';
+
+                                if (isOk) {
+                                    clearAuthError();
+                                    alert(msg || 'Authenticated successfully.');
+                                    try {
+                                        sessionStorage.setItem(AUTH_STORAGE_KEY, 'true');
+                                        sessionStorage.setItem(AUTH_RETAIN_STORAGE_KEY, 'true');
+                                    } catch (error) {
+                                        // ignore storage errors
+                                    }
+                                    window.location.reload();
+                                    return;
+                                }
+
+                                showAuthError(msg || 'Invalid password');
+                            },
+                            error: function () {
+                                showAuthError('Unable to authenticate right now. Please try again.');
+                            },
+                            complete: function () {
+                                $unlockButton.prop('disabled', false).html(originalHtml);
+                            }
+                        });
+                    });
+                });
+
+                return;
+            }
+
+            try {
+                sessionStorage.setItem(AUTH_STORAGE_KEY, 'true');
+                sessionStorage.removeItem(AUTH_RETAIN_STORAGE_KEY);
+            } catch (error) {
+                // ignore storage errors
+            }
+
+            $(document).ready(function () {
+                cacheDomReferences();
+                bindRegisterTable([]);
+                initialiseEventHandlers();
+                initialiseObservationTypeFilter();
+                initialiseInactivityTimer();
+                initialiseRequestsSection();
+            });
+
+            function cacheDomReferences() {
+                $typeSelect = $('#observationTypeSelect');
+                $tableOverlay = $('#registerTableOverlay');
+                $tableMessage = $('#registerTableMessage');
+                $tableSpinner = $('#registerTableSpinner');
+                $addButton = $('#btnAddObservation');
+                $requestsTable = $('#requestsTable');
+                $requestsTableBody = ($requestsTable && $requestsTable.length) ? $requestsTable.find('tbody') : null;
+                $refreshRequestsBtn = $('#refreshRequestsBtn');
+            }
+
+            function initialiseEventHandlers() {
+                $('#btnAddObservation').on('click', function () {
+                    ensureAuthenticated(openAdd);
+                });
+
+                $('#observationForm').on('submit', function (event) {
+                    event.preventDefault();
+                    ensureAuthenticated(saveObservation);
+                });
+
+                $('#observationModal').on('shown.bs.modal', function () {
+                    initRT(OBSERVATION_EDITOR_SELECTOR);
+                    initRT(DIRECTIONS_EDITOR_SELECTOR);
+                    applyObservationEditorContent();
+                });
+
+                $('#observationModal').on('hidden.bs.modal', function () {
+                    destroyRT(OBSERVATION_EDITOR_SELECTOR);
+                    destroyRT(DIRECTIONS_EDITOR_SELECTOR);
+                    resetObservationForm();
+                    resetObservationModalState();
+                });
+
+                $('#complianceModal').on('shown.bs.modal', function () {
+                    initRT(BANK_RESPONSE_EDITOR_SELECTOR);
+                    setRT(BANK_RESPONSE_EDITOR_SELECTOR, complianceModalState.responseHtml || '');
+                });
+
+                $('#complianceModal').on('hidden.bs.modal', function () {
+                    const $modal = $(this);
+                    destroyRT(BANK_RESPONSE_EDITOR_SELECTOR);
+                    resetComplianceModalState();
+                    $modal.data('responseId', null);
+                    $modal.find('.btn-success').text('Save Response');
+                    $modal.find('#complianceParaId').val('0');
+                    $modal.find('#complianceRefNo').val('');
+                    $modal.find('#replyDate').val('');
+                    $modal.find('#complianceStatus').val('');
+                    $modal.find('#iadValidation').val('');
+                });
+
+                if ($refreshRequestsBtn && $refreshRequestsBtn.length) {
+                    $refreshRequestsBtn.on('click', function () {
+                        ensureAuthenticated(loadPendingRequests);
+                    });
+                }
+
+                if ($typeSelect && $typeSelect.length) {
+                    $typeSelect.on('change', function () {
+                        ensureAuthenticated(function () {
+                            handleObservationTypeChange();
+                        });
+                    });
+                }
+
+            }
+
+            function initialiseObservationTypeFilter() {
+                if (!$typeSelect || !$typeSelect.length) {
+                    return;
+                }
+
+                const storedTypeId = getStoredObservationTypeId();
+                const serverSelectedId = toNumeric($typeSelect.data('selected-id'));
+                const initialValue = storedTypeId || serverSelectedId || null;
+
+                if (initialValue) {
+                    $typeSelect.val(String(initialValue));
+                    selectedObservationTypeId = initialValue;
+                    selectedObservationTypeName = getSelectedObservationTypeName();
+                    pendingSelectionConfirmation = true;
+                    setTableState('prompt', 'Change the observation type to load the register.');
+                } else {
+                    selectedObservationTypeId = null;
+                    selectedObservationTypeName = '';
+                    pendingSelectionConfirmation = false;
+                    setTableState('prompt', 'Select an observation type to load the register.');
+                }
+
+                updateAddButtonState();
+                enableRepeatSelection($typeSelect);
+            }
+
+            function initialiseRequestsSection() {
+                if (!hasRequestsTable()) {
+                    return;
+                }
+                loadPendingRequests();
+            }
+
+            function hasRequestsTable() {
+                return !!($requestsTableBody && $requestsTableBody.length);
+            }
+
+            function setRequestsTableState(message) {
+                if (!hasRequestsTable()) {
+                    return;
+                }
+
+                const text = (typeof message === 'string' && message.trim().length)
+                    ? message.trim()
+                    : 'No pending requests.';
+                $requestsTableBody.html(`<tr><td colspan="5" class="text-center text-muted">${escapeHtml(text)}</td></tr>`);
+            }
+
+            function renderRequestRows(rows) {
+                if (!hasRequestsTable()) {
+                    return;
+                }
+
+                const data = Array.isArray(rows) ? rows : [];
+                if (!data.length) {
+                    setRequestsTableState('No pending requests.');
+                    return;
+                }
+
+                $requestsTableBody.empty();
+                data.forEach(function (row) {
+                    const requestId = toNumeric(row?.REQUEST_ID ?? row?.RequestId ?? row?.request_id);
+                    const entity = escapeHtml(String(row?.ENTITY ?? row?.Entity ?? row?.entity ?? '-'));
+                    const requestType = escapeHtml(String(row?.REQUEST_TYPE ?? row?.RequestType ?? row?.request_type ?? '-'));
+                    const requestedBy = escapeHtml(String(row?.REQUESTED_BY ?? row?.Requested_By ?? row?.requested_by ?? '-'));
+                    const idDisplay = requestId > 0 ? escapeHtml(String(requestId)) : '-';
+                    let actionsHtml = '<span class="text-muted">N/A</span>';
+
+                    if (requestId > 0) {
+                        actionsHtml = `<div class="d-flex flex-wrap gap-2 justify-content-center">
+                            <button type="button" class="btn btn-sm btn-success" onclick="approveRequest(${requestId})">Approve</button>
+                            <button type="button" class="btn btn-sm btn-danger" onclick="rejectRequest(${requestId})">Reject</button>
+                        </div>`;
+                    }
+
+                    const rowHtml = `<tr>
+                        <td>${idDisplay}</td>
+                        <td>${entity}</td>
+                        <td>${requestType}</td>
+                        <td>${requestedBy}</td>
+                        <td class="text-center">${actionsHtml}</td>
+                    </tr>`;
+                    $requestsTableBody.append(rowHtml);
+                });
+            }
+
+            function loadPendingRequests() {
+                if (!hasRequestsTable()) {
+                    return;
+                }
+
+                setRequestsTableState('Loading requests...');
+                $.get(API_BASE_URL + '/ApiCalls/GetRequests?status=PENDING')
+                    .done(function (rows) {
+                        renderRequestRows(rows);
+                    })
+                    .fail(function () {
+                        setRequestsTableState('Unable to load requests.');
+                    });
+            }
+
+            function refreshActiveRegister() {
+                if (selectedObservationTypeId && Number(selectedObservationTypeId) > 0) {
+                    loadObservationRegisterForType(selectedObservationTypeId);
+                }
+            }
+
+            function ensureAuthenticated(callback) {
+                if (typeof callback === 'function') {
+                    callback();
+                }
+            }
+
+            function handleObservationTypeChange() {
+                resetInactivityTimer();
+
+                if (!$typeSelect || !$typeSelect.length) {
+                    return;
+                }
+
+                const selectedValue = ($typeSelect.val() || '').trim();
+                const numericId = toNumeric(selectedValue);
+
+                if (numericId <= 0) {
+                    selectedObservationTypeId = null;
+                    selectedObservationTypeName = '';
+                    pendingSelectionConfirmation = false;
+                    persistObservationTypeSelection(null);
+                    clearObservationData();
+                    setTableState('prompt', 'Select an observation type to load the register.');
+                    updateAddButtonState();
+                    return;
+                }
+
+                selectedObservationTypeId = numericId;
+                selectedObservationTypeName = getSelectedObservationTypeName();
+                pendingSelectionConfirmation = false;
+                persistObservationTypeSelection(numericId);
+                updateAddButtonState();
+                loadObservationRegisterForType(numericId);
+            }
+
+            function persistObservationTypeSelection(typeId) {
+                try {
+                    if (typeId && Number(typeId) > 0) {
+                        sessionStorage.setItem(OBSERVATION_TYPE_STORAGE_KEY, String(typeId));
+                    } else {
+                        sessionStorage.removeItem(OBSERVATION_TYPE_STORAGE_KEY);
+                    }
+                } catch (error) {
+                    // ignore storage errors
+                }
+            }
+
+            function getStoredObservationTypeId() {
+                try {
+                    const raw = sessionStorage.getItem(OBSERVATION_TYPE_STORAGE_KEY);
+                    const numeric = toNumeric(raw);
+                    return numeric > 0 ? numeric : null;
+                } catch (error) {
+                    return null;
+                }
+            }
+
+            function clearObservationData() {
+                observationData = [];
+                if (registerTable) {
+                    registerTable.search('').columns().search('');
+                    registerTable.order([0, 'asc']);
+                    registerTable.page('first');
+                    registerTable.clear().draw();
+                }
+                setRowActionsEnabled(false);
+                activeObservationTypeId = null;
+            }
+
+            function loadObservationRegisterForType(typeId) {
+                if (!typeId || typeId <= 0) {
+                    return;
+                }
+
+                cancelPendingRequest();
+                clearObservationData();
+                setTableState('loading', 'Loading observations...');
+                setDropdownDisabled(true);
+
+                const controller = new AbortController();
+                observationTypeRequest = controller;
+
+                fetchWithPageId(API_BASE_URL + '/ApiCalls/GetSbpObservationRegister?observationTypeId=' + encodeURIComponent(typeId), {
+                    method: 'GET',
+                    signal: controller.signal
+                })
+                    .then(parseApiResponse)
+                    .then(function (rows) {
+                        if (controller.signal.aborted) {
+                            return;
+                        }
+
+                        const items = Array.isArray(rows) ? rows : [];
+                        observationData = items.map(normalizeRegisterItem);
+                        bindRegisterTable(observationData);
+                        activeObservationTypeId = typeId;
+
+                        if (observationData.length > 0) {
+                            setTableState('ready');
+                            setRowActionsEnabled(true);
+                        } else {
+                            setTableState('empty', 'No observations found for this type.');
+                            setRowActionsEnabled(false);
+                        }
+                    })
+                    .catch(function (error) {
+                        if (controller.signal.aborted) {
+                            return;
+                        }
+
+                        console.error('Register fetch error', error);
+                        clearObservationData();
+                        const message = (error && error.message) ? error.message : 'Unable to load observations. Please try again.';
+                        setTableState('error', message);
+                    })
+                    .finally(function () {
+                        if (!controller.signal.aborted) {
+                            observationTypeRequest = null;
+                            setDropdownDisabled(false);
+                        }
+                    });
+            }
+
+            function setTableState(state, message) {
+                if (!$tableOverlay || !$tableOverlay.length) {
+                    return;
+                }
+
+                const showOverlay = state !== 'ready';
+                const defaultMessage = getDefaultTableMessage(state);
+                const resolvedMessage = message || defaultMessage;
+                const showSpinner = state === 'loading';
+
+                if (showOverlay) {
+                    $tableOverlay.addClass('active');
+                    if ($tableMessage && $tableMessage.length) {
+                        $tableMessage.text(resolvedMessage || '');
+                    }
+                    if ($tableSpinner && $tableSpinner.length) {
+                        $tableSpinner.toggleClass('d-none', !showSpinner);
+                    }
+                } else {
+                    $tableOverlay.removeClass('active');
+                }
+            }
+
+            function getDefaultTableMessage(state) {
+                switch (state) {
+                    case 'loading':
+                        return 'Loading observations...';
+                    case 'empty':
+                        return 'No observations found for this type.';
+                    case 'error':
+                        return 'Unable to load observations. Please try again.';
+                    case 'timeout':
+                        return 'Session expired. Please re-authenticate to continue.';
+                    case 'prompt':
+                    default:
+                        return 'Select an observation type to load the register.';
+                }
+            }
+
+            function setDropdownDisabled(disabled) {
+                if (!$typeSelect || !$typeSelect.length) {
+                    return;
+                }
+                $typeSelect.prop('disabled', !!disabled);
+            }
+
+            function cancelPendingRequest() {
+                if (observationTypeRequest && typeof observationTypeRequest.abort === 'function') {
+                    try {
+                        observationTypeRequest.abort();
+                    } catch (error) {
+                        // ignore abort errors
+                    }
+                }
+                observationTypeRequest = null;
+            }
+
+            function setRowActionsEnabled(isEnabled) {
+                rowActionsEnabled = !!isEnabled;
+                if (registerTable) {
+                    registerTable.rows().invalidate().draw(false);
+                }
+            }
+
+            function updateAddButtonState() {
+                if (!$addButton || !$addButton.length) {
+                    return;
+                }
+
+                const canUse = !!selectedObservationTypeId && !pendingSelectionConfirmation;
+                $addButton.prop('disabled', !canUse);
+            }
+
+            function getSelectedObservationTypeMeta() {
+                return {
+                    id: selectedObservationTypeId || null,
+                    name: selectedObservationTypeName || getSelectedObservationTypeName()
+                };
+            }
+
+            function getSelectedObservationTypeName() {
+                if (!$typeSelect || !$typeSelect.length) {
+                    return '';
+                }
+
+                const label = $typeSelect.find('option:selected').text();
+                return (label || '').trim();
+            }
+
+            function enableRepeatSelection($select) {
+                if (!$select || !$select.length) {
+                    return;
+                }
+
+                $select.on('mousedown', 'option', function (event) {
+                    const option = this;
+                    const parent = option && option.parentElement;
+                    if (!parent || !option.value) {
+                        return;
+                    }
+
+                    if (parent.value === option.value) {
+                        event.preventDefault();
+                        parent.blur();
+                        window.setTimeout(function () {
+                            parent.value = option.value;
+                            $(parent).trigger('change');
+                        }, 0);
+                    }
+                });
+            }
+
+            function refreshCurrentObservationType() {
+                if (selectedObservationTypeId && selectedObservationTypeId > 0 && !pendingSelectionConfirmation) {
+                    loadObservationRegisterForType(selectedObservationTypeId);
+                }
+            }
+
+            function initialiseInactivityTimer() {
+                if (!IS_UNLOCKED) {
+                    return;
+                }
+
+                const events = ['click', 'keydown', 'mousemove', 'scroll', 'touchstart'];
+                events.forEach(function (eventName) {
+                    document.addEventListener(eventName, resetInactivityTimer, true);
+                });
+
+                resetInactivityTimer();
+            }
+
+            function resetInactivityTimer() {
+                if (inactivityTimerId) {
+                    clearTimeout(inactivityTimerId);
+                }
+                inactivityTimerId = setTimeout(handleInactivityTimeout, INACTIVITY_TIMEOUT_MS);
+            }
+
+            function handleInactivityTimeout() {
+                cancelPendingRequest();
+                clearObservationData();
+                setTableState('timeout', 'Session expired. Please re-authenticate to continue.');
+
+                try {
+                    sessionStorage.removeItem(AUTH_STORAGE_KEY);
+                    sessionStorage.removeItem(AUTH_RETAIN_STORAGE_KEY);
+                    sessionStorage.removeItem(OBSERVATION_TYPE_STORAGE_KEY);
+                } catch (error) {
+                    // ignore
+                }
+
+                if (typeof window !== 'undefined') {
+                    if (typeof window.g_secretKey !== 'undefined') {
+                        window.g_secretKey = '';
+                    }
+                }
+
+                alert('Your SBP register session has expired due to inactivity. Please re-enter the password to continue.');
+                window.location.reload();
+            }
+
+            function normalizeRegisterItem(item) {
+                const safeText = (value) => {
+                    if (value === null || value === undefined) {
+                        return '';
+                    }
+                    return typeof value === 'string' ? value : String(value);
+                };
+                const parseNumeric = (value) => {
+                    const number = Number(value);
+                    return Number.isFinite(number) ? number : 0;
+                };
+
+                const paraId = parseNumeric(item?.ParaId ?? item?.PARA_ID ?? item?.paraId ?? item?.para_id);
+                const observationTypeId = parseNumeric(item?.ObservationTypeId ?? item?.OBSERVATION_TYPE_ID ?? item?.observation_type_id);
+                const latestResponseId = parseNumeric(
+                    item?.LatestResponseId
+                    ?? item?.LATEST_RESPONSE_ID
+                    ?? item?.ResponseId
+                    ?? item?.RESPONSE_ID
+                    ?? item?.response_id);
+
+                const model = {
+                    ParaId: paraId,
+                    RefNo: safeText(item?.Ref_No ?? item?.RefNo ?? item?.refNo),
+                    FunctionName: safeText(item?.Function_Name ?? item?.FunctionName ?? item?.functionName),
+                    ParaNo: safeText(item?.Para_No ?? item?.ParaNo ?? item?.paraNo),
+                    SBPObservation: safeText(item?.SBP_Observation ?? item?.SBPObservation ?? item?.sbpObservation),
+                    SBPDirections: safeText(item?.SBP_Directions ?? item?.SBPDirections ?? item?.sbpDirections),
+                    LatestBankResponse: safeText(item?.Latest_Bank_Response ?? item?.LatestBankResponse ?? item?.latestBankResponse ?? item?.BANK_RESPONSE),
+                    LatestResponseId: latestResponseId > 0 ? latestResponseId : null,
+                    ComplianceQuarter: safeText(item?.Compliance_Quarter ?? item?.ComplianceQuarter ?? item?.complianceQuarter),
+                    ReplyDate: safeText(item?.Reply_Date ?? item?.ReplyDate ?? item?.replyDate),
+                    ComplianceStatus: safeText(item?.Compliance_Status ?? item?.ComplianceStatus ?? item?.complianceStatus),
+                    IADValidation: safeText(item?.IAD_Validation ?? item?.IADValidation ?? item?.iadValidation),
+                    EnteredBy: safeText(item?.Entered_By ?? item?.EnteredBy ?? item?.enteredBy),
+                    EnteredOn: safeText(item?.Entered_On ?? item?.EnteredOn ?? item?.enteredOn),
+                    CreatedOn: safeText(item?.Created_On ?? item?.CreatedOn ?? item?.createdOn),
+                    ObservationTypeId: observationTypeId > 0 ? observationTypeId : null,
+                    ObservationTypeName: safeText(item?.ObservationTypeName ?? item?.Observation_Type ?? item?.ObservationType ?? item?.OBSERVATION_TYPE_NAME ?? item?.OBSERVATION_TYPE)
+                };
+
+                model.Ref_No = model.RefNo;
+                model.Function_Name = model.FunctionName;
+                model.Para_No = model.ParaNo;
+                model.SBP_Observation = model.SBPObservation;
+                model.SBP_Directions = model.SBPDirections;
+                model.Latest_Bank_Response = model.LatestBankResponse;
+                model.Compliance_Quarter = model.ComplianceQuarter;
+                model.Reply_Date = model.ReplyDate;
+                model.Compliance_Status = model.ComplianceStatus;
+                model.IAD_Validation = model.IADValidation;
+                model.Entered_By = model.EnteredBy;
+                model.Observation_Type = model.ObservationTypeName;
+
+                return model;
+            }
+
+            function findObservationByParaId(paraId) {
+                const numericId = Number(paraId);
+                if (!Number.isFinite(numericId) || numericId <= 0) {
+                    return null;
+                }
+
+                return observationData.find(function (entry) {
+                    return Number(entry?.ParaId) === numericId;
+                }) || null;
+            }
+
+            function bindRegisterTable(rows) {
+                if ($.fn.DataTable.isDataTable('#observationRegisterTable')) {
+                    const table = $('#observationRegisterTable').DataTable();
+                    table.clear().rows.add(rows || []).draw();
+                    return;
+                }
+
+                registerTable = $('#observationRegisterTable').DataTable({
+                    destroy: true,
+                    data: rows || [],
+                    autoWidth: false,
+                    scrollX: true,
+                    scrollCollapse: true,
+                    columns: [
+                        { data: 'ParaId', title: 'Para ID', visible: false },
+                        { data: 'RefNo', title: 'Reference No' },
+                        { data: 'FunctionName', title: 'Function/Dept' },
+                        { data: 'ParaNo', title: 'Para No' },
+                        {
+                            data: 'SBPObservation',
+                            title: 'SBP Observation',
+                            render: function (value) {
+                                return formatRichTextCell(value);
+                            }
+                        },
+                        {
+                            data: 'SBPDirections',
+                            title: 'SBP Directions',
+                            render: function (value) {
+                                return formatRichTextCell(value);
+                            }
+                        },
+                        {
+                            data: 'LatestBankResponse',
+                            title: 'Latest Response',
+                            render: function (value) {
+                                return formatPlainTextCell(value);
+                            }
+                        },
+                        {
+                            data: null,
+                            title: 'Actions',
+                            orderable: false,
+                            searchable: false,
+                            render: function (row) {
+                                const paraValue = row && Number(row.ParaId) ? String(row.ParaId) : '';
+                                const refValue = row && row.RefNo ? String(row.RefNo) : '';
+                                const attrPara = escapeHtml(paraValue);
+                                const attrRef = escapeHtml(refValue);
+                                const disabledAttr = rowActionsEnabled ? '' : ' disabled';
+                                const responseId = row && Number(row.LatestResponseId) ? Number(row.LatestResponseId) : 0;
+                                const attrResponse = responseId > 0 ? escapeHtml(String(responseId)) : '';
+                                const responseButton = responseId > 0
+                                    ? `<button class="btn btn-sm btn-outline-warning"${disabledAttr} data-response="${attrResponse}" onclick="requestDeleteResponse(this.dataset.response)">Request Delete Response</button>`
+                                    : '';
+                                return `
+                                    <div class="d-flex justify-content-around align-items-center flex-wrap gap-2">
+                                        <button class="btn btn-sm btn-primary"${disabledAttr} data-para="${attrPara}" data-ref="${attrRef}" onclick="updateObservation(this.dataset.para)">Update</button>
+                                        <button class="btn btn-sm btn-warning"${disabledAttr} data-para="${attrPara}" data-ref="${attrRef}" onclick="addCompliance(this.dataset.para)">Compliance</button>
+                                        <button class="btn btn-sm btn-info"${disabledAttr} data-para="${attrPara}" onclick="viewHistory(this.dataset.para)">History</button>
+                                        <button class="btn btn-sm btn-outline-danger"${disabledAttr} data-para="${attrPara}" onclick="requestDeleteObservation(this.dataset.para)">Request Delete</button>
+                                        ${responseButton}
+                                    </div>
+                                `;
+                            }
+                        }
+                    ],
+                    columnDefs: [
+                        { targets: '_all', className: 'align-top text-break' },
+                        { targets: [1, 2, 3], width: '140px' },
+                        { targets: [4, 5, 6], width: '220px' },
+                        { targets: -1, className: 'text-center align-middle text-nowrap', width: '220px', orderable: false, searchable: false }
+                    ]
+                });
+            }
+
+            function openAdd() {
+                const typeMeta = getSelectedObservationTypeMeta();
+                if (!typeMeta.id || pendingSelectionConfirmation) {
+                    alert('Please select an SBP observation type before adding a new record.');
+                    return;
+                }
+
+                resetObservationForm();
+                resetObservationModalState();
+                observationModalState.mode = 'add';
+                observationModalState.paraId = 0;
+                setModalObservationType(typeMeta.id, typeMeta.name);
+                $('#observationModalLabel').text('Add SBP Observation');
+                $('#refNo').prop('readonly', false);
+                $('#observationForm button[type="submit"]').text('Save Observation');
+                setRT(OBSERVATION_EDITOR_SELECTOR, '');
+                setRT(DIRECTIONS_EDITOR_SELECTOR, '');
+                $('#observationModal').modal('show');
+            }
+
+            function resetObservationForm() {
+                const $form = $('#observationForm');
+                const form = $form[0];
+                if (form) {
+                    form.reset();
+                }
+                $('#editMode').val('false');
+                $('#paraId').val('0');
+                $('#refNo').prop('readonly', false);
+                setRT(OBSERVATION_EDITOR_SELECTOR, '');
+                setRT(DIRECTIONS_EDITOR_SELECTOR, '');
+                $('#observationForm button[type="submit"]').text('Save Observation');
+                setModalObservationType(null, '');
+            }
+
+            function saveObservation() {
+                const form = document.getElementById('observationForm');
+                if (form && !form.checkValidity()) {
+                    form.reportValidity();
+                    return;
+                }
+
+                const paraId = toNumericValue($('#paraId').val());
+                const refNo = ($('#refNo').val() || '').trim();
+                const functionName = ($('#functionName').val() || '').trim();
+                const paraNo = ($('#paraNo').val() || '').trim();
+                const observationHtml = getRT(OBSERVATION_EDITOR_SELECTOR) || '';
+                const directionsHtml = getRT(DIRECTIONS_EDITOR_SELECTOR) || '';
+                const complianceQuarter = ($('#complianceQuarter').val() || '').trim();
+                const isEdit = observationModalState.mode === 'edit';
+                const observationTypeId = toNumericValue($('#modalObservationTypeId').val());
+
+                if (!refNo || !functionName || !paraNo || !hasRichTextContent(observationHtml)) {
+                    alert('Reference No, Function/Department, Para No, and SBP Observation are required.');
+                    return;
+                }
+
+                if (isEdit && (!paraId || paraId <= 0)) {
+                    alert('Unable to determine Para ID for the selected observation.');
+                    return;
+                }
+
+                if (!observationTypeId || observationTypeId <= 0) {
+                    alert('Observation type is required. Please re-select a type and try again.');
+                    return;
+                }
+
+                const currentUser = (window.currentUser || '').toString().trim() || getCurrentUser();
+                const encryptedObservation = encryptIfAvailable(observationHtml);
+                const encryptedDirections = encryptIfAvailable(directionsHtml);
+                const payload = {
+                    paraId: paraId,
+                    refNo: refNo,
+                    functionName: functionName,
+                    paraNo: paraNo,
+                    sbpObservation: encryptedObservation,
+                    sbpDirections: encryptedDirections,
+                    complianceQuarter: complianceQuarter,
+                    user: currentUser,
+                    observation_type_id: observationTypeId
+                };
+
+                setSavingState(true);
+
+                const endpoint = isEdit ? '/ApiCalls/UpdateSbpObservation' : '/ApiCalls/InsertSbpObservation';
+                const successMessage = isEdit ? 'Observation updated successfully.' : 'Observation saved successfully.';
+
+                fetchWithPageId(API_BASE_URL + endpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                })
+                    .then(parseApiResponse)
+                    .then(function () {
+                        alert(successMessage);
+                        $('#observationModal').modal('hide');
+                        $('#editMode').val('false');
+                        refreshCurrentObservationType();
+                        setSavingState(false);
+                    })
+                    .catch(function (err) {
+                        alert((err && err.message) ? err.message : 'Update failed.');
+                        setSavingState(false);
+                    });
+            }
+
+            function getCurrentUser() {
+                const fromWindow = (window.currentUser || '').toString().trim();
+                if (fromWindow) {
+                    return fromWindow;
+                }
+
+                const fromDom = ($('#avatarEmpName').text() || '').trim();
+                return fromDom || 'SYSTEM';
+            }
+
+            function toNumericValue(value) {
+                const numeric = Number(value);
+                return Number.isFinite(numeric) ? numeric : null;
+            }
+
+            function escapeHtml(value) {
+                if (value === null || value === undefined) {
+                    return '';
+                }
+
+                return String(value).replace(/[&<>"']/g, function (char) {
+                    switch (char) {
+                        case '&': return '&amp;';
+                        case '<': return '&lt;';
+                        case '>': return '&gt;';
+                        case '"': return '&quot;';
+                        case "'": return '&#39;';
+                        default: return char;
+                    }
+                });
+            }
+
+            function parseApiResponse(response) {
+                return response.text().then(function (text) {
+                    if (!text) {
+                        if (!response.ok) {
+                            throw new Error('Server returned an empty response.');
+                        }
+                        return {};
+                    }
+
+                    try {
+                        return JSON.parse(text);
+                    } catch (error) {
+                        if (!response.ok) {
+                            throw new Error(text);
+                        }
+                        return {};
+                    }
+                });
+            }
+
+            function setSavingState(isSaving) {
+                const $submit = $('#observationForm button[type="submit"]');
+                if (!$submit.length) {
+                    return;
+                }
+
+                if (isSaving) {
+                    if (!$submit.data('original-html')) {
+                        $submit.data('original-html', $submit.html());
+                    }
+                    $submit.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Updating...');
+                } else {
+                    const originalHtml = $submit.data('original-html') || 'Update Observation';
+                    $submit.html(originalHtml);
+                    $submit.prop('disabled', false);
+                }
+            }
+
+            function getTodayForInput() {
+                const today = new Date();
+                const month = String(today.getMonth() + 1).padStart(2, '0');
+                const day = String(today.getDate()).padStart(2, '0');
+                return today.getFullYear() + '-' + month + '-' + day;
+            }
+
+            window.addCompliance = function (paraId) {
+                ensureAuthenticated(function () {
+                    const numericId = Number(paraId);
+                    if (!Number.isFinite(numericId) || numericId <= 0) {
+                        alert('Unable to find the selected observation.');
+                        return;
+                    }
+
+                    const record = findObservationByParaId(numericId);
+                    if (!record) {
+                        alert('Unable to find the selected observation.');
+                        return;
+                    }
+
+                    const $modal = $('#complianceModal');
+                    $modal.data('responseId', null);
+                    $modal.find('#complianceParaId').val(String(numericId));
+                    $modal.find('#complianceRefNo').val(record.RefNo || record.Ref_No || '');
+                    complianceModalState.responseHtml = '';
+                    setRT(BANK_RESPONSE_EDITOR_SELECTOR, '');
+                    $modal.find('#replyDate').val(getTodayForInput());
+                    $modal.find('#complianceStatus').val('');
+                    $modal.find('#iadValidation').val('');
+                    $modal.find('.btn-success').text('Save Response');
+                    $modal.find('.modal-title').text('Add Management Response (Compliance)');
+                    $modal.modal('show');
+                });
+            };
+
+            window.saveCompliance = function () {
+                ensureAuthenticated(function () {
+                    const $modal = $('#complianceModal');
+                    const paraIdValue = toNumericValue($modal.find('#complianceParaId').val());
+                    const refNo = ($modal.find('#complianceRefNo').val() || '').trim();
+                    const responseHtml = getRT(BANK_RESPONSE_EDITOR_SELECTOR) || '';
+                    const replyDate = $modal.find('#replyDate').val();
+                    const status = $modal.find('#complianceStatus').val();
+                    const validation = $modal.find('#iadValidation').val();
+                    const responseId = toNumericValue($modal.data('responseId'));
+
+                    if (!paraIdValue || paraIdValue <= 0) {
+                        alert('Unable to determine Para ID for the selected observation.');
+                        return;
+                    }
+
+                    if (!refNo || !hasRichTextContent(responseHtml) || !replyDate) {
+                        alert('Reference No, Management Response, and Reply Date are required.');
+                        return;
+                    }
+
+                    if (!status || !validation) {
+                        alert('Please fill all required fields.');
+                        return;
+                    }
+
+                    const currentUser = (window.currentUser || '').toString().trim() || getCurrentUser();
+                    const encryptedResponse = encryptIfAvailable(responseHtml);
+                    const payload = {
+                        paraId: paraIdValue,
+                        refNo: refNo,
+                        bankResponse: encryptedResponse,
+                        replyDate: replyDate,
+                        complianceStatus: status,
+                        iadValidation: validation,
+                        user: currentUser
+                    };
+
+                    if (responseId) {
+                        payload.response_id = responseId;
+                    }
+
+                    const endpoint = responseId ? '/ApiCalls/UpdateSbpObservationResponse' : '/ApiCalls/InsertSbpObservationResponse';
+
+                    fetchWithPageId(API_BASE_URL + endpoint, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    })
+                        .then(parseApiResponse)
+                        .then(function () {
+                            alert(responseId ? 'Management response updated successfully.' : 'Management response saved successfully.');
+                            $modal.modal('hide');
+                            refreshCurrentObservationType();
+                        })
+                        .catch(function (err) {
+                            alert((err && err.message) ? err.message : 'Failed to save management response.');
+                        });
+                });
+            };
+
+            window.updateObservation = function (paraId) {
+                ensureAuthenticated(function () {
+                    const numericId = Number(paraId);
+                    if (!Number.isFinite(numericId) || numericId <= 0) {
+                        alert('Unable to find the selected observation.');
+                        return;
+                    }
+
+                    resetObservationForm();
+                    observationModalState.mode = 'edit';
+                    observationModalState.paraId = numericId;
+                    observationModalState.dataLoaded = false;
+                    observationModalState.observationHtml = '';
+                    observationModalState.directionsHtml = '';
+                    const record = findObservationByParaId(numericId);
+                    const typeId = record && Number(record.ObservationTypeId) > 0
+                        ? Number(record.ObservationTypeId)
+                        : (selectedObservationTypeId || 0);
+                    const typeName = (record && record.ObservationTypeName)
+                        ? record.ObservationTypeName
+                        : (selectedObservationTypeName || '');
+                    setModalObservationType(typeId, typeName);
+                    $('#editMode').val('true');
+                    $('#observationModalLabel').text('Update SBP Observation');
+                    $('#paraId').val(String(numericId));
+                    $('#refNo').val('').prop('readonly', true);
+                    $('#functionName').val('');
+                    $('#paraNo').val('');
+                    $('#complianceQuarter').val('');
+                    $('#observationForm button[type="submit"]').text('Update Observation');
+                    setRT(OBSERVATION_EDITOR_SELECTOR, '');
+                    setRT(DIRECTIONS_EDITOR_SELECTOR, '');
+                    $('#observationModal').modal('show');
+                    fetchObservationDetails(numericId);
+                });
+            };
+
+            window.viewHistory = function (paraId) {
+                ensureAuthenticated(function () {
+                    const numericId = Number(paraId);
+                    if (!Number.isFinite(numericId) || numericId <= 0) {
+                        return;
+                    }
+
+                    const target = API_BASE_URL + '/HM/SbpObservationHistory?paraId=' + encodeURIComponent(numericId);
+                    window.location.href = target;
+                });
+            };
+
+            window.requestDeleteObservation = function (paraId) {
+                ensureAuthenticated(function () {
+                    const numericId = toNumeric(paraId);
+                    if (numericId <= 0) {
+                        alert('Invalid Para ID.');
+                        return;
+                    }
+
+                    const reason = prompt('Reason for deletion:');
+                    if (reason === null) {
+                        return;
+                    }
+
+                    $.ajax({
+                        url: API_BASE_URL + '/ApiCalls/RequestDeleteObservation',
+                        type: 'POST',
+                        contentType: 'application/json',
+                        data: JSON.stringify({ paraId: numericId, reason: reason }),
+                        success: function (res) {
+                            alert(res?.message || (res?.success ? 'Delete request submitted' : 'Failed'));
+                            if (hasRequestsTable()) {
+                                loadPendingRequests();
+                            }
+                        },
+                        error: function () {
+                            alert('Error submitting delete request');
+                        }
+                    });
+                });
+            };
+
+            window.requestDeleteResponse = function (responseId) {
+                ensureAuthenticated(function () {
+                    const numericId = toNumeric(responseId);
+                    if (numericId <= 0) {
+                        alert('Invalid Response ID.');
+                        return;
+                    }
+
+                    const reason = prompt('Reason for deletion:');
+                    if (reason === null) {
+                        return;
+                    }
+
+                    $.ajax({
+                        url: API_BASE_URL + '/ApiCalls/RequestDeleteResponse',
+                        type: 'POST',
+                        contentType: 'application/json',
+                        data: JSON.stringify({ responseId: numericId, reason: reason }),
+                        success: function (res) {
+                            alert(res?.message || (res?.success ? 'Delete request submitted' : 'Failed'));
+                            if (hasRequestsTable()) {
+                                loadPendingRequests();
+                            }
+                        },
+                        error: function () {
+                            alert('Error submitting delete request');
+                        }
+                    });
+                });
+            };
+
+            window.approveRequest = function (requestId) {
+                ensureAuthenticated(function () {
+                    const numericId = toNumeric(requestId);
+                    if (numericId <= 0) {
+                        alert('Invalid request.');
+                        return;
+                    }
+
+                    $.ajax({
+                        url: API_BASE_URL + '/ApiCalls/ApproveRequest',
+                        type: 'POST',
+                        contentType: 'application/json',
+                        data: JSON.stringify({ requestId: numericId }),
+                        success: function (res) {
+                            alert(res?.message || (res?.success ? 'Approved' : 'Unable to approve request.'));
+                            if (hasRequestsTable()) {
+                                loadPendingRequests();
+                            }
+                            refreshActiveRegister();
+                        },
+                        error: function () {
+                            alert('Error approving request');
+                        }
+                    });
+                });
+            };
+
+            window.rejectRequest = function (requestId) {
+                ensureAuthenticated(function () {
+                    const numericId = toNumeric(requestId);
+                    if (numericId <= 0) {
+                        alert('Invalid request.');
+                        return;
+                    }
+
+                    const reason = prompt('Reason for rejection:');
+                    if (reason === null) {
+                        return;
+                    }
+
+                    $.ajax({
+                        url: API_BASE_URL + '/ApiCalls/RejectRequest',
+                        type: 'POST',
+                        contentType: 'application/json',
+                        data: JSON.stringify({ requestId: numericId, reason: reason }),
+                        success: function (res) {
+                            alert(res?.message || (res?.success ? 'Rejected' : 'Unable to reject request.'));
+                            if (hasRequestsTable()) {
+                                loadPendingRequests();
+                            }
+                        },
+                        error: function () {
+                            alert('Error rejecting request');
+                        }
+                    });
+                });
+            };
+
+            window.requestReverse = function (requestId) {
+                ensureAuthenticated(function () {
+                    const numericId = toNumeric(requestId);
+                    if (numericId <= 0) {
+                        alert('Invalid request.');
+                        return;
+                    }
+
+                    const reason = prompt('Reason for reversal:');
+                    if (reason === null) {
+                        return;
+                    }
+
+                    $.ajax({
+                        url: API_BASE_URL + '/ApiCalls/RequestReverse',
+                        type: 'POST',
+                        contentType: 'application/json',
+                        data: JSON.stringify({ requestIdToReverse: numericId, reason: reason }),
+                        success: function (res) {
+                            alert(res?.message || (res?.success ? 'Reversal submitted' : 'Unable to submit reversal.'));
+                            if (hasRequestsTable()) {
+                                loadPendingRequests();
+                            }
+                        },
+                        error: function () {
+                            alert('Error submitting reversal');
+                        }
+                    });
+                });
+            };
+
+            function fetchObservationDetails(paraId) {
+                const url = API_BASE_URL + '/ApiCalls/GetSbpObservationHistory?paraId=' + encodeURIComponent(paraId);
+
+                fetchWithPageId(url, { method: 'GET' })
+                    .then(parseApiResponse)
+                    .then(function (payload) {
+                        let details = extractObservationDetails(payload);
+                        if (!details) {
+                            const fallback = findObservationByParaId(paraId);
+                            if (fallback) {
+                                details = {
+                                    ParaId: fallback.ParaId,
+                                    Ref_No: fallback.Ref_No,
+                                    Function_Name: fallback.Function_Name,
+                                    Para_No: fallback.Para_No,
+                                    SBP_Observation: fallback.SBP_Observation,
+                                    SBP_Directions: fallback.SBP_Directions,
+                                    Compliance_Quarter: fallback.Compliance_Quarter
+                                };
+                            }
+                        }
+
+                        if (!details) {
+                            throw new Error('Observation details were not found for the selected Para ID.');
+                        }
+
+                        applyObservationDetails(details);
+                    })
+                    .catch(function (error) {
+                        console.error('Observation detail fetch error', error);
+                        alert((error && error.message) ? error.message : 'Unable to load observation details.');
+                        $('#observationModal').modal('hide');
+                    });
+            }
+
+            function applyObservationDetails(details) {
+                if (!details) {
+                    return;
+                }
+
+                const observationHtml = decryptIfAvailable(details.SBP_Observation);
+                const directionsHtml = decryptIfAvailable(details.SBP_Directions);
+                const effectiveParaId = details.ParaId && Number(details.ParaId) > 0
+                    ? Number(details.ParaId)
+                    : observationModalState.paraId;
+
+                observationModalState.dataLoaded = true;
+                observationModalState.paraId = effectiveParaId;
+                observationModalState.observationHtml = observationHtml;
+                observationModalState.directionsHtml = directionsHtml;
+
+                $('#paraId').val(String(effectiveParaId || observationModalState.paraId || 0));
+                $('#refNo').val(details.Ref_No || '').prop('readonly', observationModalState.mode === 'edit');
+                $('#functionName').val(details.Function_Name || '');
+                $('#paraNo').val(details.Para_No || '');
+                $('#complianceQuarter').val(details.Compliance_Quarter || '');
+                const detailsTypeId = toNumeric(details.ObservationTypeId || details.observation_type_id || details.Observation_Type_Id || details.OBSERVATION_TYPE_ID);
+                const detailsTypeName = (details.ObservationTypeName || details.observation_type_name || details.Observation_Type || details.OBSERVATION_TYPE_NAME || observationModalState.observationTypeName || selectedObservationTypeName || '').toString();
+                const fallbackTypeId = observationModalState.observationTypeId || selectedObservationTypeId || 0;
+                const fallbackTypeName = observationModalState.observationTypeName || selectedObservationTypeName || '';
+                const resolvedTypeId = detailsTypeId > 0 ? detailsTypeId : fallbackTypeId;
+                const resolvedTypeName = detailsTypeName || fallbackTypeName;
+                setModalObservationType(resolvedTypeId, resolvedTypeName);
+
+                if ($('#observationModal').hasClass('show')) {
+                    applyObservationEditorContent();
+                }
+            }
+
+            function applyObservationEditorContent() {
+                setRT(OBSERVATION_EDITOR_SELECTOR, observationModalState.observationHtml || '');
+                setRT(DIRECTIONS_EDITOR_SELECTOR, observationModalState.directionsHtml || '');
+            }
+
+            function resetObservationModalState() {
+                observationModalState.mode = 'add';
+                observationModalState.paraId = 0;
+                observationModalState.dataLoaded = false;
+                observationModalState.observationHtml = '';
+                observationModalState.directionsHtml = '';
+                observationModalState.observationTypeId = null;
+                observationModalState.observationTypeName = '';
+                setModalObservationType(null, '');
+            }
+
+            function setModalObservationType(typeId, typeName) {
+                const numericId = toNumeric(typeId);
+                const resolvedId = numericId > 0 ? numericId : 0;
+                const label = (typeName || '').toString();
+                observationModalState.observationTypeId = resolvedId > 0 ? resolvedId : null;
+                observationModalState.observationTypeName = label;
+                $('#modalObservationTypeId').val(String(resolvedId));
+                $('#observationTypeDisplay').val(label);
+            }
+
+            function resetComplianceModalState() {
+                complianceModalState.responseHtml = '';
+            }
+
+            function extractObservationDetails(payload) {
+                if (!payload) {
+                    return null;
+                }
+
+                const visited = new Set();
+                const queue = [];
+
+                function enqueue(value) {
+                    if (!value) {
+                        return;
+                    }
+
+                    if (Array.isArray(value)) {
+                        value.forEach(enqueue);
+                        return;
+                    }
+
+                    if (typeof value === 'object') {
+                        if (visited.has(value)) {
+                            return;
+                        }
+                        visited.add(value);
+                        queue.push(value);
+                    }
+                }
+
+                enqueue(payload);
+
+                while (queue.length) {
+                    const item = queue.shift();
+                    const header = normalizeObservationItem(item);
+                    if (header) {
+                        return header;
+                    }
+
+                    Object.keys(item || {}).forEach(function (key) {
+                        const child = item[key];
+                        if (child && (typeof child === 'object')) {
+                            enqueue(child);
+                        }
+                    });
+                }
+
+                return null;
+            }
+
+            function normalizeObservationItem(item) {
+                if (!item || typeof item !== 'object' || Array.isArray(item)) {
+                    return null;
+                }
+
+                const safeText = function (value) {
+                    if (value === null || value === undefined) {
+                        return '';
+                    }
+                    return String(value);
+                };
+
+                const result = {
+                    ParaId: toNumeric(item.ParaId || item.PARA_ID || item.para_id || item.Para_Id),
+                    Ref_No: safeText(item.Ref_No || item.REF_NO || item.ref_no),
+                    Function_Name: safeText(item.Function_Name || item.FUNCTION_NAME || item.function_name),
+                    Para_No: safeText(item.Para_No || item.PARA_NO || item.para_no),
+                    SBP_Observation: safeText(item.SBP_Observation || item.SBPObservation || item.SBP_OBSERVATION || item.sbp_observation),
+                    SBP_Directions: safeText(item.SBP_Directions || item.SBPDirections || item.SBP_DIRECTIONS || item.sbp_directions),
+                    Compliance_Quarter: safeText(item.Compliance_Quarter || item.ComplianceQuarter || item.COMPLIANCE_QUARTER || item.compliance_quarter)
+                };
+
+                const hasShape = result.Ref_No || result.Function_Name || result.Para_No || result.SBP_Observation || result.SBP_Directions;
+                return hasShape ? result : null;
+            }
+
+            function encryptIfAvailable(value) {
+                const content = typeof value === 'string' ? value : '';
+                if (typeof encryptText === 'function') {
+                    try {
+                        const encrypted = encryptText(content);
+                        if (encrypted) {
+                            return encrypted;
+                        }
+                    } catch (error) {
+                        // ignore encryption errors and fall back to original value
+                    }
+                }
+                return content;
+            }
+
+            function decryptIfAvailable(value) {
+                const content = typeof value === 'string' ? value : '';
+                if (content && typeof decryptText === 'function') {
+                    try {
+                        const decrypted = decryptText(content);
+                        if (typeof decrypted === 'string' && decrypted) {
+                            return decrypted;
+                        }
+                    } catch (error) {
+                        // ignore decryption errors and fall back to original value
+                    }
+                }
+                return content;
+            }
+
+            function hasRichTextContent(html) {
+                return extractTextFromHtml(html).length > 0;
+            }
+
+            function formatRichTextCell(value) {
+                const decrypted = decryptIfAvailable(value);
+                const text = extractTextFromHtml(decrypted);
+                return renderTruncatedCell(text);
+            }
+
+            function formatPlainTextCell(value) {
+                const text = extractTextFromHtml(typeof value === 'string' ? value : (value || ''));
+                return renderTruncatedCell(text);
+            }
+
+            function renderTruncatedCell(text, maxLength = 180) {
+                const normalised = (text || '').replace(/\s+/g, ' ').trim();
+                const content = normalised || '—';
+                const display = truncateText(content, maxLength);
+                const tooltip = escapeHtml(content);
+                return `<span class="truncate-cell" title="${tooltip}">${escapeHtml(display)}</span>`;
+            }
+
+            function truncateText(value, maxLength) {
+                if (!value) {
+                    return '—';
+                }
+
+                const limit = Number(maxLength) && Number(maxLength) > 0 ? Number(maxLength) : 120;
+                if (value.length <= limit) {
+                    return value;
+                }
+
+                return value.substring(0, limit - 1) + '…';
+            }
+
+            function extractTextFromHtml(html) {
+                if (!html) {
+                    return '';
+                }
+
+                const container = document.createElement('div');
+                container.innerHTML = html;
+                return (container.textContent || container.innerText || '')
+                    .replace(/\u00A0/g, ' ')
+                    .replace(/\s+/g, ' ')
+                    .trim();
+            }
+
+            function toNumeric(value) {
+                const number = Number(value);
+                return Number.isFinite(number) ? number : 0;
+            }
+
+            function resolveRichTextKey(selector) {
+                const entries = Object.entries(RICH_TEXT_TARGETS);
+                for (let index = 0; index < entries.length; index += 1) {
+                    if (entries[index][1] === selector) {
+                        return entries[index][0];
+                    }
+                }
+                return null;
+            }
+
+            function initRT(selector) {
+                const key = resolveRichTextKey(selector);
+                if (key && RICH_TEXT_INIT_STATE[key]) {
+                    return;
+                }
+
+                const $textarea = $(selector);
+                if (!$textarea.length || typeof $textarea.richText !== 'function') {
+                    return;
+                }
+
+                $textarea.richText(RICH_TEXT_EDITOR_OPTIONS);
+                if (key) {
+                    RICH_TEXT_INIT_STATE[key] = true;
+                }
+            }
+
+            function destroyRT(selector) {
+                const key = resolveRichTextKey(selector);
+                const $textarea = $(selector);
+                if (!$textarea.length) {
+                    if (key) {
+                        RICH_TEXT_INIT_STATE[key] = false;
+                    }
+                    return;
+                }
+
+                const $wrapper = $textarea.closest('.richText');
+                if ($wrapper.length) {
+                    const $editor = $wrapper.find('.richText-editor').first();
+                    if ($editor.length) {
+                        $textarea.val($editor.html());
+                    }
+                    $textarea.detach();
+                    $textarea.show();
+                    $wrapper.replaceWith($textarea);
+                }
+
+                if (key) {
+                    RICH_TEXT_INIT_STATE[key] = false;
+                }
+            }
+
+            function setRT(selector, html) {
+                const $textarea = $(selector);
+                if (!$textarea.length) {
+                    return;
+                }
+
+                const content = typeof html === 'string' ? html : '';
+                $textarea.val(content);
+
+                const $wrapper = $textarea.closest('.richText');
+                if ($wrapper.length) {
+                    const $editor = $wrapper.find('.richText-editor').first();
+                    if ($editor.length) {
+                        $editor.html(content);
+                    }
+                }
+            }
+
+            function getRT(selector) {
+                const $textarea = $(selector);
+                if (!$textarea.length) {
+                    return '';
+                }
+
+                const $wrapper = $textarea.closest('.richText');
+                if ($wrapper.length) {
+                    const $editor = $wrapper.find('.richText-editor').first();
+                    if ($editor.length) {
+                        return $editor.html();
+                    }
+                }
+
+                return $textarea.val() || '';
+            }
+        })();
+    </script>
+}

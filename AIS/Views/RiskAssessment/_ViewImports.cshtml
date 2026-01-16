@@ -1,0 +1,68 @@
+﻿@{
+    ViewData["Title"] = "Risk Assessment Functions";
+    Layout = "_Layout";
+}
+
+<script src="~/lib/canvasjs/canvasjs.min.js"></script>
+<script type="text/javascript">
+    
+    
+
+    function myChart() {
+
+        var piePoints = [
+            { y: 55, label: "ISAD" },
+            { y: 49, label: "CAD" },
+            { y: 44, label: "FAD" },
+            { y: 24, label: "Inspection" },
+            { y: 15, label: "Risk" }
+        ];
+
+        var chart = new CanvasJS.Chart("myChart", {
+            animationEnabled: true,
+            title: { text: "ZTBL Audit Universe" },
+            data: [{ type: "pie", dataPoints: piePoints }]
+        });
+        chart.render();
+    }
+    $(document).ready(function () {
+        myChart();
+    });
+
+
+    function myChartbar() {
+
+        var barPoints = [
+            { label: "ISAD", y: 55 },
+            { label: "CAD", y: 49 },
+            { label: "FAD", y: 44 },
+            { label: "Inspection", y: 24 },
+            { label: "Risk", y: 35 }
+        ];
+
+        var chartBar = new CanvasJS.Chart("myChartbar", {
+            animationEnabled: true,
+            title: { text: "ZTBL Audit Universe" },
+            axisY: { title: "Value" },
+            data: [{ type: "column", dataPoints: barPoints }]
+        });
+        chartBar.render();
+    }
+    $(document).ready(function () {
+        myChartbar();
+    });
+
+</style>
+
+<div class="col-md-12 mt-5" >
+    
+     
+    <div id="myChart" class="col-md-6" style="height:400px; display:inline-block;"></div>
+
+
+
+    <div id="myChartbar" class="col-md-5" style="height:400px; display:inline-block;"></div>
+
+
+
+</div>

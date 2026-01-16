@@ -1,0 +1,296 @@
+﻿
+@{
+    ViewData["Title"] = "Auditee_Observations_Report_cau";
+    Layout = "_Layout";
+}
+
+
+
+
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/1.5.3/jspdf.min.js"></script>
+<script type="text/javascript" src="https://html2canvas.hertzen.com/dist/html2canvas.js"></script>
+
+
+<script type="text/javascript">
+    var g_teamMembers = [];
+    var g_engId = 0;
+    var g_entName = '';
+    var g_startDate = '';
+    var g_endDate = '';
+    var g_ostartDate = '';
+    var g_oendDate = '';
+    var g_conoffice = '';
+    $(document).ready(function () {
+        var url_string = window.location;
+        var url = new URL(url_string);
+        g_engId = url.searchParams.get("engid");
+        g_entName = url.searchParams.get("entName");
+        g_startDate = url.searchParams.get("startDate");
+        g_endDate = url.searchParams.get("endDate");
+        g_ostartDate = url.searchParams.get("ostart");
+        g_oendDate = url.searchParams.get("oend");
+        g_conoffice = url.searchParams.get("conOffice");
+
+        getParas();
+
+        $('.conOffice').html(g_conoffice);
+        $('.entNameField').html(g_entName);
+        $('.startField').html(g_startDate);
+        $('.endField').html(g_endDate);
+        $('.ostartField').html(g_ostartDate);
+        $('.oendField').html(g_oendDate);
+        
+    });
+
+    function CreatePDFfromHTML() {
+        $('#wait').show()
+        var HTML_Width = $(".WordSection1").width();
+        var HTML_Height = $(".WordSection1").height();
+        var top_left_margin = 15;
+        var PDF_Width = HTML_Width + (top_left_margin * 2);
+        var PDF_Height = (PDF_Width * 1.5) + (top_left_margin * 2);
+        var canvas_image_width = HTML_Width;
+        var canvas_image_height = HTML_Height;
+
+        var totalPDFPages = Math.ceil(HTML_Height / PDF_Height) - 1;
+
+        html2canvas($(".WordSection1")[0]).then(function (canvas) {
+            var imgData = canvas.toDataURL("image/jpeg", 1.0);
+            var pdf = new jsPDF('p', 'pt', [PDF_Width, PDF_Height]);
+            pdf.addImage(imgData, 'JPG', top_left_margin, top_left_margin, canvas_image_width, canvas_image_height);
+            for (var i = 1; i <= totalPDFPages; i++) {
+                pdf.addPage(PDF_Width, PDF_Height);
+                pdf.addImage(imgData, 'JPG', top_left_margin, -(PDF_Height * i) + (top_left_margin * 4), canvas_image_width, canvas_image_height);
+            }
+            pdf.save("branchReport.pdf");
+            $('#wait').hide()
+        
+        });
+    }
+    function generateParaFormat(v) {
+
+        return '<div class="row col-md-12" style="font-family:Times New Roman"><div style="width:1000px; font-size:28.0pt"><b><u>Para No. ' + v.parA_NO + ' (Memo No: ' + v.memO_NUMBER + '):</u></b></div><br><br><div class="col-md-12" style="text-align:justify; font-family:Times New Roman; ; margin-left:-15px; font-size:23.0pt"><u style="font-weight: bold">' + v.v_HEADER + '</u></div></div><br><b style="font-family:Times New Roman; font-size:23.0pt">Violation:</b><br><p style="font-family:Times New Roman; font-size:23.0pt">' + v.v_DETAIL + '</p><b style="font-family:Times New Roman; font-size:23.0pt">Risk Category:</b><br /><div style="font-family:Times New Roman; font-size:23.0pt">' + v.risk + ' </div><br><b style="font-family:Times New Roman; font-size:23.0pt">FINDINGS:</b><br /><br><div class="col-md-12; py-0" style="text-align:justify;font-family:Times New Roman; font-size:23.0pt">' + v.observation + '</div><br><b style="font-family:Times New Roman; font-size:23.0pt">Management Reply:</b><div style="width:1350px; text-align:start; font-family:Times New Roman; font-size:23.0pt">' + v.managemenT_REPLY + '</div><b style="font-family:Times New Roman; font-size:23.0pt">Recomendation:</b><br><div class="col-md-12; py-0" style="font-family:Times New Roman; font-size:23.0pt">' + v.recommendation + '</div><div class="col-md-12; py-0" style="font-family:Times New Roman ; font-size:23.0pt"><b>Status:</b></div><div class="col-md-12; py-0" style="font-family:Times New Roman; font-size:23.0pt" ><b>Un-settled</b><br><br></div><div class="col-md-12"><hr style="border:solid; background-color:gainsboro"   /></div><br />';
+
+    }
+    
+    function getParas() {
+
+
+        $('.conOffice').empty();
+
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/get_report_paras",
+            type: "POST",
+            data: {
+                'ENG_ID': g_engId
+            },
+            cache: false,
+            success: function (data) {
+                console.log(data);
+
+                $('.conOffice').html(data.length > 0 ? data[0].name : '');
+                $.each(data, function (i, v) {
+                    if (v.assignedto == "CAU") {
+                        
+                       // $('#obs_report_panel').append('<tr ><td style="text-align:center">' + v.parA_NO + '</td><td style="text-align:center">' + v.name + '</td><td style="padding:50px !important;text-align:justify"><div style="width:1000px; max-width:1000px; overflow-y:auto">' + v.text + '</div></td><td style="text-align:center">' + v.reply + '</td ><td style="text-align:center">' + v.headremarks + '</td><td style="text-align:center">Un-Settled</td></tr>')
+                        $('#parano').append(generateParaFormat(v));
+
+                    }
+                    else
+                      //  $('#obs_report_panel2').append('<tr ><td style="text-align:center">' + v.parA_NO + '</td><td style="text-align:center">' + v.name + '</td><td style="padding:50px !important;text-align:justify"><div style="width:1000px; max-width:1000px; overflow-y:auto">' + v.text + '</div></td><td style="text-align:center">' + v.reply + '</td ><td style="text-align:center">' + v.headremarks + '</td><td style="text-align:center">Un-Settled</td></tr>')
+
+                    $('#parano').append(generateParaFormat(v));
+
+
+                });
+
+
+            },
+            dataType: "json",
+        });
+
+    }
+
+    function closeDraftAudit() {
+
+
+
+        $.ajax({
+
+            url: g_asiBaseURL + "/ApiCalls/close_draft_audit",
+            type: "POST",
+            data: {
+                'ENG_ID': g_engId
+            },
+            cache: false,
+            success: function () {
+                alert("Audit Closed Successfully");
+                onAlertCallback(reloadLocationToUrl);
+            },
+            dataType: "json",
+        });
+    }
+</script>
+<div class="row col-md-12 mt-3">
+    <h4 style="display: block; color: #be0e43">Auditee Observation Report</h4>
+</div>
+
+<div class="row">
+    <div class="col-md-4 offset-md-8">
+        <button class="btn btn-danger" style="float:right; margin-bottom:10px; " onclick="CreatePDFfromHTML();">Download Report</button>
+    </div>
+</div>
+
+
+
+<div class="WordSection1">
+
+    <div class="col-md-12" style="font-family:'Times New Roman'">
+        <br />  <br />  <br /> <br />  <br />  <br /> <br />  <br />  <br />
+        <br />  <br />  <br /> <br />  <br />  <br /> <br />  <br />  <br />
+
+        <h1 style="text-transform: uppercase; font-weight: bold; text-decoration: underline; text-align: right; float: right !important" class="entNameField pr-3"></h1>
+
+        <h1 style="text-align:right; float:right !important"><b><u>AUDIT OF &nbsp;</u></b> </h1>
+
+
+        <br />
+        <br />
+        <br />
+        <div class="col-md-12" style="font-size:28.0pt">
+
+            <p style="float: right"><u>By</u></p>
+
+        </div>
+        <br />  <br />  <br />
+
+        <!--   <p class="MsoNormal" align="center" style="text-align:center;line-height:150%;">
+                <b>
+                    <span style="font-size:24.0pt;line-height:150%; ">IN RESPECT OF <span style="text-transform:uppercase" class="entNameField"></span><o:p></o:p></span>
+                </b>
+            </p>
+
+            <p class="MsoNormal" align="center" style="text-align:center;line-height:150%;padding:0cm">
+                <b>
+                    <span style="font-size:24.0pt;line-height:150%;">AND<o:p></o:p></span>
+                </b>
+            </p>
+
+            <p class="MsoNormal" align="center" style="text-align:center;line-height:150%;border:none;">
+                <b>
+                    <span style="font-size:1.0pt;line-height:150%;"><o:p>&nbsp;</o:p></span>
+                </b>
+            </p>
+
+            <p class="MsoNormal" align="center" style="text-align:center;line-height:150%;border:none;padding:0cm;">
+                <b>
+                    <span style="font-size:25.0pt;line-height:150%;">ZARAI TARAQIATI BANK LIMITED<o:p></o:p></span>
+                </b>
+            </p>
+
+            <p class="MsoNormal" align="center" style="text-align:center;line-height:150%;border:none;padding:0cm;">
+                <b>
+                    <span style="font-size: 24.0pt; line-height: 150%;  text-transform:uppercase" class="entNameField"></span>
+                </b><b>
+                    <span style="font-size:25.0pt;line-height:150%;">&nbsp BRANCH<o:p></o:p></span>
+                </b>
+            </p>
+    -->
+
+        <div class="col-md-12" style="font-size:28.0pt">
+
+            <p style="float: right; text-decoration:underline" class="conOffice"></p>
+
+        </div>
+        <br />  <br />  <br /> <br />  <br />  <br /> <br />  <br />  <br /><br />  <br />
+        <br /> <br />  <br />  <br /> <br />  <br />  <br /><br />  <br />  <br />
+
+        <div class="col-md-12" style="font-size:28.0pt">
+
+            <p style="float: left"><b><u>Audit Team:</u></b></p>
+
+        </div>
+        <br />  <br />  <br /> <br />  <br />  <br /><br />  <br />
+        <br /> <br />  <br />  <br /> <br />  <br />  <br />
+        <br />
+        <br /><br />  <br />
+
+
+
+
+
+        <div class="col-md-12 mt-2" style="font-size:28.0pt">
+
+            <p style="float: left"><b><u>Audit Duration:</u></b></p>
+
+            <p>  &nbsp; &nbsp; &nbsp;</p>
+
+            <p style="float: left" class="startField"></p>
+            <label style="float: left">&nbsp To &nbsp </label>
+            <p style="float: left" class="endField"></p>
+
+
+        </div>
+        <br />  <br />  <br /> <br />  <br />  <br />
+
+
+
+
+        <div class="col-md-12" style="font-size:28.0pt">
+
+            <p style="float: left"><b><u>Operational Period:</u></b></p>
+            <p>  &nbsp; &nbsp; &nbsp;</p>
+
+            <p style="float: left" class="ostartField"></p>
+            <label style="float: left">&nbsp To &nbsp </label>
+            <p style="float: left" class="oendField"></p>
+
+        </div>
+
+        <br /> <br />  <br />  <br /> <br />  <br />  <br /><br />  <br /> <br />  <br />  <br /> <br />  <br />
+
+    </div>
+
+
+    <b>
+        <u>
+            <span style="font-size:12.0pt">
+                <br clear="all" style="page-break-before:always">
+            </span>
+        </u>
+    </b>
+
+
+
+    <b>
+        <span style="font-size:12.0pt">
+            <br clear="all" style="page-break-before:always">
+        </span>
+    </b>
+
+    <p class="MsoNormal"><b><o:p>&nbsp;</o:p></b></p>
+
+    <div class="col-md-12" style="font-family: 'Times New Roman'">
+
+       <h1 ><b>AUDIT OBSERVATIONS</b></h1>
+      
+  <hr style="border:solid; background-color:black" />
+
+    </div>
+
+
+
+    <table class="MsoNormalTable mt-3 mr-5 " border="1" cellspacing="0" cellpadding="0" style="width: 1091.8pt; border:none">
+        <thead>
+       
+
+        </thead>
+<tbody id="obs_report_panel">
+</tbody>
+    </table>
+
+    <div id="parano" class="col-md-12">
+
+    </div>
+
+</div>

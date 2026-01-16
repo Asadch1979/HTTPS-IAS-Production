@@ -1,0 +1,83 @@
+﻿@{
+    ViewData["Title"] = "FAD Legacy User Wise Performance";
+    Layout = "_Layout";
+}
+
+<script type="text/javascript">
+    
+    $(document).ready(function () {
+        $("#searchTableRecord").on("keyup", function () {
+            var value = $(this).val().toLowerCase();
+            $("#useriwseperformance tbody tr").filter(function () {
+                $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1)
+            });
+        });
+        getLegacyUserWisePerformance();
+    });
+
+
+    function getLegacyUserWisePerformance(){
+        
+        $('#useriwseperformance tbody').empty();
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/get_legacy_user_wise_performance",
+            type: "POST",
+            data: {
+                'FILTER_DATE': $('#updateDateFilter').val()
+            },
+            cache: false,
+            success: function (data) {
+                $.each(data, function (index, child) {
+                    var srNo=++index;
+                    var onlyDate = "";
+                    if (child.date!="")
+                    {
+                        onlyDate = child.date.split(' ')[0];
+                    }
+                    $('#useriwseperformance tbody').append('<tr><td><p class="fw-normal mb-1">' + srNo + '</p></td><td><p class="fw-normal mb-1">' + child.zonename + '</p></td><td><p class="fw-normal mb-1">' + child.ppno + '</p></td><td><p class="fw-normal mb-1">' + child.emP_NAME + '</p></td><td><p class="fw-normal mb-1">' + onlyDate + '</p></td><td><p class="fw-normal mb-1">' + child.parA_ENTERED + '</p></td></tr>')
+                });
+
+            },
+
+            dataType: "json",
+        });
+    }
+
+
+</script>
+
+<div class="row">
+    <div class="col-md-12 mt-3">
+        <h3 style=" display:block;color: #be0e43">Legacy Para User Wise Performance</h3>
+    </div>
+
+    <div class="row col-md-12 mt-2">        
+       
+        <div class="col-md-4 d-flex">
+            <span class="inline mt-2 mr-3 inline">Date:</span> <input type="date" id="updateDateFilter" onchange="getLegacyUserWisePerformance();" class="ml-2 inline form-control w-100" />
+        </div>        
+      
+    </div>
+
+    <div class="row col-md-12 mt-3">
+        <input id="searchTableRecord" placeholder="Search Here..." class="form-control" type="text" />
+        <table id="useriwseperformance" class="table table-hover table-bordered table-hover mt-3 table-striped">
+            <thead style="background-color: #19875478 !important; ">
+                <tr>
+                    <th class="col-md-auto">Sr. No</th>
+                    <th class="col-md-auto">Zone Name</th>
+                    <th class="col-md-auto">P.P. Number</th>
+                    <th class="col-md-auto">Employee Name</th>
+                    <th class="col-md-auto">Date</th>
+                    <th class="col-md-auto text-center">Paras Completed</th>
+
+                </tr>
+            </thead>
+            <tbody>
+             
+            </tbody>
+
+        </table>
+    </div>
+
+</div>

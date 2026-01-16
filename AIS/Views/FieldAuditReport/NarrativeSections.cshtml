@@ -1,0 +1,472 @@
+@model AIS.Models.FieldAuditReport.FieldAuditInputSectionViewModel
+@using System
+@using System.Linq
+
+@{
+    ViewData["Title"] = "Field Audit Report";
+    Layout = "_Layout";
+    var nonce = Context.Items["CSPNonce"]?.ToString();
+    var engagementSelector = ViewData["EngagementSelector"] as AIS.Models.FieldAuditReport.FieldAuditEngagementSelectorViewModel;
+    var hasEngagement = engagementSelector?.HasActiveEngagement ?? false;
+}
+
+@functions {
+    private string FieldValue(string key)
+        {
+        return Model?.Fields != null && Model.Fields.TryGetValue(key, out var value) ? value : string.Empty;
+        }
+
+    private AIS.Models.FieldAuditReport.FieldAuditPdfStatisticsRowModel FindStatisticsRow(string riskLevel)
+        {
+        return Model?.StatisticsRows?.FirstOrDefault(row =>
+            string.Equals(row.RiskLevel, riskLevel, StringComparison.OrdinalIgnoreCase));
+        }
+}
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <h3 class="mb-3">Field Audit Report</h3>
+        </div>
+    </div>
+
+    @await Html.PartialAsync("_GetEngagementSelector", engagementSelector)
+
+    @if (!hasEngagement)
+    {
+        <div class="alert alert-warning">Select an engagement to work with the Field Audit Report.</div>
+    }
+
+    @if (TempData["FieldAuditReportMessage"] != null)
+    {
+        <div class="alert alert-info">@TempData["FieldAuditReportMessage"]</div>
+    }
+
+    @if (Model.IsReadOnly)
+    {
+        <div class="alert alert-warning">This report is FINAL and cannot be edited.</div>
+    }
+
+    @if (hasEngagement)
+    {
+        <form method="post" asp-action="SaveFieldAuditInputs">
+            <input type="hidden" name="EngagementId" value="@Model.EngagementId" />
+            <input type="hidden" name="EntityId" value="@Model.EntityId" />
+            <input type="hidden" name="SectionCode" value="@Model.SectionCode" />
+            <input type="hidden" name="returnAction" value="NarrativeSections" />
+
+            <div class="table-responsive mb-4">
+                <table class="table table-bordered align-middle">
+                    <tbody>
+                        <tr>
+                            <td>
+                                <div>@Model.ReportStatus</div>
+                                <div>INTERNAL AUDIT REPORT-202X</div>
+                            </td>
+                            <td>
+                                <div>
+                                    Branch ……. [Code: xxxx
+                                    <input class="form-control d-inline-block w-auto" name="Fields[FIELD_029]" value="@FieldValue("FIELD_029")" @(Model.IsReadOnly ? "disabled" : string.Empty) />
+                                    ]
+                                </div>
+                                <div>
+                                    Audit Date: dd/mm/yyyy
+                                    <input class="form-control d-inline-block w-auto" name="Fields[FIELD_030]" value="@FieldValue("FIELD_030")" @(Model.IsReadOnly ? "disabled" : string.Empty) />
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td colspan="2">
+                                <div>
+                                    Audit Start Date: dd/mm/yyyy
+                                    <input class="form-control d-inline-block w-auto" name="Fields[FIELD_031]" value="@FieldValue("FIELD_031")" @(Model.IsReadOnly ? "disabled" : string.Empty) />
+                                </div>
+                                <div>
+                                    Audit Completion Date:  dd/mm/yyyy
+                                    <input class="form-control d-inline-block w-auto" name="Fields[FIELD_032]" value="@FieldValue("FIELD_032")" @(Model.IsReadOnly ? "disabled" : string.Empty) />
+                                </div>
+                                <div>
+                                    Audit Period: From dd/mm/yyyy To: dd/mm/yyyy
+                                    <input class="form-control d-inline-block w-auto" name="Fields[FIELD_033]" value="@FieldValue("FIELD_033")" @(Model.IsReadOnly ? "disabled" : string.Empty) />
+                                </div>
+                                <div>AUDIT CONDUCTED BY:</div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td colspan="2">
+                                <div>NOTE:</div>
+                                <div>This audit report is highly confidential, therefore, not to be shared with any third party without approval of IAD at H.O.</div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="table-responsive mb-4">
+                <table class="table table-bordered align-middle">
+                    <thead>
+                        <tr>
+                            <th>Name and Grade</th>
+                            <th>PP NO</th>
+                            <th>Designation</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model.AuditTeam.Any())
+                        {
+                            foreach (var member in Model.AuditTeam)
+                            {
+                                <tr>
+                                    <td>@member.MEMBER_NAME</td>
+                                    <td>@member.MEMBER_PPNO</td>
+                                    <td>@(member.ISTEAMLEAD == "Y" ? "Audit Team Leader" : "Audit Team Member")</td>
+                                </tr>
+                            }
+                        }
+                        else
+                        {
+                            <tr>
+                                <td colspan="3" class="text-muted">No audit team data available.</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="table-responsive mb-4">
+                <table class="table table-bordered align-middle">
+                    <thead>
+                        <tr>
+                            <th colspan="3">Para No</th>
+                            <th>Gist of the Para</th>
+                            <th>Nature of Para (repeated / new)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td colspan="5">IAS procedure will provide the data</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="table-responsive mb-4">
+                <table class="table table-bordered align-middle">
+                    <thead>
+                        <tr>
+                            <th>Nature of Paras</th>
+                            <th>Reported</th>
+                            <th>Rectified</th>
+                            <th>Outstanding</th>
+                            <th>Remarks, if any</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Fraud &amp; Forgery (if any)</td>
+                            <td>@(FindStatisticsRow("Fraud & Forgery")?.ReportedCount?.ToString() ?? string.Empty)</td>
+                            <td>@(FindStatisticsRow("Fraud & Forgery")?.RectifiedCount?.ToString() ?? string.Empty)</td>
+                            <td>@(FindStatisticsRow("Fraud & Forgery")?.OutstandingCount?.ToString() ?? string.Empty)</td>
+                            <td><input class="form-control" name="Fields[FIELD_204]" value="@FieldValue("FIELD_204")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                        </tr>
+                        <tr>
+                            <td>High Risk Paras</td>
+                            <td>@(FindStatisticsRow("High Risk")?.ReportedCount?.ToString() ?? string.Empty)</td>
+                            <td>@(FindStatisticsRow("High Risk")?.RectifiedCount?.ToString() ?? string.Empty)</td>
+                            <td>@(FindStatisticsRow("High Risk")?.OutstandingCount?.ToString() ?? string.Empty)</td>
+                            <td><input class="form-control" name="Fields[FIELD_205]" value="@FieldValue("FIELD_205")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                        </tr>
+                        <tr>
+                            <td>Medium Risk Paras</td>
+                            <td>@(FindStatisticsRow("Medium Risk")?.ReportedCount?.ToString() ?? string.Empty)</td>
+                            <td>@(FindStatisticsRow("Medium Risk")?.RectifiedCount?.ToString() ?? string.Empty)</td>
+                            <td>@(FindStatisticsRow("Medium Risk")?.OutstandingCount?.ToString() ?? string.Empty)</td>
+                            <td><input class="form-control" name="Fields[FIELD_206]" value="@FieldValue("FIELD_206")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                        </tr>
+                        <tr>
+                            <td>Low Risk Paras</td>
+                            <td>@(FindStatisticsRow("Low Risk")?.ReportedCount?.ToString() ?? string.Empty)</td>
+                            <td>@(FindStatisticsRow("Low Risk")?.RectifiedCount?.ToString() ?? string.Empty)</td>
+                            <td>@(FindStatisticsRow("Low Risk")?.OutstandingCount?.ToString() ?? string.Empty)</td>
+                            <td><input class="form-control" name="Fields[FIELD_207]" value="@FieldValue("FIELD_207")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                        </tr>
+                        <tr>
+                            <td>Total:</td>
+                            <td>@(FindStatisticsRow("Total")?.ReportedCount?.ToString() ?? string.Empty)</td>
+                            <td>@(FindStatisticsRow("Total")?.RectifiedCount?.ToString() ?? string.Empty)</td>
+                            <td>@(FindStatisticsRow("Total")?.OutstandingCount?.ToString() ?? string.Empty)</td>
+                            <td><input class="form-control" name="Fields[FIELD_208]" value="@FieldValue("FIELD_208")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="table-responsive mb-4">
+                <table class="table table-bordered align-middle">
+                    <thead>
+                        <tr>
+                            <th>Description</th>
+                            <th>Area</th>
+                            <th>Amount (Rs.)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><input class="form-control" name="Fields[FIELD_161]" value="@FieldValue("FIELD_161")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                            <td>Account <input class="form-control d-inline-block w-auto" name="Fields[FIELD_162]" value="@FieldValue("FIELD_162")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                            <td><input class="form-control" name="Fields[FIELD_163]" value="@FieldValue("FIELD_163")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                        </tr>
+                        <tr>
+                            <td><input class="form-control" name="Fields[FIELD_164]" value="@FieldValue("FIELD_164")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                            <td><input class="form-control" name="Fields[FIELD_165]" value="@FieldValue("FIELD_165")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                            <td><input class="form-control" name="Fields[FIELD_166]" value="@FieldValue("FIELD_166")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                        </tr>
+                        <tr>
+                            <td><input class="form-control" name="Fields[FIELD_167]" value="@FieldValue("FIELD_167")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                            <td><input class="form-control" name="Fields[FIELD_168]" value="@FieldValue("FIELD_168")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                            <td><input class="form-control" name="Fields[FIELD_169]" value="@FieldValue("FIELD_169")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                        </tr>
+                        <tr>
+                            <td><input class="form-control" name="Fields[FIELD_170]" value="@FieldValue("FIELD_170")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                            <td><input class="form-control" name="Fields[FIELD_171]" value="@FieldValue("FIELD_171")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                            <td><input class="form-control" name="Fields[FIELD_172]" value="@FieldValue("FIELD_172")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                        </tr>
+                        <tr>
+                            <td><input class="form-control" name="Fields[FIELD_173]" value="@FieldValue("FIELD_173")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                            <td><input class="form-control" name="Fields[FIELD_174]" value="@FieldValue("FIELD_174")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                            <td><input class="form-control" name="Fields[FIELD_175]" value="@FieldValue("FIELD_175")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                        </tr>
+                        <tr>
+                            <td>Total</td>
+                            <td></td>
+                            <td><input class="form-control" name="Fields[FIELD_176]" value="@FieldValue("FIELD_176")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="table-responsive mb-4">
+                <table class="table table-bordered align-middle">
+                    <tbody>
+                        <tr>
+                            <th>Risk Level of Para</th>
+                            <td>High</td>
+                        </tr>
+                        <tr>
+                            <th>Annexure Code</th>
+                            <td>A1</td>
+                        </tr>
+                        <tr>
+                            <th>Annexure Description</th>
+                            <td>Instances where the embezzlement of funds, impersonation, fraud, and forgery/Cash Shortage was observed.</td>
+                        </tr>
+                        <tr>
+                            <th>Target Rectification Date</th>
+                            <td>(Input by Auditee)</td>
+                        </tr>
+                        <tr>
+                            <th>Instances Involved</th>
+                            <td><input class="form-control" name="Fields[FIELD_177]" value="@FieldValue("FIELD_177")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                        </tr>
+                        <tr>
+                            <th>Amount Involved</th>
+                            <td><input class="form-control" name="Fields[FIELD_178]" value="@FieldValue("FIELD_178")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                        </tr>
+                        <tr>
+                            <th>Rectification Status</th>
+                            <td>Outstanding.</td>
+                        </tr>
+                        <tr>
+                            <th>Gist of Para</th>
+                            <td><textarea class="form-control frpt-editor" name="Fields[FIELD_179]" rows="4" @(Model.IsReadOnly ? "disabled" : string.Empty)>@FieldValue("FIELD_179")</textarea></td>
+                        </tr>
+                        <tr>
+                            <th>PARA Detail:</th>
+                            <td><textarea class="form-control frpt-editor" name="Fields[FIELD_180]" rows="4" @(Model.IsReadOnly ? "disabled" : string.Empty)>@FieldValue("FIELD_180")</textarea></td>
+                        </tr>
+                        <tr>
+                            <th>IMPLICATIONS/RISK:</th>
+                            <td><textarea class="form-control frpt-editor" name="Fields[FIELD_181]" rows="4" @(Model.IsReadOnly ? "disabled" : string.Empty)>@FieldValue("FIELD_181")</textarea></td>
+                        </tr>
+                        <tr>
+                            <th>RECOMMENDATIONS:</th>
+                            <td><textarea class="form-control frpt-editor" name="Fields[FIELD_182]" rows="4" @(Model.IsReadOnly ? "disabled" : string.Empty)>@FieldValue("FIELD_182")</textarea></td>
+                        </tr>
+                        <tr>
+                            <th>MANAGEMENT/BRANCH COMMENTS:</th>
+                            <td><textarea class="form-control frpt-editor" name="Fields[FIELD_183]" rows="4" @(Model.IsReadOnly ? "disabled" : string.Empty)>@FieldValue("FIELD_183")</textarea></td>
+                        </tr>
+                        <tr>
+                            <th>AUDITOR’S FURTHER COMMENTS (IF ANY):</th>
+                            <td><textarea class="form-control frpt-editor" name="Fields[FIELD_184]" rows="4" @(Model.IsReadOnly ? "disabled" : string.Empty)>@FieldValue("FIELD_184")</textarea></td>
+                        </tr>
+                        <tr>
+                            <th>REMARKS OF SVP/INCHARGE:</th>
+                            <td><textarea class="form-control frpt-editor" name="Fields[FIELD_185]" rows="4" @(Model.IsReadOnly ? "disabled" : string.Empty)>@FieldValue("FIELD_185")</textarea></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="table-responsive mb-4">
+                <table class="table table-bordered align-middle">
+                    <tbody>
+                        <tr>
+                            <th>Risk Level</th>
+                            <td>Medium</td>
+                        </tr>
+                        <tr>
+                            <th>Annexure Code</th>
+                            <td>A-8</td>
+                        </tr>
+                        <tr>
+                            <th>Annexure Description</th>
+                            <td>Instances where over financing was made.</td>
+                        </tr>
+                        <tr>
+                            <th>Target Rectification Date</th>
+                            <td>(Input by Auditee)</td>
+                        </tr>
+                        <tr>
+                            <th>Instances Involved</th>
+                            <td><input class="form-control" name="Fields[FIELD_186]" value="@FieldValue("FIELD_186")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                        </tr>
+                        <tr>
+                            <th>Amount Involved</th>
+                            <td><input class="form-control" name="Fields[FIELD_187]" value="@FieldValue("FIELD_187")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                        </tr>
+                        <tr>
+                            <th>Rectification Status</th>
+                            <td>Outstanding.</td>
+                        </tr>
+                        <tr>
+                            <th>Gist of Para</th>
+                            <td><textarea class="form-control frpt-editor" name="Fields[FIELD_188]" rows="4" @(Model.IsReadOnly ? "disabled" : string.Empty)>@FieldValue("FIELD_188")</textarea></td>
+                        </tr>
+                        <tr>
+                            <th>PARA Detail:</th>
+                            <td><textarea class="form-control frpt-editor" name="Fields[FIELD_189]" rows="4" @(Model.IsReadOnly ? "disabled" : string.Empty)>@FieldValue("FIELD_189")</textarea></td>
+                        </tr>
+                        <tr>
+                            <th>IMPLICATIONS/RISK:</th>
+                            <td><textarea class="form-control frpt-editor" name="Fields[FIELD_190]" rows="4" @(Model.IsReadOnly ? "disabled" : string.Empty)>@FieldValue("FIELD_190")</textarea></td>
+                        </tr>
+                        <tr>
+                            <th>RECOMMENDATIONS:</th>
+                            <td><textarea class="form-control frpt-editor" name="Fields[FIELD_191]" rows="4" @(Model.IsReadOnly ? "disabled" : string.Empty)>@FieldValue("FIELD_191")</textarea></td>
+                        </tr>
+                        <tr>
+                            <th>MANAGEMENT/BRANCH COMMENTS:</th>
+                            <td><textarea class="form-control frpt-editor" name="Fields[FIELD_192]" rows="4" @(Model.IsReadOnly ? "disabled" : string.Empty)>@FieldValue("FIELD_192")</textarea></td>
+                        </tr>
+                        <tr>
+                            <th>AUDITOR’S FURTHER COMMENTS (IF ANY):</th>
+                            <td><textarea class="form-control frpt-editor" name="Fields[FIELD_193]" rows="4" @(Model.IsReadOnly ? "disabled" : string.Empty)>@FieldValue("FIELD_193")</textarea></td>
+                        </tr>
+                        <tr>
+                            <th>REMARKS OF SVP/INCHARGE:</th>
+                            <td><textarea class="form-control frpt-editor" name="Fields[FIELD_194]" rows="4" @(Model.IsReadOnly ? "disabled" : string.Empty)>@FieldValue("FIELD_194")</textarea></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="table-responsive mb-4">
+                <table class="table table-bordered align-middle">
+                    <tbody>
+                        <tr>
+                            <th>Risk Level</th>
+                            <td>Low</td>
+                        </tr>
+                        <tr>
+                            <th>Annexure Code</th>
+                            <td>GO1</td>
+                        </tr>
+                        <tr>
+                            <th>Annexure Description</th>
+                            <td>General irregularities/Weak areas/Audit observation/internal control lapse/ Issues relating to branch location/ ambience/ notice board.</td>
+                        </tr>
+                        <tr>
+                            <th>Target Rectification date</th>
+                            <td>(Input by Auditee)</td>
+                        </tr>
+                        <tr>
+                            <th>Instances Involved</th>
+                            <td><input class="form-control" name="Fields[FIELD_195]" value="@FieldValue("FIELD_195")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                        </tr>
+                        <tr>
+                            <th>Amount Involved</th>
+                            <td><input class="form-control" name="Fields[FIELD_196]" value="@FieldValue("FIELD_196")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                        </tr>
+                        <tr>
+                            <th>Rectification Status</th>
+                            <td>Outstanding.</td>
+                        </tr>
+                        <tr>
+                            <th>Gist of Para</th>
+                            <td><textarea class="form-control frpt-editor" name="Fields[FIELD_197]" rows="4" @(Model.IsReadOnly ? "disabled" : string.Empty)>@FieldValue("FIELD_197")</textarea></td>
+                        </tr>
+                        <tr>
+                            <th>PARA Detail:</th>
+                            <td><textarea class="form-control frpt-editor" name="Fields[FIELD_198]" rows="4" @(Model.IsReadOnly ? "disabled" : string.Empty)>@FieldValue("FIELD_198")</textarea></td>
+                        </tr>
+                        <tr>
+                            <th>IMPLICATIONS/RISK:</th>
+                            <td><textarea class="form-control frpt-editor" name="Fields[FIELD_199]" rows="4" @(Model.IsReadOnly ? "disabled" : string.Empty)>@FieldValue("FIELD_199")</textarea></td>
+                        </tr>
+                        <tr>
+                            <th>RECOMMENDATIONS:</th>
+                            <td><textarea class="form-control frpt-editor" name="Fields[FIELD_200]" rows="4" @(Model.IsReadOnly ? "disabled" : string.Empty)>@FieldValue("FIELD_200")</textarea></td>
+                        </tr>
+                        <tr>
+                            <th>MANAGEMENT/BRANCH COMMENTS:</th>
+                            <td><textarea class="form-control frpt-editor" name="Fields[FIELD_201]" rows="4" @(Model.IsReadOnly ? "disabled" : string.Empty)>@FieldValue("FIELD_201")</textarea></td>
+                        </tr>
+                        <tr>
+                            <th>AUDITOR’S FURTHER COMMENTS (IF ANY):</th>
+                            <td><textarea class="form-control frpt-editor" name="Fields[FIELD_202]" rows="4" @(Model.IsReadOnly ? "disabled" : string.Empty)>@FieldValue("FIELD_202")</textarea></td>
+                        </tr>
+                        <tr>
+                            <th>REMARKS OF SVP/INCHARGE:</th>
+                            <td><textarea class="form-control frpt-editor" name="Fields[FIELD_203]" rows="4" @(Model.IsReadOnly ? "disabled" : string.Empty)>@FieldValue("FIELD_203")</textarea></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="d-flex flex-wrap gap-2">
+                <a class="btn btn-outline-secondary" href="@Url.Action("ReportOverview")">Back</a>
+                <button type="submit" class="btn btn-primary" name="submitAction" value="save" @(Model.IsReadOnly ? "disabled" : string.Empty)>Save Draft</button>
+                <button type="submit" class="btn btn-outline-success" name="submitAction" value="complete" @(Model.IsReadOnly ? "disabled" : string.Empty)>Mark Section Complete</button>
+                <a class="btn btn-outline-secondary" href="@Url.Action("StaffSnapshot")">Next Section</a>
+            </div>
+        </form>
+    }
+</div>
+
+@section Scripts {
+    <script nonce="@nonce" src="~/lib/tinymce/tinymce.min.js"></script>
+    <script nonce="@nonce">
+        const isReadOnly = @Model.IsReadOnly.ToString().ToLowerInvariant();
+
+        tinymce.init({
+            selector: '.frpt-editor',
+            height: 200,
+            menubar: false,
+            plugins: 'lists link table',
+            toolbar: 'undo redo | bold italic underline | bullist numlist | alignleft aligncenter alignright | link table',
+            readonly: isReadOnly ? 1 : 0,
+            license_key: 'gpl',
+            branding: false,
+            promotion: false
+        });
+
+        document.querySelectorAll('form').forEach(form => {
+            form.addEventListener('submit', () => {
+                if (tinymce) {
+                    tinymce.triggerSave();
+                }
+            });
+        });
+    </script>
+}

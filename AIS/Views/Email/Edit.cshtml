@@ -1,0 +1,17 @@
+@{
+    ViewData["Title"] = "Edit Email Template";
+}
+<div class="container mt-4">
+    <h3 class="mb-3">Edit Notification Template</h3>
+    @if (ViewBag.Message != null)
+    {
+        <div class="alert alert-success">@ViewBag.Message</div>
+    }
+    <form method="post">
+        <div class="mb-3">
+            <label class="form-label">Body</label>
+            <textarea name="body" class="form-control" rows="10">@ViewBag.TemplateBody</textarea>
+        </div>
+        <button type="submit" class="btn btn-primary">Save</button>
+    </form>
+</div>

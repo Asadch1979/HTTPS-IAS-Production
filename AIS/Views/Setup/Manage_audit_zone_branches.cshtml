@@ -1,0 +1,364 @@
+﻿@{
+    ViewData["Title"] = "Manage Audit Zone Branches";
+    Layout = "_Layout";
+}
+
+<script type="text/javascript">
+    var g_teams = [];
+    var g_branches = [];
+    $(document).ready(function () {
+        $('#sidebar_policy').hide();
+        $('.hiddenContainers').hide();
+        $('.fieldAuditFields').hide();
+        $('.nonFieldAuditFields').hide();
+        $('#branchInfoArea').hide();
+
+    });
+    function getBusinessDateCount(startDate, endDate) {
+        var elapsed, daysBeforeFirstSaturday, daysAfterLastSunday;
+        var ifThen = function (a, b, c) {
+            return a == b ? c : a;
+        };
+
+        elapsed = endDate - startDate;
+        elapsed /= 86400000;
+
+        daysBeforeFirstSunday = (7 - startDate.getDay()) % 7;
+        daysAfterLastSunday = endDate.getDay();
+
+        elapsed -= (daysBeforeFirstSunday + daysAfterLastSunday);
+        elapsed = (elapsed / 7) * 5;
+        elapsed += ifThen(daysBeforeFirstSunday - 1, -1, 0) + ifThen(daysAfterLastSunday, 6, 5);
+
+        return Math.ceil(elapsed);
+    }
+    function ShowDepartmentAuditPeriods() {
+        if ($('#deptSelectionBox option:selected').val() == 0)
+            $('.hiddenContainers').hide();
+        else {
+            $('.hiddenContainers').show();
+            if ($('#deptSelectionBox option:selected').val() == '473') {
+                $('.fieldAuditFields').show();
+                $('.nonFieldAuditFields').hide();
+            } else {
+                $('.nonFieldAuditFields').show();
+                $('.fieldAuditFields').hide();
+            }
+            $.ajax({
+                url: g_asiBaseURL + "/Planning/audit_periods",
+                type: "POST",
+                data: {
+                    'dept_code': $('#deptSelectionBox option:selected').val()
+                },
+                cache: false,
+                success: function (data) {
+                    $('#periodSelectionBox').empty();
+                    $('#periodSelectionBox').append('<option value="0" id="0">--Select Audit Period--</option>')
+                    //console.log(data);
+                    $.each(data, function (index, period) {
+                        $('#periodSelectionBox').append('<option value="' + period.id + '" id="' + period.id + '">' + period.description + '</option>')
+                    });
+
+                },
+                dataType: "json",
+            });
+            $.ajax({
+                url: g_asiBaseURL + "/ApiCalls/GetAuditTeams",
+                type: "POST",
+                data: {
+                    'dept_code': $('#deptSelectionBox option:selected').val()
+                },
+                cache: false,
+                success: function (data) {
+                    $('#teamSelectionBox').empty();
+                    $('#teamSelectionBox').append('<option value="0" id="0">--Select Audit Team--</option>')
+                    g_teams = data;
+                    $.each(data, function (index, team) {
+                        if (team.iS_TEAMLEAD == 'Y')
+                            $('#teamSelectionBox').append('<option value="' + team.code + '" id="' + team.code + '">' + team.name + '</option>')
+                    });
+
+                },
+                dataType: "json",
+            });
+        }
+    }
+    function ShowSelectedZonesBranches() {
+        if ($('#auditZoneSelectionBox option:selected').val() == 0) {
+            $('#branchSelectionBox').empty(); 
+            $('#branchInfoArea').hide();
+            $('#branchSelectionBox').append('<option value="0" id="0">--Select Audit Branch--</option>')
+        }
+        else {
+            $('#branchSelectionBox').empty();
+            $('#branchInfoArea').hide();
+            $.ajax({
+                url: g_asiBaseURL + "/ApiCalls/GetZoneBranches",
+                type: "POST",
+                data: {
+                    'zone_code': $('#auditZoneSelectionBox option:selected').val()
+                },
+                cache: false,
+                success: function (data) {
+                    g_branches = data;
+                    $('#branchSelectionBox').empty();
+                    $('#branchInfoArea').hide();
+                    $('#branchSelectionBox').append('<option value="0" id="0">--Select Audit Branch--</option>')
+                    //console.log(data);
+                    $.each(data, function (index, branch) {
+                        $('#branchSelectionBox').append('<option value="' + branch.description + '" id="' + branch.id + '">' + branch.description + '</option>')
+                    });
+
+                },
+                dataType: "json",
+            });
+        }
+    }
+
+    
+
+
+
+
+
+    function ShowSelectedDivisionDepartments() {
+        if ($('#divSelectionBox option:selected').val() == 0) {
+            $('#divDeptSelectionBox').empty();
+            $('#divDeptSelectionBox').append('<option value="0" id="0">--Select Audit Department--</option>')
+        }
+        else {
+            $('#divDeptSelectionBox').empty();
+            $.ajax({
+                url: g_asiBaseURL + "/ApiCalls/GetDivDepartments",
+                type: "POST",
+                data: {
+                    'div_code': $('#divSelectionBox option:selected').val()
+                },
+                cache: false,
+                success: function (data) {
+                    $('#divDeptSelectionBox').empty();
+                    $('#divDeptSelectionBox').append('<option value="0" id="0">--Select Audit Department--</option>')
+                    //console.log(data);
+                    $.each(data, function (index, dept) {
+                        $('#divDeptSelectionBox').append('<option value="' + dept.id + '" id="' + dept.id + '">' + dept.name + '</option>')
+                    });
+
+                },
+                dataType: "json",
+            });
+        }
+    }
+    function ShowBranchInfoBox() {
+        $('#branchInfoArea').show();
+    }
+    function previewAuditPlan() {
+        $('#previewAuditPlan').modal('show');
+        $('#auditorDept').text($('#deptSelectionBox option:selected').text());
+        $('#auditorPlan').text($('#periodSelectionBox option:selected').text());
+        $('#descModal_field').html($('#descriptionAuditPlanField').val());
+        if ($('#deptSelectionBox option:selected').val() == '473') {
+            $('#divzone_field').text($('#auditZoneSelectionBox option:selected').text());
+            $('#deptBranch_field').text($('#branchSelectionBox option:selected').text());
+
+        } else {
+            $('#divzone_field').text($('#divSelectionBox option:selected').text());
+            $('#deptBranch_field').text($('#divDeptSelectionBox option:selected').text());
+
+        }
+        $('#exeFrom_field').html($('#executionPeriodFromField').val());
+        $('#exeTo_field').html($('#executionPeriodToField').val());
+        $('#operationalFrom_field').html($('#auditPeriodFromField').val());
+        $('#operationalTo_field').html($('#auditPeriodToField').val());
+        //
+        if ($('#isTravelingRequiredField').is(":checked"))
+            $('#travelingReq_field').html('Yes');
+        else
+            $('#travelingReq_field').html('No');
+        $('#remarksAddtn_field').html($('#remarksAdditionalInfoField').val());
+        $('#teamName_field').text($('#teamSelectionBox option:selected').text());
+        //
+        var teamMembersFields = "";
+        $.each(g_teams, function (index, team) {
+            if (team.name == $('#teamSelectionBox option:selected').text()) {
+                if (team.iS_TEAMLEAD == "Y")
+                    teamMembersFields += team.employeename + " " + team.teammembeR_ID + " (L)<br>";
+                else
+                    teamMembersFields += team.employeename + " " + team.teammembeR_ID + " (M)<br>";
+            }
+        });
+        $('#teamMembers_field').html(teamMembersFields);
+
+    }
+
+
+    function addRecordToZoneBranchMap() {
+        var AZN = '';
+        if ($('#auditZoneSelectionBox1 option:selected').val() != 0)
+            AZN = $('#auditZoneSelectionBox1 option:selected').text();
+
+        var ZN = '';
+        if ($('#auditZoneSelectionBox option:selected').val() != 0)
+            ZN = $('#auditZoneSelectionBox option:selected').text();
+
+       
+        //var BN = '';
+        //if ($('#branchSelectionBox option:selected').val() != 0)
+          //  BN = $('#branchSelectionBox option:selected').text(); 
+        $('#ZoneBranchmap tbody').empty();
+        var selectedBr = $('#branchSelectionBox').val();
+        $.each(selectedBr, function (i, br) {
+            if (br !=0)
+            $('#ZoneBranchmap tbody').append('<tr><td value="' + $('#auditZoneSelectionBox1 option:selected').val() + '">' + AZN + '</td><td value="' + $('#auditZoneSelectionBox option:selected').val() + '">' + ZN + '</td><td value="' + $('#branchSelectionBox option:selected').val() + '">' + br + '</td><td><a onclick=DeleteAZMRecordFromGrid(this); class="text-hover text-danger">Delete</a></td></tr>')
+
+        });
+
+       // $('#ZoneBranchmap tbody').append('<tr><td value="' + $('#auditZoneSelectionBox1 option:selected').val() + '">' + AZN + '</td><td value="' + $('#auditZoneSelectionBox option:selected').val() + '">' + ZN + '</td><td value="' + $('#branchSelectionBox option:selected').val() + '">' + BN + '</td><td><a onclick=DeleteAZMRecordFromGrid(this); class="text-hover text-danger">Delete</a></td></tr>')
+
+    }
+    function DeleteAZMRecordFromGrid(e) {
+        $(e).parent().parent().remove();
+    }
+
+
+    function publishNewAuditPlanChanges() {
+        var periodId = $('#periodSelectionBox option:selected').val();
+        var stDate = $('#executionPeriodFromField').val();
+        var edDate = $('#executionPeriodToField').val();
+        var period_stDate = $('#auditPeriodFromField').val();
+        var period_edDate = $('#auditPeriodToField').val();
+        var conducted_by = $('#deptSelectionBox option:selected').val();
+        var no_days = getBusinessDateCount(new Date(stDate), new Date(edDate));
+        var zoneId = $('#auditZoneSelectionBox option:selected').val();
+        var branchId = 0;
+        if (zoneId != 0)
+            branchId = $('#branchSelectionBox option:selected').val();
+
+        var divId = $('#divSelectionBox option:selected').val();
+        var deptId = 0;
+        if (divId != 0)
+            deptId = $('#divDeptSelectionBox option:selected').val();
+
+        var teamId = $('#teamSelectionBox option:selected').val();
+        var status = 1;
+        var desc = $('#descriptionAuditPlanField').val() ;
+
+       $.ajax({
+           url: g_asiBaseURL + "/ApiCalls/AddAuditPlan",
+            type: "POST",
+            data: {
+                'AUDITPERIOD_ID': periodId,
+                'AUDIT_STARTDATE': stDate,
+                'AUDIT_ENDDATE': edDate,
+                'AUDITPERIOD_FROM': period_stDate,
+                'AUDITPERIOD_TO': period_edDate,
+                'AUDIT_CONDUCTBY_DEPT': conducted_by,
+                'NO_OF_DAYS_AUDIT': no_days,
+                'AUDIT_ZONEID': zoneId,
+                'BRANCHID': branchId,
+                'DIVISION_ID': divId,
+                'DEPARTMENT_ID': deptId,
+                'TEAM_CONST_ID': teamId,
+                'STATUS': status,
+                'DESCRIPTION': desc
+            },
+            cache: false,
+            success: function (data) {
+                window.location.href = g_asiBaseURL + "/Planning/audit_plan?dept=" + $('#deptSelectionBox option:selected').val() + "&periodId=" + $('#periodSelectionBox option:selected').val();
+            },
+            dataType: "json",
+        });
+    }
+</script>
+
+<center>
+<div class="row col-md-12">
+    <h3 style="color: #be0e43">Manage Audit Zone Branches</h3>
+</div>
+<div class="row mt-3 col-md-12">
+    <div class="row col-md-4">
+        <h5>Audit Zone *</h5>
+    </div>
+    <div class="row col-md-8">
+       <select id="auditZoneSelectionBox1"  class="form-select form-control" aria-label="Default select example">
+            <option value="0" id="0" selected>--Select Audit Zone--</option>
+            @{
+                if (ViewData["ZoneList"] != null)
+                {
+                    foreach (var item in (dynamic)(ViewData["ZoneList"]))
+                    {
+                        <option value="@item.ID" id="@item.ID">@item.ZONENAME</option>
+                    }
+                }
+            }
+        </select>
+    </div>
+</div>
+
+<div class="row mt-3 col-md-12">
+    <div class="row col-md-4">
+        <h5>Zone *</h5>
+    </div>
+    <div class="row col-md-8">
+        
+
+            <select id="auditZoneSelectionBox" onchange="ShowSelectedZonesBranches();" class="form-select form-control" aria-label="Default select example">
+                <option value="0" id="0" selected>--Select Operational Audit Cluster--</option>
+
+                @{
+                    if (ViewData["AuditZonesList"] != null)
+                    {
+                        foreach (var item in (dynamic)(ViewData["AuditZonesList"]))
+                        {
+                            <option value="@item.ZONEID" id="@item.ZONEID">@item.ZONENAME</option>
+                        }
+                    }
+                }
+            </select>
+
+        </div>
+    </div>
+
+<div class="row col-md-12 mt-3">
+    <div class="row col-md-4">
+        <h5>List of Branches</h5>
+    </div>
+    <div class="row col-md-8">
+       
+        <select id="branchSelectionBox" onchange="ShowBranchInfoBox();" class="form-select form-control" aria-label="Default select example" multiple autofocus size="15">
+            
+            <option value="0" id="0">--Select Audit Branch--</option>
+
+        </select>
+    </div>
+</div>
+</center>
+
+<div class="row col-md-12 mt-3">
+    <div class="row col-md-6 mt-3">
+        <!--  <button class="btn-primary" style="float:right">Save</button>
+        <div class="row col-md-12 mt-3">-->
+        <button onclick="addRecordToZoneBranchMap();" class="col-md-2 btn btn-danger">Save</button>
+    </div>
+
+</div>
+
+<div class="row w-100">
+    <table id="ZoneBranchmap" class="table table-bordered mb-0 mt-3 bg-white table-hover table-striped">
+        <thead>
+            <tr>
+                <td width="250"><h5>Audit Cluster</h5></td>
+                <td width="250"><h5>Zone</h5></td>
+                <td width="250"><h5>Branches</h5></td>
+                <td width="100"></td>
+            </tr>
+        </thead>
+        <tbody>
+        </tbody>
+    </table>
+</div>
+
+
+<div class="row col-md-12 mt-3">
+    <button class="col-md-2 btn btn-danger">Submit</button>
+</div>
+

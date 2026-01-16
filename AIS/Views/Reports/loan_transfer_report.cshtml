@@ -1,0 +1,85 @@
+﻿@{
+    var page_id = ViewData["PageId"] as int? ?? 0;
+}
+
+@{
+    ViewData["Title"] = "Role Wise User";
+    Layout = "_Layout";
+}
+
+<style type="text/css">
+    .tile{
+
+        height:120px !important;
+    }
+    
+
+</style>
+
+
+<script type="text/javascript">
+   
+    $(document).ready(function () {
+      
+
+    });
+  
+</script>
+
+<div class="row col-md-12">
+    <h3 style="color: #be0e43">Fraud / Embezzlement Paras</h3>
+</div>
+
+<div class="row col-md-12">
+    <div class="tile col-xl-3 col-md-4 mb-4">
+        <div class="card bg-info border-left-primary shadow h-100 m-0 p-10">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-light text-uppercase mb-1">
+                            Total Paras
+                        </div>
+                        <div class="h5 mb-0 font-weight-bold text-light"><span id="totalShippingBoxesField"></span></div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-box fa-2x text-light"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="tile col-xl-3 col-md-4 mb-4">
+        <div class="card bg-info border-left-danger shadow h-100 m-0 p-10">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-light text-uppercase mb-1">
+                            Actions Taken
+                        </div>
+                        <div class="h5 mb-0 font-weight-bold text-light"><span id="totalShippingBoxesField"></span></div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-box fa-2x text-light"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="tile col-xl-3 col-md-4 mb-4">
+        <div class="card bg-info border-left-warning shadow h-100 m-0 p-10">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-light text-uppercase mb-1">
+                            Total Amount
+                        </div>
+                        <div class="h5 mb-0 font-weight-bold text-light"><span id="totalAmountInvolved">500,000</span></div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fa fa-dollar-sign fa-2x text-light"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,329 @@
+﻿@{
+    var page_id = ViewData["PageId"] as int? ?? 0;
+    var roleId = 0;
+    if (ViewData["RoleId"] != null)
+    {
+        int.TryParse(ViewData["RoleId"].ToString(), out roleId);
+    }
+
+    ViewData["Title"] = "Annexure Wise Observations";
+    Layout = "_Layout";
+}
+
+<script>
+
+    $(document).ready(function () {
+        var roleId = parseInt($("#RoleIdHidden").val(), 10) || 0;
+        var showDatePicker = roleId === 1 || roleId === 5;
+        var $positionDateInput = $('#annexPositionDate');
+        var $validationMessage = $('#annexPositionDateValidation');
+        var $searchButton = $('#annexSearchButton');
+
+        if (showDatePicker) {
+            $searchButton.prop('disabled', false).removeClass('d-none');
+            $positionDateInput.on('change blur', function () {
+                if ($(this).val()) {
+                    $validationMessage.addClass('d-none');
+                }
+            });
+        } else {
+            $searchButton.prop('disabled', true).addClass('d-none');
+            getEntityWiseObservations(getTodayDate());
+        }
+
+        $searchButton.on('click', function () {
+            var referenceDate;
+
+            if (showDatePicker) {
+                referenceDate = $positionDateInput.val();
+                if (!referenceDate) {
+                    $validationMessage.removeClass('d-none');
+                    $positionDateInput.focus();
+                    return;
+                }
+
+                $validationMessage.addClass('d-none');
+            } else {
+                referenceDate = getTodayDate();
+            }
+
+            getEntityWiseObservations(referenceDate);
+        });
+    });
+
+    function getTodayDate() {
+        return new Date().toISOString().split('T')[0];
+    }
+
+    function getEntityWiseObservations(positionDate) {
+        if (!positionDate) {
+            return;
+        }
+
+        destroyDatatable('entitywise_panel_mainGrid');
+        $('#entitywise_panel_mainGrid tbody').empty();
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/get_annex_wise_observations",
+            type: "POST",
+            data: {
+                'P_REF_DATE': positionDate
+            },
+            cache: false,
+            success: function (data) {
+                var sr = 1;
+                var rowspan = 1;
+                var mergeRow = 1;
+                var currentT = 0;
+                var legacyT = 0;
+                var totalT = 0;
+                var r1 = 0;
+                var r2 = 0;
+                var r3 = 0;
+
+                if (Array.isArray(data) && data.length > 0) {
+                    $.each(data, function (index, item) {
+                        currentT += parseInt(item.neW_TOTAL);
+                        legacyT += parseInt(item.olD_TOTAL);
+                        totalT += parseInt(item.total);
+                        r1 += parseInt(item.r1);
+                        r2 += parseInt(item.r2);
+                        r3 += parseInt(item.r3);
+                        $('#entitywise_panel_mainGrid tbody').append("<tr><td>" + sr + "</td><td>" + item.heading + "</td><td>" + item.annex + "</td><td class=\"text-right\">" + item.neW_TOTAL + "</td><td class=\"text-right\">" + item.olD_TOTAL + "</td><td class=\"text-right\">" + item.total + "</td><td class=\"text-right\" style=\"background-color: #ff968f; \">" + item.r1 + "</td><td class=\"text-right\" style=\"background-color: #f9e10a6b; \">" + item.r2 + "</td><td class=\"text-right\" style=\"background-color:#82f386;\">" + item.r3 + "</td><td class=\"actionsCol\"><a href=\"#\" onclick=\"getParaViewerDetails(" + item.id + ");\">View Detail</a></td><td class=\"actionsCol\"><a href=\"#\" onclick=\"getParaSummaryDetails(" + item.id + ");\">View Summary</a></td></tr>");
+                        sr++;
+                    });
+
+                    $('#entitywise_panel_mainGrid tbody').append("<tr><td></td><td></td><td><b>Total</b></td><td class=\"text-right text-bold\"><b>" + currentT + "</b></td><td class=\"text-right text-bold\"><b>" + legacyT + "</b></td><td class=\"text-right text-bold\"><b>" + totalT + "</b></td><td class=\"text-right text-bold\"><b>" + r1 + "</b></td><td class=\"text-right text-bold\"><b>" + r2 + "</b></td><td class=\"text-right text-bold\"><b>" + r3 + "</b></td><td></td><td></td></tr>");
+                }
+                else {
+                    $('#entitywise_panel_mainGrid tbody').append('<tr><td colspan="11" class="text-center">No data available for the selected date.</td></tr>');
+                }
+                initializeDataTable('entitywise_panel_mainGrid');
+
+
+            },
+            dataType: "json",
+        });
+    }
+
+
+    function getParaText(id, pc) {
+        $('#paraTextViewerModel').modal("show");
+        $('#paraTextDivField').empty();
+
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/get_functional_observation_text",
+            type: "POST",
+            data: {
+                'PARA_ID': id,
+                'PARA_CATEGORY': pc
+            },
+            cache: false,
+            success: function (data) {
+                $('#paraTextDivField').html(data);
+            }
+        });
+    }
+
+    function getParaViewerDetails(id) {
+        $('#paraViewerModel').modal('show');
+        destroyDatatable('entitywise_panel');
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/get_analysis_detail_paras",
+            type: "POST",
+            data: {
+                'PROCESS_ID': id
+            },
+            cache: false,
+            success: function (data) {
+                var sr = 1;
+
+                $.each(data, function (index, item) {
+                    $('#entitywise_panel tbody').append("<tr><td>" + sr + "</td><td>" + item.name + "</td><td>" + item.audiT_PERIOD + "</td> <td class=\"text-right\">" + item.parA_NO + "</td><td><a href=\"#\" onclick=\"getParaText(" + item.id + ", '" + item.parA_CATEGORY + "');\">View Para Text</a></td></tr>");
+                    sr++;
+                });
+                initializeDataTable('entitywise_panel');
+
+            },
+            dataType: "json",
+        });
+    }
+
+    function getParaSummaryDetails(id) {
+        $('#paraSummaryModel').modal('show');
+        destroyDatatable('summarywise_panel');
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/get_analysis_summary_paras",
+            type: "POST",
+            data: {
+                'PROCESS_ID': id
+            },
+            cache: false,
+            success: function (data) {
+                var sr = 1;
+
+                $.each(data, function (index, item) {
+
+                    $('#summarywise_panel tbody').append("<tr><td>" + sr + "</td><td>" + item.p_NAME + "</td><td>" + item.name + "</td><td>" + item.audiT_PERIOD + "</td> <td class=\"text-right\">" + item.parA_NO + "</td></tr>");
+                    sr++;
+                });
+                initializeDataTable('summarywise_panel');
+
+            },
+            dataType: "json",
+        });
+    }
+
+
+</script>
+<div class="row col-md-12">
+    <h3 style="color: #be0e43;">Root Cause Analysis</h3>
+</div>
+
+<div class="row col-md-12 g-3 align-items-end mt-2">
+    <input type="hidden" id="RoleIdHidden" value="@roleId" />
+    @if (roleId == 1 || roleId == 5)
+    {
+        <div class="col-sm-4 col-md-3 col-lg-2">
+            <label for="annexPositionDate" class="form-label">Position As On Date</label>
+            <input type="date" id="annexPositionDate" class="form-control" />
+            <div id="annexPositionDateValidation" class="text-danger small d-none">Position date is required.</div>
+        </div>
+    }
+    <div class="col-sm-3 col-md-2 col-lg-2 d-flex align-items-end">
+        <button type="button" id="annexSearchButton" class="btn btn-danger w-100">Search</button>
+    </div>
+</div>
+
+<div class="row col-md-12">
+    <div class="mt-3 col-md-12">
+        <table id="entitywise_panel_mainGrid" class="table table-hover table-bordered table-hover mt-3 table-striped">
+            <thead style="background-color: #19875478 !important; ">
+                <tr>
+                    <th class="col-md-auto text-light">Sr. No.</th>
+                    <th class="col-md-auto text-light">Main Process</th>
+                    <th class="col-md-auto text-light">Annexure</th>
+                    <th class="col-md-auto text-center text-light">Current</th>
+                    <th class="col-md-auto text-center text-light">Legacy</th>
+                    <th class="col-md-auto text-center text-light">Total</th>
+                    <th class="col-md-auto text-center text-light", style="text-wrap:inherit">High</th>
+                    <th class="col-md-auto text-center text-light">Medium</th>
+                    <th class="col-md-auto text-center text-light">Low</th>
+                    <th class="col-md-auto text-center"></th>
+                    <th class="col-md-auto text-center"></th>
+                </tr>
+            </thead>
+            <tbody>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+
+
+<div id="paraSummaryModel" class="modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog  modal-xl" role="document" style="min-width:95% !important;">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">Paras Summary</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+                    
+                </button>
+            </div>
+            <div class="mt-3 modal-body">
+                <form>
+                    <div class="row col-md-12">
+                        <div class="mt-3 col-md-12">
+                            <table id="summarywise_panel" class="table table-hover table-bordered table-hover mt-3 table-striped">
+                                <thead style="background-color: #19875478 !important; ">
+                                    <tr>
+                                        <th class="col-md-auto text-light">Sr. No.</th>
+                                        <th class="col-md-auto text-light">Reporting Office</th>
+                                        <th class="col-md-auto text-light">Entity Name</th>
+                                        <th class="col-md-auto text-center text-light">Audit Period</th>
+                                        <th class="col-md-auto text-center text-light">Total No of Open items</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                </form>
+            </div>
+
+            <div class="mt-3 modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<div id="paraViewerModel" class="modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog  modal-xl" role="document" style="min-width:95% !important;">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">Para Detail</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+                    
+                </button>
+            </div>
+            <div class="mt-3 modal-body">
+                <form>
+                    <div class="row col-md-12">
+                        <div class="mt-3 col-md-12">
+                            <table id="entitywise_panel" class="table table-hover table-bordered table-hover mt-3 table-striped">
+                                <thead style="background-color: #19875478 !important; ">
+                                    <tr>
+                                        <th class="col-md-auto text-light">Sr. No.</th>
+                                        <th class="col-md-auto text-light">Entity Name</th>
+                                        <th class="col-md-auto text-center text-light">Audit Period</th>
+                                        <th class="col-md-auto text-center text-light">Para No</th>
+                                        <th class="col-md-auto text-center text-light"></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                </form>
+            </div>
+
+            <div class="mt-3 modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<div id="paraTextViewerModel" class="modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog  modal-xl" role="document" style="min-width:95% !important;">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">Para Text</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+                    
+                </button>
+            </div>
+            <div class="mt-3 modal-body">
+                <form>
+                    <div class="row mt-3 col-md-12">
+                        <div id="paraTextDivField" style="max-width:100%; overflow-y:auto;" class="col-md-12"></div>
+
+                    </div>
+
+
+                </form>
+            </div>
+
+            <div class="mt-3 modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+

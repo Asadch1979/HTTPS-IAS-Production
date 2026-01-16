@@ -1,0 +1,177 @@
+﻿@{
+    var page_id = ViewData["PageId"] as int? ?? 0;
+}
+
+@{
+    ViewData["Title"] = "Group Role Management";
+    Layout = "_Layout";
+
+}
+
+<script type="text/javascript">
+    $(document).ready(function () {
+
+        
+        $('.menu_page_selectAll').on('click', function () {
+
+            if ($('.menu_page_selectAll').is(':checked'))
+                $('.menu_page_tick').attr('checked', true);
+            else
+                $('.menu_page_tick').attr('checked', false);
+
+        });
+    });
+    function showMenuBlock() {
+        if ($('#groupSelectionBox').val() == "") {
+            $('.menuBlock').addClass('d-none');
+            $('.pagesBlock').addClass('d-none');
+        }
+        else {
+            $('.menu_page_tick').attr('checked', false);
+            $('.menuBlock').removeClass('d-none');
+            showMenuPagesBlock();
+        }
+    }
+    function showMenuPagesBlock() {
+
+        if ($('#menuSelectionBox').val() == 0) {
+            $('.pagesBlock').addClass('d-none');
+        }
+        else {
+            $('.menu_page_tick').attr('checked', false);
+            $('.pagesBlock').removeClass('d-none');
+            $('#menuPagesArea').empty();
+            $.ajax({
+                url: g_asiBaseURL + "/AdministrationPanel/menu_pages",
+                type: "POST",
+                data: {
+                    'MENU_ID': $('#menuSelectionBox').val()
+                },
+                cache: false,
+                success: function (data) {
+                    $.each(data, function (index, page) {
+                        $('#menuPagesArea').append('<div class="col-md-4"><div class= "row col-md-12" ><div class="col-md-2"><input  id="pageId_' + page.id + '" class="menu_page_tick" type="checkbox" /></div><div class="col-md-10"><label class="font-weight-normal">' + page.page_Name + '</label></div></div></div>');
+                    });
+                    getAssignedMenuPages();
+                },
+                dataType: "json",
+            });
+        }
+
+    }
+    function getAssignedMenuPages() {
+        $.ajax({
+            url: g_asiBaseURL + "/AdministrationPanel/assigned_menu_pages",
+            type: "POST",
+            data: {
+                'MENU_ID': $('#menuSelectionBox option:selected').val(),
+                'GROUP_ID': $('#groupSelectionBox option:selected').val()
+            },
+            cache: false,
+            success: function (data) {
+                $.each(data, function (index, page) {
+                    $('#pageId_' + page.id).attr('checked', true);
+                });
+            },
+            dataType: "json",
+        });
+
+    }
+
+    function AddGroupItemAssignment() {
+        var menuItemIds = [];
+        var unlinkMenuItemIds = [];
+        $.each($('.menu_page_tick'), function (index, mItem) {
+
+            if ($(mItem).is(':checked'))
+                menuItemIds.push($(mItem).attr('id').replace('pageId_', ''));
+            else
+                unlinkMenuItemIds.push($(mItem).attr('id').replace('pageId_', ''));
+        });
+        $.ajax({
+            url: g_asiBaseURL + "/AdministrationPanel/add_group_item_assignment",
+            type: "POST",
+            data: {
+                'GROUP_ID': $('#groupSelectionBox option:selected').val(),
+                'MENU_ID': $('#menuSelectionBox option:selected').val(),
+                'MENU_ITEM_IDs': menuItemIds,
+                'UNLINK_MENU_ITEM_IDs': unlinkMenuItemIds
+            },
+            cache: false,
+            success: function (data) {
+                alert('Mapping successfuly completed ');
+            },
+            dataType: "json",
+        });
+    }
+
+</script>
+
+
+<div class="row col-md-12 mt-3">
+    <h3 style=" display:block;color: #be0e43">Group Management</h3>
+</div>
+
+
+<div class="col-md-12 mt-3" ">
+
+    <div class="row col-md-12">
+        <div class="col-md-2 mt-2">
+            <label class="font-weight-normal">Group/Role</label>
+        </div>
+        <div class="col-md-10 mt-2">
+            <select id="groupSelectionBox" onchange="showMenuBlock();" class="form-select form-control" aria-label="Default select example">
+                <option value="" selected>--Select Group/Roles--</option>
+                @{
+                    if (ViewData["GroupList"] != null)
+                    {
+                        foreach (var item in (dynamic)(ViewData["GroupList"]))
+                        {
+                            <option value="@item.GROUP_CODE" id="@item.GROUP_CODE">@item.GROUP_NAME</option>
+                        }
+                    }
+                }
+            </select>
+        </div>
+    </div>
+    <div class="row col-md-12 menuBlock d-none">
+        <div class="col-md-2 mt-2">
+            <label class="font-weight-normal">Menu</label>
+        </div>
+        <div class="col-md-10 mt-2">
+            <select id="menuSelectionBox" onchange="showMenuPagesBlock();" class="form-select form-control" aria-label="Default select example">
+                <option value="0" selected>--Select Group/Roles--</option>
+            @{
+                if (ViewData["MenuList"] != null)
+                {
+                    foreach (var item in (dynamic)(ViewData["MenuList"]))
+                    {
+                        <option value="@item.Menu_Id" id="@item.Menu_Id">@item.Menu_Name</option>
+                    }
+                }
+            }
+            </select>
+        </div>
+    </div>
+    <div class="row col-md-12 pagesBlock d-none">
+        <div class="col-md-2 mt-2">
+            <label class="font-weight-normal">Pages</label>
+        </div>
+        <div class="col-md-10 mt-2">
+            <div class="row col-md-12">
+                <div style="margin-left:auto;">
+                    <input class="menu_page_selectAll" type="checkbox" /> <label class="font-weight-normal ml-2">Select All</label>
+                </div>
+            </div>
+            <div id="menuPagesArea" class="row col-md-12">
+            </div>
+        </div>
+    </div>
+    <div class="row col-md-12 mt-4">
+        <div style="margin-left:auto;">
+            <button class="btn btn-secondary">Cancel</button>
+            <button onclick="AddGroupItemAssignment();" class="btn btn-danger ml-2">Save Changes</button>
+        </div>
+    </div>
+
+</div>

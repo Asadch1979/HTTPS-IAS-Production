@@ -1,0 +1,498 @@
+﻿@{
+    ViewData["Title"] = "Manage DSAs";
+    Layout = "_Layout";
+}
+<script type="text/javascript">
+    var g_np_id = 0;
+    var g_op_id = 0;
+    var g_ind = "";
+    var g_allObs = [];
+    var g_respUser = [];
+    var g_respUsersArr = [];
+    var g_index = 0;
+    var g_ele = null;
+    $(document).ready(function () {
+        $('#entitySelectField').select2();
+        $('#paraTextViewer').richText({
+            imageUpload: false,
+            fileUpload: false,
+            videoEmbed: false,
+            urls: false
+        });
+        const currentYear = new Date().getFullYear();
+        for (var i = 1970; i <= currentYear; i++) {
+            $('#auditPara_Period').append('<option value="' + i + '">' + i + '</option>');
+        }
+
+    });
+    function getrelation(parentEntityId = 0, userEntityId = 0) {
+
+
+        $('#controlingsearch').empty();
+        $('#childposting').empty();
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/getparentrelForParaPositionReport",
+            type: "POST",
+            data: {
+                'ENTITY_REALTION_ID': $('#RelationshipField option:selected').val()
+            },
+
+
+            cache: false,
+            success: function (data) {
+
+
+                $('#controlingsearch').append('<option id="0" value="0">--Select Controlling/Reporting Office--</option>');
+                $.each(data, function (index, contof) {
+
+                    var selected = '';
+                    if (contof.entitY_ID == parentEntityId)
+                        selected = 'selected="selected"';
+
+                    $('#controlingsearch').append('<option ' + selected + ' value="' + contof.entitY_ID + '" id="' + contof.entitY_REALTION_ID + '">' + contof.description + '</option>')
+                });
+                if (userEntityId != 0)
+                    getplacepost(userEntityId)
+
+                // console.log(data);
+
+            },
+            dataType: "json",
+        });
+
+
+
+    }
+
+    function getplacepost(userEntityId = 0) {
+        $('#childposting').empty();
+
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/getpostplaceForParaPositionReport",
+            type: "POST",
+            data: {
+                'E_R_ID': $('#controlingsearch option:selected').val()
+            },
+
+
+            cache: false,
+            success: function (data) {
+                $('#childposting').append('<option id="0" value="0" selected="selected">--Select Place of Posting--</option>');
+                $.each(data, function (index, gpp) {
+
+                    var selected = '';
+                    if (gpp.entitY_ID == userEntityId)
+                        selected = 'selected="selected"';
+                    $('#childposting').append('<option ' + selected + ' value="' + gpp.entitY_ID + '" id="' + gpp.entitY_ID + '">' + gpp.c_NAME + '</option>')
+                });
+            },
+            dataType: "json",
+        });
+
+    }
+    function reloadLocation() {
+        getEntityObservation();
+    }
+    function getEntityObservation() {
+        destroyDatatable('manageObsPanel');
+        if ($('#childposting option:selected').val() != 0) {
+            $.ajax({
+                url: g_asiBaseURL + "/ApiCalls/get_observations_for_manage_paras",
+                type: "POST",
+                data: {
+                    'ENTITY_ID': $('#childposting option:selected').val()
+                },
+                cache: false,
+                success: function (data) {
+                    g_allObs = data;
+                    $.each(data, function (i, v) {
+                        $('#manageObsPanel tbody').append('<tr><td class="text-center">' + (i + 1) + '</td><td class="text-center">' + v.audiT_PERIOD + '</td><td>' + v.parA_NO + '</td><td>' + v.annex + '</td><td>' + v.obS_RISK + '</td><td>' + v.obS_GIST + '</td><td>' + v.updateD_BY + '</td><td>' + v.updateD_ON + '</td><td class="text-center"><a onclick="event.preventDefault();ObservationViewerPanel(\'' + i + '\')" href="#" class="text-hover">Update Para Details</a></td><td class="text-center"><a onclick="event.preventDefault();DeleteDuplicatePara(\'' + v.neW_PARA_ID + '\',\'' + v.olD_PARA_ID + '\', \'' + v.p_TYPE_IND + '\')" href="#" class="text-hover">Delete Duplicate Para</a></td></tr>');
+                    });
+                    initializeDataTable('manageObsPanel');
+                },
+                dataType: "json",
+            });
+        }
+    }
+
+    function ObservationViewerPanel(index) {
+        g_index = index;
+        $('#viewMemoModel').modal('show');
+        var v = g_allObs[index];
+        g_np_id = v.neW_PARA_ID;
+        g_op_id = v.olD_PARA_ID;
+        g_ind = v.indicator;
+
+        $('#auditPara_Period').val(v.audiT_PERIOD);
+        $('#auditPara_ParaNO').val(v.parA_NO);
+        $('#auditPara_Annex').val(v.anneX_ID);
+        $('#auditPara_Gist').val(v.obS_GIST);
+        $('#auditPara_Risk').val(v.obS_RISK_ID);
+        $('#paraTextViewer').val(v.parA_TEXT).trigger('change');
+        $('#auditPara_AmountInv').val(v.amounT_INV);
+        $('#auditPara_InstNO').val(v.nO_INSTANCES);
+        ObservationResponsibles(index);
+    }
+    function responsibleCallback() {
+        $('#ResponsiblePPModel').modal('hide');
+        ObservationResponsibles(g_index);
+    }
+
+
+    function updateObservationStatus() {
+        if (g_ind != "N") {
+            if ($('#auditPara_Period').val() == "") {
+                alert("Please enter Audit Period");
+                return false;
+            }
+        }
+
+        if ($('#auditPara_Risk').val() == "0") {
+            alert("Please select Audit Risk");
+            return false;
+        }
+        if ($('#auditPara_Annex').val() == "") {
+            alert("Please select Annexure");
+            return false;
+        }
+        if ($('#auditPara_ParaNO').val() == "") {
+            alert("Please enter Para No");
+            return false;
+        }
+        if ($('#auditPara_Gist').val() == "") {
+            alert("Please enter Para Gist");
+            return false;
+        }
+
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/update_para_for_manage_audit_paras",
+            type: "POST",
+            data: {
+                'NEW_PARA_ID': g_np_id,
+                'OLD_PARA_ID': g_op_id,
+                'INDICATOR': g_ind,
+                'AUDIT_PERIOD': $('#auditPara_Period').val(),
+                'OBS_GIST': $('#auditPara_Gist').val(),
+                'PARA_TEXT': $('#paraTextViewer').val(),
+                'OBS_RISK_ID': $('#auditPara_Risk').val(),
+                'PARA_NO': $('#auditPara_ParaNO').val(),
+                'ANNEX_ID': $('#auditPara_Annex').val(),
+                'AMOUNT_INV': $('#auditPara_AmountInv').val(),
+                'NO_INSTANCES': $('#auditPara_InstNO').val(),
+            },
+            cache: false,
+            success: function (data) {
+                $('#viewMemoModel').modal('hide');
+                alert(data.message);
+                onAlertCallback(getEntityObservation);
+            },
+            dataType: "json",
+        });
+
+    }
+
+    function DeleteDuplicatePara(np_id, op_id, ind) {
+          g_np_id = np_id;
+            g_op_id = op_id;
+            g_ind = ind;
+            $('#DuplicateParaModel').modal('show');
+
+
+    }
+
+    function ProceedDeleteDuplicatePara() {
+          $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/request_delete_duplicate_para",
+            type: "POST",
+            data: {
+                'NEW_PARA_ID': g_np_id,
+                'OLD_PARA_ID': g_op_id,
+                'INDICATOR': g_ind,
+                'REMARKS': $('#textarea_justification').val()
+            },
+            cache: false,
+            success: function (data) {
+                $("#DuplicateParaModel").modal('hide');
+                alert(data.message);
+                onAlertCallback(getEntityObservation);
+            },
+            dataType: "json",
+        });
+    }
+
+    function ObservationResponsibles(index) {
+        g_index = index;
+        var v = g_allObs[index];
+        g_np_id = v.neW_PARA_ID;
+        g_op_id = v.olD_PARA_ID;
+        g_ind = v.indicator;
+
+        $('#listofRespPersons tbody').empty();
+        $('#c_listofRespPersons tbody').empty();
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/get_responsible_person_list",
+            type: "POST",
+            data: {
+                'PARA_ID': g_np_id != "" ? g_np_id : g_op_id,
+                'INDICATOR': g_ind
+            },
+            cache: false,
+            success: function (data) {
+                var sr = 1;
+                var sr_c = 1;
+                $.each(data, function (i, v) {
+                    if (v.indicator == "O") {
+                        $('#listofRespPersons tbody').append('<tr id="tr_' + v.pP_NO + '"><td>' + sr + '</td><td>' + v.pP_NO + '</td><td>' + v.emP_NAME + '</td><td>' + v.loaN_CASE + '</td><td>' + v.lC_AMOUNT + '</td><td>' + v.accounT_NUMBER + '</td><td>' + v.acC_AMOUNT + '</td><td>' + v.remarks + '</td><td class="text-center"><a href="#" onclick="event.preventDefault();updateRespRow(this);">Update / delete</a></td></tr>');
+                        sr++
+                    }
+                    else {
+                        $('#c_listofRespPersons tbody').append('<tr id="tr_' + v.pP_NO + '"><td>' + sr_c + '</td><td>' + v.pP_NO + '</td><td>' + v.emP_NAME + '</td><td>' + v.loaN_CASE + '</td><td>' + v.lC_AMOUNT + '</td><td>' + v.accounT_NUMBER + '</td><td>' + v.acC_AMOUNT + '</td><td>' + v.remarks + '</td></tr>');
+                        sr_c++;
+                    }
+
+                });
+
+            },
+            dataType: "json",
+        });
+
+    }
+
+    function openDSA() {
+        $('#DSAModal').modal('show');
+        return false;
+    }
+    function getMatchedPP() {
+        $('#matchedPPNoPanels').empty();
+        g_respUser = [];
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/get_employee_name_from_pp",
+            type: "POST",
+            data: {
+                'PP_NO': $('#responsiblePPNoEntryField').val()
+            },
+            cache: false,
+            success: function (data) {
+                g_respUser.push(data);
+                if (data.ppNumber > 0) {
+                    $('#matchedPPNoPanels').append('<div class="row"><div class="row col-md-12 mt-2"><div class="col-sm-4"><label>Responsible</label></div><div class="col-sm-8"><span>' + data.name + ' (' + data.ppNumber + ') </span> </div></div><div class="row col-md-12 mt-2"><div class="col-md-4"><label> Loan Case </label></div><div class="col-md-8"><input id="resp_loan_case" class="form-control" type="number" /></div></div><div class="row col-md-12 mt-2"><div class="col-md-4"><label> LC Amount </label></div><div class="col-md-8"><input id="resp_loan_amount" class="form-control" type="number" /></div></div><div class="row col-md-12 mt-2"><div class="col-md-4"><label> Account Number </label></div><div class="col-md-8"><input id="resp_account_number" class="form-control" type="number" /></div></div><div class="row col-md-12 mt-2"><div class="col-md-4"><label>ACC Amount </label></div><div class="col-md-8"><input id="resp_account_amount" class="form-control" type="number" /></div></div><div class="row col-md-12 mt-2"><div class="col-md-4"><label>Remarks/Reason</label></div><div class="col-md-8"><textarea id="resp_remarks" class="form-control" rows="3"></textarea></div></div></div></div>');
+                    if (g_ele != null) {
+                        $('#resp_loan_case').val($(g_ele).parent().parent().children('td').eq(3).html());
+                        $('#resp_loan_amount').val($(g_ele).parent().parent().children('td').eq(4).html());
+                        $('#resp_account_number').val($(g_ele).parent().parent().children('td').eq(5).html());
+                        $('#resp_account_amount').val($(g_ele).parent().parent().children('td').eq(6).html());
+                        $('#resp_remarks').val("");
+
+                    }
+                }
+                else
+                    $('#matchedPPNoPanels').append('<div class="row"><span>No record found..</span></div>');
+            },
+            dataType: "json",
+        });
+    }
+
+    function addResponsibilityToMainTable(action) {
+        if (g_respUser[0].ppNumber > 0) {
+            var lc = $('#resp_loan_case').val();
+            var acc = $('#resp_account_number').val();
+            if (lc == "" && acc == "") {
+                alert("Please enter Either Loan Case Or Account Number to Proceed"); return false;
+            }
+            var srNo = $('#listofRespPersons tbody tr').length;
+            srNo++;
+            //  $('#listofRespPersons tbody').append('<tr id="tr_' + g_respUser[0].ppNumber + '"><td>' + srNo + '</td><td>' + g_respUser[0].ppNumber + '</td><td>' + g_respUser[0].name + '</td><td>' + $('#resp_loan_case').val() + '</td><td>' + $('#resp_loan_amount').val() + '</td><td>' + $('#resp_account_number').val() + '</td><td>' + $('#resp_account_amount').val() + '</td><td>' + $('#resp_remarks').val() + '</td><td class="text-center"><a href="#" onclick="event.preventDefault();updateRespRow(this);">Update / Delete</a></td></tr>');
+            g_respUsersArr.push(g_respUser[0]);
+            var v = g_allObs[g_index];
+            g_np_id = v.neW_PARA_ID;
+            g_op_id = v.olD_PARA_ID;
+            g_ind = v.indicator;
+            $.ajax({
+                url: g_asiBaseURL + "/ApiCalls/add_responsible_to_observation",
+                type: "POST",
+                data: {
+                    'PP_NO': g_respUser[0].ppNumber,
+                    'LOAN_CASE': $('#resp_loan_case').val(),
+                    'LC_AMOUNT': $('#resp_loan_amount').val(),
+                    'ACCOUNT_NUMBER': $('#resp_account_number').val(),
+                    'ACC_AMOUNT': $('#resp_account_amount').val(),
+                    'EMP_NAME': g_respUser[0].name,
+                    'REMARKS': $('#resp_remarks').val(),
+                    'NEW_PARA_ID': g_np_id,
+                    'OLD_PARA_ID': g_op_id,
+                    'INDICATOR': g_ind,
+                    'ACTION': action
+                },
+                cache: false,
+                success: function (data) {
+                    alert(data.message);
+                    onAlertCallback(responsibleCallback);
+
+                },
+                dataType: "json",
+            });
+
+        }
+
+    }
+
+    function deleteRespRow(e) {
+        $(e).parent().parent().remove();
+    }
+
+    function updateRespRow(e) {
+        g_ele = e;
+        $('#ResponsiblePPModel').modal('show');
+        $('#addResponsibleButton').addClass("d-none");
+        $('#updateResponsibleButton').removeClass("d-none");
+        $('#deleteResponsibleButton').removeClass("d-none");
+        $('#matchedPPNoPanels').empty();
+        $('#responsiblePPNoEntryField').val($(e).parent().parent().attr('id').split('tr_')[1]);
+        getMatchedPP();
+
+    }
+
+</script>
+
+<div class="row">
+    <div class="col-md-12 mt-3">
+        <h3 style=" display:block;color: #be0e43">Update Audit Paras</h3>
+    </div>
+    <div class="row col-md-12 mt-3">
+        <div class="col-md-2">
+            <label>Relationship Type</label>
+        </div>
+        <div class="col-md-10">
+            <select id="RelationshipField" onchange="getrelation();" class="form-control form-select">
+                <option id="0" value="0" selected="selected">--Select Relationship Type--</option>
+
+
+                @{
+                    if (ViewData["Userrelationship"] != null)
+                    {
+                        foreach (var item in (dynamic)(ViewData["Userrelationship"]))
+                        {
+                            <option value="@item.ENTITY_REALTION_ID" id="@item.ENTITY_REALTION_ID">@item.FIELD_NAME</option>
+                        }
+                    }
+                }
+
+
+
+            </select>
+        </div>
+    </div>
+
+    <div class="row col-md-12 mt-3">
+        <div class="col-md-2">
+            <label>Controlling/Reporting Office</label>
+        </div>
+        <div class="col-md-4">
+            <select id="controlingsearch" onchange="getplacepost();" class="form-control form-select">
+                <option id="0" value="0" selected="selected">--Select Controlling/Reporting Office--</option>
+            </select>
+        </div>
+
+
+        <div class="col-md-2">
+            <label>Place of Posting</label>
+        </div>
+        <div class="col-md-4">
+            <select id="childposting" onchange="getEntityObservation()" class="form-control form-select">
+                <option id="0" value="0" selected="selected">--Select Place of Posting--</option>
+
+            </select>
+        </div>
+    </div>
+
+
+
+    <div class="row col-md-12 mt-3">
+        <table id="manageObsPanel" class="table table-hover table-bordered table-hover mt-3 table-striped">
+            <thead style="background-color: #19875478 !important; ">
+                <tr>
+                    <th class="col-md-auto">Sr. No.</th>
+                    <th class="col-md-auto">DSA No.</th>
+                    <th class="col-md-auto">Subject</th>
+                    <th class="col-md-auto">Status</th>
+                    <th class="col-md-auto">Risk Category</th>
+                    <th class="col-md-auto">Summary of Issue</th>
+                    <th class="col-md-auto">Issued By</th>                                        
+                    <th class="col-md-auto text-center">Action</th>
+                    <th class="col-md-auto text-center">Action</th>
+                    <th class="col-md-auto text-center"><center><button type="button" onclick="openDSA();" class="rounded-circle btn btn-danger btn-sm"><i class="fa fa-plus text-white"></i></button></center></th>
+                </tr>
+            </thead>
+            <tbody>
+            </tbody>
+
+        </table>
+    </div>
+
+</div>
+
+<div id="DSAModal" class="modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title">Manage DSA Record</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="dsaForm">
+                    <!-- DSA No. -->
+                    <div class="form-group">
+                        <label for="dsaNumber">DSA No.</label>
+                        <input type="text" id="dsaNumber" class="form-control" placeholder="Enter DSA Number" required>
+                    </div>
+
+                    <!-- Subject -->
+                    <div class="form-group">
+                        <label for="dsaSubject">Subject</label>
+                        <input type="text" id="dsaSubject" class="form-control" placeholder="Enter Subject" required>
+                    </div>
+
+                    <!-- Status -->
+                    <div class="form-group">
+                        <label for="dsaStatus">Status</label>
+                        <select id="dsaStatus" class="form-control" required>
+                            <option value="">Select Status</option>
+                            <option value="Pending">Pending</option>
+                            <option value="In Progress">In Progress</option>
+                            <option value="Resolved">Resolved</option>
+                        </select>
+                    </div>
+
+                    <!-- Risk Category -->
+                    <div class="form-group">
+                        <label for="riskCategory">Risk Category</label>
+                        <select id="riskCategory" class="form-control" required>
+                            <option value="0" id="0" selected>--Select Risk Category--</option>
+                            @{
+                                if (ViewData["RiskList"] != null)
+                                {
+
+                                    foreach (var risk in (dynamic)(ViewData["RiskList"]))
+                                    {
+                                        <option id="@risk.R_ID" value="@risk.R_ID">@risk.DESCRIPTION</option>
+                                    }
+
+                                }
+                            }
+                        </select>
+                    </div>
+
+                    <!-- Summary of Issue -->
+                    <div class="form-group">
+                        <label for="issueSummary">Summary of Issue</label>
+                        <textarea id="issueSummary" class="form-control" placeholder="Enter a brief summary" rows="3" required></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="submit" form="dsaForm" class="btn btn-primary">Save</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>

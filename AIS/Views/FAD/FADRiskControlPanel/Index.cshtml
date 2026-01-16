@@ -1,0 +1,227 @@
+﻿@{
+    ViewData["Title"] = "FAD Risk Control Panel";
+    Layout = "_Layout";
+}
+
+<div class="container-fluid mt-3">
+
+    <!-- Page Header -->
+    <div class="row mb-3">
+        <div class="col-md-8">
+            <h4 class="fw-bold">FAD Risk Control Panel</h4>
+            <small class="text-muted">
+                Configure Main KPI, Sub KPI, Process, Sub Process, and Annexure
+            </small>
+        </div>
+    </div>
+
+    <!-- Tabs Navigation -->
+    <ul class="nav nav-tabs" id="fadRiskTabs" role="tablist">
+        <li class="nav-item">
+            <a class="nav-link active" data-bs-toggle="tab" href="#tabMainKpi" role="tab">
+                Main KPI
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" data-bs-toggle="tab" href="#tabSubKpi" role="tab">
+                Sub KPI
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" data-bs-toggle="tab" href="#tabProcess" role="tab">
+                Process
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" data-bs-toggle="tab" href="#tabSubProcess" role="tab">
+                Sub Process
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" data-bs-toggle="tab" href="#tabAnnexure" role="tab">
+                Annexure
+            </a>
+        </li>
+    </ul>
+
+    <!-- Tabs Content -->
+    <div class="tab-content border border-top-0 p-3">
+
+        <!-- ================= MAIN KPI ================= -->
+        <div class="tab-pane fade show active" id="tabMainKpi" role="tabpanel">
+            <div class="d-flex justify-content-between mb-2">
+                <h6 class="fw-bold">Main KPI List</h6>
+                <button class="btn btn-sm btn-primary" id="btnAddMainKpi">
+                    <i class="fa fa-plus"></i> Add Main KPI
+                </button>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table table-bordered table-sm" id="tblMainKpi">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Code</th>
+                            <th>Name</th>
+                            <th>Display Order</th>
+                            <th>Status</th>
+                            <th style="width:80px;">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Data via AJAX -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- ================= SUB KPI ================= -->
+        <div class="tab-pane fade" id="tabSubKpi" role="tabpanel">
+            <div class="row mb-3">
+                <div class="col-md-4">
+                    <label class="form-label">Select Main KPI</label>
+                    <select class="form-select" id="ddlMainKpi">
+                        <option value="">-- Select Main KPI --</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="d-flex justify-content-between mb-2">
+                <h6 class="fw-bold">Sub KPI List</h6>
+                <button class="btn btn-sm btn-primary" id="btnAddSubKpi">
+                    <i class="fa fa-plus"></i> Add Sub KPI
+                </button>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table table-bordered table-sm" id="tblSubKpi">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Code</th>
+                            <th>Name</th>
+                            <th>Weightage</th>
+                            <th>Display Order</th>
+                            <th>Status</th>
+                            <th style="width:80px;">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Data via AJAX -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- ================= PROCESS ================= -->
+        <div class="tab-pane fade" id="tabProcess" role="tabpanel">
+            <div class="row mb-3">
+                <div class="col-md-4">
+                    <label class="form-label">Select Sub KPI</label>
+                    <select class="form-select" id="ddlSubKpi">
+                        <option value="">-- Select Sub KPI --</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="d-flex justify-content-between mb-2">
+                <h6 class="fw-bold">Process List</h6>
+                <button class="btn btn-sm btn-primary" id="btnAddProcess">
+                    <i class="fa fa-plus"></i> Add Process
+                </button>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table table-bordered table-sm" id="tblProcess">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Code</th>
+                            <th>Name</th>
+                            <th>Weightage</th>
+                            <th>Display Order</th>
+                            <th>Status</th>
+                            <th style="width:80px;">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Data via AJAX -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- ================= SUB PROCESS ================= -->
+        <div class="tab-pane fade" id="tabSubProcess" role="tabpanel">
+            <div class="row mb-3">
+                <div class="col-md-4">
+                    <label class="form-label">Select Process</label>
+                    <select class="form-select" id="ddlProcess">
+                        <option value="">-- Select Process --</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="d-flex justify-content-between mb-2">
+                <h6 class="fw-bold">Sub Process List</h6>
+                <button class="btn btn-sm btn-primary" id="btnAddSubProcess">
+                    <i class="fa fa-plus"></i> Add Sub Process
+                </button>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table table-bordered table-sm" id="tblSubProcess">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Code</th>
+                            <th>Name</th>
+                            <th>Gravity</th>
+                            <th>Status</th>
+                            <th style="width:80px;">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Data via AJAX -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- ================= ANNEXURE ================= -->
+        <div class="tab-pane fade" id="tabAnnexure" role="tabpanel">
+            <div class="row mb-3">
+                <div class="col-md-4">
+                    <label class="form-label">Select Sub Process</label>
+                    <select class="form-select" id="ddlSubProcess">
+                        <option value="">-- Select Sub Process --</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="d-flex justify-content-between mb-2">
+                <h6 class="fw-bold">Annexure List</h6>
+                <button class="btn btn-sm btn-primary" id="btnAddAnnexure">
+                    <i class="fa fa-plus"></i> Add Annexure
+                </button>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table table-bordered table-sm" id="tblAnnexure">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Code</th>
+                            <th>Name</th>
+                            <th>Status</th>
+                            <th style="width:80px;">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Data via AJAX -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/js/fad-risk-control-panel.js"></script>
+}

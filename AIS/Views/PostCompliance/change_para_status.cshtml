@@ -1,0 +1,284 @@
+﻿@{
+    var page_id = ViewData["PageId"] as int? ?? 0;
+}
+
+@{
+    ViewData["Title"] = "Change Para Status";
+    Layout = "_Layout";
+}
+<script>
+    let g_obsList = [];
+    let g_newComId = 0;
+    let g_ind = 0;
+
+    function appendOptions($select, data, valueProp, textProp, selectedVal) {
+        $select.empty();
+        $select.append('<option id="0" value="0">--Select--</option>');
+        $.each(data, function (index, item) {
+            let selected = (item[valueProp] == selectedVal) ? 'selected="selected"' : '';
+            $select.append('<option ' + selected + ' value="' + item[valueProp] + '" id="' + item[valueProp] + '">' + item[textProp] + '</option>');
+        });
+    }
+
+    function getrelation(parentEntityId = 0, userEntityId = 0) {
+        $('#controlingsearch').empty();
+        $('#childposting').empty();
+        let relId = $('#RelationshipField option:selected').val();
+        if (!relId || relId === "0") return;
+
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/getparentrel",
+            type: "POST",
+            data: { 'ENTITY_REALTION_ID': relId },
+            cache: false,
+            success: function (data) {
+                appendOptions($('#controlingsearch'), data, 'entitY_ID', 'description', parentEntityId);
+                if (userEntityId != 0) getplacepost(userEntityId);
+            },
+            error: function (xhr) {
+                alert("getrelation AJAX error: " + xhr.responseText);
+            },
+            dataType: "json",
+        });
+    }
+
+    function getplacepost(userEntityId = 0) {
+        $('#childposting').empty();
+        let ctrlId = $('#controlingsearch option:selected').val();
+        if (!ctrlId || ctrlId === "0") return;
+
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/getpostplace",
+            type: "POST",
+            data: { 'E_R_ID': ctrlId },
+            cache: false,
+            success: function (data) {
+                appendOptions($('#childposting'), data, 'entitY_ID', 'c_NAME', userEntityId);
+            },
+            error: function (xhr) {
+                alert("getplacepost AJAX error: " + xhr.responseText);
+            },
+            dataType: "json",
+        });
+    }
+
+    function getParas() {
+        $('#paraTable tbody').empty();
+        let entityId = $('#childposting option:selected').val();
+        if (!entityId || entityId === "0") return;
+
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/get_paras_for_status_change",
+            type: "POST",
+            data: { 'ENTITY_ID': entityId },
+            cache: false,
+            success: function (data) {
+                g_obsList = data;
+                let rows = '';
+                $.each(data, function (idx, child) {
+                    rows += '<tr>' +
+                        '<td>' + (child.audiT_PERIOD || '') + '</td>' +
+                        '<td>' + (child.parA_NO || '') + '</td>' +
+                        '<td>' + (child.gisT_OF_PARAS || '') + '</td>' +
+                        '<td>' + (child.risk || '') + '</td>' +
+                        '<td>' + (child.parA_STATUS || '') + '</td>' +
+                        '<td class="text-center"><a class="text-primary" style="cursor:pointer" onclick="paraText(\'' + child.coM_ID + '\')">View Para Text</a></td>' +
+                        '<td class="text-center"><a class="text-danger" style="cursor:pointer" onclick="openChange(\'' + child.coM_ID + '\',\'' + child.ind + '\')">Change Status</a></td>' +
+                        '</tr>';
+                });
+                $('#paraTable tbody').append(rows);
+            },
+            error: function (xhr) {
+                alert("getParas AJAX error: " + xhr.responseText);
+            },
+            dataType: "json"
+        });
+    }
+
+    function paraText(comId) {
+        if (!comId || comId === "0") return;
+        $('#paraTextDisplayModel').modal('show');
+        $('#paraTextModelPanel').empty();
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/get_all_para_text",
+            type: "POST",
+            data: {
+                'COM_ID': comId
+            },
+            cache: false,
+            success: function (data) {
+                $('#paraTextModelPanel').html(data);
+            },
+            error: function (xhr) {
+                alert("paraText AJAX error: " + xhr.responseText);
+            }
+        });
+    }
+
+    function openChange(com_id, ind) {
+        g_newComId = com_id;
+        g_ind = ind;
+        $('#actionSelect').val('S');
+        $('#statusSelect').val('9');
+        $('#Reason').val('');
+        $('#process_detail').modal('show');
+    }
+
+    function Publishchange() {
+        if ($('#Reason').val().trim() === "") {
+            alert("Please enter remarks");
+            return;
+        }
+        let act = $('#actionSelect').val();
+        let status = $('#statusSelect').val();
+        if (act === 'D') status = 0;
+        $('#Publishchange').prop('disabled', true);
+
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/Add_Para_Change_status_Request",
+            type: "POST",
+            data: {
+                'COM_ID': g_newComId,
+                'NEW_STATUS': status,
+                'REMARKS': $('#Reason').val(),
+                'IND': g_ind,
+                'Action_IND': act
+            },
+            cache: false,
+            success: function (data) {
+                alert(data.message);
+                $('#process_detail').modal('hide');
+                getParas();
+            },
+            error: function (xhr) {
+                alert("Publishchange AJAX error: " + xhr.responseText);
+            },
+            complete: function () {
+                $('#Publishchange').prop('disabled', false);
+            },
+            dataType: "json"
+        });
+    }
+</script>
+
+<div class="row">
+    <div class="col-md-12 mt-3">
+        <h3 style="display:block;color:#be0e43">Change Para Status</h3>
+    </div>
+    <div class="row col-md-12 mt-3">
+        <div class="col-md-2">
+            <label>Relationship Type</label>
+        </div>
+        <div class="col-md-10">
+            <select id="RelationshipField" onchange="getrelation();" class="form-control form-select">
+                <option id="0" value="0" selected="selected">--Select Relationship Type--</option>
+                @{
+                    if (ViewData["Userrelationship"] != null)
+                    {
+                        foreach (var item in (dynamic)(ViewData["Userrelationship"]))
+                        {
+                            <option value="@item.ENTITY_REALTION_ID" id="@item.ENTITY_REALTION_ID">@item.FIELD_NAME</option>
+                        }
+                    }
+                }
+            </select>
+        </div>
+    </div>
+
+    <div class="row col-md-12 mt-3">
+        <div class="col-md-2">
+            <label>Controlling/Reporting Office</label>
+        </div>
+        <div class="col-md-4">
+            <select id="controlingsearch" onchange="getplacepost();" class="form-control form-select">
+                <option id="0" value="0" selected="selected">--Select Controlling/Reporting Office--</option>
+            </select>
+        </div>
+        <div class="col-md-2">
+            <label>Place of Posting</label>
+        </div>
+        <div class="col-md-4">
+            <select id="childposting" onchange="getParas();" class="form-control form-select">
+                <option id="0" value="0" selected="selected">--Select Place of Posting--</option>
+            </select>
+        </div>
+    </div>
+    <div class="row col-md-12 mt-3">
+        <table id="paraTable" class="table table-hover table-bordered table-striped">
+            <thead style="background-color:#19875478;">
+                <tr>
+                    <th class="col-md-auto">Audit Year</th>
+                    <th class="col-md-auto">Para No.</th>
+                    <th class="col-md-auto">Heading</th>
+                    <th class="col-md-auto">Risk</th>
+                    <th class="col-md-auto">Para Status</th>
+                    <th class="col-md-auto">View Para Text</th>
+                    <th class="col-md-auto">Action</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Modal for Change Status -->
+<div id="process_detail" class="modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-xl" role="document" style="min-width:90%;">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">Change Para Status</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="mt-3 modal-body">
+                <form>
+                    <div class="mt-2 col-md-12">
+                        <label class="font-weight-bold">Action</label>
+                    </div>
+                    <div class="mt-2 col-md-12">
+                        <select id="actionSelect" class="form-control form-select">
+                            <option value="S">Status Change</option>
+                            <option value="D">Delete Duplicate</option>
+                        </select>
+                    </div>
+                    <div class="mt-2 col-md-12">
+                        <label class="font-weight-bold">New Status</label>
+                    </div>
+                    <div class="mt-2 col-md-12">
+                        <select id="statusSelect" class="form-control form-select">
+                            <option value="9">Settled</option>
+                            <option value="8">Un-Settled</option>
+                        </select>
+                    </div>
+                    <div class="mt-3 col-md-12">
+                        <label class="font-weight-bold">Remarks</label>
+                    </div>
+                    <div class="mt-2 col-md-12">
+                        <textarea class="form-control" id="Reason"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="mt-3 modal-footer">
+                <button id="Publishchange" type="button" class="btn btn-danger" onclick="Publishchange();">Save changes</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal for Para Text -->
+<div id="paraTextDisplayModel" class="modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-xl" role="document" style="min-width:90%;">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">Para Text</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="mt-3 modal-body">
+                <div id="paraTextModelPanel"></div>
+            </div>
+            <div class="mt-3 modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>

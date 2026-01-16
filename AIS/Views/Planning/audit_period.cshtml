@@ -1,0 +1,263 @@
+﻿@{
+    var page_id = ViewData["PageId"] as int? ?? 0;
+}
+
+@{
+    ViewData["Title"] = "Audit Period";
+    Layout = "_Layout";
+}
+
+<script type="text/javascript">
+    var g_periodId = 0;
+    $(document).ready(function () {
+        ShowDepartmentAuditPeriods();
+    });
+    function ShowDepartmentAuditPeriods() {
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/audit_periods",
+            type: "POST",
+            data: {
+            },
+            cache: false,
+            success: function (data) {
+                $('#listOfAuditPeriods tbody').empty();
+                //console.log(data);
+                var srNo = 1;
+                $.each(data, function (index, period) {
+                    
+                    period.starT_DATE = period.starT_DATE.split('T')[0];
+                    period.enD_DATE = period.enD_DATE.split('T')[0];
+                    $('#listOfAuditPeriods tbody').append('<tr id=teamcode_' + period.auditperiodid + '><td class="searchable"><p class="fw-normal mb-1">' + srNo + '</p></td><td class="searchable"><p class="fw-normal mb-1">' + period.description + ' </p></td><td class="searchable"><p class="empName fw-normal mb-1">' + period.starT_DATE + ' </p></td><td class="searchable"><p class="empName fw-normal mb-1">' + period.enD_DATE + ' </p></td><td class="searchable"><p class="empName fw-normal mb-1">' + period.status + ' </p></td><td><small onclick="event.preventDefault();updateAuditPeriod(' + period.auditperiodid + ',' + period.statuS_ID + ')" class="text-danger cursor-pointer">Update</small></td></tr>');
+                    srNo++;
+                });
+
+            },
+            dataType: "json",
+        });
+
+    }
+    function setupNewAuditPeriod() {
+        $('#setupAuditPeriod').modal('show');
+        $('#periodDescriptionModalField').val('');
+        $('#periodStartModalField').val('');
+        $('#periodEndModalField').val('');
+        $.each($('.deptCheckBoxes'), function (index, chkbox) {
+            if ($(chkbox).is(':checked')) {
+                $(chkbox).click();
+            }
+        });
+
+    }
+
+    function updateAuditPeriod(periodId, statusId) {
+        $('#updateAuditPeriodModel').modal('show');
+        $('#auditPeriodStatus_forUpdate').val(statusId);
+        g_periodId = periodId;
+
+
+    }
+    function reloadLocation() {
+        location.reload();
+    }
+    function publishNewAuditPeriodChanges() {
+        var desc = $('#periodDescriptionModalField').val();
+        if (document.querySelectorAll('input.alnum-only.is-invalid').length > 0) {
+            Swal.fire({ icon: "error", title: "Validation error", text: "Please correct highlighted fields." });
+            return;
+        }
+        var stDate = $('#periodStartModalField').val();
+        var edDate = $('#periodEndModalField').val();
+        var deptIds = [];
+        $.each($('.deptCheckBoxes'), function (index, chkbox) {
+            if ($(chkbox).is(':checked')) {
+                deptIds.push($(chkbox).attr('dept-id'));
+            }
+        });
+        if (desc == "" || stDate == "" || edDate == "") {
+            alert("Missing Mandatory fields");
+            return;
+        }
+
+        //var date = '21/01/2015';
+        var ds = new Date(stDate.split("/").reverse().join("-"));
+        var dd = ds.getDate();
+        var mm = ds.getMonth() + 1;
+        var yy = ds.getFullYear();
+        var startDate = ("0" + mm).slice(-2) + "/" + ("0" + dd).slice(-2) + "/" + yy;
+
+        var de = new Date(edDate.split("/").reverse().join("-"));
+        var dd = de.getDate();
+        var mm = de.getMonth() + 1;
+        var yy = de.getFullYear();
+        var endDate = ("0" + mm).slice(-2) + "/" + ("0" + dd).slice(-2) + "/" + yy;
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/add_audit_period",
+            type: "POST",
+            data: {
+                'DESCRIPTION': desc,
+                'STARTDATE': startDate,
+                'ENDDATE': endDate,
+                'STATUS_ID': 1,
+                'DEPARTMENT_IDS': deptIds
+            },
+            cache: false,
+            success: function (data) {
+
+                alert(data.message);
+                onAlertCallback(reloadLocation);
+            },
+            dataType: "json",
+        });
+    }
+    function publishUpdateAuditPeriodChanges() {
+        if ($('#auditPeriodStatus_forUpdate').val() == 0) {
+            alert("Please select Audit Period to proceed");
+            return;
+        }     
+
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/update_audit_period",
+            type: "POST",
+            data: {
+                'AUDITPERIODID': g_periodId,
+                'STATUS_ID': $('#auditPeriodStatus_forUpdate').val(),
+            },
+            cache: false,
+            success: function (data) {
+                alert(data.message);
+                onAlertCallback(reloadLocation);
+            },
+            dataType: "json",
+        });
+    }
+    function getAuditPlan(periodId) {
+        window.location.href = g_asiBaseURL + "/Planning/tentative_audit_plan?dept=" + $('#deptSelectionBox option:selected').val() + "&periodId=" + periodId;
+    }
+
+</script>
+<div class="row mt-3">
+    <div class="row col-md-12">
+        <div class="col-md-6" style="padding-left:0px;">
+            <h2 style="color: #be0e43">Audit Period</h2>
+        </div>
+        <div class="col-md-6">
+            <button onclick="setupNewAuditPeriod();" class="btn btn-danger" style="float:right;">Add New Period</button>
+        </div>
+    </div>
+</div>
+<div id="listOfAuditPeriodsContainer" class="row mt-3">
+
+    <br />
+    <table id="listOfAuditPeriods" class="table table-hover table-bordered table-hover mt-3 table-striped">
+        <thead style="background-color: #19875478 !important;">
+            <tr>
+                <th class="col-md-1">Sr No.</th>
+                <th class="col-md-4">Description</th>
+                <th class="col-md-2">Start Date</th>
+                <th class="col-md-2">End Date</th>
+                <th class="col-md-1">Status</th>
+                <th class="col-md-1"></th>
+            </tr>
+        </thead>
+        <tbody>
+        </tbody>
+    </table>
+</div>
+
+<div id="setupAuditPeriod" class="modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">New Audit Period</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form>
+                    <div class="form-group">
+                        <label for="periodDescriptionModalField">Description<span class="text-danger">*</span> <small class="text-muted">(A-Z, 0-9, space, &amp;, ?)</small></label>
+                        <input required type="text" class="form-control alnum-only" id="periodDescriptionModalField" aria-describedby="brcode" placeholder="Description (Alphabets, numbers, spaces, ampersand (&amp;), comma (,), and question mark (?) only)" data-allow-space="true" data-allow-amp="true" maxlength="100" title="Enter only Alphabets (A-Z), numbers (0-9), spaces, ampersand (&amp;), comma (,), and question mark (?)">
+                        <small class="form-text text-muted">Enter only Alphabets (A-Z), numbers (0-9), spaces, ampersand (&amp;), comma (,), and question mark (?).</small>
+                        <div class="invalid-feedback">Enter only Alphabets (A-Z), numbers (0-9), spaces, ampersand (&amp;), comma (,), and question mark (?).</div>
+                    </div>
+                    <div class="form-group">
+                        <label for="periodStartModalField">Start Date<span class="text-danger">*</span></label>
+                        <input required type="date" data-allow-future="true" class="form-control" id="periodStartModalField" aria-describedby="brcode" placeholder="Start Date">
+                    </div>
+                    <div class="form-group">
+                        <label for="periodEndModalField">End Date<span class="text-danger">*</span></label>
+                        <input required type="date" data-allow-future="true" class="form-control" id="periodEndModalField" aria-describedby="brcode" placeholder="End Date">
+                    </div>
+                    <div class="d-none">
+                        @{
+                            <h5 for="periodEndModalField">Audit Conducted By<span class="text-danger">*</span></h5>
+                            if (ViewData["AuditDepartments"] != null)
+                            {
+                                foreach (var item in (dynamic)(ViewData["AuditDepartments"]))
+                                {
+                                    <div class="form-group">
+                                        <div class="row w-100 col-md-12">
+                                            <div class="col-md-10">
+                                                <small for="checkbox_@item.CODE">@item.NAME</small>
+                                            </div>
+                                            <div class="col-md-2">
+                                                <input type="checkbox" class="deptCheckBoxes" dept-id="@item.CODE" id="checkbox_@item.CODE" style="float:right;" value="@item.CODE" aria-label="...">
+                                            </div>
+                                        </div>
+                                    </div>
+                                }
+                            }
+                        }
+                    </div>
+
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button onclick="publishNewAuditPeriodChanges();" type="button" class="btn btn-danger">Save changes</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+<div id="updateAuditPeriodModel" class="modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">Update Audit Period</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form>
+
+                    <div class="form-group">
+                        <label for="periodStartModalField">Status<span class="text-danger">*</span></label>
+                        <select id="auditPeriodStatus_forUpdate" class="form-control">
+                            <option value="0">--Select Period Stauts--</option>
+                            @if (ViewData["AuditPeriodStatus"] != null)
+                            {
+                                foreach (var item in (dynamic)(ViewData["AuditPeriodStatus"]))
+                                {
+                                    <option value="@item.STATUS_ID">@item.STATUS</option>
+                                }
+                            }
+                        </select>
+
+                    </div>
+
+
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button onclick="publishUpdateAuditPeriodChanges();" type="button" class="btn btn-danger">Save changes</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+

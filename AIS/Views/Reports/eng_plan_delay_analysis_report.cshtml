@@ -1,0 +1,101 @@
+﻿@{
+    var page_id = ViewData["PageId"] as int? ?? 0;
+}
+
+@{
+    ViewData["Title"] = "Paras Settlement Report";
+    Layout = "_Layout";
+}
+
+<script type="text/javascript">
+
+    $(document).ready(function () {
+        getSettledParas();
+    });
+
+    function getSettledParas() {
+
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/get_engagement_plan_delay_analysis_report",
+            type: "POST",
+            data: {
+             
+            },
+            cache: false,
+            success: function (data) {
+
+                $.each(data, function (index, row) {
+                    if (row.audiT_START_DATE != "")
+                        row.audiT_START_DATE = row.audiT_START_DATE.split(" ")[0];
+                    if (row.audiT_END_DATE != "")
+                        row.audiT_END_DATE = row.audiT_END_DATE.split(" ")[0];
+                        
+                    $('#settled_paras tbody').append('<tr><td>' + ++index + '</td><td>' + row.reportinG_OFFICE + '</td><td>' + row.placE_OF_POSTING + '</td><td>' + row.entitY_NAME + '</td><td>' + row.audiT_START_DATE + '</td><td>' + row.audiT_END_DATE + '</td><td>' + row.status + '</td><td>' + row.delaY_DAYS + '</td></tr>');
+
+                });
+
+                $('#settled_paras').DataTable({
+                    dom: '<"top"lfB>rt<"bottom"ip><"clear">',
+                    buttons: [
+                        {
+                            extend: 'excelHtml5',
+                            text: 'Export to Excel',
+                            className: 'btn btn-success',
+                            exportOptions: {
+                                columns: function (idx, data, node) {
+                                    // Exclude columns with the class 'hide-export'
+                                    return !$(node).hasClass('hide-export');
+                                }
+                            }
+                        },
+                        {
+                            extend: 'pdfHtml5',
+                            text: 'Export To PDF',
+                            className: 'btn btn-danger',
+                            exportOptions: {
+                                columns: function (idx, data, node) {
+                                    // Exclude columns with the class 'hide-export'
+                                    return !$(node).hasClass('hide-export');
+                                }
+                            }
+                        }
+                    ],
+                    lengthMenu: [
+                        [10, 50, 100, -1],
+                        [10, 50, 100, "All"]
+                    ]
+                });
+
+            },
+            dataType: "json",
+        });
+
+
+    }
+</script>
+
+<div class="row col-md-12 mt-3">
+    <h3 style="color: #be0e43">Engagement Plan Delay Analysis Report</h3>
+</div>
+
+<di
+<div class="row col-md-12 mt-3">
+
+    <table id="settled_paras" class="table table-hover table-bordered table-hover mt-3 table-striped">
+        <thead style="background-color: #19875478 !important; ">
+            <tr>
+                <th class="col-md-auto">Sr. No.</th>
+                <th class="col-md-auto">Reporting Office</th>
+                <th class="col-md-auto">Entity Name</th>
+                <th class="col-md-auto">Audit By</th>
+                <th class="col-md-auto">Audit Start Date</th>
+                <th class="col-md-auto">Audit End Date</th>
+                <th class="col-md-auto">Audit Status</th>
+                <th class="col-md-auto">Delay (No. of Days)</th>
+            </tr>
+        </thead>
+        <tbody>
+        </tbody>
+    </table>
+</div>
+

@@ -1,0 +1,405 @@
+﻿@{
+    var page_id = ViewData["PageId"] as int? ?? 0;
+}
+
+@{
+    ViewData["Title"] = "Post Changes in Criteria";
+    Layout = "_Layout";
+}
+<style type="text/css">
+    .container {
+        max-width: 100%;
+    }
+
+    .card-header {
+        background-color: transparent !important;
+        font-size: 20px;
+        height: 100px;
+    }
+
+    .icon-card {
+        margin: 10px;
+    }
+</style>
+
+<script type="text/javascript">
+    var g_trId = 0;
+    $(document).ready(function () {
+        $("#searchTableRecord").on("keyup", function () {
+            var value = $(this).val().toLowerCase();
+            $("#listofAuditCriterias tbody tr").filter(function () {
+                $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1)
+            });
+        });
+    });
+
+
+    function recommendPostChangesAuditCriterias(id, period_id, ent_id, size_id, risk_id, freq_id, visit, nodays,entId,entName) {
+        g_trId = id;
+
+
+        $('#recommendPostChangesAuditCriteriasModal').modal('show');
+
+        if (ent_id == 25) {
+            $('#auditCriteriaCADHUBField').append('<option selected="selected" id="' + entId + '">' + entName + '</option>');
+            $('#CADHUBPanel').removeClass('d-none');
+            $('#nonCADHUBPanel').addClass('d-none');
+        } else {
+            $('#CADHUBPanel').addClass('d-none');
+            $('#nonCADHUBPanel').removeClass('d-none');
+        }
+        $('#auditCriteriaPeriodField').val(period_id);
+        $('#auditCriteriaEntityField').val(ent_id);
+        $('#auditCriteriaRiskField').val(risk_id);
+        $('#auditCriteriaSizeField').val(size_id);
+        $('#auditCriteriaFreqField').val(freq_id)
+        $('#auditCriteriaDaysField').val(nodays);
+        if (visit == 'Y')
+            $('#auditCriteriaVisitField').attr('checked', true);
+        else
+            $('#auditCriteriaVisitField').attr('checked', false);
+    }
+    function recommendProcTransaction() {
+        $('#commentsBox').modal('show');
+        $('#finalCommentsButtonSave').attr('onclick', 'finalRecommendProcessTransaction()');
+    }
+
+    function reloadLocation() {
+        location.reload();
+    }
+
+    function finalRecommendProcessTransaction() {
+        if ($('#commentAreaInCommentsBox').val() == "") {
+            alert("Enter Comments to Proceed"); return false;
+        }
+
+        var entity = '';
+        if ($('#auditCriteriaEntityField option:selected').val() != 0)
+            entity = $('#auditCriteriaEntityField option:selected').val();
+
+        var period = '';
+        if ($('#auditCriteriaPeriodField option:selected').val() != 0)
+            period = $('#auditCriteriaPeriodField option:selected').val();
+
+        var days = $('#auditCriteriaDaysField').val();
+        var risk = '';
+        if ($('#auditCriteriaRiskField option:selected').val() != 0)
+            risk = $('#auditCriteriaRiskField option:selected').val();
+
+        var freq = '';
+        if ($('#auditCriteriaFreqField option:selected').val() != 0)
+            freq = $('#auditCriteriaFreqField option:selected').val();
+
+        var size = '';
+        if ($('#auditCriteriaSizeField option:selected').val() != 0)
+            size = $('#auditCriteriaSizeField option:selected').val();
+
+        var visit = 'N';
+        if ($('#auditCriteriaVisitField').is(':checked'))
+            visit = "Y";
+        var criteria_details = [];
+        criteria_details.push(g_trId);
+        criteria_details.push(period);
+        criteria_details.push(entity);
+        criteria_details.push(risk);
+        criteria_details.push(freq);
+        criteria_details.push(size);
+        criteria_details.push(days);
+        criteria_details.push(visit);
+        criteria_details.push($('#commentAreaInCommentsBox').val());
+
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/PostChangesAuditCriteria",
+            type: "POST",
+            data: {
+                'CRITERIA_LIST': criteria_details
+            },
+            cache: false,
+            success: function (data) {
+                $('#recommendPostChangesAuditCriteriasModal').modal('hide');
+                alert('Post Changes in Audit Criteria successfuly done');
+                onAlertCallback(reloadLocation);
+                
+            },
+            dataType: "json",
+        });
+    }
+
+    function generatePlanAuditCriterias(id) {
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/GeneratePlanAuditCriteria",
+            type: "POST",
+            data: {
+                'CRITERIA_ID': id
+            },
+            cache: false,
+            success: function (data) {
+                alert(data.message);
+                onAlertCallback(reloadLocation);
+            },
+            dataType: "json",
+        });
+    }
+
+</script>
+
+<div class="col-md-12" style="margin-top:20px;">
+    <h3 style="color: #be0e43">Post Changes in Criteria / Generate Plan</h3>
+    <div class="row">
+        <div class="col-md-12">
+            <input class="form-control" id="searchTableRecord" type="text" placeholder="Search..">
+        </div>
+    </div>
+    <br>
+    <table id="listofAuditCriterias" class="table table-hover table-bordered table-hover mt-3 table-striped">
+        <thead style="background-color: #19875478 !important; ">
+            <tr>
+                <th class="col-md-auto">Period</th>
+                <th class="col-md-auto">Entity</th>
+                <th class="col-md-auto">Risk Category</th>
+                <th class="col-md-auto">Frequency</th>
+                <th class="col-md-auto">Size</th>
+                <th class="col-md-auto">No of Days</th>
+                <th class="col-md-auto">Field Visit</th>
+                <th class="col-md-auto">Comments</th>
+                <th class="col-md-auto">Post Changes Required</th>
+                <th class="col-md-auto">Generate Audit Plan</th>
+            </tr>
+        </thead>
+        <tbody>
+            @{
+            if (ViewData["PostChangesAuditCriteriaList"] != null)
+            {
+            foreach (var item in (dynamic)(ViewData["PostChangesAuditCriteriaList"]))
+            {
+                        <tr id="div_@item.ID">
+                            <td>
+                                <p class="fw-normal mb-1">@item.PERIOD</p>
+                            </td>
+                            @if (@item.ENTITY_TYPEID == 25)
+                            {
+                                <td value="@item.ENTITY_TYPEID">@item.ENTITY_NAME</td>
+                            }
+                            else
+                            {
+                                <td value="@item.ENTITY_TYPEID">@item.ENTITY</td>
+                            }
+                            <td>
+                                <p class="fw-normal mb-1">@item.RISK</p>
+                            </td>
+                            <td>
+                                <p class="fw-normal mb-1">@item.FREQUENCY</p>
+                            </td>
+                            <td>
+                                <p class="fw-normal mb-1">@item.SIZE</p>
+                            </td>
+                            <td>
+                                <p class="fw-normal mb-1">@item.NO_OF_DAYS</p>
+                            </td>
+                            <td>
+                                <p class="fw-normal mb-1">@item.VISIT</p>
+                            </td>
+                            <td>
+                                <p class="fw-normal mb-1">@item.COMMENTS</p>
+                            </td>
+                            <td>
+                                <button type="button" class="action btn btn-link text-danger btn-sm btn-rounded" onclick="recommendPostChangesAuditCriterias('@item.ID', '@item.AUDITPERIODID', '@item.ENTITY_TYPEID', '@item.SIZE_ID', '@item.RISK_ID', '@item.FREQUENCY_ID', '@item.VISIT', '@item.NO_OF_DAYS','@item.ENTITY_ID','@item.ENTITY_NAME');">
+                                    Post Changes
+                                </button>
+                            </td>
+                            <td>
+                                <button type="button" class="action btn btn-link text-danger btn-sm btn-rounded" onclick="generatePlanAuditCriterias('@item.ID');">
+                                    Generate Plan
+                                </button>
+                            </td>
+                        </tr>
+            }
+            }}
+        </tbody>
+    </table>
+</div>
+
+<div id="recommendPostChangesAuditCriteriasModal" class="modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">Audit Criteria Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form>
+
+                    <div class="row col-md-12 mt-3">
+                        <div class="row col-md-4">
+                            <h5>Audit Period</h5>
+                        </div>
+                        <div class="row col-md-8">
+                            <select id="auditCriteriaPeriodField" class="form-select form-control" aria-label="Default select example">
+                                <option value="0" id="0" selected>--Select Audit Period--</option>
+                                @{
+                                if (ViewData["AuditPeriodList"] != null)
+                                {
+
+                                foreach (var period in (dynamic)(ViewData["AuditPeriodList"]))
+                                {
+                                <option id="@period.AUDITPERIODID" value="@period.AUDITPERIODID">@period.DESCRIPTION</option>
+                                }
+
+                                }
+                                }
+                            </select>
+                        </div>
+                    </div>
+                    <div class="row mt-3 col-md-12">
+                        <div class="row col-md-4">
+                            <h5>Select Entity</h5>
+                        </div>
+                        <div class="row col-md-8">
+                            <select id="auditCriteriaEntityField" onchange="enitityChangeEvent();" class="form-select form-control">
+                                <option value="0" id="0" selected>--Select Entity--</option>
+                                @{
+                                if (ViewData["AuditEntities"] != null)
+                                {
+                                foreach (var item in (dynamic)(ViewData["AuditEntities"]))
+                                {
+                                <option value="@item.AUTID" id="@item.AUTID">@item.ENTITYTYPEDESC</option>
+                                }
+                                }
+                                }
+                            </select>
+
+                        </div>
+                    </div>
+                    <div class="row col-md-12" id="CADHUBPanel">
+                        <div class="row mt-3 col-md-12">
+                            <div class="col-md-4">
+                                <h5>CAD HUB</h5>
+                            </div>
+                            <div class="col-md-8">
+                                <select id="auditCriteriaCADHUBField" class="form-select form-control" aria-label="Default select example">
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row col-md-12" id="nonCADHUBPanel">
+                        <div class="row col-md-12 mt-3">
+                            <div class="row col-md-4">
+                                <h5>Risk Category</h5>
+                            </div>
+                            <div class="row col-md-8">
+                                <select id="auditCriteriaRiskField" class="form-select form-control" aria-label="Default select example">
+                                    <option value="0" id="0" selected>--Select Risk Category--</option>
+                                    @{
+                                        if (ViewData["RiskList"] != null)
+                                        {
+
+                                            foreach (var risk in (dynamic)(ViewData["RiskList"]))
+                                            {
+                                                <option id="@risk.R_ID" value="@risk.R_ID">@risk.DESCRIPTION</option>
+                                            }
+
+                                        }
+                                    }
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="row col-md-12 mt-3">
+                            <div class="row col-md-4">
+                                <h5>Frequency</h5>
+                            </div>
+                            <div class="row col-md-8">
+                                <select id="auditCriteriaFreqField" class="form-select form-control" aria-label="Default select example">
+                                    <option value="0" id="0" selected>--Select Frequency--</option>
+                                    @{
+                                        if (ViewData["AuditFrequencies"] != null)
+                                        {
+
+                                            foreach (var period in (dynamic)(ViewData["AuditFrequencies"]))
+                                            {
+                                                <option id="@period.FREQUENCY_ID" value="@period.FREQUENCY_ID">@period.FREQUENCY_DISCRIPTION</option>
+                                            }
+
+                                        }
+                                    }
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="row col-md-12 mt-3 brField">
+                            <div class="row col-md-4">
+                                <h5>Size</h5>
+                            </div>
+                            <div class="row col-md-8">
+                                <select id="auditCriteriaSizeField" class="form-select form-control" aria-label="Default select example">
+                                    <option value="0" id="0" selected>--Select Size--</option>
+                                    @{
+                                        if (ViewData["BranchSizesList"] != null)
+                                        {
+                                            foreach (var item in (dynamic)(ViewData["BranchSizesList"]))
+                                            {
+                                                <option value="@item.BR_SIZE_ID" id="@item.BR_SIZE_ID">@item.DESCRIPTION</option>
+                                            }
+                                        }
+                                    }
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row col-md-12 mt-3">
+                        <div class="row col-md-4">
+                            <h5>No. of Days</h5>
+                        </div>
+                        <div class="row col-md-8">
+                            <input id="auditCriteriaDaysField" class="form-control" type="number" />
+                        </div>
+                    </div>
+
+                    <div class="row col-md-12 mt-3">
+                        <div class="row col-md-4">
+                            <h5>Spot/Field Visit</h5>
+                        </div>
+                        <div class="row col-md-8">
+                            <input id="auditCriteriaVisitField" class="form-check" type="checkbox" />
+                        </div>
+                    </div>
+
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button onclick="recommendProcTransaction();" type="button" class="btn btn-success">Recommend Again</button>
+
+            </div>
+        </div>
+    </div>
+</div>
+<div id="commentsBox" class="modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">Comments</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form>
+                    <div class="form-group">
+                        <label for="commentAreaInCommentsBox">Comments</label>
+                        <textarea class="form-control" rows="4" id="commentAreaInCommentsBox" placeholder="Enter Comments here.."></textarea>
+
+
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button id="finalCommentsButtonSave" type="button" class="btn btn-danger">Submit</button>
+            </div>
+        </div>
+    </div>
+</div>
+

@@ -1,0 +1,281 @@
+﻿@{
+    var page_id = ViewData["PageId"] as int? ?? 0;
+}
+
+@{
+    ViewData["Title"] = "Team Members";
+    Layout = "_Layout";
+    var teams = ViewData["AuditTeams"] as List<AuditTeamModel> ?? new List<AuditTeamModel>();
+    var teamLeads = teams.Where(team => team.IS_TEAMLEAD == "Y").ToList();
+    var teamMembersByCode = teams
+        .Where(team => team.IS_TEAMLEAD != "Y")
+        .GroupBy(team => team.CODE)
+        .ToDictionary(
+            group => group.Key,
+            group => group.Select(member => $"{member.EMPLOYEENAME} ({member.TEAMMEMBER_ID})").ToList()
+        );
+    var srNo = 1;
+}
+<style type="text/css">
+    .deleteTeam:hover {
+        cursor: pointer;
+
+    }
+    .container {
+        max-width: 100%;
+    }
+
+    .card-header {
+        background-color: transparent !important;
+        font-size: 20px;
+        height: 100px;
+    }
+
+    .icon-card {
+        margin: 10px;
+    }
+    
+</style>
+<script type="text/javascript">
+    $(document).ready(function () {
+        $("#searchTeamFormation").on("keyup", function () {
+            var value = $(this).val().toLowerCase();
+            $("#listOfEmployeeTeam tbody tr").filter(function () {
+                $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1)
+            });
+        });
+        
+    });
+
+    function addNewTeam() {
+        
+        $('#teamNameModalField').val('');
+        $('#teamCodeModalField').val('');
+        $.each($('.participantcheckboxes'), function (index, member) { $(member).attr('checked', false); });
+        $.each($('.teamleadradio'), function (index, member) { $(member).attr('checked', false); });
+       
+        $('#setupAuditTeam').modal('show');
+    }
+
+    function publishNewTeamChanges() {
+        
+       
+      /*  var teamCode = $('#teamCodeModalField').val()
+        if (teamCode == '') {
+            alert('Enter Team Code');
+            return false;
+        }
+        */
+        var teamName = $('#teamNameModalField').val();
+
+        if (document.querySelectorAll('input.alnum-only.is-invalid').length > 0) {
+            Swal.fire({ icon: "error", title: "Validation error", text: "Please correct highlighted fields." });
+            return false;
+        }
+
+        if (teamName == '') {
+            alert('Enter Team Name');
+            return false;
+        }     
+
+        if (!$('.participantcheckboxes').is(':checked')) {
+            alert('Select Team Participants');
+            return false;
+        }
+        if (!$('.teamleadradio').is(':checked')) {
+            alert('Select Team Lead');
+            return false;
+        }
+        var participants = [];
+        $.each($('.participantcheckboxes'), function (index, member) {
+            if ($(member).is(':checked')) {
+                var obj = {
+                    'T_CODE': '',
+                    'T_NAME':teamName,
+                    'PPNO': $(member).attr('memberid'),
+                    'NAME': $(member).attr('memberfname') +" "+$(member).attr('memberlname'),
+                    'PLACEOFPOSTING': $(member).attr('memberplaceofposting'),
+                    'ISTEAMLEAD': 'N',
+                    'STATUS': 'Y',
+                }
+                participants.push(obj);
+            }
+        });
+        var teamLeadID = 0;
+        var teamLeadCheck = false;
+
+        $.each($('.teamleadradio'), function (index, lead) {
+            if ($(lead).is(':checked')) {
+                teamLeadID = $(lead).attr('memberid');                
+            }
+        });
+        $.each(participants, function (i, p) {
+            if (p.PPNO == teamLeadID) {
+                p.ISTEAMLEAD = 'Y'
+                teamLeadCheck = 1;
+            }
+        });
+        if (!teamLeadCheck) {
+            alert('Select Team Lead among Team Participants');
+            return false;
+        }
+
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/AddAuditTeam",
+            type: "POST",
+            data: {
+                'AUDIT_TEAM': participants
+            },
+            cache: false,
+            success: function (data) {
+                location.reload();
+            },
+            dataType: "json",
+        });
+        
+
+    }
+    function deleteTeam(teamCode) {
+
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/DeleteAuditTeam",
+            type: "POST",
+            data: {
+                'T_CODE': teamCode
+            },
+            cache: false,
+            success: function (data) {
+                location.reload();
+            },
+            dataType: "json",
+        });
+
+
+    }
+</script>
+<div class="row d-none">
+    <h5>Select Department</h5>
+    <select id="deptSelectionBox" class="form-select form-control" aria-label="Default select example">
+        @{
+            if (ViewData["AuditDepartments"] != null)
+            {
+                foreach (var item in (dynamic)(ViewData["AuditDepartments"]))
+                {
+                    <option selected ="selected" value="@item.CODE" id="@item.CODE">@item.NAME</option>
+                }
+            }
+        }
+
+    </select>
+</div>
+
+<div class="row col-md-12">
+    <div class="col-md-10 mt-3">
+
+        <h3 style="color: #be0e43 float:left">Team Formation</h3>
+    </div>
+        <div class="col-md-2 mt-3" style="float:right">
+        <button onclick="addNewTeam();" class="btn btn-danger mb-3"  style="float:right;" >Constitue New Team</button>
+            
+    </div>
+    </div>
+<div class="col-md-12 mt-3">
+    <table id="listOfEmployeeTeam" class="table table-hover table-bordered table-hover mt-3 table-striped">
+        <thead style="background-color: #19875478 !important; ">
+            <tr>
+                <th class="col-md-auto">Sr No.</th>
+                <th class="col-md-auto">Team Name</th>
+                <th class="col-md-auto">Team Lead</th>
+                <th class="col-md-auto">Team Members</th>
+                <th class="col-md-auto">Status</th>
+                <th class="col-md-auto">Delete</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var team in teamLeads)
+                {
+                var statusLabel = team.STATUS == "Y" ? "Active" : "Inactive";
+                var memberNames = teamMembersByCode.TryGetValue(team.CODE, out var members)
+                    ? string.Join(", ", members)
+                    : string.Empty;
+                <tr id="teamcode_@team.CODE">
+                    <td class="searchable"><p class="fw-normal mb-1">@srNo</p></td>
+                    <td class="searchable"><p class="fw-normal mb-1">@team.NAME</p></td>
+                    <td class="searchable"><p class="empName fw-normal mb-1">@team.EMPLOYEENAME (@team.TEAMMEMBER_ID)</p></td>
+                    <td class="empMembers">@memberNames</td>
+                    <td class="searchable"><p class="empName fw-normal mb-1 text-center">@statusLabel</p></td>
+                    <td>
+                        @if (team.STATUS == "Y")
+                            {
+                            <small onclick="event.preventDefault();deleteTeam('@team.CODE');" class="text-danger deleteTeam">Inactive</small>
+                            }
+                    </td>
+                </tr>
+                srNo++;
+                }
+        </tbody>
+    </table>
+    </div>
+    
+<div id="setupAuditTeam" class="modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog  modal-xl" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">New Audit Team</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form>
+                    <div class="form-group d-none">
+                        <label for="teamCodeModalField">Team Code <small class="text-muted">(A-Z, 0-9, space, &amp;, ?)</small></label>
+                        <input type="text" class="form-control alnum-only" id="teamCodeModalField" aria-describedby="brcode" placeholder="Team Code (Alphabets, numbers, spaces, ampersand (&amp;), comma (,), and question mark (?) only)" data-allow-space="true" data-allow-amp="true" maxlength="200" title="Enter only Alphabets (A-Z), numbers (0-9), spaces, ampersand (&amp;), comma (,), and question mark (?)">
+                        <small class="form-text text-muted">Enter only Alphabets (A-Z), numbers (0-9), spaces, ampersand (&amp;), comma (,), and question mark (?).</small>
+                        <div class="invalid-feedback">Enter only Alphabets (A-Z), numbers (0-9), spaces, ampersand (&amp;), comma (,), and question mark (?).</div>
+
+                    </div>
+                    <div class="form-group">
+                        <label for="branchCodeModalField">Team Name <small class="text-muted">(A-Z, 0-9, space, &amp;, ?)</small></label>
+                        <input type="text" class="form-control alnum-only" id="teamNameModalField" aria-describedby="brcode" placeholder="Team Name (Alphabets, numbers, spaces, ampersand (&amp;), comma (,), and question mark (?) only)" data-allow-space="true" data-allow-amp="true" maxlength="100" title="Enter only Alphabets (A-Z), numbers (0-9), spaces, ampersand (&amp;), comma (,), and question mark (?)">
+                        <small class="form-text text-muted">Enter only Alphabets (A-Z), numbers (0-9), spaces, ampersand (&amp;), comma (,), and question mark (?).</small>
+                        <div class="invalid-feedback">Enter only Alphabets (A-Z), numbers (0-9), spaces, ampersand (&amp;), comma (,), and question mark (?).</div>
+
+                    </div>
+                    <div class="form-group">
+                        <div class="row col-md-12">
+                            <label class="col-md-2">Participant</label>
+                            <label class="col-md-3" style="float:right">Auditors</label>
+                            <label class="col-md-2">P.P. NO.</label>
+                            <label class="col-md-3">Designation</label>
+
+                            <label class="col-md-2">Team Lead</label>
+                        </div>
+                        <div class="row col-md-12" >
+                            @{
+                                if (ViewData["AuditEmployees"] != null)
+                                {
+                                    foreach (var item in (dynamic)(ViewData["AuditEmployees"]))
+                                    {
+                                        <div class="col-md-2"><input id="participants_@item.PPNO" memberid="@item.PPNO" memberfname="@item.EMPLOYEEFIRSTNAME" memberlname="@item.EMPLOYEELASTNAME" memberplaceofposting="@item.DEPARTMENTCODE" class="participantcheckboxes" type="checkbox" /></div>
+                                        <div class="col-md-3" style="float:right"><label>@item.EMPLOYEEFIRSTNAME&nbsp;@item.EMPLOYEELASTNAME</label></div>
+                                        <div class="col-md-2"><label>@item.PPNO</label></div>
+                                        <div class="col-md-3"><label>@item.FUN_DESIGNATION</label></div>
+
+                                        <div class="col-md-2" style="padding-left:40px;"><input id="lead_@item.PPNO" memberid="@item.PPNO" memberfname="@item.EMPLOYEEFIRSTNAME" memberlname="@item.EMPLOYEELASTNAME" memberplaceofposting="@item.DEPARTMENTCODE" class="teamleadradio" name="isTeamLead" type="radio" /></div>
+
+                                    }
+                                }
+                            }
+
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button onclick="publishNewTeamChanges();" type="button" class="btn btn-danger">Save changes</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>

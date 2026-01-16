@@ -1,0 +1,276 @@
+﻿@{
+    ViewData["Title"] = "Para_Text_Update_FAD";
+    Layout = "_Layout";
+}
+<script>
+    var g_paraId = 0;
+    var g_obsList = [];
+
+    $(document).ready(function () {
+        getLegacyPara();
+        $('#viewMemo_compliance').richText({
+            imageUpload: false,
+            fileUpload: false,
+            videoEmbed: false,
+            urls: false
+        });
+        g_imgLoader = $('[data-type=imagesloader]').imagesloader({
+            maxFiles: 10,
+            minSelect: 1,
+            imagesToLoad: []
+        });
+    });
+
+    function viewParaDetails(ref_p, memo_no, paraId) {
+        g_paraId = ref_p;
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/get_old_para_br_compliance_text_update",
+            type: "POST",
+            data: {
+                'REF_P': ref_p
+            },
+            cache: false,
+            success: function (data) {
+                $('#viewMemoModel').modal('show');
+                $('#viewMemo_memoNumber').val(memo_no);
+                $('#viewMemo_process').val(data.checklist);
+                $('#viewMemo_subprocess').val(data.subchecklist);
+                $('#viewMemo_checklist_detail').val(data.checklistdetail);
+                $('#viewMemo_memo').html(data.parA_TEXT);
+                $('#viewMemo_compliance').val('').trigger('change');
+            },
+
+            dataType: "json",
+        });
+    }
+    function getLegacyPara() {
+
+        $('#manageObsPanel tbody').empty();
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/get_old_para_br_compliance_text_update",
+            type: "POST",
+            data: {
+
+            },
+            cache: false,
+            success: function (data) {
+                g_obsList = data;
+                $('#entityNameField').html(data.length > 0 ? data[0].name : '');
+                $.each(data, function (index, child) {
+                    $('#manageObsPanel tbody').append('<tr id="div_' + child.id + '"><td><p class="fw-normal mb-1">' + child.audiT_PERIOD + '</p></td><td><p class="fw-normal mb-1">' + child.parA_NO + '</p></td><td><p class="fw-normal mb-1">' + child.gisT_OF_PARAS + '</p></td><td><p  class="fw-normal mb-1">' + child.amount + '</p></td><td><p  class="fw-normal mb-1">' + child.voL_I_II + '</p></td><td><p  class="fw-normal mb-1">' + child.revieweR_REMARKS + '</p></td><td class="text-center"><a href="#" onclick="event.preventDefault();viewParaDetails(\'' + child.reF_P + '\', \'' + child.parA_NO + '\', \'' + child.id + '\' );" class="text-hover text-danger mr-5px"><small>View Observation</small></a></td><td class="text-center"><a href="#" onclick="updateParaDetails(\'' + child.reF_P + '\', \'' + child.parA_NO + '\', \'' + child.id + '\' );" class="text-hover text-danger mr-5px"><small>Update Observation</small></a></td></tr>')
+                });
+            },
+
+            dataType: "json",
+        });
+
+    }
+
+    function PublishCompliance() {
+
+        if ($('.richText-editor').html() == "") {
+            alert("Please enter Reply");
+            return;
+        }
+        var productImagesArr = [];
+        g_imgFiles = g_imgLoader.data('format.imagesloader').AttachmentArray;
+        $.each(g_imgFiles, function (i, v) {
+            var ProductObject = {
+                'OBS_ID': g_paraId,
+                'OBS_TEXT_ID': 0,
+                'IMAGE_NAME': v.FileName,
+                'IMAGE_DATA': v.Base64,
+                'IMAGE_TYPE': v.MimeType,
+                'LENGTH': v.FileSizeInBytes,
+                'COVER_IMAGE': i == 0 ? true : false,
+                'SEQUENCE': i
+            }
+            productImagesArr.push(ProductObject);
+        });
+
+
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/add_old_para_br_compliance_reply",
+            type: "POST",
+            data: {
+                'Para_ID': g_paraId,
+                'REPLY': $('.richText-editor').html(),
+                'EVIDENCE_LIST': productImagesArr
+            },
+            cache: false,
+            success: function (data) {
+                alert(data.message);
+                onAlertCallback(reloadLocation);
+            },
+            dataType: "json",
+        });
+    }
+    function reloadLocation() {
+        $('#viewMemoModel').modal('hide');
+        getLegacyPara();
+    }
+</script>
+
+<div class="row">
+    <div class="col-md-12 mt-3">
+        <h3 style=" display:block;color: #be0e43">Para Text Update FAD</h3>
+        <!--<h5>Branch Name: <span id="entityNameField"></span></h5>-->
+    </div>
+    <div class="row col-md-12 mt-3">
+        <table id="manageObsPanel" class="table table-hover table-bordered table-hover mt-3 table-striped">
+            <thead style="background-color: #19875478 !important; ">
+                <tr>
+                    <th class="col-md-auto">Audit Year</th>
+                    <th class="col-md-auto">Para No.</th>
+                    <th class="col-md-auto">Observation Gist</th>
+                    <th class="col-md-auto">Amount</th>
+                    <th class="col-md-auto">VOL I II</th>
+                    <th class="col-md-auto">Remarks</th>
+                    <th class="col-md-auto">Action</th>
+                    <th class="col-md-auto">Action</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+
+        </table>
+    </div>
+
+</div>
+
+
+<div id="viewMemoModel" class="modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-xl" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">Observation</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form>
+                    <div class="form-group">
+                        <label for="viewMemo_memoNumber">Memo Number</label>
+                        <input id="viewMemo_memoNumber" class="form-control" disabled="disabled" />
+                    </div>
+                    <div class="form-group">
+                        <label for="viewMemo_memo">Process</label>
+                        <input id="viewMemo_process" class="form-control" disabled="disabled" />
+                    </div>
+                    <div class="form-group">
+                        <label for="viewMemo_memo">Sub Process</label>
+                        <input id="viewMemo_subprocess" class="form-control" disabled="disabled" />
+
+                    </div>
+                    <div class="form-group">
+                        <label for="viewMemo_memo">Checklist Detail</label>
+                        <input id="viewMemo_checklist_detail" class="form-control" disabled="disabled" />
+
+                    </div>
+
+                    <div class="form-group">
+                        <label for="viewMemo_memo">Memo</label>
+                        <div id="viewMemo_memo" disabled="disabled" style="height: auto; overflow-y: auto;" class="form-control"></div>
+                    </div>
+                    <div class="form-group">
+                        <label for="viewMemo_compliance">Compliance</label>
+                        <textarea class="form-control" id="viewMemo_compliance"></textarea>
+                    </div>
+
+                    <div id="evidenceUploader" class="input-field">
+                        <label class="active">Evidences</label>
+                        <!--Image container -->
+                        <div class="row"
+                             data-type="imagesloader"
+                             data-errorformat="Accepted file formats"
+                             data-errorsize="Maximum size accepted"
+                             data-errorduplicate="File already loaded"
+                             data-errormaxfiles="Maximum number of images you can upload"
+                             data-errorminfiles="Minimum number of images to upload"
+                             data-modifyimagetext="Modify image">
+
+                            <!-- Progress bar -->
+                            <div class="col-12 order-1 mt-2">
+                                <div data-type="progress" class="progress" style="height: 25px; display:none;">
+                                    <div data-type="progressBar" class="progress-bar progress-bar-striped progress-bar-animated bg-success" role="progressbar" style="width: 100%;">Load in progress...</div>
+                                </div>
+                            </div>
+
+                            <!-- Model -->
+                            <div data-type="image-model" class="col-4 pl-2 pr-2 pt-2" style="max-width:200px; display:none;">
+
+                                <div class="ratio-box text-center" data-type="image-ratio-box">
+                                    <img data-type="noimage" class="btn btn-light ratio-img img-fluid p-2 image border dashed rounded" src="~/images/photo-camera-gray.svg" style="cursor:pointer;">
+                                    <div data-type="loading" class="img-loading" style="color:#218838; display:none;">
+                                        <span class="fa fa-2x fa-spin fa-spinner"></span>
+                                    </div>
+                                    <img data-type="preview" class="btn btn-light ratio-img img-fluid p-2 image border dashed rounded" src="" style="display: none; cursor: default;">
+                                    <span class="badge rounded-pill text-bg-success p-2 w-50 main-tag " style="display:none; border-radius:20px">Main</span>
+                                </div>
+
+                                <!-- Buttons -->
+                                <div data-type="image-buttons" class="row justify-content-center mt-2">
+                                    <button data-type="add" class="btn btn-outline-success" type="button" style="width:105px"><span class="fa fa-camera mr-2" style="padding-right:5px"></span>Add</button>
+                                    <button data-type="btn-modify" type="button" class="btn btn-outline-success m-0 " data-bs-toggle="popover" data-bs-placement="right" style="display:none; width:105px;">
+                                        <span class="fa fa-pencil-alt mr-2" style="padding-right:5px"></span>Modify
+                                    </button>
+                                </div>
+                            </div>
+
+
+
+                            <!-- Popover operations -->
+                            <div data-type="popover-model" style="display:none">
+                                <div data-type="popover" class="ml-3 mr-3" style="min-width:150px;">
+                                    <div class="row">
+                                        <div class="col p-0">
+                                            <button data-operation="main" class="btn btn-block btn-success btn-sm rounded-pill" type="button" style="width:170px"><span class="fa fa-angle-double-up mr-2" style="padding-right:15px"></span>Main</button>
+                                        </div>
+                                    </div>
+                                    <div class="row mt-2">
+                                        <div class="col-6 p-0 pr-1">
+                                            <button data-operation="left" class="btn btn-block btn-outline-success btn-sm rounded-pill" type="button" style="width:80px"><span class="fa fa-angle-left mr-2" style="padding-right:5px"></span>Left</button>
+                                        </div>
+                                        <div class="col-6 p-0 pl-1">
+                                            <button data-operation="right" class="btn btn-block btn-outline-success btn-sm rounded-pill" type="button" style="width:80px">Right<span class="fa fa-angle-right ml-2" style="padding-left:5px"></span></button>
+                                        </div>
+                                    </div>
+                                    <div class="row mt-2">
+                                        <div class="col-6 p-0 pr-1">
+                                            <button data-operation="rotateanticlockwise" class="btn btn-block btn-outline-success btn-sm rounded-pill" type="button" style="width:80px"><span class="fas fa-undo-alt mr-2" style="padding-right:5px"></span>Rotate</button>
+                                        </div>
+                                        <div class="col-6 p-0 pl-1">
+                                            <button data-operation="rotateclockwise" class="btn btn-block btn-outline-success btn-sm rounded-pill" type="button" style="width:80px">Rotate<span class="fas fa-redo-alt ml-2" style="padding-left:5px"></span></button>
+                                        </div>
+                                    </div>
+                                    <div class="row mt-2">
+                                        <button data-operation="remove" class="btn btn-outline-danger btn-sm btn-block" type="button"><span class="fa fa-times mr-2" style="padding-right:10px"></span>Remove</button>
+                                    </div>
+                                </div>
+                            </div>
+
+                        </div>
+
+                        <div class="form-group row">
+                            <div class="input-group">
+                                <!--Hidden file input for images-->
+                                <input id="files" type="file" name="files[]" data-button="" multiple="" accept="image/jpeg, image/png, image/gif," style="display:none;">
+                            </div>
+                        </div>
+                    </div>
+                 
+
+
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button onclick="PublishCompliance()" type="button" class="btn btn-danger">Save changes</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+

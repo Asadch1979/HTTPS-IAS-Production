@@ -1,0 +1,65 @@
+﻿@{
+    ViewData["Title"] = "Notification";
+    Layout = "_Layout";
+}
+
+<script type="text/javascript">
+    var g_checklist = [{ 'srNo': 1, 'observation': 'Lacking in account opening form' }, { 'srNo': 2, 'observation': 'Stop Payment not processed' }, { 'srNo': 3, 'observation': 'Loan application document not attached' }, { 'srNo': 4, 'observation': 'CNIC is expired' }, { 'srNo': 5, 'observation': 'Cash Counter is not openned timely' }]
+
+    $('#document').ready(function () {
+       
+        $('#checklistPanel tbody').empty();
+        $.each(g_checklist, function (i, v) {
+            $('#checklistPanel tbody').append('<tr><td>' + v.srNo + '</td><td>' + v.observation + '</td><td><select class="checklistaction form-select form-control" onchange="showObservationArea($(this).val(),\'obs_' + v.srNo + '\');" aria-label="Default select example"><option value="0" id="0" selected>No</option><option value="1" id="1">Yes</option></select></td></tr>');
+            $('#checklistPanel tbody').append('<tr><td id="obs_' + v.srNo + '" class="d-none" colspan="3" style="height:300px; overflow-y:auto;"><div class="page-wrapper box-content"><textarea class="template_box content" name="example"></textarea></div></td></tr>');
+        });
+        $('.template_box').richText({
+            imageUpload: false,
+            fileUpload: false,
+            videoEmbed: false,
+            urls: false
+        });
+       
+    });
+    function showObservationArea(value,id) {
+        if(value==0)
+            $('#' + id).addClass('d-none');
+        else
+            $('#' + id).removeClass('d-none');
+
+    }
+</script>
+
+<div class="col-md-12 mt-3">
+    <h3 style="display: block; color: #be0e43">Checklist</h3>
+    <table id="checklistPanel" class="table table-bordered mb-0 mt-3 bg-white table-striped">
+        <thead style="background-color: #19875478 !important;">
+            <tr>
+                <th class="col-md-2">Sr. No.</th>
+                <th class="col-md-4">Name of Checklist</th>
+                <th class="col-md-3">Yes/No</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td></td>
+                <td></td>
+                <td>
+                    <select class="checklistaction form-select form-control" onchange="showObservationArea($(this).val(),'obs1');" aria-label="Default select example">
+                        <option value="0" id="0" selected>No</option>
+                        <option value="1" id="1">Yes</option>
+                    </select>
+                </td>
+              
+            </tr>
+            <tr>
+                <td id="obs1" class="d-none" colspan="3" style="height:300px; overflow-y:auto;">
+                    <div class="page-wrapper box-content">
+                        <textarea class="template_box content" name="example"></textarea>
+                    </div>
+                </td>
+            </tr>        
+        </tbody>
+    </table>
+</div>
+  

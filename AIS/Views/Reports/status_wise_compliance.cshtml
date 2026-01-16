@@ -1,0 +1,248 @@
+﻿@{
+    var page_id = ViewData["PageId"] as int? ?? 0;
+}
+
+@{
+    ViewData["Title"] = "Status Wise Compliance";
+    Layout = "_Layout";
+}
+
+<script type="text/javascript">
+
+    $(document).ready(function () {
+    })
+    function getrelation(parentEntityId = 0, userEntityId = 0) {
+
+
+        $('#controlingsearch').empty();
+        $('#childposting').empty();
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/getparentrel",
+            type: "POST",
+            data: {
+                'ENTITY_REALTION_ID': $('#RelationshipField option:selected').val()
+            },
+
+
+            cache: false,
+            success: function (data) {
+
+
+                $('#controlingsearch').append('<option id="0" value="0">--Select Controlling/Reporting Office--</option>');
+                $.each(data, function (index, contof) {
+
+                    var selected = '';
+                    if (contof.entitY_ID == parentEntityId)
+                        selected = 'selected="selected"';
+
+                    $('#controlingsearch').append('<option ' + selected + ' value="' + contof.entitY_ID + '" id="' + contof.entitY_REALTION_ID + '">' + contof.description + '</option>')
+                });
+                if (userEntityId != 0)
+                    getplacepost(userEntityId)
+
+                // console.log(data);
+
+            },
+            dataType: "json",
+        });
+
+
+
+    }
+
+    function getplacepost(userEntityId = 0) {
+        $('#childposting').empty();
+
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/getpostplace",
+            type: "POST",
+            data: {
+                'E_R_ID': $('#controlingsearch option:selected').val()
+            },
+
+
+            cache: false,
+            success: function (data) {
+                $('#childposting').append('<option id="0" value="0" selected="selected">--Select Place of Posting--</option>');
+                $.each(data, function (index, gpp) {
+
+                    var selected = '';
+                    if (gpp.entitY_ID == userEntityId)
+                        selected = 'selected="selected"';
+                    $('#childposting').append('<option ' + selected + ' value="' + gpp.entitY_ID + '" id="' + gpp.entitY_ID + '">' + gpp.c_NAME + '</option>')
+                });
+            },
+            dataType: "json",
+        });
+        //  getrelation();
+
+    }
+    function getStatusWiseCompliance() {
+        var aud_id = 0;
+        var R_C = "N";
+        if ($('#controlingsearch').val() != 0) {
+
+            aud_id = $('#controlingsearch').val();
+            R_C = "P";
+        }
+
+        if ($('#childposting').val() != 0) {
+            aud_id = $('#childposting').val();
+            R_C = "C";
+        }
+        var s_d = "";
+        var e_d = "";
+        if ($('#startDateField').val() != "") {
+            var stDate = $('#startDateField').val();
+            var ds = new Date(stDate.split("/").reverse().join("-"));
+            var dd = ds.getDate();
+            var mm = ds.getMonth() + 1;
+            var yy = ds.getFullYear();
+            s_d = ("0" + mm).slice(-2) + "/" + ("0" + dd).slice(-2) + "/" + yy;
+        } else {
+            alert("Select Start Date to proceed");
+            return false;
+        }
+        if ($('#endDateField').val() != "") {
+            var edDate = $('#endDateField').val();
+            var de = new Date(edDate.split("/").reverse().join("-"));
+            var dd = de.getDate();
+            var mm = de.getMonth() + 1;
+            var yy = de.getFullYear();
+            e_d = ("0" + mm).slice(-2) + "/" + ("0" + dd).slice(-2) + "/" + yy;
+        }
+        else {
+            alert("Select End Date to proceed");
+            return false;
+        }
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/get_status_wise_compliance",
+            type: "POST",
+            data: {
+                'AUDITEE_ID': aud_id,
+                'START_DATE': s_d,
+                'END_DATE': e_d,
+                'RELATION_CHECK': R_C
+            },
+            cache: false,
+            success: function (data) {
+                $('#statusWiseComplianceTable tbody').empty();
+                var Complaince_Submitted = 0;
+                var Complaince_received_at_Incharge_implementation = 0;
+                var Referredback_by_Controlling_office = 0;
+                var Complaince_Submitted_To_Incharge_AZ = 0;
+                var Complaince_Referred_back_by_Incharge_Implementation = 0;
+                var Para_settled_by_Incharge_AZ = 0;
+                var Complaince_Referred_back_by_Incharge_AZ = 0;
+                $.each(data, function (i, v) {
+                    Complaince_Submitted += parseInt(v.complaince_Submitted);
+                    Complaince_received_at_Incharge_implementation += parseInt(v.complaince_received_at_Incharge_implementation);
+                    Referredback_by_Controlling_office += parseInt(v.referredback_by_Controlling_office);
+                    Complaince_Submitted_To_Incharge_AZ += parseInt(v.complaince_Submitted_To_Incharge_AZ);
+                    Complaince_Referred_back_by_Incharge_Implementation += parseInt(v.complaince_Referred_back_by_Incharge_Implementation);
+                    Para_settled_by_Incharge_AZ += parseInt(v.para_settled_by_Incharge_AZ);
+                    Complaince_Referred_back_by_Incharge_AZ += parseInt(v.complaince_Referred_back_by_Incharge_AZ);
+                    $('#statusWiseComplianceTable tbody').append('<tr><td>' + ++i + '</td><td>' + v.parent_Office + '</td><td>' + v.entity_name + '</td><td>' + v.complaince_Submitted + '</td><td>' + v.complaince_received_at_Incharge_implementation + '</td><td>' + v.referredback_by_Controlling_office + '</td><td>' + v.complaince_Submitted_To_Incharge_AZ + '</td><td>' + v.complaince_Referred_back_by_Incharge_Implementation + '</td><td>' + v.para_settled_by_Incharge_AZ + '</td><td>' + v.complaince_Referred_back_by_Incharge_AZ + '</td></tr>');
+                });
+
+                $('#statusWiseComplianceTable tbody').append('<tr><td colspan="3">Total</td><td>' + Complaince_Submitted + '</td><td>' + Complaince_received_at_Incharge_implementation + '</td><td>' + Referredback_by_Controlling_office + '</td><td>' + Complaince_Submitted_To_Incharge_AZ + '</td><td>' + Complaince_Referred_back_by_Incharge_Implementation + '</td><td>' + Para_settled_by_Incharge_AZ + '</td><td>' + Complaince_Referred_back_by_Incharge_AZ + '</td></tr>');
+            },
+            dataType: "json",
+        });
+    }
+</script>
+
+<div class="row">
+    <div class="col-md-12 mt-3">
+        <h3 style=" display:block;color: #be0e43">STATUS WISE COMPLIANCE</h3>
+    </div>
+    <div class="row col-md-12 mt-1">
+        <div class="col-md-2">
+            <label>Relationship Type</label>
+        </div>
+        <div class="col-md-10">
+            <select id="RelationshipField" onchange="getrelation();" class="form-control form-select">
+                <option id="0" value="0" selected="selected">--Select Relationship Type--</option>
+
+
+                @{
+                    if (ViewData["Userrelationship"] != null)
+                        {
+                        foreach (var item in (dynamic)(ViewData["Userrelationship"]))
+                            {
+                            <option value="@item.ENTITY_REALTION_ID" id="@item.ENTITY_REALTION_ID">@item.FIELD_NAME</option>
+                            }
+                        }
+                }
+
+
+
+            </select>
+        </div>
+    </div>
+
+    <div class="row col-md-12 mt-1">
+        <div class="col-md-2">
+            <label>Controlling/Reporting Office</label>
+        </div>
+        <div class="col-md-4">
+            <select id="controlingsearch" onchange="getplacepost();" class="form-control form-select">
+                <option id="0" value="0" selected="selected">--Select Controlling/Reporting Office--</option>
+            </select>
+        </div>
+
+
+        <div class="col-md-2">
+            <label>Place of Posting</label>
+        </div>
+        <div class="col-md-4">
+            <select id="childposting" class="form-control form-select">
+                <option id="0" value="0" selected="selected">--Select Place of Posting--</option>
+
+            </select>
+        </div>
+    </div>
+
+
+    <div class="row col-md-12 mt-3">
+        <div class="col-md-2">
+            <label><b>Start Date:</b></label>
+        </div>
+        <div class="col-md-4">
+            <input id="startDateField" type="date" class="form-control" />
+
+        </div>
+        <div class="col-md-2">
+            <label><b>End Date:</b></label>
+        </div>
+        <div class="col-md-4">
+            <input id="endDateField" type="date" class="form-control" />
+        </div>
+    </div>
+
+    <div class="row col-md-12 mt-3">
+        <button onclick="getStatusWiseCompliance();" class="btn btn-danger col-md-3 offset-md-9">Search</button>
+    </div>
+    <div class="row col-md-12 mt-3">
+        <table id="statusWiseComplianceTable" class="table table-hover table-bordered table-hover mt-3 table-striped">
+            <thead style="background-color: #19875478 !important; ">
+                <tr>
+                    <th class="col-md-auto">Sr. No</th>
+                    <th class="col-md-auto">Parent Office</th>
+                    <th class="col-md-auto">Entity Name</th>
+                    <th class="col-md-auto">Compliance Submitted to Controllign Office</th>
+                    <th class="col-md-auto">Compliance Received at Incharge Implementation</th>
+                    <th class="col-md-auto">Reffered Back by Controlling Office</th>
+                    <th class="col-md-auto">Compliance Submitted to Incharge AZ</th>
+                    <th class="col-md-auto">Reffered Back by Incharge Implementation</th>
+                    <th class="col-md-auto">Para Settled by Incahrge AZ</th>
+                    <th class="col-md-auto">Compliance Reffered Back by Incahrge AZ</th>
+                </tr>
+            </thead>
+            <tbody>
+            </tbody>
+
+        </table>
+    </div>
+
+</div>

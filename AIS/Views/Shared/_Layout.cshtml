@@ -1,0 +1,843 @@
+@using System.Linq
+@inject Microsoft.Extensions.Configuration.IConfiguration Configuration
+@{
+    var baseUrl = ViewBag.BaseURL as string ?? Configuration["BaseURL"] ?? Context.Request.PathBase.Value ?? string.Empty;
+
+    var nonce = Context.Items["CSPNonce"]?.ToString();
+
+    var menus = (ViewData["TopMenu"] as IEnumerable<dynamic> ?? Enumerable.Empty<dynamic>()).ToList();
+    var pages = (ViewData["TopMenuPages"] as IEnumerable<dynamic> ?? Enumerable.Empty<dynamic>()).ToList();
+
+    // Visible + valid pages only (exclude special "user info" row if it exists)
+    var visiblePages = pages.Where(p =>
+    {
+        try
+        {
+            if ((int)p.Menu_Id == 1020304050) return false; // special "welcome" row in some builds
+        }
+        catch { }
+
+        try { return (int)p.Hide_Menu == 0; } catch { return true; }
+    })
+    .Where(p =>
+    {
+        try { return !string.IsNullOrWhiteSpace((string)p.Page_Path) && !string.IsNullOrWhiteSpace((string)p.Page_Name); }
+        catch { return false; }
+    })
+    .ToList();
+
+    // Pull user display (fallbacks)
+    // Pull user display (fallbacks)
+    string userDisplay = "";
+    string userPosting = "";
+    string userRole = "";
+
+    try
+    {
+        foreach (var p in pages)
+        {
+            try
+            {
+                if ((int)p.Menu_Id == 1020304050)
+                {
+                    var nm = (string)p.Name;
+                    var pp = (string)p.PPNO;
+
+                    // NEW: capture posting + role (same fields as old layout)
+                    try { userPosting = (string)p.User_Entity_Name; } catch { }
+                    try { userRole = (string)p.User_Role_Name; } catch { }
+
+                    if (!string.IsNullOrWhiteSpace(nm) && !string.IsNullOrWhiteSpace(pp))
+                    {
+                        userDisplay = $"{nm} ({pp})";
+                        break;
+                    }
+                }
+
+            }
+            catch { }
+        }
+    }
+    catch { }
+
+    if (string.IsNullOrWhiteSpace(userDisplay))
+    {
+        try { userDisplay = User?.Identity?.Name ?? ""; } catch { }
+    }
+
+    var year = DateTime.Now.Year;
+}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="base-url" content="@baseUrl" />
+
+    <script nonce="@nonce">
+        window.PAGE_ID = Number(@((int?)ViewData["PageId"] ?? 0)) || 0;
+    </script>
+
+    <title>@ViewData["Title"] - IAS</title>
+
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" />
+    <link rel="stylesheet" href="~/lib/font-awesome/css/all.min.css">
+    <link rel="stylesheet" href="~/lib/rich-text-editor/richtext.min.css">
+    <link rel="stylesheet" href="~/lib/bootstrap-image-uploader/jquery.imagesloader.css" />
+    <link rel="stylesheet" href="~/lib/file-uploader/style.css" />
+    <link rel="stylesheet" href="~/lib/select2/select2.min.css" />
+    <link href="~/lib/datatable/datatables.min.css" rel="stylesheet">
+    <link rel="icon" type="image/x-icon" href="~/Images/ztbllogo.png">
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script type="text/javascript" src="~/lib/print-preview/print_preview.js"></script>
+    <script type="text/javascript" src="~/lib/select2/select2.min.js"></script>
+    <script src="~/lib/draggable/jquery-ui.js"></script>
+    <script src="~/lib/crypto/crypto-js.min.js"></script>
+    <script src="~/lib/datatable/datatables.min.js"></script>
+    <script src="~/lib/datatable/jszip.min.js"></script>
+    <script src="~/lib/datatable/vfs_fonts.js"></script>
+    <script src="~/lib/datatable/pako.min.js"></script>
+
+    <style nonce="@nonce">
+        :root{
+            --ias-bg: #ffffff;
+            --ias-card:#ffffff;
+            --ias-text:#0f172a;
+            --ias-muted:#64748b;
+            --ias-border:rgba(15, 23, 42, .08);
+            --ias-blue:#0b5ed7;
+            --ias-blue-2:#0a58ca;
+
+            --ias-sidenav:#0b214a;
+            --ias-sidenav-2:#081a39;
+            --ias-sidenav-text:rgba(255,255,255,.92);
+            --ias-sidenav-muted:rgba(255,255,255,.65);
+
+            --ias-shadow:0 10px 26px rgba(2, 6, 23, .08);
+            --ias-radius:14px;
+
+            --ias-topbar-h:64px;
+            --ias-sidebar-w:280px;
+            --ias-sidebar-collapsed-w:78px;
+        }
+
+        html, body { height:100%; }
+        body{
+            background: var(--ias-bg);
+        }
+
+        /* APP SHELL */
+        .ias-shell{
+            min-height: 100vh;
+            display: grid;
+            grid-template-columns: var(--ias-sidebar-w) 1fr;
+        }
+
+        /* TOPBAR */
+        .ias-topbar{
+            height: var(--ias-topbar-h);
+            position: sticky;
+            top: 0;
+            z-index: 1030;
+            background: #fff;
+            border-bottom: 1px solid var(--ias-border);
+        }
+
+        .ias-topbar .navbar-brand{
+            display:flex;
+            align-items:center;
+            gap:10px;
+            font-weight: 900;
+            letter-spacing:.2px;
+            font-size: 14px;
+            color: var(--ias-text);
+        }
+
+        .ias-brand-logo{
+            width:36px; height:36px;
+            border-radius: 10px;
+            background:#eef2ff;
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            overflow:hidden;
+            border:1px solid rgba(15,23,42,.06);
+        }
+        .ias-brand-logo img{ width:70%; height:70%; object-fit:contain; }
+
+        .ias-topbar-actions{
+            display:flex;
+            align-items:center;
+            gap:10px;
+        }
+
+        .ias-search{
+            width: min(520px, 44vw);
+            border:1px solid var(--ias-border);
+            border-radius: 999px;
+            height: 38px;
+            padding: 0 14px;
+            font-size: 12px;
+            outline: none;
+            background:#fff;
+        }
+        .ias-search:focus{
+            border-color: rgba(11,94,215,.35);
+            box-shadow: 0 0 0 3px rgba(11,94,215,.12);
+        }
+
+        .ias-icon-btn{
+            width:38px;
+            height:38px;
+            border-radius: 12px;
+            border:1px solid var(--ias-border);
+            background:#fff;
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            cursor:pointer;
+        }
+
+        /* SIDEBAR */
+        .ias-sidebar{
+            position: sticky;
+            top: 0;
+            height: 100vh;
+            background: linear-gradient(180deg, var(--ias-sidenav), var(--ias-sidenav-2));
+            color: var(--ias-sidenav-text);
+            overflow: hidden;
+            border-right: 1px solid rgba(255,255,255,.08);
+        }
+
+        .ias-sidebar__inner{
+            height: 100%;
+            display:flex;
+            flex-direction:column;
+        }
+
+        .ias-sidebar__head{
+            height: var(--ias-topbar-h);
+            display:flex;
+            align-items:center;
+            justify-content:space-between;
+            padding: 0 12px;
+            border-bottom: 1px solid rgba(255,255,255,.10);
+        }
+
+        .ias-sidebar__title{
+            display:flex;
+            align-items:center;
+            gap:10px;
+            font-weight: 900;
+            font-size: 13px;
+            letter-spacing:.2px;
+        }
+        .ias-dot{
+            width:10px; height:10px; border-radius:50%;
+            background: linear-gradient(90deg,#38bdf8,#818cf8);
+            box-shadow: 0 0 0 4px rgba(56,189,248,.18);
+        }
+
+        .ias-collapse-btn{
+            width:38px;
+            height:38px;
+            border-radius: 12px;
+            border:1px solid rgba(255,255,255,.16);
+            background: rgba(255,255,255,.08);
+            color: var(--ias-sidenav-text);
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            cursor:pointer;
+        }
+
+        .ias-sidebar__searchwrap{
+            padding: 10px 12px 8px;
+        }
+        .ias-sidebar__search{
+            width:100%;
+            height: 36px;
+            border-radius: 10px;
+            border: 1px solid rgba(255,255,255,.14);
+            background: rgba(255,255,255,.08);
+            color: var(--ias-sidenav-text);
+            padding: 0 12px;
+            outline:none;
+            font-size: 12px;
+        }
+        .ias-sidebar__search::placeholder{ color: rgba(255,255,255,.55); }
+
+        .ias-sidebar__body{
+            padding: 6px 10px 12px;
+            overflow: auto;
+            flex: 1 1 auto;
+        }
+        .ias-sidebar__body::-webkit-scrollbar{ width: 10px; }
+        .ias-sidebar__body::-webkit-scrollbar-thumb{ background: rgba(255,255,255,.18); border-radius: 999px; }
+        .ias-sidebar__body::-webkit-scrollbar-track{ background: transparent; }
+
+        .ias-nav-group{ margin: 10px 0 14px; }
+        .ias-nav-title{
+            padding: 8px 10px 6px;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: .6px;
+            color: var(--ias-sidenav-muted);
+            font-weight: 800;
+        }
+        .ias-subtitle{
+            padding: 8px 10px 6px;
+            font-size: 12px;
+            color: rgba(255,255,255,.78);
+            font-weight: 800;
+        }
+
+        .ias-nav-link{
+            display:flex;
+            align-items:center;
+            gap:10px;
+            padding: 10px 10px;
+            border-radius: 10px;
+            text-decoration:none;
+            color: var(--ias-sidenav-text);
+            font-size: 13px;
+            line-height: 1.2;
+            transition: background .15s ease, transform .05s ease;
+        }
+        .ias-nav-link:hover{ background: rgba(255,255,255,.10); }
+        
+        /* Accordion-style sidebar (menus expand to show pages) */
+        .ias-acc-group{ margin: 6px 0 10px; }
+        .ias-acc-btn{
+            width:100%;
+            display:flex;
+            align-items:center;
+            gap:10px;
+            padding: 10px 10px;
+            border-radius: 12px;
+            border: 1px solid transparent;
+            background: transparent;
+            color: var(--ias-sidenav-text);
+            font-size: 13px;
+            font-weight: 800;
+            cursor: pointer;
+            text-align:left;
+            transition: background .15s ease, border-color .15s ease;
+        }
+        .ias-acc-btn:hover{
+            background: rgba(255,255,255,.10);
+            border-color: rgba(255,255,255,.08);
+        }
+        .ias-acc-text{ flex: 1 1 auto; min-width:0; }
+        .ias-acc-icon{
+            width: 22px;
+            height: 22px;
+            border-radius: 8px;
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            background: rgba(255,255,255,.10);
+            color: rgba(255,255,255,.85);
+            font-weight: 900;
+            flex: 0 0 auto;
+        }
+        .ias-acc-panel{
+            padding: 4px 0 8px 10px;
+            margin-left: 8px;
+            border-left: 1px dashed rgba(255,255,255,.18);
+        }
+        .ias-page-link{
+            display:flex;
+            align-items:center;
+            gap:10px;
+            padding: 9px 10px;
+            border-radius: 10px;
+            text-decoration:none;
+            color: rgba(255,255,255,.92);
+            font-size: 12.5px;
+            line-height: 1.2;
+            transition: background .15s ease;
+        }
+        .ias-page-link:hover{ background: rgba(255,255,255,.10); }
+        .ias-page-link.active{
+            background: rgba(56,189,248,.12);
+            border: 1px solid rgba(56,189,248,.18);
+        }
+
+        /* When sidebar is collapsed, show only bullets (no text, no plus icon) */
+        body.ias-sidebar-collapsed .ias-acc-text{ display:none; }
+        body.ias-sidebar-collapsed .ias-acc-icon{ display:none; }
+        body.ias-sidebar-collapsed .ias-acc-panel{ display:none !important; }
+.ias-nav-link:active{ transform: translateY(1px); }
+
+        .ias-page-link.active{
+            background: rgba(56,189,248,.16);
+            border: 1px solid rgba(56,189,248,.18);
+        }
+
+        .ias-nav-bullet{
+            width:8px;
+            height:8px;
+            border-radius:50%;
+            background: rgba(255,255,255,.35);
+            flex: 0 0 auto;
+        }
+
+        /* CONTENT */
+        .ias-content{
+            display:flex;
+            flex-direction:column;
+            min-width:0;
+        }
+
+        .ias-main{
+            padding: 16px 16px 26px;
+        }
+
+        .ias-footer{
+            border-top: 1px solid var(--ias-border);
+            background:#fff;
+            color: var(--ias-muted);
+            font-size: 12px;
+            padding: 12px 16px;
+            margin-top: auto;
+        }
+
+        /* Collapsed sidebar (desktop) */
+        body.ias-sidebar-collapsed .ias-shell{
+            grid-template-columns: var(--ias-sidebar-collapsed-w) 1fr;
+        }
+        body.ias-sidebar-collapsed .ias-sidebar__searchwrap,
+        body.ias-sidebar-collapsed .ias-nav-title,
+        body.ias-sidebar-collapsed .ias-subtitle,
+        body.ias-sidebar-collapsed .ias-nav-link span:last-child{
+            display:none !important;
+        }
+        body.ias-sidebar-collapsed .ias-nav-link{
+            justify-content:center;
+            padding: 12px 8px;
+        }
+
+        /* Mobile: sidebar becomes offcanvas */
+        @@media (max-width: 991.98px){
+            .ias-shell{ grid-template-columns: 1fr; }
+            .ias-sidebar{
+                position: fixed;
+                left: 0;
+                top: 0;
+                width: var(--ias-sidebar-w);
+                transform: translateX(-100%);
+                transition: transform .2s ease;
+                z-index: 1040;
+            }
+            body.ias-sidebar-open .ias-sidebar{
+                transform: translateX(0);
+            }
+            .ias-backdrop{
+                display:none;
+                position: fixed;
+                inset: 0;
+                background: rgba(2,6,23,.45);
+                z-index: 1035;
+            }
+            body.ias-sidebar-open .ias-backdrop{ display:block; }
+        }
+    </style>
+</head>
+
+<body data-page-id="@((int?)ViewData["PageId"] ?? 0)">
+    <div class="ias-backdrop" id="iasSidebarBackdrop" aria-hidden="true"></div>
+
+    <div class="ias-shell">
+
+        <!-- SIDEBAR -->
+        <aside class="ias-sidebar" id="iasSidebar">
+            <div class="ias-sidebar__inner">
+                <div class="ias-sidebar__head">
+                    <div class="ias-sidebar__title">
+                        <span class="ias-dot"></span>
+                        <span>IAS</span>
+                    </div>
+                    <button class="ias-collapse-btn" type="button" id="iasSidebarCollapseBtn" title="Collapse">
+                        <i class="fa-solid fa-angles-left" id="iasSidebarCollapseIcon"></i>
+                    </button>
+                </div>
+
+                <div class="ias-sidebar__searchwrap">
+                    <input id="iasMenuSearch" class="ias-sidebar__search" type="search" placeholder="Search menu..." autocomplete="off" />
+                </div>
+
+                <div class="ias-sidebar__body" id="iasSideMenu">
+                    @if (menus.Count == 0 || visiblePages.Count == 0)
+                    {
+                        <div class="p-3" style="color:rgba(255,255,255,.75); font-size:12px;">
+                            Menu is not available for this user.
+                        </div>
+                    }
+                    else
+                    {
+                        foreach (var m in menus)
+                        {
+                            int mId = 0;
+                            string mName = "Menu";
+                            try { mId = (int)m.Menu_Id; } catch { }
+                            try { mName = (string)m.Menu_Name; } catch { }
+
+                            var mPages = visiblePages.Where(p =>
+                            {
+                                try { return (int)p.Menu_Id == mId; } catch { return false; }
+                            }).ToList();
+
+                            if (mPages.Count == 0) { continue; }
+
+                            var hasSub = mPages.Any(p =>
+                            {
+                                try { return !string.IsNullOrWhiteSpace((string)p.Sub_Menu); } catch { return false; }
+                            });
+
+                            <div class="ias-acc-group" data-group data-menu-id="@mId">
+                                <button type="button"
+                                        class="ias-acc-btn"
+                                        data-menu-btn
+                                        data-menu-id="@mId"
+                                        data-menu-name="@mName"
+                                        aria-expanded="false"
+                                        aria-controls="iasMenuPanel_@mId"
+                                        title="@mName">
+                                    <span class="ias-nav-bullet"></span>
+                                    <span class="ias-acc-text">@mName</span>
+                                    <span class="ias-acc-icon" aria-hidden="true">+</span>
+                                </button>
+
+                                <div id="iasMenuPanel_@mId" class="ias-acc-panel" hidden>
+                                    @if (hasSub)
+                                    {
+                                        var subGroups = mPages
+                                            .GroupBy(p =>
+                                            {
+                                                try { return (string)p.Sub_Menu_Name ?? (string)p.Sub_Menu; } catch { return "Other"; }
+                                            })
+                                            .ToList();
+
+                                        foreach (var sg in subGroups)
+                                        {
+                                            <div class="ias-subtitle" data-subtitle>@sg.Key</div>
+                                            foreach (var p in sg)
+                                            {
+                                                string pageName = "";
+                                                string pagePath = "";
+                                                try { pageName = (string)p.Page_Name; } catch { }
+                                                try { pagePath = (string)p.Page_Path; } catch { }
+
+                                                if (string.IsNullOrWhiteSpace(pageName) || string.IsNullOrWhiteSpace(pagePath)) { continue; }
+
+                                                <a class="ias-page-link" data-link href="~/@pagePath" title="@pageName">
+                                                    <span class="ias-nav-bullet"></span>
+                                                    <span>@pageName</span>
+                                                </a>
+                                            }
+                                        }
+                                    }
+                                    else
+                                    {
+                                        foreach (var p in mPages)
+                                        {
+                                            string pageName = "";
+                                            string pagePath = "";
+                                            try { pageName = (string)p.Page_Name; } catch { }
+                                            try { pagePath = (string)p.Page_Path; } catch { }
+
+                                            if (string.IsNullOrWhiteSpace(pageName) || string.IsNullOrWhiteSpace(pagePath)) { continue; }
+
+                                            <a class="ias-page-link" data-link href="~/@pagePath" title="@pageName">
+                                                <span class="ias-nav-bullet"></span>
+                                                <span>@pageName</span>
+                                            </a>
+                                        }
+                                    }
+                                </div>
+                            </div>
+                        }
+                    }
+                </div>
+            </div>
+        </aside>
+
+        <!-- CONTENT -->
+        <div class="ias-content">
+
+            <!-- TOPBAR (keep id navBarTopMenu for compatibility with existing JS) -->
+            <header class="ias-topbar">
+                <nav id="navBarTopMenu" class="navbar navbar-expand-lg px-3 h-100">
+                    <button class="ias-icon-btn d-lg-none me-2" type="button" id="iasSidebarToggleBtn" title="Menu">
+                        <i class="fa-solid fa-bars"></i>
+                    </button>
+
+                    <a class="navbar-brand" href="~/Home/Index">
+                        <span class="ias-brand-logo"><img src="~/Images/ztbllogo.png" alt="ZTBL" /></span>
+                        <span>Internal Audit System</span>
+                    </a>
+
+                    <div class="ms-auto d-flex align-items-center gap-2">
+                        <input class="ias-search d-none d-md-block" type="search" placeholder="Search (optional)" aria-label="Search" />
+
+                        <div class="dropdown">
+                            <a class="nav-link d-flex align-items-center gap-2" href="#" id="navImg" role="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                <span class="d-none d-md-inline">
+                                    <small class="text-muted">Welcome:</small>
+                                    <span id="avatarEmpName" class="text-start">
+                                        <small class="d-block">@userDisplay</small>
+
+                                        @if (!string.IsNullOrWhiteSpace(userPosting))
+                                        {
+                                            <small class="text-muted d-block" style="line-height:1.1;">@userPosting</small>
+                                        }
+
+                                        @if (!string.IsNullOrWhiteSpace(userRole))
+                                        {
+                                            <small class="text-muted d-block" style="line-height:1.1;">@userRole</small>
+                                        }
+                                    </span>
+
+                                </span>
+                                <span class="ias-icon-btn" aria-hidden="true"><i class="fa-regular fa-user"></i></span>
+                            </a>
+                            <div class="dropdown-menu dropdown-menu-end" aria-labelledby="navImg">
+                                <a class="dropdown-item" href="~/Home/Change_Password">Change Password</a>
+                                <a id="logout_action_url" class="dropdown-item" href="~/Login/Logout">Logout</a>
+                            </div>
+                        </div>
+                    </div>
+                </nav>
+            </header>
+
+            <div class="ias-main">
+                @RenderBody()
+            </div>
+
+            <footer class="ias-footer">
+                <div class="text-center">
+                    &copy; INTERNAL AUDIT (Developed By A.A.C)
+                    <span class="ms-2"><i class="footer-version">Version No: 13.01.2026</i></span>
+                </div>
+            </footer>
+        </div>
+    </div>
+
+    <!-- Loading overlay (kept for existing JS) -->
+    <div id="wait" class="loading-overlay" style="display:none;">
+        <div class="loading-overlay__inner">
+            <div class="spinner-border text-primary" role="status" aria-hidden="true"></div>
+            <div class="ms-2">Please wait...</div>
+        </div>
+    </div>
+
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/js/pageContext.js" asp-append-version="true"></script>
+    <script src="~/js/navigation.js" asp-append-version="true"></script>
+    <script src="~/js/idleSessionHandler.js"></script>
+    <script src="~/js/common-validation.js" asp-append-version="true"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+    <script src="~/js/referenceSection.js" asp-append-version="true"></script>
+    <script src="~/js/circular.js" asp-append-version="true"></script>
+    <script src="~/js/fieldauditparaSection.js" asp-append-version="true"></script>
+    <script src="~/js/layout.js" asp-append-version="true"></script>
+    <script type="text/javascript" src="~/lib/rich-text-editor/jquery.richtext.js"></script>
+    <script type="text/javascript" src="~/lib/word-export/FileSaver.js"></script>
+    <script type="text/javascript" src="~/lib/word-export/jquery.wordexport.js"></script>
+    <script type="text/javascript" src="~/lib/canvasjs/canvasjs.min.js"></script>
+    <script src="~/lib/bootstrap-image-uploader/jquery.imagesloader-1.0.1.js" type="text/javascript"></script>
+    <script src="~/lib/file-uploader/script.js" asp-append-version="true" type="text/javascript"></script>
+
+    <script nonce="@nonce">
+        (function(){
+            // Persist collapsed state (desktop)
+            try{
+                var collapsed = localStorage.getItem('ias.sidebar.collapsed') === '1';
+                if (collapsed) document.body.classList.add('ias-sidebar-collapsed');
+            }catch(e){}
+
+            // Collapse toggle (desktop)
+            var collapseBtn = document.getElementById('iasSidebarCollapseBtn');
+            if (collapseBtn){
+                collapseBtn.addEventListener('click', function(){
+                    document.body.classList.toggle('ias-sidebar-collapsed');
+                    try{
+                        localStorage.setItem('ias.sidebar.collapsed', document.body.classList.contains('ias-sidebar-collapsed') ? '1' : '0');
+                    }catch(e){}
+                });
+            }
+
+            // Mobile open/close
+            var toggleBtn = document.getElementById('iasSidebarToggleBtn');
+            var backdrop = document.getElementById('iasSidebarBackdrop');
+            function closeMobile(){
+                document.body.classList.remove('ias-sidebar-open');
+            }
+            function openMobile(){
+                document.body.classList.add('ias-sidebar-open');
+            }
+
+            if (toggleBtn){
+                toggleBtn.addEventListener('click', function(){
+                    if (document.body.classList.contains('ias-sidebar-open')) closeMobile();
+                    else openMobile();
+                });
+            }
+            if (backdrop){
+                backdrop.addEventListener('click', closeMobile);
+            }
+
+            // Sidebar accordion + search + Home quick links hook
+            var sideMenu = document.getElementById('iasSideMenu');
+            var search = document.getElementById('iasMenuSearch');
+
+            var openMenus = new Set();
+            try{
+                var saved = (localStorage.getItem('ias.sidebar.openMenus') || '').split(',').map(function(x){ return x.trim(); }).filter(Boolean);
+                saved.forEach(function(id){ openMenus.add(id); });
+            }catch(e){}
+
+            function getMenuBtn(menuId){
+                return sideMenu ? sideMenu.querySelector('[data-menu-btn][data-menu-id="' + menuId + '"]') : null;
+            }
+            function getMenuPanel(menuId){
+                return document.getElementById('iasMenuPanel_' + menuId);
+            }
+            function setMenuOpen(menuId, open){
+                var btn = getMenuBtn(menuId);
+                var panel = getMenuPanel(menuId);
+                if (!btn || !panel) return;
+
+                var icon = btn.querySelector('.ias-acc-icon');
+                if (open){
+                    panel.removeAttribute('hidden');
+                    btn.setAttribute('aria-expanded', 'true');
+                    if (icon) icon.textContent = '−';
+                    openMenus.add(String(menuId));
+                }else{
+                    panel.setAttribute('hidden', 'hidden');
+                    btn.setAttribute('aria-expanded', 'false');
+                    if (icon) icon.textContent = '+';
+                    openMenus.delete(String(menuId));
+                }
+
+                try{
+                    localStorage.setItem('ias.sidebar.openMenus', Array.from(openMenus).join(','));
+                }catch(e){}
+            }
+            function toggleMenu(menuId){
+                var panel = getMenuPanel(menuId);
+                if (!panel) return;
+                var isOpen = !panel.hasAttribute('hidden');
+                setMenuOpen(menuId, !isOpen);
+            }
+
+            // Restore open menus on load (only if sidebar isn't collapsed)
+            if (sideMenu && !document.body.classList.contains('ias-sidebar-collapsed')){
+                openMenus.forEach(function(id){ setMenuOpen(id, true); });
+            }
+
+            // Attach handlers to menu buttons
+            if (sideMenu){
+                sideMenu.querySelectorAll('[data-menu-btn]').forEach(function(btn){
+                    btn.addEventListener('click', function(){
+                        var menuId = btn.getAttribute('data-menu-id');
+                        var menuName = btn.getAttribute('data-menu-name') || (btn.textContent || '').trim();
+                        // If sidebar is collapsed, expand it first for better UX
+                        if (document.body.classList.contains('ias-sidebar-collapsed')){
+                            document.body.classList.remove('ias-sidebar-collapsed');
+                            try{ localStorage.setItem('ias.sidebar.collapsed','0'); }catch(e){}
+                            if (typeof updateCollapseIcon === 'function') updateCollapseIcon();
+                        }
+                        toggleMenu(menuId);
+
+                        // Home: refresh quick links tiles for this menu
+                        if (window.IASHomeSetQuickLinks){
+                            try{ window.IASHomeSetQuickLinks(parseInt(menuId,10) || 0, menuName); }catch(e){}
+                        }
+                    });
+                });
+            }
+
+            // Search filters pages and auto-opens matching menus
+            function applySearch(){
+                if (!search || !sideMenu) return;
+                var q = (search.value || '').trim().toLowerCase();
+
+                var groups = sideMenu.querySelectorAll('[data-group]');
+                groups.forEach(function(g){
+                    var btn = g.querySelector('[data-menu-btn]');
+                    var panel = g.querySelector('.ias-acc-panel');
+                    var links = g.querySelectorAll('[data-link]');
+                    var subtitles = g.querySelectorAll('[data-subtitle]');
+                    if (!btn || !panel) return;
+
+                    // reset visibility
+                    links.forEach(function(a){ a.style.display = ''; });
+                    subtitles.forEach(function(s){ s.style.display = ''; });
+
+                    if (!q){
+                        g.style.display = '';
+                        // restore saved open state
+                        var id = btn.getAttribute('data-menu-id');
+                        setMenuOpen(id, openMenus.has(String(id)));
+                        return;
+                    }
+
+                    var menuName = (btn.getAttribute('data-menu-name') || btn.textContent || '').toLowerCase();
+                    var menuMatch = menuName.includes(q);
+
+                    var anyVisible = false;
+                    links.forEach(function(a){
+                        var t = (a.textContent || '').toLowerCase();
+                        var show = menuMatch || t.includes(q);
+                        a.style.display = show ? '' : 'none';
+                        if (show) anyVisible = true;
+                    });
+
+                    // Hide subtitle blocks if all subsequent links are hidden (simple pass)
+                    subtitles.forEach(function(sub){
+                        // find links until next subtitle
+                        var node = sub.nextElementSibling;
+                        var hasVisible = false;
+                        while (node && !(node.hasAttribute && node.hasAttribute('data-subtitle'))){
+                            if (node.matches && node.matches('[data-link]') && node.style.display !== 'none'){
+                                hasVisible = true;
+                                break;
+                            }
+                            node = node.nextElementSibling;
+                        }
+                        sub.style.display = hasVisible ? '' : 'none';
+                    });
+
+                    g.style.display = anyVisible ? '' : 'none';
+                    if (anyVisible){
+                        var id = btn.getAttribute('data-menu-id');
+                        setMenuOpen(id, true);
+                    }
+                });
+            }
+
+            if (search && sideMenu){
+                search.addEventListener('input', applySearch);
+            }
+// Active link highlight
+            try{
+                var path = window.location.pathname.toLowerCase();
+                document.querySelectorAll('.ias-page-link').forEach(function(a){
+                    var href = (a.getAttribute('href') || '').toLowerCase();
+                    // href may be ~/path; browser resolves to /path in rendered HTML, so compare by endsWith
+                    if (href && path && (path === href || path.endsWith(href.replace('~','')))){
+                        a.classList.add('active');
+                    }
+                });
+            }catch(e){}
+        })();
+    </script>
+
+    @RenderSection("Scripts", required: false)
+</body>
+</html>

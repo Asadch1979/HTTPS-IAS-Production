@@ -1,0 +1,71 @@
+﻿@{
+    ViewData["Title"] = "Submission for Review";
+    Layout = "_Layout";
+}
+
+<script type="text/javascript">
+    $('#document').ready(function () {
+        $('#sidebar_policy').hide();
+    });
+</script>
+<div class="row text-center" style="margin-top:10px;">
+   <h3>Submission for Review</h3>
+</div>
+<div>
+    <div class="row" style="margin-top:10px;">
+        <table class="table table-bordered table mb-0 mt-3 bg-white table-hover table-striped" id="Plan Review">
+            <thead>
+                <tr>
+                    <th>Sr No</th>
+                    <th>Operation Zone</th>
+                    <th>Branch</th>
+                    <th>Size</th>
+                    <th>Risk</th>
+                    <th>Frequency</th>
+                    <th>No. of Days</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @{
+                    if (ViewData["TentativePlansList"] != null)
+                    {
+                        int sr = 1;
+
+                        foreach (var item in (dynamic)(ViewData["TentativePlansList"]))
+                        {
+                            <tr>
+                                <td>@sr</td>
+                                <td>@item.ZONE_NAME</td>
+                                <td>@item.BR_NAME</td>
+                                <td>@item.BR_SIZE</td>
+                                <td>@item.RISK</td>
+                                <td>@item.FREQUENCY_DESCRIPTION</td>
+                                <td>@item.NO_OF_DAYS</td>
+                                <td><input type="checkbox" /> </td>
+                            </tr>
+                            sr = sr + 1;
+                        }
+
+                    }
+                }
+            </tbody>
+        </table>
+        <div class="row w-100 mt-3">
+            <h4>Audit Cluster Head Remarks</h4>
+            <select id="deptSelectionBox" class="form-select form-control" aria-label="Default select example">
+                <option value="0" selected>Remarks</option>
+                <option value="1">1. Recommended for Approval</option>
+                <option value="2">2. Refer back for changes in the above marked plans</option>
+            </select>
+        </div>
+        <div class="row w-100 col-md-12 mt-3">
+            <div class="col-md-6 mt-5">
+                <button onclick="window.location.href = './AnnexureB_3';" class="btn-primary">Submit</button>
+            </div>
+            <div class="col-md-6 mt-5">
+                <button onclick="window.location.href = './AnnexureB_3';" class="btn-primary">Refer Back</button>
+            </div>
+        </div>
+    </div>
+</div>

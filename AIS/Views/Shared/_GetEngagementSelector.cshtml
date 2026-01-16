@@ -1,0 +1,53 @@
+@model AIS.Models.FieldAuditReport.FieldAuditEngagementSelectorViewModel
+
+@{
+    var returnUrl = $"{Context.Request.Path}{Context.Request.QueryString}";
+}
+
+<div class="card mb-4">
+    <div class="card-body">
+        <div class="row g-3 align-items-center">
+            <div class="col-md-2">
+                <label class="form-label mb-0"><strong>Engagement:</strong></label>
+            </div>
+            <div class="col-md-7">
+                @if (Model?.HasActiveEngagement ?? false)
+                {
+                    <input class="form-control" value="@Model.ActiveEngagementLabel" disabled />
+                }
+                else
+                {
+                    <form method="post" asp-action="SetActiveEngagement" id="frptEngagementForm">
+                        <input type="hidden" name="returnUrl" value="@returnUrl" />
+                        <select name="engagementId" class="form-select" onchange="if (this.value && this.value !== '0') { this.form.submit(); }">
+                            <option value="0">--Select Engagement--</option>
+                            @if (Model?.Options != null)
+                            {
+                                foreach (var option in Model.Options)
+                                {
+                                    <option value="@option.EngagementId">@option.EngagementId | @option.EntityName | @option.AuditPeriod</option>
+                                }
+                            }
+                        </select>
+                    </form>
+                }
+            </div>
+            <div class="col-md-3 text-md-end">
+                @if (Model?.HasActiveEngagement ?? false)
+                {
+                    <form method="post" asp-action="ClearEngagement" class="d-inline">
+                        <input type="hidden" name="returnUrl" value="@returnUrl" />
+                        <button type="submit" class="btn btn-outline-danger"
+                                onclick="return confirm('Changing the engagement will clear the current Field Audit Report context. Do you want to continue?');">
+                            Change Engagement
+                        </button>
+                    </form>
+                }
+            </div>
+        </div>
+        @if (Model?.HasActiveEngagement == true && Model.HasExistingData)
+        {
+            <small class="text-muted d-block mt-2">Engagement selection is locked because report data already exists.</small>
+        }
+    </div>
+</div>

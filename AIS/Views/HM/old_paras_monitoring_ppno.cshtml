@@ -1,0 +1,160 @@
+﻿@{
+    var page_id = ViewData["PageId"] as int? ?? 0;
+}
+
+@{
+    ViewData["Title"] = "Old Outstanding Paras Monitoring (PPNO Wise)";
+    Layout = "_Layout";
+}
+
+<script type="text/javascript">
+
+
+    function getEntityObservation() {
+        destroyDatatable('manageObsPanel');
+        $('#manageObsPanel tbody').empty();
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/get_old_paras_for_monitoring_ppno",
+            type: "POST",
+            data: {
+                'ppno': $('#ppnoSearchField').val(),
+            },
+            cache: false,
+            success: function (data) {
+                $.each(data, function (i, v) {
+                    $('#manageObsPanel tbody').append(
+                        '<tr id="assignedObRow_' + (v.oldParaId ?? i) + '"><td>' +
+                        (i + 1) + '</td><td>' + v.entityName + '</td><td>' + v.auditPeriod + '</td><td>' + v.annex + '</td><td>' + v.paraNo + '</td><td>' + v.gistOfParas + '</td><td>' + v.amount + '</td><td><a href="#" class="text-danger text-center" style="cursor:pointer;" onclick="event.preventDefault();viewParaText(\'' + v.comId + '\',\'' + v.ind + '\')"> View Para</a></td></tr>'
+                    );
+                });
+                initializeDataTable('manageObsPanel');
+            },
+            dataType: "json",
+        });
+    }
+
+    function getemployeename() {
+        var whereCheck = 0;
+        var entity_id = 0;
+        if ($('#ppnoSearchField').val() == "0") {
+            alert('Please Enter PPNO:');
+            return;
+        }
+        else {
+            $('#userListTable tbody').empty();
+            $.ajax({
+                url: g_asiBaseURL + "/ApiCalls/get_user_name",
+                type: "POST",
+                data: {
+                    'PPNUMBER': $('#ppnoSearchField').val(),
+
+                },
+                cache: false,
+                success: function (data) {
+                    $('#employeename').val(data.Message);
+                },
+                dataType: "json",
+            });
+
+            getEntityObservation();
+        }
+    }
+
+    function viewParaText(comid, ind) {
+        $('#viewMemoModel').modal('show');
+        $('#viewMemo_memo').html("");
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/getallparatext",
+            type: "GET",
+            data: { comId: comid },
+            cache: false,
+            dataType: "json",
+            success: function (data) {
+                var para = null;
+                if (Array.isArray(data)) {
+                    para = data.find(function (p) {
+                        return (p.IND ?? p.ind) === ind;
+                    });
+                }
+                var text = para ? (para.ParaText || para.paraText || "") : "";
+                $('#viewMemo_memo').html(text);
+            }
+        });
+    }
+
+
+</script>
+<h3 style=" display:block;color: #be0e43" class="mt-3">All Outstanding Paras Of The Employee</h3>
+<div class="row col-md-12 mt-3">
+    <div class="col-md-2">
+        <label><b>PPNO:</b> <span class="text-muted small">Please enter only numbers</span></label>
+    </div>
+
+    <div class="col-md-9">
+        <input class="form-control" id="ppnoSearchField" type="text" placeholder="Enter P.P.Number" inputmode="decimal" pattern="[0-9.,]*" oninput="this.value = this.value.replace(/[^0-9.,]/g, '');">
+    </div>
+    <div class="col-md-1">
+        <button id="findButton" onclick="getemployeename();" class="btn btn-danger w-100">Find</button>
+    </div>
+</div>
+<div class="row col-md-12 mt-2">
+    <div class="col-md-2">
+        <label><b>Employee Name:</b></label>
+    </div>
+    <div class="col-md-9">
+        <input id="employeename" class="form-control w-100" type="text" disabled>
+    </div>
+</div>
+<div class="mt-4 row col-md-12">
+    <table id="manageObsPanel" class="table table-hover table-bordered table-hover mt-3 table-striped">
+        <thead style="background-color: #19875478 !important; ">
+            <tr>
+                <th class="col-md-auto">Sr. No.</th>
+                <th class="col-md-auto">Entity Name</th>
+                <th class="col-md-auto">Audit Year</th>
+                <th class="col-md-auto">Annexure</th>
+                <th class="col-md-auto">Para Number</th>
+                <th class="col-md-auto">Heading</th>
+                <th class="col-md-auto">Amount Involved</th>
+                <th class="col-md-auto text-center"></th>
+
+            </tr>
+        </thead>
+        <tbody>
+        </tbody>
+    </table>
+</div>
+
+
+
+
+<div id="viewMemoModel" class="modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-xl" role="document" style="min-width:90%;">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">Para Text</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form>
+
+
+                    <div class="form-group">
+                        <div id="viewMemo_memo" style="height: auto; overflow-y: auto;" class="form-control"></div>
+                    </div>
+
+
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+

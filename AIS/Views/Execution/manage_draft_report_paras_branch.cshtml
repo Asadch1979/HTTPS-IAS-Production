@@ -1,0 +1,570 @@
+﻿@{
+    var page_id = ViewData["PageId"] as int? ?? 0;
+}
+
+@{
+    ViewData["Title"] = "Manage Draft Report Paras FAD";
+    Layout = "_Layout";
+}
+<style type="text/css">
+    .evidence-link {
+        display: flex;
+        align-items: center;
+        margin-bottom: 10px;
+    }
+
+    .evidence-icon {
+        margin-right: 10px;
+    }
+</style>
+
+<script type="text/javascript">
+    var g_obsId = 0;
+    var g_newStatusId = 0;
+    var g_riskId = 0;
+    var g_obsList = [];
+    var respSection = null;
+    $(document).ready(function () {
+        $('#entitySelectField').select2();
+        var entName = $('#manageObsPanel tbody .entity_name_field:first').text();
+        $('#entityNameField').val(entName);
+        var periodName = $('#manageObsPanel tbody .period_name_field:first').text();
+        $('#auditPeriodNameField').val(periodName);
+
+        respSection = initResponsibilitySection({
+            tableSelector: '#update_listofRespPersons',
+            changesTableSelector: '#c_update_listofRespPersons',
+            modalSelector: '#ResponsiblePPModel',
+            status: 2,
+            indicator: 'O',
+            directSaveMode: false,
+            afterSave: function () {
+                respSection.reload();
+                ViewObservation(g_obsId);
+            }
+        });
+
+
+    });
+    function reloadLocation() {
+        getEntityObservation();
+    }
+    function ViewObservation(id) {
+        $('#viewMemoModel').modal('show');
+        $('#viewMemo_panel').html("");
+        var comId = 0; var oldParaId = id;
+        $.each(g_obsList, function (i, v) {
+            if (v.obS_ID == id) { comId = v.coM_ID || 0; oldParaId = v.olD_PARA_ID || id; }
+        });
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/get_observations_draft_text",
+            type: "POST",
+            data: {
+                'OBS_ID': id
+            },
+            cache: false,
+            success: function (data) {
+                $('#viewMemo_panel').html(data[0].obS_TEXT);
+                respSection.updateContext({ newParaId: id, comId: comId, oldParaId: oldParaId, indicator: 'O', engId: 0 });
+                respSection.reload();
+                initReferenceSection(id, true, '#viewMemoModel #referenceSection');
+            },
+            dataType: "json",
+        });
+    }
+    function ViewObservationResponse(id) {
+        $('#viewMemoResponseModel').modal('show');
+        $('#viewMemoRes_panel').html("");
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/get_observations_draft_auditee_reply",
+            type: "POST",
+            data: {
+                'OBS_ID': id
+            },
+            cache: false,
+            success: function (data) {
+                $('#viewMemoRes_panel').html(data[0].obS_REPLY);
+                ViewAuditeeAttachedEvidences(id);
+            },
+            dataType: "json",
+        });
+    }
+    function ViewAuditeeAttachedEvidences(id) {
+        $('#viewMemoResponseModel').modal('show');
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/get_responded_obs_evidences",
+            type: "POST",
+            data: {
+                'OBS_ID': id
+            },
+            cache: false,
+            success: function (data) {
+
+                $('#complianceCycleEvidences').empty();
+                if (data.length > 0) {
+                    $.each(data, function (i, pp) {
+
+                        var extension = pp.imagE_NAME.split('.').pop().toLowerCase();
+                        const contentType = getContentType(extension);
+
+                        // Create and append the attachment item
+                        const container = document.createElement('div');
+                        container.className = 'evidence-link';
+
+                        // Add icon
+                        const icon = document.createElement('i');
+                        icon.className = getIconClass(extension) + ' evidence-icon mr-1';
+                        container.appendChild(icon);
+
+                        // Add label
+                        const label = document.createElement('span');
+                        label.innerText = pp.imagE_NAME;
+                        label.classList.add('text-primary');
+
+                        // Add cursor style to make it look like a link
+                        label.style.cursor = 'pointer';
+                        container.appendChild(label);
+
+                        // Add click event to download file on selection
+                        container.addEventListener('click', function () {
+                            downloadFile(pp.filE_ID);
+                        });
+
+                        $('#complianceCycleEvidences').append(container);
+                    });
+                }
+                else {
+                    $('#complianceCycleEvidences').append("<i>No evidence is attached </i>");
+                }
+
+            },
+            dataType: "json",
+        });
+    }
+    function finalCommentsButtonSave() {
+        var svpComments = "";
+        svpComments = $('#commentAreaInCommentsBox').val();
+
+        if ($('#draftNoInCommentsBox').val() == "") {
+            alert("Please enter Draft Para No to proceed");
+            return;
+        }
+
+
+        if ($('#commentAreaInCommentsBox').val() == "") {
+            alert("Please enter the Comments First");
+            return;
+        }
+
+
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/update_observation_status",
+            type: "POST",
+            data: {
+                'OBS_ID': g_obsId,
+                'NEW_STATUS_ID': g_newStatusId,
+                'DRAFT_PARA_NO': $('#draftNoInCommentsBox').val(),
+                'RISK_ID': g_riskId,
+                'AUDITOR_COMMENT': svpComments
+            },
+            cache: false,
+            success: function (data) {
+                if (data) {
+                    alert("Successfully done");
+                    onAlertCallback(reloadLocation);
+                } else {
+                    alert("Failed to update Observation status!! please try again");
+                    onAlertCallback(reloadLocation);
+                }
+                $('#commentsBox').modal('hide');
+            },
+            dataType: "json",
+        });
+
+    }
+    function updateObservationStatus(obs_id, new_status_id, risk_id) {
+        g_obsId = obs_id;
+        g_newStatusId = new_status_id;
+        g_riskId = risk_id;
+        $('#commentsBox').modal('show');
+        $('#commentAreaInCommentsBox').val('');
+        if (g_newStatusId == 4) {
+            $('#draftNoInCommentsBox').val(0);
+            $('#draftNoInCommentsBox').attr("disabled", true);
+
+        } else {
+            $('#draftNoInCommentsBox').val('');
+            $('#draftNoInCommentsBox').attr("disabled", false);
+        }
+    }
+    function getEntityObservation() {
+        $('#manageObsPanel tbody').empty();
+        if ($('#entitySelectField option:selected').val() != 0) {
+            $.ajax({
+                url: g_asiBaseURL + "/ApiCalls/get_observations_draft_branch",
+                type: "POST",
+                data: {
+                    'ENG_ID': $('#entitySelectField option:selected').val()
+                },
+                cache: false,
+                success: function (data) {
+                    g_obsList = data;
+                    var isbranch = false;
+                    $.each(data, function (i, v) {
+                        $('#auditPeriodNameField').val(v.period);
+                        if (v.violation == null && v.nature == null) {
+                            isbranch = true;
+                        }
+                        if (v.obS_STATUS_ID == 3 && v.obS_RISK_ID == 3)
+                            $('#manageObsPanel tbody').append('<tr id="' + v.obS_ID + '"><td class="text-center">' + v.memO_NO + '</td><td class="text-center">' + v.drafT_PARA_NO + '</td><td>' + v.heading + '</td><td>' + v.checklist_Details + '</td><td class="text-center"><a onclick="event.preventDefault();ViewObservation(' + v.obS_ID + ');" href="#" class="text-primary">View Observation</a></td><td class="obs_reply"><a onclick="ViewObservationResponse(' + v.obS_ID + ');" href="#" class="text-primary">View Response</a></td><td>' + v.auD_REPLY + '</td><td>' + v.heaD_REPLY + '</td><td>' + v.obS_RISK + '</td><td>' + v.obS_STATUS + '</td><td class="text-center"><a href="#" onclick="updateObservationStatus(' + v.obS_ID + ', 4,' + v.obS_RISK_ID + ');" class="text-hover text-danger mr-5px"><small>Resolved at Memo Level</small></a></td><td><a href="#" onclick="updateObservationStatus(' + v.obS_ID + ',5,' + v.obS_RISK_ID + ');" class="text-hover text-primary ml-5px"><small>Add to Draft Report</small></a></td></tr>');
+                        else if (v.obS_STATUS_ID == 3 && v.obS_RISK_ID != 3)
+                            $('#manageObsPanel tbody').append('<tr id="' + v.obS_ID + '"><td class="text-center">' + v.memO_NO + '</td><td class="text-center">' + v.drafT_PARA_NO + '</td><td>' + v.heading + '</td><td>' + v.checklist_Details + '</td><td class="text-center"><a onclick="event.preventDefault();ViewObservation(' + v.obS_ID + ');" href="#" class="text-primary">View Observation</a></td><td class="obs_reply"><a onclick="ViewObservationResponse(' + v.obS_ID + ');" href="#" class="text-primary">View Response</a></td><td>' + v.auD_REPLY + '</td><td>' + v.heaD_REPLY + '</td><td>' + v.obS_RISK + '</td><td>' + v.obS_STATUS + '</td><td></td><td class="text-center"><a href="#" onclick="updateObservationStatus(' + v.obS_ID + ',5,' + v.obS_RISK_ID + ');" class="text-hover text-primary ml-5px"><small>Add to Draft Report</small></a></td></tr>');
+                        else
+                            $('#manageObsPanel tbody').append('<tr id="' + v.obS_ID + '"><td class="text-center">' + v.memO_NO + '</td><td class="text-center">' + v.drafT_PARA_NO + '</td><td>' + v.heading + '</td><td>' + v.checklist_Details + '</td><td class="text-center"><a onclick="event.preventDefault();ViewObservation(' + v.obS_ID + ');" href="#" class="text-primary">View Observation</a></td><td class="obs_reply"><a onclick="ViewObservationResponse(' + v.obS_ID + ');" href="#" class="text-primary">View Response</a></td><td>' + v.auD_REPLY + '</td><td>' + v.heaD_REPLY + '</td><td>' + v.obS_RISK + '</td><td>' + v.obS_STATUS + '</td><td class="text-center"></td><td></td></tr>');
+                    });
+
+
+                    setTimeout(function () {
+                        if (g_obsId != 0) {
+                            var rowpos = $('#manageObsPanel tbody tr#' + g_obsId).position();
+                            $('html').scrollTop(rowpos.top);
+                        }
+                    }, 200)
+                },
+                dataType: "json",
+            });
+
+        }
+    }
+
+    function downloadFile(id) {
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/get_auditee_evidence_data",
+            type: "POST",
+            data: {
+                'FILE_ID': id,
+            },
+            cache: false,
+            success: function (data) {
+                var extension = data.imagE_NAME.split('.').pop().toLowerCase();
+                const contentType = getContentType(extension);
+
+                const blob = base64ToBlob(data.imagE_DATA, contentType);
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(blob);
+                link.download = data.imagE_NAME;
+                link.click(); // Trigger the download
+
+            },
+            dataType: "json",
+        });
+
+
+    }
+    function getFileExtension(file) {
+        var fileName = file.name;
+        var extension = fileName.substring(fileName.lastIndexOf('.') + 1).toLowerCase();
+        return extension;
+    }
+    function getIconClass(extension) {
+        switch (extension) {
+            case 'pdf': return 'fa fa-file-pdf';
+            case 'zip': return 'fa fa-file-archive';
+            case 'png':
+            case 'jpg':
+            case 'jpeg':
+            case 'bmp': return 'fa fa-file-image';
+            case 'doc':
+            case 'docx': return 'fa fa-file-word';
+            default: return 'fa fa-file';
+        }
+    }
+    function getContentType(extension) {
+        switch (extension) {
+            case 'pdf': return 'application/pdf';
+            case 'zip': return 'application/zip';
+            case 'png': return 'image/png';
+            case 'doc': return 'application/msword';
+            case 'docx': return 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+            default: return 'application/octet-stream';
+        }
+    }
+    function base64ToBlob(base64, contentType) {
+        const byteCharacters = atob(base64);
+        const byteArrays = [];
+
+        for (let offset = 0; offset < byteCharacters.length; offset += 512) {
+            const slice = byteCharacters.slice(offset, offset + 512);
+
+            const byteNumbers = new Array(slice.length);
+            for (let i = 0; i < slice.length; i++) {
+                byteNumbers[i] = slice.charCodeAt(i);
+            }
+
+            const byteArray = new Uint8Array(byteNumbers);
+            byteArrays.push(byteArray);
+        }
+
+        const blob = new Blob(byteArrays, { type: contentType });
+        return blob;
+    }
+    function openResponsiblePPs() {
+        $('#ResponsiblePPModel').modal('show');
+    }
+
+</script>
+
+<div class="row">
+    <div class="col-md-12 mt-3">
+        <h3 style=" display:block;color: #be0e43">Manage Draft Report Paras</h3>
+    </div>
+    <div class="row col-md-12 mt-3">
+        <div class="col-md-2">
+            <label><b>Entity:</b></label>
+        </div>
+        <div class="col-md-10">
+            <input id="entityNameField" disabled="disabled" class="form-control ml-1 d-none" type="text" />
+            <select id="entitySelectField" onchange="getEntityObservation()" class="form-control form-select">
+                <option value="0" id="0">--Select Audit Entity--</option>
+                @{
+                    if (ViewData["EntitiesList"] != null)
+                    {
+                        foreach (var item in (dynamic)(ViewData["EntitiesList"]))
+                        {
+                            <option value="@item.ENG_ID" id="@item.ENG_ID">@item.NAME</option>
+                        }
+                    }
+                }
+
+            </select>
+        </div>
+    </div>
+    <div class="row col-md-12 mt-3">
+        <div class="col-md-2">
+            <label><b>Audit Period:</b></label>
+        </div>
+        <div class="col-md-10 ">
+            <input id="auditPeriodNameField" disabled="disabled" class="form-control ml-1" type="text" />
+        </div>
+    </div>
+    <div class="row col-md-12 mt-3">
+        <table id="manageObsPanel" class="table table-hover table-bordered table-hover mt-3 table-striped">
+            <thead style="background-color: #19875478 !important; ">
+                <tr>
+                    <th class="col-md-auto">Memo No.</th>
+                    <th class="col-md-auto">Draft Para No.</th>
+                    <th class="col-md-auto">Title of Observation</th>
+                    <th class="col-md-auto">Checklist Detail</th>
+                    <th class="col-md-auto">Observation</th>
+                    <th class="col-md-auto">Auditee Response</th>
+                    <th class="col-md-auto">Auditor Response</th>
+                    <th class="col-md-auto">Recommendations to Audit Head</th>
+                    <th class="col-md-auto">Risk Category</th>
+                    <th class="col-md-auto">Status</th>
+                    <th class="col-md-auto">Resolved at Memo Level</th>
+                    <th class="col-md-auto">Add to Draft Report</th>
+                </tr>
+            </thead>
+            <tbody>
+            </tbody>
+
+        </table>
+    </div>
+
+</div>
+
+<div id="commentsBox" class="modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">Auditor Comments</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form>
+                    <div class="form-group">
+                        <label for="commentAreaInCommentsBox">Draft Para No</label>
+                        <input class="form-control" id="draftNoInCommentsBox" placeholder="Draft Para No" />
+                    </div>
+                    <div class="form-group">
+                        <label for="commentAreaInCommentsBox">Comments</label>
+                        <textarea class="form-control" rows="4" id="commentAreaInCommentsBox" placeholder="Enter Comments here.."></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button onclick="finalCommentsButtonSave();" id="finalCommentsButtonSave" type="button" class="btn btn-danger">Submit</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+<div id="viewMemoModel" class="modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-xl" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">Observation</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form>
+                    <div class="form-group">
+                        <label for="viewMemo_memo">Memo</label>
+                        <div class="col-md-12" style="max-height:500px; overflow-y:auto;" id="viewMemo_panel"></div>
+                    </div>
+                    <div class="form-group">
+                        <label for="update_listofRespPersons" class="font-weight-bold">Responsible Personals</label>
+                        <div class="col-md-12 pl-0 pr-0">
+                            <table id="update_listofRespPersons" class="table table-hover table-bordered table-hover mt-3 table-striped">
+                                <thead style="background-color: #19875478 !important; ">
+                                    <tr>
+                                        <th class="col-md-auto font-weight-bold">Sr.No</th>
+                                        <th class="col-md-auto font-weight-bold">P.P. No</th>
+                                        <th class="col-md-auto font-weight-bold">Name</th>
+                                        <th class="col-md-auto font-weight-bold">Loan Case</th>
+                                        <th class="col-md-auto font-weight-bold">LC Amount</th>
+                                        <th class="col-md-auto font-weight-bold">Account No.</th>
+                                        <th class="col-md-auto font-weight-bold">ACC Amount</th>
+                                        <th class="col-md-auto font-weight-bold">Remarks</th>
+                                        <th class="col-md-auto text-center font-weight-bold"><center><button type="button" onclick="openResponsiblePPs();" class="rounded-circle btn btn-danger btn-sm"><i class="fa fa-plus text-white"></i></button></center></th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div id="referenceSection" class="mt-3 p-3 border border-danger">
+                        <h6>References</h6>
+                        <ul id="refList" class="list-group mb-3"></ul>
+                        <div id="searchSection" style="display:none;"></div>
+                        <table class="table" id="resultTbl" style="display:none;">
+                            <thead>
+                                <tr>
+                                    <th>TITLE</th>
+                                    <th>Circular Date</th>
+                                    <th>INSTRUCTIONS DETAILS</th>
+                                    <th>KEYWORDS</th>
+                                    <th>View Circular</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<div id="viewMemoResponseModel" class="modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-xl" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">Auditee Response</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form>
+                    <div class="form-group">
+                        <label for="viewMemoRes_panel">Reponse</label>
+                        <div class="col-md-12" style="max-height:500px; overflow-y:auto;" id="viewMemoRes_panel"></div>
+                    </div>
+                    <div id="evidenceViewer" class="input-field">
+                        <label class="font-weight-bold">Evidences</label>
+                        <div class="row col-md-12 mt-3 mb-3">
+                            <div id="complianceCycleEvidences">
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<div id="ResponsiblePPModel" class="modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-lg" style="min-width:95% !important" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title">Responsible Person</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form>
+                    <div class="form-group">
+
+                        <label class="form-control text-bold fw-bold text-center">Search Responsible By LC Number</label>
+
+                        <div class="row col-sm-12">
+                            <div class="col-sm-5">
+                                <label for="viewMemo_memo">Loan Case No.</label>
+                                <input type="text" class="form-control" id="responsibleLCNoEntryField" />
+                            </div>
+                            <div class="col-sm-5">
+                                <label for="responsibleBrCodeEntryField">Branch Code <small class="text-muted">(A-Z, 0-9, space, &amp;, ?)</small></label>
+                                <input type="text" class="form-control alnum-only" id="responsibleBrCodeEntryField" aria-describedby="brcode" placeholder="Branch Code (Alphabets, numbers, spaces, ampersand (&amp;), comma (,), and question mark (?) only)" data-allow-space="true" data-allow-amp="true" maxlength="200" title="Enter only Alphabets (A-Z), numbers (0-9), spaces, ampersand (&amp;), comma (,), and question mark (?)" />
+                            </div>
+                            <div class="col-sm-2 d-flex align-items-end">
+                                <button onclick="respSection.getLCDetails();" type="button" class="btn btn-danger w-100">Find</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <div id="matchedPPNoPanels" style="padding:20px;">
+                        </div>
+                    </div>
+                    <div class="form-group">
+
+                        <label class="form-control text-bold fw-bold text-center">Search Responsible By PP No.</label>
+
+                        <div id="findBYPPNOPanel" class="mt-2 row col-md-12">
+                            <div class="col-md-2">
+                                <input id="responsiblePPNoEntryField" class="form-control" type="text" placeholder="Enter PP. No." />
+                            </div>
+                            <div class="col-md-2">
+                                <input id="responsibleAccountNumberEntryField" class="form-control" type="number" placeholder="Enter Account Number" />
+                            </div>
+                            <div class="col-md-2">
+                                <input id="responsibleAccountAmountEntryField" class="form-control" type="number" placeholder="Enter Account Amount" />
+                            </div>
+                            <div class="col-md-2">
+                                <input id="loanCaseNumber" class="form-control" type="text" placeholder="Enter LC No." />
+                            </div>
+                            <div class="col-md-2">
+                                <input id="loanCaseAmount" class="form-control" type="text" placeholder="Enter LC Amount" />
+                            </div>
+
+                            <button type="button" onclick="respSection.getMatchedPP();" class="col-md-2 btn btn-success">Search</button>
+
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <div id="matchedPPNoPanelsBYPP" style="padding:20px;">
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button id="addResponsibleButton" type="button" class="btn btn-danger">Add Responsibility</button>
+                <button id="updateResponsibleButton" type="button" class="btn btn-success d-none">Update Responsibility</button>
+                <button id="deleteResponsibleButton" type="button" class="btn btn-danger d-none">Delete Responsibility</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+@section Scripts {
+    <script src="~/js/responsibilitySection.js"></script>
+}

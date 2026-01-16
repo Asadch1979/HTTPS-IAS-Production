@@ -1,0 +1,252 @@
+﻿@{
+    var page_id = ViewData["PageId"] as int? ?? 0;
+}
+
+@{
+    ViewData["Title"] = "Status Reversal of Audit Entities";
+    Layout = "_Layout";
+
+}
+
+<script type="text/javascript">
+    $(document).ready(function () {
+        $('.menu_page_selectAll').on('click', function () {
+
+            if ($('.menu_page_selectAll').is(':checked'))
+                $('.menu_page_tick').attr('checked', true);
+            else
+                $('.menu_page_tick').attr('checked', false);
+
+        });
+
+
+    });
+    function showPagesBlock() {
+
+        if ($('#menuSelectionBox option:selected').val() == 0) {
+            $('.pagesBlock').addClass('d-none');
+
+        }
+        else {
+            $('.menu_page_tick').attr('checked', false);
+            $('.pagesBlock').addClass('d-none');
+            $.ajax({
+                url: g_asiBaseURL + "/AdministrationPanel/menu_pages",
+                type: "POST",
+                data: {
+                    'MENU_ID': $('#menuSelectionBox option:selected').val()
+                },
+                cache: false,
+                success: function (data) {
+                    $('.menu_page_tick').attr('checked', false);
+                    $.each(data, function (index, page) {
+                        $('#pagemenuitem_' + page.id).attr('checked', true);
+                    });
+                    $('.pagesBlock').removeClass('d-none');
+                },
+                dataType: "json",
+            });
+
+        }
+    }
+
+    function publishSaveChanges() {
+        var pageIds = [];
+        $.each($('.menu_page_tick:checked'), function (i, v) {
+            pageIds.push($(v).attr('id').split('_')[1]);
+        });
+
+        if (pageIds.length > 0) {
+            alert('Please check atleast one page to proceed');
+            return false;
+        }
+        
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/menu_pages_updation",
+            type: "POST",
+            data: {
+                'MENU_ID': $('#menuSelectionBox option:selected').val(),
+                'PAGE_IDS': pageIds
+            },
+            cache: false,
+            success: function (data) {
+                alert("Menu Pages assignment Succesfully completed");
+                
+            },
+            dataType: "json",
+        });
+    }
+
+    function getrelation(parentEntityId = 0, userEntityId = 0) {
+
+
+        $('#controlingsearch').empty();
+        $('#childposting').empty();
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/getparentrel",
+            type: "POST",
+            data: {
+                'ENTITY_REALTION_ID': $('#RelationshipField option:selected').val()
+            },
+
+
+            cache: false,
+            success: function (data) {
+
+
+                $('#controlingsearch').append('<option id="0" value="0">--Select Controlling/Reporting Office--</option>');
+                $.each(data, function (index, contof) {
+
+                    var selected = '';
+                    if (contof.entitY_ID == parentEntityId)
+                        selected = 'selected="selected"';
+
+                    $('#controlingsearch').append('<option ' + selected + ' value="' + contof.entitY_ID + '" id="' + contof.entitY_REALTION_ID + '">' + contof.description + '</option>')
+                });
+                if (userEntityId != 0)
+                    getplacepost(userEntityId)
+
+                // console.log(data);
+
+            },
+            dataType: "json",
+        });
+
+
+
+    }
+
+    function getplacepost(userEntityId = 0) {
+        $('#childposting').empty();
+
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/getpostplace",
+            type: "POST",
+            data: {
+                'E_R_ID': $('#controlingsearch option:selected').val()
+            },
+
+
+            cache: false,
+            success: function (data) {
+                $('#childposting').append('<option id="0" value="0" selected="selected">--Select Place of Posting--</option>');
+                $.each(data, function (index, gpp) {
+
+                    var selected = '';
+                    if (gpp.entitY_ID == userEntityId)
+                        selected = 'selected="selected"';
+                    $('#childposting').append('<option ' + selected + ' value="' + gpp.entitY_ID + '" id="' + gpp.entitY_ID + '">' + gpp.c_NAME + '</option>')
+                });
+            },
+            dataType: "json",
+        });
+        //  getrelation();
+
+    }
+</script>
+
+<div class="col-md-12" style="margin-top:20px;">
+    <h3 style=" display:block;color: #be0e43">Status Reversal of Audit Entities</h3>
+
+    <div class="row col-md-12 mt-1">
+        <div class="col-md-2">
+            <label>Relationship Type</label>
+        </div>
+        <div class="col-md-10">
+            <select id="RelationshipField" onchange="getrelation();" class="form-control form-select">
+                <option id="0" value="0" selected="selected">--Select Relationship Type--</option>
+
+
+                @{
+                    if (ViewData["Userrelationship"] != null)
+                    {
+                        foreach (var item in (dynamic)(ViewData["Userrelationship"]))
+                        {
+                            <option value="@item.ENTITY_REALTION_ID" id="@item.ENTITY_REALTION_ID">@item.FIELD_NAME</option>
+                        }
+                    }
+                }
+
+
+
+            </select>
+        </div>
+    </div>
+
+    <div class="row col-md-12 mt-1">
+        <div class="col-md-2">
+            <label>Controlling/Reporting Office</label>
+        </div>
+        <div class="col-md-4">
+            <select id="controlingsearch" onchange="getplacepost();" class="form-control form-select">
+                <option id="0" value="0" selected="selected">--Select Controlling/Reporting Office--</option>
+            </select>
+        </div>
+
+
+        <div class="col-md-2">
+            <label>Place of Posting</label>
+        </div>
+        <div class="col-md-4">
+            <select id="childposting" class="form-control form-select">
+                <option id="0" value="0" selected="selected">--Select Place of Posting--</option>
+
+            </select>
+        </div>
+    </div>
+
+
+    <div class="row col-md-12">
+        <div class="col-md-2 mt-2">
+            <label class="font-weight-normal">Audit Period</label>
+        </div>
+        <div class="col-md-10 mt-2">
+            <select id="menuSelectionBox" onchange="showPagesBlock();" class="form-select form-control" aria-label="Default select example">
+                <option value="0" selected>--Select Audit Period--</option>
+                @{
+                    if (ViewData["PeriodList"] != null)
+                    {
+                        foreach (var item in (dynamic)(ViewData["PeriodList"]))
+                        {
+                            <option value="@item.Menu_Id" id="@item.Menu_Id">@item.Menu_Name</option>
+                        }
+                    }
+                }
+            </select>
+        </div>
+    </div>
+    <div class="row col-md-12 pagesBlock d-none">
+        <div class="col-md-2 mt-2">
+            <label class="font-weight-normal">Pages</label>
+        </div>
+        <div class="col-md-10 mt-2">
+            <div class="row col-md-12">
+                <div style="margin-left:auto;">
+                    <input class="menu_page_selectAll" type="checkbox" /> <label class="font-weight-normal ml-2">Select All</label>
+                </div>
+            </div>
+            <div id="menuPagesArea" class="row col-md-12">
+                @{
+                    if (ViewData["MenuPagesList"] != null)
+                    {
+
+                        foreach (var item in (dynamic)(ViewData["MenuPagesList"]))
+                        {
+
+                            <div class="col-md-6">
+                                <input id="pagemenuitem_@item.Id" class="menu_page_tick" type="checkbox" /> <label class="font-weight-normal ml-2">@item.Page_Name</label>
+                            </div>
+                        }
+                    }
+                }
+            </div>
+        </div>
+    </div>
+    <div class="row col-md-12 mt-4">
+        <div style="margin-left:auto;">
+            <button class="btn btn-secondary">Cancel</button>
+            <button onclick="publishSaveChanges();" class="btn btn-danger ml-2">Save Changes</button>
+        </div>
+    </div>
+
+</div>

@@ -1,0 +1,183 @@
+﻿@{
+    ViewData["Title"] = "Final Audit Report";
+    Layout = "_Layout";
+}
+
+
+<style type="text/css">
+    .container {
+        max-width: 100%;
+    }
+
+    .card-header {
+        background-color: transparent !important;
+        font-size: 20px;
+        height: 100px;
+    }
+
+    .icon-card {
+        margin: 10px;
+    }
+</style>
+
+<script type="text/javascript">
+    var g_engId=0;
+     $(document).ready(function () {
+        getAuditReports();
+     });
+
+     function getAuditReports(){
+           $.ajax({
+              url: g_asiBaseURL + "/ApiCalls/get_audit_reports",
+             type: "POST",
+             data: {
+                 'ENG_ID': g_engId
+             },
+             cache: false,
+             success: function (data) {
+                 $.each(data, function (i, v) {
+                    $('#audit_report_panel tbody').append('<tr><td class="text-center" >' + ++i + '</td><td class="text-center" >' + v.audiT_PERIOD + '</td><td class="text-center" >' + v.entitY_NAME + '</td><td><input type="checkbox" data-fileid="' + v.id + '" data-filename="' + v.entitY_NAME + '" class="report-checkbox"/></td></tr>');
+                 });
+
+             },
+             dataType: "json",
+         });
+
+     }
+        function downloadSelectedReports() {
+        var selectedReports = [];
+
+        // Loop through all checkboxes and collect the file IDs of selected reports
+        $('.report-checkbox:checked').each(function() {
+            var fileId = $(this).data('fileid');
+            var fileName = $(this).data('filename');
+            selectedReports.push([fileId,fileName]);
+        });
+
+        if (selectedReports.length > 0) {
+            // Trigger the download for each selected report
+            selectedReports.forEach(function(file) {
+                downloadAuditReport(file[0],file[1]);
+            });
+        } else {
+            alert("Please select at least one report.");
+        }
+    }
+
+      function downloadAuditReport(id, name) {
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/get_audit_report_content",
+            type: "POST",
+            data: {
+                'FILE_ID': id,
+            },
+            cache: false,
+            success: function (data) {
+
+
+                 var extension = data.imagE_NAME.split('.').pop().toLowerCase();
+                    const contentType = getContentType(extension);
+                    const blob = base64ToBlob(data.imagE_DATA, contentType);
+                    const link = document.createElement('a');
+                    link.href = URL.createObjectURL(blob);
+                    link.download =data.imagE_NAME; // Suggest a filename
+                    link.click();
+
+
+                },
+            dataType: "json",
+        });
+
+
+    }
+
+        function getFileExtension(file) {
+        var fileName = file.name;
+        var extension = fileName.substring(fileName.lastIndexOf('.') + 1).toLowerCase();
+        return extension;
+    }
+    function getIconClass(extension) {
+        switch (extension) {
+            case 'pdf': return 'fa fa-file-pdf';
+            case 'zip': return 'fa fa-file-archive';
+            case 'png':
+            case 'jpg':
+            case 'jpeg':
+            case 'bmp': return 'fa fa-file-image';
+            case 'doc':
+            case 'docx': return 'fa fa-file-word';
+            default: return 'fa fa-file';
+        }
+    }
+    function getContentType(extension) {
+        switch (extension) {
+            case 'pdf': return 'application/pdf';
+            case 'zip': return 'application/zip';
+            case 'png': return 'image/png';
+            case 'doc': return 'application/msword';
+            case 'docx': return 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+            default: return 'application/octet-stream';
+        }
+    }
+    function generateUniqueTimestamp() {
+        var date = new Date();
+        var year = date.getFullYear();
+        var month = ('0' + (date.getMonth() + 1)).slice(-2);
+        var day = ('0' + date.getDate()).slice(-2);
+        var hours = ('0' + date.getHours()).slice(-2);
+        var minutes = ('0' + date.getMinutes()).slice(-2);
+        var seconds = ('0' + date.getSeconds()).slice(-2);
+        var milliseconds = ('00' + date.getMilliseconds()).slice(-3);
+
+        var timestamp = year + month + day + '_' + hours + minutes + seconds + milliseconds;
+        return timestamp;
+    }
+
+    function base64ToBlob(base64, contentType) {
+        const byteCharacters = atob(base64);
+        const byteArrays = [];
+
+        for (let offset = 0; offset < byteCharacters.length; offset += 512) {
+            const slice = byteCharacters.slice(offset, offset + 512);
+
+            const byteNumbers = new Array(slice.length);
+            for (let i = 0; i < slice.length; i++) {
+                byteNumbers[i] = slice.charCodeAt(i);
+            }
+
+            const byteArray = new Uint8Array(byteNumbers);
+            byteArrays.push(byteArray);
+        }
+
+        const blob = new Blob(byteArrays, { type: contentType });
+        return blob;
+    }
+
+
+</script>
+<div class="row col-md-12 mt-3">
+    <h3 style="color: #be0e43">Audit Reports</h3>
+</div>
+<div>
+
+
+    <div class="row col-md-12 mt-3">
+        <table id="audit_report_panel" class="table table-hover table-bordered table-hover mt-3 table-striped">
+            <thead style="background-color: #19875478 !important; ">
+                <tr>
+                    <th class="col-md-auto">Sr No.</th>
+                    <th class="col-md-auto">Audit Period</th>
+                    <th class="col-md-auto">Entity Name</th>
+                    <th class="col-md-auto">Action</th>
+                </tr>
+            </thead>
+            <tbody>
+            </tbody>
+        </table>
+
+    </div>
+
+    <div class="row col-md-12">
+        <button onclick="downloadSelectedReports();" class="col-md-3 offset-md-9 btn btn-primary">Download Selected</button>
+    </div>
+</div>

@@ -1,0 +1,258 @@
+﻿@{
+    ViewData["Title"] = "Manage Entity Audit Department";
+    Layout = "_Layout";
+
+}
+
+
+<script type="text/javascript">      
+
+
+
+    var g_rowId = 0;
+    var g_statusRecord = [];
+
+
+    $(document).ready(function () {
+
+
+        $("#searchTableRecord").on("keyup", function () {
+            var value = $(this).val().toLowerCase();
+            $("#manageEntityAuditDeptGrid tbody tr").filter(function () {
+                $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1)
+            });
+        });
+        getManageEntityAuditDeptt();
+
+    });
+
+    function getManageEntityAuditDeptt() {
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/get_manage_ent_audit_dept",
+            type: "POST",
+            data: {
+
+            },
+            cache: false,
+            success: function (data) {
+                g_statusRecord = data;
+                $('#manageEntityAuditDeptGrid tbody').empty();
+                $.each(data, function (i, v) {
+
+                    $('#manageEntityAuditDeptGrid tbody').append('<tr><td>' + ++i + '</td><td>' + v.enT_ID + '</td><td>' + v.d_ID + '</td><td>' + v.d_CODE + '</td><td>' + v.cbaS_CODE + '</td><td>' + v.d_NAME + '</td><td>' + v.auD_ID + '</td><td>' + v.auditor + '</td><td>' + v.status + '</td> <td><a href="#" onclick="event.preventDefault();UpdateManageEntityAuditDept(' + v.r_ID + ');" class="text-danger">Update</a></td></tr>');
+
+                });
+            },
+            dataType: "json",
+        });
+    }
+    function reloadLocation() {
+        $('#updateManageEntityAuditDepartment').modal('hide');
+    
+        getManageEntityAuditDeptt();
+    }
+
+    function addNewEntAuditDept(){
+        g_rowId = 0;
+        $('#updateManageEntityAuditDepartment').modal('show');
+        $('#modalentityid').val('');
+        $('#modaldepartmentid').val('');
+        $('#modaldepartmentCode').val('');
+        $('#modalcbasecode').val('');
+
+        $('#modaldepartmentname').val('');
+        $('#modalauditdepartmentid').val('');
+        $('#modalauditor').val('Y');
+        $('#modalstatus').val('Y');
+    }
+
+    function UpdateManageEntityAuditDept(rowId) {
+        g_rowId = rowId;
+        $('#updateManageEntityAuditDepartment').modal('show');
+
+
+        $('#modalentityid').val('');
+        $('#modaldepartmentid').val('');
+        $('#modaldepartmentCode').val('');
+        $('#modalcbasecode').val('Y');
+
+        $('#modaldepartmentname').val('');
+        $('#modalauditdepartmentid').val('');
+        $('#modalauditor').val('');
+        $('#modalstatus').val('Y');
+     
+        $.each(g_statusRecord, function (i, v) {
+            if (v.r_ID == g_rowId) {           
+
+                $('#modalentityid').val(v.enT_ID);
+                $('#modaldepartmentid').val(v.d_ID);
+                $('#modaldepartmentCode').val(v.d_CODE);
+                $('#modalcbasecode').val(v.cbaS_CODE);
+                $('#modaldepartmentname').val(v.d_NAME);
+                $('#modalauditdepartmentid').val(v.auD_ID);
+                $('#modalauditor').val(v.auditor);
+                $('#modalstatus').val(v.status);
+              
+
+            }
+        })
+
+    }
+    function saveChangesManageEntityAuditDepartment() {
+        var manageEntityAuditDepartmentModel = {
+
+            'R_ID': g_rowId,
+            'ENT_ID': $('#modalentityid').val(),
+            'D_ID': $('#modaldepartmentid').val(),
+            'D_CODE': $('#modaldepartmentCode').val(),
+            'CBAS_CODE': $('#modalcbasecode').val(),
+            'D_NAME': $('#modaldepartmentname').val(),
+            'AUD_ID': $('#modalauditdepartmentid').val(),
+            'AUDITOR': $('#modalauditor').val(),
+            'STATUS': $('#modalstatus').val(),
+
+        }
+        if (g_rowId == 0) {
+            $.ajax({
+                url: g_asiBaseURL + "/ApiCalls/add_manage_entities_audit_department",
+                type: "POST",
+                data: {
+                    ENT_AUD_DEPT_MODEL: manageEntityAuditDepartmentModel
+                },
+                cache: false,
+                success: function (data) {
+                    alert(data.message);
+                    onAlertCallback(reloadLocation);
+
+                },
+                dataType: "json",
+            });
+        } else {
+            $.ajax({
+                url: g_asiBaseURL + "/ApiCalls/update_manage_entities_audit_department",
+                type: "POST",
+                data: {
+                    ENT_AUD_DEPT_MODEL: manageEntityAuditDepartmentModel
+                },
+                cache: false,
+                success: function (data) {
+                    alert(data.message);
+                    onAlertCallback(reloadLocation);
+
+                },
+                dataType: "json",
+            });
+        }
+      
+       
+    }
+
+</script>
+
+<div class="mt-3 mb-4">
+    <h3 style="color: #be0e43">Manage Entity Audit Department</h3>
+</div>
+<div class="row col-md-12">
+    <button onclick="addNewEntAuditDept();" class="btn btn-primary offset-md-9 col-md-3">Add New Audit Department</button>
+</div>
+<div class="mt-3">
+    <div class="col-md-12 px-0">
+        <input class="form-control" id="searchTableRecord" type="text" placeholder="Search..">
+    </div>
+</div>
+
+<div class="row col-md-12 mt-3">
+    <table id="manageEntityAuditDeptGrid" class="table table-hover table-bordered table-hover mt-3 table-striped">
+        <thead style="background-color: #19875478 !important; ">
+            <tr>
+                <th class="col-md-auto text-center">Sr. No.</th>
+                <th class="col-md-auto">ENTITY ID</th>
+                <th class="col-md-auto">DEPARTMENT ID</th>
+                <th class="col-md-auto">DEPARTMENT CODE</th>
+                <th class="col-md-auto">CBASE CODE</th>
+                <th class="col-md-auto">DEPARTMENT NAME</th>
+                <th class="col-md-auto">AUDIT DEPARTMENT ID</th>
+                <th class="col-md-auto">AUDITOR</th>
+                <th class="col-md-auto">STATUS</th>
+                <th class="col-md-auto"></th>
+
+
+            </tr>
+        </thead>
+        <tbody>
+        </tbody>
+    </table>
+
+</div>
+
+
+
+<div id="updateManageEntityAuditDepartment" class="modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-xl" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">Add Checklist Detail</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+
+
+                <div class="form-group">
+                    <label>Entity Id</label>
+                        <input id="modalentityid" type="text" class="form-control" />
+                </div>
+                <div class="form-group">
+                    <label>Department Id</label>
+                        <input id="modaldepartmentid" type="text" class="form-control" />
+                </div>
+                <div class="form-group">
+                    <label>Department Code</label>
+                        <input id="modaldepartmentCode" type="text" class="form-control" />
+                </div>
+                    <div class="form-group">
+                        <label>CBAS Code</label>
+                        <input id="modalcbasecode" type="text" class="form-control" />
+                    </div>
+               
+                <div class="form-group">
+                    <label>Department Name</label>
+                    <input id="modaldepartmentname" type="text" class="form-control" />
+                </div>
+              
+                <div class="form-group">
+                    <label>Audit Department Id</label>
+                    <input id="modalauditdepartmentid" type="text" class="form-control" />
+                </div>
+            
+                <div class="form-group">
+                    <label>Auditor</label>
+                    <select class="form-control" id="modalauditor">
+                        <option value="N">N</option>
+                        <option value="Y">Y</option>
+                    </select>
+                    
+                </div>
+              
+                <div class="form-group">
+                    <label>Status</label>
+                    <select class="form-control" id="modalstatus">
+                        <option value="N">N</option>
+                        <option value="Y">Y</option>
+                    </select>
+                   
+                </div>
+
+          
+          
+
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button onclick="saveChangesManageEntityAuditDepartment();" type="button" data-bs-dismiss="modal" class="btn btn-success">Save Changes</button>
+
+            </div>
+        </div>
+    </div>
+</div>

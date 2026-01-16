@@ -1,0 +1,96 @@
+﻿@{
+    var page_id = ViewData["PageId"] as int? ?? 0;
+}
+
+@{
+    ViewData["Title"] = "Group Wise Pages";
+    Layout = "_Layout";
+}
+
+<script type="text/javascript">
+   
+    $(document).ready(function () {
+
+        $("#searchTableRecord").on("keyup", function () {
+            var value = $(this).val().toLowerCase();
+            $("#group_wise_pages_grid tbody tr").filter(function () {
+                $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1)
+            });
+        });
+
+        getGroupWisePages();
+     
+    });
+
+   
+    function getGroupWisePages() {
+
+        $('#group_wise_pages_grid tbody').empty();
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/get_group_wise_pages",
+            type: "POST",
+            data: {
+                "GROUP_ID":$('#groupSelectionBox').val()
+                },
+            cache: false,
+            success: function (data) {
+
+                var srNo = 1;
+                $.each(data, function (index, row) {
+                  
+                    $('#group_wise_pages_grid tbody').append('<tr><td>' + srNo + '</td><td>' + row.g_NAME+ '</td><td>' + row.p_NAME+ '</td></tr>');
+                    srNo++;
+                });
+
+            },
+            dataType: "json",
+        });
+
+
+    }
+</script>
+
+<div class="mt-3 mb-4">
+    <h3 style="color: #be0e43">Group Wise Pages</h3>
+</div>
+
+
+<div id="groupSelectionPanel" class="row col-md-12 mt-3">
+    <label>Group / Role</label>
+    <select id="groupSelectionBox" onchange="getGroupWisePages()" class="form-select form-control" aria-label="Default select example">
+        <option value="0" selected>--Select Group/Roles--</option>
+        @{
+            if (ViewData["GroupList"] != null)
+            {
+                foreach (var item in (dynamic)(ViewData["GroupList"]))
+                {
+                    <option value="@item.GROUP_CODE" id="@item.GROUP_CODE">@item.GROUP_NAME</option>
+                }
+            }
+        }
+    </select>
+</div>
+
+
+
+<div class="mt-3">
+
+    <div class="col-md-12 px-0">
+        <input class="form-control" id="searchTableRecord" type="text" placeholder="Search..">
+    </div>
+
+    <br>
+    <table id="group_wise_pages_grid" class="table table-hover table-bordered table-hover mt-3 table-striped">
+        <thead style="background-color: #19875478 !important; ">
+            <tr>
+                <th>Sr. No.</th>
+                <th>Group Name</th>
+                <th>Page Name</th>
+              
+            </tr>
+        </thead>
+        <tbody>
+        </tbody>
+    </table>
+</div>
+

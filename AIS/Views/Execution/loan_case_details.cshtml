@@ -1,0 +1,111 @@
+﻿@{
+    var page_id = ViewData["PageId"] as int? ?? 0;
+}
+
+@{
+    ViewData["Title"] = "Pre Audit Information";
+    Layout = "_Layout";
+}
+
+<style type="text/css">
+    .container {
+        max-width: 100%;
+    }
+
+    .card-header {
+        background-color: transparent !important;
+        font-size: 20px;
+        height: 100px;
+    }
+
+    .icon-card {
+        margin: 10px;
+    }
+</style>
+
+<script type="text/javascript">
+    var g_loanType = '';
+    $(document).ready(function () {
+        var url_string = window.location;
+        var url = new URL(url_string);
+        g_loanType = url.searchParams.get("type");          
+          $("#searchTableRecord").on("keyup", function () {
+            var value = $(this).val().toLowerCase();
+            $("#Loancasetable tbody tr").filter(function () {
+                $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1)
+            });
+          });
+        getloancase();
+    });
+    function getloancase() {
+
+            var lid = $('#LCN').val();
+            if (lid != 0) {
+                $.ajax({
+                    url: g_asiBaseURL + "/ApiCalls/Loan_Case_Details",
+                    type: "POST",
+                    data: {
+                        'Loan_case': lid,
+                        'LOAN_TYPE': g_loanType
+                    },
+                    cache: false,
+                    success: function (data) {
+
+                        console.log(data);
+                        $('#Loancasetable tbody').empty();
+                        $.each(data, function (i, v) {
+                            $('#Loancasetable tbody').append('<tr><td>' + v.loaN_CASE_NO + '</td><td>' + v.cnic + '</td><td>' + v.customername + '</td><td>' + v.disburseD_AMOUNT + '</td><td>' + v.prin + '</td><td>' + v.markup + '</td><td>' + v.disB_DATE.split('T')[0] + '</td>  <td>' + v.disB_STATUSID + '</td> </tr>')
+                        });
+                    },
+                    dataType: "json",
+                });
+            }
+        }
+</script>
+
+
+
+<div class="row col-md-12 mt-3">
+    <h4 style="display: block; color: #be0e43">Loan Case Details</h4>
+</div>
+<div class="row col-md-12">
+    <input class="form-control" id="searchTableRecord" type="text" placeholder="Search..">
+</div>
+
+<!--<div class="row col-md-12 mt-1">
+    <div class="row col-md-6 mt-1">
+        <label><b>Loan Case No.</b></label>
+        <input id="LCN" min="1" class="form-control mr-1" type="number" placeholder="Enter Loan Case #" />
+    </div>
+</div>
+<div class="row col-md-12 mt-3">
+    <button onclick="getloancase();" class="btn btn-primary">Find</button>
+</div>-->
+
+<div class="row col-md-12 mt-3">
+    <table id="Loancasetable" class="table table-hover table-bordered table-hover mb-0 mt-3 bg-white table-striped">
+        <thead style="background-color: #19875478 !important; ">
+            <tr>
+
+                <th class="col-md-auto">LC #</th>
+
+
+                <th class="col-md-auto">CNIC</th>
+                <th class="col-md-auto">CUSTOMER NAME</th>
+                <th class="col-md-auto">DISB AMOUNT</th>
+                <th class="col-md-auto">PRINCIPLE</th>
+                <th class="col-md-auto">MARKUP</th>
+                <th class="col-md-auto">DISB DATE</th>
+                <th class="col-md-auto">DISB STATUS ID</th>
+            </tr>
+        </thead>
+        <tbody>
+        </tbody>
+    </table>
+</div>
+<div class="row col-md-12 mt-3">
+
+    <button onclick="history.back()" class="btn btn-primary" style="color:white">Return</button>
+
+</div>
+

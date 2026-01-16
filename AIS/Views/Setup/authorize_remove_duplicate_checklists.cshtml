@@ -1,0 +1,168 @@
+﻿@{
+    var page_id = ViewData["PageId"] as int? ?? 0;
+}
+
+@{
+    ViewData["Title"] = "Authorize Merge Duplicate/Redundant Checklist Details";
+    Layout = "_Layout";
+}
+<style type="text/css">
+    .container {
+        max-width: 100%;
+    }
+
+    .card-header {
+        background-color: transparent !important;
+        font-size: 20px;
+        height: 100px;
+    }
+
+    .icon-card {
+        margin: 10px;
+    }
+</style>
+<script type="text/javascript">
+    var g_procId = 0;
+    var g_subProcId = 0;
+    var g_procDetailId = 0;
+    var g_subProcList = [];
+    var g_procDetailList = [];
+    $(document).ready(function () {
+        $("#searchTableRecord").on("keyup", function () {
+            var value = $(this).val().toLowerCase();
+            $("#authorizeMergeChecklistPanel tbody tr").filter(function () {
+               
+                $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1)
+
+            });
+        });
+
+       
+    });
+
+
+    function getAuditChecklistDetailsForMergeDuplicate() {
+        var processId = $('#checklistSelectField').val();       
+        $('#authorizeMergeChecklistPanel tbody').empty();
+        if (processId != 0) {
+            $.ajax({
+                url: g_asiBaseURL + "/ApiCalls/get_duplicate_checklists",
+                type: "POST",
+                data: {
+                    'PROCESS_ID': processId
+                },
+                cache: false,
+                success: function (data) {
+                    $.each(data, function (i, v) {
+                        $('#authorizeMergeChecklistPanel').append('<tr><td>' + v.id + '</td><td>' + v.heading + '</td></tr>');
+
+                    });
+                },
+                dataType: "json",
+            });
+        }
+    }
+    function countDuplicate(){
+        var processId = $('#checklistSelectField').val();
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/get_duplicate_checklists_count",
+            type: "POST",
+            data: {
+                'PROCESS_ID': processId
+            },
+            cache: false,
+            success: function (data) {
+                console.log("newww count",data);
+                $('#legacyObsLinked').html(data.olD_COUNT);
+                $('#newObsLinked').html(data.neW_COUNT);
+            },
+            dataType: "json",
+        });
+    }
+    function authorizeMergeDuplicate() {
+        var processId = $('#checklistSelectField').val();
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/authorize_merge_duplicate_checklists",
+            type: "POST",
+            data: {
+                'PROCESS_ID': processId
+            },
+            cache: false,
+            success: function (data) {
+                alert(data.message);
+            },
+            dataType: "json",
+        });
+    }
+   
+</script>
+<div class="row text-center mt-3">
+    <h3 style=" display:block;color: #be0e43">Authorize Merge Duplicate/Redundant Checklists Detail </h3>
+</div>
+<div class="row mt-3 col-md-12">
+        <label><b>Audit Main Process</b></label>
+        <select id="checklistSelectField" onchange="getAuditChecklistDetailsForMergeDuplicate();" class="form-select form-control">
+            <option value="0" id="0" selected>--Select Process--</option>
+            @{
+                if (ViewData["ProcessList"] != null)
+                {
+                    foreach (var item in (dynamic)(ViewData["ProcessList"]))
+                    {
+                                <option value="@item.T_ID" id="@item.T_ID">@item.HEADING</option>
+
+                    }
+                }
+            }
+
+        </select>
+
+</div>
+
+<div class="row col-md-12 mt-3">
+    <h5>Search Checklist Detail</h5>
+    <input id="searchTableRecord" type="text" class="form-control" />
+</div>
+
+
+<div class="row col-md-12 mt-1">
+    <table id="authorizeMergeChecklistPanel" class="table table-bordered table mb-0 mt-3 bg-white table-hover table-striped">
+        <thead>
+            <tr style="background-color: #19875478 !important; ">
+                <th class="col-md-1 font-weight-bold">ID</th>
+                <th class="col-md-2 font-weight-bold">Duplicate Checklist</th>
+            </tr>
+        </thead>
+        <tbody>
+          
+        </tbody>
+    </table>
+</div>
+
+
+<div class="row col-md-12 mt-3">
+    <table id="countMergeChecklistPanel" class="table table-bordered table mb-0 mt-3 bg-white table-hover table-striped">
+        <thead>
+            <tr style="background-color: #19875478 !important; ">
+                <th class="col-md-10 font-weight-bold">Linked Observations Type</th>
+                <th class="col-md-2 font-weight-bold">Count</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Legacy Observations Linked</td>
+                <td id="legacyObsLinked">-</td>
+            </tr>
+            <tr>
+                <td>New Observations Linked</td>
+                <td id="newObsLinked">-</td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+<div class="row col-md-12 mt-3">
+
+    <button onclick="countDuplicate();" class="btn btn-danger col-md-3 offset-md-6">Linked Observations Count</button>
+    <button onclick="authorizeMergeDuplicate();" class="btn btn-danger col-md-3">Auhtorize Merge Duplicates</button>
+</div>
+

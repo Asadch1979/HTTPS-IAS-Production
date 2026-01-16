@@ -1,0 +1,601 @@
+﻿@{
+    var page_id = ViewData["PageId"] as int? ?? 0;
+}
+
+@{
+    ViewData["Title"] = "Manage Users";
+    Layout = "_Layout";
+}
+
+<script type="text/javascript">
+    var g_userList = [];
+    var g_userId = 0;
+    $(document).ready(function () {
+        $('#roleSaveField').select2();
+        $('#roleSaveField').css("width", "100% !important");
+        $("#searchTableRecord").on("keyup", function () {
+            var value = $(this).val().toLowerCase();
+            $("#listOfDepartment tbody tr").filter(function () {
+                $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1)
+            });
+        });
+    });
+    function ShowSelectedZonesBranches() {
+        if ($('#zoneSearchField option:selected').val() == 0) {
+            $('#brSearchField').empty();
+            $('#brSearchField').append('<option value="0" id="0">--Select Branch--</option>');
+        }
+        else {
+            $('#brSearchField').empty();
+            $('#brSearchField').append('<option value="0" id="0">--Select Branch--</option>')
+            $.ajax({
+                url: g_asiBaseURL + "/ApiCalls/GetZoneBranches",
+                type: "POST",
+                data: {
+                    'zone_code': $('#zoneSearchField option:selected').val()
+                },
+                cache: false,
+                success: function (data) {
+                    $.each(data, function (index, branch) {
+                        $('#brSearchField').append('<option value="' + branch.branchcode + '" id="' + branch.branchcode + '">' + branch.description + '</option>')
+                    });
+                },
+                dataType: "json",
+            });
+        }
+    }
+
+    function getrelation(parentEntityId = 0, userEntityId = 0) {
+
+
+        $('#controlingsearch').empty();
+        $('#childposting').empty();
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/getparentrel",
+            type: "POST",
+            data: {
+                'ENTITY_REALTION_ID': $('#RelationshipField option:selected').val()
+            },
+
+
+            cache: false,
+            success: function (data) {
+
+
+                $('#controlingsearch').append('<option id="0" value="0">--Select Controlling/Reporting Office--</option>');
+                $.each(data, function (index, contof) {
+
+                    var selected = '';
+                    if (contof.entitY_ID == parentEntityId)
+                        selected = 'selected="selected"';
+
+                    $('#controlingsearch').append('<option ' + selected + ' value="' + contof.entitY_ID + '" id="' + contof.entitY_REALTION_ID + '">' + contof.description + '</option>')
+                });
+                if (userEntityId != 0)
+                    getplacepost(userEntityId)
+
+                // console.log(data);
+
+            },
+            dataType: "json",
+        });
+
+
+
+    }
+
+    function getplacepost(userEntityId = 0) {
+        $('#childposting').empty();
+
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/getpostplace",
+            type: "POST",
+            data: {
+                'E_R_ID': $('#controlingsearch option:selected').val()
+            },
+
+
+            cache: false,
+            success: function (data) {
+                $('#childposting').append('<option id="0" value="0" selected="selected">--Select Place of Posting--</option>');
+                $.each(data, function (index, gpp) {
+
+                    var selected = '';
+                    if (gpp.entitY_ID == userEntityId)
+                        selected = 'selected="selected"';
+                    $('#childposting').append('<option ' + selected + ' value="' + gpp.entitY_ID + '" id="' + gpp.entitY_ID + '">' + gpp.c_NAME + '</option>')
+                });
+            },
+            dataType: "json",
+        });
+        //  getrelation();
+
+    }
+    function ShowSelectedDivisionDepartments() {
+        if ($('#divSearchField option:selected').val() == 0) {
+            $('#deptSearchField').empty();
+            $('#deptSearchField').append('<option value="0" id="0">--Select Audit Department--</option>')
+        }
+        else {
+            $('#deptSearchField').empty();
+            $('#deptSearchField').append('<option value="0" id="0">--Select Audit Department--</option>')
+
+            $.ajax({
+                url: g_asiBaseURL + "/ApiCalls/GetDivDepartments",
+                type: "POST",
+                data: {
+                    'div_code': $('#divSearchField option:selected').val()
+                },
+                cache: false,
+                success: function (data) {
+
+                    $.each(data, function (index, dept) {
+                        $('#deptSearchField').append('<option value="' + dept.id + '" id="' + dept.id + '">' + dept.name + '</option>')
+                    });
+
+                },
+                dataType: "json",
+            });
+        }
+    }
+    function findButtonClickHandler() {
+        var whereCheck = 0;
+        var entity_id = 0;
+        if ($('#ppnoSearchField').val() != "")
+            whereCheck++;
+        if ($('#loginSearchField').val() != "")
+            whereCheck++;
+        if ($('#childposting').val() != 0) {
+            whereCheck++;
+            entity_id = $('#childposting').val();
+        } else if ($('#controlingsearch').val() != 0) {
+            whereCheck++;
+            entity_id = $('#controlingsearch').val();
+        }
+        if ($('#emailSearchField').val() != "")
+            whereCheck++;
+        if ($('#roleSearchField option:selected').val() != 0)
+            whereCheck++;
+
+        if (whereCheck == 0) {
+            alert('Please provide at least one filter to proceed');
+            return;
+        }
+
+        $('#userListTable tbody').empty();
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/FindUsers",
+            type: "POST",
+            contentType: "application/json",
+            data: JSON.stringify({
+                ppNumber: $('#ppnoSearchField').val(),
+                loginName: $('#loginSearchField').val(),
+                entityId: entity_id,
+                email: $('#emailSearchField').val(),
+                groupId: $('#roleSearchField option:selected').val(),
+            }),
+            cache: false,
+            success: function (data) {
+
+                g_userList = data;
+                $.each(data, function (index, user) {
+                    $('#userListTable tbody').append('<tr id="userrecordrow_' + user.id + '"><td>' + user.name + '</td><td>' + user.ppNumber + '</td><td>' + user.userParentEntityName + '</td><td>' + user.userEntityName + '</td><td>' + user.email + '</td><td>' + user.userRole + '</td><td>' + user.isActive + '</td><td><a class="text-danger editmode" href="#" onclick="event.preventDefault();editUserDetails(' + user.id + ')">Edit</a><a class="text-danger cancelmode d-none" href="#" onclick="cancelEditUserDetails(' + user.id + ')">Cancel</a></td></tr>')
+                });
+
+            },
+            dataType: "json",
+        });
+    }
+    function editUserDetails(userId) {
+        g_userId = userId;
+        $('#userrecordrow_' + userId).css({ 'background': 'rgba(0,0,0,.05)', 'font-weight': 'bold', 'color': 'navy' });
+        $('#userrecordrow_' + userId + ' .editmode').addClass('d-none');
+        $('#userrecordrow_' + userId + ' .cancelmode').removeClass('d-none');
+        $('#saveChangesButton').removeClass('d-none');
+        $('#addNewUserChangesButton').removeClass('d-none');
+        $('#findButton').addClass('d-none');
+        $('#searchFieldsContainer').addClass('d-none');
+        $('#saveChangesFieldsContainer').removeClass('d-none');
+        $.each(g_userList, function (index, user) {
+            if (user.id == userId) {
+                $('#ppnoSaveField').val(user.ppNumber);
+                $('#loginSaveField').val(user.ppNumber);
+
+                $('#RelationshipField').val(user.relationshipId);
+                getrelation(user.userParentEntityID, user.userEntityID);
+
+
+                $('#emailSaveField').val(user.email);
+                if (user.userGroupID != null)
+                    $('#roleSaveField').val(user.userGroupID).trigger("change");
+                else
+                    $('#roleSaveField').val(0).trigger("change");;
+
+                $('#mySelect2').trigger('change');
+                if (user.isActive == "Y")
+                    $('#isActiveSaveField').attr('checked', true);
+                else
+                    $('#isActiveSaveField').attr('checked', false);
+            }
+        });
+    }
+    function ShowEditedZonesBranches(brId) {
+        if (brId == 0 || brId == null) {
+            $('#brSaveField').empty();
+            $('#brSaveField').append('<option value="0" id="0">--Select Branch--</option>');
+        }
+        else {
+            $('#brSaveField').empty();
+            $('#brSaveField').append('<option value="0" id="0">--Select Branch--</option>')
+            $.ajax({
+                url: g_asiBaseURL + "/ApiCalls/GetZoneBranches",
+                type: "POST",
+                data: {
+                    'zone_code': $('#zoneSaveField option:selected').val()
+                },
+                cache: false,
+                success: function (data) {
+                    $.each(data, function (index, branch) {
+                        var selected = '';
+                        if (branch.branchid == brId)
+                            selected = 'selected="selected"';
+                        $('#brSaveField').append('<option value="' + branch.branchid + '" id="' + branch.branchid + '"  ' + selected + ' >' + branch.description + '</option>')
+                    });
+
+                },
+                dataType: "json",
+            });
+        }
+    }
+    function ShowEditedDivisionDepartments(deptId) {
+        if (deptId == 0 || deptId == null) {
+            $('#deptSaveField').empty();
+            $('#deptSaveField').append('<option value="0" id="0">--Select Audit Department--</option>')
+        }
+        else {
+            $('#deptSaveField').empty();
+            $('#deptSaveField').append('<option value="0" id="0">--Select Audit Department--</option>')
+
+            $.ajax({
+                url: g_asiBaseURL + "/ApiCalls/get_departments",
+                type: "POST",
+                data: {
+                    'div_id': $('#divSaveField').val()
+                },
+                cache: false,
+                success: function (data) {
+
+                    $.each(data, function (index, dept) {
+                        var selected = '';
+                        if (dept.id == deptId)
+                            selected = 'selected="selected"';
+                        $('#deptSaveField').append('<option value="' + dept.id + '"  id="' + dept.id + '" ' + selected + '>' + dept.name + '</option>')
+                    });
+
+                },
+                dataType: "json",
+            });
+        }
+    }
+    function cancelEditUserDetails(userId) {
+        g_userId = 0;
+        $('#userrecordrow_' + userId).css({ 'background': 'none', 'font-weight': 'normal', 'color': 'black' });
+        $('#userrecordrow_' + userId + ' .editmode').removeClass('d-none');
+        $('#userrecordrow_' + userId + ' .cancelmode').addClass('d-none');
+        $('#saveChangesButton').addClass('d-none');
+        $('#addNewUserChangesButton').addClass('d-none');
+        $('#findButton').removeClass('d-none');
+        $('#saveChangesFieldsContainer').addClass('d-none');
+        $('#searchFieldsContainer').removeClass('d-none');
+        clearSearchFields();
+    }
+    function clearSearchFields() {
+        $('#ppnoSaveField').val('');
+        $('#loginSaveField').val('');
+        $('#divSaveField').val(0);
+        $('#deptSaveField').val(0);
+        $('#zoneSaveField').val(0);
+        $('#brSaveField').val(0);
+        $('#emailSaveField').val('');
+        $('#passSaveField').val('');
+        $('#conPassSaveField').val('');
+        $('#roleSaveField').val(0).trigger("change");;
+        $('#mySelect2').trigger('change');
+        $('#isActiveSaveField').attr('checked', false);
+    }
+    function saveButtonClickHandler() {
+
+        if ($('#passSaveField').val() == $('#conPassSaveField').val()) {
+            var active = 'N';
+            if ($('#isActiveSaveField').is(":checked"))
+                active = 'Y';
+
+            $.ajax({
+                url: g_asiBaseURL + "/AdministrationPanel/update_user",
+                type: "POST",
+                data: {
+                    'USER_ID': g_userId,
+                    'PPNO': $('#ppnoSaveField').val(),
+                    'ROLE_ID': $('#roleSaveField option:selected').val(),
+                    'ENTITY_ID': $('#childposting option:selected').val(),
+                    'EMAIL_ADDRESS': $('#emailSaveField').val(),
+                    'PASSWORD': $('#passSaveField').val(),
+                    'ISACTIVE': active,
+                },
+                cache: false,
+                success: function (data) {
+                    if (data && data.status) {
+                        alert('User Successfully Updated');
+                    }
+                    else {
+                        alert((data && data.message) ? data.message : 'Unable to update user.');
+                    }
+
+                },
+                error: function () {
+                    alert('Unable to update user.');
+                },
+                dataType: "json",
+            });
+
+        }
+        else {
+            alert('Password and Confirm Password should be Same');
+            return;
+        }
+    }
+
+    function addNewUserButtonClickHandler() {
+
+        if ($('#passSaveField').val() == $('#conPassSaveField').val()) {
+
+            $.ajax({
+                url: g_asiBaseURL + "/ApiCalls/add_new_user",
+                type: "POST",
+                data: {
+                    'USER_ID': 0,
+                    'PPNUMBER': $('#ppnoSaveField').val(),
+                    'GROUPID': $('#roleSaveField option:selected').val(),
+                    'ENTITYID': $('#childposting option:selected').val(),
+                    'PASSWORD': $('#passSaveField').val()
+                },
+                cache: false,
+                success: function (data) {
+                    alert(data.message);
+                },
+                dataType: "json",
+            });
+
+        }
+        else {
+            alert('Password and Confirm Password should be Same');
+            return;
+        }
+    }
+
+
+    function checkBoxClicked() {
+        if ($('#resetpassword').prop('checked')) {
+            $('#passSaveField').val('Ztbl@1234');
+            $('#conPassSaveField').val('Ztbl@1234');
+        } else {
+            $('#passSaveField').val('');
+            $('#conPassSaveField').val('');
+        }
+    }
+
+
+
+</script>
+
+<div class="row col-md-12 mt-3">
+    <h3 style=" display:block;color: #be0e43">Manage Users</h3>
+</div>
+
+<div class="row col-md-12 mt-1">
+    <div class="col-md-2">
+        <label>Relationship Type</label>
+    </div>
+    <div class="col-md-10">
+        <select id="RelationshipField" onchange="getrelation();" class="form-control form-select">
+            <option id="0" value="0" selected="selected">--Select Relationship Type--</option>
+
+            @{
+                if (ViewData["Userrelationship"] != null)
+                {
+                    foreach (var item in (dynamic)(ViewData["Userrelationship"]))
+                    {
+                            <option value="@item.ENTITY_REALTION_ID" id="@item.ENTITY_REALTION_ID">@item.FIELD_NAME</option>
+                    }
+                }
+            }
+
+
+
+        </select>
+    </div>
+</div>
+
+<div class="row col-md-12 mt-1">
+    <div class="col-md-2">
+        <label>Controlling/Reporting Office</label>
+    </div>
+    <div class="col-md-4">
+        <select id="controlingsearch" onchange="getplacepost();" class="form-control form-select">
+            <option id="0" value="0" selected="selected">--Select Controlling/Reporting Office--</option>
+        </select>
+    </div>
+
+
+    <div class="col-md-2">
+        <label>Place of Posting</label>
+    </div>
+    <div class="col-md-4">
+        <select id="childposting" class="form-control form-select">
+            <option id="0" value="0" selected="selected">--Select Place of Posting--</option>
+
+        </select>
+    </div>
+</div>
+
+<div id="searchFieldsContainer">
+    <div class="row col-md-12 mt-1">
+        <div class="col-md-2">
+            <label>P.P.No.</label>
+        </div>
+        <div class="col-md-4">
+            <input id="ppnoSearchField" type="text" class="form-control" placeholder="P.P.Number" aria-label="P.P.Number" aria-describedby="basic-addon2">
+        </div>
+        <div class="col-md-2">
+            <label>login Name</label>
+        </div>
+        <div class="col-md-4">
+            <input id="loginSearchField" autocomplete="false" readonly onfocus="this.removeAttribute('readonly');" class="form-control" type="text" />
+        </div>
+    </div>
+    <div class="row col-md-12 mt-1">
+        <div class="col-md-2">
+            <label>Email</label>
+        </div>
+        <div class="col-md-10">
+            <input id="emailSearchField" class="form-control" type="text" />
+        </div>
+    </div>
+    <div class="row col-md-12 mt-1">
+        <div class="col-md-2">
+            <label>Group/Role</label>
+        </div>
+        <div class="col-md-10">
+            <select id="roleSearchField" class="form-control form-select">
+                <option id="0" value="0" selected="selected">--Select Group--</option>
+                @{
+                    if (ViewData["GroupList"] != null)
+                    {
+                        foreach (var item in (dynamic)(ViewData["GroupList"]))
+                        {
+                                <option value="@item.GROUP_CODE" id="@item.GROUP_CODE">@item.GROUP_NAME</option>
+                        }
+                    }
+                }
+            </select>
+        </div>
+    </div>
+
+    <div class="row col-md-12 mt-1">
+        <div class="col-md-2">
+            <label>Is Active</label>
+        </div>
+        <div class="col-md-10">
+            <input id="isActiveSearchField" type="checkbox" />
+        </div>
+    </div>
+</div>
+
+<div id="saveChangesFieldsContainer" class="d-none">
+    <div class="row col-md-12 mt-1">
+        <div class="col-md-2">
+            <label>P.P.No.</label>
+        </div>
+        <div class="col-md-4">
+            <input id="ppnoSaveField" type="text" class="form-control" placeholder="P.P.Number" aria-label="P.P.Number" aria-describedby="basic-addon2">
+        </div>
+        <div class="col-md-2">
+            <label>login Name</label>
+        </div>
+        <div class="col-md-4">
+            <input id="loginSaveField" autocomplete="false" class="form-control" type="text" />
+        </div>
+    </div>
+
+    <div class="row col-md-12 mt-1">
+        <div class="col-md-2">
+            <label>Password</label>
+        </div>
+        <div class="col-md-4">
+            <input id="passSaveField" autocomplete="false" type="password" class="form-control" />
+        </div>
+        <div class="col-md-2">
+            <label>Confirm Password</label>
+        </div>
+        <div class="col-md-4">
+            <input id="conPassSaveField" autocomplete="false" class="form-control" type="password" />
+        </div>
+    </div>
+    <div class="row col-md-12 mt-1">
+        <div class="col-md-2">
+            <label>Email</label>
+        </div>
+        <div class="col-md-10">
+            <input id="emailSaveField" class="form-control" type="text" />
+        </div>
+    </div>
+    <div class="row col-md-12 mt-1">
+        <div class="col-md-2">
+            <label>Group/Role</label>
+        </div>
+        <div class="col-md-10">
+            <div class="row col-md-12 w-100 m-0 p-0">
+                <select id="roleSaveField" class="form-control form-select">
+                 
+                    @{
+                        if (ViewData["GroupList"] != null)
+                        {
+                            foreach (var item in (dynamic)(ViewData["GroupList"]))
+                            {
+                                    <option value="@item.GROUP_CODE" id="@item.GROUP_CODE">@item.GROUP_NAME</option>
+                            }
+                        }
+                    }
+                </select>
+            </div>
+        </div>
+    </div>
+    <div class="row col-md-12 mt-1">
+        <div class="col-md-2">
+            <label>Is Active</label>
+        </div>
+        <div class="col-md-10">
+            <input id="isActiveSaveField" type="checkbox" />
+        </div>
+    </div>
+    <div class="row col-md-12 mt-1">
+        <div class="col-md-2">
+            <label>Reset Password</label>
+        </div>
+        <div class="col-md-10">
+            <input id="resetpassword" type="checkbox" onclick="checkBoxClicked()"/>
+        </div>
+    </div>
+</div>
+
+<div class="row col-md-12 mt-1">
+    <button id="findButton" onclick="findButtonClickHandler();" class="btn btn-danger col-md-2" style="margin-left:auto;">Find</button>
+    <button id="saveChangesButton" onclick="saveButtonClickHandler();" class="btn btn-success col-md-2 d-none" style="margin-left:auto;">Save Changes</button>
+    <button id="addNewUserChangesButton" onclick="addNewUserButtonClickHandler();" class="btn btn-success col-md-2 d-none" style="margin-left:auto;">Add New User</button>
+
+</div>
+<div class="mt-1">
+    <table class="table table-bordered mb-0 mt-3 bg-white table-hover table-striped" id="userListTable">
+        <thead>
+            <tr>
+                <td style="text-align:left;"><h6>User Name</h6></td>
+                <td style="text-align:left;"><h6>P.P. No.</h6></td>
+                <td style="text-align:left;"><h6>Controlling/Reporting Office</h6></td>
+                <td style="text-align:left;"><h6>Current Place of Posting</h6></td>
+                <td style="text-align:left;"><h6>Email</h6></td>
+                <td style="text-align:left;"><h6>Group/Role</h6></td>
+                <td style="text-align:left;"><h6>Is Active</h6></td>
+                <td style="text-align:left;"></td>
+            </tr>
+        </thead>
+        <tbody>
+        </tbody>
+    </table>
+</div>
+
+
+
+
+
+
+

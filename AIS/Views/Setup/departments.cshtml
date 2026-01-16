@@ -1,0 +1,220 @@
+﻿@{
+    ViewData["Title"] = "Departments";
+    Layout = "_Layout";
+}
+
+<script type="text/javascript">
+    $(document).ready(function () {
+        var g_deptId = 0;
+        $('#sidebar_policy').hide();
+        $("#searchTableRecord").on("keyup", function () {
+            var value = $(this).val().toLowerCase();
+            $("#listOfDepartment tbody tr").filter(function () {
+                $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1)
+            });
+        });
+    });
+
+    function newDeptSetup() {
+        g_deptId = 0;
+        $('#setupDeptModal').modal('show');
+        $('#deptCodeModalField').val('');
+        $('#deptNameModalField').val('');
+        $('#deptdivNameModalField').val(0);
+        $('#deptdivNameModalField').val(0);
+    }
+
+    function setupDepartment(code, name, div_name, status, id, div_id,audited_id) {
+        g_deptId = id;
+        $('#deptCodeModalField').val(code);
+        $('#deptNameModalField').val(name);
+        //audited_id
+
+        $('#deptdivNameModalField').val(div_id);
+        $('#deptAuditByNameModalField').val(audited_id);
+        if (status == "Active")
+            $('#deptActiveModalField').click();
+        else if (status == "InActive")
+            $('#deptInactiveModalField').click();
+
+        $('#setupDeptModal').modal('show');
+    }
+
+    function publishDepartmentChanges() {
+
+        var code = $('#deptCodeModalField').val();
+        var name = $('#deptNameModalField').val();
+        var div_id = $('#deptdivNameModalField').val();
+        var auditby_id = $('#deptAuditByNameModalField option:selected').val();
+        var div_name = $('#deptdivNameModalField option:selected').text();
+        var status;
+        var badge;
+        if ($('#deptActiveModalField').is(':checked')) {
+            status = 'Active';
+            badge = 'text-bg-success ';
+        }
+        else {
+            status = 'InActive';
+            badge = 'text-bg-danger ';
+        }
+        if (auditby_id == 0) {
+            alert("Select Audit By Department");
+            return;
+        }
+       $('#setupDeptModal').modal('hide');
+        $.ajax({
+            url: g_asiBaseURL + "/Setup/department_add",
+            type: "POST",
+            data: {
+                'id': g_deptId,
+                'code': code,
+                'name': name,
+                'div_id': div_id,
+                'AUDITED_BY_DEPID': auditby_id,
+                'status': status
+            },
+            cache: false,
+            success: function (data) {
+                //console.log(data);
+                window.location = window.location.pathname;
+            },
+            dataType: "json",
+        });
+    }
+</script>
+
+<div class="col-md-12" style="margin-top:20px;">
+    <h3>List of Departments</h3>
+    <div class="row">
+        <div class="col-md-9">
+            <input class="form-control" id="searchTableRecord" type="text" placeholder="Search..">
+        </div>
+        <div class="col-md-3">
+            <button onclick="newDeptSetup();" class="btn btn-danger w-100">Add New Department</button>
+        </div>
+    </div>
+    <br>
+    <table id="listOfDepartment" class="table align-middle mb-0 bg-white table-hover table-striped">
+        <thead class="bg-light">
+            <tr>
+                <th class="col-md-1">Code</th>
+                <th class="col-md-3">Name</th>
+                <th class="col-md-2">Division Name</th>
+                <th class="col-md-3">Audit By</th>
+                <th class="col-md-2">Status</th>
+                <th class="col-md-1">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            @{
+                if (ViewData["DepartmentList"] != null)
+                {
+                    foreach (var item in (dynamic)(ViewData["DepartmentList"]))
+                    {
+
+                        <tr id="dept_@item.CODE">
+                            <td class="dept_code">
+                                <p class="fw-normal mb-1">@item.CODE</p>
+                            </td>
+                            <td class="dept_name">
+                                <p class="fw-normal mb-1">@item.NAME</p>
+                            </td>
+                            <td class="dept_div">
+                                <p class="fw-normal mb-1">@item.DIV_NAME</p>
+                                <!--<p class="text-muted mb-0">IT department</p>-->
+                            </td>
+                            <td class="dept_div">
+                                <p class="fw-normal mb-1">@item.AUDITED_BY_NAME</p>
+                                <!--<p class="text-muted mb-0">IT department</p>-->
+                            </td>
+                            <td class="dept_status">
+                                @{
+                                    if (item.STATUS == "Active")
+
+                                    { <span class="badge text-bg-success rounded-pill d-inline">@item.STATUS</span>}
+                                else
+                                { <span class="badge text-bg-danger rounded-pill d-inline" style="color: red">@item.STATUS</span>}
+                                }
+                            </td>
+                            <td class="dept_action">
+                                <button type="button" class="btn btn-link text-danger btn-sm btn-rounded" onclick="setupDepartment('@item.CODE','@item.NAME','@item.DIV_NAME','@item.STATUS','@item.ID','@item.DIV_ID','@item.AUDITED_BY_DEPID');">
+                                    Edit
+                                </button>
+                            </td>
+                        </tr>
+                                        }
+                                    }}
+        </tbody>
+    </table>
+</div>
+
+<div id="setupDeptModal" class="modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">Department Setup</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form>
+                    <div class="form-group">
+                        <label for="deptCodeModalField">Code</label>
+                        <input type="text" class="form-control" id="deptCodeModalField" aria-describedby="brcode" placeholder="Department Code">
+
+                    </div>
+                    <div class="form-group">
+                        <label for="deptNameModalField">Name</label>
+                        <input type="text" class="form-control" id="deptNameModalField" placeholder="Department Name">
+                    </div>
+                    <div class="form-group">
+                        <label for="deptdivNameModalField">Division</label>
+                        <select id="deptdivNameModalField" class="form-select form-control">
+                            @{
+                                if (ViewData["DivisionList"] != null)
+                                {
+                                    foreach (var item in (dynamic)(ViewData["DivisionList"]))
+                                    {
+                                        <option value="@item.DIVISIONID" id="@item.DIVISIONID">@item.NAME</option>
+                                    }
+                                }
+                            }
+
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="deptAuditByNameModalField">Audit by Department</label>
+                        <select id="deptAuditByNameModalField" class="form-select form-control">
+                            <option>--Select Audit By Department--</option>
+                            <option value="472" id="472">CORPORATE AUDIT DEPARTMENT</option>
+                            <option value="494" id="494">INFO. SYS. AUDIT DEPT</option>
+
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="branchAddressModalField">Status</label>
+                        <div class="row col-md-12">
+                            <div class="form-check form-check-inline">
+                                <input class="form-check-input" type="radio" name="inlineRadioOptions" id="deptActiveModalField" value="option1" />
+                                <label class="form-check-label" for="deptActiveModalField">Active</label>
+                            </div>
+
+                            <div class="form-check form-check-inline">
+                                <input class="form-check-input" type="radio" name="inlineRadioOptions" id="deptInactiveModalField" value="option2" />
+                                <label class="form-check-label" for="deptInactiveModalField">Inactive</label>
+                            </div>
+                        </div>
+                    </div>
+
+
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button onclick="publishDepartmentChanges();" type="button" class="btn btn-danger">Save changes</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+

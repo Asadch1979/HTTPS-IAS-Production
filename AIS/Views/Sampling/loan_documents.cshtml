@@ -1,0 +1,168 @@
+﻿@{
+    var page_id = ViewData["PageId"] as int? ?? 0;
+}
+
+@{
+    ViewData["Title"] = "Loan Document List";
+    Layout = "_Layout";
+}
+<script type="text/javascript">
+    var g_engId = 0;
+    var g_accountNo = 0;
+    var g_loanDisbId = 0;  // Fix: Declare this variable
+    var g_sampleType = "";
+
+    $(document).ready(function () {
+        var url_string = window.location.href;
+        var url = new URL(url_string);
+        g_engId = url.searchParams.get("engId");
+        g_loanDisbId = url.searchParams.get("disbId");
+        g_sampleType = url.searchParams.get("sample_type");
+        if(g_sampleType){
+            $("#sampleTypeHeader").text(g_sampleType);
+        }
+        loadLoanDocuments();
+    });
+
+    function loadLoanDocuments() {
+        $('#wait').show();
+        destroyDatatable('loan_document_list');
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/get_loan_documents",
+            type: "POST",
+            data: {
+                'LOAN_DISB_ID': g_loanDisbId,
+                'ENG_ID': g_engId
+            },
+            success: function (data) {
+                if (data.length > 0) {
+                    populateTable(data);
+                }
+            },
+            dataType: "json",
+            error: function (xhr, status, error) { // Fix: Catch AJAX errors
+                console.error("AJAX Error:", status, error);
+            },
+            complete: function(){
+                $('#wait').hide();
+            }
+        });
+    }
+
+     function populateTable(data) {
+         var tableBody = $("#loan_document_list tbody");
+         tableBody.empty();  // Clear table before adding new data
+
+        $.each(data, function (index, item) {
+            var row = `<tr>
+                <td>${index + 1}</td>
+                    <td>${item.brancH_CODE}</td>
+                <td>${item.loaN_CASE_NO}</td>
+                <td>${item.customeR_NAME}</td>
+                <td>${item.doC_NAME}</td>  
+                <td class="text-center">
+                    ${item.imagE_ID ?
+                        `<a href="#" onclick="event.preventDefault();viewDocument('${item.imagE_ID}','${item.doC_NAME}');" class="btn btn-info btn-sm">View Document</a>` :
+                        `<span class="text-muted">No Image</span>`}
+                </td>
+            </tr>`;
+            tableBody.append(row);
+        });
+
+        initializeDataTable('loan_document_list');
+    }
+
+    function viewDocument(docId, docName) {
+        if (!docId) {
+            alert("Document ID is missing.");
+            return;
+        }
+
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/get_loan_document_data",
+            type: "POST",
+            data: { 'IMAGE_ID': docId },
+            dataType: "json",
+            success: function (data) {
+                var docImage = data[0].imagE_DATA;
+
+                if (!docImage) {
+                    console.error("No document data available");
+                    alert("No document data received.");
+                    return;
+                }
+
+                docImage = docImage.trim();
+
+                let win = window.open("", "_blank");
+                if (!win) {
+                    alert("Please allow popups to view the document.");
+                    return;
+                }
+
+                let extension = '';
+                if (docName && docName.indexOf('.') > -1) {
+                    extension = docName.split('.').pop().toLowerCase();
+                }
+
+                let mime = '';
+                if (extension === 'pdf' || docImage.startsWith('JVBERi0xL')) {
+                    mime = 'application/pdf';
+                } else if (extension === 'png' || docImage.startsWith('iVBOR')) {
+                    mime = 'image/png';
+                } else if (extension === 'gif' || docImage.startsWith('R0lGOD')) {
+                    mime = 'image/gif';
+                } else if (extension === 'bmp' || docImage.startsWith('Qk')) {
+                    mime = 'image/bmp';
+                } else if (extension === 'tiff' || extension === 'tif' || docImage.startsWith('SUkq')) {
+                    mime = 'image/tiff';
+                } else if (extension === 'jpeg' || extension === 'jpg' || docImage.startsWith('/9j/')) {
+                    mime = 'image/jpeg';
+                }
+
+                if (mime === 'application/pdf') {
+                    let pdfSrc = `data:${mime};base64,` + docImage;
+                    win.document.write(`<html><body style="margin:0;"><embed src="${pdfSrc}" type="application/pdf" width="100%" height="100%"/><\/body></html>`);
+                    win.document.close();
+                } else if (mime.startsWith('image/')) {
+                    let imageSrc = `data:${mime};base64,` + docImage;
+                    win.document.write(`<html><body style="margin:0;"><img src="${imageSrc}" style="width:100%; height:auto;"/><\/body></html>`);
+                    win.document.close();
+                } else {
+                    console.error("Unsupported document type");
+                    alert("The document type is not supported.");
+                    win.close();
+                }
+            },
+            error: function (xhr, status, error) {
+                console.error("AJAX Error:", status, error);
+            }
+        });
+    }
+
+</script>
+<link rel="stylesheet" href="~/css/sampling.css" />
+<div class="container-fluid mt-4">
+    <div class="card card-sample shadow-sm">
+        <div class="card-header">
+            <h4 class="mb-0">Loan Documents List <span id="sampleTypeHeader" style="color:red;font-weight:bold;"></span></h4>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table id="loan_document_list" class="table table-hover table-bordered table-striped">
+                    <thead>
+                        <tr>
+                            <th>Sr No</th>
+                            <th>Branch Code</th>
+                            <th>Loan Case</th>
+                            <th>Customer Name</th>
+                            <th>Document Name</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>

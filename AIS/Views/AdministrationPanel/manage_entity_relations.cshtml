@@ -1,0 +1,192 @@
+﻿@{
+    ViewData["Title"] = "Manage Entity Relations";
+    Layout = "_Layout";
+
+}
+
+
+<script type="text/javascript">
+
+    var g_entId = 0;
+    var g_entRecord = [];
+
+
+    $(document).ready(function () {
+
+        getEntityRelations();
+
+    });
+
+    function getEntityRelations() {
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/get_entity_relations",
+            type: "POST",
+            data: {
+
+            },
+            cache: false,
+            success: function (data) {
+                g_entRecord = data;
+                $('#entityRelationsGrid tbody').empty();
+                $.each(data, function (i, v) {
+                    $('#entityRelationsGrid tbody').append('<tr><td>' + ++i + '</td><td>' + v.id + '</td><td>' + v.entitY_REALTION_ID + '</td><td>' + v.parenT_ENTITY_TYPEID + '</td><td>' + v.chilD_ENTITY_TYPEID + '</td><td>' + v.parenT_NAME + '</td><td>' + v.chilD_NAME + '</td><td>' + v.status + '</td><td><a href="#" onclick="event.preventDefault();UpdateEntityType(' + v.autid + ');" class="text-danger">Update</a></td></tr>');
+                });
+            },
+            dataType: "json",
+        });
+    }
+    function reloadLocation() {
+        $('#updateEntityType').modal('hide');
+        getEntityRelations();
+    }
+
+    function UpdateEntityType(typeId) {
+        g_entId = typeId;
+        $('#updateEntityType').modal('show');
+
+        $('#modalEntId').val('');
+        $('#modalEntType').val('');
+        $('#modalEntTypeDesc').val('');
+        $('#modalEntAuitable').val('N');
+        $('#modalAuditedCode').val('');
+        $('#modalEntAuitedType').val('');
+        $('#entAuditbyField').val(0);
+        $.each(g_entRecord, function (i, v) {
+            if (v.autid == g_entId) {
+
+                $('#modalEntId').val(v.autid);
+                $('#modalEntType').val(v.entitycode);
+                $('#modalEntTypeDesc').val(v.entitytypedesc);
+                $('#modalEntAuitable').val(v.auditable);
+                $('#modalAuditedCode').val(v.auditedby);
+                $('#modalEntAuitedType').val(v.audiT_TYPE);
+                $('#entAuditbyField').val(v.auditeD_BY_ENTITY);
+
+            }
+        })
+
+    }
+    function saveChangesEntityType() {
+
+        var entityUpdateModel = {
+            'AUTID': $('#modalEntId').val(),
+            'ENTITYCODE': $('#modalEntType').val(),
+            'ENTITYTYPEDESC': $('#modalEntTypeDesc').val(),
+            'AUDITABLE': $('#modalEntAuitable').val(),
+            'AUDITEDBY': $('#modalAuditedCode').val(),
+            'AUDITED_BY_ENTITY': $('#entAuditbyField').val(),
+            'AUDIT_TYPE': $('#modalEntAuitedType').val(),
+            'E_AUTID': g_entId
+        }
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/update_entity_types",
+            type: "POST",
+            data: {
+                ENTITY_MODEL: entityUpdateModel
+            },
+            cache: false,
+            success: function (data) {
+                alert(data.message);
+                onAlertCallback(reloadLocation);
+
+            },
+            dataType: "json",
+        });
+    }
+
+</script>
+
+<div class="row col-md-12 mt-3">
+    <table id="entityRelationsGrid" class="table table-hover table-bordered table-hover mt-3 table-striped">
+        <thead style="background-color: #19875478 !important; ">
+            <tr>
+                <th class="col-md-auto text-center">Sr. No.</th>
+                <th class="col-md-auto">ID</th>
+                <th class="col-md-auto">Relationship ID</th>
+                <th class="col-md-auto">Parent Type ID</th>
+                <th class="col-md-auto">Child Type ID</th>
+                <th class="col-md-auto">Parent Name</th>
+                <th class="col-md-auto">Child Name</th>
+                <th class="col-md-auto">Status</th>
+                <th class="col-md-auto"></th>
+            </tr>
+        </thead>
+        <tbody>
+        </tbody>
+    </table>
+
+</div>
+
+
+
+<div id="updateEntityType" class="modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-xl" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">Add Checklist Detail</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+
+
+                <div class="form-group">
+                    <label>ID</label>
+                    <input id="modalEntId" type="text" class="form-control" />
+                </div>
+                <div class="form-group">
+                    <label>Entity Type</label>
+                    <input id="modalEntType" type="text" class="form-control" />
+                </div>
+                <div class="form-group">
+                    <label>Type Description</label>
+                    <textarea id="modalEntTypeDesc" class="form-control" rows="3"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Auditable</label>
+                    <select class="form-control" id="modalEntAuitable">
+                        <option value="A">Auditable</option>
+                        <option value="N">Not Auditable</option>
+
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Audited By Type</label>
+                    <select class="form-control" id="modalEntAuitedType">
+                        <option value="">--Select Audited By Type--</option>
+                        <option value="D">Department</option>
+                        <option value="B">Branch</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Audited By</label>
+                    <select id="entAuditbyField" class="form-control">
+                        <option value="0" id="0" selected>--Select Entity--</option>
+                        @{
+                            if (ViewData["AuditedByList"] != null)
+                            {
+                                foreach (var item in (dynamic)(ViewData["AuditedByList"]))
+                                {
+                                    <option value="@item.AUTID">@item.ENTITYTYPEDESC</option>
+                                }
+                            }
+                        }
+
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Audited By Code</label>
+                    <input id="modalAuditedCode" type="text" class="form-control" />
+                </div>
+
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button onclick="saveChangesEntityType();" type="button" data-bs-dismiss="modal" class="btn btn-success">Save Changes</button>
+
+            </div>
+        </div>
+    </div>
+</div>

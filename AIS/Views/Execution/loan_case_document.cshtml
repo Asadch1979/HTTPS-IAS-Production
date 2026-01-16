@@ -1,0 +1,114 @@
+﻿@{
+    var page_id = ViewData["PageId"] as int? ?? 0;
+}
+
+@{
+    ViewData["Title"] = "Loan Case Document";
+    Layout = "_Layout";
+}
+
+<style type="text/css">
+    .container {
+        max-width: 100%;
+    }
+
+    .card-header {
+        background-color: transparent !important;
+        font-size: 20px;
+        height: 100px;
+    }
+
+    .icon-card {
+        margin: 10px;
+    }
+</style>
+
+<script type="text/javascript">
+
+    $(document).ready(function () {
+
+        getb_depositinfo();
+
+        $('#sidebar_policy').hide();
+        $("#searchTableRecord").on("keyup", function () {
+            var value = $(this).val().toLowerCase();
+            $("#l_c_d_T tbody tr").filter(function () {
+                $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1)
+            });
+        });
+
+
+    });
+
+    function getb_depositinfo() {
+
+     
+            $.ajax({
+                url: g_asiBaseURL + "/ApiCalls/Getloancasedocuments",
+                type: "POST",
+                data: {
+                 //   'b_id': bid
+                },
+                cache: false,
+                success: function (data) {
+                    console.log(data);
+                    $('#l_c_d_T tbody').empty();
+                    $.each(data, function (i, v) {
+                        $('#l_c_d_T tbody').append('<tr><td>' + v.branchcode + '</td><td>' + v.loaN_APP_ID + '</td><td class="pr-2">' + v.cnic + '</td><td>' + v.loaN_CASE_NO + '</td><td>' + v.glsubcode + '</td><td>' + v.customername + '</td><td>' + v.loaN_DISB_ID + '</td><td>' + v.documents + '</td>  <td>' + v.images+ '</td> </tr>')
+                    });
+                },
+                dataType: "json",
+            });
+        
+    }
+
+
+
+
+</script>
+<div class="row col-md-12 mt-3">
+    <h4 style="display: block; color: #be0e43">Fresh Disbursement Information</h4>
+</div>
+
+<!--<div class="row col-md-12 mt-1">
+
+    <div class="row col-md-6 mt-1">
+        <label><b>Branch ID</b></label>
+        <input id="b_i" class="form-control ml-1" type="number" />
+    </div>
+</div>
+<div class="row col-md-12 mt-3">
+    <button onclick="getb_depositinfo();" class="btn btn-primary">Find</button>
+</div>
+-->
+
+
+<div class="row col-md-12">
+    <input class="form-control" id="searchTableRecord" type="text" placeholder="Search..">
+</div>
+
+<div class="row col-md-12 mt-3">
+    <table id="l_c_d_T" class="table table-hover table-bordered table-hover mt-3 table-striped">
+        <thead style="background-color: #19875478 !important; ">
+            <tr>
+                <th class="col-md-auto">BRANCH CODE</th>
+                <th class="col-md-Auto">LOAN APP ID</th>
+                <th class="col-md-Auto">CNIC</th>
+                <th class="col-md-Auto">LOAN CASE NO</th>
+                <th class="col-md-Auto">GL SUB CODE</th>
+                <th class="col-md-Auto">CUSTOMER NAME</th>
+                <th class="col-md-Auto">LOAN DISB ID</th>
+                <th class="col-md-1">DOCUMENTS</th>
+                <th class="col-md-Auto">IMAGES</th>
+            </tr>
+        </thead>
+        <tbody style="font-size:small">
+        </tbody>
+    </table>
+
+    <div class="row col-md-12 mt-3">
+
+        <button onclick="history.back()" class="btn btn-primary" style="color:white">Return</button>
+
+    </div>
+</div>

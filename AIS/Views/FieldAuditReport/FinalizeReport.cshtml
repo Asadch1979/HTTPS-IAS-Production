@@ -1,0 +1,79 @@
+@model AIS.Models.FieldAuditReport.FinalizeReportViewModel
+
+@{
+    ViewData["Title"] = "Finalize Report";
+    Layout = "_Layout";
+    var engagementSelector = ViewData["EngagementSelector"] as AIS.Models.FieldAuditReport.FieldAuditEngagementSelectorViewModel;
+    var hasEngagement = engagementSelector?.HasActiveEngagement ?? false;
+}
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <h3 class="mb-3">Finalize Field Audit Report</h3>
+        </div>
+    </div>
+
+    @await Html.PartialAsync("_GetEngagementSelector", engagementSelector)
+
+    @if (!hasEngagement)
+    {
+        <div class="alert alert-warning">Select an engagement to review completion and finalize the report.</div>
+    }
+
+    @if (TempData["FieldAuditReportMessage"] != null)
+    {
+        <div class="alert alert-info">@TempData["FieldAuditReportMessage"]</div>
+    }
+
+    @if (Model.IsFinal)
+    {
+        <div class="alert alert-success">This report is already finalized.</div>
+    }
+    else
+    {
+        <div class="alert alert-warning">
+            Once finalized, the report becomes read-only. Any change will require a new version.
+        </div>
+    }
+
+    @if (hasEngagement)
+    {
+        <div class="card mb-4">
+            <div class="card-header">Completion Checklist</div>
+            <div class="card-body">
+                <ul class="list-group">
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        KPI Snapshot
+                        <span class="text-@((Model.Checklist.HasKpiSnapshot ? "success" : "danger"))">
+                            <i class="fa-solid @(Model.Checklist.HasKpiSnapshot ? "fa-circle-check" : "fa-circle-xmark")"></i>
+                        </span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        NPL Snapshot
+                        <span class="text-@((Model.Checklist.HasNplSnapshot ? "success" : "danger"))">
+                            <i class="fa-solid @(Model.Checklist.HasNplSnapshot ? "fa-circle-check" : "fa-circle-xmark")"></i>
+                        </span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        Staff Snapshot
+                        <span class="text-@((Model.Checklist.HasStaffSnapshot ? "success" : "danger"))">
+                            <i class="fa-solid @(Model.Checklist.HasStaffSnapshot ? "fa-circle-check" : "fa-circle-xmark")"></i>
+                        </span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        Mandatory Narrative Sections
+                        <span class="text-@((Model.Checklist.MandatoryNarrativesComplete ? "success" : "danger"))">
+                            <i class="fa-solid @(Model.Checklist.MandatoryNarrativesComplete ? "fa-circle-check" : "fa-circle-xmark")"></i>
+                        </span>
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+        <form method="post" asp-action="FinalizeReport">
+            <button type="submit" class="btn btn-success" @(!Model.CanFinalize ? "disabled" : string.Empty)>Finalize Report</button>
+            <button type="button" class="btn btn-outline-secondary" disabled>Generate PDF (Coming Soon)</button>
+        </form>
+    }
+</div>

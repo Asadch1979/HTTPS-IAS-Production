@@ -1,0 +1,68 @@
+﻿@{
+    var page_id = ViewData["PageId"] as int? ?? 0;
+}
+
+@{
+    ViewData["Title"] = "Checklist";
+    Layout = "_Layout";
+}
+<script type="text/javascript">
+    var g_endId = 0;
+    $(document).ready(function () {
+        var url_string = window.location;
+        var url = new URL(url_string);
+        g_endId = url.searchParams.get("engId");
+    });
+    function proceedToSubChecklist(id) {
+        window.location.href = g_asiBaseURL + '/Execution/subchecklist?engId=' + g_endId + '&id=' + id;
+    }
+</script>
+    <div class="row mt-3">
+        <div>
+            <center>
+                <h3 style="color: #be0e43">Checklist</h3>
+            </center>
+        </div>
+
+        <table class="table table-hover table-bordered table-hover mt-3 table-striped">
+        <thead style="background-color: #19875478 !important; ">
+                <tr>
+                    <th class="col-md-1 font-weight-bold">Sr. No</th>
+                    <th class="col-md-8 font-weight-bold">Heading</th>
+                    <th class="col-md-1 font-weight-bold text-center">Status</th>
+                    <th class="col-md-2 font-weight-bold"></th>
+                </tr>
+            </thead>
+            <tbody>
+                @{
+                    if (ViewData["Checklist"] != null)
+                    {
+
+                        var index = 1;
+                        foreach (var item in (dynamic)(ViewData["Checklist"]))
+                        {
+                           
+                            <tr>
+                                <td class="text-center">@index</td>
+                                <td>@item.HEADING</td>
+                                <td class="text-center">
+                                    @{
+                                        if (item.STATUS == "Y")
+                                        {
+                                            <span class="badge text-bg-success rounded-pill d-inline">Pending</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge text-bg-danger rounded-pill d-inline">@item.STATUS</span>}
+                                    }
+
+                                </td>
+                                <td class="text-hover text-danger text-center"><a href="#" onclick="proceedToSubChecklist(@item.T_ID)">Sub Checklist</a></td>
+                            </tr>
+                            index++;
+                        }
+                    }
+                }
+            </tbody>
+        </table>
+    </div>

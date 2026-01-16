@@ -1,0 +1,211 @@
+﻿@{
+    ViewData["Title"] = "HR Designation Wise Role";
+    Layout = "_Layout";
+
+}
+
+<script type="text/javascript">
+
+    var g_desigId = 0;
+    var g_groupId = 0;
+    var g_assignmentId = 0;
+    var g_entType = '';
+    $(document).ready(function () {
+        $("#searchTableRecord").on("keyup", function () {
+            var value = $(this).val().toLowerCase();
+            $("#hr_desig_wise_role_grid tbody tr").filter(function () {
+                $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1)
+            });
+        });
+
+        getHRDesignationWiseRole();
+
+    });
+    function getHRDesignationWiseRole() {
+        $('#hr_desig_wise_role_grid tbody').empty();
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/get_hr_designation_wise_roles",
+            type: "POST",
+            data: {
+            },
+            cache: false,
+            success: function (data) {
+                $.each(data, function (i, v) {
+                    $('#hr_desig_wise_role_grid').append('<tr><td>' + ++i + '</td><td>' + v.designatioN_CODE + '</td><td>' + v.description + '</td><td>' + v.rolE_ID + '</td><td>' + v.role + '</td><td>' + v.entitY_TYPE + '</td><td><a href="#" onclick="event.preventDefault();updateHRDesignationCode(' + v.id + ',' + v.designatioN_CODE + ',' + v.rolE_ID + ', \'' + v.entitY_TYPE + '\' );">Update</a></td></tr>');
+                });
+
+            },
+            dataType: "json",
+        });
+    }
+    function addHRDesignationCode(assignId, desigId, grpId, entType) {
+        g_assignmentId = assignId;
+        g_desigId = desigId;
+        g_groupId = grpId;
+        g_entType = entType;
+        $('#hRDesignationWiseRoleModal').modal("show");
+        $('#hRDesignationWiseRoleModal .modal-title').html("New HR Designation Wise Role Assignment");
+        $('#HRDesigSelectionField').val(g_desigId);
+        $('#RoleSelectionBox').val(g_groupId);
+        $('#EntTypeSelectionField').val(g_entTypeId);
+    }
+
+
+
+    function updateHRDesignationCode(assignId, desigId, grpId, entType) {
+        g_assignmentId = assignId;
+        g_desigId = desigId;
+        g_groupId = grpId;
+        g_entType = entType;
+        $('#hRDesignationWiseRoleModal').modal("show");
+        $('#hRDesignationWiseRoleModal .modal-title').html("Update HR Designation Wise Role Assignment");
+        $('#HRDesigSelectionField').val(g_desigId);
+        $('#RoleSelectionBox').val(g_groupId);
+        $('#EntTypeSelectionField').val(g_entType);
+    }
+
+    function submitAddNewHRDesignationWiseRoleAssignment() {
+
+        if (g_assignmentId == 0) {
+            $.ajax({
+                url: g_asiBaseURL + "/ApiCalls/add_hr_designation_wise_role_assignment",
+                type: "POST",
+                data: {
+                    'ASSIGNMENT_ID': g_assignmentId,
+                    'DESIGNATION_ID': $('#HRDesigSelectionField option:selected').val(),
+                    'GROUP_ID': $('#RoleSelectionBox option:selected').val(),
+                    'SUB_ENTITY_NAME': $('#EntTypeSelectionField option:selected').text()
+                },
+                cache: false,
+                success: function (data) {
+                    alert(data.message);
+                    onAlertCallback(reloadPage)
+                },
+                dataType: "json",
+            });
+        } else {
+            $.ajax({
+                url: g_asiBaseURL + "/ApiCalls/update_hr_designation_wise_role_assignment",
+                type: "POST",
+                data: {
+                    'ASSIGNMENT_ID': g_assignmentId,
+                    'DESIGNATION_ID': $('#HRDesigSelectionField option:selected').val(),
+                    'GROUP_ID': $('#RoleSelectionBox option:selected').val(),
+                    'SUB_ENTITY_NAME': $('#EntTypeSelectionField option:selected').text()
+                },
+                cache: false,
+                success: function (data) {
+                    alert(data.message);
+                    onAlertCallback(reloadPage)
+                },
+                dataType: "json",
+            });
+        }
+
+    }
+
+
+    function reloadPage() {
+        window.location.reload();
+    }
+
+</script>
+
+
+<div class="row col-md-12 mt-3">
+    <div class="col-md-8">
+        <h3 style=" display:block;color: #be0e43">HR Designation Wise Role</h3>
+    </div>
+    <div class="col-md-4">
+        <button style="float:right;" class="btn btn-primary" onclick="addHRDesignationCode(0,0,0,0);"> Add New Assignment</button>
+    </div>
+
+</div>
+<div class="row col-md-12 mt-3">
+    <input class="form-control" id="searchTableRecord" type="text" placeholder="Search..">
+</div>
+<div class="mt-3 row col-md-12">
+
+    <table id="hr_desig_wise_role_grid" class="table table-hover table-bordered table-hover mt-3 table-striped">
+        <thead style="background-color: #19875478 !important; ">
+            <tr>
+                <th>Sr. No.</th>
+                <th>HR Designation Code</th>
+                <th>HR Designation</th>
+                <th>Role ID</th>
+                <th>Role</th>
+                <th>Sub Entity Type</th>
+                <th></th>
+
+            </tr>
+        </thead>
+        <tbody>
+        </tbody>
+    </table>
+
+</div>
+<div id="hRDesignationWiseRoleModal" class="modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-xl" style="min-width:90%" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">New HR Designation Wise Role Assignment</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form>
+
+                    <label>HR Designation Code</label>
+                    <select id="HRDesigSelectionField" class="form-select form-control" aria-label="Default select example">
+                        <option value="0" selected>--Select HR Designation--</option>
+                        @{
+                            if (ViewData["HRDesigList"] != null)
+                            {
+                                foreach (var item in (dynamic)(ViewData["HRDesigList"]))
+                                {
+                                    <option value="@item.GROUP_CODE" id="@item.GROUP_CODE">@item.GROUP_NAME</option>
+                                }
+                            }
+                        }
+                    </select>
+
+                    <label>Group / Role</label>
+                    <select id="RoleSelectionBox" class="form-select form-control">
+                        <option value="0" selected>--Select HR Designation--</option>
+                        @{
+                            if (ViewData["GroupList"] != null)
+                            {
+                                foreach (var item in (dynamic)(ViewData["GroupList"]))
+                                {
+                                    <option value="@item.GROUP_CODE" id="@item.GROUP_CODE">@item.GROUP_NAME</option>
+                                }
+                            }
+                        }
+                    </select>
+
+                    <label>Entity Type</label>
+                    <select id="EntTypeSelectionField" class="form-select form-control" aria-label="Default select example">
+                        <option value="0" selected>--Select Entity Type--</option>
+                        @{
+                            if (ViewData["EntitiesList"] != null)
+                            {
+                                foreach (var item in (dynamic)(ViewData["EntitiesList"]))
+                                {
+                                    <option value="@item.NAME" id="@item.NAME">@item.NAME</option>
+                                }
+                            }
+                        }
+                    </select>
+
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button onclick="submitAddNewHRDesignationWiseRoleAssignment();" type="button" data-bs-dismiss="modal" class="btn btn-success btn-footer">Save Changes</button>
+
+            </div>
+        </div>
+    </div>
+</div>
+

@@ -1,0 +1,20 @@
+@model ErrorViewModel
+@{
+    ViewData["Title"] = "Error";
+    var statusCode = ViewData["StatusCode"] as int?;
+}
+
+<div class="container my-5">
+    <div class="alert alert-warning" role="alert">
+        <h1 class="alert-heading">We couldn't process your request.</h1>
+        <p class="mb-3">An unexpected error occurred while handling your request. Please try again in a few minutes.</p>
+        @if (statusCode.HasValue)
+        {
+            <p class="mb-1"><strong>Status code:</strong> @statusCode.Value</p>
+        }
+        @if (Model.ShowRequestId)
+        {
+            <p class="mb-0"><small>Reference ID: <code>@Model.RequestId</code></small></p>
+        }
+    </div>
+</div>

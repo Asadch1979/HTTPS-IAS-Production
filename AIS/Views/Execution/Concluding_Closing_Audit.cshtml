@@ -1,0 +1,660 @@
+﻿@{
+    var page_id = ViewData["PageId"] as int? ?? 0;
+}
+
+@{
+    ViewData["Title"] = "Concluding_Closing_Audit";
+    Layout = "_Layout";
+}
+
+
+
+<script type="text/javascript">
+        var g_teamMembers = [];
+        var g_engId = 0;
+        var g_type_id = 0;
+        var g_allowLimit = '12'; // Maximum file size in MB
+    var g_isFileUploaded=false;
+
+        $(document).ready(function(){
+
+            $('#uploadAuditReportButtonHandler').addClass('d-none');
+            $('#closeAuditReportButtonHandler').addClass('d-none');
+
+              $("aks-file-upload").aksFileUpload({
+            fileUpload: "#aksfileupload", // Target input for file upload
+            fileType: ["pdf", "doc", "docx"], // Allowed file formats
+            dragDrop: false, // Disable drag & drop
+            maxSize: g_allowLimit + " MB", // Maximum file size
+            multiple: false, // Allow single file upload
+            maxFile: 100, // Maximum number of uploaded files
+            maxFileError: "File exceeds upload limit. - Max limit:", // Error for exceeding file count
+            maxSizeError: "File exceeds size. - Max limit:", // Error for file size
+            fileTypeError: "Disallowed file format.", // Error for disallowed format
+            label: "Select your files and wait until they appear below", // Input label
+        });
+
+          $("#uploadReportModel").on("show.bs.modal", function () {
+            fetchUploadedFiles();
+        });
+
+        var fileInput = document.getElementById("aksfileupload");
+
+        fileInput.addEventListener("change", function () {
+            if (this.files.length > 0) {
+                $("#wait").css("display", "block"); // Show loader
+                processFiles(this.files).finally(() => {
+                    $("#wait").css("display", "none"); // Hide loader
+                });
+            } else {
+                $("#wait").css("display", "none"); // Hide loader if no files
+            }
+        });
+
+        async function processFiles(files) {
+            const formData = new FormData();
+            formData.append("subfolder", g_engId);
+
+            const allowedExtensions = ["pdf", "doc", "docx"]; // Allowed file extensions
+            const maxSizeInBytes = parseInt(g_allowLimit) * 1024 * 1024; // Convert MB to bytes
+            let hasFiles = false; // Flag to check for valid files
+
+            Array.from(files).forEach((file) => {
+                const fileExtension = file.name.split(".").pop().toLowerCase(); // Get file extension
+
+                if (!allowedExtensions.includes(fileExtension)) {
+                    alert(`Disallowed file format: ${file.name}`);
+                } else if (file.size > maxSizeInBytes) {
+                    alert(`File exceeds maximum size of ${g_allowLimit} MB: ${file.name}`);
+                } else {
+                    formData.append("files", file); // Add valid file to FormData
+                    hasFiles = true;
+                }
+            });
+
+            if (hasFiles) {
+                uploadFiles(formData);
+            } else {
+                alert("No valid files to upload.");
+            }
+        }
+
+        async function uploadFiles(formData) {
+            try {
+                const response = await $.ajax({
+                    url: g_asiBaseURL + "/UploadFile/UploadAuditReport",
+                    type: "POST",
+                    data: formData,
+                    processData: false,
+                    contentType: false,
+                });
+
+                alert("Files uploaded successfully!");
+                    g_isFileUploaded=true;
+
+                $(".aks-file-upload .aks-file-upload-delete").on("click", function () {
+                    const filename = $(this).attr("data-delete");
+                    deleteFileFromServer(filename);
+                });
+            } catch (error) {
+                console.error("Error uploading files:", error);
+                alert("Error uploading files. Please try again.");
+            }
+        }
+
+        function deleteFileFromServer(fileName) {
+            if (fileName) {
+                $.ajax({
+                    url: g_asiBaseURL + "/UploadFile/DeleteAuditReport",
+                    type: "POST",
+                    data: {
+                        fileName: fileName,
+                        subFolder: g_engId,
+                    },
+                    success: function () {
+                        alert("File deleted successfully.");
+                    },
+                    dataType: "json",
+                });
+            }
+        }
+
+        });
+
+         function getFileExtension(file) {
+            var fileName = file.name;
+            var extension = fileName.substring(fileName.lastIndexOf('.') + 1).toLowerCase();
+            return extension;
+        }
+        function getIconClass(extension) {
+            switch (extension) {
+                case 'pdf': return 'fa fa-file-pdf';
+                case 'zip': return 'fa fa-file-archive';
+                case 'png':
+                case 'jpg':
+                case 'jpeg':
+                case 'bmp': return 'fa fa-file-image';
+                case 'doc':
+                case 'docx': return 'fa fa-file-word';
+                default: return 'fa fa-file';
+            }
+        }
+        function getContentType(extension) {
+            switch (extension) {
+                case 'pdf': return 'application/pdf';
+                case 'zip': return 'application/zip';
+                case 'png': return 'image/png';
+                case 'doc': return 'application/msword';
+                case 'docx': return 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+                default: return 'application/octet-stream';
+            }
+        }
+        function generateUniqueTimestamp() {
+            var date = new Date();
+            var year = date.getFullYear();
+            var month = ('0' + (date.getMonth() + 1)).slice(-2);
+            var day = ('0' + date.getDate()).slice(-2);
+            var hours = ('0' + date.getHours()).slice(-2);
+            var minutes = ('0' + date.getMinutes()).slice(-2);
+            var seconds = ('0' + date.getSeconds()).slice(-2);
+            var milliseconds = ('00' + date.getMilliseconds()).slice(-3);
+
+            var timestamp = year + month + day + '_' + hours + minutes + seconds + milliseconds;
+            return timestamp;
+        }
+
+        function base64ToBlob(base64, contentType) {
+            const byteCharacters = atob(base64);
+            const byteArrays = [];
+
+            for (let offset = 0; offset < byteCharacters.length; offset += 512) {
+                const slice = byteCharacters.slice(offset, offset + 512);
+
+                const byteNumbers = new Array(slice.length);
+                for (let i = 0; i < slice.length; i++) {
+                    byteNumbers[i] = slice.charCodeAt(i);
+                }
+
+                const byteArray = new Uint8Array(byteNumbers);
+                byteArrays.push(byteArray);
+            }
+
+            const blob = new Blob(byteArrays, { type: contentType });
+            return blob;
+        }
+
+        function reloadLocationToUrl() {
+            window.location.href = g_asiBaseURL + "/Engagement/task_list"
+        }
+
+
+        function getaddress() {
+
+            $('#auditorWiseProgessTable tbody').empty();
+            $('#joiningAuditorDetailsTable tbody').empty();
+            g_engId = $('#entitySelectField').val();
+            g_type_id = $('#entitySelectField option:selected').attr("ent_type_id");
+
+            if(g_engId==0){
+                $('#uploadAuditReportButtonHandler').addClass('d-none');
+                $('#closeAuditReportButtonHandler').addClass('d-none');
+                return;
+            }
+
+            $('#uploadAuditReportButtonHandler').removeClass('d-none');
+            $('#closeAuditReportButtonHandler').removeClass('d-none');
+
+            $('#conoffice').empty();
+            $('#EntN').empty();
+            $('#ADD').empty();
+            $('#a_s_d').empty();
+            $('#a_e_d').empty();
+            $('#o_s_d').empty();
+            $('#o_e_d').empty();
+            $.ajax({
+                url: g_asiBaseURL + "/ApiCalls/get_address",
+                type: "POST",
+                data: {
+                    'ENT_ID': g_engId
+                },
+                cache: false,
+                success: function (data) {
+                    $.each(data, function (i, v) {
+                        console.log(v);
+                        g_teamMembers.push(v.teaM_MEM_PPNO);
+                        $('#conoffice').html(v.p_NAME);
+                        $('#EntN').html(v.name);
+                        $('#ADD').html(v.address);
+                        $('#a_s_d').html(v.audiT_STARTDATE.split('T')[0]);
+                        $('#a_e_d').html(v.audiT_ENDDATE.split('T')[0]);
+                        $('#o_s_d').html(v.operatioN_STARTDATE.split('T')[0]);
+                        $('#o_e_d').html(v.operatioN_ENDDATE.split('T')[0]);
+
+                        $('#highTotalMemos').html(v.high);
+                        $('#highTotalSettledMemos').html(v.settleD_HIGH);
+                        $('#highTotalOpenMemos').html(v.opeN_HIGH);
+
+                        $('#mediumTotalMemos').html(v.medium);
+                        $('#mediumTotalSettledMemos').html(v.settleD_MEDIUM);
+                        $('#mediumTotalOpenMemos').html(v.opeN_MEDIUM);
+
+                        $('#lowTotalMemos').html(v.low);
+                        $('#lowTotalSettledMemos').html(v.settleD_LOW);
+                        $('#lowTotalOpenMemos').html(v.opeN_LOW);
+
+                    });
+                },
+                dataType: "json",
+            });
+
+            $.ajax({
+                url: g_asiBaseURL + "/ApiCalls/GetTeamDetails",
+                type: "POST",
+                data: {
+                    'ENG_ID': g_engId
+                },
+                cache: false,
+                success: function (data) {
+                    console.log(data);
+                    $.each(data, function (i, v) {
+                        g_teamMembers.push(v.teaM_MEM_PPNO);
+                        $('#joiningAuditorDetailsTable tbody').append('<tr><td class="text-center" >' + v.membeR_PPNO + '</td><td class="text-center" >' + v.membeR_NAME + '</td><td class="text-center" >' + v.isteamlead + '</td><td class="text-center" >' + v.audiT_START_DATE + '</td><td class="text-center" >' + v.audiT_END_DATE + '</td></tr>');
+
+                    });
+
+                },
+                dataType: "json",
+            });
+
+
+        }
+
+        function reloadLocation(){
+            window.location.reload();
+        }
+
+        function uploadAuditReport(){
+                g_isFileUploaded=false;
+            $('#uploadReportModel').modal('show');
+
+        }
+
+        function uploadAuditReportToServer(){
+
+                if(!g_isFileUploaded){
+                    alert("Please attach Audit Report first to upload to server ");
+                    return;
+                }
+
+            $.ajax({
+
+                url: g_asiBaseURL + "/ApiCalls/upload_audit_report",
+                type: "POST",
+                data: {
+                    'ENG_ID': g_engId
+                },
+                cache: false,
+                success: function (data) {
+                      $('#uploadReportModel').modal('hide');
+                    alert(data.message);
+                  //  onAlertCallback(fetchUploadedFiles);
+
+                },
+                dataType: "json",
+            });
+        }
+
+        async function fetchUploadedFiles() {
+
+              $.ajax({
+
+                url: g_asiBaseURL + "/ApiCalls/get_check_report_exist_for_engId",
+                type: "POST",
+                data: {
+                    'ENG_ID': g_engId
+                },
+                cache: false,
+                success: function (data) {
+
+                const fileListContainer = $("#uploadedFilesList");
+
+                fileListContainer.empty(); // Clear any existing files in the list
+
+                if (parseInt(data.id) > 0) {
+
+                        const listItem = `
+                              <li class="list-group-item d-flex justify-content-between align-items-center">
+            ${data.doC_NAME}
+              <button class="btn btn-sm btn-danger" onclick="downloadAuditReport('${data.id}','${data.doC_NAME}')">
+                                View Report
+                            </button>
+        </li>`;
+                        fileListContainer.append(listItem);
+
+                } else {
+                    fileListContainer.append('<li class="list-group-item text-muted">No files uploaded yet.</li>');
+                }
+
+                },
+                dataType: "json",
+            });
+
+
+
+        }
+        function downloadAuditReport(id, name) {
+            $.ajax({
+                url: g_asiBaseURL + "/ApiCalls/get_audit_report_content",
+                type: "POST",
+                data: {
+                    'FILE_ID': id,
+                },
+                cache: false,
+                success: function (data) {
+
+                      var extension = data.imagE_NAME.split('.').pop().toLowerCase();
+                    const contentType = getContentType(extension);
+                    const blob = base64ToBlob(data.imagE_DATA, contentType);
+                    const link = document.createElement('a');
+                    link.href = URL.createObjectURL(blob);
+                    link.download =data.imagE_NAME; // Suggest a filename
+                    link.click();
+
+                    },
+                dataType: "json",
+            });
+            }
+
+        function getFileExtension(file) {
+              var fileName = file.name;
+              var extension = fileName.substring(fileName.lastIndexOf('.') + 1).toLowerCase();
+              return extension;
+          }
+          function getIconClass(extension) {
+              switch (extension) {
+                  case 'pdf': return 'fa fa-file-pdf';
+                  case 'zip': return 'fa fa-file-archive';
+                  case 'png':
+                  case 'jpg':
+                  case 'jpeg':
+                  case 'bmp': return 'fa fa-file-image';
+                  case 'doc':
+                  case 'docx': return 'fa fa-file-word';
+                  default: return 'fa fa-file';
+              }
+          }
+          function getContentType(extension) {
+              switch (extension) {
+                  case 'pdf': return 'application/pdf';
+                  case 'zip': return 'application/zip';
+                  case 'png': return 'image/png';
+                  case 'doc': return 'application/msword';
+                  case 'docx': return 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+                  default: return 'application/octet-stream';
+              }
+          }
+          function generateUniqueTimestamp() {
+              var date = new Date();
+              var year = date.getFullYear();
+              var month = ('0' + (date.getMonth() + 1)).slice(-2);
+              var day = ('0' + date.getDate()).slice(-2);
+              var hours = ('0' + date.getHours()).slice(-2);
+              var minutes = ('0' + date.getMinutes()).slice(-2);
+              var seconds = ('0' + date.getSeconds()).slice(-2);
+              var milliseconds = ('00' + date.getMilliseconds()).slice(-3);
+
+              var timestamp = year + month + day + '_' + hours + minutes + seconds + milliseconds;
+              return timestamp;
+          }
+
+          function base64ToBlob(base64, contentType) {
+              const byteCharacters = atob(base64);
+              const byteArrays = [];
+
+              for (let offset = 0; offset < byteCharacters.length; offset += 512) {
+                  const slice = byteCharacters.slice(offset, offset + 512);
+
+                  const byteNumbers = new Array(slice.length);
+                  for (let i = 0; i < slice.length; i++) {
+                      byteNumbers[i] = slice.charCodeAt(i);
+                  }
+
+                  const byteArray = new Uint8Array(byteNumbers);
+                  byteArrays.push(byteArray);
+              }
+
+              const blob = new Blob(byteArrays, { type: contentType });
+              return blob;
+          }
+
+              function uploadFileModelCloseHandler() {
+            // Find the aks-file-upload element
+            const fileUploader = document.querySelector('aks-file-upload');
+
+            if (fileUploader) {
+                // Call the `clear` method if supported
+                if (typeof fileUploader.clear === 'function') {
+                    fileUploader.clear();
+                } else {
+                    // Reset the value or clear manually
+                    fileUploader.value = null;
+
+                    // If the component uses child inputs
+                    const inputElement = fileUploader.querySelector('input[type="file"]');
+                    if (inputElement) {
+                        inputElement.value = '';
+                    }
+                }
+                $('.aks-file-upload-delete').click();
+            }
+
+
+    }
+
+      function closeDraftAudit() {
+
+          if(g_engId==0){
+              alert("Please select Entity to proceed");
+              return;
+          }
+
+           $.ajax({
+
+                url: g_asiBaseURL + "/ApiCalls/get_check_report_exist_for_engId",
+                type: "POST",
+                data: {
+                    'ENG_ID': g_engId
+                },
+                cache: false,
+                success: function (data) {
+
+              
+
+                if (parseInt(data.id) > 0) {
+
+                        $.ajax({
+
+            url: g_asiBaseURL + "/ApiCalls/conclude_draft_audit",
+            type: "POST",
+            data: {
+                'ENG_ID': g_engId
+            },
+            cache: false,
+            success: function (data) {
+                alert(data.message);
+                onAlertCallback(reloadLocation);
+
+            },
+            dataType: "json",
+        });
+
+                } else {
+                  alert("Please upload the Audit Report before proceeding to Audit Concluding.");
+                  return;
+                }
+
+                },
+                dataType: "json",
+            });
+
+
+      
+    }
+
+
+
+</script>
+<div class="row col-md-12 mt-3">
+    <h4 style="display: block; color: #be0e43">Close Audit Report</h4>
+</div>
+
+<div class="row col-md-12 mt-3">
+    <div class="col-md-2">
+        <label><b>Entity:</b></label>
+    </div>
+    <div class="col-md-10">
+        <input id="entityNameField" disabled="disabled" class="form-control ml-1 d-none" type="text" />
+        <select id="entitySelectField" onchange="getaddress();" class="form-control form-select">
+            <option value="0" id="0">--Select Audit Entity--</option>
+            @{
+                if (ViewData["EntitiesList"] != null)
+                {
+                    foreach (var item in (dynamic)(ViewData["EntitiesList"]))
+                    {
+                        <option value="@item.ENG_ID" ent_type_id="@item.TYPE_ID">@item.ENTITY_NAME</option>
+                    }
+                }
+            }
+
+        </select>
+    </div>
+</div>
+<div class="row col-md-12 mt-3">
+    <h5 style="display: block; color: #be0e43">Auditee Information</h5>
+</div>
+<div class="row col-md-12">
+
+    <table id="reportheading1" class="table table-bordered mb-0 mt-3 bg-white table-striped">
+        <thead>
+            <tr>
+                <th style="background-color: #19875478 !important;" class="col-md-1">Controling Office</th>
+                <th id="conoffice" Class="col-md-5"></th>
+            </tr>
+            <tr>
+                <th style="background-color: #19875478 !important;" class="col-md-1">Entity Name</th>
+                <th id="EntN" Class="col-md-5"></th>
+            </tr>
+            <tr>
+                <th style="background-color: #19875478 !important;" class="col-md-aut-1">Address</th>
+                <th id="ADD" Class="col-md-5"></th>
+            </tr>
+        </thead>
+        <tbody>
+        </tbody>
+    </table>
+</div>
+<div class="row col-md-12">
+    <table id="reportheading2" class="table table-bordered mb-0  bg-white table-striped">
+
+        <tr>
+
+            <th style="background-color: #19875478 !important;" class="col-md-1">Audit S-Date</th>
+            <th id="a_s_d" Class="col-md-2"></th>
+            <th style="background-color: #19875478 !important;" class="col-md-1">Audit E-Date</th>
+            <th id="a_e_d" Class="col-md-2"></th>
+        </tr>
+
+        <tr>
+            <th style="background-color: #19875478 !important;" class="col-md-1">Operational S-Date</t>
+            <th id="o_s_d" Class="col-md-2"></th>
+            <th style="background-color: #19875478 !important;" class="col-md-1">Operational E-Date</th>
+            <th id="o_e_d" Class="col-md-2"></th>
+        </tr>
+
+
+        <tr>
+            <th class="col-md-auto"></th>
+            <th style="background-color: #19875478 !important;" class="col-md-auto">High</th>
+            <th style="background-color: #19875478 !important;" class="col-md-auto">Medium</th>
+            <th style="background-color: #19875478 !important;" class="col-md-auto">Low</th>
+        </tr>
+        <tr>
+            <th style="background-color: #19875478 !important;" class="col-md-auto">Total Memos</th>
+            <th id="highTotalMemos" class="col-md-auto bg-transparent text-center"></th>
+            <th id="mediumTotalMemos" class="col-md-auto bg-transparent text-center"></th>
+            <th id="lowTotalMemos" class="col-md-auto bg-transparent text-center"></th>
+        </tr>
+        <tr>
+            <th style="background-color: #19875478 !important;" class="col-md-auto">Settled</th>
+            <th id="highTotalSettledMemos" class="col-md-auto bg-transparent text-center"></th>
+            <th id="mediumTotalSettledMemos" class="col-md-auto bg-transparent text-center"></th>
+            <th id="lowTotalSettledMemos" class="col-md-auto bg-transparent text-center"></th>
+        </tr>
+        <tr>
+            <th style="background-color: #19875478 !important;" class="col-md-auto">Add to Final Report</th>
+            <th id="highTotalOpenMemos" class="col-md-auto bg-transparent text-center"></th>
+            <th id="mediumTotalOpenMemos" class="col-md-auto bg-transparent text-center"></th>
+            <th id="lowTotalOpenMemos" class="col-md-auto bg-transparent text-center"></th>
+        </tr>
+
+    </table>
+
+</div>
+<div class="row col-md-12">
+    <table id="joiningAuditorDetailsTable" class="table table-bordered mb-0  bg-white table-striped">
+        <thead>
+            <tr>
+                <th style="background-color: #19875478 !important; " colspan="4" class="col-md-auto text-center">Joining Details</th>
+            </tr>
+            <tr>
+                <th style="background-color: #19875478 !important; " class="col-md-auto">P.P. Number</th>
+                <th style="background-color: #19875478 !important; " class="col-md-auto">Name</th>
+                <th style="background-color: #19875478 !important; " class="col-md-auto">Team Lead</th>
+                <th style="background-color: #19875478 !important; " class="col-md-auto">Joining Date</th>
+                <th style="background-color: #19875478 !important; " class="col-md-auto">Completion Date </th>
+            </tr>
+        </thead>
+        <tbody>
+        </tbody>
+    </table>
+</div>
+
+
+<div class="row col-md-12 mt-3">
+    <button id="uploadAuditReportButtonHandler" onclick="uploadAuditReport();" class="col-md-3 btn btn-success offset-md-5 d-none"> Upload AUdit Report</button>
+    <button id="closeAuditReportButtonHandler" onclick="closeDraftAudit();" class="col-md-3 btn btn-danger offset-md-1 d-none"> Close Audit</button>
+</div>
+
+<div id="uploadReportModel" class="modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-xl" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">Upload Audit Report</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <!-- File List Section -->
+                <div id="uploadedFilesSection" class="mb-3">
+                    <h6>Uploaded Files:</h6>
+                    <ul id="uploadedFilesList" class="list-group">
+                        <li class="list-group-item text-muted">No files uploaded yet.</li>
+                    </ul>
+                </div>
+
+                <form>
+                    <div id="evidenceUploader" class="input-field">
+                        <label class="active">Evidences</label>
+                        <div class="row-col-md-12 mt-1">
+                            <p class="text-danger text-italic">Allowed Formats [PDF, DOC, DOCX] and maximum file size limit is 10MB.</p>
+                        </div>
+                        <aks-file-upload></aks-file-upload>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button onclick="uploadFileModelCloseHandler();" type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button onclick="uploadAuditReportToServer();" type="button" class="btn btn-danger">Upload Audit Report</button>
+            </div>
+        </div>
+    </div>
+</div>

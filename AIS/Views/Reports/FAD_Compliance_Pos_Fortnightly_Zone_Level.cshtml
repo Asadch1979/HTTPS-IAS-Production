@@ -1,0 +1,66 @@
+﻿@{
+    var page_id = ViewData["PageId"] as int? ?? 0;
+}
+
+@{
+    ViewData["Title"] = "FAD_Compliance_Pos_Fortnightly_Zone_Level";
+    Layout = "_Layout";
+}
+<script>
+    $(document).ready(function () {
+        $("#searchTableRecord").on("keyup", function () {
+            var value = $(this).val().toLowerCase();
+            $("#A_P_E_T tbody tr").filter(function () {
+                $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1)
+            });
+        });
+
+
+    });
+</script>
+<div>
+    <div class="row col-md-12 mt-3">
+        <h3 style=" display:block;color: #be0e43">FAD Compliance Position Fortnightly</h3>
+    </div>
+    <div class="row col-md-12 mt-3 mb-2">
+
+        <input class="form-control" id="searchTableRecord" type="text" placeholder="Search Results..">
+
+    </div>
+    <div class="row col-md-12 mt-3">
+        <h5 style=" display:block;color: #be0e43">COMPLIANCE AT ZONE LEVEL</h5>
+    </div>
+    <div class="row col-md-12">
+
+        <table id="zonecompliance" class="table table-hover table-bordered table-hover mt-1 table-striped" style="font-size:small; text-align:center">
+            <thead style="background-color: #19875478 !important; ">
+                <tr>
+                    <th class="col-md-auto">Sr. No</th>
+                    <th class="col-md-auto">Operational Zone</th>
+                    <th class="col-md-auto">Total Compliance Received At Audit Cluster</th>
+                    <th class="col-md-auto">Compliance Received On</th>
+                    <th class="col-md-auto">Referred Back/Forwarded On</th>
+                    <th class="col-md-auto">Paras Settled At Audit Cluster</th>
+
+                    
+                    <th class="col-md-auto">Not Received</th>
+                    <th class="col-md-auto">In Process</th>
+                    <th class="col-md-auto">Reference Pending For More Than 03 Days</th>
+                    <th class="col-md-auto">Forwarded To FAD By Zone</th>
+
+
+
+                </tr>
+            </thead>
+            <tbody>
+             
+            </tbody>
+
+        </table>
+    </div>
+   
+
+
+    <div class="col-md-12 offset-md-12 mt-4">
+        <button id="printPreview_btn" class="btn btn-danger" style="float:right; margin-bottom:10px;">Download Report/Print</button>
+    </div>

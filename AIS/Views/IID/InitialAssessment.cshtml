@@ -1,0 +1,167 @@
+@{
+    ViewData["Title"] = "Initial Assessment";
+    Layout = "_Layout";
+}
+<h4>Initial Assessment</h4>
+
+<table id="complaintsTable" class="table table-bordered table-striped">
+    <thead class="table-success">
+        <tr>
+            <th>Complaint ID</th>
+            <th>Nature</th>
+            <th>Submitted On</th>
+            <th>Action</th>
+        </tr>
+    </thead>
+    <tbody></tbody>
+</table>
+
+<!-- View Complaint Modal -->
+<div class="modal fade" id="viewComplaintModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Complaint</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <h6>Complain</h6>
+                <p id="complaintContents" class="mb-3"></p>
+                <div>
+                    <strong>Evidence</strong>
+                    <div id="evidenceList"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Assessment Modal -->
+<div class="modal fade" id="assessmentModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Initial Assessment</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="assessmentForm">
+                    <input type="hidden" name="ComplaintId" id="modalComplaintId" />
+                    <div class="mb-2">
+                        <label class="form-label">Initial Assessment</label>
+                        <textarea class="form-control" name="Assessment"></textarea>
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label">Recommendation</label>
+                        <select class="form-select" name="Recommendation">
+                            <option>Qualify</option>
+                            <option>Not Qualify</option>
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button id="saveAssessment" type="button" class="btn btn-primary">Save</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts{
+<script>
+    $(function(){
+        loadComplaints();
+
+        function loadComplaints(){
+            $.post(g_asiBaseURL + '/ApiCalls/GetComplaintsWithoutAssessment',{  },function(d){
+                destroyDatatable('complaintsTable');
+                var body = $('#complaintsTable tbody');
+                body.empty();
+                $.each(d,function(i,v){
+                    var row = '<tr data-complaintid="'+v.complaintId+'">'+
+                            '<td><a href="#" class="view-complaint-link" data-id="'+v.complaintId+'">'+ (v.complaintId || '') +'</a></td>'+
+                        '<td>'+ (v.nature || '') +'</td>'+
+                        '<td>'+ (v.submittedOn || '') +'</td>'+
+                        '<td>'+
+                                    '<button type="button" class="btn btn-sm btn-info me-1 view-btn">View</button>'+
+                                    '<button type="button" class="btn btn-sm btn-primary assess-btn">Assess</button>'+
+                        '</td>'+
+                        '</tr>';
+                    body.append(row);
+                });
+                initializeDataTable('complaintsTable');
+            });
+        }
+
+        $(document).on('click','.assess-btn',function(){
+            var id = $(this).closest('tr').data('complaintid');
+            $('#modalComplaintId').val(id);
+            $('#assessmentModal').modal('show');
+        });
+
+        $(document).on('click','.view-btn',function(){
+            var id = $(this).closest('tr').data('complaintid');
+                    $.post(g_asiBaseURL + '/ApiCalls/GetComplaint',{ complaintId: id },function(d){
+                $('#complaintContents').text(d.contents || '');
+                var html = '';
+                if(d.uploadedComplaint){
+                    html += '<a href="'+g_asiBaseURL+'/Uploads/'+d.uploadedComplaint+'" target="_blank">Complaint</a><br/>';
+                }
+                if(d.uploadedFFR){
+                    html += '<a href="'+g_asiBaseURL+'/Uploads/'+d.uploadedFFR+'" target="_blank">FFR</a><br/>';
+                }
+                if(d.uploadedEvidence){
+                    var arr = d.uploadedEvidence.split(';');
+                    $.each(arr,function(i,f){
+                        if(f) html += '<a href="'+g_asiBaseURL+'/Uploads/'+f+'" target="_blank">Evidence '+(i+1)+'</a><br/>';
+                    });
+                }
+                $('#evidenceList').html(html);
+                $('#viewComplaintModal').modal('show');
+            });
+        });
+
+        $(document).on('click','.view-complaint-link',function(e){
+            e.preventDefault();
+            var id = $(this).data('id');
+            $.post(g_asiBaseURL + '/ApiCalls/GetComplaint',{ complaintId: id },function(d){
+                $('#complaintContents').text(d.contents || '');
+                var html = '';
+                if(d.uploadedComplaint){
+                    html += '<a href="'+g_asiBaseURL+'/Uploads/'+d.uploadedComplaint+'" target="_blank">Complaint</a><br/>';
+                }
+                if(d.uploadedFFR){
+                    html += '<a href="'+g_asiBaseURL+'/Uploads/'+d.uploadedFFR+'" target="_blank">FFR</a><br/>';
+                }
+                if(d.uploadedEvidence){
+                    var arr = d.uploadedEvidence.split(';');
+                    $.each(arr,function(i,f){
+                        if(f) html += '<a href="'+g_asiBaseURL+'/Uploads/'+f+'" target="_blank">Evidence '+(i+1)+'</a><br/>';
+                    });
+                }
+                $('#evidenceList').html(html);
+                $('#viewComplaintModal').modal('show');
+            });
+        });
+
+        $('#saveAssessment').click(function(){
+            var formData = {
+                ComplaintId: $('#modalComplaintId').val(),
+                Assessment: $('#assessmentForm [name="Assessment"]').val(),
+                Recommendation: $('#assessmentForm [name="Recommendation"]').val()
+            };
+            $.ajax({
+                url: g_asiBaseURL + '/ApiCalls/AddAssessment',
+                method: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify(formData),
+                success: function(){
+                    $('#assessmentModal').modal('hide');
+                    loadComplaints();
+                }
+            });
+        });
+    });
+</script>
+}

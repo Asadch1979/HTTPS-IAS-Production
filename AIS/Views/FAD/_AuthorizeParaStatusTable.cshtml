@@ -1,0 +1,47 @@
+@model IEnumerable<AIS.Models.ParaStatusChangeLogModel>
+<table class="table table-hover table-bordered table-striped">
+    <thead style="background-color: #19875478 !important;">
+        <tr>
+            <th class="col-md-auto">Audit Year</th>
+            <th class="col-md-auto">Para No</th>
+            <th class="col-md-auto">Annexure</th>
+            <th class="col-md-auto">Title</th>
+            <th class="col-md-auto">Risk</th>
+            <th class="col-md-auto">Old Status</th>
+            <th class="col-md-auto">New Status</th>
+            <th class="col-md-auto">Changed By</th>
+            <th class="col-md-auto">Changed On</th>
+            <th class="col-md-auto">Maker Remarks</th>
+            <th class="col-md-auto">Action</th>
+        </tr>
+    </thead>
+    <tbody>
+        @if (Model != null)
+        {
+            foreach (var item in Model)
+            {
+                <tr>
+                    <td>@item.AuditYear</td>
+                    <td>@item.ParaNo</td>
+                    <td>@item.Annexure</td>
+                    <td>@item.Title</td>
+                    <td>@item.Risk</td>
+                    <td>
+                        <span class="@(item.OldStatus == 9 ? "text-success" : "text-danger")">
+                            @(item.OldStatus == 9 ? "Settled" : "Unsettled")
+                        </span>
+                    </td>
+                    <td>
+                        <span class="@(item.NewStatus == 9 ? "text-success" : "text-danger")">
+                            @(item.NewStatus == 9 ? "Settled" : "Unsettled")
+                        </span>
+                    </td>
+                    <td>@item.ChangedBy</td>
+                    <td>@item.ChangedOn.ToString("dd-MMM-yyyy")</td>
+                    <td>@item.MakerRemarks</td>
+                    <td class="text-center"><a href="#" class="text-success" onclick="event.preventDefault();authorizeRequest(@item.LogId);">Authorize</a> | <a href="#" class="text-danger" onclick="event.preventDefault();rejectRequest(@item.LogId);">Reject</a></td>
+                </tr>
+            }
+        }
+    </tbody>
+</table>

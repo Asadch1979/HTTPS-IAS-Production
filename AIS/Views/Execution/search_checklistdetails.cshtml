@@ -1,0 +1,62 @@
+﻿@{
+    var page_id = ViewData["PageId"] as int? ?? 0;
+}
+
+@{
+    ViewData["Title"] = "Sub Checklist";
+    Layout = "_Layout";
+}
+<script type="text/javascript">
+     $(document).ready(function () {
+       
+        $("#searchTableRecord").on("keyup", function () {
+            var value = $(this).val().toLowerCase();
+            $("#subchecklistPanel tbody tr").filter(function () {
+                $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1)
+            });
+        });
+    });
+</script>
+<div class="row mt-3">
+        <center>
+            <h3 style="color: #be0e43">Checklist Detail</h3>
+        </center>
+  
+</div>
+<div class="row col-md-12 mt-3">
+    <input class="form-control" id="searchTableRecord" type="text" placeholder="Search..">
+  </div>
+
+  <div class="row col-md-12 mt-3">
+    <table id="subchecklistPanel" class="table table-hover table-bordered table-hover mt-3 table-striped">
+        <thead style="background-color: #19875478 !important; ">
+            <tr>
+                <th class="col-md-1 font-weight-bold">Sr. No</th>
+                <th class="col-md-2 font-weight-bold">Process</th>
+                <th class="col-md-4 font-weight-bold">Sub Process</th>
+                <th class="col-md-4 font-weight-bold">Process Detail</th>
+                <th class="col-md-1 font-weight-bold">Risk</th>
+            </tr>
+        </thead>
+        <tbody>
+            @{
+                if (ViewData["EntitiesList"] != null)
+                {
+                    int sr = 1;
+                    foreach (var item in (dynamic)(ViewData["EntitiesList"]))
+                    {
+                        <tr>
+                            <td>@sr</td>
+                            <td>@item.PROCESS</td>
+                            <td>@item.SUB_PROCESS</td>
+                            <td>@item.PROCESS_DETAIL</td>
+                            <td>@item.RISK</td>
+                        </tr>
+                        sr++;
+                    }
+                }
+            }
+        </tbody>
+    </table>
+
+  </div>

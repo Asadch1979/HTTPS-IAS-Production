@@ -1,0 +1,139 @@
+﻿@{
+    var page_id = ViewData["PageId"] as int? ?? 0;
+}
+
+@{
+    ViewData["Title"] = "glhead_yearwise_summary";
+    Layout = "_Layout";
+}
+<style type="text/css">
+    .container {
+        max-width: 100%;
+    }
+
+    .card-header {
+        background-color: transparent !important;
+        font-size: 20px;
+        height: 100px;
+    }
+
+    .icon-card {
+        margin: 10px;
+    }
+</style>
+
+<script type="text/javascript">
+
+    var g_engId = 0;
+
+    $(document).ready(function () {
+        var gl_Id = 0;
+        var url_string = window.location;
+        var url = new URL(url_string);
+        var eng_id = url.searchParams.get("engId");
+        if (typeof eng_id != 'undefined')
+            g_engId = eng_id;
+        $("#searchTableRecord").on("keyup", function () {
+            var value = $(this).val().toLowerCase();
+            $("#listOfGlHead tbody tr").filter(function () {
+                $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1)
+            });
+        });
+    });
+
+</script>
+
+<div class="row col-md-12 mt-3">
+    <h4 style="display: block; color: #be0e43">GL Head Year Wise Summary</h4>
+</div>
+<div class="row col-md-12">
+    <input class="form-control" id="searchTableRecord" type="text" placeholder="Search..">
+</div>
+<div class="row col-md-12 mt-3">
+
+    <table id="listOfGlHead" class="col-md-12 table table-hover table-bordered mb-0 mt-3 bg-white table-striped">
+        <thead style="background-color: #19875478 !important; ">
+            @{
+                if (ViewData["GlHeadDetailsyearly"] != null)
+                {
+
+                    int i = 0;
+                    foreach (var item in (dynamic)(ViewData["GlHeadDetailsyearly"]))
+                    {
+                        if (i > 0)
+                            continue;
+                        <tr>
+                            <th class="col-md-auto" style="font-size: 12px; text-align: center;">@item.COL1</th>
+                            <th class="col-md-auto" style="font-size: 12px; text-align: center;">@item.COL2</th>
+                            <th class="col-md-auto" style="font-size: 12px; text-align: center;">@item.COL3</th>
+                            <th class="col-md-auto" style="font-size: 12px; text-align: center;"> Credit Balance <br>@item.LAST_CREDIT</th>
+                            <th class="col-md-auto" style="font-size: 12px; text-align: center;"> Debit Balance <br>@item.LAST_DEBIT</th>
+                            <th class="col-md-auto" style="font-size: 12px; text-align: center;"> Balance <br>@item.LAST_BALANCE</th>
+                            <th class="col-md-auto" style="font-size: 12px; text-align: center;"> Credit Balance <br>@item.CURRENT_CREDIT</th>
+                            <th class="col-md-auto" style="font-size: 12px; text-align: center;"> Debit Balance <br>@item.CURRENT_DEBIT</th>
+                            <th class="col-md-auto" style="font-size: 12px; text-align: center;"> Balance <br>@item.CURRENT_BALANCE</th>
+                        </tr>
+
+                        i = i + 1;
+                    }
+                }
+            }
+
+        </thead>
+        <tbody>
+            @{
+                if (ViewData["GlHeadDetailsyearly"] != null)
+                {
+
+
+                    foreach (var item in (dynamic)(ViewData["GlHeadDetailsyearly"]))
+                    {
+                        <tr>
+                            <td class="gl_id; text-right">
+                                <p class="fw-normal mb-1" style="font-size: 12px;">@item.GLSUBCODE</p>
+                            </td>
+                            <td class="gl_id; text-right">
+                                <p class="fw-normal mb-1" style="font-size: 12px;">@item.BRANCHID</p>
+                            </td>
+                            <td class="gl_des">
+                                <p class="fw-normal mb-1" style="font-size: 12px;">@item.GLSUBNAME</p>
+                            </td>
+
+                            <td class="run_cr; text-right">
+                                <p class="fw-normal mb-1" style="font-size: 12px;">@item.CREDIT_2021</p>
+
+                            </td>
+                            <td class="run_deb; text-right">
+                                <p class="fw-normal mb-1" style="font-size: 12px;">@item.DEBIT_2021</p>
+                            </td>
+                            <td class="bal; text-right">
+                                <p class="fw-normal mb-1" style="font-size: 12px;">@item.BALANCE_2021</p>
+
+                            </td>
+                            <td class="run_cr; text-right">
+                                <p class="fw-normal mb-1" style="font-size: 12px;">@item.CREDIT_2022</p>
+
+                            </td>
+                            <td class="run_deb; text-right">
+                                <p class="fw-normal mb-1" style="font-size: 12px;">@item.DEBIT_2022</p>
+                            </td>
+                            <td class="bal; text-right">
+                                <p class="fw-normal mb-1" style="font-size: 12px;">@item.BALANCE_2022</p>
+
+                            </td>
+
+                        </tr>
+                    }
+                }
+            }
+        </tbody>
+
+
+    </table>
+</div>
+
+<div class="row col-md-12 mt-3">
+
+    <button onclick="history.back()" class="btn btn-primary" style="color:white">Return</button>
+
+</div>

@@ -1,0 +1,445 @@
+﻿@{
+    var page_id = ViewData["PageId"] as int? ?? 0;
+}
+
+@{
+    ViewData["Title"] = "Audit_Period_Or_Entity_Wise_Report";
+    Layout = "_Layout";
+}
+
+<script type="text/javascript">
+    var g_obsId = 0;
+    var g_obsTextId = 0;
+    var g_obsList = [];
+    var g_imgFiles = null;
+    var g_imgLoader = null;
+
+    $(document).ready(function () {
+
+        $('#viewMemo_reply').richText({
+            imageUpload: false,
+            fileUpload: false,
+            videoEmbed: false,
+            urls: false
+        });
+
+        g_imgLoader = $('[data-type=imagesloader]').imagesloader({
+            maxFiles: 10,
+            minSelect: 1,
+            imagesToLoad: []
+        });
+    });
+    function reloadLocation() {
+        getEntityObservation();
+      
+    }
+    function showMemo(obs_id, resp_id) {
+        var obs_text_id, status, violation, nature, process, subprocess, checklist_detail,memo_number,canReply;
+
+        $.each(g_obsList, function (i, v) {
+            if (v.obS_ID == obs_id) {
+                obs_text_id = v.obS_TEXT_ID;
+                status = v.statuS_ID;
+                violation = v.violation;
+                nature = v.nature;
+                process = v.process;
+                subprocess = v.suB_PROCESS;
+                checklist_detail = v.checklisT_DETAIL;
+                memo_number = v.memO_NUMBER;
+                canReply=v.caN_REPLY;
+            }
+        });
+
+        g_obsId=obs_id;
+        g_obsTextId = obs_text_id;
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/get_observation_text",
+            type: "POST",
+            data: {
+                'OBS_ID': g_obsId,
+                'RESP_ID': resp_id
+            },
+            cache: false,
+            success: function (data) {
+
+                $('#viewMemoModel').modal('show');
+                $('#viewMemo_memo').html(data[0]);
+                $('#viewMemo_memoNumber').val(memo_number);
+                if (nature != null && violation != null) {
+                    $('#viewMemo_nature').val(nature);
+                    $('#viewMemo_violation').val(violation);
+                    $('#viewMemo_process').parent().addClass('d-none');
+                    $('#viewMemo_subprocess').parent().addClass('d-none');
+                    $('#viewMemo_checklist_detail').parent().addClass('d-none');
+                } else {
+                    $('#viewMemo_nature').parent().addClass('d-none');
+                    $('#viewMemo_violation').parent().addClass('d-none');
+
+                    $('#viewMemo_process').val(process);
+                    $('#viewMemo_subprocess').val(subprocess);
+                    $('#viewMemo_checklist_detail').val(checklist_detail);
+                }
+
+                if (canReply==1){
+                    if (status == 2) {
+                        $('#replyButton_memoReply').removeClass('d-none');
+                        $('#viewMemo_responded').parent().addClass('d-none');
+                        $('#replyrichTextWrapper').removeClass('d-none');
+                        $('#viewMemo_responded').html('');
+                        $('#evidenceViewer').addClass('d-none');
+                        $('#evidenceUploader').removeClass('d-none');
+
+                    }
+                    else {
+                        $('#replyButton_memoReply').addClass('d-none');
+                        $('#viewMemo_responded').parent().removeClass('d-none');
+                        $('#replyrichTextWrapper').addClass('d-none');
+                        $('#viewMemo_responded').html(data[1]);
+                        $('#evidenceViewer').removeClass('d-none');
+                        $('#evidenceUploader').addClass('d-none');
+                    }
+
+                }
+                else {
+                    $('#replyButton_memoReply').addClass('d-none');
+                    $('#viewMemo_responded').parent().removeClass('d-none');
+                    $('#replyrichTextWrapper').addClass('d-none');
+                    $('#viewMemo_responded').html(data[1]);
+                    $('#evidenceViewer').removeClass('d-none');
+                    $('#evidenceUploader').addClass('d-none');
+                }
+
+                var auctionImages = [];
+                $('#evidencePortal').empty();
+                $.each(data[2], function (i, v) {
+                    $('#evidencePortal').append('<div style="display:inline-block, height:190px; width:190px, border: 2px dashed; margin:5px;"><img style="height:184px; width:184px;" src="data: ' + v.imagE_TYPE + '; base64,' + v.imagE_DATA+'" /></div>')
+
+                  
+                });
+              
+            },
+            dataType: "json",
+        });
+    }
+    function replyMemo() {
+
+        var productImagesArr = [];
+        g_imgFiles = g_imgLoader.data('format.imagesloader').AttachmentArray;
+        $.each(g_imgFiles, function (i, v) {
+            var ProductObject = {
+                'OBS_ID': g_obsId,
+                'OBS_TEXT_ID': g_obsTextId,
+                'IMAGE_NAME': v.FileName,
+                'IMAGE_DATA': v.Base64,
+                'IMAGE_TYPE': v.MimeType,
+                'LENGTH': v.FileSizeInBytes,
+                'COVER_IMAGE': i == 0 ? true : false,
+                'SEQUENCE': i
+            }
+            productImagesArr.push(ProductObject);
+        });
+
+
+        var replyTxt = ($('#viewMemo_reply').val()).length;
+        if (replyTxt > 0) {
+            $.ajax({
+                url: g_asiBaseURL + "/ApiCalls/reply_observation",
+                type: "POST",
+                data: {
+                    'AU_OBS_ID': g_obsId,
+                    'OBS_TEXT_ID': g_obsTextId,
+                    'REPLY': $('#viewMemo_reply').val(),
+                    'EVIDENCE_LIST': productImagesArr
+                },
+                cache: false,
+                success: function (data) {
+                    alert("Reply sent successfuly");
+                    onAlertCallback(reloadLocation);
+
+                },
+                dataType: "json",
+            });
+        } else {
+            alert("Provide your comments to proceed");
+            return false;
+        }
+
+    }
+
+    function getEntityObservation() {
+        $('#manageObsPanel tbody').empty();
+        if ($('#entitySelectField option:selected').val() != 0) {
+            $.ajax({
+                url: g_asiBaseURL + "/ApiCalls/get_assigned_observation",
+                type: "POST",
+                data: {
+                    'ENG_ID': $('#entitySelectField option:selected').val()
+                },
+                cache: false,
+                success: function (data) {
+                    g_obsList = data;
+                    var sr = 1;
+                    $.each(data, function (i, v) {
+                        var sdate = v.memO_DATE.split(" ")[0];
+                        var edate = v.memO_REPLY_DATE.split(" ")[0];
+                        var opsdate = v.operatioN_STARTDATE.split("T")[0];
+                        var opedate = v.operatioN_ENDDATE .split("T")[0];
+                        if(v.caN_REPLY==1){
+                            if(v.statuS_ID==2)
+                                $('#manageObsPanel tbody').append('<tr id="assignedObRow_' + v.obS_ID + '"><td>' + v.memO_NUMBER + '</td><td>' + v.audiT_YEAR + '</td><td>' + v.entitY_NAME + '</td><td class="text-center">' + sdate + '</td><td class="text-center">' + edate + '</td><td class="text-center">' + opsdate + '</td><td class="text-center">' + opedate + '</td><td class="text-center">' + v.status + '</td><td class="text-center"><a onclick="event.preventDefault();showMemo(' + v.obS_ID + ',' + v.resP_ID + ');" class="text-hover font-weight-bold text-success">Reply</a></td></tr>');
+                        else
+                                $('#manageObsPanel tbody').append('<tr id="assignedObRow_' + v.obS_ID + '"><td>' + v.memO_NUMBER + '</td><td>' + v.audiT_YEAR + '</td><td>' + v.entitY_NAME + '</td><td class="text-center">' + sdate + '</td><td class="text-center">' + edate + '</td><td class="text-center">' + opsdate + '</td><td class="text-center">' + opedate + '</td><td class="text-center">' + v.status + '</td><td class="text-center"><a onclick="event.preventDefault();showMemo(' + v.obS_ID + ',' + v.resP_ID + ');" class="text-hover font-weight-bold text-success">View</a></td></tr>');
+                        }else{
+                            if(v.statuS_ID==2)
+                                $('#manageObsPanel tbody').append('<tr id="assignedObRow_' + v.obS_ID + '"><td>' + v.memO_NUMBER + '</td><td>' + v.audiT_YEAR + '</td><td>' + v.entitY_NAME + '</td><td class="text-center">' + sdate + '</td><td class="text-center">' + edate + '</td><td class="text-center">' + opsdate + '</td><td class="text-center">' + opedate + '</td><td class="text-center">' + v.status + '</td><td class="text-center"><a onclick="event.preventDefault();showMemo(' + v.obS_ID + ',' + v.resP_ID + ');" class="text-hover font-weight-bold text-success">View</a></td></tr>');
+                        else
+                                $('#manageObsPanel tbody').append('<tr id="assignedObRow_' + v.obS_ID + '"><td>' + v.memO_NUMBER + '</td><td>' + v.audiT_YEAR + '</td><td>' + v.entitY_NAME + '</td><td class="text-center">' + sdate + '</td><td class="text-center">' + edate + '</td><td class="text-center">' + opsdate + '</td><td class="text-center">' + opedate + '</td><td class="text-center">' + v.status + '</td><td class="text-center"><a onclick="event.preventDefault();showMemo(' + v.obS_ID + ',' + v.resP_ID + ');" class="text-hover font-weight-bold text-success">View</a></td></tr>');
+                        }
+                        
+                        sr++;
+                    });
+
+                    setTimeout(function () {
+                        if (g_obsId != 0) {
+                            var rowpos = $('#assignedObRow_' + g_obsId).position();
+                            $('html').scrollTop(rowpos.top);
+                        }
+                    }, 200)
+
+                  
+
+                },
+                dataType: "json",
+            });
+
+        }
+    }
+</script>
+<div class="row col-md-12">
+
+    <div class="row col-md-12 mt-3">
+        <h3 style="color: #be0e43">Audit Period Or Entity Wise Report</h3>
+    </div>
+    <div class="row col-md-12 mt-3">
+        <div class="col-md-2">
+            <label><b>Audit Period:</b></label>
+        </div>
+        <div class="col-md-10">
+            <input id="PeriodNameField" disabled="disabled" class="form-control ml-1 d-none" type="text"  />
+            <select id="entitySelectField" onchange="getEntityObservation()" class="form-control form-select">
+                <option value="0" id="0">--Select Audit Period--</option>
+                @{
+                if (ViewData["EntitiesList"] != null)
+                {
+                foreach (var item in (dynamic)(ViewData["EntitiesList"]))
+                {
+                <option value="@item.ENG_ID" id="@item.ENG_ID">@item.NAME</option>
+                }
+                }
+                }
+
+            </select>
+        </div>
+    </div>
+    <div class="row col-md-12 mt-3">
+        <div class="col-md-2">
+            <label><b>Audit Entity:</b></label>
+        </div>
+        <div class="col-md-10">
+            <input id="entityNameField" disabled="disabled" class="form-control ml-1 d-none" type="text" />
+            <select id="entitySelectField" onchange="getEntityObservation()" class="form-control form-select">
+                <option value="0" id="0">--Select Audit Entity--</option>
+                @{
+                    if (ViewData["EntitiesList"] != null)
+                    {
+                        foreach (var item in (dynamic)(ViewData["EntitiesList"]))
+                        {
+                            <option value="@item.ENG_ID" id="@item.ENG_ID">@item.NAME</option>
+                        }
+                    }
+                }
+
+            </select>
+        </div>
+
+    </div>
+    <div class="col-md-12 mt-3" style=" padding-right:45px" >
+        <button id="Publishchange" style="float:right;" type="button" class="btn btn-primary">Search</button>
+
+
+    </div>
+
+    <div class="row col-md-12 mt-3">
+
+        <table id="manageObsPanel" class="table table-hover table-bordered table-hover mt-3 table-striped">
+            <thead style="background-color: #19875478 !important; ">
+                <tr>
+                    <th class="col-md-auto text-center">SR No #</th>
+                    <th class="col-md-auto text-center">Audit Period</th>
+                    <th class="col-md-auto text-center">Audit Entity</th>
+                    <th class="col-md-auto text-center">Total Paras</th>
+                    <th class="col-md-auto text-center">Settled Paras </th>
+                    <th class="col-md-auto text-center">Un-Settled Paras</th>
+                 
+                </tr>
+            </thead>
+            <tbody>
+            </tbody>
+        </table>
+
+
+
+    </div>
+</div>
+
+
+<div id="viewMemoModel" class="modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-xl" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">Observation</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form>
+                    <div class="form-group">
+                        <label for="viewMemo_memoNumber">Memo Number</label>
+                        <input id="viewMemo_memoNumber" class="form-control" disabled="disabled" />
+                    </div>
+                    <div class="form-group">
+                        <label for="viewMemo_memo">Violation</label>
+                        <input id="viewMemo_violation" class="form-control" disabled="disabled" />
+                    </div>
+                    <div class="form-group">
+                        <label for="viewMemo_memo">Nature</label>
+                        <input id="viewMemo_nature" class="form-control" disabled="disabled" />
+
+                    </div>
+                    <div class="form-group">
+                        <label for="viewMemo_memo">Process</label>
+                        <input id="viewMemo_process" class="form-control" disabled="disabled" />
+                    </div>
+                    <div class="form-group">
+                        <label for="viewMemo_memo">Sub Process</label>
+                        <input id="viewMemo_subprocess" class="form-control" disabled="disabled" />
+
+                    </div>
+                    <div class="form-group">
+                        <label for="viewMemo_memo">Checklist Detail</label>
+                        <input id="viewMemo_checklist_detail" class="form-control" disabled="disabled" />
+
+                    </div>
+
+                    <div class="form-group">
+                        <label for="viewMemo_memo">Memo</label>
+                        <div id="viewMemo_memo" disabled="disabled" style="height: auto; overflow-y: auto;" class="form-control"></div>
+                    </div>
+                    <div class="form-group d-none">
+                        <label for="viewMemo_responded">Management Response</label>
+                        <div id="viewMemo_responded" disabled="disabled" style="height: auto; overflow-y: auto;" class="form-control"></div>
+                    </div>
+                    <div id="replyrichTextWrapper" class="form-group">
+                        <label for="viewMemo_reply">Reply</label>
+                        <textarea id="viewMemo_reply" style="max-height:150px; height:auto;" class="form-control"></textarea>
+                    </div>
+                    <div id="evidenceUploader" class="input-field d-none">
+                        <label class="active">Evidences</label>
+                        <!--Image container -->
+                        <div class="row"
+                             data-type="imagesloader"
+                             data-errorformat="Accepted file formats"
+                             data-errorsize="Maximum size accepted"
+                             data-errorduplicate="File already loaded"
+                             data-errormaxfiles="Maximum number of images you can upload"
+                             data-errorminfiles="Minimum number of images to upload"
+                             data-modifyimagetext="Modify image">
+
+                            <!-- Progress bar -->
+                            <div class="col-12 order-1 mt-2">
+                                <div data-type="progress" class="progress" style="height: 25px; display:none;">
+                                    <div data-type="progressBar" class="progress-bar progress-bar-striped progress-bar-animated bg-success" role="progressbar" style="width: 100%;">Load in progress...</div>
+                                </div>
+                            </div>
+
+                            <!-- Model -->
+                            <div data-type="image-model" class="col-4 pl-2 pr-2 pt-2" style="max-width:200px; display:none;">
+
+                                <div class="ratio-box text-center" data-type="image-ratio-box">
+                                    <img data-type="noimage" class="btn btn-light ratio-img img-fluid p-2 image border dashed rounded" src="~/images/photo-camera-gray.svg" style="cursor:pointer;">
+                                    <div data-type="loading" class="img-loading" style="color:#218838; display:none;">
+                                        <span class="fa fa-2x fa-spin fa-spinner"></span>
+                                    </div>
+                                    <img data-type="preview" class="btn btn-light ratio-img img-fluid p-2 image border dashed rounded" src="" style="display: none; cursor: default;">
+                                    <span class="badge rounded-pill text-bg-success p-2 w-50 main-tag " style="display:none; border-radius:20px">Main</span>
+                                </div>
+
+                                <!-- Buttons -->
+                                <div data-type="image-buttons" class="row justify-content-center mt-2">
+                                    <button data-type="add" class="btn btn-outline-success" type="button" style="width:105px"><span class="fa fa-camera mr-2" style="padding-right:5px"></span>Add</button>
+                                    <button data-type="btn-modify" type="button" class="btn btn-outline-success m-0 " data-bs-toggle="popover" data-bs-placement="right" style="display:none; width:105px;">
+                                        <span class="fa fa-pencil-alt mr-2" style="padding-right:5px"></span>Modify
+                                    </button>
+                                </div>
+                            </div>
+
+
+
+                            <!-- Popover operations -->
+                            <div data-type="popover-model" style="display:none">
+                                <div data-type="popover" class="ml-3 mr-3" style="min-width:150px;">
+                                    <div class="row">
+                                        <div class="col p-0">
+                                            <button data-operation="main" class="btn btn-block btn-success btn-sm rounded-pill" type="button" style="width:170px"><span class="fa fa-angle-double-up mr-2" style="padding-right:15px"></span>Main</button>
+                                        </div>
+                                    </div>
+                                    <div class="row mt-2">
+                                        <div class="col-6 p-0 pr-1">
+                                            <button data-operation="left" class="btn btn-block btn-outline-success btn-sm rounded-pill" type="button" style="width:80px"><span class="fa fa-angle-left mr-2" style="padding-right:5px"></span>Left</button>
+                                        </div>
+                                        <div class="col-6 p-0 pl-1">
+                                            <button data-operation="right" class="btn btn-block btn-outline-success btn-sm rounded-pill" type="button" style="width:80px">Right<span class="fa fa-angle-right ml-2" style="padding-left:5px"></span></button>
+                                        </div>
+                                    </div>
+                                    <div class="row mt-2">
+                                        <div class="col-6 p-0 pr-1">
+                                            <button data-operation="rotateanticlockwise" class="btn btn-block btn-outline-success btn-sm rounded-pill" type="button" style="width:80px"><span class="fas fa-undo-alt mr-2" style="padding-right:5px"></span>Rotate</button>
+                                        </div>
+                                        <div class="col-6 p-0 pl-1">
+                                            <button data-operation="rotateclockwise" class="btn btn-block btn-outline-success btn-sm rounded-pill" type="button" style="width:80px">Rotate<span class="fas fa-redo-alt ml-2" style="padding-left:5px"></span></button>
+                                        </div>
+                                    </div>
+                                    <div class="row mt-2">
+                                        <button data-operation="remove" class="btn btn-outline-danger btn-sm btn-block" type="button"><span class="fa fa-times mr-2" style="padding-right:10px"></span>Remove</button>
+                                    </div>
+                                </div>
+                            </div>
+
+                        </div>
+
+                        <div class="form-group row">
+                            <div class="input-group">
+                                <!--Hidden file input for images-->
+                                <input id="files" type="file" name="files[]" data-button="" multiple="" accept="image/jpeg, image/png, image/gif," style="display:none;">
+                            </div>
+                        </div>
+                    </div>
+                    <div id="evidenceViewer" class="input-field d-none">
+                        <label class="active">Evidences</label>
+                        <!--Image container -->
+                       
+                        <div id="evidencePortal" class="row col-md-12">
+                            
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button id="replyButton_memoReply" onclick="replyMemo();" type="button" data-bs-dismiss="modal" class="btn btn-danger">Reply</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+

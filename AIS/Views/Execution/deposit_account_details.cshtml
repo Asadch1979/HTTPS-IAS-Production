@@ -1,0 +1,101 @@
+﻿@{
+    var page_id = ViewData["PageId"] as int? ?? 0;
+}
+
+@{
+    ViewData["Title"] = "deposit_account_details";
+    Layout = "_Layout";
+}
+
+<style type="text/css">
+    .container {
+        max-width: 100%;
+    }
+
+    .card-header {
+        background-color: transparent !important;
+        font-size: 20px;
+        height: 100px;
+    }
+
+    .icon-card {
+        margin: 10px;
+    }
+</style>
+
+<script type="text/javascript">
+
+    $('#document').ready(function () {
+        var url_string = window.location;
+        var url = new URL(url_string);
+        var cat_id = url.searchParams.get("acccatid");
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/GetDepositAccountcatdetails",
+            type: "POST",
+            data: {
+                'catid': cat_id
+            },
+            cache: false,
+            success: function (data) {
+
+                console.log(data);
+                $('#b_d_det tbody').empty();
+                $.each(data, function (i, v) {
+                    $('#b_d_det tbody').append('<tr><td >' + v.brancH_NAME + ' ' + '</td><td >' + v.customername + '</td><td >' + v.title + '</td><td>' + v.acC_NUMBER + '</td> <td>' + v.accountcategory + '</td><td>' + v.accountstatus + '</td><td>' + v.cnic + ' ' + '</td><td>' + v.cnicexpirydate.split('T')[0] + '</td><td>' + v.bmvS_VERIFIED + '</td><td>' + v.openingdate + '</td>  <td>' + v.lasttransactiondate.split('T')[0] + '</td> </tr>')
+                });
+            },
+            dataType: "json",
+        });
+    });
+
+
+
+
+
+</script>
+<div class="row col-md-12 mt-3">
+    <h4 style="display: block; color: #be0e43">Deposit Account Details</h4>
+</div>
+
+<div class="row col-md-12">
+    <input class="form-control" id="searchTableRecord" type="text" placeholder="Search..">
+</div>
+<div class="row w-100 mt-3 pl-2">
+    <table id="b_d_det" class="col-md-12 table table-bordered mb-0 mt-3 bg-white table-striped">
+        <thead style="background-color: #19875478 !important; font-size:small">
+            <tr>
+                <th width="100">BRANCH</th>
+                <th width="130">CUSTOMER NAME</th>
+                <th width="100">ACC TITLE</th>
+                <th width="80">ACCOUNT #</th>
+
+                <th width="130">ACC CATEGORY</th>
+                <th width="100">ACC STATUS</th>
+                <th width="100">CNIC</th>
+                <th width="100">CNIC EXP</th>
+
+                <th width="50">BMVS Verified</th>
+                <th width="150">ACC OPEN DATE</th>
+                <th width="100">LAST TR DATE</th>
+
+            </tr>
+        </thead>
+        <tbody style="font-size:small">
+        </tbody>
+    </table>
+
+
+
+    <div class="row col-md-12 mt-3">
+
+        <button onclick="history.back()" class="btn btn-primary" style="color:white">Return</button>
+
+    </div>
+
+
+</div>
+
+
+
+
+

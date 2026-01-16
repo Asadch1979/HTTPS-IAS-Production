@@ -1,0 +1,141 @@
+﻿@{
+    var page_id = ViewData["PageId"] as int? ?? 0;
+}
+
+@{
+    ViewData["Title"] = "Authorize Merge Duplicate/Redundant Sub Process";
+    Layout = "_Layout";
+}
+<style type="text/css">
+    .container {
+        max-width: 100%;
+    }
+
+    .card-header {
+        background-color: transparent !important;
+        font-size: 20px;
+        height: 100px;
+    }
+
+    .icon-card {
+        margin: 10px;
+    }
+</style>
+<script type="text/javascript">
+    var g_procId = 0;
+    var g_subProcId = 0;
+    var g_procDetailId = 0;
+    var g_subProcList = [];
+    var g_procDetailList = [];
+    var g_subprocMergeIds=[];
+    $(document).ready(function () {
+        $("#searchTableRecord").on("keyup", function () {
+            var value = $(this).val().toLowerCase();
+            $("#authorizeMergeChecklistPanel tbody tr").filter(function () {
+               
+                $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1)
+
+            });
+        });
+       
+    });
+
+  
+
+    function getProcessesForMergeDuplicate() {
+        g_subprocMergeIds = [];
+        var processId = $('#subchecklistSelectField').val();
+        $('#authorizeMergeChecklistPanel tbody').empty();
+        if (processId != 0) {
+            $.ajax({
+                url: g_asiBaseURL + "/ApiCalls/get_duplicate_Sub_Processes",
+                type: "POST",
+                data: {
+                    'SUB_PROCESS_ID': processId
+                },
+                cache: false,
+                success: function (data) {
+                    
+                    $.each(data, function (i, v) {
+                        g_subprocMergeIds.push(v.m_ID);
+                        $('#authorizeMergeChecklistPanel').append('<tr><td>' + v.m_ID + '</td><td>' + v.heading + '</td></tr>');
+
+                    });
+                },
+                dataType: "json",
+            });
+        }
+    }
+ 
+    function authorizeMergeDuplicate() {
+        var processId = $('#subchecklistSelectField').val();
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/authorize_merge_duplicate_sub_process",
+            type: "POST",
+            data: {
+                'SUB_PROCESS_ID': processId,
+                'AUTH_S_P_IDS': g_subprocMergeIds,
+
+            },
+            cache: false,
+            success: function (data) {
+                alert(data.message);
+                onAlertCallback(getProcessesForMergeDuplicate);
+            },
+            dataType: "json",
+        });
+    }
+   
+</script>
+<div class="row text-center mt-3">
+    <h3 style=" display:block;color: #be0e43">Authorize Merge Duplicate/Redundant Checklists Detail </h3>
+</div>
+
+
+
+<div class="row mt-3 col-md-12">
+
+    <label class="form-label font-weight-bold">Sub Process</label>
+    <select onchange="getProcessesForMergeDuplicate();" id="subchecklistSelectField" class="form-select form-control">
+        <option value="0">--Select Sub-Checklist--</option>
+        @{
+            if (ViewData["ProcessList"] != null)
+            {
+
+                foreach (var item in (dynamic)(ViewData["ProcessList"]))
+                {
+                    <option id="@item.T_ID" value="@item.T_ID">@item.HEADING</option>
+                }
+
+            }
+        }
+    </select>
+
+
+</div>
+
+<div class="row col-md-12 mt-3">
+    <h5>Search Sub Process</h5>
+    <input id="searchTableRecord" type="text" class="form-control" />
+</div>
+
+
+<div class="row col-md-12 mt-1">
+    <table id="authorizeMergeChecklistPanel" class="table table-bordered table mb-0 mt-3 bg-white table-hover table-striped">
+        <thead>
+            <tr style="background-color: #19875478 !important; ">
+                <th class="col-md-1 font-weight-bold">ID</th>
+                <th class="col-md-2 font-weight-bold">Duplicate Checklist</th>
+            </tr>
+        </thead>
+        <tbody>
+          
+        </tbody>
+    </table>
+</div>
+
+
+<div class="row col-md-12 mt-3">
+    <button onclick="authorizeMergeDuplicate();" class="btn btn-danger offset-md-9 col-md-3">Auhtorize</button>
+</div>
+

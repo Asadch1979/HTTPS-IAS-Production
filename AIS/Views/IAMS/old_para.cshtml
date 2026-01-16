@@ -1,0 +1,339 @@
+﻿@{
+    ViewData["Title"] = "Legacy Observations";
+    Layout = "_Layout";
+}
+
+
+
+<script>
+    var g_paraId = 0;
+    $(document).ready(function () {
+
+        $('#observation').richText({
+            imageUpload: false,
+            fileUpload: false,
+            videoEmbed: false,
+            urls: false
+        });
+        $('#PublishParaText').on('click', function () {
+            console.log('asdasdas');
+            publishResponseChanges();
+        });
+    });
+    function getLegacyPara() {
+        if ($('#legacypara_branch option:selected').val() == 0) {
+            alert('Please Select Your Branch');
+            return;
+        }
+        $('#manageObsPanel tbody').empty();
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/get_legacy_para",
+            type: "POST",
+            data: {
+                'AUDITED_BY': $('#legacypara_branch option:selected').val(),
+                'AUDIT_YEAR': $('#legacypara_year option:selected').val(),
+            },
+            cache: false,
+            success: function (data) {
+                $.each(data, function (index, child) {
+                    $('#manageObsPanel tbody').append('<tr id="div_' + child.id + '"><td><p class="fw-normal mb-1">' + child.entitY_NAME + '</p></td><td><p class="fw-normal mb-1">' + child.audiT_PERIOD + '</p></td><td><p class="fw-normal mb-1">' + child.parA_NO + '</p></td><td><p class="fw-normal mb-1">' + child.gisT_OF_PARAS + '</p></td><td><p class="fw-normal mb-1">' + child.amounT_INVOLVED + '</p></td><td><p  class="fw-normal mb-1">' + child.voL_I_II + '</p></td><td class="text-center"><a class="text-center text-danger" style="cursor:pointer;" onclick="event.preventDefault();processdetails(' + child.id + ');">Add Para Text</a></td></tr>')
+                });
+
+            },
+
+            dataType: "json",
+        });
+
+    }
+    function getProcessChilds() {
+
+        var select = document.getElementById('processbox');
+        var option = select.options[select.selectedIndex];
+        var p_id = option.value;
+        $('#sub_process').empty();
+        $('#sub_process').append('<option value="0" id="0">--Select Sub-Process--</option>');
+        if (p_id != 0) {
+            $.ajax({
+                url: g_asiBaseURL + "/Setup/process_details",
+                type: "POST",
+                data: {
+                    'ProcessId': p_id,
+                },
+
+                cache: false,
+                success: function (data) {
+                    
+                    $.each(data, function (index, pid) {
+                        $('#sub_process').append('<option value="' + pid.id + '" id="' + pid.id + '" >' + pid.title + '</option>');
+                    });
+                },
+
+                dataType: "json",
+            });
+        }
+
+    }
+    function getchecklist() {
+        var select = document.getElementById('sub_process');
+        var option = select.options[select.selectedIndex];
+        var s_p_id = option.value;
+        $('#checklist_box').empty();
+        $('#checklist_box').append('<option value="0" id="0">--Select Checklist Detail--</option>');
+        if (s_p_id != 0) {
+            $.ajax({
+                url: g_asiBaseURL + "/Setup/process_transactions",
+                type: "POST",
+                data: {
+                    'ProcessDetailId': s_p_id,
+                },
+                cache: false,
+                success: function (data) {                    
+                    $.each(data, function (index, clid) {
+                        $('#checklist_box').append('<option value="' + clid.id + '" id="' + clid.id + '" >' + clid.description + '</option>');
+                    });
+                },
+
+                dataType: "json",
+            });
+        }
+
+    }
+    function processdetails(id) {
+        g_paraId = id;
+        $('#process_detail').modal('show');
+        $('#observation').val('').trigger('change');
+    }
+
+    function publishResponseChanges() {
+        if ($('#processbox option:selected').val() == 0) {
+            alert("Please select Process to proceed");
+            return;
+        }
+
+        if ($('#sub_process option:selected').val() == 0) {
+            alert("Please select Sub-Process to proceed");
+            return;
+        }
+        if ($('#checklist_box option:selected').val() == 0) {
+            alert("Please select Checklist Detail to proceed");
+            return;
+        }
+
+    
+        if ($('.richText-editor').html() == "") {
+            alert("Please enter Para Text");
+            return;
+        }
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/add_legacy_para_observation_text",
+            type: "POST",
+            data: {
+                'ID': g_paraId,
+                'PROCESS': $('#processbox option:selected').val(),
+                'SUB_PROCESS': $('#sub_process option:selected').val(),
+                'PROCESS_DETAIL': $('#checklist_box option:selected').val(),
+                'PARA_TEXT': $('.richText-editor').html(),
+                'RESPONSIBLE_PP_NO': $('#multiplePPNumberFields').val()
+            },
+            cache: false,
+            success: function (data) {
+                alert("Para text Successfully added");
+                onAlertCallback(reloadLocation);
+            },
+            dataType: "json",
+        });
+    }
+    function reloadLocation() {
+        window.location.reload();
+    }
+
+</script>
+
+<div class="row">
+    <div class="col-md-12 mt-3">
+        <h3 style=" display:block;color: #be0e43">Old Audit Observations</h3>
+    </div>
+    <div class="row col-md-12">
+        <div class="col-md-4">
+            <label>Audit Branch</label>
+        </div>
+        <div class="col-md-8">
+            <select id="legacypara_branch" class="form-select form-control">
+                <option value="0" id="0">--Select Branch--</option>
+                @{
+                    if (ViewData["EntitiesList"] != null)
+                    {
+                        foreach (var item in (dynamic)(ViewData["EntitiesList"]))
+                        {
+                                <option value="@item.ENTITY_ID" id="@item.ENTITY_ID">@item.NAME &nbsp;&nbsp; -&nbsp;&nbsp; @item.CODE</option>
+                        }
+                    }
+                }
+            </select>
+        </div>
+
+    </div>
+    <div class="row col-md-12 mt-3">
+        <div class="col-md-4">
+            <label>Audit Year</label>
+        </div>
+        <div class="col-md-8">
+            <select id="legacypara_year" class="form-select form-control">
+                <option value="0" id="0">--Select Audit Year--</option>
+                @{
+                    if (ViewData["AuditYearList"] != null)
+                    {
+                        foreach (var item in (dynamic)(ViewData["AuditYearList"]))
+                        {
+                            <option value="@item.AUDIT_PERIOD" id="@item.AUDIT_PERIOD">@item.AUDIT_PERIOD</option>
+                        }
+                    }
+                }
+            </select>
+        </div>
+        
+    </div>
+    <div class="row col-md-12 mt-3">
+        <div class="w-100">
+            <button onclick="getLegacyPara();" style="float:right; margin-right:15px;" class="btn btn-danger">Search Legacy Paras</button>
+        </div>
+
+    </div>
+
+    <div class="row col-md-12 mt-3">
+        <table id="manageObsPanel" class="table table-hover table-bordered table-hover mt-3 table-striped">
+            <thead style="background-color: #19875478 !important; ">
+                <tr>
+                    <th class="col-md-2">Entity</th>
+                    <th class="col-md-1">Audit Year</th>
+                    <th class="col-md-1">Para No.</th>
+                    <th class="col-md-3">Observation</th>
+                    <th class="col-md-1">Amount</th>
+                    <th class="col-md-2">VOL I II</th>
+                    <th class="col-md-2">Action</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+            <!-- <tbody>
+                @{
+                    if (ViewData["OldParas"] != null)
+                    {
+                        foreach (var item in (dynamic)(ViewData["OldParas"]))
+                        {
+
+                            <tr id="div_@item.ID">
+                                <td>
+                                    <p class="fw-normal mb-1">@item.ENTITY_NAME</p>
+                                </td>
+                                <td>
+                                    <p class="fw-normal mb-1">@item.AUDIT_PERIOD</p>
+                                </td>
+                                <td>
+                                    <p class="fw-normal mb-1">@item.PARA_NO</p>
+                                </td>
+                                <td>
+                                    <p class="fw-normal mb-1">@item.GIST_OF_PARAS</p>
+                                </td>
+                                <td>
+                                <p class="fw-normal mb-1">@item.AMOUNT_INVOLVED</p>
+                                </td>
+                                <td>
+                                <p class="fw-normal mb-1">@item.ANNEXURE</p>
+                                </td>
+                                <td class="text-center">
+                                    <a class="text-center text-danger" style="cursor:pointer;" onclick="processdetails(@item.ID);">Add Para Text</a>
+                                </td>
+
+                            </tr>
+                        }
+                    }}
+
+            </tbody>-->
+
+        </table>
+    </div>
+
+</div>
+
+
+<div id="process_detail" class="modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog  modal-xl" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">Sub Process Entry</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="mt-3 modal-body">
+                <form>
+
+                    <div class="row col-md-12">
+
+                        <label class="font-weight-bold">Process</label>
+
+                        <select id="processbox" onchange="getProcessChilds();" class="form-select form-control">
+                            <option value="0" id="0">--Enter Process--</option>
+                            @{
+                                if (ViewData["ProcessList"] != null)
+                                {
+                                    foreach (var item in (dynamic)(ViewData["ProcessList"]))
+                                    {
+                                        <option id="@item.P_ID" value="@item.P_ID">@item.P_NAME</option>
+
+
+                                    }
+                                }
+                            }
+                        </select>
+                    </div>
+                    <div class="row mt-3 col-md-12">
+
+                        <label class="font-weight-bold">Sub-Process</label>
+
+                        <select id="sub_process" onchange="getchecklist();" class="form-select form-control">
+                            <option value="0" id="0">--Add Sub-Process--</option>
+
+                        </select>
+                        <!--<button onclick="getProcessChilds();">function</button>-->
+                    </div>
+
+                    <div class="row mt-3 col-md-12">
+
+                        <label class="font-weight-bold">Checklist Details </label>
+                        <select id="checklist_box" class="form-select form-control">
+                            <option value="0" id="0">--Enter Checklist Details--</option>
+
+                        </select>
+
+                    </div>
+
+                    <div class="row mt-3 col-md-12">
+                        <label class="font-weight-bold">Observation</label>
+
+                    </div>
+                    <div class="row mt-3 col-md-12">
+                        <textarea id="observation" class="form-control"></textarea>
+
+                    </div>
+                    <div class="row mt-3 col-md-12">
+                        <label class="font-weight-bold">Responsible PP No.</label>
+
+                    </div>
+                    <div class="row mt-3 col-md-12">
+                        <input type="text" id="multiplePPNumberFields" class="form-control" placeholder="123456,23456,1222334,345123 etc." />
+                    </div>
+
+                </form>
+            </div>
+
+            <div class="mt-3 modal-footer">
+                <button id="PublishParaText" type="button" class="btn btn-danger">Save changes</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+

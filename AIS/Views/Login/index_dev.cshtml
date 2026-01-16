@@ -1,0 +1,294 @@
+@{
+    Layout = "_BlankLayout";
+    ViewData["Title"] = "Login (DEV)";
+    var statusMessage = ViewData["StatusMessage"] as string;
+    var errorMessage = ViewData["ErrorMessage"] as string;
+    var nonce = Context.Items["CSPNonce"]?.ToString();
+}
+
+<script src="~/js/login.js" asp-append-version="true" nonce="@nonce"></script>
+
+<input type="hidden" id="sessionStatusValue" value="@statusMessage" />
+
+<style nonce="@nonce">
+    :root {
+        --dev-bg: #9aa0a6;
+        --card: #eef1f4;
+        --text: #1f2d3d;
+        --muted: #6b7785;
+        --border: #dde1e7;
+        --btn1: #2b4a7a;
+        --btn2: #1d355d;
+        --link: #2b6cb0;
+    }
+
+    #login-page.ias-dev-login {
+        min-height: 100vh;
+        background: #7da2c9;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 28px 16px;
+        color: var(--text);
+    }
+
+    .dev-card {
+        width: min(360px, 92vw);
+        background: var(--card);
+        border-radius: 6px;
+        box-shadow: 0 18px 32px rgba(0,0,0,.18);
+        position: relative;
+        padding: 26px 26px 16px;
+    }
+
+    .dev-logo {
+        width: 92px;
+        height: 92px;
+        border-radius: 50%;
+        background: #fff;
+        border: 6px solid #dfe6ee;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: -66px auto 12px;
+        box-shadow: 0 10px 18px rgba(0,0,0,.14);
+        overflow: hidden;
+    }
+
+        .dev-logo img {
+            width: 76%;
+            height: 70%;
+            object-fit: contain;
+            border-radius: 30%;
+        }
+
+    .dev-title {
+        font-size: 14px;
+        font-weight: 700;
+        margin: 6px 0 12px;
+        text-align: left;
+        color: #2b2f36;
+    }
+
+    .dev-badge {
+        display: inline-block;
+        margin: -4px 0 14px;
+        padding: 4px 10px;
+        border-radius: 999px;
+        font-size: 11px;
+        font-weight: 700;
+        background: rgba(220,53,69,.12);
+        color: #b02a37;
+    }
+
+    .dev-input {
+        width: 100%;
+        height: 36px;
+        border: 1px solid var(--border);
+        border-radius: 4px;
+        padding: 0 10px;
+        font-size: 13px;
+        outline: none;
+        background: #fff;
+    }
+
+        .dev-input:focus {
+            border-color: rgba(43,108,176,.5);
+            box-shadow: 0 0 0 3px rgba(43,108,176,.12);
+        }
+
+    .dev-field {
+        margin-bottom: 10px;
+    }
+
+    .dev-password-wrap {
+        position: relative;
+    }
+
+    .dev-eye {
+        position: absolute;
+        right: 10px;
+        top: 50%;
+        transform: translateY(-50%);
+        border: none;
+        background: transparent;
+        color: #6b7785;
+        font-size: 14px;
+        cursor: pointer;
+        padding: 0;
+        line-height: 1;
+    }
+
+    .dev-link {
+        display: inline-block;
+        margin: 4px 0 12px;
+        font-size: 12px;
+        color: var(--link);
+        text-decoration: none;
+        font-weight: 600;
+    }
+
+        .dev-link:hover {
+            text-decoration: underline;
+        }
+
+    .dev-btn {
+        width: 100%;
+        height: 40px;
+        border: none;
+        border-radius: 3px;
+        color: #fff;
+        font-weight: 700;
+        font-size: 12px;
+        letter-spacing: .2px;
+        cursor: pointer;
+        background: linear-gradient(90deg,var(--btn1),var(--btn2));
+        box-shadow: 0 10px 16px rgba(29,53,93,.25);
+        margin-top: 6px;
+    }
+
+        .dev-btn:hover {
+            filter: brightness(.98);
+        }
+
+    .dev-kill {
+        width: 100%;
+        height: 38px;
+        border-radius: 3px;
+        border: 1px solid #efc4c4;
+        background: #fff;
+        color: #b02a37;
+        font-weight: 700;
+        font-size: 12px;
+        cursor: pointer;
+        margin-top: 6px;
+    }
+
+    .dev-status {
+        text-align: center;
+        margin-top: 12px;
+        font-size: 12px;
+        color: #2b2f36;
+    }
+
+        .dev-status span {
+            color: var(--link);
+            font-weight: 700;
+        }
+
+    .dev-alert {
+        width: min(560px, 92vw);
+        margin: 0 auto 12px;
+        border-radius: 10px;
+    }
+</style>
+
+<div id="login-page" class="ias-dev-login" data-base-url="@ViewBag.BaseURL">
+
+    <div style="width:min(420px, 92vw);">
+        @if (!string.IsNullOrWhiteSpace(errorMessage))
+        {
+            <div class="alert alert-danger alert-dismissible fade show dev-alert" role="alert">
+                @errorMessage
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        }
+
+        <div class="dev-card">
+            <div class="dev-logo" aria-hidden="true">
+                <img src="~/Images/ztbllogo.png" alt="ZTBL" />
+            </div>
+
+            <div class="dev-title">Log In</div>
+            <div class="dev-badge">Development / Test</div>
+            <form id="loginForm" action="#" method="post" autocomplete="off">
+                @Html.AntiForgeryToken()
+
+                <div class="dev-field">
+                    <input autocomplete="off" required type="number" inputmode="numeric"
+                           placeholder="PP NO" id="inputPPNoField" name="PPNumber" class="dev-input pp-limited" />
+                </div>
+
+                <div class="dev-field dev-password-wrap">
+                    <input autocomplete="off" required type="password"
+                           placeholder="Password" id="inputPassword" name="Password" class="dev-input" />
+                    <button type="button" class="dev-eye" id="togglePasswordBtn" aria-label="Show/Hide password">👁</button>
+                </div>
+
+                <a href="#" id="forgotPasswordLink" class="dev-link">Forgot Password?</a>
+
+                <button id="submitKillSessionButton" type="button" class="dev-kill d-none">
+                    Kill Session
+                </button>
+
+                <button id="submitLoginButton" type="button" class="dev-btn">
+                    Log In
+                </button>
+
+                <div class="dev-status">
+                    Status: <span>🔒 Secure</span>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script nonce="@nonce">
+    // Simple password show/hide (does not interfere with login.js)
+    (function(){
+        var btn = document.getElementById('togglePasswordBtn');
+        var input = document.getElementById('inputPassword');
+        if(!btn || !input) return;
+        btn.addEventListener('click', function(){
+            input.type = (input.type === 'password') ? 'text' : 'password';
+        });
+    })();
+</script>
+
+<form id="killSessionForm" method="post" action="@Url.Action("KillSession", "Login")" class="d-none">
+    @Html.AntiForgeryToken()
+    <input type="hidden" name="PPNumber" id="killSessionPPNumber" />
+    <input type="hidden" name="Password" id="killSessionPassword" />
+</form>
+
+<div class="modal" id="loginerrormodal" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Error</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p id="errorDescField"></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-danger" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal" id="resetPasswordModel" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Reset Password</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="form-outline mb-4">
+                    <input autocomplete="off" required type="number" inputmode="numeric"
+                           placeholder="PP Number" id="inputPPNoField_reset" name="PPNumber" class="form-control pp-limited" />
+                </div>
+
+                <div class="form-outline mb-4">
+                    <input autocomplete="off" required type="number" inputmode="numeric"
+                           placeholder="CNIC Number" id="inputCnicField_reset" name="cnicNumber" class="form-control pp-limited" />
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" id="submitPasswordResetButton" class="btn btn-danger">Submit Request</button>
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,332 @@
+﻿@{
+    ViewData["Title"] = "CIA Analysis";
+    Layout = "_Layout";
+}
+
+<script>
+
+    $(document).ready(function () {
+
+       
+    });
+
+    function getBACAnalysis() {
+
+        $('#bacanalysis_panel tbody').empty();
+
+        if ($('#BACAnalysisOptionBox option:selected').val() == "-1")
+            return;
+
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/get_bac_analysis",
+            type: "POST",
+            data: {
+                'PROCESS_ID': $('#BACAnalysisOptionBox option:selected').val(),
+            },
+            cache: false,
+            success: function (data) {
+                var sr = 1;
+                var rowspan = 1;
+                var mergeRow = 1;
+                var currentT = 0;
+                var legacyT = 0;
+                var totalT = 0;
+                var heading_check = "";
+                var rowSpArr = [];
+                $.each(data, function (index, item) 
+                {
+                    if (item.heading == heading_check) {
+                        rowspan++;
+                       
+                    } else {
+                        if(rowspan>1)
+                            rowSpArr.push({ 'heading': heading_check, 'rowspan': rowspan });
+                        rowspan = 1;
+                        heading_check = item.heading;
+                    }
+
+                });
+                rowSpArr.push({ 'heading': heading_check, 'rowspan': rowspan });
+
+                console.log(rowSpArr);
+                rowspan = 1;
+                var heading_check = "";
+                $.each(data, function (index, item) {
+                    currentT += parseInt(item.newcount);
+                    legacyT += parseInt(item.oldcount);
+                    totalT += parseInt(item.count);
+                    if (item.heading != heading_check) {
+                        $.each(rowSpArr, function (i, v) {
+                            if (v.heading == item.heading) {
+                                mergeRow = v.rowspan;
+                            }
+                        });
+
+                        if(item.indicator=="Y")
+                            $('#bacanalysis_panel tbody').append("<tr><td>" + sr + "</td><td class=\"heading_field\">" + item.heading + "</td><td>" + item.annex + "</td><td class=\"text-right\">" + item.newcount + "</td><td class=\"text-right\">" + item.oldcount + "</td><td class=\"text-right\">" + item.count + "</td><td style=\"vertical-align: middle;\" rowspan=\"" + mergeRow + "\">" + item.auditcomments + "</td><td class=\"actionsCol\"><a href=\"#\" onclick=\"getParaViewerDetails(" + item.id + ");\">View Detail</a></td><td class=\"actionsCol\"><a  href=\"#\" onclick=\"getParaSummaryDetails(" + item.id + ");\">View Summary</a></td></tr>");
+                        else
+                            $('#bacanalysis_panel tbody').append("<tr><td>" + sr + "</td><td class=\"heading_field\">" + item.heading + "</td><td>" + item.annex + "</td><td class=\"text-right\">" + item.newcount + "</td><td class=\"text-right\">" + item.oldcount + "</td><td class=\"text-right\">" + item.count + "</td><td style=\"vertical-align: middle;\" rowspan=\"" + mergeRow + "\">" + item.auditcomments + "</td><td class=\"actionsCol\"></td><td class=\"actionsCol\"></td></tr>");
+                        heading_check = item.heading;
+                    }
+                    else{
+                        if (item.indicator == "Y")
+                            $('#bacanalysis_panel tbody').append("<tr><td>" + sr + "</td><td class=\"heading_field\">" + item.heading + "</td><td>" + item.annex + "</td><td class=\"text-right\">" + item.newcount + "</td><td class=\"text-right\">" + item.oldcount + "</td><td class=\"text-right\">" + item.count + "</td><td class=\"actionsCol\"><a href=\"#\" onclick=\"getParaViewerDetails(" + item.id + ");\">View Detail</a></td><td class=\"actionsCol\"><a href=\"#\" onclick=\"getParaSummaryDetails(" + item.id + ");\">View Summary</a></td></tr>");
+                        else
+                            $('#bacanalysis_panel tbody').append("<tr><td>" + sr + "</td><td class=\"heading_field\">" + item.heading + "</td><td>" + item.annex + "</td><td class=\"text-right\">" + item.newcount + "</td><td class=\"text-right\">" + item.oldcount + "</td><td class=\"text-right\">" + item.count + "</td><td class=\"actionsCol\" ></td><td class=\"actionsCol\"></td></tr>");
+
+                         heading_check = item.heading;
+                    }
+                    sr++;                   
+                });              
+
+                if ($('#BACAnalysisOptionBox option:selected').val() == "0")
+                {
+                    $('#bacanalysis_panel tbody').append("<tr><td colspan=\"3\"><b>Total</b></td><td class=\"text-right text-bold\"><b>" + currentT + "</b></td><td class=\"text-right text-bold\"><b>" + legacyT + "</b></td><td class=\"text-right text-bold\"><b>" + totalT + "</b></td><td></td><td class=\"actionsCol\"></td><td class=\"actionsCol\"></td></tr>");
+                    $('.heading_field').show();
+                    $('.actionsCol').hide();
+
+                }                
+                else
+                {
+                    $('.heading_field').hide();
+                    $('.actionsCol').show();
+                    $('#bacanalysis_panel tbody').append("<tr><td colspan=\"2\"><b>Total</b></td><td class=\"text-right text-bold\"><b>" + currentT + "</b></td><td class=\"text-right text-bold\"><b>" + legacyT + "</b></td><td class=\"text-right text-bold\"><b>" + totalT + "</b></td><td></td><td class=\"actionsCol\"></td><td class=\"actionsCol\"></td></tr>");
+                }   
+                
+
+
+            },
+            dataType: "json",
+        });
+
+    }
+
+    function getParaText(id, pc) {
+        $('#paraTextViewerModel').modal("show");
+        $('#paraTextDivField').empty();
+
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/get_functional_observation_text",
+            type: "POST",
+            data: {
+                'PARA_ID': id,
+                'PARA_CATEGORY': pc
+            },
+            cache: false,
+            success: function (data) {
+                $('#paraTextDivField').html(data);
+            }
+        });
+    }
+
+    function getParaViewerDetails(id) {
+        $('#paraViewerModel').modal('show');
+        $('#entitywise_panel tbody').empty();
+         $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/get_analysis_detail_paras",
+            type: "POST",
+            data: {
+                'PROCESS_ID': id
+            },
+            cache: false,
+            success: function (data) {
+                var sr = 1;
+
+                $.each(data, function (index, item) {
+
+                    $('#entitywise_panel tbody').append("<tr><td>" + sr + "</td><td>" + item.name + "</td><td>" + item.audiT_PERIOD + "</td> <td class=\"text-right\">" + item.parA_NO + "</td><td><a href=\"#\" onclick=\"getParaText(" + item.id + ", '"+item.parA_CATEGORY+"');\">View Para Text</a></td></tr>");
+                    sr++;
+                });
+
+
+            },
+            dataType: "json",
+        });
+    }
+
+    function getParaSummaryDetails(id) {
+        $('#paraSummaryModel').modal('show');
+        $('#summarywise_panel tbody').empty();
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/get_analysis_summary_paras",
+            type: "POST",
+            data: {
+                'PROCESS_ID': id
+            },
+            cache: false,
+            success: function (data) {
+                var sr = 1;
+
+                $.each(data, function (index, item) {
+
+                    $('#summarywise_panel tbody').append("<tr><td>" + sr + "</td><td>" + item.p_NAME + "</td><td>" + item.name + "</td><td>" + item.audiT_PERIOD + "</td> <td class=\"text-right\">" + item.parA_NO + "</td></tr>");
+                    sr++;
+                });
+
+
+            },
+            dataType: "json",
+        });
+    }
+
+   
+</script>
+<div class="row col-md-12">
+
+    <h3 style="color: #be0e43;">CIA Analysis for Policy/Procedure Improvement and Control Implementation</h3>
+</div>
+<div class="row col-md-12 mt-3">
+    <div class="col-md-12">
+        <label class="text-bold"><b>Main Process</b></label>
+      </div>
+    <div class="col-md-12 mt-1">
+       
+           <select onchange="getBACAnalysis();" id="BACAnalysisOptionBox" class="form-control">
+               <option value="-1">--Select Main Process--</option>
+               <option value="0">All</option>
+                @{
+                    if (ViewData["OptionList"] != null)
+                    {
+                        foreach (var item in (dynamic)(ViewData["OptionList"]))
+                        {
+                                <option value="@item.ID">@item.HEADING</option>
+                       
+                        }
+                    }
+                }
+               
+           </select>
+    </div>    
+</div>
+<div class="row col-md-12 mt-3">
+    <div class="mt-3 col-md-12">
+        <table id="bacanalysis_panel" class="table table-hover table-bordered table-hover mt-3 table-striped">
+            <thead style="background-color: #19875478 !important; ">
+                <tr>
+                    <th class="col-md-auto text-light">Sr. No.</th>
+                    <th class="col-md-auto text-light heading_field">Main Process</th>
+                    <th class="col-md-auto text-light">Annexure</th>
+                    <th class="col-md-auto text-center text-light">Current</th>
+                    <th class="col-md-auto text-center text-light">Legacy</th>
+                    <th class="col-md-auto text-center text-light">Total</th>
+                    <th class="col-md-auto text-center text-light">Audit Comments</th>
+                    <th class="col-md-auto text-center text-light actionsCol"></th>
+                    <th class="col-md-auto text-center text-light actionsCol"></th>
+                </tr>
+               
+
+            </thead>
+            <tbody>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+
+<div id="paraSummaryModel" class="modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog  modal-xl" role="document" style="min-width:95% !important;">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">Paras Summary</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="mt-3 modal-body">
+                <form>
+                    <div class="row col-md-12">
+                        <div class="mt-3 col-md-12">
+                            <table id="summarywise_panel" class="table table-hover table-bordered table-hover mt-3 table-striped">
+                                <thead style="background-color: #19875478 !important; ">
+                                    <tr>
+                                        <th class="col-md-auto text-light">Sr. No.</th>
+                                        <th class="col-md-auto text-light">Reporting Office</th>
+                                        <th class="col-md-auto text-light">Entity Name</th>
+                                        <th class="col-md-auto text-center text-light">Audit Period</th>
+                                        <th class="col-md-auto text-center text-light">Total No of Open items</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                </form>
+            </div>
+
+            <div class="mt-3 modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<div id="paraViewerModel" class="modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog  modal-xl" role="document" style="min-width:95% !important;">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">Para Detail</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="mt-3 modal-body">
+                <form>
+                    <div class="row col-md-12">
+                        <div class="mt-3 col-md-12">
+                            <table id="entitywise_panel" class="table table-hover table-bordered table-hover mt-3 table-striped">
+                                <thead style="background-color: #19875478 !important; ">
+                                    <tr>
+                                        <th class="col-md-auto text-light">Sr. No.</th>
+                                        <th class="col-md-auto text-light">Entity Name</th>
+                                        <th class="col-md-auto text-center text-light">Audit Period</th>
+                                        <th class="col-md-auto text-center text-light">Para No</th>
+                                        <th class="col-md-auto text-center text-light"></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                </form>
+            </div>
+
+            <div class="mt-3 modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<div id="paraTextViewerModel" class="modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog  modal-xl" role="document" style="min-width:95% !important;">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">Para Text</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="mt-3 modal-body">
+                <form>
+                    <div class="row mt-3 col-md-12">
+                        <div id="paraTextDivField" style="max-width:100%; overflow-y:auto;" class="col-md-12"></div>
+
+                    </div>
+
+
+                </form>
+            </div>
+
+            <div class="mt-3 modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+

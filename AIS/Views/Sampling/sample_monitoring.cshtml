@@ -1,0 +1,151 @@
+﻿@{
+    var page_id = ViewData["PageId"] as int? ?? 0;
+}
+
+@{
+    ViewData["Title"] = "List of Samples";
+    Layout = "_Layout";
+}
+
+<script type="text/javascript">
+
+    var g_engID = 0;
+    $(document).ready(function () {
+       listSamples();
+
+    });
+    function listSamples(){
+        if( $('#entitySelectField').val()=="0"){
+
+           return;
+        }
+         $('#regenerateSampleBtn').show();
+        g_engID=$('#entitySelectField').val();
+        $.ajax({
+             url: g_asiBaseURL + "/ApiCalls/get_list_of_samples",
+            type: "POST",
+               cache: false,
+
+            data: {
+            'ENG_ID':g_engID
+            },
+            success: function (data) {
+                if (data.length > 0) {
+                    populateTable(data);
+                }
+            },
+            dataType: "json",
+        });
+    }
+    function populateTable(data) {
+            $('#wait').show();
+             destroyDatatable('listOfSamples');
+        let tableBody = $("#listOfSamples tbody");
+
+
+         data.forEach((item, index) => {
+        let row = `<tr>
+            <td>${index + 1}</td>
+            <td>${item.samplE_TYPE}</td>
+            <td class="text-center">${item.samplE_PERCENTAGE}%</td>
+            <td class="text-center">${item.totaL_COUNT}</td>
+            <td class="text-center">${item.samplE_COUNT}</td>
+            <td class="text-center">
+                <button class="btn btn-danger btn-sm" onclick="viewSample(${item.samplE_ID}, ${item.loaN_STATUS}, '${item.samplE_INDICATOR}')">
+                    View
+                </button>
+            </td>
+              <td class="text-center">
+                <button class="btn btn-danger btn-sm" onclick="regenerateSample(${item.samplE_ID}, ${item.loaN_STATUS}, '${item.samplE_INDICATOR}')">
+                    Regenerate
+                </button>
+            </td>
+        </tr>`;
+
+        tableBody.append(row);
+    });
+
+        // Reinitialize DataTable after populating data
+        initializeDataTable("listOfSamples");
+        $('#wait').hide();
+    }
+
+
+    function viewSample(sampleId, loanStatus, indicator) {
+        if(indicator=="A"){
+            redirectToBiomet(sampleId,loanStatus);
+        }else if(indicator=="L"){
+            redirectToLoan(sampleId,loanStatus);
+        }
+    }
+
+    function redirectToBiomet(sampleId,loanStatus){
+
+        window.location.href = g_asiBaseURL + "/Sampling/biomet?engId="+g_engID+"&sample_id="+sampleId+"&loan_status="+loanStatus;
+    }
+
+    function redirectToLoan(sampleId,loanStatus){
+
+        window.location.href = g_asiBaseURL + "/Sampling/loans?engId="+g_engID+"&sample_id="+sampleId+"&loan_status="+loanStatus
+    }
+
+    function regenerateSample(sampleId,loanStatus,indicator ){
+         $.ajax({
+             url: g_asiBaseURL + "/ApiCalls/regenerate_sample_of_loans",
+            type: "POST",
+               cache: false,
+
+            data: {
+            'ENG_ID':g_engID,
+            'LOAN_SAMPLE_ID':sampleId,
+            },
+            success: function (data) {
+               alert(data.message);
+              onAlertCallback(listSamples);
+            },
+            dataType: "json",
+        });
+    }
+
+</script>
+<link rel="stylesheet" href="~/css/sampling.css" />
+<div class="container-fluid mt-4">
+    <div class="card card-sample shadow-sm">
+        <div class="card-header">
+            <h4 class="mb-0">Monitoring of Samples</h4>
+        </div>
+        <div class="card-body">
+            <div class="mb-3">
+                <label>Entity:</label>
+                <select id="entitySelectField" onchange="listSamples();" class="form-select form-control">
+                    <option value="0" id="0" selected>--Select Entity Name--</option>
+                    @{
+                        if (ViewData["EntityList"] != null)
+                        {
+                            foreach (var ent in (dynamic)(ViewData["EntityList"]))
+                            {
+                                <option id="@ent.ENG_ID" value="@ent.ENG_ID">@ent.NAME</option>
+                            }
+                        }
+                    }
+                </select>
+            </div>
+            <div class="table-responsive">
+                <table id="listOfSamples" class="table table-hover table-bordered table-striped">
+                    <thead>
+                        <tr>
+                            <th class="col-md-auto">Sr. No.</th>
+                            <th class="col-md-auto">Sample List</th>
+                            <th class="col-md-auto">Percentage</th>
+                            <th class="col-md-auto">Total Count</th>
+                            <th class="col-md-auto">Sample Count</th>
+                            <th class="col-md-auto text-center">View</th>
+                            <th class="col-md-auto text-center">Regenerate Sample</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>

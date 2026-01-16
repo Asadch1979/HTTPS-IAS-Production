@@ -1,0 +1,15 @@
+﻿@model ErrorViewModel
+@{
+    ViewData["Title"] = "Error";
+}
+
+<div class="container my-5">
+    <div class="alert alert-danger" role="alert">
+        <h1 class="alert-heading">Something went wrong.</h1>
+        <p class="mb-3">We couldn't process your request right now. Please try again later.</p>
+        @if (Model.ShowRequestId)
+        {
+            <p class="mb-0"><small>Reference ID: <code>@Model.RequestId</code></small></p>
+        }
+    </div>
+</div>

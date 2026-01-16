@@ -1,0 +1,106 @@
+﻿@{
+    var page_id = ViewData["PageId"] as int? ?? 0;
+}
+
+@{
+    ViewData["Title"] = "FAD_Branch_Risk_Rating";
+    Layout = "_Layout";
+}
+<script>
+    $(document).ready(function () {
+        $("#searchTableRecord").on("keyup", function () {
+            var value = $(this).val().toLowerCase();
+            $("#A_P_E_T tbody tr").filter(function () {
+                $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1)
+            });
+        });
+
+
+    });
+</script>
+
+<div class="row col-md-12 mt-3">
+    <h3 style=" display:block;color: #be0e43">FAD Branch Risk Rating</h3>
+</div>
+
+<div class="row col-md-12 mt-2">
+    <div style=" width:155px">
+        <label for="periodStartModalField"><b>Audit Period</b><span class="text-danger">*</span></label>
+    </div>
+    <div class=" col-md-5 mr-1">
+        <select id="entitySelectField" onchange="" class="form-control form-select">
+            <option value="0" id="0">--Select Period--</option>
+        </select>
+    </div>
+
+    <div style=" width:135px">
+        <label for="periodEndModalField"><b>Audit Cluster</b><span class="text-danger">*</span></label>
+    </div>
+    <div style=" width:545px">
+        <select id="entitySelectField" onchange="" class="form-control form-select">
+            <option value="0" id="0">--Audit Audit Cluster--</option>
+        </select>
+    </div>
+</div>
+<div class="row col-md-12 mt-2">
+    <div style=" width:155px">
+        <label for="periodStartModalField"><b>Branch Rating</b><span class="text-danger">*</span></label>
+    </div>
+    <div class=" col-md-5 mr-1">
+        <select id="entitySelectField" onchange="" class="form-control form-select">
+            <option value="0" id="0">--Select Branch Rating--</option>
+        </select>
+    </div>
+
+    <div style=" width:135px">
+        <label for="periodEndModalField"><b>Branch Size</b><span class="text-danger">*</span></label>
+    </div>
+    <div style=" width:545px">
+        <select id="entitySelectField" onchange="" class="form-control form-select">
+            <option value="0" id="0">--Select Branch Size--</option>
+        </select>
+    </div>
+</div>
+
+
+
+<div class="row col-md-12 mt-1">
+    <button id="findButton" onclick="" class="btn btn-danger" style="margin-left:auto;">Search</button>
+
+</div>
+<div class="row col-md-12 mt-3">
+
+    <input class="form-control" id="searchTableRecord" type="text" placeholder="Search Results..">
+
+</div>
+
+<div class="row col-md-12 mt-3">
+    <table id="zoneiwseperformance" class="table table-hover table-bordered table-hover mt-3 table-striped">
+        <thead style="background-color: #19875478 !important; ">
+            <tr>
+                <th class="col-md-auto">Sr. No</th>
+                <th class="col-md-auto">Code</th>
+                <th class="col-md-auto">Audit Cluster</th>
+
+                <th class="col-md-auto">Operational Zone</th>
+
+                <th class="col-md-auto">Audit period (Audited Till)</th>
+                <th class="col-md-auto">Risk Rating</th>
+                <th class="col-md-auto">Risk Rating Mark</th>
+                <th class="col-md-auto">Rating</th>
+                <th class="col-md-auto">Size</th>
+
+
+
+
+            </tr>
+        </thead>
+        <tbody>
+        </tbody>
+
+    </table>
+</div>
+
+<div class="col-md-12 offset-md-12 mt-4">
+    <button id="printPreview_btn" class="btn btn-danger" style="float:right; margin-bottom:10px;">Download Report/Print</button>
+</div>

@@ -1,0 +1,220 @@
+@{
+    ViewData["Title"] = "API Master";
+    Layout = ViewData.ContainsKey("Layout") ? ViewData["Layout"] as string : "_Layout";
+    var isAdvanced = (ViewData["IsAdvancedUser"] as bool?) ?? false;
+}
+
+@if (!isAdvanced)
+    {
+    <div class="alert alert-warning mb-0">
+        Only Super Admins can manage API Master.
+    </div>
+    }
+else
+    {
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h5 class="mb-0">API Definitions</h5>
+        <button class="btn btn-primary" type="button" onclick="openApiMasterModal(0);">Add API</button>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-striped" id="apiMasterTable">
+            <thead>
+                <tr>
+                    <th>API Name</th>
+                    <th>Path</th>
+                    <th>Method</th>
+                    <th>Active</th>
+                    <th style="width: 160px;">Actions</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+
+    <div class="modal fade" id="apiMasterModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">API Master</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="apiMasterId" value="0" />
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold" for="apiNameInput">API Name</label>
+                            <input class="form-control" id="apiNameInput" type="text" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold" for="apiPathInput">Path</label>
+                            <input class="form-control" id="apiPathInput" type="text" placeholder="/api/example" />
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold" for="apiMethodInput">HTTP Method</label>
+                            <select class="form-select" id="apiMethodInput">
+                                <option value="GET">GET</option>
+                                <option value="POST">POST</option>
+                                <option value="PUT">PUT</option>
+                                <option value="DELETE">DELETE</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold" for="apiIsActiveInput">Active</label>
+                            <select class="form-select" id="apiIsActiveInput">
+                                <option value="Y">Enabled</option>
+                                <option value="N">Disabled</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="saveApiMaster();">Save</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="text/javascript">
+        var apiMasterData = [];
+
+        $(document).ready(function () {
+            loadApiMasterList();
+        });
+
+        function loadApiMasterList() {
+            $.ajax({
+                url: g_asiBaseURL + "/Administration/ApiMaster/List",
+                type: "GET",
+                cache: false,
+                success: function (response) {
+                    if (!response || !response.success) {
+                        alert(response && response.message ? response.message : "Unable to load API master list.");
+                        return;
+                    }
+
+                    apiMasterData = response.data || [];
+                    renderApiMasterTable();
+                },
+                error: function () {
+                    alert("Unable to load API master list.");
+                }
+            });
+        }
+
+        function renderApiMasterTable() {
+            var tbody = $('#apiMasterTable tbody');
+            tbody.empty();
+
+            if (!apiMasterData || apiMasterData.length === 0) {
+                tbody.append('<tr><td colspan="5" class="text-muted">No API definitions found.</td></tr>');
+                return;
+            }
+
+            $.each(apiMasterData, function (i, item) {
+                var isActiveRaw = item.isActive || '';
+                var statusLabel = isActiveRaw.toUpperCase() === 'N' ? 'Disabled' : 'Enabled';
+                var apiId = item.apiId;
+
+                var row = '<tr>'
+                    + '<td>' + (item.apiName || '') + '</td>'
+                    + '<td>' + (item.apiPath || '') + '</td>'
+                    + '<td>' + (item.httpMethod || '') + '</td>'
+                    + '<td>' + statusLabel + '</td>'
+                    + '<td>'
+                    + '<button class="btn btn-sm btn-outline-primary me-2" type="button" onclick="openApiMasterModal(' + apiId + ');">Edit</button>'
+                    + '<button class="btn btn-sm btn-outline-secondary" type="button" onclick="disableApiMaster(' + apiId + ');">Disable</button>'
+                    + '</td>'
+                    + '</tr>';
+
+                tbody.append(row);
+            });
+        }
+
+        function openApiMasterModal(apiId) {
+            var modal = new bootstrap.Modal(document.getElementById('apiMasterModal'));
+            var item = apiMasterData.find(function (entry) {
+                return entry.apiId == apiId;
+            });
+
+            $('#apiMasterId').val(apiId || 0);
+            $('#apiNameInput').val(item ? item.apiName : '');
+            $('#apiPathInput').val(item ? item.apiPath : '');
+            $('#apiMethodInput').val(item ? item.httpMethod : 'POST');
+            $('#apiIsActiveInput').val(item ? (item.isActive || 'Y') : 'Y');
+
+            modal.show();
+        }
+
+        function saveApiMaster() {
+            var apiId = parseInt($('#apiMasterId').val() || 0);
+            var payload = {
+                apiId: apiId,
+                apiName: $('#apiNameInput').val(),
+                apiPath: $('#apiPathInput').val(),
+                httpMethod: $('#apiMethodInput').val(),
+                isActive: $('#apiIsActiveInput').val(),
+                actionInd: apiId > 0 ? 'U' : 'A'
+            };
+
+            $.ajax({
+                url: g_asiBaseURL + "/Administration/ApiMaster/Save",
+                type: "POST",
+                contentType: "application/json",
+                data: JSON.stringify(payload),
+                cache: false,
+                success: function (response) {
+                    if (!response || !response.success) {
+                        alert(response && response.message ? response.message : "Unable to save API master entry.");
+                        return;
+                    }
+
+                    $('#apiMasterModal').modal('hide');
+                    loadApiMasterList();
+                },
+                error: function () {
+                    alert("Unable to save API master entry.");
+                }
+            });
+        }
+
+        function disableApiMaster(apiId) {
+            var item = apiMasterData.find(function (entry) {
+                return entry.apiId == apiId;
+            });
+
+            if (!item) {
+                return;
+            }
+
+            var payload = {
+                apiId: apiId,
+                apiName: item.apiName,
+                apiPath: item.apiPath,
+                httpMethod: item.httpMethod,
+                isActive: 'N',
+                actionInd: 'D'
+            };
+
+            $.ajax({
+                url: g_asiBaseURL + "/Administration/ApiMaster/Save",
+                type: "POST",
+                contentType: "application/json",
+                data: JSON.stringify(payload),
+                cache: false,
+                success: function (response) {
+                    if (!response || !response.success) {
+                        alert(response && response.message ? response.message : "Unable to disable API.");
+                        return;
+                    }
+
+                    loadApiMasterList();
+                },
+                error: function () {
+                    alert("Unable to disable API.");
+                }
+            });
+        }
+    </script>
+    }

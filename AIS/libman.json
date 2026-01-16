@@ -1,0 +1,66 @@
+{
+  "version": "1.0",
+  "defaultProvider": "cdnjs",
+  "libraries": [
+    {
+      "library": "jquery@3.7.1",
+      "destination": "wwwroot/lib/jquery"
+    },
+    {
+      "library": "jquery-validation@1.19.5",
+      "destination": "wwwroot/lib/jquery-validation"
+    },
+    {
+      "library": "jquery-validation-unobtrusive@3.2.12",
+      "destination": "wwwroot/lib/jquery-validation-unobtrusive"
+    },
+    {
+      "library": "jquery-ui@1.13.2",
+      "destination": "wwwroot/lib/draggable",
+      "files": [
+        "jquery-ui.min.js",
+        "jquery-ui.min.css"
+      ]
+    },
+    {
+      "library": "bootstrap@5.3.3",
+      "destination": "wwwroot/lib/bootstrap",
+      "files": [
+        "dist/js/bootstrap.min.js",
+        "dist/css/bootstrap.min.css"
+      ]
+    },
+    {
+      "library": "font-awesome@6.5.1",
+      "destination": "wwwroot/lib/font-awesome",
+      "files": [
+        "css/all.min.css",
+        "webfonts/*"
+      ]
+    },
+    {
+      "library": "select2@4.1.0-rc.0",
+      "destination": "wwwroot/lib/select2"
+    },
+    {
+      "library": "datatables.net@1.13.8",
+      "destination": "wwwroot/lib/datatable",
+      "files": [
+        "js/dataTables.min.js",
+        "css/dataTables.min.css"
+      ]
+    },
+    {
+      "library": "jszip@3.10.1",
+      "destination": "wwwroot/lib/datatable"
+    },
+    {
+      "library": "pdfmake@0.2.7",
+      "destination": "wwwroot/lib/datatable"
+    },
+    {
+      "library": "crypto-js@4.2.0",
+      "destination": "wwwroot/lib/crypto"
+    }
+  ]
+}

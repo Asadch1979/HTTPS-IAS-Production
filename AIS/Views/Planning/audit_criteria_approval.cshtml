@@ -1,0 +1,183 @@
+﻿@{
+    var page_id = ViewData["PageId"] as int? ?? 0;
+}
+
+@{
+    ViewData["Title"] = "Authorize Processes";
+    Layout = "_Layout";
+}
+<style type="text/css">
+    .container {
+        max-width: 100%;
+    }
+
+    .card-header {
+        background-color: transparent !important;
+        font-size: 20px;
+        height: 100px;
+    }
+
+    .icon-card {
+        margin: 10px;
+    }
+</style>
+
+<script type="text/javascript">
+    var g_trId = 0;
+    $(document).ready(function () {
+        $("#searchTableRecord").on("keyup", function () {
+            var value = $(this).val().toLowerCase();
+            $("#listOfProcTransactions tbody tr").filter(function () {
+                $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1)
+            });
+        });
+    });
+    function reloadLocation() {
+        location.reload();
+    }
+    function referredBackAuditCriterias() {
+        var datalist = [];
+        $.each($('.actionCriteria'), function (i, v) {
+            if ($(v).is(':checked'))
+            {
+                var id = $(v).attr('id');
+                var comment = $($(v).parent().parent().find('.criteriaComment').eq(0)).val();
+                datalist.push({ 'ID': id, 'COMMENT': comment });
+            }
+        });
+      
+        if (datalist.length > 0) {
+            $.ajax({
+                url: g_asiBaseURL + "/ApiCalls/ReferredBackAuditCriteria",
+                type: "POST",
+                data: {
+                    'DATALIST': datalist
+                },
+                cache: false,
+                success: function (data) {
+                    alert("Audit Criteria selected Cases Referred Back");
+                    onAlertCallback(reloadLocation);
+                },
+                dataType: "json",
+            });
+        }
+    }
+
+    function approveAuditCriterias() {
+        var datalist = [];
+        $.each($('.actionCriteria'), function (i, v) {
+            if ($(v).is(':checked')) {
+                var id = $(v).attr('id');
+                var comment = $($(v).parent().parent().find('.criteriaComment').eq(0)).val();
+                datalist.push({ 'ID': id, 'COMMENT': comment });
+            }
+        });
+       
+        if (datalist.length > 0) {
+            $.ajax({
+                url: g_asiBaseURL + "/ApiCalls/AuthorizeAuditCriteria",
+                type: "POST",
+                data: {
+                    'DATALIST': datalist
+                },
+                cache: false,
+                success: function (data) {
+                    alert("Audit Criteria selected Cases Successfully Approved");
+                    onAlertCallback(reloadLocation);
+                },
+                dataType: "json",
+            });
+        }
+    }
+   
+   
+</script>
+
+<div class="col-md-12" style="margin-top:20px; margin-bottom:20px;">
+    <h3 style="color: #be0e43">List of Audit Criteria To Authorize </h3>
+    <div class="row">
+        <div class="col-md-12">
+            <input class="form-control" id="searchTableRecord" type="text" placeholder="Search..">
+        </div>
+    </div>
+    <br>
+    <table id="listOfProcTransactions" class="table table-hover table-bordered table-hover mt-3 table-striped">
+        <thead style="background-color: #19875478 !important; ">
+            <tr>
+                <th class="col-md-1">Period</th>
+                <th class="col-md-1">Entity</th>
+                <th class="col-md-1">Risk</th>
+                <th class="col-md-1">Size</th>
+                <th class="col-md-1">No of Days</th>
+                <th class="col-md-1">Frequency</th>
+                <th class="col-md-1">Visit</th>
+                <th class="col-md-1">Comments</th>
+                <th class="col-md-auto">Auditable Ent</th>
+
+                <th class="col-md-2">Remarks</th>
+                <th class="col-md-auto">Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            @{
+                if (ViewData["ToAuthorizeAuditCriteriaList"] != null)
+                {
+                    foreach (var item in (dynamic)(ViewData["ToAuthorizeAuditCriteriaList"]))
+                    {
+
+                        <tr id="div_@item.ID">
+                            <td>
+                                <p class="fw-normal mb-1">@item.PERIOD</p>
+                            </td>
+                             <td value="@item.ENTITY_TYPEID">@item.ENTITY_NAME</td>
+                            
+                            <td>
+                                <p class="fw-normal mb-1">@item.RISK</p>
+                            </td>
+                            <td>
+                                <p class="fw-normal mb-1">@item.SIZE</p>
+                            </td>
+                            <td class="text-center">
+                                <p class="fw-normal mb-1">@item.NO_OF_DAYS</p>
+                            </td>
+                            <td>
+                                <p class="fw-normal mb-1">@item.FREQUENCY</p>
+                            </td>
+                            <td class="text-center">
+                                <p class="fw-normal mb-1">@item.VISIT</p>
+                            </td>
+                            <td>
+                                <p class="fw-normal mb-1">@item.COMMENTS</p>
+                            </td>
+                            <td>
+                                <p class="fw-normal mb-1">@item.ENTITIES_COUNT</p>
+                            </td>
+
+
+                            <td class="text-center">
+                                <select class="form-select form-control criteriaComment">
+                                    <option value="" id="0">--Select Remarks--</option>
+                                    <option value="Approved">Approved</option>
+                                    <option value="Rejected">Rejected</option>
+                                    <option value="Please Discuss">Please Discuss</option>
+                                </select>
+                            </td>
+                            <td class="text-center">
+                                <input class="actionCriteria" checked="checked" type="checkbox" id="@item.ID" />
+                            </td>
+                        </tr>
+                    }
+                }}
+        </tbody>
+    </table>
+    <div class="row">
+        <div class="col-md-12">
+            <button onclick="approveAuditCriterias();" style="float:right; margin-left:15px;" class="btn btn-success col-md-2">Approved</button>
+            <button onclick="referredBackAuditCriterias();" style="float:right;" class="btn btn-danger col-md-2">Refer Back</button>
+        </div>
+
+    </div>
+</div>
+
+   
+    

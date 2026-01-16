@@ -1,0 +1,353 @@
+﻿@{
+    ViewData["Title"] = "Risk Rating Annex Wise";
+    Layout = "_Layout";
+}
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.inputmask/3.3.4/jquery.inputmask.bundle.min.js"></script>
+<script type="text/javascript">
+
+
+    var g_memoStatusReversalIds = [];
+    var g_engID = 0;
+    var g_planID = 0;
+    var g_obsID = 0;
+    var g_auditedByID = 0;
+    var g_obsIdsArr = [];
+
+    $(document).ready(function () {
+      
+    });
+
+    function getrelation(parentEntityId = 0, userEntityId = 0) {
+
+
+        $('#controlingsearch').empty();
+        $('#childposting').empty();
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/getparentrel",
+            type: "POST",
+            data: {
+                'ENTITY_REALTION_ID': $('#RelationshipField option:selected').val()
+            },
+
+
+            cache: false,
+            success: function (data) {
+
+
+                $('#controlingsearch').append('<option id="0" value="0">--Select Controlling/Reporting Office--</option>');
+                $.each(data, function (index, contof) {
+
+                    var selected = '';
+                    if (contof.entitY_ID == parentEntityId)
+                        selected = 'selected="selected"';
+
+                    $('#controlingsearch').append('<option ' + selected + ' value="' + contof.entitY_ID + '" id="' + contof.entitY_REALTION_ID + '">' + contof.description + '</option>')
+                });
+                if (userEntityId != 0)
+                    getplacepost(userEntityId)
+
+                // console.log(data);
+
+            },
+            dataType: "json",
+        });
+
+
+
+    }
+
+    function getplacepost(userEntityId = 0) {
+        $('#childposting').empty();
+
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/getpostplace",
+            type: "POST",
+            data: {
+                'E_R_ID': $('#controlingsearch option:selected').val()
+            },
+
+
+            cache: false,
+            success: function (data) {
+                $('#childposting').append('<option id="0" value="0" selected="selected">--Select Place of Posting--</option>');
+                $.each(data, function (index, gpp) {
+
+                    var selected = '';
+                    if (gpp.entitY_ID == userEntityId)
+                        selected = 'selected="selected"';
+                    $('#childposting').append('<option ' + selected + ' value="' + gpp.entitY_ID + '" id="' + gpp.entitY_ID + '">' + gpp.c_NAME + '</option>')
+                });
+            },
+            dataType: "json",
+        });
+    }
+    function reloadLocation(){
+        getEngagementDetails();
+    }
+    function getEngagementDetails() {
+        $('#engsListPanel tbody').empty();
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/get_risk_rating_model_for_branches_working",
+            type: "POST",
+            data: {
+                'ENTITY_ID': $('#childposting option:selected').val()
+            },
+
+            cache: false,
+            success: function (data) {
+
+                $.each(data, function (i, v) {
+                    $('#engsListPanel tbody').append(
+                        '<tr>' +
+                        '<td>' + (i + 1) + '</td>' +
+                        '<td>' + v.mainProcessRiskSequence + '</td>' +
+                        '<td>' + v.mainProcess + '</td>' +
+                        '<td>' + v.mainProcessWeightAssigned + '</td>' +
+                        '<td>' + v.subProcessRiskSequence + '</td>' +
+                        '<td>' + v.subProcess + '</td>' +
+                        '<td>' + v.subProcessWeightAssigned + '</td>' +
+                        '<td>' + v.high + '</td>' +
+                        '<td>' + v.medium + '</td>' +
+                        '<td>' + v.low + '</td>' +
+                        '<td>' + v.totalNoOfTest + '</td>' +
+                        '<td>' + v.availableWeightedScore + '</td>' +
+                        '<td>' + v.availableProcessScore + '</td>' +
+                        '<td>' + v.totalHigh + '</td>' +
+                        '<td>' + v.totalMedium + '</td>' +
+                        '<td>' + v.totalLow + '</td>' +
+                        '<td>' + v.totalObservations + '</td>' +
+                        '<td>' + v.totalScoreSubProcess + '</td>' +
+                        '<td>' + v.weightedAverageScore + '</td>' +
+                        '<td>' + v.totalScoreProcess + '</td>' +
+                        '<td>' + v.weightedAverageScoreOverall + '</td>' +
+                        '</tr>'
+                    );
+                });
+
+            },
+            dataType: "json",
+        });
+
+    }
+   function generateTraditionalRisk(engId){
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/generate_traditional_risk_rating_of_engagement",
+            type: "POST",
+            data: {
+                'ENG_ID': engId
+            },
+
+            cache: false,
+            success: function (data) {
+                alert(data.message);
+                onAlertCallback(reloadLocation);
+            },
+            dataType: "json",
+        });
+   }
+    function hideTraditionalRiskRating(){
+        $('#traditionalRiskRatingContainer').addClass('d-none');
+    }
+    function hideAnnexureRiskRating() {
+        $('#annexureRiskRatingContainer').addClass('d-none');
+    }
+    function viewTraditionalRisk(engId) {
+
+        $('#traditionalRiskRatingContainer').removeClass('d-none');
+        $('#traditionalRiskRatingGrid tbody').empty();
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/view_traditional_risk_rating_of_engagement",
+            type: "POST",
+            data: {
+                'ENG_ID': engId
+            },
+
+            cache: false,
+            success: function (data) {                
+                $.each(data,function(i,v){
+                    $('#traditionalRiskRatingGrid tbody').append('<tr><td>' + ++i + '</td><td>' + v.maiN_PROCESS + '</td><td>' + v.risK_MODEL + '</td><td class="text-right">' + v.maX_NUMBER + '</td><td class="text-right">' + v.weightagE_AVERAGE + '</td><td class="text-right">' + v.gravitY_RISK + '</td><td class="text-right">' + v.nO_OF_OBSERVATIONS + '</td><td class="text-right">' + v.risK_BASED_MARKS + '</td><td class="text-right">' + v.weighteD_AVERAGE_MARKS + '</td><td class="text-right">' + v.ciA_MARKS + '</td></tr>');
+                })
+            },
+            dataType: "json",
+        });
+   }
+    function generateAnnexureRisk(engId) {
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/generate_annexure_risk_rating_of_engagement",
+            type: "POST",
+            data: {
+                'ENG_ID': engId
+            },
+
+            cache: false,
+            success: function (data) {
+                alert(data.message);
+                onAlertCallback(reloadLocation);
+            },
+            dataType: "json",
+        });
+   }
+    function viewAnnexureRisk(engId) {
+
+        $('#annexureRiskRatingContainer').removeClass('d-none');
+        $('#annexureRiskRatingGrid tbody').empty();
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/view_annexure_risk_rating_of_engagement",
+            type: "POST",
+            data: {
+                'ENG_ID': engId
+            },
+
+            cache: false,
+            success: function (data) {
+                $.each(data, function (i, v) {
+                    $('#annexureRiskRatingGrid tbody').append('<tr><td>' + ++i + '</td><td>' + v.maiN_PROCESS + '</td><td>' + v.risK_MODEL + '</td><td class="text-right">' + v.maX_NUMBER + '</td><td class="text-right">' + v.weightagE_AVERAGE + '</td><td class="text-right">' + v.gravitY_RISK + '</td><td class="text-right">' + v.nO_OF_OBSERVATIONS + '</td><td class="text-right">' + v.risK_BASED_MARKS + '</td><td class="text-right">' + v.weighteD_AVERAGE_MARKS + '</td></tr>');
+                })
+            },
+            dataType: "json",
+        });
+    }
+
+</script>
+<div class="row col-md-12 mt-3">
+    <h3 style=" display:block;color: #be0e43">Risk Rating Model for Branches (Working) </h3>
+</div>
+
+
+<div class="row col-md-12 mt-1">
+    <div class="col-md-2">
+        <label>Relationship Type</label>
+    </div>
+    <div class="col-md-10">
+        <select id="RelationshipField" onchange="getrelation();" class="form-control form-select">
+            <option id="0" value="0" selected="selected">--Select Relationship Type--</option>
+
+
+            @{
+                if (ViewData["Userrelationship"] != null)
+                {
+                    foreach (var item in (dynamic)(ViewData["Userrelationship"]))
+                    {
+                                <option value="@item.ENTITY_REALTION_ID" id="@item.ENTITY_REALTION_ID">@item.FIELD_NAME</option>
+                    }
+                }
+            }
+
+
+
+        </select>
+    </div>
+</div>
+
+<div class="row col-md-12 mt-1">
+    <div class="col-md-2">
+        <label>Controlling/Reporting Office</label>
+    </div>
+    <div class="col-md-4">
+        <select id="controlingsearch" onchange="getplacepost();" class="form-control form-select">
+            <option id="0" value="0" selected="selected">--Select Controlling/Reporting Office--</option>
+        </select>
+    </div>
+
+
+    <div class="col-md-2">
+        <label>Place of Posting</label>
+    </div>
+    <div class="col-md-4">
+        <select id="childposting" onchange="getEngagementDetails();" class="form-control form-select">
+            <option id="0" value="0" selected="selected">--Select Place of Posting--</option>
+
+        </select>
+    </div>
+</div>
+
+<div class="row col-md-12 mt-3" style="max-width:100% !important; overflow-x:auto; font-size:11px !important;">
+    <table id="engsListPanel" class="table responsive table-bordered mb-0 mt-3 bg-white table-hover table-striped">
+        <thead>
+            <tr style="background-color: #19875478 !important;">
+                <th class="col-md-auto">Sr No.</th>
+                <th class="col-md-auto">Process Risk Sequence</th>
+                <th class="col-md-auto">Process</th>
+                <th class="col-md-auto">Process Weight</th>
+                <th class="col-md-auto">Sub Process Risk Sequence</th>
+                <th class="col-md-auto">Sub Process</th>
+                <th class="col-md-auto">Sub Process Weight</th>
+                <th class="col-md-auto">High</th>
+                <th class="col-md-auto">Medium</th>
+                <th class="col-md-auto">Low</th>
+                <th class="col-md-auto">Total No. of Testing Procedures</th>
+                <th class="col-md-auto">Available Weighted Score</th>
+                <th class="col-md-auto">Available Process Score</th>
+                <th class="col-md-auto">Total High</th>
+                <th class="col-md-auto">Total Medium</th>
+                <th class="col-md-auto">Total Low</th>
+                <th class="col-md-auto">Total Observations</th>
+                <th class="col-md-auto">Total Score Sub Process</th>
+                <th class="col-md-auto">Weighted Average Score</th>
+                <th class="col-md-auto">Total Score Process</th>
+                <th class="col-md-auto">Weighted Average Score Overall</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+</div>
+
+<div id="traditionalRiskRatingContainer" class="row mt-3 d-none">
+  
+    
+    <h4 style=" display:block;color: #be0e43">Traditional Risk Rating</h4>
+    <div class="row col-md-12 mt-3">
+        <table id="traditionalRiskRatingGrid" class="table table-bordered table mb-0 mt-3 bg-white table-hover table-striped">
+            <thead>
+                <tr style="background-color: #19875478 !important; ">
+                    <th class="col-md-auto">Sr No.</th>
+                    <th class="col-md-auto">Main Process</th>
+                    <th class="col-md-auto">Risk Model</th>
+                    <th class="col-md-auto">Max Number</th>
+                    <th class="col-md-auto">Weightage Average</th>
+                    <th class="col-md-auto">Gravity Risk</th>
+                    <th class="col-md-auto">No of Observations</th>
+                    <th class="col-md-auto">Risk Based Marks</th>
+                    <th class="col-md-auto">Weightage Average Marks</th>
+                    <th class="col-md-auto">Our Working Marks</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+
+    </div>
+    <div class="row col-md-12 mt-1">
+        <button onclick="hideTraditionalRiskRating();" class="btn btn-sm btn-danger col-md-1 offset-md-11">Close</button>
+    </div>
+
+</div>
+
+<div id="annexureRiskRatingContainer" class="row mt-3 d-none">
+
+
+    <h4 style=" display:block;color: #be0e43">Annexure Risk Rating</h4>
+    <div class="row col-md-12 mt-3">
+        <table id="annexurelRiskRatingGrid" class="table table-bordered table mb-0 mt-3 bg-white table-hover table-striped">
+            <thead>
+                <tr style="background-color: #19875478 !important; ">
+                    <th class="col-md-auto">Sr No.</th>
+                    <th class="col-md-auto">Main Process</th>
+                    <th class="col-md-auto">Risk Model</th>
+                    <th class="col-md-auto">Weightage</th>
+                    <th class="col-md-auto">Weightage Average</th>
+                    <th class="col-md-auto">Gravity Risk</th>
+                    <th class="col-md-auto">No of Observations</th>
+                    <th class="col-md-auto">Risk Based Marks</th>
+                    <th class="col-md-auto">Weightage Average Marks</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+
+    </div>
+    <div class="row col-md-12 mt-1">
+        <button onclick="hideAnnexureRiskRating();" class="btn btn-sm btn-danger col-md-1 offset-md-11">Close</button>
+    </div>
+
+</div>

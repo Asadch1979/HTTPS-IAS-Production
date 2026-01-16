@@ -1,0 +1,201 @@
+﻿@{
+    var page_id = ViewData["PageId"] as int? ?? 0;
+}
+
+@{
+    ViewData["Title"] = "Voucher Checking";
+    Layout = "_Layout";
+}
+
+
+
+<script>
+    var g_paraId = 0;
+    var g_engID = 0;
+    $(document).ready(function () {
+
+        var url_string = window.location;
+        var url = new URL(url_string);
+        g_engID = url.searchParams.get("engId");
+        getFixedAssets();
+
+
+    });
+
+    function openFixedAssetModel() {
+        $('#newFixedAssetDialog').modal('show');
+    }
+
+    function getFixedAssets() {
+
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/Get_Working_Paper_Fixed_Assets",
+            type: "POST",
+            data: {
+                'ENGID': g_engID
+            },
+            cache: false,
+            success: function (data) {
+                console.log(data);
+                $.each(data, function (i, v) {
+
+                    $('#manageObsPanel').append('<tr><td>' + ++i + '</td><td>' + v.asseT_NAME + '</td><td>' + v.physicaL_EXISTANCE + '</td><td>' + v.locatioN_AS_PER_FAR + '</td><td>' + v.difference + '</td><td>' + v.remarks + '</td><td><a href="#" onclick="event.preventDefault();updateVoucherChecking(' + v.V_ID + ');"></a></td></tr>');
+
+                })
+
+            },
+
+            dataType: "json",
+        });
+    }
+
+    function updateFixedAssets(fId) {
+
+    }
+
+    function AddNewFixedAssets() {
+
+        if ($('#assetName_txtField').val() == "") {
+            alert("Provide Assets Name to proceed");
+            return;
+        }
+
+        if ($('#pyex_txtField').val() == "") {
+            alert("Provide Physical Existance to proceed");
+            return;
+        }
+
+        if ($('#fixedAsset_txtField').val() == "") {
+            alert("Provide Location as per Fixed Asset Register to proceed");
+            return;
+        }
+        if ($('#diff_txtField').val() == "") {
+            alert("Provide Difference to proceed");
+            return;
+        }
+
+        if ($('#rem_txtField').val() == "") {
+            alert("Provide Remarks to proceed");
+            return;
+        }
+
+
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/Add_Working_Paper_Fixed_Assets",
+            type: "POST",
+            data: {
+                'ENGID': g_engID,
+                'A_NAME': $('#assetName_txtField').val(),
+                'PHY_EX': $('#pyex_txtField').val(),
+                'FAR': $('#fixedAsset_txtField').val(),
+                'DIFF': $('#diff_txtField').val(),
+                'REM': $('#rem_txtField').val()
+            },
+            cache: false,
+            success: function (data) {
+                alert(data.message);
+                onAlertCallback(reloadLocation);
+
+            },
+
+            dataType: "json",
+        });
+    }
+
+    function reloadLocation() {
+        window.location.reload();
+    }
+
+    function redirectToNexPage() {
+        window.location.href = g_asiBaseURL + '/WorkingPaper/cash_count?engId=' + g_engID;
+    }
+
+    function redirectToPreviousPage() {
+        window.location.href = g_asiBaseURL + '/WorkingPaper/account_opening?engId=' + g_engID;
+    }
+
+</script>
+
+<div class="row">
+    <div class="col-md-12 mt-3">
+        <h3 style=" display:block;color: #be0e43">Working Paper for Fixed Assets</h3>
+    </div>
+   
+    <div class="row col-md-12 mt-3">
+        <table id="manageObsPanel" class="table table-hover table-bordered table-hover mt-3 table-striped">
+            <thead style="background-color: #19875478 !important; ">
+                <tr>
+                    <th class="col-md-auto">Sr. No</th>
+                    <th class="col-md-auto">Asset Name</th>
+                    <th class="col-md-auto">Physical Existance</th>
+                    <th class="col-md-auto">As per Fixed Asset Register</th>
+                    <th class="col-md-auto">Difference</th>
+                    <th class="col-md-auto">Remarks</th>
+                    <th class="col-md- auto text-center font-weight-bold"><center><button type="button" onclick="openFixedAssetModel();" class="rounded-circle btn btn-danger btn-sm"><i class="fa fa-plus text-white"></i></button></center></th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+          
+        </table>
+    </div>
+
+    <div class="row col-md-12 mt-3">
+        <div class="col-md-2 offset-md-8">
+            <button onclick="redirectToPreviousPage();" class="btn btn-danger w-100">Account Opening</button>
+        </div>
+        <div class="col-md-2">
+            <button onclick="redirectToNexPage();" class="btn btn-success w-100">Cash Counter</button>
+        </div>
+
+    </div>
+
+</div>
+
+
+
+
+<div id="newFixedAssetDialog" class="modal" tabindex="-1" role="dialog">
+    <div class="modal-xl modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">New Fixed Assets Record</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form>
+                    <div class="form-group">
+                        <label for="commentAreaInCommentsBox">Asset Name</label>
+                        <input type="text" class="form-control" id="assetName_txtField" />
+                    </div>
+                    <div class="form-group">
+                        <label for="commentAreaInCommentsBox">Physical Existance</label>
+                        <input type="text" class="form-control" id="pyex_txtField" />
+                    </div>
+                    <div class="form-group">
+                        <label for="commentAreaInCommentsBox">As per Fixed Asset Register</label>
+                        <input type="text" class="form-control" id="fixedAsset_txtField" />
+                    </div>
+                    <div class="form-group">
+                        <label for="commentAreaInCommentsBox">Difference</label>
+                        <input type="text" class="form-control" id="diff_txtField" />
+                    </div>
+                    <div class="form-group">
+                        <label for="commentAreaInCommentsBox">Remarks</label>
+                        <input type="text" class="form-control" id="rem_txtField" />
+                    </div>
+                
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" onclick="AddNewFixedAssets();" class="btn btn-danger">Add New</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+

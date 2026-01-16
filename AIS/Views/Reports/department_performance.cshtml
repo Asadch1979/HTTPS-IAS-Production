@@ -1,0 +1,637 @@
+@{
+    var page_id = 23;
+}
+@{
+    ViewData["Title"] = "Performance Report";
+    Layout = "_Layout";
+}
+
+<div class="mb-4">
+    <h3 class="text-success mb-0">Performance Report</h3>
+</div>
+
+<div class="card mb-3">
+    <div class="card-body">
+        <div class="row g-3 align-items-end">
+            <div class="col-md-3">
+                <label for="departmentSelect" class="form-label">Department</label>
+                <select id="departmentSelect" class="form-select">
+                    <option value="">Select Department</option>
+                    <option value="1">Information Systems Audit Department</option>
+                    <option value="2">Corporate Audit Department</option>
+                    <option value="3">Field Audit Department</option>
+                    <option value="4">Inspection &amp; Complaint Department</option>
+                </select>
+            </div>
+            <div id="auditZoneContainer" class="col-md-3 d-none">
+                <label for="auditZoneSelect" class="form-label">Audit Zone</label>
+                <select id="auditZoneSelect" class="form-select" disabled>
+                    <option value="">Select Audit Zone</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label for="startDate" class="form-label">Start Date</label>
+                <input id="startDate" type="date" class="form-control" />
+            </div>
+            <div class="col-md-3">
+                <label for="endDate" class="form-label">End Date</label>
+                <input id="endDate" type="date" class="form-control" />
+            </div>
+        </div>
+        <div class="row g-3 align-items-end mt-0">
+            <div class="col-md-8">
+                <span class="form-label d-block">Report Type</span>
+                <div class="btn-group" role="group" aria-label="Report type">
+                    <input type="radio" class="btn-check" name="reportType" id="reportTypeDepartment" value="department" autocomplete="off" checked>
+                    <label class="btn btn-outline-primary" for="reportTypeDepartment">Department Performance</label>
+                    <input type="radio" class="btn-check" name="reportType" id="reportTypeAuditor" value="auditor" autocomplete="off">
+                    <label class="btn btn-outline-primary" for="reportTypeAuditor">Auditor Performance</label>
+                </div>
+            </div>
+            <div class="col-md-4 d-flex justify-content-md-end align-items-end">
+                <button id="findButton" class="btn btn-success w-100 w-md-auto">Find</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="messageArea" class="mt-2 small" role="alert"></div>
+
+<div id="resultsWrapper" class="mt-4"></div>
+
+@section Scripts {
+    <script type="text/javascript">
+        (function ($) {
+            const FIELD_AUDIT_DEPARTMENT_ID = '3';
+            const ALL_ZONES_VALUE = '-2';
+            const numberFormatter = new Intl.NumberFormat('en-US', { maximumFractionDigits: 2 });
+
+            const $departmentSelect = $('#departmentSelect');
+            const $auditZoneContainer = $('#auditZoneContainer');
+            const $auditZoneSelect = $('#auditZoneSelect');
+            const $startDate = $('#startDate');
+            const $endDate = $('#endDate');
+            const $findButton = $('#findButton');
+            const $messageArea = $('#messageArea');
+            const $resultsWrapper = $('#resultsWrapper');
+            const $reportTypeInputs = $('input[name="reportType"]');
+
+            let zonesLoaded = false;
+            let defaultButtonText = '';
+
+            $(function () {
+                defaultButtonText = $findButton.text();
+                loadAuditZones();
+                setZoneVisibility();
+
+                $departmentSelect.on('change', function () {
+                    setZoneVisibility();
+                    clearMessage();
+                });
+
+                $auditZoneSelect.on('change', function () {
+                    clearMessage();
+                });
+
+                $reportTypeInputs.on('change', function () {
+                    clearMessage();
+                    clearResults();
+                });
+
+                $findButton.on('click', function (event) {
+                    event.preventDefault();
+                    runReport();
+                });
+            });
+
+            function loadAuditZones() {
+                zonesLoaded = false;
+                $auditZoneSelect.prop('disabled', true)
+                    .empty()
+                    .append($('<option>', { value: '', text: 'Select Audit Zone' }));
+
+                $.ajax({
+                    url: g_asiBaseURL + '/ApiCalls/get_audit_zones',
+                    method: 'GET',
+                    dataType: 'json'
+                }).done(function (data) {
+                    zonesLoaded = true;
+                    const zones = Array.isArray(data) ? data : [];
+                    const options = [
+                        $('<option>', { value: '', text: 'Select Audit Zone' }),
+                        $('<option>', { value: ALL_ZONES_VALUE, text: 'All Audit Zones' })
+                    ];
+
+                    zones.forEach(function (zone) {
+                        const zoneId = safeValue(zone, 'zone_id');
+                        const zoneName = safeValue(zone, 'zone_name');
+                        if (zoneId === null || zoneId === undefined) {
+                            return;
+                        }
+                        options.push(
+                            $('<option>', {
+                                value: String(zoneId),
+                                text: zoneName ? String(zoneName) : String(zoneId)
+                            })
+                        );
+                    });
+
+                    $auditZoneSelect.empty();
+                    options.forEach(function (option) {
+                        $auditZoneSelect.append(option);
+                    });
+                    setZoneVisibility();
+                }).fail(function () {
+                    showMessage('Unable to load audit zones. The Field Audit filter will remain hidden until zones are available.', 'error');
+                    zonesLoaded = false;
+                    setZoneVisibility();
+                });
+            }
+
+            function setZoneVisibility() {
+                const isFieldAudit = $departmentSelect.val() === FIELD_AUDIT_DEPARTMENT_ID;
+                if (isFieldAudit && zonesLoaded) {
+                    $auditZoneContainer.removeClass('d-none');
+                    $auditZoneSelect.prop('disabled', false);
+                } else {
+                    $auditZoneSelect.val('');
+                    $auditZoneSelect.prop('disabled', true);
+                    $auditZoneContainer.addClass('d-none');
+                }
+            }
+
+            function runReport() {
+                clearMessage();
+                clearResults();
+
+                const entId = $departmentSelect.val();
+                if (!entId) {
+                    showMessage('Please select a department.', 'error');
+                    $departmentSelect.focus();
+                    return;
+                }
+
+                const startDate = $startDate.val();
+                const endDate = $endDate.val();
+
+                if (!startDate || !endDate) {
+                    showMessage('Please provide both start and end dates.', 'error');
+                    return;
+                }
+
+                if (startDate > endDate) {
+                    showMessage('Start Date cannot be later than End Date.', 'error');
+                    return;
+                }
+
+                const reportType = $reportTypeInputs.filter(':checked').val();
+                const isFieldAudit = entId === FIELD_AUDIT_DEPARTMENT_ID;
+                const zoneVisible = isFieldAudit && zonesLoaded && !$auditZoneContainer.hasClass('d-none');
+                const zoneSelection = zoneVisible ? ($auditZoneSelect.val() || '') : '';
+                let zoneIdValue = null;
+                if (zoneSelection !== '') {
+                    const parsed = parseInt(zoneSelection, 10);
+                    if (!Number.isNaN(parsed)) {
+                        zoneIdValue = parsed;
+                    }
+                }
+
+                const requestBase = {
+                    ent_id: parseInt(entId, 10),
+                    start_date: startDate,
+                    end_date: endDate
+                };
+
+                let requestPayload = requestBase;
+                let endpoint = '/ApiCalls/get_department_performance_summary_and_detail';
+
+                if (reportType === 'auditor') {
+                    endpoint = '/ApiCalls/get_auditor_performance';
+                    requestPayload = Object.assign({}, requestBase, { zone_id: zoneIdValue });
+                } else if (zoneSelection !== '') {
+                    endpoint = '/ApiCalls/get_department_performance_by_zone';
+                    requestPayload = Object.assign({}, requestBase, { zone_id: zoneIdValue });
+                }
+
+                const originalText = defaultButtonText || $findButton.text();
+                $findButton.prop('disabled', true).text('Loading...');
+
+                $.ajax({
+                    url: g_asiBaseURL + endpoint,
+                    method: 'POST',
+                    contentType: 'application/json',
+                    dataType: 'json',
+                    data: JSON.stringify(requestPayload)
+                }).done(function (data) {
+                    if (reportType === 'auditor') {
+                        renderAuditorPerformance(Array.isArray(data) ? data : []);
+                        return;
+                    }
+
+                    if (zoneSelection !== '') {
+                        renderDepartmentPerformanceByZone(Array.isArray(data) ? data : []);
+                        return;
+                    }
+
+                    const summaryData = data && typeof data === 'object' ? safeValue(data, 'summary') : null;
+                    const detailData = data && typeof data === 'object' ? safeValue(data, 'detail') : [];
+                    renderDepartmentSummaryAndDetail(summaryData, Array.isArray(detailData) ? detailData : []);
+                }).fail(function (xhr) {
+                    const responseJson = xhr && xhr.responseJSON ? xhr.responseJSON : null;
+                    let message = 'Unable to load the report. Please try again.';
+                    if (responseJson && typeof responseJson === 'object') {
+                        if (responseJson.message) {
+                            message = responseJson.message;
+                        } else if (responseJson.error) {
+                            message = responseJson.error;
+                        }
+                    } else if (xhr && typeof xhr.responseText === 'string' && xhr.responseText.trim().length > 0) {
+                        message = xhr.responseText;
+                    }
+                    showMessage(message, 'error');
+                }).always(function () {
+                    $findButton.prop('disabled', false).text(originalText);
+                });
+            }
+
+            function renderDepartmentSummaryAndDetail(summary, detail) {
+                clearResults();
+                const fragment = $(document.createDocumentFragment());
+                fragment.append(buildSummaryTable(summary));
+                fragment.append(buildDetailTable(detail));
+                $resultsWrapper.append(fragment);
+            }
+
+            function renderDepartmentPerformanceByZone(rows) {
+                clearResults();
+                $resultsWrapper.append(buildZoneTable(rows));
+            }
+
+            function renderAuditorPerformance(rows) {
+                clearResults();
+                $resultsWrapper.append(buildAuditorTable(rows));
+            }
+
+            function buildSummaryTable(summary) {
+                const columns = [
+                    { key: 'opening_balance', label: 'Opening Balance' },
+                    { key: 'added', label: 'Added' },
+                    { key: 'total', label: 'Total' },
+                    { key: 'settled', label: 'Settled' },
+                    { key: 'outstanding', label: 'Outstanding' },
+                    { key: 'high', label: 'High' },
+                    { key: 'low', label: 'Low' },
+                    { key: 'medium', label: 'Medium' }
+                ];
+
+                const totals = {};
+                columns.forEach(function (column) {
+                    totals[column.key] = 0;
+                });
+
+                const $table = $('<table>').addClass('table table-bordered table-sm align-middle mb-4');
+                $table.append($('<caption>').addClass('visually-hidden').text('Summary totals for the selected department'));
+                const $thead = $('<thead>').appendTo($table);
+                const $headerRow = $('<tr>');
+                columns.forEach(function (column) {
+                    $headerRow.append($('<th>', { scope: 'col', class: 'text-end', text: column.label }));
+                });
+                $thead.append($headerRow);
+
+                const $tbody = $('<tbody>').appendTo($table);
+                if (summary && typeof summary === 'object') {
+                    const $row = $('<tr>');
+                    columns.forEach(function (column) {
+                        const value = numericValue(safeValue(summary, column.key));
+                        totals[column.key] += value;
+                        $row.append($('<td>', { class: 'text-end', text: formatNumber(value) }));
+                    });
+                    $tbody.append($row);
+                } else {
+                    $tbody.append(createNoDataRow(columns.length));
+                }
+
+                const $tfoot = $('<tfoot>').appendTo($table);
+                const $footerRow = $('<tr>').addClass('fw-semibold');
+                columns.forEach(function (column, index) {
+                    if (index === 0) {
+                        $footerRow.append($('<th>', {
+                            scope: 'row',
+                            class: 'text-end',
+                            html: 'Totals<span class="ms-2">' + formatNumber(totals[column.key]) + '</span>'
+                        }));
+                    } else {
+                        $footerRow.append($('<th>', { class: 'text-end', text: formatNumber(totals[column.key]) }));
+                    }
+                });
+                $tfoot.append($footerRow);
+
+                return $table;
+            }
+
+            function buildDetailTable(rows) {
+                const $table = $('<table>').addClass('table table-bordered table-sm align-middle mb-4');
+                $table.append($('<caption>').addClass('visually-hidden').text('Detail of audit performed'));
+                const $thead = $('<thead>').appendTo($table);
+                const headerRow = $('<tr>')
+                    .append($('<th>', { scope: 'col', text: 'Entity Audited' }))
+                    .append($('<th>', { scope: 'col', text: 'Coso' }))
+                    .append($('<th>', { scope: 'col', class: 'text-end', text: 'High' }))
+                    .append($('<th>', { scope: 'col', class: 'text-end', text: 'Medium' }))
+                    .append($('<th>', { scope: 'col', class: 'text-end', text: 'Low' }))
+                    .append($('<th>', { scope: 'col', class: 'text-end', text: 'Total' }))
+                    .append($('<th>', { scope: 'col', class: 'text-end', text: 'Settled' }))
+                    .append($('<th>', { scope: 'col', class: 'text-end', text: 'Final' }))
+                    .append($('<th>', { scope: 'col', class: 'text-end', text: 'No of days Delay' }));
+                $thead.append(headerRow);
+
+                const totals = {
+                    high: 0,
+                    medium: 0,
+                    low: 0,
+                    total: 0,
+                    settled: 0,
+                    final: 0,
+                    days_delay: 0
+                };
+
+                const $tbody = $('<tbody>').appendTo($table);
+                if (Array.isArray(rows) && rows.length > 0) {
+                    rows.forEach(function (row) {
+                        const $tr = $('<tr>')
+                            .append($('<td>', { text: safeValue(row, 'entity_audited') || '' }))
+                            .append($('<td>', { text: safeValue(row, 'coso') || '' }));
+
+                        ['high', 'medium', 'low', 'total', 'settled', 'final', 'days_delay'].forEach(function (key) {
+                            const value = numericValue(safeValue(row, key));
+                            totals[key] += value;
+                            $tr.append($('<td>', { class: 'text-end', text: formatNumber(value) }));
+                        });
+
+                        $tbody.append($tr);
+                    });
+                } else {
+                    $tbody.append(createNoDataRow(9));
+                }
+
+                const $tfoot = $('<tfoot>').appendTo($table);
+                const $footerRow = $('<tr>').addClass('fw-semibold');
+                $footerRow.append($('<th>', { scope: 'row', colspan: 2, text: 'Totals' }));
+                ['high', 'medium', 'low', 'total', 'settled', 'final', 'days_delay'].forEach(function (key) {
+                    $footerRow.append($('<th>', { class: 'text-end', text: formatNumber(totals[key]) }));
+                });
+                $tfoot.append($footerRow);
+
+                return $table;
+            }
+
+            function buildZoneTable(rows) {
+                const $table = $('<table>').addClass('table table-bordered table-sm align-middle');
+                $table.append($('<caption>').addClass('visually-hidden').text('Department performance filtered by audit zone'));
+                const $thead = $('<thead>').appendTo($table);
+                const headerRow = $('<tr>')
+                    .append($('<th>', { scope: 'col', text: 'Entity Audited' }))
+                    .append($('<th>', { scope: 'col', text: 'Anexx' }))
+                    .append($('<th>', { scope: 'col', class: 'text-end', text: 'High' }))
+                    .append($('<th>', { scope: 'col', class: 'text-end', text: 'Medium' }))
+                    .append($('<th>', { scope: 'col', class: 'text-end', text: 'Low' }))
+                    .append($('<th>', { scope: 'col', class: 'text-end', text: 'Total' }))
+                    .append($('<th>', { scope: 'col', class: 'text-end', text: 'Settled' }))
+                    .append($('<th>', { scope: 'col', class: 'text-end', text: 'Delayed Start' }))
+                    .append($('<th>', { scope: 'col', class: 'text-end', text: 'Delayed Exit' }))
+                    .append($('<th>', { scope: 'col', class: 'text-end', text: 'Delay in Final Report' }));
+                $thead.append(headerRow);
+
+                const totals = {
+                    high: 0,
+                    medium: 0,
+                    low: 0,
+                    total: 0,
+                    settled: 0,
+                    delayed_start: 0,
+                    delayed_exit: 0,
+                    delay_final_report: 0
+                };
+
+                const $tbody = $('<tbody>').appendTo($table);
+                if (Array.isArray(rows) && rows.length > 0) {
+                    rows.forEach(function (row) {
+                        const $tr = $('<tr>')
+                            .append($('<td>', { text: safeValue(row, 'entity_audited') || '' }))
+                            .append($('<td>', { text: safeValue(row, 'anexx') || '' }));
+
+                        ['high', 'medium', 'low', 'total', 'settled', 'delayed_start', 'delayed_exit', 'delay_final_report'].forEach(function (key) {
+                            const value = numericValue(safeValue(row, key));
+                            totals[key] += value;
+                            $tr.append($('<td>', { class: 'text-end', text: formatNumber(value) }));
+                        });
+
+                        $tbody.append($tr);
+                    });
+                } else {
+                    $tbody.append(createNoDataRow(10));
+                }
+
+                const $tfoot = $('<tfoot>').appendTo($table);
+                const $footerRow = $('<tr>').addClass('fw-semibold');
+                $footerRow.append($('<th>', { scope: 'row', colspan: 2, text: 'Totals' }));
+                ['high', 'medium', 'low', 'total', 'settled', 'delayed_start', 'delayed_exit', 'delay_final_report'].forEach(function (key) {
+                    $footerRow.append($('<th>', { class: 'text-end', text: formatNumber(totals[key]) }));
+                });
+                $tfoot.append($footerRow);
+
+                return $table;
+            }
+
+            function buildAuditorTable(rows) {
+                const $table = $('<table>').addClass('table table-bordered table-sm align-middle');
+                $table.append($('<caption>').addClass('visually-hidden').text('Auditor performance for the selected filters'));
+
+                const $thead = $('<thead>').appendTo($table);
+                const headerRow = $('<tr>')
+                    .append($('<th>', { scope: 'col', text: 'PPNO' }))
+                    .append($('<th>', { scope: 'col', text: 'Auditor Name' }))
+                    .append($('<th>', { scope: 'col', text: 'Entity Audited' }))
+                    .append($('<th>', { scope: 'col', text: 'Audited as' }))
+                    .append($('<th>', { scope: 'col', text: 'Annexure/Coso' }))
+                    .append($('<th>', { scope: 'col', class: 'text-end', text: 'High' }))
+                    .append($('<th>', { scope: 'col', class: 'text-end', text: 'Medium' }))
+                    .append($('<th>', { scope: 'col', class: 'text-end', text: 'Low' }))
+                    .append($('<th>', { scope: 'col', class: 'text-end', text: 'Total' }))
+                    .append($('<th>', { scope: 'col', class: 'text-end', text: 'Settled' }))
+                    .append($('<th>', { scope: 'col', class: 'text-end', text: 'Outstanding' }))
+                    .append($('<th>', { scope: 'col', class: 'text-end', text: 'Performance' }));
+                $thead.append(headerRow);
+
+                const totals = {
+                    high: 0,
+                    medium: 0,
+                    low: 0,
+                    total: 0,
+                    settled: 0,
+                    outstanding: 0,
+                    performanceSum: 0,
+                    performanceWeight: 0,
+                    performanceIsPercent: false
+                };
+
+                const $tbody = $('<tbody>').appendTo($table);
+                if (Array.isArray(rows) && rows.length > 0) {
+                    rows.forEach(function (row) {
+                        const high = numericValue(safeValue(row, 'high'));
+                        const medium = numericValue(safeValue(row, 'medium'));
+                        const low = numericValue(safeValue(row, 'low'));
+                        const total = numericValue(safeValue(row, 'total'));
+                        const settled = numericValue(safeValue(row, 'settled'));
+                        const outstanding = numericValue(safeValue(row, 'outstanding'));
+                        const performanceRaw = safeValue(row, 'performance');
+
+                        totals.high += high;
+                        totals.medium += medium;
+                        totals.low += low;
+                        totals.total += total;
+                        totals.settled += settled;
+                        totals.outstanding += outstanding;
+
+                        let performanceDisplay = '';
+                        if (performanceRaw !== null && performanceRaw !== undefined && performanceRaw !== '') {
+                            const valueString = String(performanceRaw).trim();
+                            if (valueString.endsWith('%')) {
+                                const numeric = numericValue(valueString.replace(/%/g, ''));
+                                const weight = total > 0 ? total : 1;
+                                totals.performanceSum += numeric * weight;
+                                totals.performanceWeight += weight;
+                                totals.performanceIsPercent = true;
+                                performanceDisplay = numeric.toFixed(2) + '%';
+                            } else {
+                                const numeric = numericValue(valueString);
+                                totals.performanceSum += numeric;
+                                totals.performanceWeight += 1;
+                                performanceDisplay = formatNumber(numeric);
+                            }
+                        } else {
+                            totals.performanceWeight += 1;
+                        }
+
+                        const $tr = $('<tr>')
+                            .append($('<td>', { text: safeValue(row, 'ppno') || '' }))
+                            .append($('<td>', { text: safeValue(row, 'auditor_name') || '' }))
+                            .append($('<td>', { text: safeValue(row, 'entity_audited') || '' }))
+                            .append($('<td>', { text: safeValue(row, 'audited_as') || '' }))
+                            .append($('<td>', { text: safeValue(row, 'annexure_coso') || '' }))
+                            .append($('<td>', { class: 'text-end', text: formatNumber(high) }))
+                            .append($('<td>', { class: 'text-end', text: formatNumber(medium) }))
+                            .append($('<td>', { class: 'text-end', text: formatNumber(low) }))
+                            .append($('<td>', { class: 'text-end', text: formatNumber(total) }))
+                            .append($('<td>', { class: 'text-end', text: formatNumber(settled) }))
+                            .append($('<td>', { class: 'text-end', text: formatNumber(outstanding) }))
+                            .append($('<td>', { class: 'text-end', text: performanceDisplay }));
+                        $tbody.append($tr);
+                    });
+                } else {
+                    $tbody.append(createNoDataRow(12));
+                }
+
+                const $tfoot = $('<tfoot>').appendTo($table);
+                const $footerRow = $('<tr>').addClass('fw-semibold');
+                $footerRow.append($('<th>', { scope: 'row', colspan: 5, text: 'Totals' }));
+                $footerRow.append($('<th>', { class: 'text-end', text: formatNumber(totals.high) }));
+                $footerRow.append($('<th>', { class: 'text-end', text: formatNumber(totals.medium) }));
+                $footerRow.append($('<th>', { class: 'text-end', text: formatNumber(totals.low) }));
+                $footerRow.append($('<th>', { class: 'text-end', text: formatNumber(totals.total) }));
+                $footerRow.append($('<th>', { class: 'text-end', text: formatNumber(totals.settled) }));
+                $footerRow.append($('<th>', { class: 'text-end', text: formatNumber(totals.outstanding) }));
+
+                if (totals.performanceIsPercent) {
+                    const aggregate = totals.performanceWeight > 0 ? (totals.performanceSum / totals.performanceWeight) : 0;
+                    $footerRow.append($('<th>', { class: 'text-end', text: aggregate.toFixed(2) + '%' }));
+                } else {
+                    $footerRow.append($('<th>', { class: 'text-end', text: formatNumber(totals.performanceSum) }));
+                }
+
+                $tfoot.append($footerRow);
+
+                return $table;
+            }
+
+            function createNoDataRow(colspan) {
+                return $('<tr>').append($('<td>', {
+                    colspan: colspan,
+                    class: 'text-center text-muted',
+                    text: 'No records found'
+                }));
+            }
+
+            function safeValue(obj, key) {
+                if (!obj || !key) {
+                    return null;
+                }
+                const candidates = [
+                    key,
+                    key.toLowerCase(),
+                    key.toUpperCase(),
+                    toCamelCase(key),
+                    toPascalCase(key)
+                ];
+                for (let i = 0; i < candidates.length; i++) {
+                    const candidate = candidates[i];
+                    if (candidate && Object.prototype.hasOwnProperty.call(obj, candidate)) {
+                        return obj[candidate];
+                    }
+                }
+                return null;
+            }
+
+            function toCamelCase(key) {
+                return key.replace(/_([a-z])/g, function (_, char) {
+                    return char.toUpperCase();
+                });
+            }
+
+            function toPascalCase(key) {
+                const camel = toCamelCase(key);
+                return camel.charAt(0).toUpperCase() + camel.slice(1);
+            }
+
+            function numericValue(value) {
+                if (value === null || value === undefined || value === '') {
+                    return 0;
+                }
+                if (typeof value === 'number') {
+                    return Number.isFinite(value) ? value : 0;
+                }
+                const cleaned = String(value).replace(/,/g, '').replace(/%/g, '');
+                const parsed = parseFloat(cleaned);
+                return Number.isNaN(parsed) ? 0 : parsed;
+            }
+
+            function formatNumber(value) {
+                const numeric = typeof value === 'number' ? value : numericValue(value);
+                return numberFormatter.format(Number.isFinite(numeric) ? numeric : 0);
+            }
+
+            function clearResults() {
+                $resultsWrapper.empty();
+            }
+
+            function clearMessage() {
+                $messageArea.removeClass('text-danger text-info text-success text-muted');
+                $messageArea.text('');
+            }
+
+            function showMessage(message, type) {
+                $messageArea.removeClass('text-danger text-info text-success text-muted');
+                if (type === 'error') {
+                    $messageArea.addClass('text-danger');
+                } else if (type === 'info') {
+                    $messageArea.addClass('text-info');
+                } else if (type === 'success') {
+                    $messageArea.addClass('text-success');
+                } else {
+                    $messageArea.addClass('text-muted');
+                }
+                $messageArea.text(message);
+            }
+        })(jQuery);
+    </script>
+}

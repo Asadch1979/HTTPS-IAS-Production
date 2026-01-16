@@ -1,0 +1,1114 @@
+﻿@{
+    var page_id = ViewData["PageId"] as int? ?? 0;
+}
+
+
+@{
+    ViewData["Title"] = "Auditee_Observations_Report_cau";
+    Layout = "_Layout";
+}
+
+
+
+
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/1.5.3/jspdf.min.js"></script>
+<script type="text/javascript" src="https://html2canvas.hertzen.com/dist/html2canvas.js"></script>
+
+
+<script type="text/javascript">
+    var g_teamMembers = [];
+    var g_engId = 0;
+    var g_entName = '';
+    var g_startDate = '';
+    var g_endDate = '';
+    var g_ostartDate = '';
+    var g_oendDate = '';
+    var g_conoffice = '';
+    $(document).ready(function () {
+        var url_string = window.location;
+        var url = new URL(url_string);
+        g_engId = url.searchParams.get("engid");
+        g_entName = url.searchParams.get("entName");
+        g_startDate = url.searchParams.get("startDate");
+        g_endDate = url.searchParams.get("endDate");
+        g_ostartDate = url.searchParams.get("ostart");
+        g_oendDate = url.searchParams.get("oend");
+        g_conoffice = url.searchParams.get("conOffice");
+
+        getParas();
+
+        $('.conOffice').html(g_conoffice);
+        $('.entNameField').html(g_entName);
+        $('#startField').html(g_startDate);
+        $('#endField').html(g_endDate);
+        $('#ostartField').html(g_ostartDate);
+        $('#oendField').html(g_oendDate);
+    });
+
+    function CreatePDFfromHTML() {
+        $('#wait').show()
+        var HTML_Width = $(".WordSection1").width();
+        var HTML_Height = $(".WordSection1").height();
+        var top_left_margin = 15;
+        var PDF_Width = HTML_Width + (top_left_margin * 2);
+        var PDF_Height = (PDF_Width * 1.5) + (top_left_margin * 2);
+        var canvas_image_width = HTML_Width;
+        var canvas_image_height = HTML_Height;
+
+        var totalPDFPages = Math.ceil(HTML_Height / PDF_Height) - 1;
+
+        html2canvas($(".WordSection1")[0]).then(function (canvas) {
+            var imgData = canvas.toDataURL("image/jpeg", 1.0);
+            var pdf = new jsPDF('p', 'pt', [PDF_Width, PDF_Height]);
+            pdf.addImage(imgData, 'JPG', top_left_margin, top_left_margin, canvas_image_width, canvas_image_height);
+            for (var i = 1; i <= totalPDFPages; i++) {
+                pdf.addPage(PDF_Width, PDF_Height);
+                pdf.addImage(imgData, 'JPG', top_left_margin, -(PDF_Height * i) + (top_left_margin * 4), canvas_image_width, canvas_image_height);
+            }
+            pdf.save("branchReport.pdf");
+            $('#wait').hide()
+            //  $(".WordSection1").hide();
+        });
+    }
+
+    /* $('#reportheading1').empty;
+     $('#reportheading2').empty;
+
+     var url_string = window.location;
+     var url = new URL(url_string);
+     var eng_id =
+     if (typeof eng_id != 'undefined')
+         g_engId = eng_id;
+
+     $.ajax({
+         url: g_asiBaseURL + "/ApiCalls/get_team_details",
+         type: "POST",
+         data: {
+             'ENG_ID': g_engId
+         },
+         cache: false,
+         success: function (data) {
+             $.each(data, function (i, v) {
+                 g_teamMembers.push(v.teaM_MEM_PPNO);
+                 $('#joiningAuditorDetailsTable tbody').append('<tr><td class="text-center" style="font-size:xx-small">' + v.teaM_MEM_PPNO + '</td><td class="text-center" style="font-size:xx-small">' + v.membeR_NAME + '</td><td class="text-center" style="font-size:xx-small">' + v.joininG_DATE.split('T')[0] + '</td><td class="text-center" style="font-size:xx-small">' + (new Date().toISOString()).split("T")[0] + '</td></tr>');
+                 // $('#conoffice').html(v.teaM_MEM_PPNO);
+             });
+
+             $.ajax({
+                 url: g_asiBaseURL + "/ApiCalls/closing_draft_report_status",
+                 type: "POST",
+                 data: {
+                     'ENG_ID': g_engId
+                 },
+                 cache: false,
+                 success: function (data) {
+                     g_obsList = data;
+                     // g_engId = g_obsList[0].engplanid;
+                     $.each(g_teamMembers, function (i, v) {
+                         var totalObs = 0;
+                         var sendToAuditee = 0;
+                         var noresByAuditee = 0;
+                         var settled = 0;
+                         var addToDraft = 0;
+                         var teamLead = 'N';
+                         $.each(g_obsList, function (k, ob) {
+                             if (ob.enteredby == v) {
+                                 totalObs++;
+                                 sendToAuditee++;
+                                 if (ob.status == 4)
+                                     settled++;
+                                 if (ob.status == 5)
+                                     addToDraft++;
+                                 if (ob.status == 2)
+                                     noresByAuditee++;
+                                 if (ob.teaM_LEAD == 'Y')
+                                     teamLead = 'Y';
+                             }
+
+                         });
+                         $('#auditorWiseProgessTable tbody').append('<tr><td class="text-center" style="font-size:xx-small">' + v + '</td><td class="text-center" style="font-size:xx-small" >' + teamLead + '</td><td class="text-center" style="font-size:xx-small">' + totalObs + '</td><td class="text-center" style="font-size:xx-small">' + sendToAuditee + '</td><td class="text-center" style="font-size:xx-small">' + (totalObs - noresByAuditee) + '</td><td class="text-center" style="font-size:xx-small">' + settled + '</td><td class="text-center" style="font-size:xx-small">' + addToDraft + '</td></tr>')
+                     });
+
+                 },
+                 dataType: "json",
+             });
+
+
+
+         },
+         dataType: "json",
+     });
+ });
+ function reloadLocationToUrl() {
+     window.location.href = "/Engagement/task_list"
+ }
+
+
+
+ function getaddress() {
+
+     //getParas();
+     var eng_id = $('#entitySelectField').val();
+
+     $('#conoffice').empty();
+     $('#EntN').empty();
+     $('#ADD').empty();
+     $('#a_s_d').empty();
+     $('#a_e_d').empty();
+     $('#o_s_d').empty();
+     $('#o_e_d').empty();
+     $.ajax({
+         url: g_asiBaseURL + "/ApiCalls/get_address",
+         type: "POST",
+         data: {
+             'ENT_ID': eng_id
+         },
+         cache: false,
+         success: function (data) {
+             $.each(data, function (i, v) {
+                 console.log(v);
+                 //  g_teamMembers.push(v.teaM_MEM_PPNO);
+                 // $('#joiningAuditorDetailsTable tbody').append('<tr><td class="text-center" style="font-size:xx-small">' + v.teaM_MEM_PPNO + '</td><td class="text-center" style="font-size:xx-small">' + v.membeR_NAME + '</td><td class="text-center" style="font-size:xx-small">' + v.joininG_DATE.split('T')[0] + '</td><td class="text-center" style="font-size:xx-small">' + (new Date().toISOString()).split("T")[0] + '</td></tr>');
+                 $('#conoffice').html(v.p_NAME);
+                 $('#EntN').html(v.name);
+                 $('#ADD').html(v.address);
+                 $('#a_s_d').html(v.audiT_STARTDATE.split('T')[0]);
+                 $('#a_e_d').html(v.audiT_ENDDATE.split('T')[0]);
+                 $('#o_s_d').html(v.operatioN_STARTDATE.split('T')[0]);
+                 $('#o_e_d').html(v.operatioN_ENDDATE.split('T')[0]);
+
+
+
+             });
+
+
+         },
+         dataType: "json",
+     });
+     getParas();
+ }
+ */
+    function getParas() {
+
+        //  var eng_id = $('#entitySelectField').val();
+
+        $('.conOffice').empty();
+
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/get_report_paras",
+            type: "POST",
+            data: {
+                'ENG_ID': g_engId
+            },
+            cache: false,
+            success: function (data) {
+
+                $('.conOffice').html(data.length > 0 ? data[0].name : '');
+                $.each(data, function (i, v) {
+                    if (v.assignedto == "CAU")
+                        $('#obs_report_panel').append('<tr ><td style="text-align:center">' + v.memO_NUMBER + '</td><td style="text-align:center">' + v.name + '</td><td style="padding:50px !important;text-align:justify"><div style="width:1000px; max-width:1000px; overflow-y:auto">' + v.text + '</div></td><td style="text-align:center">' + v.reply + '</td ><td style="text-align:center">' + v.recommendation + '</td><td style="text-align:center">' + v.headremarks + '</td></tr>')
+                    else
+                        $('#obs_report_panel2').append('<tr ><td style="text-align:center">' + v.memO_NUMBER + '</td><td style="text-align:center">' + v.name + '</td><td style="padding:50px !important;text-align:justify"><div style="width:1000px; max-width:1000px; overflow-y:auto">' + v.text + '</div></td><td style="text-align:center">' + v.reply + '</td ><td style="text-align:center">' + v.recommendation + '</td><td style="text-align:center">' + v.headremarks + '</td></tr>')
+
+
+
+                });
+
+
+            },
+            dataType: "json",
+        });
+
+    }
+
+    function closeDraftAudit() {
+
+
+
+        $.ajax({
+
+            url: g_asiBaseURL + "/ApiCalls/close_draft_audit",
+            type: "POST",
+            data: {
+                'ENG_ID': g_engId
+            },
+            cache: false,
+            success: function () {
+                alert("Audit Closed Successfully");
+                onAlertCallback(reloadLocationToUrl);
+            },
+            dataType: "json",
+        });
+    }
+</script>
+<div class="row col-md-12 mt-3">
+    <h4 style="display: block; color: #be0e43">Auditee Observation Report</h4>
+</div>
+
+<div class="row">
+    <div class="col-md-4 offset-md-8">
+        <button class="btn btn-danger" style="float:right; margin-bottom:10px;" onclick="CreatePDFfromHTML();">Download Report</button>
+    </div>
+</div>
+
+
+
+<div class="WordSection1">
+
+    <!----><div style="border:solid windowtext 3.0pt;padding:0cm 4.0pt 1.0pt 4.0pt">
+
+        <p class="" align="center" style="text-align:center;line-height:150%;border:none;">
+            <b>
+                <span style="font-size:37.0pt;line-height:150%;">FINAL AUDIT REPORT<o:p></o:p></span>
+            </b>
+        </p>
+
+        <p class="MsoNormal" align="center" style="text-align:center;line-height:150%;">
+            <b>
+                <span style="font-size:30.0pt;line-height:150%;">OF <span class="conOffice"></span></span>
+            </b>
+            <b>
+                <span style="font-size:37.0pt;line-height:150%;"><o:p></o:p></span>
+            </b>
+        </p>
+
+        <p class="MsoNormal" align="center" style="text-align:center;line-height:150%;">
+            <b>
+                <span style="font-size:24.0pt;line-height:150%;">IN RESPECT OF <span style="text-transform:uppercase" class="entNameField"></span><o:p></o:p></span>
+            </b>
+        </p>
+
+        <p class="MsoNormal" align="center" style="text-align:center;line-height:150%;padding:0cm;">
+            <b>
+                <span style="font-size:24.0pt;line-height:150%;">AND<o:p></o:p></span>
+            </b>
+        </p>
+
+        <p class="MsoNormal" align="center" style="text-align:center;line-height:150%;border:none;">
+            <b>
+                <span style="font-size:1.0pt;line-height:150%;"><o:p>&nbsp;</o:p></span>
+            </b>
+        </p>
+
+        <p class="MsoNormal" align="center" style="text-align:center;line-height:150%;border:none;padding:0cm;">
+            <b>
+                <span style="font-size:25.0pt;line-height:150%;">ZARAI TARAQIATI BANK LIMITED<o:p></o:p></span>
+            </b>
+        </p>
+
+        <p class="MsoNormal" align="center" style="text-align:center;line-height:150%;border:none;padding:0cm;">
+            <b>
+                <span style="font-size: 24.0pt; line-height: 150%;  text-transform:uppercase" class="entNameField"></span>
+            </b><b>
+                <span style="font-size:25.0pt;line-height:150%;">&nbsp CAU<o:p></o:p></span>
+            </b>
+        </p>
+
+        <!--      <p class="MsoNormal" align="center" style="text-align:center;line-height:150%;border:none;">
+                    <b>
+                        <span style="font-size:25.0pt;line-height:150%;">BRANCH CODE 22345<o:p></o:p></span>
+                    </b>
+                </p>
+        -->
+        <p class="MsoNormal" align="center" style="text-align:center;line-height:150%;border:none;padding:0cm">
+            <b>
+                <span style="font-size:25.0pt;line-height:150%;">FOR THE PERIOD ENDED ON <span id="oendField"></span>.<o:p></o:p></span>
+            </b>
+        </p>
+
+        <p class="MsoNormal" align="center" style="text-align:center;line-height:150%;border:none;padding:0cm">
+            <b>
+                <span style="font-size:14.0pt;line-height:150%">DATE OF AUDIT.FROM <span id="startField"></span>TO<span id="endField"></span> <span>&nbsp;&nbsp; </span>DATE OF DISCUSSION 24.05.2022</span>
+            </b>
+            <b>
+                <span style="font-size:25.0pt;line-height:150%"><o:p></o:p></span>
+            </b>
+        </p>
+
+
+
+
+
+        <p class="MsoNormal" align="center" style="text-align:center;line-height:150%;border:none;padding:0cm">
+            <b>
+                <span style="font-size:19.0pt;line-height:150%;"><o:p>&nbsp;</o:p></span>
+            </b>
+        </p>
+
+    </div>
+
+    <b>
+        <u>
+            <span style="font-size:12.0pt">
+                <br clear="all" style="page-break-before:always">
+            </span>
+        </u>
+    </b>
+
+
+
+    <b>
+        <span style="font-size:12.0pt">
+            <br clear="all" style="page-break-before:always">
+        </span>
+    </b>
+
+    <p class="MsoNormal"><b><o:p>&nbsp;</o:p></b></p>
+
+    <div style="border:solid windowtext 3.0pt;padding:0cm 4.0pt 1.0pt 4.0pt">
+
+        <p class="MsoNormal" align="center" style="text-align:center;line-height:150%;border:none;padding:0cm">
+            <b><span style="font-size:30.0pt;line-height:150%;">PART-01</span></b><b>
+                <span style="font-size:25.0pt;line-height:150%"><o:p></o:p></span>
+            </b>
+        </p>
+
+        <p class="MsoNormal" align="center" style="text-align:center;line-height:150%;padding:0cm">
+            <b>
+                <span style="font-size:30.0pt;line-height:150%;">
+                    AUDIT
+                    PARAS PERTAINING TO CREDIT ADMINISTRATION UNIT<o:p></o:p>
+                </span>
+            </b>
+        </p>
+
+        <p class="MsoNormal" align="center" style="text-align:center;line-height:150%;padding:0cm;">
+            <b>
+                <span style="font-size:30.0pt;line-height:150%">
+                    PARA
+                    NO. 01<o:p></o:p>
+                </span>
+            </b>
+        </p>
+
+    </div>
+
+
+
+    <table class="MsoNormalTable mt-3 mr-5" border="1" cellspacing="0" cellpadding="0" style="width: 1091.8pt; border: solid windowtext 1.0pt">
+        <thead>
+            <tr style="height:22.75pt">
+                <td class="col-md-auto" style="width:48.25pt;border:solid windowtext 1.0pt;padding:0cm 5.4pt 0cm 5.4pt;height:22.75pt">
+                    <p class="MsoNormal" align="center" style="text-align:center"><b><span>PARA<o:p></o:p></span></b></p>
+                    <p class="MsoNormal" align="center" style="text-align:center"><b><span>NO<o:p></o:p></span></b></p>
+                </td>
+                <td class="col-md-auto" style="width:48.25pt;border:solid windowtext 1.0pt;padding:0cm 5.4pt 0cm 5.4pt;height:22.75pt; line-height:40px;">
+                    <p class="MsoNormal" align="center" style="text-align:center"><b><span>ASSIGNED TO<o:p></o:p></span></b></p>
+
+                </td>
+            
+                <td style="border:solid windowtext 1.0pt;border-left:none;padding:0cm 5.4pt 0cm 5.4pt;height:22.75pt">
+                    <div style="width:1000px">
+                        <p class="MsoNormal" align="center" style="text-align:center">
+                            <b>
+                                <span>
+                                    CA
+                                    UNIT AUDIT OBSERVATION<o:p></o:p>
+                                </span>
+                            </b>
+                        </p>
+                        <p class="MsoNormal" align="center" style="text-align:center"><b><span>VOL-I<o:p></o:p></span></b></p>
+                    </div>
+                </td>
+
+<td class="col-md-auto" style="width:94.5pt;border:solid windowtext 1.0pt;border-left:none; padding:0cm 5.4pt 0cm 5.4pt;height:22.75pt">
+    <p class="MsoNormal" align="center" style="text-align:center">
+        <b>
+            <span>
+                REPLY
+                OF THE BRANCH<o:p></o:p>
+            </span>
+        </b>
+    </p>
+</td>
+<td class="col-md-auto" style="width:85.5pt;border:solid windowtext 1.0pt;border-left:none;padding:0cm 5.4pt 0cm 5.4pt;height:22.75pt">
+    <p class="MsoNormal" align="center" style="text-align:center">
+        <b>
+            <span>
+                COMMENTS
+                OF AUDIT<o:p></o:p>
+            </span>
+        </b>
+    </p>
+</td>
+<td class="col-md-auto" style="width:74.8pt;border:solid windowtext 1.0pt;padding:0cm 5.4pt 0cm 5.4pt;height:22.75pt">
+    <p class="MsoNormal" align="center" style="text-align:center"><b><span>STATUS<o:p></o:p></span></b></p>
+</td>
+            </tr>
+
+        </thead>
+<tbody id="obs_report_panel" style="width:48.25pt;border:solid windowtext 1.0pt;padding:0cm 5.4pt 0cm 5.4pt;height:22.75pt">
+</tbody>
+    </table>
+
+<p class="MsoNormal"><span><o:p>&nbsp;</o:p></span></p>
+
+<span style="font-size:12.0pt">
+    <br clear="all" style="page-break-before:always">
+</span>
+
+<p class="MsoNormal"><span style="font-size:6.0pt"><o:p>&nbsp;</o:p></span></p>
+
+<p class="MsoNormal">
+    <span style="font-size:14.0pt"><span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </span><o:p></o:p></span>
+</p>
+
+</div>
+<div style="border:solid windowtext 3.0pt;padding:0cm 4.0pt 1.0pt 4.0pt">
+
+    <p class="MsoNormal" align="center" style="text-align:center;line-height:150%;border:none;padding:0cm">
+        <b><span style="font-size:30.0pt;line-height:150%">PART-02</span></b>
+        <b>
+            <span style="font-size:25.0pt;line-height:150%"><o:p></o:p></span>
+        </b>
+    </p>
+
+    <p class="MsoNormal" align="center" style="text-align:center;line-height:150%;border:none;padding:0cm">
+        <b>
+            <span style="font-size:30.0pt;line-height:150%">
+                AUDIT
+                PARAS PERTAINING TO THE BRANCH<o:p></o:p>
+            </span>
+        </b>
+    </p>
+    <p class="MsoNormal" align="center" style="text-align:center;line-height:150%;padding:0cm">
+        <b>
+            <span style="font-size:30.0pt;line-height:150%">
+                PARA
+                NO. 02<o:p></o:p>
+            </span>
+        </b>
+    </p>
+
+    <p class="MsoNormal" align="center" style="text-align:center;line-height:150%;border:none;padding:0cm">
+        <b><span style="font-size:30.0pt;line-height:150%">TO<o:p></o:p></span></b>
+    </p>
+
+    <p class="MsoNormal" align="center" style="text-align:center;line-height:150%;padding:0cm">
+        <b>
+            <span style="font-size:30.0pt;line-height:150%">
+                PARA
+                NO. 22<o:p></o:p>
+            </span>
+        </b>
+    </p>
+
+    <p class="MsoNormal" align="center" style="text-align:center;line-height:150%;padding:0cm">
+        <b>
+            <span style="font-size:30.0pt;line-height:150%">
+                VOL-I(Para
+                No. 02 to Para No. 04)<o:p></o:p>
+            </span>
+        </b>
+    </p>
+
+    <p class="MsoNormal" align="center" style="text-align:center;line-height:150%;border:none;padding:0cm">
+        <b>
+            <span style="font-size:25.0pt;line-height:150%">
+                VOL-II(Para
+                No. 05 to Para No.22 )<o:p></o:p>
+            </span>
+        </b>
+    </p>
+
+</div>
+
+<table class="MsoNormalTable mt-3 mr-5" border="1" cellspacing="0" cellpadding="0" style="width: 1091.8pt; border: solid windowtext 1.0pt">
+    <thead>
+        <tr style="height:22.75pt">
+            <td class="col-md-auto" style="width:48.25pt;border:solid windowtext 1.0pt;padding:0cm 5.4pt 0cm 5.4pt;height:22.75pt">
+                <p class="MsoNormal" align="center" style="text-align:center"><b><span>PARA<o:p></o:p></span></b></p>
+                <p class="MsoNormal" align="center" style="text-align:center"><b><span>NO<o:p></o:p></span></b></p>
+            </td>
+            <td class="col-md-auto" style="width:48.25pt;border:solid windowtext 1.0pt;padding:0cm 5.4pt 0cm 5.4pt;height:22.75pt; line-height:40px;">
+                <p class="MsoNormal" align="center" style="text-align:center"><b><span>ASSIGNED TO<o:p></o:p></span></b></p>
+
+            </td>
+
+            <td style="border:solid windowtext 1.0pt;border-left:none;padding:0cm 5.4pt 0cm 5.4pt;height:22.75pt">
+                <div style="width:1000px">
+                    <p class="MsoNormal" align="center" style="text-align:center">
+                        <b>
+                            <span>
+                                CA
+                                UNIT AUDIT OBSERVATION<o:p></o:p>
+                            </span>
+                        </b>
+                    </p>
+                    <p class="MsoNormal" align="center" style="text-align:center"><b><span>VOL-I<o:p></o:p></span></b></p>
+                </div>
+            </td>
+
+            <td class="col-md-auto" style="width:94.5pt;border:solid windowtext 1.0pt;border-left:none; padding:0cm 5.4pt 0cm 5.4pt;height:22.75pt">
+                <p class="MsoNormal" align="center" style="text-align:center">
+                    <b>
+                        <span>
+                            REPLY
+                            OF THE BRANCH<o:p></o:p>
+                        </span>
+                    </b>
+                </p>
+            </td>
+            <td class="col-md-auto" style="width:85.5pt;border:solid windowtext 1.0pt;border-left:none;padding:0cm 5.4pt 0cm 5.4pt;height:22.75pt">
+                <p class="MsoNormal" align="center" style="text-align:center">
+                    <b>
+                        <span>
+                            COMMENTS
+                            OF AUDIT<o:p></o:p>
+                        </span>
+                    </b>
+                </p>
+            </td>
+            <td class="col-md-auto" style="width:74.8pt;border:solid windowtext 1.0pt;padding:0cm 5.4pt 0cm 5.4pt;height:22.75pt">
+                <p class="MsoNormal" align="center" style="text-align:center"><b><span>STATUS<o:p></o:p></span></b></p>
+            </td>
+        </tr>
+
+    </thead>
+    <tbody id="obs_report_panel2" style="width:48.25pt;border:solid windowtext 1.0pt;padding:0cm 5.4pt 0cm 5.4pt;height:22.75pt">
+    </tbody>
+</table>
+
+<!-- <p class="MsoNormal" align="center" style="text-align:center;line-height:150%;padding:0cm">
+                <b>
+                    <span style="font-size:30.0pt;line-height:150%">
+                        PARA
+                        NO. 02<o:p></o:p>
+                    </span>
+                </b>
+            </p>
+
+            <p class="MsoNormal" align="center" style="text-align:center;line-height:150%;border:none;padding:0cm">
+                <b><span style="font-size:30.0pt;line-height:150%">TO<o:p></o:p></span></b>
+            </p>
+
+            <p class="MsoNormal" align="center" style="text-align:center;line-height:150%;padding:0cm">
+                <b>
+                    <span style="font-size:30.0pt;line-height:150%">
+                        PARA
+                        NO. 22<o:p></o:p>
+                    </span>
+                </b>
+            </p>
+
+        <p class="MsoNormal" align="center" style="text-align:center;line-height:150%;padding:0cm">
+            <b>
+                <span style="font-size:30.0pt;line-height:150%">
+                    VOL-I(Para
+                    No. 02 to Para No. 04)<o:p></o:p>
+                </span>
+            </b>
+        </p>
+
+        <p class="MsoNormal" align="center" style="text-align:center;line-height:150%;border:none;padding:0cm">
+            <b>
+                <span style="font-size:25.0pt;line-height:150%">
+                    VOL-II(Para
+                    No. 05 to Para No.22 )<o:p></o:p>
+                </span>
+            </b>
+        </p>
+-->
+</div>
+
+<!--
+<div style="border:solid windowtext 3.0pt;padding:0cm 4.0pt 1.0pt 4.0pt">
+
+    <p class="MsoNormal" align="center" style="text-align:center;line-height:150%;border:none;padding:0cm">
+        <b><span style="font-size:30.0pt;line-height:150%">PART-02</span></b><b>
+            <span style="font-size:25.0pt;line-height:150%"><o:p></o:p></span>
+        </b>
+    </p>
+
+    <p class="MsoNormal" align="center" style="text-align:center;line-height:150%;border:none;padding:0cm">
+        <b>
+            <span style="font-size:30.0pt;line-height:150%">
+                AUDIT
+                PARAS PERTAINING TO THE BRANCH<o:p></o:p>
+            </span>
+        </b>
+    </p>
+
+    <p class="MsoNormal" align="center" style="text-align:center;line-height:150%;padding:0cm">
+        <b>
+            <span style="font-size:30.0pt;line-height:150%">
+                PARA
+                NO. 02<o:p></o:p>
+            </span>
+        </b>
+    </p>
+
+    <p class="MsoNormal" align="center" style="text-align:center;line-height:150%;border:none;padding:0cm">
+        <b><span style="font-size:30.0pt;line-height:150%">TO<o:p></o:p></span></b>
+    </p>
+
+    <p class="MsoNormal" align="center" style="text-align:center;line-height:150%;padding:0cm">
+        <b>
+            <span style="font-size:30.0pt;line-height:150%">
+                PARA
+                NO. 22<o:p></o:p>
+            </span>
+        </b>
+    </p>
+
+    <p class="MsoNormal" align="center" style="text-align:center;line-height:150%;padding:0cm">
+        <b>
+            <span style="font-size:30.0pt;line-height:150%">
+                VOL-I(Para
+                No. 02 to Para No. 04)<o:p></o:p>
+            </span>
+        </b>
+    </p>
+
+    <p class="MsoNormal" align="center" style="text-align:center;line-height:150%;border:none;padding:0cm">
+        <b>
+            <span style="font-size:25.0pt;line-height:150%">
+                VOL-II(Para
+                No. 05 to Para No.22 )<o:p></o:p>
+            </span>
+        </b>
+    </p>
+
+</div>
+
+<span style="font-size:12.0pt">
+    <br clear="all" style="page-break-before:always">
+</span>
+
+<p class="MsoNormal"><span style="font-size:6.0pt"><o:p>&nbsp;</o:p></span></p>
+
+<table class="MsoNormalTable" border="1" cellspacing="0" cellpadding="0" width="1355" style="width:812.8pt;margin-left:-12.6pt;border-collapse:collapse;border:none;">
+    <thead>
+        <tr style="height:22.75pt">
+            <td width="80" style="width:48.25pt;border:solid windowtext 1.0pt;padding:0cm 5.4pt 0cm 5.4pt;height:22.75pt">
+                <p class="MsoNormal" align="center" style="text-align:center"><b><span>PARA<o:p></o:p></span></b></p>
+                <p class="MsoNormal" align="center" style="text-align:center"><b><span>NO<o:p></o:p></span></b></p>
+            </td>
+            <td width="850" style="width:509.75pt;border:solid windowtext 1.0pt;border-left:none;padding:0cm 5.4pt 0cm 5.4pt;height:22.75pt">
+                <p class="MsoNormal" align="center" style="text-align:center">
+                    <b>
+                        <span>
+                            BRANCH
+                            AUDIT OBSERVATION<o:p></o:p>
+                        </span>
+                    </b>
+                </p>
+                <p class="MsoNormal" align="center" style="text-align:center"><b><span>VOL-I<o:p></o:p></span></b></p>
+            </td>
+            <td width="158" style="width:94.5pt;border:solid windowtext 1.0pt;border-left:none;padding:0cm 5.4pt 0cm 5.4pt;height:22.75pt">
+                <p class="MsoNormal" align="center" style="text-align:center">
+                    <b>
+                        <span>
+                            REPLY
+                            OF THE BRANCH<o:p></o:p>
+                        </span>
+                    </b>
+                </p>
+            </td>
+            <td width="143" style="width:85.5pt;border:solid windowtext 1.0pt;border-left:none;padding:0cm 5.4pt 0cm 5.4pt;height:22.75pt">
+                <p class="MsoNormal" align="center" style="text-align:center">
+                    <b>
+                        <span>
+                            COMMENTS
+                            OF AUDIT<o:p></o:p>
+                        </span>
+                    </b>
+                </p>
+            </td>
+            <td width="125" style="width:74.8pt;border:solid windowtext 1.0pt;border-left:none;padding:0cm 5.4pt 0cm 5.4pt;height:22.75pt">
+                <p class="MsoNormal" align="center" style="text-align:center"><b><span>STATUS<o:p></o:p></span></b></p>
+            </td>
+        </tr>
+    </thead>
+
+    <tbody id="obs_report_panel2">
+    </tbody>
+</table>
+
+
+            <span style="font-size:14.0pt">
+                <br clear="all" style="page-break-before:always">
+            </span>
+
+            <p class="MsoNormal" align="center" style="text-align:center"><span style="font-size:6.0pt;font-family:&quot;Calibri&quot;,sans-serif"><o:p>&nbsp;</o:p></span></p>
+
+
+            <table class="MsoNormalTable" border="1" cellspacing="0" cellpadding="0" width="1424" style="width:854.35pt;margin-left:-12.6pt;border-collapse:collapse;border:none;">
+                <tbody>
+                    <tr style="height:22.75pt">
+                        <td width="1424" colspan="4" valign="top" style="width:854.35pt;border:solid windowtext 1.0pt;padding:0cm 5.4pt 0cm 5.4pt;height:22.75pt">
+                            <p class="MsoNormal" align="center" style="text-align:center">
+                                <b>
+                                    <u>
+                                        <span style="font-size:19.0pt;">
+                                            C E R T I F I C A T E<o:p></o:p>
+                                        </span>
+                                    </u>
+                                </b>
+                            </p>
+                            <p class="MsoNormal"><span style="font-family:&quot;Calibri&quot;,sans-serif"><o:p>&nbsp;</o:p></span></p>
+                            <p class="MsoNormal" style="text-align:justify">
+                                <span style="font-family:&quot;Calibri&quot;,sans-serif">
+                                    <span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </span>This is to certify that
+                                    entire audit observations were discussed with Branch Manager and observations
+                                    where compliance was duly arranged were settled on spot while remaining
+                                    observations where compliance could not be arranged have been taken in the
+                                    Audit Report. The behavior of audit team with branch staff was excellent and
+                                    we have no objection on the behavior and working of audit team. <o:p></o:p>
+                                </span>
+                            </p>
+                            <p class="MsoNormal" style="text-align:justify"><span style="font-family:&quot;Calibri&quot;,sans-serif"><o:p>&nbsp;</o:p></span></p>
+                            <table class="MsoNormalTable" border="1" cellspacing="0" cellpadding="0" style="margin-left:76.15pt;border-collapse:collapse;border:none">
+                                <tbody>
+                                    <tr style="height:61.15pt">
+                                        <td width="130" valign="top" style="width:77.95pt;border:solid windowtext 1.0pt;padding:0cm 5.4pt 0cm 5.4pt;height:61.15pt">
+                                            <p class="MsoNormal" style="text-align:justify;"><span>Description<o:p></o:p></span></p>
+                                        </td>
+                                        <td width="142" valign="top" style="width:3.0cm;border:solid windowtext 1.0pt;border-left:none;padding:0cm 5.4pt 0cm 5.4pt;height:61.15pt">
+                                            <p class="MsoNormal" style="text-align:justify"><span>Paras raised by Audit Team<o:p></o:p></span></p>
+                                        </td>
+                                        <td width="142" valign="top" style="width:3.0cm;border:solid windowtext 1.0pt;border-left:none;padding:0cm 5.4pt 0cm 5.4pt;height:61.15pt">
+                                            <p class="MsoNormal" style="text-align:justify"><span >Paras settled <o:p></o:p></span></p>
+                                            <p class="MsoNormal" style="text-align:justify"><span >by audit Team <o:p></o:p></span></p>
+                                            <p class="MsoNormal" style="text-align:justify"><span >on spot<o:p></o:p></span></p>
+                                        </td>
+                                        <td width="154" valign="top" style="width:92.15pt;border:solid windowtext 1.0pt;border-left:none;padding:0cm 5.4pt 0cm 5.4pt;height:61.15pt">
+                                            <p class="MsoNormal">
+                                                <span>
+                                                    Same Nature Paras clubbed in
+                                                    Report <o:p></o:p>
+                                                </span>
+                                            </p>
+                                            <p class="MsoNormal" style="text-align:justify"><span style="font-family:&quot;Calibri&quot;,sans-serif"><o:p>&nbsp;</o:p></span></p>
+                                        </td>
+                                        <td width="189" valign="top" style="width:4.0cm;border:solid windowtext 1.0pt;padding:0cm 5.4pt 0cm 5.4pt;height:61.15pt">
+                                            <p class="MsoNormal">
+                                                <span style="font-family:&quot;Calibri&quot;,sans-serif">
+                                                    Paras Taken in to Draft Audit
+                                                    Report<o:p></o:p>
+                                                </span>
+                                            </p>
+                                        </td>
+                                        <td width="154" valign="top" style="width:92.15pt;border:solid windowtext 1.0pt;border-left:none;padding:0cm 5.4pt 0cm 5.4pt;height:61.15pt">
+                                            <p class="MsoNormal" style="text-align:justify"><span >Paras settled <o:p></o:p></span></p>
+                                            <p class="MsoNormal" style="text-align:justify"><span >by In-charge Audit<o:p></o:p></span></p>
+                                        </td>
+                                        <td width="165" valign="top" style="width:99.2pt;border:solid windowtext 1.0pt;border-left:none;padding:0cm 5.4pt 0cm 5.4pt;height:61.15pt">
+                                            <p class="MsoNormal" style="text-align:justify">
+                                                <span>
+                                                    Paras clubbed by In-charge Audit in
+                                                    Final Audit Report <o:p></o:p>
+                                                </span>
+                                            </p>
+                                            <p class="MsoNormal"><span ><o:p>&nbsp;</o:p></span></p>
+                                        </td>
+                                        <td width="165" valign="top" style="width:99.2pt;border:solid windowtext 1.0pt;border-left:none;padding:0cm 5.4pt 0cm 5.4pt;height:61.15pt">
+                                            <p class="MsoNormal" >
+                                                <span style="font-family:&quot;Calibri&quot;,sans-serif">
+                                                    Paras Taken in to Final Audit
+                                                    Report<o:p></o:p>
+                                                </span>
+                                            </p>
+                                        </td>
+                                    </tr>
+                                    <tr >
+                                        <td width="130" valign="top" style="width:77.95pt;border:solid windowtext 1.0pt;border-top:none;padding:0cm 5.4pt 0cm 5.4pt">
+                                            <p class="MsoNormal" align="center" style="text-align:center">
+                                                <b>
+                                                    <span >
+                                                        CAD
+                                                        HUB<o:p></o:p>
+                                                    </span>
+                                                </b>
+                                            </p>
+                                        </td>
+                                        <td width="142" valign="top" style="width:3.0cm;border-top:none;border-left:
+            none;border-bottom:solid windowtext 1.0pt;border-right:solid windowtext 1.0pt;
+            mso-border-top-alt:solid windowtext .5pt;mso-border-left-alt:solid windowtext .5pt;
+            mso-border-alt:solid windowtext .5pt;padding:0cm 5.4pt 0cm 5.4pt">
+                                            <p class="MsoNormal" align="center" style="text-align:center;tab-stops:162.0pt"><b style="mso-bidi-font-weight:normal"><span style="font-family:&quot;Calibri&quot;,sans-serif">11<o:p></o:p></span></b></p>
+                                        </td>
+                                        <td width="142" valign="top" style="width:3.0cm;border-top:none;border-left:
+            none;border-bottom:solid windowtext 1.0pt;border-right:solid windowtext 1.0pt;
+            mso-border-top-alt:solid windowtext .5pt;mso-border-left-alt:solid windowtext .5pt;
+            mso-border-alt:solid windowtext .5pt;padding:0cm 5.4pt 0cm 5.4pt">
+                                            <p class="MsoNormal" align="center" style="text-align:center;tab-stops:162.0pt"><b style="mso-bidi-font-weight:normal"><span style="font-family:&quot;Calibri&quot;,sans-serif">0<o:p></o:p></span></b></p>
+                                        </td>
+                                        <td width="154" valign="top" style="width:92.15pt;border-top:none;border-left:
+            none;border-bottom:solid windowtext 1.0pt;border-right:solid windowtext 1.0pt;
+            mso-border-top-alt:solid windowtext .5pt;mso-border-left-alt:solid windowtext .5pt;
+            mso-border-alt:solid windowtext .5pt;padding:0cm 5.4pt 0cm 5.4pt">
+                                            <p class="MsoNormal" align="center" style="text-align:center;tab-stops:162.0pt"><b style="mso-bidi-font-weight:normal"><span style="font-family:&quot;Calibri&quot;,sans-serif">0<o:p></o:p></span></b></p>
+                                        </td>
+                                        <td width="189" valign="top" style="width:4.0cm;border-top:none;border-left:
+            none;border-bottom:solid windowtext 1.0pt;border-right:solid windowtext 1.0pt;
+            mso-border-top-alt:solid windowtext .5pt;mso-border-left-alt:solid windowtext .5pt;
+            mso-border-alt:solid windowtext .5pt;padding:0cm 5.4pt 0cm 5.4pt">
+                                            <p class="MsoNormal" align="center" style="text-align:center;tab-stops:162.0pt"><b style="mso-bidi-font-weight:normal"><span style="font-family:&quot;Calibri&quot;,sans-serif">11<o:p></o:p></span></b></p>
+                                        </td>
+                                        <td width="154" valign="top" style="width:92.15pt;border-top:none;border-left:
+            none;border-bottom:solid windowtext 1.0pt;border-right:solid windowtext 1.0pt;
+            mso-border-top-alt:solid windowtext .5pt;mso-border-left-alt:solid windowtext .5pt;
+            mso-border-alt:solid windowtext .5pt;padding:0cm 5.4pt 0cm 5.4pt">
+                                            <p class="MsoNormal" align="center" style="text-align:center;tab-stops:162.0pt"><b style="mso-bidi-font-weight:normal"><span style="font-family:&quot;Calibri&quot;,sans-serif">10<o:p></o:p></span></b></p>
+                                        </td>
+                                        <td width="165" valign="top" style="width:99.2pt;border-top:none;border-left:
+            none;border-bottom:solid windowtext 1.0pt;border-right:solid windowtext 1.0pt;
+            mso-border-top-alt:solid windowtext .5pt;mso-border-left-alt:solid windowtext .5pt;
+            mso-border-alt:solid windowtext .5pt;padding:0cm 5.4pt 0cm 5.4pt">
+                                            <p class="MsoNormal" align="center" style="text-align:center;tab-stops:162.0pt"><b style="mso-bidi-font-weight:normal"><span style="font-family:&quot;Calibri&quot;,sans-serif">0<o:p></o:p></span></b></p>
+                                        </td>
+                                        <td width="165" valign="top" style="width:99.2pt;border-top:none;border-left:
+            none;border-bottom:solid windowtext 1.0pt;border-right:solid windowtext 1.0pt;
+            mso-border-top-alt:solid windowtext .5pt;mso-border-left-alt:solid windowtext .5pt;
+            mso-border-alt:solid windowtext .5pt;padding:0cm 5.4pt 0cm 5.4pt">
+                                            <p class="MsoNormal" align="center" style="text-align:center;tab-stops:162.0pt"><b style="mso-bidi-font-weight:normal"><span style="font-family:&quot;Calibri&quot;,sans-serif">01<o:p></o:p></span></b></p>
+                                        </td>
+                                    </tr>
+                                    <tr style="mso-yfti-irow:2">
+                                        <td width="130" valign="top" style="width:77.95pt;border:solid windowtext 1.0pt;
+            border-top:none;mso-border-top-alt:solid windowtext .5pt;mso-border-alt:
+            solid windowtext .5pt;padding:0cm 5.4pt 0cm 5.4pt">
+                                            <p class="MsoNormal" align="center" style="text-align:center;tab-stops:162.0pt"><b style="mso-bidi-font-weight:normal"><span style="font-family:&quot;Calibri&quot;,sans-serif">BRANCH<o:p></o:p></span></b></p>
+                                        </td>
+                                        <td width="142" valign="top" style="width:3.0cm;border-top:none;border-left:
+            none;border-bottom:solid windowtext 1.0pt;border-right:solid windowtext 1.0pt;
+            mso-border-top-alt:solid windowtext .5pt;mso-border-left-alt:solid windowtext .5pt;
+            mso-border-alt:solid windowtext .5pt;padding:0cm 5.4pt 0cm 5.4pt">
+                                            <p class="MsoNormal" align="center" style="text-align:center;tab-stops:162.0pt"><b style="mso-bidi-font-weight:normal"><span style="font-family:&quot;Calibri&quot;,sans-serif">53<o:p></o:p></span></b></p>
+                                        </td>
+                                        <td width="142" valign="top" style="width:3.0cm;border-top:none;border-left:
+            none;border-bottom:solid windowtext 1.0pt;border-right:solid windowtext 1.0pt;
+            mso-border-top-alt:solid windowtext .5pt;mso-border-left-alt:solid windowtext .5pt;
+            mso-border-alt:solid windowtext .5pt;padding:0cm 5.4pt 0cm 5.4pt">
+                                            <p class="MsoNormal" align="center" style="text-align:center;tab-stops:162.0pt"><b style="mso-bidi-font-weight:normal"><span style="font-family:&quot;Calibri&quot;,sans-serif">08<o:p></o:p></span></b></p>
+                                        </td>
+                                        <td width="154" valign="top" style="width:92.15pt;border-top:none;border-left:
+            none;border-bottom:solid windowtext 1.0pt;border-right:solid windowtext 1.0pt;
+            mso-border-top-alt:solid windowtext .5pt;mso-border-left-alt:solid windowtext .5pt;
+            mso-border-alt:solid windowtext .5pt;padding:0cm 5.4pt 0cm 5.4pt">
+                                            <p class="MsoNormal" align="center" style="text-align:center;tab-stops:162.0pt"><b style="mso-bidi-font-weight:normal"><span style="font-family:&quot;Calibri&quot;,sans-serif">0<o:p></o:p></span></b></p>
+                                        </td>
+                                        <td width="189" valign="top" style="width:4.0cm;border-top:none;border-left:
+            none;border-bottom:solid windowtext 1.0pt;border-right:solid windowtext 1.0pt;
+            mso-border-top-alt:solid windowtext .5pt;mso-border-left-alt:solid windowtext .5pt;
+            mso-border-alt:solid windowtext .5pt;padding:0cm 5.4pt 0cm 5.4pt">
+                                            <p class="MsoNormal" align="center" style="text-align:center;tab-stops:162.0pt"><b style="mso-bidi-font-weight:normal"><span style="font-family:&quot;Calibri&quot;,sans-serif">45<o:p></o:p></span></b></p>
+                                        </td>
+                                        <td width="154" valign="top" style="width:92.15pt;border-top:none;border-left:
+            none;border-bottom:solid windowtext 1.0pt;border-right:solid windowtext 1.0pt;
+            mso-border-top-alt:solid windowtext .5pt;mso-border-left-alt:solid windowtext .5pt;
+            mso-border-alt:solid windowtext .5pt;padding:0cm 5.4pt 0cm 5.4pt">
+                                            <p class="MsoNormal" align="center" style="text-align:center;tab-stops:162.0pt"><b style="mso-bidi-font-weight:normal"><span style="font-family:&quot;Calibri&quot;,sans-serif">24<o:p></o:p></span></b></p>
+                                        </td>
+                                        <td width="165" valign="top" style="width:99.2pt;border-top:none;border-left:
+            none;border-bottom:solid windowtext 1.0pt;border-right:solid windowtext 1.0pt;
+            mso-border-top-alt:solid windowtext .5pt;mso-border-left-alt:solid windowtext .5pt;
+            mso-border-alt:solid windowtext .5pt;padding:0cm 5.4pt 0cm 5.4pt">
+                                            <p class="MsoNormal" align="center" style="text-align:center;tab-stops:162.0pt"><b style="mso-bidi-font-weight:normal"><span style="font-family:&quot;Calibri&quot;,sans-serif">0<o:p></o:p></span></b></p>
+                                        </td>
+                                        <td width="165" valign="top" style="width:99.2pt;border-top:none;border-left:
+            none;border-bottom:solid windowtext 1.0pt;border-right:solid windowtext 1.0pt;
+            mso-border-top-alt:solid windowtext .5pt;mso-border-left-alt:solid windowtext .5pt;
+            mso-border-alt:solid windowtext .5pt;padding:0cm 5.4pt 0cm 5.4pt">
+                                            <p class="MsoNormal" align="center" style="text-align:center;tab-stops:162.0pt"><b style="mso-bidi-font-weight:normal"><span style="font-family:&quot;Calibri&quot;,sans-serif">21<o:p></o:p></span></b></p>
+                                        </td>
+                                    </tr>
+                                    <tr style="mso-yfti-irow:3;mso-yfti-lastrow:yes">
+                                        <td width="130" valign="top" style="width:77.95pt;border:solid windowtext 1.0pt;
+            border-top:none;mso-border-top-alt:solid windowtext .5pt;mso-border-alt:
+            solid windowtext .5pt;padding:0cm 5.4pt 0cm 5.4pt">
+                                            <p class="MsoNormal" align="center" style="text-align:center;tab-stops:162.0pt"><b style="mso-bidi-font-weight:normal"><span style="font-family:&quot;Calibri&quot;,sans-serif">TOTAL<o:p></o:p></span></b></p>
+                                        </td>
+                                        <td width="142" valign="top" style="width:3.0cm;border-top:none;border-left:
+            none;border-bottom:solid windowtext 1.0pt;border-right:solid windowtext 1.0pt;
+            mso-border-top-alt:solid windowtext .5pt;mso-border-left-alt:solid windowtext .5pt;
+            mso-border-alt:solid windowtext .5pt;padding:0cm 5.4pt 0cm 5.4pt">
+                                            <p class="MsoNormal" align="center" style="text-align:center;tab-stops:162.0pt"><b style="mso-bidi-font-weight:normal"><span style="font-family:&quot;Calibri&quot;,sans-serif">64<o:p></o:p></span></b></p>
+                                        </td>
+                                        <td width="142" valign="top" style="width:3.0cm;border-top:none;border-left:
+            none;border-bottom:solid windowtext 1.0pt;border-right:solid windowtext 1.0pt;
+            mso-border-top-alt:solid windowtext .5pt;mso-border-left-alt:solid windowtext .5pt;
+            mso-border-alt:solid windowtext .5pt;padding:0cm 5.4pt 0cm 5.4pt">
+                                            <p class="MsoNormal" align="center" style="text-align:center;tab-stops:162.0pt"><b style="mso-bidi-font-weight:normal"><span style="font-family:&quot;Calibri&quot;,sans-serif">08<o:p></o:p></span></b></p>
+                                        </td>
+                                        <td width="154" valign="top" style="width:92.15pt;border-top:none;border-left:
+            none;border-bottom:solid windowtext 1.0pt;border-right:solid windowtext 1.0pt;
+            mso-border-top-alt:solid windowtext .5pt;mso-border-left-alt:solid windowtext .5pt;
+            mso-border-alt:solid windowtext .5pt;padding:0cm 5.4pt 0cm 5.4pt">
+                                            <p class="MsoNormal" align="center" style="text-align:center;tab-stops:162.0pt"><b style="mso-bidi-font-weight:normal"><span style="font-family:&quot;Calibri&quot;,sans-serif">0<o:p></o:p></span></b></p>
+                                        </td>
+                                        <td width="189" valign="top" style="width:4.0cm;border-top:none;border-left:
+            none;border-bottom:solid windowtext 1.0pt;border-right:solid windowtext 1.0pt;
+            mso-border-top-alt:solid windowtext .5pt;mso-border-left-alt:solid windowtext .5pt;
+            mso-border-alt:solid windowtext .5pt;padding:0cm 5.4pt 0cm 5.4pt">
+                                            <p class="MsoNormal" align="center" style="text-align:center;tab-stops:162.0pt"><b style="mso-bidi-font-weight:normal"><span style="font-family:&quot;Calibri&quot;,sans-serif">56<o:p></o:p></span></b></p>
+                                        </td>
+                                        <td width="154" valign="top" style="width:92.15pt;border-top:none;border-left:
+            none;border-bottom:solid windowtext 1.0pt;border-right:solid windowtext 1.0pt;
+            mso-border-top-alt:solid windowtext .5pt;mso-border-left-alt:solid windowtext .5pt;
+            mso-border-alt:solid windowtext .5pt;padding:0cm 5.4pt 0cm 5.4pt">
+                                            <p class="MsoNormal" align="center" style="text-align:center;tab-stops:162.0pt"><b style="mso-bidi-font-weight:normal"><span style="font-family:&quot;Calibri&quot;,sans-serif">34<o:p></o:p></span></b></p>
+                                        </td>
+                                        <td width="165" valign="top" style="width:99.2pt;border-top:none;border-left:
+            none;border-bottom:solid windowtext 1.0pt;border-right:solid windowtext 1.0pt;
+            mso-border-top-alt:solid windowtext .5pt;mso-border-left-alt:solid windowtext .5pt;
+            mso-border-alt:solid windowtext .5pt;padding:0cm 5.4pt 0cm 5.4pt">
+                                            <p class="MsoNormal" align="center" style="text-align:center;tab-stops:162.0pt"><b style="mso-bidi-font-weight:normal"><span style="font-family:&quot;Calibri&quot;,sans-serif">0<o:p></o:p></span></b></p>
+                                        </td>
+                                        <td width="165" valign="top" style="width:99.2pt;border-top:none;border-left:
+            none;border-bottom:solid windowtext 1.0pt;border-right:solid windowtext 1.0pt;
+            mso-border-top-alt:solid windowtext .5pt;mso-border-left-alt:solid windowtext .5pt;
+            mso-border-alt:solid windowtext .5pt;padding:0cm 5.4pt 0cm 5.4pt">
+                                            <p class="MsoNormal" align="center" style="text-align:center;tab-stops:162.0pt"><b style="mso-bidi-font-weight:normal"><span style="font-family:&quot;Calibri&quot;,sans-serif">22<o:p></o:p></span></b></p>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                            <p class="MsoNormal" style="text-align:justify">
+                                <b style="mso-bidi-font-weight:
+          normal"><span style="font-family:&quot;Calibri&quot;,sans-serif"><o:p>&nbsp;</o:p></span></b>
+                            </p>
+                            <p class="MsoNormal" align="center" style="text-align:center"><span style="font-family:&quot;Calibri&quot;,sans-serif"><o:p>&nbsp;</o:p></span></p>
+                        </td>
+                    </tr>
+                    <tr style="mso-yfti-irow:1;mso-yfti-lastrow:yes;height:137.65pt">
+                        <td width="432" valign="top" style="width:259.0pt;border:solid windowtext 1.0pt;
+          border-top:none;mso-border-top-alt:solid windowtext .5pt;mso-border-alt:solid windowtext .5pt;
+          padding:0cm 5.4pt 0cm 5.4pt;height:137.65pt">
+                            <p class="MsoNormal" align="center" style="text-align:center"><b style="mso-bidi-font-weight:normal"><span style="font-family:&quot;Calibri&quot;,sans-serif"><o:p>&nbsp;</o:p></span></b></p>
+                            <p class="MsoNormal" align="center" style="text-align:center"><b style="mso-bidi-font-weight:normal"><span style="font-family:&quot;Calibri&quot;,sans-serif"><o:p>&nbsp;</o:p></span></b></p>
+                            <p class="MsoNormal" align="center" style="text-align:center"><b style="mso-bidi-font-weight:normal"><span style="font-family:&quot;Calibri&quot;,sans-serif"><o:p>&nbsp;</o:p></span></b></p>
+                            <p class="MsoNormal" align="center" style="text-align:center"><b style="mso-bidi-font-weight:normal"><span style="font-family:&quot;Calibri&quot;,sans-serif"><o:p>&nbsp;</o:p></span></b></p>
+                            <p class="MsoNormal" align="center" style="text-align:center"><b style="mso-bidi-font-weight:normal"><span style="font-family:&quot;Calibri&quot;,sans-serif"><o:p>&nbsp;</o:p></span></b></p>
+                            <p class="MsoNormal" align="center" style="text-align:center">
+                                <b style="mso-bidi-font-weight:normal">
+                                    <span style="font-family:&quot;Calibri&quot;,sans-serif">
+                                        (AJMAL
+                                        SHAHEEN
+                                    </span>
+                                </b><span style="font-size:14.0pt;font-family:&quot;Calibri&quot;,sans-serif">),</span><b style="mso-bidi-font-weight:normal"><span style="font-family:&quot;Calibri&quot;,sans-serif"><o:p></o:p></span></b>
+                            </p>
+                            <p class="MsoNormal" align="center" style="text-align:center"><b><span style="font-size:14.0pt;font-family:&quot;Calibri&quot;,sans-serif">OG-II/ TEAM HEAD,<o:p></o:p></span></b></p>
+                            <p class="MsoNormal" align="center" style="text-align:center">
+                                <b style="mso-bidi-font-weight:normal">
+                                    <span style="font-family:&quot;Calibri&quot;,sans-serif">
+                                        CAMP
+                                        AT ZTBL, CHHONA WALA,
+                                    </span>
+                                </b><b>
+                                    <span style="font-size:14.0pt;font-family:
+          &quot;Calibri&quot;,sans-serif"><o:p></o:p></span>
+                                </b>
+                            </p>
+                            <p class="MsoNormal" align="center" style="text-align:center"><b style="mso-bidi-font-weight:normal"><span style="font-family:&quot;Calibri&quot;,sans-serif">BRANCH.</span></b><span style="font-size:14.0pt;font-family:&quot;Calibri&quot;,sans-serif"><o:p></o:p></span></p>
+                        </td>
+                        <td width="343" valign="top" style="width:205.55pt;border-top:none;border-left:
+          none;border-bottom:solid windowtext 1.0pt;border-right:solid windowtext 1.0pt;
+          mso-border-top-alt:solid windowtext .5pt;mso-border-left-alt:solid windowtext .5pt;
+          mso-border-alt:solid windowtext .5pt;padding:0cm 5.4pt 0cm 5.4pt;height:137.65pt">
+                            <p class="MsoNormal" align="center" style="text-align:center"><span style="font-family:&quot;Calibri&quot;,sans-serif"><o:p>&nbsp;</o:p></span></p>
+                            <p class="MsoNormal" align="center" style="text-align:center"><span style="font-family:&quot;Calibri&quot;,sans-serif"><o:p>&nbsp;</o:p></span></p>
+                            <p class="MsoNormal" align="center" style="text-align:center"><span style="font-family:&quot;Calibri&quot;,sans-serif"><o:p>&nbsp;</o:p></span></p>
+                            <p class="MsoNormal" align="center" style="text-align:center"><span style="font-family:&quot;Calibri&quot;,sans-serif"><o:p>&nbsp;</o:p></span></p>
+                            <p class="MsoNormal" align="center" style="text-align:center"><b style="mso-bidi-font-weight:normal"><span style="font-family:&quot;Calibri&quot;,sans-serif"><o:p>&nbsp;</o:p></span></b></p>
+                            <p class="MsoNormal" align="center" style="text-align:center">
+                                <b style="mso-bidi-font-weight:normal">
+                                    <span style="font-family:&quot;Calibri&quot;,sans-serif">
+                                        MUHAMMAD
+                                        ZAFAR IQBAL<span style="mso-spacerun:yes">&nbsp; </span><o:p></o:p>
+                                    </span>
+                                </b>
+                            </p>
+                            <p class="MsoNormal" align="center" style="text-align:center"><b style="mso-bidi-font-weight:normal"><span style="font-family:&quot;Calibri&quot;,sans-serif">MANAGER,<o:p></o:p></span></b></p>
+                            <p class="MsoNormal" align="center" style="text-align:center">
+                                <b style="mso-bidi-font-weight:normal">
+                                    <span style="font-family:&quot;Calibri&quot;,sans-serif">
+                                        ZTBL,
+                                        CHHONA WALA,<o:p></o:p>
+                                    </span>
+                                </b>
+                            </p>
+                            <p class="MsoNormal" align="center" style="text-align:center"><b style="mso-bidi-font-weight:normal"><span style="font-family:&quot;Calibri&quot;,sans-serif">BRANCH.<o:p></o:p></span></b></p>
+                        </td>
+                        <td width="390" valign="top" style="width:233.85pt;border-top:none;border-left:
+          none;border-bottom:solid windowtext 1.0pt;border-right:solid windowtext 1.0pt;
+          mso-border-top-alt:solid windowtext .5pt;mso-border-left-alt:solid windowtext .5pt;
+          mso-border-alt:solid windowtext .5pt;padding:0cm 5.4pt 0cm 5.4pt;height:137.65pt">
+                            <p class="MsoNormal" align="center" style="text-align:center"><span style="font-family:&quot;Calibri&quot;,sans-serif"><o:p>&nbsp;</o:p></span></p>
+                            <p class="MsoNormal" align="center" style="text-align:center;mso-layout-grid-align:
+          none;text-autospace:none"><span style="font-family:&quot;Calibri&quot;,sans-serif"><o:p>&nbsp;</o:p></span></p>
+                            <p class="MsoNormal" align="center" style="text-align:center;mso-layout-grid-align:
+          none;text-autospace:none"><span style="font-family:&quot;Calibri&quot;,sans-serif"><o:p>&nbsp;</o:p></span></p>
+                            <p class="MsoNormal" align="center" style="text-align:center;mso-layout-grid-align:
+          none;text-autospace:none"><span style="font-family:&quot;Calibri&quot;,sans-serif"><o:p>&nbsp;</o:p></span></p>
+                            <p class="MsoNormal" align="center" style="text-align:center"><span style="font-family:&quot;Calibri&quot;,sans-serif"><o:p>&nbsp;</o:p></span></p>
+                            <p class="MsoNormal" align="center" style="text-align:center">
+                                <b style="mso-bidi-font-weight:normal">
+                                    <span style="font-family:&quot;Calibri&quot;,sans-serif">
+                                        SYED
+                                        HASSAN ABBAS RIZVI,<o:p></o:p>
+                                    </span>
+                                </b>
+                            </p>
+                            <p class="MsoNormal" align="center" style="text-align:center">
+                                <b style="mso-bidi-font-weight:normal">
+                                    <span style="font-size:11.0pt;font-family:
+          &quot;Calibri&quot;,sans-serif">ZONAL CHIEF,<o:p></o:p></span>
+                                </b>
+                            </p>
+                            <p class="MsoNormal" align="center" style="text-align:center;mso-layout-grid-align:
+          none;text-autospace:none"><b style="mso-bidi-font-weight:normal"><span style="font-family:&quot;Calibri&quot;,sans-serif">ZTBL, BAHAWALPUR ZONE.<o:p></o:p></span></b></p>
+                        </td>
+                        <td width="260" valign="top" style="width:155.95pt;border-top:none;border-left:
+          none;border-bottom:solid windowtext 1.0pt;border-right:solid windowtext 1.0pt;
+          mso-border-top-alt:solid windowtext .5pt;mso-border-left-alt:solid windowtext .5pt;
+          mso-border-alt:solid windowtext .5pt;padding:0cm 5.4pt 0cm 5.4pt;height:137.65pt">
+                            <p class="MsoNormal" align="center" style="text-align:center"><span style="font-family:&quot;Calibri&quot;,sans-serif"><o:p>&nbsp;</o:p></span></p>
+                            <p class="MsoNormal" align="center" style="text-align:center"><span style="font-family:&quot;Calibri&quot;,sans-serif"><o:p>&nbsp;</o:p></span></p>
+                            <p class="MsoNormal" align="center" style="text-align:center"><span style="font-family:&quot;Calibri&quot;,sans-serif"><o:p>&nbsp;</o:p></span></p>
+                            <p class="MsoNormal" align="center" style="text-align:center"><span style="font-family:&quot;Calibri&quot;,sans-serif"><o:p>&nbsp;</o:p></span></p>
+                            <p class="MsoNormal" align="center" style="text-align:center">
+                                <b style="mso-bidi-font-weight:normal">
+                                    <span style="font-size:11.0pt;font-family:
+          &quot;Calibri&quot;,sans-serif"><o:p>&nbsp;</o:p></span>
+                                </b>
+                            </p>
+                            <p class="MsoNormal" align="center" style="text-align:center">
+                                <b style="mso-bidi-font-weight:normal">
+                                    <span style="font-size:11.0pt;font-family:
+          &quot;Calibri&quot;,sans-serif">(RANA QAYYUM LATIF)<o:p></o:p></span>
+                                </b>
+                            </p>
+                            <p class="MsoNormal" align="center" style="text-align:center">
+                                <b style="mso-bidi-font-weight:normal">
+                                    <span style="font-size:11.0pt;font-family:
+          &quot;Calibri&quot;,sans-serif">INCHARGE,<o:p></o:p></span>
+                                </b>
+                            </p>
+                            <p class="MsoNormal" align="center" style="text-align:center">
+                                <b style="mso-bidi-font-weight:normal">
+                                    <span style="font-size:11.0pt;font-family:
+          &quot;Calibri&quot;,sans-serif">AUDIT Cluster,<o:p></o:p></span>
+                                </b>
+                            </p>
+                            <p class="MsoNormal" align="center" style="text-align:center">
+                                <b style="mso-bidi-font-weight:normal">
+                                    <span style="font-family:&quot;Calibri&quot;,sans-serif">
+                                        ZTBL,
+                                        BAHAWAL PUR.<o:p></o:p>
+                                    </span>
+                                </b>
+                            </p>
+                        </td>
+                    </tr>
+                </tbody>
+
+</table>
+            <p class="MsoNormal"><span style="font-family:&quot;Calibri&quot;,sans-serif"><o:p>&nbsp;</o:p></span></p>
+
+            <p class="MsoNormal"><span style="font-family:&quot;Calibri&quot;,sans-serif"><o:p>&nbsp;</o:p></span></p>
+
+            <p class="MsoNormal"><span style="font-family:&quot;Calibri&quot;,sans-serif"><o:p>&nbsp;</o:p></span></p>
+        -->
+    </div>

@@ -1,0 +1,231 @@
+﻿@{
+    var page_id = ViewData["PageId"] as int? ?? 0;
+}
+
+@{
+    ViewData["Title"] = "Manage Checklist";
+    Layout = "_Layout";
+}
+<style type="text/css">
+    .container {
+        max-width: 100%;
+    }
+
+    .card-header {
+        background-color: transparent !important;
+        font-size: 20px;
+        height: 100px;
+    }
+
+    .icon-card {
+        margin: 10px;
+    }
+</style>
+<script type="text/javascript">
+    var g_procId = 0;
+    var g_subProcId = 0;
+    var g_subProcList=[];
+    $(document).ready(function () {
+        $("#searchTableRecord").on("keyup", function () {
+            var value = $(this).val().toLowerCase();
+            $("#listOfDepartment tbody tr").filter(function () {
+                $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1)
+            });
+        });
+    });
+
+
+    
+    function openUpdateSubCheclist(id, text, seq, weight) {
+        g_subProcId=id;
+        $('#updateEntityModal').modal('show');
+        $('#entCodeField').val(text);
+        $('#entSeqField').val(seq);
+        $('#entWeightField').val(weight);
+        
+    }
+    function reloadLocation(){
+        window.location.reload();
+    }
+
+    function updateSubProcess() {
+        if (document.querySelectorAll('input.alnum-only.is-invalid').length > 0) {
+            Swal.fire({ icon: "error", title: "Validation error", text: "Please correct highlighted fields." });
+            return;
+        }
+        if ($('#entCodeField').val()==""){
+            alert("Please enter Checklist Title");
+            return;
+        }
+
+        if ($('#entSeqField').val() == "") {
+            alert("Please enter Risk Sequence");
+            return;
+        }
+
+        if ($('#entWeightField').val() == "") {
+            alert("Please enter Risk Weightage");
+            return;
+        }
+      
+        if (g_subProcId !=0){
+            $.ajax({
+                url: g_asiBaseURL + "/ApiCalls/update_audit_checklist",
+                type: "POST",
+                data: {
+                    'PROCESS_ID': g_subProcId,
+                    'HEADING': $('#entCodeField').val(),
+                    'RISK_SEQUENCE': $('#entSeqField').val(),
+                    'RISK_WEIGHTAGE': $('#entWeightField').val(),
+                    'ACTIVE': $('#entActiveField').val() 
+                },
+                cache: false,
+                success: function (data) {
+                    alert(data.message);
+                    onAlertCallback(reloadLocation);
+                },
+                dataType: "json",
+            });
+        }else{
+            $.ajax({
+                url: g_asiBaseURL + "/ApiCalls/add_audit_checklist",
+                type: "POST",
+                data: {
+                    'HEADING': $('#entCodeField').val(),
+                    'ENTITY_TYPE_ID': 6, //Hardcoded 6 for Branch,
+                    'RISK_SEQUENCE': $('#entSeqField').val(),
+                    'RISK_WEIGHTAGE': $('#entWeightField').val(),
+                    'ACTIVE': $('#entActiveField').val(),
+                },
+                cache: false,
+                success: function (data) {
+                    alert(data.message);
+                    onAlertCallback(reloadLocation);
+                },
+                dataType: "json",
+            });
+        }
+      
+    }
+
+    function addNewCheckList(id) {
+        g_subProcId = id;
+        $('#updateEntityModal').modal('show');
+        $('#entCodeField').val('');
+        $('#entSeqField').val('');
+        $('#entWeightField').val('');
+    }
+</script>
+<div class="row mt-3">
+    <div class="col-md-6 text-left">
+        <h3 style=" display:block;color: #be0e43">Audit Checklist </h3>
+    </div>
+    <div class="col-md-6 text-right" style="padding-right:45px;">
+        <button onclick="addNewCheckList(0);"  class="btn btn-danger">Add New Checklist</button>
+    </div>
+    
+</div>
+<div class="row col-md-12 mt-3">
+    <table id="auditeeEntitiesList" class="table table-bordered table mb-0 mt-3 bg-white table-hover table-striped">
+        <thead>
+            <tr style="background-color: #19875478 !important; ">
+                <th class="col-md-auto">Sr No.</th>
+                <th class="col-md-auto">Checklist</th>
+                <th class="col-md-auto">Risk Sequence</th>
+                <th class="col-md-auto">Weightage</th>
+                <th class="col-md-auto">Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            @{
+                if (ViewData["ChecklistTypes"] != null)
+                {
+                    int SrNo = 1;
+
+                    foreach (var item in (dynamic)(ViewData["ChecklistTypes"]))
+                    {
+
+                        <tr>
+                            <td class="text-center">@SrNo</td>
+                            <td class="col-md-auto">@item.HEADING</td>
+                            <td class="col-md-auto">@item.RISK_SEQUENCE</td>
+                            <td class="col-md-auto">@item.RISK_WEIGHTAGE</td>
+                            <td style="cursor:pointer;">
+                                <a class="text-danger" onclick="openUpdateSubCheclist( @item.T_ID, '@item.HEADING', '@item.RISK_SEQUENCE','@item.RISK_WEIGHTAGE' )">Update</a>
+                            </td>
+                        </tr>
+                        SrNo= @SrNo + 1;
+
+                    }
+                    
+                }
+            }
+        </tbody>
+
+    </table>
+</div>
+
+
+<div id="updateEntityModal" class="modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">Add/Update Checklist</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form>
+                    
+                    <div class="row col-md-12 mt-3">
+                        <div class="row col-md-4">
+                            <label>Heading <small class="text-muted">(A-Z, 0-9, space, &amp;, ?)</small></label>
+                        </div>
+                        <div class="row col-md-8">
+                            <input id="entCodeField" class="form-control alnum-only" type="text" data-allow-space="true" data-allow-amp="true" maxlength="150" title="Enter only Alphabets (A-Z), numbers (0-9), spaces, ampersand (&amp;), comma (,), and question mark (?)" placeholder="Alphabets, numbers, spaces, ampersand (&amp;), comma (,), and question mark (?) only" />
+                            <small class="form-text text-muted">Enter only Alphabets (A-Z), numbers (0-9), spaces, ampersand (&amp;), comma (,), and question mark (?).</small>
+                            <div class="invalid-feedback">Enter only Alphabets (A-Z), numbers (0-9), spaces, ampersand (&amp;), comma (,), and question mark (?).</div>
+                        </div>
+                    </div>
+                       <div class="row col-md-12 mt-3">
+                        <div class="row col-md-4">
+                            <label>Risk Sequence</label>
+                        </div>
+                        <div class="row col-md-8">
+                            <input id="entSeqField" min="0" oninput="validity.valid||(value='');" class="form-control" type="number" />
+                        </div>
+                    </div>
+                    <div class="row col-md-12 mt-3">
+                        <div class="row col-md-4">
+                            <label>Weightage</label>
+                        </div>
+                        <div class="row col-md-8">
+                            <input id="entWeightField" class="form-control" type="number" />
+                        </div>
+                    </div>
+                    <div class="row col-md-12 mt-3">
+                        <div class="row col-md-4">
+                            <label>Is Active</label>
+                        </div>
+                        <div class="row col-md-8">
+                            <select id="entActiveField" class="form-control">
+                                <option value="Y">Yes</option>
+                                <option value="N">No</option>
+                            </select>
+                           
+                        </div>
+                    </div>
+
+                   
+
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button onclick="updateSubProcess();" type="button" data-bs-dismiss="modal" class="btn btn-success">Save Changes</button>
+
+            </div>
+        </div>
+    </div>
+</div>

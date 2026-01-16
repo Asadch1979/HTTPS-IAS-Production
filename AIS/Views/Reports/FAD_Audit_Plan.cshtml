@@ -1,0 +1,259 @@
+﻿@{
+    var page_id = ViewData["PageId"] as int? ?? 0;
+}
+
+@{
+    ViewData["Title"] = "FAD_Audit_Plan_Report";
+    Layout = "_Layout";
+}
+
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/1.5.3/jspdf.min.js"></script>
+<script type="text/javascript" src="https://html2canvas.hertzen.com/dist/html2canvas.js"></script>
+<style type="text/css">
+    .container {
+        max-width: 100%;
+    }
+
+    .card-header {
+        background-color: transparent !important;
+        font-size: 20px;
+        height: 100px;
+    }
+
+    .icon-card {
+        margin: 10px;
+    }
+</style>
+
+<script type="text/javascript">
+    function CreatePDFfromHTML() {
+        $('#wait').show
+
+        var HTML_Width = $(".reportsec").width();
+        var HTML_Height = $(".reportsec").height();
+        var top_left_margin = 15;
+        var PDF_Width = HTML_Width + (top_left_margin * 2);
+        var PDF_Height = (PDF_Width * 1.5) + (top_left_margin * 2);
+        var canvas_image_width = HTML_Width;
+        var canvas_image_height = HTML_Height;
+
+        var totalPDFPages = Math.ceil(HTML_Height / PDF_Height) - 1;
+
+        html2canvas($(".reportsec")[0]).then(function (canvas) {
+            var imgData = canvas.toDataURL("image/jpeg", 1.0);
+            var pdf = new jsPDF('p', 'pt', [PDF_Width, PDF_Height]);
+            pdf.addImage(imgData, 'JPG', top_left_margin, top_left_margin, canvas_image_width, canvas_image_height);
+            for (var i = 1; i <= totalPDFPages; i++) {
+                pdf.addPage(PDF_Width, PDF_Height);
+                pdf.addImage(imgData, 'JPG', top_left_margin, -(PDF_Height * i) + (top_left_margin * 4), canvas_image_width, canvas_image_height);
+            }
+            pdf.save("Report.pdf");
+            $('#wait').hide()
+            //  $(".WordSection1").hide();
+        });
+    }
+
+    function getauditplanreport() {
+        var sr = 1;
+
+        var entityid = $("#entitySelectField option:selected").attr("id");
+        var zoneid = $("#ZoneSelectField option:selected").attr("id");
+        var risk = $('#RiskSelectField').val();
+        var size =$("#SizeSelectField option:selected").attr("id");
+
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/GetFADAuditPlan",
+            type: "POST",
+            data: {
+                'ENT_ID': entityid,
+                'Z_ID': zoneid,
+                'RISK': risk,
+                'SIZE': size
+            },
+            cache: false,
+            success: function (data) {
+
+
+                $.each(data, function (i, v) {
+                    console.log(data);
+                  //  g_teamMembers.push(v.teaM_MEM_PPNO);
+                    
+                    $('#tentative_plan_list tbody').append('<tr><td class="text-center" style="font-size:xx-small">' + sr + '</td><td class="text-center" style="font-size:xx-small">' + v.auditeename + '</td><td class="text-center" style="font-size:xx-small">' + v.entitycode + '</td><td class="text-center" style="font-size:xx-small">' + v.auditedby + '</td><td class="text-center" style="font-size:xx-small">' + v.parrentoffice + '</td><td class="text-center" style="font-size:xx-small">' + v.lastauditopsendate + '</td><td class="text-center" style="font-size:xx-small">' + v.entityrisk + '</td><td class="text-center" style="font-size:xx-small">' + v.entitysize + '</td><td class="text-center" style="font-size:xx-small">' + v.normaldays + '</td><td class="text-center" style="font-size:xx-small">' + v.revenuedays + '</td><td class="text-center" style="font-size:xx-small">' + v.travelday + '</td><td class="text-center" style="font-size:xx-small">' + v.discussionday + '</td><td class="text-center" style="font-size:xx-small">' + v.auditstartdate + '</td><td class="text-center" style="font-size:xx-small">' + v.auditenddate + '</td><td class="text-center" style="font-size:xx-small">' + v.tname + '</td><td class="text-center" style="font-size:xx-small">' + v.teamlead + '</td></tr>');
+                    //
+                    sr++;
+                });
+
+
+
+
+
+            },
+            dataType: "json",
+        });
+
+
+    }
+
+
+</script>
+<div class="reportsec">
+    <div class="row col-md-12 mt-3">
+        <h3 style="color: #be0e43">FAD Audit Plan Report</h3>
+    </div>
+    <div class="row col-md-12 mt-2">
+        <div style=" width:155px">
+            <label for="periodStartModalField"><b>Auditable Entity</b><span class="text-danger">*</span></label>
+        </div>
+        <div class=" col-md-5 mr-1">
+            <select id="entitySelectField" onchange="" class="form-control form-select">
+                <option value="0" id="0">--Select Auditable Entity--</option>
+           
+
+
+
+                @{ 
+                    if(ViewData["FADEntityList"]!=null)
+
+                    {
+                        foreach (var item in (dynamic)(ViewData["FADEntityList"]))
+                {
+                        <option id="@item.ENTITY_ID">@item.ENTITY_NAME</option>
+                }
+                    }
+
+                }
+
+
+            </select>
+        </div>
+
+        <div style=" width:135px">
+            <label for="periodEndModalField"><b>Audit Cluster</b><span class="text-danger">*</span></label>
+        </div>
+        <div style=" width:535px">
+            <select id="ZoneSelectField" onchange="" class="form-control form-select">
+                <option value="0" id="0">--Select Audit Cluster--</option>
+
+                @{
+                    if (ViewData["FADZoneList"] != null)
+
+                    {
+                        foreach (var item in (dynamic)(ViewData["FADZoneList"]))
+                        {
+                            <option id="@item.ENTITY_ID">@item.ENTITY_NAME</option>
+                        }
+                    }
+
+                }
+            </select>
+        </div>
+    </div>
+    <div class="row col-md-12 mt-2">
+        <div style=" width:155px">
+            <label for="periodStartModalField"><b>Branch Rating</b><span class="text-danger">*</span></label>
+        </div>
+        <div class=" col-md-5 mr-1">
+            <select id="RiskSelectField" onchange="" class="form-control form-select">
+                <option value="0" id="0">--Select Branch Rating--</option>
+
+                @{
+                    if (ViewData["FADEntityRisk"] != null)
+
+                    {
+                        foreach (var item in (dynamic)(ViewData["FADEntityRisk"]))
+                        {
+                            <option id="@item.R_ID" value="@item.RATING">@item.DESCRIPTION</option>
+                        }
+                    }
+
+                }
+
+            </select>
+        </div>
+
+        <div style=" width:135px">
+            <label for="periodEndModalField"><b>Branch Size</b><span class="text-danger">*</span></label>
+        </div>
+        <div style=" width:535px">
+            <select id="SizeSelectField" onchange="" class="form-control form-select">
+                <option value="0" id="0">--Select Branch Size--</option>
+                @{
+                    if (ViewData["FADEntitySize"] != null)
+
+                    {
+                        foreach (var item in (dynamic)(ViewData["FADEntitySize"]))
+                        {
+                            <option id="@item.ENTITY_SIZE">@item.DESCRIPTION</option>
+                        }
+                    }
+
+                }
+            </select>
+        </div>
+    </div>
+
+
+
+    <div class="row col-md-12 mt-1">
+        <button id="findButton" onclick="getauditplanreport();" class="btn btn-danger" style="margin-left:auto;">Search</button>
+
+    </div>
+
+    <div class="row col-md-12 mt-3">
+        <input class="form-control" id="searchTableRecord" type="text" placeholder="Search Results..">
+    </div>
+
+
+    <div class="row col-md-12 mt-1">
+        <table id="tentative_plan_list" class="table table-hover table-bordered table-hover mt-3 table-striped">
+            <thead style="background-color: #19875478 !important; ">
+                <tr style="text-align:center">
+                    <th class="col-md-auto" style="font-size: x-small" rowspan="2">Sr No</th>
+                    <th class="col-md-auto" style="font-size: x-small" rowspan="2">Auditable Entity</th>
+                    <th class="col-md-auto" style="font-size: x-small" rowspan="2">Branch Code</th>
+                    <th class="col-md-auto" style="font-size: x-small" rowspan="2">Audit Cluster</th>
+                    <th style="font-size: x-small; width:10px" rowspan="2">Operational Zone</th>
+                    <th class="col-md-auto" style="font-size: x-small" rowspan="2">Last Audit Period End (Operational Period)</th>
+
+                    <th class="col-md-auto" style="font-size: x-small" rowspan="2">Branch Rating (High, Low, Medium)</th>
+                    <!-- <th class="col-md-auto" style="font-size: x-small" rowspan="2">Outstanding portfolio of branch (In Millions)</th>
+                    -->
+                    <th class="col-md-auto" style="font-size: x-small" rowspan="2">Branch Size (Small/Medium/Large)</th>
+                    <th class="col-md-auto" style="font-size: x-small" colspan="4">Working days</th>
+                    <th class="col-md-auto" style="font-size: x-small" colspan="2">Schedule of Audit</th>
+
+                    <th class="col-md-2" style="font-size: x-small" colspan="2">Constitution of  Team</th>
+                </tr>
+                <tr style="text-align:center">
+
+
+
+                    <td class="col-md-auto" style="font-size: x-small" rowspan="2">Days for Normal Audit</td>
+                    <td class="col-md-auto" style="font-size: x-small" rowspan="2">Days for Checking of revenue Record/ Utilization/Spot Visit  </td>
+                    <td class="col-md-auto" style="font-size: x-small" rowspan="2">Journey Day</td>
+                    <td class="col-md-auto" style="font-size: x-small" rowspan="2">Discussion Day</td>
+
+
+
+
+                    <td class="col-md-auto" style="font-size: x-small" rowspan="2">Journey day</td>
+                    <td class="col-md-auto" style="font-size: x-small" rowspan="2">Start date (From)</td>
+
+
+                    <td class="col-md-auto" style="font-size: x-small" rowspan="2">Team Name</td>
+                    <td class="col-md-auto" style="font-size: x-small" rowspan="2">Team Lead</td>
+
+                </tr>
+
+
+            </thead>
+            <tbody>
+                
+            </tbody>
+        </table>
+
+    </div>
+</div>
+<div class="col-md-12 offset-md-12 mt-4">
+    <button class="btn btn-danger" style="float:right; margin-bottom:10px;" onclick="CreatePDFfromHTML();">Download/Print Report</button>
+</div>

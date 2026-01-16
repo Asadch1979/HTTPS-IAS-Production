@@ -1,0 +1,191 @@
+﻿@{
+    var page_id = ViewData["PageId"] as int? ?? 0;
+}
+
+@{
+    ViewData["Title"] = "Task List";
+    Layout = "_Layout";
+}
+<style type="text/css">
+    .strike-out {
+        text-decoration: line-through !important;
+    }
+    #taskListTable th,
+    #taskListTable td {
+        text-align: left !important;
+    }
+</style>
+<div class="container-fluid mt-4">
+    <div class="row">
+        <div class="col-md-12">
+            <h3 class="text-success">Task List/Job Assignment</h3>
+            <p class="mb-1"><strong>Job Assigned To:</strong> @ViewData["EMP_NAME"]</p>
+            <p class="mb-3"><strong>PP. No.</strong> @ViewData["PPNumber"]</p>
+        </div>
+        <div class="col-md-12">
+            <div class="card shadow-sm">
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                    <table id="taskListTable" class="table table-hover table-bordered table-striped table-sm mb-0 w-100">
+                        <thead style="background-color: #19875478 !important; ">
+                            <tr>
+                                <th class="font-weight-bold text-center" width="5%">Sr. No</th>
+                                <th class="col-md-auto font-weight-bold text-left">Audit Entity</th>
+                                <th class="col-md-auto font-weight-bold text-center">Start Date</th>
+                                <th class="col-md-auto font-weight-bold text-center">End Date</th>
+                                <th class="col-md-auto font-weight-bold text-black">Stage</th>
+                                <th colspan="5" class="col-md-auto font-weight-bold text-center">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @{
+                                if (ViewData["TaskList"] != null)
+                                {
+
+                                    var index = 1;
+                                    foreach (var item in (dynamic)(ViewData["TaskList"]))
+                                    {
+                                        var sDate = item.AUDIT_START_DATE.ToString();
+                                        var eDate = item.AUDIT_END_DATE.ToString();
+
+                                        <tr>
+                                            <td class="text-center" style="width:50px">@index</td>
+                                            <td class="col-md-auto text-center">@item.ENTITY_NAME</td>
+                                            <td class="col-md-1 text-center">@sDate.Split(" ")[0]</td>
+                                            <td class="col-md-1 text-center">@eDate.Split(" ")[0]</td>
+                                            <td class="col-md-1 text-center">
+                                                    <span class="badge text-bg-danger rounded-pill d-inline" style="color: red" >@item.ENG_STATUS</span>
+                                            </td>
+                                            <td class="text-hover text-danger text-center">
+                                                @{
+
+                                                    if (item.STATUS_ID == 1)
+                                                    {
+                                                        <a href="../Engagement/Join?engId=@item.ENG_PLAN_ID">@item.ENG_NEXT_STATUS</a>
+                                                    }
+                                                    else if (item.STATUS_ID == 2)
+                                                    {
+                                                        if (item.ENTITY_TYPE == 6 || item.ENTITY_TYPE == 28)
+                                                        {
+                                                            <a href="../Execution/checklist?engId=@item.ENG_PLAN_ID">@item.ENG_NEXT_STATUS</a>
+                                                        }
+                                                        else if (item.ENTITY_TYPE == 5 || item.ENTITY_TYPE == 7 || item.ENTITY_TYPE == 17 || item.ENTITY_TYPE == 20 || item.ENTITY_TYPE == 21 || item.ENTITY_TYPE == 22 || item.ENTITY_TYPE == 23 || item.ENTITY_TYPE == 25)
+                                                        {
+                                                            <a href="../Execution/cau_observation?engId=@item.ENG_PLAN_ID">@item.ENG_NEXT_STATUS</a>
+                                                        }
+                                                        else
+                                                        {
+                                                            <a href="../Execution/audit_execution?engId=@item.ENG_PLAN_ID">@item.ENG_NEXT_STATUS</a>
+                                                        }
+
+                                                    }
+                                                    else if (item.STATUS_ID == 3)
+                                                    {
+                                                        if (item.ENTITY_TYPE == 6 || item.ENTITY_TYPE == 28)
+                                                        {
+                                                            <a href="../Execution/manage_observations_branches?engId=@item.ENG_PLAN_ID">@item.ENG_NEXT_STATUS</a>
+                                                        }
+                                                        else if (item.ENTITY_TYPE == 5 || item.ENTITY_TYPE == 7 || item.ENTITY_TYPE == 17 || item.ENTITY_TYPE == 20 || item.ENTITY_TYPE == 21 || item.ENTITY_TYPE == 22 || item.ENTITY_TYPE == 23 || item.ENTITY_TYPE == 25)
+                                                        {
+                                                            <a href="../Execution/manage_observations_branches?engId=@item.ENG_PLAN_ID">@item.ENG_NEXT_STATUS</a>
+                                                        }
+                                                        else
+                                                        {
+                                                            <a href="../Execution/manage_observations?engId=@item.ENG_PLAN_ID">@item.ENG_NEXT_STATUS</a>
+                                                        }
+
+                                                    }
+                                                    else if (item.STATUS_ID == 4)
+                                                    {
+                                                        if (item.ENTITY_TYPE == 6 || item.ENTITY_TYPE == 28)
+                                                        {
+                                                            <a href="../Reports/draft_audit_report_branch?engId=@item.ENG_PLAN_ID">@item.ENG_NEXT_STATUS</a>
+                                                        }
+                                                        else if (item.ENTITY_TYPE == 5 || item.ENTITY_TYPE == 7 || item.ENTITY_TYPE == 17 || item.ENTITY_TYPE == 20 || item.ENTITY_TYPE == 21 || item.ENTITY_TYPE == 22 || item.ENTITY_TYPE == 23 || item.ENTITY_TYPE == 25)
+                                                        {
+                                                            <a href="../Reports/draft_audit_report_branch?engId=@item.ENG_PLAN_ID">@item.ENG_NEXT_STATUS</a>
+                                                        }
+                                                        else
+                                                        {
+                                                            <a href="../Reports/draft_audit_report?engId=@item.ENG_PLAN_ID">@item.ENG_NEXT_STATUS</a>
+                                                        }
+
+                                                    }
+                                                    else if (item.STATUS_ID == 5)
+                                                    {
+                                                        <a href="#">Meeting with Managment</a>
+                                                    }
+                                                    else
+                                                    {
+                                                        <span>-</span>
+                                                    }
+                                                }
+                                            </td>
+                                            <td class="col-md-1 text-center">
+                                                @{
+                                                    if (item.WORKING_PAPER.Trim().Length > 0)
+                                                    {
+                                                        <a href="../WorkingPaper/loan_case_file?engId=@item.ENG_PLAN_ID">@item.WORKING_PAPER</a>
+                                                    }
+                                                    else
+                                                    {
+                                                        <span>-</span>
+                                                    }
+                                                }
+
+                                            </td>
+
+
+                                            <td class="col-md-1 text-center">
+                                                @{
+                                                    if (item.PRE_INFO.Trim().Length > 0)
+                                                    {
+                                                        <a href="../sampling/list_reports?engId=@item.ENG_PLAN_ID">Execption Reports</a>
+                                                    }
+                                                    else
+                                                    {
+                                                        <a href="../sampling/list_reports?engId=@item.ENG_PLAN_ID">Execption Reports</a>
+                                                    }
+                                                }
+
+                                            </td>
+                                            <td class="col-md-1 text-center">
+
+                                                <a href="../sampling/list_samples?engId=@item.ENG_PLAN_ID">Audit Sampling</a>
+
+
+                                            </td>
+                                            <td class="col-md-1 text-center">
+                                                @{
+                                                    if (item.ISCLOSE == "Z")
+                                                    {
+                                                        <a href="../Execution/closing?engId=@item.ENG_PLAN_ID">Closing/Exit</a>
+                                                    }
+                                                    else
+                                                    {
+                                                        <span>-</span>
+                                                    }
+                                                }
+
+                                            </td>
+                                        </tr>
+                                        index++;
+                                    }
+                                }
+                            }
+                        </tbody>
+                    </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script type="text/javascript">
+        $(document).ready(function () {
+            initializeDataTable('taskListTable');
+        });
+    </script>
+}

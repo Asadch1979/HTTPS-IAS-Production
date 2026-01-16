@@ -1,0 +1,186 @@
+﻿@{
+    ViewData["Title"] = "FAD New Old Para Performance";
+    Layout = "_Layout";
+}
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/1.5.3/jspdf.min.js"></script>
+<script type="text/javascript" src="https://html2canvas.hertzen.com/dist/html2canvas.js"></script>
+<script>
+    $(document).ready(function () {
+        $("#searchTableRecord").on("keyup", function () {
+            var value = $(this).val().toLowerCase();
+            $("#zoneiwseperformance tbody tr").filter(function () {
+                $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1)
+            });
+        });
+    });
+
+    function getReportContents(){
+        $('#zoneiwseperformance tbody').empty();
+        if ($('#ZoneSelectField option:selected').val() != -1) {
+            $.ajax({
+                url: g_asiBaseURL + "/ApiCalls/get_fad_new_old_para_performance",
+                type: "POST",
+                data: {
+                    'AUDIT_ZONE_ID': $('#ZoneSelectField option:selected').val()
+                },
+                cache: false,
+                success: function (data) {
+                  
+                    $.each(data, function (i, v) {
+                        $('#zoneiwseperformance tbody').append(' <tr><td class="text-center">' + v.Checklist + '</td><td>' + v.Total_Paras + '</td><td>' + v.nature + '</td><td class="d-none entity_name_field">' + v.entitY_NAME + '</td><td class="d-none period_name_field">' + v.period + '</td><td>' + v.obS_RISK + '</td><td>' + v.obS_STATUS + '</td><td class="text-center"><a onclick="event.preventDefault();ObservationViewerPanel(' + v.obS_ID + ',' + v.obS_STATUS_ID + ', ' + v.obS_RISK_ID + ')" href="#" class="text-hover">View Memo</a></td></tr>');
+                    });
+                  
+
+
+                },
+                dataType: "json",
+            });
+
+        }
+    }
+
+    function CreatePDFfromHTML() {
+        $('#wait').show();
+
+        var HTML_Width = $(".reportsec").width();
+        var HTML_Height = $(".reportsec").height();
+        var top_left_margin = 15;
+        var PDF_Width = HTML_Width + (top_left_margin * 2);
+        var PDF_Height = (PDF_Width * 1.5) + (top_left_margin * 2);
+        var canvas_image_width = HTML_Width;
+        var canvas_image_height = HTML_Height;
+
+        var totalPDFPages = Math.ceil(HTML_Height / PDF_Height) - 1;
+
+        html2canvas($(".reportsec")[0]).then(function (canvas) {
+            var imgData = canvas.toDataURL("image/jpeg", 1.0);
+            var pdf = new jsPDF('p', 'pt', [PDF_Width, PDF_Height]);
+            pdf.addImage(imgData, 'JPG', top_left_margin, top_left_margin, canvas_image_width, canvas_image_height);
+            for (var i = 1; i <= totalPDFPages; i++) {
+                pdf.addPage(PDF_Width, PDF_Height);
+                pdf.addImage(imgData, 'JPG', top_left_margin, -(PDF_Height * i) + (top_left_margin * 4), canvas_image_width, canvas_image_height);
+            }
+            pdf.save("Report.pdf");
+            $('#wait').hide()
+            //  $(".WordSection1").hide();
+        });
+    }
+</script>
+
+<div class="col-md-12 reportsec">
+    <div class="col-md-10  mx-auto">
+        <div class="row col-md-12 mt-3">
+            <h3 style=" display:block;color: #be0e43">AUDIT PERIOD STARTING FROM 1ST JAN,2023 TILL TO-DATE</h3>
+        </div>
+        <div class="row col-md-8">
+             <div class="col-md-3">
+                <label for="periodEndModalField"><b>Process</b><span class="text-danger">*</span></label>
+            </div>
+            <div class="col-md-5">
+            <select id="ZoneSelectField" onchange="" class="form-control form-select">
+                <option value="-1" id="-1">--Select Process--</option>
+                @{
+                    if (ViewData["FADZoneList"] != null)
+
+                    {
+                        foreach (var item in (dynamic)(ViewData["FADZoneList"]))
+                        {
+                            <option id="@item.ENTITY_ID">@item.ENTITY_NAME</option>
+                        }
+                    }
+
+                }
+            </select>
+        </div>
+      
+
+        </div>
+        <div class="row col-md-8 mt-3">
+            <div class="col-md-3">
+                <label for="periodEndModalField"><b>Area</b><span class="text-danger">*</span></label>
+            </div>
+            <div class="col-md-5">
+                <select id="ZoneSelectField" onchange="" class="form-control form-select">
+                    <option value="-1" id="-1">--Select Area--</option>
+                    @{
+                        if (ViewData["FADZoneList"] != null)
+
+                        {
+                            foreach (var item in (dynamic)(ViewData["FADZoneList"]))
+                            {
+                                <option id="@item.ENTITY_ID">@item.ENTITY_NAME</option>
+                            }
+                        }
+
+                    }
+                </select>
+            </div>
+             <div class="col-md-4 justify-content-center">
+            <button onclick="getReportContents();" class="btn btn-danger w-50"> Find </button>
+        </div>
+
+        </div>
+
+       
+
+        <div class="row col-md-12 mt-3 mb-2">
+
+            <input class="form-control" id="searchTableRecord" type="text" placeholder="Search Results..">
+
+        </div>
+
+        <div class="row col-md-12 mt-3">
+            <table id="zoneiwseperformance" class="table table-hover table-bordered table-hover mt-3 table-striped">
+                <thead style="background-color: #19875478 !important; ">
+                    <tr>
+
+
+                        <th class="col-md-auto `">Sr. No.</th>
+                        <th class="col-md-auto">Process</th>
+                        <th class="col-md-auto text-center">Total Paras</th>
+                        <th class="col-md-auto text-center">On Spot Settled<br /> (Before issueance of Final Report)</th>
+                        <th class="col-md-auto text-center">Un-Settled Para <br /> (In Final Report)</th>
+                        <th class="col-md-auto text-center">Ratio</th>
+                        <th class="col-md-auto text-center">R1</th>
+                        <th class="col-md-auto text-center">R2</th>
+                        <th class="col-md-auto text-center">R3</th>
+
+                    </tr>
+                </thead>
+                <tbody>
+                    @{
+                        if (ViewData["NEWPARAPERFORMANCE"] != null)
+                        {
+
+                            var index = 1;
+                            foreach (var item in (dynamic)(ViewData["NEWPARAPERFORMANCE"]))
+                            {
+
+                                        <tr>
+                                            <td style="text-align:center;">@index</td>
+                                            <td>@item.Checklist</td>
+                                            <td style="text-align:right;">@item.Total_Paras</td>
+                                            <td style="text-align:right;">@item.Setteled_Para</td>
+                                            <td style="text-align:right;">@item.Unsetteled_Para</td>
+                                            <td style="text-align:right;">@item.Ratio</td>
+                                            <td style="text-align:right;color:red;">@item.R1</td>
+                                            <td style="text-align:right; color:yellow;">@item.R2</td>
+                                            <td style="text-align:right; color:green;">@item.R3</td>
+                                        </tr>
+                                index++;
+                            }
+                        }
+                    }
+                </tbody>
+
+            </table>
+        </div>
+
+        <div class="col-md-12  mt-4">
+            <div style="display:flex; flex-direction:row-reverse">
+                <button id="printPreview_btn" class="btn btn-danger" onclick="CreatePDFfromHTML();">Download Report/Print</button>
+            </div>
+
+        </div>
+    </div>
+</div>

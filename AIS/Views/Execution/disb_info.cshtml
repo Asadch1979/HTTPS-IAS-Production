@@ -1,0 +1,115 @@
+﻿@{
+    var page_id = ViewData["PageId"] as int? ?? 0;
+}
+
+@{
+    ViewData["Title"] = "Fresh Disbursement Information";
+    Layout = "_Layout";
+}
+
+<style type="text/css">
+    .container {
+        max-width: 100%;
+    }
+
+    .card-header {
+        background-color: transparent !important;
+        font-size: 20px;
+        height: 100px;
+    }
+
+    .icon-card {
+        margin: 10px;
+    }
+</style>
+
+<script type="text/javascript">
+
+    $(document).ready(function () {
+
+        getb_depositinfo();
+
+        $('#sidebar_policy').hide();
+        $("#searchTableRecord").on("keyup", function () {
+            var value = $(this).val().toLowerCase();
+            $("#b_d_T tbody tr").filter(function () {
+                $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1)
+            });
+        });
+
+
+    });
+
+    function getb_depositinfo() {
+
+        var bid = $('#b_i').val();
+        if (bid != 0) {
+            $.ajax({
+                url: g_asiBaseURL + "/ApiCalls/GetBranchDesbursementaccountdetails",
+                type: "POST",
+                data: {
+                    'b_id': bid
+                },
+                cache: false,
+                success: function (data) {
+                    console.log(data);
+                    $('#b_d_T tbody').empty();
+                    $.each(data, function (i, v) {
+                        $('#b_d_T tbody').append('<tr><td>' + v.loaN_CASE_NO + '</td><td class="pr-2">' + v.cnic + '</td><td>' + v.customername + '</td><td>' + v.disburseD_AMOUNT + '</td><td>' + v.prin + '</td><td>' + v.markup + '</td><td>' + v.disB_DATE.split('T')[0] + '</td>  <td>' + v.disB_STATUSID + '</td> </tr>')
+                    });
+                },
+                dataType: "json",
+            });
+        }
+    }
+
+
+
+
+</script>
+<div class="row col-md-12 mt-3">
+    <h4 style="display: block; color: #be0e43">Fresh Disbursement Information</h4>
+</div>
+
+<!--<div class="row col-md-12 mt-1">
+
+    <div class="row col-md-6 mt-1">
+        <label><b>Branch ID</b></label>
+        <input id="b_i" class="form-control ml-1" type="number" />
+    </div>
+</div>
+<div class="row col-md-12 mt-3">
+    <button onclick="getb_depositinfo();" class="btn btn-primary">Find</button>
+</div>
+-->
+
+
+<div class="row col-md-12">
+    <input class="form-control" id="searchTableRecord" type="text" placeholder="Search..">
+</div>
+
+<div class="row col-md-12 mt-3">
+    <table id="b_d_T" class="table table-hover table-bordered table-hover mt-3 table-striped">
+        <thead style="background-color: #19875478 !important; ">
+            <tr>
+              
+                <th class="col-md-1">LC #</th>
+                <th class="col-md-1">CNIC</th>
+                <th class="col-md-2">CUSTOMER NAME</th>
+                <th class="col-md-2">DISB AMOUNT</th>
+                <th class="col-md-1">PRINCIPLE</th>
+                <th class="col-md-1">MARKUP</th>
+                <th class="col-md-1">DISB DATE</th>
+                <th class="col-md-2">DISB STATUS ID</th>
+            </tr>
+        </thead>
+        <tbody style="font-size:small">
+        </tbody>
+    </table>
+
+    <div class="row col-md-12 mt-3">
+
+        <button onclick="history.back()" class="btn btn-primary" style="color:white">Return</button>
+
+    </div>
+</div>

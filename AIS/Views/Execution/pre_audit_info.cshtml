@@ -1,0 +1,100 @@
+﻿@{
+    var page_id = ViewData["PageId"] as int? ?? 0;
+}
+
+@{
+    ViewData["Title"] = "Pre Audit Information";
+    Layout = "_Layout";
+}
+
+<style type="text/css">
+
+    .card-header {
+        background-color: transparent !important;
+        font-size: 20px;
+        height: 100px;
+    }
+
+    .icon-card {
+        margin: 10px;
+    }
+</style>
+<script type="text/javascript">
+
+    var g_engId = 0;  
+
+
+    $(document).ready(function () {
+
+        var url_string = window.location;
+        var url = new URL(url_string);
+        var eng_id = url.searchParams.get("engId");
+        if (typeof eng_id != 'undefined')
+            g_engId = eng_id;
+    });
+</script>
+
+
+<div class="row col-md-12 mt-3">
+    <div class="col-md-12">
+        <h4 style="display: block; color: #be0e43">Pre Audit Information</h4>
+    </div>
+    </div>
+
+
+    <div class="row col-md-12 mt-3 btn-group">
+
+        <div class="row col-md-3 mt-3">
+
+        <div class="col-md-12">
+            <button type="button" class="col-md-12 mt-2  btn btn-success text-left" onclick="window.location.href ='/reports/glhead_yearwise_summary?engId='+g_engId;">GLHead Summary(Yearly Comparison)</button>
+        </div>
+        <div class="col-md-12">
+            <button type="button" class="col-md-12   btn btn-success text-left" onclick="window.location.href = '/reports/glhead_summary?engId='+g_engId;">GL Head Transaction Details (GL Move)</button>
+        </div>
+        <div class="col-md-12">
+            <button type="button" class="col-md-12  btn btn-success text-left" onclick="window.location.href = '/Reports/income_expenditure?engId='+g_engId;">BranchWise Income And Expend Info.</button>
+        </div>
+
+    </div>
+    <div class="row col-md-3 mt-3">
+        <div class="col-md-12">
+            <button type="button" class="col-md-12 mt-2 btn btn-success text-left" onclick="window.location.href = '/Execution/loan_scheme?engId='+g_engId;">Loan Scheme Wise</button>
+        </div>
+
+        <div class="col-md-12">
+            <button type="button" class="col-md-12 mt-2 btn btn-success text-left" onclick="window.location.href = '/Execution/loan_scheme_yearly?engId='+g_engId;">Loan Scheme Yearly Comparison</button>
+        </div>
+        <div class="col-md-12">
+            <button type="button" class="col-md-12 mt-2 btn btn-success text-left" onclick="window.location.href = '/Execution/loan_case_details?type=live&engId='+g_engId;">Live loan Cases</button>
+        </div>
+        <div class="col-md-12">
+            <button type="button" class="col-md-12 mt-2 btn btn-success text-left" onclick="window.location.href = '/Execution/loan_case_details?type=close&engId='+g_engId;">Closed Loan Cases During Oper Period</button>
+        </div>
+
+        <div class="col-md-12">
+            <button type="button" class="col-md-12 mt-2 btn btn-success text-left" onclick="window.location.href = '/Execution/loan_case_document?engId='+g_engId;">Loan Case Documents</button>
+        </div>
+        <div class="col-md-12">
+            <button type="button" class="col-md-12 mt-2 btn btn-success text-left" onclick="window.location.href = '/Execution/disb_info?engId='+g_engId;">Disbursement (Fresh Disb Information)</button>
+        </div>
+    </div>
+    <div class="row col-md-3 mt-3">
+        <div class="col-md-12">
+            <button type="button" class="col-md-12 mt-2 btn btn-success text-left" onclick="window.location.href = '/Execution/deposit_account?engId='+g_engId;">Deposit Account (Categ Wise Details)</button>
+        </div>
+        <div class="col-md-12">
+            <button type="button" class="col-md-12 mt-2 btn btn-success text-left" onclick="window.location.href = '/Execution/branch_deposit_info?engId='+g_engId;">Deposit Account (with Balance)</button>
+        </div>
+
+
+        </div>
+
+
+    <div class="row col-md-3 mt-3">
+        <div class="col-md-12">
+            <button type="button" class="col-md-12 mt-2 btn btn-success text-left" onclick="window.location.href = '/Execution/staff_pos_info?engId='+g_engId;">Staff Position Information (ZTBL Only)</button>
+        </div>
+    </div>
+
+    </div>

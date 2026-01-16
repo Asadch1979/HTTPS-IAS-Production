@@ -1,0 +1,150 @@
+﻿@{
+    var page_id = ViewData["PageId"] as int? ?? 0;
+}
+
+@{
+    ViewData["Title"] = "Deposit Accounts";
+    Layout = "_Layout";
+}
+
+<style type="text/css">
+    .container {
+        max-width: 100%;
+    }
+
+    .card-header {
+        background-color: transparent !important;
+        font-size: 20px;
+        height: 100px;
+    }
+
+    .icon-card {
+        margin: 10px;
+    }
+</style>
+
+<script type="text/javascript">
+
+    $(document).ready(function () {
+
+        getb_depositinfo();
+
+        $('#sidebar_policy').hide();
+        $("#searchTableRecord").on("keyup", function () {
+            var value = $(this).val().toLowerCase();
+            $("#b_d_T tbody tr").filter(function () {
+                $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1)
+            });
+        });
+
+
+    });
+
+    function getb_depositinfo() {
+
+        var bid = $('#b_i').val();
+        if (bid != 0) {
+            $.ajax({
+                url: g_asiBaseURL + "/ApiCalls/get",
+                type: "POST",
+                data: {
+                    'b_id': bid
+                },
+                cache: false,
+                success: function (data) {
+                    console.log(data);
+                    $('#b_d_T tbody').empty();
+                    $.each(data, function (i, v) {
+                        $('#b_d_T tbody').append('<tr><td>' + v.branchid + '</td><td>' + v.loaN_CASE_NO + '</td><td class="pr-2">' + v.cnic + '</td><td>' + v.customername + '</td><td>' + v.disburseD_AMOUNT + '</td><td>' + v.prin + '</td><td>' + v.markup + '</td><td>' + v.disB_DATE.split('T')[0] + '</td>  <td>' + v.disB_STATUSID + '</td> </tr>')
+                    });
+                },
+                dataType: "json",
+            });
+        }
+    }
+
+
+
+
+</script>
+<div class="row col-md-12 mt-3">
+    <h4 style="display: block; color: #be0e43">Deposit Accounts</h4>
+</div>
+
+<!--<div class="row col-md-12 mt-1">
+
+    <div class="row col-md-6 mt-1">
+        <label><b>Branch ID</b></label>
+        <input id="b_i" class="form-control ml-1" type="number" />
+    </div>
+</div>
+<div class="row col-md-12 mt-3">
+    <button onclick="getb_depositinfo();" class="btn btn-primary">Find</button>
+</div>
+-->
+
+
+<div class="row col-md-12">
+    <input class="form-control" id="searchTableRecord" type="text" placeholder="Search..">
+</div>
+
+<div class="row col-md-12 mt-3">
+    <table id="b_d_T" class="table table-hover table-bordered table-hover mt-3 table-striped">
+        <thead style="background-color: #19875478 !important; ">
+            <tr>
+                <th class="col-md-1">Branch Name</th>
+                <th class="col-md-1">Account Category</th>
+                <th class="col-md-1">Account Status</th>
+          
+                <th class="col-md-2">Amount</th>
+                <th class="col-md-2">Action</th>
+
+
+            </tr>
+        </thead>
+        <tbody>
+            @{
+                if (ViewData["Depositcat"] != null)
+                {
+
+
+                    foreach (var item in (dynamic)(ViewData["Depositcat"]))
+                    {
+
+                     
+
+                        <tr>
+
+                            <td class="gl_id">
+                                <p class="fw-normal mb-1">@item.BRANCH_NAME</p>
+                            </td>
+                            <td class="gl_des">
+                                <p class="fw-normal mb-1">@item.ACCOUNTCATEGORY</p>
+                            </td>
+                         
+                            <td class="run_crt">
+                                <p class="fw-normal mb-1">@item.ACCOCUNTSTATUS</p>
+
+                            </td>
+                            <td class="run_deb; text-right">
+                                <p class="fw-normal mb-1">@item.AMOUNT</p>
+                            </td>
+                         
+
+
+                            <td>
+                                <a href='../execution/deposit_account_details?acccatid=@item.ACCOUNTCATEGORYID'>Details</a>
+                            </td>
+
+                        </tr>
+                    }
+                }}
+        </tbody>
+    </table>
+
+    <div class="row col-md-12 mt-3">
+
+        <button onclick="history.back()" class="btn btn-primary" style="color:white">Return</button>
+
+    </div>
+</div>

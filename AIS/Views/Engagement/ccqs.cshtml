@@ -1,0 +1,208 @@
+﻿@{
+    ViewData["Title"] = "CCQs";
+    Layout = "_Layout";
+}
+<script type="text/javascript">
+    $(document).ready(function () {
+        ShowEmployeeContainer();
+        $("#searchTeamFormation").on("keyup", function () {
+            var value = $(this).val().toLowerCase();
+            $("#listOfEmployeeTeam tbody tr").filter(function () {
+                $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1)
+            });
+        });
+
+    });
+
+    function ShowEmployeeContainer() {
+        //console.log($('#deptSelectionBox option:selected').val());
+        if ($('#deptSelectionBox option:selected').val() == 0)
+            $('#listOfEmployeeTeam tbody').empty();
+        else {
+            $('#listOfEmployeeTeam tbody').empty();
+            $.ajax({
+                url: g_asiBaseURL + "/ApiCalls/GetAuditTeam",
+                type: "POST",
+                data: {
+                    'dept_code': $('#deptSelectionBox option:selected').val()
+                },
+                cache: false,
+                success: function (data) {
+                    //console.log(data);
+                    var teamId = 0;
+                    var srNo = 1;
+                    var teamMembers = [];
+                    $.each(data, function (index, team) {
+
+                        if (team.iS_TEAMLEAD == "Y") {
+                            $('#listOfEmployeeTeam tbody').append('<tr id=teamcode_' + team.code + '><td class="searchable"><p class="fw-normal mb-1">' + srNo + '</p></td><td class="searchable"><p class="fw-normal mb-1">' + team.name + ' </p></td><td class="searchable"><p class="empName fw-normal mb-1">' + team.employeename + ' </p></td><td class="empMembers"></td><td> <small onclick="event.preventDefault();deleteTeam(\'' + team.code + '\');" class="text-danger deleteTeam">Delete</small></td></tr>');
+                        } else {
+                            teamMembers.push(team);
+                            if (team.code != teamId) {
+                                teamId = team.code;
+                                srNo++;
+                            }
+                        }
+                    });
+                    $.each(teamMembers, function (index, team) {
+                        if (team.iS_TEAMLEAD != "Y") {
+                            prevText = $('#listOfEmployeeTeam tbody #teamcode_' + team.code + ' .empMembers').html();
+                            if (prevText != '')
+                                prevText += ", ";
+                            $('#listOfEmployeeTeam tbody #teamcode_' + team.code + ' .empMembers').text(prevText + team.employeename);
+                        }
+                    });
+                },
+                dataType: "json",
+            });
+        }
+    }
+    function addccq() {
+        $('#teamNameModalField').val('');
+        $('#teamCodeModalField').val('');
+        $.each($('.participantcheckboxes'), function (index, member) { $(member).attr('checked', false); });
+        $.each($('.teamleadradio'), function (index, member) { $(member).attr('checked', false); });
+
+        $('#setupAuditTeam').modal('show');
+    }
+    function publishNewTeamChanges() {
+
+
+        var teamCode = $('#teamCodeModalField').val()
+        if (teamCode == '') {
+            alert('Enter Sr. No.');
+            return false;
+        }
+        var Entity = $('#EntityModalField').val();
+
+        if (Entity == '') {
+            alert('Enter Entity');
+            return false;
+        }
+        var Question = $('#QuestionModalField').val();
+        if (Question == '') {
+            alert('Enter Question');
+            return false;
+        }
+        var ControlViolation = $('#ControlViolationModalField').val();
+                if (ControlViolation == '') {
+            alert('Enter Control Violation');
+            return false;
+        }
+        var Risk = $('#RiskModalField').val();
+                if (Risk == '') {
+            alert('Enter Risk');
+            return false;
+        }
+                var Status = $('#StatusModalField').val();
+                if (Status == '') {
+            alert('Enter Status');
+            return false;
+        }
+        ;
+
+
+
+
+
+    }
+    function deleteTeam(teamCode) {
+
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/DeleteAuditTeam",
+            type: "POST",
+            data: {
+                'T_CODE': teamCode
+            },
+            cache: false,
+            success: function (data) {
+                window.location = window.location.pathname;
+            },
+            dataType: "json",
+        });
+
+
+    }
+</script>
+<div class="row col-md-12">
+    <div class="row col-md-8 mt-3">
+        <h4 style=" display:block;color: #be0e43" class="mt-2">Compliance & Control Questionnaire</h4>
+    </div>
+    <div class="col-md-4 mt-3">
+        <button onclick="addccq();" class="btn btn-danger" style="float:right;">Add CCQ</button>
+    </div>
+</div>
+
+<div class="row col-md-12">
+    <table class="table table-bordered mb-0 mt-3 bg-white table-hover table-striped" id="Reply">
+        <thead style=" background-color: #19875478 !important; ">
+            <tr>
+                <th class="col-md-1">Sr. No.</th>
+                <th class="col-md-2">Audit Entity</th>
+                <th class="col-md-2">Reference</th>
+                <th class="col-md-3">Questions</th>
+                <th class="col-md-2">Control Violation</th>
+                <th class="col-md-2">Risk</th>
+                <th class="col-md-2">Status</th>
+            </tr>
+        </thead>
+        <tbody>
+          
+        </tbody>
+    </table>
+</div>
+
+<div id="setupAuditTeam" class="modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog  modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">New Questionaire</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form>
+                    <div class="form-group">
+                        <label for="teamCodeModalField">Sr. No.</label>
+                        <input type="number" class="form-control" id="teamCodeModalField" aria-describedby="brcode" placeholder="Sr. No.">
+
+                    </div>
+                    <div class="form-group">
+                        <label for="branchCodeModalField">Audit Entity</label>
+                        <input type="text" class="form-control" id="teamNameModalField" aria-describedby="brcode" placeholder="Entity">
+
+                    </div>
+                                        <div class="form-group">
+                        <label for="branchCodeModalField">Question</label>
+                        <input type="text" class="form-control" id="teamNameModalField" aria-describedby="brcode" placeholder="Question">
+
+                    </div>
+                                        <div class="form-group">
+                        <label for="branchCodeModalField">Control Violation</label>
+                        <input type="text" class="form-control" id="teamNameModalField" aria-describedby="brcode" placeholder="Control Violation">
+                    </div>
+                                   <div class="form-group">
+                        <label for="branchCodeModalField">Risk</label>
+                        <input type="text" class="form-control" id="teamNameModalField" aria-describedby="brcode" placeholder="Risk">
+
+                    </div>
+                                        <div class="form-group">
+                        <label for="branchCodeModalField">Status</label>
+                        <input type="text" class="form-control" id="teamNameModalField" aria-describedby="brcode" placeholder="Status">
+
+                    </div>
+
+
+
+
+
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button onclick="publishNewTeamChanges();" type="button" class="btn btn-danger">Save changes</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>

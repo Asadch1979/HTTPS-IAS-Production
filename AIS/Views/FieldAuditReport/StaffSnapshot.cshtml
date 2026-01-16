@@ -1,0 +1,134 @@
+@model AIS.Models.FieldAuditReport.FieldAuditInputSectionViewModel
+
+@{
+    ViewData["Title"] = "Branch Profile / Key Statistics";
+    Layout = "_Layout";
+    var engagementSelector = ViewData["EngagementSelector"] as AIS.Models.FieldAuditReport.FieldAuditEngagementSelectorViewModel;
+    var hasEngagement = engagementSelector?.HasActiveEngagement ?? false;
+}
+
+@functions {
+    private string FieldValue(string key)
+        {
+        return Model?.Fields != null && Model.Fields.TryGetValue(key, out var value) ? value : string.Empty;
+        }
+}
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <h3 class="mb-3">Branch Profile / Key Statistics</h3>
+        </div>
+    </div>
+
+    @await Html.PartialAsync("_GetEngagementSelector", engagementSelector)
+
+    @if (!hasEngagement)
+    {
+        <div class="alert alert-warning">Select an engagement to work with branch profile and key statistics.</div>
+    }
+
+    @if (TempData["FieldAuditReportMessage"] != null)
+    {
+        <div class="alert alert-info">@TempData["FieldAuditReportMessage"]</div>
+    }
+
+    @if (Model.IsReadOnly)
+    {
+        <div class="alert alert-warning">This report is FINAL and cannot be edited.</div>
+    }
+
+    @if (hasEngagement)
+    {
+        <form method="post" asp-action="SaveFieldAuditInputs">
+            <input type="hidden" name="EngagementId" value="@Model.EngagementId" />
+            <input type="hidden" name="EntityId" value="@Model.EntityId" />
+            <input type="hidden" name="SectionCode" value="@Model.SectionCode" />
+            <input type="hidden" name="returnAction" value="StaffSnapshot" />
+
+            <div class="table-responsive mb-4">
+                <table class="table table-bordered align-middle">
+                    <thead>
+                        <tr>
+                            <th colspan="5">Branch Profile / Key Statistics</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <th colspan="2">Staff Strength</th>
+                            <th>Date of Branch Opening</th>
+                            <td colspan="2"><input class="form-control" name="Fields[FIELD_034]" value="@FieldValue("FIELD_034")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                        </tr>
+                        <tr>
+                            <td></td>
+                            <td></td>
+                            <th>Current Audit Rating</th>
+                            <td colspan="2"><input class="form-control" name="Fields[FIELD_035]" value="@FieldValue("FIELD_035")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                        </tr>
+                        <tr>
+                            <th>VP</th>
+                            <td><input class="form-control" name="Fields[FIELD_036]" value="@FieldValue("FIELD_036")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                            <th>Previous Audit rating</th>
+                            <td colspan="2"><input class="form-control" name="Fields[FIELD_037]" value="@FieldValue("FIELD_037")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                        </tr>
+                        <tr>
+                            <th>AVP</th>
+                            <td><input class="form-control" name="Fields[FIELD_038]" value="@FieldValue("FIELD_038")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                            <th>Audit Report Date</th>
+                            <td colspan="2"><input class="form-control" name="Fields[FIELD_039]" value="@FieldValue("FIELD_039")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                        </tr>
+                        <tr>
+                            <th>OG-I</th>
+                            <td><input class="form-control" name="Fields[FIELD_040]" value="@FieldValue("FIELD_040")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                            <th>Audit Fieldwork Date</th>
+                            <td colspan="2"><input class="form-control" name="Fields[FIELD_041]" value="@FieldValue("FIELD_041")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                        </tr>
+                        <tr>
+                            <th>OG-II</th>
+                            <td><input class="form-control" name="Fields[FIELD_042]" value="@FieldValue("FIELD_042")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                            <th>Audit cutoff date or Audit Period</th>
+                            <td><input class="form-control" name="Fields[FIELD_043]" value="@FieldValue("FIELD_043")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                            <td>Annual/Surprise/Special <input class="form-control d-inline-block w-auto" name="Fields[FIELD_044]" value="@FieldValue("FIELD_044")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                        </tr>
+                        <tr>
+                            <th>OG-III</th>
+                            <td><input class="form-control" name="Fields[FIELD_045]" value="@FieldValue("FIELD_045")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                        </tr>
+                        <tr>
+                            <th>Sr. Assistant</th>
+                            <td><input class="form-control" name="Fields[FIELD_046]" value="@FieldValue("FIELD_046")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                            <td colspan="3">Internal Auditor(s) <input class="form-control d-inline-block w-auto" name="Fields[FIELD_047]" value="@FieldValue("FIELD_047")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                        </tr>
+                        <tr>
+                            <th>Assist/Typist</th>
+                            <td><input class="form-control" name="Fields[FIELD_048]" value="@FieldValue("FIELD_048")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                            <td colspan="3">Mr.<input class="form-control d-inline-block w-auto" name="Fields[FIELD_049]" value="@FieldValue("FIELD_049")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                        </tr>
+                        <tr>
+                            <th>Non-Clerical Staff</th>
+                            <td><input class="form-control" name="Fields[FIELD_050]" value="@FieldValue("FIELD_050")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                            <td colspan="3">Mr. <input class="form-control d-inline-block w-auto" name="Fields[FIELD_051]" value="@FieldValue("FIELD_051")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                        </tr>
+                        <tr>
+                            <th>KSSL Staff</th>
+                            <td><input class="form-control" name="Fields[FIELD_052]" value="@FieldValue("FIELD_052")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="d-flex flex-wrap gap-2">
+                <a class="btn btn-outline-secondary" href="@Url.Action("NarrativeSections")">Back</a>
+                <button type="submit" class="btn btn-primary" name="submitAction" value="save" @(Model.IsReadOnly ? "disabled" : string.Empty)>Save Draft</button>
+                <button type="submit" class="btn btn-outline-success" name="submitAction" value="complete" @(Model.IsReadOnly ? "disabled" : string.Empty)>Mark Section Complete</button>
+                <a class="btn btn-outline-secondary" href="@Url.Action("KpiSnapshot")">Next Section</a>
+            </div>
+        </form>
+    }
+</div>

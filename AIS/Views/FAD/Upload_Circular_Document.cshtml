@@ -1,0 +1,33 @@
+﻿@{
+    var page_id = ViewData["PageId"] as int? ?? 0;
+}
+
+@{
+    ViewData["Title"] = "Upload Circular Document";
+    Layout = "_Layout";
+}
+
+<h4>Upload Circular Documents (PDF/JPEG)</h4>
+<form id="uploadForm" enctype="multipart/form-data">
+    <input type="number" id="circularId" name="circularId" required placeholder="Circular ID" class="form-control mb-2" />
+    <input type="file" id="files" name="files" multiple accept=".pdf,.jpg,.jpeg" required class="form-control mb-2" />
+    <button class="btn btn-primary" type="submit">Upload</button>
+</form>
+<div id="result" class="mt-3"></div>
+@section Scripts {
+    <script>
+        $("#uploadForm").submit(function(e){
+            e.preventDefault();
+            var formData = new FormData(this);
+            $.ajax({
+                url: "/ApiCalls/UploadCircularFiles",
+                type: "POST",
+                data: formData,
+                processData: false,
+                contentType: false,
+                success: function(resp){ $("#result").html('<span class="text-success">'+resp+'</span>'); },
+                error: function(xhr){ $("#result").html('<span class="text-danger">'+xhr.responseText+'</span>'); }
+            });
+        });
+    </script>
+}

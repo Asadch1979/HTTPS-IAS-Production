@@ -1,0 +1,154 @@
+﻿@{
+    var page_id = ViewData["PageId"] as int? ?? 0;
+}
+
+@{
+    ViewData["Title"] = "Paras Settlement Report";
+    Layout = "_Layout";
+}
+
+<script type="text/javascript">
+
+    $(document).ready(function () {
+
+        $('#entitySelectField').select2();
+
+    });
+
+    function getSettledParas() {
+        if ($('#selectFromDate').val() == "") {
+            alert("Please select From Date to proceed");
+            return;
+        }
+        if ($('#selectEndDate').val() == "") {
+            alert("Please select End Date to proceed");
+            return;
+        }
+        if ($.fn.DataTable.isDataTable('#settled_paras')) {
+            $('#settled_paras').DataTable().clear().destroy();
+        }
+        $('#settled_paras tbody').empty();
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/get_settled_paras_for_compliance_report",
+            type: "POST",
+            data: {
+                "ENTITY_TYPE_ID": $('#entitySelectField').val(),
+                "DATE_FROM": $('#selectFromDate').val(),
+                "DATE_TO": $('#selectEndDate').val()
+            },
+            cache: false,
+            success: function (data) {
+
+                $.each(data, function (index, row) {
+                    if (row.settleD_ON != "")
+                        row.settleD_ON = row.settleD_ON.split(" ")[0];
+                    $('#settled_paras tbody').append('<tr><td>' + ++index + '</td><td>' + row.reportinG_OFFICE + '</td><td>' + row.placE_OF_POSTING + '</td> <td>' + row.audiT_PERIOD + '</td><td>' + row.parA_NO + '</td><td>' + row.gist + '</td><td>' + row.auditeD_BY + '</td><td>' + row.settleD_ON + '</td></tr>');
+
+                });
+
+                $('#settled_paras').DataTable({
+                    dom: '<"top"lfB>rt<"bottom"ip><"clear">',
+                    buttons: [
+                        {
+                            extend: 'excelHtml5',
+                            text: 'Export to Excel',
+                            className: 'btn btn-success',
+                            exportOptions: {
+                                columns: function (idx, data, node) {
+                                    // Exclude columns with the class 'hide-export'
+                                    return !$(node).hasClass('hide-export');
+                                }
+                            }
+                        },
+                        {
+                            extend: 'pdfHtml5',
+                            text: 'Export To PDF',
+                            className: 'btn btn-danger',
+                            exportOptions: {
+                                columns: function (idx, data, node) {
+                                    // Exclude columns with the class 'hide-export'
+                                    return !$(node).hasClass('hide-export');
+                                }
+                            }
+                        }
+                    ],
+                    lengthMenu: [
+                        [10, 50, 100, -1],
+                        [10, 50, 100, "All"]
+                    ]
+                });
+
+            },
+            dataType: "json",
+        });
+
+
+    }
+</script>
+
+<div class="row col-md-12 mt-3">
+    <h3 style="color: #be0e43">Paras Settlement Report</h3>
+</div>
+
+<div class="row col-md-12 mt-3">
+
+    <div class="row col-md-12 mt-3">
+        <div class="col-md-1">
+            <label><b>Entity:</b></label>
+        </div>
+        <div class="col-md-11">
+            <select id="entitySelectField" class="form-control form-select">
+                <option value="0" id="0">-All-</option>
+                @{
+                    if (ViewData["EntityTypesList"] != null)
+                    {
+                        foreach (var item in (dynamic)(ViewData["EntityTypesList"]))
+                        {
+                            <option value="@item.AUTID" id="@item.AUTID">@item.ENTITYTYPEDESC</option>
+                        }
+                    }
+                }
+
+            </select>
+        </div>
+    </div>
+
+
+    <div class="row col-md-12 mt-3">
+        <div class="col-md-1">
+            <label><b>From:</b></label>
+        </div>
+        <div class="col-md-5">
+            <input type="date" id="selectFromDate" class="form-control" />
+        </div>
+        <div class="col-md-1">
+            <label><b>To:</b></label>
+        </div>
+        <div class="col-md-5">
+            <input type="date" id="selectEndDate" class="form-control" />
+        </div>
+    </div>
+    <div class="row col-md-12 mt-3">
+        <button onclick="getSettledParas();" class="btn btn-danger col-md-2 offset-md-10">Find</button>
+    </div>
+</div>
+<div class="row col-md-12 mt-3">
+
+    <table id="settled_paras" class="table table-hover table-bordered table-hover mt-3 table-striped">
+        <thead style="background-color: #19875478 !important; ">
+            <tr>
+                <th class="col-md-auto">Sr. No.</th>
+                <th class="col-md-auto">Reporting Office</th>
+                <th class="col-md-auto">Entity Name</th>
+                <th class="col-md-auto">Audit Period</th>
+                <th class="col-md-auto">Para No</th>
+                <th class="col-md-auto">Gist</th>
+                <th class="col-md-auto">Settled By</th>
+                <th class="col-md-auto">Settled On</th>
+            </tr>
+        </thead>
+        <tbody>
+        </tbody>
+    </table>
+</div>
+

@@ -1,0 +1,210 @@
+﻿@{
+    var page_id = ViewData["PageId"] as int? ?? 0;
+}
+
+@{
+    ViewData["Title"] = "Add Legacy Para";
+    Layout = "_Layout";
+}
+<script type="text/javascript">
+   
+  
+    function getEntity() {
+        $('#entitySelectField').empty();
+        $('#entitySelectField').append('<option value="0">--Select Audit Entity--</option>');
+        if ($('#entityTypeSelectField').val()!=0){           
+            
+            $.ajax({
+                url: g_asiBaseURL + "/ApiCalls/get_auditee_entities_by_entity_type_id",
+                type: "POST",
+                data: {
+                    'ENTITY_TYPE_ID': $('#entityTypeSelectField').val()
+                },
+                cache: false,
+                success: function (data) {
+                    $.each(data, function (index, v) {
+                        $('#entitySelectField').append('<option value="' + v.typE_ID + '">' + v.entitytypedesc + '</option>');
+                    });
+                },
+
+                dataType: "json",
+            });
+        }
+     
+
+    }
+
+    function resetLegacyParaFields(){
+        $('#entityTypeSelectField').val(0);
+        $('#entitySelectField').val(0);
+        $('#natureSelectField').val(0);
+        $('#yearSelectField').val(0);
+        $('#paraNoField').val('');
+        $('#paragistField').val('');
+        $('#amountField').val('');
+        $('#annexureField').val('');
+        $('#VolumeSelectField').val(0);
+        $('#instancesField').val('');
+
+    }
+
+    function addLegacyParaToDB(){
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/add_new_legacy_para",
+            type: "POST",
+            data: {
+                'ENTITY_TYPE_ID': $('#entityTypeSelectField').val(),
+                'ENTITY_ID': $('#entitySelectField').val(),
+                'NATURE_ID': $('#natureSelectField').val(),
+                'AUDIT_YEAR': $('#yearSelectField').val(),
+                'PARA_NO': $('#paraNoField').val(),
+                'GIST_OF_PARA': $('#paragistField').val(),
+                'AMOUNT': $('#amountField').val(),
+                'ANNEXURE': $('#annexureField').val(),
+                'VOL_I_II': $('#VolumeSelectField').val(),
+                'NO_OF_INSTANCES': $('#instancesField').val()
+            },
+            cache: false,
+            success: function (data) {
+                alert(data.message);
+                resetLegacyParaFields();
+            },
+
+            dataType: "json",
+        });
+    }
+  
+    function reloadLocation() {
+        getLegacyPara();
+    }
+
+   
+</script>
+
+<div class="row">
+    <div class="col-md-12 mt-3">
+        <h3 style=" display:block;color: #be0e43">Add Legacy Paras</h3>
+    </div>
+    <div class="row col-md-12 mt-3">
+        <div class="col-md-1">
+            <label><b>Entity Type:</b></label>
+        </div>
+        <div class="col-md-5">
+            <select id="entityTypeSelectField" onchange="getEntity();" class="form-control form-select">
+                <option value="0" id="0">--Select Audit Entity--</option>
+                @{
+                    if (ViewData["EntitiesTypeList"] != null)
+                    {
+                        foreach (var item in (dynamic)(ViewData["EntitiesTypeList"]))
+                        {
+                            <option value="@item.TYPE_ID" id="@item.TYPE_ID">@item.ENTITYTYPEDESC</option>
+                        }
+                    }
+                }
+
+            </select>
+        </div>
+        <div class="col-md-1">
+            <label><b>Entity:</b></label>
+        </div>
+        <div class="col-md-5">
+            <select id="entitySelectField" class="form-control form-select">
+                <option value="0">--Select Audit Entity--</option>
+            </select>
+        </div>
+    </div>
+   
+    <div class="row col-md-12 mt-3">
+        <div class="col-md-1">
+            <label><b>Nature:</b></label>
+        </div>
+        <div class="col-md-5">
+            <select id="natureSelectField" class="form-control form-select">
+                <option value="0" id="0">--Select Year--</option>
+                @{
+                    if (ViewData["AuditNatureList"] != null)
+                    {
+                        foreach (var item in (dynamic)(ViewData["AuditNatureList"]))
+                        {
+                            <option value="@item.N_ID" id="@item.N_ID">@item.DESCRIPTION</option>
+                        }
+                    }
+                }
+
+            </select>
+        </div>
+        <div class="col-md-1">
+            <label><b>Year:</b></label>
+        </div>
+        <div class="col-md-5">
+            <select id="yearSelectField" class="form-control form-select">
+                <option value="0" id="0">--Select Year--</option>
+                @{
+                    if (ViewData["AuditYearList"] != null)
+                    {
+                        foreach (var item in (dynamic)(ViewData["AuditYearList"]))
+                        {
+                            <option value="@item.AUDITPERIODID" id="@item.AUDITPERIODID">@item.DESCRIPTION</option>
+                        }
+                    }
+                }
+
+            </select>
+        </div>
+    </div>
+
+    <div class="row col-md-12 mt-3">
+        <div class="col-md-1">
+            <label><b>Para No:</b></label>
+        </div>
+        <div class="col-md-5">
+          <input id="paraNoField" placeholder="Para No." type="text" class="form-control" />
+        </div>
+        <div class="col-md-1">
+            <label><b>Vol I-II:</b></label>
+        </div>
+        <div class="col-md-5">
+            <select id="VolumeSelectField" class="form-control form-select">
+                <option value="0" id="0">--Select Volume--</option>
+                <option value="Vol-I">Vol I</option>
+                <option value="Vol-II">Vol II</option>
+               
+            </select>
+        </div>
+    </div>
+    <div class="row col-md-12 mt-3">
+        <div class="col-md-1">
+            <label><b>Gist of Para:</b></label>
+        </div>
+        <div class="col-md-11">
+            <textarea placeholder="Gist of Para" id="paragistField" class="form-control" rows="3"></textarea>
+            
+        </div>      
+    </div>
+    <div class="row col-md-12 mt-3">
+        <div class="col-md-1">
+            <label><b>Annexure:</b></label>
+        </div>
+        <div class="col-md-3">
+            <input id="annexureField" placeholder="Annexure Details" type="text" class="form-control" />
+        </div>
+        <div class="col-md-1">
+            <label><b>Amount:</b></label>
+        </div>
+        <div class="col-md-3">
+            <input id="amountField" placeholder="Amount Involved" type="text" class="form-control" />
+        </div>
+        <div class="col-md-1">
+            <label><b>No. of Instances:</b></label>
+        </div>
+        <div class="col-md-3">
+            <input id="instancesField" placeholder="No. of Instances" type="text" class="form-control" />
+        </div>
+    </div>
+    <div class="row col-md-12 mt-3">
+        <div class="offset-md-9 col-md-3"><button onclick="addLegacyParaToDB();" class="btn w-100 btn-danger">Add Legacy Para</button></div>
+    </div>
+
+</div>
+
+

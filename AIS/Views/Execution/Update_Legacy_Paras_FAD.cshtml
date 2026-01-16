@@ -1,0 +1,622 @@
+﻿@{
+    var page_id = ViewData["PageId"] as int? ?? 0;
+}
+
+@{
+    ViewData["Title"] = "Update_Legacy_Paras_FAD";
+    Layout = "_Layout";
+}
+<script>
+    var g_paraId = 0;
+    var g_obsList = [];
+    var g_procId = 0;
+    var g_subprocId = 0;
+    var g_procDetailId = 0;
+    var g_paraRef = "";
+    var g_event="";
+
+    $(document).ready(function () {
+        $('#responseAuditee').richText({
+            imageUpload: false,
+            fileUpload: false,
+            videoEmbed: false,
+            urls: false
+        });
+
+    });
+
+    function AddRecord(e) {
+        var respRow = $(e).closest("tr");
+        if ($(respRow).find('input').eq(0).val() == '') {
+            alert("Please enter responsible PP No to proceed");
+            return;
+        }
+        var resP = [];
+        var _error = false;
+        $.each($(respRow), function (i, v) {
+
+            if ($(v).find('td').eq(0).find('input').eq(0).val() != "" && ($(v).find('td').eq(2).find('input').eq(0).val() == "" || $(v).find('td').eq(3).find('input').eq(0).val() == "") && $(v).find('td').eq(4).find('input').eq(0).val() == "") {
+
+                _error = true;
+            }
+            resP.push({
+                'PP_NO': $(v).find('td').eq(0).find('input').eq(0).val(),
+                'EMP_NAME': $(v).find('td').eq(1).find('input').eq(0).val(),
+                'LOAN_CASE': $(v).find('td').eq(2).find('input').eq(0).val(),
+                'LC_AMOUNT': $(v).find('td').eq(3).find('input').eq(0).val(),
+                'ACCOUNT_NUMBER': $(v).find('td').eq(4).find('input').eq(0).val(),
+                'ACC_AMOUNT': $(v).find('td').eq(5).find('input').eq(0).val(),
+            });
+        });
+
+        if (_error) {
+            alert("Please enter either Loan Case and Loan Case Amount or Account Number against responsible");
+            return false;
+        }
+
+
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/add_responsibility_to_legacy_para_fad",
+            type: "POST",
+            data: {
+                'RESP_PP': resP[0],
+                'REF_P': g_paraRef,
+                'P_ID': g_paraId
+            },
+            cache: false,
+            success: function (data) {
+                alert(data.message);
+                $($(e).closest("tr").find('.ibtnAdd').eq(0)).attr('disabled', true);
+                $($(e).closest("tr").find('.ibtnAdd').eq(0)).val('Added');
+                $($(e).closest("tr").find('.ibtnAdd').eq(0)).addClass('ibtnAdded');
+                $($(e).closest("tr").find('.ibtnAdded').eq(0)).removeClass('ibtnAdd');
+                $($(e).closest("tr").find('.ibtnDel').eq(0)).removeClass('d-none');
+               
+
+            },
+
+            dataType: "json",
+        });
+
+    }
+
+    function DeleteRecord(e) {
+
+           
+        var respRow = $(e).closest("tr");
+        if ($($(e).closest("tr").find('.ibtnAdd').eq(0)).length > 0) {
+            $(e).closest("tr").remove();
+        } else {
+            DeleteRecordFromDB(e);
+        }
+
+    }
+
+    function DeleteRecordFromDB(e){
+        g_event=e;
+        confirmAlert("Do you really want to delete this record");
+        onconfirmAlertCallback(DeleteConfirmAlertBox)
+    }
+
+    function DeleteConfirmAlertBox(){
+       
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/delete_legacy_para_responsibility",
+            type: "POST",
+            data: {
+                'PARA_REF': g_paraRef,
+                'PARA_ID': g_paraId,
+                'PP_NO': $($($(g_event).parent().parent()).find('td').eq(0).find('input').eq(0)).val(),
+            },
+            cache: false,
+            success: function (data) {
+                alert(data.message);
+                $(g_event).closest("tr").remove();              
+            },
+
+            dataType: "json",
+        });
+
+
+    }
+    function AddNewRespRecord(pp, emp_name, lc, lc_amount, acc, acc_amount, mode, checkClass) {
+        var dis_attr=''
+        if(mode=="disabled")
+            dis_attr = 'disabled="disabled";'
+
+        var newRow = $("<tr \"new_row\">");
+        if (mode == "disabled")
+        newRow = $("<tr class=\"disabled_row\">");
+        var cols = "";
+        var counter = $('#listofRespPersons tbody tr').length + 1;
+        cols += '<td><input type="text" ' + dis_attr + ' onfocusout="getEmployeeName(this,' + counter + ');" class="form-control" id="ppNo' + counter + '" name="ppNo' + counter + '" value="' + pp + '" /></td>';
+        cols += '<td><input type="text" ' + dis_attr + ' class="form-control" disabled="disabled" id="empName' + counter + '" value="' + emp_name + '" name="empName' + counter + '" value="' + emp_name + '"  /></td>';
+        cols += '<td><input type="text" ' + dis_attr + ' class="form-control" name="loanCase' + counter + '" id="loanCase' + counter + '" value ="' + lc + '" /></td>';
+        cols += '<td><input type="text" ' + dis_attr + ' class="form-control" name="lcAMount' + counter + '" id="lcAMount' + counter + '" value="' + lc_amount + '"  /></td>';
+        cols += '<td><input type="text" ' + dis_attr + ' class="form-control" name="account' + counter + '"  id="account' + counter + '" value="' + acc + '" /></td>';
+        cols += '<td><input type="text" ' + dis_attr + ' class="form-control" name="accountAmount' + counter + '" id="accountAmount' + counter + '" value="' + acc_amount + '" /></td>';
+        if (checkClass == "checked")
+            cols += '<td><input onclick="event.preventDefault();AddRecord(this);" disabled="disabled" type="button" class="ibtnAdded btn btn-md btn-success" value="Added"></td>';
+        else
+            cols += '<td><input onclick="event.preventDefault();AddRecord(this);" type="button" class="ibtnAdd btn btn-md btn-success" value="Add"></td>';
+
+        if (mode == "disabled")
+            cols += '<td><input onclick="event.preventDefault();DeleteRecordFromDB(this);" type="button" class="ibtnDel btn btn-md btn-danger " value="Delete"></td>';
+        else
+            cols += '<td><input onclick="event.preventDefault();DeleteRecord(this);" type="button" class="ibtnDel btn btn-md btn-danger " value="Delete"></td>';
+        newRow.append(cols);
+        $('#listofRespPersons tbody').append(newRow);
+    }
+
+    function calculateRow(row) {
+        var price = +row.find('input[name^="price"]').val();
+
+    }
+
+    function calculateGrandTotal() {
+        var grandTotal = 0;
+        $("table.order-list").find('input[name^="price"]').each(function () {
+            grandTotal += +$(this).val();
+        });
+        $("#grandtotal").text(grandTotal.toFixed(2));
+    }
+    function getLegacyPara() {
+        $('#process_detail').modal('hide');
+        $('#manageObsPanel tbody').empty();
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/get_legacy_paras_for_update_FAD",
+            type: "POST",
+            data: {
+                'ENTITY_ID': $('#entitySelectField').val()
+            },
+            cache: false,
+            success: function (data) {
+                g_obsList = data;
+                $('#entityNameField').html(data.length > 0 ? data[0].name : '');
+                $.each(data, function (index, child) {
+                    $('#manageObsPanel tbody').append('<tr id="div_' + child.id + '"><td><p class="fw-normal mb-1">' + child.audiT_PERIOD + '</p></td><td><p class="fw-normal mb-1">' + child.parA_NO + '</p></td><td><p class="fw-normal mb-1">' + child.gisT_OF_PARAS + '</p></td><td><p  class="fw-normal mb-1">' + child.amounT_INVOLVED + '</p></td><td><p  class="fw-normal mb-1">' + child.voL_I_II + '</p></td><td class="text-center"><a href="#" onclick="event.preventDefault();updateParaDetails(\'' + child.reF_P + '\', \'' + child.parA_NO + '\', \'' + child.id + '\' );" class="text-hover text-danger mr-5px"><small>Update Observation</small></a></td></tr>')
+                });
+            },
+
+            dataType: "json",
+        });
+
+    }
+    function updateParaDetails(ref_p, memo_no, paraId) {
+        
+
+        g_paraId = paraId;
+        g_paraRef = ref_p;
+        $('#process_detail').modal('show');
+        $('#listofRespPersons tbody').empty();
+
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/get_legacy_paras_for_update_FAD",
+            type: "POST",
+            data: {
+                'ENTITY_ID': $('#entitySelectField').val(),
+                'PARA_REF': ref_p,
+                'PARA_ID': paraId
+            },
+            cache: false,
+            success: function (data) {
+
+                if (data.length > 0) {
+                    var v = data[0];
+                    g_procId = v.process;
+                    g_subprocId = v.suB_PROCESS;
+                    g_procDetailId = v.procesS_DETAIL;
+
+                    $('#updateMemo_process').val(v.process);
+                    getSubProcessList();
+                    $('#observation').html(v.gisT_OF_PARAS);
+                    $('#responseAuditee').val(v.parA_TEXT).trigger('change');
+                    $('#auditCriteriaRiskField').val(v.risK_ID);                  
+
+                    $.each(v.parA_RESP, function (i, res) {
+
+                        AddNewRespRecord(res.pP_NO, res.emP_NAME, res.loaN_CASE, res.lC_AMOUNT, res.accounT_NUMBER, res.acC_AMOUNT,'disabled','checked')
+
+                    });
+                }
+            },
+
+            dataType: "json",
+        });
+
+
+    }
+
+    function getSubProcessList() {
+        if ($('#updateMemo_process option:selected').val() == 0) {
+            $('#updateMemo_subprocess').empty();
+            $('#updateMemo_violation').empty();
+        }
+        else {
+
+            $('#updateMemo_subprocess').empty();
+            $('#updateMemo_violation').empty();
+            $.ajax({
+                url: g_asiBaseURL + "/ApiCalls/sub_checklist",
+                type: "POST",
+                data: {
+                    'T_ID': $('#updateMemo_process option:selected').val(),
+                },
+                cache: false,
+                success: function (data) {
+                    $('#updateMemo_subprocess').append("<option value=\"0\" id=\"0\">--Select Sub Group--</option>");
+                    $.each(data, function (index, item) {
+                        var className = "";
+                        if (g_subprocId == item.s_ID) {
+                            className = 'selected = "selected"';
+                        }
+                        $('#updateMemo_subprocess').append("<option " + className + " value=\"" + item.s_ID + "\"> " + item.heading + " </option > ");
+                    });
+                    if (g_subprocId != 0) {
+                        getSubProcessViolationList();
+                    }
+                },
+                dataType: "json",
+            });
+        }
+    }
+    function getSubProcessViolationList() {
+        if ($('#updateMemo_subprocess option:selected').val() == 0)
+            $('#updateMemo_violation').empty();
+        else {
+            $('#updateMemo_violation').empty();
+            $.ajax({
+                url: g_asiBaseURL + "/ApiCalls/checklist_details",
+                type: "POST",
+                data: {
+                    'S_ID': $('#updateMemo_subprocess option:selected').val(),
+                },
+                cache: false,
+                success: function (data) {
+                    $('#updateMemo_violation').append("<option value=\"0\" id=\"0\">--Select Sub Group--</option>");
+                    $.each(data, function (index, item) {
+
+                        var className = "";
+                        if (g_procDetailId == item.id) {
+                            className = 'selected = "selected"';
+                        }
+
+                        $('#updateMemo_violation').append("<option " + className + " value=\"" + item.id + "\"> " + item.heading + "</option>");
+                    });
+                },
+                dataType: "json",
+            });
+        }
+
+
+    }
+
+    function getEmployeeName(e, counter) {
+        if (e.value != "" && e.value.length > 4 && e.value != "000000") {
+            $.ajax({
+                url: g_asiBaseURL + "/ApiCalls/get_employee_name_from_pp",
+                type: "POST",
+                data: {
+                    'PP_NO': e.value
+                },
+                cache: false,
+                success: function (data) {
+                    console.log($(e));
+                    $('#empName' + counter).val(data.name);
+                },
+
+                dataType: "json",
+            });
+        }
+    }
+
+    function reloadLocation() {
+        getLegacyPara();
+    }
+
+    function submitLegacyParaUpdates() {
+
+         if ($('#listofRespPersons tbody tr .ibtnAdd').length > 0) {
+            alert("There are pending responsibilities, please add all pending responsibilities to proceed");
+            return;
+        } 
+
+        if ($('#listofRespPersons tbody tr .ibtnAdded').length==0){
+            confirmAlert("Do you confirm this Legacy Para has no responsibility");
+            onconfirmAlertCallback(confirm_submitLegacyParaUpdates);
+            return;
+        }else{
+            confirm_submitLegacyParaUpdates();
+        } 
+    }
+
+    function confirm_submitLegacyParaUpdates(){
+        $('#PublishParaText').attr('disabled', true);
+        var resP = [];
+
+        if ($('#updateMemo_process').val() == 0) {
+            alert("Please select Process");
+            $('#PublishParaText').attr('disabled', false);
+            return;
+        }
+
+
+        if ($('#updateMemo_subprocess').val() == 0) {
+            alert("Please select Sub Process");
+            $('#PublishParaText').attr('disabled', false);
+            return;
+        }
+
+        if ($('#updateMemo_violation').val() == 0) {
+            alert("Please select Checklist Detail");
+            $('#PublishParaText').attr('disabled', false);
+            return;
+        }
+        if ($('#auditCriteriaRiskField').val() == 0) {
+            alert("Please select Risk");
+            $('#PublishParaText').attr('disabled', false);
+            return;
+        }
+
+
+        var add_leg_data = {
+            'PARA_TEXT': $('.richText-editor').html(),
+            'ID': g_paraId,
+            'PROCESS_ID': $('#updateMemo_process').val(),
+            'SUB_PROCESS_ID': $('#updateMemo_subprocess').val(),
+            'CHECKLIST_DETAIL_ID': $('#updateMemo_violation').val(),
+            'RISK_ID': $('#auditCriteriaRiskField').val(),
+            'REF_P': g_paraRef,
+            'RESP_PP': resP
+        };
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/update_legacy_para_with_responsibilities_FAD",
+            type: "POST",
+            data: add_leg_data,
+            cache: false,
+            success: function (data) {
+                alert(data.message);
+                $('#PublishParaText').attr('disabled', false);
+                getLegacyPara();
+            },
+
+            dataType: "json",
+        });
+
+    }
+
+    function submitLegacyParaUpdatesWithNoChanges() {
+
+        if ($('#listofRespPersons tbody tr .ibtnAdd').length > 0) {
+            alert("There are pending responsibilities, please add all pending responsibilities to proceed");
+            return;
+        }
+
+        if ($('#listofRespPersons tbody tr .ibtnAdded').length == 0) {
+            confirmAlert("Do you confirm this Legacy Para has no responsibility");
+            onconfirmAlertCallback(confirm_submitLegacyParaUpdatesWithNoChanges);
+            return;
+        } else {
+            confirm_submitLegacyParaUpdatesWithNoChanges();
+        }
+    }
+
+    function confirm_submitLegacyParaUpdatesWithNoChanges() {
+
+        $('#PublishParaTextWithNoChanges').attr('disabled', true);
+        var resP = [];       
+
+        if ($('#updateMemo_process').val() == 0) {
+            alert("Please select Process");
+            $('#PublishParaTextWithNoChanges').attr('disabled', false);
+            return;
+        }
+
+        if ($('#updateMemo_subprocess').val() == 0) {
+            alert("Please select Sub Process");
+            $('#PublishParaTextWithNoChanges').attr('disabled', false);
+            return;
+        }
+
+        if ($('#updateMemo_violation').val() == 0) {
+            alert("Please select Checklist Detail");
+            $('#PublishParaTextWithNoChanges').attr('disabled', false);
+            return;
+        }
+
+        if ($('#auditCriteriaRiskField').val() == 0) {
+            alert("Please select Risk");
+            $('#PublishParaTextWithNoChanges').attr('disabled', false);
+            return;
+        }
+
+        var add_leg_data = {
+            'PARA_TEXT': $('.richText-editor').html(),
+            'ID': g_paraId,
+            'PROCESS_ID': $('#updateMemo_process').val(),
+            'SUB_PROCESS_ID': $('#updateMemo_subprocess').val(),
+            'CHECKLIST_DETAIL_ID': $('#updateMemo_violation').val(),
+            'RISK_ID': $('#auditCriteriaRiskField').val(),
+            'REF_P': g_paraRef,
+            'RESP_PP': resP
+        };
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/update_legacy_para_with_responsibilities_no_changes",
+            type: "POST",
+            data: add_leg_data,
+            cache: false,
+            success: function (data) {
+                alert(data.message);
+                getLegacyPara();
+                $('#PublishParaTextWithNoChanges').attr('disabled', false);
+            },
+
+            dataType: "json",
+        });
+
+    }
+
+    function referBackLegacyParaUpdates(){
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/refer_back_legacy_para_to_az",
+            type: "POST",
+            data: {
+                'PARA_REF':g_paraRef,
+                'PARA_ID':g_paraId
+            },
+            cache: false,
+            success: function (data) {
+                alert(data.message);
+                getLegacyPara();
+                $('#PublishParaTextWithNoChanges').attr('disabled', false);
+            },
+
+            dataType: "json",
+        });
+
+    }
+
+</script>
+
+<div class="row">
+    <div class="col-md-12 mt-3">
+        <h3 style=" display:block;color: #be0e43">Update Legacy Paras</h3>
+    </div>
+    <div class="row col-md-12 mt-3">
+        <div class="col-md-2">
+            <label><b>Entity:</b></label>
+        </div>
+        <div class="col-md-10">
+            <select id="entitySelectField" onchange="getLegacyPara();" class="form-control form-select">
+                <option value="0" id="0">--Select Audit Entity--</option>
+                @{
+                    if (ViewData["EntitiesList"] != null)
+                    {
+                        foreach (var item in (dynamic)(ViewData["EntitiesList"]))
+                        {
+                            <option value="@item.ID" id="@item.ID">@item.ENTITY_NAME</option>
+                        }
+                    }
+                }
+
+            </select>
+        </div>
+    </div>
+    <div class="row col-md-12 mt-3">
+        <table id="manageObsPanel" class="table table-hover table-bordered table-hover mt-3 table-striped">
+            <thead style="background-color: #19875478 !important; ">
+                <tr>
+                    <th class="col-md-auto">Audit Year</th>
+                    <th class="col-md-auto">Para No.</th>
+                    <th class="col-md-auto">Observation Gist</th>
+                    <th class="col-md-auto">Amount</th>
+                    <th class="col-md-auto">VOL I II</th>
+                    <th class="col-md-auto">Action</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+
+        </table>
+    </div>
+
+</div>
+
+
+<div id="process_detail" class="modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog  modal-xl" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">Sub Process Entry</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="mt-3 modal-body">
+                <form>
+
+                    <div class="form-group">
+                        <label for="updateMemo_process" class="font-weight-bold">Process</label>
+                        <select id="updateMemo_process" onchange="getSubProcessList();" class="form-select form-control" aria-label="Default select example">
+                            <option value="0" id="0" selected="selected">--Select Voilation Category--</option>
+                            @{
+                                if (ViewData["ProcessList"] != null)
+                                {
+                                    foreach (var item in (dynamic)(ViewData["ProcessList"]))
+                                    {
+                                        <option id="@item.T_ID" value="@item.T_ID">@item.HEADING</option>
+                                    }
+                                }
+                            }
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="updateMemo_subprocess" class="font-weight-bold">Sub Process</label>
+                        <select id="updateMemo_subprocess" onchange="getSubProcessViolationList();" class="form-select form-control" aria-label="Default select example">
+                        </select>
+
+                    </div>
+                    <div class="form-group">
+                        <label for="updateMemo_violation" class="font-weight-bold">Checklist Details</label>
+                        <select id="updateMemo_violation" class="form-select form-control" aria-label="Default select example">
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+
+                        <label class="font-weight-bold">Risk Category </label>
+                        <select id="auditCriteriaRiskField" class="form-select form-control" aria-label="Default select example">
+                            <option value="0" id="0" selected>--Select Risk Category--</option>
+                            @{
+                                if (ViewData["RiskList"] != null)
+                                {
+
+                                    foreach (var risk in (dynamic)(ViewData["RiskList"]))
+                                    {
+                                        <option id="@risk.R_ID" value="@risk.R_ID">@risk.DESCRIPTION</option>
+                                    }
+
+                                }
+                            }
+                        </select>
+                    </div>
+
+                    <div class="row mt-3 col-md-12">
+                        <label class="font-weight-bold">Para Text</label>
+
+                    </div>
+                    <div class="form-group">
+                        <textarea class="form-control" id="responseAuditee"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="viewMemo_loancase">Responsible PP NO.</label>
+                        <div class="row col-sm-12">
+                            <table id="listofRespPersons" class="table table-hover table-bordered table-hover mt-3 table-striped">
+                                <thead style="background-color: #19875478 !important; ">
+                                    <tr>
+                                        <th class="col-md- auto font-weight-bold">P.P. No</th>
+                                        <th class="col-md- auto font-weight-bold">Name</th>
+                                        <th class="col-md- auto font-weight-bold">Loan Case</th>
+                                        <th class="col-md- auto font-weight-bold">LC Amount</th>
+                                        <th class="col-md- auto font-weight-bold">Account No.</th>
+                                        <th class="col-md- auto font-weight-bold">ACC Amount</th>
+                                        <th colspan="2" class="col-md- auto text-center font-weight-bold"><center><button type="button" onclick="AddNewRespRecord('','','','','','','','');" class="rounded-circle btn btn-danger btn-sm"><i class="fa fa-plus text-white"></i></button></center></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                </tbody>
+
+                            </table>
+                            <p class="text-italic text-danger">Note:<br/>In case of wrong Responsibles added by AZ, delete the record first and reenter in the system</p>
+                        </div>
+                    </div>
+                </form>
+            </div>
+
+            <div class="mt-3 modal-footer">
+                <button onclick="submitLegacyParaUpdates();" id="PublishParaText" type="button" class="btn btn-danger">Save changes</button>
+                <button onclick="submitLegacyParaUpdatesWithNoChanges();" id="PublishParaTextWithNoChanges" type="button" class="btn btn-primary">No changes Required</button>
+                <button onclick="referBackLegacyParaUpdates();" id="ReferBackPara" type="button" class="btn btn-success">Refer Back</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+

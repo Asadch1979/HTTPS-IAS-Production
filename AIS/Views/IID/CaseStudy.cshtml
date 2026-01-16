@@ -1,0 +1,101 @@
+@{
+    ViewData["Title"] = "Case Study";
+    Layout = "_Layout";
+    var complaintId = ViewData["ComplaintId"];
+}
+<h4>Case Study</h4>
+<form id="caseForm">
+    <input type="hidden" name="ComplaintId" value="@complaintId" />
+    <div class="mb-2">
+        <label class="form-label">Originating Process Owner</label>
+        <input class="form-control" name="OriginProcessOwner" />
+    </div>
+    <div class="mb-2">
+        <label class="form-label">Name</label>
+        <input class="form-control" name="NameComplainant" />
+    </div>
+    <div class="mb-2">
+        <label class="form-label">Branch</label>
+        <input class="form-control" name="Branch" />
+    </div>
+    <div class="mb-2">
+        <label class="form-label">Gist</label>
+        <textarea class="form-control" name="Gist"></textarea>
+    </div>
+    <div class="mb-2">
+        <label class="form-label">Outcome</label>
+        <textarea class="form-control" name="Outcome"></textarea>
+    </div>
+    <div class="mb-2">
+        <label class="form-label">Modus Operandi</label>
+        <textarea class="form-control" name="ModusOperandi"></textarea>
+    </div>
+    <div class="mb-2">
+        <label class="form-label">Key Lessons / Controls Gaps Summary</label>
+        <textarea class="form-control" name="Gaps"></textarea>
+    </div>
+    <div class="mb-2">
+        <label class="form-label">Root Cause</label>
+        <textarea class="form-control" name="RootCause"></textarea>
+    </div>
+    <div class="mb-2">
+        <label class="form-label">Policy Gaps Identified</label>
+        <textarea class="form-control" name="PolicyGapsIdentified"></textarea>
+    </div>
+    <div class="mb-2">
+        <label class="form-label">Violated Policy/SOP References</label>
+        <textarea class="form-control" name="ControlViolations"></textarea>
+    </div>
+    <div class="mb-2">
+        <label class="form-label">Risk Identified</label>
+        <textarea class="form-control" name="RiskIdentified"></textarea>
+    </div>
+    <div class="mb-2">
+        <label class="form-label">Regulatory Compliance Failure</label>
+        <textarea class="form-control" name="RegulatoryComplianceFailure"></textarea>
+    </div>
+    <div class="mb-2">
+        <label class="form-label">Actions/Administrative Action Summary</label>
+        <textarea class="form-control" name="ActionsRec"></textarea>
+    </div>
+    <div class="mb-2">
+        <label class="form-label">Status</label>
+        <input class="form-control" name="Status" />
+    </div>
+    <button type="submit" class="btn btn-primary">Submit</button>
+</form>
+@section Scripts{
+<script>
+    $(function(){
+        $('#caseForm').on('submit', function(e){
+            e.preventDefault();
+            var data = {
+                ComplaintId: $('#caseForm [name="ComplaintId"]').val(),
+                OriginProcessOwner: $('#caseForm [name="OriginProcessOwner"]').val(),
+                NameComplainant: $('#caseForm [name="NameComplainant"]').val(),
+                Branch: $('#caseForm [name="Branch"]').val(),
+                Gist: $('#caseForm [name="Gist"]').val(),
+                Outcome: $('#caseForm [name="Outcome"]').val(),
+                ModusOperandi: $('#caseForm [name="ModusOperandi"]').val(),
+                Gaps: $('#caseForm [name="Gaps"]').val(),
+                RootCause: $('#caseForm [name="RootCause"]').val(),
+                PolicyGapsIdentified: $('#caseForm [name="PolicyGapsIdentified"]').val(),
+                ControlViolations: $('#caseForm [name="ControlViolations"]').val(),
+                RiskIdentified: $('#caseForm [name="RiskIdentified"]').val(),
+                RegulatoryComplianceFailure: $('#caseForm [name="RegulatoryComplianceFailure"]').val(),
+                ActionsRec: $('#caseForm [name="ActionsRec"]').val(),
+                Status: $('#caseForm [name="Status"]').val()
+            };
+            $.ajax({
+                url: g_asiBaseURL + '/ApiCalls/AddCaseStudy',
+                method: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify(data),
+                success: function(){
+                    alert('Case study added');
+                }
+            });
+        });
+    });
+</script>
+}

@@ -1,0 +1,704 @@
+@using System.Linq
+@using System.Text.Json
+@{
+    ViewData["Title"] = "Home";
+    Layout = "_Layout";
+
+    var nonce = Context.Items["CSPNonce"]?.ToString();
+    var quickLinkPages = (ViewData["QuickLinks"] as IEnumerable<dynamic> ?? Enumerable.Empty<dynamic>()).ToList();
+
+    var visiblePages = quickLinkPages.Where(p =>
+    {
+        try
+        {
+            if ((int)p.Menu_Id == 1020304050) return false;
+        }
+        catch { }
+
+        try { return (int)p.Hide_Menu == 0; } catch { return true; }
+    })
+    .Where(p =>
+    {
+        try
+        {
+            var pagePath = "";
+            var pageName = "";
+
+            try { pagePath = (string)p.PagePath; } catch { }
+            if (string.IsNullOrWhiteSpace(pagePath))
+            {
+                try { pagePath = (string)p.Page_Path; } catch { }
+            }
+
+            try { pageName = (string)p.PageName; } catch { }
+            if (string.IsNullOrWhiteSpace(pageName))
+            {
+                try { pageName = (string)p.Page_Name; } catch { }
+            }
+
+            return !string.IsNullOrWhiteSpace(pagePath) && !string.IsNullOrWhiteSpace(pageName);
+        }
+        catch { return false; }
+    })
+    .ToList();
+
+    var quickLinks = visiblePages
+        .Take(8)
+        .ToList();
+}
+
+<style nonce="@nonce">
+    :root{
+        --ias-card:#ffffff;
+        --ias-text:#0f172a;
+        --ias-muted:#64748b;
+        --ias-border:rgba(15, 23, 42, .08);
+        --ias-shadow:0 10px 26px rgba(2, 6, 23, .08);
+        --ias-radius:14px;
+        --ias-blue:#0b5ed7;
+    }
+
+    .ias-home-header{
+        background: var(--ias-card);
+        border: 1px solid var(--ias-border);
+        border-radius: var(--ias-radius);
+        box-shadow: var(--ias-shadow);
+        padding: 16px 18px;
+        display:flex;
+        align-items:center;
+        justify-content:space-between;
+        gap: 12px;
+        margin-bottom: 14px;
+    }
+    .ias-home-header h1{
+        margin:0;
+        font-size: 18px;
+        font-weight: 900;
+        color: var(--ias-text);
+    }
+    .ias-home-header p{
+        margin:4px 0 0;
+        font-size: 12px;
+        color: var(--ias-muted);
+    }
+
+    .ias-pill{
+        border:1px solid var(--ias-border);
+        border-radius: 999px;
+        padding: 7px 12px;
+        font-size: 12px;
+        color: var(--ias-muted);
+        background:#fff;
+        white-space: nowrap;
+    }
+
+    .ias-grid{
+        display:grid;
+        grid-template-columns: 1.4fr .9fr;
+        gap: 14px;
+        align-items:start;
+    }
+
+    .ias-card{
+        background: var(--ias-card);
+        border: 1px solid var(--ias-border);
+        border-radius: var(--ias-radius);
+        box-shadow: var(--ias-shadow);
+        padding: 14px 14px;
+    }
+    .ias-card h2{
+        font-size: 14px;
+        margin: 0 0 10px;
+        font-weight: 900;
+        color: var(--ias-text);
+    }
+    .ias-card .sub{
+        margin: -6px 0 12px;
+        font-size: 12px;
+        color: var(--ias-muted);
+    }
+
+    .ias-tiles{
+        display:grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 10px;
+    }
+    .ias-tile{
+        display:block;
+        text-decoration:none;
+        border: 1px solid var(--ias-border);
+        border-radius: 14px;
+        padding: 12px 12px;
+        background: #fff;
+        transition: transform .08s ease, box-shadow .15s ease, border-color .15s ease;
+        min-height: 76px;
+    }
+    .ias-tile:hover{
+        transform: translateY(-1px);
+        border-color: rgba(11,94,215,.25);
+        box-shadow: 0 14px 26px rgba(2,6,23,.10);
+    }
+    .ias-tile .title{
+        font-weight: 900;
+        color: var(--ias-text);
+        font-size: 13px;
+        line-height: 1.2;
+        margin-bottom: 6px;
+    }
+    .ias-tile .meta{
+        font-size: 11px;
+        color: var(--ias-muted);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .ias-list{
+        list-style:none;
+        padding:0;
+        margin:0;
+    }
+    .ias-list li{
+        display:flex;
+        align-items:flex-start;
+        justify-content:space-between;
+        gap: 10px;
+        padding: 10px 10px;
+        border: 1px solid rgba(15,23,42,.06);
+        border-radius: 12px;
+        background:#fff;
+        margin-bottom: 10px;
+    }
+    .ias-list .name{
+        font-weight: 900;
+        font-size: 13px;
+        color: var(--ias-text);
+        margin:0;
+    }
+    .ias-list .desc{
+        font-size: 12px;
+        color: var(--ias-muted);
+        margin: 2px 0 0;
+    }
+    .ias-badge{
+        font-size: 11px;
+        font-weight: 900;
+        border-radius: 999px;
+        padding: 6px 10px;
+        border: 1px solid rgba(11,94,215,.20);
+        background: rgba(11,94,215,.06);
+        color: var(--ias-blue);
+        white-space: nowrap;
+        align-self:center;
+    }
+
+    /* Calendar */
+    .ias-cal-head{
+        display:flex;
+        align-items:center;
+        justify-content:space-between;
+        gap: 10px;
+        margin-bottom: 10px;
+    }
+    .ias-cal-title{
+        font-weight: 900;
+        font-size: 13px;
+        color: var(--ias-text);
+        margin:0;
+    }
+    .ias-cal-actions{ display:flex; gap:8px; }
+    .ias-cal-btn{
+        border:1px solid var(--ias-border);
+        background:#fff;
+        border-radius: 10px;
+        padding: 6px 10px;
+        font-size: 12px;
+        cursor:pointer;
+        color: var(--ias-text);
+    }
+    .ias-cal-grid{
+        display:grid;
+        grid-template-columns: repeat(7, 1fr);
+        gap: 6px;
+    }
+    .ias-cal-dow{
+        font-size: 11px;
+        color: var(--ias-muted);
+        font-weight: 900;
+        text-align:center;
+        padding: 4px 0;
+    }
+    .ias-cal-cell{
+        border:1px solid rgba(15,23,42,.06);
+        background:#fff;
+        border-radius: 10px;
+        min-height: 36px;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        font-size: 12px;
+        color: var(--ias-text);
+        position: relative;
+    }
+    .ias-cal-cell.muted{
+        color: rgba(100,116,139,.55);
+        background: rgba(255,255,255,.60);
+    }
+    .ias-cal-cell.today{
+        outline: 2px solid rgba(11,94,215,.35);
+        background: rgba(11,94,215,.06);
+        font-weight: 900;
+    }
+    .ias-cal-cell.holiday::after{
+        content:"";
+        width:6px; height:6px; border-radius:50%;
+        background:#ff7a18;
+        position:absolute;
+        bottom:6px;
+        right:6px;
+    }
+
+    @@media (max-width: 1200px){
+        .ias-tiles{ grid-template-columns: repeat(2, minmax(0,1fr)); }
+        .ias-grid{ grid-template-columns: 1fr; }
+    }
+</style>
+
+<div class="ias-home-header">
+    <div>
+        <h1>Welcome to IAS</h1>
+        <p>Quick access to your modules, holidays, and updates.</p>
+    </div>
+    <div class="d-flex flex-wrap gap-2">
+        <div class="ias-pill" id="iasTodayPill"></div>
+        <div class="ias-pill">Status: Secure</div>
+    </div>
+</div>
+
+<div class="ias-grid">
+    <!-- LEFT COLUMN -->
+    <div>
+        <div class="ias-card">
+            <div style="display:flex; align-items:flex-end; justify-content:space-between; gap:10px;">
+                <div>
+                    <h2 style="margin-bottom:2px;">Quick Links</h2>
+                    <div class="sub">Based on your permitted pages. <span id="iasQuickLinksScope" style="font-weight:800; color:var(--ias-blue);">All</span></div>
+                </div>
+            </div>
+
+            @if (quickLinks.Count == 0)
+            {
+                <div class="text-muted" style="font-size:12px;">No quick links available.</div>
+            }
+            else
+            {
+                <div class="ias-tiles" id="iasQuickLinksGrid">
+                    @foreach (var p in quickLinks)
+                    {
+                        var pageName = "";
+                        var pagePath = "";
+                        try { pageName = (string)p.PageName; } catch { }
+                        if (string.IsNullOrWhiteSpace(pageName))
+                        {
+                            try { pageName = (string)p.Page_Name; } catch { }
+                        }
+
+                        try { pagePath = (string)p.PagePath; } catch { }
+                        if (string.IsNullOrWhiteSpace(pagePath))
+                        {
+                            try { pagePath = (string)p.Page_Path; } catch { }
+                        }
+
+                        <a class="ias-tile" href="~/@pagePath" title="@pageName">
+                            <div class="title">@pageName</div>
+                            <div class="meta">Open module</div>
+                        </a>
+                    }
+                </div>
+            }
+        </div>
+
+        <div class="ias-card" style="margin-top:14px;">
+            <h2>Announcements / Notifications</h2>
+            <div class="sub">Message from IAS Team</div>
+
+            <ul class="ias-list">
+                <li>
+                    <div>
+                        <p class="name">Welcome</p>
+                        <p class="desc">
+                            Please enjoy New IAS system and in case you find any difficulty or error, please share the details like Page Name,
+                            Error Screen Shot along with a short brief of the issue.
+                        </p>
+                    </div>
+                    <span class="ias-badge">Info</span>
+                </li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- RIGHT COLUMN -->
+    <div>
+        <div class="ias-card">
+            <div class="ias-cal-head">
+                <p class="ias-cal-title" id="iasCalTitle">Calendar</p>
+                <div class="ias-cal-actions">
+                    <button class="ias-cal-btn" type="button" id="iasCalPrev">Prev</button>
+                    <button class="ias-cal-btn" type="button" id="iasCalToday">Today</button>
+                    <button class="ias-cal-btn" type="button" id="iasCalNext">Next</button>
+                </div>
+            </div>
+
+            <div class="ias-cal-grid" id="iasCalGrid"></div>
+
+            <div class="text-muted" style="font-size:11px; margin-top:10px;">
+                Holidays are marked with an orange dot.
+            </div>
+        </div>
+
+        <div class="ias-card" style="margin-top:14px;">
+            <h2>Public Holidays</h2>
+            <div class="sub">
+                <span>Year:</span>
+                <select id="iasHolidayYear" class="form-select form-select-sm" style="display:inline-block; width:auto; margin-left:6px;">
+                </select>
+            </div>
+
+            <div id="iasHolidayLoading" class="text-muted" style="font-size:12px;">Loading...</div>
+            <ul id="iasHolidayList" class="ias-list" style="margin-top:10px;"></ul>
+
+            <div id="iasHolidayEmpty" class="text-muted" style="font-size:12px; display:none;">
+                No holidays found for the selected year.
+            </div>
+        </div>
+    </div>
+</div>
+
+<script nonce="@nonce">
+(function(){
+    const baseUrl = (document.querySelector('meta[name="base-url"]')?.getAttribute('content') || '').replace(/\/$/,'');
+    const apiUrl = (path) => `${baseUrl}${path}`;
+
+    const today = new Date();
+    const todayPill = document.getElementById('iasTodayPill');
+    if (todayPill){
+        todayPill.textContent = today.toLocaleDateString(undefined, { weekday:'long', year:'numeric', month:'short', day:'numeric' });
+    }
+
+    let holidayMap = new Map(); // key: YYYY-MM-DD -> {name, raw}
+    let calCursor = new Date(today.getFullYear(), today.getMonth(), 1);
+
+    function pad2(n){ return String(n).padStart(2,'0'); }
+    function toKey(d){ return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`; }
+
+    function pick(obj, keys){
+        for (const k of keys){
+            if (obj && Object.prototype.hasOwnProperty.call(obj, k) && obj[k] != null) return obj[k];
+            const found = obj ? Object.keys(obj).find(x => x.toLowerCase() === k.toLowerCase()) : null;
+            if (found && obj[found] != null) return obj[found];
+        }
+        return null;
+    }
+
+    function parseHolidayDate(h){
+        const v = pick(h, ['holiday_date','HolidayDate','HOLIDAY_DATE','date','Date','HOLIDAYDATE','PublicHolidayDate']);
+        if (!v) return null;
+        const d = new Date(v);
+        if (!isNaN(d.getTime())) return d;
+
+        if (typeof v === 'string'){
+            const m = v.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
+            if (m){
+                const dd = parseInt(m[1],10), mm = parseInt(m[2],10), yy = parseInt(m[3],10);
+                const d2 = new Date(yy, mm-1, dd);
+                if (!isNaN(d2.getTime())) return d2;
+            }
+        }
+        return null;
+    }
+
+    function parseHolidayName(h){
+        const v = pick(h, ['holiday_name','HolidayName','HOLIDAY_NAME','name','Name','HOLIDAY','holiday','description','Description','HOLIDAY_DESC']);
+        return (v || 'Public Holiday').toString();
+    }
+
+    function setHolidayMap(holidays){
+        holidayMap = new Map();
+        (holidays || []).forEach(h => {
+            const d = parseHolidayDate(h);
+            if (!d) return;
+            holidayMap.set(toKey(d), { name: parseHolidayName(h), raw: h });
+        });
+    }
+
+    // Calendar
+    const calTitle = document.getElementById('iasCalTitle');
+    const calGrid = document.getElementById('iasCalGrid');
+
+    function renderCalendar(){
+        if (!calGrid) return;
+        calGrid.innerHTML = '';
+
+        const monthName = calCursor.toLocaleDateString(undefined, { month:'long', year:'numeric' });
+        if (calTitle) calTitle.textContent = monthName;
+
+        ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].forEach(d => {
+            const el = document.createElement('div');
+            el.className = 'ias-cal-dow';
+            el.textContent = d;
+            calGrid.appendChild(el);
+        });
+
+        const first = new Date(calCursor.getFullYear(), calCursor.getMonth(), 1);
+        const startDow = first.getDay();
+        const start = new Date(first);
+        start.setDate(first.getDate() - startDow);
+
+        for (let i=0; i<42; i++){
+            const d = new Date(start);
+            d.setDate(start.getDate() + i);
+
+            const cell = document.createElement('div');
+            cell.className = 'ias-cal-cell';
+
+            if (d.getMonth() !== calCursor.getMonth()) cell.classList.add('muted');
+
+            const key = toKey(d);
+            if (holidayMap.has(key)){
+                cell.classList.add('holiday');
+                cell.title = holidayMap.get(key).name;
+            }
+
+            if (d.getFullYear() === today.getFullYear() && d.getMonth() === today.getMonth() && d.getDate() === today.getDate()){
+                cell.classList.add('today');
+            }
+
+            cell.textContent = d.getDate().toString();
+            calGrid.appendChild(cell);
+        }
+    }
+
+    // Holidays list
+    const yearSel = document.getElementById('iasHolidayYear');
+    const listEl = document.getElementById('iasHolidayList');
+    const loadingEl = document.getElementById('iasHolidayLoading');
+    const emptyEl = document.getElementById('iasHolidayEmpty');
+
+    function setLoading(on){ if (loadingEl) loadingEl.style.display = on ? '' : 'none'; }
+    function setEmpty(on){ if (emptyEl) emptyEl.style.display = on ? '' : 'none'; }
+
+    function renderHolidayList(holidays){
+        if (!listEl) return;
+        listEl.innerHTML = '';
+
+        const normalized = (holidays || [])
+            .map(h => ({ raw:h, date: parseHolidayDate(h), name: parseHolidayName(h) }))
+            .filter(x => x.date)
+            .sort((a,b) => a.date - b.date);
+
+        const now = new Date();
+        const upcoming = normalized.filter(x => x.date >= new Date(now.getFullYear(), now.getMonth(), now.getDate()));
+        const shown = (upcoming.length ? upcoming : normalized).slice(0, 10);
+
+        if (shown.length === 0){
+            setEmpty(true);
+            return;
+        }
+        setEmpty(false);
+
+        shown.forEach(x => {
+            const li = document.createElement('li');
+
+            const left = document.createElement('div');
+            const name = document.createElement('p');
+            name.className = 'name';
+            name.textContent = x.name;
+
+            const desc = document.createElement('p');
+            desc.className = 'desc';
+            desc.textContent = x.date.toLocaleDateString(undefined, { weekday:'short', year:'numeric', month:'short', day:'numeric' });
+
+            left.appendChild(name);
+            left.appendChild(desc);
+
+            const badge = document.createElement('span');
+            badge.className = 'ias-badge';
+            badge.textContent = 'Holiday';
+
+            li.appendChild(left);
+            li.appendChild(badge);
+
+            listEl.appendChild(li);
+        });
+    }
+
+    async function fetchHolidays(year){
+        setLoading(true);
+        setEmpty(false);
+
+        const payload = JSON.stringify({ year: Number(year) || 0 });
+
+        let res = null;
+        try{
+            res = await fetch(apiUrl('/ApiCalls/get_all_public_holidays'), {
+                method: 'POST',
+                headers: { 'Content-Type':'application/json' },
+                body: payload,
+                credentials: 'same-origin'
+            });
+        }catch(e){}
+
+        if (!res || !res.ok){
+            try{
+                res = await fetch(apiUrl('/ApiCalls/get_all_public_holidays'), {
+                    method: 'GET',
+                    headers: { 'Content-Type':'application/json' },
+                    credentials: 'same-origin'
+                });
+            }catch(e){}
+        }
+
+        let data = [];
+        try{
+            if (res && res.ok) data = await res.json();
+        }catch(e){ data = []; }
+
+        setLoading(false);
+        setHolidayMap(data);
+        renderHolidayList(data);
+        renderCalendar();
+    }
+
+    function initYears(){
+        if (!yearSel) return;
+        const y = today.getFullYear();
+        [y-1, y, y+1].forEach(yy => {
+            const opt = document.createElement('option');
+            opt.value = String(yy);
+            opt.textContent = String(yy);
+            if (yy === y) opt.selected = true;
+            yearSel.appendChild(opt);
+        });
+        yearSel.addEventListener('change', () => fetchHolidays(yearSel.value));
+    }
+
+    document.getElementById('iasCalPrev')?.addEventListener('click', () => { calCursor = new Date(calCursor.getFullYear(), calCursor.getMonth()-1, 1); renderCalendar(); });
+    document.getElementById('iasCalNext')?.addEventListener('click', () => { calCursor = new Date(calCursor.getFullYear(), calCursor.getMonth()+1, 1); renderCalendar(); });
+    document.getElementById('iasCalToday')?.addEventListener('click', () => { calCursor = new Date(today.getFullYear(), today.getMonth(), 1); renderCalendar(); });
+
+    initYears();
+    renderCalendar();
+    fetchHolidays(today.getFullYear());
+})();
+</script>
+
+
+@{
+    // Build quick-links dataset for client-side filtering (safe Razor scoping)
+    var menus2 = (ViewData["TopMenu"] as IEnumerable<dynamic> ?? Enumerable.Empty<dynamic>()).ToList();
+    var pages2 = (ViewData["QuickLinks"] as IEnumerable<dynamic> ?? Enumerable.Empty<dynamic>()).ToList();
+
+    var visiblePages2 = pages2.Where(p2 =>
+    {
+        try { return Convert.ToInt32(p2.Hide_Menu) == 0; } catch { return true; }
+    }).ToList();
+
+    var menuNameMap2 = new Dictionary<int, string>();
+    foreach (var mm in menus2)
+    {
+        try
+        {
+            var mid = Convert.ToInt32(mm.Menu_Id);
+            var mn = Convert.ToString(mm.Menu_Name) ?? "Menu";
+            if (!menuNameMap2.ContainsKey(mid)) menuNameMap2[mid] = mn;
+        }
+        catch { }
+    }
+
+    var pageDtos2 = new List<object>();
+    foreach (var pp in visiblePages2)
+    {
+        int menuId = 0;
+        string menuName = "Menu";
+        string pageName = "";
+        string pagePath = "";
+
+        try { menuId = Convert.ToInt32(pp.Menu_Id); } catch { menuId = 0; }
+        try { pageName = Convert.ToString(pp.PageName) ?? ""; } catch { pageName = ""; }
+        if (string.IsNullOrWhiteSpace(pageName))
+        {
+            try { pageName = Convert.ToString(pp.Page_Name) ?? ""; } catch { pageName = ""; }
+        }
+
+        try { pagePath = Convert.ToString(pp.PagePath) ?? ""; } catch { pagePath = ""; }
+        if (string.IsNullOrWhiteSpace(pagePath))
+        {
+            try { pagePath = Convert.ToString(pp.Page_Path) ?? ""; } catch { pagePath = ""; }
+        }
+
+        if (string.IsNullOrWhiteSpace(pageName) || string.IsNullOrWhiteSpace(pagePath))
+            continue;
+
+        if (menuNameMap2.ContainsKey(menuId)) menuName = menuNameMap2[menuId];
+
+        pageDtos2.Add(new { menuId, menuName, pageName, pagePath });
+    }
+
+    var quickLinksJson = JsonSerializer.Serialize(pageDtos2);
+}
+<script nonce="@nonce">
+(function(){
+    // Expose dataset + handler for layout menu clicks
+    window.IASHomePages = @Html.Raw(quickLinksJson);
+
+    window.IASHomeSetQuickLinks = function(menuId, menuName){
+        var grid = document.getElementById('iasQuickLinksGrid');
+        var scope = document.getElementById('iasQuickLinksScope');
+        if (!grid) return;
+
+        var all = Array.isArray(window.IASHomePages) ? window.IASHomePages : [];
+        var filtered = (menuId && menuId > 0) ? all.filter(function(p){ return p.menuId === menuId; }) : all;
+        if (menuId && menuId > 0 && filtered.length === 0 && all.length > 0){
+            filtered = all;
+            menuId = 0;
+        }
+
+        if (scope){
+            scope.textContent = (menuId && menuId > 0) ? (menuName || 'Selected') : 'All';
+        }
+
+        var tiles = filtered.slice(0, 8);
+        if (!tiles.length){
+            grid.innerHTML = '<div class="text-muted" style="font-size:12px;">No quick links available for this menu.</div>';
+            return;
+        }
+
+        var html = '';
+        tiles.forEach(function(p){
+            var name = (p.pageName || '').toString();
+            var path = (p.pagePath || '').toString();
+            if (!name || !path) return;
+
+            html += ''
+                + '<a class="ias-tile" href="/' + path.replace(/^\\/+/, '') + '" title="' + name.replace(/"/g,'&quot;') + '">'
+                +   '<div class="title">' + name + '</div>'
+                +   '<div class="meta">Open module</div>'
+                + '</a>';
+        });
+
+        grid.innerHTML = html;
+    };
+})();
+
+(function(){
+    // Auto-apply last selected menu (set by sidebar click)
+    try{
+        var id = parseInt(localStorage.getItem('ias.home.quicklinks.menuId') || '0', 10) || 0;
+        var name = (localStorage.getItem('ias.home.quicklinks.menuName') || '').toString();
+        if (id > 0 && window.IASHomeSetQuickLinks){
+            window.IASHomeSetQuickLinks(id, name);
+        }
+    }catch(e){}
+})();
+
+</script>

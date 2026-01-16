@@ -1,0 +1,287 @@
+﻿@{
+    var page_id = ViewData["PageId"] as int? ?? 0;
+}
+
+@{
+    ViewData["Title"] = "Manage Sub Checklist";
+    Layout = "_Layout";
+}
+<style type="text/css">
+    .container {
+        max-width: 100%;
+    }
+
+    .card-header {
+        background-color: transparent !important;
+        font-size: 20px;
+        height: 100px;
+    }
+
+    .icon-card {
+        margin: 10px;
+    }
+</style>
+<script type="text/javascript">
+    var g_procId = 0;
+    var g_subProcId = 0;
+    var g_subProcList=[];
+    $(document).ready(function () {
+        $("#searchTableRecord").on("keyup", function () {
+            var value = $(this).val().toLowerCase();
+            $("#listOfDepartment tbody tr").filter(function () {
+                $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1)
+            });
+        });
+
+        ShowSubChecklist();
+    });
+
+    function addNewSubCheckList(id) {
+        g_subProcId = 0;
+        g_procId = 0;
+        $('#updateEntityModal').modal('show');
+        $('#newChecklist').val(0);
+        $('#entCodeField').val("");
+        $('#entSeqField').val("");
+        $('#entWeightField').val("");
+        $('#checklistDetailsList').empty();
+    }
+    
+    function openUpdateSubCheclist(id) {
+        g_subProcId=id;
+        $('#updateEntityModal').modal('show');
+        $('#checklistDetailsList').empty();
+        $.each(g_subProcList, function (i, v) {
+            if (v.s_ID == g_subProcId) {
+                g_procId=v.t_ID;
+                $('#newChecklist').val(v.t_ID);
+                $('#entCodeField').val(v.heading);
+                $('#entSeqField').val(v.risK_SEQUENCE);
+                $('#entWeightField').val(v.risK_WEIGHTAGE);
+            }
+        });
+
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/get_checklist_details_for_sub_process",
+            type: "POST",
+            data: {
+                'SUB_PROCESS_ID': g_subProcId
+            },
+            cache: false,
+            success: function (data) {
+                g_procDetailList = data;
+                var sr = 0;
+                $.each(data, function (i, v) {
+                    $('#checklistDetailsList').append('<li>' + v.heading + '</li>');
+                });
+            },
+            dataType: "json",
+        });       
+    }
+   
+    function reloadLocation() {
+        window.location.reload();
+    }
+
+    function updateSubProcess() {
+        if (document.querySelectorAll('input.alnum-only.is-invalid').length > 0) {
+            Swal.fire({ icon: "error", title: "Validation error", text: "Please correct highlighted fields." });
+            return;
+        }
+        if ($('#newChecklist').val() == 0) {
+            alert("Please select Process");
+            return;
+        }
+        if ($('#entCodeField').val() == "") {
+            alert("Please enter Sub Process Title");
+            return;
+        }
+
+        if ($('#entSeqField').val() == "") {
+            alert("Please enter Risk Sequence");
+            return;
+        }
+
+        if ($('#entWeightField').val() == "") {
+            alert("Please enter Risk Weightage");
+            return;
+        }
+        if (g_subProcId != 0)
+        {
+            $.ajax({
+                url: g_asiBaseURL + "/ApiCalls/update_audit_sub_checklist",
+                type: "POST",
+                data: {
+                    'OLD_PROCESS_ID': g_procId,
+                    'PROCESS_ID': $('#newChecklist').val(),
+                    'SUB_PROCESS_ID': g_subProcId,
+                    'HEADING': $('#entCodeField').val(),
+                    'RISK_SEQUENCE': $('#entSeqField').val(),
+                    'RISK_WEIGHTAGE': $('#entWeightField').val(),
+                    'ENTITY_TYPE_ID': 6
+                },
+                cache: false,
+                success: function (data) {
+                    alert(data.message);
+                    ShowSubChecklist();
+                },
+                dataType: "json",
+            });
+        }else{
+
+            $.ajax({
+                url: g_asiBaseURL + "/ApiCalls/add_audit_sub_checklist",
+                type: "POST",
+                data: {
+                    'PROCESS_ID': $('#newChecklist').val(),
+                    'ENTITY_TYPE_ID': 6,
+                    'HEADING': $('#entCodeField').val(),
+                    'RISK_SEQUENCE': $('#entSeqField').val(),
+                    'RISK_WEIGHTAGE': $('#entWeightField').val(),
+                },
+                cache: false,
+                success: function (data) {
+                    alert(data.message);
+                    ShowSubChecklist();
+                },
+                dataType: "json",
+            });
+        }
+     
+      
+
+    }
+    function ShowSubChecklist() {
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/get_audit_sub_checklist",
+            type: "POST",
+            data: {
+            },
+            cache: false,
+            success: function (data) {
+                g_subProcList = data;
+                var sr = 0;
+                $('#auditeeEntitiesList tbody').empty();
+                $.each(data, function (i, v) {
+                    sr++;
+                    $('#auditeeEntitiesList tbody').append('<tr><td>' + sr + '</td><td>' + v.process + '</td><td>' + v.heading + '</td><td>' + v.risK_SEQUENCE + '</td><td>' + v.risK_WEIGHTAGE + '</td><td>' + v.comments + '</td><td style="cursor:pointer;"><a class="text-danger" onclick="event.preventDefault();openUpdateSubCheclist(' + v.s_ID + ')">Update</a></td></tr>');
+
+                });
+            },
+            dataType: "json",
+        });
+        
+
+    }
+</script>
+<div class="row text-center mt-3">
+    <div class="col-md-6 text-left">
+        <h3 style=" display:block;color: #be0e43">Audit Sub Checklist </h3>
+    </div>
+    <div class="col-md-6 text-right" style="padding-right:45px;">
+        <button onclick="addNewSubCheckList(0);" class="btn btn-danger">Add New Sub Checklist</button>
+    </div>
+    
+</div>
+<div class="row col-md-12 mt-3">
+    <table id="auditeeEntitiesList" class="table table-bordered table mb-0 mt-3 bg-white table-hover table-striped">
+        <thead>
+            <tr style="background-color: #19875478 !important; ">
+                <th class="col-md-auto">Sr No.</th>
+                <th class="col-md-auto">Process</th>
+                <th class="col-md-auto">Sub Checklist</th>
+                <th class="col-md-auto">Risk Sequence</th>
+                <th class="col-md-auto">Weightage</th>
+                <th class="col-md-auto">Remarks</th>
+                <th class="col-md-auto">Action</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+
+    </table>
+</div>
+
+
+<div id="updateEntityModal" class="modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">Add/Update Sub Checklist</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form>
+                    <div class="row col-md-12 mt-3">
+                        <div class="row col-md-4">
+                            <label>Checklist</label>
+                        </div>
+                        <div class="row col-md-8">
+                            <select id="newChecklist" class="form-select form-control">
+                                <option value="0" id="0" selected>--Select Checklist Type--</option>
+                                @{
+                                    if (ViewData["ChecklistTypes"] != null)
+                                    {
+                                        foreach (var item in (dynamic)(ViewData["ChecklistTypes"]))
+                                        {
+                                            <option value="@item.T_ID" id="@item.T_ID">@item.HEADING</option>
+
+                                        }
+                                    }
+                                }
+
+                            </select>
+                        </div>
+                    </div>
+                    <div class="row col-md-12 mt-3">
+                        <div class="row col-md-4">
+                            <label>Heading <small class="text-muted">(A-Z, 0-9, space, &amp;, ?)</small></label>
+                        </div>
+                        <div class="row col-md-8">
+                            <input id="entCodeField" class="form-control alnum-only" type="text" data-allow-space="true" data-allow-amp="true" maxlength="150" title="Enter only Alphabets (A-Z), numbers (0-9), spaces, ampersand (&amp;), comma (,), and question mark (?)" placeholder="Alphabets, numbers, spaces, ampersand (&amp;), comma (,), and question mark (?) only" />
+                            <small class="form-text text-muted">Enter only Alphabets (A-Z), numbers (0-9), spaces, ampersand (&amp;), comma (,), and question mark (?).</small>
+                            <div class="invalid-feedback">Enter only Alphabets (A-Z), numbers (0-9), spaces, ampersand (&amp;), comma (,), and question mark (?).</div>
+                        </div>
+                    </div>
+                    <div class="row col-md-12 mt-3">
+                        <div class="row col-md-4">
+                            <label>Risk Sequence</label>
+                        </div>
+                        <div class="row col-md-8">
+                            <input id="entSeqField" min="0" oninput="validity.valid||(value='');" class="form-control" type="number" />
+                        </div>
+                    </div>
+                    <div class="row col-md-12 mt-3">
+                        <div class="row col-md-4">
+                            <label>Weightage</label>
+                        </div>
+                        <div class="row col-md-8">
+                            <input id="entWeightField" class="form-control" type="number" />
+                        </div>
+                    </div>
+                    <div class="row col-md-12 mt-3">
+                        <div class="row col-md-4">
+                            <label>Checklist Details</label>
+                        </div>
+                        <div class="row col-md-8">
+                            <ul id="checklistDetailsList">
+
+                            </ul>
+                            
+                        </div>
+                    </div>
+                 
+
+                   
+
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button onclick="updateSubProcess();" type="button" data-bs-dismiss="modal" class="btn btn-success">Save Changes</button>
+
+            </div>
+        </div>
+    </div>
+</div>

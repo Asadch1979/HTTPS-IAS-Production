@@ -1,0 +1,251 @@
+﻿@{
+    var page_id = ViewData["PageId"] as int? ?? 0;
+}
+
+@{
+    ViewData["Title"] = "AIS Post Compliance";
+    Layout = "_Layout";
+}
+<script type="text/javascript">
+    var postComplianceData = [];
+    var tableFields = [
+        "COMID",
+        "AUDITPERIOD",
+        "GISTOFPARAS",
+        "AUDITEDBY",
+        "ENTITYTYPEID",
+        "COMCYCLE",
+        "COMSTATUS",
+        "COMSTAGE",
+        "PARASTATUS",
+        "PARANO",
+        "IND",
+        "RISK"
+    ];
+    function getrelation(parentEntityId = 0, userEntityId = 0) {
+
+
+        $('#controlingsearch').empty();
+        $('#childposting').empty();
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/getparentrel",
+            type: "POST",
+            data: {
+                'ENTITY_REALTION_ID': $('#RelationshipField option:selected').val()
+            },
+
+
+            cache: false,
+            success: function (data) {
+
+
+                $('#controlingsearch').append('<option id="0" value="0">--Select Controlling/Reporting Office--</option>');
+                $.each(data, function (index, contof) {
+
+                    var selected = '';
+                    if (contof.entitY_ID == parentEntityId)
+                        selected = 'selected="selected"';
+
+                    $('#controlingsearch').append('<option ' + selected + ' value="' + contof.entitY_ID + '" id="' + contof.entitY_REALTION_ID + '">' + contof.description + '</option>')
+                });
+                if (userEntityId != 0)
+                    getplacepost(userEntityId)
+
+                // console.log(data);
+
+            },
+            dataType: "json",
+        });
+
+
+    }
+
+    function getplacepost(userEntityId = 0) {
+        $('#childposting').empty();
+
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/getpostplace",
+            type: "POST",
+            data: {
+                'E_R_ID': $('#controlingsearch option:selected').val()
+            },
+
+
+            cache: false,
+            success: function (data) {
+                $('#childposting').append('<option id="0" value="0" selected="selected">--Select Place of Posting--</option>');
+                $.each(data, function (index, gpp) {
+
+                    var selected = '';
+                    if (gpp.entitY_ID == userEntityId)
+                        selected = 'selected="selected"';
+                    $('#childposting').append('<option ' + selected + ' value="' + gpp.entitY_ID + '" id="' + gpp.entitY_ID + '">' + gpp.c_NAME + '</option>')
+                });
+            },
+            dataType: "json",
+        });
+        //  getrelation();
+
+    }
+    function getPostCompliance() {
+        destroyDatatable('manageObsPanel');
+        $('#manageObsPanel tbody').empty();
+        if ($('#childposting option:selected').val() != 0) {
+            $.ajax({
+                url: g_asiBaseURL + "/ApiCalls/get_ais_post_compliance_details",
+                type: "POST",
+                data: {
+                    'ENT': $('#childposting option:selected').val()
+                },
+                cache: false,
+                success: function (data) {
+                    postComplianceData = data;
+                    $.each(data, function (idx, v) {
+                        var row = '<tr data-index="' + idx + '"><td>' + (idx + 1) + '</td>';
+                        $.each(tableFields, function(_, f){
+                            var val = v[f];
+                            if (val === undefined) val = v[f.toLowerCase()];
+                            if (val === undefined) val = v[f.toUpperCase()];
+                            row += '<td>' + (val !== undefined ? val : '') + '</td>';
+                        });
+                        row += '<td><button class="btn btn-sm btn-primary" onclick="openUpdateModal(' + idx + ');">Update</button></td></tr>';
+                        $('#manageObsPanel tbody').append(row);
+                    });
+                    initializeDataTable('manageObsPanel');
+                },
+                dataType: "json",
+            });
+        }
+    }
+    function openUpdateModal(index) {
+        var d = postComplianceData[index];
+        $('#rowIndex').val(index);
+        $.each(tableFields, function (_, f) {
+            var val = d[f] || d[f.toLowerCase()] || d[f.toUpperCase()] || d[f.replace(/_/g, '')];
+            var id = '#upd_' + f;
+            if ($(id).length)
+                $(id).val(val || '');
+        });
+        $('#updateModal').modal('show');
+    }
+    function submitUpdate() {
+        var idx = $('#rowIndex').val();
+        var payload = {};
+        $('#updateModal input').each(function(){
+            payload[$(this).attr('name')] = $(this).val();
+        });
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/update_ais_post_compliance",
+            type: "POST",
+            data: payload,
+            cache: false,
+            success: function (resp) {
+                alert(resp.Message);
+                $('#updateModal').modal('hide');
+                getPostCompliance();
+            },
+            dataType: "json",
+        });
+    }
+</script>
+<h3 style=" display:block;color: #be0e43" class="mt-3">@ViewData["Title"]</h3>
+<div class="row col-md-12 mt-1">
+    <div class="col-md-2">
+        <label>Relationship Type</label>
+    </div>
+    <div class="col-md-10">
+        <select id="RelationshipField" onchange="getrelation();" class="form-control form-select">
+            <option id="0" value="0" selected="selected">--Select Relationship Type--</option>
+
+
+            @{
+                if (ViewData["Userrelationship"] != null)
+                {
+                    foreach (var item in (dynamic)(ViewData["Userrelationship"]))
+                    {
+                        <option value="@item.ENTITY_REALTION_ID" id="@item.ENTITY_REALTION_ID">@item.FIELD_NAME</option>
+                    }
+                }
+            }
+
+
+
+        </select>
+    </div>
+</div>
+
+<div class="row col-md-12 mt-1">
+    <div class="col-md-2">
+        <label>Controlling/Reporting Office</label>
+    </div>
+    <div class="col-md-4">
+        <select id="controlingsearch" onchange="getplacepost();" class="form-control form-select">
+            <option id="0" value="0" selected="selected">--Select Controlling/Reporting Office--</option>
+        </select>
+    </div>
+
+
+    <div class="col-md-2">
+        <label>Place of Posting</label>
+    </div>
+    <div class="col-md-4">
+        <select id="childposting" onchange="getPostCompliance();" class="form-control form-select">
+            <option id="0" value="0" selected="selected">--Select Place of Posting--</option>
+
+        </select>
+    </div>
+</div>
+   
+<div class="row col-md-12 mt-4">
+    <table id="manageObsPanel" class="table table-hover table-bordered table-hover mt-3 table-striped">
+        <thead style="background-color: #19875478 !important; ">
+            <tr>
+                <th>Sr. No.</th>
+                <th>COM ID</th>
+                <th>AUDIT PERIOD</th>
+                <th>GIST OF PARAS</th>
+                <th>AUDITED BY</th>
+                <th>ENTITY TYPE ID</th>
+                <th>COM CYCLE</th>
+                <th>COM STATUS</th>
+                <th>COM STAGE</th>
+                <th>PARA STATUS</th>
+                <th>PARA NO</th>
+                <th>IND</th>
+                <th>RISK</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+        </tbody>
+    </table>
+</div>
+<div id="updateModal" class="modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-lg" role="document" style="min-width:90% !important;">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">Update Post Compliance</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="rowIndex" />
+                <div class="mb-2"><label>COMID</label><input id="upd_COMID" name="COMID" class="form-control" /></div>
+                <div class="mb-2"><label>AUDIT_PERIOD</label><input id="upd_AUDITPERIOD" name="AUDITPERIOD" class="form-control" /></div>
+                <div class="mb-2"><label>GIST_OF_PARAS</label><input id="upd_GISTOFPARAS" name="GISTOFPARAS" class="form-control" /></div>
+                <div class="mb-2"><label>AUDITED_BY</label><input id="upd_AUDITEDBY" name="AUDITEDBY" class="form-control" /></div>
+                <div class="mb-2"><label>ENTITY_TYPE_ID</label><input id="upd_ENTITYTYPEID" name="ENTITYTYPEID" class="form-control" /></div>
+                <div class="mb-2"><label>COM_CYCLE</label><input id="upd_COMCYCLE" name="COMCYCLE" class="form-control" /></div>
+                <div class="mb-2"><label>COM_STATUS</label><input id="upd_COMSTATUS" name="COMSTATUS" class="form-control" /></div>
+                <div class="mb-2"><label>COM_STAGE</label><input id="upd_COMSTAGE" name="COMSTAGE" class="form-control" /></div>
+                <div class="mb-2"><label>PARA_STATUS</label><input id="upd_PARASTATUS" name="PARASTATUS" class="form-control" /></div>
+                <div class="mb-2"><label>PARA_NO</label><input id="upd_PARANO" name="PARANO" class="form-control" /></div>
+                <div class="mb-2"><label>IND</label><input id="upd_IND" name="IND" class="form-control" /></div>
+                <div class="mb-2"><label>RISK</label><input id="upd_RISK" name="RISK" class="form-control" /></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" onclick="submitUpdate();">Update</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>

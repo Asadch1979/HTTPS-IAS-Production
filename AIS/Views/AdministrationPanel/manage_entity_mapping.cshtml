@@ -1,0 +1,369 @@
+﻿@{
+    ViewData["Title"] = "Manage Entity Mapping";
+    Layout = "_Layout";
+
+}
+
+
+<script type="text/javascript">
+
+    var g_entId = 0;
+    var g_entRecord = [];
+
+
+    $(document).ready(function () {
+
+    });
+
+    function getEntityMapping() {
+        var indicator = "";
+        if ($('#entityIDDropBox').val() != 0) {
+            indicator = "Y";
+        }
+        else if ($('#parentTypeID').val() != 0) {
+            indicator = "Y";
+        }
+        else if ($('#childTypeID').val() != 0) {
+            indicator = "Y";
+        }
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/get_entities_mapping",
+            type: "POST",
+            data: {
+                "ENT_ID": $('#entityIDDropBox').val(),
+                "P_TYPE": $('#parentTypeID').val(),
+                "C_TYPE": $('#childTypeID').val(),
+                "IND":indicator
+            },
+            cache: false,
+            success: function (data) {
+                g_entRecord = data;
+                $('#entityMappingGrid tbody').empty();
+                $.each(data, function (i, v) {
+                    $('#entityMappingGrid tbody').append('<tr><td>' + ++i + '</td><td>' + v.relatioN_TYPE_ID + '</td><td>' + v.p_TYPE_ID + '</td><td>' + v.c_TYPE_ID + '</td><td>' + v.parenT_CODE + '</td><td>' + v.chilD_CODE + '</td><td>' + v.parenT_ID + '</td><td>' + v.entitY_ID + '</td><td>' + v.p_NAME + '</td><td>' + v.c_NAME + '</td><td>' + v.status + '</td><td><a href="#" onclick="event.preventDefault();UpdateEntityType(' + v.autid + ');" class="text-danger">Update</a></td></tr>');
+                });
+            },
+            dataType: "json",
+        });
+    }
+    function getEntityMappingReporting() {
+        var indicator = "";
+        if ($('#entityIDDropBox').val() != 0) {
+            indicator = "Y";
+        }
+        else if ($('#parentTypeID').val() != 0) {
+            indicator = "Y";
+        }
+        else if ($('#childTypeID').val() != 0) {
+            indicator = "Y";
+        }
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/get_entities_mapping_reporting",
+            type: "POST",
+            data: {
+                "ENT_ID": $('#entityIDDropBox').val(),
+                "P_TYPE": $('#parentTypeID').val(),
+                "C_TYPE": $('#childTypeID').val(),
+                "IND": indicator
+            },
+            cache: false,
+            success: function (data) {
+                g_entRecord = data;
+                $('#entityMappingGrid tbody').empty();
+                $.each(data, function (i, v) {
+                    $('#entityMappingGrid tbody').append('<tr><td>' + ++i + '</td><td>' + v.relatioN_TYPE_ID + '</td><td>' + v.p_TYPE_ID + '</td><td>' + v.c_TYPE_ID + '</td><td>' + v.parenT_CODE + '</td><td>' + v.chilD_CODE + '</td><td>' + v.parenT_ID + '</td><td>' + v.entitY_ID + '</td><td>' + v.p_NAME + '</td><td>' + v.c_NAME + '</td><td>' + v.status + '</td><td><a href="#" onclick="event.preventDefault();UpdateEntityType(' + v.autid + ');" class="text-danger">Update</a></td></tr>');
+                });
+            },
+            dataType: "json",
+        });
+    }
+    function reloadLocation() {
+        $('#updateEntityType').modal('hide');
+        getEntitiesMapping();
+    }
+
+    function UpdateEntityType(typeId) {
+        g_entId = typeId;
+        $('#updateEntityType').modal('show');
+
+        $('#modalEntId').val('');
+        $('#modalEntType').val('');
+        $('#modalEntTypeDesc').val('');
+        $('#modalEntAuitable').val('N');
+        $('#modalAuditedCode').val('');
+        $('#modalEntAuitedType').val('');
+        $('#entAuditbyField').val(0);
+        $.each(g_entRecord, function (i, v) {
+            if (v.autid == g_entId) {
+
+                $('#modalEntId').val(v.autid);
+                $('#modalEntType').val(v.entitycode);
+                $('#modalEntTypeDesc').val(v.entitytypedesc);
+                $('#modalEntAuitable').val(v.auditable);
+                $('#modalAuditedCode').val(v.auditedby);
+                $('#modalEntAuitedType').val(v.audiT_TYPE);
+                $('#entAuditbyField').val(v.auditeD_BY_ENTITY);
+
+            }
+        })
+
+    }
+    function saveChangesEntityType() {
+
+        var entityUpdateModel = {
+            'AUTID': $('#modalEntId').val(),
+            'ENTITYCODE': $('#modalEntType').val(),
+            'ENTITYTYPEDESC': $('#modalEntTypeDesc').val(),
+            'AUDITABLE': $('#modalEntAuitable').val(),
+            'AUDITEDBY': $('#modalAuditedCode').val(),
+            'AUDITED_BY_ENTITY': $('#entAuditbyField').val(),
+            'AUDIT_TYPE': $('#modalEntAuitedType').val(),
+            'E_AUTID': g_entId
+        }
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/update_entity_types",
+            type: "POST",
+            data: {
+                ENTITY_MODEL: entityUpdateModel
+            },
+            cache: false,
+            success: function (data) {
+                alert(data.message);
+                onAlertCallback(reloadLocation);
+
+            },
+            dataType: "json",
+        });
+    }
+    function getEntitiesMapping() {
+        if ($('#datasource').val() == 0) {
+            $('#entityMappingGrid tbody').empty();
+        } else {
+            $('#entityMappingGrid tbody').empty();
+            if ($('#datasource').val() == "mapping") {
+                getEntityMapping();
+            } else {
+                getEntityMappingReporting();
+            }
+
+        }
+    }
+    function getEntityIDDropBox() {
+        $('#entityIDDropBox').empty();
+        $('#entityIDDropBox').append('<option value=0>--Select Entity--</option>');
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/get_entities_of_parent_child",
+            type: "POST",
+            data: {
+                'P_TYPE_ID': $('#parentTypeID').val(),
+                'C_TYPE_ID': $('#childTypeID').val(),
+            },
+            cache: false,
+            success: function (data) {
+                $.each(data, function (i, v) {
+                    $('#entityIDDropBox').append('<option value=' + v.parenT_ID + '>' + v.p_NAME + '</option>');
+                });
+             
+            },
+            dataType: "json",
+        });
+    }
+</script>
+
+
+<div class="row col-md-12 mt-1">
+    <div class="col-md-4">
+        <h6>Relation Type ID</h6>
+    </div>
+    <div class="col-md-8">
+        <select class="form-control" id="relationTypeID">
+
+            <option id="0" value="0" selected="selected">--Select Relationship Type--</option>
+
+
+            @{
+                if (ViewData["Userrelationship"] != null)
+                {
+                    foreach (var item in (dynamic)(ViewData["Userrelationship"]))
+                    {
+                                <option value="@item.ENTITY_REALTION_ID" id="@item.ENTITY_REALTION_ID">@item.FIELD_NAME</option>
+                    }
+                }
+            }
+
+
+          
+        </select>
+    </div>
+</div>
+<div class="row col-md-12 mt-1">
+    <div class="col-md-4">
+        <h6>Parent Type ID</h6>
+    </div>
+    <div class="col-md-8">
+        <select onchange="getEntityIDDropBox();" class="form-control" id="parentTypeID">
+            <option value="0">--Select Parent Type ID--</option>
+
+            @{
+                if (ViewData["EntitiesType"] != null)
+                {
+                    foreach (var item in (dynamic)(ViewData["EntitiesType"]))
+                    {
+                                <option value="@item.ENTITY_ID" id="@item.ENTITY_ID">@item.NAME</option>
+                    }
+                }
+            }
+
+           
+        </select>
+    </div>
+</div>
+<div class="row col-md-12 mt-1">
+    <div class="col-md-4">
+        <h6>Child Type ID</h6>
+    </div>
+    <div class="col-md-8">
+        <select onchange="getEntityIDDropBox();" class="form-control" id="childTypeID">
+            <option value="0">--Select Child Type ID--</option>
+
+            @{
+                if (ViewData["EntitiesType"] != null)
+                {
+                    foreach (var item in (dynamic)(ViewData["EntitiesType"]))
+                    {
+                                <option value="@item.ENTITY_ID" id="@item.ENTITY_ID">@item.NAME</option>
+                    }
+                }
+            }
+
+            
+        </select>
+    </div>
+</div>
+
+<div class="row col-md-12 mt-1">
+    <div class="col-md-4">
+        <h6>Entity ID</h6>
+    </div>
+    <div class="col-md-8">
+        <select class="form-control" id="entityIDDropBox">
+            <option value="0">--Select Entity ID--</option>
+           
+
+        </select>
+    </div>
+</div>
+
+<div class="row col-md-12 mt-1">
+    <div class="col-md-4">
+        <h6>Data Source</h6>
+    </div>
+    <div class="col-md-8">
+        <select onchange="getEntitiesMapping();" class="form-control" id="datasource">
+            <option value="0">--Select Source Data</option>
+            <option value="mapping">Mapping</option>
+            <option value="reporting">Reporting</option>
+        </select>
+    </div>
+</div>
+
+
+<div class="row col-md-12 mt-3">
+    <table id="entityMappingGrid" class="table table-hover table-bordered table-hover mt-3 table-striped">
+        <thead style="background-color: #19875478 !important; ">
+            <tr>
+                <th class="col-md-auto text-center">Sr. No.</th>
+                <th class="col-md-auto">Relation Type ID</th>
+                <th class="col-md-auto">Parent Type ID</th>
+                <th class="col-md-auto">Child Type ID</th>
+                <th class="col-md-auto">Parent Code</th>
+                <th class="col-md-auto">Child Code</th>
+                <th class="col-md-auto">Parent ID</th>
+                <th class="col-md-auto">Child ID</th>
+                <th class="col-md-auto">Parent Name</th>
+                <th class="col-md-auto">Child Name</th>
+                <th class="col-md-auto">Status</th>
+                <th class="col-md-auto"></th>
+
+
+            </tr>
+        </thead>
+        <tbody>
+        </tbody>
+    </table>
+
+</div>
+
+
+
+<div id="updateEntityType" class="modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-xl" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h6 class="modal-title">Add Checklist Detail</h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+
+
+                <div class="form-group">
+                    <label>ID</label>
+                    <input id="modalEntId" type="text" class="form-control" />
+                </div>
+                <div class="form-group">
+                    <label>Entity Type</label>
+                    <input id="modalEntType" type="text" class="form-control" />
+                </div>
+                <div class="form-group">
+                    <label>Type Description</label>
+                    <textarea id="modalEntTypeDesc" class="form-control" rows="3"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Auditable</label>
+                    <select class="form-control" id="modalEntAuitable">
+                        <option value="A">Auditable</option>
+                        <option value="N">Not Auditable</option>
+
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Audited By Type</label>
+                    <select class="form-control" id="modalEntAuitedType">
+                        <option value="">--Select Audited By Type--</option>
+                        <option value="D">Department</option>
+                        <option value="B">Branch</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Audited By</label>
+                    <select id="entAuditbyField" class="form-control">
+                        <option value="0" id="0" selected>--Select Entity--</option>
+                        @{
+                            if (ViewData["AuditedByList"] != null)
+                            {
+                                foreach (var item in (dynamic)(ViewData["AuditedByList"]))
+                                {
+                                            <option value="@item.AUTID">@item.ENTITYTYPEDESC</option>
+                                }
+                            }
+                        }
+
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Audited By Code</label>
+                    <input id="modalAuditedCode" type="text" class="form-control" />
+                </div>
+
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button onclick="saveChangesEntityType();" type="button" data-bs-dismiss="modal" class="btn btn-success">Save Changes</button>
+
+            </div>
+        </div>
+    </div>
+</div>

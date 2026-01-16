@@ -1,0 +1,96 @@
+﻿@{
+    var page_id = ViewData["PageId"] as int? ?? 0;
+}
+
+@{
+    ViewData["Title"] = "Analysis of Settlement Paras";
+    Layout = "_Layout";
+}
+
+<script type="text/javascript">
+    var g_cnic = 0;
+    var g_loan_disb_id = 0;
+    $('#document').ready(function () {
+
+        var url_string = window.location;
+        var url = new URL(url_string);
+        g_cnic = url.searchParams.get("cnic");
+        g_loan_disb_id = url.searchParams.get("disb_id");
+        getCnicLoanDetail();
+        $("#dateSelector").datepicker({
+            format: "mm-yyyy",
+            viewMode: "months",
+            minViewMode: "months"
+        });
+
+    });
+
+
+    function getCnicLoanDetail() {
+
+
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/get_default_cnic_loan_detail_report",
+            type: "POST",
+            data: {
+                'CNIC': g_cnic,
+                'LOAN_DISB_ID': g_loan_disb_id,
+
+            },
+            cache: false,
+            success: function (data) {
+
+                $.each(data, function (i, v) {
+
+                    $('#gldetailtab tbody').append('<tr><td class="text-center">' + v.cnic + '</td><td class="text-center">' + v.transactioN_DATE.split(" ")[0] + '</td><td class="text-center">' + v.currenT_STATUS + '</td>  <td class="text-right">' + v.outstandinG_PRINCIPAL_TOTAL + '</td><td class="text-right">' + v.outstandinG_MARKUP_TOTAL + '</td><td class="text-right">' + v.defaulT_PRINCIPAL + '</td><td class="text-right">' + v.defaulT_MARKUP + '</td></tr>')
+
+                });
+            },
+            dataType: "json",
+        });
+    }
+
+
+</script>
+
+<div class="row col-md-12 mt-3">
+    <h4 style="display: block; color: #be0e43">Analysis of Settlement Paras</h4>
+</div>
+
+<div class="col-md-4">
+    <input class="form-control" type="date" id="dateSelector" />
+</div>
+
+<div class="row col-md-12 mt-3">
+    <input class="form-control" id="searchTableRecord" type="text" placeholder="Search..">
+</div>
+
+<div class="row col-md-12 mt-3">
+    <div class="row col-md-12">
+        <table id="gldetailtab" class="col-md-12 table table-bordered table-hover mt-1 table-striped">
+            <thead style="background-color: #19875478 !important; ">
+                <tr>
+                    <th class="col-md-auto">Zone</th>
+                    <th class="col-md-auto">Total No. of Compliance of Paras Submitted</th>
+                    <th class="col-md-auto">Paras Settled in </th>
+                    <th class="col-md-auto">Paras Settled in</th>
+                    <th class="col-md-auto">Inrease/ Decrease</th>
+                    <th class="col-md-auto">Paras as at</th>
+                    <th class="col-md-auto">Paras added in</th>
+
+                    <th class="col-md-auto">Total Paras</th>
+                    <th class="col-md-auto">Total Paras Settled upto March</th>
+                    <th class="col-md-auto">Balance as at</th>
+                    <th class="col-md-auto">% of Sattlement</th>
+                    <th class="col-md-auto"></th>
+                </tr>
+            </thead>
+            <tbody>
+            </tbody>
+
+
+        </table>
+
+
+    </div>
+</div>

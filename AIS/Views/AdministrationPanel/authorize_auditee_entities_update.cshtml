@@ -1,0 +1,213 @@
+﻿@{
+    var page_id = ViewData["PageId"] as int? ?? 0;
+}
+
+@{
+    ViewData["Title"] = "Authorize Audit Entity Updates";
+    Layout = "_Layout";
+}
+<script type="text/javascript">
+    var g_pending = [];
+    var g_current = null;
+    function getVal(obj, prop) {
+        return obj[prop] ?? obj[prop.toLowerCase()] ?? obj[prop.toUpperCase()] ?? obj[prop.replace(/_/g, '')];
+    }
+    function loadPending() {
+        $('#pendingGrid tbody').empty();
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/GetAuditeeEntitiesPendingAuthorization",
+            type: "POST",
+            cache: false,
+            success: function (data) {
+                var pendingList = Array.isArray(data) ? data : (data ? [data] : []);
+                g_pending = pendingList;
+                if (!pendingList.length) {
+                    $('#pendingGrid tbody').append('<tr><td colspan="12" class="text-center">No pending updates found.</td></tr>');
+                    return;
+                }
+                $.each(pendingList, function (i, v) {
+                    var id = getVal(v, 'entitY_ID');
+                    $('#pendingGrid tbody').append(
+                        '<tr><td>' + id + '</td>' +
+                        '<td>' + getVal(v, 'code') + '</td>' +
+                        '<td>' + getVal(v, 'name') + '</td>' +
+                        '<td>' + getVal(v, 'active') + '</td>' +
+                        '<td>' + getVal(v, 'auditbY_NAME') + '</td>' +
+                        '<td>' + getVal(v, 'auditable') + '</td>' +
+                        '<td>' + getVal(v, 'address') + '</td>' +
+                        '<td>' + getVal(v, 'telephone') + '</td>' +
+                        '<td>' + getVal(v, 'emaiL_ADDRESS') + '</td>' +
+                        '<td>' + getVal(v, 'erisk') + '</td>' +
+                        '<td>' + getVal(v, 'esize') + '</td>' +
+                        '<td>' +
+                        '<a href="#" onclick="event.preventDefault();openCompare(' + id + ');" class="text-danger me-2">View</a>' +
+                        '</td></tr>');
+                });
+            },
+            dataType: "json",
+        });
+    }
+    function openCompare(id) {
+        var ent = g_pending.find(e => getVal(e, 'entitY_ID') == id);
+        if (!ent) return;
+        g_current = ent;
+        $('#compareEntityId').val(id);
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/GetAuditeeEntityByIdforAuthorization",
+            type: "POST",
+            data: { ENTITY_ID: id },
+            cache: false,
+            success: function (orig) {
+                if (!orig) return;
+
+                $('#oldCode').val(getVal(orig, 'codE_OLD'));
+                $('#oldName').val(getVal(orig, 'namE_OLD'));
+                $('#oldActive').val(getVal(orig, 'activE_OLD'));
+                $('#oldAuditBy').val(getVal(orig, 'auditbY_NAME_OLD'));
+                $('#oldAuditable').val(getVal(orig, 'auditablE_OLD'));
+                $('#oldAddress').val(getVal(orig, 'addresS_OLD'));
+                $('#oldTelephone').val(getVal(orig, 'telephonE_OLD'));
+                $('#oldEmail').val(getVal(orig, 'emaiL_ADDRESS_OLD'));
+                $('#oldRiskId').val(getVal(orig, 'risK_ID_OLD'));
+                $('#oldSizeId').val(getVal(orig, 'sizE_ID_OLD'));
+                $('#oldRisk').val(getVal(orig, 'erisK_OLD'));
+                $('#oldSize').val(getVal(orig, 'esizE_OLD'));
+
+                $('#newCode').val(getVal(ent, 'code'));
+                $('#newName').val(getVal(ent, 'name'));
+                $('#newActive').val(getVal(ent, 'active'));
+                $('#newAuditBy').val(getVal(ent, 'auditbY_NAME'));
+                $('#newAuditable').val(getVal(ent, 'auditable'));
+                $('#newAddress').val(getVal(ent, 'address'));
+                $('#newTelephone').val(getVal(ent, 'telephone'));
+                $('#newEmail').val(getVal(ent, 'emaiL_ADDRESS'));
+                $('#newRiskId').val(getVal(ent, 'risk_ID'));
+                $('#newSizeId').val(getVal(ent, 'size_ID'));
+                $('#newRisk').val(getVal(ent, 'erisk'));
+                $('#newSize').val(getVal(ent, 'esize'));
+
+                $('#compareModal').modal('show');
+            },
+            dataType: "json",
+        });
+    }
+    function authorizeCurrent() {
+        if (!g_current) return;
+        g_current.UP_STATUS = 'A';
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/UpdateAuditeeEntity",
+            type: "POST",
+            data: { ENTITY_MODEL: g_current, IND: 'A' },
+            cache: false,
+            success: function (resp) {
+                alert(resp.Message);
+                $('#compareModal').modal('hide');
+                loadPending();
+            },
+            dataType: "json",
+        });
+    }
+    function rejectCurrent() {
+        if (!g_current) return;
+        g_current.UP_STATUS = 'R';
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/UpdateAuditeeEntity",
+            type: "POST",
+            data: { ENTITY_MODEL: g_current, IND: 'R' },
+            cache: false,
+            success: function (resp) {
+                alert(resp.Message);
+                $('#compareModal').modal('hide');
+                loadPending();
+            },
+            dataType: "json",
+        });
+    }
+    function authorizeEntry(id) {
+        var ent = g_pending.find(e => getVal(e, 'entitY_ID') == id);
+        if (!ent) return;
+        g_current = ent;
+        authorizeCurrent();
+    }
+    function rejectEntry(id) {
+        var ent = g_pending.find(e => getVal(e, 'entitY_ID') == id);
+        if (!ent) return;
+        g_current = ent;
+        rejectCurrent();
+    }
+    $(document).ready(function(){
+        loadPending();
+    });
+</script>
+<div class="container">
+    <div class="row col-md-12 mt-3">
+        <table id="pendingGrid" class="table table-bordered table-hover table-striped">
+            <thead>
+                <tr style="background-color:#19875478;">
+                    <th>ENTITY ID</th>
+                    <th>CODE</th>
+                    <th>NAME</th>
+                    <th>Active</th>
+                    <th>AUDIT ZONE</th>
+                    <th>AUDITABLE</th>
+                    <th>ADDRESS</th>
+                    <th>TELEPHONE</th>
+                    <th>EMAIL ADDRESS</th>
+                    <th>Risk</th>
+                    <th>Size</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+</div>
+</div>
+<div id="compareModal" class="modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">Audit Entity Update</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="compareEntityId" />
+                <div class="row">
+                    <div class="col-md-6">
+                        <form>
+                            <h6 class="text-center"><b>Existing Details</b></h6>
+                            <div class="form-group"><label>Code</label><input id="oldCode" disabled class="form-control" /></div>
+                            <div class="form-group"><label>Name</label><input id="oldName" disabled class="form-control" /></div>
+                            <div class="form-group"><label>Active</label><input id="oldActive" disabled class="form-control" /></div>
+                            <div class="form-group"><label>Audit Zone</label><input id="oldAuditBy" disabled class="form-control" /></div>
+                            <div class="form-group"><label>Auditable</label><input id="oldAuditable" disabled class="form-control" /></div>
+                            <div class="form-group"><label>Address</label><input id="oldAddress" disabled class="form-control" /></div>
+                            <div class="form-group"><label>Telephone</label><input id="oldTelephone" disabled class="form-control" /></div>
+                            <div class="form-group"><label>Email</label><input id="oldEmail" disabled class="form-control" /></div>
+                            <div class="form-group"><label>Risk</label><input id="oldRisk" disabled class="form-control" /></div>
+                            <div class="form-group"><label>Size</label><input id="oldSize" disabled class="form-control" /></div>
+                        </form>
+                    </div>
+                    <div class="col-md-6">
+                        <form>
+                            <h6 class="text-center"><b>Proposed Changes</b></h6>
+                            <div class="form-group"><label>Code</label><input id="newCode" disabled class="form-control" /></div>
+                            <div class="form-group"><label>Name</label><input id="newName" disabled class="form-control" /></div>
+                            <div class="form-group"><label>Active</label><input id="newActive" disabled class="form-control" /></div>
+                            <div class="form-group"><label>Audit By</label><input id="newAuditBy" disabled class="form-control" /></div>
+                            <div class="form-group"><label>Auditable</label><input id="newAuditable" disabled class="form-control" /></div>
+                            <div class="form-group"><label>Address</label><input id="newAddress" disabled class="form-control" /></div>
+                            <div class="form-group"><label>Telephone</label><input id="newTelephone" disabled class="form-control" /></div>
+                            <div class="form-group"><label>Email</label><input id="newEmail" disabled class="form-control" /></div>
+                            <div class="form-group"><label>Risk</label><input id="newRisk" disabled class="form-control" /></div>
+                            <div class="form-group"><label>Size</label><input id="newSize" disabled class="form-control" /></div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-success" onclick="authorizeCurrent();">Authorize</button>
+                <button type="button" class="btn btn-danger" onclick="rejectCurrent();">Reject</button>
+            </div>
+        </div>
+    </div>
+</div>
