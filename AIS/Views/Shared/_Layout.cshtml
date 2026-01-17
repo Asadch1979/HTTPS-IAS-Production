@@ -7,6 +7,7 @@
 
     var menus = (ViewData["TopMenu"] as IEnumerable<dynamic> ?? Enumerable.Empty<dynamic>()).ToList();
     var pages = (ViewData["TopMenuPages"] as IEnumerable<dynamic> ?? Enumerable.Empty<dynamic>()).ToList();
+    var hideSidebar = ViewData["HideSidebar"] as bool? ?? false;
 
     // Visible + valid pages only (exclude special "user info" row if it exists)
     var visiblePages = pages.Where(p =>
@@ -444,87 +445,119 @@
             }
             body.ias-sidebar-open .ias-backdrop{ display:block; }
         }
+        body.ias-hide-sidebar .ias-shell{
+            grid-template-columns: 1fr;
+        }
+        body.ias-hide-sidebar .ias-sidebar{
+            display:none;
+        }
+        body.ias-hide-sidebar .ias-backdrop{
+            display:none;
+        }
     </style>
 </head>
 
-<body data-page-id="@((int?)ViewData["PageId"] ?? 0)">
-    <div class="ias-backdrop" id="iasSidebarBackdrop" aria-hidden="true"></div>
+<body data-page-id="@((int?)ViewData["PageId"] ?? 0)" class="@(hideSidebar ? "ias-hide-sidebar" : "")">
+    @if (!hideSidebar)
+    {
+        <div class="ias-backdrop" id="iasSidebarBackdrop" aria-hidden="true"></div>
+    }
 
     <div class="ias-shell">
 
         <!-- SIDEBAR -->
-        <aside class="ias-sidebar" id="iasSidebar">
-            <div class="ias-sidebar__inner">
-                <div class="ias-sidebar__head">
-                    <div class="ias-sidebar__title">
-                        <span class="ias-dot"></span>
-                        <span>IAS</span>
-                    </div>
-                    <button class="ias-collapse-btn" type="button" id="iasSidebarCollapseBtn" title="Collapse">
-                        <i class="fa-solid fa-angles-left" id="iasSidebarCollapseIcon"></i>
-                    </button>
-                </div>
-
-                <div class="ias-sidebar__searchwrap">
-                    <input id="iasMenuSearch" class="ias-sidebar__search" type="search" placeholder="Search menu..." autocomplete="off" />
-                </div>
-
-                <div class="ias-sidebar__body" id="iasSideMenu">
-                    @if (menus.Count == 0 || visiblePages.Count == 0)
-                    {
-                        <div class="p-3" style="color:rgba(255,255,255,.75); font-size:12px;">
-                            Menu is not available for this user.
+        @if (!hideSidebar)
+        {
+            <aside class="ias-sidebar" id="iasSidebar">
+                <div class="ias-sidebar__inner">
+                    <div class="ias-sidebar__head">
+                        <div class="ias-sidebar__title">
+                            <span class="ias-dot"></span>
+                            <span>IAS</span>
                         </div>
-                    }
-                    else
-                    {
-                        foreach (var m in menus)
+                        <button class="ias-collapse-btn" type="button" id="iasSidebarCollapseBtn" title="Collapse">
+                            <i class="fa-solid fa-angles-left" id="iasSidebarCollapseIcon"></i>
+                        </button>
+                    </div>
+
+                    <div class="ias-sidebar__searchwrap">
+                        <input id="iasMenuSearch" class="ias-sidebar__search" type="search" placeholder="Search menu..." autocomplete="off" />
+                    </div>
+
+                    <div class="ias-sidebar__body" id="iasSideMenu">
+                        @if (menus.Count == 0 || visiblePages.Count == 0)
                         {
-                            int mId = 0;
-                            string mName = "Menu";
-                            try { mId = (int)m.Menu_Id; } catch { }
-                            try { mName = (string)m.Menu_Name; } catch { }
-
-                            var mPages = visiblePages.Where(p =>
+                            <div class="p-3" style="color:rgba(255,255,255,.75); font-size:12px;">
+                                Menu is not available for this user.
+                            </div>
+                        }
+                        else
+                        {
+                            foreach (var m in menus)
                             {
-                                try { return (int)p.Menu_Id == mId; } catch { return false; }
-                            }).ToList();
+                                int mId = 0;
+                                string mName = "Menu";
+                                try { mId = (int)m.Menu_Id; } catch { }
+                                try { mName = (string)m.Menu_Name; } catch { }
 
-                            if (mPages.Count == 0) { continue; }
+                                var mPages = visiblePages.Where(p =>
+                                {
+                                    try { return (int)p.Menu_Id == mId; } catch { return false; }
+                                }).ToList();
 
-                            var hasSub = mPages.Any(p =>
-                            {
-                                try { return !string.IsNullOrWhiteSpace((string)p.Sub_Menu); } catch { return false; }
-                            });
+                                if (mPages.Count == 0) { continue; }
 
-                            <div class="ias-acc-group" data-group data-menu-id="@mId">
-                                <button type="button"
-                                        class="ias-acc-btn"
-                                        data-menu-btn
-                                        data-menu-id="@mId"
-                                        data-menu-name="@mName"
-                                        aria-expanded="false"
-                                        aria-controls="iasMenuPanel_@mId"
-                                        title="@mName">
-                                    <span class="ias-nav-bullet"></span>
-                                    <span class="ias-acc-text">@mName</span>
-                                    <span class="ias-acc-icon" aria-hidden="true">+</span>
-                                </button>
+                                var hasSub = mPages.Any(p =>
+                                {
+                                    try { return !string.IsNullOrWhiteSpace((string)p.Sub_Menu); } catch { return false; }
+                                });
 
-                                <div id="iasMenuPanel_@mId" class="ias-acc-panel" hidden>
-                                    @if (hasSub)
-                                    {
-                                        var subGroups = mPages
-                                            .GroupBy(p =>
-                                            {
-                                                try { return (string)p.Sub_Menu_Name ?? (string)p.Sub_Menu; } catch { return "Other"; }
-                                            })
-                                            .ToList();
+                                <div class="ias-acc-group" data-group data-menu-id="@mId">
+                                    <button type="button"
+                                            class="ias-acc-btn"
+                                            data-menu-btn
+                                            data-menu-id="@mId"
+                                            data-menu-name="@mName"
+                                            aria-expanded="false"
+                                            aria-controls="iasMenuPanel_@mId"
+                                            title="@mName">
+                                        <span class="ias-nav-bullet"></span>
+                                        <span class="ias-acc-text">@mName</span>
+                                        <span class="ias-acc-icon" aria-hidden="true">+</span>
+                                    </button>
 
-                                        foreach (var sg in subGroups)
+                                    <div id="iasMenuPanel_@mId" class="ias-acc-panel" hidden>
+                                        @if (hasSub)
                                         {
-                                            <div class="ias-subtitle" data-subtitle>@sg.Key</div>
-                                            foreach (var p in sg)
+                                            var subGroups = mPages
+                                                .GroupBy(p =>
+                                                {
+                                                    try { return (string)p.Sub_Menu_Name ?? (string)p.Sub_Menu; } catch { return "Other"; }
+                                                })
+                                                .ToList();
+
+                                            foreach (var sg in subGroups)
+                                            {
+                                                <div class="ias-subtitle" data-subtitle>@sg.Key</div>
+                                                foreach (var p in sg)
+                                                {
+                                                    string pageName = "";
+                                                    string pagePath = "";
+                                                    try { pageName = (string)p.Page_Name; } catch { }
+                                                    try { pagePath = (string)p.Page_Path; } catch { }
+
+                                                    if (string.IsNullOrWhiteSpace(pageName) || string.IsNullOrWhiteSpace(pagePath)) { continue; }
+
+                                                    <a class="ias-page-link" data-link href="~/@pagePath" title="@pageName">
+                                                        <span class="ias-nav-bullet"></span>
+                                                        <span>@pageName</span>
+                                                    </a>
+                                                }
+                                            }
+                                        }
+                                        else
+                                        {
+                                            foreach (var p in mPages)
                                             {
                                                 string pageName = "";
                                                 string pagePath = "";
@@ -539,31 +572,14 @@
                                                 </a>
                                             }
                                         }
-                                    }
-                                    else
-                                    {
-                                        foreach (var p in mPages)
-                                        {
-                                            string pageName = "";
-                                            string pagePath = "";
-                                            try { pageName = (string)p.Page_Name; } catch { }
-                                            try { pagePath = (string)p.Page_Path; } catch { }
-
-                                            if (string.IsNullOrWhiteSpace(pageName) || string.IsNullOrWhiteSpace(pagePath)) { continue; }
-
-                                            <a class="ias-page-link" data-link href="~/@pagePath" title="@pageName">
-                                                <span class="ias-nav-bullet"></span>
-                                                <span>@pageName</span>
-                                            </a>
-                                        }
-                                    }
+                                    </div>
                                 </div>
-                            </div>
+                            }
                         }
-                    }
+                    </div>
                 </div>
-            </div>
-        </aside>
+            </aside>
+        }
 
         <!-- CONTENT -->
         <div class="ias-content">
@@ -571,9 +587,12 @@
             <!-- TOPBAR (keep id navBarTopMenu for compatibility with existing JS) -->
             <header class="ias-topbar">
                 <nav id="navBarTopMenu" class="navbar navbar-expand-lg px-3 h-100">
-                    <button class="ias-icon-btn d-lg-none me-2" type="button" id="iasSidebarToggleBtn" title="Menu">
-                        <i class="fa-solid fa-bars"></i>
-                    </button>
+                    @if (!hideSidebar)
+                    {
+                        <button class="ias-icon-btn d-lg-none me-2" type="button" id="iasSidebarToggleBtn" title="Menu">
+                            <i class="fa-solid fa-bars"></i>
+                        </button>
+                    }
 
                     <a class="navbar-brand" href="~/Home/Index">
                         <span class="ias-brand-logo"><img src="~/Images/ztbllogo.png" alt="ZTBL" /></span>
