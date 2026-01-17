@@ -162,6 +162,7 @@ namespace AIS.Controllers
                         });
                     }
 
+                    SetMustChangePasswordFlag(user);
                     await SignInUserAsync(sessionUser);
                     return Json(BuildLoginResponse(user));
                 }
@@ -434,6 +435,21 @@ namespace AIS.Controllers
             var principal = new ClaimsPrincipal(identity);
 
             await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal);
+        }
+
+        private void SetMustChangePasswordFlag(UserModel user)
+        {
+            var mustChangePassword = user?.passwordChangeRequired == true ||
+                                     string.Equals(user?.changePassword, "Y", StringComparison.OrdinalIgnoreCase);
+
+            try
+            {
+                HttpContext.Session.SetString(SessionKeys.MustChangePassword, mustChangePassword ? "1" : "0");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Unable to set must-change-password flag for current session.");
+            }
         }
 
         private UserModel EvaluateRateLimit(LoginModel login)

@@ -13,5 +13,6 @@ namespace AIS.Session
         public const string UserRole = "session:user-role";
         public const string IsSuperUser = "session:is-super-user";
         public const string ActiveEngagementId = "session:active-engagement-id";
+        public const string MustChangePassword = "session:must-change-password";
     }
 }

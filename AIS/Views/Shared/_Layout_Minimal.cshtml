@@ -1,0 +1,41 @@
+@inject Microsoft.Extensions.Configuration.IConfiguration Configuration
+@{
+    var baseUrl = ViewBag.BaseURL as string ?? Configuration["BaseURL"] ?? Context.Request.PathBase.Value ?? string.Empty;
+    var year = DateTime.Now.Year;
+}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="base-url" content="@baseUrl" />
+
+    <title>@ViewData["Title"] - IAS</title>
+
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" />
+    <link rel="icon" type="image/x-icon" href="~/Images/ztbllogo.png">
+</head>
+<body>
+    <header class="border-bottom bg-white">
+        <div class="container py-2 d-flex align-items-center gap-2">
+            <img src="~/Images/ztbllogo.png" alt="IAS Logo" width="36" height="36" />
+            <span class="fw-bold text-dark">Internal Audit System</span>
+        </div>
+    </header>
+
+    <main class="container py-4">
+        @RenderBody()
+    </main>
+
+    <footer class="text-center text-muted py-3">
+        &copy; @year INTERNAL AUDIT (Developed By A.A.C)
+    </footer>
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+    <script src="~/js/common-validation.js" asp-append-version="true"></script>
+    @RenderSection("Scripts", required: false)
+</body>
+</html>

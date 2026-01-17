@@ -290,6 +290,7 @@ namespace AIS
             app.UseAuthentication();
             app.UseMiddleware<SessionValidationMiddleware>();
             app.UseAuthorization();
+            app.UseMiddleware<ForcePasswordChangeMiddleware>();
 
             app.UseEndpoints(endpoints =>
             {
