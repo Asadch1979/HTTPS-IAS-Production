@@ -54,7 +54,7 @@ namespace AIS.Controllers
                                 CONTROLLER = ReadString(reader, "CONTROLLER"),
                                 ACTION = ReadString(reader, "ACTION"),
                                 MESSAGE = ReadString(reader, "MESSAGE"),
-                                TECH_DETAILS = ReadString(reader, "TECH_DETAILS"),
+                                TECH_DETAILS = ReadClob(reader, "TECH_DETAILS"),
                                 PAGE_ID = ReadNullableInt(reader, "PAGE_ID"),
                                 ENG_ID = ReadNullableInt(reader, "ENG_ID"),
                                 USER_PPNO = ReadString(reader, "USER_PPNO")
@@ -115,6 +115,19 @@ namespace AIS.Controllers
                 }
 
             return reader[column].ToString();
+            }
+
+        private static string ReadClob(OracleDataReader reader, string column)
+            {
+            if (reader[column] == DBNull.Value)
+                {
+                return string.Empty;
+                }
+
+            using (var clob = reader.GetOracleClob(reader.GetOrdinal(column)))
+                {
+                return clob?.Value ?? string.Empty;
+                }
             }
         }
     }
