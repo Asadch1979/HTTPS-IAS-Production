@@ -1,6 +1,7 @@
 using AIS.Models;
 using AIS.Security.PasswordPolicy;
 using AIS.Services;
+using AIS.Session;
 using System;
 using System.Text;
 using Microsoft.AspNetCore.Http;
@@ -80,6 +81,7 @@ namespace AIS.Controllers
                     return Json(new { success = false, message = "Unable to change password. Please try again." });
                     }
 
+                HttpContext.Session.Remove(SessionKeys.MustChangePassword);
                 return Json(new { success = true, message = "Your password has been changed successfully." });
                 }
             catch (Exception ex)
