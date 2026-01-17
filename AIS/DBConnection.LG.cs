@@ -66,6 +66,29 @@ namespace AIS.Controllers
             return logs;
             }
 
+        public int DeleteOldSystemLogs(DateTime cutoffTime)
+            {
+            using (var con = DatabaseConnection(requireActiveSession: false))
+                using (OracleCommand cmd = con.CreateCommand())
+                    {
+                    cmd.CommandText = "PKG_LG.P_DELETE_SYS_LOGS";
+                    cmd.CommandType = CommandType.StoredProcedure;
+                    cmd.BindByName = true;
+                    cmd.Parameters.Clear();
+                    cmd.Parameters.Add("p_cutoff_time", OracleDbType.TimeStamp).Value = cutoffTime;
+                    var deletedCountParam = cmd.Parameters.Add("o_deleted_count", OracleDbType.Int32);
+                    deletedCountParam.Direction = ParameterDirection.Output;
+                    cmd.ExecuteNonQuery();
+
+                    if (deletedCountParam.Value == DBNull.Value || deletedCountParam.Value == null)
+                        {
+                        return 0;
+                        }
+
+                    return Convert.ToInt32(deletedCountParam.Value);
+                    }
+            }
+
         private void LogWithLevel(string procedureName, string module, string controller, string action, string message, string techDetails, int? pageId, int? engId, string userPpno)
             {
             using (var con = DatabaseConnection(requireActiveSession: false))

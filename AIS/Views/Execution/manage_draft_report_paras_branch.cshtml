@@ -529,25 +529,30 @@
 
                         <label class="form-control text-bold fw-bold text-center">Search Responsible By PP No.</label>
 
-                        <div id="findBYPPNOPanel" class="mt-2 row col-md-12">
+                                                <div id="findBYPPNOPanel" class="mt-2 row col-md-12">
                             <div class="col-md-2">
+                                <label for="responsiblePPNoEntryField" class="form-label">PPNO</label>
                                 <input id="responsiblePPNoEntryField" class="form-control" type="text" placeholder="Enter PP. No." />
                             </div>
                             <div class="col-md-2">
-                                <input id="responsibleAccountNumberEntryField" class="form-control js-resp-account-number" type="number" placeholder="Enter Account Number" />
+                                <label for="responsibleLoanNumberEntryField" class="form-label">Loan Case No</label>
+                                <input id="responsibleLoanNumberEntryField" class="form-control" type="text" placeholder="Enter LC No." />
                             </div>
                             <div class="col-md-2">
-                                <input id="responsibleAccountAmountEntryField" class="form-control js-resp-account-amount" type="number" placeholder="Enter Account Amount" />
+                                <label for="responsibleLoanAmountEntryField" class="form-label">Loan Amount</label>
+                                <input id="responsibleLoanAmountEntryField" class="form-control" type="text" placeholder="Enter LC Amount" />
                             </div>
                             <div class="col-md-2">
-                                <input id="loanCaseNumber" class="form-control js-resp-loan-case" type="text" placeholder="Enter LC No." />
+                                <label for="responsibleAccountNumberEntryField" class="form-label">Account No</label>
+                                <input id="responsibleAccountNumberEntryField" class="form-control" type="number" placeholder="Enter Account Number" />
                             </div>
                             <div class="col-md-2">
-                                <input id="loanCaseAmount" class="form-control js-resp-loan-amount" type="text" placeholder="Enter LC Amount" />
+                                <label for="responsibleAccountAmountEntryField" class="form-label">Account Amount</label>
+                                <input id="responsibleAccountAmountEntryField" class="form-control" type="number" placeholder="Enter Account Amount" />
                             </div>
-
-                            <button type="button" onclick="respSection.getMatchedPP();" class="col-md-2 btn btn-success">Search</button>
-
+                            <div class="col-md-2 d-flex align-items-end">
+                                <button type="button" onclick="respSection.getMatchedPP();" class="col-md-2 btn btn-success w-100">Select</button>
+                            </div>
                         </div>
                     </div>
                     <div class="form-group">
