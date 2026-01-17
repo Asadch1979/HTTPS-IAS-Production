@@ -3,6 +3,8 @@
     Layout = "_Layout";
 }
 
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css" />
+
 <div class="container-fluid">
     <div class="row mb-3">
         <div class="col-12">
@@ -16,11 +18,11 @@
             <div class="row">
                 <div class="col-md-3 mb-3">
                     <label for="logStartTime">Start time</label>
-                    <input id="logStartTime" type="datetime-local" class="form-control" />
+                    <input id="logStartTime" type="text" class="form-control system-log-datetime" placeholder="YYYY-MM-DD hh:mm AM/PM" />
                 </div>
                 <div class="col-md-3 mb-3">
                     <label for="logEndTime">End time</label>
-                    <input id="logEndTime" type="datetime-local" class="form-control" />
+                    <input id="logEndTime" type="text" class="form-control system-log-datetime" placeholder="YYYY-MM-DD hh:mm AM/PM" />
                 </div>
                 <div class="col-md-2 mb-3">
                     <label for="logLevel">Level</label>
@@ -51,7 +53,7 @@
         </div>
     </div>
 
-    <div class="card">
+    <div class="card mb-4">
         <div class="card-body table-responsive">
             <table class="table table-bordered table-striped" id="systemLogsTable">
                 <thead>
@@ -72,25 +74,72 @@
             </table>
         </div>
     </div>
+
+    <div class="card">
+        <div class="card-body">
+            <h5 class="mb-3">Delete old logs</h5>
+            <div class="row align-items-end">
+                <div class="col-md-4 mb-3">
+                    <label for="deleteLogCutoffTime">Cutoff datetime</label>
+                    <input id="deleteLogCutoffTime" type="text" class="form-control system-log-datetime" placeholder="YYYY-MM-DD hh:mm AM/PM" />
+                </div>
+                <div class="col-md-3 mb-3">
+                    <label for="deleteLogDays">Older than (days)</label>
+                    <input id="deleteLogDays" type="number" class="form-control" min="1" placeholder="e.g. 30" />
+                </div>
+                <div class="col-md-3 mb-3">
+                    <button id="deleteOldLogs" class="btn btn-danger w-100" type="button">Delete</button>
+                </div>
+                <div class="col-md-2 mb-3 text-muted small">
+                    This cannot be undone.
+                </div>
+            </div>
+            <div id="systemLogsDeleteMessage"></div>
+        </div>
+    </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 <script type="text/javascript">
     $(document).ready(function () {
+        initSystemLogDatePickers();
         $('#loadSystemLogs').on('click', function () {
             fetchSystemLogs();
+        });
+
+        $('#deleteOldLogs').on('click', function () {
+            deleteOldSystemLogs();
         });
 
         fetchSystemLogs();
     });
 
+    function initSystemLogDatePickers() {
+        if (typeof flatpickr === 'undefined') {
+            return;
+        }
+
+        $('.system-log-datetime').flatpickr({
+            enableTime: true,
+            dateFormat: 'Y-m-d h:i K',
+            time_24hr: false,
+            allowInput: true
+        });
+    }
+
     function fetchSystemLogs() {
         $('#systemLogsMessage').text('');
+        var startValue = $('#logStartTime').val();
+        var endValue = $('#logEndTime').val();
+        var queryString = $.param({
+            start: startValue,
+            end: endValue
+        });
+
         $.ajax({
-            url: g_asiBaseURL + "/AdministrationPanel/GetSystemLogs",
+            url: g_asiBaseURL + "/AdministrationPanel/GetSystemLogs" + (queryString ? '?' + queryString : ''),
             type: "POST",
             data: {
-                startTime: $('#logStartTime').val(),
-                endTime: $('#logEndTime').val(),
                 logLevel: $('#logLevel').val(),
                 module: $('#logModule').val(),
                 userPpno: $('#logUserPpno').val(),
@@ -106,6 +155,65 @@
                 renderSystemLogs([]);
             }
         });
+    }
+
+    function deleteOldSystemLogs() {
+        $('#systemLogsDeleteMessage').removeClass('text-success text-danger').text('');
+
+        var cutoffValue = $('#deleteLogCutoffTime').val();
+        var daysValue = $('#deleteLogDays').val();
+        var cutoffTime = '';
+
+        if (daysValue) {
+            var parsedDays = Number(daysValue);
+            if (Number.isNaN(parsedDays) || parsedDays <= 0) {
+                $('#systemLogsDeleteMessage').addClass('text-danger').text('Please enter a valid number of days.');
+                return;
+            }
+            var cutoffDate = new Date();
+            cutoffDate.setDate(cutoffDate.getDate() - parsedDays);
+            cutoffTime = formatDateTime(cutoffDate);
+        } else if (cutoffValue) {
+            cutoffTime = cutoffValue;
+        }
+
+        if (!cutoffTime) {
+            $('#systemLogsDeleteMessage').addClass('text-danger').text('Please select a cutoff datetime or enter days.');
+            return;
+        }
+
+        if (!confirm('Delete logs older than the selected cutoff? This cannot be undone.')) {
+            return;
+        }
+
+        $.ajax({
+            url: g_asiBaseURL + "/AdministrationPanel/DeleteSystemLogs",
+            type: "POST",
+            data: {
+                cutoffTime: cutoffTime
+            },
+            cache: false,
+            success: function (resp) {
+                $('#systemLogsDeleteMessage').addClass('text-success').text('Deleted ' + (resp.deletedCount || 0) + ' log(s).');
+                fetchSystemLogs();
+            },
+            error: function () {
+                $('#systemLogsDeleteMessage').addClass('text-danger').text('Unable to delete old logs.');
+            }
+        });
+    }
+
+    function formatDateTime(date) {
+        var year = date.getFullYear();
+        var month = String(date.getMonth() + 1).padStart(2, '0');
+        var day = String(date.getDate()).padStart(2, '0');
+        var hours = date.getHours();
+        var minutes = String(date.getMinutes()).padStart(2, '0');
+        var ampm = hours >= 12 ? 'PM' : 'AM';
+        var displayHours = hours % 12;
+        displayHours = displayHours ? displayHours : 12;
+        var hourString = String(displayHours).padStart(2, '0');
+        return year + '-' + month + '-' + day + ' ' + hourString + ':' + minutes + ' ' + ampm;
     }
 
     function renderSystemLogs(logs) {
