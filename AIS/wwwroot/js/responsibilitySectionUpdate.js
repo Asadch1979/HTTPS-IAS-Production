@@ -21,6 +21,28 @@ function initResponsibilitySection(config) {
     var selectedRow = null;
     var isSaving = false;
 
+    function getFirstValue(selectors) {
+        for (var i = 0; i < selectors.length; i++) {
+            var $el = $(selectors[i]);
+            if ($el.length) {
+                var val = $el.val();
+                if (val !== undefined && val !== null && $.trim(val) !== '') {
+                    return val;
+                }
+            }
+        }
+        return '';
+    }
+
+    function normalizeNumericValue(value) {
+        var trimmed = $.trim(value);
+        if (!trimmed) {
+            return 0;
+        }
+        var number = Number(trimmed);
+        return Number.isNaN(number) ? 0 : number;
+    }
+
     function load() {
         if (!table.length) return;
         table.find('tbody').empty();
@@ -264,14 +286,18 @@ function initResponsibilitySection(config) {
             $btns.prop('disabled', false);
             return;
         }
-        var lc = $('#resp_loan_case').val() || $('#loanCaseNumber').val() || $('#responsibleLoanNumberEntryField').val();
-        var acc = $('#resp_account_number').val();
-        if (lc === '' && acc === '') {
+        var rawLoanCase = getFirstValue(['#resp_loan_case', '#loanCaseNumber', '#responsibleLoanNumberEntryField', '.js-resp-loan-case']);
+        var rawAccountNumber = getFirstValue(['#resp_account_number', '#responsibleAccountNumberEntryField', '.js-resp-account-number']);
+        if ($.trim(rawLoanCase) === '' && $.trim(rawAccountNumber) === '') {
             alert('Please enter Either Loan Case Or Account Number to Proceed');
             isSaving = false;
             $btns.prop('disabled', false);
             return;
         }
+        var loanCaseValue = normalizeNumericValue(rawLoanCase);
+        var loanAmountValue = normalizeNumericValue(getFirstValue(['#resp_loan_amount', '#loanCaseAmount', '#responsibleLoanAmountEntryField', '.js-resp-loan-amount']));
+        var accountNumberValue = normalizeNumericValue(rawAccountNumber);
+        var accountAmountValue = normalizeNumericValue(getFirstValue(['#resp_account_amount', '#responsibleAccountAmountEntryField', '.js-resp-account-amount']));
         if ((opts.indicator !== 'O' && (!opts.engId || opts.engId <= 0)) ||
             (opts.indicator === 'O' && (!opts.comId || opts.comId <= 0))) {
             alert('Context missing: please ensure ENG_ID (for new obs) or COM_ID (for old paras) is set.');
@@ -287,10 +313,10 @@ function initResponsibilitySection(config) {
                 contentType: 'application/json',
                 data: JSON.stringify({
                     'PP_NO': respUser[0].ppNumber,
-                    'LOAN_CASE': $('#resp_loan_case').val() || $('#loanCaseNumber').val() || $('#responsibleLoanNumberEntryField').val(),
-                    'LC_AMOUNT': $('#resp_loan_amount').val() || $('#loanCaseAmount').val() || $('#responsibleLoanAmountEntryField').val(),
-                    'ACCOUNT_NUMBER': $('#resp_account_number').val(),
-                    'ACC_AMOUNT': $('#resp_account_amount').val(),
+                    'LOAN_CASE': loanCaseValue,
+                    'LC_AMOUNT': loanAmountValue,
+                    'ACCOUNT_NUMBER': accountNumberValue,
+                    'ACC_AMOUNT': accountAmountValue,
                     'COM_ID': opts.comId
                 }),
                 dataType: 'json'
@@ -301,10 +327,10 @@ function initResponsibilitySection(config) {
                 type: 'POST',
                 data: {
                     'PP_NO': respUser[0].ppNumber,
-                    'LOAN_CASE': $('#resp_loan_case').val() || $('#loanCaseNumber').val() || $('#responsibleLoanNumberEntryField').val(),
-                    'LC_AMOUNT': $('#resp_loan_amount').val() || $('#loanCaseAmount').val() || $('#responsibleLoanAmountEntryField').val(),
-                    'ACCOUNT_NUMBER': $('#resp_account_number').val(),
-                    'ACC_AMOUNT': $('#resp_account_amount').val(),
+                    'LOAN_CASE': loanCaseValue,
+                    'LC_AMOUNT': loanAmountValue,
+                    'ACCOUNT_NUMBER': accountNumberValue,
+                    'ACC_AMOUNT': accountAmountValue,
                     'EMP_NAME': respUser[0].name,
                     'REMARKS': $('#resp_remarks').val(),
                     'NEW_PARA_ID': opts.newParaId,
