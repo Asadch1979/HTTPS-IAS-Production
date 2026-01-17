@@ -97,14 +97,9 @@
                 engId: $('#logEngId').val()
             },
             cache: false,
-            success: function (response) {
-                if (!response || response.status !== true) {
-                    $('#systemLogsMessage').text('Unable to load system logs.');
-                    renderSystemLogs([]);
-                    return;
-                }
-
-                renderSystemLogs(response.data || []);
+            success: function (resp) {
+                const rows = IAS.unwrap(resp);
+                renderSystemLogs(rows);
             },
             error: function () {
                 $('#systemLogsMessage').text('Unable to load system logs.');
@@ -122,9 +117,7 @@
             return;
         }
 
-        $.each(IAS.unwrap(logs), function (index, log) {
-
-
+        $.each(logs, function (index, log) {
             log = IAS.normaliseRow(log);
             var row = $('<tr></tr>');
             row.append($('<td></td>').text(formatLogTime(log.LOG_TIME)));

@@ -96,6 +96,12 @@ namespace AIS.Middleware
                 }
 
             var path = request.Path.HasValue ? request.Path.Value : string.Empty;
+            if (string.Equals(path, "/.well-known/appspecific/com.chrome.devtools.json", StringComparison.OrdinalIgnoreCase)
+                || path.EndsWith(".map", StringComparison.OrdinalIgnoreCase))
+                {
+                return false;
+                }
+
             if (path.StartsWith("/ApiCalls", StringComparison.OrdinalIgnoreCase))
                 {
                 return true;
