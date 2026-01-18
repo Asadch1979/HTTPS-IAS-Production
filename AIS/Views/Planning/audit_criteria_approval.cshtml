@@ -69,6 +69,7 @@
 
     function approveAuditCriterias() {
         var datalist = [];
+        setApprovalMessage('', false);
 
         $.each($('.actionCriteria'), function (i, v) {
             if ($(v).is(':checked')) {
@@ -82,7 +83,7 @@
         });
 
         if (datalist.length === 0) {
-            alert("Please select at least one criteria.");
+            setApprovalMessage("Please select at least one criteria.", false);
             return;
         }
 
@@ -93,11 +94,39 @@
             dataType: "json",
             cache: false,
             data: JSON.stringify(datalist),
-            success: function () {
-                alert("Audit Criteria selected Cases Successfully Approved");
+            success: function (response) {
+                if (!response || response.status !== true) {
+                    var message = response && response.message ? response.message : "Unable to approve audit criteria.";
+                    setApprovalMessage(message, false);
+                    return;
+                }
+                setApprovalMessage("Audit Criteria selected Cases Successfully Approved", true);
                 onAlertCallback(reloadLocation);
+            },
+            error: function (xhr) {
+                var message = "Unable to approve audit criteria.";
+                if (xhr && xhr.responseJSON && xhr.responseJSON.message) {
+                    message = xhr.responseJSON.message;
+                } else if (xhr && xhr.responseText) {
+                    message = xhr.responseText;
+                }
+                if (xhr && xhr.status) {
+                    message += " (HTTP " + xhr.status + ")";
+                }
+                setApprovalMessage(message, false);
             }
         });
+    }
+
+    function setApprovalMessage(message, isSuccess) {
+        var messageElement = $('#approvalMessage');
+        messageElement.removeClass('text-success text-danger');
+        if (!message) {
+            messageElement.text('');
+            return;
+        }
+        messageElement.addClass(isSuccess ? 'text-success' : 'text-danger');
+        messageElement.text(message);
     }
 </script>
 
@@ -185,6 +214,7 @@
         </div>
 
     </div>
+    <div id="approvalMessage" class="mt-2"></div>
 </div>
 
    
