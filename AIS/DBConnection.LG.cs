@@ -87,16 +87,6 @@ namespace AIS.Controllers
                     }
             }
 
-        private static int ReadInt(OracleDataReader reader, string column)
-            {
-            if (reader[column] == DBNull.Value)
-                {
-                return 0;
-                }
-
-            return Convert.ToInt32(reader[column]);
-            }
-
         private static int? ReadNullableInt(OracleDataReader reader, string column)
             {
             if (reader[column] == DBNull.Value)
