@@ -1134,7 +1134,7 @@ namespace AIS.Controllers
                 });
             }
 
-        private static DateTime? ParseSystemLogDateTime(string value)
+        private DateTime? ParseSystemLogDateTime(string value)
             {
             if (string.IsNullOrWhiteSpace(value))
                 {
@@ -1146,6 +1146,7 @@ namespace AIS.Controllers
                 return parsed;
                 }
 
+            _logger.LogWarning("Failed to parse system log datetime value: {Value}", value);
             return null;
             }
 

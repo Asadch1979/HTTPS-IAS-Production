@@ -131,9 +131,7 @@
         $('#systemLogsMessage').text('');
 
         $.ajax({
-            // IMPORTANT: pick the correct one
-            url: g_asiBaseURL + "/ApiCalls/GetSystemLogs",
-            // url: g_asiBaseURL + "/AdministrationPanel/GetSystemLogs",
+            url: g_asiBaseURL + "/AdministrationPanel/GetSystemLogs",
 
             type: "POST",
             dataType: "json",
@@ -158,7 +156,8 @@
                 renderSystemLogs(response.data || []);
             },
             error: function (xhr) {
-                $('#systemLogsMessage').text('Unable to load system logs.');
+                var statusMessage = xhr && xhr.status ? (' (HTTP ' + xhr.status + ')') : '';
+                $('#systemLogsMessage').text('Unable to load system logs.' + statusMessage);
                 renderSystemLogs([]);
             }
         });
