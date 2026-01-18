@@ -252,15 +252,19 @@
             return '';
         }
 
-        if (log[field] !== undefined && log[field] !== null) {
-            return log[field];
-        }
+        var candidates = [
+            field,
+            field.charAt(0).toLowerCase() + field.slice(1),
+            field.toLowerCase().replace(/_([a-z])/g, function (match, letter) { return letter.toUpperCase(); }),
+            field.toLowerCase()
+        ];
 
-        var lowerFirst = field.charAt(0).toLowerCase() + field.slice(1);
-        if (log[lowerFirst] !== undefined && log[lowerFirst] !== null) {
-            return log[lowerFirst];
+        for (var i = 0; i < candidates.length; i++) {
+            var key = candidates[i];
+            if (log[key] !== undefined && log[key] !== null) {
+                return log[key];
+            }
         }
-
         return '';
     }
 
