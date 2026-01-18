@@ -32,6 +32,24 @@
                 $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1);
             });
         });
+
+        function updateSelectAllState() {
+            var total = $('.actionCriteria').length;
+            var selected = $('.actionCriteria:checked').length;
+            $('#selectAllCriteria').prop('checked', total > 0 && total === selected);
+        }
+
+        $('#selectAllCriteria').on('change', function () {
+            var isChecked = $(this).is(':checked');
+            $('.actionCriteria').prop('checked', isChecked);
+            updateSelectAllState();
+        });
+
+        $(document).on('change', '.actionCriteria', function () {
+            updateSelectAllState();
+        });
+
+        updateSelectAllState();
     });
 
     function reloadLocation() {
@@ -74,10 +92,12 @@
         $.each($('.actionCriteria'), function (i, v) {
             if ($(v).is(':checked')) {
                 var rawId = $(v).attr('id');
-                var id = IAS.numOrNull(rawId);
-                if (!id) id = 0;
+                var id = parseInt(rawId, 10);
+                if (Number.isNaN(id)) {
+                    id = 0;
+                }
 
-                var comment = IAS.valOrEmpty($(v).closest('tr').find('.criteriaComment').val());
+                var comment = $(v).closest('tr').find('.criteriaComment').val() || '';
                 datalist.push({ ID: id, COMMENT: comment });
             }
         });
@@ -152,7 +172,12 @@
                 <th class="col-md-auto">Auditable Ent</th>
 
                 <th class="col-md-2">Remarks</th>
-                <th class="col-md-auto">Action</th>
+                <th class="col-md-auto">
+                    <div class="form-check m-0">
+                        <input class="form-check-input" type="checkbox" id="selectAllCriteria" />
+                        <label class="form-check-label" for="selectAllCriteria">Select All</label>
+                    </div>
+                </th>
             </tr>
         </thead>
         <tbody>

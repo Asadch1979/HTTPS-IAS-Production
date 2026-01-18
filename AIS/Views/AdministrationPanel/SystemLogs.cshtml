@@ -110,8 +110,6 @@
         $('#deleteOldLogs').on('click', function () {
             deleteOldSystemLogs();
         });
-
-        fetchSystemLogs();
     });
 
     function initSystemLogDatePickers() {
@@ -223,7 +221,7 @@
         return year + '-' + month + '-' + day + ' ' + hourString + ':' + minutes + ' ' + ampm;
     }
 
-        function renderSystemLogs(logs) {
+    function renderSystemLogs(logs) {
         var tbody = $('#systemLogsTable tbody');
         tbody.empty();
 
@@ -234,19 +232,36 @@
 
         $.each(logs, function (index, log) {
             var row = $('<tr></tr>');
-            row.append($('<td></td>').text(formatLogTime(log.LOG_TIME)));
-            row.append($('<td></td>').text(log.LOG_LEVEL || ''));
-            row.append($('<td></td>').text(log.MODULE || ''));
-            row.append($('<td></td>').text(log.CONTROLLER || ''));
-            row.append($('<td></td>').text(log.ACTION || ''));
-            row.append($('<td></td>').text(log.MESSAGE || ''));
-            row.append($('<td></td>').text(log.TECH_DETAILS || ''));
-            row.append($('<td></td>').text(log.PAGE_ID || ''));
-            row.append($('<td></td>').text(log.ENG_ID || ''));
-            row.append($('<td></td>').text(log.USER_PPNO || ''));
+            row.append($('<td></td>').text(formatLogTime(readLogField(log, 'LOG_TIME'))));
+            row.append($('<td></td>').text(readLogField(log, 'LOG_LEVEL')));
+            row.append($('<td></td>').text(readLogField(log, 'MODULE')));
+            row.append($('<td></td>').text(readLogField(log, 'CONTROLLER')));
+            row.append($('<td></td>').text(readLogField(log, 'ACTION')));
+            row.append($('<td></td>').text(readLogField(log, 'MESSAGE')));
+            row.append($('<td></td>').text(readLogField(log, 'TECH_DETAILS')));
+            row.append($('<td></td>').text(readLogField(log, 'PAGE_ID')));
+            row.append($('<td></td>').text(readLogField(log, 'ENG_ID')));
+            row.append($('<td></td>').text(readLogField(log, 'USER_PPNO')));
 
             tbody.append(row);
         });
+    }
+
+    function readLogField(log, field) {
+        if (!log) {
+            return '';
+        }
+
+        if (log[field] !== undefined && log[field] !== null) {
+            return log[field];
+        }
+
+        var lowerFirst = field.charAt(0).toLowerCase() + field.slice(1);
+        if (log[lowerFirst] !== undefined && log[lowerFirst] !== null) {
+            return log[lowerFirst];
+        }
+
+        return '';
     }
 
     function formatLogTime(value) {
