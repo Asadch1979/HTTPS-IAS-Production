@@ -256,9 +256,14 @@
             return log[field];
         }
 
-        var lowerFirst = field.charAt(0).toLowerCase() + field.slice(1);
-        if (log[lowerFirst] !== undefined && log[lowerFirst] !== null) {
-            return log[lowerFirst];
+        var normalizedField = field.replace(/_/g, '').toLowerCase();
+        var keys = Object.keys(log);
+
+        for (var i = 0; i < keys.length; i++) {
+            var key = keys[i];
+            if (key.replace(/_/g, '').toLowerCase() === normalizedField) {
+                return log[key];
+            }
         }
 
         return '';
