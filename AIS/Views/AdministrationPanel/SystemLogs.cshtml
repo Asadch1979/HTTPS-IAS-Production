@@ -252,20 +252,19 @@
             return '';
         }
 
-        if (log[field] !== undefined && log[field] !== null) {
-            return log[field];
-        }
+        var candidates = [
+            field,
+            field.charAt(0).toLowerCase() + field.slice(1),
+            field.toLowerCase().replace(/_([a-z])/g, function (match, letter) { return letter.toUpperCase(); }),
+            field.toLowerCase()
+        ];
 
-        var normalizedField = field.replace(/_/g, '').toLowerCase();
-        var keys = Object.keys(log);
-
-        for (var i = 0; i < keys.length; i++) {
-            var key = keys[i];
-            if (key.replace(/_/g, '').toLowerCase() === normalizedField) {
+        for (var i = 0; i < candidates.length; i++) {
+            var key = candidates[i];
+            if (log[key] !== undefined && log[key] !== null) {
                 return log[key];
             }
         }
-
         return '';
     }
 
