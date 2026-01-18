@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.Extensions.Logging;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.Linq;
 using AIS.Services;
 
@@ -1069,7 +1070,7 @@ namespace AIS.Controllers
 
         [HttpPost]
         [IgnoreAntiforgeryToken]
-        public IActionResult GetSystemLogs(DateTime? startTime, DateTime? endTime, string logLevel, string module, string userPpno, int? engId)
+        public IActionResult GetSystemLogs(string start, string end, string logLevel, string module, string userPpno, int? engId)
             {
             if (!User.Identity.IsAuthenticated)
                 {
@@ -1090,12 +1091,62 @@ namespace AIS.Controllers
                     });
                 }
 
+            DateTime? startTime = ParseSystemLogDateTime(start);
+            DateTime? endTime = ParseSystemLogDateTime(end);
+
             var logs = dBConnection.GetSystemLogs(startTime, endTime, logLevel, module, userPpno, engId);
             return Json(new
                 {
                 status = true,
                 data = logs
                 });
+            }
+
+        [HttpPost]
+        [IgnoreAntiforgeryToken]
+        public IActionResult DeleteSystemLogs(string cutoffTime)
+            {
+            if (!User.Identity.IsAuthenticated)
+                {
+                return Unauthorized();
+                }
+
+            if (!this.UserHasPagePermissionForCurrentAction(sessionHandler))
+                {
+                return Forbid();
+                }
+
+            DateTime? cutoff = ParseSystemLogDateTime(cutoffTime);
+            if (!cutoff.HasValue)
+                {
+                return BadRequest(new
+                    {
+                    status = false,
+                    message = "Cutoff time is required."
+                    });
+                }
+
+            int deletedCount = dBConnection.DeleteOldSystemLogs(cutoff.Value);
+            return Json(new
+                {
+                status = true,
+                deletedCount = deletedCount
+                });
+            }
+
+        private static DateTime? ParseSystemLogDateTime(string value)
+            {
+            if (string.IsNullOrWhiteSpace(value))
+                {
+                return null;
+                }
+
+            if (DateTime.TryParseExact(value, "yyyy-MM-dd hh:mm tt", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime parsed))
+                {
+                return parsed;
+                }
+
+            return null;
             }
 
         [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
