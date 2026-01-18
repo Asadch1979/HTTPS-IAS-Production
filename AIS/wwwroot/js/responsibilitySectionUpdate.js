@@ -21,31 +21,6 @@ function initResponsibilitySection(config) {
     var selectedRow = null;
     var isSaving = false;
 
-    function getInputValue(selectors) {
-        for (var i = 0; i < selectors.length; i++) {
-            var $el = $(selectors[i]);
-            if ($el.length) {
-                var val = $el.val();
-                if (val !== undefined && val !== null) {
-                    return val;
-                }
-            }
-        }
-        return '';
-    }
-
-    function normalizeNumericValue(value) {
-        if (value === undefined || value === null) {
-            return 0;
-        }
-        var trimmed = String(value).trim();
-        if (!trimmed) {
-            return 0;
-        }
-        var numeric = Number(trimmed);
-        return isNaN(numeric) ? 0 : numeric;
-    }
-
     function load() {
         if (!table.length) return;
         table.find('tbody').empty();
@@ -289,18 +264,14 @@ function initResponsibilitySection(config) {
             $btns.prop('disabled', false);
             return;
         }
-        var lcRaw = getInputValue(['#resp_loan_case', '#loanCaseNumber', '#responsibleLoanNumberEntryField', '.js-responsible-loan-case']);
-        var accRaw = getInputValue(['#resp_account_number', '#responsibleAccountNumberEntryField', '.js-responsible-account-number']);
-        if ($.trim(lcRaw) === '' && $.trim(accRaw) === '') {
+        var lc = $('#resp_loan_case').val() || $('#loanCaseNumber').val() || $('#responsibleLoanNumberEntryField').val();
+        var acc = $('#resp_account_number').val();
+        if (lc === '' && acc === '') {
             alert('Please enter Either Loan Case Or Account Number to Proceed');
             isSaving = false;
             $btns.prop('disabled', false);
             return;
         }
-        var lcValue = normalizeNumericValue(lcRaw);
-        var lcAmountValue = normalizeNumericValue(getInputValue(['#resp_loan_amount', '#loanCaseAmount', '#responsibleLoanAmountEntryField', '.js-responsible-loan-amount']));
-        var accValue = normalizeNumericValue(accRaw);
-        var accAmountValue = normalizeNumericValue(getInputValue(['#resp_account_amount', '#responsibleAccountAmountEntryField', '.js-responsible-account-amount']));
         if ((opts.indicator !== 'O' && (!opts.engId || opts.engId <= 0)) ||
             (opts.indicator === 'O' && (!opts.comId || opts.comId <= 0))) {
             alert('Context missing: please ensure ENG_ID (for new obs) or COM_ID (for old paras) is set.');
@@ -316,10 +287,10 @@ function initResponsibilitySection(config) {
                 contentType: 'application/json',
                 data: JSON.stringify({
                     'PP_NO': respUser[0].ppNumber,
-                    'LOAN_CASE': lcValue,
-                    'LC_AMOUNT': lcAmountValue,
-                    'ACCOUNT_NUMBER': accValue,
-                    'ACC_AMOUNT': accAmountValue,
+                    'LOAN_CASE': $('#resp_loan_case').val() || $('#loanCaseNumber').val() || $('#responsibleLoanNumberEntryField').val(),
+                    'LC_AMOUNT': $('#resp_loan_amount').val() || $('#loanCaseAmount').val() || $('#responsibleLoanAmountEntryField').val(),
+                    'ACCOUNT_NUMBER': $('#resp_account_number').val(),
+                    'ACC_AMOUNT': $('#resp_account_amount').val(),
                     'COM_ID': opts.comId
                 }),
                 dataType: 'json'
@@ -330,10 +301,10 @@ function initResponsibilitySection(config) {
                 type: 'POST',
                 data: {
                     'PP_NO': respUser[0].ppNumber,
-                    'LOAN_CASE': lcValue,
-                    'LC_AMOUNT': lcAmountValue,
-                    'ACCOUNT_NUMBER': accValue,
-                    'ACC_AMOUNT': accAmountValue,
+                    'LOAN_CASE': $('#resp_loan_case').val() || $('#loanCaseNumber').val() || $('#responsibleLoanNumberEntryField').val(),
+                    'LC_AMOUNT': $('#resp_loan_amount').val() || $('#loanCaseAmount').val() || $('#responsibleLoanAmountEntryField').val(),
+                    'ACCOUNT_NUMBER': $('#resp_account_number').val(),
+                    'ACC_AMOUNT': $('#resp_account_amount').val(),
                     'EMP_NAME': respUser[0].name,
                     'REMARKS': $('#resp_remarks').val(),
                     'NEW_PARA_ID': opts.newParaId,
