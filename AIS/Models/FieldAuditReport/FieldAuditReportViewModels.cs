@@ -82,11 +82,21 @@ namespace AIS.Models.FieldAuditReport
         public string TextBlock { get; set; }
         }
 
-    public class NarrativeSectionsViewModel
+    public class FieldAuditObservationDetailModel
         {
-        public int EngagementId { get; set; }
-        public bool IsReadOnly { get; set; }
-        public List<FieldAuditNarrativeSectionModel> Sections { get; set; } = new List<FieldAuditNarrativeSectionModel>();
+        public string Risk { get; set; }
+        public string AnnexureCode { get; set; }
+        public string AnnexureDescription { get; set; }
+        public string InstancesInvolved { get; set; }
+        public string AmountInvolved { get; set; }
+        public string GistOfPara { get; set; }
+        public string ParaDetail { get; set; }
+        }
+
+    public class NarrativeSectionsViewModel : FieldAuditInputSectionViewModel
+        {
+        public int ObservationCount { get; set; }
+        public List<FieldAuditObservationDetailModel> Observations { get; set; } = new List<FieldAuditObservationDetailModel>();
         }
 
     public class KpiSnapshotRowModel
