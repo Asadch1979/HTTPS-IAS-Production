@@ -19,6 +19,16 @@ namespace AIS.Models.FieldAuditReport
         public string GeneratedBy { get; set; }
         public DateTime? FinalizedOn { get; set; }
         public string FinalizedBy { get; set; }
+
+        public string AUDIT_YEAR { get; set; }
+        public string REPORTING_OFFICE { get; set; }
+        public string ENTITY_NAME { get; set; }
+        public DateTime? OPERATION_STARTDATE { get; set; }
+        public DateTime? OPERATION_ENDDATE { get; set; }
+        public DateTime? AUDIT_STARTED_ON { get; set; }
+        public DateTime? TEAM_EXIST { get; set; }
+        public int? TOTAL_MEMBERS { get; set; }
+        public string TEAM_LEAD { get; set; }
         }
 
     public class FieldAuditReportChecklistModel

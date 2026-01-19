@@ -1,0 +1,49 @@
+@model AIS.Models.ManagementReport.ManagementReportHomeViewModel
+
+@{
+    ViewData["Title"] = "Management Report";
+    Layout = "_Layout";
+    string FormatText(string value) => string.IsNullOrWhiteSpace(value) ? "-" : value;
+}
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <h3 class="mb-3">Management Report</h3>
+        </div>
+    </div>
+
+    @if (!Model.HasActiveEngagement)
+    {
+        <div class="alert alert-warning">Select an engagement to view the Management Report overview.</div>
+    }
+    else
+    {
+        <div class="card mb-4">
+            <div class="card-header">Engagement Summary</div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <strong>Entity Name:</strong> @FormatText(Model.EntityName)
+                    </div>
+                    <div class="col-md-6">
+                        <strong>Audit Period:</strong> @FormatText(Model.AuditPeriod)
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">Navigation</div>
+            <div class="card-body">
+                <ul class="list-group">
+                    <li class="list-group-item">Intimation Letter</li>
+                    <li class="list-group-item">Engagement Letter</li>
+                    <li class="list-group-item">Audit Memorandum</li>
+                    <li class="list-group-item">Meeting Record</li>
+                    <li class="list-group-item">Management Audit Report</li>
+                </ul>
+            </div>
+        </div>
+    }
+</div>
