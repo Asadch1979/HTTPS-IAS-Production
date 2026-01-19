@@ -49,10 +49,12 @@ namespace AIS.Models.FieldAuditReport
         // Internal / DB context (optional but valid)
         public int EngId { get; set; }
         public int EntityId { get; set; }
+        public int Entitytype { get; set; }
+        public string AuditType { get; set; }
+
         }
 
-
-    public class FieldAuditEngagementSelectorViewModel
+        public class FieldAuditEngagementSelectorViewModel
         {
         public int? ActiveEngagementId { get; set; }
         public string ActiveEngagementLabel { get; set; }

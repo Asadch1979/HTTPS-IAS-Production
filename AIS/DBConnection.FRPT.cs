@@ -104,6 +104,8 @@ namespace AIS.Controllers
                             EngId = engId,
                             EngagementId = engId,          // 🔑 THIS WAS MISSING
                             EntityId = Convert.ToInt32(dr["ENTITY_ID"]),
+                            Entitytype = Convert.ToInt32(dr["ENTITY_TYPE"]),
+                            AuditType = dr["AUDIT_TYPE"]?.ToString(),
                             EntityName = dr["ENTITY_NAME"]?.ToString(),
                             AuditPeriod = dr["AUDIT_PERIOD"]?.ToString()
                             });
