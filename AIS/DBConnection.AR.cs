@@ -492,16 +492,18 @@ namespace AIS.Controllers
 
         public string SaveAuditObservation(ObservationModel ob)
             {
-
-
             int addedObsId = 0;
             string returnResp = "";
             bool proceed = false;
+
             var sessionHandler = CreateSessionHandler();
             var con = this.DatabaseConnection();
             var loggedInUser = sessionHandler.GetUserOrThrow();
+
             var entityId = loggedInUser.UserEntityID.GetValueOrDefault();
-            var isSpecialEntity = entityId == 112242 || entityId == 112248;
+            var skipResponsibility = entityId == 112242 || entityId == 112248;  // EXCLUDE these entities from responsibility assignment
+            var isSpecialEntity = skipResponsibility;                           // keep your existing “special entity defaults” behavior
+
             var subChecklistId = ob.SUBCHECKLIST_ID;
             var annexureId = ob.ANNEXURE_ID;
             var checklistDetailId = ob.CHECKLISTDETAIL_ID;
@@ -509,125 +511,125 @@ namespace AIS.Controllers
             var amountInvolved = ob.AMOUNT_INVOLVED;
             var responsiblePpnoList = ob.RESPONSIBLE_PPNO;
 
+            // Keep your original behavior for these entities (defaults for optional fields)
             if (isSpecialEntity)
                 {
                 subChecklistId ??= 0;
+
                 if (string.IsNullOrWhiteSpace(annexureId))
-                    {
                     annexureId = "0";
-                    }
+
                 checklistDetailId ??= 0;
+
                 if (string.IsNullOrWhiteSpace(noOfInstances))
-                    {
                     noOfInstances = "0";
-                    }
+
                 if (string.IsNullOrWhiteSpace(amountInvolved))
-                    {
                     amountInvolved = "0";
-                    }
+
                 responsiblePpnoList ??= new List<ObservationResponsiblePPNOModel>();
                 }
+
             var INDICATOR = "A";
+
             if (ob.ENGPLANID == 0)
                 ob.ENGPLANID = this.GetLoggedInUserEngId();
+
             using (OracleCommand cmd = con.CreateCommand())
                 {
                 cmd.CommandText = "pkg_ar.P_SaveAuditObservation";
                 cmd.CommandType = CommandType.StoredProcedure;
                 cmd.Parameters.Clear();
+
                 cmd.Parameters.Add("PLANID", OracleDbType.Int32).Value = ob.ENGPLANID;
                 cmd.Parameters.Add("STATUS", OracleDbType.Int32).Value = ob.STATUS;
                 cmd.Parameters.Add("REPLYDATE", OracleDbType.Date).Value = ob.REPLYDATE;
                 cmd.Parameters.Add("ENTEREDBY", OracleDbType.Int32).Value = loggedInUser.PPNumber;
                 cmd.Parameters.Add("Severity", OracleDbType.Int32).Value = ob.SEVERITY;
-                cmd.Parameters.Add("SUBCHECKLISTID", OracleDbType.Varchar2).Value = subChecklistId;
+
+                cmd.Parameters.Add("SUBCHECKLISTID", OracleDbType.Int32).Value = subChecklistId;
                 cmd.Parameters.Add("CHECKLISTDETAILID", OracleDbType.Int32).Value = checklistDetailId;
+
                 cmd.Parameters.Add("VCATID", OracleDbType.Int32).Value = ob.V_CAT_ID;
                 cmd.Parameters.Add("VCATNATUREID", OracleDbType.Int32).Value = ob.V_CAT_NATURE_ID;
+
                 cmd.Parameters.Add("TEXT_DATA", OracleDbType.Clob).Value = ob.OBSERVATION_TEXT;
                 cmd.Parameters.Add("NOINSTANCES", OracleDbType.Int32).Value = noOfInstances;
                 cmd.Parameters.Add("AMOUNT_INV", OracleDbType.Int32).Value = amountInvolved;
+
                 cmd.Parameters.Add("TITLE", OracleDbType.Varchar2).Value = ob.HEADING;
                 cmd.Parameters.Add("OT_ENT_ID", OracleDbType.Int32).Value = ob.OTHER_ENTITY_ID;
+
                 cmd.Parameters.Add("ENT_ID", OracleDbType.Int32).Value = loggedInUser.UserEntityID;
                 cmd.Parameters.Add("P_NO", OracleDbType.Int32).Value = loggedInUser.PPNumber;
                 cmd.Parameters.Add("R_ID", OracleDbType.Int32).Value = loggedInUser.UserRoleID;
+
                 cmd.Parameters.Add("ANNEX_ID", OracleDbType.Int32).Value = annexureId;
+
                 cmd.Parameters.Add("T_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+
                 OracleDataReader rdr = cmd.ExecuteReader();
                 while (rdr.Read())
                     {
-                    if (rdr["REF"].ToString() != "" && rdr["REF"].ToString() != null && rdr["REF"].ToString() == "2")
+                    var refVal = rdr["REF"]?.ToString();
+
+                    if (!string.IsNullOrWhiteSpace(refVal) && refVal == "2")
                         {
-                        returnResp = CleanDbMessage(rdr["remarks"].ToString());
+                        returnResp = CleanDbMessage(rdr["remarks"]?.ToString());
                         }
-                    else if (rdr["REF"].ToString() != "" && rdr["REF"].ToString() != null && rdr["REF"].ToString() == "1")
+                    else if (!string.IsNullOrWhiteSpace(refVal) && refVal == "1")
                         {
-                        addedObsId = Convert.ToInt32(rdr["ID"].ToString());
-                        returnResp = CleanDbMessage(rdr["remarks"].ToString());
+                        addedObsId = Convert.ToInt32(rdr["ID"]?.ToString());
+                        returnResp = CleanDbMessage(rdr["remarks"]?.ToString());
                         proceed = true;
                         }
                     }
+
                 if (proceed)
                     {
-                    if (responsiblePpnoList != null)
+                    // IMPORTANT: Skip responsibility assignment for excluded entities
+                    if (!skipResponsibility && responsiblePpnoList != null && responsiblePpnoList.Count > 0 && addedObsId > 0)
                         {
-                        if (responsiblePpnoList.Count > 0 && addedObsId > 0)
+                        foreach (ObservationResponsiblePPNOModel pp in responsiblePpnoList)
                             {
-                            foreach (ObservationResponsiblePPNOModel pp in responsiblePpnoList)
-                                {
-                                var ppNo = pp.PP_NO;
-                                var loanCase = pp.LOAN_CASE;
-                                var accountNumber = pp.ACCOUNT_NUMBER;
-                                var lcAmount = pp.LC_AMOUNT;
-                                var accAmount = pp.ACC_AMOUNT;
+                            var ppNo = pp.PP_NO;
+                            var loanCase = pp.LOAN_CASE;
+                            var accountNumber = pp.ACCOUNT_NUMBER;
+                            var lcAmount = pp.LC_AMOUNT;
+                            var accAmount = pp.ACC_AMOUNT;
 
-                                if (isSpecialEntity)
-                                    {
-                                    if (string.IsNullOrWhiteSpace(ppNo))
-                                        {
-                                        ppNo = "0";
-                                        }
-                                    if (string.IsNullOrWhiteSpace(loanCase))
-                                        {
-                                        loanCase = "0";
-                                        }
-                                    if (string.IsNullOrWhiteSpace(accountNumber))
-                                        {
-                                        accountNumber = "0";
-                                        }
-                                    if (string.IsNullOrWhiteSpace(lcAmount))
-                                        {
-                                        lcAmount = "0";
-                                        }
-                                    if (string.IsNullOrWhiteSpace(accAmount))
-                                        {
-                                        accAmount = "0";
-                                        }
-                                    }
+                            // ALWAYS normalize numeric inputs because OracleDbType.Int32 cannot take null/empty
+                            if (string.IsNullOrWhiteSpace(ppNo)) ppNo = "0";
+                            if (string.IsNullOrWhiteSpace(loanCase)) loanCase = "0";
+                            if (string.IsNullOrWhiteSpace(accountNumber)) accountNumber = "0";
+                            if (string.IsNullOrWhiteSpace(lcAmount)) lcAmount = "0";
+                            if (string.IsNullOrWhiteSpace(accAmount)) accAmount = "0";
 
-                                cmd.CommandText = "pkg_ar.P_responibilityassigned";
-                                cmd.CommandType = CommandType.StoredProcedure;
-                                cmd.Parameters.Clear();
-                                cmd.Parameters.Add("N_ID", OracleDbType.Int32).Value = addedObsId;
-                                cmd.Parameters.Add("E_ID", OracleDbType.Int32).Value = ob.ENGPLANID;
-                                cmd.Parameters.Add("C_ID", OracleDbType.Int32).Value = 0;
-                                cmd.Parameters.Add("IND", OracleDbType.Varchar2).Value = INDICATOR;
-                                cmd.Parameters.Add("PPNO", OracleDbType.Int32).Value = loggedInUser.PPNumber;
-                                cmd.Parameters.Add("RES_PP", OracleDbType.Int32).Value = ppNo;
-                                cmd.Parameters.Add("LOANCASE", OracleDbType.Int32).Value = loanCase;
-                                cmd.Parameters.Add("ACCNUMBER", OracleDbType.Int32).Value = accountNumber;
-                                cmd.Parameters.Add("LCAMOUNT", OracleDbType.Int32).Value = lcAmount;
-                                cmd.Parameters.Add("ACAMOUNT", OracleDbType.Int32).Value = accAmount;
-                                cmd.Parameters.Add("T_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
-                                cmd.ExecuteReader();
-                                }
+                            cmd.CommandText = "pkg_ar.P_responibilityassigned";
+                            cmd.CommandType = CommandType.StoredProcedure;
+                            cmd.Parameters.Clear();
+
+                            cmd.Parameters.Add("N_ID", OracleDbType.Int32).Value = addedObsId;
+                            cmd.Parameters.Add("E_ID", OracleDbType.Int32).Value = ob.ENGPLANID;
+                            cmd.Parameters.Add("C_ID", OracleDbType.Int32).Value = 0;
+                            cmd.Parameters.Add("IND", OracleDbType.Varchar2).Value = INDICATOR;
+                            cmd.Parameters.Add("PPNO", OracleDbType.Int32).Value = loggedInUser.PPNumber;
+
+                            // RES_PP is Int32: bind as int (not string)
+                            cmd.Parameters.Add("RES_PP", OracleDbType.Int32).Value = Convert.ToInt32(ppNo);
+
+                            cmd.Parameters.Add("LOANCASE", OracleDbType.Int32).Value = Convert.ToInt32(loanCase);
+                            cmd.Parameters.Add("ACCNUMBER", OracleDbType.Int32).Value = Convert.ToInt32(accountNumber);
+                            cmd.Parameters.Add("LCAMOUNT", OracleDbType.Int32).Value = Convert.ToInt32(lcAmount);
+                            cmd.Parameters.Add("ACAMOUNT", OracleDbType.Int32).Value = Convert.ToInt32(accAmount);
+
+                            cmd.Parameters.Add("T_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+                            cmd.ExecuteReader();
                             }
-
                         }
                     }
-
                 }
+
             con.Dispose();
             return returnResp;
             }
@@ -698,10 +700,20 @@ namespace AIS.Controllers
                                 cmd.Parameters.Add("IND", OracleDbType.Varchar2).Value = INDICATOR;
                                 cmd.Parameters.Add("PPNO", OracleDbType.Int32).Value = loggedInUser.PPNumber;
                                 cmd.Parameters.Add("RES_PP", OracleDbType.Int32).Value = pp.PP_NO;
-                                cmd.Parameters.Add("LOANCASE", OracleDbType.Int32).Value = pp.LOAN_CASE;
-                                cmd.Parameters.Add("ACCNUMBER", OracleDbType.Int32).Value = pp.ACCOUNT_NUMBER;
-                                cmd.Parameters.Add("LCAMOUNT", OracleDbType.Int32).Value = pp.LC_AMOUNT;
-                                cmd.Parameters.Add("ACAMOUNT", OracleDbType.Int32).Value = pp.ACC_AMOUNT;
+
+                                cmd.Parameters.Add("LOANCASE", OracleDbType.Int32).Value =
+                                    string.IsNullOrWhiteSpace(pp.LOAN_CASE?.ToString()) ? 0 : Convert.ToInt32(pp.LOAN_CASE);
+
+                                cmd.Parameters.Add("ACCNUMBER", OracleDbType.Int32).Value =
+                                    string.IsNullOrWhiteSpace(pp.ACCOUNT_NUMBER?.ToString()) ? 0 : Convert.ToInt32(pp.ACCOUNT_NUMBER);
+
+                                cmd.Parameters.Add("LCAMOUNT", OracleDbType.Int32).Value =
+                                    string.IsNullOrWhiteSpace(pp.LC_AMOUNT?.ToString()) ? 0 : Convert.ToInt32(pp.LC_AMOUNT);
+
+                                cmd.Parameters.Add("ACAMOUNT", OracleDbType.Int32).Value =
+                                    string.IsNullOrWhiteSpace(pp.ACC_AMOUNT?.ToString()) ? 0 : Convert.ToInt32(pp.ACC_AMOUNT);
+
+
                                 cmd.Parameters.Add("T_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
                                 cmd.ExecuteReader();
                                 }

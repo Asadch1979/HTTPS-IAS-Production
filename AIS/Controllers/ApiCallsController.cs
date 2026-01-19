@@ -321,23 +321,26 @@ namespace AIS.Controllers
             }
 
         [HttpPost]
-        public IActionResult AuthorizeAuditCriteria([FromForm] List<CriteriaIDComment> DATALIST)
+        public IActionResult AuthorizeAuditCriteria([FromBody] List<CriteriaIDComment> datalist)
             {
             var unauthorized = EnsureAuthenticatedSession();
-            if (unauthorized != null)
+            if (unauthorized != null) return unauthorized;
+
+            if (datalist == null || datalist.Count == 0)
+                return BadRequest(new { status = false, message = "No criteria received." });
+
+            foreach (var criteria in datalist)
                 {
-                return unauthorized;
+                var id = criteria?.ID.GetValueOrDefault() ?? 0;
+                var comment = criteria?.COMMENT;
+
+                if (id <= 0)
+                    return BadRequest(new { status = false, message = "Invalid Criteria ID received." });
+
+                dBConnection.SetAuditCriteriaStatusApprove(id, comment);
                 }
 
-            if (DATALIST != null && DATALIST.Count > 0)
-                {
-                foreach (var criteria in DATALIST)
-                    {
-                    dBConnection.SetAuditCriteriaStatusApprove(criteria.ID.GetValueOrDefault(), criteria.COMMENT);
-                    }
-                }
-
-            return Ok(true);
+            return Ok(new { status = true });
             }
 
         [HttpPost]

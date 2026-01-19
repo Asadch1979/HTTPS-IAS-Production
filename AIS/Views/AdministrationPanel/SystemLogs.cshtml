@@ -129,33 +129,41 @@
 
     function fetchSystemLogs() {
         $('#systemLogsMessage').text('');
-        var startValue = $('#logStartTime').val();
-        var endValue = $('#logEndTime').val();
-        var queryString = $.param({
-            start: startValue,
-            end: endValue
-        });
 
         $.ajax({
-            url: g_asiBaseURL + "/AdministrationPanel/GetSystemLogs" + (queryString ? '?' + queryString : ''),
+            // IMPORTANT: pick the correct one
+            url: g_asiBaseURL + "/ApiCalls/GetSystemLogs",
+            // url: g_asiBaseURL + "/AdministrationPanel/GetSystemLogs",
+
             type: "POST",
+            dataType: "json",
             data: {
+                // Controller expects: start, end (NOT startTime/endTime)
+                start: $('#logStartTime').val(),
+                end: $('#logEndTime').val(),
                 logLevel: $('#logLevel').val(),
                 module: $('#logModule').val(),
                 userPpno: $('#logUserPpno').val(),
                 engId: $('#logEngId').val()
             },
             cache: false,
-            success: function (resp) {
-                const rows = IAS.unwrap(resp);
-                renderSystemLogs(rows);
+            success: function (response) {
+                if (!response || response.status !== true) {
+                    $('#systemLogsMessage').text('Unable to load system logs.');
+                    renderSystemLogs([]);
+                    return;
+                }
+
+                // response.data is already the array
+                renderSystemLogs(response.data || []);
             },
-            error: function () {
+            error: function (xhr) {
                 $('#systemLogsMessage').text('Unable to load system logs.');
                 renderSystemLogs([]);
             }
         });
     }
+
 
     function deleteOldSystemLogs() {
         $('#systemLogsDeleteMessage').removeClass('text-success text-danger').text('');
@@ -216,7 +224,7 @@
         return year + '-' + month + '-' + day + ' ' + hourString + ':' + minutes + ' ' + ampm;
     }
 
-    function renderSystemLogs(logs) {
+      function renderSystemLogs(logs) {
         var tbody = $('#systemLogsTable tbody');
         tbody.empty();
 
@@ -227,6 +235,7 @@
 
         $.each(logs, function (index, log) {
             log = IAS.normaliseRow(log);
+
             var row = $('<tr></tr>');
             row.append($('<td></td>').text(formatLogTime(log.LOG_TIME)));
             row.append($('<td></td>').text(log.LOG_LEVEL || ''));
@@ -238,6 +247,7 @@
             row.append($('<td></td>').text(log.PAGE_ID || ''));
             row.append($('<td></td>').text(log.ENG_ID || ''));
             row.append($('<td></td>').text(log.USER_PPNO || ''));
+
             tbody.append(row);
         });
     }

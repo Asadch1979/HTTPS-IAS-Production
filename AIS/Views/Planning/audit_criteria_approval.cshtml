@@ -67,26 +67,24 @@
         var datalist = [];
         $.each($('.actionCriteria'), function (i, v) {
             if ($(v).is(':checked')) {
-                var id = $(v).attr('id');
-                var comment = $($(v).parent().parent().find('.criteriaComment').eq(0)).val();
+                var id = IAS.numOrNull($(v).attr('id')) ?? 0;
+                var comment = IAS.valOrEmpty($($(v).parent().parent().find('.criteriaComment').eq(0)).val());
                 datalist.push({ 'ID': id, 'COMMENT': comment });
             }
         });
-       
-        if (datalist.length > 0) {
+
             $.ajax({
-                url: g_asiBaseURL + "/ApiCalls/AuthorizeAuditCriteria",
-                type: "POST",
-                data: {
-                    'DATALIST': datalist
-                },
-                cache: false,
-                success: function (data) {
-                    alert("Audit Criteria selected Cases Successfully Approved");
-                    onAlertCallback(reloadLocation);
-                },
-                dataType: "json",
-            });
+                      url: g_asiBaseURL + "/ApiCalls/AuthorizeAuditCriteria",
+                      type: "POST",
+                      contentType: "application/json; charset=utf-8",
+                      dataType: "json",
+                      data: JSON.stringify(datalist),
+                      success: function (resp) {
+                        alert("Audit Criteria selected Cases Successfully Approved");
+                        onAlertCallback(reloadLocation);
+                      }
+                    });
+
         }
     }
    

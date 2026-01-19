@@ -1288,38 +1288,41 @@ namespace AIS.Controllers
             con.Dispose();
             return true;
             }
-        public string SetAuditCriteriaStatusApprove(int ID, string REMARKS)
+        public string SetAuditCriteriaStatusApprove(int id, string remarks)
             {
-            if (REMARKS == "")
-                REMARKS = "APPROVED";
+            if (id <= 0)
+                return "Invalid criteria id.";
+
+            if (string.IsNullOrWhiteSpace(remarks))
+                remarks = "APPROVED";
 
             var sessionHandler = CreateSessionHandler();
             var loggedInUser = sessionHandler.GetUserOrThrow();
-            var con = this.DatabaseConnection();
-            string REMARK = "";
-            using (OracleCommand cmd = con.CreateCommand())
+
+            using var con = this.DatabaseConnection();
+            using var cmd = con.CreateCommand();
+
+            cmd.CommandText = "pkg_pg.P_SetAuditCriteriaStatusApprove";
+            cmd.CommandType = CommandType.StoredProcedure;
+            cmd.Parameters.Clear();
+
+            cmd.Parameters.Add("CAID", OracleDbType.Int32).Value = id;
+            cmd.Parameters.Add("REMARKS", OracleDbType.Varchar2).Value = remarks;
+            cmd.Parameters.Add("ENT_ID", OracleDbType.Int32).Value = loggedInUser.UserEntityID;
+            cmd.Parameters.Add("P_NO", OracleDbType.Int32).Value = loggedInUser.PPNumber;
+            cmd.Parameters.Add("R_ID", OracleDbType.Int32).Value = loggedInUser.UserRoleID;
+            cmd.Parameters.Add("T_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+
+            string remark = "";
+            using (var rdr = cmd.ExecuteReader())
                 {
-                cmd.CommandText = "pkg_pg.P_SetAuditCriteriaStatusApprove";
-                cmd.CommandType = CommandType.StoredProcedure;
-                cmd.Parameters.Clear();
-                cmd.Parameters.Add("CAID", OracleDbType.Int32).Value = ID;
-                cmd.Parameters.Add("REMARKS", OracleDbType.Varchar2).Value = REMARKS;
-                cmd.Parameters.Add("ENT_ID", OracleDbType.Int32).Value = loggedInUser.UserEntityID;
-                cmd.Parameters.Add("P_NO", OracleDbType.Int32).Value = loggedInUser.PPNumber;
-                cmd.Parameters.Add("R_ID", OracleDbType.Int32).Value = loggedInUser.UserRoleID;
-                cmd.Parameters.Add("T_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
-                OracleDataReader rdr = cmd.ExecuteReader();
                 while (rdr.Read())
-                    {
-                    REMARK = rdr["remark"].ToString();
-
-                    }
-
-
+                    remark = rdr["remark"]?.ToString() ?? "";
                 }
-            con.Dispose();
-            return REMARK;
+
+            return remark;
             }
+
         public List<AuditCriteriaModel> GetPendingAuditCriterias()
             {
             var sessionHandler = CreateSessionHandler();
