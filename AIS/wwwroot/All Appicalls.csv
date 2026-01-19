@@ -1,4 +1,4 @@
-page_key,page_key,view_name,controller_name,action_name,http_method,call_type,source_type,confidence_level,,
+page_key,page_key,view_name,controller_name,action_name,http_method,call_type,source_type,confidence_level,Api Path,
 11,11,Planning/team_members.cshtml,Planning,audit_team,POST,AJAX,VIEW,MEDIUM, /api/planning/audit_team,
 11,11,Planning/team_members.cshtml,Planning,add_audit_team,POST,AJAX,VIEW,MEDIUM, /api/planning/add_audit_team,
 11,11,Planning/team_members.cshtml,Planning,delete_audit_team,POST,AJAX,VIEW,MEDIUM, /api/planning/delete_audit_team,

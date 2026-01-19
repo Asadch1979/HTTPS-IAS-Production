@@ -47,17 +47,17 @@ namespace AIS.Controllers
                             {
                             logs.Add(new SystemLogModel
                                 {
-                                LOG_ID = ReadInt(reader, "LOG_ID"),
-                                LOG_LEVEL = ReadString(reader, "LOG_LEVEL"),
-                                LOG_TIME = ReadDateTime(reader, "LOG_TIME"),
+                                LOGID = ReadInt(reader, "LOG_ID"),
+                                LOGLEVEL = ReadString(reader, "LOG_LEVEL"),
+                                LOGTIME = ReadDateTime(reader, "LOG_TIME"),
                                 MODULE = ReadString(reader, "MODULE"),
                                 CONTROLLER = ReadString(reader, "CONTROLLER"),
                                 ACTION = ReadString(reader, "ACTION"),
                                 MESSAGE = ReadString(reader, "MESSAGE"),
-                                TECH_DETAILS = ReadClob(reader, "TECH_DETAILS"),
-                                PAGE_ID = ReadNullableInt(reader, "PAGE_ID"),
-                                ENG_ID = ReadNullableInt(reader, "ENG_ID"),
-                                USER_PPNO = ReadString(reader, "USER_PPNO")
+                                TECHDETAILS = ReadClob(reader, "TECH_DETAILS"),
+                                PAGEID = ReadNullableInt(reader, "PAGE_ID"),
+                                ENGID = ReadNullableInt(reader, "ENG_ID"),
+                                USERPPNO = ReadString(reader, "USER_PPNO")
                                 });
                             }
                         }

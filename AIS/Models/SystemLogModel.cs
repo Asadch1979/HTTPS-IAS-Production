@@ -5,10 +5,10 @@ namespace AIS.Models
     {
     public class SystemLogModel
         {
-        public int LOG_ID { get; set; }
+        public int LOGID { get; set; }
         [PlainText]
-        public string LOG_LEVEL { get; set; }
-        public DateTime LOG_TIME { get; set; }
+        public string LOGLEVEL { get; set; }
+        public DateTime LOGTIME { get; set; }
         [PlainText]
         public string MODULE { get; set; }
         [PlainText]
@@ -18,10 +18,10 @@ namespace AIS.Models
         [PlainText]
         public string MESSAGE { get; set; }
         [PlainText]
-        public string TECH_DETAILS { get; set; }
-        public int? PAGE_ID { get; set; }
-        public int? ENG_ID { get; set; }
+        public string TECHDETAILS { get; set; }
+        public int? PAGEID { get; set; }
+        public int? ENGID { get; set; }
         [PlainText]
-        public string USER_PPNO { get; set; }
+        public string USERPPNO { get; set; }
         }
     }

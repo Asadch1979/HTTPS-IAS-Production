@@ -232,16 +232,16 @@
 
         $.each(logs, function (index, log) {
             var row = $('<tr></tr>');
-            row.append($('<td></td>').text(formatLogTime(readLogField(log, 'LOG_TIME'))));
-            row.append($('<td></td>').text(readLogField(log, 'LOG_LEVEL')));
+            row.append($('<td></td>').text(formatLogTime(readLogField(log, 'LOGTIME'))));
+            row.append($('<td></td>').text(readLogField(log, 'LOGLEVEL')));
             row.append($('<td></td>').text(readLogField(log, 'MODULE')));
             row.append($('<td></td>').text(readLogField(log, 'CONTROLLER')));
             row.append($('<td></td>').text(readLogField(log, 'ACTION')));
             row.append($('<td></td>').text(readLogField(log, 'MESSAGE')));
-            row.append($('<td></td>').text(readLogField(log, 'TECH_DETAILS')));
-            row.append($('<td></td>').text(readLogField(log, 'PAGE_ID')));
-            row.append($('<td></td>').text(readLogField(log, 'ENG_ID')));
-            row.append($('<td></td>').text(readLogField(log, 'USER_PPNO')));
+            row.append($('<td></td>').text(readLogField(log, 'TECHDETAILS')));
+            row.append($('<td></td>').text(readLogField(log, 'PAGEID')));
+            row.append($('<td></td>').text(readLogField(log, 'ENGID')));
+            row.append($('<td></td>').text(readLogField(log, 'USERPPNO')));
 
             tbody.append(row);
         });
