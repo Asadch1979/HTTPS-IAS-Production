@@ -301,6 +301,73 @@ namespace AIS.Controllers
             return list;
             }
 
+        public int GetFieldAuditObservationCount(int engId)
+            {
+            var sessionHandler = CreateSessionHandler();
+            var activeEngagementId = sessionHandler.GetActiveEngagementIdOrThrow();
+
+            using var con = DatabaseConnection();
+            EnsureConnectionOpen(con);
+
+            using var cmd = con.CreateCommand();
+            cmd.BindByName = true;
+            cmd.CommandType = CommandType.StoredProcedure;
+            cmd.CommandText = "PKG_FRPT.P_GET_OBSERVATION_COUNT";
+
+            cmd.Parameters.Add("P_ENG_ID", OracleDbType.Int32).Value = activeEngagementId;
+            cmd.Parameters.Add("O_CURSOR", OracleDbType.RefCursor, ParameterDirection.Output);
+
+            using var reader = cmd.ExecuteReader();
+            if (!reader.Read())
+                {
+                return 0;
+                }
+
+            var countValue = reader["NO_OF_PARAS"];
+            if (countValue == DBNull.Value)
+                {
+                return 0;
+                }
+
+            return Convert.ToInt32(countValue);
+            }
+
+        public List<FieldAuditObservationDetailModel> GetFieldAuditObservationDetails(int engId)
+            {
+            var list = new List<FieldAuditObservationDetailModel>();
+
+            var sessionHandler = CreateSessionHandler();
+            var activeEngagementId = sessionHandler.GetActiveEngagementIdOrThrow();
+
+            using var con = DatabaseConnection();
+            EnsureConnectionOpen(con);
+
+            using var cmd = con.CreateCommand();
+            cmd.BindByName = true;
+            cmd.CommandType = CommandType.StoredProcedure;
+            cmd.CommandText = "PKG_FRPT.P_GET_OBSERVATION_DETAILS";
+
+            cmd.Parameters.Add("P_ENG_ID", OracleDbType.Int32).Value = activeEngagementId;
+            cmd.Parameters.Add("O_CURSOR", OracleDbType.RefCursor, ParameterDirection.Output);
+
+            using var reader = cmd.ExecuteReader();
+            while (reader.Read())
+                {
+                list.Add(new FieldAuditObservationDetailModel
+                    {
+                    Risk = reader["risk"] == DBNull.Value ? string.Empty : reader["risk"].ToString(),
+                    AnnexureCode = reader["Annexcode"] == DBNull.Value ? string.Empty : reader["Annexcode"].ToString(),
+                    AnnexureDescription = reader["Annexure"] == DBNull.Value ? string.Empty : reader["Annexure"].ToString(),
+                    InstancesInvolved = reader["instances"] == DBNull.Value ? string.Empty : reader["instances"].ToString(),
+                    AmountInvolved = reader["amount"] == DBNull.Value ? string.Empty : reader["amount"].ToString(),
+                    GistOfPara = reader["Gist_of_Para"] == DBNull.Value ? string.Empty : reader["Gist_of_Para"].ToString(),
+                    ParaDetail = reader["PARA_Detail"] == DBNull.Value ? string.Empty : reader["PARA_Detail"].ToString()
+                    });
+                }
+
+            return list;
+            }
+
         public void SaveFieldAuditTextBlock(int engId, string sectionCode, string text)
             {
             var sessionHandler = CreateSessionHandler();

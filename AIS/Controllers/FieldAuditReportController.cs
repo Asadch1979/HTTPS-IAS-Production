@@ -81,7 +81,7 @@ namespace AIS.Controllers
             ViewData["EngagementSelector"] = selector;
             if (!selector.HasActiveEngagement)
                 {
-                return View(new FieldAuditInputSectionViewModel { IsReadOnly = true });
+                return View(new NarrativeSectionsViewModel { IsReadOnly = true });
                 }
 
             var selected = selector.Options.FirstOrDefault(option => option.EngagementId == selector.ActiveEngagementId);
@@ -92,7 +92,24 @@ namespace AIS.Controllers
 
             var engId = selector.ActiveEngagementId.Value;
             var isFinal = _dbConnection.IsFieldAuditReportFinal(engId);
-            var model = BuildInputSectionViewModel(engId, isFinal, NarrativeFieldCodes, FieldAuditReportSectionCodes.NarrativeInputs);
+            var baseModel = BuildInputSectionViewModel(engId, isFinal, NarrativeFieldCodes, FieldAuditReportSectionCodes.NarrativeInputs);
+            var observationCount = _dbConnection.GetFieldAuditObservationCount(engId);
+            var observationDetails = _dbConnection.GetFieldAuditObservationDetails(engId);
+
+            var model = new NarrativeSectionsViewModel
+                {
+                EngagementId = baseModel.EngagementId,
+                EntityId = baseModel.EntityId,
+                IsReadOnly = baseModel.IsReadOnly,
+                SectionCode = baseModel.SectionCode,
+                Fields = baseModel.Fields,
+                ReportStatus = baseModel.ReportStatus,
+                AuditTeam = baseModel.AuditTeam,
+                StatisticsRows = baseModel.StatisticsRows,
+                ObservationCount = observationCount,
+                Observations = observationDetails
+                };
+
             return View(model);
             }
 
@@ -506,11 +523,8 @@ namespace AIS.Controllers
         private static readonly string[] NarrativeFieldCodes =
             {
             "FIELD_029", "FIELD_030", "FIELD_031", "FIELD_032", "FIELD_033",
-            "FIELD_161", "FIELD_162", "FIELD_163", "FIELD_164", "FIELD_165", "FIELD_166", "FIELD_167", "FIELD_168", "FIELD_169",
-            "FIELD_170", "FIELD_171", "FIELD_172", "FIELD_173", "FIELD_174", "FIELD_175", "FIELD_176",
-            "FIELD_177", "FIELD_178", "FIELD_179", "FIELD_180", "FIELD_181", "FIELD_182", "FIELD_183", "FIELD_184", "FIELD_185",
-            "FIELD_186", "FIELD_187", "FIELD_188", "FIELD_189", "FIELD_190", "FIELD_191", "FIELD_192", "FIELD_193", "FIELD_194",
-            "FIELD_195", "FIELD_196", "FIELD_197", "FIELD_198", "FIELD_199", "FIELD_200", "FIELD_201", "FIELD_202", "FIELD_203",
+            "FIELD_161", "FIELD_163", "FIELD_164", "FIELD_166", "FIELD_167", "FIELD_169",
+            "FIELD_170", "FIELD_172", "FIELD_173", "FIELD_175", "FIELD_176",
             "FIELD_204", "FIELD_205", "FIELD_206", "FIELD_207", "FIELD_208"
             };
 
