@@ -309,20 +309,19 @@ namespace AIS.Controllers
         private FieldAuditEngagementSelectorViewModel BuildEngagementSelector()
             {
             var options = new List<FieldAuditEngagementOptionModel>();
-            foreach (var item in _dbConnection.GetObservationEntitiesForPreConcluding())
+            foreach (var item in _dbConnection.GetReportEntities())
                 {
-                if (!item.ENG_ID.HasValue || item.ENG_ID.Value <= 0)
-                    {
+                if (item.EngagementId <= 0)
                     continue;
-                    }
 
                 options.Add(new FieldAuditEngagementOptionModel
                     {
-                    EngagementId = item.ENG_ID.Value,
-                    EntityName = item.NAME ?? string.Empty,
-                    AuditPeriod = "-"
+                    EngagementId = item.EngagementId,
+                    EntityName = item.EntityName ?? string.Empty,
+                    AuditPeriod = item.AuditPeriod ?? string.Empty
                     });
                 }
+
 
             options = options.OrderBy(option => option.EngagementId).ToList();
 

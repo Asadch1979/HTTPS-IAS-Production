@@ -1,4 +1,4 @@
-using AIS.Models;
+﻿using AIS.Models;
 using AIS.Models.FieldAuditReport;
 using Oracle.ManagedDataAccess.Client;
 using System;
@@ -71,6 +71,48 @@ namespace AIS.Controllers
         /* =========================================================
            REPORT STATUS
         ========================================================= */
+
+        public List<FieldAuditEngagementOptionModel> GetReportEntities()
+            {
+            var list = new List<FieldAuditEngagementOptionModel>();
+
+            var sessionHandler = CreateSessionHandler();
+            var con = this.DatabaseConnection();
+            var loggedInUser = sessionHandler.GetUserOrThrow();
+
+            using (con)
+            using (var cmd = con.CreateCommand())
+                {
+                cmd.CommandText = "PKG_FRPT.P_GET_REPORT_ENTITY";
+                cmd.CommandType = CommandType.StoredProcedure;
+                cmd.Parameters.Add("P_USER_ENT_ID", OracleDbType.Int32)
+                              .Value = loggedInUser.UserEntityID;
+                cmd.Parameters.Add("O_CURSOR", OracleDbType.RefCursor)
+                              .Direction = ParameterDirection.Output;
+
+                using (var dr = cmd.ExecuteReader())
+                    {
+                    while (dr.Read())
+                        {
+                        var engId = Convert.ToInt32(dr["ENG_ID"]);
+
+                        if (engId <= 0)
+                            continue;
+
+                        list.Add(new FieldAuditEngagementOptionModel
+                            {
+                            EngId = engId,
+                            EngagementId = engId,          // 🔑 THIS WAS MISSING
+                            EntityId = Convert.ToInt32(dr["ENTITY_ID"]),
+                            EntityName = dr["ENTITY_NAME"]?.ToString(),
+                            AuditPeriod = dr["AUDIT_PERIOD"]?.ToString()
+                            });
+                        }
+                    }
+                }
+
+            return list;
+            }
 
         public bool IsFieldAuditReportFinal(int engId)
             {
