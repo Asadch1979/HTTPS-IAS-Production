@@ -24,71 +24,81 @@
 
 <script type="text/javascript">
     var g_trId = 0;
+
     $(document).ready(function () {
         $("#searchTableRecord").on("keyup", function () {
             var value = $(this).val().toLowerCase();
             $("#listOfProcTransactions tbody tr").filter(function () {
-                $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1)
+                $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1);
             });
         });
     });
+
     function reloadLocation() {
         location.reload();
     }
+
     function referredBackAuditCriterias() {
         var datalist = [];
+
         $.each($('.actionCriteria'), function (i, v) {
-            if ($(v).is(':checked'))
-            {
+            if ($(v).is(':checked')) {
                 var id = $(v).attr('id');
-                var comment = $($(v).parent().parent().find('.criteriaComment').eq(0)).val();
-                datalist.push({ 'ID': id, 'COMMENT': comment });
+                var comment = $(v).closest('tr').find('.criteriaComment').val();
+                datalist.push({ ID: id, COMMENT: comment });
             }
         });
-      
-        if (datalist.length > 0) {
-            $.ajax({
-                url: g_asiBaseURL + "/ApiCalls/ReferredBackAuditCriteria",
-                type: "POST",
-                data: {
-                    'DATALIST': datalist
-                },
-                cache: false,
-                success: function (data) {
-                    alert("Audit Criteria selected Cases Referred Back");
-                    onAlertCallback(reloadLocation);
-                },
-                dataType: "json",
-            });
+
+        if (datalist.length === 0) {
+            alert("Please select at least one criteria.");
+            return;
         }
+
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/ReferredBackAuditCriteria",
+            type: "POST",
+            dataType: "json",
+            cache: false,
+            data: { DATALIST: datalist },
+            success: function () {
+                alert("Audit Criteria selected Cases Referred Back");
+                onAlertCallback(reloadLocation);
+            }
+        });
     }
 
     function approveAuditCriterias() {
         var datalist = [];
+
         $.each($('.actionCriteria'), function (i, v) {
             if ($(v).is(':checked')) {
-                var id = IAS.numOrNull($(v).attr('id')) ?? 0;
-                var comment = IAS.valOrEmpty($($(v).parent().parent().find('.criteriaComment').eq(0)).val());
-                datalist.push({ 'ID': id, 'COMMENT': comment });
+                var rawId = $(v).attr('id');
+                var id = IAS.numOrNull(rawId);
+                if (!id) id = 0;
+
+                var comment = IAS.valOrEmpty($(v).closest('tr').find('.criteriaComment').val());
+                datalist.push({ ID: id, COMMENT: comment });
             }
         });
 
-            $.ajax({
-                      url: g_asiBaseURL + "/ApiCalls/AuthorizeAuditCriteria",
-                      type: "POST",
-                      contentType: "application/json; charset=utf-8",
-                      dataType: "json",
-                      data: JSON.stringify(datalist),
-                      success: function (resp) {
-                        alert("Audit Criteria selected Cases Successfully Approved");
-                        onAlertCallback(reloadLocation);
-                      }
-                    });
-
+        if (datalist.length === 0) {
+            alert("Please select at least one criteria.");
+            return;
         }
+
+        $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/AuthorizeAuditCriteria",
+            type: "POST",
+            contentType: "application/json; charset=utf-8",
+            dataType: "json",
+            cache: false,
+            data: JSON.stringify(datalist),
+            success: function () {
+                alert("Audit Criteria selected Cases Successfully Approved");
+                onAlertCallback(reloadLocation);
+            }
+        });
     }
-   
-   
 </script>
 
 <div class="col-md-12" style="margin-top:20px; margin-bottom:20px;">

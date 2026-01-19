@@ -224,7 +224,7 @@
         return year + '-' + month + '-' + day + ' ' + hourString + ':' + minutes + ' ' + ampm;
     }
 
-      function renderSystemLogs(logs) {
+        function renderSystemLogs(logs) {
         var tbody = $('#systemLogsTable tbody');
         tbody.empty();
 
@@ -234,8 +234,6 @@
         }
 
         $.each(logs, function (index, log) {
-            log = IAS.normaliseRow(log);
-
             var row = $('<tr></tr>');
             row.append($('<td></td>').text(formatLogTime(log.LOG_TIME)));
             row.append($('<td></td>').text(log.LOG_LEVEL || ''));
