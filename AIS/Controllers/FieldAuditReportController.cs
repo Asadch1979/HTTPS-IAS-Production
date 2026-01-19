@@ -45,6 +45,12 @@ namespace AIS.Controllers
                 return View(new FieldAuditReportOverviewViewModel());
                 }
 
+            var selected = selector.Options.FirstOrDefault(option => option.EngagementId == selector.ActiveEngagementId);
+            if (!IsBranchAudit(selected))
+                {
+                return RedirectToAction("Home", "MANReport");
+                }
+
             var engId = selector.ActiveEngagementId.Value;
             var overview = _dbConnection.GetFieldAuditReportOverview(engId);
             var isFinal = _dbConnection.IsFieldAuditReportFinal(engId);
@@ -78,6 +84,12 @@ namespace AIS.Controllers
                 return View(new FieldAuditInputSectionViewModel { IsReadOnly = true });
                 }
 
+            var selected = selector.Options.FirstOrDefault(option => option.EngagementId == selector.ActiveEngagementId);
+            if (!IsBranchAudit(selected))
+                {
+                return RedirectToAction("Home", "MANReport");
+                }
+
             var engId = selector.ActiveEngagementId.Value;
             var isFinal = _dbConnection.IsFieldAuditReportFinal(engId);
             var model = BuildInputSectionViewModel(engId, isFinal, NarrativeFieldCodes, FieldAuditReportSectionCodes.NarrativeInputs);
@@ -97,6 +109,12 @@ namespace AIS.Controllers
             if (!selector.HasActiveEngagement)
                 {
                 return View(new FieldAuditInputSectionViewModel { IsReadOnly = true });
+                }
+
+            var selected = selector.Options.FirstOrDefault(option => option.EngagementId == selector.ActiveEngagementId);
+            if (!IsBranchAudit(selected))
+                {
+                return RedirectToAction("Home", "MANReport");
                 }
 
             var engId = selector.ActiveEngagementId.Value;
@@ -120,6 +138,12 @@ namespace AIS.Controllers
                 return View(new FieldAuditInputSectionViewModel { IsReadOnly = true });
                 }
 
+            var selected = selector.Options.FirstOrDefault(option => option.EngagementId == selector.ActiveEngagementId);
+            if (!IsBranchAudit(selected))
+                {
+                return RedirectToAction("Home", "MANReport");
+                }
+
             var engId = selector.ActiveEngagementId.Value;
             var isFinal = _dbConnection.IsFieldAuditReportFinal(engId);
             var model = BuildInputSectionViewModel(engId, isFinal, NplFieldCodes, FieldAuditReportSectionCodes.NplSnapshot);
@@ -139,6 +163,12 @@ namespace AIS.Controllers
             if (!selector.HasActiveEngagement)
                 {
                 return View(new FieldAuditInputSectionViewModel { IsReadOnly = true });
+                }
+
+            var selected = selector.Options.FirstOrDefault(option => option.EngagementId == selector.ActiveEngagementId);
+            if (!IsBranchAudit(selected))
+                {
+                return RedirectToAction("Home", "MANReport");
                 }
 
             var engId = selector.ActiveEngagementId.Value;
@@ -201,6 +231,12 @@ namespace AIS.Controllers
             if (!selector.HasActiveEngagement)
                 {
                 return View(new FinalizeReportViewModel());
+                }
+
+            var selected = selector.Options.FirstOrDefault(option => option.EngagementId == selector.ActiveEngagementId);
+            if (!IsBranchAudit(selected))
+                {
+                return RedirectToAction("Home", "MANReport");
                 }
 
             var engId = selector.ActiveEngagementId.Value;
@@ -306,6 +342,12 @@ namespace AIS.Controllers
             return _sessionHandler.TryGetActiveEngagementId(out engId);
             }
 
+        private static bool IsBranchAudit(FieldAuditEngagementOptionModel selected)
+            {
+            return selected != null
+                && string.Equals(selected.AuditType, "B", StringComparison.OrdinalIgnoreCase);
+            }
+
         private FieldAuditEngagementSelectorViewModel BuildEngagementSelector()
             {
             var options = new List<FieldAuditEngagementOptionModel>();
@@ -318,7 +360,8 @@ namespace AIS.Controllers
                     {
                     EngagementId = item.EngagementId,
                     EntityName = item.EntityName ?? string.Empty,
-                    AuditPeriod = item.AuditPeriod ?? string.Empty
+                    AuditPeriod = item.AuditPeriod ?? string.Empty,
+                    AuditType = item.AuditType
                     });
                 }
 

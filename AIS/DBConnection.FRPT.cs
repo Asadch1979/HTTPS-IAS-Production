@@ -167,21 +167,99 @@ namespace AIS.Controllers
             if (!reader.Read())
                 return null;
 
+            var columns = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            for (var i = 0; i < reader.FieldCount; i++)
+                {
+                columns.Add(reader.GetName(i));
+                }
+
+            string GetString(params string[] names)
+                {
+                foreach (var name in names)
+                    {
+                    if (!columns.Contains(name))
+                        {
+                        continue;
+                        }
+
+                    var value = reader[name];
+                    if (value == DBNull.Value)
+                        {
+                        return string.Empty;
+                        }
+
+                    return value.ToString();
+                    }
+
+                return string.Empty;
+                }
+
+            DateTime? GetDate(params string[] names)
+                {
+                foreach (var name in names)
+                    {
+                    if (!columns.Contains(name))
+                        {
+                        continue;
+                        }
+
+                    var value = reader[name];
+                    if (value == DBNull.Value)
+                        {
+                        return null;
+                        }
+
+                    return Convert.ToDateTime(value);
+                    }
+
+                return null;
+                }
+
+            int? GetInt(params string[] names)
+                {
+                foreach (var name in names)
+                    {
+                    if (!columns.Contains(name))
+                        {
+                        continue;
+                        }
+
+                    var value = reader[name];
+                    if (value == DBNull.Value)
+                        {
+                        return null;
+                        }
+
+                    return Convert.ToInt32(value);
+                    }
+
+                return null;
+                }
+
             return new FieldAuditReportOverviewModel
                 {
-                EngId = reader["ENG_ID"] == DBNull.Value ? 0 : Convert.ToInt32(reader["ENG_ID"]),
-                EntityId = reader["ENTITY_ID"] == DBNull.Value ? 0 : Convert.ToInt32(reader["ENTITY_ID"]),
-                EntityCode = reader["ENTITY_CODE"] == DBNull.Value ? string.Empty : reader["ENTITY_CODE"].ToString(),
-                EntityName = reader["ENTITY_NAME"] == DBNull.Value ? string.Empty : reader["ENTITY_NAME"].ToString(),
-                AuditPeriod = reader["AUDIT_PERIOD"] == DBNull.Value ? string.Empty : reader["AUDIT_PERIOD"].ToString(),
-                AuditStartDate = reader["AUDIT_STARTDATE"] == DBNull.Value ? (DateTime?)null : Convert.ToDateTime(reader["AUDIT_STARTDATE"]),
-                AuditEndDate = reader["AUDIT_ENDDATE"] == DBNull.Value ? (DateTime?)null : Convert.ToDateTime(reader["AUDIT_ENDDATE"]),
-                TeamName = reader["TEAM_NAME"] == DBNull.Value ? string.Empty : reader["TEAM_NAME"].ToString(),
-                VersionNo = reader["VERSION_NO"] == DBNull.Value ? string.Empty : reader["VERSION_NO"].ToString(),
-                GeneratedOn = reader["GENERATED_ON"] == DBNull.Value ? (DateTime?)null : Convert.ToDateTime(reader["GENERATED_ON"]),
-                GeneratedBy = reader["GENERATED_BY"] == DBNull.Value ? string.Empty : reader["GENERATED_BY"].ToString(),
-                FinalizedOn = reader["FINALIZED_ON"] == DBNull.Value ? (DateTime?)null : Convert.ToDateTime(reader["FINALIZED_ON"]),
-                FinalizedBy = reader["FINALIZED_BY"] == DBNull.Value ? string.Empty : reader["FINALIZED_BY"].ToString()
+                EngId = GetInt("ENG_ID") ?? 0,
+                EntityId = GetInt("ENTITY_ID") ?? 0,
+                EntityCode = GetString("ENTITY_CODE"),
+                EntityName = GetString("ENTITY_NAME"),
+                AuditPeriod = GetString("AUDIT_PERIOD"),
+                AuditStartDate = GetDate("AUDIT_STARTDATE"),
+                AuditEndDate = GetDate("AUDIT_ENDDATE"),
+                TeamName = GetString("TEAM_NAME"),
+                VersionNo = GetString("VERSION_NO"),
+                GeneratedOn = GetDate("GENERATED_ON"),
+                GeneratedBy = GetString("GENERATED_BY"),
+                FinalizedOn = GetDate("FINALIZED_ON"),
+                FinalizedBy = GetString("FINALIZED_BY"),
+                AUDIT_YEAR = GetString("AUDIT_YEAR", "AUDIT_PERIOD"),
+                REPORTING_OFFICE = GetString("REPORTING_OFFICE"),
+                ENTITY_NAME = GetString("ENTITY_NAME"),
+                OPERATION_STARTDATE = GetDate("OPERATION_STARTDATE", "AUDIT_STARTDATE"),
+                OPERATION_ENDDATE = GetDate("OPERATION_ENDDATE", "AUDIT_ENDDATE"),
+                AUDIT_STARTED_ON = GetDate("AUDIT_STARTED_ON", "AUDIT_STARTDATE"),
+                TEAM_EXIST = GetDate("TEAM_EXIST"),
+                TOTAL_MEMBERS = GetInt("TOTAL_MEMBERS"),
+                TEAM_LEAD = GetString("TEAM_LEAD", "TEAM_NAME")
                 };
             }
 
