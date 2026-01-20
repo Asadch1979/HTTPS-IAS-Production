@@ -410,6 +410,7 @@ namespace AIS.Controllers
                                 PP_NO = rdr["PP_NO"]?.ToString(),
                                 EMP_NAME = rdr["EMP_NAME"]?.ToString(),
                                 LOAN_CASE = rdr["LOANCASE"]?.ToString(),
+                                BR_CODE = rdr["BR_CODE"]?.ToString(),
                                 LC_AMOUNT = rdr["LCAMOUNT"]?.ToString(),
                                 ACCOUNT_NUMBER = rdr["ACCNUMBER"]?.ToString(),
                                 ACC_AMOUNT = rdr["ACAMOUNT"]?.ToString()

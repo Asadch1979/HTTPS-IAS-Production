@@ -3772,6 +3772,7 @@ namespace AIS.Controllers
                 cmd.Parameters.Add("E_ID", OracleDbType.Int32).Value = eng_id;
                 cmd.Parameters.Add("PPNO", OracleDbType.Int32).Value = responsible.PP_NO;
                 cmd.Parameters.Add("L_CASE", OracleDbType.Int32).Value = responsible.LOAN_CASE;
+                cmd.Parameters.Add("BR_CODE", OracleDbType.Varchar2).Value = responsible.BR_CODE;
                 cmd.Parameters.Add("NO_ACCOUNT", OracleDbType.Int32).Value = responsible.ACCOUNT_NUMBER;
                 cmd.Parameters.Add("ENT_ID", OracleDbType.Int32).Value = loggedInUser.UserEntityID;
                 cmd.Parameters.Add("P_NO", OracleDbType.Int32).Value = loggedInUser.PPNumber;
