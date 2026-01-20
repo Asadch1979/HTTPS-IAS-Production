@@ -95,6 +95,8 @@ namespace AIS.Controllers
             var baseModel = BuildInputSectionViewModel(engId, isFinal, NarrativeFieldCodes, FieldAuditReportSectionCodes.NarrativeInputs);
             var observationCount = _dbConnection.GetFieldAuditObservationCount(engId);
             var observationDetails = _dbConnection.GetFieldAuditObservationDetails(engId);
+            var overview = _dbConnection.GetFieldAuditReportOverview(engId);
+            overview ??= new FieldAuditReportOverviewModel();
 
             var model = new NarrativeSectionsViewModel
                 {
@@ -106,6 +108,7 @@ namespace AIS.Controllers
                 ReportStatus = baseModel.ReportStatus,
                 AuditTeam = baseModel.AuditTeam,
                 StatisticsRows = baseModel.StatisticsRows,
+                Overview = overview,
                 ObservationCount = observationCount,
                 Observations = observationDetails
                 };

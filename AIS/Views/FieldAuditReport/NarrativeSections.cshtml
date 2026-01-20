@@ -5,7 +5,6 @@
 @{
     ViewData["Title"] = "Field Audit Report";
     Layout = "_Layout";
-    var nonce = Context.Items["CSPNonce"]?.ToString();
     var engagementSelector = ViewData["EngagementSelector"] as AIS.Models.FieldAuditReport.FieldAuditEngagementSelectorViewModel;
     var hasEngagement = engagementSelector?.HasActiveEngagement ?? false;
 }
@@ -14,6 +13,26 @@
     private string FieldValue(string key)
         {
         return Model?.Fields != null && Model.Fields.TryGetValue(key, out var value) ? value : string.Empty;
+        }
+
+    private string FormatDate(DateTime? value)
+        {
+        return value?.ToString("dd-MMM-yyyy") ?? "-";
+        }
+
+    private string FormatRange(DateTime? start, DateTime? end)
+        {
+        return $"{FormatDate(start)} to {FormatDate(end)}";
+        }
+
+    private string FormatText(string value)
+        {
+        return string.IsNullOrWhiteSpace(value) ? "-" : value;
+        }
+
+    private string FormatNumber(int? value)
+        {
+        return value.HasValue ? value.Value.ToString() : "-";
         }
 
     private AIS.Models.FieldAuditReport.FieldAuditPdfStatisticsRowModel FindStatisticsRow(string riskLevel)
@@ -54,6 +73,39 @@
 
     @if (hasEngagement)
     {
+        <div class="card mb-4">
+            <div class="card-header">Report Summary</div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <strong>Audit Year / Period:</strong> @FormatText(Model.Overview.AUDIT_YEAR)
+                    </div>
+                    <div class="col-md-4">
+                        <strong>Reporting Office:</strong> @FormatText(Model.Overview.REPORTING_OFFICE)
+                    </div>
+                    <div class="col-md-4">
+                        <strong>Entity Name:</strong> @FormatText(Model.Overview.ENTITY_NAME)
+                    </div>
+                </div>
+                <div class="row g-3 mt-1">
+                    <div class="col-md-6">
+                        <strong>Operation Period:</strong> @FormatRange(Model.Overview.OPERATION_STARTDATE, Model.Overview.OPERATION_ENDDATE)
+                    </div>
+                    <div class="col-md-6">
+                        <strong>Team Exist Audit:</strong> @FormatRange(Model.Overview.AUDIT_STARTED_ON, Model.Overview.TEAM_EXIST)
+                    </div>
+                </div>
+                <div class="row g-3 mt-1">
+                    <div class="col-md-6">
+                        <strong>Total Members:</strong> @FormatNumber(Model.Overview.TOTAL_MEMBERS)
+                    </div>
+                    <div class="col-md-6">
+                        <strong>Team Lead:</strong> @FormatText(Model.Overview.TEAM_LEAD)
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <form method="post" asp-action="SaveFieldAuditInputs">
             <input type="hidden" name="EngagementId" value="@Model.EngagementId" />
             <input type="hidden" name="EntityId" value="@Model.EntityId" />
@@ -254,86 +306,76 @@
                 var auditorCommentsKey = ObservationFieldKey(index, "AuditorFurtherComments");
                 var svpRemarksKey = ObservationFieldKey(index, "SvpRemarks");
                 <div class="table-responsive mb-4">
-                    <div class="row g-3">
-                        <div class="col-lg-6">
-                            <table class="table table-bordered align-middle mb-0">
-                                <tbody>
-                                    <tr>
-                                        <th>Risk Level of Para</th>
-                                        <td>@(observation?.Risk ?? string.Empty)</td>
-                                    </tr>
-                                    <tr>
-                                        <th>Annexure Code</th>
-                                        <td>@(observation?.AnnexureCode ?? string.Empty)</td>
-                                    </tr>
-                                    <tr>
-                                        <th>Annexure Description</th>
-                                        <td>@(observation?.AnnexureDescription ?? string.Empty)</td>
-                                    </tr>
-                                    <tr>
-                                        <th>Target Rectification Date</th>
-                                        <td>(Input by Auditee)</td>
-                                    </tr>
-                                    <tr>
-                                        <th>Instances Involved</th>
-                                        <td>@(observation?.InstancesInvolved ?? string.Empty)</td>
-                                    </tr>
-                                    <tr>
-                                        <th>Amount Involved</th>
-                                        <td>@(observation?.AmountInvolved ?? string.Empty)</td>
-                                    </tr>
-                                    <tr>
-                                        <th>Rectification Status</th>
-                                        <td>Outstanding</td>
-                                    </tr>
-                                    <tr>
-                                        <th>Gist of Para</th>
-                                        <td>@(observation?.GistOfPara ?? string.Empty)</td>
-                                    </tr>
-                                    <tr>
-                                        <th>PARA Detail</th>
-                                        <td>@(observation?.ParaDetail ?? string.Empty)</td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                        <div class="col-lg-6">
-                            <table class="table table-bordered align-middle mb-0">
-                                <tbody>
-                                    <tr>
-                                        <th>IMPLICATIONS</th>
-                                        <td>
-                                            <textarea class="form-control frpt-editor" name="Fields[@implicationsKey]" rows="4" @(Model.IsReadOnly ? "disabled" : string.Empty)>@FieldValue(implicationsKey)</textarea>
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <th>RECOMMENDATIONS</th>
-                                        <td>
-                                            <textarea class="form-control frpt-editor" name="Fields[@recommendationsKey]" rows="4" @(Model.IsReadOnly ? "disabled" : string.Empty)>@FieldValue(recommendationsKey)</textarea>
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <th>MANAGEMENT / BRANCH COMMENTS</th>
-                                        <td>
-                                            <textarea class="form-control frpt-editor" name="Fields[@managementCommentsKey]" rows="4" @(Model.IsReadOnly ? "disabled" : string.Empty)>@FieldValue(managementCommentsKey)</textarea>
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <th>AUDITOR’S FURTHER COMMENTS</th>
-                                        <td>
-                                            <textarea class="form-control frpt-editor" name="Fields[@auditorCommentsKey]" rows="4" @(Model.IsReadOnly ? "disabled" : string.Empty)>@FieldValue(auditorCommentsKey)</textarea>
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <th>REMARKS OF SVP / INCHARGE</th>
-                                        <td>
-                                            <textarea class="form-control frpt-editor" name="Fields[@svpRemarksKey]" rows="4" @(Model.IsReadOnly ? "disabled" : string.Empty)>@FieldValue(svpRemarksKey)</textarea>
-                                        </td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
+                    <table class="table table-bordered align-middle mb-0">
+                        <tbody>
+                            <tr>
+                                <th>Risk Level of Para</th>
+                                <td>@(observation?.Risk ?? string.Empty)</td>
+                            </tr>
+                            <tr>
+                                <th>Annexure Code</th>
+                                <td>@(observation?.AnnexureCode ?? string.Empty)</td>
+                            </tr>
+                            <tr>
+                                <th>Annexure Description</th>
+                                <td>@(observation?.AnnexureDescription ?? string.Empty)</td>
+                            </tr>
+                            <tr>
+                                <th>Target Rectification Date</th>
+                                <td>(Input by Auditee)</td>
+                            </tr>
+                            <tr>
+                                <th>Instances Involved</th>
+                                <td>@(observation?.InstancesInvolved ?? string.Empty)</td>
+                            </tr>
+                            <tr>
+                                <th>Amount Involved</th>
+                                <td>@(observation?.AmountInvolved ?? string.Empty)</td>
+                            </tr>
+                            <tr>
+                                <th>Rectification Status</th>
+                                <td>Outstanding</td>
+                            </tr>
+                            <tr>
+                                <th>Gist of Para</th>
+                                <td>@(observation?.GistOfPara ?? string.Empty)</td>
+                            </tr>
+                            <tr>
+                                <th>PARA Detail</th>
+                                <td>@Html.Raw(observation?.ParaDetail ?? string.Empty)</td>
+                            </tr>
+                            <tr>
+                                <th>IMPLICATIONS</th>
+                                <td>
+                                    <textarea class="form-control w-100" name="Fields[@implicationsKey]" rows="4" @(Model.IsReadOnly ? "disabled" : string.Empty)></textarea>
+                                </td>
+                            </tr>
+                            <tr>
+                                <th>RECOMMENDATIONS</th>
+                                <td>
+                                    <textarea class="form-control w-100" name="Fields[@recommendationsKey]" rows="4" @(Model.IsReadOnly ? "disabled" : string.Empty)></textarea>
+                                </td>
+                            </tr>
+                            <tr>
+                                <th>MANAGEMENT / BRANCH COMMENTS</th>
+                                <td>
+                                    <textarea class="form-control w-100" name="Fields[@managementCommentsKey]" rows="4" @(Model.IsReadOnly ? "disabled" : string.Empty)></textarea>
+                                </td>
+                            </tr>
+                            <tr>
+                                <th>AUDITOR’S FURTHER COMMENTS</th>
+                                <td>
+                                    <textarea class="form-control w-100" name="Fields[@auditorCommentsKey]" rows="4" @(Model.IsReadOnly ? "disabled" : string.Empty)></textarea>
+                                </td>
+                            </tr>
+                            <tr>
+                                <th>REMARKS OF SVP / INCHARGE</th>
+                                <td>
+                                    <textarea class="form-control w-100" name="Fields[@svpRemarksKey]" rows="4" @(Model.IsReadOnly ? "disabled" : string.Empty)></textarea>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
             }
 
@@ -346,30 +388,3 @@
         </form>
     }
 </div>
-
-@section Scripts {
-    <script nonce="@nonce" src="~/lib/tinymce/tinymce.min.js"></script>
-    <script nonce="@nonce">
-        const isReadOnly = @Model.IsReadOnly.ToString().ToLowerInvariant();
-
-        tinymce.init({
-            selector: '.frpt-editor',
-            height: 200,
-            menubar: false,
-            plugins: 'lists link table',
-            toolbar: 'undo redo | bold italic underline | bullist numlist | alignleft aligncenter alignright | link table',
-            readonly: isReadOnly ? 1 : 0,
-            license_key: 'gpl',
-            branding: false,
-            promotion: false
-        });
-
-        document.querySelectorAll('form').forEach(form => {
-            form.addEventListener('submit', () => {
-                if (tinymce) {
-                    tinymce.triggerSave();
-                }
-            });
-        });
-    </script>
-}
