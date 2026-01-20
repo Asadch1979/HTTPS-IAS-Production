@@ -18,6 +18,7 @@ function initResponsibilitySection(config) {
     var changesTable = $(opts.changesTableSelector);
     var modal = $(opts.modalSelector);
     var respUser = [];
+    var stagedResp = [];
     var selectedRow = null;
     var isSaving = false;
 
@@ -41,6 +42,76 @@ function initResponsibilitySection(config) {
         }
         var number = Number(trimmed);
         return Number.isNaN(number) ? 0 : number;
+    }
+
+    function applyDigitsOnly($container) {
+        var $fields = $container.find('.digits-only');
+        $fields.off('.digitsOnly');
+        $fields.on('input.digitsOnly', function () {
+            this.value = this.value.replace(/\D/g, '');
+        });
+        $fields.on('paste.digitsOnly', function () {
+            var input = this;
+            setTimeout(function () {
+                input.value = input.value.replace(/\D/g, '');
+            }, 0);
+        });
+        $fields.on('keydown.digitsOnly', function (e) {
+            var controlKeys = ['Backspace', 'Delete', 'Tab', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End'];
+            if (controlKeys.indexOf(e.key) !== -1) {
+                return;
+            }
+            if ((e.ctrlKey || e.metaKey) && ['a', 'c', 'v', 'x'].indexOf(e.key.toLowerCase()) !== -1) {
+                return;
+            }
+            if (/^\d$/.test(e.key)) {
+                return;
+            }
+            e.preventDefault();
+        });
+    }
+
+    function renderPendingGrid() {
+        var $tableBody = modal.find('#respPendingTable tbody');
+        if (!$tableBody.length) {
+            return;
+        }
+        $tableBody.empty();
+        stagedResp.forEach(function (item) {
+            $tableBody.append(`
+                <tr>
+                    <td>${item.role || ''}</td>
+                    <td>${item.ppNo || ''}</td>
+                    <td>${item.empName || ''}</td>
+                    <td>${item.loanCase || ''}</td>
+                    <td>${item.lcAmount || ''}</td>
+                    <td>${item.accountNumber || ''}</td>
+                    <td>${item.accAmount || ''}</td>
+                    <td class="text-center">
+                        <button type="button" class="btn btn-sm btn-outline-danger respPendingRemove" data-key="${item.key}">Remove</button>
+                    </td>
+                </tr>
+            `);
+        });
+    }
+
+    function stageItem(item) {
+        if (!item || !item.key) {
+            return;
+        }
+        var exists = stagedResp.some(function (entry) { return entry.key === item.key; });
+        if (!exists) {
+            stagedResp.push(item);
+        }
+    }
+
+    function unstageItem(key) {
+        stagedResp = stagedResp.filter(function (entry) { return entry.key !== key; });
+    }
+
+    function clearPending() {
+        stagedResp = [];
+        renderPendingGrid();
     }
 
     function load() {
@@ -115,6 +186,12 @@ function initResponsibilitySection(config) {
                 success: function (data) {
                     respUser.push(data);
                     if (data.ppNumber > 0) {
+                        var ppNo = $('#responsiblePPNoEntryField').val();
+                        var loanCase = $('#loanCaseNumber').val() || $('#responsibleLoanNumberEntryField').val();
+                        var lcAmount = $('#loanCaseAmount').val() || $('#responsibleLoanAmountEntryField').val();
+                        var accountNumber = $('#responsibleAccountNumberEntryField').val();
+                        var accAmount = $('#responsibleAccountAmountEntryField').val();
+                        var key = `${ppNo}_`;
                         $('#matchedPPNoPanelsBYPP').append(`
                             <div class="row col-md-12 mt-2">
                                 <div class="col-sm-1 font-weight-bold">P.P. No</div>
@@ -127,14 +204,22 @@ function initResponsibilitySection(config) {
                             </div>
                             <hr class="row col-md-12 mt-3" />
                             <div class="row col-md-12 mt-2">
-                                <div class="col-sm-1"><span>${$('#responsiblePPNoEntryField').val()}</span></div>
+                                <div class="col-sm-1"><span>${ppNo}</span></div>
                                 <div class="col-sm-3"><span>${data.name}</span></div>
-                                <div class="col-sm-2"><span>${$('#responsibleAccountNumberEntryField').val()}</span></div>
-                                <div class="col-sm-2"><span>${$('#responsibleAccountAmountEntryField').val()}</span></div>
-                                <div class="col-sm-1"><span>${$('#loanCaseNumber').val() || $('#responsibleLoanNumberEntryField').val()}</span></div>
-                                <div class="col-sm-2"><span>${$('#loanCaseAmount').val() || $('#responsibleLoanAmountEntryField').val()}</span></div>
+                                <div class="col-sm-2"><span>${accountNumber}</span></div>
+                                <div class="col-sm-2"><span>${accAmount}</span></div>
+                                <div class="col-sm-1"><span>${loanCase}</span></div>
+                                <div class="col-sm-2"><span>${lcAmount}</span></div>
                                 <div class="col-sm-1">
-                                    <input style="margin-left:10px;" class="respCheckBOXBYPP" type="checkbox" />
+                                    <input style="margin-left:10px;" class="respCheckBOXBYPP" type="checkbox"
+                                           data-key="${key}"
+                                           data-role=""
+                                           data-ppno="${ppNo}"
+                                           data-name="${data.name}"
+                                           data-loan-case="${loanCase}"
+                                           data-lc-amount="${lcAmount}"
+                                           data-account-number="${accountNumber}"
+                                           data-acc-amount="${accAmount}" />
                                 </div>
                             </div>
                         `);
@@ -183,6 +268,8 @@ function initResponsibilitySection(config) {
             success: function (data) {
                 var response = data;
                 response.forEach(function (d) {
+                    var accountNumber = d.accountNumber || d.accNumber || d.accountNo || '';
+                    var accountAmount = d.accAmount || d.accountAmount || '';
                     var responsiblePersons = [
                         { label: 'MCO', ppno: d.mcoPPNo, name: d.mcoName },
                         { label: 'Manager', ppno: d.managerPPNo, name: d.managerName },
@@ -241,13 +328,22 @@ function initResponsibilitySection(config) {
                             </div>
                             <hr class="row col-md-12 mt-3" />
                             ${responsiblePersons.map(function (person) {
+                                var key = `${person.ppno}_${person.label}`;
                                 return `
                                     <div class="row col-md-12 mt-2">
                                         <div class="col-sm-3"><label>${person.label}</label></div>
                                         <div class="col-sm-3"><span>${person.ppno}</span></div>
                                         <div class="col-sm-3"><span>${person.name}</span></div>
                                         <div class="col-sm-3">
-                                            <input style="margin-left:10px;" class="respCheckBOX" type="checkbox" />
+                                            <input style="margin-left:10px;" class="respCheckBOX" type="checkbox"
+                                                   data-key="${key}"
+                                                   data-role="${person.label}"
+                                                   data-ppno="${person.ppno}"
+                                                   data-name="${person.name}"
+                                                   data-loan-case="${d.loanCaseNo}"
+                                                   data-lc-amount="${d.outstandingAmount}"
+                                                   data-account-number="${accountNumber}"
+                                                   data-acc-amount="${accountAmount}" />
                                         </div>
                                     </div>
                                 `;
@@ -260,6 +356,122 @@ function initResponsibilitySection(config) {
             },
             dataType: 'json'
         });
+    }
+
+    function saveStaged(action) {
+        if (isSaving) return;
+        if (!stagedResp.length) {
+            alert('Select at least one responsible');
+            return;
+        }
+        if ((opts.indicator !== 'O' && (!opts.engId || opts.engId <= 0)) ||
+            (opts.indicator === 'O' && (!opts.comId || opts.comId <= 0))) {
+            alert('Context missing: please ensure ENG_ID (for new obs) or COM_ID (for old paras) is set.');
+            return;
+        }
+        isSaving = true;
+        var $btns = $('#addResponsibleButton,#updateResponsibleButton,#deleteResponsibleButton').prop('disabled', true);
+        var index = 0;
+        var successCount = 0;
+
+        function handleDone() {
+            alert('Responsibilities added: ' + successCount);
+            onAlertCallback(function () {
+                modal.modal('hide');
+                load();
+                if (typeof opts.afterSave === 'function') {
+                    opts.afterSave();
+                }
+            });
+            $('#matchedPPNoPanels').empty();
+            $('#matchedPPNoPanelsBYPP').empty();
+            $('#responsiblePPNoEntryField').val('');
+            $('#loanCaseNumber').val('');
+            $('#loanCaseAmount').val('');
+            $('#responsibleLoanNumberEntryField').val('');
+            $('#responsibleLoanAmountEntryField').val('');
+            $('#responsibleAccountNumberEntryField').val('');
+            $('#responsibleAccountAmountEntryField').val('');
+            clearPending();
+            isSaving = false;
+            $btns.prop('disabled', false);
+        }
+
+        function handleFail(xhr) {
+            var msg = 'Error occurred';
+            if (xhr && xhr.responseJSON) {
+                msg = xhr.responseJSON.Message || xhr.responseJSON.message || msg;
+            }
+            alert(msg);
+            isSaving = false;
+            $btns.prop('disabled', false);
+        }
+
+        function saveNext() {
+            if (index >= stagedResp.length) {
+                handleDone();
+                return;
+            }
+            var item = stagedResp[index];
+            index += 1;
+            var rawLoanCase = $.trim(item.loanCase || '');
+            var rawAccountNumber = $.trim(item.accountNumber || '');
+            if (rawLoanCase === '' && rawAccountNumber === '') {
+                alert('Please enter Either Loan Case Or Account Number to Proceed');
+                isSaving = false;
+                $btns.prop('disabled', false);
+                return;
+            }
+            var loanCaseValue = normalizeNumericValue(rawLoanCase);
+            var loanAmountValue = normalizeNumericValue(item.lcAmount || '');
+            var accountNumberValue = normalizeNumericValue(rawAccountNumber);
+            var accountAmountValue = normalizeNumericValue(item.accAmount || '');
+            var ajaxOpts;
+            if (opts.indicator === 'O') {
+                ajaxOpts = {
+                    url: g_asiBaseURL + '/ApiCalls/add_responsible_for_old_paras?IND_Action=' + action,
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify({
+                        'PP_NO': item.ppNo,
+                        'LOAN_CASE': loanCaseValue,
+                        'LC_AMOUNT': loanAmountValue,
+                        'ACCOUNT_NUMBER': accountNumberValue,
+                        'ACC_AMOUNT': accountAmountValue,
+                        'COM_ID': opts.comId
+                    }),
+                    dataType: 'json'
+                };
+            } else {
+                ajaxOpts = {
+                    url: g_asiBaseURL + '/ApiCalls/add_responsible_to_observation',
+                    type: 'POST',
+                    data: {
+                        'PP_NO': item.ppNo,
+                        'LOAN_CASE': loanCaseValue,
+                        'LC_AMOUNT': loanAmountValue,
+                        'ACCOUNT_NUMBER': accountNumberValue,
+                        'ACC_AMOUNT': accountAmountValue,
+                        'EMP_NAME': item.empName || '',
+                        'REMARKS': $('#resp_remarks').val() || '',
+                        'NEW_PARA_ID': opts.newParaId,
+                        'OLD_PARA_ID': opts.oldParaId,
+                        'ENG_ID': opts.engId,
+                        'INDICATOR': action,
+                        'COM_ID': opts.comId,
+                        'ACTION': action,
+                        'PARA_STATUS': opts.status
+                    },
+                    dataType: 'json'
+                };
+            }
+            $.ajax(ajaxOpts).done(function () {
+                successCount += 1;
+                saveNext();
+            }).fail(handleFail);
+        }
+
+        saveNext();
     }
 
     function saveResp(action) {
@@ -391,7 +603,13 @@ function initResponsibilitySection(config) {
     modal.find('form').off('submit.resp').on('submit.resp', function (e) { e.preventDefault(); });
 
     if (!opts.readOnly) {
-        $('#addResponsibleButton').off('click.resp').on('click.resp', function () { saveResp('A'); });
+        $('#addResponsibleButton').off('click.resp').on('click.resp', function () {
+            if (opts.directSaveMode === false) {
+                saveStaged('A');
+            } else {
+                saveResp('A');
+            }
+        });
         $('#updateResponsibleButton').off('click.resp').on('click.resp', function () { saveResp('U'); });
         $('#deleteResponsibleButton').off('click.resp').on('click.resp', function () {
             if (confirm('Are you sure you want to delete this responsibility?')) {
@@ -414,6 +632,7 @@ function initResponsibilitySection(config) {
             $('#addResponsibleButton').removeClass('d-none');
             $('#updateResponsibleButton').addClass('d-none');
             $('#deleteResponsibleButton').addClass('d-none');
+            clearPending();
         });
     }
 
@@ -422,6 +641,36 @@ function initResponsibilitySection(config) {
         load();
     }
 
+    modal.off('change.resp', '.respCheckBOX, .respCheckBOXBYPP').on('change.resp', '.respCheckBOX, .respCheckBOXBYPP', function () {
+        var $checkbox = $(this);
+        var data = $checkbox.data();
+        var key = data.key || `${data.ppno || ''}_${data.role || ''}`;
+        if ($checkbox.is(':checked')) {
+            stageItem({
+                key: key,
+                role: data.role || '',
+                ppNo: data.ppno || '',
+                empName: data.name || '',
+                loanCase: data.loanCase || '',
+                lcAmount: data.lcAmount || '',
+                accountNumber: data.accountNumber || '',
+                accAmount: data.accAmount || ''
+            });
+        } else {
+            unstageItem(key);
+        }
+        renderPendingGrid();
+    });
+
+    modal.off('click.resp', '.respPendingRemove').on('click.resp', '.respPendingRemove', function () {
+        var key = $(this).data('key');
+        modal.find(`.respCheckBOX[data-key="${key}"], .respCheckBOXBYPP[data-key="${key}"]`).prop('checked', false);
+        unstageItem(key);
+        renderPendingGrid();
+    });
+
+    applyDigitsOnly(modal);
+
     load();
 
     return {
@@ -429,6 +678,7 @@ function initResponsibilitySection(config) {
         updateContext: updateContext,
         getMatchedPP: getMatchedPP,
         getLCDetails: getLCDetails,
-        saveResp: saveResp
+        saveResp: saveResp,
+        saveStaged: saveStaged
     };
 }
