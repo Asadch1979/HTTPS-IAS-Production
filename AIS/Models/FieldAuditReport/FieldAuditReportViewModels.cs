@@ -95,6 +95,7 @@ namespace AIS.Models.FieldAuditReport
 
     public class NarrativeSectionsViewModel : FieldAuditInputSectionViewModel
         {
+        public FieldAuditReportOverviewModel Overview { get; set; } = new FieldAuditReportOverviewModel();
         public int ObservationCount { get; set; }
         public List<FieldAuditObservationDetailModel> Observations { get; set; } = new List<FieldAuditObservationDetailModel>();
         }
