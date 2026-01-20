@@ -4131,6 +4131,17 @@ namespace AIS.Controllers
             }
 
         [HttpPost]
+        public IActionResult delete_responsible_from_observation(ObservationResponsiblePPNOModel model)
+            {
+            var paraId = model.NEW_PARA_ID ?? model.OLD_PARA_ID ?? 0;
+            var result = dBConnection.DeleteResponsibilityFromObservation(
+                paraId,
+                model.ENG_ID.GetValueOrDefault(),
+                model);
+            return Json(new { Message = result });
+            }
+
+        [HttpPost]
         public IActionResult add_responsible_for_old_paras([FromQuery] string IND_Action, [FromBody] ObservationResponsiblePPNOModel model)
             {
             var result = dBConnection.AddResponsibilityforoldparas(model.COM_ID.GetValueOrDefault(), model, IND_Action);
@@ -4204,11 +4215,69 @@ namespace AIS.Controllers
 
             }
 
-        [HttpGet]
         [HttpPost]
         public List<LoanCaseDetailModel> get_lc_details(int LC_NO, int BR_CODE)
             {
             return dBConnection.GetLoanCaseDetailsWithBRCode(LC_NO, BR_CODE);
+            }
+
+        [HttpPost]
+        public List<ResponsibilitySearchResultModel> get_responsible_by_lc(int LC_NO, int BR_CODE)
+            {
+            var details = dBConnection.GetLoanCaseDetailsWithBRCode(LC_NO, BR_CODE);
+            var results = new List<ResponsibilitySearchResultModel>();
+            foreach (var detail in details)
+                {
+                var loanCase = detail.LoanCaseNo;
+                var lcAmount = detail.OutstandingAmount.ToString();
+                void AddIfPresent(string role, string ppNo, string name)
+                    {
+                    if (string.IsNullOrWhiteSpace(ppNo))
+                        {
+                        return;
+                        }
+                    results.Add(new ResponsibilitySearchResultModel
+                        {
+                        Role = role,
+                        PPNo = ppNo,
+                        EmpName = name,
+                        LoanCase = loanCase,
+                        LCAmount = lcAmount,
+                        AccountNumber = string.Empty,
+                        AccAmount = string.Empty
+                        });
+                    }
+
+                AddIfPresent("MCO", detail.McoPPNo, detail.McoName);
+                AddIfPresent("Manager", detail.ManagerPPNo, detail.ManagerName);
+                AddIfPresent("RGM", detail.RgmPPNo, detail.RgmName);
+                AddIfPresent("CAD Reviewer", detail.CadReviewerPPNo, detail.CadReviewerName);
+                AddIfPresent("CAD Authorizer", detail.CadAuthorizerPPNo, detail.CadAuthorizerName);
+                }
+            return results;
+            }
+
+        [HttpPost]
+        public List<ResponsibilitySearchResultModel> get_responsible_by_pp(int PP_NO)
+            {
+            var user = dBConnection.GetEmployeeNameFromPPNO(PP_NO);
+            if (user == null || string.IsNullOrWhiteSpace(user.PPNumber))
+                {
+                return new List<ResponsibilitySearchResultModel>();
+                }
+            return new List<ResponsibilitySearchResultModel>
+                {
+                new ResponsibilitySearchResultModel
+                    {
+                    Role = string.Empty,
+                    PPNo = user.PPNumber,
+                    EmpName = user.Name,
+                    LoanCase = string.Empty,
+                    LCAmount = string.Empty,
+                    AccountNumber = string.Empty,
+                    AccAmount = string.Empty
+                    }
+                };
             }
 
 

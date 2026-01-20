@@ -44,6 +44,10 @@ function initResponsibilitySection(config) {
         return Number.isNaN(number) ? 0 : number;
     }
 
+    function buildKey(ppNo, role, loanCase, accountNumber) {
+        return `${ppNo || ''}|${role || ''}|${loanCase || ''}|${accountNumber || ''}`;
+    }
+
     function applyDigitsOnly($container) {
         var $fields = $container.find('.digits-only');
         $fields.off('.digitsOnly');
@@ -96,12 +100,16 @@ function initResponsibilitySection(config) {
     }
 
     function stageItem(item) {
-        if (!item || !item.key) {
+        if (!item) {
             return;
         }
-        var exists = stagedResp.some(function (entry) { return entry.key === item.key; });
+        var key = item.key || buildKey(item.ppNo, item.role, item.loanCase, item.accountNumber);
+        item.key = key;
+        var exists = stagedResp.some(function (entry) { return entry.key === key; });
         if (!exists) {
             stagedResp.push(item);
+        } else {
+            alert('This responsibility is already added.');
         }
     }
 
@@ -129,7 +137,9 @@ function initResponsibilitySection(config) {
                     var sr = 1; var sr_c = 1;
                     $.each(data, function (i, v) {
                         var pp = v.pP_NO || v.PP_NO || v.pp_no;
-                        var baseRow = '<tr id="tr_' + pp + '"><td>' + (v.indicator === 'O' ? sr : sr_c) + '</td><td>' + pp + '</td><td>' + (v.emP_NAME || v.EMP_NAME || v.emp_name) + '</td><td>' + (v.loaN_CASE || v.LOAN_CASE || v.loancase) + '</td><td>' + (v.lC_AMOUNT || v.LC_AMOUNT || v.lcamount) + '</td><td>' + (v.accounT_NUMBER || v.ACCOUNT_NUMBER || v.accnumber) + '</td><td>' + (v.acC_AMOUNT || v.ACC_AMOUNT || v.acamount) + '</td><td>' + (v.remarkS || v.REMARKS || '') + '</td>';
+                        var loanCaseValue = v.loaN_CASE || v.LOAN_CASE || v.loancase;
+                        var accountValue = v.accounT_NUMBER || v.ACCOUNT_NUMBER || v.accnumber;
+                        var baseRow = '<tr data-pp="' + (pp || '') + '" data-loan="' + (loanCaseValue || '') + '" data-account="' + (accountValue || '') + '"><td>' + (v.indicator === 'O' ? sr : sr_c) + '</td><td>' + pp + '</td><td>' + (v.emP_NAME || v.EMP_NAME || v.emp_name) + '</td><td>' + (loanCaseValue || '') + '</td><td>' + (v.lC_AMOUNT || v.LC_AMOUNT || v.lcamount) + '</td><td>' + (accountValue || '') + '</td><td>' + (v.acC_AMOUNT || v.ACC_AMOUNT || v.acamount) + '</td><td>' + (v.remarkS || v.REMARKS || '') + '</td>';
                         if (!opts.readOnly && (v.indicator === 'O' || v.indicator === undefined || v.indicator === null))
                             baseRow += '<td class="text-center"><a href="#" class="updateResp">Update / delete</a></td>';
                         baseRow += '</tr>';
@@ -156,109 +166,67 @@ function initResponsibilitySection(config) {
             success: function (data) {
                 var sr = 1; var sr_c = 1;
                 $.each(data, function (i, v) {
-                    var row = '<tr id="tr_' + v.pP_NO + '"><td>' + sr + '</td><td>' + v.pP_NO + '</td><td>' + v.emP_NAME + '</td><td>' + v.loaN_CASE + '</td><td>' + v.lC_AMOUNT + '</td><td>' + v.accounT_NUMBER + '</td><td>' + v.acC_AMOUNT + '</td><td>' + v.remarks + '</td>';
+                    var row = '<tr data-pp="' + (v.pP_NO || '') + '" data-loan="' + (v.loaN_CASE || '') + '" data-account="' + (v.accounT_NUMBER || '') + '"><td>' + sr + '</td><td>' + v.pP_NO + '</td><td>' + v.emP_NAME + '</td><td>' + v.loaN_CASE + '</td><td>' + v.lC_AMOUNT + '</td><td>' + v.accounT_NUMBER + '</td><td>' + v.acC_AMOUNT + '</td><td>' + v.remarks + '</td>';
                     if (!opts.readOnly && v.indicator === 'O')
                         row += '<td class="text-center"><a href="#" class="updateResp">Update / delete</a></td>';
                     row += '</tr>';
                     if (v.indicator === 'O') {
                         table.find('tbody').append(row); sr++; }
                     else if (changesTable.length) {
-                        changesTable.find('tbody').append('<tr id="tr_' + v.pP_NO + '"><td>' + sr_c + '</td><td>' + v.pP_NO + '</td><td>' + v.emP_NAME + '</td><td>' + v.loaN_CASE + '</td><td>' + v.lC_AMOUNT + '</td><td>' + v.accounT_NUMBER + '</td><td>' + v.acC_AMOUNT + '</td><td>' + v.remarks + '</td></tr>'); sr_c++; }
+                        changesTable.find('tbody').append('<tr data-pp="' + (v.pP_NO || '') + '" data-loan="' + (v.loaN_CASE || '') + '" data-account="' + (v.accounT_NUMBER || '') + '"><td>' + sr_c + '</td><td>' + v.pP_NO + '</td><td>' + v.emP_NAME + '</td><td>' + v.loaN_CASE + '</td><td>' + v.lC_AMOUNT + '</td><td>' + v.accounT_NUMBER + '</td><td>' + v.acC_AMOUNT + '</td><td>' + v.remarks + '</td></tr>'); sr_c++; }
                 });
             }
         });
     }
 
     function getMatchedPP() {
-        // prefer new style panel if available
-        if ($('#matchedPPNoPanelsBYPP').length) {
-            $('#matchedPPNoPanelsBYPP').empty();
-            if ($('#responsiblePPNoEntryField').val() === "") {
-                alert('Please enter PP Number to proceed');
-                return;
-            }
-            respUser = [];
-            $.ajax({
-                url: g_asiBaseURL + '/ApiCalls/get_employee_name_from_pp',
-                type: 'POST',
-                data: { 'PP_NO': $('#responsiblePPNoEntryField').val() },
-                cache: false,
-                success: function (data) {
-                    respUser.push(data);
-                    if (data.ppNumber > 0) {
-                        var ppNo = $('#responsiblePPNoEntryField').val();
-                        var loanCase = $('#loanCaseNumber').val() || $('#responsibleLoanNumberEntryField').val();
-                        var lcAmount = $('#loanCaseAmount').val() || $('#responsibleLoanAmountEntryField').val();
-                        var accountNumber = $('#responsibleAccountNumberEntryField').val();
-                        var accAmount = $('#responsibleAccountAmountEntryField').val();
-                        var key = `${ppNo}_`;
-                        $('#matchedPPNoPanelsBYPP').append(`
-                            <div class="row col-md-12 mt-2">
-                                <div class="col-sm-1 font-weight-bold">P.P. No</div>
-                                <div class="col-sm-3 font-weight-bold">Name</div>
-                                <div class="col-sm-2 font-weight-bold">Acc No.</div>
-                                <div class="col-sm-2 font-weight-bold">Acc Amount</div>
-                                <div class="col-sm-1 font-weight-bold">LC No.</div>
-                                <div class="col-sm-2 font-weight-bold">LC Amount</div>
-                                <div class="col-sm-1 font-weight-bold">Action</div>
-                            </div>
-                            <hr class="row col-md-12 mt-3" />
-                            <div class="row col-md-12 mt-2">
-                                <div class="col-sm-1"><span>${ppNo}</span></div>
-                                <div class="col-sm-3"><span>${data.name}</span></div>
-                                <div class="col-sm-2"><span>${accountNumber}</span></div>
-                                <div class="col-sm-2"><span>${accAmount}</span></div>
-                                <div class="col-sm-1"><span>${loanCase}</span></div>
-                                <div class="col-sm-2"><span>${lcAmount}</span></div>
-                                <div class="col-sm-1">
-                                    <input style="margin-left:10px;" class="respCheckBOXBYPP" type="checkbox"
-                                           data-key="${key}"
-                                           data-role=""
-                                           data-ppno="${ppNo}"
-                                           data-name="${data.name}"
-                                           data-loan-case="${loanCase}"
-                                           data-lc-amount="${lcAmount}"
-                                           data-account-number="${accountNumber}"
-                                           data-acc-amount="${accAmount}" />
-                                </div>
-                            </div>
-                        `);
-                    }
-                },
-                dataType: 'json'
-            });
-        } else {
-            $('#matchedPPNoPanels').empty();
-            respUser = [];
-            $.ajax({
-                url: g_asiBaseURL + '/ApiCalls/get_employee_name_from_pp',
-                type: 'POST',
-                data: { 'PP_NO': $('#responsiblePPNoEntryField').val() },
-                dataType: 'json',
-                success: function (data) {
-                    respUser.push(data);
-                    if (data.ppNumber > 0) {
-                        $('#matchedPPNoPanels').append('<div class="row"><div class="row col-md-12 mt-2"><div class="col-sm-4"><label>Responsible</label></div><div class="col-sm-8"><span>' + data.name + ' (' + data.ppNumber + ')</span></div></div><div class="row col-md-12 mt-2"><div class="col-md-4"><label> Loan Case </label></div><div class="col-md-8"><input id="resp_loan_case" class="form-control" type="number" /></div></div><div class="row col-md-12 mt-2"><div class="col-md-4"><label> LC Amount </label></div><div class="col-md-8"><input id="resp_loan_amount" class="form-control" type="number" /></div></div><div class="row col-md-12 mt-2"><div class="col-md-4"><label> Account Number </label></div><div class="col-md-8"><input id="resp_account_number" class="form-control" type="number" /></div></div><div class="row col-md-12 mt-2"><div class="col-md-4"><label>ACC Amount </label></div><div class="col-md-8"><input id="resp_account_amount" class="form-control" type="number" /></div></div><div class="row col-md-12 mt-2"><div class="col-md-4"><label>Remarks/Reason</label></div><div class="col-md-8"><textarea id="resp_remarks" class="form-control" rows="3"></textarea></div></div></div>');
-                        if (selectedRow) {
-                            $('#resp_loan_case').val($(selectedRow).parent().parent().children('td').eq(3).text());
-                            $('#resp_loan_amount').val($(selectedRow).parent().parent().children('td').eq(4).text());
-                            $('#resp_account_number').val($(selectedRow).parent().parent().children('td').eq(5).text());
-                            $('#resp_account_amount').val($(selectedRow).parent().parent().children('td').eq(6).text());
-                            $('#resp_remarks').val('');
-                        }
-                    } else {
-                        $('#matchedPPNoPanels').append('<div class="row"><span>No record found..</span></div>');
-                    }
-                }
-            });
+        if ($('#responsiblePPNoEntryField').val() === "") {
+            alert('Please enter PP Number to proceed');
+            return;
         }
+        respUser = [];
+        $.ajax({
+            url: g_asiBaseURL + '/ApiCalls/get_responsible_by_pp',
+            type: 'POST',
+            data: { 'PP_NO': $('#responsiblePPNoEntryField').val() },
+            cache: false,
+            success: function (data) {
+                var items = Array.isArray(data) ? data : (data ? [data] : []);
+                if (!items.length) {
+                    alert('No record found..');
+                    return;
+                }
+                items.forEach(function (item) {
+                    if (!item) {
+                        return;
+                    }
+                    var ppNo = item.ppNo || item.PP_NO || item.ppNumber || $('#responsiblePPNoEntryField').val();
+                    var empName = item.name || item.empName || item.EMP_NAME || '';
+                    var role = item.role || item.ROLE || item.respRole || '';
+                    var loanCase = item.loanCase || item.LOAN_CASE || item.loanCaseNo || $('#loanCaseNumber').val() || $('#responsibleLoanNumberEntryField').val();
+                    var lcAmount = item.lcAmount || item.LC_AMOUNT || item.loanAmount || $('#loanCaseAmount').val() || $('#responsibleLoanAmountEntryField').val();
+                    var accountNumber = item.accountNumber || item.ACCOUNT_NUMBER || $('#responsibleAccountNumberEntryField').val();
+                    var accAmount = item.accAmount || item.ACC_AMOUNT || $('#responsibleAccountAmountEntryField').val();
+                    stageItem({
+                        role: role,
+                        ppNo: ppNo,
+                        empName: empName,
+                        loanCase: loanCase,
+                        lcAmount: lcAmount,
+                        accountNumber: accountNumber,
+                        accAmount: accAmount
+                    });
+                });
+                renderPendingGrid();
+            },
+            dataType: 'json'
+        });
     }
 
     function getLCDetails() {
-        $('#matchedPPNoPanels').empty();
         respUser = [];
         $.ajax({
-            url: g_asiBaseURL + '/ApiCalls/get_lc_details',
+            url: g_asiBaseURL + '/ApiCalls/get_responsible_by_lc',
             type: 'POST',
             data: {
                 'LC_NO': $('#responsibleLCNoEntryField').val(),
@@ -266,93 +234,30 @@ function initResponsibilitySection(config) {
             },
             cache: false,
             success: function (data) {
-                var response = data;
+                var response = Array.isArray(data) ? data : (data ? [data] : []);
+                if (!response.length) {
+                    alert('No record found..');
+                    return;
+                }
                 response.forEach(function (d) {
-                    var accountNumber = d.accountNumber || d.accNumber || d.accountNo || '';
-                    var accountAmount = d.accAmount || d.accountAmount || '';
-                    var responsiblePersons = [
-                        { label: 'MCO', ppno: d.mcoPPNo, name: d.mcoName },
-                        { label: 'Manager', ppno: d.managerPPNo, name: d.managerName },
-                        { label: 'RGM', ppno: d.rgmPPNo, name: d.rgmName },
-                        { label: 'CAD Reviewer', ppno: d.cadReviewerPPNo, name: d.cadReviewerName },
-                        { label: 'CAD Authorizer', ppno: d.cadAuthorizerPPNo, name: d.cadAuthorizerName }
-                    ].filter(function (p) { return p.ppno; });
-
-                    var formatDate = function (dateString) {
-                        if (!dateString) return 'N/A';
-                        var parts = dateString.split('T')[0].split('-');
-                        return parts[2] + '/' + parts[1] + '/' + parts[0];
-                    };
-
-                      $('#matchedPPNoPanels').append(`
-                        <hr class="row col-md-12 mt-1"/>
-                        <div class="row loan-case-panel">
-                            <div class="row col-md-12 mt-2">
-                                <div class="col-md-4"><label>Name</label></div>
-                                <div class="col-md-8"><input class="form-control" type="text" value="${d.name}" readonly /></div>
-                            </div>
-                            <div class="row col-md-12 mt-2">
-                                <div class="col-md-4"><label>CNIC</label></div>
-                                <div class="col-md-8"><input class="form-control" type="text" value="${d.cnic}" readonly /></div>
-                            </div>
-                            <div class="row col-md-12 mt-2">
-                                  <div class="col-md-4"><label>Loan Case No</label></div>
-                                  <div class="col-md-8"><input id="resp_loan_case" class="form-control" type="text" value="${d.loanCaseNo}" readonly /></div>
-                            </div>
-                            <div class="row col-md-12 mt-2">
-                                <div class="col-md-4"><label>Application Date</label></div>
-                                <div class="col-md-8"><input class="form-control" type="text" value="${formatDate(d.appDate)}" readonly /></div>
-                            </div>
-                            <div class="row col-md-12 mt-2">
-                                <div class="col-md-4"><label>CAD Receive Date</label></div>
-                                <div class="col-md-8"><input class="form-control" type="text" value="${formatDate(d.cadReceiveDate)}" readonly /></div>
-                            </div>
-                            <div class="row col-md-12 mt-2">
-                                <div class="col-md-4"><label>Sanction Date</label></div>
-                                <div class="col-md-8"><input class="form-control" type="text" value="${formatDate(d.sanctionDate)}" readonly /></div>
-                            </div>
-                            <div class="row col-md-12 mt-2">
-                                <div class="col-md-4"><label>Disbursed Amount</label></div>
-                                <div class="col-md-8"><input class="form-control" type="text" value="${d.disbursedAmount}" readonly /></div>
-                            </div>
-                            <div class="row col-md-12 mt-2">
-                                  <div class="col-md-4"><label>Outstanding Amount</label></div>
-                                  <div class="col-md-8"><input id="resp_loan_amount" class="form-control" type="text" value="${d.outstandingAmount}" readonly /></div>
-                            </div>
-                            <hr class="row col-md-12 mt-3" />
-                            <div class="row col-md-12 mt-2">
-                                <div class="col-sm-3 font-weight-bold">Role</div>
-                                <div class="col-sm-3 font-weight-bold">P.P. No</div>
-                                <div class="col-sm-3 font-weight-bold">Name</div>
-                                <div class="col-sm-3 font-weight-bold">Action</div>
-                            </div>
-                            <hr class="row col-md-12 mt-3" />
-                            ${responsiblePersons.map(function (person) {
-                                var key = `${person.ppno}_${person.label}`;
-                                return `
-                                    <div class="row col-md-12 mt-2">
-                                        <div class="col-sm-3"><label>${person.label}</label></div>
-                                        <div class="col-sm-3"><span>${person.ppno}</span></div>
-                                        <div class="col-sm-3"><span>${person.name}</span></div>
-                                        <div class="col-sm-3">
-                                            <input style="margin-left:10px;" class="respCheckBOX" type="checkbox"
-                                                   data-key="${key}"
-                                                   data-role="${person.label}"
-                                                   data-ppno="${person.ppno}"
-                                                   data-name="${person.name}"
-                                                   data-loan-case="${d.loanCaseNo}"
-                                                   data-lc-amount="${d.outstandingAmount}"
-                                                   data-account-number="${accountNumber}"
-                                                   data-acc-amount="${accountAmount}" />
-                                        </div>
-                                    </div>
-                                `;
-                            }).join('')}
-                        </div>
-                      `);
-                      $('#loanCaseNumber').val(d.loanCaseNo);
-                      $('#loanCaseAmount').val(d.outstandingAmount);
+                    var ppNo = d.ppNo || d.PP_NO || d.ppNumber || '';
+                    var role = d.role || d.ROLE || d.respRole || '';
+                    var name = d.name || d.empName || d.EMP_NAME || '';
+                    var loanCase = d.loanCase || d.LOAN_CASE || d.loanCaseNo || $('#responsibleLCNoEntryField').val();
+                    var lcAmount = d.lcAmount || d.LC_AMOUNT || d.outstandingAmount || '';
+                    var accountNumber = d.accountNumber || d.ACCOUNT_NUMBER || d.accountNo || '';
+                    var accAmount = d.accAmount || d.ACC_AMOUNT || d.accountAmount || '';
+                    stageItem({
+                        role: role,
+                        ppNo: ppNo,
+                        empName: name,
+                        loanCase: loanCase,
+                        lcAmount: lcAmount,
+                        accountNumber: accountNumber,
+                        accAmount: accAmount
+                    });
                 });
+                renderPendingGrid();
             },
             dataType: 'json'
         });
@@ -444,7 +349,7 @@ function initResponsibilitySection(config) {
                 };
             } else {
                 ajaxOpts = {
-                    url: g_asiBaseURL + '/ApiCalls/add_responsible_to_observation',
+                    url: action === 'D' ? g_asiBaseURL + '/ApiCalls/delete_responsible_from_observation' : g_asiBaseURL + '/ApiCalls/add_responsible_to_observation',
                     type: 'POST',
                     data: {
                         'PP_NO': item.ppNo,
@@ -580,7 +485,8 @@ function initResponsibilitySection(config) {
         modal.modal('show');
 
         // set the current row after modal.show has reset state
-        selectedRow = this;
+        var $row = $(this).closest('tr');
+        selectedRow = $row;
 
         // toggle button visibility for update/delete mode
         $('#addResponsibleButton').addClass('d-none');
@@ -588,32 +494,34 @@ function initResponsibilitySection(config) {
         $('#deleteResponsibleButton').removeClass('d-none');
 
         // populate entry fields from the selected row
-        var $row = $(this).closest('tr');
-        $('#matchedPPNoPanels').empty();
-        $('#responsiblePPNoEntryField').val($row.attr('id').split('tr_')[1]);
-        $('#loanCaseNumber, #responsibleLoanNumberEntryField').val($row.children('td').eq(3).text());
+        $('#responsiblePPNoEntryField').val($row.data('pp') || $row.children('td').eq(1).text());
+        $('#loanCaseNumber, #responsibleLoanNumberEntryField').val($row.data('loan') || $row.children('td').eq(3).text());
         $('#loanCaseAmount, #responsibleLoanAmountEntryField').val($row.children('td').eq(4).text());
-        $('#responsibleAccountNumberEntryField').val($row.children('td').eq(5).text());
+        $('#responsibleAccountNumberEntryField').val($row.data('account') || $row.children('td').eq(5).text());
         $('#responsibleAccountAmountEntryField').val($row.children('td').eq(6).text());
-
-        // build the matched PP panel with the populated values
-        getMatchedPP();
+        clearPending();
+        stageItem({
+            role: '',
+            ppNo: $row.data('pp') || $row.children('td').eq(1).text(),
+            empName: $row.children('td').eq(2).text(),
+            loanCase: $row.data('loan') || $row.children('td').eq(3).text(),
+            lcAmount: $row.children('td').eq(4).text(),
+            accountNumber: $row.data('account') || $row.children('td').eq(5).text(),
+            accAmount: $row.children('td').eq(6).text()
+        });
+        renderPendingGrid();
     });
 
     modal.find('form').off('submit.resp').on('submit.resp', function (e) { e.preventDefault(); });
 
     if (!opts.readOnly) {
         $('#addResponsibleButton').off('click.resp').on('click.resp', function () {
-            if (opts.directSaveMode === false) {
-                saveStaged('A');
-            } else {
-                saveResp('A');
-            }
+            saveStaged('A');
         });
-        $('#updateResponsibleButton').off('click.resp').on('click.resp', function () { saveResp('U'); });
+        $('#updateResponsibleButton').off('click.resp').on('click.resp', function () { saveStaged('U'); });
         $('#deleteResponsibleButton').off('click.resp').on('click.resp', function () {
             if (confirm('Are you sure you want to delete this responsibility?')) {
-                saveResp('D');
+                saveStaged('D');
             }
         });
         $('#responsiblePPNoEntryField').off('keypress.resp').on('keypress.resp', function (e) { if (e.which === 13) { e.preventDefault(); getMatchedPP(); } });
@@ -641,30 +549,8 @@ function initResponsibilitySection(config) {
         load();
     }
 
-    modal.off('change.resp', '.respCheckBOX, .respCheckBOXBYPP').on('change.resp', '.respCheckBOX, .respCheckBOXBYPP', function () {
-        var $checkbox = $(this);
-        var data = $checkbox.data();
-        var key = data.key || `${data.ppno || ''}_${data.role || ''}`;
-        if ($checkbox.is(':checked')) {
-            stageItem({
-                key: key,
-                role: data.role || '',
-                ppNo: data.ppno || '',
-                empName: data.name || '',
-                loanCase: data.loanCase || '',
-                lcAmount: data.lcAmount || '',
-                accountNumber: data.accountNumber || '',
-                accAmount: data.accAmount || ''
-            });
-        } else {
-            unstageItem(key);
-        }
-        renderPendingGrid();
-    });
-
     modal.off('click.resp', '.respPendingRemove').on('click.resp', '.respPendingRemove', function () {
         var key = $(this).data('key');
-        modal.find(`.respCheckBOX[data-key="${key}"], .respCheckBOXBYPP[data-key="${key}"]`).prop('checked', false);
         unstageItem(key);
         renderPendingGrid();
     });
