@@ -719,7 +719,9 @@
                                         <th class="col-md-auto font-weight-bold">Account No.</th>
                                         <th class="col-md-auto font-weight-bold">ACC Amount</th>
                                         <th class="col-md-auto font-weight-bold">Remarks</th>
-                                        <th class="col-md-auto text-center font-weight-bold"><center><button type="button" onclick="openResponsiblePPs();" class="rounded-circle btn btn-danger btn-sm"><i class="fa fa-plus text-white"></i></button></center></th>
+                                        <th class="col-md-auto font-weight-bold">Update</th>
+                                        <th class="col-md-auto font-weight-bold">Delete</th>
+                                        <th class="col-md-auto text-center font-weight-bold resp-add-column"><center><button type="button" onclick="openResponsiblePPs();" class="rounded-circle btn btn-danger btn-sm"><i class="fa fa-plus text-white"></i></button></center></th>
                                     </tr>
                                 </thead>
                                 <tbody></tbody>
@@ -867,6 +869,8 @@
             </div>
             <div class="modal-footer">
                 <button id="addResponsibleButton" type="button" class="btn btn-danger">Add Responsibility</button>
+                <button id="updateResponsibleButton" type="button" class="btn btn-success d-none">Update Responsibility</button>
+                <button id="deleteResponsibleButton" type="button" class="btn btn-danger d-none">Delete Responsibility</button>
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
             </div>
         </div>
