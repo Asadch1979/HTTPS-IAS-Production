@@ -160,6 +160,24 @@
         }
         $('#viewMemo_risk_display').css('color', color);
     }
+    function normalizeRequiredInt(value) {
+        var trimmed = $.trim(value);
+        if (!trimmed) {
+            return 0;
+        }
+        var number = parseInt(trimmed, 10);
+        return Number.isNaN(number) ? 0 : number;
+    }
+
+    function normalizeNullableInt(value) {
+        var trimmed = $.trim(value);
+        if (!trimmed) {
+            return null;
+        }
+        var number = parseInt(trimmed, 10);
+        return Number.isNaN(number) ? null : number;
+    }
+
     function saveMemoContent() {
         if ($('#updatedAnnexlist').val() == 0) {
             alert("Please select Annexure");
@@ -187,12 +205,12 @@
         var resP = [];
         $.each($('#listofRespPersons tbody tr'), function (i, v) {
             resP.push({
-                'PP_NO': $(v).data('pp'),
+                'PP_NO': normalizeRequiredInt($(v).data('pp')),
                 'EMP_NAME': $(v).find('td').eq(2).html(),
-                'LOAN_CASE': $(v).find('td').eq(3).html(),
-                'LC_AMOUNT': $(v).find('td').eq(4).html(),
-                'ACCOUNT_NUMBER': $(v).find('td').eq(5).html(),
-                'ACC_AMOUNT': $(v).find('td').eq(6).html()
+                'LOAN_CASE': normalizeNullableInt($(v).find('td').eq(3).html()),
+                'LC_AMOUNT': normalizeNullableInt($(v).find('td').eq(4).html()),
+                'ACCOUNT_NUMBER': normalizeRequiredInt($(v).find('td').eq(5).html()),
+                'ACC_AMOUNT': normalizeRequiredInt($(v).find('td').eq(6).html())
             });
         });
         var memo = {
@@ -324,7 +342,7 @@
               url: g_asiBaseURL + "/ApiCalls/get_responsible_by_pp",
               type: "POST",
               data: {
-                  'PP_NO': $('#responsiblePPNoEntryField').val()
+                  'PP_NO': normalizeRequiredInt($('#responsiblePPNoEntryField').val())
               },
               cache: false,
               success: function (data) {

@@ -11,6 +11,23 @@
     var g_respUsersArr = [];
     var g_index = 0;
     var g_ele = null;
+    function normalizeRequiredInt(value) {
+        var trimmed = $.trim(value);
+        if (!trimmed) {
+            return 0;
+        }
+        var number = parseInt(trimmed, 10);
+        return Number.isNaN(number) ? 0 : number;
+    }
+
+    function normalizeNullableInt(value) {
+        var trimmed = $.trim(value);
+        if (!trimmed) {
+            return null;
+        }
+        var number = parseInt(trimmed, 10);
+        return Number.isNaN(number) ? null : number;
+    }
     $(document).ready(function () {
         $('#entitySelectField').select2();
         $('#paraTextViewer').richText({
@@ -269,7 +286,7 @@
             url: g_asiBaseURL + "/ApiCalls/get_employee_name_from_pp",
             type: "POST",
             data: {
-                'PP_NO': $('#responsiblePPNoEntryField').val()
+                'PP_NO': normalizeRequiredInt($('#responsiblePPNoEntryField').val())
             },
             cache: false,
             success: function (data) {
@@ -311,11 +328,11 @@
                 url: g_asiBaseURL + "/ApiCalls/add_responsible_to_observation",
                 type: "POST",
                 data: {
-                    'PP_NO': g_respUser[0].ppNumber,
-                    'LOAN_CASE': $('#resp_loan_case').val(),
-                    'LC_AMOUNT': $('#resp_loan_amount').val(),
-                    'ACCOUNT_NUMBER': $('#resp_account_number').val(),
-                    'ACC_AMOUNT': $('#resp_account_amount').val(),
+                    'PP_NO': normalizeRequiredInt(g_respUser[0].ppNumber),
+                    'LOAN_CASE': normalizeNullableInt($('#resp_loan_case').val()),
+                    'LC_AMOUNT': normalizeNullableInt($('#resp_loan_amount').val()),
+                    'ACCOUNT_NUMBER': normalizeRequiredInt($('#resp_account_number').val()),
+                    'ACC_AMOUNT': normalizeRequiredInt($('#resp_account_amount').val()),
                     'EMP_NAME': g_respUser[0].name,
                     'REMARKS': $('#resp_remarks').val(),
                     'NEW_PARA_ID': g_np_id,
@@ -342,11 +359,11 @@
         }
         var $row = $(e).closest('tr');
         var payload = {
-            PP_NO: $row.data('pp') || $row.children('td').eq(1).text(),
-            LOAN_CASE: $row.data('loan') || $row.children('td').eq(3).text(),
-            LC_AMOUNT: $row.data('lcamount') || $row.children('td').eq(4).text(),
-            ACCOUNT_NUMBER: $row.data('account') || $row.children('td').eq(5).text(),
-            ACC_AMOUNT: $row.data('accamount') || $row.children('td').eq(6).text(),
+            PP_NO: normalizeRequiredInt($row.data('pp') || $row.children('td').eq(1).text()),
+            LOAN_CASE: normalizeNullableInt($row.data('loan') || $row.children('td').eq(3).text()),
+            LC_AMOUNT: normalizeNullableInt($row.data('lcamount') || $row.children('td').eq(4).text()),
+            ACCOUNT_NUMBER: normalizeRequiredInt($row.data('account') || $row.children('td').eq(5).text()),
+            ACC_AMOUNT: normalizeRequiredInt($row.data('accamount') || $row.children('td').eq(6).text()),
             EMP_NAME: $row.data('emp') || $row.children('td').eq(2).text(),
             NEW_PARA_ID: g_np_id,
             OLD_PARA_ID: g_op_id,

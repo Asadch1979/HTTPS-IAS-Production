@@ -261,18 +261,40 @@ namespace AIS.Controllers
                 throw new ApplicationException(msg);
             }
 
-        private static int ReadInt(OracleDataReader reader, string column)
+        private static int ReadInt(IDataRecord reader, string column, int defaultValue = 0)
             {
             var ordinal = GetOrdinal(reader, column);
             if (ordinal < 0 || reader.IsDBNull(ordinal))
                 {
-                return 0;
+                return defaultValue;
                 }
 
-            return Convert.ToInt32(reader.GetValue(ordinal));
+            var value = reader.GetValue(ordinal);
+            if (value == null || value == DBNull.Value)
+                {
+                return defaultValue;
+                }
+
+            if (value is int intValue)
+                {
+                return intValue;
+                }
+
+            if (value is long longValue)
+                {
+                return longValue > int.MaxValue || longValue < int.MinValue ? defaultValue : (int)longValue;
+                }
+
+            if (value is decimal decimalValue)
+                {
+                return decimalValue > int.MaxValue || decimalValue < int.MinValue ? defaultValue : decimal.ToInt32(decimalValue);
+                }
+
+            var text = value.ToString();
+            return int.TryParse(text, out var parsed) ? parsed : defaultValue;
             }
 
-        private static string ReadString(OracleDataReader reader, params string[] columns)
+        private static string ReadString(IDataRecord reader, params string[] columns)
             {
             if (columns == null || columns.Length == 0)
                 {
@@ -293,7 +315,7 @@ namespace AIS.Controllers
             return string.Empty;
             }
 
-        private static int GetOrdinal(OracleDataReader reader, string column)
+        private static int GetOrdinal(IDataRecord reader, string column)
             {
             for (var i = 0; i < reader.FieldCount; i++)
                 {

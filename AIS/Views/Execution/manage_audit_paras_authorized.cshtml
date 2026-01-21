@@ -20,6 +20,24 @@
         var g_ele = null;
         var g_annexList = @Json.Serialize(ViewData["AnnexList"]);
         var g_selectedRiskId = 0;
+        function normalizeRequiredInt(value) {
+            var trimmed = $.trim(value);
+            if (!trimmed) {
+                return 0;
+            }
+            var number = parseInt(trimmed, 10);
+            return Number.isNaN(number) ? 0 : number;
+        }
+
+        function normalizeNullableInt(value) {
+            var trimmed = $.trim(value);
+            if (!trimmed) {
+                return null;
+            }
+            var number = parseInt(trimmed, 10);
+            return Number.isNaN(number) ? null : number;
+        }
+
         function buildKey(ppNo, role, loanCase, accountNumber) {
             return `${ppNo || ''}|${role || ''}|${loanCase || ''}|${accountNumber || ''}`;
         }
@@ -357,7 +375,7 @@
             $.ajax({
                 url: g_asiBaseURL + "/ApiCalls/get_responsible_by_pp",
                 type: "POST",
-                data: { 'PP_NO': ppNo },
+                data: { 'PP_NO': normalizeRequiredInt(ppNo) },
                 cache: false,
                 success: function (data) {
                     var items = Array.isArray(data) ? data : (data ? [data] : []);
@@ -441,11 +459,11 @@
             }
             var $row = $(e).closest('tr');
             var payload = {
-                PP_NO: $row.data('pp') || $row.children('td').eq(1).text(),
-                LOAN_CASE: $row.data('loan') || $row.children('td').eq(3).text(),
-                LC_AMOUNT: $row.data('lcamount') || $row.children('td').eq(4).text(),
-                ACCOUNT_NUMBER: $row.data('account') || $row.children('td').eq(5).text(),
-                ACC_AMOUNT: $row.data('accamount') || $row.children('td').eq(6).text()
+                PP_NO: normalizeRequiredInt($row.data('pp') || $row.children('td').eq(1).text()),
+                LOAN_CASE: normalizeNullableInt($row.data('loan') || $row.children('td').eq(3).text()),
+                LC_AMOUNT: normalizeNullableInt($row.data('lcamount') || $row.children('td').eq(4).text()),
+                ACCOUNT_NUMBER: normalizeRequiredInt($row.data('account') || $row.children('td').eq(5).text()),
+                ACC_AMOUNT: normalizeRequiredInt($row.data('accamount') || $row.children('td').eq(6).text())
             };
             fetchWithPageId(`${g_asiBaseURL}/ApiCalls/add_responsible_for_old_paras?IND_Action=D`, {
                 method: 'POST',
@@ -836,11 +854,11 @@
                     }
                     const tr = this.closest('tr');
                     const data = {
-                        PP_NO: tr.children[1].textContent,
-                        LOAN_CASE: tr.children[3].textContent,
-                        LC_AMOUNT: tr.children[4].textContent,
-                        ACCOUNT_NUMBER: tr.children[5].textContent,
-                        ACC_AMOUNT: tr.children[6].textContent
+                        PP_NO: normalizeRequiredInt(tr.children[1].textContent),
+                        LOAN_CASE: normalizeNullableInt(tr.children[3].textContent),
+                        LC_AMOUNT: normalizeNullableInt(tr.children[4].textContent),
+                        ACCOUNT_NUMBER: normalizeRequiredInt(tr.children[5].textContent),
+                        ACC_AMOUNT: normalizeRequiredInt(tr.children[6].textContent)
                     };
                     save('D', data);
                 });
@@ -854,11 +872,11 @@
                     }
                     for (const item of g_stagedResp) {
                         const data = {
-                            PP_NO: item.ppNo || '',
-                            ACCOUNT_NUMBER: item.accountNumber || '',
-                            ACC_AMOUNT: item.accAmount || '',
-                            LOAN_CASE: item.loanCase || '',
-                            LC_AMOUNT: item.lcAmount || ''
+                            PP_NO: normalizeRequiredInt(item.ppNo),
+                            ACCOUNT_NUMBER: normalizeRequiredInt(item.accountNumber),
+                            ACC_AMOUNT: normalizeRequiredInt(item.accAmount),
+                            LOAN_CASE: normalizeNullableInt(item.loanCase),
+                            LC_AMOUNT: normalizeNullableInt(item.lcAmount)
                         };
                         await save(action, data);
                     }

@@ -221,11 +221,11 @@ namespace AIS.Controllers
                     ObservationResponsiblePPNOModel usr = new ObservationResponsiblePPNOModel();
                     usr.RESP_ROW_ID = Convert.ToInt32(rdr["RESP_ROW_ID"].ToString());
                     usr.EMP_NAME = rdr["EMP_NAME"].ToString();
-                    usr.PP_NO = rdr["PP_NO"].ToString();
-                    usr.LOAN_CASE = rdr["LOANCASE"].ToString();
-                    usr.LC_AMOUNT = rdr["LCAMOUNT"].ToString();
-                    usr.ACCOUNT_NUMBER = rdr["ACCNUMBER"].ToString();
-                    usr.ACC_AMOUNT = rdr["ACAMOUNT"].ToString();
+                    usr.PP_NO = ReadInt(rdr, "PP_NO");
+                    usr.LOAN_CASE = ReadNullableInt(rdr, "LOANCASE");
+                    usr.LC_AMOUNT = ReadNullableInt(rdr, "LCAMOUNT");
+                    usr.ACCOUNT_NUMBER = ReadInt(rdr, "ACCNUMBER");
+                    usr.ACC_AMOUNT = ReadInt(rdr, "ACAMOUNT");
                     list.Add(usr);
 
                     }
@@ -253,11 +253,11 @@ namespace AIS.Controllers
                     {
                     ObservationResponsiblePPNOModel usr = new ObservationResponsiblePPNOModel();
                     usr.EMP_NAME = rdr["EMP_NAME"].ToString();
-                    usr.PP_NO = rdr["PP_NO"].ToString();
-                    usr.LOAN_CASE = rdr["LOANCASE"].ToString();
-                    usr.LC_AMOUNT = rdr["LCAMOUNT"].ToString();
-                    usr.ACCOUNT_NUMBER = rdr["ACCNUMBER"].ToString();
-                    usr.ACC_AMOUNT = rdr["ACAMOUNT"].ToString();
+                    usr.PP_NO = ReadInt(rdr, "PP_NO");
+                    usr.LOAN_CASE = ReadNullableInt(rdr, "LOANCASE");
+                    usr.LC_AMOUNT = ReadNullableInt(rdr, "LCAMOUNT");
+                    usr.ACCOUNT_NUMBER = ReadInt(rdr, "ACCNUMBER");
+                    usr.ACC_AMOUNT = ReadInt(rdr, "ACAMOUNT");
                     list.Add(usr);
 
                     }
