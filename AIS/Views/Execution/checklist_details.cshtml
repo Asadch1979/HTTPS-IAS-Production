@@ -73,8 +73,8 @@
     });
 
     });
-    function buildRespKey(ppNo, role, loanCase, accountNumber, branchCode) {
-        return `${ppNo || ''}|${role || ''}|${loanCase || ''}|${accountNumber || ''}|${branchCode || ''}`;
+    function buildRespKey(ppNo, role, loanCase, accountNumber) {
+        return `${ppNo || ''}|${role || ''}|${loanCase || ''}|${accountNumber || ''}`;
     }
 
     function renderPendingGrid() {
@@ -102,13 +102,7 @@
         if (!item) {
             return;
         }
-        var branchCode = $.trim(item.branchCode || '');
-        if (!branchCode) {
-            alert('Please enter Branch Code to proceed');
-            return;
-        }
-        item.branchCode = branchCode;
-        var key = item.key || buildRespKey(item.ppNo, item.role, item.loanCase, item.accountNumber, branchCode);
+        var key = item.key || buildRespKey(item.ppNo, item.role, item.loanCase, item.accountNumber);
         item.key = key;
         var exists = g_stagedResp.some(function (entry) { return entry.key === key; });
         if (exists) {
@@ -194,11 +188,10 @@
             resP.push({
                 'PP_NO': $(v).data('pp'),
                 'EMP_NAME': $(v).find('td').eq(2).html(),
-                'BR_CODE': $(v).data('branch'),
-                'LOAN_CASE': $(v).data('loan') || $(v).find('td').eq(4).html(),
-                'LC_AMOUNT': $(v).find('td').eq(5).html(),
-                'ACCOUNT_NUMBER': $(v).data('account') || $(v).find('td').eq(6).html(),
-                'ACC_AMOUNT': $(v).find('td').eq(7).html()
+                'LOAN_CASE': $(v).find('td').eq(3).html(),
+                'LC_AMOUNT': $(v).find('td').eq(4).html(),
+                'ACCOUNT_NUMBER': $(v).find('td').eq(5).html(),
+                'ACC_AMOUNT': $(v).find('td').eq(6).html()
             });
         });
         var memo = {
@@ -296,7 +289,7 @@
                 $.each(tempobj.RESPONSIBLE_PPNO, function (j, pp) {
                     var srNo = $('#listofRespPersons tbody tr').length;
                     srNo++;
-                    $('#listofRespPersons tbody').append('<tr data-pp="' + (pp.PP_NO || '') + '" data-branch="' + (pp.BR_CODE || '') + '" data-loan="' + (pp.LOAN_CASE || '') + '" data-account="' + (pp.ACCOUNT_NUMBER || '') + '"><td>' + srNo + '</td><td>' + pp.PP_NO + '</td><td>' + pp.EMP_NAME + '</td><td>' + (pp.BR_CODE || '') + '</td><td>' + pp.LOAN_CASE + '</td><td>' + pp.LC_AMOUNT + '</td><td>' + pp.ACCOUNT_NUMBER + '</td><td>' + pp.ACC_AMOUNT + '</td><td></td><td class="text-center"></td><td class="text-center"><a href="#" onclick="event.preventDefault();deleteRespRow(this);">Delete</a></td></tr>');
+                    $('#listofRespPersons tbody').append('<tr data-pp="' + (pp.PP_NO || '') + '" data-loan="' + (pp.LOAN_CASE || '') + '" data-account="' + (pp.ACCOUNT_NUMBER || '') + '"><td>' + srNo + '</td><td>' + pp.PP_NO + '</td><td>' + pp.EMP_NAME + '</td><td>' + pp.LOAN_CASE + '</td><td>' + pp.LC_AMOUNT + '</td><td>' + pp.ACCOUNT_NUMBER + '</td><td>' + pp.ACC_AMOUNT + '</td><td class="text-center"><a href="#" onclick="event.preventDefault();deleteRespRow(this);">Delete</a></td></tr>');
                 });
             }
         } else {
@@ -343,12 +336,10 @@
                       var lcAmount = item.lcAmount || item.LC_AMOUNT || item.loanAmount || $('#responsibleLoanAmountEntryField').val();
                       var accountNumber = item.accountNumber || item.ACCOUNT_NUMBER || $('#responsibleAccountNumberEntryField').val();
                       var accAmount = item.accAmount || item.ACC_AMOUNT || $('#responsibleAccountAmountEntryField').val();
-                      var branchCode = $.trim(item.branchCode || item.BR_CODE || $('#responsibleBrCodeEntryField').val());
                       stagePending({
                           role: role,
                           ppNo: ppNo,
                           empName: empName,
-                          branchCode: branchCode,
                           loanCase: loanCase,
                           lcAmount: lcAmount,
                           accountNumber: accountNumber,
@@ -385,12 +376,10 @@
                     var lcAmount = item.lcAmount || item.LC_AMOUNT || item.outstandingAmount || '';
                     var accountNumber = item.accountNumber || item.ACCOUNT_NUMBER || item.accountNo || '';
                     var accAmount = item.accAmount || item.ACC_AMOUNT || item.accountAmount || '';
-                    var branchCode = $.trim(item.branchCode || item.BR_CODE || $('#responsibleBrCodeEntryField').val());
                     stagePending({
                         role: role,
                         ppNo: ppNo,
                         empName: empName,
-                        branchCode: branchCode,
                         loanCase: loanCase,
                         lcAmount: lcAmount,
                         accountNumber: accountNumber,
@@ -403,10 +392,7 @@
         });
     }
     function deleteRespRow(e) {
-        if (!confirm('Are you sure to delete responsibility?')) {
-            return;
-        }
-        $(e).closest('tr').remove();
+        $(e).parent().parent().remove();
     }
     function addResponsibilityToMainTable() {
         if (!g_stagedResp.length) {
@@ -416,17 +402,14 @@
         g_stagedResp.forEach(function (item) {
             var srNo = $('#listofRespPersons tbody tr').length + 1;
             $('#listofRespPersons tbody').append(`
-                <tr data-pp="${item.ppNo || ''}" data-branch="${item.branchCode || ''}" data-loan="${item.loanCase || ''}" data-account="${item.accountNumber || ''}">
+                <tr data-pp="${item.ppNo || ''}" data-loan="${item.loanCase || ''}" data-account="${item.accountNumber || ''}">
                     <td>${srNo}</td>
                     <td>${item.ppNo || ''}</td>
                     <td>${item.empName || ''}</td>
-                    <td>${item.branchCode || ''}</td>
                     <td>${item.loanCase || ''}</td>
                     <td>${item.lcAmount || ''}</td>
                     <td>${item.accountNumber || ''}</td>
                     <td>${item.accAmount || ''}</td>
-                    <td></td>
-                    <td class="text-center"></td>
                     <td class="text-center">
                         <a href="#" onclick="event.preventDefault(); deleteRespRow(this);">Delete</a>
                     </td>
@@ -590,19 +573,11 @@
                                         <th class="col-md- auto font-weight-bold">Sr.No</th>
                                         <th class="col-md- auto font-weight-bold">P.P. No</th>
                                         <th class="col-md- auto font-weight-bold">Name</th>
-                                        <th class="col-md- auto font-weight-bold">Branch Code</th>
                                         <th class="col-md- auto font-weight-bold">Loan Case</th>
                                         <th class="col-md- auto font-weight-bold">LC Amount</th>
                                         <th class="col-md- auto font-weight-bold">Account No.</th>
                                         <th class="col-md- auto font-weight-bold">ACC Amount</th>
-                                        <th class="col-md- auto font-weight-bold">Remarks</th>
-                                        <th class="col-md- auto text-center font-weight-bold">
-                                            <div class="d-flex align-items-center justify-content-center gap-1">
-                                                <span>Update</span>
-                                                <button type="button" onclick="openResponsiblePPs();" class="rounded-circle btn btn-danger btn-sm"><i class="fa fa-plus text-white"></i></button>
-                                            </div>
-                                        </th>
-                                        <th class="col-md- auto text-center font-weight-bold">Delete</th>
+                                        <th class="col-md- auto text-center font-weight-bold"><center><button type="button" onclick="openResponsiblePPs();" class="rounded-circle btn btn-danger btn-sm"><i class="fa fa-plus text-white"></i></button></center></th>
                                     </tr>
                                 </thead>
                                 <tbody>

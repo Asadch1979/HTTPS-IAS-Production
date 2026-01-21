@@ -44,12 +44,8 @@ function initResponsibilitySection(config) {
         return Number.isNaN(number) ? 0 : number;
     }
 
-    function getBranchCodeValue(value) {
-        return $.trim(value || '');
-    }
-
-    function buildKey(ppNo, role, loanCase, accountNumber, branchCode) {
-        return `${ppNo || ''}|${role || ''}|${loanCase || ''}|${accountNumber || ''}|${branchCode || ''}`;
+    function buildKey(ppNo, role, loanCase, accountNumber) {
+        return `${ppNo || ''}|${role || ''}|${loanCase || ''}|${accountNumber || ''}`;
     }
 
     function applyDigitsOnly($container) {
@@ -107,13 +103,7 @@ function initResponsibilitySection(config) {
         if (!item) {
             return;
         }
-        var branchCode = getBranchCodeValue(item.branchCode || item.BR_CODE || item.brCode);
-        if (!branchCode) {
-            alert('Please enter Branch Code to proceed');
-            return;
-        }
-        item.branchCode = branchCode;
-        var key = item.key || buildKey(item.ppNo, item.role, item.loanCase, item.accountNumber, branchCode);
+        var key = item.key || buildKey(item.ppNo, item.role, item.loanCase, item.accountNumber);
         item.key = key;
         var exists = stagedResp.some(function (entry) { return entry.key === key; });
         if (!exists) {
@@ -146,22 +136,17 @@ function initResponsibilitySection(config) {
                 success: function (data) {
                     var sr = 1; var sr_c = 1;
                     $.each(data, function (i, v) {
-                    var pp = v.pP_NO || v.PP_NO || v.pp_no;
-                    var loanCaseValue = v.loaN_CASE || v.LOAN_CASE || v.loancase;
-                    var accountValue = v.accounT_NUMBER || v.ACCOUNT_NUMBER || v.accnumber;
-                    var branchCodeValue = v.bR_CODE || v.BR_CODE || v.br_code || v.brCode;
-                    var baseRow = '<tr data-pp="' + (pp || '') + '" data-branch="' + (branchCodeValue || '') + '" data-loan="' + (loanCaseValue || '') + '" data-account="' + (accountValue || '') + '"><td>' + (v.indicator === 'O' ? sr : sr_c) + '</td><td>' + pp + '</td><td>' + (v.emP_NAME || v.EMP_NAME || v.emp_name) + '</td><td>' + (branchCodeValue || '') + '</td><td>' + (loanCaseValue || '') + '</td><td>' + (v.lC_AMOUNT || v.LC_AMOUNT || v.lcamount) + '</td><td>' + (accountValue || '') + '</td><td>' + (v.acC_AMOUNT || v.ACC_AMOUNT || v.acamount) + '</td><td>' + (v.remarkS || v.REMARKS || '') + '</td>';
-                    if (!opts.readOnly && (v.indicator === 'O' || v.indicator === undefined || v.indicator === null)) {
-                        baseRow += '<td class="text-center"><a href="#" class="updateResp">Update</a></td>';
-                        baseRow += '<td class="text-center"><a href="#" class="btn-resp-delete">Delete</a></td>';
-                    } else {
-                        baseRow += '<td></td><td></td>';
-                    }
-                    baseRow += '</tr>';
-                    if (v.indicator === 'O' || v.indicator === undefined || v.indicator === null) {
-                        table.find('tbody').append(baseRow); sr++;
-                    } else if (changesTable.length) {
-                        changesTable.find('tbody').append(baseRow); sr_c++;
+                        var pp = v.pP_NO || v.PP_NO || v.pp_no;
+                        var loanCaseValue = v.loaN_CASE || v.LOAN_CASE || v.loancase;
+                        var accountValue = v.accounT_NUMBER || v.ACCOUNT_NUMBER || v.accnumber;
+                        var baseRow = '<tr data-pp="' + (pp || '') + '" data-loan="' + (loanCaseValue || '') + '" data-account="' + (accountValue || '') + '"><td>' + (v.indicator === 'O' ? sr : sr_c) + '</td><td>' + pp + '</td><td>' + (v.emP_NAME || v.EMP_NAME || v.emp_name) + '</td><td>' + (loanCaseValue || '') + '</td><td>' + (v.lC_AMOUNT || v.LC_AMOUNT || v.lcamount) + '</td><td>' + (accountValue || '') + '</td><td>' + (v.acC_AMOUNT || v.ACC_AMOUNT || v.acamount) + '</td><td>' + (v.remarkS || v.REMARKS || '') + '</td>';
+                        if (!opts.readOnly && (v.indicator === 'O' || v.indicator === undefined || v.indicator === null))
+                            baseRow += '<td class="text-center"><a href="#" class="updateResp">Update / delete</a></td>';
+                        baseRow += '</tr>';
+                        if (v.indicator === 'O' || v.indicator === undefined || v.indicator === null) {
+                            table.find('tbody').append(baseRow); sr++;
+                        } else if (changesTable.length) {
+                            changesTable.find('tbody').append(baseRow); sr_c++;
                         }
                     });
                 }
@@ -181,18 +166,14 @@ function initResponsibilitySection(config) {
             success: function (data) {
                 var sr = 1; var sr_c = 1;
                 $.each(data, function (i, v) {
-                    var row = '<tr data-pp="' + (v.pP_NO || '') + '" data-branch="' + (v.BR_CODE || v.br_code || '') + '" data-loan="' + (v.loaN_CASE || '') + '" data-account="' + (v.accounT_NUMBER || '') + '"><td>' + sr + '</td><td>' + v.pP_NO + '</td><td>' + v.emP_NAME + '</td><td>' + (v.BR_CODE || v.br_code || '') + '</td><td>' + v.loaN_CASE + '</td><td>' + v.lC_AMOUNT + '</td><td>' + v.accounT_NUMBER + '</td><td>' + v.acC_AMOUNT + '</td><td>' + v.remarks + '</td>';
-                    if (!opts.readOnly && v.indicator === 'O') {
-                        row += '<td class="text-center"><a href="#" class="updateResp">Update</a></td>';
-                        row += '<td class="text-center"><a href="#" class="btn-resp-delete">Delete</a></td>';
-                    } else {
-                        row += '<td></td><td></td>';
-                    }
+                    var row = '<tr data-pp="' + (v.pP_NO || '') + '" data-loan="' + (v.loaN_CASE || '') + '" data-account="' + (v.accounT_NUMBER || '') + '"><td>' + sr + '</td><td>' + v.pP_NO + '</td><td>' + v.emP_NAME + '</td><td>' + v.loaN_CASE + '</td><td>' + v.lC_AMOUNT + '</td><td>' + v.accounT_NUMBER + '</td><td>' + v.acC_AMOUNT + '</td><td>' + v.remarks + '</td>';
+                    if (!opts.readOnly && v.indicator === 'O')
+                        row += '<td class="text-center"><a href="#" class="updateResp">Update / delete</a></td>';
                     row += '</tr>';
                     if (v.indicator === 'O') {
                         table.find('tbody').append(row); sr++; }
                     else if (changesTable.length) {
-                        changesTable.find('tbody').append('<tr data-pp="' + (v.pP_NO || '') + '" data-branch="' + (v.BR_CODE || v.br_code || '') + '" data-loan="' + (v.loaN_CASE || '') + '" data-account="' + (v.accounT_NUMBER || '') + '"><td>' + sr_c + '</td><td>' + v.pP_NO + '</td><td>' + v.emP_NAME + '</td><td>' + (v.BR_CODE || v.br_code || '') + '</td><td>' + v.loaN_CASE + '</td><td>' + v.lC_AMOUNT + '</td><td>' + v.accounT_NUMBER + '</td><td>' + v.acC_AMOUNT + '</td><td>' + v.remarks + '</td><td></td><td></td></tr>'); sr_c++; }
+                        changesTable.find('tbody').append('<tr data-pp="' + (v.pP_NO || '') + '" data-loan="' + (v.loaN_CASE || '') + '" data-account="' + (v.accounT_NUMBER || '') + '"><td>' + sr_c + '</td><td>' + v.pP_NO + '</td><td>' + v.emP_NAME + '</td><td>' + v.loaN_CASE + '</td><td>' + v.lC_AMOUNT + '</td><td>' + v.accounT_NUMBER + '</td><td>' + v.acC_AMOUNT + '</td><td>' + v.remarks + '</td></tr>'); sr_c++; }
                 });
             }
         });
@@ -226,12 +207,10 @@ function initResponsibilitySection(config) {
                     var lcAmount = item.lcAmount || item.LC_AMOUNT || item.loanAmount || $('#loanCaseAmount').val() || $('#responsibleLoanAmountEntryField').val();
                     var accountNumber = item.accountNumber || item.ACCOUNT_NUMBER || $('#responsibleAccountNumberEntryField').val();
                     var accAmount = item.accAmount || item.ACC_AMOUNT || $('#responsibleAccountAmountEntryField').val();
-                    var branchCode = getBranchCodeValue(item.branchCode || item.BR_CODE || $('#responsibleBrCodeEntryField').val());
                     stageItem({
                         role: role,
                         ppNo: ppNo,
                         empName: empName,
-                        branchCode: branchCode,
                         loanCase: loanCase,
                         lcAmount: lcAmount,
                         accountNumber: accountNumber,
@@ -268,12 +247,10 @@ function initResponsibilitySection(config) {
                     var lcAmount = d.lcAmount || d.LC_AMOUNT || d.outstandingAmount || '';
                     var accountNumber = d.accountNumber || d.ACCOUNT_NUMBER || d.accountNo || '';
                     var accAmount = d.accAmount || d.ACC_AMOUNT || d.accountAmount || '';
-                    var branchCode = getBranchCodeValue(d.branchCode || d.BR_CODE || $('#responsibleBrCodeEntryField').val());
                     stageItem({
                         role: role,
                         ppNo: ppNo,
                         empName: name,
-                        branchCode: branchCode,
                         loanCase: loanCase,
                         lcAmount: lcAmount,
                         accountNumber: accountNumber,
@@ -342,13 +319,6 @@ function initResponsibilitySection(config) {
             }
             var item = stagedResp[index];
             index += 1;
-            var rawBranchCode = getBranchCodeValue(item.branchCode);
-            if (!rawBranchCode) {
-                alert('Please enter Branch Code to proceed');
-                isSaving = false;
-                $btns.prop('disabled', false);
-                return;
-            }
             var rawLoanCase = $.trim(item.loanCase || '');
             var rawAccountNumber = $.trim(item.accountNumber || '');
             if (rawLoanCase === '' && rawAccountNumber === '') {
@@ -370,7 +340,6 @@ function initResponsibilitySection(config) {
                     data: JSON.stringify({
                         'PP_NO': item.ppNo,
                         'LOAN_CASE': loanCaseValue,
-                        'BR_CODE': rawBranchCode,
                         'LC_AMOUNT': loanAmountValue,
                         'ACCOUNT_NUMBER': accountNumberValue,
                         'ACC_AMOUNT': accountAmountValue,
@@ -385,7 +354,6 @@ function initResponsibilitySection(config) {
                     data: {
                         'PP_NO': item.ppNo,
                         'LOAN_CASE': loanCaseValue,
-                        'BR_CODE': rawBranchCode,
                         'LC_AMOUNT': loanAmountValue,
                         'ACCOUNT_NUMBER': accountNumberValue,
                         'ACC_AMOUNT': accountAmountValue,
@@ -423,15 +391,8 @@ function initResponsibilitySection(config) {
         }
         var rawLoanCase = getFirstValue(['#resp_loan_case', '#loanCaseNumber', '#responsibleLoanNumberEntryField', '.js-resp-loan-case']);
         var rawAccountNumber = getFirstValue(['#resp_account_number', '#responsibleAccountNumberEntryField', '.js-resp-account-number']);
-        var rawBranchCode = getBranchCodeValue(getFirstValue(['#responsibleBrCodeEntryField', '.js-resp-branch-code']));
         if ($.trim(rawLoanCase) === '' && $.trim(rawAccountNumber) === '') {
             alert('Please enter Either Loan Case Or Account Number to Proceed');
-            isSaving = false;
-            $btns.prop('disabled', false);
-            return;
-        }
-        if (!rawBranchCode) {
-            alert('Please enter Branch Code to proceed');
             isSaving = false;
             $btns.prop('disabled', false);
             return;
@@ -456,7 +417,6 @@ function initResponsibilitySection(config) {
                 data: JSON.stringify({
                     'PP_NO': respUser[0].ppNumber,
                     'LOAN_CASE': loanCaseValue,
-                    'BR_CODE': rawBranchCode,
                     'LC_AMOUNT': loanAmountValue,
                     'ACCOUNT_NUMBER': accountNumberValue,
                     'ACC_AMOUNT': accountAmountValue,
@@ -471,7 +431,6 @@ function initResponsibilitySection(config) {
                 data: {
                     'PP_NO': respUser[0].ppNumber,
                     'LOAN_CASE': loanCaseValue,
-                    'BR_CODE': rawBranchCode,
                     'LC_AMOUNT': loanAmountValue,
                     'ACCOUNT_NUMBER': accountNumberValue,
                     'ACC_AMOUNT': accountAmountValue,
@@ -536,65 +495,21 @@ function initResponsibilitySection(config) {
 
         // populate entry fields from the selected row
         $('#responsiblePPNoEntryField').val($row.data('pp') || $row.children('td').eq(1).text());
-        $('#responsibleBrCodeEntryField').val($row.data('branch') || $row.children('td').eq(3).text());
-        $('#loanCaseNumber, #responsibleLoanNumberEntryField').val($row.data('loan') || $row.children('td').eq(4).text());
-        $('#loanCaseAmount, #responsibleLoanAmountEntryField').val($row.children('td').eq(5).text());
-        $('#responsibleAccountNumberEntryField').val($row.data('account') || $row.children('td').eq(6).text());
-        $('#responsibleAccountAmountEntryField').val($row.children('td').eq(7).text());
+        $('#loanCaseNumber, #responsibleLoanNumberEntryField').val($row.data('loan') || $row.children('td').eq(3).text());
+        $('#loanCaseAmount, #responsibleLoanAmountEntryField').val($row.children('td').eq(4).text());
+        $('#responsibleAccountNumberEntryField').val($row.data('account') || $row.children('td').eq(5).text());
+        $('#responsibleAccountAmountEntryField').val($row.children('td').eq(6).text());
         clearPending();
         stageItem({
             role: '',
             ppNo: $row.data('pp') || $row.children('td').eq(1).text(),
             empName: $row.children('td').eq(2).text(),
-            branchCode: $row.data('branch') || $row.children('td').eq(3).text(),
-            loanCase: $row.data('loan') || $row.children('td').eq(4).text(),
-            lcAmount: $row.children('td').eq(5).text(),
-            accountNumber: $row.data('account') || $row.children('td').eq(6).text(),
-            accAmount: $row.children('td').eq(7).text()
+            loanCase: $row.data('loan') || $row.children('td').eq(3).text(),
+            lcAmount: $row.children('td').eq(4).text(),
+            accountNumber: $row.data('account') || $row.children('td').eq(5).text(),
+            accAmount: $row.children('td').eq(6).text()
         });
         renderPendingGrid();
-    });
-
-    table.off('click.resp', '.btn-resp-delete').on('click.resp', '.btn-resp-delete', function (e) {
-        e.preventDefault();
-        var $row = $(this).closest('tr');
-        var ppNo = $row.data('pp') || '';
-        var loanCase = $row.data('loan') || '';
-        var branchCode = $row.data('branch') || '';
-        var accountNumber = $row.data('account') || '';
-        if (!branchCode) {
-            alert('Please enter Branch Code to proceed');
-            return;
-        }
-        if (!confirm('Are you sure to delete responsibility?')) {
-            return;
-        }
-        $.ajax({
-            url: g_asiBaseURL + '/ApiCalls/delete_responsible_from_observation',
-            type: 'POST',
-            data: {
-                'ENG_ID': opts.engId,
-                'NEW_PARA_ID': opts.newParaId,
-                'OLD_PARA_ID': opts.oldParaId,
-                'PP_NO': ppNo,
-                'LOAN_CASE': loanCase,
-                'BR_CODE': branchCode,
-                'ACCOUNT_NUMBER': accountNumber
-            },
-            dataType: 'json'
-        }).done(function (data) {
-            var msg = data && (data.Message || data.message);
-            if (msg) {
-                alert(msg);
-            }
-            $row.remove();
-        }).fail(function (xhr) {
-            var msg = 'Error occurred';
-            if (xhr && xhr.responseJSON) {
-                msg = xhr.responseJSON.Message || xhr.responseJSON.message || msg;
-            }
-            alert(msg);
-        });
     });
 
     modal.find('form').off('submit.resp').on('submit.resp', function (e) { e.preventDefault(); });
@@ -616,7 +531,6 @@ function initResponsibilitySection(config) {
             selectedRow = null;
             respUser = [];
             $('#responsiblePPNoEntryField').val('');
-            $('#responsibleBrCodeEntryField').val('');
             $('#loanCaseNumber').val('');
             $('#loanCaseAmount').val('');
             $('#responsibleLoanNumberEntryField').val('');

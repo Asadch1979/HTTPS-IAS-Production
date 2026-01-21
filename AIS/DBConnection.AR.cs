@@ -502,7 +502,7 @@ namespace AIS.Controllers
 
             var entityId = loggedInUser.UserEntityID.GetValueOrDefault();
             var skipResponsibility = entityId == 112242 || entityId == 112248;  // EXCLUDE these entities from responsibility assignment
-            var isSpecialEntity = skipResponsibility;                           // keep your existing Â“special entity defaultsÂ” behavior
+            var isSpecialEntity = skipResponsibility;                           // keep your existing “special entity defaults” behavior
 
             var subChecklistId = ob.SUBCHECKLIST_ID;
             var annexureId = ob.ANNEXURE_ID;
@@ -3158,7 +3158,6 @@ namespace AIS.Controllers
                     usr.EMP_NAME = rdr["emp_name"].ToString();
                     usr.PP_NO = rdr["PP_NO"].ToString();
                     usr.LOAN_CASE = rdr["loan_case"].ToString();
-                    usr.BR_CODE = rdr["br_code"].ToString();
                     usr.LC_AMOUNT = rdr["lc_amount"].ToString();
                     usr.ACCOUNT_NUMBER = rdr["account_number"].ToString();
                     usr.ACC_AMOUNT = rdr["ac_amount"].ToString();
@@ -3192,7 +3191,6 @@ namespace AIS.Controllers
                 cmd.Parameters.Add("PPNO", OracleDbType.Int32).Value = loggedInUser.PPNumber;
                 cmd.Parameters.Add("RES_PP", OracleDbType.Int32).Value = responsible.PP_NO;
                 cmd.Parameters.Add("LOANCASE", OracleDbType.Int32).Value = responsible.LOAN_CASE;
-                cmd.Parameters.Add("BR_CODE", OracleDbType.Varchar2).Value = responsible.BR_CODE;
                 cmd.Parameters.Add("ACCNUMBER", OracleDbType.Int32).Value = responsible.ACCOUNT_NUMBER;
                 cmd.Parameters.Add("LCAMOUNT", OracleDbType.Int32).Value = responsible.LC_AMOUNT;
                 cmd.Parameters.Add("ACAMOUNT", OracleDbType.Int32).Value = responsible.ACC_AMOUNT;
@@ -3228,7 +3226,6 @@ namespace AIS.Controllers
                 cmd.Parameters.Add("E_ID", OracleDbType.Int32).Value = eng_id;
                 cmd.Parameters.Add("PPNO", OracleDbType.Int32).Value = responsible.PP_NO;
                 cmd.Parameters.Add("L_CASE", OracleDbType.Int32).Value = responsible.LOAN_CASE;
-                cmd.Parameters.Add("BR_CODE", OracleDbType.Varchar2).Value = responsible.BR_CODE;
                 cmd.Parameters.Add("LC_AMOUNT", OracleDbType.Int32).Value = responsible.LC_AMOUNT;
                 cmd.Parameters.Add("AC_AMOUNT", OracleDbType.Int32).Value = responsible.ACC_AMOUNT;
                 cmd.Parameters.Add("NO_ACCOUNT", OracleDbType.Int32).Value = responsible.ACCOUNT_NUMBER;
