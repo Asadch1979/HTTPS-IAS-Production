@@ -18,6 +18,8 @@ namespace AIS.Models
         [PlainText]
         public string ACC_AMOUNT { get; set; }
         [PlainText]
+        public string BR_CODE { get; set; }
+        [PlainText]
         public string RESP_ACTIVE { get; set; }
         [PlainText]
         public string REMARKS { get; set; }
