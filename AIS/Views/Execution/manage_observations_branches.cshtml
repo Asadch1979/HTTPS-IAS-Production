@@ -719,7 +719,11 @@
                                         <th class="col-md-auto font-weight-bold">Account No.</th>
                                         <th class="col-md-auto font-weight-bold">ACC Amount</th>
                                         <th class="col-md-auto font-weight-bold">Remarks</th>
-                                        <th class="col-md-auto text-center font-weight-bold"><center><button type="button" onclick="openResponsiblePPs();" class="rounded-circle btn btn-danger btn-sm"><i class="fa fa-plus text-white"></i></button></center></th>
+                                        <th class="col-md-auto text-center font-weight-bold">Update</th>
+                                        <th class="col-md-auto text-center font-weight-bold">Delete</th>
+                                        <th class="col-md-auto text-center font-weight-bold">
+                                            <center><button type="button" onclick="openResponsiblePPs();" class="rounded-circle btn btn-danger btn-sm"><i class="fa fa-plus text-white"></i></button></center>
+                                        </th>
                                     </tr>
                                 </thead>
                                 <tbody></tbody>
@@ -814,10 +818,6 @@
                         </div>
                     </div>
                     <div class="form-group">
-                        <div id="matchedPPNoPanels" style="padding:20px;">
-                        </div>
-                    </div>
-                    <div class="form-group">
 
                         <label class="form-control text-bold fw-bold text-center">Search Responsible By PP No.</label>
 
@@ -845,10 +845,6 @@
                             <div class="col-md-2 d-flex align-items-end">
                                 <button type="button" onclick="respSectionUpdate.getMatchedPP();" class="col-md-2 btn btn-success w-100">Select</button>
                             </div>
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <div id="matchedPPNoPanelsBYPP" style="padding:20px;">
                         </div>
                     </div>
                     <div class="form-group">
@@ -938,5 +934,5 @@
     </div>
 </div>
 @section Scripts {
-    <script src="~/js/responsibilitySection.js"></script>
+    <script src="~/js/responsibilitySectionUpdate.js"></script>
 }

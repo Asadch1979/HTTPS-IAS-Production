@@ -3755,6 +3755,40 @@ namespace AIS.Controllers
                 }
             }
 
+        public string DeleteResponsibilityFromObservation(int paraId, int eng_id, ObservationResponsiblePPNOModel responsible)
+            {
+            var sessionHandler = CreateSessionHandler();
+            var con = this.DatabaseConnection();
+            var loggedInUser = sessionHandler.GetUserOrThrow();
+            string resp = "";
+
+            using (OracleCommand cmd = con.CreateCommand())
+                {
+                cmd.CommandText = "pkg_ar.P_Delete_responsibility";
+                cmd.CommandType = CommandType.StoredProcedure;
+                cmd.Parameters.Clear();
+
+                cmd.Parameters.Add("PARA_ID", OracleDbType.Int32).Value = paraId;
+                cmd.Parameters.Add("E_ID", OracleDbType.Int32).Value = eng_id;
+                cmd.Parameters.Add("PPNO", OracleDbType.Int32).Value = responsible.PP_NO;
+                cmd.Parameters.Add("L_CASE", OracleDbType.Int32).Value = responsible.LOAN_CASE;
+                cmd.Parameters.Add("NO_ACCOUNT", OracleDbType.Int32).Value = responsible.ACCOUNT_NUMBER;
+                cmd.Parameters.Add("ENT_ID", OracleDbType.Int32).Value = loggedInUser.UserEntityID;
+                cmd.Parameters.Add("P_NO", OracleDbType.Int32).Value = loggedInUser.PPNumber;
+                cmd.Parameters.Add("R_ID", OracleDbType.Int32).Value = loggedInUser.UserRoleID;
+                cmd.Parameters.Add("T_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+
+                OracleDataReader rdr = cmd.ExecuteReader();
+                while (rdr.Read())
+                    {
+                    resp = rdr["remarks"].ToString();
+                    }
+                }
+
+            con.Dispose();
+            return resp;
+            }
+
         public List<MenuPagesModel> GetMenuPagesId(string Page_Path)
             {
             var sessionHandler = CreateSessionHandler();

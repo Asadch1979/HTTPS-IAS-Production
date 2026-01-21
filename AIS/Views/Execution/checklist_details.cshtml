@@ -13,6 +13,8 @@
     var g_engId = 0;
     var S_ID = 0;
     var g_respUsersArr = [];
+    var g_stagedResp = [];
+    var g_editingRow = null;
 
     var g_selectedRiskId = 0;
     var g_annexList = @Json.Serialize(ViewData["AnnexList"]);
@@ -24,6 +26,11 @@
         g_engId = url.searchParams.get("engId");
         $('#updatedAnnexlist').select2({ dropdownParent: $('#viewMemoModel') });
         $('#updatedAnnexlist').on('change', updateRiskDisplay);
+
+        applyDigitsOnly($(document));
+        $('#ResponsiblePPModel').on('show.bs.modal', function () {
+            applyDigitsOnly($(this));
+        });
 
 
         $.ajax({
@@ -70,7 +77,77 @@
             document.getElementById('viewMemo_amountInv').addEventListener('input', function (e) {
         this.value = this.value.replace(/\D|^0(?=\d)/g, ''); // Removes decimals and leading zeros
     });
+
     });
+    function applyDigitsOnly($container) {
+        var $fields = $container.find('.digits-only');
+        $fields.off('.digitsOnly');
+        $fields.on('input.digitsOnly', function () {
+            this.value = this.value.replace(/\D/g, '');
+        });
+        $fields.on('paste.digitsOnly', function () {
+            var input = this;
+            setTimeout(function () {
+                input.value = input.value.replace(/\D/g, '');
+            }, 0);
+        });
+    }
+
+    function buildRespKey(ppNo, role, loanCase, accountNumber) {
+        return `${ppNo || ''}|${role || ''}|${loanCase || ''}|${accountNumber || ''}`;
+    }
+
+    function renderPendingGrid() {
+        var $tbody = $('#respPendingTable tbody');
+        $tbody.empty();
+        g_stagedResp.forEach(function (item) {
+            $tbody.append(`
+                <tr>
+                    <td>${item.role || ''}</td>
+                    <td>${item.ppNo || ''}</td>
+                    <td>${item.empName || ''}</td>
+                    <td>${item.loanCase || ''}</td>
+                    <td>${item.lcAmount || ''}</td>
+                    <td>${item.accountNumber || ''}</td>
+                    <td>${item.accAmount || ''}</td>
+                    <td class="text-center">
+                        <button type="button" class="btn btn-sm btn-outline-danger respPendingRemove" data-key="${item.key}">Remove</button>
+                    </td>
+                </tr>
+            `);
+        });
+    }
+
+    function stagePending(item) {
+        if (!item) {
+            return;
+        }
+        var key = item.key || buildRespKey(item.ppNo, item.role, item.loanCase, item.accountNumber);
+        item.key = key;
+        var exists = g_stagedResp.some(function (entry) { return entry.key === key; });
+        if (exists) {
+            alert('This responsibility is already added.');
+            return;
+        }
+        g_stagedResp.push(item);
+    }
+
+    function clearPending() {
+        g_stagedResp = [];
+        renderPendingGrid();
+    }
+
+    function setModalMode(mode) {
+        if (mode === 'edit') {
+            $('#addResponsibleButton').addClass('d-none');
+            $('#updateResponsibleButton').removeClass('d-none');
+            $('#deleteResponsibleButton').removeClass('d-none');
+        } else {
+            $('#addResponsibleButton').removeClass('d-none');
+            $('#updateResponsibleButton').addClass('d-none');
+            $('#deleteResponsibleButton').addClass('d-none');
+        }
+    }
     function showObservationArea(value, id) {
         g_observationId = id;
         if (value == 1) {
@@ -141,7 +218,7 @@
         var resP = [];
         $.each($('#listofRespPersons tbody tr'), function (i, v) {
             resP.push({
-                'PP_NO': $(v).attr('id').split('tr_')[1],
+                'PP_NO': $(v).data('pp'),
                 'EMP_NAME': $(v).find('td').eq(2).html(),
                 'LOAN_CASE': $(v).find('td').eq(3).html(),
                 'LC_AMOUNT': $(v).find('td').eq(4).html(),
@@ -244,7 +321,7 @@
                 $.each(tempobj.RESPONSIBLE_PPNO, function (j, pp) {
                     var srNo = $('#listofRespPersons tbody tr').length;
                     srNo++;
-                    $('#listofRespPersons tbody').append('<tr id="tr_' + pp.PP_NO + '"><td>' + srNo + '</td><td>' + pp.PP_NO + '</td><td>' + pp.EMP_NAME + '</td><td>' + pp.LOAN_CASE + '</td><td>' + pp.LC_AMOUNT + '</td><td>' + pp.ACCOUNT_NUMBER + '</td><td>' + pp.ACC_AMOUNT + '</td><td class="text-center"><a href="#" onclick="event.preventDefault();deleteRespRow(this);">Delete</a></td></tr>');
+                    $('#listofRespPersons tbody').append('<tr data-pp="' + (pp.PP_NO || '') + '" data-loan="' + (pp.LOAN_CASE || '') + '" data-account="' + (pp.ACCOUNT_NUMBER || '') + '" data-role=""><td>' + srNo + '</td><td>' + pp.PP_NO + '</td><td>' + pp.EMP_NAME + '</td><td>' + pp.LOAN_CASE + '</td><td>' + pp.LC_AMOUNT + '</td><td>' + pp.ACCOUNT_NUMBER + '</td><td>' + pp.ACC_AMOUNT + '</td><td class="text-center"><a href="#" class="respUpdateRow" onclick="event.preventDefault();">Update</a></td><td class="text-center"><a href="#" class="respDeleteRow" onclick="event.preventDefault();deleteRespRow(this);">Delete</a></td><td></td></tr>');
                 });
             }
         } else {
@@ -254,64 +331,65 @@
     }
     function openResponsiblePPs() {
         $('#ResponsiblePPModel').modal('show');
-        $('#matchedPPNoPanels').empty();
-        $('#matchedPPNoPanelsBYPP').empty();
-      //  $('#findBYPPNOPanel').addClass('d-none');
+        clearPending();
+        g_editingRow = null;
+        setModalMode('add');
+        $('#responsibleLCNoEntryField').val('');
+        $('#responsibleBrCodeEntryField').val('');
+        $('#responsiblePPNoEntryField').val('');
+        $('#responsibleLoanNumberEntryField').val('');
+        $('#responsibleLoanAmountEntryField').val('');
+        $('#responsibleAccountNumberEntryField').val('');
+        $('#responsibleAccountAmountEntryField').val('');
         return false;
     }
     function getMatchedPP() {
-          $('#matchedPPNoPanelsBYPP').empty();
-          if($('#responsiblePPNoEntryField')==""){
+          if($.trim($('#responsiblePPNoEntryField').val()) === ''){
               alert("Please enter PP Number to proceed");
               return;
           }
           g_respUser = [];
           $.ajax({
-              url: g_asiBaseURL + "/ApiCalls/get_employee_name_from_pp",
+              url: g_asiBaseURL + "/ApiCalls/get_responsible_by_pp",
               type: "POST",
               data: {
                   'PP_NO': $('#responsiblePPNoEntryField').val()
               },
               cache: false,
               success: function (data) {
-                  g_respUser.push(data);
-                  if (data.ppNumber > 0) {
-                       $('#matchedPPNoPanelsBYPP').append(`
-                        <!-- Responsible Persons Heading -->
-            <div class="row col-md-12 mt-2">
-                <div class="col-sm-1 font-weight-bold">P.P. No</div>
-                <div class="col-sm-3 font-weight-bold">Name</div>
-                <div class="col-sm-2 font-weight-bold">Acc No.</div>
-                <div class="col-sm-2 font-weight-bold">Acc Amount</div>
-                <div class="col-sm-1 font-weight-bold">LC No.</div>
-                <div class="col-sm-2 font-weight-bold">LC Amount</div>
-                <div class="col-sm-1 font-weight-bold">Action</div>
-            </div>
-            <hr class="row col-md-12 mt-3" />
-          <div class="row col-md-12 mt-2">
-           <div class="col-sm-1"><span>${$('#responsiblePPNoEntryField').val()}</span></div>
-              <div class="col-sm-3"><span>${data.name}</span></div>
-              <div class="col-sm-2"><span>${$('#responsibleAccountNumberEntryField').val()}</span></div>
-              <div class="col-sm-2"><span>${$('#responsibleAccountAmountEntryField').val()}</span></div>
-              <div class="col-sm-1"><span>${$('#responsibleLoanNumberEntryField').val()}</span></div>
-              <div class="col-sm-2"><span>${$('#responsibleLoanAmountEntryField').val()}</span></div>
-              <div class="col-sm-1">
-                  <input style="margin-left:10px;" class="respCheckBOXBYPP" type="checkbox" />
-              </div>
-          </div>
-      `);                  }
-
+                  var items = Array.isArray(data) ? data : (data ? [data] : []);
+                  if (!items.length) {
+                      alert("No record found..");
+                      return;
+                  }
+                  items.forEach(function (item) {
+                      var ppNo = item.ppNo || item.PP_NO || item.ppNumber || $('#responsiblePPNoEntryField').val();
+                      var empName = item.name || item.empName || item.EMP_NAME || '';
+                      var role = item.role || item.ROLE || item.respRole || '';
+                      var loanCase = item.loanCase || item.LOAN_CASE || item.loanCaseNo || $('#responsibleLoanNumberEntryField').val();
+                      var lcAmount = item.lcAmount || item.LC_AMOUNT || item.loanAmount || $('#responsibleLoanAmountEntryField').val();
+                      var accountNumber = item.accountNumber || item.ACCOUNT_NUMBER || $('#responsibleAccountNumberEntryField').val();
+                      var accAmount = item.accAmount || item.ACC_AMOUNT || $('#responsibleAccountAmountEntryField').val();
+                      stagePending({
+                          role: role,
+                          ppNo: ppNo,
+                          empName: empName,
+                          loanCase: loanCase,
+                          lcAmount: lcAmount,
+                          accountNumber: accountNumber,
+                          accAmount: accAmount
+                      });
+                  });
+                  renderPendingGrid();
               },
               dataType: "json",
           });
       }
 
       function getLCDetails(){
-         $('#matchedPPNoPanels').empty();
-        // $('#findBYPPNOPanel').removeClass('d-none');
         g_respUser = [];
         $.ajax({
-            url: g_asiBaseURL + "/ApiCalls/get_lc_details",
+            url: g_asiBaseURL + "/ApiCalls/get_responsible_by_lc",
             type: "POST",
             data: {
                 'LC_NO': $('#responsibleLCNoEntryField').val(),
@@ -319,144 +397,130 @@
             },
             cache: false,
             success: function (data) {
-                var response =data;
-
-                      response.forEach((data) => {
-        const responsiblePersons = [
-            { label: "MCO", ppno: data.mcoPPNo, name:data.mcoName },
-            { label: "Manager", ppno: data.managerPPNo, name:data.managerName },
-            { label: "RGM", ppno: data.rgmPPNo, name:data.rgmName },
-            { label: "CAD Reviewer", ppno: data.cadReviewerPPNo, name:data.cadReviewerName },
-            { label: "CAD Authorizer", ppno: data.cadAuthorizerPPNo , name:data.cadAuthorizerName }
-        ].filter(person => person.ppno);
-          const formatDate = (dateString) => {
-        if (!dateString) return 'N/A';
-        const [year, month, day] = dateString.split("T")[0].split("-");
-        return `${day}/${month}/${year}`;
-    };
-
-        $('#matchedPPNoPanels').append(`
-        <hr class="row col-md-12 mt-1"/> <div class="row loan-case-panel">
-            <!-- Loan Case Details -->
-            <div class="row col-md-12 mt-2">
-                <div class="col-md-4"><label>Name</label></div>
-                <div class="col-md-8"><input class="form-control" type="text" value="${data.name}" readonly /></div>
-            </div>
-            <div class="row col-md-12 mt-2">
-                <div class="col-md-4"><label>CNIC</label></div>
-                <div class="col-md-8"><input class="form-control" type="text" value="${data.cnic}" readonly /></div>
-            </div>
-            <div class="row col-md-12 mt-2">
-                <div class="col-md-4"><label>Loan Case No</label></div>
-                <div class="col-md-8"><input id="resp_loan_case" class="form-control" type="text" value="${data.loanCaseNo}" readonly /></div>
-            </div>
-
-            <div class="row col-md-12 mt-2">
-                <div class="col-md-4"><label>Application Date</label></div>
-                <div class="col-md-8"><input class="form-control" type="text" value="${formatDate(data.appDate)}" readonly /></div>
-            </div>
-            <div class="row col-md-12 mt-2">
-                <div class="col-md-4"><label>CAD Receive Date</label></div>
-                <div class="col-md-8"><input class="form-control" type="text" value="${formatDate(data.cadReceiveDate)}" readonly /></div>
-            </div>
-            <div class="row col-md-12 mt-2">
-                <div class="col-md-4"><label>Sanction Date</label></div>
-                <div class="col-md-8"><input class="form-control" type="text" value="${formatDate(data.sanctionDate)}" readonly /></div>
-            </div>
-
-            <div class="row col-md-12 mt-2">
-                <div class="col-md-4"><label>Disbursed Amount</label></div>
-                <div class="col-md-8"><input  class="form-control" type="text" value="${data.disbursedAmount}" readonly /></div>
-            </div>
-            <div class="row col-md-12 mt-2">
-                <div class="col-md-4"><label>Outstanding Amount</label></div>
-                <div class="col-md-8"><input id="resp_loan_amount" class="form-control" type="text" value="${data.outstandingAmount}" readonly /></div>
-            </div>
-            <hr class="row col-md-12 mt-3" />
-            <!-- Responsible Persons Heading -->
-            <div class="row col-md-12 mt-2">
-                <div class="col-sm-3 font-weight-bold">Role</div>
-                <div class="col-sm-3 font-weight-bold">P.P. No</div>
-                <div class="col-sm-3 font-weight-bold">Name</div>
-                <div class="col-sm-3 font-weight-bold">Action</div>
-            </div>
-            <hr class="row col-md-12 mt-3" />
-            <!-- Responsible Persons -->
-            ${responsiblePersons.map(person => `
-                <div class="row col-md-12 mt-2">
-                    <div class="col-sm-3"><label>${person.label}</label></div>
-                    <div class="col-sm-3"><span>${person.ppno}</span></div>
-                    <div class="col-sm-3"><span>${person.name}</span></div>
-                    <div class="col-sm-3">
-                        <input style="margin-left:10px;" class="respCheckBOX" type="checkbox" />
-                    </div>
-                </div>
-            `).join('')}
-        </div>
-    `);
-    });
+                var response = Array.isArray(data) ? data : (data ? [data] : []);
+                if (!response.length) {
+                    alert("No record found..");
+                    return;
+                }
+                response.forEach(function (item) {
+                    var ppNo = item.ppNo || item.PP_NO || item.ppNumber || '';
+                    var empName = item.name || item.empName || item.EMP_NAME || '';
+                    var role = item.role || item.ROLE || item.respRole || '';
+                    var loanCase = item.loanCase || item.LOAN_CASE || item.loanCaseNo || $('#responsibleLCNoEntryField').val();
+                    var lcAmount = item.lcAmount || item.LC_AMOUNT || item.outstandingAmount || '';
+                    var accountNumber = item.accountNumber || item.ACCOUNT_NUMBER || item.accountNo || '';
+                    var accAmount = item.accAmount || item.ACC_AMOUNT || item.accountAmount || '';
+                    stagePending({
+                        role: role,
+                        ppNo: ppNo,
+                        empName: empName,
+                        loanCase: loanCase,
+                        lcAmount: lcAmount,
+                        accountNumber: accountNumber,
+                        accAmount: accAmount
+                    });
+                });
+                renderPendingGrid();
             },
             dataType: "json",
         });
     }
     function deleteRespRow(e) {
+        if (!confirm('Are you sure you want to delete this responsibility?')) {
+            return;
+        }
         $(e).parent().parent().remove();
     }
     function addResponsibilityToMainTable() {
-        g_respUser = []; // Clear the existing user array for fresh addition
-
-        // Loop through each checked checkbox
-        $('.respCheckBOX:checked').each(function() {
-            const row = $(this).closest('.row'); // Get the closest row to the checkbox
-            const ppNumber = row.find('span').eq(0).text(); // Get P.P. No (second span)
-            const name = row.find('span').eq(1).text(); // Get Name (third span)
-
-            var srNo = $('#listofRespPersons tbody tr').length + 1; // Increment Serial Number
-                $('#listofRespPersons tbody').append(`
-                    <tr id="tr_${ppNumber}">
-                        <td>${srNo}</td>
-                        <td>${ppNumber}</td>
-                        <td>${name}</td>
-                        <td>${$('#resp_loan_case').val()}</td>
-                        <td>${$('#resp_loan_amount').val()}</td>
-                        <td></td>
-                        <td></td>
-                        <td class="text-center">
-                            <a href="#" onclick="event.preventDefault(); deleteRespRow(this);">Delete</a>
-                        </td>
-                    </tr>
-                `);
-                g_respUser.push({ ppNumber, name }); // Store the user details if needed
-
+        if (!g_stagedResp.length) {
+            alert('Select at least one responsible');
+            return;
+        }
+        g_stagedResp.forEach(function (item) {
+            var srNo = $('#listofRespPersons tbody tr').length + 1;
+            $('#listofRespPersons tbody').append(`
+                <tr data-pp="${item.ppNo || ''}" data-loan="${item.loanCase || ''}" data-account="${item.accountNumber || ''}" data-role="${item.role || ''}">
+                    <td>${srNo}</td>
+                    <td>${item.ppNo || ''}</td>
+                    <td>${item.empName || ''}</td>
+                    <td>${item.loanCase || ''}</td>
+                    <td>${item.lcAmount || ''}</td>
+                    <td>${item.accountNumber || ''}</td>
+                    <td>${item.accAmount || ''}</td>
+                    <td class="text-center">
+                        <a href="#" class="respUpdateRow" onclick="event.preventDefault();">Update</a>
+                    </td>
+                    <td class="text-center">
+                        <a href="#" class="respDeleteRow" onclick="event.preventDefault(); deleteRespRow(this);">Delete</a>
+                    </td>
+                    <td></td>
+                </tr>
+            `);
         });
-
-         $('.respCheckBOXBYPP:checked').each(function() {
-            const row = $(this).closest('.row');
-            const ppNumber = row.find('span').eq(0).text();
-            const name = row.find('span').eq(1).text();
-            const acc_no = row.find('span').eq(2).text();
-            const acc_amt = row.find('span').eq(3).text();
-            const lc_no = row.find('span').eq(4).text();
-            const lc_amt = row.find('span').eq(5).text();
-            var srNo = $('#listofRespPersons tbody tr').length + 1; // Increment Serial Number
-                $('#listofRespPersons tbody').append(`
-                    <tr id="tr_${ppNumber}">
-                        <td>${srNo}</td>
-                        <td>${ppNumber}</td>
-                        <td>${name}</td>
-                        <td>${lc_no}</td>
-                        <td>${lc_amt}</td>
-                         <td>${acc_no}</td>
-                        <td>${acc_amt}</td>
-                        <td class="text-center">
-                            <a href="#" onclick="event.preventDefault(); deleteRespRow(this);">Delete</a>
-                        </td>
-                    </tr>
-                `);
-                g_respUser.push({ ppNumber, name }); // Store the user details if needed
-
-        });
+        clearPending();
+        $('#ResponsiblePPModel').modal('hide');
     }
+
+    function updateResponsibilityInMainTable() {
+        if (!g_editingRow) {
+            alert('Select a responsibility to update.');
+            return;
+        }
+        if (!g_stagedResp.length) {
+            alert('Select at least one responsible');
+            return;
+        }
+        var item = g_stagedResp[0];
+        var $row = $(g_editingRow);
+        $row.attr('data-pp', item.ppNo || '');
+        $row.attr('data-loan', item.loanCase || '');
+        $row.attr('data-account', item.accountNumber || '');
+        $row.attr('data-role', item.role || '');
+        $row.find('td').eq(1).text(item.ppNo || '');
+        $row.find('td').eq(2).text(item.empName || '');
+        $row.find('td').eq(3).text(item.loanCase || '');
+        $row.find('td').eq(4).text(item.lcAmount || '');
+        $row.find('td').eq(5).text(item.accountNumber || '');
+        $row.find('td').eq(6).text(item.accAmount || '');
+        clearPending();
+        g_editingRow = null;
+        $('#ResponsiblePPModel').modal('hide');
+    }
+
+    function deleteResponsibilityFromMainTable() {
+        if (!g_editingRow) {
+            alert('Select a responsibility to delete.');
+            return;
+        }
+        $(g_editingRow).remove();
+        g_editingRow = null;
+        clearPending();
+        $('#ResponsiblePPModel').modal('hide');
+    }
+
+    $(document).on('click', '.respPendingRemove', function () {
+        var key = $(this).data('key');
+        g_stagedResp = g_stagedResp.filter(function (entry) { return entry.key !== key; });
+        renderPendingGrid();
+    });
+
+    $(document).on('click', '.respUpdateRow', function () {
+        var $row = $(this).closest('tr');
+        g_editingRow = $row;
+        clearPending();
+        stagePending({
+            role: $row.data('role') || '',
+            ppNo: $row.data('pp') || '',
+            empName: $row.find('td').eq(2).text(),
+            loanCase: $row.data('loan') || '',
+            lcAmount: $row.find('td').eq(4).text(),
+            accountNumber: $row.data('account') || '',
+            accAmount: $row.find('td').eq(6).text()
+        });
+        renderPendingGrid();
+        setModalMode('edit');
+        $('#ResponsiblePPModel').modal('show');
+    });
     function getSubCheckListStatus() {
         $.ajax({
             url: g_asiBaseURL + "/ApiCalls/get_subchecklist_status",
@@ -513,7 +577,7 @@
                     $.each(data[0].responsiblE_PPs, function (j, pp) {
                         var srNo = $('#listofRespPersons_ObSent tbody tr').length;
                         srNo++;
-                        $('#listofRespPersons_ObSent tbody').append('<tr id="tr__ObSent_' + pp.pP_NO + '"><td>' + srNo + '</td><td>' + pp.pP_NO + '</td><td>' + pp.emP_NAME + '</td><td>' + pp.loaN_CASE + '</td><td>' + pp.lC_AMOUNT + '</td><td>' + pp.accounT_NUMBER + '</td><td>' + pp.acC_AMOUNT + '</td></tr>');
+                        $('#listofRespPersons_ObSent tbody').append('<tr data-pp="' + (pp.pP_NO || '') + '" data-loan="' + (pp.loaN_CASE || '') + '" data-account="' + (pp.accounT_NUMBER || '') + '"><td>' + srNo + '</td><td>' + pp.pP_NO + '</td><td>' + pp.emP_NAME + '</td><td>' + pp.loaN_CASE + '</td><td>' + pp.lC_AMOUNT + '</td><td>' + pp.accounT_NUMBER + '</td><td>' + pp.acC_AMOUNT + '</td></tr>');
                     });
                 }
                 }
@@ -609,7 +673,11 @@
                                         <th class="col-md- auto font-weight-bold">LC Amount</th>
                                         <th class="col-md- auto font-weight-bold">Account No.</th>
                                         <th class="col-md- auto font-weight-bold">ACC Amount</th>
-                                        <th class="col-md- auto text-center font-weight-bold"><center><button type="button" onclick="openResponsiblePPs();" class="rounded-circle btn btn-danger btn-sm"><i class="fa fa-plus text-white"></i></button></center></th>
+                                        <th class="col-md- auto text-center font-weight-bold">Update</th>
+                                        <th class="col-md- auto text-center font-weight-bold">Delete</th>
+                                        <th class="col-md- auto text-center font-weight-bold">
+                                            <center><button type="button" onclick="openResponsiblePPs();" class="rounded-circle btn btn-danger btn-sm"><i class="fa fa-plus text-white"></i></button></center>
+                                        </th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -688,10 +756,6 @@
                         </div>
                     </div>
                     <div class="form-group">
-                        <div id="matchedPPNoPanels" style="padding:20px;">
-                        </div>
-                    </div>
-                    <div class="form-group">
 
                         <label class="form-control text-bold fw-bold text-center">Search Responsible By PP No.</label>
 
@@ -722,10 +786,6 @@
                         </div>
                     </div>
                     <div class="form-group">
-                        <div id="matchedPPNoPanelsBYPP" style="padding:20px;">
-                        </div>
-                    </div>
-                    <div class="form-group">
                         <label class="form-control text-bold fw-bold text-center">Selected Responsibles (Pending)</label>
                         <div class="table-responsive mt-2">
                             <table id="respPendingTable" class="table table-sm table-bordered">
@@ -748,7 +808,9 @@
                 </form>
             </div>
             <div class="modal-footer">
-                <button onclick="addResponsibilityToMainTable();" type="button" data-bs-dismiss="modal" class="btn btn-danger">Add Responsibility</button>
+                <button id="addResponsibleButton" onclick="addResponsibilityToMainTable();" type="button" class="btn btn-danger">Add Responsibility</button>
+                <button id="updateResponsibleButton" onclick="updateResponsibilityInMainTable();" type="button" class="btn btn-success d-none">Update Responsibility</button>
+                <button id="deleteResponsibleButton" onclick="deleteResponsibilityFromMainTable();" type="button" class="btn btn-danger d-none">Delete Responsibility</button>
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
             </div>
         </div>
