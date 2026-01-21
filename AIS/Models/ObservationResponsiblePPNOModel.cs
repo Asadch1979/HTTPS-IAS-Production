@@ -7,16 +7,11 @@ namespace AIS.Models
         public int? RESP_ROW_ID { get; set; }
         [PlainText]
         public string EMP_NAME { get; set; }
-        [PlainText]
-        public string PP_NO { get; set; }
-        [PlainText]
-        public string LOAN_CASE { get; set; }
-        [PlainText]
-        public string LC_AMOUNT { get; set; }
-        [PlainText]
-        public string ACCOUNT_NUMBER { get; set; }
-        [PlainText]
-        public string ACC_AMOUNT { get; set; }
+        public int PP_NO { get; set; }
+        public int? LOAN_CASE { get; set; }
+        public int? LC_AMOUNT { get; set; }
+        public int ACCOUNT_NUMBER { get; set; }
+        public int ACC_AMOUNT { get; set; }
         [PlainText]
         public string RESP_ACTIVE { get; set; }
         [PlainText]

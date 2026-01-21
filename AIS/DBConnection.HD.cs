@@ -121,11 +121,11 @@ namespace AIS.Controllers
                     {
                     ObservationResponsiblePPNOModel usr = new ObservationResponsiblePPNOModel();
                     usr.EMP_NAME = rdr["EMP_NAME"].ToString();
-                    usr.PP_NO = rdr["PP_NO"].ToString();
-                    usr.LOAN_CASE = rdr["LOANCASE"].ToString();
-                    usr.LC_AMOUNT = rdr["LCAMOUNT"].ToString();
-                    usr.ACCOUNT_NUMBER = rdr["ACCNUMBER"].ToString();
-                    usr.ACC_AMOUNT = rdr["ACAMOUNT"].ToString();
+                    usr.PP_NO = ReadInt(rdr, "PP_NO");
+                    usr.LOAN_CASE = ReadNullableInt(rdr, "LOANCASE");
+                    usr.LC_AMOUNT = ReadNullableInt(rdr, "LCAMOUNT");
+                    usr.ACCOUNT_NUMBER = ReadInt(rdr, "ACCNUMBER");
+                    usr.ACC_AMOUNT = ReadInt(rdr, "ACAMOUNT");
                     list.Add(usr);
 
                     }
@@ -914,10 +914,10 @@ namespace AIS.Controllers
                             cmd.Parameters.Add("PPNO", OracleDbType.Int32).Value = loggedInUser.PPNumber;
                             cmd.Parameters.Add("ENT_ID", OracleDbType.Int32).Value = loggedInUser.UserEntityID;
                             cmd.Parameters.Add("USER_PPNO", OracleDbType.Int32).Value = pp.PP_NO;
-                            cmd.Parameters.Add("LC_NO", OracleDbType.Varchar2).Value = pp.LOAN_CASE;
-                            cmd.Parameters.Add("LC_AMOUNT", OracleDbType.Varchar2).Value = pp.ACCOUNT_NUMBER;
-                            cmd.Parameters.Add("AC_NO", OracleDbType.Varchar2).Value = pp.LC_AMOUNT;
-                            cmd.Parameters.Add("AC_AMOUNT", OracleDbType.Varchar2).Value = pp.ACC_AMOUNT;
+                            cmd.Parameters.Add("LC_NO", OracleDbType.Int32).Value = pp.LOAN_CASE.HasValue ? (object)pp.LOAN_CASE.Value : DBNull.Value;
+                            cmd.Parameters.Add("LC_AMOUNT", OracleDbType.Int32).Value = pp.ACCOUNT_NUMBER;
+                            cmd.Parameters.Add("AC_NO", OracleDbType.Int32).Value = pp.LC_AMOUNT.HasValue ? (object)pp.LC_AMOUNT.Value : DBNull.Value;
+                            cmd.Parameters.Add("AC_AMOUNT", OracleDbType.Int32).Value = pp.ACC_AMOUNT;
                             cmd.Parameters.Add("refp", OracleDbType.Varchar2).Value = REFID;
                             cmd.Parameters.Add("OBS_ID", OracleDbType.Varchar2).Value = OBS_ID;
                             cmd.Parameters.Add("A_C", OracleDbType.Varchar2).Value = pp.RESP_ACTIVE;

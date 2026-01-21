@@ -35,13 +35,22 @@ function initResponsibilitySection(config) {
         return '';
     }
 
-    function normalizeNumericValue(value) {
+    function normalizeRequiredInt(value) {
         var trimmed = $.trim(value);
         if (!trimmed) {
             return 0;
         }
-        var number = Number(trimmed);
+        var number = parseInt(trimmed, 10);
         return Number.isNaN(number) ? 0 : number;
+    }
+
+    function normalizeNullableInt(value) {
+        var trimmed = $.trim(value);
+        if (!trimmed) {
+            return null;
+        }
+        var number = parseInt(trimmed, 10);
+        return Number.isNaN(number) ? null : number;
     }
 
     function buildKey(ppNo, role, loanCase, accountNumber) {
@@ -188,7 +197,7 @@ function initResponsibilitySection(config) {
         $.ajax({
             url: g_asiBaseURL + '/ApiCalls/get_responsible_by_pp',
             type: 'POST',
-            data: { 'PP_NO': $('#responsiblePPNoEntryField').val() },
+            data: { 'PP_NO': normalizeRequiredInt($('#responsiblePPNoEntryField').val()) },
             cache: false,
             success: function (data) {
                 var items = Array.isArray(data) ? data : (data ? [data] : []);
@@ -327,10 +336,10 @@ function initResponsibilitySection(config) {
                 $btns.prop('disabled', false);
                 return;
             }
-            var loanCaseValue = normalizeNumericValue(rawLoanCase);
-            var loanAmountValue = normalizeNumericValue(item.lcAmount || '');
-            var accountNumberValue = normalizeNumericValue(rawAccountNumber);
-            var accountAmountValue = normalizeNumericValue(item.accAmount || '');
+            var loanCaseValue = normalizeNullableInt(rawLoanCase);
+            var loanAmountValue = normalizeNullableInt(item.lcAmount || '');
+            var accountNumberValue = normalizeRequiredInt(rawAccountNumber);
+            var accountAmountValue = normalizeRequiredInt(item.accAmount || '');
             var ajaxOpts;
             if (opts.indicator === 'O') {
                 ajaxOpts = {
@@ -338,7 +347,7 @@ function initResponsibilitySection(config) {
                     type: 'POST',
                     contentType: 'application/json',
                     data: JSON.stringify({
-                        'PP_NO': item.ppNo,
+                        'PP_NO': normalizeRequiredInt(item.ppNo),
                         'LOAN_CASE': loanCaseValue,
                         'LC_AMOUNT': loanAmountValue,
                         'ACCOUNT_NUMBER': accountNumberValue,
@@ -352,7 +361,7 @@ function initResponsibilitySection(config) {
                     url: action === 'D' ? g_asiBaseURL + '/ApiCalls/delete_responsible_from_observation' : g_asiBaseURL + '/ApiCalls/add_responsible_to_observation',
                     type: 'POST',
                     data: {
-                        'PP_NO': item.ppNo,
+                        'PP_NO': normalizeRequiredInt(item.ppNo),
                         'LOAN_CASE': loanCaseValue,
                         'LC_AMOUNT': loanAmountValue,
                         'ACCOUNT_NUMBER': accountNumberValue,
@@ -397,10 +406,10 @@ function initResponsibilitySection(config) {
             $btns.prop('disabled', false);
             return;
         }
-        var loanCaseValue = normalizeNumericValue(rawLoanCase);
-        var loanAmountValue = normalizeNumericValue(getFirstValue(['#resp_loan_amount', '#loanCaseAmount', '#responsibleLoanAmountEntryField', '.js-resp-loan-amount']));
-        var accountNumberValue = normalizeNumericValue(rawAccountNumber);
-        var accountAmountValue = normalizeNumericValue(getFirstValue(['#resp_account_amount', '#responsibleAccountAmountEntryField', '.js-resp-account-amount']));
+        var loanCaseValue = normalizeNullableInt(rawLoanCase);
+        var loanAmountValue = normalizeNullableInt(getFirstValue(['#resp_loan_amount', '#loanCaseAmount', '#responsibleLoanAmountEntryField', '.js-resp-loan-amount']));
+        var accountNumberValue = normalizeRequiredInt(rawAccountNumber);
+        var accountAmountValue = normalizeRequiredInt(getFirstValue(['#resp_account_amount', '#responsibleAccountAmountEntryField', '.js-resp-account-amount']));
         if ((opts.indicator !== 'O' && (!opts.engId || opts.engId <= 0)) ||
             (opts.indicator === 'O' && (!opts.comId || opts.comId <= 0))) {
             alert('Context missing: please ensure ENG_ID (for new obs) or COM_ID (for old paras) is set.');
@@ -415,7 +424,7 @@ function initResponsibilitySection(config) {
                 type: 'POST',
                 contentType: 'application/json',
                 data: JSON.stringify({
-                    'PP_NO': respUser[0].ppNumber,
+                    'PP_NO': normalizeRequiredInt(respUser[0].ppNumber),
                     'LOAN_CASE': loanCaseValue,
                     'LC_AMOUNT': loanAmountValue,
                     'ACCOUNT_NUMBER': accountNumberValue,
@@ -429,7 +438,7 @@ function initResponsibilitySection(config) {
                 url: g_asiBaseURL + '/ApiCalls/add_responsible_to_observation',
                 type: 'POST',
                 data: {
-                    'PP_NO': respUser[0].ppNumber,
+                    'PP_NO': normalizeRequiredInt(respUser[0].ppNumber),
                     'LOAN_CASE': loanCaseValue,
                     'LC_AMOUNT': loanAmountValue,
                     'ACCOUNT_NUMBER': accountNumberValue,

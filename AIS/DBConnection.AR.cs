@@ -502,7 +502,7 @@ namespace AIS.Controllers
 
             var entityId = loggedInUser.UserEntityID.GetValueOrDefault();
             var skipResponsibility = entityId == 112242 || entityId == 112248;  // EXCLUDE these entities from responsibility assignment
-            var isSpecialEntity = skipResponsibility;                           // keep your existing ìspecial entity defaultsî behavior
+            var isSpecialEntity = skipResponsibility;                           // keep your existing ‚Äúspecial entity defaults‚Äù behavior
 
             var subChecklistId = ob.SUBCHECKLIST_ID;
             var annexureId = ob.ANNEXURE_ID;
@@ -702,16 +702,16 @@ namespace AIS.Controllers
                                 cmd.Parameters.Add("RES_PP", OracleDbType.Int32).Value = pp.PP_NO;
 
                                 cmd.Parameters.Add("LOANCASE", OracleDbType.Int32).Value =
-                                    string.IsNullOrWhiteSpace(pp.LOAN_CASE?.ToString()) ? 0 : Convert.ToInt32(pp.LOAN_CASE);
+                                    pp.LOAN_CASE ?? 0;
 
                                 cmd.Parameters.Add("ACCNUMBER", OracleDbType.Int32).Value =
-                                    string.IsNullOrWhiteSpace(pp.ACCOUNT_NUMBER?.ToString()) ? 0 : Convert.ToInt32(pp.ACCOUNT_NUMBER);
+                                    pp.ACCOUNT_NUMBER;
 
                                 cmd.Parameters.Add("LCAMOUNT", OracleDbType.Int32).Value =
-                                    string.IsNullOrWhiteSpace(pp.LC_AMOUNT?.ToString()) ? 0 : Convert.ToInt32(pp.LC_AMOUNT);
+                                    pp.LC_AMOUNT ?? 0;
 
                                 cmd.Parameters.Add("ACAMOUNT", OracleDbType.Int32).Value =
-                                    string.IsNullOrWhiteSpace(pp.ACC_AMOUNT?.ToString()) ? 0 : Convert.ToInt32(pp.ACC_AMOUNT);
+                                    pp.ACC_AMOUNT;
 
 
                                 cmd.Parameters.Add("T_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
@@ -2235,10 +2235,10 @@ namespace AIS.Controllers
                             cmd.Parameters.Add("PPNO", OracleDbType.Int32).Value = respRow.PP_NO;
                             cmd.Parameters.Add("AZ_Entity_id", OracleDbType.Int32).Value = loggedInUser.UserEntityID;
                             cmd.Parameters.Add("user_ppno", OracleDbType.Int32).Value = loggedInUser.PPNumber;
-                            cmd.Parameters.Add("lC_no", OracleDbType.Varchar2).Value = respRow.LOAN_CASE;
-                            cmd.Parameters.Add("LC_AMOUNT", OracleDbType.Varchar2).Value = respRow.LC_AMOUNT;
-                            cmd.Parameters.Add("AC_NO", OracleDbType.Varchar2).Value = respRow.ACCOUNT_NUMBER;
-                            cmd.Parameters.Add("AC_AMOUNT", OracleDbType.Varchar2).Value = respRow.ACC_AMOUNT;
+                            cmd.Parameters.Add("lC_no", OracleDbType.Int32).Value = respRow.LOAN_CASE.HasValue ? (object)respRow.LOAN_CASE.Value : DBNull.Value;
+                            cmd.Parameters.Add("LC_AMOUNT", OracleDbType.Int32).Value = respRow.LC_AMOUNT.HasValue ? (object)respRow.LC_AMOUNT.Value : DBNull.Value;
+                            cmd.Parameters.Add("AC_NO", OracleDbType.Int32).Value = respRow.ACCOUNT_NUMBER;
+                            cmd.Parameters.Add("AC_AMOUNT", OracleDbType.Int32).Value = respRow.ACC_AMOUNT;
                             cmd.Parameters.Add("refp", OracleDbType.Varchar2).Value = LEGACY_PARA.REF_P;
                             cmd.Parameters.Add("T_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
                             OracleDataReader rdr2 = cmd.ExecuteReader();
@@ -2301,10 +2301,10 @@ namespace AIS.Controllers
                 cmd.Parameters.Add("PPNO", OracleDbType.Int32).Value = RESP_PP.PP_NO;
                 cmd.Parameters.Add("AZ_Entity_id", OracleDbType.Int32).Value = loggedInUser.UserEntityID;
                 cmd.Parameters.Add("user_ppno", OracleDbType.Int32).Value = loggedInUser.PPNumber;
-                cmd.Parameters.Add("lC_no", OracleDbType.Varchar2).Value = RESP_PP.LOAN_CASE;
-                cmd.Parameters.Add("LC_AMOUNT", OracleDbType.Varchar2).Value = RESP_PP.LC_AMOUNT;
-                cmd.Parameters.Add("AC_NO", OracleDbType.Varchar2).Value = RESP_PP.ACCOUNT_NUMBER;
-                cmd.Parameters.Add("AC_AMOUNT", OracleDbType.Varchar2).Value = RESP_PP.ACC_AMOUNT;
+                cmd.Parameters.Add("lC_no", OracleDbType.Int32).Value = RESP_PP.LOAN_CASE.HasValue ? (object)RESP_PP.LOAN_CASE.Value : DBNull.Value;
+                cmd.Parameters.Add("LC_AMOUNT", OracleDbType.Int32).Value = RESP_PP.LC_AMOUNT.HasValue ? (object)RESP_PP.LC_AMOUNT.Value : DBNull.Value;
+                cmd.Parameters.Add("AC_NO", OracleDbType.Int32).Value = RESP_PP.ACCOUNT_NUMBER;
+                cmd.Parameters.Add("AC_AMOUNT", OracleDbType.Int32).Value = RESP_PP.ACC_AMOUNT;
                 cmd.Parameters.Add("refp", OracleDbType.Varchar2).Value = REF_P;
                 cmd.Parameters.Add("T_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
                 OracleDataReader rdr2 = cmd.ExecuteReader();
@@ -2548,12 +2548,12 @@ namespace AIS.Controllers
                 while (rdr.Read())
                     {
                     ObservationResponsiblePPNOModel rp = new ObservationResponsiblePPNOModel();
-                    rp.LOAN_CASE = rdr["LOANCASE"].ToString(); ;
+                    rp.LOAN_CASE = ReadNullableInt(rdr, "LOANCASE");
                     rp.EMP_NAME = rdr["EMP_NAME"].ToString();
-                    rp.LC_AMOUNT = rdr["LCAMOUNT"].ToString(); ;
-                    rp.ACCOUNT_NUMBER = rdr["ACCNUMBER"].ToString(); ;
-                    rp.ACC_AMOUNT = rdr["ACAMOUNT"].ToString(); ;
-                    rp.PP_NO = rdr["PP_NO"].ToString();
+                    rp.LC_AMOUNT = ReadNullableInt(rdr, "LCAMOUNT");
+                    rp.ACCOUNT_NUMBER = ReadInt(rdr, "ACCNUMBER");
+                    rp.ACC_AMOUNT = ReadInt(rdr, "ACAMOUNT");
+                    rp.PP_NO = ReadInt(rdr, "PP_NO");
                     list.Add(rp);
                     }
                 }
@@ -3156,11 +3156,11 @@ namespace AIS.Controllers
                     {
                     ObservationResponsiblePPNOModel usr = new ObservationResponsiblePPNOModel();
                     usr.EMP_NAME = rdr["emp_name"].ToString();
-                    usr.PP_NO = rdr["PP_NO"].ToString();
-                    usr.LOAN_CASE = rdr["loan_case"].ToString();
-                    usr.LC_AMOUNT = rdr["lc_amount"].ToString();
-                    usr.ACCOUNT_NUMBER = rdr["account_number"].ToString();
-                    usr.ACC_AMOUNT = rdr["ac_amount"].ToString();
+                    usr.PP_NO = ReadInt(rdr, "PP_NO");
+                    usr.LOAN_CASE = ReadNullableInt(rdr, "loan_case");
+                    usr.LC_AMOUNT = ReadNullableInt(rdr, "lc_amount");
+                    usr.ACCOUNT_NUMBER = ReadInt(rdr, "account_number");
+                    usr.ACC_AMOUNT = ReadInt(rdr, "ac_amount");
                     usr.REMARKS = rdr["remarks"].ToString();
                     usr.INDICATOR = rdr["r_ind"].ToString();
                     list.Add(usr);
@@ -3190,9 +3190,9 @@ namespace AIS.Controllers
                 cmd.Parameters.Add("IND", OracleDbType.Varchar2).Value = INDICATOR;
                 cmd.Parameters.Add("PPNO", OracleDbType.Int32).Value = loggedInUser.PPNumber;
                 cmd.Parameters.Add("RES_PP", OracleDbType.Int32).Value = responsible.PP_NO;
-                cmd.Parameters.Add("LOANCASE", OracleDbType.Int32).Value = responsible.LOAN_CASE;
+                cmd.Parameters.Add("LOANCASE", OracleDbType.Int32).Value = responsible.LOAN_CASE.HasValue ? (object)responsible.LOAN_CASE.Value : DBNull.Value;
                 cmd.Parameters.Add("ACCNUMBER", OracleDbType.Int32).Value = responsible.ACCOUNT_NUMBER;
-                cmd.Parameters.Add("LCAMOUNT", OracleDbType.Int32).Value = responsible.LC_AMOUNT;
+                cmd.Parameters.Add("LCAMOUNT", OracleDbType.Int32).Value = responsible.LC_AMOUNT.HasValue ? (object)responsible.LC_AMOUNT.Value : DBNull.Value;
                 cmd.Parameters.Add("ACAMOUNT", OracleDbType.Int32).Value = responsible.ACC_AMOUNT;
                 cmd.Parameters.Add("T_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
                 OracleDataReader rdr = cmd.ExecuteReader();
@@ -3225,8 +3225,8 @@ namespace AIS.Controllers
                 cmd.Parameters.Add("N_PARA_ID", OracleDbType.Int32).Value = newParaId;
                 cmd.Parameters.Add("E_ID", OracleDbType.Int32).Value = eng_id;
                 cmd.Parameters.Add("PPNO", OracleDbType.Int32).Value = responsible.PP_NO;
-                cmd.Parameters.Add("L_CASE", OracleDbType.Int32).Value = responsible.LOAN_CASE;
-                cmd.Parameters.Add("LC_AMOUNT", OracleDbType.Int32).Value = responsible.LC_AMOUNT;
+                cmd.Parameters.Add("L_CASE", OracleDbType.Int32).Value = responsible.LOAN_CASE.HasValue ? (object)responsible.LOAN_CASE.Value : DBNull.Value;
+                cmd.Parameters.Add("LC_AMOUNT", OracleDbType.Int32).Value = responsible.LC_AMOUNT.HasValue ? (object)responsible.LC_AMOUNT.Value : DBNull.Value;
                 cmd.Parameters.Add("AC_AMOUNT", OracleDbType.Int32).Value = responsible.ACC_AMOUNT;
                 cmd.Parameters.Add("NO_ACCOUNT", OracleDbType.Int32).Value = responsible.ACCOUNT_NUMBER;
                 cmd.Parameters.Add("Remarks", OracleDbType.Varchar2).Value = responsible.REMARKS;

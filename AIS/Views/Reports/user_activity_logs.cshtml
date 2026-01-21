@@ -8,6 +8,14 @@
 }
 
 <script type="text/javascript">
+    function normalizeRequiredInt(value) {
+        var trimmed = $.trim(value);
+        if (!trimmed) {
+            return 0;
+        }
+        var number = parseInt(trimmed, 10);
+        return Number.isNaN(number) ? 0 : number;
+    }
 
     function getActivityLog() {
          destroyDatatable('userWiseActivityLog');
@@ -16,7 +24,7 @@
             url: g_asiBaseURL + "/ApiCalls/get_user_activity_log",
             type: "POST",
             data: {
-                'PP_NO': $('#ppNumField').val()
+                'PP_NO': normalizeRequiredInt($('#ppNumField').val())
             },
             cache: false,
             success: function (data) {

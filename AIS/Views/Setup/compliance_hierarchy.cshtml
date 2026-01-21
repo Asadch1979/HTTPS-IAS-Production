@@ -119,6 +119,15 @@
             dataType: "json",
         });
     }
+    function normalizeRequiredInt(value) {
+        var trimmed = $.trim(value);
+        if (!trimmed) {
+            return 0;
+        }
+        var number = parseInt(trimmed, 10);
+        return Number.isNaN(number) ? 0 : number;
+    }
+
     function getMatchedPP(ppno, labelId) {
         $('#matchedPPNoPanels').empty();
         g_respUser = [];
@@ -126,7 +135,7 @@
             url: g_asiBaseURL + "/ApiCalls/get_employee_name_from_pp",
             type: "POST",
             data: {
-                'PP_NO': ppno
+                'PP_NO': normalizeRequiredInt(ppno)
             },
             cache: false,
             success: function (data) {

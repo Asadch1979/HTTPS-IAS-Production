@@ -110,14 +110,36 @@ namespace AIS.Controllers
                     }
             }
 
-        private static int? ReadNullableInt(OracleDataReader reader, string column)
+        private static int? ReadNullableInt(IDataRecord reader, string column)
             {
-            if (reader[column] == DBNull.Value)
+            if (reader == null)
                 {
                 return null;
                 }
 
-            return Convert.ToInt32(reader[column]);
+            var value = reader[column];
+            if (value == null || value == DBNull.Value)
+                {
+                return null;
+                }
+
+            if (value is int intValue)
+                {
+                return intValue;
+                }
+
+            if (value is long longValue)
+                {
+                return longValue > int.MaxValue || longValue < int.MinValue ? (int?)null : (int)longValue;
+                }
+
+            if (value is decimal decimalValue)
+                {
+                return decimalValue > int.MaxValue || decimalValue < int.MinValue ? (int?)null : decimal.ToInt32(decimalValue);
+                }
+
+            var text = value.ToString();
+            return int.TryParse(text, out var parsed) ? parsed : (int?)null;
             }
 
         private static DateTime ReadDateTime(OracleDataReader reader, string column)

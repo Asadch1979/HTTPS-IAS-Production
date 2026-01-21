@@ -17,6 +17,24 @@
     var g_paraRef="";
     var g_instructionMap = [];
 
+    function normalizeRequiredInt(value) {
+        var trimmed = $.trim(value);
+        if (!trimmed) {
+            return 0;
+        }
+        var number = parseInt(trimmed, 10);
+        return Number.isNaN(number) ? 0 : number;
+    }
+
+    function normalizeNullableInt(value) {
+        var trimmed = $.trim(value);
+        if (!trimmed) {
+            return null;
+        }
+        var number = parseInt(trimmed, 10);
+        return Number.isNaN(number) ? null : number;
+    }
+
     $(document).ready(function () {
         $('#responseAuditee').richText({
             imageUpload: false,
@@ -135,7 +153,7 @@
                 url: g_asiBaseURL + "/ApiCalls/delete_responsibility_of_legacy_para",
                 type: "POST",
                 data: {
-                    'PP_NO': $($($(respRow).find('td').eq(0)).find('input').eq(0)).val(),
+                    'PP_NO': normalizeRequiredInt($($($(respRow).find('td').eq(0)).find('input').eq(0)).val()),
                     'REF_P': g_paraRef,
                     'P_ID': g_paraId
                 },
@@ -167,12 +185,12 @@
                 _error = true;
             }
             resP.push({
-                'PP_NO': $(v).find('td').eq(0).find('input').eq(0).val(),
+                'PP_NO': normalizeRequiredInt($(v).find('td').eq(0).find('input').eq(0).val()),
                 'EMP_NAME': $(v).find('td').eq(1).find('input').eq(0).val(),
-                'LOAN_CASE': $(v).find('td').eq(2).find('input').eq(0).val(),
-                'LC_AMOUNT': $(v).find('td').eq(3).find('input').eq(0).val(),
-                'ACCOUNT_NUMBER': $(v).find('td').eq(4).find('input').eq(0).val(),
-                'ACC_AMOUNT': $(v).find('td').eq(5).find('input').eq(0).val(),
+                'LOAN_CASE': normalizeNullableInt($(v).find('td').eq(2).find('input').eq(0).val()),
+                'LC_AMOUNT': normalizeNullableInt($(v).find('td').eq(3).find('input').eq(0).val()),
+                'ACCOUNT_NUMBER': normalizeRequiredInt($(v).find('td').eq(4).find('input').eq(0).val()),
+                'ACC_AMOUNT': normalizeRequiredInt($(v).find('td').eq(5).find('input').eq(0).val())
             });
         });
 
@@ -240,7 +258,7 @@
                 url: g_asiBaseURL + "/ApiCalls/get_employee_name_from_pp",
                 type: "POST",
                 data: {
-                    'PP_NO': e.value
+                    'PP_NO': normalizeRequiredInt(e.value)
                 },
                 cache: false,
                 success: function (data) {
@@ -967,4 +985,3 @@
         </div>
     </div>
 </div>
-
