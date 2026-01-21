@@ -15,10 +15,54 @@
         var g_allObs = [];
         var g_respUser = [];
         var g_respUsersArr = [];
+        var g_stagedResp = [];
         var g_index = 0;
         var g_ele = null;
         var g_annexList = @Json.Serialize(ViewData["AnnexList"]);
         var g_selectedRiskId = 0;
+        function buildKey(ppNo, role, loanCase, accountNumber) {
+            return `${ppNo || ''}|${role || ''}|${loanCase || ''}|${accountNumber || ''}`;
+        }
+        function stagePending(item) {
+            if (!item) {
+                return;
+            }
+            var key = item.key || buildKey(item.ppNo, item.role, item.loanCase, item.accountNumber);
+            item.key = key;
+            var exists = g_stagedResp.some(function (entry) { return entry.key === key; });
+            if (!exists) {
+                g_stagedResp.push(item);
+            } else {
+                alert('This responsibility is already added.');
+            }
+        }
+        function renderPendingGrid() {
+            var $tableBody = $('#respPendingTable tbody');
+            if (!$tableBody.length) {
+                return;
+            }
+            $tableBody.empty();
+            g_stagedResp.forEach(function (item) {
+                $tableBody.append(`
+                    <tr>
+                        <td>${item.role || ''}</td>
+                        <td>${item.ppNo || ''}</td>
+                        <td>${item.empName || ''}</td>
+                        <td>${item.loanCase || ''}</td>
+                        <td>${item.lcAmount || ''}</td>
+                        <td>${item.accountNumber || ''}</td>
+                        <td>${item.accAmount || ''}</td>
+                        <td class="text-center">
+                            <button type="button" class="btn btn-sm btn-outline-danger respPendingRemove" data-key="${item.key}">Remove</button>
+                        </td>
+                    </tr>
+                `);
+            });
+        }
+        function clearPending() {
+            g_stagedResp = [];
+            renderPendingGrid();
+        }
         $(document).ready(function () {
             $('#paraTextViewer').richText({
                 imageUpload: false,
@@ -282,11 +326,19 @@
         function openResponsiblePPs() {
             $('#ResponsiblePPModel').modal('show');
             $('#matchedPPNoPanels').empty();
+            $('#matchedPPNoPanelsBYPP').empty();
             g_ele = null;
             $('#addResponsibleButton').removeClass("d-none");
             $('#updateResponsibleButton').addClass("d-none");
             $('#deleteResponsibleButton').addClass("d-none");
             $('#responsiblePPNoEntryField').val('');
+            $('#responsibleLCNoEntryField').val('');
+            $('#responsibleBrCodeEntryField').val('');
+            $('#responsibleLoanNumberEntryField').val('');
+            $('#responsibleLoanAmountEntryField').val('');
+            $('#responsibleAccountNumberEntryField').val('');
+            $('#responsibleAccountAmountEntryField').val('');
+            clearPending();
             return false;
         }
         function openResponsibleGridModel() {
@@ -294,148 +346,116 @@
             $('#ResponsibleGridModel').modal('show');
         }
         function getMatchedPP() {
-            if ($('#matchedPPNoPanelsBYPP').length) {
-                $('#matchedPPNoPanelsBYPP').empty();
-                if ($('#responsiblePPNoEntryField').val() === "") {
-                    alert('Please enter PP Number to proceed');
-                    return;
-                }
-                g_respUser = [];
-                $.ajax({
-                    url: g_asiBaseURL + "/ApiCalls/get_employee_name_from_pp",
-                    type: "POST",
-                    data: { 'PP_NO': $('#responsiblePPNoEntryField').val() },
-                    cache: false,
-                    success: function (data) {
-                        g_respUser.push(data);
-                        if (data.ppNumber > 0) {
-                            $('#matchedPPNoPanelsBYPP').append(`
-                            <div class="row col-md-12 mt-2">
-                                <div class="col-sm-1 font-weight-bold">P.P. No</div>
-                                <div class="col-sm-3 font-weight-bold">Name</div>
-                                <div class="col-sm-2 font-weight-bold">Acc No.</div>
-                                <div class="col-sm-2 font-weight-bold">Acc Amount</div>
-                                <div class="col-sm-1 font-weight-bold">LC No.</div>
-                                <div class="col-sm-2 font-weight-bold">LC Amount</div>
-                                <div class="col-sm-1 font-weight-bold">Action</div>
-                            </div>
-                            <hr class="row col-md-12 mt-3" />
-                            <div class="row col-md-12 mt-2">
-                                <div class="col-sm-1"><span>${$('#responsiblePPNoEntryField').val()}</span></div>
-                                <div class="col-sm-3"><span>${data.name}</span></div>
-                                <div class="col-sm-2"><span>${$('#responsibleAccountNumberEntryField').val() || 0}</span></div>
-                                <div class="col-sm-2"><span>${$('#responsibleAccountAmountEntryField').val() || 0}</span></div>
-                                <div class="col-sm-1"><span>${$('#loanCaseNumber').val() || $('#responsibleLoanNumberEntryField').val() || 0}</span></div>
-                                <div class="col-sm-2"><span>${$('#loanCaseAmount').val() || $('#responsibleLoanAmountEntryField').val() || 0}</span></div>
-                                <div class="col-sm-1">
-                                    <input style="margin-left:10px;" class="respCheckBOXBYPP" type="checkbox" />
-                                </div>
-                            </div>
-                            `);
-                        }
-                    },
-                    dataType: 'json'
-                });
-            } else {
-                $('#matchedPPNoPanels').empty();
-                g_respUser = [];
-                $.ajax({
-                    url: g_asiBaseURL + "/ApiCalls/get_employee_name_from_pp",
-                    type: "POST",
-                    data: { 'PP_NO': $('#responsiblePPNoEntryField').val() },
-                    dataType: 'json',
-                    success: function (data) {
-                        g_respUser.push(data);
-                        if (data.ppNumber > 0) {
-                            $('#matchedPPNoPanels').append('<div class="row"><div class="row col-md-12 mt-2"><div class="col-sm-4"><label>Responsible</label></div><div class="col-sm-8"><span>' + data.name + ' (' + data.ppNumber + ')</span></div></div><div class="row col-md-12 mt-2"><div class="col-md-4"><label> Loan Case </label></div><div class="col-md-8"><input id="resp_loan_case" class="form-control" type="number" /></div></div><div class="row col-md-12 mt-2"><div class="col-md-4"><label> LC Amount </label></div><div class="col-md-8"><input id="resp_loan_amount" class="form-control" type="number" /></div></div><div class="row col-md-12 mt-2"><div class="col-md-4"><label> Account Number </label></div><div class="col-md-8"><input id="resp_account_number" class="form-control" type="number" /></div></div><div class="row col-md-12 mt-2"><div class="col-md-4"><label>ACC Amount </label></div><div class="col-md-8"><input id="resp_account_amount" class="form-control" type="number" /></div></div><div class="row col-md-12 mt-2"><div class="col-md-4"><label>Remarks/Reason</label></div><div class="col-md-8"><textarea id="resp_remarks" class="form-control" rows="3"></textarea></div></div></div>');
-                            if (g_ele != null) {
-                                $('#resp_loan_case').val($(g_ele).parent().parent().children('td').eq(3).text().trim() || 0);
-                                $('#resp_loan_amount').val($(g_ele).parent().parent().children('td').eq(4).text().trim() || 0);
-                                $('#resp_account_number').val($(g_ele).parent().parent().children('td').eq(5).text().trim() || 0);
-                                $('#resp_account_amount').val($(g_ele).parent().parent().children('td').eq(6).text().trim() || 0);
-                                $('#resp_remarks').val($(g_ele).parent().parent().children('td').eq(7).text().trim());
-                            }
-                        } else {
-                            $('#matchedPPNoPanels').append('<div class="row"><span>No record found..</span></div>');
-                        }
-                    }
-                });
+            $('#matchedPPNoPanelsBYPP').empty();
+            $('#matchedPPNoPanels').empty();
+            var ppNo = $.trim($('#responsiblePPNoEntryField').val());
+            if (ppNo === "") {
+                alert('Please enter PP Number to proceed');
+                return;
             }
+            g_respUser = [];
+            $.ajax({
+                url: g_asiBaseURL + "/ApiCalls/get_responsible_by_pp",
+                type: "POST",
+                data: { 'PP_NO': ppNo },
+                cache: false,
+                success: function (data) {
+                    var items = Array.isArray(data) ? data : (data ? [data] : []);
+                    if (!items.length || !items[0]) {
+                        alert('No record found..');
+                        return;
+                    }
+                    var item = items[0];
+                    g_respUser.push(item);
+                    stagePending({
+                        role: item.role || item.ROLE || '',
+                        ppNo: item.ppNo || item.PP_NO || ppNo,
+                        empName: item.empName || item.EMP_NAME || item.name || '',
+                        loanCase: $('#responsibleLoanNumberEntryField').val() || $('#loanCaseNumber').val() || '',
+                        lcAmount: $('#responsibleLoanAmountEntryField').val() || $('#loanCaseAmount').val() || '',
+                        accountNumber: $('#responsibleAccountNumberEntryField').val() || '',
+                        accAmount: $('#responsibleAccountAmountEntryField').val() || ''
+                    });
+                    renderPendingGrid();
+                },
+                dataType: 'json'
+            });
         }
 
         function getLCDetails() {
             $('#matchedPPNoPanels').empty();
             g_respUser = [];
+            var lcNo = $.trim($('#responsibleLCNoEntryField').val());
+            var brCode = $.trim($('#responsibleBrCodeEntryField').val());
+            if (lcNo === '' || brCode === '') {
+                alert('Please enter LC Number and Branch Code to proceed');
+                return;
+            }
             $.ajax({
-                url: g_asiBaseURL + "/ApiCalls/get_lc_details",
+                url: g_asiBaseURL + "/ApiCalls/get_responsible_by_lc",
                 type: "POST",
                 data: {
-                    'LC_NO': $('#responsibleLCNoEntryField').val(),
-                    'BR_CODE': $('#responsibleBrCodeEntryField').val()
+                    'LC_NO': lcNo,
+                    'BR_CODE': brCode
                 },
                 cache: false,
                 success: function (data) {
-                    var response = data;
-                    response.forEach(function (d) {
-                        var responsiblePersons = [
-                            { label: 'MCO', ppno: d.mcoPPNo, name: d.mcoName },
-                            { label: 'Manager', ppno: d.managerPPNo, name: d.managerName },
-                            { label: 'RGM', ppno: d.rgmPPNo, name: d.rgmName },
-                            { label: 'CAD Reviewer', ppno: d.cadReviewerPPNo, name: d.cadReviewerName },
-                            { label: 'CAD Authorizer', ppno: d.cadAuthorizerPPNo, name: d.cadAuthorizerName }
-                        ].filter(function (p) { return p.ppno; });
-
-                        var formatDate = function (dateString) {
-                            if (!dateString) return 'N/A';
-                            var parts = dateString.split('T')[0].split('-');
-                            return parts[2] + '/' + parts[1] + '/' + parts[0];
-                        };
-
-                        var panel = '<hr class="row col-md-12 mt-1"/>' +
-                            '<div class="row loan-case-panel">' +
-                            '<div class="row col-md-12 mt-2"><div class="col-md-4"><label>Name</label></div><div class="col-md-8"><input class="form-control" type="text" value="' + d.name + '" readonly /></div></div>' +
-                            '<div class="row col-md-12 mt-2"><div class="col-md-4"><label>CNIC</label></div><div class="col-md-8"><input class="form-control" type="text" value="' + d.cnic + '" readonly /></div></div>' +
-                            '<div class="row col-md-12 mt-2"><div class="col-md-4"><label>Loan Case No</label></div><div class="col-md-8"><input id="resp_loan_case" class="form-control" type="text" value="' + d.loanCaseNo + '" readonly /></div></div>' +
-                            '<div class="row col-md-12 mt-2"><div class="col-md-4"><label>Application Date</label></div><div class="col-md-8"><input class="form-control" type="text" value="' + formatDate(d.appDate) + '" readonly /></div></div>' +
-                            '<div class="row col-md-12 mt-2"><div class="col-md-4"><label>CAD Receive Date</label></div><div class="col-md-8"><input class="form-control" type="text" value="' + formatDate(d.cadReceiveDate) + '" readonly /></div></div>' +
-                            '<div class="row col-md-12 mt-2"><div class="col-md-4"><label>Sanction Date</label></div><div class="col-md-8"><input class="form-control" type="text" value="' + formatDate(d.sanctionDate) + '" readonly /></div></div>' +
-                            '<div class="row col-md-12 mt-2"><div class="col-md-4"><label>Disbursed Amount</label></div><div class="col-md-8"><input class="form-control" type="text" value="' + d.disbursedAmount + '" readonly /></div></div>' +
-                            '<div class="row col-md-12 mt-2"><div class="col-md-4"><label>Outstanding Amount</label></div><div class="col-md-8"><input id="resp_loan_amount" class="form-control" type="text" value="' + d.outstandingAmount + '" readonly /></div></div>' +
-                            '<hr class="row col-md-12 mt-3" />' +
-                            '<div class="row col-md-12 mt-2"><div class="col-sm-3 font-weight-bold">Role</div><div class="col-sm-3 font-weight-bold">P.P. No</div><div class="col-sm-3 font-weight-bold">Name</div><div class="col-sm-3 font-weight-bold">Action</div></div>' +
-                            '<hr class="row col-md-12 mt-3" />';
-
-                        responsiblePersons.forEach(function (person) {
-                            panel += '<div class="row col-md-12 mt-2">' +
-                                '<div class="col-sm-3"><label>' + person.label + '</label></div>' +
-                                '<div class="col-sm-3"><span>' + person.ppno + '</span></div>' +
-                                '<div class="col-sm-3"><span>' + person.name + '</span></div>' +
-                                '<div class="col-sm-3"><input style="margin-left:10px;" class="respCheckBOX" type="checkbox" data-ppno="' + person.ppno + '" data-name="' + person.name + '" /></div>' +
-                                '</div>';
+                    var response = Array.isArray(data) ? data : (data ? [data] : []);
+                    if (!response.length) {
+                        alert('No record found..');
+                        return;
+                    }
+                    response.forEach(function (item) {
+                        var ppNo = item.ppNo || item.PP_NO || item.ppNumber || '';
+                        var role = item.role || item.ROLE || item.respRole || '';
+                        var empName = item.empName || item.EMP_NAME || item.name || '';
+                        var loanCase = item.loanCase || item.LOAN_CASE || item.loanCaseNo || lcNo;
+                        var lcAmount = item.lcAmount || item.LC_AMOUNT || item.outstandingAmount || '';
+                        var accountNumber = item.accountNumber || item.ACCOUNT_NUMBER || item.accountNo || '';
+                        var accAmount = item.accAmount || item.ACC_AMOUNT || item.accountAmount || '';
+                        $('#loanCaseNumber').val(loanCase || '');
+                        $('#loanCaseAmount').val(lcAmount || '');
+                        stagePending({
+                            role: role,
+                            ppNo: ppNo,
+                            empName: empName,
+                            loanCase: loanCase,
+                            lcAmount: lcAmount,
+                            accountNumber: accountNumber,
+                            accAmount: accAmount
                         });
-
-                        panel += '</div>';
-                        $('#matchedPPNoPanels').append(panel);
-                        $('#loanCaseNumber').val(d.loanCaseNo);
-                        $('#loanCaseAmount').val(d.outstandingAmount);
                     });
+                    renderPendingGrid();
                 },
                 dataType: "json",
             });
         }
-
-        $(document).on('change', '.respCheckBOX', function () {
-            if ($(this).is(':checked')) {
-                g_respUser = [{ ppNumber: $(this).data('ppno'), name: $(this).data('name') }];
-            }
-        });
 
         var respSectionUpdate = {
             getLCDetails: getLCDetails,
             getMatchedPP: getMatchedPP
         };
         function deleteRespRow(e) {
-            $(e).parent().parent().remove();
+            if (!confirm('Are you sure you want to delete this responsibility?')) {
+                return;
+            }
+            var $row = $(e).closest('tr');
+            var payload = {
+                PP_NO: $row.data('pp') || $row.children('td').eq(1).text(),
+                LOAN_CASE: $row.data('loan') || $row.children('td').eq(3).text(),
+                LC_AMOUNT: $row.data('lcamount') || $row.children('td').eq(4).text(),
+                ACCOUNT_NUMBER: $row.data('account') || $row.children('td').eq(5).text(),
+                ACC_AMOUNT: $row.data('accamount') || $row.children('td').eq(6).text()
+            };
+            fetchWithPageId(`${g_asiBaseURL}/ApiCalls/add_responsible_for_old_paras?IND_Action=D`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ ...payload, COM_ID: g_com_id })
+            }).then(function () {
+                if (typeof ObservationResponsibles === 'function') {
+                    ObservationResponsibles(g_index);
+                }
+            });
         }
         function updateRespRow(e) {
             g_ele = e;
@@ -444,19 +464,36 @@
                 $('#addResponsibleButton').addClass("d-none");
                 $('#updateResponsibleButton').removeClass("d-none");
                 $('#deleteResponsibleButton').removeClass("d-none");
-                $('#responsiblePPNoEntryField').val($row.attr('id').split('tr_')[1]);
-                var lcNo = $.trim($row.children('td').eq(3).text()) || '0';
-                var lcAmt = $.trim($row.children('td').eq(4).text()) || '0';
-                var accNo = $.trim($row.children('td').eq(5).text()) || '0';
-                var accAmt = $.trim($row.children('td').eq(6).text()) || '0';
+                var ppNo = $row.data('pp') || $row.children('td').eq(1).text();
+                var lcNo = $.trim($row.data('loan') || $row.children('td').eq(3).text()) || '0';
+                var lcAmt = $.trim($row.data('lcamount') || $row.children('td').eq(4).text()) || '0';
+                var accNo = $.trim($row.data('account') || $row.children('td').eq(5).text()) || '0';
+                var accAmt = $.trim($row.data('accamount') || $row.children('td').eq(6).text()) || '0';
+                $('#responsiblePPNoEntryField').val(ppNo);
                 $('#loanCaseNumber').val(lcNo);
                 $('#loanCaseAmount').val(lcAmt);
                 $('#responsibleAccountNumberEntryField').val(accNo);
                 $('#responsibleAccountAmountEntryField').val(accAmt);
-                getMatchedPP();
+                clearPending();
+                stagePending({
+                    role: '',
+                    ppNo: ppNo,
+                    empName: $row.data('emp') || $row.children('td').eq(2).text(),
+                    loanCase: lcNo,
+                    lcAmount: lcAmt,
+                    accountNumber: accNo,
+                    accAmount: accAmt
+                });
+                renderPendingGrid();
                 $(this).off('shown.bs.modal.update');
             }).modal('show');
         }
+
+        $(document).on('click', '.respPendingRemove', function () {
+            var key = $(this).data('key');
+            g_stagedResp = g_stagedResp.filter(function (entry) { return entry.key !== key; });
+            renderPendingGrid();
+        });
 
         function ObservationResponsibles(index) {
             g_index = index;
@@ -496,7 +533,21 @@
                     var sr_c = 1;
                     $.each(data, function (i, v) {
                         var act = v.action || v.ACTION || '';
-                        $('#p_listofRespPersons tbody').append('<tr id="tr_' + v.pP_NO + '"><td>' + sr_c + '</td><td>' + v.pP_NO + '</td><td>' + v.emP_NAME + '</td><td>' + v.loaN_CASE + '</td><td>' + v.lC_AMOUNT + '</td><td>' + v.accounT_NUMBER + '</td><td>' + v.acC_AMOUNT + '</td><td>' + act + '</td><td>' + v.remarks + '</td><td class="text-center"><a href="#" onclick="event.preventDefault();updateRespRow(this);">Update / delete</a></td></tr>');
+                        $('#p_listofRespPersons tbody').append(
+                            '<tr data-pp="' + (v.pP_NO || '') + '" data-loan="' + (v.loaN_CASE || '') + '" data-account="' + (v.accounT_NUMBER || '') + '" data-lcamount="' + (v.lC_AMOUNT || '') + '" data-accamount="' + (v.acC_AMOUNT || '') + '" data-emp="' + (v.emP_NAME || '') + '" data-action="' + act + '" data-remarks="' + (v.remarks || '') + '">' +
+                            '<td>' + sr_c + '</td>' +
+                            '<td>' + v.pP_NO + '</td>' +
+                            '<td>' + v.emP_NAME + '</td>' +
+                            '<td>' + v.loaN_CASE + '</td>' +
+                            '<td>' + v.lC_AMOUNT + '</td>' +
+                            '<td>' + v.accounT_NUMBER + '</td>' +
+                            '<td>' + v.acC_AMOUNT + '</td>' +
+                            '<td>' + act + '</td>' +
+                            '<td>' + v.remarks + '</td>' +
+                            '<td class="text-center"><a href="#" onclick="event.preventDefault();updateRespRow(this);">Update</a></td>' +
+                            '<td class="text-center"><a href="#" class="text-danger" onclick="event.preventDefault();deleteRespRow(this);">Delete</a></td>' +
+                            '</tr>'
+                        );
                         sr_c++;
                     });
                     $('#respGridTable tbody').html($('#p_listofRespPersons tbody').html());
@@ -620,6 +671,7 @@
                                                 <th class="col-md- auto font-weight-bold">LC Amount</th>
                                                 <th class="col-md- auto font-weight-bold">Account No.</th>
                                                 <th class="col-md- auto font-weight-bold">ACC Amount</th>
+                                                <th class="col-md- auto font-weight-bold">Action</th>
                                                 <th class="col-md- auto font-weight-bold">Remarks</th>
                                             </tr>
                                         </thead>
@@ -706,7 +758,13 @@
                                                 <th class="col-md- auto font-weight-bold">ACC Amount</th>
                                                 <th class="col-md- auto font-weight-bold">Action</th>
                                                 <th class="col-md- auto font-weight-bold">Remarks</th>
-                                                <th class="col-md-auto text-center font-weight-bold"><center><button type="button" onclick="openResponsibleGridModel();" class="rounded-circle btn btn-danger btn-sm"><i class="fa fa-plus text-white"></i></button></center></th>
+                                                <th class="col-md-auto text-center font-weight-bold">
+                                                    <div class="d-flex flex-column align-items-center">
+                                                        <span>Update</span>
+                                                        <button type="button" onclick="openResponsibleGridModel();" class="rounded-circle btn btn-danger btn-sm"><i class="fa fa-plus text-white"></i></button>
+                                                    </div>
+                                                </th>
+                                                <th class="col-md-auto text-center font-weight-bold">Delete</th>
                                             </tr>
                                         </thead>
                                         <tbody style="font-size:10px !important;">
@@ -759,18 +817,8 @@
                         .then(render);
                 }
 
-                function collect() {
-                    return {
-                        PP_NO: document.getElementById('responsiblePPNoEntryField')?.value || '',
-                        ACCOUNT_NUMBER: document.getElementById('responsibleAccountNumberEntryField')?.value || '',
-                        ACC_AMOUNT: document.getElementById('responsibleAccountAmountEntryField')?.value || '',
-                        LOAN_CASE: document.getElementById('loanCaseNumber')?.value || '',
-                        LC_AMOUNT: document.getElementById('loanCaseAmount')?.value || ''
-                    };
-                }
-
                 async function save(action, data) {
-                    const payload = data || collect();
+                    const payload = data || {};
                     await fetchWithPageId(`${g_asiBaseURL}/ApiCalls/add_responsible_for_old_paras?IND_Action=${action}`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
@@ -783,6 +831,9 @@
                 }
 
                 $tbody.off('click', '.btn-delete').on('click', '.btn-delete', function () {
+                    if (!confirm('Are you sure you want to delete this responsibility?')) {
+                        return;
+                    }
                     const tr = this.closest('tr');
                     const data = {
                         PP_NO: tr.children[1].textContent,
@@ -796,8 +847,22 @@
 
                 load();
 
-                window.addResponsibilityToMainTable = function (action) {
-                    save(action);
+                window.addResponsibilityToMainTable = async function (action) {
+                    if (!g_stagedResp.length) {
+                        alert('Select at least one responsible');
+                        return;
+                    }
+                    for (const item of g_stagedResp) {
+                        const data = {
+                            PP_NO: item.ppNo || '',
+                            ACCOUNT_NUMBER: item.accountNumber || '',
+                            ACC_AMOUNT: item.accAmount || '',
+                            LOAN_CASE: item.loanCase || '',
+                            LC_AMOUNT: item.lcAmount || ''
+                        };
+                        await save(action, data);
+                    }
+                    clearPending();
                     if (window.$) {
                         $('#ResponsibleGridModel').modal('hide');
                         $('#ResponsiblePPModel').modal('hide');
@@ -837,7 +902,13 @@
                                         <th class="col-md- auto font-weight-bold">ACC Amount</th>
                                         <th class="col-md- auto font-weight-bold">Action</th>
                                         <th class="col-md- auto font-weight-bold">Remarks</th>
-                                        <th class="col-md- auto text-center font-weight-bold"><center><button type="button" onclick="openResponsiblePPs();" class="rounded-circle btn btn-danger btn-sm"><i class="fa fa-plus text-white"></i></button></center></th>
+                                        <th class="col-md- auto text-center font-weight-bold">
+                                            <div class="d-flex flex-column align-items-center">
+                                                <span>Update</span>
+                                                <button type="button" onclick="openResponsiblePPs();" class="rounded-circle btn btn-danger btn-sm"><i class="fa fa-plus text-white"></i></button>
+                                            </div>
+                                        </th>
+                                        <th class="col-md- auto text-center font-weight-bold">Delete</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -870,11 +941,11 @@
                         <div class="row col-sm-12">
                             <div class="col-sm-5">
                                 <label for="viewMemo_memo">Loan Case No.</label>
-                                <input type="text" class="form-control" id="responsibleLCNoEntryField" />
+                                <input type="text" class="form-control digits-only" id="responsibleLCNoEntryField" inputmode="numeric" pattern="[0-9]*" autocomplete="off" />
                             </div>
                             <div class="col-sm-5">
-                                <label for="responsibleBrCodeEntryField">Branch Code <small class="text-muted">(A-Z, 0-9, space, &amp;, ?)</small></label>
-                                <input type="text" class="form-control alnum-only" id="responsibleBrCodeEntryField" aria-describedby="brcode" placeholder="Branch Code (Alphabets, numbers, spaces, ampersand (&amp;), comma (,), and question mark (?) only)" data-allow-space="true" data-allow-amp="true" maxlength="200" title="Enter only Alphabets (A-Z), numbers (0-9), spaces, ampersand (&amp;), comma (,), and question mark (?)" />
+                                <label for="responsibleBrCodeEntryField">Branch Code <small class="text-muted">(0-9 only)</small></label>
+                                <input type="text" class="form-control digits-only" id="responsibleBrCodeEntryField" aria-describedby="brcode" placeholder="Branch Code (digits only)" inputmode="numeric" pattern="[0-9]*" autocomplete="off" />
                             </div>
                             <div class="col-sm-2 d-flex align-items-end">
                                 <button onclick="respSectionUpdate.getLCDetails();" type="button" class="btn btn-danger w-100">Find</button>
@@ -890,23 +961,23 @@
                                                 <div id="findBYPPNOPanel" class="mt-2 row col-md-12">
                             <div class="col-md-2">
                                 <label for="responsiblePPNoEntryField" class="form-label">PPNO</label>
-                                <input id="responsiblePPNoEntryField" class="form-control" type="text" placeholder="Enter PP. No." />
+                                <input id="responsiblePPNoEntryField" class="form-control digits-only" type="text" placeholder="Enter PP. No." inputmode="numeric" pattern="[0-9]*" autocomplete="off" />
                             </div>
                             <div class="col-md-2">
                                 <label for="responsibleLoanNumberEntryField" class="form-label">Loan Case No</label>
-                                <input id="responsibleLoanNumberEntryField" class="form-control" type="text" placeholder="Enter LC No." />
+                                <input id="responsibleLoanNumberEntryField" class="form-control digits-only" type="text" placeholder="Enter LC No." inputmode="numeric" pattern="[0-9]*" autocomplete="off" />
                             </div>
                             <div class="col-md-2">
                                 <label for="responsibleLoanAmountEntryField" class="form-label">Loan Amount</label>
-                                <input id="responsibleLoanAmountEntryField" class="form-control" type="text" placeholder="Enter LC Amount" />
+                                <input id="responsibleLoanAmountEntryField" class="form-control digits-only" type="text" placeholder="Enter LC Amount" inputmode="numeric" pattern="[0-9]*" autocomplete="off" />
                             </div>
                             <div class="col-md-2">
                                 <label for="responsibleAccountNumberEntryField" class="form-label">Account No</label>
-                                <input id="responsibleAccountNumberEntryField" class="form-control" type="number" placeholder="Enter Account Number" />
+                                <input id="responsibleAccountNumberEntryField" class="form-control digits-only" type="text" placeholder="Enter Account Number" inputmode="numeric" pattern="[0-9]*" autocomplete="off" />
                             </div>
                             <div class="col-md-2">
                                 <label for="responsibleAccountAmountEntryField" class="form-label">Account Amount</label>
-                                <input id="responsibleAccountAmountEntryField" class="form-control" type="number" placeholder="Enter Account Amount" />
+                                <input id="responsibleAccountAmountEntryField" class="form-control digits-only" type="text" placeholder="Enter Account Amount" inputmode="numeric" pattern="[0-9]*" autocomplete="off" />
                             </div>
                             <div class="col-md-2 d-flex align-items-end">
                                 <button type="button" onclick="respSectionUpdate.getMatchedPP();" class="col-md-2 btn btn-success w-100">Select</button>
@@ -915,6 +986,26 @@
                     </div>
                     <div class="form-group">
                         <div id="matchedPPNoPanelsBYPP" style="padding:20px;">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-control text-bold fw-bold text-center">Selected Responsibles (Pending)</label>
+                        <div class="table-responsive mt-2">
+                            <table id="respPendingTable" class="table table-sm table-bordered">
+                                <thead>
+                                    <tr>
+                                        <th>Role</th>
+                                        <th>PP No</th>
+                                        <th>Name</th>
+                                        <th>Loan Case</th>
+                                        <th>LC Amount</th>
+                                        <th>Account No</th>
+                                        <th>ACC Amount</th>
+                                        <th class="text-center">Remove</th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
                         </div>
                     </div>
                 </form>

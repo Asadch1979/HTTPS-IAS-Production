@@ -126,9 +126,11 @@ function initResponsibilitySection(config) {
                         var pp = v.pP_NO || v.PP_NO || v.pp_no;
                         var loanCaseValue = v.loaN_CASE || v.LOAN_CASE || v.loancase;
                         var accountValue = v.accounT_NUMBER || v.ACCOUNT_NUMBER || v.accnumber;
-                        var row = '<tr data-pp="' + (pp || '') + '" data-loan="' + (loanCaseValue || '') + '" data-account="' + (accountValue || '') + '"><td>' + sr + '</td><td>' + pp + '</td><td>' + (v.emP_NAME || v.EMP_NAME || v.emp_name) + '</td><td>' + (loanCaseValue || '') + '</td><td>' + (v.lC_AMOUNT || v.LC_AMOUNT || v.lcamount) + '</td><td>' + (accountValue || '') + '</td><td>' + (v.acC_AMOUNT || v.ACC_AMOUNT || v.acamount) + '</td><td>' + (v.remarkS || v.REMARKS || '') + '</td>';
-                        if (!opts.readOnly)
-                            row += '<td class="text-center"><a href="#" class="updateResp">Update / delete</a></td>';
+                        var row = '<tr data-pp="' + (pp || '') + '" data-loan="' + (loanCaseValue || '') + '" data-account="' + (accountValue || '') + '" data-lcamount="' + (v.lC_AMOUNT || v.LC_AMOUNT || v.lcamount || '') + '" data-accamount="' + (v.acC_AMOUNT || v.ACC_AMOUNT || v.acamount || '') + '" data-emp="' + (v.emP_NAME || v.EMP_NAME || v.emp_name || '') + '"><td>' + sr + '</td><td>' + pp + '</td><td>' + (v.emP_NAME || v.EMP_NAME || v.emp_name) + '</td><td>' + (loanCaseValue || '') + '</td><td>' + (v.lC_AMOUNT || v.LC_AMOUNT || v.lcamount) + '</td><td>' + (accountValue || '') + '</td><td>' + (v.acC_AMOUNT || v.ACC_AMOUNT || v.acamount) + '</td><td>' + (v.remarkS || v.REMARKS || '') + '</td>';
+                        if (!opts.readOnly) {
+                            row += '<td class="text-center"><a href="#" class="updateResp">Update</a></td>' +
+                                '<td class="text-center"><a href="#" class="deleteResp text-danger">Delete</a></td>';
+                        }
                         row += '</tr>';
                         table.find('tbody').append(row);
                         sr++;
@@ -169,9 +171,11 @@ function initResponsibilitySection(config) {
             success: function (data) {
                 var sr = 1; var sr_c = 1;
                 $.each(data, function (i, v) {
-                    var row = '<tr data-pp="' + (v.pP_NO || '') + '" data-loan="' + (v.loaN_CASE || '') + '" data-account="' + (v.accounT_NUMBER || '') + '"><td>' + sr + '</td><td>' + v.pP_NO + '</td><td>' + v.emP_NAME + '</td><td>' + v.loaN_CASE + '</td><td>' + v.lC_AMOUNT + '</td><td>' + v.accounT_NUMBER + '</td><td>' + v.acC_AMOUNT + '</td><td>' + v.remarks + '</td>';
-                    if (!opts.readOnly && v.indicator === 'O')
-                        row += '<td class="text-center"><a href="#" class="updateResp">Update / delete</a></td>';
+                    var row = '<tr data-pp="' + (v.pP_NO || '') + '" data-loan="' + (v.loaN_CASE || '') + '" data-account="' + (v.accounT_NUMBER || '') + '" data-lcamount="' + (v.lC_AMOUNT || '') + '" data-accamount="' + (v.acC_AMOUNT || '') + '" data-emp="' + (v.emP_NAME || '') + '"><td>' + sr + '</td><td>' + v.pP_NO + '</td><td>' + v.emP_NAME + '</td><td>' + v.loaN_CASE + '</td><td>' + v.lC_AMOUNT + '</td><td>' + v.accounT_NUMBER + '</td><td>' + v.acC_AMOUNT + '</td><td>' + v.remarks + '</td>';
+                    if (!opts.readOnly && v.indicator === 'O') {
+                        row += '<td class="text-center"><a href="#" class="updateResp">Update</a></td>' +
+                            '<td class="text-center"><a href="#" class="deleteResp text-danger">Delete</a></td>';
+                    }
                     row += '</tr>';
                     if (v.indicator === 'O') {
                         table.find('tbody').append(row); sr++; }
@@ -222,44 +226,19 @@ function initResponsibilitySection(config) {
     }
 
     function getLCDetails() {
+        var lcNo = $.trim($('#responsibleLCNoEntryField').val());
+        var brCode = $.trim($('#responsibleBrCodeEntryField').val());
+        if (lcNo === '' || brCode === '') {
+            alert('Please enter LC Number and Branch Code to proceed');
+            return;
+        }
         respUser = [];
-        $.ajax({
-            url: g_asiBaseURL + '/ApiCalls/get_lc_details',
-            type: 'POST',
-            data: {
-                'LC_NO': $('#responsibleLCNoEntryField').val(),
-                'BR_CODE': $('#responsibleBrCodeEntryField').val()
-            },
-            cache: false,
-            success: function (data) {
-                var detail = Array.isArray(data) ? data[0] : data;
-                if (!detail) {
-                    return;
-                }
-                var loanCaseNo = detail.loanCaseNo || detail.LoanCaseNo;
-                var outstanding = detail.outstandingAmount || detail.OutstandingAmount;
-                if ($('#loanCaseNumber').length) {
-                    $('#loanCaseNumber').val(loanCaseNo || '');
-                }
-                if ($('#loanCaseAmount').length) {
-                    $('#loanCaseAmount').val(outstanding || '');
-                }
-                if ($('#responsibleLoanNumberEntryField').length && loanCaseNo) {
-                    $('#responsibleLoanNumberEntryField').val(loanCaseNo);
-                }
-                if ($('#responsibleLoanAmountEntryField').length && outstanding) {
-                    $('#responsibleLoanAmountEntryField').val(outstanding);
-                }
-            },
-            dataType: 'json'
-        });
-
         $.ajax({
             url: g_asiBaseURL + '/ApiCalls/get_responsible_by_lc',
             type: 'POST',
             data: {
-                'LC_NO': $('#responsibleLCNoEntryField').val(),
-                'BR_CODE': $('#responsibleBrCodeEntryField').val()
+                'LC_NO': lcNo,
+                'BR_CODE': brCode
             },
             cache: false,
             success: function (data) {
@@ -272,10 +251,22 @@ function initResponsibilitySection(config) {
                     var ppNo = d.ppNo || d.PP_NO || d.ppNumber || '';
                     var role = d.role || d.ROLE || d.respRole || '';
                     var name = d.empName || d.EMP_NAME || d.name || '';
-                    var loanCase = d.loanCase || d.LOAN_CASE || d.loanCaseNo || $('#responsibleLCNoEntryField').val();
-                    var lcAmount = d.lcAmount || d.LC_AMOUNT || d.outstandingAmount || '';
+                    var loanCase = d.loanCase || d.LOAN_CASE || d.loanCaseNo || lcNo;
+                    var lcAmount = d.lcAmount || d.LC_AMOUNT || d.outstandingAmount || d.lC_AMOUNT || '';
                     var accountNumber = d.accountNumber || d.ACCOUNT_NUMBER || d.accountNo || '';
                     var accAmount = d.accAmount || d.ACC_AMOUNT || d.accountAmount || '';
+                    if ($('#loanCaseNumber').length) {
+                        $('#loanCaseNumber').val(loanCase || '');
+                    }
+                    if ($('#loanCaseAmount').length) {
+                        $('#loanCaseAmount').val(lcAmount || '');
+                    }
+                    if ($('#responsibleLoanNumberEntryField').length && loanCase) {
+                        $('#responsibleLoanNumberEntryField').val(loanCase);
+                    }
+                    if ($('#responsibleLoanAmountEntryField').length && lcAmount) {
+                        $('#responsibleLoanAmountEntryField').val(lcAmount);
+                    }
                     stageItem({
                         role: role,
                         ppNo: ppNo,
@@ -345,9 +336,13 @@ function initResponsibilitySection(config) {
                 return;
             }
             var srNo = table.find('tbody tr').length + 1;
-            var actionCell = !opts.readOnly ? '<td class="text-center"><a href="#" class="updateResp">Update / delete</a></td>' : '';
+            var actionCell = '';
+            if (!opts.readOnly) {
+                actionCell = '<td class="text-center"><a href="#" class="updateResp">Update</a></td>' +
+                    '<td class="text-center"><a href="#" class="deleteResp text-danger">Delete</a></td>';
+            }
             table.find('tbody').append(
-                '<tr data-pp="' + (item.ppNo || '') + '" data-loan="' + (item.loanCase || '') + '" data-account="' + (item.accountNumber || '') + '">' +
+                '<tr data-pp="' + (item.ppNo || '') + '" data-loan="' + (item.loanCase || '') + '" data-account="' + (item.accountNumber || '') + '" data-lcamount="' + (item.lcAmount || '') + '" data-accamount="' + (item.accAmount || '') + '" data-emp="' + (item.empName || '') + '">' +
                 '<td>' + srNo + '</td>' +
                 '<td>' + (item.ppNo || '') + '</td>' +
                 '<td>' + (item.empName || '') + '</td>' +
@@ -555,10 +550,10 @@ function initResponsibilitySection(config) {
             $('#deleteResponsibleButton').removeClass('d-none');
 
             $('#responsiblePPNoEntryField').val($row.data('pp') || $row.children('td').eq(1).text());
-            var lcNo = $.trim($row.children('td').eq(3).text()) || '0';
-            var lcAmt = $.trim($row.children('td').eq(4).text()) || '0';
-            var accNo = $.trim($row.children('td').eq(5).text()) || '0';
-            var accAmt = $.trim($row.children('td').eq(6).text()) || '0';
+            var lcNo = $.trim($row.data('loan') || $row.children('td').eq(3).text()) || '0';
+            var lcAmt = $.trim($row.data('lcamount') || $row.children('td').eq(4).text()) || '0';
+            var accNo = $.trim($row.data('account') || $row.children('td').eq(5).text()) || '0';
+            var accAmt = $.trim($row.data('accamount') || $row.children('td').eq(6).text()) || '0';
             $('#loanCaseNumber, #responsibleLoanNumberEntryField').val(lcNo);
             $('#loanCaseAmount, #responsibleLoanAmountEntryField').val(lcAmt);
             $('#responsibleAccountNumberEntryField').val(accNo);
@@ -568,7 +563,7 @@ function initResponsibilitySection(config) {
             stageItem({
                 role: '',
                 ppNo: $row.data('pp') || $row.children('td').eq(1).text(),
-                empName: $row.children('td').eq(2).text(),
+                empName: $row.data('emp') || $row.children('td').eq(2).text(),
                 loanCase: $row.data('loan') || lcNo,
                 lcAmount: lcAmt,
                 accountNumber: $row.data('account') || accNo,
@@ -577,6 +572,76 @@ function initResponsibilitySection(config) {
             renderPendingGrid();
             modal.off('shown.bs.modal.update');
         }).modal('show');
+    });
+
+    table.off('click.resp', '.deleteResp').on('click.resp', '.deleteResp', function (e) {
+        e.preventDefault();
+        if (!confirm('Are you sure you want to delete this responsibility?')) {
+            return;
+        }
+        var $row = $(this).closest('tr');
+        var payload = {
+            ppNo: $row.data('pp') || $row.children('td').eq(1).text(),
+            loanCase: $row.data('loan') || $row.children('td').eq(3).text(),
+            lcAmount: $row.data('lcamount') || $row.children('td').eq(4).text(),
+            accountNumber: $row.data('account') || $row.children('td').eq(5).text(),
+            accAmount: $row.data('accamount') || $row.children('td').eq(6).text(),
+            empName: $row.data('emp') || $row.children('td').eq(2).text()
+        };
+        if (opts.indicator === 'O') {
+            $.ajax({
+                url: g_asiBaseURL + '/ApiCalls/add_responsible_for_old_paras?IND_Action=D',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({
+                    'PP_NO': payload.ppNo,
+                    'LOAN_CASE': normalizeNumericValue(payload.loanCase),
+                    'LC_AMOUNT': normalizeNumericValue(payload.lcAmount),
+                    'ACCOUNT_NUMBER': normalizeNumericValue(payload.accountNumber),
+                    'ACC_AMOUNT': normalizeNumericValue(payload.accAmount),
+                    'COM_ID': opts.comId
+                }),
+                dataType: 'json'
+            }).done(function () {
+                $row.remove();
+            }).fail(function (xhr) {
+                var msg = 'Error occurred';
+                if (xhr && xhr.responseJSON) {
+                    msg = xhr.responseJSON.Message || xhr.responseJSON.message || msg;
+                }
+                alert(msg);
+            });
+        } else {
+            $.ajax({
+                url: g_asiBaseURL + '/ApiCalls/delete_responsible_from_observation',
+                type: 'POST',
+                data: {
+                    'PP_NO': payload.ppNo,
+                    'LOAN_CASE': normalizeNumericValue(payload.loanCase),
+                    'LC_AMOUNT': normalizeNumericValue(payload.lcAmount),
+                    'ACCOUNT_NUMBER': normalizeNumericValue(payload.accountNumber),
+                    'ACC_AMOUNT': normalizeNumericValue(payload.accAmount),
+                    'EMP_NAME': payload.empName || '',
+                    'REMARKS': $('#resp_remarks').val() || '',
+                    'NEW_PARA_ID': opts.newParaId,
+                    'OLD_PARA_ID': opts.oldParaId,
+                    'ENG_ID': opts.engId,
+                    'INDICATOR': 'D',
+                    'COM_ID': opts.comId,
+                    'ACTION': 'D',
+                    'PARA_STATUS': opts.status
+                },
+                dataType: 'json'
+            }).done(function () {
+                $row.remove();
+            }).fail(function (xhr) {
+                var msg = 'Error occurred';
+                if (xhr && xhr.responseJSON) {
+                    msg = xhr.responseJSON.Message || xhr.responseJSON.message || msg;
+                }
+                alert(msg);
+            });
+        }
     });
 
     modal.find('form').off('submit.resp').on('submit.resp', function (e) { e.preventDefault(); });

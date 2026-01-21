@@ -658,7 +658,13 @@
                                         <th class="col-md-auto font-weight-bold">Account No.</th>
                                         <th class="col-md-auto font-weight-bold">ACC Amount</th>
                                         <th class="col-md-auto font-weight-bold">Remarks</th>
-                                        <th class="col-md-auto text-center font-weight-bold"><center><button type="button" onclick="openResponsiblePPs();" class="rounded-circle btn btn-danger btn-sm"><i class="fa fa-plus text-white"></i></button></center></th>
+                                        <th class="col-md-auto text-center font-weight-bold">
+                                            <div class="d-flex flex-column align-items-center">
+                                                <span>Update</span>
+                                                <button type="button" onclick="openResponsiblePPs();" class="rounded-circle btn btn-danger btn-sm"><i class="fa fa-plus text-white"></i></button>
+                                            </div>
+                                        </th>
+                                        <th class="col-md-auto text-center font-weight-bold">Delete</th>
                                     </tr>
                                 </thead>
                                 <tbody></tbody>
@@ -726,11 +732,11 @@
                         <div class="row col-sm-12">
                             <div class="col-sm-5">
                                 <label for="viewMemo_memo">Loan Case No.</label>
-                                <input type="text" class="form-control" id="responsibleLCNoEntryField" />
+                                <input type="text" class="form-control digits-only" id="responsibleLCNoEntryField" inputmode="numeric" pattern="[0-9]*" autocomplete="off" />
                             </div>
                                 <div class="col-sm-5">
-                                    <label for="responsibleBrCodeEntryField">Branch Code <small class="text-muted">(A-Z, 0-9, space, &amp;, ?)</small></label>
-                                    <input type="text" class="form-control alnum-only" id="responsibleBrCodeEntryField" aria-describedby="brcode" placeholder="Branch Code (Alphabets, numbers, spaces, ampersand (&amp;), comma (,), and question mark (?) only)" data-allow-space="true" data-allow-amp="true" maxlength="200" title="Enter only Alphabets (A-Z), numbers (0-9), spaces, ampersand (&amp;), comma (,), and question mark (?)" />
+                                    <label for="responsibleBrCodeEntryField">Branch Code <small class="text-muted">(0-9 only)</small></label>
+                                    <input type="text" class="form-control digits-only" id="responsibleBrCodeEntryField" aria-describedby="brcode" placeholder="Branch Code (digits only)" inputmode="numeric" pattern="[0-9]*" autocomplete="off" />
                                 </div>
                             <div class="col-sm-2 d-flex align-items-end">
                                 <button onclick="respSection.getLCDetails();" type="button" class="btn btn-danger w-100">Find</button>
@@ -748,23 +754,23 @@
                                                 <div id="findBYPPNOPanel" class="mt-2 row col-md-12">
                             <div class="col-md-2">
                                 <label for="responsiblePPNoEntryField" class="form-label">PPNO</label>
-                                <input id="responsiblePPNoEntryField" class="form-control" type="text" placeholder="Enter PP. No." />
+                                <input id="responsiblePPNoEntryField" class="form-control digits-only" type="text" placeholder="Enter PP. No." inputmode="numeric" pattern="[0-9]*" autocomplete="off" />
                             </div>
                             <div class="col-md-2">
                                 <label for="responsibleLoanNumberEntryField" class="form-label">Loan Case No</label>
-                                <input id="responsibleLoanNumberEntryField" class="form-control" type="text" placeholder="Enter LC No." />
+                                <input id="responsibleLoanNumberEntryField" class="form-control digits-only" type="text" placeholder="Enter LC No." inputmode="numeric" pattern="[0-9]*" autocomplete="off" />
                             </div>
                             <div class="col-md-2">
                                 <label for="responsibleLoanAmountEntryField" class="form-label">Loan Amount</label>
-                                <input id="responsibleLoanAmountEntryField" class="form-control" type="text" placeholder="Enter LC Amount" />
+                                <input id="responsibleLoanAmountEntryField" class="form-control digits-only" type="text" placeholder="Enter LC Amount" inputmode="numeric" pattern="[0-9]*" autocomplete="off" />
                             </div>
                             <div class="col-md-2">
                                 <label for="responsibleAccountNumberEntryField" class="form-label">Account No</label>
-                                <input id="responsibleAccountNumberEntryField" class="form-control" type="number" placeholder="Enter Account Number" />
+                                <input id="responsibleAccountNumberEntryField" class="form-control digits-only" type="text" placeholder="Enter Account Number" inputmode="numeric" pattern="[0-9]*" autocomplete="off" />
                             </div>
                             <div class="col-md-2">
                                 <label for="responsibleAccountAmountEntryField" class="form-label">Account Amount</label>
-                                <input id="responsibleAccountAmountEntryField" class="form-control" type="number" placeholder="Enter Account Amount" />
+                                <input id="responsibleAccountAmountEntryField" class="form-control digits-only" type="text" placeholder="Enter Account Amount" inputmode="numeric" pattern="[0-9]*" autocomplete="off" />
                             </div>
                             <div class="col-md-2 d-flex align-items-end">
                                 <button type="button" onclick="respSection.getMatchedPP();" class="col-md-2 btn btn-success w-100">Select</button>

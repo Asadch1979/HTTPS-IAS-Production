@@ -14,6 +14,7 @@
     var S_ID = 0;
     var g_respUsersArr = [];
     var g_stagedResp = [];
+    var g_selectedRespRow = null;
 
     var g_selectedRiskId = 0;
     var g_annexList = @Json.Serialize(ViewData["AnnexList"]);
@@ -289,7 +290,7 @@
                 $.each(tempobj.RESPONSIBLE_PPNO, function (j, pp) {
                     var srNo = $('#listofRespPersons tbody tr').length;
                     srNo++;
-                    $('#listofRespPersons tbody').append('<tr data-pp="' + (pp.PP_NO || '') + '" data-loan="' + (pp.LOAN_CASE || '') + '" data-account="' + (pp.ACCOUNT_NUMBER || '') + '"><td>' + srNo + '</td><td>' + pp.PP_NO + '</td><td>' + pp.EMP_NAME + '</td><td>' + pp.LOAN_CASE + '</td><td>' + pp.LC_AMOUNT + '</td><td>' + pp.ACCOUNT_NUMBER + '</td><td>' + pp.ACC_AMOUNT + '</td><td class="text-center"><a href="#" onclick="event.preventDefault();deleteRespRow(this);">Delete</a></td></tr>');
+                    $('#listofRespPersons tbody').append('<tr data-pp="' + (pp.PP_NO || '') + '" data-loan="' + (pp.LOAN_CASE || '') + '" data-account="' + (pp.ACCOUNT_NUMBER || '') + '" data-lcamount="' + (pp.LC_AMOUNT || '') + '" data-accamount="' + (pp.ACC_AMOUNT || '') + '" data-emp="' + (pp.EMP_NAME || '') + '"><td>' + srNo + '</td><td>' + pp.PP_NO + '</td><td>' + pp.EMP_NAME + '</td><td>' + pp.LOAN_CASE + '</td><td>' + pp.LC_AMOUNT + '</td><td>' + pp.ACCOUNT_NUMBER + '</td><td>' + pp.ACC_AMOUNT + '</td><td class="text-center"><a href="#" onclick="event.preventDefault();updateRespRow(this);">Update</a></td><td class="text-center"><a href="#" class="text-danger" onclick="event.preventDefault();deleteRespRow(this);">Delete</a></td></tr>');
                 });
             }
         } else {
@@ -300,6 +301,7 @@
     function openResponsiblePPs() {
         $('#ResponsiblePPModel').modal('show');
         clearPending();
+        g_selectedRespRow = null;
         $('#responsibleLCNoEntryField').val('');
         $('#responsibleBrCodeEntryField').val('');
         $('#responsiblePPNoEntryField').val('');
@@ -307,10 +309,13 @@
         $('#responsibleLoanAmountEntryField').val('');
         $('#responsibleAccountNumberEntryField').val('');
         $('#responsibleAccountAmountEntryField').val('');
+        $('#addResponsibleButton').removeClass("d-none");
+        $('#updateResponsibleButton').addClass("d-none");
+        $('#deleteResponsibleButton').addClass("d-none");
         return false;
     }
     function getMatchedPP() {
-          if($('#responsiblePPNoEntryField')==""){
+          if ($.trim($('#responsiblePPNoEntryField').val()) === "") {
               alert("Please enter PP Number to proceed");
               return;
           }
@@ -392,31 +397,101 @@
         });
     }
     function deleteRespRow(e) {
-        $(e).parent().parent().remove();
+        if (!confirm('Are you sure you want to delete this responsibility?')) {
+            return;
+        }
+        $(e).closest('tr').remove();
     }
-    function addResponsibilityToMainTable() {
-        if (!g_stagedResp.length) {
+    function updateRespRow(e) {
+        var $row = $(e).closest('tr');
+        g_selectedRespRow = $row;
+        $('#ResponsiblePPModel').off('shown.bs.modal.update').on('shown.bs.modal.update', function () {
+            $('#addResponsibleButton').addClass("d-none");
+            $('#updateResponsibleButton').removeClass("d-none");
+            $('#deleteResponsibleButton').removeClass("d-none");
+            var lcNo = $.trim($row.data('loan') || $row.children('td').eq(3).text()) || '0';
+            var lcAmt = $.trim($row.data('lcamount') || $row.children('td').eq(4).text()) || '0';
+            var accNo = $.trim($row.data('account') || $row.children('td').eq(5).text()) || '0';
+            var accAmt = $.trim($row.data('accamount') || $row.children('td').eq(6).text()) || '0';
+            $('#responsiblePPNoEntryField').val($row.data('pp') || $row.children('td').eq(1).text());
+            $('#responsibleLoanNumberEntryField').val(lcNo);
+            $('#responsibleLoanAmountEntryField').val(lcAmt);
+            $('#responsibleAccountNumberEntryField').val(accNo);
+            $('#responsibleAccountAmountEntryField').val(accAmt);
+            clearPending();
+            stagePending({
+                role: '',
+                ppNo: $row.data('pp') || $row.children('td').eq(1).text(),
+                empName: $row.data('emp') || $row.children('td').eq(2).text(),
+                loanCase: lcNo,
+                lcAmount: lcAmt,
+                accountNumber: accNo,
+                accAmount: accAmt
+            });
+            renderPendingGrid();
+            $(this).off('shown.bs.modal.update');
+        }).modal('show');
+    }
+    function addResponsibilityToMainTable(action) {
+        if (!g_stagedResp.length && action !== 'D') {
             alert('Select at least one responsible');
             return;
         }
-        g_stagedResp.forEach(function (item) {
-            var srNo = $('#listofRespPersons tbody tr').length + 1;
-            $('#listofRespPersons tbody').append(`
-                <tr data-pp="${item.ppNo || ''}" data-loan="${item.loanCase || ''}" data-account="${item.accountNumber || ''}">
-                    <td>${srNo}</td>
-                    <td>${item.ppNo || ''}</td>
-                    <td>${item.empName || ''}</td>
-                    <td>${item.loanCase || ''}</td>
-                    <td>${item.lcAmount || ''}</td>
-                    <td>${item.accountNumber || ''}</td>
-                    <td>${item.accAmount || ''}</td>
-                    <td class="text-center">
-                        <a href="#" onclick="event.preventDefault(); deleteRespRow(this);">Delete</a>
-                    </td>
-                </tr>
-            `);
-        });
+        if (action === 'U') {
+            if (!g_selectedRespRow) {
+                alert('Please select a responsibility to update.');
+                return;
+            }
+            var item = g_stagedResp[0];
+            $(g_selectedRespRow)
+                .attr('data-pp', item.ppNo || '')
+                .attr('data-loan', item.loanCase || '')
+                .attr('data-account', item.accountNumber || '')
+                .attr('data-lcamount', item.lcAmount || '')
+                .attr('data-accamount', item.accAmount || '')
+                .attr('data-emp', item.empName || '')
+                .children('td').eq(1).text(item.ppNo || '').end()
+                .children('td').eq(2).text(item.empName || '').end()
+                .children('td').eq(3).text(item.loanCase || '').end()
+                .children('td').eq(4).text(item.lcAmount || '').end()
+                .children('td').eq(5).text(item.accountNumber || '').end()
+                .children('td').eq(6).text(item.accAmount || '');
+            g_selectedRespRow = null;
+        } else if (action === 'D') {
+            if (!g_selectedRespRow) {
+                alert('Please select a responsibility to delete.');
+                return;
+            }
+            if (confirm('Are you sure you want to delete this responsibility?')) {
+                $(g_selectedRespRow).remove();
+                g_selectedRespRow = null;
+            }
+        } else {
+            g_stagedResp.forEach(function (item) {
+                var srNo = $('#listofRespPersons tbody tr').length + 1;
+                $('#listofRespPersons tbody').append(`
+                    <tr data-pp="${item.ppNo || ''}" data-loan="${item.loanCase || ''}" data-account="${item.accountNumber || ''}" data-lcamount="${item.lcAmount || ''}" data-accamount="${item.accAmount || ''}" data-emp="${item.empName || ''}">
+                        <td>${srNo}</td>
+                        <td>${item.ppNo || ''}</td>
+                        <td>${item.empName || ''}</td>
+                        <td>${item.loanCase || ''}</td>
+                        <td>${item.lcAmount || ''}</td>
+                        <td>${item.accountNumber || ''}</td>
+                        <td>${item.accAmount || ''}</td>
+                        <td class="text-center">
+                            <a href="#" onclick="event.preventDefault(); updateRespRow(this);">Update</a>
+                        </td>
+                        <td class="text-center">
+                            <a href="#" class="text-danger" onclick="event.preventDefault(); deleteRespRow(this);">Delete</a>
+                        </td>
+                    </tr>
+                `);
+            });
+        }
         clearPending();
+        $('#addResponsibleButton').removeClass('d-none');
+        $('#updateResponsibleButton').addClass('d-none');
+        $('#deleteResponsibleButton').addClass('d-none');
         $('#ResponsiblePPModel').modal('hide');
     }
 
@@ -577,7 +652,13 @@
                                         <th class="col-md- auto font-weight-bold">LC Amount</th>
                                         <th class="col-md- auto font-weight-bold">Account No.</th>
                                         <th class="col-md- auto font-weight-bold">ACC Amount</th>
-                                        <th class="col-md- auto text-center font-weight-bold"><center><button type="button" onclick="openResponsiblePPs();" class="rounded-circle btn btn-danger btn-sm"><i class="fa fa-plus text-white"></i></button></center></th>
+                                        <th class="col-md- auto text-center font-weight-bold">
+                                            <div class="d-flex flex-column align-items-center">
+                                                <span>Update</span>
+                                                <button type="button" onclick="openResponsiblePPs();" class="rounded-circle btn btn-danger btn-sm"><i class="fa fa-plus text-white"></i></button>
+                                            </div>
+                                        </th>
+                                        <th class="col-md- auto text-center font-weight-bold">Delete</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -708,7 +789,9 @@
                 </form>
             </div>
             <div class="modal-footer">
-                <button onclick="addResponsibilityToMainTable();" type="button" data-bs-dismiss="modal" class="btn btn-danger">Add Responsibility</button>
+                <button id="addResponsibleButton" onclick="addResponsibilityToMainTable('A');" type="button" class="btn btn-danger">Add Responsibility</button>
+                <button id="updateResponsibleButton" onclick="addResponsibilityToMainTable('U');" type="button" class="btn btn-success d-none">Update Responsibility</button>
+                <button id="deleteResponsibleButton" onclick="addResponsibilityToMainTable('D');" type="button" class="btn btn-danger d-none">Delete Responsibility</button>
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
             </div>
         </div>
