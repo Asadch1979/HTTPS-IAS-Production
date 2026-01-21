@@ -62,10 +62,6 @@ function initResponsibilitySection(config) {
         return `${ppNo || ''}|${role || ''}|${loanCase || ''}|${accountNumber || ''}`;
     }
 
-    function hasAddColumn() {
-        return table.find('thead th.resp-add-column').length > 0;
-    }
-
     function renderPendingGrid() {
         var $tableBody = modal.find('#respPendingTable tbody');
         if (!$tableBody.length) {
@@ -130,14 +126,9 @@ function initResponsibilitySection(config) {
                         var pp = v.pP_NO || v.PP_NO || v.pp_no;
                         var loanCaseValue = v.loaN_CASE || v.LOAN_CASE || v.loancase;
                         var accountValue = v.accounT_NUMBER || v.ACCOUNT_NUMBER || v.accnumber;
-                        var row = '<tr data-pp="' + (pp || '') + '" data-name="' + (v.emP_NAME || v.EMP_NAME || v.emp_name || '') + '" data-loan="' + (loanCaseValue || '') + '" data-lc-amount="' + (v.lC_AMOUNT || v.LC_AMOUNT || v.lcamount || '') + '" data-account="' + (accountValue || '') + '" data-acc-amount="' + (v.acC_AMOUNT || v.ACC_AMOUNT || v.acamount || '') + '"><td>' + sr + '</td><td>' + pp + '</td><td>' + (v.emP_NAME || v.EMP_NAME || v.emp_name) + '</td><td>' + (loanCaseValue || '') + '</td><td>' + (v.lC_AMOUNT || v.LC_AMOUNT || v.lcamount) + '</td><td>' + (accountValue || '') + '</td><td>' + (v.acC_AMOUNT || v.ACC_AMOUNT || v.acamount) + '</td><td>' + (v.remarkS || v.REMARKS || '') + '</td>';
-                        if (!opts.readOnly) {
-                            row += '<td class="text-center"><a href="#" class="updateResp">Update</a></td>';
-                            row += '<td class="text-center"><a href="#" class="deleteResp">Delete</a></td>';
-                        }
-                        if (hasAddColumn()) {
-                            row += '<td></td>';
-                        }
+                        var row = '<tr data-pp="' + (pp || '') + '" data-loan="' + (loanCaseValue || '') + '" data-account="' + (accountValue || '') + '"><td>' + sr + '</td><td>' + pp + '</td><td>' + (v.emP_NAME || v.EMP_NAME || v.emp_name) + '</td><td>' + (loanCaseValue || '') + '</td><td>' + (v.lC_AMOUNT || v.LC_AMOUNT || v.lcamount) + '</td><td>' + (accountValue || '') + '</td><td>' + (v.acC_AMOUNT || v.ACC_AMOUNT || v.acamount) + '</td><td>' + (v.remarkS || v.REMARKS || '') + '</td>';
+                        if (!opts.readOnly)
+                            row += '<td class="text-center"><a href="#" class="updateResp">Update / delete</a></td>';
                         row += '</tr>';
                         table.find('tbody').append(row);
                         sr++;
@@ -175,17 +166,12 @@ function initResponsibilitySection(config) {
                 'ENG_ID': opts.engId
             },
             dataType: 'json',
-                success: function (data) {
-                    var sr = 1; var sr_c = 1;
-                    $.each(data, function (i, v) {
-                        var row = '<tr data-pp="' + (v.pP_NO || '') + '" data-name="' + (v.emP_NAME || '') + '" data-loan="' + (v.loaN_CASE || '') + '" data-lc-amount="' + (v.lC_AMOUNT || '') + '" data-account="' + (v.accounT_NUMBER || '') + '" data-acc-amount="' + (v.acC_AMOUNT || '') + '"><td>' + sr + '</td><td>' + v.pP_NO + '</td><td>' + v.emP_NAME + '</td><td>' + v.loaN_CASE + '</td><td>' + v.lC_AMOUNT + '</td><td>' + v.accounT_NUMBER + '</td><td>' + v.acC_AMOUNT + '</td><td>' + v.remarks + '</td>';
-                    if (!opts.readOnly && v.indicator === 'O') {
-                        row += '<td class="text-center"><a href="#" class="updateResp">Update</a></td>';
-                        row += '<td class="text-center"><a href="#" class="deleteResp">Delete</a></td>';
-                    }
-                    if (hasAddColumn()) {
-                        row += '<td></td>';
-                    }
+            success: function (data) {
+                var sr = 1; var sr_c = 1;
+                $.each(data, function (i, v) {
+                    var row = '<tr data-pp="' + (v.pP_NO || '') + '" data-loan="' + (v.loaN_CASE || '') + '" data-account="' + (v.accounT_NUMBER || '') + '"><td>' + sr + '</td><td>' + v.pP_NO + '</td><td>' + v.emP_NAME + '</td><td>' + v.loaN_CASE + '</td><td>' + v.lC_AMOUNT + '</td><td>' + v.accounT_NUMBER + '</td><td>' + v.acC_AMOUNT + '</td><td>' + v.remarks + '</td>';
+                    if (!opts.readOnly && v.indicator === 'O')
+                        row += '<td class="text-center"><a href="#" class="updateResp">Update / delete</a></td>';
                     row += '</tr>';
                     if (v.indicator === 'O') {
                         table.find('tbody').append(row); sr++; }
@@ -237,6 +223,37 @@ function initResponsibilitySection(config) {
 
     function getLCDetails() {
         respUser = [];
+        $.ajax({
+            url: g_asiBaseURL + '/ApiCalls/get_lc_details',
+            type: 'POST',
+            data: {
+                'LC_NO': $('#responsibleLCNoEntryField').val(),
+                'BR_CODE': $('#responsibleBrCodeEntryField').val()
+            },
+            cache: false,
+            success: function (data) {
+                var detail = Array.isArray(data) ? data[0] : data;
+                if (!detail) {
+                    return;
+                }
+                var loanCaseNo = detail.loanCaseNo || detail.LoanCaseNo;
+                var outstanding = detail.outstandingAmount || detail.OutstandingAmount;
+                if ($('#loanCaseNumber').length) {
+                    $('#loanCaseNumber').val(loanCaseNo || '');
+                }
+                if ($('#loanCaseAmount').length) {
+                    $('#loanCaseAmount').val(outstanding || '');
+                }
+                if ($('#responsibleLoanNumberEntryField').length && loanCaseNo) {
+                    $('#responsibleLoanNumberEntryField').val(loanCaseNo);
+                }
+                if ($('#responsibleLoanAmountEntryField').length && outstanding) {
+                    $('#responsibleLoanAmountEntryField').val(outstanding);
+                }
+            },
+            dataType: 'json'
+        });
+
         $.ajax({
             url: g_asiBaseURL + '/ApiCalls/get_responsible_by_lc',
             type: 'POST',
@@ -328,11 +345,9 @@ function initResponsibilitySection(config) {
                 return;
             }
             var srNo = table.find('tbody tr').length + 1;
-            var updateCell = !opts.readOnly ? '<td class="text-center"><a href="#" class="updateResp">Update</a></td>' : '';
-            var deleteCell = !opts.readOnly ? '<td class="text-center"><a href="#" class="deleteResp">Delete</a></td>' : '';
-            var addCell = hasAddColumn() ? '<td></td>' : '';
+            var actionCell = !opts.readOnly ? '<td class="text-center"><a href="#" class="updateResp">Update / delete</a></td>' : '';
             table.find('tbody').append(
-                '<tr data-pp="' + (item.ppNo || '') + '" data-name="' + (item.empName || '') + '" data-loan="' + (item.loanCase || '') + '" data-lc-amount="' + (item.lcAmount || '') + '" data-account="' + (item.accountNumber || '') + '" data-acc-amount="' + (item.accAmount || '') + '">' +
+                '<tr data-pp="' + (item.ppNo || '') + '" data-loan="' + (item.loanCase || '') + '" data-account="' + (item.accountNumber || '') + '">' +
                 '<td>' + srNo + '</td>' +
                 '<td>' + (item.ppNo || '') + '</td>' +
                 '<td>' + (item.empName || '') + '</td>' +
@@ -341,9 +356,7 @@ function initResponsibilitySection(config) {
                 '<td>' + (item.accountNumber || '') + '</td>' +
                 '<td>' + (item.accAmount || '') + '</td>' +
                 '<td>' + ($('#resp_remarks').val() || '') + '</td>' +
-                updateCell +
-                deleteCell +
-                addCell +
+                actionCell +
                 '</tr>'
             );
         }
@@ -411,6 +424,7 @@ function initResponsibilitySection(config) {
                         'ENG_ID': opts.engId,
                         'INDICATOR': action,
                         'COM_ID': opts.comId,
+                        'ACTION': action,
                         'PARA_STATUS': opts.status
                     },
                     dataType: 'json'
@@ -492,6 +506,7 @@ function initResponsibilitySection(config) {
                     'ENG_ID': opts.engId,
                     'INDICATOR': action,
                     'COM_ID': opts.comId,
+                    'ACTION': action,
                     'PARA_STATUS': opts.status
                 },
                 dataType: 'json'
@@ -539,11 +554,11 @@ function initResponsibilitySection(config) {
             $('#updateResponsibleButton').removeClass('d-none');
             $('#deleteResponsibleButton').removeClass('d-none');
 
-            var lcNo = $row.data('loan') || '';
-            var lcAmt = $row.data('lc-amount') || '';
-            var accNo = $row.data('account') || '';
-            var accAmt = $row.data('acc-amount') || '';
-            $('#responsiblePPNoEntryField').val($row.data('pp') || '');
+            $('#responsiblePPNoEntryField').val($row.data('pp') || $row.children('td').eq(1).text());
+            var lcNo = $.trim($row.children('td').eq(3).text()) || '0';
+            var lcAmt = $.trim($row.children('td').eq(4).text()) || '0';
+            var accNo = $.trim($row.children('td').eq(5).text()) || '0';
+            var accAmt = $.trim($row.children('td').eq(6).text()) || '0';
             $('#loanCaseNumber, #responsibleLoanNumberEntryField').val(lcNo);
             $('#loanCaseAmount, #responsibleLoanAmountEntryField').val(lcAmt);
             $('#responsibleAccountNumberEntryField').val(accNo);
@@ -552,34 +567,16 @@ function initResponsibilitySection(config) {
             clearPending();
             stageItem({
                 role: '',
-                ppNo: $row.data('pp') || '',
-                empName: $row.data('name') || '',
-                loanCase: lcNo,
+                ppNo: $row.data('pp') || $row.children('td').eq(1).text(),
+                empName: $row.children('td').eq(2).text(),
+                loanCase: $row.data('loan') || lcNo,
                 lcAmount: lcAmt,
-                accountNumber: accNo,
+                accountNumber: $row.data('account') || accNo,
                 accAmount: accAmt
             });
             renderPendingGrid();
             modal.off('shown.bs.modal.update');
         }).modal('show');
-    });
-
-    table.off('click.resp', '.deleteResp').on('click.resp', '.deleteResp', function (e) {
-        e.preventDefault();
-        if (!confirm('Are you sure you want to delete this responsibility?')) {
-            return;
-        }
-        var $row = $(this).closest('tr');
-        var item = {
-            ppNo: $row.data('pp') || '',
-            empName: $row.data('name') || '',
-            loanCase: $row.data('loan') || '',
-            lcAmount: $row.data('lc-amount') || '',
-            accountNumber: $row.data('account') || '',
-            accAmount: $row.data('acc-amount') || ''
-        };
-        stagedResp = [item];
-        saveStaged('D');
     });
 
     modal.find('form').off('submit.resp').on('submit.resp', function (e) { e.preventDefault(); });
