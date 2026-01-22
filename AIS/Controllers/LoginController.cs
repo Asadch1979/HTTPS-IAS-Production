@@ -34,8 +34,9 @@ namespace AIS.Controllers
         private readonly SecurityTokenService _tokenService;
         private readonly IPermissionService _permissionService;
         private readonly LoginViewResolver _loginViewResolver;
+        private readonly PasswordChangeTokenService _passwordChangeTokenService;
 
-        public LoginController(ILogger<LoginController> logger, SessionHandler sessionHandler, DBConnection dbConnection, IConfiguration configuration, LoginAttemptTracker loginAttemptTracker, PasswordPolicyValidator passwordPolicyValidator, SecurityTokenService tokenService, IPermissionService permissionService, LoginViewResolver loginViewResolver)
+        public LoginController(ILogger<LoginController> logger, SessionHandler sessionHandler, DBConnection dbConnection, IConfiguration configuration, LoginAttemptTracker loginAttemptTracker, PasswordPolicyValidator passwordPolicyValidator, SecurityTokenService tokenService, IPermissionService permissionService, LoginViewResolver loginViewResolver, PasswordChangeTokenService passwordChangeTokenService)
             {
             _logger = logger;
             this.sessionHandler = sessionHandler;
@@ -46,6 +47,7 @@ namespace AIS.Controllers
             _tokenService = tokenService;
             _permissionService = permissionService;
             _loginViewResolver = loginViewResolver;
+            _passwordChangeTokenService = passwordChangeTokenService;
             }
 
         public IActionResult Index()
@@ -120,13 +122,18 @@ namespace AIS.Controllers
                     return Json(BuildLoginResponse(throttleResult));
                 }
 
-                EnsureSessionInitialized();
                 var user = dBConnection.AutheticateLogin(loginModel);
                 _logger.LogDebug("Authentication outcome for PP {PPNumber}: Authenticated={IsAuthenticated}, AlreadyLoggedIn={AlreadyLoggedIn}, ErrorCode={ErrorCode}.", login.PPNumber, user.isAuthenticate, user.isAlreadyLoggedIn, user.ErrorCode);
 
                 if (user.isAuthenticate)
                 {
                     ResetRateLimit(loginModel);
+                }
+
+                if (user.isAuthenticate && RequiresPasswordChange(user))
+                {
+                    _passwordChangeTokenService.IssueToken(Request, Response, user);
+                    return Json(BuildLoginResponse(user, true, BuildChangePasswordRedirect()));
                 }
 
                 if (user.ID != 0 && !user.isAlreadyLoggedIn && user.isAuthenticate)
@@ -452,6 +459,20 @@ namespace AIS.Controllers
             }
         }
 
+        private static bool RequiresPasswordChange(UserModel user)
+        {
+            return user?.passwordChangeRequired == true ||
+                   string.Equals(user?.changePassword, "Y", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private string BuildChangePasswordRedirect()
+        {
+            var pathBase = HttpContext?.Request?.PathBase.HasValue == true
+                ? HttpContext.Request.PathBase.Value
+                : string.Empty;
+            return string.Concat(pathBase, "/Home/Change_Password");
+        }
+
         private UserModel EvaluateRateLimit(LoginModel login)
         {
             return _loginAttemptTracker.EvaluateRateLimit(login, GetRemoteIpAddress());
@@ -531,7 +552,7 @@ namespace AIS.Controllers
             return HttpContext?.Connection?.RemoteIpAddress?.ToString() ?? "unknown";
         }
 
-        private object BuildLoginResponse(UserModel user)
+        private object BuildLoginResponse(UserModel user, bool forcePwdChange = false, string redirectUrl = null)
         {
             return new
             {
@@ -542,7 +563,9 @@ namespace AIS.Controllers
                 errorMsg = user?.ErrorMsg,
                 retryAfterSeconds = user?.RetryAfterSeconds,
                 passwordChangeRequired = user?.passwordChangeRequired ?? false,
-                changePassword = user?.changePassword
+                changePassword = user?.changePassword,
+                forcePwdChange,
+                redirectUrl
             };
         }
 

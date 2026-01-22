@@ -90,6 +90,7 @@ namespace AIS
             services.AddSingleton<PasswordPolicyValidator>();
             services.AddSingleton<SecurityTokenService>();
             services.AddSingleton<LoginViewResolver>();
+            services.AddSingleton<PasswordChangeTokenService>();
             services.AddHostedService<PageIdRouteValidator>();
             var mvcBuilder = services.AddControllersWithViews()
                 .AddJsonOptions(options =>

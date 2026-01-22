@@ -480,6 +480,13 @@ namespace AIS.Controllers
                     else
                         user.UserRoleID = 0;
 
+                    var requiresPasswordChange = user.passwordChangeRequired ||
+                                                 string.Equals(user.changePassword, "Y", StringComparison.OrdinalIgnoreCase);
+                    if (requiresPasswordChange)
+                        {
+                        return user;
+                        }
+
                     bool isSessionAvailable = false;
                     string _sql2 = "pkg_lg.p_get_user_id";
                     cmd.CommandType = CommandType.StoredProcedure;
@@ -492,7 +499,8 @@ namespace AIS.Controllers
                         {
                         if (rdr2["ID"].ToString() != null && rdr2["ID"].ToString() != "")
                             {
-                            isSessionAvailable = !isSessionAvailable;
+                            isSessionAvailable = true;
+                            break;
                             }
                         }
 
@@ -536,6 +544,33 @@ namespace AIS.Controllers
                 }
             }
         #endregion
+        public bool ChangePasswordForUser(string ppNumber, int entityId, int roleId, string newPassword)
+            {
+            if (string.IsNullOrWhiteSpace(ppNumber))
+                {
+                return false;
+                }
+
+            var con = this.DatabaseConnection(requireActiveSession: false);
+            var enc_new_pass = HashEncryptedPassword(newPassword);
+            bool res = false;
+            using (OracleCommand cmd = con.CreateCommand())
+                {
+                cmd.CommandText = "pkg_lg.P_ChangePassword";
+                cmd.CommandType = CommandType.StoredProcedure;
+                cmd.Parameters.Clear();
+                cmd.Parameters.Add("PP_NO", OracleDbType.Int32).Value = ppNumber;
+                cmd.Parameters.Add("enc_pass", OracleDbType.Varchar2).Value = enc_new_pass;
+                cmd.Parameters.Add("ENT_ID", OracleDbType.Int32).Value = entityId;
+                cmd.Parameters.Add("P_NO", OracleDbType.Int32).Value = entityId;
+                cmd.Parameters.Add("R_ID", OracleDbType.Int32).Value = roleId;
+                cmd.ExecuteReader();
+                res = true;
+                }
+
+            con.Dispose();
+            return res;
+            }
         public async Task<List<AuditeeResponseEvidenceModel>> GetUploadedAuditReportsFromDirectory(string subfolder)
             {
             var filesData = new List<AuditeeResponseEvidenceModel>();
