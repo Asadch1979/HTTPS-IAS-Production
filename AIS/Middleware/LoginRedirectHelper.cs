@@ -64,12 +64,6 @@ namespace AIS.Middleware
                 return true;
             }
 
-            var requestedWith = request.Headers["X-Requested-With"].ToString();
-            if (string.Equals(requestedWith, "XMLHttpRequest", StringComparison.OrdinalIgnoreCase))
-            {
-                return true;
-            }
-
             return false;
         }
 

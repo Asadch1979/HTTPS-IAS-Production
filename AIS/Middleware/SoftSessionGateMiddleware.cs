@@ -49,11 +49,6 @@ namespace AIS.Middleware
                 return true;
             }
 
-            if (IsWhitelistedPath(fullPath))
-            {
-                return true;
-            }
-
             if (fullPath.Contains("/apicalls", StringComparison.Ordinal))
             {
                 return true;
@@ -79,19 +74,6 @@ namespace AIS.Middleware
             }
 
             return false;
-        }
-
-        private static bool IsWhitelistedPath(string fullPath)
-        {
-            if (string.IsNullOrWhiteSpace(fullPath))
-            {
-                return false;
-            }
-
-            return fullPath.Equals("/login/index", StringComparison.OrdinalIgnoreCase) ||
-                   fullPath.Equals("/login/dologin", StringComparison.OrdinalIgnoreCase) ||
-                   fullPath.Equals("/home/change_password", StringComparison.OrdinalIgnoreCase) ||
-                   fullPath.Equals("/home/dochangepassword", StringComparison.OrdinalIgnoreCase);
         }
     }
 }
