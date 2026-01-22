@@ -149,8 +149,10 @@ function initResponsibilitySection(config) {
                         var loanCaseValue = v.loaN_CASE || v.LOAN_CASE || v.loancase;
                         var accountValue = v.accounT_NUMBER || v.ACCOUNT_NUMBER || v.accnumber;
                         var baseRow = '<tr data-pp="' + (pp || '') + '" data-loan="' + (loanCaseValue || '') + '" data-account="' + (accountValue || '') + '"><td>' + (v.indicator === 'O' ? sr : sr_c) + '</td><td>' + pp + '</td><td>' + (v.emP_NAME || v.EMP_NAME || v.emp_name) + '</td><td>' + (loanCaseValue || '') + '</td><td>' + (v.lC_AMOUNT || v.LC_AMOUNT || v.lcamount) + '</td><td>' + (accountValue || '') + '</td><td>' + (v.acC_AMOUNT || v.ACC_AMOUNT || v.acamount) + '</td><td>' + (v.remarkS || v.REMARKS || '') + '</td>';
-                        if (!opts.readOnly && (v.indicator === 'O' || v.indicator === undefined || v.indicator === null))
-                            baseRow += '<td class="text-center"><a href="#" class="updateResp">Update / delete</a></td>';
+                        if (!opts.readOnly && (v.indicator === 'O' || v.indicator === undefined || v.indicator === null)) {
+                            baseRow += '<td class="text-center"><a href="#" class="updateResp">Update</a></td>';
+                            baseRow += '<td class="text-center"><a href="#" class="deleteResp text-danger">Delete</a></td>';
+                        }
                         baseRow += '</tr>';
                         if (v.indicator === 'O' || v.indicator === undefined || v.indicator === null) {
                             table.find('tbody').append(baseRow); sr++;
@@ -176,8 +178,10 @@ function initResponsibilitySection(config) {
                 var sr = 1; var sr_c = 1;
                 $.each(data, function (i, v) {
                     var row = '<tr data-pp="' + (v.pP_NO || '') + '" data-loan="' + (v.loaN_CASE || '') + '" data-account="' + (v.accounT_NUMBER || '') + '"><td>' + sr + '</td><td>' + v.pP_NO + '</td><td>' + v.emP_NAME + '</td><td>' + v.loaN_CASE + '</td><td>' + v.lC_AMOUNT + '</td><td>' + v.accounT_NUMBER + '</td><td>' + v.acC_AMOUNT + '</td><td>' + v.remarks + '</td>';
-                    if (!opts.readOnly && v.indicator === 'O')
-                        row += '<td class="text-center"><a href="#" class="updateResp">Update / delete</a></td>';
+                    if (!opts.readOnly && v.indicator === 'O') {
+                        row += '<td class="text-center"><a href="#" class="updateResp">Update</a></td>';
+                        row += '<td class="text-center"><a href="#" class="deleteResp text-danger">Delete</a></td>';
+                    }
                     row += '</tr>';
                     if (v.indicator === 'O') {
                         table.find('tbody').append(row); sr++; }
@@ -487,14 +491,15 @@ function initResponsibilitySection(config) {
         });
     }
 
-    table.off('click.resp', '.updateResp').on('click.resp', '.updateResp', function (e) {
-        e.preventDefault();
+    function openResponsibilityEditor($row) {
+        if (!$row || !$row.length) {
+            return;
+        }
 
         // show the modal (this will clear previous values via the show handler)
         modal.modal('show');
 
         // set the current row after modal.show has reset state
-        var $row = $(this).closest('tr');
         selectedRow = $row;
 
         // toggle button visibility for update/delete mode
@@ -519,6 +524,16 @@ function initResponsibilitySection(config) {
             accAmount: $row.children('td').eq(6).text()
         });
         renderPendingGrid();
+    }
+
+    table.off('click.resp', '.updateResp').on('click.resp', '.updateResp', function (e) {
+        e.preventDefault();
+        openResponsibilityEditor($(this).closest('tr'));
+    });
+
+    table.off('click.resp', '.deleteResp').on('click.resp', '.deleteResp', function (e) {
+        e.preventDefault();
+        openResponsibilityEditor($(this).closest('tr'));
     });
 
     modal.find('form').off('submit.resp').on('submit.resp', function (e) { e.preventDefault(); });
