@@ -27,10 +27,7 @@ namespace AIS.Middleware
                 await _next(context);
                 return;
             }
-            if ((path?.Contains("/login/index") ?? false) ||
-                (path?.Contains("/login/logout") ?? false) ||
-                (path?.Contains("/api/auth") ?? false) ||
-                (path?.Contains("/login") ?? false))
+            if (IsPreSessionPath(path))
             {
                 await _next(context);
                 return;
@@ -38,7 +35,8 @@ namespace AIS.Middleware
 
             if (string.IsNullOrWhiteSpace(token))
             {
-                if (LoginRedirectHelper.IsApiRequest(context.Request))
+                if (LoginRedirectHelper.IsApiRequest(context.Request) ||
+                    LoginRedirectHelper.IsAjaxRequest(context.Request))
                 {
                     await LoginRedirectHelper.WriteUnauthorizedAsync(context);
                     return;
@@ -51,7 +49,8 @@ namespace AIS.Middleware
             bool isValid = db.IsSessionValid(token);
             if (!isValid)
             {
-                if (LoginRedirectHelper.IsApiRequest(context.Request))
+                if (LoginRedirectHelper.IsApiRequest(context.Request) ||
+                    LoginRedirectHelper.IsAjaxRequest(context.Request))
                 {
                     await LoginRedirectHelper.WriteUnauthorizedAsync(context);
                     return;
@@ -62,6 +61,25 @@ namespace AIS.Middleware
             }
 
             await _next(context);
+        }
+
+        private static bool IsPreSessionPath(string path)
+        {
+            if (string.IsNullOrWhiteSpace(path))
+            {
+                return false;
+            }
+
+            return path.Equals("/login/index", StringComparison.OrdinalIgnoreCase) ||
+                   path.Equals("/login/dologin", StringComparison.OrdinalIgnoreCase) ||
+                   path.Equals("/login/resetpassword", StringComparison.OrdinalIgnoreCase) ||
+                   path.Equals("/login/killsession", StringComparison.OrdinalIgnoreCase) ||
+                   path.Equals("/home/change_password", StringComparison.OrdinalIgnoreCase) ||
+                   path.Equals("/home/dochangepassword", StringComparison.OrdinalIgnoreCase) ||
+                   path.Equals("/login/logout", StringComparison.OrdinalIgnoreCase) ||
+                   path.Equals("/login/index_dev", StringComparison.OrdinalIgnoreCase) ||
+                   path.Equals("/login/maintenance", StringComparison.OrdinalIgnoreCase) ||
+                   path.Equals("/api/auth", StringComparison.OrdinalIgnoreCase);
         }
     }
 }

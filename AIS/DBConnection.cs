@@ -480,6 +480,12 @@ namespace AIS.Controllers
                     else
                         user.UserRoleID = 0;
 
+                    if (RequiresPasswordChange(user))
+                        {
+                        user.isAlreadyLoggedIn = false;
+                        return user;
+                        }
+
                     bool isSessionAvailable = false;
                     string _sql2 = "pkg_lg.p_get_user_id";
                     cmd.CommandType = CommandType.StoredProcedure;
@@ -492,7 +498,8 @@ namespace AIS.Controllers
                         {
                         if (rdr2["ID"].ToString() != null && rdr2["ID"].ToString() != "")
                             {
-                            isSessionAvailable = !isSessionAvailable;
+                            isSessionAvailable = true;
+                            break;
                             }
                         }
 
@@ -536,6 +543,54 @@ namespace AIS.Controllers
                 }
             }
         #endregion
+        private static bool RequiresPasswordChange(UserModel user)
+            {
+            if (user == null)
+                {
+                return false;
+                }
+
+            return user.passwordChangeRequired ||
+                   string.Equals(user.changePassword, "Y", StringComparison.OrdinalIgnoreCase);
+            }
+
+        public SessionUser CreateLoginSession(UserModel user)
+            {
+            if (user == null)
+                {
+                throw new ArgumentNullException(nameof(user));
+                }
+
+            var sessionHandler = CreateSessionHandler();
+            var sessionUser = sessionHandler.SetSessionUser(user);
+
+            using (var con = this.DatabaseConnection())
+                {
+                using (OracleCommand cmd = con.CreateCommand())
+                    {
+                    cmd.CommandText = "pkg_lg.User_SESSION";
+                    cmd.CommandType = CommandType.StoredProcedure;
+                    cmd.Parameters.Clear();
+                    cmd.Parameters.Add("PPNumber", OracleDbType.Int32).Value = user.PPNumber;
+                    cmd.Parameters.Add("UserRoleID", OracleDbType.Int32).Value = user.UserRoleID;
+                    cmd.Parameters.Add("LocalIpAddress", OracleDbType.Varchar2).Value = iPAddress.GetLocalIpAddress();
+                    cmd.Parameters.Add("SessionId", OracleDbType.Varchar2).Value = sessionUser.SessionId;
+                    cmd.Parameters.Add("UserLocationType", OracleDbType.Varchar2).Value = user.UserLocationType;
+                    cmd.Parameters.Add("MACAddress", OracleDbType.Varchar2).Value = iPAddress.GetMACAddress();
+                    cmd.Parameters.Add("FirstMACCardAddress", OracleDbType.Varchar2).Value = iPAddress.GetFirstMACCardAddress();
+                    cmd.Parameters.Add("UserPostingDiv", OracleDbType.Int32).Value = user.UserPostingDiv;
+                    cmd.Parameters.Add("UserGroupID", OracleDbType.Varchar2).Value = user.UserGroupID;
+                    cmd.Parameters.Add("UserPostingDept", OracleDbType.Int32).Value = user.UserPostingDept;
+                    cmd.Parameters.Add("UserPostingZone", OracleDbType.Int32).Value = user.UserPostingZone;
+                    cmd.Parameters.Add("UserPostingBranch", OracleDbType.Int32).Value = user.UserPostingBranch;
+                    cmd.Parameters.Add("UserPostingAuditZone", OracleDbType.Int32).Value = user.UserPostingAuditZone;
+                    cmd.Parameters.Add("ENT_ID", OracleDbType.Int32).Value = user.UserEntityID;
+                    cmd.ExecuteReader();
+                    }
+                }
+
+            return sessionUser;
+            }
         public async Task<List<AuditeeResponseEvidenceModel>> GetUploadedAuditReportsFromDirectory(string subfolder)
             {
             var filesData = new List<AuditeeResponseEvidenceModel>();
@@ -1675,6 +1730,33 @@ namespace AIS.Controllers
                 }
             con.Dispose();
             return res;
+            }
+
+        public bool ChangePasswordForUser(UserModel user, string encryptedNewPassword)
+            {
+            if (user == null || string.IsNullOrWhiteSpace(user.PPNumber) || string.IsNullOrWhiteSpace(encryptedNewPassword))
+                {
+                return false;
+                }
+
+            using (var con = this.DatabaseConnection(requireActiveSession: false))
+                {
+                var enc_new_pass = HashEncryptedPassword(encryptedNewPassword);
+                using (OracleCommand cmd = con.CreateCommand())
+                    {
+                    cmd.CommandText = "pkg_lg.P_ChangePassword";
+                    cmd.CommandType = CommandType.StoredProcedure;
+                    cmd.Parameters.Clear();
+                    cmd.Parameters.Add("PP_NO", OracleDbType.Int32).Value = user.PPNumber;
+                    cmd.Parameters.Add("enc_pass", OracleDbType.Varchar2).Value = enc_new_pass;
+                    cmd.Parameters.Add("ENT_ID", OracleDbType.Int32).Value = user.UserEntityID ?? 0;
+                    cmd.Parameters.Add("P_NO", OracleDbType.Int32).Value = user.UserEntityID ?? 0;
+                    cmd.Parameters.Add("R_ID", OracleDbType.Int32).Value = user.UserRoleID ?? 0;
+                    cmd.ExecuteReader();
+                    }
+                }
+
+            return true;
             }
 
         private static void Shuffle(IList<char> list)
