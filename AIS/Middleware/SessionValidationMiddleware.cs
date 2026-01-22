@@ -18,6 +18,11 @@ namespace AIS.Middleware
             var token = context.Request.Cookies["IAS_SESSION"];
 
             var path = context.Request.Path.Value?.ToLower();
+            if (IsWhitelistedPath(path))
+            {
+                await _next(context);
+                return;
+            }
             if ((path?.StartsWith("/css") ?? false) ||
                 (path?.StartsWith("/js") ?? false) ||
                 (path?.StartsWith("/lib") ?? false) ||
@@ -62,6 +67,19 @@ namespace AIS.Middleware
             }
 
             await _next(context);
+        }
+
+        private static bool IsWhitelistedPath(string path)
+        {
+            if (string.IsNullOrWhiteSpace(path))
+            {
+                return false;
+            }
+
+            return path.Equals("/login/index", StringComparison.OrdinalIgnoreCase) ||
+                   path.Equals("/login/dologin", StringComparison.OrdinalIgnoreCase) ||
+                   path.Equals("/home/change_password", StringComparison.OrdinalIgnoreCase) ||
+                   path.Equals("/home/dochangepassword", StringComparison.OrdinalIgnoreCase);
         }
     }
 }

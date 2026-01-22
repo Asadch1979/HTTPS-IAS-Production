@@ -3,8 +3,13 @@
         return typeof inputText === 'string' && inputText.length >= 8;
     }
 
-    function reloadLocation() {
-        window.location.href = g_asiBaseURL + "/login/logout";
+    function reloadLocation(redirectUrl) {
+        if (redirectUrl) {
+            window.location.href = redirectUrl;
+            return;
+        }
+
+        window.location.href = g_asiBaseURL + "/Home/Index";
     }
 
     function onSubmitChangePassword() {
@@ -27,17 +32,25 @@
             data: {
                 'Password': encryptPassword($('#inputPassword').val()),
                 'NewPassword': encryptPassword(newPassword),
+                'ConfirmPassword': encryptPassword(confirmPassword),
             },
             cache: false,
             success: function (data) {
                 if (data && data.success) {
                     alert(data.message || "Your Password has been changed Successfully");
-                    onAlertCallback(reloadLocation);
+                    onAlertCallback(function () {
+                        reloadLocation(data.redirectUrl);
+                    });
                 } else {
                     alert((data && data.message) || "Unable to change password. Please try again.");
                 }
             },
-            error: function () {
+            error: function (xhr) {
+                if (xhr && xhr.status === 401) {
+                    window.location.href = g_asiBaseURL + "/Login/Index";
+                    return;
+                }
+
                 alert("Unable to change password. Please try again.");
             },
             dataType: "json",
