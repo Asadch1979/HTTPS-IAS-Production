@@ -34,8 +34,10 @@ namespace AIS.Controllers
         private readonly SecurityTokenService _tokenService;
         private readonly IPermissionService _permissionService;
         private readonly LoginViewResolver _loginViewResolver;
+        private readonly PasswordChangeTokenService _passwordChangeTokenService;
+        private readonly PasswordChangeStateStore _passwordChangeStateStore;
 
-        public LoginController(ILogger<LoginController> logger, SessionHandler sessionHandler, DBConnection dbConnection, IConfiguration configuration, LoginAttemptTracker loginAttemptTracker, PasswordPolicyValidator passwordPolicyValidator, SecurityTokenService tokenService, IPermissionService permissionService, LoginViewResolver loginViewResolver)
+        public LoginController(ILogger<LoginController> logger, SessionHandler sessionHandler, DBConnection dbConnection, IConfiguration configuration, LoginAttemptTracker loginAttemptTracker, PasswordPolicyValidator passwordPolicyValidator, SecurityTokenService tokenService, IPermissionService permissionService, LoginViewResolver loginViewResolver, PasswordChangeTokenService passwordChangeTokenService, PasswordChangeStateStore passwordChangeStateStore)
             {
             _logger = logger;
             this.sessionHandler = sessionHandler;
@@ -46,6 +48,8 @@ namespace AIS.Controllers
             _tokenService = tokenService;
             _permissionService = permissionService;
             _loginViewResolver = loginViewResolver;
+            _passwordChangeTokenService = passwordChangeTokenService;
+            _passwordChangeStateStore = passwordChangeStateStore;
             }
 
         public IActionResult Index()
@@ -120,13 +124,19 @@ namespace AIS.Controllers
                     return Json(BuildLoginResponse(throttleResult));
                 }
 
-                EnsureSessionInitialized();
                 var user = dBConnection.AutheticateLogin(loginModel);
                 _logger.LogDebug("Authentication outcome for PP {PPNumber}: Authenticated={IsAuthenticated}, AlreadyLoggedIn={AlreadyLoggedIn}, ErrorCode={ErrorCode}.", login.PPNumber, user.isAuthenticate, user.isAlreadyLoggedIn, user.ErrorCode);
 
                 if (user.isAuthenticate)
                 {
                     ResetRateLimit(loginModel);
+                }
+
+                if (user.isAuthenticate && RequiresPasswordChange(user))
+                {
+                    IssuePasswordChangeToken(user);
+                    ClearAuthCookies();
+                    return Json(BuildLoginResponse(user, forcePwdChange: true, redirectUrl: BuildChangePasswordRedirectUrl()));
                 }
 
                 if (user.ID != 0 && !user.isAlreadyLoggedIn && user.isAuthenticate)
@@ -544,6 +554,54 @@ namespace AIS.Controllers
                 passwordChangeRequired = user?.passwordChangeRequired ?? false,
                 changePassword = user?.changePassword
             };
+        }
+
+        private object BuildLoginResponse(UserModel user, bool forcePwdChange, string redirectUrl)
+        {
+            return new
+            {
+                isAuthenticate = user?.isAuthenticate ?? false,
+                isAlreadyLoggedIn = user?.isAlreadyLoggedIn ?? false,
+                errorCode = user?.ErrorCode,
+                errorTitle = user?.ErrorTitle,
+                errorMsg = user?.ErrorMsg,
+                retryAfterSeconds = user?.RetryAfterSeconds,
+                passwordChangeRequired = user?.passwordChangeRequired ?? false,
+                changePassword = user?.changePassword,
+                forcePwdChange,
+                redirectUrl
+            };
+        }
+
+        private static bool RequiresPasswordChange(UserModel user)
+        {
+            if (user == null)
+            {
+                return false;
+            }
+
+            return user.passwordChangeRequired ||
+                   string.Equals(user.changePassword, "Y", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private void IssuePasswordChangeToken(UserModel user)
+        {
+            var token = _passwordChangeTokenService.CreateToken(user.ID, user.PPNumber);
+            _passwordChangeTokenService.AppendCookie(Response, token, Request.PathBase);
+            _passwordChangeStateStore.Store(token, user);
+        }
+
+        private void ClearAuthCookies()
+        {
+            Response.Cookies.Delete("IAS.Auth");
+            Response.Cookies.Delete("IAS.Session");
+            Response.Cookies.Delete("IAS_SESSION");
+        }
+
+        private string BuildChangePasswordRedirectUrl()
+        {
+            var pathBase = Request.PathBase.HasValue ? Request.PathBase.Value : string.Empty;
+            return string.Concat(pathBase, "/Home/Change_Password");
         }
 
     }

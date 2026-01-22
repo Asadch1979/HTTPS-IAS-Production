@@ -31,7 +31,8 @@ namespace AIS.Session
 
             if (!_sessionHandler.TryGetUser(out _))
             {
-                if (Middleware.LoginRedirectHelper.IsApiRequest(context.HttpContext.Request))
+                if (Middleware.LoginRedirectHelper.IsApiRequest(context.HttpContext.Request) ||
+                    Middleware.LoginRedirectHelper.IsAjaxRequest(context.HttpContext.Request))
                 {
                     context.Result = new JsonResult(new { error = "unauthenticated", message = "Session missing or expired." })
                     {

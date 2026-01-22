@@ -67,6 +67,17 @@ namespace AIS.Middleware
             return false;
         }
 
+        public static bool IsAjaxRequest(HttpRequest request)
+        {
+            if (request == null)
+            {
+                return false;
+            }
+
+            var requestedWith = request.Headers["X-Requested-With"].ToString();
+            return string.Equals(requestedWith, "XMLHttpRequest", StringComparison.OrdinalIgnoreCase);
+        }
+
         public static void RedirectToLogin(HttpContext context)
         {
             if (context == null)

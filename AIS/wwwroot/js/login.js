@@ -142,8 +142,9 @@
             return;
         }
 
-        if (data.passwordChangeRequired || data.changePassword === 'Y') {
-            window.location.href = g_asiBaseURL + '/Home/Change_Password';
+        if (data.forcePwdChange || data.passwordChangeRequired || data.changePassword === 'Y') {
+            var target = data.redirectUrl || (g_asiBaseURL + '/Home/Change_Password');
+            window.location.href = target;
             return;
         }
 
