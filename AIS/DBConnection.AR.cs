@@ -592,18 +592,19 @@ namespace AIS.Controllers
                         {
                         foreach (ObservationResponsiblePPNOModel pp in responsiblePpnoList)
                             {
-                            var ppNo = pp.PP_NO;
-                            var loanCase = pp.LOAN_CASE;
-                            var accountNumber = pp.ACCOUNT_NUMBER;
-                            var lcAmount = pp.LC_AMOUNT;
-                            var accAmount = pp.ACC_AMOUNT;
+                            // int is already non-null; int? may be null
+                            int ppNo = pp.PP_NO;
+                            int loanCase = pp.LOAN_CASE ?? 0;
+                            int accountNumber = pp.ACCOUNT_NUMBER;     // if you keep it non-nullable int
+                            int lcAmount = pp.LC_AMOUNT ?? 0;
+                            int accAmount = pp.ACC_AMOUNT;             // if you keep it non-nullable int
 
-                            // ALWAYS normalize numeric inputs because OracleDbType.Int32 cannot take null/empty
-                            if (string.IsNullOrWhiteSpace(ppNo)) ppNo = "0";
-                            if (string.IsNullOrWhiteSpace(loanCase)) loanCase = "0";
-                            if (string.IsNullOrWhiteSpace(accountNumber)) accountNumber = "0";
-                            if (string.IsNullOrWhiteSpace(lcAmount)) lcAmount = "0";
-                            if (string.IsNullOrWhiteSpace(accAmount)) accAmount = "0";
+                            // If you want extra safety (e.g. negative not allowed), clamp:
+                            if (ppNo < 0) ppNo = 0;
+                            if (loanCase < 0) loanCase = 0;
+                            if (accountNumber < 0) accountNumber = 0;
+                            if (lcAmount < 0) lcAmount = 0;
+                            if (accAmount < 0) accAmount = 0;
 
                             cmd.CommandText = "pkg_ar.P_responibilityassigned";
                             cmd.CommandType = CommandType.StoredProcedure;
