@@ -14,6 +14,8 @@
     var g_newStatusId = 0;
     var g_riskId = 0;
     var g_currentStatus = 0;
+    var g_submitInProgress = false;
+    var g_exportedObsId = null;
     $(document).ready(function () {
         $('#entitySelectField').select2();
         $('#manageObsPanel_parent').hide();
@@ -32,6 +34,20 @@
     function reloadLocation() {
         
         getEntityObservationSummary();
+    }
+    function setSubmitDisabled(isDisabled) {
+        $('#submitAuditeeButton_memoReply').prop('disabled', isDisabled);
+    }
+    function triggerObservationPdfDownload(obsId) {
+        if (!obsId) {
+            return;
+        }
+        var link = document.createElement('a');
+        link.href = g_asiBaseURL + "/Observation/GeneratePdf?obsId=" + encodeURIComponent(obsId);
+        link.style.display = 'none';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
     }
     function getEntityObservationSummary(){
         $('#manageObsPanelSummary tbody').empty();
@@ -220,12 +236,17 @@
         });
     }
     function submitObservationToAuditee(obs_id, new_status_id, risk_id) {
+        if (g_submitInProgress) {
+            return;
+        }
         $('#' + $('#auditeeEvidences').find('input[type="file"]').attr('id'))
 
 
         g_obsId = obs_id;
         g_newStatusId = new_status_id;
         g_riskId = risk_id;
+        g_submitInProgress = true;
+        setSubmitDisabled(true);
         $.ajax({
             url: g_asiBaseURL + "/ApiCalls/submit_observation_to_auditee",
             type: "POST",
@@ -236,8 +257,26 @@
             },
             cache: false,
             success: function (data) {
-                alert(data.message);
-                onAlertCallback(reloadLocation);
+                var isSuccess = data && (data.Status === true || data.status === true);
+                var message = data ? (data.Message || data.message || '') : '';
+                if (isSuccess && message) {
+                    alert(message);
+                    onAlertCallback(function () {
+                        if (g_exportedObsId !== g_obsId) {
+                            g_exportedObsId = g_obsId;
+                            triggerObservationPdfDownload(g_obsId);
+                        }
+                        reloadLocation();
+                    });
+                } else {
+                    alert(message || 'Unable to submit observation to auditee.');
+                    g_submitInProgress = false;
+                    setSubmitDisabled(false);
+                }
+            },
+            error: function () {
+                g_submitInProgress = false;
+                setSubmitDisabled(false);
             },
             dataType: "json",
         });
