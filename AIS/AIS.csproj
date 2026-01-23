@@ -21,7 +21,7 @@
     <PackageReference Include="ExcelDataReader" Version="3.6.0" />
     <PackageReference Include="ExcelDataReader.DataSet" Version="3.6.0" />
     <PackageReference Include="itext7" Version="8.0.5" />
-    <PackageReference Include="itext7.pdfhtml" Version="5.0.5" />
+    <PackageReference Include="itext7.pdfhtml" Version="5.0.0" />
     <PackageReference Include="Microsoft.AspNetCore.Mvc.Razor.RuntimeCompilation" Version="8.0.2" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="9.0.0-rc.1.24451.1" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="9.0.0-rc.1.24451.1">
@@ -30,7 +30,6 @@
     </PackageReference>
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
     <PackageReference Include="Oracle.ManagedDataAccess.Core" Version="23.5.1" />
-    <PackageReference Include="Portable.itextsharp.xmlworker" Version="5.5.13.3" />
     <PackageReference Include="WebEssentials.AspNetCore.PWA" Version="1.0.85" />
   </ItemGroup>
 

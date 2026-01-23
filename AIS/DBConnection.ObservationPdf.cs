@@ -11,8 +11,7 @@ namespace AIS.Controllers
         public ObservationPdfDataModel GetObservationPdfData(int obsId)
             {
             var result = new ObservationPdfDataModel();
-            using var con = DatabaseConnection();
-            con.Open();
+            using var con = DatabaseConnection();      
 
             using var cmd = con.CreateCommand();
             cmd.BindByName = true;
