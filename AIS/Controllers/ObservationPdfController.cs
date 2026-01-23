@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using System;
 using System.IO;
+using System.Linq;
 
 namespace AIS.Controllers
     {
@@ -41,9 +42,24 @@ namespace AIS.Controllers
                     return errorResult;
                     }
 
+                if (!User.Identity.IsAuthenticated)
+                    {
+                    return Unauthorized(new { message = "User session is not authenticated." });
+                    }
+
+                if (!this.UserHasPagePermissionForCurrentAction(SessionHandler))
+                    {
+                    return Unauthorized(new { message = "User is not authorized to access observation PDFs." });
+                    }
+
                 if (obsId <= 0)
                     {
                     return BadRequest("Observation id is required.");
+                    }
+
+                if (!IsObservationAuthorized(obsId))
+                    {
+                    return Unauthorized(new { message = "User is not authorized to access this observation PDF." });
                     }
 
                 var data = _dbConnection.GetObservationPdfData(obsId);
@@ -62,6 +78,16 @@ namespace AIS.Controllers
                 _logger.LogError(ex, "Failed to generate observation PDF for OBS_ID {ObsId}.", obsId);
                 return BadRequest("An error occurred while generating the PDF. Please try again later.");
                 }
+            }
+
+        private bool IsObservationAuthorized(int obsId)
+            {
+            if (SessionHandler.TryGetActiveEngagementId(out var engId) && engId > 0)
+                {
+                return _dbConnection.GetManagedObservationsForBranches(engId, obsId).Any();
+                }
+
+            return _dbConnection.GetManagedObservationsForBranches(0, obsId).Any();
             }
 
         private static byte[] RenderPdf(string html)
