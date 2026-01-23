@@ -32,7 +32,7 @@ namespace AIS.Controllers
             }
 
         [HttpGet("GeneratePdf")]
-        public IActionResult GeneratePdf(int obsId)
+        public IActionResult GeneratePdf(int obsId, int engId)
             {
             try
                 {
@@ -57,9 +57,14 @@ namespace AIS.Controllers
                     return BadRequest("Observation id is required.");
                     }
 
-                if (!IsObservationAuthorized(obsId))
+                if (engId <= 0)
                     {
-                    return Unauthorized(new { message = "User is not authorized to access this observation PDF." });
+                    return BadRequest("Engagement id is required.");
+                    }
+
+                if (!IsObservationAuthorized(engId, obsId))
+                    {
+                    return Unauthorized(new { message = "Not authorized / observation not in your list." });
                     }
 
                 var data = _dbConnection.GetObservationPdfData(obsId);
@@ -80,14 +85,14 @@ namespace AIS.Controllers
                 }
             }
 
-        private bool IsObservationAuthorized(int obsId)
+        private bool IsObservationAuthorized(int engId, int obsId)
             {
-            if (SessionHandler.TryGetActiveEngagementId(out var engId) && engId > 0)
+            if (engId <= 0 || obsId <= 0)
                 {
-                return _dbConnection.GetManagedObservationsForBranches(engId, obsId).Any();
+                return false;
                 }
 
-            return _dbConnection.GetManagedObservationsForBranches(0, obsId).Any();
+            return _dbConnection.GetManagedObservationsForBranches(engId, obsId).Any();
             }
 
         private static byte[] RenderPdf(string html)
