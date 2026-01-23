@@ -11,9 +11,11 @@ using iText.Layout.Properties;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using System;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace AIS.Controllers
     {
@@ -45,9 +47,10 @@ namespace AIS.Controllers
             }
 
         [HttpGet("GeneratePdf")]
-        public IActionResult GeneratePdf(int? reportVersion = null)
+        public async Task<IActionResult> GeneratePdf(int? reportVersion = null)
             {
             var engId = 0;
+            var totalStopwatch = Stopwatch.StartNew();
             try
                 {
                 var precheck = EnsureReadyForPdf(out engId);
@@ -56,7 +59,12 @@ namespace AIS.Controllers
                     return precheck;
                     }
 
+                _logger.LogInformation("Generating field audit report PDF for ENG_ID {EngId} reportVersion {ReportVersion}.", engId, reportVersion);
+
+                var dataStopwatch = Stopwatch.StartNew();
                 var data = _dbConnection.GetFieldAuditReportPdfData(engId, reportVersion);
+                dataStopwatch.Stop();
+                _logger.LogInformation("Field audit PDF data retrieval completed in {ElapsedMs} ms for ENG_ID {EngId}.", dataStopwatch.ElapsedMilliseconds, engId);
                 if (data == null)
                     {
                     return BadRequest("Unable to generate PDF at this time.");
@@ -70,35 +78,57 @@ namespace AIS.Controllers
                     }
 
                 var html = _pdfBuilder.BuildHtml(data);
-                var pdfBytes = RenderPdf(html);
+                var htmlLength = html?.Length ?? 0;
+                _logger.LogInformation("Field audit PDF HTML length {HtmlLength} for ENG_ID {EngId}.", htmlLength, engId);
+                if (htmlLength == 0)
+                    {
+                    return StatusCode(500, "PDF content could not be prepared for this report.");
+                    }
+
+                var pdfStopwatch = Stopwatch.StartNew();
+                var pdfBytes = await RenderPdfWithTimeoutAsync(html, TimeSpan.FromSeconds(60));
+                pdfStopwatch.Stop();
+                if (pdfBytes == null)
+                    {
+                    _logger.LogWarning("Field audit PDF generation timed out after {ElapsedMs} ms for ENG_ID {EngId}.", pdfStopwatch.ElapsedMilliseconds, engId);
+                    return StatusCode(504, "PDF generation timed out. Please try again.");
+                    }
+
+                _logger.LogInformation("Field audit PDF generated in {ElapsedMs} ms with {PdfBytes} bytes for ENG_ID {EngId}.", pdfStopwatch.ElapsedMilliseconds, pdfBytes.Length, engId);
+                if (pdfBytes.Length == 0)
+                    {
+                    return StatusCode(500, "Generated PDF is empty. Please try again.");
+                    }
+
                 var filename = BuildFilename(data);
+                totalStopwatch.Stop();
+                _logger.LogInformation("Field audit PDF request completed in {ElapsedMs} ms for ENG_ID {EngId}.", totalStopwatch.ElapsedMilliseconds, engId);
                 return File(pdfBytes, "application/pdf", filename);
                 }
             catch (Exception ex)
                 {
                 _logger.LogError(ex, "Failed to generate field audit report PDF for ENG_ID {EngId}.", engId);
-                return BadRequest("An error occurred while generating the PDF. Please try again later.");
+                return StatusCode(500, "An error occurred while generating the PDF. Please try again later.");
                 }
             }
 
         private IActionResult EnsureAuthorized()
             {
-            var (_, errorResult) = GetUserOr401();
-            if (errorResult != null)
+            if (!_sessionHandler.TryGetUser(out _))
                 {
-                return errorResult;
+                return StatusCode(401, "Session expired. Please sign in again.");
                 }
 
             _topMenus.GetTopMenus();
             _ = _permissionService;
             if (!User.Identity.IsAuthenticated)
                 {
-                return Unauthorized(new { message = "User session is not authenticated." });
+                return StatusCode(401, "User session is not authenticated.");
                 }
 
             if (!this.UserHasPagePermissionForCurrentAction(_sessionHandler))
                 {
-                return Unauthorized(new { message = "User is not authorized to access field audit reports." });
+                return StatusCode(403, "User is not authorized to access field audit reports.");
                 }
 
             return null;
@@ -165,6 +195,18 @@ namespace AIS.Controllers
 
                 return output.ToArray();
                 }
+            }
+
+        private static async Task<byte[]> RenderPdfWithTimeoutAsync(string html, TimeSpan timeout)
+            {
+            var renderTask = Task.Run(() => RenderPdf(html));
+            var completedTask = await Task.WhenAny(renderTask, Task.Delay(timeout));
+            if (completedTask != renderTask)
+                {
+                return null;
+                }
+
+            return await renderTask;
             }
 
         private static string BuildFilename(FieldAuditPdfReportData data)
