@@ -606,6 +606,11 @@
                     <div class="form-group">
                         <label for="viewMemo_loancase">Responsible PP NO.</label>
                         <div class="row col-sm-12">
+                            <div class="d-flex justify-content-end mb-2">
+                                <button type="button" onclick="AddNewRespRecord('','','','','','','','');" class="rounded-circle btn btn-danger btn-sm" aria-label="Add responsible person">
+                                    <i class="fa fa-plus text-white"></i>
+                                </button>
+                            </div>
                             <table id="listofRespPersons" class="table table-hover table-bordered table-hover mt-3 table-striped">
                                 <thead style="background-color: #19875478 !important; ">
                                     <tr>
@@ -615,7 +620,8 @@
                                         <th class="col-md- auto font-weight-bold">LC Amount</th>
                                         <th class="col-md- auto font-weight-bold">Account No.</th>
                                         <th class="col-md- auto font-weight-bold">ACC Amount</th>
-                                        <th colspan="2" class="col-md- auto text-center font-weight-bold"><center><button type="button" onclick="AddNewRespRecord('','','','','','','','');" class="rounded-circle btn btn-danger btn-sm"><i class="fa fa-plus text-white"></i></button></center></th>
+                                        <th class="col-md- auto text-center font-weight-bold">Add</th>
+                                        <th class="col-md- auto text-center font-weight-bold">Delete</th>
                                     </tr>
                                 </thead>
                                 <tbody>

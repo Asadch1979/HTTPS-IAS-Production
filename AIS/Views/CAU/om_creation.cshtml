@@ -478,6 +478,11 @@
             Please only select the branch in case you want to send this observation to branch.
             In case of forwarding/submitting the observation to Credit Administration Unit, Do Not Select any Branch
         </p>
+        <div class="d-flex justify-content-end mb-2">
+            <button type="button" onclick="openResponsiblePPs();" class="rounded-circle btn btn-danger btn-sm" aria-label="Add responsible person">
+                <i class="fa fa-plus text-white"></i>
+            </button>
+        </div>
         <table id="listofRespPersons" class="table table-hover table-bordered table-hover mt-3 table-striped">
             <thead style="background-color: #19875478 !important; ">
                 <tr>
@@ -488,7 +493,7 @@
                     <th class="col-md- auto font-weight-bold">LC Amount</th>
                     <th class="col-md- auto font-weight-bold">Account No.</th>
                     <th class="col-md- auto font-weight-bold">ACC Amount</th>
-                    <th class="col-md- auto text-center font-weight-bold"><center><button type="button" onclick="openResponsiblePPs();" class="rounded-circle btn btn-danger btn-sm"><i class="fa fa-plus text-white"></i></button></center></th>
+                    <th class="col-md- auto text-center font-weight-bold">Delete</th>
                 </tr>
             </thead>
             <tbody>

@@ -1,7 +1,13 @@
-﻿@{
+@{
     ViewData["Title"] = "Manage DSAs";
     Layout = "_Layout";
 }
+<style type="text/css">
+    .action-col {
+        width: 1%;
+        white-space: nowrap;
+    }
+</style>
 <script type="text/javascript">
     var g_np_id = 0;
     var g_op_id = 0;
@@ -452,19 +458,24 @@
 
 
     <div class="row col-md-12 mt-3">
+        <div class="d-flex justify-content-end mb-2">
+            <button type="button" onclick="openDSA();" class="rounded-circle btn btn-danger btn-sm" aria-label="Add DSA">
+                <i class="fa fa-plus text-white"></i>
+            </button>
+        </div>
         <table id="manageObsPanel" class="table table-hover table-bordered table-hover mt-3 table-striped">
             <thead style="background-color: #19875478 !important; ">
                 <tr>
                     <th class="col-md-auto">Sr. No.</th>
-                    <th class="col-md-auto">DSA No.</th>
-                    <th class="col-md-auto">Subject</th>
-                    <th class="col-md-auto">Status</th>
+                    <th class="col-md-auto">Audit Period</th>
+                    <th class="col-md-auto">Para No.</th>
+                    <th class="col-md-auto">Annexure</th>
                     <th class="col-md-auto">Risk Category</th>
-                    <th class="col-md-auto">Summary of Issue</th>
-                    <th class="col-md-auto">Issued By</th>                                        
-                    <th class="col-md-auto text-center">Action</th>
-                    <th class="col-md-auto text-center">Action</th>
-                    <th class="col-md-auto text-center"><center><button type="button" onclick="openDSA();" class="rounded-circle btn btn-danger btn-sm"><i class="fa fa-plus text-white"></i></button></center></th>
+                    <th class="col-md-auto">Gist of Para</th>
+                    <th class="col-md-auto">Updated By</th>
+                    <th class="col-md-auto">Updated On</th>
+                    <th class="col-md-auto text-center action-col">Update</th>
+                    <th class="col-md-auto text-center action-col">Delete</th>
                 </tr>
             </thead>
             <tbody>

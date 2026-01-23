@@ -127,13 +127,18 @@
     </div>
 
     <div class="row col-md-12 mt-3">
+        <div class="d-flex justify-content-end mb-2">
+            <button type="button" onclick="openVoucherCheckingFile();" class="rounded-circle btn btn-danger btn-sm" aria-label="Add cash count entry">
+                <i class="fa fa-plus text-white"></i>
+            </button>
+        </div>
         <table id="manageObsPanel" class="table table-hover table-bordered table-hover mt-3 table-striped">
             <thead style="background-color: #19875478 !important; ">
                 <tr>
                     <th class="col-md-auto" colspan="1"></th>
                     <th class="col-md-auto text-center" colspan="3">Cash Found in Vault</th>
                     <th class="col-md-auto text-center" colspan="3">Cash as per Night save Register</th>
-                    <th class="col-md- auto text-center font-weight-bold"><center><button type="button" onclick="openVoucherCheckingFile();" class="rounded-circle btn btn-danger btn-sm"><i class="fa fa-plus text-white"></i></button></center></th>
+                    <th class="col-md-auto" colspan="2"></th>
                 </tr>
                 <tr>
                     <th class="col-md-auto">Sr. No</th>
@@ -144,7 +149,7 @@
                     <th class="col-md-auto">No of Currency Notes</th>
                     <th class="col-md-auto">Total Amount</th>
                     <th class="col-md-auto">Difference</th>
-                    <th class="col-md-auto"></th>
+                    <th class="col-md-auto text-center font-weight-bold">Update</th>
                 </tr>
             </thead>
             <tbody></tbody>
@@ -220,7 +225,6 @@
         </div>
     </div>
 </div>
-
 
 
 

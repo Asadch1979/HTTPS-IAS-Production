@@ -473,6 +473,25 @@ namespace AIS.Controllers
                     return View();
                 }
             }
+        public IActionResult observation_export_pdf(int engId = 0)
+            {
+            ViewData["TopMenu"] = tm.GetTopMenus();
+            ViewData["TopMenuPages"] = tm.GetTopMenusPages();
+            ViewData["EntitiesList"] = dBConnection.GetObservationEntitiesForManageObservations();
+            if (!User.Identity.IsAuthenticated)
+                {
+                return RedirectToAction("Index", "Login");
+                }
+            else
+                {
+                if (!this.UserHasPagePermissionForCurrentAction(sessionHandler)) //MIGRATION_PERMISSION_CHECK (Controller)
+                    {
+                    return RedirectToAction("Index", "PageNotFound");
+                    }
+                else
+                    return View();
+                }
+            }
 
         public IActionResult manage_draft_report_paras(int engId = 0)
             {
