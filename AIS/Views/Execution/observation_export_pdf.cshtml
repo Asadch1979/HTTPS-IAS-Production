@@ -81,7 +81,13 @@
             return;
         }
 
-        var url = g_asiBaseURL + '/Observation/GeneratePdf?obsId=' + obsId;
+        var engId = $('#engIdHidden').val();
+        if (!engId || engId <= 0) {
+            alert('Engagement id is required.');
+            return;
+        }
+
+        var url = g_asiBaseURL + '/Observation/GeneratePdf?obsId=' + obsId + '&engId=' + engId;
         window.open(url, '_blank');
     }
 </script>
