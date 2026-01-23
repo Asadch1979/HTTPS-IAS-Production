@@ -10,6 +10,7 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 
 namespace AIS.Controllers
@@ -82,10 +83,29 @@ namespace AIS.Controllers
 
                 var html = _pdfBuilder.BuildHtml(data);
                 var htmlLength = html?.Length ?? 0;
-                _logger.LogInformation("Observation PDF HTML length {HtmlLength} for OBS_ID {ObsId}.", htmlLength, obsId);
+                var htmlBytes = Encoding.UTF8.GetByteCount(html ?? string.Empty);
+                var htmlSizeKb = htmlBytes / 1024d;
+                var htmlSizeMb = htmlSizeKb / 1024d;
+                _logger.LogInformation(
+                    "Observation PDF HTML length {HtmlLength} chars, size {HtmlSizeKb:F2} KB ({HtmlSizeMb:F2} MB) for OBS_ID {ObsId}.",
+                    htmlLength,
+                    htmlSizeKb,
+                    htmlSizeMb,
+                    obsId);
                 if (htmlLength == 0)
                     {
                     return StatusCode(500, "PDF content could not be prepared for this observation.");
+                    }
+
+                const int maxHtmlBytes = 800 * 1024;
+                if (htmlBytes > maxHtmlBytes)
+                    {
+                    _logger.LogWarning(
+                        "Observation PDF HTML exceeds safe size limit {HtmlSizeKb:F2} KB (limit {LimitKb} KB) for OBS_ID {ObsId}.",
+                        htmlSizeKb,
+                        maxHtmlBytes / 1024,
+                        obsId);
+                    return StatusCode(413, "Content too large for PDF export, please export per observation text block / reduce text.");
                     }
 
                 var pdfStopwatch = Stopwatch.StartNew();
