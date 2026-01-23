@@ -1582,6 +1582,12 @@ namespace AIS.Controllers
             {
             return dBConnection.GetManagedObservationsForBranches(ENG_ID, OBS_ID);
             }
+        [HttpGet]
+        [HttpPost]
+        public ObservationPdfDataModel get_observation_pdf_data(int OBS_ID = 0)
+            {
+            return dBConnection.GetObservationPdfData(OBS_ID);
+            }
         [HttpPost]
         public string add_observation_gist_and_recommendation(ObservationGistRecommendationModel model)
             {

@@ -1,0 +1,132 @@
+@{
+    var page_id = ViewData["PageId"] as int? ?? 0;
+}
+
+@{
+    ViewData["Title"] = "Observation Export PDF";
+    Layout = "_Layout";
+}
+
+<style type="text/css">
+    .action-col {
+        width: 1%;
+        white-space: nowrap;
+    }
+</style>
+
+<script type="text/javascript">
+    var g_tablePage = 0;
+    var g_scrollPos = 0;
+
+    function preserveTablePosition() {
+        g_scrollPos = $('html').scrollTop();
+        if ($.fn.DataTable.isDataTable('#manageObsPanel')) {
+            g_tablePage = $('#manageObsPanel').DataTable().page();
+        }
+    }
+
+    $(document).ready(function () {
+        $('#entitySelectField').select2();
+    });
+
+    function getEntityObservation() {
+        destroyDatatable('manageObsPanel');
+        $('#manageObsPanel tbody').empty();
+        var selectedEngId = $('#entitySelectField').val();
+        $('#engIdHidden').val(selectedEngId);
+        if ($('#entitySelectField option:selected').val() != 0) {
+            $.ajax({
+                url: g_asiBaseURL + "/ApiCalls/get_observation_branches",
+                type: "POST",
+                data: {
+                    'ENG_ID': $('#entitySelectField option:selected').val()
+                },
+                cache: false,
+                success: function (data) {
+                    $.each(data, function (i, v) {
+                        var statusText = (v.obS_STATUS || '').toString();
+                        var isPrintable = statusText.toLowerCase() === 'submitted to auditee';
+                        var printCell = isPrintable
+                            ? '<button type="button" class="btn btn-sm btn-primary" onclick="printObservation(' + v.obS_ID + ')">Print</button>'
+                            : '';
+
+                        $('#manageObsPanel tbody').append(
+                            '<tr id="' + v.obS_ID + '">'
+                            + '<td class="text-center">' + v.memO_NO + '</td>'
+                            + '<td class="text-center">' + v.annexurE_CODE + '</td>'
+                            + '<td>' + v.heading + '</td>'
+                            + '<td>' + v.nO_OF_INSTANCES + '</td>'
+                            + '<td>' + v.obS_RISK + '</td>'
+                            + '<td>' + v.obS_STATUS + '</td>'
+                            + '<td class="text-center action-col">' + printCell + '</td>'
+                            + '</tr>'
+                        );
+                    });
+
+                    initializeDataTable('manageObsPanel');
+                    var tbl = $('#manageObsPanel').DataTable();
+                    tbl.page(g_tablePage).draw('page');
+                    setTimeout(function () {
+                        $('html').scrollTop(g_scrollPos);
+                    }, 200)
+                },
+                dataType: "json",
+            });
+        }
+    }
+
+    function printObservation(obsId) {
+        if (!obsId || obsId <= 0) {
+            alert('Observation id is required.');
+            return;
+        }
+
+        var url = g_asiBaseURL + '/Observation/GeneratePdf?obsId=' + obsId;
+        window.open(url, '_blank');
+    }
+</script>
+
+<div class="row">
+    <div class="col-md-12 mt-3">
+        <h3 style=" display:block;color: #be0e43">Observation Export PDF</h3>
+    </div>
+    <div class="row col-md-12 mt-3">
+        <div class="col-md-2">
+            <label><b>Entity:</b></label>
+        </div>
+        <div class="col-md-10">
+            <select id="entitySelectField" onchange="getEntityObservation()" class="form-control form-select">
+                <option value="0" id="0">--Select Audit Entity--</option>
+                @{
+                    if (ViewData["EntitiesList"] != null)
+                    {
+                        foreach (var item in (dynamic)(ViewData["EntitiesList"]))
+                        {
+                            <option value="@item.ENG_ID" id="@item.ENG_ID">@item.NAME</option>
+                        }
+                    }
+                }
+
+            </select>
+        </div>
+    </div>
+    <input type="hidden" id="engIdHidden" />
+    <div class="row col-md-12 mt-3">
+        <table id="manageObsPanel" class="table table-hover table-bordered table-hover mt-3 table-striped">
+            <thead style="background-color: #19875478 !important; ">
+                <tr>
+                    <th class="col-md-auto">Memo No.</th>
+                    <th class="col-md-auto">Annexure</th>
+                    <th class="col-md-auto">Title of Observation</th>
+                    <th class="col-md-auto">No. of Instances</th>
+                    <th class="col-md-auto">Risk Category</th>
+                    <th class="col-md-auto">Status</th>
+                    <th class="col-md-auto text-center action-col">Print</th>
+                </tr>
+            </thead>
+            <tbody>
+            </tbody>
+        </table>
+    </div>
+
+</div>

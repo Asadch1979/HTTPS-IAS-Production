@@ -401,6 +401,11 @@
                 <div class="card-body">
                     <label for="viewMemo_respPP" class="font-weight-bold">DAC Details</label>
                     <div class="col-md-12 pl-0 pr-0">
+                        <div class="d-flex justify-content-end mb-2">
+                            <button type="button" onclick="openDACAssignments();" class="rounded-circle btn btn-danger btn-sm" aria-label="Add DAC">
+                                <i class="fa fa-plus text-white"></i>
+                            </button>
+                        </div>
                         <table id="listofDACattached" class="table table-hover table-bordered table-hover mt-3 table-striped">
                             <thead style="background-color: #19875478 !important; ">
                                 <tr>
@@ -408,7 +413,7 @@
                                     <th class="col-md- auto font-weight-bold">DAC Date</th>
                                     <th class="col-md- auto font-weight-bold">Report Frequency</th>
                                     <th class="col-md- auto font-weight-bold">DAC Recommendation</th>
-                                    <th class="col-md- auto text-center font-weight-bold"><center><button type="button" onclick="openDACAssignments();" class="rounded-circle btn btn-danger btn-sm"><i class="fa fa-plus text-white"></i></button></center></th>
+                                    <th class="col-md- auto text-center font-weight-bold">Delete</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -446,6 +451,11 @@
                 <div class="card-body">
                     <label for="viewMemo_respPP" class="font-weight-bold">PAC Details</label>
                     <div class="col-md-12 pl-0 pr-0">
+                        <div class="d-flex justify-content-end mb-2">
+                            <button type="button" onclick="openPACAssignments();" class="rounded-circle btn btn-danger btn-sm" aria-label="Add PAC">
+                                <i class="fa fa-plus text-white"></i>
+                            </button>
+                        </div>
                         <table id="listofPACattached" class="table table-hover table-bordered table-hover mt-3 table-striped">
                             <thead style="background-color: #19875478 !important; ">
                                 <tr>
@@ -454,7 +464,7 @@
                                     <th class="col-md- auto font-weight-bold">Para Printing Date</th>
                                     <th class="col-md- auto font-weight-bold">PAC Recommendation</th>
                                     <th class="col-md- auto font-weight-bold">Status</th>                                    
-                                    <th class="col-md- auto text-center font-weight-bold"><center><button type="button" onclick="openPACAssignments();" class="rounded-circle btn btn-danger btn-sm"><i class="fa fa-plus text-white"></i></button></center></th>
+                                    <th class="col-md- auto text-center font-weight-bold">Delete</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -618,7 +628,6 @@
         </div>
     </div>
 </div>
-
 
 
 
