@@ -17,7 +17,7 @@ namespace AIS.Controllers
             using var cmd = con.CreateCommand();
             cmd.BindByName = true;
             cmd.CommandType = CommandType.StoredProcedure;
-            cmd.CommandText = "P_GET_OBSERVATION_TO_PRINT";
+            cmd.CommandText = "pkg_ar.P_GET_OBSERVATION_TO_PRINT";
 
             cmd.Parameters.Add("OBS_ID", OracleDbType.Int32).Value = obsId;
             cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor, ParameterDirection.Output);
