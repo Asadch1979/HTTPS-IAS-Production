@@ -1,23 +1,23 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\Asad Ali\\Documents\\GitHub\\IAS-VAPT\\AIS\\AIS.csproj": {}
+    "E:\\IAS\\HTTPS-IAS-Production\\AIS\\AIS.csproj": {}
   },
   "projects": {
-    "C:\\Users\\Asad Ali\\Documents\\GitHub\\IAS-VAPT\\AIS\\AIS.csproj": {
+    "E:\\IAS\\HTTPS-IAS-Production\\AIS\\AIS.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\Asad Ali\\Documents\\GitHub\\IAS-VAPT\\AIS\\AIS.csproj",
+        "projectUniqueName": "E:\\IAS\\HTTPS-IAS-Production\\AIS\\AIS.csproj",
         "projectName": "AIS",
-        "projectPath": "C:\\Users\\Asad Ali\\Documents\\GitHub\\IAS-VAPT\\AIS\\AIS.csproj",
-        "packagesPath": "C:\\Users\\Asad Ali\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\Asad Ali\\Documents\\GitHub\\IAS-VAPT\\AIS\\obj\\",
+        "projectPath": "E:\\IAS\\HTTPS-IAS-Production\\AIS\\AIS.csproj",
+        "packagesPath": "C:\\Users\\pc\\.nuget\\packages\\",
+        "outputPath": "E:\\IAS\\HTTPS-IAS-Production\\AIS\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
         ],
         "configFilePaths": [
-          "C:\\Users\\Asad Ali\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Users\\pc\\AppData\\Roaming\\NuGet\\NuGet.Config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
         ],
@@ -26,6 +26,7 @@
         ],
         "sources": {
           "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
+          "C:\\Program Files\\dotnet\\library-packs": {},
           "https://api.nuget.org/v3/index.json": {}
         },
         "frameworks": {
@@ -52,11 +53,11 @@
           "dependencies": {
             "ExcelDataReader": {
               "target": "Package",
-              "version": "[3.6.0, )"
+              "version": "[3.8.0, )"
             },
             "ExcelDataReader.DataSet": {
               "target": "Package",
-              "version": "[3.6.0, )"
+              "version": "[3.8.0, )"
             },
             "HtmlSanitizer": {
               "target": "Package",
@@ -86,7 +87,7 @@
             },
             "Portable.itextsharp.xmlworker": {
               "target": "Package",
-              "version": "[5.5.13.3, )"
+              "version": "[5.5.13.5, )"
             },
             "WebEssentials.AspNetCore.PWA": {
               "target": "Package",
@@ -94,11 +95,7 @@
             },
             "itext7": {
               "target": "Package",
-              "version": "[8.0.5, )"
-            },
-            "itext7.pdfhtml": {
-              "target": "Package",
-              "version": "[5.0.5, )"
+              "version": "[9.5.0, )"
             }
           },
           "imports": [
@@ -120,7 +117,7 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.308/PortableRuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.304/PortableRuntimeIdentifierGraph.json"
         }
       }
     }
