@@ -1,8 +1,10 @@
 using AIS.Models;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace AIS.Services
     {
@@ -15,7 +17,7 @@ namespace AIS.Services
             var annexure = Encode(data?.Annexure);
             var title = Encode(data?.Title);
             var risk = Encode(data?.Risk);
-            var paraText = data?.ParaText ?? string.Empty;
+            var paraText = SanitizeParaText(data?.ParaText ?? string.Empty);
 
             var hasResponsibilities = data?.Responsibilities != null
                 && data.Responsibilities.Any(item =>
@@ -28,34 +30,31 @@ namespace AIS.Services
             builder.AppendLine("<head>");
             builder.AppendLine("<style>");
             builder.AppendLine("body { font-family: Arial, Helvetica, sans-serif; font-size: 12px; color: #111; }");
-            builder.AppendLine(".header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; }");
-            builder.AppendLine(".title { font-size: 18px; font-weight: bold; }");
-            builder.AppendLine(".memo-date { font-size: 12px; text-align: right; }");
             builder.AppendLine(".label { font-weight: bold; }");
             builder.AppendLine(".section { margin-bottom: 12px; }");
+            builder.AppendLine(".para-block { margin-bottom: 8px; }");
+            builder.AppendLine(".page-break { page-break-before: always; }");
             builder.AppendLine(".responsibility-table { width: 100%; border-collapse: collapse; margin-top: 6px; }");
             builder.AppendLine(".responsibility-table th, .responsibility-table td { border: 1px solid #666; padding: 6px; text-align: left; }");
-            builder.AppendLine(".footer { margin-top: 30px; font-size: 11px; }");
+            builder.AppendLine(".footer { margin-top: 20px; font-size: 11px; }");
             builder.AppendLine("</style>");
             builder.AppendLine("</head>");
             builder.AppendLine("<body>");
-            builder.AppendLine("<div class=\"header\">");
-            builder.AppendLine("  <div class=\"title\">Internal Audit System</div>");
-            builder.AppendLine($"  <div class=\"memo-date\">Memo Date: {Encode(memoDate)}</div>");
-            builder.AppendLine("</div>");
-
-            builder.AppendLine($"<div class=\"section\"><span class=\"label\">Memo No:</span> {memoNumber}</div>");
-            builder.AppendLine($"<div class=\"section\"><span class=\"label\">Title:</span> {title}</div>");
-            builder.AppendLine($"<div class=\"section\"><span class=\"label\">Annexure:</span> {annexure}</div>");
-            builder.AppendLine($"<div class=\"section\"><span class=\"label\">Risk:</span> {risk}</div>");
-            builder.AppendLine("<div class=\"section\">");
-            builder.AppendLine("  <div class=\"label\">Body:</div>");
-            builder.AppendLine($"  <div>{paraText}</div>");
-            builder.AppendLine("</div>");
+            builder.AppendLine("<section class=\"section\">");
+            builder.AppendLine($"  <div><span class=\"label\">Memo No:</span> {memoNumber}</div>");
+            builder.AppendLine($"  <div><span class=\"label\">Memo Date:</span> {Encode(memoDate)}</div>");
+            builder.AppendLine("</section>");
+            builder.AppendLine($"<section class=\"section\"><span class=\"label\">Title:</span> {title}</section>");
+            builder.AppendLine($"<section class=\"section\"><span class=\"label\">Annexure:</span> {annexure}</section>");
+            builder.AppendLine($"<section class=\"section\"><span class=\"label\">Risk:</span> {risk}</section>");
+            builder.AppendLine("<section class=\"section\">");
+            builder.AppendLine("  <div class=\"label\">Para Text:</div>");
+            AppendParaBlocks(builder, paraText);
+            builder.AppendLine("</section>");
 
             if (hasResponsibilities)
                 {
-                builder.AppendLine("<div class=\"section\">");
+                builder.AppendLine("<section class=\"section\">");
                 builder.AppendLine("  <div class=\"label\">Responsibility</div>");
                 builder.AppendLine("  <table class=\"responsibility-table\">");
                 builder.AppendLine("    <thead><tr><th>PP No</th><th>Loan Case</th><th>LC Amount</th></tr></thead>");
@@ -77,7 +76,7 @@ namespace AIS.Services
                     }
                 builder.AppendLine("    </tbody>");
                 builder.AppendLine("  </table>");
-                builder.AppendLine("</div>");
+                builder.AppendLine("</section>");
                 }
 
             builder.AppendLine("<div class=\"footer\">Disclaimer: System-generated memo does not require a signature and is subject to change before finalizing the audit report.</div>");
@@ -85,6 +84,116 @@ namespace AIS.Services
             builder.AppendLine("</html>");
 
             return builder.ToString();
+            }
+
+        private static void AppendParaBlocks(StringBuilder builder, string paraText)
+            {
+            var blocks = ExtractParaBlocks(paraText);
+            if (blocks.Count == 0)
+                {
+                builder.AppendLine("<div class=\"para-block\"></div>");
+                return;
+                }
+
+            const int maxCharsPerPage = 3500;
+            const int maxBlocksPerPage = 6;
+            var currentChars = 0;
+            var currentBlocks = 0;
+
+            for (var index = 0; index < blocks.Count; index++)
+                {
+                var block = blocks[index];
+                if (string.IsNullOrWhiteSpace(block))
+                    {
+                    continue;
+                    }
+
+                if (!LooksLikeHtml(block))
+                    {
+                    block = Encode(block).Replace("\n", "<br />");
+                    }
+
+                builder.AppendLine($"  <div class=\"para-block\">{block}</div>");
+
+                currentChars += block.Length;
+                currentBlocks++;
+                if (index < blocks.Count - 1
+                    && (currentChars >= maxCharsPerPage || currentBlocks >= maxBlocksPerPage))
+                    {
+                    builder.AppendLine("  <div class=\"page-break\"></div>");
+                    currentChars = 0;
+                    currentBlocks = 0;
+                    }
+                }
+            }
+
+        private static List<string> ExtractParaBlocks(string paraText)
+            {
+            var blocks = new List<string>();
+            if (string.IsNullOrWhiteSpace(paraText))
+                {
+                return blocks;
+                }
+
+            var sanitized = StripUnsupportedTags(paraText);
+            var pattern = new Regex("<p\\b[^>]*>.*?</p>", RegexOptions.IgnoreCase | RegexOptions.Singleline);
+            var matches = pattern.Matches(sanitized);
+            if (matches.Count > 0)
+                {
+                foreach (Match match in matches)
+                    {
+                    blocks.Add(match.Value);
+                    }
+
+                sanitized = pattern.Replace(sanitized, string.Empty);
+                }
+
+            sanitized = sanitized.Replace("\r\n", "\n");
+            foreach (var chunk in Regex.Split(sanitized, "\\n{2,}"))
+                {
+                var trimmed = chunk.Trim();
+                if (!string.IsNullOrWhiteSpace(trimmed))
+                    {
+                    blocks.Add(trimmed);
+                    }
+                }
+
+            return blocks;
+            }
+
+        private static string SanitizeParaText(string value)
+            {
+            if (string.IsNullOrWhiteSpace(value))
+                {
+                return string.Empty;
+                }
+
+            var sanitized = Regex.Replace(value, "<script\\b[^>]*>.*?</script>", string.Empty, RegexOptions.IgnoreCase | RegexOptions.Singleline);
+            sanitized = Regex.Replace(sanitized, "<style\\b[^>]*>.*?</style>", string.Empty, RegexOptions.IgnoreCase | RegexOptions.Singleline);
+            sanitized = Regex.Replace(sanitized, "\\son\\w+\\s*=\\s*\"[^\"]*\"", string.Empty, RegexOptions.IgnoreCase);
+            sanitized = Regex.Replace(sanitized, "\\son\\w+\\s*=\\s*'[^']*'", string.Empty, RegexOptions.IgnoreCase);
+            sanitized = Regex.Replace(sanitized, "\\sstyle\\s*=\\s*\"[^\"]*\"", string.Empty, RegexOptions.IgnoreCase);
+            sanitized = Regex.Replace(sanitized, "\\sstyle\\s*=\\s*'[^']*'", string.Empty, RegexOptions.IgnoreCase);
+            return sanitized;
+            }
+
+        private static string StripUnsupportedTags(string value)
+            {
+            if (string.IsNullOrWhiteSpace(value))
+                {
+                return string.Empty;
+                }
+
+            return Regex.Replace(
+                value,
+                "</?(?!p\\b|br\\b|ul\\b|ol\\b|li\\b|strong\\b|b\\b|em\\b|i\\b|u\\b)[^>]+>",
+                string.Empty,
+                RegexOptions.IgnoreCase | RegexOptions.Singleline);
+            }
+
+        private static bool LooksLikeHtml(string value)
+            {
+            return value.IndexOf('<') >= 0 && value.IndexOf('>') >= 0;
             }
 
         private static string Encode(string value)
