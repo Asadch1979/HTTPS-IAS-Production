@@ -86,37 +86,43 @@ namespace AIS.Controllers
                 if (!TryGetPasswordChangeState(out var token, out var tokenInfo, out var changeState))
                     {
                     ExpirePasswordChangeToken(token);
-                    return StatusCode(StatusCodes.Status401Unauthorized, new { Status = false, Message = "Password change session expired, login again." });
+                    return StatusCode(StatusCodes.Status401Unauthorized, new
+                        {
+                        Status = false,
+                        Success = false,
+                        Message = "Password change session expired, login again."
+                        });
                     }
 
                 var decodedNewPassword = DecodePassword(NewPassword);
                 var decodedConfirmPassword = DecodePassword(ConfirmPassword);
                 if (string.IsNullOrWhiteSpace(decodedNewPassword))
                     {
-                    return Json(new { Status = false, Message = "New password is required." });
+                    return Json(new { Status = false, Success = false, Message = "New password is required." });
                     }
 
                 if (!string.Equals(decodedNewPassword, decodedConfirmPassword, StringComparison.Ordinal))
                     {
-                    return Json(new { Status = false, Message = "New password and confirm password do not match." });
+                    return Json(new { Status = false, Success = false, Message = "New password and confirm password do not match." });
                     }
 
                 var validation = _passwordPolicyValidator.Validate(decodedNewPassword, tokenInfo?.PPNumber);
                 if (!validation.IsValid)
                     {
-                    return Json(new { Status = false, Message = validation.ErrorMessage });
+                    return Json(new { Status = false, Success = false, Message = validation.ErrorMessage });
                     }
 
                 var passwordChanged = dBConnection.ChangePasswordForUser(changeState.User, NewPassword);
                 if (!passwordChanged)
                     {
-                    return Json(new { Status = false, Message = "Unable to change password. Please try again." });
+                    return Json(new { Status = false, Success = false, Message = "Unable to change password. Please try again." });
                     }
 
                 ExpirePasswordChangeToken(token);
                 return Json(new
                     {
                     Status = true,
+                    Success = true,
                     Message = "Password Changed",
                     RedirectUrl = BuildAppPath("/Login/Index")
                     });
@@ -124,7 +130,7 @@ namespace AIS.Controllers
             catch (Exception ex)
                 {
                 _logger.LogError(ex, "Error while changing password for current user.");
-                return Json(new { Status = false, Message = "Unable to change password. Please try again." });
+                return Json(new { Status = false, Success = false, Message = "Unable to change password. Please try again." });
                 }
             }
 
