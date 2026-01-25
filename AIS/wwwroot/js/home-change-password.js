@@ -87,8 +87,10 @@
                 if (isSuccess) {
                     var target = (data && data.RedirectUrl) ? data.RedirectUrl : getLoginUrl();
                     setProcessingState(false, false);
+                    onAlertCallback(function () {
+                        window.location.href = target;
+                    });
                     showApiAlert(data, "Password Changed");
-                    window.location.href = target;
                 } else {
                     setProcessingState(false, true);
                     showApiAlert(data, "Unable to change password. Please try again.");
@@ -97,8 +99,10 @@
             error: function (xhr, textStatus) {
                 if (isAuthFailureResponse(xhr, textStatus)) {
                     setProcessingState(false, true);
+                    onAlertCallback(function () {
+                        window.location.href = getLoginUrl();
+                    });
                     showApiAlertFromXhr(xhr, xhr && xhr.status ? xhr.status : null, getErrorReferenceIdFromXhr(xhr), 'Session expired, please login again.');
-                    window.location.href = getLoginUrl();
                     return;
                 }
 
