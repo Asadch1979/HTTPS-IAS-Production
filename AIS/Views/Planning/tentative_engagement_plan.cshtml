@@ -106,7 +106,7 @@
 
     function getAutoEndDate() {
         var numAdd = parseInt($('#days_label').text());
-        if (g_entityType == 25 || g_entityType == 6) {
+        if (g_entityType == 25 || g_entityType == 6 || g_entityType == 28) {
             var addDays = parseInt($('#discussionDaysSelectField').val()) + parseInt($('#revenueDaysSelectField').val()) + parseInt($('#travellingDaysSelectField').val());
             numAdd = parseInt(numAdd) + addDays;
         }
