@@ -27,6 +27,7 @@
     var g_newStatusId = 0;
     var g_riskId = 0;
     var g_obsList = [];
+    var g_engId = 0;
     var respSection = null;
     $(document).ready(function () {
         $('#entitySelectField').select2();
@@ -203,12 +204,13 @@
     }
     function getEntityObservation() {
         $('#manageObsPanel tbody').empty();
-        if ($('#entitySelectField option:selected').val() != 0) {
+        g_engId = $('#entitySelectField option:selected').val();
+        if (g_engId != 0) {
             $.ajax({
                 url: g_asiBaseURL + "/ApiCalls/get_observations_draft_branch",
                 type: "POST",
                 data: {
-                    'ENG_ID': $('#entitySelectField option:selected').val()
+                    'ENG_ID': g_engId
                 },
                 cache: false,
                 success: function (data) {
@@ -219,12 +221,17 @@
                         if (v.violation == null && v.nature == null) {
                             isbranch = true;
                         }
+                        var statusText = (v.obS_STATUS || '').toString();
+                        var isPrintable = statusText.toLowerCase() === 'submitted to auditee';
+                        var printCell = isPrintable
+                            ? '<button type="button" class="btn btn-sm btn-primary" onclick="printObservation(' + v.obS_ID + ')">Print</button>'
+                            : '';
                         if (v.obS_STATUS_ID == 3 && v.obS_RISK_ID == 3)
-                            $('#manageObsPanel tbody').append('<tr id="' + v.obS_ID + '"><td class="text-center">' + v.memO_NO + '</td><td class="text-center">' + v.drafT_PARA_NO + '</td><td>' + v.heading + '</td><td>' + v.checklist_Details + '</td><td class="text-center"><a onclick="event.preventDefault();ViewObservation(' + v.obS_ID + ');" href="#" class="text-primary">View Observation</a></td><td class="obs_reply"><a onclick="ViewObservationResponse(' + v.obS_ID + ');" href="#" class="text-primary">View Response</a></td><td>' + v.auD_REPLY + '</td><td>' + v.heaD_REPLY + '</td><td>' + v.obS_RISK + '</td><td>' + v.obS_STATUS + '</td><td class="text-center"><a href="#" onclick="updateObservationStatus(' + v.obS_ID + ', 4,' + v.obS_RISK_ID + ');" class="text-hover text-danger mr-5px"><small>Resolved at Memo Level</small></a></td><td><a href="#" onclick="updateObservationStatus(' + v.obS_ID + ',5,' + v.obS_RISK_ID + ');" class="text-hover text-primary ml-5px"><small>Add to Draft Report</small></a></td></tr>');
+                            $('#manageObsPanel tbody').append('<tr id="' + v.obS_ID + '"><td class="text-center">' + v.memO_NO + '</td><td class="text-center">' + v.drafT_PARA_NO + '</td><td>' + v.heading + '</td><td>' + v.checklist_Details + '</td><td class="text-center"><a onclick="event.preventDefault();ViewObservation(' + v.obS_ID + ');" href="#" class="text-primary">View Observation</a></td><td class="obs_reply"><a onclick="ViewObservationResponse(' + v.obS_ID + ');" href="#" class="text-primary">View Response</a></td><td>' + v.auD_REPLY + '</td><td>' + v.heaD_REPLY + '</td><td>' + v.obS_RISK + '</td><td>' + v.obS_STATUS + '</td><td class="text-center"><a href="#" onclick="updateObservationStatus(' + v.obS_ID + ', 4,' + v.obS_RISK_ID + ');" class="text-hover text-danger mr-5px"><small>Resolved at Memo Level</small></a></td><td><a href="#" onclick="updateObservationStatus(' + v.obS_ID + ',5,' + v.obS_RISK_ID + ');" class="text-hover text-primary ml-5px"><small>Add to Draft Report</small></a></td><td class="text-center action-col">' + printCell + '</td></tr>');
                         else if (v.obS_STATUS_ID == 3 && v.obS_RISK_ID != 3)
-                            $('#manageObsPanel tbody').append('<tr id="' + v.obS_ID + '"><td class="text-center">' + v.memO_NO + '</td><td class="text-center">' + v.drafT_PARA_NO + '</td><td>' + v.heading + '</td><td>' + v.checklist_Details + '</td><td class="text-center"><a onclick="event.preventDefault();ViewObservation(' + v.obS_ID + ');" href="#" class="text-primary">View Observation</a></td><td class="obs_reply"><a onclick="ViewObservationResponse(' + v.obS_ID + ');" href="#" class="text-primary">View Response</a></td><td>' + v.auD_REPLY + '</td><td>' + v.heaD_REPLY + '</td><td>' + v.obS_RISK + '</td><td>' + v.obS_STATUS + '</td><td></td><td class="text-center"><a href="#" onclick="updateObservationStatus(' + v.obS_ID + ',5,' + v.obS_RISK_ID + ');" class="text-hover text-primary ml-5px"><small>Add to Draft Report</small></a></td></tr>');
+                            $('#manageObsPanel tbody').append('<tr id="' + v.obS_ID + '"><td class="text-center">' + v.memO_NO + '</td><td class="text-center">' + v.drafT_PARA_NO + '</td><td>' + v.heading + '</td><td>' + v.checklist_Details + '</td><td class="text-center"><a onclick="event.preventDefault();ViewObservation(' + v.obS_ID + ');" href="#" class="text-primary">View Observation</a></td><td class="obs_reply"><a onclick="ViewObservationResponse(' + v.obS_ID + ');" href="#" class="text-primary">View Response</a></td><td>' + v.auD_REPLY + '</td><td>' + v.heaD_REPLY + '</td><td>' + v.obS_RISK + '</td><td>' + v.obS_STATUS + '</td><td class="text-center"><a href="#" onclick="updateObservationStatus(' + v.obS_ID + ',5,' + v.obS_RISK_ID + ');" class="text-hover text-primary ml-5px"><small>Add to Draft Report</small></a></td><td class="text-center action-col">' + printCell + '</td></tr>');
                         else
-                            $('#manageObsPanel tbody').append('<tr id="' + v.obS_ID + '"><td class="text-center">' + v.memO_NO + '</td><td class="text-center">' + v.drafT_PARA_NO + '</td><td>' + v.heading + '</td><td>' + v.checklist_Details + '</td><td class="text-center"><a onclick="event.preventDefault();ViewObservation(' + v.obS_ID + ');" href="#" class="text-primary">View Observation</a></td><td class="obs_reply"><a onclick="ViewObservationResponse(' + v.obS_ID + ');" href="#" class="text-primary">View Response</a></td><td>' + v.auD_REPLY + '</td><td>' + v.heaD_REPLY + '</td><td>' + v.obS_RISK + '</td><td>' + v.obS_STATUS + '</td><td class="text-center"></td><td></td></tr>');
+                            $('#manageObsPanel tbody').append('<tr id="' + v.obS_ID + '"><td class="text-center">' + v.memO_NO + '</td><td class="text-center">' + v.drafT_PARA_NO + '</td><td>' + v.heading + '</td><td>' + v.checklist_Details + '</td><td class="text-center"><a onclick="event.preventDefault();ViewObservation(' + v.obS_ID + ');" href="#" class="text-primary">View Observation</a></td><td class="obs_reply"><a onclick="ViewObservationResponse(' + v.obS_ID + ');" href="#" class="text-primary">View Response</a></td><td>' + v.auD_REPLY + '</td><td>' + v.heaD_REPLY + '</td><td>' + v.obS_RISK + '</td><td>' + v.obS_STATUS + '</td><td class="text-center"></td><td></td><td class="text-center action-col">' + printCell + '</td></tr>');
                     });
 
 
@@ -239,6 +246,21 @@
             });
 
         }
+    }
+
+    function printObservation(obsId) {
+        if (!obsId || obsId <= 0) {
+            alert('Observation id is required.');
+            return;
+        }
+
+        if (!g_engId || g_engId <= 0) {
+            alert('Engagement id is required.');
+            return;
+        }
+
+        var url = g_asiBaseURL + '/Observation/GeneratePdf?obsId=' + obsId + '&engId=' + g_engId;
+        window.open(url, '_blank');
     }
 
     function downloadFile(id) {
@@ -367,6 +389,7 @@
                     <th class="col-md-auto">Status</th>
                     <th class="col-md-auto">Resolved at Memo Level</th>
                     <th class="col-md-auto">Add to Draft Report</th>
+                    <th class="col-md-auto text-center action-col">Print</th>
                 </tr>
             </thead>
             <tbody>

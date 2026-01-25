@@ -96,7 +96,12 @@
                     $.each(data, function (i, v) {
                         g_entityID = v.entitY_ID;
                         $('#auditPeriodNameField').val(v.period);
-                        $('#manageObsPanel tbody').append(' <tr id="' + v.obS_ID + '"><td class="text-center">' + v.memO_NO + '</td><td class="text-center">' + v.annexurE_CODE + '</td><td>' + v.heading + '</td><td>' + v.nO_OF_INSTANCES + '</td><td>' + v.obS_RISK + '</td><td>' + v.obS_STATUS + '</td><td><a onclick="ObservationUpdatePanel(' + v.obS_ID + ')" href="#" class="text-hover">Manage</a></td></tr>');
+                        var statusText = (v.obS_STATUS || '').toString();
+                        var isPrintable = statusText.toLowerCase() === 'submitted to auditee';
+                        var printCell = isPrintable
+                            ? '<button type="button" class="btn btn-sm btn-primary" onclick="printObservation(' + v.obS_ID + ')">Print</button>'
+                            : '';
+                        $('#manageObsPanel tbody').append(' <tr id="' + v.obS_ID + '"><td class="text-center">' + v.memO_NO + '</td><td class="text-center">' + v.annexurE_CODE + '</td><td>' + v.heading + '</td><td>' + v.nO_OF_INSTANCES + '</td><td>' + v.obS_RISK + '</td><td>' + v.obS_STATUS + '</td><td><a onclick="ObservationUpdatePanel(' + v.obS_ID + ')" href="#" class="text-hover">Manage</a></td><td class="text-center action-col">' + printCell + '</td></tr>');
                     });
 
                     initializeDataTable('manageObsPanel');
@@ -115,6 +120,22 @@
             });
 
         }
+    }
+
+    function printObservation(obsId) {
+        if (!obsId || obsId <= 0) {
+            alert('Observation id is required.');
+            return;
+        }
+
+        var engId = $('#engIdHidden').val();
+        if (!engId || engId <= 0) {
+            alert('Engagement id is required.');
+            return;
+        }
+
+        var url = g_asiBaseURL + '/Observation/GeneratePdf?obsId=' + obsId + '&engId=' + engId;
+        window.open(url, '_blank');
     }
     function getSubProcessList() {
         if ($('#updateMemo_process option:selected').val() == 0) {
@@ -600,6 +621,7 @@
                     <th class="col-md-auto">Risk Category</th>
                     <th class="col-md-auto">Status</th>
                     <th class="col-md-auto text-center">Action</th>
+                    <th class="col-md-auto text-center action-col">Print</th>
                 </tr>
             </thead>
             <tbody>
