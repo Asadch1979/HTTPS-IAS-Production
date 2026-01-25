@@ -390,7 +390,7 @@
                     .catch(function (error) {
                         console.error('History fetch error', error);
                         renderHistoryData(null);
-                        const message = (error && error.message) ? error.message : 'Unable to load observation history at the moment.';
+                        const message = extractApiMessage(error, 'Unable to load observation history at the moment.');
                         alert(message);
                     });
             }
@@ -831,7 +831,7 @@
                             loadHistory();
                         })
                         .catch(function (error) {
-                            const message = (error && error.message) ? error.message : 'Unable to process request.';
+                            const message = extractApiMessage(error, 'Unable to process request.');
                             alert(message);
                         });
                 });

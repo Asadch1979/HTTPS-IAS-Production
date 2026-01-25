@@ -96,8 +96,7 @@
                 }
             },
             error: function (xhr) {
-                var message = (xhr.responseJSON && xhr.responseJSON.Message) ? xhr.responseJSON.Message : "Unable to save report. Please check your input.";
-                alert(message);
+                showApiAlertFromXhr(xhr, xhr ? xhr.status : null, getErrorReferenceIdFromXhr(xhr), "Unable to save report. Please check your input.");
             }
         });
     }

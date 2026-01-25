@@ -79,50 +79,52 @@ namespace AIS.Controllers
         [HttpPost]
         [EnableRateLimiting("ChangePasswordPolicy")]
         [AllowAnonymous]
-        public async Task<IActionResult> DoChangePassword(string Password, string NewPassword, string ConfirmPassword)
+        public IActionResult DoChangePassword(string Password, string NewPassword, string ConfirmPassword)
             {
             try
                 {
                 if (!TryGetPasswordChangeState(out var token, out var tokenInfo, out var changeState))
                     {
                     ExpirePasswordChangeToken(token);
-                    return StatusCode(StatusCodes.Status401Unauthorized, new { success = false, message = "Password change session expired, login again." });
+                    return StatusCode(StatusCodes.Status401Unauthorized, new { Status = false, Message = "Password change session expired, login again." });
                     }
 
                 var decodedNewPassword = DecodePassword(NewPassword);
                 var decodedConfirmPassword = DecodePassword(ConfirmPassword);
                 if (string.IsNullOrWhiteSpace(decodedNewPassword))
                     {
-                    return Json(new { success = false, message = "New password is required." });
+                    return Json(new { Status = false, Message = "New password is required." });
                     }
 
                 if (!string.Equals(decodedNewPassword, decodedConfirmPassword, StringComparison.Ordinal))
                     {
-                    return Json(new { success = false, message = "New password and confirm password do not match." });
+                    return Json(new { Status = false, Message = "New password and confirm password do not match." });
                     }
 
                 var validation = _passwordPolicyValidator.Validate(decodedNewPassword, tokenInfo?.PPNumber);
                 if (!validation.IsValid)
                     {
-                    return Json(new { success = false, message = validation.ErrorMessage });
+                    return Json(new { Status = false, Message = validation.ErrorMessage });
                     }
 
                 var passwordChanged = dBConnection.ChangePasswordForUser(changeState.User, NewPassword);
                 if (!passwordChanged)
                     {
-                    return Json(new { success = false, message = "Unable to change password. Please try again." });
+                    return Json(new { Status = false, Message = "Unable to change password. Please try again." });
                     }
 
                 ExpirePasswordChangeToken(token);
-                var sessionUser = dBConnection.CreateLoginSession(changeState.User);
-                IssueSessionToken(changeState.User);
-                await SignInUserAsync(sessionUser);
-                return Json(new { success = true, message = "Your password has been changed successfully.", redirectUrl = BuildAppPath("/Home/Index") });
+                return Json(new
+                    {
+                    Status = true,
+                    Message = "Password Changed",
+                    RedirectUrl = BuildAppPath("/Login/Index")
+                    });
                 }
             catch (Exception ex)
                 {
                 _logger.LogError(ex, "Error while changing password for current user.");
-                return Json(new { success = false, message = "Unable to change password. Please try again." });
+                return Json(new { Status = false, Message = "Unable to change password. Please try again." });
                 }
             }
 

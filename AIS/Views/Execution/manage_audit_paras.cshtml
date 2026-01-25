@@ -245,7 +245,7 @@
               cache: false,
               success: function (res) {
                 $('#viewMemoModel').modal('hide');
-                alert(res.message || res.Message);
+                showApiAlert(res);
                 onAlertCallback(getEntityObservation);
               },
               error: function (xhr) {
@@ -282,7 +282,7 @@
                 cache: false,
                 success: function (data) {
                     $("#DuplicateParaModel").modal('hide');
-                    alert(data.message);
+                    showApiAlert(data);
                     onAlertCallback(getEntityObservation);
                 },
                 dataType: "json",

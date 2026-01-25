@@ -324,16 +324,15 @@
                 },
                 cache: false,
                 success: function (data) {
-                    if (data && data.status) {
-                        alert('User Successfully Updated');
-                    }
-                    else {
-                        alert((data && data.message) ? data.message : 'Unable to update user.');
+                    if (data && (data.status || data.Status)) {
+                        showApiAlert(data, 'User Successfully Updated');
+                    } else {
+                        showApiAlert(data, 'Unable to update user.');
                     }
 
                 },
-                error: function () {
-                    alert('Unable to update user.');
+                error: function (xhr) {
+                    showApiAlertFromXhr(xhr, xhr ? xhr.status : null, getErrorReferenceIdFromXhr(xhr), 'Unable to update user.');
                 },
                 dataType: "json",
             });
@@ -361,7 +360,7 @@
                 },
                 cache: false,
                 success: function (data) {
-                    alert(data.message);
+                    showApiAlert(data);
                 },
                 dataType: "json",
             });
@@ -592,7 +591,6 @@
         </tbody>
     </table>
 </div>
-
 
 
 

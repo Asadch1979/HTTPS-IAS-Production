@@ -135,7 +135,7 @@
 
                   
                     else {
-                    alert(data[0].message);
+                    showApiAlert((data && data[0]) ? data[0] : data, 'Request completed.');
                     return;
                 }
                 }
@@ -144,7 +144,7 @@
                         alert("Audit Entity Not Selected");
 
                     else {
-                        alert(data[0].message);
+                        showApiAlert((data && data[0]) ? data[0] : data, 'Request completed.');
                         onAlertCallback(auditeereport);
                         //auditeereport();
                     }
@@ -171,7 +171,7 @@
             },
             cache: false,
             success: function (data) {
-                alert(data.message);
+                showApiAlert(data);
             
             },
             dataType: "json",
@@ -311,4 +311,3 @@
         <button onclick="closeDraftAudit();" class="col-md-3 btn btn-danger float-right"> Close Audit</button>
 
 </div>
-

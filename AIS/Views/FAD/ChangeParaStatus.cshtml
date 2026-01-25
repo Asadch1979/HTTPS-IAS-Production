@@ -87,7 +87,7 @@
             makerRemarks: $('#statusChangeRemarks').val()
         },
         success: function (resp) {
-            alert(resp.message);
+            showApiAlert(resp);
             $('#changeStatusModal').modal('hide');
             findParas();
         },

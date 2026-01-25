@@ -69,7 +69,7 @@
             data: { ENTITY_MODEL: model, IND: 'U' },
             cache: false,
             success: function (resp) {
-                alert(resp.Message);
+                showApiAlert(resp);
                 loadEntities();
             },
             dataType: "json",

@@ -181,7 +181,7 @@
             },
             cache: false,
             success: function (data) {
-                alert(data.message);
+                showApiAlert(data);
                 $('#submitCAUParaResponseHandler').attr("disabled", false);
                 onAlertCallback(reloadLocation);
             }, error: function (jqXHR, textStatus, errorThrown) {

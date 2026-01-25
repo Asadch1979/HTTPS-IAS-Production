@@ -140,7 +140,7 @@
             data: payload,
             cache: false,
             success: function (resp) {
-                alert(resp.Message);
+                showApiAlert(resp);
                 $('#updateModal').modal('hide');
                 getPostCompliance();
             },

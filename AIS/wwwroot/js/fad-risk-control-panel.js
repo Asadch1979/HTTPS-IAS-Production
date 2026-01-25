@@ -423,7 +423,7 @@
             data: payload
         }).done(function (response) {
             if (response && response.success === false) {
-                alert(response.message || 'Failed to save Sub KPI.');
+                showApiAlert(response, 'Failed to save Sub KPI.');
                 return;
             }
             bootstrap.Modal.getOrCreateInstance(document.getElementById('subKpiModal')).hide();
@@ -456,7 +456,7 @@
             data: payload
         }).done(function (response) {
             if (response && response.success === false) {
-                alert(response.message || 'Failed to save Process.');
+                showApiAlert(response, 'Failed to save Process.');
                 return;
             }
             bootstrap.Modal.getOrCreateInstance(document.getElementById('processModal')).hide();
@@ -488,7 +488,7 @@
             data: payload
         }).done(function (response) {
             if (response && response.success === false) {
-                alert(response.message || 'Failed to save Sub Process.');
+                showApiAlert(response, 'Failed to save Sub Process.');
                 return;
             }
             bootstrap.Modal.getOrCreateInstance(document.getElementById('subProcessModal')).hide();
@@ -519,7 +519,7 @@
             data: payload
         }).done(function (response) {
             if (response && response.success === false) {
-                alert(response.message || 'Failed to save Annexure.');
+                showApiAlert(response, 'Failed to save Annexure.');
                 return;
             }
             bootstrap.Modal.getOrCreateInstance(document.getElementById('annexureModal')).hide();

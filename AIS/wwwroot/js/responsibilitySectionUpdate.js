@@ -331,11 +331,7 @@ function initResponsibilitySection(config) {
         }
 
         function handleFail(xhr) {
-            var msg = 'Error occurred';
-            if (xhr && xhr.responseJSON) {
-                msg = xhr.responseJSON.Message || xhr.responseJSON.message || msg;
-            }
-            alert(msg);
+            showApiAlertFromXhr(xhr, xhr ? xhr.status : null, getErrorReferenceIdFromXhr(xhr), 'Error occurred');
             isSaving = false;
             $btns.prop('disabled', false);
         }
@@ -517,8 +513,7 @@ function initResponsibilitySection(config) {
             };
         }
         $.ajax(ajaxOpts).done(function (data) {
-                var msg = data.Message || data.message || 'Operation completed';
-                alert(msg);
+                showApiAlert(data, 'Operation completed');
                 onAlertCallback(function () {
                     modal.modal('hide');
                     if (typeof opts.afterSave === 'function') {
@@ -537,11 +532,7 @@ function initResponsibilitySection(config) {
                 $('#responsibleAccountNumberEntryField').val('');
                 $('#responsibleAccountAmountEntryField').val('');
             }).fail(function (xhr) {
-                var msg = 'Error occurred';
-                if (xhr.responseJSON) {
-                    msg = xhr.responseJSON.Message || xhr.responseJSON.message || msg;
-                }
-                alert(msg);
+                showApiAlertFromXhr(xhr, xhr ? xhr.status : null, getErrorReferenceIdFromXhr(xhr), 'Error occurred');
             }).always(function () {
             isSaving = false;
             $btns.prop('disabled', false);
@@ -614,11 +605,7 @@ function initResponsibilitySection(config) {
             }).done(function () {
                 $row.remove();
             }).fail(function (xhr) {
-                var msg = 'Error occurred';
-                if (xhr && xhr.responseJSON) {
-                    msg = xhr.responseJSON.Message || xhr.responseJSON.message || msg;
-                }
-                alert(msg);
+                showApiAlertFromXhr(xhr, xhr ? xhr.status : null, getErrorReferenceIdFromXhr(xhr), 'Error occurred');
             });
         } else {
             $.ajax({
@@ -644,11 +631,7 @@ function initResponsibilitySection(config) {
             }).done(function () {
                 $row.remove();
             }).fail(function (xhr) {
-                var msg = 'Error occurred';
-                if (xhr && xhr.responseJSON) {
-                    msg = xhr.responseJSON.Message || xhr.responseJSON.message || msg;
-                }
-                alert(msg);
+                showApiAlertFromXhr(xhr, xhr ? xhr.status : null, getErrorReferenceIdFromXhr(xhr), 'Error occurred');
             });
         }
     });

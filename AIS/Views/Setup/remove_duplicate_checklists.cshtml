@@ -131,7 +131,7 @@
                 },
                 cache: false,
                 success: function (data) {
-                    alert(data.message);
+                    showApiAlert(data);
                     $('#updateProcessModal').modal('hide');
                 },
                 dataType: "json",
@@ -191,7 +191,7 @@
                 },
                 cache: false,
                 success: function (data) {
-                    alert(data.message);
+                    showApiAlert(data);
                 },
                 dataType: "json",
             });
@@ -312,7 +312,7 @@
             },
             cache: false,
             success: function (data) {
-                alert(data.message);
+                showApiAlert(data);
                 $('#updateProcessDetailModal').modal('hide');
             },
             dataType: "json",
@@ -367,7 +367,7 @@
                 },
                 cache: false,
                 success: function (data) {
-                    alert(data.message);
+                    showApiAlert(data);
                     onAlertCallback(reloadLocation);
                 },
                 dataType: "json",

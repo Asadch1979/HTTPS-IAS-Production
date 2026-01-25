@@ -137,7 +137,7 @@
             },
             cache: false,
             success: function (data) {
-                alert(data.message);
+                showApiAlert(data);
                 g_status='Create';
                 $('#saveButtonSpecialPlan').html('Save');
                 getSavedSpecialAuditPlan();
@@ -188,7 +188,7 @@
             },
             cache: false,
             success: function (data) {
-                  alert(data.message);
+                  showApiAlert(data);
                 g_status='Create';
                 $('#saveButtonSpecialPlan').html('Save');
                 getSavedSpecialAuditPlan();
@@ -211,7 +211,7 @@
             },
             cache: false,
             success: function (data) {
-                 alert(data.message);
+                 showApiAlert(data);
                 g_status='Create';
                 $('#saveButtonSpecialPlan').html('Save');
                 getSavedSpecialAuditPlan();

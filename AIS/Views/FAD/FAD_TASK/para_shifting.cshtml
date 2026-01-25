@@ -96,7 +96,7 @@
                 },
                 cache: false,
                 success: function (data) {
-                    alert(data.message);
+                    showApiAlert(data);
                     getEntityObservation();
                 },
                 dataType: "json",

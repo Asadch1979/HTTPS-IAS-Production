@@ -111,7 +111,7 @@
             cache: false,
             success: function (data) {
 
-                alert(data.message);
+                showApiAlert(data);
                 onAlertCallback(getEntityObservation);
                 $('#viewMemoModel').modal('hide');
 

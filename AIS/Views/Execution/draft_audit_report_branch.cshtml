@@ -173,7 +173,7 @@
             },
             cache: false,
             success: function (data) {
-                alert(data.message);
+                showApiAlert(data);
                 onAlertCallback(reloadLocation);
                 $('#commentsBox').modal('hide');
             },
@@ -207,7 +207,7 @@
             cache: false,
             success: function (data) {
 
-                alert(data.message);
+                showApiAlert(data);
             },
             dataType: "json",
         });
@@ -508,7 +508,7 @@
             },
             cache: false,
             success: function (data) {
-                alert(data.message);
+                showApiAlert(data);
                  onAlertCallback(getEntityObservation);
             },
             dataType: "json",
@@ -575,7 +575,7 @@
                 },
                 cache: false,
                 success: function (data) {
-                    alert(data.message);
+                    showApiAlert(data);
                    onAlertCallback(submissionOfDSA);
 
                 },

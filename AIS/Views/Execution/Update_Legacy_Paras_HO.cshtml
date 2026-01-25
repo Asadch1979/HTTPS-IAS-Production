@@ -147,7 +147,7 @@
             cache: false,
             success: function (data) {
 
-                alert(data.message);
+                showApiAlert(data);
                 $('#settleRemarksModel').modal('hide');
                 getLegacyPara();
             },
@@ -176,7 +176,7 @@
             cache: false,
             success: function (data) {
 
-                alert(data.message);
+                showApiAlert(data);
                 $('#confirmModel').modal('hide');
                 getLegacyPara();
             },
@@ -277,7 +277,7 @@
             cache: false,
             success: function (data) {
                 $('#PublishParaText').attr('disabled', false);
-                alert(data.message);
+                showApiAlert(data);
                 getLegacyPara();
             },
 
@@ -374,7 +374,7 @@
             data: add_leg_data,
             cache: false,
             success: function (data) {
-                alert(data.message);
+                showApiAlert(data);
                 getLegacyPara();
             },
 

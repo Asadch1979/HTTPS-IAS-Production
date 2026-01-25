@@ -54,7 +54,7 @@
             },
             cache: false,
             success: function (data) {
-                alert(data.message);
+                showApiAlert(data);
                 $('.step1').show();
                 $('#deleteUser').hide();
 
@@ -115,7 +115,7 @@
             },
             cache: false,
             success: function (data) {
-                alert(data.message);
+                showApiAlert(data);
             },
             dataType: "json",
         });

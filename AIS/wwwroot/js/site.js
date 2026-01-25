@@ -324,18 +324,18 @@ $(document).ready(function () {
         var errorRefId = getErrorReferenceIdFromXhr(jqxhr);
 
         if (status === 401) {
-            showAjaxErrorAlert(status, errorRefId, 'Your session has expired. Please sign in again.');
+            showApiAlertFromXhr(jqxhr, status, errorRefId, 'Your session has expired. Please sign in again.');
             window.location = g_asiBaseURL + "/Login/Index";
             return;
         }
 
         if (status === 403) {
-            showAjaxErrorAlert(status, errorRefId, "You don't have access. Please contact support if this continues.");
+            showApiAlertFromXhr(jqxhr, status, errorRefId, "You don't have access. Please contact support if this continues.");
             return;
         }
 
         if (status === 400 || status === 415 || status === 500 || status === 503 || status === 302) {
-            showAjaxErrorAlert(status, errorRefId);
+            showApiAlertFromXhr(jqxhr, status, errorRefId);
         }
 
         if (jqxhr.responseJSON) {
@@ -373,6 +373,165 @@ function alert(message) {
     $('#alertMessagesPopup').modal('show');
 }
 
+function tryParseJson(value) {
+    if (typeof value !== 'string') {
+        return value;
+    }
+
+    var trimmed = value.trim();
+    if (!trimmed) {
+        return value;
+    }
+
+    try {
+        return JSON.parse(trimmed);
+    } catch (e) {
+        return value;
+    }
+}
+
+function unwrapApiPayload(payload) {
+    var current = payload;
+    for (var i = 0; i < 2; i++) {
+        if (typeof current === 'string') {
+            var parsed = tryParseJson(current);
+            if (parsed !== current) {
+                current = parsed;
+                continue;
+            }
+        }
+        break;
+    }
+    return current;
+}
+
+function extractMessageFromErrors(errors) {
+    if (!errors) {
+        return '';
+    }
+
+    if (Array.isArray(errors) && errors.length) {
+        return errors[0];
+    }
+
+    if (typeof errors === 'object') {
+        var keys = Object.keys(errors);
+        for (var i = 0; i < keys.length; i++) {
+            var entry = errors[keys[i]];
+            if (Array.isArray(entry) && entry.length) {
+                return entry[0];
+            }
+            if (typeof entry === 'string' && entry.trim()) {
+                return entry.trim();
+            }
+        }
+    }
+
+    return '';
+}
+
+function extractApiMessage(payload, fallbackMessage) {
+    if (!payload) {
+        return (fallbackMessage || '').toString().trim();
+    }
+
+    if (typeof payload === 'string') {
+        var parsedPayload = unwrapApiPayload(payload);
+        if (parsedPayload !== payload) {
+            return extractApiMessage(parsedPayload, fallbackMessage);
+        }
+        return payload.trim() || (fallbackMessage || '').toString().trim();
+    }
+
+    var normalized = unwrapApiPayload(payload);
+    if (typeof normalized === 'string') {
+        return normalized.trim() || (fallbackMessage || '').toString().trim();
+    }
+
+    if (normalized && typeof normalized === 'object') {
+        var messageValue = normalized.Message || normalized.message || normalized.StatusMessage || normalized.statusMessage;
+        if (messageValue && typeof messageValue === 'string') {
+            return messageValue.trim();
+        }
+
+        var errorMessage = normalized.Error || normalized.error;
+        if (errorMessage && typeof errorMessage === 'string') {
+            return errorMessage.trim();
+        }
+
+        var nestedMessage = extractMessageFromErrors(normalized.Errors || normalized.errors);
+        if (nestedMessage) {
+            return nestedMessage.trim();
+        }
+
+        if (normalized.data) {
+            return extractApiMessage(normalized.data, fallbackMessage);
+        }
+    }
+
+    return (fallbackMessage || '').toString().trim();
+}
+
+function extractApiMessageFromXhr(jqxhr, fallbackMessage) {
+    if (!jqxhr) {
+        return (fallbackMessage || '').toString().trim();
+    }
+
+    if (jqxhr.responseJSON) {
+        var jsonMessage = extractApiMessage(jqxhr.responseJSON, fallbackMessage);
+        if (jsonMessage) {
+            return jsonMessage;
+        }
+    }
+
+    if (jqxhr.responseText) {
+        var textMessage = extractApiMessage(jqxhr.responseText, fallbackMessage);
+        if (textMessage) {
+            return textMessage;
+        }
+    }
+
+    if (jqxhr.statusText) {
+        return jqxhr.statusText.toString().trim();
+    }
+
+    return (fallbackMessage || '').toString().trim();
+}
+
+function showApiAlert(payload, fallbackMessage) {
+    var message = extractApiMessage(payload, fallbackMessage);
+    if (!message) {
+        message = (fallbackMessage || 'Request completed.').toString().trim();
+    }
+    alert(message);
+}
+
+function showApiAlertFromXhr(jqxhr, status, errorRefId, fallbackMessage) {
+    var message = extractApiMessageFromXhr(jqxhr, fallbackMessage);
+    var alertMessage = buildAjaxErrorMessage(status, errorRefId, message);
+    alert(alertMessage);
+}
+
+function showApiAlertFromResponse(response, status, errorRefId, fallbackMessage) {
+    if (!response || typeof response.clone !== 'function') {
+        var fallbackAlert = buildAjaxErrorMessage(status, errorRefId, fallbackMessage);
+        alert(fallbackAlert);
+        return Promise.resolve();
+    }
+
+    return response.clone().json().then(function (json) {
+        var message = extractApiMessage(json, fallbackMessage);
+        alert(buildAjaxErrorMessage(status, errorRefId, message));
+    }).catch(function () {
+        return response.clone().text().then(function (text) {
+            var message = extractApiMessage(text, fallbackMessage);
+            alert(buildAjaxErrorMessage(status, errorRefId, message));
+        }).catch(function () {
+            alert(buildAjaxErrorMessage(status, errorRefId, fallbackMessage));
+        });
+    });
+}
+
 function getErrorReferenceIdFromXhr(jqxhr) {
     if (!jqxhr || typeof jqxhr.getResponseHeader !== 'function') {
         return null;
@@ -390,7 +549,8 @@ function getErrorReferenceIdFromHeaders(headers) {
 }
 
 function buildAjaxErrorMessage(status, errorRefId, fallbackMessage) {
-    var message = fallbackMessage || ('Request failed (' + status + '). Please retry. If it continues, contact support.');
+    var baseMessage = (fallbackMessage || '').toString().trim();
+    var message = baseMessage || ('Request failed (' + status + '). Please retry. If it continues, contact support.');
 
     if (errorRefId) {
         message += ' Reference: ' + errorRefId;
@@ -427,34 +587,29 @@ function handleAjaxLikeResponse(response) {
     var contentType = response.headers ? response.headers.get('content-type') : '';
 
     if (status === 401) {
-        showAjaxErrorAlert(status, errorRefId, 'Your session has expired. Please sign in again.');
-        return Promise.resolve();
+        return showApiAlertFromResponse(response, status, errorRefId, 'Your session has expired. Please sign in again.');
     }
 
     if (status === 403) {
-        showAjaxErrorAlert(status, errorRefId, "You don't have access. Please contact support if this continues.");
-        return Promise.resolve();
+        return showApiAlertFromResponse(response, status, errorRefId, "You don't have access. Please contact support if this continues.");
     }
 
     if (response.redirected) {
-        showAjaxErrorAlert(302, errorRefId, 'Your session may have expired. Please sign in again.');
-        return Promise.resolve();
+        return showApiAlertFromResponse(response, 302, errorRefId, 'Your session may have expired. Please sign in again.');
     }
 
     if (status === 400 || status === 415 || status === 500 || status === 503 || status === 302) {
-        showAjaxErrorAlert(status, errorRefId);
-        return Promise.resolve();
+        return showApiAlertFromResponse(response, status, errorRefId);
     }
 
     if (status === 200 && contentType && contentType.indexOf('text/html') !== -1) {
-        showAjaxErrorAlert(302, errorRefId, 'Your session may have expired. Please sign in again.');
-        return Promise.resolve();
+        return showApiAlertFromResponse(response, 302, errorRefId, 'Your session may have expired. Please sign in again.');
     }
 
     if (status === 200 && (!contentType || contentType.indexOf('application/json') === -1)) {
         return response.clone().text().then(function (text) {
             if (isHtmlResponse(contentType, text)) {
-                showAjaxErrorAlert(302, errorRefId, 'Your session may have expired. Please sign in again.');
+                showApiAlertFromXhr({ responseText: text }, 302, errorRefId, 'Your session may have expired. Please sign in again.');
             }
         }).catch(function () { });
     }

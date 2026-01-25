@@ -66,7 +66,7 @@
             cache: false,
             success: function (data) {
                 $('#process_detail').modal('hide');
-                alert(data.message);
+                showApiAlert(data);
                 onAlertCallback(reloadLocation);
 
             },

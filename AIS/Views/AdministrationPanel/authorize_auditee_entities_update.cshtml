@@ -100,7 +100,7 @@
             data: { ENTITY_MODEL: g_current, IND: 'A' },
             cache: false,
             success: function (resp) {
-                alert(resp.Message);
+                showApiAlert(resp);
                 $('#compareModal').modal('hide');
                 loadPending();
             },
@@ -116,7 +116,7 @@
             data: { ENTITY_MODEL: g_current, IND: 'R' },
             cache: false,
             success: function (resp) {
-                alert(resp.Message);
+                showApiAlert(resp);
                 $('#compareModal').modal('hide');
                 loadPending();
             },
