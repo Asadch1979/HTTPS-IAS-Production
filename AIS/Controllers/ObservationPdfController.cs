@@ -57,7 +57,7 @@ namespace AIS.Controllers
                     return StatusCode(403, "Not authorized. Observation is not available for this engagement.");
                     }
 
-                _logger.LogInformation("Preparing observation print view for OBS_ID {ObsId} ENG_ID {EngId} by user {UserId}.", obsId, engId, user?.USER_ID);
+                _logger.LogInformation("Preparing observation print view for OBS_ID {ObsId} ENG_ID {EngId} by user {UserId}.", obsId, engId, user?.PPNumber);
 
                 var data = _dbConnection.GetObservationPrintDetails(obsId);
                 if (data == null || string.IsNullOrWhiteSpace(data.MemoNumber))
