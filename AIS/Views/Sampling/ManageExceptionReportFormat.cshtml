@@ -218,10 +218,7 @@
                 loadFormat();
             },
             error: function (xhr) {
-                var message = (xhr.responseJSON && (xhr.responseJSON.message || xhr.responseJSON.Message))
-                    ? (xhr.responseJSON.message || xhr.responseJSON.Message)
-                    : "Unable to save format. Please try again.";
-                alert(message);
+                showApiAlertFromXhr(xhr, xhr ? xhr.status : null, getErrorReferenceIdFromXhr(xhr), "Unable to save format. Please try again.");
             }
         });
     }

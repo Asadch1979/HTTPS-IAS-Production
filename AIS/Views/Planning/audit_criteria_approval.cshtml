@@ -116,7 +116,7 @@
             data: JSON.stringify(datalist),
             success: function (response) {
                 if (!response || response.status !== true) {
-                    var message = response && response.message ? response.message : "Unable to approve audit criteria.";
+                    var message = extractApiMessage(response, "Unable to approve audit criteria.");
                     setApprovalMessage(message, false);
                     return;
                 }
@@ -124,12 +124,7 @@
                 onAlertCallback(reloadLocation);
             },
             error: function (xhr) {
-                var message = "Unable to approve audit criteria.";
-                if (xhr && xhr.responseJSON && xhr.responseJSON.message) {
-                    message = xhr.responseJSON.message;
-                } else if (xhr && xhr.responseText) {
-                    message = xhr.responseText;
-                }
+                var message = extractApiMessageFromXhr(xhr, "Unable to approve audit criteria.");
                 if (xhr && xhr.status) {
                     message += " (HTTP " + xhr.status + ")";
                 }

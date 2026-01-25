@@ -79,7 +79,7 @@
             },
             cache: false,
             success: function (data) {
-                alert(data.message);
+                showApiAlert(data);
                 onAlertCallback(getProcessesForMergeDuplicate);
             },
             dataType: "json",

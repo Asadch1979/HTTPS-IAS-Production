@@ -42,7 +42,7 @@
             authRemarks: $('#authRemarks').val()
         },
         success: function (resp) {
-            alert(resp.message);
+            showApiAlert(resp);
             $('#authModal').modal('hide');
             loadRequests();
         },

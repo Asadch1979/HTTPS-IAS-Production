@@ -146,7 +146,7 @@
             },
             cache: false,
             success: function (data) {
-                alert(data.message);
+                showApiAlert(data);
                 $('#process_detail').modal('hide');
                 getParas();
             },

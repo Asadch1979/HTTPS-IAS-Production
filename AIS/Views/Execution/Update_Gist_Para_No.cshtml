@@ -114,7 +114,7 @@
             cache: false,
             success: function (data) {
                 $('#PublishParaText').attr('disabled', false);
-                alert(data.message);
+                showApiAlert(data);
                 getLegacyPara();
             },
 

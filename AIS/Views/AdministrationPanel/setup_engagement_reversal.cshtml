@@ -342,7 +342,7 @@
 
             cache: false,
             success: function (data) {
-                alert(data.message);
+                showApiAlert(data);
                 $('#memoNumberChangeModal').modal('hide');
             },
             dataType: "json",
@@ -368,7 +368,7 @@
 
             cache: false,
             success: function (data) {
-                alert(data.message);
+                showApiAlert(data);
                 $('#newStatusReversalModel').modal('hide');
             },
             dataType: "json",
@@ -400,7 +400,7 @@
 
             cache: false,
             success: function (data) {
-                alert(data.message);
+                showApiAlert(data);
                 $('#assignmentReversalModal').modal('hide');
             },
             dataType: "json",
@@ -427,7 +427,7 @@
 
             cache: false,
             success: function (data) {
-                alert(data.message);
+                showApiAlert(data);
                 $('#setupAuditTeam').modal("hide");
                 //onAlertCallback(reloadLocation);
             },
@@ -450,7 +450,7 @@
 
             cache: false,
             success: function (data) {
-                alert(data.message);
+                showApiAlert(data);
                 $('#engagementDatesUpdationModel').modal('hide');
             },
             dataType: "json",

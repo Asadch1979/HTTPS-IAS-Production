@@ -82,7 +82,7 @@
             cache: false,
             dataType: "json",
             success: function (data) {
-                alert(data.message);
+                showApiAlert(data);
                 onAlertCallback(redirectToTaskList);
             }
         });

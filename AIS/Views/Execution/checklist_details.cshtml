@@ -268,7 +268,7 @@
             data: JSON.stringify(payload),
             cache: false,
             success: function (data) {
-                alert(data.message);
+                showApiAlert(data);
                 onAlertCallback(reloadLocation);
             },
             dataType: "json",

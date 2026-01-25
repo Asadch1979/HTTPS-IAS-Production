@@ -996,19 +996,19 @@ namespace AIS.Controllers
             {
             if (request == null)
                 {
-                return BadRequest(new { success = false, message = "Request payload is required." });
+                return BadRequest(new { Status = false, Message = "Request payload is required." });
                 }
 
             var newPassword = request.NewPassword?.Trim();
             if (string.IsNullOrWhiteSpace(newPassword))
                 {
-                return BadRequest(new { success = false, message = "New password is required." });
+                return BadRequest(new { Status = false, Message = "New password is required." });
                 }
 
             var validation = _passwordPolicyValidator.Validate(newPassword, sessionHandler.TryGetUser(out var user) ? user?.PPNumber : null);
             if (!validation.IsValid)
                 {
-                return BadRequest(new { success = false, message = validation.ErrorMessage });
+                return BadRequest(new { Status = false, Message = validation.ErrorMessage });
                 }
 
             try
@@ -1024,19 +1024,19 @@ namespace AIS.Controllers
                     var errorMessage = string.IsNullOrWhiteSpace(result.Message)
                         ? "Password update failed."
                         : result.Message;
-                    return StatusCode(StatusCodes.Status400BadRequest, new { success = false, message = errorMessage });
+                    return StatusCode(StatusCodes.Status400BadRequest, new { Status = false, Message = errorMessage });
                     }
 
                 var successMessage = string.IsNullOrWhiteSpace(result.Message)
                     ? "Password updated successfully."
                     : result.Message;
 
-                return Ok(new { success = true, message = successMessage });
+                return Ok(new { Status = true, Message = successMessage });
                 }
             catch (Exception ex)
                 {
                 _logger.LogError(ex, "Error updating SBP observation password.");
-                return StatusCode(StatusCodes.Status500InternalServerError, new { success = false, message = "Password update failed." });
+                return StatusCode(StatusCodes.Status500InternalServerError, new { Status = false, Message = "Password update failed." });
                 }
             }
 

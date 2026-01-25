@@ -258,7 +258,7 @@
             },
             cache: false,
             success: function (data) {
-                alert(data.message);
+                showApiAlert(data);
                 onAlertCallback(reloadLocation);
                 $('#commentsBox').modal('hide');
             },
@@ -376,7 +376,7 @@
             },
             cache: false,
             success: function (data) {
-                alert(data.message);
+                showApiAlert(data);
                  onAlertCallback(getEntityObservation);
             },
             dataType: "json",

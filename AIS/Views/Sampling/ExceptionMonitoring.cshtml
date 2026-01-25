@@ -185,16 +185,16 @@
                 'er_id': erId
             },
             success: function (data) {
-                if (data && data.success) {
+                if (data && (data.success || data.Status)) {
                     showToast('Exception regenerated successfully', true);
                     loadExceptionDetails();
                 } else {
-                    var message = data && data.message ? data.message : 'Failed to regenerate exception';
+                    var message = extractApiMessage(data, 'Failed to regenerate exception');
                     showToast(message, false);
                 }
             },
             error: function (xhr) {
-                showToast(xhr.responseText || 'An error occurred while regenerating the exception', false);
+                showToast(extractApiMessageFromXhr(xhr, 'An error occurred while regenerating the exception'), false);
             },
             complete: function () {
                 $button.prop('disabled', false);

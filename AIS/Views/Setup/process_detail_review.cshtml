@@ -104,7 +104,7 @@
             success: function (data) {
                 $('#recommendReferProcTransactionModal').modal('hide');
                 $('#commentsBox').modal('hide');
-                alert(data.message);
+                showApiAlert(data);
                 onAlertCallback(reloadLocation);              
             },
             dataType: "json",
@@ -122,7 +122,7 @@
             success: function (data) {
                 $('#recommendReferProcTransactionModal').modal('hide');
                 $('#commentsBox').modal('hide');
-                alert(data.message);
+                showApiAlert(data);
                 onAlertCallback(reloadLocation);
             },
             dataType: "json",

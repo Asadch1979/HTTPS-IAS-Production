@@ -296,7 +296,7 @@
                 cache: false,
                 success: function (data) {
                       $('#uploadReportModel').modal('hide');
-                    alert(data.message);
+                    showApiAlert(data);
                   //  onAlertCallback(fetchUploadedFiles);
 
                 },
@@ -481,7 +481,7 @@
             },
             cache: false,
             success: function (data) {
-                alert(data.message);
+                showApiAlert(data);
                 onAlertCallback(reloadLocation);
 
             },

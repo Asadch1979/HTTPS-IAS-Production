@@ -78,7 +78,7 @@
             cache: false,
             success: function (data) {
                 $('#recommendReferProcTransactionModal').modal('hide');
-                alert(data.message);
+                showApiAlert(data);
                 onAlertCallback(reloadLocation);
                
             },
@@ -96,7 +96,7 @@
             cache: false,
             success: function (data) {
                 $('#recommendReferProcTransactionModal').modal('hide');
-                alert(data.message);
+                showApiAlert(data);
                 onAlertCallback(reloadLocation);
             },
             dataType: "json",

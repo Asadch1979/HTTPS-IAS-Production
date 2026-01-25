@@ -264,7 +264,7 @@
                 cache: false,
                 success: function (data) {
                     $('#viewMemoModel').modal('hide');
-                    alert(data.message);
+                    showApiAlert(data);
                     onAlertCallback(getEntityObservation);
                 },
                 dataType: "json",
@@ -294,7 +294,7 @@
                 cache: false,
                 success: function (data) {
                     $('#viewMemoModel').modal('hide');
-                    alert(data.message);
+                    showApiAlert(data);
                     onAlertCallback(getEntityObservation);
                 },
                 dataType: "json",
@@ -340,7 +340,7 @@
                 },
                 cache: false,
                 success: function (data) {
-                    alert(data.message);
+                    showApiAlert(data);
                     onAlertCallback(getEntityObservation);
                 },
                 dataType: "json",

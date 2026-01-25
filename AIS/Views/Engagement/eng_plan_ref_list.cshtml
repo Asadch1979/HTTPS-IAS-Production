@@ -141,7 +141,7 @@
                 cache: false,
                 dataType: "json"
             }).done(function (data) {
-                alert((data && data.Message) ? data.Message : "Saved successfully.");
+                showApiAlert(data, "Saved successfully.");
                 if (typeof onAlertCallback === "function") {
                     onAlertCallback(function () { location.reload(); });
                 } else {
@@ -149,7 +149,7 @@
                 }
             }).fail(function (xhr) {
                 console.log("Submit error:", xhr && (xhr.responseText || xhr));
-                alert("Unable to submit. Please try again.");
+                showApiAlertFromXhr(xhr, xhr ? xhr.status : null, getErrorReferenceIdFromXhr(xhr), "Unable to submit. Please try again.");
             });
         };
 

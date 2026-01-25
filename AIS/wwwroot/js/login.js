@@ -89,7 +89,7 @@
             cache: false,
             success: function (data) {
                 $('#resetPasswordModel').modal('hide');
-                alert(data.message);
+                showApiAlert(data, 'Password reset request submitted.');
             },
             dataType: 'json',
         });

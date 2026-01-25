@@ -313,7 +313,7 @@
             cache: false,
             success: function (data) {
                 $('#submitCAUobBtn').attr('disabled', false);
-                alert(data.message);
+                showApiAlert(data);
                 onAlertCallback(reloadLocation);
             },
             dataType: "json",

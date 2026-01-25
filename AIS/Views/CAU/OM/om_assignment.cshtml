@@ -84,7 +84,7 @@
             cache: false,
             success: function (data) {
 
-                alert(data.response);
+                showApiAlert(data && data.response ? data.response : data);
 
                 g_omID=data.id;
                // $('#saveOMAssignmentStage1').attr('disabled', true);
@@ -115,7 +115,7 @@
             },
             cache: false,
             success: function (data) {
-                alert(data.response);
+                showApiAlert(data && data.response ? data.response : data);
                 g_paraID=data.id;
                 $('#paraNumber_box_stage3').val($('#paraNumber_box_stage2').val());
 
@@ -144,7 +144,7 @@
             },
             cache: false,
             success: function (data) {
-                alert(data.response);
+                showApiAlert(data && data.response ? data.response : data);
                 //$('#saveOMAssignmentStage3').attr('disabled', true);
                 $('#omNumber_box_stage4').val($('#omNumber_box_stage3').val());
 
@@ -174,7 +174,7 @@
             },
             cache: false,
             success: function (data) {
-                alert(data.response);                
+                showApiAlert(data && data.response ? data.response : data);                
             },
             dataType: "json",
         });
@@ -227,7 +227,7 @@
             },
             cache: false,
             success: function (data) {
-                alert(data.response);
+                showApiAlert(data && data.response ? data.response : data);
             },
             dataType: "json",
         });
@@ -628,6 +628,5 @@
         </div>
     </div>
 </div>
-
 
 

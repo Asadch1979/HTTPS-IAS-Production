@@ -322,7 +322,7 @@
             cache: false,
             success: function (data) {
                 if (data.Status == true) {
-                    alert(data.message);
+                    showApiAlert(data);
                     onAlertCallback(reloadLocation);
                 } else {
                     alert("Failed!! please try again");
@@ -366,7 +366,7 @@
             },
             cache: false,
             success: function (data) {
-                alert(data.Message);
+                showApiAlert(data);
                 onAlertCallback(reloadLocation);
             },
             dataType: "json",
@@ -442,7 +442,7 @@
                 },
                 cache: false,
                 success: function (data) {
-                    alert(data.message);
+                    showApiAlert(data);
                    onAlertCallback(finalSubmissionParasToAuditee);
                     $('#DSAModel').modal('hide');
                     $('#updateMemoModel').modal('hide');
@@ -465,7 +465,7 @@
                 },
                 cache: false,
                 success: function (data) {
-                    alert(data.Message);
+                    showApiAlert(data);
                     onAlertCallback(reloadLocation);
                     $('#DSAModel').modal('hide');
                     $('#updateMemoModel').modal('hide');
@@ -493,7 +493,7 @@
             },
             cache: false,
             success: function (data) {
-                alert(data.message);
+                showApiAlert(data);
                 onAlertCallback(reloadLocation);
             },
             dataType: "json",

@@ -1200,7 +1200,7 @@ else
                         setSavingState(false);
                     })
                     .catch(function (err) {
-                        alert((err && err.message) ? err.message : 'Update failed.');
+                        alert(extractApiMessage(err, 'Update failed.'));
                         setSavingState(false);
                     });
             }
@@ -1367,7 +1367,7 @@ else
                             refreshCurrentObservationType();
                         })
                         .catch(function (err) {
-                            alert((err && err.message) ? err.message : 'Failed to save management response.');
+                            alert(extractApiMessage(err, 'Failed to save management response.'));
                         });
                 });
             };
@@ -1440,7 +1440,7 @@ else
                         contentType: 'application/json',
                         data: JSON.stringify({ paraId: numericId, reason: reason }),
                         success: function (res) {
-                            alert(res?.message || (res?.success ? 'Delete request submitted' : 'Failed'));
+                            showApiAlert(res, res?.success ? 'Delete request submitted' : 'Failed');
                             if (hasRequestsTable()) {
                                 loadPendingRequests();
                             }
@@ -1471,7 +1471,7 @@ else
                         contentType: 'application/json',
                         data: JSON.stringify({ responseId: numericId, reason: reason }),
                         success: function (res) {
-                            alert(res?.message || (res?.success ? 'Delete request submitted' : 'Failed'));
+                            showApiAlert(res, res?.success ? 'Delete request submitted' : 'Failed');
                             if (hasRequestsTable()) {
                                 loadPendingRequests();
                             }
@@ -1497,7 +1497,7 @@ else
                         contentType: 'application/json',
                         data: JSON.stringify({ requestId: numericId }),
                         success: function (res) {
-                            alert(res?.message || (res?.success ? 'Approved' : 'Unable to approve request.'));
+                            showApiAlert(res, res?.success ? 'Approved' : 'Unable to approve request.');
                             if (hasRequestsTable()) {
                                 loadPendingRequests();
                             }
@@ -1529,7 +1529,7 @@ else
                         contentType: 'application/json',
                         data: JSON.stringify({ requestId: numericId, reason: reason }),
                         success: function (res) {
-                            alert(res?.message || (res?.success ? 'Rejected' : 'Unable to reject request.'));
+                            showApiAlert(res, res?.success ? 'Rejected' : 'Unable to reject request.');
                             if (hasRequestsTable()) {
                                 loadPendingRequests();
                             }
@@ -1560,7 +1560,7 @@ else
                         contentType: 'application/json',
                         data: JSON.stringify({ requestIdToReverse: numericId, reason: reason }),
                         success: function (res) {
-                            alert(res?.message || (res?.success ? 'Reversal submitted' : 'Unable to submit reversal.'));
+                            showApiAlert(res, res?.success ? 'Reversal submitted' : 'Unable to submit reversal.');
                             if (hasRequestsTable()) {
                                 loadPendingRequests();
                             }
@@ -1602,7 +1602,7 @@ else
                     })
                     .catch(function (error) {
                         console.error('Observation detail fetch error', error);
-                        alert((error && error.message) ? error.message : 'Unable to load observation details.');
+                        alert(extractApiMessage(error, 'Unable to load observation details.'));
                         $('#observationModal').modal('hide');
                     });
             }

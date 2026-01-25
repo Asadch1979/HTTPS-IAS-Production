@@ -31,23 +31,24 @@
             },
             cache: false,
             success: function (data) {
-                if (data && data.success) {
-                    var target = (data && data.redirectUrl) ? data.redirectUrl : (g_asiBaseURL + "/Home/Index");
-                    alert(data.message || "Your Password has been changed Successfully");
+                if (data && data.Status) {
+                    var target = (data && data.RedirectUrl) ? data.RedirectUrl : (g_asiBaseURL + "/Login/Index");
+                    alert('Password Changed');
                     onAlertCallback(function () {
                         window.location.href = target;
                     });
                 } else {
-                    alert((data && data.message) || "Unable to change password. Please try again.");
+                    showApiAlert(data, "Unable to change password. Please try again.");
                 }
             },
             error: function (xhr) {
                 if (xhr && xhr.status === 401) {
+                    showApiAlertFromXhr(xhr, xhr.status, getErrorReferenceIdFromXhr(xhr), 'Password change session expired, login again.');
                     window.location.href = g_asiBaseURL + "/Login/Index";
                     return;
                 }
 
-                alert("Unable to change password. Please try again.");
+                showApiAlertFromXhr(xhr, xhr ? xhr.status : null, getErrorReferenceIdFromXhr(xhr), "Unable to change password. Please try again.");
             },
             dataType: "json",
         });

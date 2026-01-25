@@ -83,7 +83,7 @@
             },
             cache: false,
             success: function (data) {
-                alert(data.message);
+                showApiAlert(data);
                 $($(e).closest("tr").find('.ibtnAdd').eq(0)).attr('disabled', true);
                 $($(e).closest("tr").find('.ibtnAdd').eq(0)).val('Added');
                 $($(e).closest("tr").find('.ibtnAdd').eq(0)).addClass('ibtnAdded');
@@ -128,7 +128,7 @@
             },
             cache: false,
             success: function (data) {
-                alert(data.message);
+                showApiAlert(data);
                 $(g_event).closest("tr").remove();              
             },
 
@@ -393,7 +393,7 @@
             data: add_leg_data,
             cache: false,
             success: function (data) {
-                alert(data.message);
+                showApiAlert(data);
                 $('#PublishParaText').attr('disabled', false);
                 getLegacyPara();
             },
@@ -464,7 +464,7 @@
             data: add_leg_data,
             cache: false,
             success: function (data) {
-                alert(data.message);
+                showApiAlert(data);
                 getLegacyPara();
                 $('#PublishParaTextWithNoChanges').attr('disabled', false);
             },
@@ -484,7 +484,7 @@
             },
             cache: false,
             success: function (data) {
-                alert(data.message);
+                showApiAlert(data);
                 getLegacyPara();
                 $('#PublishParaTextWithNoChanges').attr('disabled', false);
             },
