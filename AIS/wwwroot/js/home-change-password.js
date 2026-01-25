@@ -11,6 +11,75 @@
         return g_asiBaseURL + "/Login/Index";
     }
 
+    function setInlineMessage(message, type) {
+        var messageContainer = document.getElementById('changePasswordMessage');
+        if (!messageContainer) {
+            return;
+        }
+
+        var trimmedMessage = (message || '').toString().trim();
+        if (!trimmedMessage) {
+            messageContainer.classList.add('d-none');
+            return;
+        }
+
+        var alertType = type || 'info';
+        messageContainer.className = 'alert alert-' + alertType;
+        messageContainer.textContent = trimmedMessage;
+        messageContainer.classList.remove('d-none');
+    }
+
+    function parseTruthy(value) {
+        if (typeof value === 'boolean') {
+            return value;
+        }
+
+        if (typeof value === 'number') {
+            return value === 1;
+        }
+
+        if (typeof value === 'string') {
+            var normalized = value.toLowerCase().trim();
+            return normalized === 'true' || normalized === '1' || normalized === 'y' || normalized === 'yes' || normalized === 'success';
+        }
+
+        return false;
+    }
+
+    function isSuccessResponse(data) {
+        if (!data || typeof data !== 'object') {
+            return false;
+        }
+
+        var directSuccess = parseTruthy(data.success) ||
+            parseTruthy(data.Success) ||
+            parseTruthy(data.status) ||
+            parseTruthy(data.Status) ||
+            parseTruthy(data.isSuccess) ||
+            parseTruthy(data.IsSuccess);
+
+        if (directSuccess) {
+            return true;
+        }
+
+        if (data.data && typeof data.data === 'object') {
+            return isSuccessResponse(data.data);
+        }
+
+        return false;
+    }
+
+    function resolveMessage(payload, fallbackMessage) {
+        if (typeof extractApiMessage === 'function') {
+            var extracted = extractApiMessage(payload, fallbackMessage);
+            if (extracted && extracted.toString().trim()) {
+                return extracted.toString().trim();
+            }
+        }
+
+        return (fallbackMessage || '').toString().trim();
+    }
+
     function setProcessingState(isProcessing, shouldEnableOnStop) {
         var submitButton = document.getElementById('changePasswordSubmit');
         var spinner = document.getElementById('changePasswordSpinner');
@@ -33,29 +102,13 @@
         }
     }
 
-    function isAuthFailureResponse(xhr, textStatus) {
-        if (!xhr) {
-            return false;
-        }
-
-        if (xhr.status === 401 || xhr.status === 403) {
-            return true;
-        }
-
-        if (textStatus === 'parsererror') {
-            return true;
-        }
-
-        var responseText = xhr.responseText || '';
-        return responseText.indexOf('Login') !== -1 || responseText.indexOf('login') !== -1;
-    }
-
     function onSubmitChangePassword() {
         var submitButton = document.getElementById('changePasswordSubmit');
         if (submitButton && submitButton.disabled) {
             return;
         }
 
+        setInlineMessage('', 'info');
         setProcessingState(true);
 
         const newPassword = $('#inputNewPassword').val();
@@ -83,31 +136,31 @@
             },
             cache: false,
             success: function (data) {
-                var isSuccess = data && (data.Success === true || data.Status === true);
+                var isSuccess = isSuccessResponse(data);
                 if (isSuccess) {
-                    var target = (data && data.RedirectUrl) ? data.RedirectUrl : getLoginUrl();
-                    setProcessingState(false, false);
-                    onAlertCallback(function () {
-                        window.location.href = target;
-                    });
-                    showApiAlert(data, "Password Changed");
+                    var successMessage = resolveMessage(data, 'Password changed successfully.');
+                    setInlineMessage(successMessage, 'success');
+                    setProcessingState(true, false);
+                    setTimeout(function () {
+                        window.location.href = getLoginUrl();
+                    }, 150);
                 } else {
+                    var failureMessage = resolveMessage(data, 'Password change failed. Please try again.');
                     setProcessingState(false, true);
-                    showApiAlert(data, "Unable to change password. Please try again.");
+                    alert(failureMessage);
                 }
             },
             error: function (xhr, textStatus) {
-                if (isAuthFailureResponse(xhr, textStatus)) {
-                    setProcessingState(false, true);
-                    onAlertCallback(function () {
-                        window.location.href = getLoginUrl();
-                    });
-                    showApiAlertFromXhr(xhr, xhr && xhr.status ? xhr.status : null, getErrorReferenceIdFromXhr(xhr), 'Session expired, please login again.');
-                    return;
+                setProcessingState(false, true);
+                var errorMessage = resolveMessage(xhr, 'Password change failed. Please try again.');
+                if (typeof extractApiMessageFromXhr === 'function') {
+                    var extractedMessage = extractApiMessageFromXhr(xhr, '');
+                    if (extractedMessage && extractedMessage.toString().trim()) {
+                        errorMessage = extractedMessage.toString().trim();
+                    }
                 }
 
-                setProcessingState(false, true);
-                showApiAlertFromXhr(xhr, xhr ? xhr.status : null, getErrorReferenceIdFromXhr(xhr), "Unable to change password. Please try again.");
+                alert(errorMessage);
             },
             dataType: "json",
         });
