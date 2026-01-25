@@ -1,0 +1,151 @@
+@model AIS.Models.ObservationPdfDataModel
+
+@{
+    Layout = null;
+    var memoDate = Model?.MemoDate?.ToString("dd-MMM-yyyy") ?? string.Empty;
+    var hasResponsibilities = Model?.Responsibilities != null
+        && Model.Responsibilities.Any(item =>
+            !string.IsNullOrWhiteSpace(item.PpNo)
+            || !string.IsNullOrWhiteSpace(item.EmployeeName)
+            || !string.IsNullOrWhiteSpace(item.LoanCase)
+            || !string.IsNullOrWhiteSpace(item.LcAmount)
+            || !string.IsNullOrWhiteSpace(item.AccountNumber)
+            || !string.IsNullOrWhiteSpace(item.AcAmount));
+}
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Observation Print</title>
+    <style>
+        body {
+            font-family: Arial, Helvetica, sans-serif;
+            font-size: 12px;
+            color: #111;
+            margin: 24px;
+        }
+
+        h1 {
+            font-size: 16px;
+            margin-bottom: 16px;
+            text-align: center;
+        }
+
+        .section {
+            margin-bottom: 12px;
+        }
+
+        .label {
+            font-weight: bold;
+            display: inline-block;
+            min-width: 120px;
+        }
+
+        .para-text {
+            margin-top: 6px;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+
+        .responsibility-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 6px;
+        }
+
+        .responsibility-table th,
+        .responsibility-table td {
+            border: 1px solid #666;
+            padding: 6px;
+            text-align: left;
+        }
+
+        .disclaimer {
+            margin-top: 18px;
+            font-size: 11px;
+        }
+
+        .signature {
+            margin-top: 28px;
+        }
+
+        .signature-line {
+            border-top: 1px solid #222;
+            width: 240px;
+            margin-bottom: 6px;
+        }
+
+        .page-break {
+            page-break-before: always;
+        }
+    </style>
+</head>
+<body>
+    <h1>Internal Audit System</h1>
+
+    <div class="section"><span class="label">Entity Name:</span> @Model?.EntityName</div>
+    <div class="section"><span class="label">Audit Period:</span> @Model?.AuditPeriod</div>
+    <div class="section"><span class="label">Memo Date:</span> @memoDate</div>
+    <div class="section"><span class="label">Memo No:</span> @Model?.MemoNumber</div>
+    <div class="section"><span class="label">Title:</span> @Model?.Title</div>
+    <div class="section"><span class="label">Annexure:</span> @Model?.Annexure</div>
+    <div class="section"><span class="label">Risk:</span> @Model?.Risk</div>
+
+    <div class="section">
+        <div class="label">Para Text:</div>
+        <div class="para-text">@Html.Raw(Model?.ParaText ?? string.Empty)</div>
+    </div>
+
+    @if (hasResponsibilities)
+    {
+        <div class="section">
+            <div class="label">Responsibility</div>
+            <table class="responsibility-table">
+                <thead>
+                    <tr>
+                        <th>PP No</th>
+                        <th>Name</th>
+                        <th>Loan Case</th>
+                        <th>LC Amount</th>
+                        <th>Account No</th>
+                        <th>ACC Amount</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Model.Responsibilities)
+                    {
+                        if (string.IsNullOrWhiteSpace(item.PpNo)
+                            && string.IsNullOrWhiteSpace(item.EmployeeName)
+                            && string.IsNullOrWhiteSpace(item.LoanCase)
+                            && string.IsNullOrWhiteSpace(item.LcAmount)
+                            && string.IsNullOrWhiteSpace(item.AccountNumber)
+                            && string.IsNullOrWhiteSpace(item.AcAmount))
+                        {
+                            continue;
+                        }
+
+                        <tr>
+                            <td>@item.PpNo</td>
+                            <td>@item.EmployeeName</td>
+                            <td>@item.LoanCase</td>
+                            <td>@item.LcAmount</td>
+                            <td>@item.AccountNumber</td>
+                            <td>@item.AcAmount</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+
+    <div class="disclaimer">
+        Disclaimer: System-generated memo does not require a signature and is subject to change before finalizing the audit report.
+    </div>
+
+    <div class="signature">
+        <div class="signature-line"></div>
+        <div>@Model?.TeamLead</div>
+    </div>
+</body>
+</html>
