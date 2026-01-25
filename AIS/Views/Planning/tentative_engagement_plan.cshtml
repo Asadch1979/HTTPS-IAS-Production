@@ -65,7 +65,7 @@
 
         // Public holidays will be fetched on demand when calculating end date
 
-         if (g_entityType == 25 || g_entityType == 6) {
+         if (g_entityType == 25 || g_entityType == 6|| g_entityType == 28) {
              $('#travellingDayWrapper').removeClass('d-none');
              $('#revenueCollWrapper').removeClass('d-none');
              $('#discussionDayWrapper').removeClass('d-none');
@@ -85,7 +85,7 @@
      });
 
     function isWeekend(dateObj) {
-        var saturdayWorking = [5, 6, 17, 21, 22, 25, 28];
+        var saturdayWorking = [5, 6, 17, 21, 22, 25];
         if (saturdayWorking.includes(parseInt(g_entityType)))
             return dateObj.getDay() === 0;
         return dateObj.getDay() === 6 || dateObj.getDay() === 0;
