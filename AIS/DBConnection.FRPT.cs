@@ -351,21 +351,131 @@ namespace AIS.Controllers
             cmd.Parameters.Add("O_CURSOR", OracleDbType.RefCursor, ParameterDirection.Output);
 
             using var reader = cmd.ExecuteReader();
+            var columns = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            for (var i = 0; i < reader.FieldCount; i++)
+                {
+                columns.Add(reader.GetName(i));
+                }
+
+            string GetString(params string[] names)
+                {
+                foreach (var name in names)
+                    {
+                    if (!columns.Contains(name))
+                        {
+                        continue;
+                        }
+
+                    var value = reader[name];
+                    if (value == DBNull.Value)
+                        {
+                        return string.Empty;
+                        }
+
+                    return value.ToString();
+                    }
+
+                return string.Empty;
+                }
+
+            int? GetInt(params string[] names)
+                {
+                foreach (var name in names)
+                    {
+                    if (!columns.Contains(name))
+                        {
+                        continue;
+                        }
+
+                    var value = reader[name];
+                    if (value == DBNull.Value)
+                        {
+                        return null;
+                        }
+
+                    return Convert.ToInt32(value);
+                    }
+
+                return null;
+                }
+
+            bool GetBool(params string[] names)
+                {
+                var value = GetInt(names);
+                return value.HasValue && value.Value == 1;
+                }
+
             while (reader.Read())
                 {
                 list.Add(new FieldAuditObservationDetailModel
                     {
-                    Risk = reader["risk"] == DBNull.Value ? string.Empty : reader["risk"].ToString(),
-                    AnnexureCode = reader["Annexcode"] == DBNull.Value ? string.Empty : reader["Annexcode"].ToString(),
-                    AnnexureDescription = reader["Annexure"] == DBNull.Value ? string.Empty : reader["Annexure"].ToString(),
-                    InstancesInvolved = reader["instances"] == DBNull.Value ? string.Empty : reader["instances"].ToString(),
-                    AmountInvolved = reader["amount"] == DBNull.Value ? string.Empty : reader["amount"].ToString(),
-                    GistOfPara = reader["Gist_of_Para"] == DBNull.Value ? string.Empty : reader["Gist_of_Para"].ToString(),
-                    ParaDetail = reader["PARA_Detail"] == DBNull.Value ? string.Empty : reader["PARA_Detail"].ToString()
+                    ParaId = GetInt("PARA_ID", "Para_Id", "para_id") ?? 0,
+                    ParaNo = GetInt("PARA_NO", "Para_No", "para_no"),
+                    IsFinalized = GetBool("IS_FINALIZED", "Is_Finalized", "is_finalized"),
+                    Risk = GetString("risk", "RISK"),
+                    AnnexureCode = GetString("Annexcode", "ANNEXCODE", "ANNEX_CODE"),
+                    AnnexureDescription = GetString("Annexure", "ANNEXURE"),
+                    InstancesInvolved = GetString("instances", "INSTANCES"),
+                    AmountInvolved = GetString("amount", "AMOUNT"),
+                    GistOfPara = GetString("Gist_of_Para", "GIST_OF_PARA"),
+                    ParaDetail = GetString("PARA_Detail", "PARA_DETAIL"),
+                    Implications = GetString("IMPLICATIONS"),
+                    Recommendations = GetString("RECOMMENDATIONS"),
+                    ManagementComments = GetString("MANAGEMENT_COMMENTS", "MANAGEMENT_BRANCH_COMMENTS"),
+                    AuditorFurtherComments = GetString("AUDITOR_FURTHER_COMMENTS", "AUDITOR_COMMENTS"),
+                    SvpRemarks = GetString("SVP_REMARKS", "REMARKS_OF_SVP")
                     });
                 }
 
             return list;
+            }
+
+        public (bool Success, string Message) SaveFieldAuditParaNarrative(int engId, FieldAuditParaNarrativeSaveRequest request)
+            {
+            if (request == null)
+                {
+                return (false, "Invalid request.");
+                }
+
+            var sessionHandler = CreateSessionHandler();
+            var activeEngagementId = sessionHandler.GetActiveEngagementIdOrThrow();
+
+            using var con = DatabaseConnection();
+            EnsureConnectionOpen(con);
+
+            using var cmd = con.CreateCommand();
+            cmd.BindByName = true;
+            cmd.CommandType = CommandType.StoredProcedure;
+            cmd.CommandText = "PKG_FRPT.P_SAVE_PARA_NARRATIVE";
+
+            cmd.Parameters.Add("P_ENG_ID", OracleDbType.Int32).Value = activeEngagementId;
+            cmd.Parameters.Add("P_PARA_ID", OracleDbType.Int32).Value = request.ParaId;
+            cmd.Parameters.Add("P_IMPLICATIONS", OracleDbType.Clob).Value = request.Implications ?? string.Empty;
+            cmd.Parameters.Add("P_RECOMMENDATIONS", OracleDbType.Clob).Value = request.Recommendations ?? string.Empty;
+            cmd.Parameters.Add("P_MGMT_COMMENTS", OracleDbType.Clob).Value = request.ManagementComments ?? string.Empty;
+            cmd.Parameters.Add("P_AUDITOR_COMMENTS", OracleDbType.Clob).Value = request.AuditorFurtherComments ?? string.Empty;
+            cmd.Parameters.Add("P_SVP_REMARKS", OracleDbType.Clob).Value = request.SvpRemarks ?? string.Empty;
+            cmd.Parameters.Add("P_ACTION", OracleDbType.Varchar2).Value = request.Action ?? string.Empty;
+
+            var statusParam = cmd.Parameters.Add("O_STATUS", OracleDbType.Int32);
+            statusParam.Direction = ParameterDirection.Output;
+            var messageParam = cmd.Parameters.Add("O_MESSAGE", OracleDbType.Varchar2, 4000);
+            messageParam.Direction = ParameterDirection.Output;
+
+            cmd.ExecuteNonQuery();
+
+            var success = false;
+            if (statusParam.Value != null && statusParam.Value != DBNull.Value)
+                {
+                var oracleValue = (Oracle.ManagedDataAccess.Types.OracleDecimal)statusParam.Value;
+                success = oracleValue.ToInt32() == 1;
+                }
+
+            var message = messageParam.Value == null || messageParam.Value == DBNull.Value
+                ? (success ? "Para narrative saved." : "Unable to save para narrative.")
+                : messageParam.Value.ToString();
+
+            return (success, message);
             }
 
         public void SaveFieldAuditTextBlock(int engId, string sectionCode, string text)

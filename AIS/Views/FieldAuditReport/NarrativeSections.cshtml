@@ -41,9 +41,9 @@
             string.Equals(row.RiskLevel, riskLevel, StringComparison.OrdinalIgnoreCase));
         }
 
-    private string ObservationFieldKey(int index, string suffix)
+    private string FormatParaNo(int? paraNo)
         {
-        return $"Observation{index + 1}{suffix}";
+        return paraNo.HasValue && paraNo.Value > 0 ? paraNo.Value.ToString("D2") : "--";
         }
 }
 
@@ -300,13 +300,18 @@
                 var observation = Model.Observations != null && index < Model.Observations.Count
                     ? Model.Observations[index]
                     : null;
-                var implicationsKey = ObservationFieldKey(index, "Implications");
-                var recommendationsKey = ObservationFieldKey(index, "Recommendations");
-                var managementCommentsKey = ObservationFieldKey(index, "ManagementBranchComments");
-                var auditorCommentsKey = ObservationFieldKey(index, "AuditorFurtherComments");
-                var svpRemarksKey = ObservationFieldKey(index, "SvpRemarks");
+                var paraLabel = FormatParaNo(observation?.ParaNo);
+                var isParaFinalized = observation?.IsFinalized ?? false;
+                var isParaLocked = Model.IsReadOnly || isParaFinalized;
                 <div class="table-responsive mb-4">
-                    <table class="table table-bordered align-middle mb-0">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <h5 class="mb-0">Para No @paraLabel:</h5>
+                        @if (isParaFinalized)
+                        {
+                            <span class="badge bg-success">Finalized</span>
+                        }
+                    </div>
+                    <table class="table table-bordered align-middle mb-0" data-para-id="@(observation?.ParaId ?? 0)">
                         <tbody>
                             <tr>
                                 <th>Risk Level of Para</th>
@@ -347,35 +352,74 @@
                             <tr>
                                 <th>IMPLICATIONS</th>
                                 <td>
-                                    <textarea class="form-control w-100" name="Fields[@implicationsKey]" rows="4" @(Model.IsReadOnly ? "disabled" : string.Empty)></textarea>
+                                    <textarea class="form-control w-100"
+                                              data-field="Implications"
+                                              data-label="IMPLICATIONS"
+                                              rows="4"
+                                              @(isParaLocked ? "disabled" : string.Empty)>@observation?.Implications</textarea>
                                 </td>
                             </tr>
                             <tr>
                                 <th>RECOMMENDATIONS</th>
                                 <td>
-                                    <textarea class="form-control w-100" name="Fields[@recommendationsKey]" rows="4" @(Model.IsReadOnly ? "disabled" : string.Empty)></textarea>
+                                    <textarea class="form-control w-100"
+                                              data-field="Recommendations"
+                                              data-label="RECOMMENDATIONS"
+                                              rows="4"
+                                              @(isParaLocked ? "disabled" : string.Empty)>@observation?.Recommendations</textarea>
                                 </td>
                             </tr>
                             <tr>
                                 <th>MANAGEMENT / BRANCH COMMENTS</th>
                                 <td>
-                                    <textarea class="form-control w-100" name="Fields[@managementCommentsKey]" rows="4" @(Model.IsReadOnly ? "disabled" : string.Empty)></textarea>
+                                    <textarea class="form-control w-100"
+                                              data-field="ManagementComments"
+                                              data-label="MANAGEMENT / BRANCH COMMENTS"
+                                              rows="4"
+                                              @(isParaLocked ? "disabled" : string.Empty)>@observation?.ManagementComments</textarea>
                                 </td>
                             </tr>
                             <tr>
                                 <th>AUDITOR’S FURTHER COMMENTS</th>
                                 <td>
-                                    <textarea class="form-control w-100" name="Fields[@auditorCommentsKey]" rows="4" @(Model.IsReadOnly ? "disabled" : string.Empty)></textarea>
+                                    <textarea class="form-control w-100"
+                                              data-field="AuditorFurtherComments"
+                                              data-label="AUDITOR’S FURTHER COMMENTS"
+                                              rows="4"
+                                              @(isParaLocked ? "disabled" : string.Empty)>@observation?.AuditorFurtherComments</textarea>
                                 </td>
                             </tr>
                             <tr>
                                 <th>REMARKS OF SVP / INCHARGE</th>
                                 <td>
-                                    <textarea class="form-control w-100" name="Fields[@svpRemarksKey]" rows="4" @(Model.IsReadOnly ? "disabled" : string.Empty)></textarea>
+                                    <textarea class="form-control w-100"
+                                              data-field="SvpRemarks"
+                                              data-label="REMARKS OF SVP / INCHARGE"
+                                              rows="4"
+                                              @(isParaLocked ? "disabled" : string.Empty)>@observation?.SvpRemarks</textarea>
                                 </td>
                             </tr>
                         </tbody>
                     </table>
+                    @if (!Model.IsReadOnly && observation?.ParaId > 0)
+                    {
+                        <div class="mt-2 d-flex flex-wrap gap-2">
+                            @if (isParaFinalized)
+                            {
+                                <button type="button" class="btn btn-outline-warning"
+                                        onclick="submitParaAction(@observation.ParaId, 'UPDATE_REQUIRED')">
+                                    Update Required
+                                </button>
+                            }
+                            else
+                            {
+                                <button type="button" class="btn btn-primary"
+                                        onclick="submitParaAction(@observation.ParaId, 'FINALIZE')">
+                                    Save/Finalize Para
+                                </button>
+                            }
+                        </div>
+                    }
                 </div>
             }
 
@@ -388,3 +432,66 @@
         </form>
     }
 </div>
+
+@section Scripts {
+    <script>
+        function findParaContainer(paraId) {
+            return document.querySelector(`table[data-para-id='${paraId}']`);
+        }
+
+        function collectParaFields(container) {
+            const fields = {};
+            const missing = [];
+            container.querySelectorAll('textarea[data-field]').forEach((textarea) => {
+                const fieldName = textarea.dataset.field;
+                const label = textarea.dataset.label || fieldName;
+                const value = textarea.value || '';
+                fields[fieldName] = value;
+                if (!value.trim()) {
+                    missing.push(label);
+                }
+            });
+
+            return { fields, missing };
+        }
+
+        async function submitParaAction(paraId, action) {
+            const container = findParaContainer(paraId);
+            if (!container) {
+                alert('Unable to locate para details.');
+                return;
+            }
+
+            const { fields, missing } = collectParaFields(container);
+            if (action === 'FINALIZE' && missing.length > 0) {
+                alert(`${missing[0]} is required.`);
+                return;
+            }
+
+            const payload = new FormData();
+            payload.append('ParaId', paraId);
+            payload.append('Implications', fields.Implications || '');
+            payload.append('Recommendations', fields.Recommendations || '');
+            payload.append('ManagementComments', fields.ManagementComments || '');
+            payload.append('AuditorFurtherComments', fields.AuditorFurtherComments || '');
+            payload.append('SvpRemarks', fields.SvpRemarks || '');
+            payload.append('Action', action);
+
+            try {
+                const response = await fetch('@Url.Action("SaveNarrativePara")', {
+                    method: 'POST',
+                    body: payload
+                });
+                const result = await response.json();
+                if (!response.ok || !result.Status) {
+                    alert(result.Message || 'Unable to save para.');
+                    return;
+                }
+                alert(result.Message || 'Para updated successfully.');
+                window.location.reload();
+            } catch (error) {
+                alert('Unable to save para. Please try again.');
+            }
+        }
+    </script>
+}
