@@ -1,4 +1,5 @@
 @model AIS.Models.ObservationPdfDataModel
+@using AIS.Utilities
 
 @{
     Layout = null;
@@ -34,6 +35,7 @@
 
         .section {
             margin-bottom: 12px;
+            page-break-inside: avoid;
         }
 
         .label {
@@ -42,16 +44,40 @@
             min-width: 120px;
         }
 
-        .para-text {
-            margin-top: 6px;
-            white-space: pre-wrap;
+        .para-box {
+            border: 1px solid #666;
+            padding: 10px 12px;
+            margin-top: 8px;
+            background-color: #fff;
+        }
+
+        .para-title {
+            font-weight: bold;
+            text-decoration: underline;
+            font-size: 13px;
+            margin-bottom: 6px;
+        }
+
+        .para-body {
+            font-size: 12px;
+            line-height: 1.5;
+            text-align: justify;
             word-break: break-word;
+        }
+
+        .para-body p {
+            margin: 0 0 8px;
+        }
+
+        .para-body p:last-child {
+            margin-bottom: 0;
         }
 
         .responsibility-table {
             width: 100%;
             border-collapse: collapse;
             margin-top: 6px;
+            page-break-inside: avoid;
         }
 
         .responsibility-table th,
@@ -60,6 +86,11 @@
             padding: 6px;
             text-align: left;
         }
+
+        .responsibility-table tr {
+            page-break-inside: avoid;
+        }
+
 
         .disclaimer {
             margin-top: 18px;
@@ -93,8 +124,10 @@
     <div class="section"><span class="label">Risk:</span> @Model?.Risk</div>
 
     <div class="section">
-        <div class="label">Para Text:</div>
-        <div class="para-text">@Html.Raw(Model?.ParaText ?? string.Empty)</div>
+        <div class="para-box">
+            <div class="para-title">Para Text:</div>
+            <div class="para-body">@MemoHtmlHelper.FormatMemoAsHtml(Model?.ParaText)</div>
+        </div>
     </div>
 
     @if (hasResponsibilities)
