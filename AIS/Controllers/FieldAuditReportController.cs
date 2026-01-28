@@ -326,6 +326,64 @@ namespace AIS.Controllers
             }
 
         [HttpPost]
+        public IActionResult SaveNarrativePara(FieldAuditParaNarrativeSaveRequest request)
+            {
+            var redirect = EnsureAuthorized();
+            if (redirect != null)
+                {
+                return redirect;
+                }
+
+            if (!TryResolveEngagementId(out var engId))
+                {
+                return BadRequest(new { Status = false, Message = "Select an engagement to continue." });
+                }
+
+            if (request == null || request.ParaId <= 0)
+                {
+                return BadRequest(new { Status = false, Message = "Invalid para selection." });
+                }
+
+            if (_dbConnection.IsFieldAuditReportFinal(engId))
+                {
+                return BadRequest(new { Status = false, Message = "Report is finalized and cannot be edited." });
+                }
+
+            var paraDetails = _dbConnection
+                .GetFieldAuditObservationDetails(engId)
+                .FirstOrDefault(detail => detail.ParaId == request.ParaId);
+
+            if (paraDetails == null)
+                {
+                return BadRequest(new { Status = false, Message = "Invalid para selection." });
+                }
+
+            request.Action = string.IsNullOrWhiteSpace(request.Action) ? string.Empty : request.Action.Trim().ToUpperInvariant();
+
+            if (paraDetails.IsFinalized && !string.Equals(request.Action, "UPDATE_REQUIRED", StringComparison.OrdinalIgnoreCase))
+                {
+                return BadRequest(new { Status = false, Message = "Para is finalized. Click Update Required to edit." });
+                }
+
+            if (string.Equals(request.Action, "FINALIZE", StringComparison.OrdinalIgnoreCase))
+                {
+                var missingField = GetMissingNarrativeField(request);
+                if (!string.IsNullOrWhiteSpace(missingField))
+                    {
+                    return BadRequest(new { Status = false, Message = $"{missingField} is required." });
+                    }
+                }
+
+            var result = _dbConnection.SaveFieldAuditParaNarrative(engId, request);
+            if (!result.Success)
+                {
+                return BadRequest(new { Status = false, Message = result.Message });
+                }
+
+            return Ok(new { Status = true, Message = result.Message });
+            }
+
+        [HttpPost]
         public IActionResult ClearEngagement(string returnUrl)
             {
             var redirect = EnsureAuthorized();
@@ -430,10 +488,40 @@ namespace AIS.Controllers
         private HashSet<int> GetAuthorizedEngagementIds()
             {
             return _dbConnection
-                .GetObservationEntitiesForPreConcluding()
-                .Where(item => item.ENG_ID.HasValue && item.ENG_ID.Value > 0)
-                .Select(item => item.ENG_ID.Value)
+                .GetReportEntities()
+                .Where(item => item.EngagementId > 0)
+                .Select(item => item.EngagementId)
                 .ToHashSet();
+            }
+
+        private static string GetMissingNarrativeField(FieldAuditParaNarrativeSaveRequest request)
+            {
+            if (string.IsNullOrWhiteSpace(request.Implications))
+                {
+                return "IMPLICATIONS";
+                }
+
+            if (string.IsNullOrWhiteSpace(request.Recommendations))
+                {
+                return "RECOMMENDATIONS";
+                }
+
+            if (string.IsNullOrWhiteSpace(request.ManagementComments))
+                {
+                return "MANAGEMENT / BRANCH COMMENTS";
+                }
+
+            if (string.IsNullOrWhiteSpace(request.AuditorFurtherComments))
+                {
+                return "AUDITOR’S FURTHER COMMENTS";
+                }
+
+            if (string.IsNullOrWhiteSpace(request.SvpRemarks))
+                {
+                return "REMARKS OF SVP / INCHARGE";
+                }
+
+            return string.Empty;
             }
 
         private IActionResult RedirectToLocal(string returnUrl, string fallbackAction)

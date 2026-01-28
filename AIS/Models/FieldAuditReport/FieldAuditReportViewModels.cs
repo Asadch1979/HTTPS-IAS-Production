@@ -84,6 +84,9 @@ namespace AIS.Models.FieldAuditReport
 
     public class FieldAuditObservationDetailModel
         {
+        public int ParaId { get; set; }
+        public int? ParaNo { get; set; }
+        public bool IsFinalized { get; set; }
         public string Risk { get; set; }
         public string AnnexureCode { get; set; }
         public string AnnexureDescription { get; set; }
@@ -91,6 +94,23 @@ namespace AIS.Models.FieldAuditReport
         public string AmountInvolved { get; set; }
         public string GistOfPara { get; set; }
         public string ParaDetail { get; set; }
+        public string Implications { get; set; }
+        public string Recommendations { get; set; }
+        public string ManagementComments { get; set; }
+        public string AuditorFurtherComments { get; set; }
+        public string SvpRemarks { get; set; }
+        }
+
+    public class FieldAuditParaNarrativeSaveRequest
+        {
+        public int ParaId { get; set; }
+        public int? ParaNo { get; set; }
+        public string Implications { get; set; }
+        public string Recommendations { get; set; }
+        public string ManagementComments { get; set; }
+        public string AuditorFurtherComments { get; set; }
+        public string SvpRemarks { get; set; }
+        public string Action { get; set; }
         }
 
     public class NarrativeSectionsViewModel : FieldAuditInputSectionViewModel
