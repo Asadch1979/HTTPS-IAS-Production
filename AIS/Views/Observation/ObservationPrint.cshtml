@@ -42,10 +42,46 @@
             min-width: 120px;
         }
 
-        .para-text {
+        .para-box {
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            padding: 12px 14px;
             margin-top: 6px;
+            background: #fff;
+        }
+
+        .para-title {
+            font-weight: 700;
+            text-decoration: underline;
+            font-size: 14px;
+            margin-bottom: 10px;
+            color: #111;
+        }
+
+        .para-body {
+            font-size: 13px;
+            line-height: 1.6;
+            text-align: justify;
             white-space: pre-wrap;
             word-break: break-word;
+            color: #212529;
+        }
+
+        .para-body p {
+            margin: 0 0 10px;
+        }
+
+        .para-body table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+
+        .para-body table th,
+        .para-body table td {
+            border: 1px solid #222;
+            padding: 4px 6px;
+            vertical-align: top;
         }
 
         .responsibility-table {
@@ -93,8 +129,10 @@
     <div class="section"><span class="label">Risk:</span> @Model?.Risk</div>
 
     <div class="section">
-        <div class="label">Para Text:</div>
-        <div class="para-text">@Html.Raw(Model?.ParaText ?? string.Empty)</div>
+        <div class="para-box">
+            <div class="para-title">Para Text:</div>
+            <div class="para-body">@Html.Raw(Model?.ParaText ?? string.Empty)</div>
+        </div>
     </div>
 
     @if (hasResponsibilities)
