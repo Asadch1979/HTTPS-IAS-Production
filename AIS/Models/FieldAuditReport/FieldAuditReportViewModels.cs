@@ -130,6 +130,25 @@ namespace AIS.Models.FieldAuditReport
         public string Unit { get; set; }
         }
 
+    public class StaffDesignationOptionModel
+        {
+        public string Code { get; set; }
+        public string Label { get; set; }
+        }
+
+    public class KpiOptionModel
+        {
+        public string KpiCode { get; set; }
+        public string KpiLabel { get; set; }
+        public string Unit { get; set; }
+        }
+
+    public class NplCategoryOptionModel
+        {
+        public string Code { get; set; }
+        public string Label { get; set; }
+        }
+
     public class KpiSnapshotViewModel
         {
         public int EngagementId { get; set; }

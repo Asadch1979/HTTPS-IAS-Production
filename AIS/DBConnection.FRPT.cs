@@ -485,6 +485,91 @@ namespace AIS.Controllers
            KPI SNAPSHOT
         ========================================================= */
 
+        public List<StaffDesignationOptionModel> GetStaffDesignationOptions(int engId)
+            {
+            var list = new List<StaffDesignationOptionModel>();
+
+            using var con = DatabaseConnection();
+            EnsureConnectionOpen(con);
+
+            using var cmd = con.CreateCommand();
+            cmd.BindByName = true;
+            cmd.CommandType = CommandType.StoredProcedure;
+            cmd.CommandText = "PKG_FRPT.P_GET_STAFF_DESIGNATIONS";
+
+            cmd.Parameters.Add("P_ENG_ID", OracleDbType.Int32).Value = engId;
+            cmd.Parameters.Add("O_CURSOR", OracleDbType.RefCursor, ParameterDirection.Output);
+
+            using var reader = cmd.ExecuteReader();
+            while (reader.Read())
+                {
+                list.Add(new StaffDesignationOptionModel
+                    {
+                    Code = reader["CODE"] == DBNull.Value ? string.Empty : reader["CODE"].ToString(),
+                    Label = reader["LABEL"] == DBNull.Value ? string.Empty : reader["LABEL"].ToString()
+                    });
+                }
+
+            return list;
+            }
+
+        public List<KpiOptionModel> GetKpiOptions(int engId)
+            {
+            var list = new List<KpiOptionModel>();
+
+            using var con = DatabaseConnection();
+            EnsureConnectionOpen(con);
+
+            using var cmd = con.CreateCommand();
+            cmd.BindByName = true;
+            cmd.CommandType = CommandType.StoredProcedure;
+            cmd.CommandText = "PKG_FRPT.P_GET_KPI_OPTIONS";
+
+            cmd.Parameters.Add("P_ENG_ID", OracleDbType.Int32).Value = engId;
+            cmd.Parameters.Add("O_CURSOR", OracleDbType.RefCursor, ParameterDirection.Output);
+
+            using var reader = cmd.ExecuteReader();
+            while (reader.Read())
+                {
+                list.Add(new KpiOptionModel
+                    {
+                    KpiCode = reader["KPI_CODE"] == DBNull.Value ? string.Empty : reader["KPI_CODE"].ToString(),
+                    KpiLabel = reader["KPI_LABEL"] == DBNull.Value ? string.Empty : reader["KPI_LABEL"].ToString(),
+                    Unit = reader["UNIT"] == DBNull.Value ? string.Empty : reader["UNIT"].ToString()
+                    });
+                }
+
+            return list;
+            }
+
+        public List<NplCategoryOptionModel> GetNplCategoryOptions(int engId)
+            {
+            var list = new List<NplCategoryOptionModel>();
+
+            using var con = DatabaseConnection();
+            EnsureConnectionOpen(con);
+
+            using var cmd = con.CreateCommand();
+            cmd.BindByName = true;
+            cmd.CommandType = CommandType.StoredProcedure;
+            cmd.CommandText = "PKG_FRPT.P_GET_NPL_CATEGORIES";
+
+            cmd.Parameters.Add("P_ENG_ID", OracleDbType.Int32).Value = engId;
+            cmd.Parameters.Add("O_CURSOR", OracleDbType.RefCursor, ParameterDirection.Output);
+
+            using var reader = cmd.ExecuteReader();
+            while (reader.Read())
+                {
+                list.Add(new NplCategoryOptionModel
+                    {
+                    Code = reader["CODE"] == DBNull.Value ? string.Empty : reader["CODE"].ToString(),
+                    Label = reader["LABEL"] == DBNull.Value ? string.Empty : reader["LABEL"].ToString()
+                    });
+                }
+
+            return list;
+            }
+
         public List<KpiSnapshotRowModel> GetFieldAuditKpiSnapshots(int engId)
             {
             var list = new List<KpiSnapshotRowModel>();

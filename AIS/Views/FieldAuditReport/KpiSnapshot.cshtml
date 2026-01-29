@@ -191,19 +191,39 @@
             </div>
 
             <div class="card mb-4">
+                <div class="card-header">Saved Data (Read-only)</div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-bordered align-middle" id="kpi-snapshot-saved-table">
+                            <thead>
+                                <tr>
+                                    <th>KPI Label</th>
+                                    <th>Period End</th>
+                                    <th>Actual</th>
+                                    <th>Target</th>
+                                    <th>Unit</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card mb-4">
                 <div class="card-header d-flex justify-content-between align-items-center">
-                    <span>KPI Snapshot Rows</span>
+                    <span>KPI Snapshot (Entry)</span>
                     <button type="button" class="btn btn-outline-primary btn-sm" id="add-kpi-snapshot-row" @(Model.IsReadOnly ? "disabled" : string.Empty)>
                         <i class="fa-solid fa-plus"></i>
                     </button>
                 </div>
                 <div class="card-body">
                     <div class="table-responsive">
-                        <table class="table table-bordered align-middle" id="kpi-snapshot-table">
+                        <table class="table table-bordered align-middle" id="kpi-snapshot-entry-table">
                             <thead>
                                 <tr>
-                                    <th>KPI Code</th>
-                                    <th>Label</th>
+                                    <th>KPI Label</th>
                                     <th>Period End</th>
                                     <th>Actual Value</th>
                                     <th>Target Value</th>
@@ -278,12 +298,14 @@
 
         (() => {
             const engId = @Model.EngagementId;
-            const tableBody = document.querySelector('#kpi-snapshot-table tbody');
+            const entryTableBody = document.querySelector('#kpi-snapshot-entry-table tbody');
+            const savedTableBody = document.querySelector('#kpi-snapshot-saved-table tbody');
             const addButton = document.getElementById('add-kpi-snapshot-row');
             const saveButton = document.getElementById('save-kpi-snapshot');
             const statusEl = document.getElementById('kpi-snapshot-status');
+            const kpiOptions = [];
 
-            if (!tableBody || !engId) {
+            if (!entryTableBody || !savedTableBody || !engId) {
                 return;
             }
 
@@ -298,6 +320,55 @@
                 return date.toISOString().slice(0, 10);
             };
 
+            const renderSavedRows = (rows = []) => {
+                savedTableBody.innerHTML = '';
+                if (!rows.length) {
+                    const emptyRow = document.createElement('tr');
+                    emptyRow.innerHTML = '<td colspan="5" class="text-muted">No saved data.</td>';
+                    savedTableBody.appendChild(emptyRow);
+                    return;
+                }
+
+                rows.forEach(row => {
+                    const kpiLabel = row.kpiLabel ?? row.KpiLabel ?? '';
+                    const periodEnd = row.periodEnd ?? row.PeriodEnd ?? '';
+                    const actualValue = row.actualValue ?? row.ActualValue ?? '';
+                    const targetValue = row.targetValue ?? row.TargetValue ?? '';
+                    const unit = row.unit ?? row.Unit ?? '';
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td>${kpiLabel || '-'}</td>
+                        <td>${formatDate(periodEnd) || '-'}</td>
+                        <td>${actualValue ?? ''}</td>
+                        <td>${targetValue ?? ''}</td>
+                        <td>${unit || '-'}</td>
+                    `;
+                    savedTableBody.appendChild(tr);
+                });
+            };
+
+            const createKpiSelect = (selectedCode = '', selectedLabel = '') => {
+                const select = document.createElement('select');
+                select.className = 'form-select';
+                const placeholder = document.createElement('option');
+                placeholder.value = '';
+                placeholder.textContent = 'Select KPI';
+                select.appendChild(placeholder);
+
+                kpiOptions.forEach(option => {
+                    const opt = document.createElement('option');
+                    opt.value = option.kpiCode;
+                    opt.textContent = option.kpiLabel;
+                    opt.dataset.unit = option.unit ?? '';
+                    if (option.kpiCode === selectedCode || option.kpiLabel === selectedLabel) {
+                        opt.selected = true;
+                    }
+                    select.appendChild(opt);
+                });
+
+                return select;
+            };
+
             const addRow = (row = {}) => {
                 const kpiCode = row.kpiCode ?? row.KpiCode ?? '';
                 const kpiLabel = row.kpiLabel ?? row.KpiLabel ?? '';
@@ -306,15 +377,51 @@
                 const targetValue = row.targetValue ?? row.TargetValue ?? '';
                 const unit = row.unit ?? row.Unit ?? '';
                 const tr = document.createElement('tr');
-                tr.innerHTML = `
-                    <td><input class="form-control" value="${kpiCode}" /></td>
-                    <td><input class="form-control" value="${kpiLabel}" /></td>
-                    <td><input class="form-control" type="date" value="${formatDate(periodEnd)}" /></td>
-                    <td><input class="form-control" type="number" step="any" value="${actualValue}" /></td>
-                    <td><input class="form-control" type="number" step="any" value="${targetValue}" /></td>
-                    <td><input class="form-control" value="${unit}" /></td>
-                `;
-                tableBody.appendChild(tr);
+                const kpiCell = document.createElement('td');
+                const select = createKpiSelect(kpiCode, kpiLabel);
+                const unitInput = document.createElement('input');
+                unitInput.className = 'form-control';
+                unitInput.value = unit;
+
+                select.addEventListener('change', (event) => {
+                    const selected = event.target.selectedOptions[0];
+                    const selectedUnit = selected?.dataset?.unit ?? '';
+                    if (selectedUnit) {
+                        unitInput.value = selectedUnit;
+                    }
+                });
+
+                kpiCell.appendChild(select);
+                tr.appendChild(kpiCell);
+                const periodCell = document.createElement('td');
+                const periodInput = document.createElement('input');
+                periodInput.className = 'form-control';
+                periodInput.type = 'date';
+                periodInput.value = formatDate(periodEnd);
+                periodCell.appendChild(periodInput);
+                tr.appendChild(periodCell);
+
+                const actualCell = document.createElement('td');
+                const actualInput = document.createElement('input');
+                actualInput.className = 'form-control';
+                actualInput.type = 'number';
+                actualInput.step = 'any';
+                actualInput.value = actualValue;
+                actualCell.appendChild(actualInput);
+                tr.appendChild(actualCell);
+
+                const targetCell = document.createElement('td');
+                const targetInput = document.createElement('input');
+                targetInput.className = 'form-control';
+                targetInput.type = 'number';
+                targetInput.step = 'any';
+                targetInput.value = targetValue;
+                targetCell.appendChild(targetInput);
+                tr.appendChild(targetCell);
+                const unitCell = document.createElement('td');
+                unitCell.appendChild(unitInput);
+                tr.appendChild(unitCell);
+                entryTableBody.appendChild(tr);
             };
 
             const loadKpiRows = () => {
@@ -322,12 +429,9 @@
                 fetch(`/FieldAuditReport/GetKpiSnapshotRows?engId=${engId}`)
                     .then(response => response.json())
                     .then(data => {
-                        tableBody.innerHTML = '';
-                        if (data?.rows?.length) {
-                            data.rows.forEach(row => addRow(row));
-                        } else {
-                            addRow();
-                        }
+                        renderSavedRows(data?.rows ?? []);
+                        entryTableBody.innerHTML = '';
+                        addRow();
                         statusEl.textContent = '';
                     })
                     .catch(() => {
@@ -336,14 +440,15 @@
             };
 
             const collectKpiRows = () => {
-                return Array.from(tableBody.querySelectorAll('tr')).map(row => {
+                return Array.from(entryTableBody.querySelectorAll('tr')).map(row => {
+                    const kpiSelect = row.querySelector('select');
                     const cells = row.querySelectorAll('input');
-                    const kpiCode = cells[0]?.value?.trim() ?? '';
-                    const kpiLabel = cells[1]?.value?.trim() ?? '';
-                    const periodEnd = cells[2]?.value;
-                    const actualValue = cells[3]?.value;
-                    const targetValue = cells[4]?.value;
-                    const unit = cells[5]?.value?.trim() ?? '';
+                    const kpiCode = kpiSelect?.value?.trim() ?? '';
+                    const kpiLabel = kpiSelect?.selectedOptions[0]?.textContent?.trim() ?? '';
+                    const periodEnd = cells[0]?.value;
+                    const actualValue = cells[1]?.value;
+                    const targetValue = cells[2]?.value;
+                    const unit = cells[3]?.value?.trim() ?? '';
                     return {
                         kpiCode,
                         kpiLabel,
@@ -374,7 +479,7 @@
                             return;
                         }
                         statusEl.textContent = data.message ?? 'Saved.';
-                        loadKpiRows();
+                        renderSavedRows(data?.rows ?? []);
                     })
                     .catch(() => {
                         statusEl.textContent = 'Unable to save KPI snapshot rows.';
@@ -383,7 +488,26 @@
 
             addButton?.addEventListener('click', () => addRow());
             saveButton?.addEventListener('click', saveKpiRows);
-            loadKpiRows();
+            fetch(`/FieldAuditReport/GetKpiOptions?engId=${engId}`)
+                .then(response => response.json())
+                .then(data => {
+                    kpiOptions.length = 0;
+                    (data?.items ?? []).forEach(item => {
+                        if (!item) {
+                            return;
+                        }
+                        kpiOptions.push({
+                            kpiCode: item.kpiCode ?? item.KpiCode ?? '',
+                            kpiLabel: item.kpiLabel ?? item.KpiLabel ?? '',
+                            unit: item.unit ?? item.Unit ?? ''
+                        });
+                    });
+                    loadKpiRows();
+                })
+                .catch(() => {
+                    statusEl.textContent = 'Unable to load KPI options.';
+                    loadKpiRows();
+                });
         })();
     </script>
 }
