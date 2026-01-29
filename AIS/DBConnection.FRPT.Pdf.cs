@@ -15,18 +15,17 @@ namespace AIS.Controllers
 
         public FieldAuditPdfReportData GetFieldAuditReportPdfData(int engId, int? reportVersion)
             {
-            var activeEngagementId = GetActiveEngagementId();
             return new FieldAuditPdfReportData
                 {
-                Header = GetFieldAuditPdfHeader(activeEngagementId, reportVersion),
-                ReportMeta = GetFieldAuditPdfReportMeta(activeEngagementId, reportVersion),
-                Sections = GetFieldAuditPdfSections(activeEngagementId, reportVersion),
-                KpiRows = GetFieldAuditPdfKpiSnapshot(activeEngagementId, reportVersion),
-                NplRows = GetFieldAuditPdfNplSnapshot(activeEngagementId, reportVersion),
-                StaffRows = GetFieldAuditPdfStaffSnapshot(activeEngagementId, reportVersion),
-                Paras = GetFieldAuditPdfParas(activeEngagementId, reportVersion),
-                StatisticsRows = GetFieldAuditPdfStatistics(activeEngagementId, reportVersion),
-                IncomeLeakageRows = GetFieldAuditPdfIncomeLeakage(activeEngagementId, reportVersion)
+                Header = GetFieldAuditPdfHeader(engId, reportVersion),
+                ReportMeta = GetFieldAuditPdfReportMeta(engId, reportVersion),
+                Sections = GetFieldAuditPdfSections(engId, reportVersion),
+                KpiRows = GetFieldAuditPdfKpiSnapshot(engId, reportVersion),
+                NplRows = GetFieldAuditPdfNplSnapshot(engId, reportVersion),
+                StaffRows = GetFieldAuditPdfStaffSnapshot(engId, reportVersion),
+                Paras = GetFieldAuditPdfParas(engId, reportVersion),
+                StatisticsRows = GetFieldAuditPdfStatistics(engId, reportVersion),
+                IncomeLeakageRows = GetFieldAuditPdfIncomeLeakage(engId, reportVersion)
                 };
             }
 
@@ -37,7 +36,6 @@ namespace AIS.Controllers
         public FieldAuditPdfHeaderModel GetFieldAuditPdfHeader(int engId, int? reportVersion)
             {
             var header = new FieldAuditPdfHeaderModel();
-            var activeEngagementId = GetActiveEngagementId();
 
             using var con = DatabaseConnection();
             con.Open();
@@ -47,7 +45,7 @@ namespace AIS.Controllers
             cmd.CommandType = CommandType.StoredProcedure;
             cmd.CommandText = "PKG_FRPT.P_GET_PDF_HEADER";
 
-            cmd.Parameters.Add("P_ENG_ID", OracleDbType.Int32).Value = activeEngagementId;
+            cmd.Parameters.Add("P_ENG_ID", OracleDbType.Int32).Value = engId;
             cmd.Parameters.Add("P_REPORT_VERSION", OracleDbType.Int32).Value = reportVersion ?? (object)DBNull.Value;
             cmd.Parameters.Add("O_CURSOR", OracleDbType.RefCursor, ParameterDirection.Output);
 
@@ -76,7 +74,6 @@ namespace AIS.Controllers
         public FieldAuditPdfReportMetaModel GetFieldAuditPdfReportMeta(int engId, int? reportVersion)
             {
             var meta = new FieldAuditPdfReportMetaModel();
-            var activeEngagementId = GetActiveEngagementId();
 
             using var con = DatabaseConnection();
             con.Open();
@@ -86,7 +83,7 @@ namespace AIS.Controllers
             cmd.CommandType = CommandType.StoredProcedure;
             cmd.CommandText = "PKG_FRPT.P_GET_PDF_REPORT_META";
 
-            cmd.Parameters.Add("P_ENG_ID", OracleDbType.Int32).Value = activeEngagementId;
+            cmd.Parameters.Add("P_ENG_ID", OracleDbType.Int32).Value = engId;
             cmd.Parameters.Add("P_REPORT_VERSION", OracleDbType.Int32).Value = reportVersion ?? (object)DBNull.Value;
             cmd.Parameters.Add("O_CURSOR", OracleDbType.RefCursor, ParameterDirection.Output);
 
@@ -111,7 +108,6 @@ namespace AIS.Controllers
         public List<FieldAuditPdfSectionModel> GetFieldAuditPdfSections(int engId, int? reportVersion)
             {
             var sections = new List<FieldAuditPdfSectionModel>();
-            var activeEngagementId = GetActiveEngagementId();
 
             using var con = DatabaseConnection();
             con.Open();
@@ -121,7 +117,7 @@ namespace AIS.Controllers
             cmd.CommandType = CommandType.StoredProcedure;
             cmd.CommandText = "PKG_FRPT.P_GET_PDF_SECTIONS";
 
-            cmd.Parameters.Add("P_ENG_ID", OracleDbType.Int32).Value = activeEngagementId;
+            cmd.Parameters.Add("P_ENG_ID", OracleDbType.Int32).Value = engId;
             cmd.Parameters.Add("P_REPORT_VERSION", OracleDbType.Int32).Value = reportVersion ?? (object)DBNull.Value;
             cmd.Parameters.Add("O_CURSOR", OracleDbType.RefCursor, ParameterDirection.Output);
 
@@ -148,7 +144,6 @@ namespace AIS.Controllers
         public List<FieldAuditPdfKpiRowModel> GetFieldAuditPdfKpiSnapshot(int engId, int? reportVersion)
             {
             var rows = new List<FieldAuditPdfKpiRowModel>();
-            var activeEngagementId = GetActiveEngagementId();
 
             using var con = DatabaseConnection();
             con.Open();
@@ -158,7 +153,7 @@ namespace AIS.Controllers
             cmd.CommandType = CommandType.StoredProcedure;
             cmd.CommandText = "PKG_FRPT.P_GET_PDF_KPI";
 
-            cmd.Parameters.Add("P_ENG_ID", OracleDbType.Int32).Value = activeEngagementId;
+            cmd.Parameters.Add("P_ENG_ID", OracleDbType.Int32).Value = engId;
             cmd.Parameters.Add("P_REPORT_VERSION", OracleDbType.Int32).Value = reportVersion ?? (object)DBNull.Value;
             cmd.Parameters.Add("O_CURSOR", OracleDbType.RefCursor, ParameterDirection.Output);
 
@@ -186,7 +181,6 @@ namespace AIS.Controllers
         public List<FieldAuditPdfNplRowModel> GetFieldAuditPdfNplSnapshot(int engId, int? reportVersion)
             {
             var rows = new List<FieldAuditPdfNplRowModel>();
-            var activeEngagementId = GetActiveEngagementId();
 
             using var con = DatabaseConnection();
             con.Open();
@@ -196,7 +190,7 @@ namespace AIS.Controllers
             cmd.CommandType = CommandType.StoredProcedure;
             cmd.CommandText = "PKG_FRPT.P_GET_PDF_NPL";
 
-            cmd.Parameters.Add("P_ENG_ID", OracleDbType.Int32).Value = activeEngagementId;
+            cmd.Parameters.Add("P_ENG_ID", OracleDbType.Int32).Value = engId;
             cmd.Parameters.Add("P_REPORT_VERSION", OracleDbType.Int32).Value = reportVersion ?? (object)DBNull.Value;
             cmd.Parameters.Add("O_CURSOR", OracleDbType.RefCursor, ParameterDirection.Output);
 
@@ -223,7 +217,6 @@ namespace AIS.Controllers
         public List<FieldAuditPdfStaffRowModel> GetFieldAuditPdfStaffSnapshot(int engId, int? reportVersion)
             {
             var rows = new List<FieldAuditPdfStaffRowModel>();
-            var activeEngagementId = GetActiveEngagementId();
 
             using var con = DatabaseConnection();
             con.Open();
@@ -233,7 +226,7 @@ namespace AIS.Controllers
             cmd.CommandType = CommandType.StoredProcedure;
             cmd.CommandText = "PKG_FRPT.P_GET_PDF_STAFF";
 
-            cmd.Parameters.Add("P_ENG_ID", OracleDbType.Int32).Value = activeEngagementId;
+            cmd.Parameters.Add("P_ENG_ID", OracleDbType.Int32).Value = engId;
             cmd.Parameters.Add("P_REPORT_VERSION", OracleDbType.Int32).Value = reportVersion ?? (object)DBNull.Value;
             cmd.Parameters.Add("O_CURSOR", OracleDbType.RefCursor, ParameterDirection.Output);
 
@@ -260,7 +253,6 @@ namespace AIS.Controllers
             var rows = new List<FieldAuditPdfParaModel>();
             var sessionHandler = CreateSessionHandler();
             var user = sessionHandler.GetUserOrThrow();
-            var activeEngagementId = sessionHandler.GetActiveEngagementIdOrThrow();
 
             using var con = DatabaseConnection();
             con.Open();
@@ -270,7 +262,7 @@ namespace AIS.Controllers
             cmd.CommandType = CommandType.StoredProcedure;
             cmd.CommandText = "PKG_RPT.R_GETAUDITEEPARAS";
 
-            cmd.Parameters.Add("ENGID", OracleDbType.Int32).Value = activeEngagementId;
+            cmd.Parameters.Add("ENGID", OracleDbType.Int32).Value = engId;
             cmd.Parameters.Add("ENT_ID", OracleDbType.Int32).Value = user.UserEntityID;
             cmd.Parameters.Add("P_NO", OracleDbType.Int32).Value = user.PPNumber;
             cmd.Parameters.Add("R_ID", OracleDbType.Int32).Value = user.UserRoleID;
@@ -308,7 +300,6 @@ namespace AIS.Controllers
         public List<FieldAuditPdfStatisticsRowModel> GetFieldAuditPdfStatistics(int engId, int? reportVersion)
             {
             var rows = new List<FieldAuditPdfStatisticsRowModel>();
-            var activeEngagementId = GetActiveEngagementId();
 
             using var con = DatabaseConnection();
             con.Open();
@@ -318,7 +309,7 @@ namespace AIS.Controllers
             cmd.CommandType = CommandType.StoredProcedure;
             cmd.CommandText = "PKG_FRPT.P_GET_PDF_STATISTICS";
 
-            cmd.Parameters.Add("P_ENG_ID", OracleDbType.Int32).Value = activeEngagementId;
+            cmd.Parameters.Add("P_ENG_ID", OracleDbType.Int32).Value = engId;
             cmd.Parameters.Add("P_REPORT_VERSION", OracleDbType.Int32).Value = reportVersion ?? (object)DBNull.Value;
             cmd.Parameters.Add("O_CURSOR", OracleDbType.RefCursor, ParameterDirection.Output);
 
@@ -344,7 +335,6 @@ namespace AIS.Controllers
         public List<FieldAuditPdfIncomeLeakageRowModel> GetFieldAuditPdfIncomeLeakage(int engId, int? reportVersion)
             {
             var rows = new List<FieldAuditPdfIncomeLeakageRowModel>();
-            var activeEngagementId = GetActiveEngagementId();
 
             using var con = DatabaseConnection();
             con.Open();
@@ -354,7 +344,7 @@ namespace AIS.Controllers
             cmd.CommandType = CommandType.StoredProcedure;
             cmd.CommandText = "PKG_FRPT.P_GET_PDF_INCOME_LEAKAGE";
 
-            cmd.Parameters.Add("P_ENG_ID", OracleDbType.Int32).Value = activeEngagementId;
+            cmd.Parameters.Add("P_ENG_ID", OracleDbType.Int32).Value = engId;
             cmd.Parameters.Add("P_REPORT_VERSION", OracleDbType.Int32).Value = reportVersion ?? (object)DBNull.Value;
             cmd.Parameters.Add("O_CURSOR", OracleDbType.RefCursor, ParameterDirection.Output);
 
@@ -406,10 +396,5 @@ namespace AIS.Controllers
                 }
             }
 
-        private int GetActiveEngagementId()
-            {
-            var sessionHandler = CreateSessionHandler();
-            return sessionHandler.GetActiveEngagementIdOrThrow();
-            }
         }
     }

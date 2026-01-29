@@ -73,7 +73,18 @@
 
         <form method="post" asp-action="FinalizeReport">
             <button type="submit" class="btn btn-success" @(!Model.CanFinalize ? "disabled" : string.Empty)>Finalize Report</button>
-            <button type="button" class="btn btn-outline-secondary" disabled>Generate PDF (Coming Soon)</button>
+            @if (Model.IsFinal)
+            {
+                <a class="btn btn-outline-secondary"
+                   asp-controller="FieldAuditReportPdf"
+                   asp-action="GeneratePdf"
+                   asp-route-engId="@Model.EngagementId">Generate PDF</a>
+            }
+            else
+            {
+                <button type="button" class="btn btn-outline-secondary" disabled title="Finalize first">Generate PDF</button>
+                <span class="text-muted ms-2">Finalize first</span>
+            }
         </form>
     }
 </div>
