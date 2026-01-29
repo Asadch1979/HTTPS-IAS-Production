@@ -190,6 +190,37 @@
                 </table>
             </div>
 
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span>KPI Snapshot Rows</span>
+                    <button type="button" class="btn btn-outline-primary btn-sm" id="add-kpi-snapshot-row" @(Model.IsReadOnly ? "disabled" : string.Empty)>
+                        <i class="fa-solid fa-plus"></i>
+                    </button>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-bordered align-middle" id="kpi-snapshot-table">
+                            <thead>
+                                <tr>
+                                    <th>KPI Code</th>
+                                    <th>Label</th>
+                                    <th>Period End</th>
+                                    <th>Actual Value</th>
+                                    <th>Target Value</th>
+                                    <th>Unit</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="d-flex align-items-center gap-2">
+                        <button type="button" class="btn btn-primary" id="save-kpi-snapshot" @(Model.IsReadOnly ? "disabled" : string.Empty)>Save KPI Snapshot</button>
+                        <span class="text-muted" id="kpi-snapshot-status"></span>
+                    </div>
+                </div>
+            </div>
+
             <div class="d-flex flex-wrap gap-2">
                 <a class="btn btn-outline-secondary" href="@Url.Action("StaffSnapshot")">Back</a>
                 <button type="submit" class="btn btn-primary" name="submitAction" value="save" @(Model.IsReadOnly ? "disabled" : string.Empty)>Save Draft</button>
@@ -243,6 +274,116 @@
                 tableBody.appendChild(row);
                 nextIndex += 1;
             });
+        })();
+
+        (() => {
+            const engId = @Model.EngagementId;
+            const tableBody = document.querySelector('#kpi-snapshot-table tbody');
+            const addButton = document.getElementById('add-kpi-snapshot-row');
+            const saveButton = document.getElementById('save-kpi-snapshot');
+            const statusEl = document.getElementById('kpi-snapshot-status');
+
+            if (!tableBody || !engId) {
+                return;
+            }
+
+            const formatDate = (value) => {
+                if (!value) {
+                    return '';
+                }
+                const date = new Date(value);
+                if (Number.isNaN(date.getTime())) {
+                    return '';
+                }
+                return date.toISOString().slice(0, 10);
+            };
+
+            const addRow = (row = {}) => {
+                const kpiCode = row.kpiCode ?? row.KpiCode ?? '';
+                const kpiLabel = row.kpiLabel ?? row.KpiLabel ?? '';
+                const periodEnd = row.periodEnd ?? row.PeriodEnd ?? '';
+                const actualValue = row.actualValue ?? row.ActualValue ?? '';
+                const targetValue = row.targetValue ?? row.TargetValue ?? '';
+                const unit = row.unit ?? row.Unit ?? '';
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td><input class="form-control" value="${kpiCode}" /></td>
+                    <td><input class="form-control" value="${kpiLabel}" /></td>
+                    <td><input class="form-control" type="date" value="${formatDate(periodEnd)}" /></td>
+                    <td><input class="form-control" type="number" step="any" value="${actualValue}" /></td>
+                    <td><input class="form-control" type="number" step="any" value="${targetValue}" /></td>
+                    <td><input class="form-control" value="${unit}" /></td>
+                `;
+                tableBody.appendChild(tr);
+            };
+
+            const loadKpiRows = () => {
+                statusEl.textContent = 'Loading...';
+                fetch(`/FieldAuditReport/GetKpiSnapshotRows?engId=${engId}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        tableBody.innerHTML = '';
+                        if (data?.rows?.length) {
+                            data.rows.forEach(row => addRow(row));
+                        } else {
+                            addRow();
+                        }
+                        statusEl.textContent = '';
+                    })
+                    .catch(() => {
+                        statusEl.textContent = 'Unable to load KPI snapshot rows.';
+                    });
+            };
+
+            const collectKpiRows = () => {
+                return Array.from(tableBody.querySelectorAll('tr')).map(row => {
+                    const cells = row.querySelectorAll('input');
+                    const kpiCode = cells[0]?.value?.trim() ?? '';
+                    const kpiLabel = cells[1]?.value?.trim() ?? '';
+                    const periodEnd = cells[2]?.value;
+                    const actualValue = cells[3]?.value;
+                    const targetValue = cells[4]?.value;
+                    const unit = cells[5]?.value?.trim() ?? '';
+                    return {
+                        kpiCode,
+                        kpiLabel,
+                        periodEnd: periodEnd === '' ? null : periodEnd,
+                        actualValue: actualValue === '' ? null : Number(actualValue),
+                        targetValue: targetValue === '' ? null : Number(targetValue),
+                        unit
+                    };
+                });
+            };
+
+            const saveKpiRows = () => {
+                if (saveButton?.disabled) {
+                    return;
+                }
+                statusEl.textContent = 'Saving...';
+                fetch(`/FieldAuditReport/SaveKpiSnapshotRows?engId=${engId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(collectKpiRows())
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (!data?.success) {
+                            statusEl.textContent = data?.message ?? 'Unable to save KPI snapshot rows.';
+                            return;
+                        }
+                        statusEl.textContent = data.message ?? 'Saved.';
+                        loadKpiRows();
+                    })
+                    .catch(() => {
+                        statusEl.textContent = 'Unable to save KPI snapshot rows.';
+                    });
+            };
+
+            addButton?.addEventListener('click', () => addRow());
+            saveButton?.addEventListener('click', saveKpiRows);
+            loadKpiRows();
         })();
     </script>
 }

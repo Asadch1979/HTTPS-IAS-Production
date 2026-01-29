@@ -197,6 +197,182 @@ namespace AIS.Controllers
             return View(model);
             }
 
+        [HttpGet]
+        public IActionResult GetStaffSnapshotRows(int engId)
+            {
+            var redirect = EnsureAuthorized();
+            if (redirect != null)
+                {
+                return redirect;
+                }
+
+            if (engId <= 0)
+                {
+                return BadRequest(new { success = false, message = "Invalid engagement." });
+                }
+
+            var rows = _dbConnection.GetFieldAuditStaffSnapshots(engId);
+            return Json(new { success = true, rows });
+            }
+
+        [HttpPost]
+        public IActionResult SaveStaffSnapshotRows(int engId, [FromBody] List<StaffSnapshotRowModel> rows)
+            {
+            var redirect = EnsureAuthorized();
+            if (redirect != null)
+                {
+                return redirect;
+                }
+
+            if (engId <= 0)
+                {
+                return BadRequest(new { success = false, message = "Invalid engagement." });
+                }
+
+            if (_dbConnection.IsFieldAuditReportFinal(engId))
+                {
+                return BadRequest(new { success = false, message = "Report is finalized and cannot be edited." });
+                }
+
+            foreach (var row in rows ?? new List<StaffSnapshotRowModel>())
+                {
+                if (row == null)
+                    {
+                    continue;
+                    }
+
+                if (string.IsNullOrWhiteSpace(row.Designation)
+                    && !row.StaffCount.HasValue
+                    && !row.AsOfDate.HasValue)
+                    {
+                    continue;
+                    }
+
+                _dbConnection.SaveFieldAuditStaffSnapshot(engId, row);
+                }
+
+            return Json(new { success = true, message = "Staff Snapshot saved." });
+            }
+
+        [HttpGet]
+        public IActionResult GetNplSnapshotRows(int engId)
+            {
+            var redirect = EnsureAuthorized();
+            if (redirect != null)
+                {
+                return redirect;
+                }
+
+            if (engId <= 0)
+                {
+                return BadRequest(new { success = false, message = "Invalid engagement." });
+                }
+
+            var rows = _dbConnection.GetFieldAuditNplSnapshots(engId);
+            return Json(new { success = true, rows });
+            }
+
+        [HttpPost]
+        public IActionResult SaveNplSnapshotRows(int engId, [FromBody] List<NplSnapshotRowModel> rows)
+            {
+            var redirect = EnsureAuthorized();
+            if (redirect != null)
+                {
+                return redirect;
+                }
+
+            if (engId <= 0)
+                {
+                return BadRequest(new { success = false, message = "Invalid engagement." });
+                }
+
+            if (_dbConnection.IsFieldAuditReportFinal(engId))
+                {
+                return BadRequest(new { success = false, message = "Report is finalized and cannot be edited." });
+                }
+
+            foreach (var row in rows ?? new List<NplSnapshotRowModel>())
+                {
+                if (row == null)
+                    {
+                    continue;
+                    }
+
+                if (string.IsNullOrWhiteSpace(row.Category)
+                    && !row.PeriodEnd.HasValue
+                    && !row.CaseCount.HasValue
+                    && !row.OutstandingAmount.HasValue
+                    && !row.ProvisionAmount.HasValue)
+                    {
+                    continue;
+                    }
+
+                _dbConnection.SaveFieldAuditNplSnapshot(engId, row);
+                }
+
+            return Json(new { success = true, message = "NPL Snapshot saved." });
+            }
+
+        [HttpGet]
+        public IActionResult GetKpiSnapshotRows(int engId)
+            {
+            var redirect = EnsureAuthorized();
+            if (redirect != null)
+                {
+                return redirect;
+                }
+
+            if (engId <= 0)
+                {
+                return BadRequest(new { success = false, message = "Invalid engagement." });
+                }
+
+            var rows = _dbConnection.GetFieldAuditKpiSnapshots(engId);
+            return Json(new { success = true, rows });
+            }
+
+        [HttpPost]
+        public IActionResult SaveKpiSnapshotRows(int engId, [FromBody] List<KpiSnapshotRowModel> rows)
+            {
+            var redirect = EnsureAuthorized();
+            if (redirect != null)
+                {
+                return redirect;
+                }
+
+            if (engId <= 0)
+                {
+                return BadRequest(new { success = false, message = "Invalid engagement." });
+                }
+
+            if (_dbConnection.IsFieldAuditReportFinal(engId))
+                {
+                return BadRequest(new { success = false, message = "Report is finalized and cannot be edited." });
+                }
+
+            foreach (var row in rows ?? new List<KpiSnapshotRowModel>())
+                {
+                if (row == null)
+                    {
+                    continue;
+                    }
+
+                if (string.IsNullOrWhiteSpace(row.KpiCode)
+                    && string.IsNullOrWhiteSpace(row.KpiLabel)
+                    && !row.PeriodEnd.HasValue
+                    && !row.ActualValue.HasValue
+                    && !row.TargetValue.HasValue
+                    && string.IsNullOrWhiteSpace(row.Unit))
+                    {
+                    continue;
+                    }
+
+                _dbConnection.SaveFieldAuditKpiSnapshot(engId, row);
+                }
+
+            return Json(new { success = true, message = "KPI Snapshot saved." });
+            }
+
         [HttpPost]
         public IActionResult SaveFieldAuditInputs(FieldAuditInputSectionViewModel model, string submitAction, string returnAction)
             {
