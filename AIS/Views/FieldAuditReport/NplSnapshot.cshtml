@@ -250,27 +250,15 @@
             const headerRow = table.tHead?.rows[0];
             const subHeaderRow = table.tHead?.rows[1];
             const body = table.tBodies[0];
-            if (!headerRow || !subHeaderRow || !body) {
-                return;
-            }
+                    @{
+                var allPeriodIndices = Model.Fields.Keys
+                        .Where(k => k.StartsWith("NPL_"))
+                        .Select(k => int.Parse(k.Split('_')[2]))
+                        .Distinct()
+                        .OrderBy(x => x)
+                        .ToList();
+        }
 
-            const getMaxPeriodIndex = () => {
-                const inputs = table.querySelectorAll('input[name^="Fields[NPL_PERIOD_"]');
-                let maxIndex = 0;
-                inputs.forEach((input) => {
-                    const match = input.name.match(/Fields\[NPL_PERIOD_(\d+)_/i);
-                    if (!match) {
-                        return;
-                    }
-                    const value = Number.parseInt(match[1], 10);
-                    if (!Number.isNaN(value)) {
-                        maxIndex = Math.max(maxIndex, value);
-                    }
-                });
-                return maxIndex || 2;
-            };
-
-            let maxPeriodIndex = getMaxPeriodIndex();
 
             const insertCellBeforeImpact = (row, html) => {
                 const impactStartIndex = row.cells.length - 4;
@@ -279,38 +267,31 @@
                 return cell;
             };
 
-            const insertHeaderBeforeImpact = (label) => {
-                const impactHeader = headerRow.cells[headerRow.cells.length - 1];
-                const th = document.createElement('th');
-                th.colSpan = 3;
-                th.textContent = label;
-                headerRow.insertBefore(th, impactHeader);
-            };
-
-            const insertSubHeaderBeforeImpact = (label) => {
-                const impactStartIndex = subHeaderRow.cells.length - 4;
-                const th = document.createElement('th');
-                th.textContent = label;
-                subHeaderRow.insertBefore(th, subHeaderRow.cells[impactStartIndex]);
-            };
-
             const addPeriod = () => {
                 if (addPeriodButton?.disabled) {
                     return;
                 }
 
-                maxPeriodIndex += 1;
+                periodIndex += 1;
 
-                insertHeaderBeforeImpact(`Period ${maxPeriodIndex}`);
-                ['Cases', 'Outstanding Principal (Rs.)', 'Provision Amount (Rs.)'].forEach(insertSubHeaderBeforeImpact);
+                const headerCell = document.createElement('th');
+                headerCell.colSpan = 3;
+                headerCell.textContent = `Period ${periodIndex}`;
+                headerRow.insertBefore(headerCell, headerRow.cells[headerRow.cells.length - 1]);
 
-                Array.from(body.rows).forEach((row) => {
+                ['Cases', 'Outstanding Principal (Rs.)', 'Provision Amount (Rs.)'].forEach(label => {
+                    const th = document.createElement('th');
+                    th.textContent = label;
+                    subHeaderRow.insertBefore(th, subHeaderRow.cells[subHeaderRow.cells.length - 4]);
+                });
+
+                Array.from(body.rows).forEach(row => {
                     const rowKey = row.dataset.rowKey;
                     const extraIndex = row.dataset.extraRowIndex;
                     if (extraIndex) {
-                        insertCellBeforeImpact(row, `<input class="form-control" name="Fields[NPL_EXTRA_ROW_${extraIndex}_PERIOD_${maxPeriodIndex}_CASES]" />`);
-                        insertCellBeforeImpact(row, `<input class="form-control" name="Fields[NPL_EXTRA_ROW_${extraIndex}_PERIOD_${maxPeriodIndex}_OUTSTANDING]" />`);
-                        insertCellBeforeImpact(row, `<input class="form-control" name="Fields[NPL_EXTRA_ROW_${extraIndex}_PERIOD_${maxPeriodIndex}_PROVISION]" />`);
+                        insertCellBeforeImpact(row, `<input class="form-control" name="Fields[NPL_EXTRA_ROW_${extraIndex}_PERIOD_${periodIndex}_CASES]" />`);
+                        insertCellBeforeImpact(row, `<input class="form-control" name="Fields[NPL_EXTRA_ROW_${extraIndex}_PERIOD_${periodIndex}_OUTSTANDING]" />`);
+                        insertCellBeforeImpact(row, `<input class="form-control" name="Fields[NPL_EXTRA_ROW_${extraIndex}_PERIOD_${periodIndex}_PROVISION]" />`);
                         return;
                     }
 
@@ -318,24 +299,10 @@
                         return;
                     }
 
-                    insertCellBeforeImpact(row, `<input class="form-control" name="Fields[NPL_PERIOD_${maxPeriodIndex}_${rowKey}_CASES]" />`);
-                    insertCellBeforeImpact(row, `<input class="form-control" name="Fields[NPL_PERIOD_${maxPeriodIndex}_${rowKey}_OUTSTANDING]" />`);
-                    insertCellBeforeImpact(row, `<input class="form-control" name="Fields[NPL_PERIOD_${maxPeriodIndex}_${rowKey}_PROVISION]" />`);
+                    insertCellBeforeImpact(row, `<input class="form-control" name="Fields[NPL_PERIOD_${periodIndex}_${rowKey}_CASES]" />`);
+                    insertCellBeforeImpact(row, `<input class="form-control" name="Fields[NPL_PERIOD_${periodIndex}_${rowKey}_OUTSTANDING]" />`);
+                    insertCellBeforeImpact(row, `<input class="form-control" name="Fields[NPL_PERIOD_${periodIndex}_${rowKey}_PROVISION]" />`);
                 });
-            };
-
-            const findTotalRowIndex = () => {
-                const rows = Array.from(body.rows);
-                return rows.findIndex((row) => row.dataset.rowKey === 'TOTAL');
-            };
-
-            const getNextExtraRowIndex = () => {
-                const extraRows = Array.from(body.querySelectorAll('[data-extra-row-index]'));
-                if (!extraRows.length) {
-                    return 1;
-                }
-                const maxIndex = Math.max(...extraRows.map((row) => Number(row.dataset.extraRowIndex) || 0));
-                return maxIndex + 1;
             };
 
             const addRow = () => {
@@ -343,14 +310,14 @@
                     return;
                 }
 
-                const insertIndex = findTotalRowIndex();
-                const row = body.insertRow(insertIndex === -1 ? body.rows.length : insertIndex);
-                const nextIndex = getNextExtraRowIndex();
+                const extraRows = Array.from(body.querySelectorAll('[data-extra-row-index]'));
+                const nextIndex = extraRows.length ? Math.max(...extraRows.map(row => Number(row.dataset.extraRowIndex))) + 1 : 1;
+                const row = body.insertRow(body.rows.length - 1);
                 row.dataset.extraRowIndex = nextIndex;
 
                 row.insertCell(0).innerHTML = `<input class="form-control" name="Fields[NPL_EXTRA_ROW_${nextIndex}_CATEGORY]" />`;
 
-                for (let i = 1; i <= maxPeriodIndex; i += 1) {
+                for (let i = 1; i <= periodIndex; i += 1) {
                     row.insertCell(row.cells.length).innerHTML = `<input class="form-control" name="Fields[NPL_EXTRA_ROW_${nextIndex}_PERIOD_${i}_CASES]" />`;
                     row.insertCell(row.cells.length).innerHTML = `<input class="form-control" name="Fields[NPL_EXTRA_ROW_${nextIndex}_PERIOD_${i}_OUTSTANDING]" />`;
                     row.insertCell(row.cells.length).innerHTML = `<input class="form-control" name="Fields[NPL_EXTRA_ROW_${nextIndex}_PERIOD_${i}_PROVISION]" />`;

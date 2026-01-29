@@ -295,35 +295,6 @@
                 </table>
             </div>
 
-            <div class="card mb-4">
-                <div class="card-header">Additional Narrative Sections</div>
-                <div class="card-body">
-                    @if (Model.RemainingNarrativeSections.Any())
-                    {
-                        foreach (var section in Model.RemainingNarrativeSections)
-                        {
-                            <div class="mb-3">
-                                <div class="d-flex align-items-center gap-2 mb-1">
-                                    <strong>@section.SectionTitle</strong>
-                                    @if (section.IsMandatory)
-                                    {
-                                        <span class="badge bg-warning text-dark">Mandatory</span>
-                                    }
-                                </div>
-                                <textarea class="form-control"
-                                          name="Fields[@(section.SectionCode)]"
-                                          rows="4"
-                                          @(Model.IsReadOnly ? "disabled" : string.Empty)>@FieldValue(section.SectionCode)</textarea>
-                            </div>
-                        }
-                    }
-                    else
-                    {
-                        <div class="text-muted">No additional narrative sections are available.</div>
-                    }
-                </div>
-            </div>
-
             @for (var index = 0; index < Model.ObservationCount; index++)
             {
                 var observation = Model.Observations != null && index < Model.Observations.Count
