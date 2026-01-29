@@ -118,6 +118,7 @@ namespace AIS.Models.FieldAuditReport
         public FieldAuditReportOverviewModel Overview { get; set; } = new FieldAuditReportOverviewModel();
         public int ObservationCount { get; set; }
         public List<FieldAuditObservationDetailModel> Observations { get; set; } = new List<FieldAuditObservationDetailModel>();
+        public List<FieldAuditNarrativeSectionModel> RemainingNarrativeSections { get; set; } = new List<FieldAuditNarrativeSectionModel>();
         }
 
     public class KpiSnapshotRowModel
