@@ -7,6 +7,7 @@
     Layout = "_Layout";
     var engagementSelector = ViewData["EngagementSelector"] as AIS.Models.FieldAuditReport.FieldAuditEngagementSelectorViewModel;
     var hasEngagement = engagementSelector?.HasActiveEngagement ?? false;
+    var reportYear = string.IsNullOrWhiteSpace(Model?.Overview?.AUDIT_YEAR) ? "202X" : Model.Overview.AUDIT_YEAR;
 }
 
 @functions {
@@ -118,33 +119,27 @@
                         <tr>
                             <td>
                                 <div>@Model.ReportStatus</div>
-                                <div>INTERNAL AUDIT REPORT-202X</div>
+                                <div>INTERNAL AUDIT REPORT-@reportYear</div>
                             </td>
                             <td>
                                 <div>
-                                    Branch ……. [Code: xxxx
-                                    <input class="form-control d-inline-block w-auto" name="Fields[FIELD_029]" value="@FieldValue("FIELD_029")" @(Model.IsReadOnly ? "disabled" : string.Empty) />
-                                    ]
+                                    Branch @FormatText(Model.Overview.ENTITY_NAME) [Code: @FormatText(Model.Overview.EntityCode)]
                                 </div>
                                 <div>
-                                    Audit Date: dd/mm/yyyy
-                                    <input class="form-control d-inline-block w-auto" name="Fields[FIELD_030]" value="@FieldValue("FIELD_030")" @(Model.IsReadOnly ? "disabled" : string.Empty) />
+                                    Audit Date: @FormatDate(Model.Overview.AUDIT_STARTED_ON)
                                 </div>
                             </td>
                         </tr>
                         <tr>
                             <td colspan="2">
                                 <div>
-                                    Audit Start Date: dd/mm/yyyy
-                                    <input class="form-control d-inline-block w-auto" name="Fields[FIELD_031]" value="@FieldValue("FIELD_031")" @(Model.IsReadOnly ? "disabled" : string.Empty) />
+                                    Audit Start Date: @FormatDate(Model.Overview.OPERATION_STARTDATE)
                                 </div>
                                 <div>
-                                    Audit Completion Date:  dd/mm/yyyy
-                                    <input class="form-control d-inline-block w-auto" name="Fields[FIELD_032]" value="@FieldValue("FIELD_032")" @(Model.IsReadOnly ? "disabled" : string.Empty) />
+                                    Audit Completion Date: @FormatDate(Model.Overview.TEAM_EXIST)
                                 </div>
                                 <div>
-                                    Audit Period: From dd/mm/yyyy To: dd/mm/yyyy
-                                    <input class="form-control d-inline-block w-auto" name="Fields[FIELD_033]" value="@FieldValue("FIELD_033")" @(Model.IsReadOnly ? "disabled" : string.Empty) />
+                                    Audit Period: @FormatRange(Model.Overview.OPERATION_STARTDATE, Model.Overview.OPERATION_ENDDATE)
                                 </div>
                                 <div>AUDIT CONDUCTED BY:</div>
                             </td>

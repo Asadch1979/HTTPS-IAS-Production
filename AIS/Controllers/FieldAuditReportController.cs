@@ -198,6 +198,60 @@ namespace AIS.Controllers
             }
 
         [HttpGet]
+        public IActionResult GetStaffDesignationOptions(int engId)
+            {
+            var redirect = EnsureAuthorized();
+            if (redirect != null)
+                {
+                return redirect;
+                }
+
+            if (engId <= 0)
+                {
+                return BadRequest(new { success = false, message = "Invalid engagement." });
+                }
+
+            var items = _dbConnection.GetStaffDesignationOptions(engId);
+            return Json(new { success = true, items });
+            }
+
+        [HttpGet]
+        public IActionResult GetKpiOptions(int engId)
+            {
+            var redirect = EnsureAuthorized();
+            if (redirect != null)
+                {
+                return redirect;
+                }
+
+            if (engId <= 0)
+                {
+                return BadRequest(new { success = false, message = "Invalid engagement." });
+                }
+
+            var items = _dbConnection.GetKpiOptions(engId);
+            return Json(new { success = true, items });
+            }
+
+        [HttpGet]
+        public IActionResult GetNplCategoryOptions(int engId)
+            {
+            var redirect = EnsureAuthorized();
+            if (redirect != null)
+                {
+                return redirect;
+                }
+
+            if (engId <= 0)
+                {
+                return BadRequest(new { success = false, message = "Invalid engagement." });
+                }
+
+            var items = _dbConnection.GetNplCategoryOptions(engId);
+            return Json(new { success = true, items });
+            }
+
+        [HttpGet]
         public IActionResult GetStaffSnapshotRows(int engId)
             {
             var redirect = EnsureAuthorized();
@@ -251,7 +305,8 @@ namespace AIS.Controllers
                 _dbConnection.SaveFieldAuditStaffSnapshot(engId, row);
                 }
 
-            return Json(new { success = true, message = "Staff Snapshot saved." });
+            var savedRows = _dbConnection.GetFieldAuditStaffSnapshots(engId);
+            return Json(new { success = true, message = "Staff Snapshot saved.", rows = savedRows });
             }
 
         [HttpGet]
@@ -310,7 +365,8 @@ namespace AIS.Controllers
                 _dbConnection.SaveFieldAuditNplSnapshot(engId, row);
                 }
 
-            return Json(new { success = true, message = "NPL Snapshot saved." });
+            var savedRows = _dbConnection.GetFieldAuditNplSnapshots(engId);
+            return Json(new { success = true, message = "NPL Snapshot saved.", rows = savedRows });
             }
 
         [HttpGet]
@@ -370,7 +426,8 @@ namespace AIS.Controllers
                 _dbConnection.SaveFieldAuditKpiSnapshot(engId, row);
                 }
 
-            return Json(new { success = true, message = "KPI Snapshot saved." });
+            var savedRows = _dbConnection.GetFieldAuditKpiSnapshots(engId);
+            return Json(new { success = true, message = "KPI Snapshot saved.", rows = savedRows });
             }
 
         [HttpPost]
