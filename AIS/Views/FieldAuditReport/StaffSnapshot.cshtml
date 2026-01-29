@@ -12,12 +12,6 @@
         {
         return Model?.Fields != null && Model.Fields.TryGetValue(key, out var value) ? value : string.Empty;
         }
-
-    private string DisplayValue(string key)
-        {
-        var value = FieldValue(key);
-        return string.IsNullOrWhiteSpace(value) ? "-" : value;
-        }
 }
 
 <div class="container-fluid">
@@ -43,15 +37,9 @@
     {
         <div class="alert alert-warning">This report is FINAL and cannot be edited.</div>
     }
-    else if (Model.IsSectionComplete)
-    {
-        <div class="alert alert-info">This section is marked complete. Entry grids are read-only.</div>
-    }
 
     @if (hasEngagement)
     {
-        var isEntryLocked = Model.IsReadOnly || Model.IsSectionComplete;
-
         <form method="post" asp-action="SaveFieldAuditInputs">
             <input type="hidden" name="EngagementId" value="@Model.EngagementId" />
             <input type="hidden" name="EntityId" value="@Model.EntityId" />
@@ -69,64 +57,64 @@
                         <tr>
                             <th colspan="2">Staff Strength</th>
                             <th>Date of Branch Opening</th>
-                            <td colspan="2"><span>@DisplayValue("FIELD_034")</span></td>
+                            <td colspan="2"><input class="form-control" name="Fields[FIELD_034]" value="@FieldValue("FIELD_034")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
                         </tr>
                         <tr>
                             <td></td>
                             <td></td>
                             <th>Current Audit Rating</th>
-                            <td colspan="2"><span>@DisplayValue("FIELD_035")</span></td>
+                            <td colspan="2"><input class="form-control" name="Fields[FIELD_035]" value="@FieldValue("FIELD_035")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
                         </tr>
                         <tr>
                             <th>VP</th>
-                            <td><span data-staff-role="vp">-</span></td>
+                            <td><input class="form-control" name="Fields[FIELD_036]" value="@FieldValue("FIELD_036")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
                             <th>Previous Audit rating</th>
-                            <td colspan="2"><span>@DisplayValue("FIELD_037")</span></td>
+                            <td colspan="2"><input class="form-control" name="Fields[FIELD_037]" value="@FieldValue("FIELD_037")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
                         </tr>
                         <tr>
                             <th>AVP</th>
-                            <td><span data-staff-role="avp">-</span></td>
+                            <td><input class="form-control" name="Fields[FIELD_038]" value="@FieldValue("FIELD_038")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
                             <th>Audit Report Date</th>
-                            <td colspan="2"><span>@DisplayValue("FIELD_039")</span></td>
+                            <td colspan="2"><input class="form-control" name="Fields[FIELD_039]" value="@FieldValue("FIELD_039")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
                         </tr>
                         <tr>
                             <th>OG-I</th>
-                            <td><span data-staff-role="og-i">-</span></td>
+                            <td><input class="form-control" name="Fields[FIELD_040]" value="@FieldValue("FIELD_040")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
                             <th>Audit Fieldwork Date</th>
-                            <td colspan="2"><span>@DisplayValue("FIELD_041")</span></td>
+                            <td colspan="2"><input class="form-control" name="Fields[FIELD_041]" value="@FieldValue("FIELD_041")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
                         </tr>
                         <tr>
                             <th>OG-II</th>
-                            <td><span data-staff-role="og-ii">-</span></td>
+                            <td><input class="form-control" name="Fields[FIELD_042]" value="@FieldValue("FIELD_042")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
                             <th>Audit cutoff date or Audit Period</th>
-                            <td><span>@DisplayValue("FIELD_043")</span></td>
-                            <td>Annual/Surprise/Special <span>@DisplayValue("FIELD_044")</span></td>
+                            <td><input class="form-control" name="Fields[FIELD_043]" value="@FieldValue("FIELD_043")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                            <td>Annual/Surprise/Special <input class="form-control d-inline-block w-auto" name="Fields[FIELD_044]" value="@FieldValue("FIELD_044")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
                         </tr>
                         <tr>
                             <th>OG-III</th>
-                            <td><span data-staff-role="og-iii">-</span></td>
+                            <td><input class="form-control" name="Fields[FIELD_045]" value="@FieldValue("FIELD_045")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
                             <td></td>
                             <td></td>
                             <td></td>
                         </tr>
                         <tr>
                             <th>Sr. Assistant</th>
-                            <td><span data-staff-role="sr-assistant">-</span></td>
-                            <td colspan="3">Internal Auditor(s) <span>@DisplayValue("FIELD_047")</span></td>
+                            <td><input class="form-control" name="Fields[FIELD_046]" value="@FieldValue("FIELD_046")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                            <td colspan="3">Internal Auditor(s) <input class="form-control d-inline-block w-auto" name="Fields[FIELD_047]" value="@FieldValue("FIELD_047")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
                         </tr>
                         <tr>
                             <th>Assist/Typist</th>
-                            <td><span data-staff-role="assist-typist">-</span></td>
-                            <td colspan="3">Mr.<span>@DisplayValue("FIELD_049")</span></td>
+                            <td><input class="form-control" name="Fields[FIELD_048]" value="@FieldValue("FIELD_048")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                            <td colspan="3">Mr.<input class="form-control d-inline-block w-auto" name="Fields[FIELD_049]" value="@FieldValue("FIELD_049")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
                         </tr>
                         <tr>
                             <th>Non-Clerical Staff</th>
-                            <td><span data-staff-role="non-clerical">-</span></td>
-                            <td colspan="3">Mr. <span>@DisplayValue("FIELD_051")</span></td>
+                            <td><input class="form-control" name="Fields[FIELD_050]" value="@FieldValue("FIELD_050")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                            <td colspan="3">Mr. <input class="form-control d-inline-block w-auto" name="Fields[FIELD_051]" value="@FieldValue("FIELD_051")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
                         </tr>
                         <tr>
                             <th>KSSL Staff</th>
-                            <td><span data-staff-role="kssl">-</span></td>
+                            <td><input class="form-control" name="Fields[FIELD_052]" value="@FieldValue("FIELD_052")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
                             <td></td>
                             <td></td>
                             <td></td>
@@ -157,7 +145,7 @@
             <div class="card mb-4">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <span>Staff Snapshot (Entry)</span>
-                    <button type="button" class="btn btn-outline-primary btn-sm" id="add-staff-snapshot-row" @(isEntryLocked ? "disabled" : string.Empty)>
+                    <button type="button" class="btn btn-outline-primary btn-sm" id="add-staff-snapshot-row" @(Model.IsReadOnly ? "disabled" : string.Empty)>
                         <i class="fa-solid fa-plus"></i>
                     </button>
                 </div>
@@ -176,7 +164,7 @@
                         </table>
                     </div>
                     <div class="d-flex align-items-center gap-2">
-                        <button type="button" class="btn btn-primary" id="save-staff-snapshot" @(isEntryLocked ? "disabled" : string.Empty)>Save Staff Snapshot</button>
+                        <button type="button" class="btn btn-primary" id="save-staff-snapshot" @(Model.IsReadOnly ? "disabled" : string.Empty)>Save Staff Snapshot</button>
                         <span class="text-muted" id="staff-snapshot-status"></span>
                     </div>
                 </div>
@@ -196,7 +184,6 @@
     <script>
         (() => {
             const engId = @Model.EngagementId;
-            const isEntryLocked = @((Model.IsReadOnly || Model.IsSectionComplete).ToString().ToLower());
             const entryTableBody = document.querySelector('#staff-snapshot-entry-table tbody');
             const savedTableBody = document.querySelector('#staff-snapshot-saved-table tbody');
             const addButton = document.getElementById('add-staff-snapshot-row');
@@ -204,18 +191,10 @@
             const statusEl = document.getElementById('staff-snapshot-status');
             const designationOptions = [];
             const designationLookup = new Map();
-            const staffStrengthCells = new Map();
 
             if (!entryTableBody || !savedTableBody || !engId) {
                 return;
             }
-
-            document.querySelectorAll('[data-staff-role]').forEach(element => {
-                const key = element.getAttribute('data-staff-role');
-                if (key) {
-                    staffStrengthCells.set(key, element);
-                }
-            });
 
             const formatDate = (value) => {
                 if (!value) {
@@ -234,7 +213,6 @@
                     const emptyRow = document.createElement('tr');
                     emptyRow.innerHTML = '<td colspan="3" class="text-muted">No saved data.</td>';
                     savedTableBody.appendChild(emptyRow);
-                    renderStaffStrengthCounts([]);
                     return;
                 }
 
@@ -246,75 +224,16 @@
                     const tr = document.createElement('tr');
                     tr.innerHTML = `
                         <td>${designationLabel || '-'}</td>
-                        <td>${staffCount === null || staffCount === undefined || staffCount === '' ? '-' : staffCount}</td>
+                        <td>${staffCount ?? ''}</td>
                         <td>${formatDate(asOfDate) || '-'}</td>
                     `;
                     savedTableBody.appendChild(tr);
-                });
-
-                renderStaffStrengthCounts(rows);
-            };
-
-            const normalizeDesignation = (value) => (value ?? '').toString().replace(/\s+/g, ' ').trim().toUpperCase();
-
-            const designationRoleMap = new Map([
-                ['VP', 'vp'],
-                ['AVP', 'avp'],
-                ['OG-I', 'og-i'],
-                ['OG I', 'og-i'],
-                ['OG-II', 'og-ii'],
-                ['OG II', 'og-ii'],
-                ['OG-III', 'og-iii'],
-                ['OG III', 'og-iii'],
-                ['SR. ASSISTANT', 'sr-assistant'],
-                ['SR ASSISTANT', 'sr-assistant'],
-                ['SENIOR ASSISTANT', 'sr-assistant'],
-                ['ASSIST/TYPIST', 'assist-typist'],
-                ['ASSISTANT/TYPIST', 'assist-typist'],
-                ['ASSIST TYPIST', 'assist-typist'],
-                ['NON-CLERICAL STAFF', 'non-clerical'],
-                ['NON CLERICAL STAFF', 'non-clerical'],
-                ['KSSL STAFF', 'kssl'],
-                ['KSSL', 'kssl']
-            ]);
-
-            const renderStaffStrengthCounts = (rows = []) => {
-                const latestCounts = new Map();
-
-                rows.forEach(row => {
-                    const designationValue = row.designation ?? row.Designation ?? '';
-                    const designationLabel = designationLookup.get(designationValue) ?? designationValue;
-                    const normalized = normalizeDesignation(designationLabel || designationValue);
-                    const roleKey = designationRoleMap.get(normalized);
-                    if (!roleKey) {
-                        return;
-                    }
-                    const asOfDateRaw = row.asOfDate ?? row.AsOfDate ?? null;
-                    const asOfDate = asOfDateRaw ? new Date(asOfDateRaw) : null;
-                    const staffCount = row.staffCount ?? row.StaffCount ?? null;
-                    const existing = latestCounts.get(roleKey);
-                    if (!existing) {
-                        latestCounts.set(roleKey, { staffCount, asOfDate });
-                        return;
-                    }
-                    const existingDate = existing.asOfDate;
-                    if (asOfDate && (!existingDate || asOfDate > existingDate)) {
-                        latestCounts.set(roleKey, { staffCount, asOfDate });
-                    }
-                });
-
-                staffStrengthCells.forEach((element, roleKey) => {
-                    const value = latestCounts.get(roleKey)?.staffCount;
-                    element.textContent = value === null || value === undefined || value === '' ? '-' : value;
                 });
             };
 
             const createDesignationSelect = (selectedValue = '') => {
                 const select = document.createElement('select');
                 select.className = 'form-select';
-                if (isEntryLocked) {
-                    select.disabled = true;
-                }
                 const placeholder = document.createElement('option');
                 placeholder.value = '';
                 placeholder.textContent = 'Select designation';
@@ -346,9 +265,6 @@
                 const countInput = document.createElement('input');
                 countInput.className = 'form-control';
                 countInput.type = 'number';
-                if (isEntryLocked) {
-                    countInput.disabled = true;
-                }
                 countInput.value = staffCount;
                 countCell.appendChild(countInput);
                 tr.appendChild(countCell);
@@ -357,9 +273,6 @@
                 const dateInput = document.createElement('input');
                 dateInput.className = 'form-control';
                 dateInput.type = 'date';
-                if (isEntryLocked) {
-                    dateInput.disabled = true;
-                }
                 dateInput.value = formatDate(asOfDate);
                 dateCell.appendChild(dateInput);
                 tr.appendChild(dateCell);
@@ -442,12 +355,7 @@
                     });
             };
 
-            addButton?.addEventListener('click', () => {
-                if (isEntryLocked) {
-                    return;
-                }
-                addEntryRow();
-            });
+            addButton?.addEventListener('click', () => addEntryRow());
             saveButton?.addEventListener('click', saveStaffRows);
             loadDesignationOptions()
                 .then(loadStaffRows)

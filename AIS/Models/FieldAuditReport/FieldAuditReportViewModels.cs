@@ -199,7 +199,6 @@ namespace AIS.Models.FieldAuditReport
         public int EngagementId { get; set; }
         public int EntityId { get; set; }
         public bool IsReadOnly { get; set; }
-        public bool IsSectionComplete { get; set; }
         public string SectionCode { get; set; }
         public Dictionary<string, string> Fields { get; set; } = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         public string ReportStatus { get; set; }

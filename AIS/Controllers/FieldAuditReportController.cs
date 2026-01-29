@@ -785,9 +785,6 @@ namespace AIS.Controllers
                 section => section.SectionCode ?? string.Empty,
                 section => section.TextBlock ?? string.Empty,
                 StringComparer.OrdinalIgnoreCase);
-            var isSectionComplete = sections.Any(section =>
-                string.Equals(section.SectionCode, sectionCode, StringComparison.OrdinalIgnoreCase)
-                && !string.IsNullOrWhiteSpace(section.TextBlock));
 
             var fields = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
             foreach (var code in fieldCodes ?? Array.Empty<string>())
@@ -827,7 +824,6 @@ namespace AIS.Controllers
                 EngagementId = engId,
                 EntityId = overview?.EntityId ?? 0,
                 IsReadOnly = isFinal,
-                IsSectionComplete = isSectionComplete,
                 SectionCode = sectionCode,
                 Fields = fields,
                 ReportStatus = isFinal ? "FINAL" : "DRAFT",
