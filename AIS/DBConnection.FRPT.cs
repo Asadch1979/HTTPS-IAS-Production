@@ -439,7 +439,7 @@ namespace AIS.Controllers
 
             var sessionHandler = CreateSessionHandler();
             var activeEngagementId = sessionHandler.GetActiveEngagementIdOrThrow();
-
+            var sessionUser = sessionHandler.GetUserOrThrow();
             using var con = DatabaseConnection();
             EnsureConnectionOpen(con);
 
@@ -456,6 +456,8 @@ namespace AIS.Controllers
             cmd.Parameters.Add("P_AUDITOR_COMMENTS", OracleDbType.Clob).Value = request.AuditorFurtherComments ?? string.Empty;
             cmd.Parameters.Add("P_SVP_REMARKS", OracleDbType.Clob).Value = request.SvpRemarks ?? string.Empty;
             cmd.Parameters.Add("P_ACTION", OracleDbType.Varchar2).Value = request.Action ?? string.Empty;
+
+            cmd.Parameters.Add("P_USER_ID", OracleDbType.Int32).Value = sessionUser.PPNumber;
 
             var statusParam = cmd.Parameters.Add("O_STATUS", OracleDbType.Int32);
             statusParam.Direction = ParameterDirection.Output;
