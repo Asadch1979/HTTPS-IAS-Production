@@ -93,6 +93,31 @@ namespace AIS.Controllers
             var engId = selector.ActiveEngagementId.Value;
             var isFinal = _dbConnection.IsFieldAuditReportFinal(engId);
             var baseModel = BuildInputSectionViewModel(engId, isFinal, NarrativeFieldCodes, FieldAuditReportSectionCodes.NarrativeInputs);
+            var narrativeSections = _dbConnection.GetFieldAuditNarrativeSections(engId) ?? new List<FieldAuditNarrativeSectionModel>();
+            var excludedCodes = new HashSet<string>(NarrativeFieldCodes, StringComparer.OrdinalIgnoreCase)
+                {
+                FieldAuditReportSectionCodes.NarrativeInputs,
+                FieldAuditReportSectionCodes.KpiSnapshot,
+                FieldAuditReportSectionCodes.NplSnapshot,
+                FieldAuditReportSectionCodes.StaffSnapshot
+                };
+            var remainingNarrativeSections = narrativeSections
+                .Where(section => !string.IsNullOrWhiteSpace(section.SectionCode))
+                .Where(section => !excludedCodes.Contains(section.SectionCode))
+                .Where(section => !string.IsNullOrWhiteSpace(section.SectionTitle))
+                .OrderBy(section => section.DisplayOrder)
+                .ThenBy(section => section.SectionTitle)
+                .ToList();
+
+            foreach (var section in remainingNarrativeSections)
+                {
+                if (baseModel.Fields.ContainsKey(section.SectionCode))
+                    {
+                    continue;
+                    }
+
+                baseModel.Fields[section.SectionCode] = section.TextBlock ?? string.Empty;
+                }
             var observationCount = _dbConnection.GetFieldAuditObservationCount(engId);
             var observationDetails = _dbConnection.GetFieldAuditObservationDetails(engId);
             var overview = _dbConnection.GetFieldAuditReportOverview(engId);
@@ -110,7 +135,8 @@ namespace AIS.Controllers
                 StatisticsRows = baseModel.StatisticsRows,
                 Overview = overview,
                 ObservationCount = observationCount,
-                Observations = observationDetails
+                Observations = observationDetails,
+                RemainingNarrativeSections = remainingNarrativeSections
                 };
 
             return View(model);
