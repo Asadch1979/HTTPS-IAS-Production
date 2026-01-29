@@ -47,24 +47,24 @@ namespace AIS.Controllers
             }
 
         [HttpGet("GeneratePdf")]
-        public async Task<IActionResult> GeneratePdf(int? reportVersion = null)
+        public async Task<IActionResult> GeneratePdf(int? engId, int? reportVersion = null)
             {
-            var engId = 0;
+            var resolvedEngId = 0;
             var totalStopwatch = Stopwatch.StartNew();
             try
                 {
-                var precheck = EnsureReadyForPdf(out engId);
+                var precheck = EnsureReadyForPdf(engId, out resolvedEngId);
                 if (precheck != null)
                     {
                     return precheck;
                     }
 
-                _logger.LogInformation("Generating field audit report PDF for ENG_ID {EngId} reportVersion {ReportVersion}.", engId, reportVersion);
+                _logger.LogInformation("Generating field audit report PDF for ENG_ID {EngId} reportVersion {ReportVersion}.", resolvedEngId, reportVersion);
 
                 var dataStopwatch = Stopwatch.StartNew();
-                var data = _dbConnection.GetFieldAuditReportPdfData(engId, reportVersion);
+                var data = _dbConnection.GetFieldAuditReportPdfData(resolvedEngId, reportVersion);
                 dataStopwatch.Stop();
-                _logger.LogInformation("Field audit PDF data retrieval completed in {ElapsedMs} ms for ENG_ID {EngId}.", dataStopwatch.ElapsedMilliseconds, engId);
+                _logger.LogInformation("Field audit PDF data retrieval completed in {ElapsedMs} ms for ENG_ID {EngId}.", dataStopwatch.ElapsedMilliseconds, resolvedEngId);
                 if (data == null)
                     {
                     return BadRequest("Unable to generate PDF at this time.");
@@ -79,7 +79,7 @@ namespace AIS.Controllers
 
                 var html = _pdfBuilder.BuildHtml(data);
                 var htmlLength = html?.Length ?? 0;
-                _logger.LogInformation("Field audit PDF HTML length {HtmlLength} for ENG_ID {EngId}.", htmlLength, engId);
+                _logger.LogInformation("Field audit PDF HTML length {HtmlLength} for ENG_ID {EngId}.", htmlLength, resolvedEngId);
                 if (htmlLength == 0)
                     {
                     return StatusCode(500, "PDF content could not be prepared for this report.");
@@ -90,11 +90,11 @@ namespace AIS.Controllers
                 pdfStopwatch.Stop();
                 if (pdfBytes == null)
                     {
-                    _logger.LogWarning("Field audit PDF generation timed out after {ElapsedMs} ms for ENG_ID {EngId}.", pdfStopwatch.ElapsedMilliseconds, engId);
+                    _logger.LogWarning("Field audit PDF generation timed out after {ElapsedMs} ms for ENG_ID {EngId}.", pdfStopwatch.ElapsedMilliseconds, resolvedEngId);
                     return StatusCode(504, "PDF generation timed out. Please try again.");
                     }
 
-                _logger.LogInformation("Field audit PDF generated in {ElapsedMs} ms with {PdfBytes} bytes for ENG_ID {EngId}.", pdfStopwatch.ElapsedMilliseconds, pdfBytes.Length, engId);
+                _logger.LogInformation("Field audit PDF generated in {ElapsedMs} ms with {PdfBytes} bytes for ENG_ID {EngId}.", pdfStopwatch.ElapsedMilliseconds, pdfBytes.Length, resolvedEngId);
                 if (pdfBytes.Length == 0)
                     {
                     return StatusCode(500, "Generated PDF is empty. Please try again.");
@@ -102,12 +102,12 @@ namespace AIS.Controllers
 
                 var filename = BuildFilename(data);
                 totalStopwatch.Stop();
-                _logger.LogInformation("Field audit PDF request completed in {ElapsedMs} ms for ENG_ID {EngId}.", totalStopwatch.ElapsedMilliseconds, engId);
+                _logger.LogInformation("Field audit PDF request completed in {ElapsedMs} ms for ENG_ID {EngId}.", totalStopwatch.ElapsedMilliseconds, resolvedEngId);
                 return File(pdfBytes, "application/pdf", filename);
                 }
             catch (Exception ex)
                 {
-                _logger.LogError(ex, "Failed to generate field audit report PDF for ENG_ID {EngId}.", engId);
+                _logger.LogError(ex, "Failed to generate field audit report PDF for ENG_ID {EngId}.", resolvedEngId);
                 return StatusCode(500, "An error occurred while generating the PDF. Please try again later.");
                 }
             }
@@ -134,7 +134,7 @@ namespace AIS.Controllers
             return null;
             }
 
-        private IActionResult EnsureReadyForPdf(out int engId)
+        private IActionResult EnsureReadyForPdf(int? requestedEngagementId, out int engId)
             {
             engId = 0;
 
@@ -144,7 +144,11 @@ namespace AIS.Controllers
                 return authorizationResult;
                 }
 
-            if (!_sessionHandler.TryGetActiveEngagementId(out engId))
+            if (requestedEngagementId.HasValue)
+                {
+                engId = requestedEngagementId.Value;
+                }
+            else if (!_sessionHandler.TryGetActiveEngagementId(out engId))
                 {
                 return BadRequest("An active engagement is required before generating the report.");
                 }
