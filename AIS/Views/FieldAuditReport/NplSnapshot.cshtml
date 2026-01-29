@@ -227,6 +227,36 @@
                 </table>
             </div>
 
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span>NPL Snapshot Rows</span>
+                    <button type="button" class="btn btn-outline-primary btn-sm" id="add-npl-snapshot-row" @(Model.IsReadOnly ? "disabled" : string.Empty)>
+                        <i class="fa-solid fa-plus"></i>
+                    </button>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-bordered align-middle" id="npl-snapshot-table">
+                            <thead>
+                                <tr>
+                                    <th>Category</th>
+                                    <th>Period End</th>
+                                    <th>Case Count</th>
+                                    <th>Outstanding Amount</th>
+                                    <th>Provision Amount</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="d-flex align-items-center gap-2">
+                        <button type="button" class="btn btn-primary" id="save-npl-snapshot" @(Model.IsReadOnly ? "disabled" : string.Empty)>Save NPL Snapshot</button>
+                        <span class="text-muted" id="npl-snapshot-status"></span>
+                    </div>
+                </div>
+            </div>
+
             <div class="d-flex flex-wrap gap-2">
                 <a class="btn btn-outline-secondary" href="@Url.Action("KpiSnapshot")">Back</a>
                 <button type="submit" class="btn btn-primary" name="submitAction" value="save" @(Model.IsReadOnly ? "disabled" : string.Empty)>Save Draft</button>
@@ -332,5 +362,119 @@
             addPeriodButton?.addEventListener('click', addPeriod);
             addRowButton?.addEventListener('click', addRow);
         })();
+
+        const loadNplRows = () => {
+            const engId = @Model.EngagementId;
+            const tableBody = document.querySelector('#npl-snapshot-table tbody');
+            const statusEl = document.getElementById('npl-snapshot-status');
+            if (!tableBody || !engId) {
+                return;
+            }
+
+            statusEl.textContent = 'Loading...';
+            fetch(`/FieldAuditReport/GetNplSnapshotRows?engId=${engId}`)
+                .then(response => response.json())
+                .then(data => {
+                    tableBody.innerHTML = '';
+                    if (data?.rows?.length) {
+                        data.rows.forEach(row => addNplRow(row));
+                    } else {
+                        addNplRow();
+                    }
+                    statusEl.textContent = '';
+                })
+                .catch(() => {
+                    statusEl.textContent = 'Unable to load NPL snapshot rows.';
+                });
+        };
+
+        const addNplRow = (row = {}) => {
+            const tableBody = document.querySelector('#npl-snapshot-table tbody');
+            if (!tableBody) {
+                return;
+            }
+            const category = row.category ?? row.Category ?? '';
+            const periodEnd = row.periodEnd ?? row.PeriodEnd ?? '';
+            const caseCount = row.caseCount ?? row.CaseCount ?? '';
+            const outstandingAmount = row.outstandingAmount ?? row.OutstandingAmount ?? '';
+            const provisionAmount = row.provisionAmount ?? row.ProvisionAmount ?? '';
+            const formatDate = (value) => {
+                if (!value) {
+                    return '';
+                }
+                const date = new Date(value);
+                if (Number.isNaN(date.getTime())) {
+                    return '';
+                }
+                return date.toISOString().slice(0, 10);
+            };
+
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td><input class="form-control" value="${category}" /></td>
+                <td><input class="form-control" type="date" value="${formatDate(periodEnd)}" /></td>
+                <td><input class="form-control" type="number" value="${caseCount}" /></td>
+                <td><input class="form-control" type="number" step="any" value="${outstandingAmount}" /></td>
+                <td><input class="form-control" type="number" step="any" value="${provisionAmount}" /></td>
+            `;
+            tableBody.appendChild(tr);
+        };
+
+        const collectNplRows = () => {
+            const tableBody = document.querySelector('#npl-snapshot-table tbody');
+            if (!tableBody) {
+                return [];
+            }
+
+            return Array.from(tableBody.querySelectorAll('tr')).map(row => {
+                const cells = row.querySelectorAll('input');
+                const category = cells[0]?.value?.trim() ?? '';
+                const periodEnd = cells[1]?.value;
+                const caseCount = cells[2]?.value;
+                const outstandingAmount = cells[3]?.value;
+                const provisionAmount = cells[4]?.value;
+                return {
+                    category,
+                    periodEnd: periodEnd === '' ? null : periodEnd,
+                    caseCount: caseCount === '' ? null : Number(caseCount),
+                    outstandingAmount: outstandingAmount === '' ? null : Number(outstandingAmount),
+                    provisionAmount: provisionAmount === '' ? null : Number(provisionAmount)
+                };
+            });
+        };
+
+        const saveNplRows = () => {
+            const engId = @Model.EngagementId;
+            const statusEl = document.getElementById('npl-snapshot-status');
+            const saveButton = document.getElementById('save-npl-snapshot');
+            if (!engId || saveButton?.disabled) {
+                return;
+            }
+
+            statusEl.textContent = 'Saving...';
+            fetch(`/FieldAuditReport/SaveNplSnapshotRows?engId=${engId}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(collectNplRows())
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (!data?.success) {
+                        statusEl.textContent = data?.message ?? 'Unable to save NPL snapshot rows.';
+                        return;
+                    }
+                    statusEl.textContent = data.message ?? 'Saved.';
+                    loadNplRows();
+                })
+                .catch(() => {
+                    statusEl.textContent = 'Unable to save NPL snapshot rows.';
+                });
+        };
+
+        document.getElementById('add-npl-snapshot-row')?.addEventListener('click', () => addNplRow());
+        document.getElementById('save-npl-snapshot')?.addEventListener('click', saveNplRows);
+        loadNplRows();
     </script>
 }
