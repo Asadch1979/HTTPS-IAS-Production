@@ -14,7 +14,14 @@ namespace AIS.Controllers
         public List<AuditZoneItem> GetAuditZones()
             {
             var sessionHandler = CreateSessionHandler();
-            var loggedInUser = sessionHandler.GetUserOrThrow();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID <= 0
+                || loggedInUser.PPNumber <= 0
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return new List<AuditZoneItem>();
+                }
             var zones = new List<AuditZoneItem>();
 
             using (var con = this.DatabaseConnection())
@@ -46,7 +53,14 @@ namespace AIS.Controllers
         public DepartmentPerformanceSummaryDetailResponse GetDepartmentPerformanceSummaryAndDetail(int entId, DateTime startDate, DateTime endDate)
             {
             var sessionHandler = CreateSessionHandler();
-            var loggedInUser = sessionHandler.GetUserOrThrow();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID <= 0
+                || loggedInUser.PPNumber <= 0
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return new List<AuditZoneItem>();
+                }
             var response = new DepartmentPerformanceSummaryDetailResponse();
 
             using (var con = this.DatabaseConnection())
@@ -109,7 +123,14 @@ namespace AIS.Controllers
         public List<DeptPerfByZoneRow> GetDepartmentPerformanceByZone(int entId, int zoneId, DateTime startDate, DateTime endDate)
             {
             var sessionHandler = CreateSessionHandler();
-            var loggedInUser = sessionHandler.GetUserOrThrow();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID <= 0
+                || loggedInUser.PPNumber <= 0
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return new List<DeptPerfByZoneRow>();
+                }
             var rows = new List<DeptPerfByZoneRow>();
 
             using (var con = this.DatabaseConnection())
@@ -153,7 +174,14 @@ namespace AIS.Controllers
         public List<AuditorPerformanceRow> GetAuditorPerformance(int entId, int? zoneId, DateTime startDate, DateTime endDate)
             {
             var sessionHandler = CreateSessionHandler();
-            var loggedInUser = sessionHandler.GetUserOrThrow();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID <= 0
+                || loggedInUser.PPNumber <= 0
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return new List<AuditorPerformanceRow>();
+                }
             var rows = new List<AuditorPerformanceRow>();
 
             using (var con = this.DatabaseConnection())
@@ -199,7 +227,14 @@ namespace AIS.Controllers
         public List<AuditPeriodModel> GetAllParasYears()
             {
             var sessionHandler = CreateSessionHandler();
-            var loggedInUser = sessionHandler.GetUserOrThrow();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID <= 0
+                || loggedInUser.PPNumber <= 0
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return new List<AuditPeriodModel>();
+                }
             var periodList = new List<AuditPeriodModel>();
             using (var con = this.DatabaseConnection())
                 {
@@ -229,7 +264,14 @@ namespace AIS.Controllers
             using (var con = this.DatabaseConnection())
                 {
                
-                var loggedInUser = sessionHandler.GetUserOrThrow();
+                var loggedInUser = sessionHandler.GetUser();
+                if (loggedInUser == null
+                    || loggedInUser.UserEntityID <= 0
+                    || loggedInUser.PPNumber <= 0
+                    || loggedInUser.UserRoleID <= 0)
+                    {
+                    return new List<DepartmentModel>();
+                    }
 
                 var entityId = 0;
                 if (div_code == 0)
@@ -294,7 +336,14 @@ namespace AIS.Controllers
             using (var con = this.DatabaseConnection())
                 {
 
-                var loggedInUser = sessionHandler.GetUserOrThrow();
+                var loggedInUser = sessionHandler.GetUser();
+                if (loggedInUser == null
+                    || loggedInUser.UserEntityID <= 0
+                    || loggedInUser.PPNumber <= 0
+                    || loggedInUser.UserRoleID <= 0)
+                    {
+                    return new List<ZoneWiseOldParasPerformanceModel>();
+                    }
                 using (var cmd = con.CreateCommand())
                     {
                     cmd.CommandText = "pkg_rpt.P_GetZoneWiseOldParasPerformance";
@@ -349,7 +398,14 @@ namespace AIS.Controllers
         public List<UserRelationshipModel> GetchildpostingForParaPositionReport(int e_r_id = 0)
             {
             var sessionHandler = CreateSessionHandler();
-            var loggedInUser = sessionHandler.GetUserOrThrow();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID <= 0
+                || loggedInUser.PPNumber <= 0
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return new List<UserRelationshipModel>();
+                }
 
             if (e_r_id == 0)
                 e_r_id = Convert.ToInt32(loggedInUser.UserEntityID);
@@ -384,7 +440,14 @@ namespace AIS.Controllers
         public List<UserRelationshipModel> GetparentrepofficeForParaPositionReport(int r_id = 0)
             {
             var sessionHandler = CreateSessionHandler();
-            var loggedInUser = sessionHandler.GetUserOrThrow();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID <= 0
+                || loggedInUser.PPNumber <= 0
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return new List<UserRelationshipModel>();
+                }
             List<UserRelationshipModel> entitiesList = new List<UserRelationshipModel>();
             using (var con = this.DatabaseConnection())
                 {
@@ -418,7 +481,14 @@ namespace AIS.Controllers
         public List<AuditeeEntitiesModel> GetAuditDepartmentsZones()
             {
             var sessionHandler = CreateSessionHandler();
-            var loggedInUser = sessionHandler.GetUserOrThrow();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID <= 0
+                || loggedInUser.PPNumber <= 0
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return new List<AuditeeEntitiesModel>();
+                }
 
             List<AuditeeEntitiesModel> entitiesList = new List<AuditeeEntitiesModel>();
             using (var con = this.DatabaseConnection())
@@ -452,7 +522,14 @@ namespace AIS.Controllers
         public List<UserRelationshipModel> GetrealtionshiptypeForParaPositionReport()
             {
             var sessionHandler = CreateSessionHandler();
-            var loggedInUser = sessionHandler.GetUserOrThrow();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID <= 0
+                || loggedInUser.PPNumber <= 0
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return new List<UserRelationshipModel>();
+                }
 
             List<UserRelationshipModel> entitiesList = new List<UserRelationshipModel>();
             using (var con = this.DatabaseConnection())
@@ -483,7 +560,14 @@ namespace AIS.Controllers
         public List<AuditPlanEngagementModel> GetAuditPlanEngagement(int periodid)
             {
             var sessionHandler = CreateSessionHandler();
-            var loggedInUser = sessionHandler.GetUserOrThrow();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID <= 0
+                || loggedInUser.PPNumber <= 0
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return new List<AuditPlanEngagementModel>();
+                }
 
             List<AuditPlanEngagementModel> periodList = new List<AuditPlanEngagementModel>();
             using (var con = this.DatabaseConnection())
@@ -648,7 +732,14 @@ namespace AIS.Controllers
         public List<CurrentAuditProgress> GetCurrentAuditProgressEntities()
             {
             var sessionHandler = CreateSessionHandler();
-            var loggedInUser = sessionHandler.GetUserOrThrow();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID <= 0
+                || loggedInUser.PPNumber <= 0
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return new List<CurrentAuditProgress>();
+                }
             List<CurrentAuditProgress> list = new List<CurrentAuditProgress>();
             using (var con = this.DatabaseConnection())
                 {
@@ -677,7 +768,14 @@ namespace AIS.Controllers
         public List<CurrentAuditProgress> GetCurrentAuditProgress(int ENTITY_ID = 0)
             {
             var sessionHandler = CreateSessionHandler();
-            var loggedInUser = sessionHandler.GetUserOrThrow();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID <= 0
+                || loggedInUser.PPNumber <= 0
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return new List<CurrentAuditProgress>();
+                }
             List<CurrentAuditProgress> list = new List<CurrentAuditProgress>();
             using (var con = this.DatabaseConnection())
                 {
@@ -709,7 +807,14 @@ namespace AIS.Controllers
         public List<CurrentActiveUsers> GetCurrentActiveUsers()
             {
             var sessionHandler = CreateSessionHandler();
-            var loggedInUser = sessionHandler.GetUserOrThrow();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID <= 0
+                || loggedInUser.PPNumber <= 0
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return new List<CurrentActiveUsers>();
+                }
             List<CurrentActiveUsers> list = new List<CurrentActiveUsers>();
             using (var con = this.DatabaseConnection())
                 {
@@ -748,7 +853,14 @@ namespace AIS.Controllers
             using (var con = this.DatabaseConnection())
                 {
                
-                var loggedInUser = sessionHandler.GetUserOrThrow();
+                var loggedInUser = sessionHandler.GetUser();
+                if (loggedInUser == null
+                    || loggedInUser.UserEntityID <= 0
+                    || loggedInUser.PPNumber <= 0
+                    || loggedInUser.UserRoleID <= 0)
+                    {
+                    return new List<ParaTextModel>();
+                    }
                 using (var cmd = con.CreateCommand())
                     {
                     cmd.CommandText = "pkg_rpt.r_getauditeeParas";
@@ -780,7 +892,14 @@ namespace AIS.Controllers
             using (var con = this.DatabaseConnection())
                 {
                
-                var loggedInUser = sessionHandler.GetUserOrThrow();
+                var loggedInUser = sessionHandler.GetUser();
+                if (loggedInUser == null
+                    || loggedInUser.UserEntityID <= 0
+                    || loggedInUser.PPNumber <= 0
+                    || loggedInUser.UserRoleID <= 0)
+                    {
+                    return new List<ZoneBranchParaStatusModel>();
+                    }
 
                 using (var cmd = con.CreateCommand())
                     {
@@ -809,7 +928,14 @@ namespace AIS.Controllers
         public List<AuditPlanReportModel> getauditplanreport()
             {
             var sessionHandler = CreateSessionHandler();
-            var loggedInUser = sessionHandler.GetUserOrThrow();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID <= 0
+                || loggedInUser.PPNumber <= 0
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return new List<AuditPlanReportModel>();
+                }
 
             List<AuditPlanReportModel> planList = new List<AuditPlanReportModel>();
             using (var con = this.DatabaseConnection())
@@ -879,7 +1005,14 @@ namespace AIS.Controllers
             using (var con = this.DatabaseConnection())
                 {
                
-                var loggedInUser = sessionHandler.GetUserOrThrow();
+                var loggedInUser = sessionHandler.GetUser();
+                if (loggedInUser == null
+                    || loggedInUser.UserEntityID <= 0
+                    || loggedInUser.PPNumber <= 0
+                    || loggedInUser.UserRoleID <= 0)
+                    {
+                    return new List<AuditeeAddressModel>();
+                    }
                 using (var cmd = con.CreateCommand())
                     {
                     cmd.CommandText = "pkg_rpt.r_getauditeeaddress";
@@ -952,7 +1085,14 @@ namespace AIS.Controllers
             using (var con = this.DatabaseConnection())
                 {
                
-                var loggedInUser = sessionHandler.GetUserOrThrow();
+                var loggedInUser = sessionHandler.GetUser();
+                if (loggedInUser == null
+                    || loggedInUser.UserEntityID <= 0
+                    || loggedInUser.PPNumber <= 0
+                    || loggedInUser.UserRoleID <= 0)
+                    {
+                    return new List<GetAuditeeParasModel>();
+                    }
                 using (var cmd = con.CreateCommand())
                     {
                     cmd.CommandText = "pkg_rpt.r_getauditeeparas";
@@ -986,7 +1126,14 @@ namespace AIS.Controllers
             using (var con = this.DatabaseConnection())
                 {
                
-                var loggedInUser = sessionHandler.GetUserOrThrow();
+                var loggedInUser = sessionHandler.GetUser();
+                if (loggedInUser == null
+                    || loggedInUser.UserEntityID <= 0
+                    || loggedInUser.PPNumber <= 0
+                    || loggedInUser.UserRoleID <= 0)
+                    {
+                    return new List<GetTeamDetailsModel>();
+                    }
                 using (var cmd = con.CreateCommand())
                     {
                     cmd.CommandText = "pkg_rpt.p_getauditteams";
@@ -1022,7 +1169,14 @@ namespace AIS.Controllers
             using (var con = this.DatabaseConnection())
                 {
                
-                var loggedInUser = sessionHandler.GetUserOrThrow();
+                var loggedInUser = sessionHandler.GetUser();
+                if (loggedInUser == null
+                    || loggedInUser.UserEntityID <= 0
+                    || loggedInUser.PPNumber <= 0
+                    || loggedInUser.UserRoleID <= 0)
+                    {
+                    return new List<GetFinalReportModel>();
+                    }
                 using (var cmd = con.CreateCommand())
                     {
                     cmd.CommandText = "pkg_rpt.r_getauditeeparas";
@@ -1066,7 +1220,14 @@ namespace AIS.Controllers
         public List<AuditPlanReportModel> GetFadAuditPlanReport(int ent_id, int z_id, int risk, int size)
             {
             var sessionHandler = CreateSessionHandler();
-            var loggedInUser = sessionHandler.GetUserOrThrow();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID <= 0
+                || loggedInUser.PPNumber <= 0
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return new List<AuditPlanReportModel>();
+                }
 
             List<AuditPlanReportModel> planList = new List<AuditPlanReportModel>();
             using (var con = this.DatabaseConnection())
@@ -1137,7 +1298,14 @@ namespace AIS.Controllers
             using (var con = this.DatabaseConnection())
                 {
                
-                var loggedInUser = sessionHandler.GetUserOrThrow();
+                var loggedInUser = sessionHandler.GetUser();
+                if (loggedInUser == null
+                    || loggedInUser.UserEntityID <= 0
+                    || loggedInUser.PPNumber <= 0
+                    || loggedInUser.UserRoleID <= 0)
+                    {
+                    return new List<FADGetReportEntititiesModel>();
+                    }
 
                 using (var cmd = con.CreateCommand())
                     {
@@ -1172,7 +1340,14 @@ namespace AIS.Controllers
             using (var con = this.DatabaseConnection())
                 {
                
-                var loggedInUser = sessionHandler.GetUserOrThrow();
+                var loggedInUser = sessionHandler.GetUser();
+                if (loggedInUser == null
+                    || loggedInUser.UserEntityID <= 0
+                    || loggedInUser.PPNumber <= 0
+                    || loggedInUser.UserRoleID <= 0)
+                    {
+                    return new List<FADGetReportZonesModel>();
+                    }
 
                 using (var cmd = con.CreateCommand())
                     {
@@ -1207,7 +1382,14 @@ namespace AIS.Controllers
             using (var con = this.DatabaseConnection())
                 {
                
-                var loggedInUser = sessionHandler.GetUserOrThrow();
+                var loggedInUser = sessionHandler.GetUser();
+                if (loggedInUser == null
+                    || loggedInUser.UserEntityID <= 0
+                    || loggedInUser.PPNumber <= 0
+                    || loggedInUser.UserRoleID <= 0)
+                    {
+                    return new List<FADEntitySizeModel>();
+                    }
 
                 using (var cmd = con.CreateCommand())
                     {
@@ -1241,7 +1423,14 @@ namespace AIS.Controllers
             using (var con = this.DatabaseConnection())
                 {
                
-                var loggedInUser = sessionHandler.GetUserOrThrow();
+                var loggedInUser = sessionHandler.GetUser();
+                if (loggedInUser == null
+                    || loggedInUser.UserEntityID <= 0
+                    || loggedInUser.PPNumber <= 0
+                    || loggedInUser.UserRoleID <= 0)
+                    {
+                    return new List<FADEntityRiskModel>();
+                    }
 
                 using (var cmd = con.CreateCommand())
                     {
@@ -1274,7 +1463,14 @@ namespace AIS.Controllers
             using (var con = this.DatabaseConnection())
                 {
                
-                var loggedInUser = sessionHandler.GetUserOrThrow();
+                var loggedInUser = sessionHandler.GetUser();
+                if (loggedInUser == null
+                    || loggedInUser.UserEntityID <= 0
+                    || loggedInUser.PPNumber <= 0
+                    || loggedInUser.UserRoleID <= 0)
+                    {
+                    return new List<FADNewParaPerformanceModel>();
+                    }
 
                 using (var cmd = con.CreateCommand())
                     {
@@ -1312,7 +1508,14 @@ namespace AIS.Controllers
             using (var con = this.DatabaseConnection())
                 {
                
-                var loggedInUser = sessionHandler.GetUserOrThrow();
+                var loggedInUser = sessionHandler.GetUser();
+                if (loggedInUser == null
+                    || loggedInUser.UserEntityID <= 0
+                    || loggedInUser.PPNumber <= 0
+                    || loggedInUser.UserRoleID <= 0)
+                    {
+                    return new List<FADNewOldParaPerformanceModel>();
+                    }
 
                 using (var cmd = con.CreateCommand())
                     {
@@ -1351,7 +1554,14 @@ namespace AIS.Controllers
             using (var con = this.DatabaseConnection())
                 {
                
-                var loggedInUser = sessionHandler.GetUserOrThrow();
+                var loggedInUser = sessionHandler.GetUser();
+                if (loggedInUser == null
+                    || loggedInUser.UserEntityID <= 0
+                    || loggedInUser.PPNumber <= 0
+                    || loggedInUser.UserRoleID <= 0)
+                    {
+                    return new List<FADLagacyParaPerformanceModel>();
+                    }
 
                 using (var cmd = con.CreateCommand())
                     {
@@ -1391,7 +1601,14 @@ namespace AIS.Controllers
             using (var con = this.DatabaseConnection())
                 {
                
-                var loggedInUser = sessionHandler.GetUserOrThrow();
+                var loggedInUser = sessionHandler.GetUser();
+                if (loggedInUser == null
+                    || loggedInUser.UserEntityID <= 0
+                    || loggedInUser.PPNumber <= 0
+                    || loggedInUser.UserRoleID <= 0)
+                    {
+                    return new List<LegacyZoneWiseOldParasPerformanceModel>();
+                    }
 
                 using (var cmd = con.CreateCommand())
                     {
@@ -1426,7 +1643,14 @@ namespace AIS.Controllers
             using (var con = this.DatabaseConnection())
                 {
                
-                var loggedInUser = sessionHandler.GetUserOrThrow();
+                var loggedInUser = sessionHandler.GetUser();
+                if (loggedInUser == null
+                    || loggedInUser.UserEntityID <= 0
+                    || loggedInUser.PPNumber <= 0
+                    || loggedInUser.UserRoleID <= 0)
+                    {
+                    return new List<LegacyUserWiseOldParasPerformanceModel>();
+                    }
 
                 using (var cmd = con.CreateCommand())
                     {
@@ -1462,7 +1686,14 @@ namespace AIS.Controllers
             using (var con = this.DatabaseConnection())
                 {
                
-                var loggedInUser = sessionHandler.GetUserOrThrow();
+                var loggedInUser = sessionHandler.GetUser();
+                if (loggedInUser == null
+                    || loggedInUser.UserEntityID <= 0
+                    || loggedInUser.PPNumber <= 0
+                    || loggedInUser.UserRoleID <= 0)
+                    {
+                    return new List<FADHOUserLegacyParaUserWiseParasPerformanceModel>();
+                    }
 
                 using (var cmd = con.CreateCommand())
                     {
@@ -1493,7 +1724,14 @@ namespace AIS.Controllers
 
             {
             var sessionHandler = CreateSessionHandler();
-            var loggedInUser = sessionHandler.GetUserOrThrow();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID <= 0
+                || loggedInUser.PPNumber <= 0
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return new List<ParaPositionReportModel>();
+                }
 
             List<ParaPositionReportModel> list = new List<ParaPositionReportModel>();
             using (var con = this.DatabaseConnection())
@@ -1529,7 +1767,14 @@ namespace AIS.Controllers
         public List<ParaPositionDetailsModel> GetParaPositionParaDetails(int ENTITY_ID = 0, int AUDIT_PERIOD = 0)
             {
             var sessionHandler = CreateSessionHandler();
-            var loggedInUser = sessionHandler.GetUserOrThrow();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID <= 0
+                || loggedInUser.PPNumber <= 0
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return new List<ParaPositionDetailsModel>();
+                }
             List<ParaPositionDetailsModel> list = new List<ParaPositionDetailsModel>();
             using (var con = this.DatabaseConnection())
                 {
@@ -1561,7 +1806,14 @@ namespace AIS.Controllers
         public List<FADNewOldParaPerformanceModel> GetTotalParasDetailsHO(int ENTITY_ID = 0, int PROCESS_ID = 0)
             {
             var sessionHandler = CreateSessionHandler();
-            var loggedInUser = sessionHandler.GetUserOrThrow();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID <= 0
+                || loggedInUser.PPNumber <= 0
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return new List<FADNewOldParaPerformanceModel>();
+                }
 
             List<FADNewOldParaPerformanceModel> pdetails = new List<FADNewOldParaPerformanceModel>();
             using (var con = this.DatabaseConnection())
@@ -1599,7 +1851,14 @@ namespace AIS.Controllers
         public List<RoleActivityLogModel> GetRoleActivityLog(int ROLE_ID, int DEPT_ID, int AZ_ID)
             {
             var sessionHandler = CreateSessionHandler();
-            var loggedInUser = sessionHandler.GetUserOrThrow();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID <= 0
+                || loggedInUser.PPNumber <= 0
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return new List<RoleActivityLogModel>();
+                }
 
             List<RoleActivityLogModel> pdetails = new List<RoleActivityLogModel>();
             using (var con = this.DatabaseConnection())
@@ -1633,7 +1892,14 @@ namespace AIS.Controllers
         public List<RoleActivityLogModel> GetUserActivityLog(int PP_NO)
             {
             var sessionHandler = CreateSessionHandler();
-            var loggedInUser = sessionHandler.GetUserOrThrow();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID <= 0
+                || loggedInUser.PPNumber <= 0
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return new List<RoleActivityLogModel>();
+                }
 
             List<RoleActivityLogModel> pdetails = new List<RoleActivityLogModel>();
             using (var con = this.DatabaseConnection())
@@ -1675,7 +1941,14 @@ namespace AIS.Controllers
             using (var con = this.DatabaseConnection())
                 {
                
-                var loggedInUser = sessionHandler.GetUserOrThrow();
+                var loggedInUser = sessionHandler.GetUser();
+                if (loggedInUser == null
+                    || loggedInUser.UserEntityID <= 0
+                    || loggedInUser.PPNumber <= 0
+                    || loggedInUser.UserRoleID <= 0)
+                    {
+                    return new List<StatusWiseComplianceModel>();
+                    }
                 using (var cmd = con.CreateCommand())
                     {
                     cmd.CommandText = "pkg_rpt.P_GET_COMPLIANCE_STATUS_WISE";
@@ -1726,7 +1999,14 @@ namespace AIS.Controllers
             using (var con = this.DatabaseConnection())
                 {
                
-                var loggedInUser = sessionHandler.GetUserOrThrow();
+                var loggedInUser = sessionHandler.GetUser();
+                if (loggedInUser == null
+                    || loggedInUser.UserEntityID <= 0
+                    || loggedInUser.PPNumber <= 0
+                    || loggedInUser.UserRoleID <= 0)
+                    {
+                    return new List<AuditParaReconsillation>();
+                    }
                 using (var cmd = con.CreateCommand())
                     {
                     cmd.CommandText = "pkg_rpt.P_FAD_audit_Para_Reconciliation";
@@ -1774,7 +2054,14 @@ namespace AIS.Controllers
             using (var con = this.DatabaseConnection())
                 {
                
-                var loggedInUser = sessionHandler.GetUserOrThrow();
+                var loggedInUser = sessionHandler.GetUser();
+                if (loggedInUser == null
+                    || loggedInUser.UserEntityID <= 0
+                    || loggedInUser.PPNumber <= 0
+                    || loggedInUser.UserRoleID <= 0)
+                    {
+                    return new List<AuditPlanEngDetailReport>();
+                    }
 
                 using (var cmd = con.CreateCommand())
                     {
@@ -1821,7 +2108,14 @@ namespace AIS.Controllers
             using (var con = this.DatabaseConnection())
                 {
                
-                var loggedInUser = sessionHandler.GetUserOrThrow();
+                var loggedInUser = sessionHandler.GetUser();
+                if (loggedInUser == null
+                    || loggedInUser.UserEntityID <= 0
+                    || loggedInUser.PPNumber <= 0
+                    || loggedInUser.UserRoleID <= 0)
+                    {
+                    return new List<AnnexureExerciseStatus>();
+                    }
 
                 using (var cmd = con.CreateCommand())
                     {
@@ -1856,7 +2150,14 @@ namespace AIS.Controllers
             using (var con = this.DatabaseConnection())
                 {
                
-                var loggedInUser = sessionHandler.GetUserOrThrow();
+                var loggedInUser = sessionHandler.GetUser();
+                if (loggedInUser == null
+                    || loggedInUser.UserEntityID <= 0
+                    || loggedInUser.PPNumber <= 0
+                    || loggedInUser.UserRoleID <= 0)
+                    {
+                    return new List<GroupWiseUsersCountModel>();
+                    }
 
                 using (var cmd = con.CreateCommand())
                     {
@@ -1889,7 +2190,14 @@ namespace AIS.Controllers
             using (var con = this.DatabaseConnection())
                 {
                
-                var loggedInUser = sessionHandler.GetUserOrThrow();
+                var loggedInUser = sessionHandler.GetUser();
+                if (loggedInUser == null
+                    || loggedInUser.UserEntityID <= 0
+                    || loggedInUser.PPNumber <= 0
+                    || loggedInUser.UserRoleID <= 0)
+                    {
+                    return new List<GroupWisePagesModel>();
+                    }
 
                 using (var cmd = con.CreateCommand())
                     {
@@ -1916,7 +2224,14 @@ namespace AIS.Controllers
         public List<AuditeeEntitiesModel> GetEntityTypesForEntityWiseOutstandingObsPosition()
             {
             var sessionHandler = CreateSessionHandler();
-            var loggedInUser = sessionHandler.GetUserOrThrow();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID <= 0
+                || loggedInUser.PPNumber <= 0
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return new List<AuditeeEntitiesModel>();
+                }
 
             List<AuditeeEntitiesModel> entitiesList = new List<AuditeeEntitiesModel>();
             using (var con = this.DatabaseConnection())
@@ -1955,7 +2270,14 @@ namespace AIS.Controllers
             using (var con = this.DatabaseConnection())
                 {
                
-                var loggedInUser = sessionHandler.GetUserOrThrow();
+                var loggedInUser = sessionHandler.GetUser();
+                if (loggedInUser == null
+                    || loggedInUser.UserEntityID <= 0
+                    || loggedInUser.PPNumber <= 0
+                    || loggedInUser.UserRoleID <= 0)
+                    {
+                    return new List<DepttWiseOutstandingParasModel>();
+                    }
 
                 using (var cmd = con.CreateCommand())
                     {
@@ -1990,7 +2312,14 @@ namespace AIS.Controllers
         public List<AuditeeEntitiesModel> GetLoanStatus()
             {
             var sessionHandler = CreateSessionHandler();
-            var loggedInUser = sessionHandler.GetUserOrThrow();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID <= 0
+                || loggedInUser.PPNumber <= 0
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return new List<AuditeeEntitiesModel>();
+                }
 
             List<AuditeeEntitiesModel> entitiesList = new List<AuditeeEntitiesModel>();
             using (var con = this.DatabaseConnection())
@@ -2020,7 +2349,14 @@ namespace AIS.Controllers
         public List<AuditeeEntitiesModel> GetLoanGLs()
             {
             var sessionHandler = CreateSessionHandler();
-            var loggedInUser = sessionHandler.GetUserOrThrow();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID <= 0
+                || loggedInUser.PPNumber <= 0
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return new List<AuditeeEntitiesModel>();
+                }
 
             List<AuditeeEntitiesModel> entitiesList = new List<AuditeeEntitiesModel>();
             using (var con = this.DatabaseConnection())
@@ -2050,7 +2386,14 @@ namespace AIS.Controllers
         public List<AuditeeEntitiesModel> GetGMsList()
             {
             var sessionHandler = CreateSessionHandler();
-            var loggedInUser = sessionHandler.GetUserOrThrow();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID <= 0
+                || loggedInUser.PPNumber <= 0
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return new List<AuditeeEntitiesModel>();
+                }
 
             List<AuditeeEntitiesModel> entitiesList = new List<AuditeeEntitiesModel>();
             using (var con = this.DatabaseConnection())
@@ -2080,7 +2423,14 @@ namespace AIS.Controllers
         public List<AuditeeEntitiesModel> GetRBHList(int REGION_ID)
             {
             var sessionHandler = CreateSessionHandler();
-            var loggedInUser = sessionHandler.GetUserOrThrow();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID <= 0
+                || loggedInUser.PPNumber <= 0
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return new List<AuditeeEntitiesModel>();
+                }
 
             List<AuditeeEntitiesModel> entitiesList = new List<AuditeeEntitiesModel>();
             using (var con = this.DatabaseConnection())
@@ -2117,7 +2467,14 @@ namespace AIS.Controllers
             using (var con = this.DatabaseConnection())
                 {
                
-                var loggedInUser = sessionHandler.GetUserOrThrow();
+                var loggedInUser = sessionHandler.GetUser();
+                if (loggedInUser == null
+                    || loggedInUser.UserEntityID <= 0
+                    || loggedInUser.PPNumber <= 0
+                    || loggedInUser.UserRoleID <= 0)
+                    {
+                    return new List<LoanDetailReportModel>();
+                    }
 
                 using (var cmd = con.CreateCommand())
                     {
@@ -2164,7 +2521,14 @@ namespace AIS.Controllers
             using (var con = this.DatabaseConnection())
                 {
                
-                var loggedInUser = sessionHandler.GetUserOrThrow();
+                var loggedInUser = sessionHandler.GetUser();
+                if (loggedInUser == null
+                    || loggedInUser.UserEntityID <= 0
+                    || loggedInUser.PPNumber <= 0
+                    || loggedInUser.UserRoleID <= 0)
+                    {
+                    return new List<LoanDetailReportModel>();
+                    }
 
                 using (var cmd = con.CreateCommand())
                     {
@@ -2207,7 +2571,14 @@ namespace AIS.Controllers
             using (var con = this.DatabaseConnection())
                 {
                
-                var loggedInUser = sessionHandler.GetUserOrThrow();
+                var loggedInUser = sessionHandler.GetUser();
+                if (loggedInUser == null
+                    || loggedInUser.UserEntityID <= 0
+                    || loggedInUser.PPNumber <= 0
+                    || loggedInUser.UserRoleID <= 0)
+                    {
+                    return new List<DefaultHisotryLoanDetailReportModel>();
+                    }
 
                 using (var cmd = con.CreateCommand())
                     {
@@ -2248,7 +2619,14 @@ namespace AIS.Controllers
             using (var con = this.DatabaseConnection())
                 {
                
-                var loggedInUser = sessionHandler.GetUserOrThrow();
+                var loggedInUser = sessionHandler.GetUser();
+                if (loggedInUser == null
+                    || loggedInUser.UserEntityID <= 0
+                    || loggedInUser.PPNumber <= 0
+                    || loggedInUser.UserRoleID <= 0)
+                    {
+                    return new List<GISTWiseReportParas>();
+                    }
                 using (var cmd = con.CreateCommand())
                     {
                     cmd.CommandText = "pkg_rpt.P_find_gist";
@@ -2285,7 +2663,14 @@ namespace AIS.Controllers
             using (var con = this.DatabaseConnection())
                 {
                
-                var loggedInUser = sessionHandler.GetUserOrThrow();
+                var loggedInUser = sessionHandler.GetUser();
+                if (loggedInUser == null
+                    || loggedInUser.UserEntityID <= 0
+                    || loggedInUser.PPNumber <= 0
+                    || loggedInUser.UserRoleID <= 0)
+                    {
+                    return new List<ComplianceProgressReportModel>();
+                    }
                 using (var cmd = con.CreateCommand())
                     {
                     cmd.CommandText = "pkg_rpt.P_GET_COM_PROGREE_REPORT ";
@@ -2323,7 +2708,14 @@ namespace AIS.Controllers
             using (var con = this.DatabaseConnection())
                 {
                
-                var loggedInUser = sessionHandler.GetUserOrThrow();
+                var loggedInUser = sessionHandler.GetUser();
+                if (loggedInUser == null
+                    || loggedInUser.UserEntityID <= 0
+                    || loggedInUser.PPNumber <= 0
+                    || loggedInUser.UserRoleID <= 0)
+                    {
+                    return new List<ComplianceProgressReportDetailModel>();
+                    }
                 using (var cmd = con.CreateCommand())
                     {
                     cmd.CommandText = "pkg_rpt.P_GET_COM_PROGREE_REPORT_DETAIL ";
@@ -2368,7 +2760,14 @@ namespace AIS.Controllers
 
                
                 var sessionHandler = CreateSessionHandler();
-                var loggedInUser = sessionHandler.GetUserOrThrow();
+                var loggedInUser = sessionHandler.GetUser();
+                if (loggedInUser == null
+                    || loggedInUser.UserEntityID <= 0
+                    || loggedInUser.PPNumber <= 0
+                    || loggedInUser.UserRoleID <= 0)
+                    {
+                    return new List<AuditEntitiesModel>();
+                    }
                 using (var cmd = con.CreateCommand())
                     {
                     cmd.CommandText = "pkg_rpt.P_GET_ENTITY_TYPE_FOR_SETTLEMENT";
@@ -2401,7 +2800,14 @@ namespace AIS.Controllers
             using (var con = this.DatabaseConnection())
                 {
                
-                var loggedInUser = sessionHandler.GetUserOrThrow();
+                var loggedInUser = sessionHandler.GetUser();
+                if (loggedInUser == null
+                    || loggedInUser.UserEntityID <= 0
+                    || loggedInUser.PPNumber <= 0
+                    || loggedInUser.UserRoleID <= 0)
+                    {
+                    return new List<SettledParasModel>();
+                    }
                 using (var cmd = con.CreateCommand())
                     {
                     cmd.CommandText = "pkg_rpt.P_GET_COMPLIANCE_REPORT";
@@ -2442,7 +2848,14 @@ namespace AIS.Controllers
             using (var con = this.DatabaseConnection())
                 {
                
-                var loggedInUser = sessionHandler.GetUserOrThrow();
+                var loggedInUser = sessionHandler.GetUser();
+                if (loggedInUser == null
+                    || loggedInUser.UserEntityID <= 0
+                    || loggedInUser.PPNumber <= 0
+                    || loggedInUser.UserRoleID <= 0)
+                    {
+                    return new List<ComplianceOSParasModel>();
+                    }
                 using (var cmd = con.CreateCommand())
                     {
                     cmd.CommandText = "pkg_rpt.P_GET_PARA_POSITION_SUM";
@@ -2482,7 +2895,14 @@ namespace AIS.Controllers
             using (var con = this.DatabaseConnection())
                 {
                
-                var loggedInUser = sessionHandler.GetUserOrThrow();
+                var loggedInUser = sessionHandler.GetUser();
+                if (loggedInUser == null
+                    || loggedInUser.UserEntityID <= 0
+                    || loggedInUser.PPNumber <= 0
+                    || loggedInUser.UserRoleID <= 0)
+                    {
+                    return new List<EngPlanDelayAnalysisReportModel>();
+                    }
                 using (var cmd = con.CreateCommand())
                     {
                     cmd.CommandText = "pkg_rpt.p_delay_audits";
@@ -2514,7 +2934,14 @@ namespace AIS.Controllers
         public List<FADMonthlyReviewParasModel> GetFADMonthlyReviewParasForEntityTypeId(string ENT_TYPE_ID, DateTime? S_DATE, DateTime? E_DATE)
             {
             var sessionHandler = CreateSessionHandler();
-            var loggedInUser = sessionHandler.GetUserOrThrow();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID <= 0
+                || loggedInUser.PPNumber <= 0
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return new List<FADMonthlyReviewParasModel>();
+                }
             var list = new List<FADMonthlyReviewParasModel>();
             try
                 {
@@ -2577,7 +3004,14 @@ namespace AIS.Controllers
             using (var con = this.DatabaseConnection())
                 {
                
-                var loggedInUser = sessionHandler.GetUserOrThrow();
+                var loggedInUser = sessionHandler.GetUser();
+                if (loggedInUser == null
+                    || loggedInUser.UserEntityID <= 0
+                    || loggedInUser.PPNumber <= 0
+                    || loggedInUser.UserRoleID <= 0)
+                    {
+                    return new List<SeriousFraudulentObsGM>();
+                    }
                 using (var cmd = con.CreateCommand())
                     {
                     cmd.CommandText = "pkg_rpt.P_GET_GM_WISE_SERIOUS_PARAS";
@@ -2621,7 +3055,14 @@ namespace AIS.Controllers
             using (var con = this.DatabaseConnection())
                 {
                
-                var loggedInUser = sessionHandler.GetUserOrThrow();
+                var loggedInUser = sessionHandler.GetUser();
+                if (loggedInUser == null
+                    || loggedInUser.UserEntityID <= 0
+                    || loggedInUser.PPNumber <= 0
+                    || loggedInUser.UserRoleID <= 0)
+                    {
+                    return new List<SeriousFraudulentObsGMDetails>();
+                    }
                 using (var cmd = con.CreateCommand())
                     {
                     cmd.CommandText = "pkg_rpt.P_GET_GM_WISE_SERIOUS_PARAS_DETAILS";
@@ -2668,7 +3109,14 @@ namespace AIS.Controllers
                 {
 
                
-                var loggedInUser = sessionHandler.GetUserOrThrow();
+                var loggedInUser = sessionHandler.GetUser();
+                if (loggedInUser == null
+                    || loggedInUser.UserEntityID <= 0
+                    || loggedInUser.PPNumber <= 0
+                    || loggedInUser.UserRoleID <= 0)
+                    {
+                    return new List<YearWiseOutstandingObservationsModel>();
+                    }
 
                 using (var cmd = con.CreateCommand())
                     {
@@ -2711,7 +3159,14 @@ namespace AIS.Controllers
             using (var con = this.DatabaseConnection())
                 {
                
-                var loggedInUser = sessionHandler.GetUserOrThrow();
+                var loggedInUser = sessionHandler.GetUser();
+                if (loggedInUser == null
+                    || loggedInUser.UserEntityID <= 0
+                    || loggedInUser.PPNumber <= 0
+                    || loggedInUser.UserRoleID <= 0)
+                    {
+                    return new List<AuditeeOldParasModel>();
+                    }
                 using (var cmd = con.CreateCommand())
                     {
                     cmd.CommandText = "pkg_rpt.P_GET_YEAR_WISE_AUDIT_OUTSTANDING_PARAS_DETAILS";
@@ -2749,7 +3204,14 @@ namespace AIS.Controllers
             using (var con = this.DatabaseConnection())
                 {
                
-                var loggedInUser = sessionHandler.GetUserOrThrow();
+                var loggedInUser = sessionHandler.GetUser();
+                if (loggedInUser == null
+                    || loggedInUser.UserEntityID <= 0
+                    || loggedInUser.PPNumber <= 0
+                    || loggedInUser.UserRoleID <= 0)
+                    {
+                    return new List<ParaTextSearchModel>();
+                    }
                 using (var cmd = con.CreateCommand())
                     {
                     cmd.CommandText = "pkg_rpt.P_GET_PARA_TEXT_WORDS_V2";
@@ -2793,7 +3255,14 @@ namespace AIS.Controllers
 
                
                 var sessionHandler = CreateSessionHandler();
-                var loggedInUser = sessionHandler.GetUserOrThrow();
+                var loggedInUser = sessionHandler.GetUser();
+                if (loggedInUser == null
+                    || loggedInUser.UserEntityID <= 0
+                    || loggedInUser.PPNumber <= 0
+                    || loggedInUser.UserRoleID <= 0)
+                    {
+                    return new List<YearWiseAllParasModel>();
+                    }
                 using (var cmd = con.CreateCommand())
                     {
                     cmd.CommandText = "pkg_rpt.P_GET_YEAR_WISE_ALL_PARAS";

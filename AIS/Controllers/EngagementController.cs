@@ -48,7 +48,14 @@ namespace AIS.Controllers
             ViewData["TopMenu"] = tm.GetTopMenus();
             ViewData["TopMenuPages"] = tm.GetTopMenusPages();
             ViewData["TaskList"] = dBConnection.GetTaskList();
-            var loggedInUser = sessionHandler.GetUserOrThrow();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID <= 0
+                || loggedInUser.PPNumber <= 0
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return new JsonResult(new object());
+                }
             ViewData["PPNumber"] = loggedInUser.PPNumber;
             ViewData["EMP_NAME"] = loggedInUser.Name;
             List<TaskListModel> tlist = dBConnection.GetTaskList();

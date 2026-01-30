@@ -115,7 +115,14 @@ namespace AIS.Controllers
         public SBPPasswordValidationResult ValidateSbpAccessPassword(string inputPassword)
             {
             var sessionHandler = CreateSessionHandler();
-            var loggedInUser = sessionHandler.GetUserOrThrow();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID <= 0
+                || loggedInUser.PPNumber <= 0
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return new SBPPasswordValidationResult();
+                }
             var result = new SBPPasswordValidationResult { Success = false, Message = "Invalid password." };
             using (var con = this.DatabaseConnection())
                 {
@@ -143,7 +150,14 @@ namespace AIS.Controllers
         public long InsertSbpObservation(SBPObservationCreateModel model)
             {
             var sessionHandler = CreateSessionHandler();
-            var loggedInUser = sessionHandler.GetUserOrThrow();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID <= 0
+                || loggedInUser.PPNumber <= 0
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return 0;
+                }
             if (model == null)
                 {
                 throw new ArgumentNullException(nameof(model));
@@ -425,7 +439,14 @@ namespace AIS.Controllers
             {
 
             var sessionHandler = CreateSessionHandler();
-            var loggedInUser = sessionHandler.GetUserOrThrow();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID <= 0
+                || loggedInUser.PPNumber <= 0
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return (false, string.Empty);
+                }
 
             if (model?.ParaId == null || model.ParaId <= 0)
                 {
@@ -550,7 +571,14 @@ namespace AIS.Controllers
             using (var con = this.DatabaseConnection())
                 {
                
-                var loggedInUser = sessionHandler.GetUserOrThrow();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID <= 0
+                || loggedInUser.PPNumber <= 0
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return (false, string.Empty);
+                }
                 var ppNumber = loggedInUser.PPNumber;
                 var roleId = loggedInUser.UserGroupID;
 
@@ -601,7 +629,14 @@ namespace AIS.Controllers
         public (bool Success, string Message, long RequestId) RequestDeleteObservation(long paraId, string reason)
             {
             var session = CreateSessionHandler();
-            var user = session.GetUserOrThrow();
+            var user = session.GetUser();
+            if (user == null
+                || user.UserEntityID <= 0
+                || user.PPNumber <= 0
+                || user.UserRoleID <= 0)
+                {
+                return (false, string.Empty, 0);
+                }
 
             using (var con = this.DatabaseConnection())
                 {
@@ -635,7 +670,14 @@ namespace AIS.Controllers
         public (bool Success, string Message, long RequestId) RequestDeleteResponse(long responseId, string reason)
             {
             var session = CreateSessionHandler();
-            var user = session.GetUserOrThrow();
+            var user = session.GetUser();
+            if (user == null
+                || user.UserEntityID <= 0
+                || user.PPNumber <= 0
+                || user.UserRoleID <= 0)
+                {
+                return (false, string.Empty, 0);
+                }
 
             using (var con = this.DatabaseConnection())
                 {
@@ -669,7 +711,14 @@ namespace AIS.Controllers
         public (bool Success, string Message, long RequestId) RequestReverse(long requestIdToReverse, string reason)
             {
             var session = CreateSessionHandler();
-            var user = session.GetUserOrThrow();
+            var user = session.GetUser();
+            if (user == null
+                || user.UserEntityID <= 0
+                || user.PPNumber <= 0
+                || user.UserRoleID <= 0)
+                {
+                return (false, string.Empty, 0);
+                }
 
             using (var con = this.DatabaseConnection())
                 {
@@ -703,7 +752,14 @@ namespace AIS.Controllers
         public (bool Success, string Message) ApproveRequest(long requestId)
             {
             var session = CreateSessionHandler();
-            var user = session.GetUserOrThrow();
+            var user = session.GetUser();
+            if (user == null
+                || user.UserEntityID <= 0
+                || user.PPNumber <= 0
+                || user.UserRoleID <= 0)
+                {
+                return (false, string.Empty);
+                }
 
             using (var con = this.DatabaseConnection())
                 {
@@ -733,7 +789,14 @@ namespace AIS.Controllers
         public (bool Success, string Message) RejectRequest(long requestId, string reason)
             {
             var session = CreateSessionHandler();
-            var user = session.GetUserOrThrow();
+            var user = session.GetUser();
+            if (user == null
+                || user.UserEntityID <= 0
+                || user.PPNumber <= 0
+                || user.UserRoleID <= 0)
+                {
+                return (false, string.Empty);
+                }
 
             using (var con = this.DatabaseConnection())
                 {

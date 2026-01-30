@@ -30,7 +30,15 @@ namespace AIS.Controllers
             {
             ViewData["TopMenu"] = tm.GetTopMenus();
             ViewData["TopMenuPages"] = tm.GetTopMenusPages();
-            ViewData["UserEntityName"] = sessionHandler.GetUserOrThrow().UserEntityName;
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID <= 0
+                || loggedInUser.PPNumber <= 0
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return new JsonResult(new object());
+                }
+            ViewData["UserEntityName"] = loggedInUser.UserEntityName;
             if (!User.Identity.IsAuthenticated)
                 return RedirectToAction("Index", "Login");
             else
@@ -47,7 +55,15 @@ namespace AIS.Controllers
             {
             ViewData["TopMenu"] = tm.GetTopMenus();
             ViewData["TopMenuPages"] = tm.GetTopMenusPages();
-            ViewData["UserEntityName"] = sessionHandler.GetUserOrThrow().UserEntityName;
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID <= 0
+                || loggedInUser.PPNumber <= 0
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return new JsonResult(new object());
+                }
+            ViewData["UserEntityName"] = loggedInUser.UserEntityName;
             ViewData["Userrelationship"] = dBConnection.GetrealtionshiptypeForCAU();
             if (!User.Identity.IsAuthenticated)
                 return RedirectToAction("Index", "Login");
@@ -65,7 +81,15 @@ namespace AIS.Controllers
             {
             ViewData["TopMenu"] = tm.GetTopMenus();
             ViewData["TopMenuPages"] = tm.GetTopMenusPages();
-            ViewData["UserEntityName"] = sessionHandler.GetUserOrThrow().UserEntityName;
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID <= 0
+                || loggedInUser.PPNumber <= 0
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return new JsonResult(new object());
+                }
+            ViewData["UserEntityName"] = loggedInUser.UserEntityName;
             if (!User.Identity.IsAuthenticated)
                 return RedirectToAction("Index", "Login");
             else
@@ -82,7 +106,15 @@ namespace AIS.Controllers
             {
             ViewData["TopMenu"] = tm.GetTopMenus();
             ViewData["TopMenuPages"] = tm.GetTopMenusPages();
-            ViewData["UserEntityName"] = sessionHandler.GetUserOrThrow().UserEntityName;
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID <= 0
+                || loggedInUser.PPNumber <= 0
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return new JsonResult(new object());
+                }
+            ViewData["UserEntityName"] = loggedInUser.UserEntityName;
             if (!User.Identity.IsAuthenticated)
                 return RedirectToAction("Index", "Login");
             else
@@ -99,7 +131,15 @@ namespace AIS.Controllers
             {
             ViewData["TopMenu"] = tm.GetTopMenus();
             ViewData["TopMenuPages"] = tm.GetTopMenusPages();
-            ViewData["UserEntityName"] = sessionHandler.GetUserOrThrow().UserEntityName;
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID <= 0
+                || loggedInUser.PPNumber <= 0
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return new JsonResult(new object());
+                }
+            ViewData["UserEntityName"] = loggedInUser.UserEntityName;
             if (!User.Identity.IsAuthenticated)
                 return RedirectToAction("Index", "Login");
             else
@@ -116,7 +156,15 @@ namespace AIS.Controllers
             {
             ViewData["TopMenu"] = tm.GetTopMenus();
             ViewData["TopMenuPages"] = tm.GetTopMenusPages();
-            ViewData["UserEntityName"] = sessionHandler.GetUserOrThrow().UserEntityName;
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID <= 0
+                || loggedInUser.PPNumber <= 0
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return new JsonResult(new object());
+                }
+            ViewData["UserEntityName"] = loggedInUser.UserEntityName;
             if (!User.Identity.IsAuthenticated)
                 return RedirectToAction("Index", "Login");
             else
