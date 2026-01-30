@@ -144,14 +144,12 @@ namespace AIS.Controllers
                 return authorizationResult;
                 }
 
-            if (requestedEngagementId.HasValue)
+            if (!requestedEngagementId.HasValue || requestedEngagementId.Value <= 0)
                 {
-                engId = requestedEngagementId.Value;
+                return BadRequest("engId is required.");
                 }
-            else if (!_sessionHandler.TryGetActiveEngagementId(out engId))
-                {
-                return BadRequest("An active engagement is required before generating the report.");
-                }
+
+            engId = requestedEngagementId.Value;
 
             if (!IsEngagementAuthorized(engId))
                 {
@@ -174,9 +172,20 @@ namespace AIS.Controllers
 
         private bool IsEngagementAuthorized(int engId)
             {
-            return _dbConnection
-                .GetObservationEntitiesForPreConcluding()
-                .Any(item => item.ENG_ID.HasValue && item.ENG_ID.Value == engId);
+            if (!_sessionHandler.TryGetUser(out var user))
+                {
+                return false;
+                }
+
+            if (!int.TryParse(user.PPNumber, out var ppNo))
+                {
+                return false;
+                }
+
+            var rId = user.UserRoleID;
+            var entId = user.UserEntityID ?? 0;
+
+            return _dbConnection.IsEngagementAllowedForPdf(engId, ppNo, rId, entId);
             }
 
         private static byte[] RenderPdf(string html)
