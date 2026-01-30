@@ -202,92 +202,134 @@
                 </table>
             </div>
 
-            <div class="table-responsive mb-4">
-                <table class="table table-bordered align-middle">
-                    <thead>
-                        <tr>
-                            <th>Nature of Paras</th>
-                            <th>Reported</th>
-                            <th>Rectified</th>
-                            <th>Outstanding</th>
-                            <th>Remarks, if any</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td>Fraud &amp; Forgery (if any)</td>
-                            <td>@(FindStatisticsRow("Fraud & Forgery")?.ReportedCount?.ToString() ?? string.Empty)</td>
-                            <td>@(FindStatisticsRow("Fraud & Forgery")?.RectifiedCount?.ToString() ?? string.Empty)</td>
-                            <td>@(FindStatisticsRow("Fraud & Forgery")?.OutstandingCount?.ToString() ?? string.Empty)</td>
-                            <td><input class="form-control" name="Fields[FIELD_204]" value="@FieldValue("FIELD_204")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
-                        </tr>
-                        <tr>
-                            <td>High Risk Paras</td>
-                            <td>@(FindStatisticsRow("High Risk")?.ReportedCount?.ToString() ?? string.Empty)</td>
-                            <td>@(FindStatisticsRow("High Risk")?.RectifiedCount?.ToString() ?? string.Empty)</td>
-                            <td>@(FindStatisticsRow("High Risk")?.OutstandingCount?.ToString() ?? string.Empty)</td>
-                            <td><input class="form-control" name="Fields[FIELD_205]" value="@FieldValue("FIELD_205")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
-                        </tr>
-                        <tr>
-                            <td>Medium Risk Paras</td>
-                            <td>@(FindStatisticsRow("Medium Risk")?.ReportedCount?.ToString() ?? string.Empty)</td>
-                            <td>@(FindStatisticsRow("Medium Risk")?.RectifiedCount?.ToString() ?? string.Empty)</td>
-                            <td>@(FindStatisticsRow("Medium Risk")?.OutstandingCount?.ToString() ?? string.Empty)</td>
-                            <td><input class="form-control" name="Fields[FIELD_206]" value="@FieldValue("FIELD_206")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
-                        </tr>
-                        <tr>
-                            <td>Low Risk Paras</td>
-                            <td>@(FindStatisticsRow("Low Risk")?.ReportedCount?.ToString() ?? string.Empty)</td>
-                            <td>@(FindStatisticsRow("Low Risk")?.RectifiedCount?.ToString() ?? string.Empty)</td>
-                            <td>@(FindStatisticsRow("Low Risk")?.OutstandingCount?.ToString() ?? string.Empty)</td>
-                            <td><input class="form-control" name="Fields[FIELD_207]" value="@FieldValue("FIELD_207")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
-                        </tr>
-                        <tr>
-                            <td>Total:</td>
-                            <td>@(FindStatisticsRow("Total")?.ReportedCount?.ToString() ?? string.Empty)</td>
-                            <td>@(FindStatisticsRow("Total")?.RectifiedCount?.ToString() ?? string.Empty)</td>
-                            <td>@(FindStatisticsRow("Total")?.OutstandingCount?.ToString() ?? string.Empty)</td>
-                            <td><input class="form-control" name="Fields[FIELD_208]" value="@FieldValue("FIELD_208")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
-                        </tr>
-                    </tbody>
-                </table>
+            <div class="mb-4" id="statisticsBlock">
+                <div class="d-flex align-items-stretch mb-2">
+                    <div class="bg-secondary" style="width:6px;"></div>
+                    <div class="flex-grow-1 bg-light border px-2 py-1 fw-semibold">4. Statistics of Current Audit Report</div>
+                </div>
+                <div class="table-responsive mb-2">
+                    <table class="table table-bordered align-middle mb-0" id="statisticsTable">
+                        <thead>
+                            <tr>
+                                <th>Nature of Paras</th>
+                                <th>Reported</th>
+                                <th>Rectified</th>
+                                <th>Outstanding</th>
+                                <th>Remarks, if any</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr data-nature="Fraud &amp; Forgery (if any)">
+                                <td>Fraud &amp; Forgery (if any)</td>
+                                <td><input class="form-control" type="number" min="0" step="1" data-field="reported" /></td>
+                                <td><input class="form-control" type="number" min="0" step="1" data-field="rectified" /></td>
+                                <td><input class="form-control" type="number" min="0" step="1" data-field="outstanding" /></td>
+                                <td><input class="form-control" type="text" data-field="remarks" /></td>
+                            </tr>
+                            <tr data-nature="High Risk Paras">
+                                <td>High Risk Paras</td>
+                                <td><input class="form-control" type="number" min="0" step="1" data-field="reported" /></td>
+                                <td><input class="form-control" type="number" min="0" step="1" data-field="rectified" /></td>
+                                <td><input class="form-control" type="number" min="0" step="1" data-field="outstanding" /></td>
+                                <td><input class="form-control" type="text" data-field="remarks" /></td>
+                            </tr>
+                            <tr data-nature="Medium Risk Paras">
+                                <td>Medium Risk Paras</td>
+                                <td><input class="form-control" type="number" min="0" step="1" data-field="reported" /></td>
+                                <td><input class="form-control" type="number" min="0" step="1" data-field="rectified" /></td>
+                                <td><input class="form-control" type="number" min="0" step="1" data-field="outstanding" /></td>
+                                <td><input class="form-control" type="text" data-field="remarks" /></td>
+                            </tr>
+                            <tr data-nature="Low Risk Paras">
+                                <td>Low Risk Paras</td>
+                                <td><input class="form-control" type="number" min="0" step="1" data-field="reported" /></td>
+                                <td><input class="form-control" type="number" min="0" step="1" data-field="rectified" /></td>
+                                <td><input class="form-control" type="number" min="0" step="1" data-field="outstanding" /></td>
+                                <td><input class="form-control" type="text" data-field="remarks" /></td>
+                            </tr>
+                            <tr data-nature="Total">
+                                <td>Total</td>
+                                <td><input class="form-control" type="number" min="0" step="1" data-field="reported" /></td>
+                                <td><input class="form-control" type="number" min="0" step="1" data-field="rectified" /></td>
+                                <td><input class="form-control" type="number" min="0" step="1" data-field="outstanding" /></td>
+                                <td><input class="form-control" type="text" data-field="remarks" /></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="d-flex flex-wrap gap-2">
+                    <button type="button" class="btn btn-primary" id="saveStatisticsBtn">Save Statistics</button>
+                    <button type="button" class="btn btn-outline-warning d-none" id="updateStatisticsBtn">Update Statistics</button>
+                </div>
+                <div id="statisticsMessage" class="small mt-2"></div>
             </div>
 
-            <div class="table-responsive mb-4">
-                <table class="table table-bordered align-middle">
-                    <thead>
-                        <tr>
-                            <th>Description</th>
-                            <th>Amount (Rs.)</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td><input class="form-control" name="Fields[FIELD_161]" value="@FieldValue("FIELD_161")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
-                            <td><input class="form-control" name="Fields[FIELD_163]" value="@FieldValue("FIELD_163")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
-                        </tr>
-                        <tr>
-                            <td><input class="form-control" name="Fields[FIELD_164]" value="@FieldValue("FIELD_164")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
-                            <td><input class="form-control" name="Fields[FIELD_166]" value="@FieldValue("FIELD_166")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
-                        </tr>
-                        <tr>
-                            <td><input class="form-control" name="Fields[FIELD_167]" value="@FieldValue("FIELD_167")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
-                            <td><input class="form-control" name="Fields[FIELD_169]" value="@FieldValue("FIELD_169")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
-                        </tr>
-                        <tr>
-                            <td><input class="form-control" name="Fields[FIELD_170]" value="@FieldValue("FIELD_170")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
-                            <td><input class="form-control" name="Fields[FIELD_172]" value="@FieldValue("FIELD_172")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
-                        </tr>
-                        <tr>
-                            <td><input class="form-control" name="Fields[FIELD_173]" value="@FieldValue("FIELD_173")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
-                            <td><input class="form-control" name="Fields[FIELD_175]" value="@FieldValue("FIELD_175")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
-                        </tr>
-                        <tr>
-                            <td>Total</td>
-                            <td><input class="form-control" name="Fields[FIELD_176]" value="@FieldValue("FIELD_176")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
-                        </tr>
-                    </tbody>
-                </table>
+            <div class="mb-4" id="incomeLeakageBlock">
+                <div class="d-flex align-items-stretch mb-2">
+                    <div class="bg-secondary" style="width:6px;"></div>
+                    <div class="flex-grow-1 bg-light border px-2 py-1 fw-semibold">5. Summary of leakage of income / identified from sample of transactions</div>
+                </div>
+                <div class="table-responsive mb-2">
+                    <table class="table table-bordered align-middle mb-0" id="incomeLeakageTable">
+                        <thead>
+                            <tr>
+                                <th>Description</th>
+                                <th>Area</th>
+                                <th>Amount (Rs.)</th>
+                                <th style="width:120px;"></th>
+                            </tr>
+                        </thead>
+                        <tbody id="incomeLeakageRows"></tbody>
+                    </table>
+                </div>
+                <div class="d-flex flex-wrap gap-2">
+                    <button type="button" class="btn btn-outline-secondary" id="addIncomeRowBtn">Add Row</button>
+                    <button type="button" class="btn btn-primary" id="saveIncomeLeakageBtn">Save Income Leakage</button>
+                    <button type="button" class="btn btn-outline-warning d-none" id="updateIncomeLeakageBtn">Update Income Leakage</button>
+                </div>
+                <div id="incomeLeakageMessage" class="small mt-2"></div>
+            </div>
+
+            <div class="mb-4" id="overallConclusionBlock">
+                <div class="d-flex align-items-stretch mb-2">
+                    <div class="bg-secondary" style="width:6px;"></div>
+                    <div class="flex-grow-1 bg-light border px-2 py-1 fw-semibold">6. Overall Audit Conclusion</div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-semibold" for="overallConclusionEditor">Overall Audit Conclusion</label>
+                    <div class="border rounded p-2">
+                        <textarea id="overallConclusionEditor" class="form-control" rows="6"></textarea>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-semibold" for="nonAddressableEditor">a) Non-Addressable Findings/Exceptions</label>
+                    <div class="border rounded p-2">
+                        <textarea id="nonAddressableEditor" class="form-control" rows="4"></textarea>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-semibold" for="fraudProneEditor">b) Fraud Prone Indicators</label>
+                    <div class="border rounded p-2">
+                        <textarea id="fraudProneEditor" class="form-control" rows="4"></textarea>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-semibold" for="regulatoryEditor">c) Exceptions related to Regulatory Violations</label>
+                    <div class="border rounded p-2">
+                        <textarea id="regulatoryEditor" class="form-control" rows="4"></textarea>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-semibold" for="safetySecurityEditor">d) Comments on Safety &amp; Security</label>
+                    <div class="border rounded p-2">
+                        <textarea id="safetySecurityEditor" class="form-control" rows="4"></textarea>
+                    </div>
+                </div>
+                <div class="d-flex flex-wrap gap-2">
+                    <button type="button" class="btn btn-primary" id="saveConclusionBtn">Save Conclusion</button>
+                    <button type="button" class="btn btn-outline-warning d-none" id="updateConclusionBtn">Update Conclusion</button>
+                </div>
+                <div id="conclusionMessage" class="small mt-2"></div>
             </div>
 
             @for (var index = 0; index < Model.ObservationCount; index++)
@@ -430,6 +472,526 @@
 
 @section Scripts {
     <script>
+        (function () {
+            const engagementId = Number(@Json.Serialize(Model.EngagementId));
+            const reportVersionRaw = @Json.Serialize(Model.Overview?.VersionNo);
+            const reportVersion = parseInt(reportVersionRaw, 10) || 1;
+            const pageReadOnly = @Json.Serialize(Model.IsReadOnly);
+            const API_ENDPOINTS = {
+                getStatistics: '@Url.Action("GetPdfStatistics")',
+                saveStatistics: '@Url.Action("SavePdfStatistics")',
+                getIncomeLeakage: '@Url.Action("GetIncomeLeakage")',
+                saveIncomeLeakage: '@Url.Action("SaveIncomeLeakage")',
+                getConclusion: '@Url.Action("GetOverallConclusion")',
+                saveConclusion: '@Url.Action("SaveOverallConclusion")'
+            };
+            const RICH_TEXT_EDITOR_OPTIONS = {
+                bold: true,
+                italic: true,
+                underline: true,
+                leftAlign: true,
+                centerAlign: true,
+                rightAlign: true,
+                justify: true,
+                ol: true,
+                ul: true,
+                heading: true,
+                fonts: true,
+                fontColor: true,
+                fontSize: true,
+                table: true,
+                removeStyles: true,
+                code: true,
+                imageUpload: false,
+                fileUpload: false,
+                videoEmbed: false,
+                urls: false
+            };
+
+            const editorSelectors = [
+                '#overallConclusionEditor',
+                '#nonAddressableEditor',
+                '#fraudProneEditor',
+                '#regulatoryEditor',
+                '#safetySecurityEditor'
+            ];
+
+            function setMessage(elementId, message, isError) {
+                const element = document.getElementById(elementId);
+                if (!element) {
+                    return;
+                }
+
+                element.textContent = message || '';
+                element.classList.remove('text-success', 'text-danger');
+                if (message) {
+                    element.classList.add(isError ? 'text-danger' : 'text-success');
+                }
+            }
+
+            function buildQuery(params) {
+                const query = new URLSearchParams();
+                Object.keys(params || {}).forEach((key) => {
+                    const value = params[key];
+                    if (value !== null && value !== undefined) {
+                        query.append(key, value);
+                    }
+                });
+                return query.toString();
+            }
+
+            async function fetchJson(url, options) {
+                const response = await fetch(url, options);
+                const payload = await response.json();
+                if (!response.ok || !payload.success) {
+                    throw new Error(payload.message || 'Unable to process request.');
+                }
+                return payload;
+            }
+
+            function initRichTextEditor(selector) {
+                const $textarea = $(selector);
+                if (!$textarea.length || $textarea.data('richTextInit')) {
+                    return;
+                }
+
+                $textarea.richText(RICH_TEXT_EDITOR_OPTIONS);
+                $textarea.data('richTextInit', true);
+            }
+
+            function setEditorContent(selector, html) {
+                const $textarea = $(selector);
+                if (!$textarea.length) {
+                    return;
+                }
+
+                const content = typeof html === 'string' ? html : '';
+                if ($textarea.data('richTextInit')) {
+                    const $editor = $textarea.closest('.richText').find('.richText-editor');
+                    if ($editor.length) {
+                        $editor.html(content);
+                    }
+                }
+
+                $textarea.val(content);
+            }
+
+            function getEditorContent(selector) {
+                const $textarea = $(selector);
+                if (!$textarea.length) {
+                    return '';
+                }
+
+                if ($textarea.data('richTextInit')) {
+                    const $editor = $textarea.closest('.richText').find('.richText-editor');
+                    if ($editor.length) {
+                        return $editor.html();
+                    }
+                }
+
+                return $textarea.val() || '';
+            }
+
+            function setRichTextReadOnly(selector, isReadOnly) {
+                const $textarea = $(selector);
+                if (!$textarea.length) {
+                    return;
+                }
+
+                initRichTextEditor(selector);
+                const $wrapper = $textarea.closest('.richText');
+                const $toolbar = $wrapper.find('.richText-toolbar');
+                const $editor = $wrapper.find('.richText-editor');
+
+                $textarea.prop('disabled', isReadOnly);
+                if (isReadOnly) {
+                    $toolbar.hide();
+                    $editor.attr('contenteditable', 'false').addClass('bg-light');
+                } else {
+                    $toolbar.show();
+                    $editor.attr('contenteditable', 'true').removeClass('bg-light');
+                }
+            }
+
+            function setStatisticsLocked(isLocked) {
+                document.querySelectorAll('#statisticsTable input').forEach((input) => {
+                    input.disabled = isLocked || pageReadOnly;
+                });
+
+                const saveBtn = document.getElementById('saveStatisticsBtn');
+                const updateBtn = document.getElementById('updateStatisticsBtn');
+                if (saveBtn) {
+                    saveBtn.disabled = isLocked || pageReadOnly;
+                }
+                if (updateBtn) {
+                    updateBtn.classList.toggle('d-none', !isLocked);
+                    updateBtn.disabled = pageReadOnly;
+                }
+            }
+
+            function setIncomeLeakageLocked(isLocked) {
+                document.querySelectorAll('#incomeLeakageTable input').forEach((input) => {
+                    input.disabled = isLocked || pageReadOnly;
+                });
+
+                const addRowBtn = document.getElementById('addIncomeRowBtn');
+                const saveBtn = document.getElementById('saveIncomeLeakageBtn');
+                const updateBtn = document.getElementById('updateIncomeLeakageBtn');
+                if (addRowBtn) {
+                    addRowBtn.disabled = isLocked || pageReadOnly;
+                }
+                if (saveBtn) {
+                    saveBtn.disabled = isLocked || pageReadOnly;
+                }
+                if (updateBtn) {
+                    updateBtn.classList.toggle('d-none', !isLocked);
+                    updateBtn.disabled = pageReadOnly;
+                }
+
+                document.querySelectorAll('[data-action="remove-income-row"]').forEach((button) => {
+                    button.disabled = isLocked || pageReadOnly;
+                });
+            }
+
+            function setConclusionLocked(isLocked) {
+                editorSelectors.forEach((selector) => {
+                    setRichTextReadOnly(selector, isLocked || pageReadOnly);
+                });
+
+                const saveBtn = document.getElementById('saveConclusionBtn');
+                const updateBtn = document.getElementById('updateConclusionBtn');
+                if (saveBtn) {
+                    saveBtn.disabled = isLocked || pageReadOnly;
+                }
+                if (updateBtn) {
+                    updateBtn.classList.toggle('d-none', !isLocked);
+                    updateBtn.disabled = pageReadOnly;
+                }
+            }
+
+            function normalizeStatisticsRows(rows) {
+                const lookup = new Map();
+                (rows || []).forEach((row) => {
+                    if (!row) {
+                        return;
+                    }
+                    const key = (row.nature || row.Nature || row.riskLevel || row.RiskLevel || '').toString().trim().toLowerCase();
+                    if (key) {
+                        lookup.set(key, row);
+                    }
+                });
+
+                document.querySelectorAll('#statisticsTable tbody tr').forEach((tr) => {
+                    const nature = (tr.dataset.nature || '').toLowerCase();
+                    const data = lookup.get(nature);
+                    const reported = tr.querySelector('input[data-field="reported"]');
+                    const rectified = tr.querySelector('input[data-field="rectified"]');
+                    const outstanding = tr.querySelector('input[data-field="outstanding"]');
+                    const remarks = tr.querySelector('input[data-field="remarks"]');
+
+                    const reportedValue = data?.reported ?? data?.Reported ?? data?.reportedCount ?? data?.ReportedCount;
+                    const rectifiedValue = data?.rectified ?? data?.Rectified ?? data?.rectifiedCount ?? data?.RectifiedCount;
+                    const outstandingValue = data?.outstanding ?? data?.Outstanding ?? data?.outstandingCount ?? data?.OutstandingCount;
+                    const remarksValue = data?.remarks ?? data?.Remarks;
+
+                    if (reported) {
+                        reported.value = reportedValue != null ? reportedValue : '';
+                    }
+                    if (rectified) {
+                        rectified.value = rectifiedValue != null ? rectifiedValue : '';
+                    }
+                    if (outstanding) {
+                        outstanding.value = outstandingValue != null ? outstandingValue : '';
+                    }
+                    if (remarks) {
+                        remarks.value = remarksValue != null ? remarksValue : '';
+                    }
+                });
+            }
+
+            function collectStatisticsRows() {
+                const rows = [];
+                document.querySelectorAll('#statisticsTable tbody tr').forEach((tr) => {
+                    const nature = tr.dataset.nature || '';
+                    const reported = tr.querySelector('input[data-field="reported"]')?.value;
+                    const rectified = tr.querySelector('input[data-field="rectified"]')?.value;
+                    const outstanding = tr.querySelector('input[data-field="outstanding"]')?.value;
+                    const remarks = tr.querySelector('input[data-field="remarks"]')?.value;
+
+                    rows.push({
+                        nature,
+                        reported: reported === '' ? null : Number(reported),
+                        rectified: rectified === '' ? null : Number(rectified),
+                        outstanding: outstanding === '' ? null : Number(outstanding),
+                        remarks: remarks || ''
+                    });
+                });
+                return rows;
+            }
+
+            function validateStatistics(rows) {
+                const invalid = (rows || []).find((row) =>
+                    (row.reported != null && (Number.isNaN(row.reported) || row.reported < 0))
+                    || (row.rectified != null && (Number.isNaN(row.rectified) || row.rectified < 0))
+                    || (row.outstanding != null && (Number.isNaN(row.outstanding) || row.outstanding < 0)));
+                if (invalid) {
+                    return 'Statistics values must be non-negative.';
+                }
+                return '';
+            }
+
+            function addIncomeRow(row) {
+                const tbody = document.getElementById('incomeLeakageRows');
+                if (!tbody) {
+                    return;
+                }
+
+                const data = row || {};
+                const tr = document.createElement('tr');
+                const descriptionCell = document.createElement('td');
+                const descriptionInput = document.createElement('input');
+                descriptionInput.className = 'form-control';
+                descriptionInput.type = 'text';
+                descriptionInput.dataset.field = 'description';
+                descriptionInput.value = data.description || '';
+                descriptionCell.appendChild(descriptionInput);
+
+                const areaCell = document.createElement('td');
+                const areaInput = document.createElement('input');
+                areaInput.className = 'form-control';
+                areaInput.type = 'text';
+                areaInput.dataset.field = 'area';
+                areaInput.value = data.area || '';
+                areaCell.appendChild(areaInput);
+
+                const amountCell = document.createElement('td');
+                const amountInput = document.createElement('input');
+                amountInput.className = 'form-control';
+                amountInput.type = 'number';
+                amountInput.min = '0';
+                amountInput.step = '0.01';
+                amountInput.dataset.field = 'amount';
+                amountInput.value = data.amount != null ? data.amount : '';
+                amountCell.appendChild(amountInput);
+
+                const actionCell = document.createElement('td');
+                actionCell.className = 'text-center';
+                const removeButton = document.createElement('button');
+                removeButton.type = 'button';
+                removeButton.className = 'btn btn-outline-danger btn-sm';
+                removeButton.dataset.action = 'remove-income-row';
+                removeButton.textContent = 'Remove';
+                actionCell.appendChild(removeButton);
+
+                tr.appendChild(descriptionCell);
+                tr.appendChild(areaCell);
+                tr.appendChild(amountCell);
+                tr.appendChild(actionCell);
+                tbody.appendChild(tr);
+            }
+
+            function populateIncomeRows(rows) {
+                const tbody = document.getElementById('incomeLeakageRows');
+                if (!tbody) {
+                    return;
+                }
+
+                tbody.innerHTML = '';
+                if (rows && rows.length) {
+                    rows.forEach((row) => addIncomeRow({
+                        description: row.description || row.Description || '',
+                        area: row.area || row.Area || '',
+                        amount: row.amount ?? row.Amount ?? ''
+                    }));
+                } else {
+                    addIncomeRow();
+                }
+            }
+
+            function collectIncomeRows() {
+                const rows = [];
+                document.querySelectorAll('#incomeLeakageRows tr').forEach((tr) => {
+                    const description = tr.querySelector('input[data-field="description"]')?.value?.trim() || '';
+                    const area = tr.querySelector('input[data-field="area"]')?.value?.trim() || '';
+                    const amountValue = tr.querySelector('input[data-field="amount"]')?.value;
+
+                    if (!description && !area && !amountValue) {
+                        return;
+                    }
+
+                    rows.push({
+                        description,
+                        area,
+                        amount: amountValue === '' ? null : Number(amountValue)
+                    });
+                });
+                return rows;
+            }
+
+            function validateIncomeRows(rows) {
+                const invalid = (rows || []).find((row) =>
+                    row.amount != null && (Number.isNaN(row.amount) || row.amount < 0));
+                if (invalid) {
+                    return 'Income leakage amount must be a non-negative number.';
+                }
+                return '';
+            }
+
+            async function loadStatistics() {
+                try {
+                    const url = `${API_ENDPOINTS.getStatistics}?${buildQuery({ engId: engagementId, reportVersion })}`;
+                    const payload = await fetchJson(url, { method: 'GET' });
+                    normalizeStatisticsRows(payload.rows || []);
+                    setStatisticsLocked(Boolean(payload.locked));
+                    setMessage('statisticsMessage', payload.locked ? 'Saved successfully.' : '', false);
+                } catch (error) {
+                    setMessage('statisticsMessage', error.message || 'Unable to load statistics.', true);
+                }
+            }
+
+            async function loadIncomeLeakage() {
+                try {
+                    const url = `${API_ENDPOINTS.getIncomeLeakage}?${buildQuery({ engId: engagementId, reportVersion })}`;
+                    const payload = await fetchJson(url, { method: 'GET' });
+                    populateIncomeRows(payload.rows || []);
+                    setIncomeLeakageLocked(Boolean(payload.locked));
+                    setMessage('incomeLeakageMessage', payload.locked ? 'Saved successfully.' : '', false);
+                } catch (error) {
+                    setMessage('incomeLeakageMessage', error.message || 'Unable to load income leakage.', true);
+                }
+            }
+
+            async function loadConclusion() {
+                try {
+                    const url = `${API_ENDPOINTS.getConclusion}?${buildQuery({ engId: engagementId, reportVersion })}`;
+                    const payload = await fetchJson(url, { method: 'GET' });
+                    const data = payload.data || {};
+                    setEditorContent('#overallConclusionEditor', data.overallConclusionHtml || data.OverallConclusionHtml || '');
+                    setEditorContent('#nonAddressableEditor', data.nonAddressableHtml || data.NonAddressableHtml || '');
+                    setEditorContent('#fraudProneEditor', data.fraudProneHtml || data.FraudProneHtml || '');
+                    setEditorContent('#regulatoryEditor', data.regulatoryHtml || data.RegulatoryHtml || '');
+                    setEditorContent('#safetySecurityEditor', data.safetySecurityHtml || data.SafetySecurityHtml || '');
+                    setConclusionLocked(Boolean(payload.locked));
+                    setMessage('conclusionMessage', payload.locked ? 'Saved successfully.' : '', false);
+                } catch (error) {
+                    setMessage('conclusionMessage', error.message || 'Unable to load conclusion.', true);
+                }
+            }
+
+            async function saveStatistics() {
+                setMessage('statisticsMessage', '', false);
+                const rows = collectStatisticsRows();
+                const validationMessage = validateStatistics(rows);
+                if (validationMessage) {
+                    setMessage('statisticsMessage', validationMessage, true);
+                    return;
+                }
+
+                try {
+                    const payload = await fetchJson(API_ENDPOINTS.saveStatistics, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ engId: engagementId, reportVersion, rows })
+                    });
+                    setStatisticsLocked(Boolean(payload.locked));
+                    setMessage('statisticsMessage', payload.message || 'Saved successfully.', false);
+                } catch (error) {
+                    setMessage('statisticsMessage', error.message || 'Unable to save statistics.', true);
+                }
+            }
+
+            async function saveIncomeLeakage() {
+                setMessage('incomeLeakageMessage', '', false);
+                const rows = collectIncomeRows();
+                const validationMessage = validateIncomeRows(rows);
+                if (validationMessage) {
+                    setMessage('incomeLeakageMessage', validationMessage, true);
+                    return;
+                }
+
+                try {
+                    const payload = await fetchJson(API_ENDPOINTS.saveIncomeLeakage, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ engId: engagementId, reportVersion, rows })
+                    });
+                    setIncomeLeakageLocked(Boolean(payload.locked));
+                    setMessage('incomeLeakageMessage', payload.message || 'Saved successfully.', false);
+                } catch (error) {
+                    setMessage('incomeLeakageMessage', error.message || 'Unable to save income leakage.', true);
+                }
+            }
+
+            async function saveConclusion() {
+                setMessage('conclusionMessage', '', false);
+                const payloadBody = {
+                    engId: engagementId,
+                    reportVersion,
+                    overallConclusionHtml: getEditorContent('#overallConclusionEditor'),
+                    nonAddressableHtml: getEditorContent('#nonAddressableEditor'),
+                    fraudProneHtml: getEditorContent('#fraudProneEditor'),
+                    regulatoryHtml: getEditorContent('#regulatoryEditor'),
+                    safetySecurityHtml: getEditorContent('#safetySecurityEditor')
+                };
+
+                try {
+                    const payload = await fetchJson(API_ENDPOINTS.saveConclusion, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payloadBody)
+                    });
+                    setConclusionLocked(Boolean(payload.locked));
+                    setMessage('conclusionMessage', payload.message || 'Saved successfully.', false);
+                } catch (error) {
+                    setMessage('conclusionMessage', error.message || 'Unable to save conclusion.', true);
+                }
+            }
+
+            document.addEventListener('click', (event) => {
+                if (event.target?.matches('[data-action="remove-income-row"]')) {
+                    event.preventDefault();
+                    event.target.closest('tr')?.remove();
+                }
+            });
+
+            document.getElementById('addIncomeRowBtn')?.addEventListener('click', () => {
+                addIncomeRow();
+                setIncomeLeakageLocked(false);
+            });
+
+            document.getElementById('saveStatisticsBtn')?.addEventListener('click', saveStatistics);
+            document.getElementById('updateStatisticsBtn')?.addEventListener('click', () => {
+                setStatisticsLocked(false);
+                setMessage('statisticsMessage', 'Editing enabled.', false);
+            });
+
+            document.getElementById('saveIncomeLeakageBtn')?.addEventListener('click', saveIncomeLeakage);
+            document.getElementById('updateIncomeLeakageBtn')?.addEventListener('click', () => {
+                setIncomeLeakageLocked(false);
+                setMessage('incomeLeakageMessage', 'Editing enabled.', false);
+            });
+
+            document.getElementById('saveConclusionBtn')?.addEventListener('click', saveConclusion);
+            document.getElementById('updateConclusionBtn')?.addEventListener('click', () => {
+                setConclusionLocked(false);
+                setMessage('conclusionMessage', 'Editing enabled.', false);
+            });
+
+            $(document).ready(function () {
+                editorSelectors.forEach((selector) => initRichTextEditor(selector));
+                setStatisticsLocked(pageReadOnly);
+                setIncomeLeakageLocked(pageReadOnly);
+                setConclusionLocked(pageReadOnly);
+                if (!engagementId) {
+                    return;
+                }
+
+                loadStatistics();
+                loadIncomeLeakage();
+                loadConclusion();
+            });
+        })();
+
         function findParaContainer(paraId) {
             return document.querySelector(`table[data-para-id='${paraId}']`);
         }
