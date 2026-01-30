@@ -87,16 +87,8 @@ namespace AIS.Controllers
             {
             ViewData["TopMenu"] = tm.GetTopMenus();
             ViewData["TopMenuPages"] = tm.GetTopMenusPages();
-            var loggedInUser = sessionHandler.GetUser();
-            if (loggedInUser == null
-                || loggedInUser.UserEntityID <= 0
-                || loggedInUser.PPNumber <= 0
-                || loggedInUser.UserRoleID <= 0)
-                {
-                return new JsonResult(new object());
-                }
-            ViewData["USER_ROLE_ID"] = loggedInUser.UserRoleID;
-            ViewData["USER_ENT_ID"] = loggedInUser.UserEntityID;
+            ViewData["USER_ROLE_ID"] = sessionHandler.GetUserOrThrow().UserRoleID;
+            ViewData["USER_ENT_ID"] = sessionHandler.GetUserOrThrow().UserEntityID;
 
             if (!User.Identity.IsAuthenticated)
                 {
@@ -104,11 +96,11 @@ namespace AIS.Controllers
                 }
             else
                 {
-                if (loggedInUser.UserRoleID == 12 && loggedInUser.UserEntityID == 112259)
+                if (sessionHandler.GetUserOrThrow().UserRoleID == 12 && sessionHandler.GetUserOrThrow().UserEntityID == 112259)
                     {
                     return View();
                     }
-                else if (loggedInUser.UserRoleID == 12 && loggedInUser.UserEntityID == 112259)
+                else if (sessionHandler.GetUserOrThrow().UserRoleID == 12 && sessionHandler.GetUserOrThrow().UserEntityID == 112259)
                     {
                     return View();
                     }
@@ -361,15 +353,7 @@ namespace AIS.Controllers
             ViewData["AnnexList"] = dBConnection.GetAnnexuresForChecklistDetail();
             ViewData["EntitiesList"] = dBConnection.GetEntitiesForManageAuditParas();
             ViewData["Userrelationship"] = dBConnection.GetrealtionshiptypeForParaPositionReport();
-            var loggedInUser = sessionHandler.GetUser();
-            if (loggedInUser == null
-                || loggedInUser.UserEntityID <= 0
-                || loggedInUser.PPNumber <= 0
-                || loggedInUser.UserRoleID <= 0)
-                {
-                return new JsonResult(new object());
-                }
-            ViewData["LoggedInUserGroupId"] = loggedInUser.UserGroupID;
+            ViewData["LoggedInUserGroupId"] = sessionHandler.GetUserOrThrow().UserGroupID;
 
             if (!User.Identity.IsAuthenticated)
                 {

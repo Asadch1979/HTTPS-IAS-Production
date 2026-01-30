@@ -32,14 +32,7 @@ namespace AIS.Controllers
         public bool IsEngagementAllowedForPdf(int engId)
             {
             var sessionHandler = CreateSessionHandler();
-            var loggedInUser = sessionHandler.GetUser();
-            if (loggedInUser == null
-                || loggedInUser.UserEntityID <= 0
-                || loggedInUser.PPNumber <= 0
-                || loggedInUser.UserRoleID <= 0)
-                {
-                return false;
-                }
+            var loggedInUser = sessionHandler.GetUserOrThrow();
 
             using var con = DatabaseConnection();
             using var cmd = con.CreateCommand();
@@ -292,14 +285,7 @@ namespace AIS.Controllers
             {
             var rows = new List<FieldAuditPdfParaModel>();
             var sessionHandler = CreateSessionHandler();
-            var user = sessionHandler.GetUser();
-            if (user == null
-                || user.UserEntityID <= 0
-                || user.PPNumber <= 0
-                || user.UserRoleID <= 0)
-                {
-                return new List<FieldAuditPdfParaModel>();
-                }
+            var user = sessionHandler.GetUserOrThrow();
 
             using var con = DatabaseConnection();
            

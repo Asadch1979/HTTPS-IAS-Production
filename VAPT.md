@@ -193,7 +193,7 @@ Acceptance Criteria:
 ### Phase 7 — Database connection session gating (2025-12-07)
 Status: Done
 Summary:
-- Centralized all Oracle connections through a single `DatabaseConnection(requireActiveSession = true)` helper that now enforces session presence via `CreateSessionHandler().GetUser()` and opens the connection before returning.
+- Centralized all Oracle connections through a single `DatabaseConnection(requireActiveSession = true)` helper that now enforces session presence via `CreateSessionHandler().GetUserOrThrow()` and opens the connection before returning.
 - Removed manual `con.Open()` calls across every DBConnection partial to ensure the new gate runs for all database operations.
 - Added explicit authentication bypass annotations for the limited pre-session or cleanup flows.
 Files Changed:

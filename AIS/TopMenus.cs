@@ -77,14 +77,7 @@ namespace AIS
                     }
 
                 }
-            var loggedInUser = sessionHandler.GetUser();
-            if (loggedInUser == null
-                || loggedInUser.UserEntityID <= 0
-                || loggedInUser.PPNumber <= 0
-                || loggedInUser.UserRoleID <= 0)
-                {
-                return new List<Object>();
-                }
+            var loggedInUser = sessionHandler.GetUserOrThrow();
             AvatarNameDisplayModel av = new AvatarNameDisplayModel();
             av.Menu_Id = 1020304050;
             av.Id = 11223344;

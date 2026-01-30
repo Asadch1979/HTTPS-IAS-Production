@@ -58,14 +58,7 @@ namespace AIS.Controllers
                     {
                     ViewData["TopMenu"] = tm.GetTopMenus();
                     ViewData["TopMenuPages"] = tm.GetTopMenusPages();
-                    var loggedInUser = sessionHandler.GetUser();
-                    if (loggedInUser == null
-                        || loggedInUser.UserEntityID <= 0
-                        || loggedInUser.PPNumber <= 0
-                        || loggedInUser.UserRoleID <= 0)
-                        {
-                        return new JsonResult(new object());
-                        }
+                    var loggedInUser = sessionHandler.GetUserOrThrow();
                     ViewData["QuickLinks"] = dBConnection.GetDashboardQuickLinks(loggedInUser.UserRoleID);
                     return View();
                     }

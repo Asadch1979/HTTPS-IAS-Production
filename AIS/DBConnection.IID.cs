@@ -11,14 +11,7 @@ namespace AIS.Controllers
         public int SubmitComplaint(ComplaintModel model)
             {
             var sessionHandler = CreateSessionHandler();
-            var loggedInUser = sessionHandler.GetUser();
-            if (loggedInUser == null
-                || loggedInUser.UserEntityID <= 0
-                || loggedInUser.PPNumber <= 0
-                || loggedInUser.UserRoleID <= 0)
-                {
-                return 0;
-                }
+            var loggedInUser = sessionHandler.GetUserOrThrow();
             using var con = this.DatabaseConnection();
            
             using (OracleCommand cmd = con.CreateCommand())
@@ -52,14 +45,7 @@ namespace AIS.Controllers
         public DataTable GetComplaintsByUser()
             {
             var sessionHandler = CreateSessionHandler();
-            var loggedInUser = sessionHandler.GetUser();
-            if (loggedInUser == null
-                || loggedInUser.UserEntityID <= 0
-                || loggedInUser.PPNumber <= 0
-                || loggedInUser.UserRoleID <= 0)
-                {
-                return new DataTable();
-                }
+            var loggedInUser = sessionHandler.GetUserOrThrow();
             using var con = this.DatabaseConnection();
            
             using (OracleCommand cmd = con.CreateCommand())
@@ -141,14 +127,7 @@ namespace AIS.Controllers
         public int AddAssessment(InitialAssessmentModel model)
             {
             var sessionHandler = CreateSessionHandler();
-            var loggedInUser = sessionHandler.GetUser();
-            if (loggedInUser == null
-                || loggedInUser.UserEntityID <= 0
-                || loggedInUser.PPNumber <= 0
-                || loggedInUser.UserRoleID <= 0)
-                {
-                return new List<InitialAssessmentModel>();
-                }
+            var loggedInUser = sessionHandler.GetUserOrThrow();
             using var con = this.DatabaseConnection();
            
             using (OracleCommand cmd = con.CreateCommand())
@@ -170,14 +149,7 @@ namespace AIS.Controllers
         public int AddHeadReview(HeadReviewModel model)
             {
             var sessionHandler = CreateSessionHandler();
-            var loggedInUser = sessionHandler.GetUser();
-            if (loggedInUser == null
-                || loggedInUser.UserEntityID <= 0
-                || loggedInUser.PPNumber <= 0
-                || loggedInUser.UserRoleID <= 0)
-                {
-                return new List<InitialAssessmentModel>();
-                }
+            var loggedInUser = sessionHandler.GetUserOrThrow();
             using var con = this.DatabaseConnection();
            
             using (OracleCommand cmd = con.CreateCommand())
@@ -206,14 +178,7 @@ namespace AIS.Controllers
         public int AddInvestigationPlan(InvestigationPlanModel model)
             {
             var sessionHandler = CreateSessionHandler();
-            var loggedInUser = sessionHandler.GetUser();
-            if (loggedInUser == null
-                || loggedInUser.UserEntityID <= 0
-                || loggedInUser.PPNumber <= 0
-                || loggedInUser.UserRoleID <= 0)
-                {
-                return new List<InitialAssessmentModel>();
-                }
+            var loggedInUser = sessionHandler.GetUserOrThrow();
             using var con = this.DatabaseConnection();
            
             using (OracleCommand cmd = con.CreateCommand())
@@ -235,14 +200,7 @@ namespace AIS.Controllers
         public int AddPlanApproval(PlanApprovalModel model)
             {
             var sessionHandler = CreateSessionHandler();
-            var loggedInUser = sessionHandler.GetUser();
-            if (loggedInUser == null
-                || loggedInUser.UserEntityID <= 0
-                || loggedInUser.PPNumber <= 0
-                || loggedInUser.UserRoleID <= 0)
-                {
-                return new List<InitialAssessmentModel>();
-                }
+            var loggedInUser = sessionHandler.GetUserOrThrow();
             using var con = this.DatabaseConnection();
            
             using (OracleCommand cmd = con.CreateCommand())
@@ -265,14 +223,7 @@ namespace AIS.Controllers
         public int AddInquiryReport(InquiryReportModel model)
             {
             var sessionHandler = CreateSessionHandler();
-            var loggedInUser = sessionHandler.GetUser();
-            if (loggedInUser == null
-                || loggedInUser.UserEntityID <= 0
-                || loggedInUser.PPNumber <= 0
-                || loggedInUser.UserRoleID <= 0)
-                {
-                return new List<InitialAssessmentModel>();
-                }
+            var loggedInUser = sessionHandler.GetUserOrThrow();
             using var con = this.DatabaseConnection();
            
             using (OracleCommand cmd = con.CreateCommand())
@@ -303,14 +254,7 @@ namespace AIS.Controllers
         public int AddAnalysis(AnalysisModel model)
             {
             var sessionHandler = CreateSessionHandler();
-            var loggedInUser = sessionHandler.GetUser();
-            if (loggedInUser == null
-                || loggedInUser.UserEntityID <= 0
-                || loggedInUser.PPNumber <= 0
-                || loggedInUser.UserRoleID <= 0)
-                {
-                return new List<InitialAssessmentModel>();
-                }
+            var loggedInUser = sessionHandler.GetUserOrThrow();
             using var con = this.DatabaseConnection();
            
             using (OracleCommand cmd = con.CreateCommand())
@@ -337,14 +281,7 @@ namespace AIS.Controllers
         public int AddFinalApproval(FinalApprovalModel model)
             {
             var sessionHandler = CreateSessionHandler();
-            var loggedInUser = sessionHandler.GetUser();
-            if (loggedInUser == null
-                || loggedInUser.UserEntityID <= 0
-                || loggedInUser.PPNumber <= 0
-                || loggedInUser.UserRoleID <= 0)
-                {
-                return new List<InitialAssessmentModel>();
-                }
+            var loggedInUser = sessionHandler.GetUserOrThrow();
             using var con = this.DatabaseConnection();
            
             using (OracleCommand cmd = con.CreateCommand())
@@ -395,14 +332,7 @@ namespace AIS.Controllers
         public int AddCaseStudy(CaseStudyModel model)
             {
             var sessionHandler = CreateSessionHandler();
-            var loggedInUser = sessionHandler.GetUser();
-            if (loggedInUser == null
-                || loggedInUser.UserEntityID <= 0
-                || loggedInUser.PPNumber <= 0
-                || loggedInUser.UserRoleID <= 0)
-                {
-                return new List<InitialAssessmentModel>();
-                }
+            var loggedInUser = sessionHandler.GetUserOrThrow();
             using var con = this.DatabaseConnection();
            
             using (OracleCommand cmd = con.CreateCommand())
@@ -435,14 +365,7 @@ namespace AIS.Controllers
         public DataTable GetReports(ReportFilterModel filter)
             {
             var sessionHandler = CreateSessionHandler();
-            var loggedInUser = sessionHandler.GetUser();
-            if (loggedInUser == null
-                || loggedInUser.UserEntityID <= 0
-                || loggedInUser.PPNumber <= 0
-                || loggedInUser.UserRoleID <= 0)
-                {
-                return new List<InitialAssessmentModel>();
-                }
+            var loggedInUser = sessionHandler.GetUserOrThrow();
             using var con = this.DatabaseConnection();
            
             using (OracleCommand cmd = con.CreateCommand())

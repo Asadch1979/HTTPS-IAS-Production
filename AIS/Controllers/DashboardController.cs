@@ -224,14 +224,7 @@ namespace AIS.Controllers
                     }
                 else
                     {
-                    var loggedInUser = sessionHandler.GetUser();
-                    if (loggedInUser == null
-                        || loggedInUser.UserEntityID <= 0
-                        || loggedInUser.PPNumber <= 0
-                        || loggedInUser.UserRoleID <= 0)
-                        {
-                        return new JsonResult(new object());
-                        }
+                    var loggedInUser = sessionHandler.GetUserOrThrow();
                     ViewData["RoleId"] = loggedInUser?.UserRoleID ?? 0;
                     return View();
                     }

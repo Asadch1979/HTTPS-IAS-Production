@@ -17,14 +17,7 @@ namespace AIS.Controllers
             string email = "";
             string email_cc = "";
             var sessionHandler = CreateSessionHandler();
-            var loggedInUser = sessionHandler.GetUser();
-            if (loggedInUser == null
-                || loggedInUser.UserEntityID <= 0
-                || loggedInUser.PPNumber <= 0
-                || loggedInUser.UserRoleID <= 0)
-                {
-                return string.Empty;
-                }
+            var loggedInUser = sessionHandler.GetUserOrThrow();
             var con = this.DatabaseConnection();
             using (OracleCommand cmd = con.CreateCommand())
                 {
@@ -59,14 +52,7 @@ namespace AIS.Controllers
             string email = "";
             string email_cc = "";
             var sessionHandler = CreateSessionHandler();
-            var loggedInUser = sessionHandler.GetUser();
-            if (loggedInUser == null
-                || loggedInUser.UserEntityID <= 0
-                || loggedInUser.PPNumber <= 0
-                || loggedInUser.UserRoleID <= 0)
-                {
-                return string.Empty;
-                }
+            var loggedInUser = sessionHandler.GetUserOrThrow();
             var con = this.DatabaseConnection();
             using (OracleCommand cmd = con.CreateCommand())
                 {
@@ -103,14 +89,7 @@ namespace AIS.Controllers
            
 
             List<BiometSamplingModel> responseList = new List<BiometSamplingModel>();
-            var loggedInUser = sessionHandler.GetUser();
-            if (loggedInUser == null
-                || loggedInUser.UserEntityID <= 0
-                || loggedInUser.PPNumber <= 0
-                || loggedInUser.UserRoleID <= 0)
-                {
-                return new List<BiometSamplingModel>();
-                }
+            var loggedInUser = sessionHandler.GetUserOrThrow();
 
             using (OracleCommand cmd = con.CreateCommand())
                 {
@@ -164,14 +143,7 @@ namespace AIS.Controllers
            
 
             List<AccountTransactionSampleModel> responseList = new List<AccountTransactionSampleModel>();
-            var loggedInUser = sessionHandler.GetUser();
-            if (loggedInUser == null
-                || loggedInUser.UserEntityID <= 0
-                || loggedInUser.PPNumber <= 0
-                || loggedInUser.UserRoleID <= 0)
-                {
-                return new List<AccountTransactionSampleModel>();
-                }
+            var loggedInUser = sessionHandler.GetUserOrThrow();
 
             using (OracleCommand cmd = con.CreateCommand())
                 {
@@ -222,14 +194,7 @@ namespace AIS.Controllers
            
 
             List<AccountDocumentBiometSamplingModel> responseList = new List<AccountDocumentBiometSamplingModel>();
-            var loggedInUser = sessionHandler.GetUser();
-            if (loggedInUser == null
-                || loggedInUser.UserEntityID <= 0
-                || loggedInUser.PPNumber <= 0
-                || loggedInUser.UserRoleID <= 0)
-                {
-                return new List<AccountDocumentBiometSamplingModel>();
-                }
+            var loggedInUser = sessionHandler.GetUserOrThrow();
 
             using (OracleCommand cmd = con.CreateCommand())
                 {
@@ -331,14 +296,7 @@ namespace AIS.Controllers
             {
             var sessionHandler = CreateSessionHandler();
             var con = this.DatabaseConnection();
-            var loggedInUser = sessionHandler.GetUser();
-            if (loggedInUser == null
-                || loggedInUser.UserEntityID <= 0
-                || loggedInUser.PPNumber <= 0
-                || loggedInUser.UserRoleID <= 0)
-                {
-                return new List<ListOfSamplesModel>();
-                }
+            var loggedInUser = sessionHandler.GetUserOrThrow();
             List<ListOfSamplesModel> list = new List<ListOfSamplesModel>();
             using (OracleCommand cmd = con.CreateCommand())
                 {
@@ -373,14 +331,7 @@ namespace AIS.Controllers
             {
             var sessionHandler = CreateSessionHandler();
             var con = this.DatabaseConnection();
-            var loggedInUser = sessionHandler.GetUser();
-            if (loggedInUser == null
-                || loggedInUser.UserEntityID <= 0
-                || loggedInUser.PPNumber <= 0
-                || loggedInUser.UserRoleID <= 0)
-                {
-                return new List<LoanCaseSampleModel>();
-                }
+            var loggedInUser = sessionHandler.GetUserOrThrow();
             List<LoanCaseSampleModel> list = new List<LoanCaseSampleModel>();
             using (OracleCommand cmd = con.CreateCommand())
                 {
@@ -422,14 +373,7 @@ namespace AIS.Controllers
             {
             var sessionHandler = CreateSessionHandler();
             var con = this.DatabaseConnection();
-            var loggedInUser = sessionHandler.GetUser();
-            if (loggedInUser == null
-                || loggedInUser.UserEntityID <= 0
-                || loggedInUser.PPNumber <= 0
-                || loggedInUser.UserRoleID <= 0)
-                {
-                return new List<LoanCaseSampleModel>();
-                }
+            var loggedInUser = sessionHandler.GetUserOrThrow();
             List<LoanCaseSampleModel> list = new List<LoanCaseSampleModel>();
             using (OracleCommand cmd = con.CreateCommand())
                 {
@@ -470,14 +414,7 @@ namespace AIS.Controllers
             {
             var sessionHandler = CreateSessionHandler();
             var con = this.DatabaseConnection();
-            var loggedInUser = sessionHandler.GetUser();
-            if (loggedInUser == null
-                || loggedInUser.UserEntityID <= 0
-                || loggedInUser.PPNumber <= 0
-                || loggedInUser.UserRoleID <= 0)
-                {
-                return new List<LoanCaseSampleDocumentsModel>();
-                }
+            var loggedInUser = sessionHandler.GetUserOrThrow();
             List<LoanCaseSampleDocumentsModel> list = new List<LoanCaseSampleDocumentsModel>();
             using (OracleCommand cmd = con.CreateCommand())
                 {
@@ -516,14 +453,7 @@ namespace AIS.Controllers
             {
             var sessionHandler = CreateSessionHandler();
             var con = this.DatabaseConnection();
-            var loggedInUser = sessionHandler.GetUser();
-            if (loggedInUser == null
-                || loggedInUser.UserEntityID <= 0
-                || loggedInUser.PPNumber <= 0
-                || loggedInUser.UserRoleID <= 0)
-                {
-                return new List<LoanCaseSampleDocumentsModel>();
-                }
+            var loggedInUser = sessionHandler.GetUserOrThrow();
             List<LoanCaseSampleDocumentsModel> list = new List<LoanCaseSampleDocumentsModel>();
             using (OracleCommand cmd = con.CreateCommand())
                 {
@@ -561,14 +491,7 @@ namespace AIS.Controllers
             {
             var sessionHandler = CreateSessionHandler();
             var con = this.DatabaseConnection();
-            var loggedInUser = sessionHandler.GetUser();
-            if (loggedInUser == null
-                || loggedInUser.UserEntityID <= 0
-                || loggedInUser.PPNumber <= 0
-                || loggedInUser.UserRoleID <= 0)
-                {
-                return new List<LoanCaseSampleTransactionsModel>();
-                }
+            var loggedInUser = sessionHandler.GetUserOrThrow();
             List<LoanCaseSampleTransactionsModel> list = new List<LoanCaseSampleTransactionsModel>();
             using (OracleCommand cmd = con.CreateCommand())
                 {
@@ -622,14 +545,7 @@ namespace AIS.Controllers
 
             var con = this.DatabaseConnection();
             var sessionHandler = CreateSessionHandler();
-            var loggedInUser = sessionHandler.GetUser();
-            if (loggedInUser == null
-                || loggedInUser.UserEntityID <= 0
-                || loggedInUser.PPNumber <= 0
-                || loggedInUser.UserRoleID <= 0)
-                {
-                return new List<AuditeeEntitiesModel>();
-                }
+            var loggedInUser = sessionHandler.GetUserOrThrow();
             List<AuditeeEntitiesModel> entitiesList = new List<AuditeeEntitiesModel>();
             using (OracleCommand cmd = con.CreateCommand())
                 {
@@ -660,14 +576,7 @@ namespace AIS.Controllers
             {
             var sessionHandler = CreateSessionHandler();
             var con = this.DatabaseConnection();
-            var loggedInUser = sessionHandler.GetUser();
-            if (loggedInUser == null
-                || loggedInUser.UserEntityID <= 0
-                || loggedInUser.PPNumber <= 0
-                || loggedInUser.UserRoleID <= 0)
-                {
-                return new List<AuditeeEntitiesModel>();
-                }
+            var loggedInUser = sessionHandler.GetUserOrThrow();
             string resp = "";
             using (OracleCommand cmd = con.CreateCommand())
                 {
@@ -787,14 +696,7 @@ namespace AIS.Controllers
 
             var con = this.DatabaseConnection();
             var sessionHandler = CreateSessionHandler();
-            var loggedInUser = sessionHandler.GetUser();
-            if (loggedInUser == null
-                || loggedInUser.UserEntityID <= 0
-                || loggedInUser.PPNumber <= 0
-                || loggedInUser.UserRoleID <= 0)
-                {
-                return new List<CDMSMasterTransactionModel>();
-                }
+            var loggedInUser = sessionHandler.GetUserOrThrow();
             List<CDMSMasterTransactionModel> list = new List<CDMSMasterTransactionModel>();
             using (OracleCommand cmd = con.CreateCommand())
                 {
@@ -847,14 +749,7 @@ namespace AIS.Controllers
             {
             var sessionHandler = CreateSessionHandler();
             var con = this.DatabaseConnection();
-            var loggedInUser = sessionHandler.GetUser();
-            if (loggedInUser == null
-                || loggedInUser.UserEntityID <= 0
-                || loggedInUser.PPNumber <= 0
-                || loggedInUser.UserRoleID <= 0)
-                {
-                return new List<ListOfReportsModel>();
-                }
+            var loggedInUser = sessionHandler.GetUserOrThrow();
             List<ListOfReportsModel> list = new List<ListOfReportsModel>();
             using (OracleCommand cmd = con.CreateCommand())
                 {
@@ -888,14 +783,7 @@ namespace AIS.Controllers
             string resp = "";
             var sessionHandler = CreateSessionHandler();
             var con = this.DatabaseConnection();
-            var loggedInUser = sessionHandler.GetUser();
-            if (loggedInUser == null
-                || loggedInUser.UserEntityID <= 0
-                || loggedInUser.PPNumber <= 0
-                || loggedInUser.UserRoleID <= 0)
-                {
-                return new List<ListOfReportsModel>();
-                }
+            var loggedInUser = sessionHandler.GetUserOrThrow();
             using (OracleCommand cmd = con.CreateCommand())
                 {
                 cmd.CommandText = "pkg_sm.P_Add_new_exp_report";
