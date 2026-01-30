@@ -137,7 +137,14 @@ namespace AIS.Controllers
             ViewData["TopMenu"] = tm.GetTopMenus();
             ViewData["TopMenuPages"] = tm.GetTopMenusPages();
             bool sessionCheck = true;
-            var loggedInUser = sessionHandler.GetUserOrThrow();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID <= 0
+                || loggedInUser.PPNumber <= 0
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return new JsonResult(new object());
+                }
             if (loggedInUser.UserRoleID == 1)
                 sessionCheck = false;
             ViewData["AuditDepartments"] = dBConnection.GetDepartments(354, sessionCheck);
@@ -318,7 +325,14 @@ namespace AIS.Controllers
             ViewData["TopMenu"] = tm.GetTopMenus();
             ViewData["TopMenuPages"] = tm.GetTopMenusPages();
             bool sessionCheck = true;
-            var loggedInUser = sessionHandler.GetUserOrThrow();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID <= 0
+                || loggedInUser.PPNumber <= 0
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return new JsonResult(new object());
+                }
             if (loggedInUser.UserRoleID == 1)
                 sessionCheck = false;
             ViewData["AuditDepartments"] = dBConnection.GetDepartments(354, sessionCheck);
@@ -341,7 +355,14 @@ namespace AIS.Controllers
             ViewData["TopMenu"] = tm.GetTopMenus();
             ViewData["TopMenuPages"] = tm.GetTopMenusPages();
             ViewData["AuditDepartments"] = dBConnection.GetDepartments(354);
-            var loggedInUser = sessionHandler.GetUserOrThrow();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID <= 0
+                || loggedInUser.PPNumber <= 0
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return new JsonResult(new object());
+                }
             ViewData["AuditEmployees"] = dBConnection.GetAuditEmployees((int)loggedInUser.UserEntityID);
             ViewData["AuditTeams"] = dBConnection.GetAuditTeams();
 
@@ -364,7 +385,14 @@ namespace AIS.Controllers
             ViewData["TopMenu"] = tm.GetTopMenus();
             ViewData["TopMenuPages"] = tm.GetTopMenusPages();
             ViewData["AuditDepartments"] = dBConnection.GetDepartments(354);
-            var loggedInUser = sessionHandler.GetUserOrThrow();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID <= 0
+                || loggedInUser.PPNumber <= 0
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return new JsonResult(new object());
+                }
             if (loggedInUser.UserPostingAuditZone != null && loggedInUser.UserPostingAuditZone != 0)
                 ViewData["AuditEmployees"] = dBConnection.GetAuditEmployees((int)loggedInUser.UserPostingAuditZone);
             else if (loggedInUser.UserPostingBranch != null && loggedInUser.UserPostingBranch != 0)

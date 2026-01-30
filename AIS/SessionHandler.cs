@@ -60,7 +60,7 @@ namespace AIS
             return user != null;
             }
 
-        public SessionUser GetUserOrThrow()
+        public SessionUser GetUser()
             {
             if (!TryGetUser(out var user))
                 {
@@ -550,7 +550,7 @@ namespace AIS
             return true;
             }
 
-        [Obsolete("Use GetUserOrThrow instead.")]
+        [Obsolete("Use GetUser instead.")]
         public SessionUser GetSessionUser()
             {
             return TryGetUser(out var user) ? user : new SessionUser();

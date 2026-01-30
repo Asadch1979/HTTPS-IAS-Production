@@ -15,7 +15,14 @@ namespace AIS.Controllers
         public string SaveCircularDocument(CircularDocumentModel model)
             {
             var sessionHandler = CreateSessionHandler();
-            var loggedInUser = sessionHandler.GetUserOrThrow();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID <= 0
+                || loggedInUser.PPNumber <= 0
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return string.Empty;
+                }
 
             using (var con = this.DatabaseConnection())
                 {
@@ -107,7 +114,14 @@ namespace AIS.Controllers
             {
 
             var sessionHandler = CreateSessionHandler();
-            var loggedInUser = sessionHandler.GetUserOrThrow();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID <= 0
+                || loggedInUser.PPNumber <= 0
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return new List<AuditChecklistAnnexureCircularModel>();
+                }
             var list = new List<AuditChecklistAnnexureCircularModel>();
             var con = this.DatabaseConnection();
            
@@ -191,7 +205,14 @@ namespace AIS.Controllers
         public List<AuditEmployeeModel> GetFadAuditEmployees()
             {
             var sessionHandler = CreateSessionHandler();
-            var loggedInUser = sessionHandler.GetUserOrThrow();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID <= 0
+                || loggedInUser.PPNumber <= 0
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return new List<AuditEmployeeModel>();
+                }
             var con = this.DatabaseConnection();
            
 
@@ -234,7 +255,14 @@ namespace AIS.Controllers
         string IND_Action)
             {
             var sessionHandler = CreateSessionHandler();
-            var loggedInUser = sessionHandler.GetUserOrThrow();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID <= 0
+                || loggedInUser.PPNumber <= 0
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return new List<AuditEmployeeModel>();
+                }
 
             string resp = string.Empty;
 
@@ -299,7 +327,14 @@ namespace AIS.Controllers
                     {
                    
 
-                    var loggedInUser = sessionHandler.GetUserOrThrow();
+                    var loggedInUser = sessionHandler.GetUser();
+                    if (loggedInUser == null
+                        || loggedInUser.UserEntityID <= 0
+                        || loggedInUser.PPNumber <= 0
+                        || loggedInUser.UserRoleID <= 0)
+                        {
+                        return new List<ManageAuditParasModel>();
+                        }
 
                     using (OracleCommand cmd = con.CreateCommand())
                         {
@@ -347,7 +382,14 @@ namespace AIS.Controllers
             using (var con = this.DatabaseConnection())
                 {
                
-                var loggedInUser = sessionHandler.GetUserOrThrow();
+                var loggedInUser = sessionHandler.GetUser();
+                if (loggedInUser == null
+                    || loggedInUser.UserEntityID <= 0
+                    || loggedInUser.PPNumber <= 0
+                    || loggedInUser.UserRoleID <= 0)
+                    {
+                    return new List<ManageAuditParasModel>();
+                    }
                 using (OracleCommand cmd = con.CreateCommand())
                     {
                     cmd.CommandText = "pkg_ar.P_GetObservationsDetailsForManageAuditParas";
@@ -427,7 +469,14 @@ namespace AIS.Controllers
             {
             var sessionHandler = CreateSessionHandler();
             var con = this.DatabaseConnection();
-            var loggedInUser = sessionHandler.GetUserOrThrow();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID <= 0
+                || loggedInUser.PPNumber <= 0
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return new List<ManageAuditParasModel>();
+                }
             List<ManageAuditParasModel> list = new List<ManageAuditParasModel>();
 
             using (OracleCommand cmd = con.CreateCommand())
@@ -472,7 +521,14 @@ namespace AIS.Controllers
             {
             var sessionHandler = CreateSessionHandler();
             var con = this.DatabaseConnection();
-            var loggedInUser = sessionHandler.GetUserOrThrow();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID <= 0
+                || loggedInUser.PPNumber <= 0
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return new List<ManageAuditParasModel>();
+                }
             List<ManageAuditParasModel> list = new List<ManageAuditParasModel>();
 
             using (OracleCommand cmd = con.CreateCommand())
@@ -512,7 +568,14 @@ namespace AIS.Controllers
         public List<IdNameModel> GetRelationTypes()
             {
             var sessionHandler = CreateSessionHandler();
-            var loggedInUser = sessionHandler.GetUserOrThrow();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID <= 0
+                || loggedInUser.PPNumber <= 0
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return new List<IdNameModel>();
+                }
             var con = this.DatabaseConnection();
            
 
@@ -542,7 +605,14 @@ namespace AIS.Controllers
         public List<IdNameModel> GetReportingOffices(int relationTypeId)
             {
             var sessionHandler = CreateSessionHandler();
-            var loggedInUser = sessionHandler.GetUserOrThrow();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID <= 0
+                || loggedInUser.PPNumber <= 0
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return new List<IdNameModel>();
+                }
             var con = this.DatabaseConnection();
            
 
@@ -574,7 +644,14 @@ namespace AIS.Controllers
         public List<EntityModel> Get_Entities_For_Office(int reportingOfficeId)
             {
             var sessionHandler = CreateSessionHandler();
-            var loggedInUser = sessionHandler.GetUserOrThrow();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID <= 0
+                || loggedInUser.PPNumber <= 0
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return new List<EntityModel>();
+                }
             var con = this.DatabaseConnection();
            
 
@@ -608,7 +685,14 @@ namespace AIS.Controllers
         public string AllocateEntityToAuditor(int azId, int entId, int auditorPpno)
             {
             var sessionHandler = CreateSessionHandler();
-            var loggedInUser = sessionHandler.GetUserOrThrow();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID <= 0
+                || loggedInUser.PPNumber <= 0
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return new List<EntityModel>();
+                }
             var con = this.DatabaseConnection();
             string result = "";
             using (OracleCommand cmd = con.CreateCommand())
@@ -638,7 +722,14 @@ namespace AIS.Controllers
         public List<ObservationReferenceModel> GetObservationsForReferenceUpdate(int? entId, int? assignedAuditorId, int? referenceId)
             {
             var sessionHandler = CreateSessionHandler();
-            var loggedInUser = sessionHandler.GetUserOrThrow();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID <= 0
+                || loggedInUser.PPNumber <= 0
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return new List<ObservationReferenceModel>();
+                }
             var con = this.DatabaseConnection();
            
 
@@ -674,7 +765,14 @@ namespace AIS.Controllers
         public string UpdateParaReference(int comId, int? linkId, int newRef)
             {
             var sessionHandler = CreateSessionHandler();
-            var loggedInUser = sessionHandler.GetUserOrThrow();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID <= 0
+                || loggedInUser.PPNumber <= 0
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return new List<ObservationReferenceModel>();
+                }
 
             // Call the unified procedure with UPDATE action
             var result = ManageReference(
@@ -690,7 +788,14 @@ namespace AIS.Controllers
         public List<UpdateLogModel> GetUpdateLog(int comId)
             {
             var sessionHandler = CreateSessionHandler();
-            var loggedInUser = sessionHandler.GetUserOrThrow();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID <= 0
+                || loggedInUser.PPNumber <= 0
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return new List<UpdateLogModel>();
+                }
             var con = this.DatabaseConnection();
            
 
@@ -724,7 +829,14 @@ namespace AIS.Controllers
         public List<ReferenceSearchResultModel> SearchReferences(string referenceType, string keyword)
             {
             var sessionHandler = CreateSessionHandler();
-            var loggedInUser = sessionHandler.GetUserOrThrow();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID <= 0
+                || loggedInUser.PPNumber <= 0
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return new List<ReferenceSearchResultModel>();
+                }
             var con = this.DatabaseConnection();
            
 
@@ -793,7 +905,14 @@ namespace AIS.Controllers
         public List<EntityTaskSummaryModel> GetEntityTaskSummary()
             {
             var sessionHandler = CreateSessionHandler();
-            var loggedInUser = sessionHandler.GetUserOrThrow();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID <= 0
+                || loggedInUser.PPNumber <= 0
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return new List<EntityTaskSummaryModel>();
+                }
             var list = new List<EntityTaskSummaryModel>();
             using (var con = this.DatabaseConnection())
                 {
@@ -827,7 +946,14 @@ namespace AIS.Controllers
         public List<ReferenceEntitySummaryModel> GetReferenceEntitySummary()
             {
             var sessionHandler = CreateSessionHandler();
-            var loggedInUser = sessionHandler.GetUserOrThrow();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID <= 0
+                || loggedInUser.PPNumber <= 0
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return new List<ReferenceEntitySummaryModel>();
+                }
             var list = new List<ReferenceEntitySummaryModel>();
             using (var con = this.DatabaseConnection())
                 {
@@ -1112,7 +1238,14 @@ namespace AIS.Controllers
         public string SaveParaReferences(int comId, List<ParaReferenceLinkModel> references)
             {
             var sessionHandler = CreateSessionHandler();
-            var user = sessionHandler.GetUserOrThrow();
+            var user = sessionHandler.GetUser();
+            if (user == null
+                || user.UserEntityID <= 0
+                || user.PPNumber <= 0
+                || user.UserRoleID <= 0)
+                {
+                return string.Empty;
+                }
 
             var existing = GetParaReferenceLinks(comId);
             string result = string.Empty;
@@ -1300,7 +1433,14 @@ namespace AIS.Controllers
         public List<RoleRespModel> GetRoleResponsibleForChecklistDetail()
             {
             var sessionHandler = CreateSessionHandler();
-            var loggedInUser = sessionHandler.GetUserOrThrow();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID <= 0
+                || loggedInUser.PPNumber <= 0
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return new List<RoleRespModel>();
+                }
             var con = this.DatabaseConnection();
             List<RoleRespModel> groupList = new List<RoleRespModel>();
             using (OracleCommand cmd = con.CreateCommand())
@@ -1330,7 +1470,14 @@ namespace AIS.Controllers
             {
             var con = this.DatabaseConnection();
             var sessionHandler = CreateSessionHandler();
-            var loggedInUser = sessionHandler.GetUserOrThrow();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID <= 0
+                || loggedInUser.PPNumber <= 0
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return new List<AuditeeEntitiesModel>();
+                }
             List<AuditeeEntitiesModel> entitiesList = new List<AuditeeEntitiesModel>();
             using (OracleCommand cmd = con.CreateCommand())
                 {
@@ -1389,7 +1536,14 @@ namespace AIS.Controllers
             {
             var sessionHandler = CreateSessionHandler();
             var con = this.DatabaseConnection();
-            var loggedInUser = sessionHandler.GetUserOrThrow();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID <= 0
+                || loggedInUser.PPNumber <= 0
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return new List<OldParasModel>();
+                }
             List<OldParasModel> list = new List<OldParasModel>();
             using (OracleCommand cmd = con.CreateCommand())
                 {
@@ -1425,7 +1579,14 @@ namespace AIS.Controllers
             {
             var sessionHandler = CreateSessionHandler();
             var con = this.DatabaseConnection();
-            var loggedInUser = sessionHandler.GetUserOrThrow();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID <= 0
+                || loggedInUser.PPNumber <= 0
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return new List<AuditeeOldParasModel>();
+                }
             List<AuditeeOldParasModel> list = new List<AuditeeOldParasModel>();
             using (OracleCommand cmd = con.CreateCommand())
                 {
@@ -1452,7 +1613,14 @@ namespace AIS.Controllers
             {
             var sessionHandler = CreateSessionHandler();
             var con = this.DatabaseConnection();
-            var loggedInUser = sessionHandler.GetUserOrThrow();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID <= 0
+                || loggedInUser.PPNumber <= 0
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return new List<AuditeeOldParasModel>();
+                }
             List<AuditeeOldParasModel> list = new List<AuditeeOldParasModel>();
             using (OracleCommand cmd = con.CreateCommand())
                 {
@@ -1481,7 +1649,14 @@ namespace AIS.Controllers
             {
             var sessionHandler = CreateSessionHandler();
             var con = this.DatabaseConnection();
-            var loggedInUser = sessionHandler.GetUserOrThrow();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID <= 0
+                || loggedInUser.PPNumber <= 0
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return new List<OldParasModel>();
+                }
             List<OldParasModel> list = new List<OldParasModel>();
             using (OracleCommand cmd = con.CreateCommand())
 
@@ -1538,7 +1713,14 @@ namespace AIS.Controllers
             string responseRes = "";
             var sessionHandler = CreateSessionHandler();
             var con = this.DatabaseConnection();
-            var loggedInUser = sessionHandler.GetUserOrThrow();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID <= 0
+                || loggedInUser.PPNumber <= 0
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return new List<OldParasModel>();
+                }
             using (OracleCommand cmd = con.CreateCommand())
                 {
                 cmd.CommandText = "pkg_fad.p_add_para_responsibility";
@@ -1571,7 +1753,14 @@ namespace AIS.Controllers
             string resp = "";
             var sessionHandler = CreateSessionHandler();
             var con = this.DatabaseConnection();
-            var loggedInUser = sessionHandler.GetUserOrThrow();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID <= 0
+                || loggedInUser.PPNumber <= 0
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return new List<OldParasModel>();
+                }
             using (OracleCommand cmd = con.CreateCommand())
                 {
                 cmd.CommandText = "pkg_fad.P_reviewed_legacy_Para";
@@ -1605,7 +1794,14 @@ namespace AIS.Controllers
             string responseRes = "";
             var sessionHandler = CreateSessionHandler();
             var con = this.DatabaseConnection();
-            var loggedInUser = sessionHandler.GetUserOrThrow();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID <= 0
+                || loggedInUser.PPNumber <= 0
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return new List<OldParasModel>();
+                }
             using (OracleCommand cmd = con.CreateCommand())
                 {
                 cmd.CommandText = "pkg_fad.P_update_legacy_Para_text";
@@ -1673,7 +1869,14 @@ namespace AIS.Controllers
             string resp = "";
             var sessionHandler = CreateSessionHandler();
             var con = this.DatabaseConnection();
-            var loggedInUser = sessionHandler.GetUserOrThrow();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID <= 0
+                || loggedInUser.PPNumber <= 0
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return new List<OldParasModel>();
+                }
             using (OracleCommand cmd = con.CreateCommand())
                 {
                 cmd.CommandText = "pkg_fad.P_AuthorizeChangeStatusRequestForSettledPara_new";
@@ -1704,7 +1907,14 @@ namespace AIS.Controllers
             var sessionHandler = CreateSessionHandler();
             var con = this.DatabaseConnection();
             string resp = "";
-            var loggedInUser = sessionHandler.GetUserOrThrow();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID <= 0
+                || loggedInUser.PPNumber <= 0
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return new List<OldParasModel>();
+                }
             using (OracleCommand cmd = con.CreateCommand())
                 {
                 cmd.CommandText = "pkg_fad.p_authorizechangestatusrequestforsettledpara";
@@ -1732,7 +1942,14 @@ namespace AIS.Controllers
             {
             var sessionHandler = CreateSessionHandler();
             var con = this.DatabaseConnection();
-            var loggedInUser = sessionHandler.GetUserOrThrow();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID <= 0
+                || loggedInUser.PPNumber <= 0
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return new List<OldParasAuthorizeModel>();
+                }
             List<OldParasAuthorizeModel> list = new List<OldParasAuthorizeModel>();
             using (OracleCommand cmd = con.CreateCommand())
                 {
@@ -1775,7 +1992,14 @@ namespace AIS.Controllers
             {
             var sessionHandler = CreateSessionHandler();
             var con = this.DatabaseConnection();
-            var loggedInUser = sessionHandler.GetUserOrThrow();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID <= 0
+                || loggedInUser.PPNumber <= 0
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return new List<ObservationResponsiblePPNOModel>();
+                }
             List<ObservationResponsiblePPNOModel> list = new List<ObservationResponsiblePPNOModel>();
             using (OracleCommand cmd = con.CreateCommand())
                 {
@@ -1807,7 +2031,14 @@ namespace AIS.Controllers
             string resp = "Failed to delete responsibility, Please try again";
             var sessionHandler = CreateSessionHandler();
             var con = this.DatabaseConnection();
-            var loggedInUser = sessionHandler.GetUserOrThrow();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID <= 0
+                || loggedInUser.PPNumber <= 0
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return new List<ObservationResponsiblePPNOModel>();
+                }
             using (OracleCommand cmd = con.CreateCommand())
                 {
                 cmd.CommandText = "pkg_fad.p_delete_para_responsibility";
@@ -1835,7 +2066,14 @@ namespace AIS.Controllers
             var sessionHandler = CreateSessionHandler();
 
             var con = this.DatabaseConnection();
-            var loggedInUser = sessionHandler.GetUserOrThrow();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID <= 0
+                || loggedInUser.PPNumber <= 0
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return new List<ObservationResponsiblePPNOModel>();
+                }
 
             List<AuditNatureModel> entitiesList = new List<AuditNatureModel>();
             using (OracleCommand cmd = con.CreateCommand())
@@ -1861,7 +2099,14 @@ namespace AIS.Controllers
         public List<ZoneModel> GetZonesForAnnexureAssignment()
             {
             var sessionHandler = CreateSessionHandler();
-            var loggedInUser = sessionHandler.GetUserOrThrow();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID <= 0
+                || loggedInUser.PPNumber <= 0
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return new List<ZoneModel>();
+                }
             var con = this.DatabaseConnection();
             List<ZoneModel> zoneList = new List<ZoneModel>();
             using (OracleCommand cmd = con.CreateCommand())
@@ -1888,7 +2133,14 @@ namespace AIS.Controllers
         public List<BranchModel> GetZoneBranchesForAnnexureAssignment(int ENTITY_ID = 0)
             {
             var sessionHandler = CreateSessionHandler();
-            var loggedInUser = sessionHandler.GetUserOrThrow();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID <= 0
+                || loggedInUser.PPNumber <= 0
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return new List<BranchModel>();
+                }
             var con = this.DatabaseConnection();
             List<BranchModel> branchList = new List<BranchModel>();
             using (OracleCommand cmd = con.CreateCommand())
@@ -1916,7 +2168,14 @@ namespace AIS.Controllers
             {
             var sessionHandler = CreateSessionHandler();
             var con = this.DatabaseConnection();
-            var loggedInUser = sessionHandler.GetUserOrThrow();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID <= 0
+                || loggedInUser.PPNumber <= 0
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return new List<AllParaForAnnexureAssignmentModel>();
+                }
             List<AllParaForAnnexureAssignmentModel> list = new List<AllParaForAnnexureAssignmentModel>();
             using (OracleCommand cmd = con.CreateCommand())
                 {
@@ -1952,7 +2211,14 @@ namespace AIS.Controllers
             string resp = "";
             var sessionHandler = CreateSessionHandler();
             var con = this.DatabaseConnection();
-            var loggedInUser = sessionHandler.GetUserOrThrow();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID <= 0
+                || loggedInUser.PPNumber <= 0
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return new List<AllParaForAnnexureAssignmentModel>();
+                }
             List<AllParaForAnnexureAssignmentModel> list = new List<AllParaForAnnexureAssignmentModel>();
             using (OracleCommand cmd = con.CreateCommand())
                 {
@@ -1981,7 +2247,14 @@ namespace AIS.Controllers
         public string ParaShiftedTo(int OBS_ID, int NEW_ENT_ID, int OLD_ENT_ID, string P_IND)
             {
             var sessionHandler = CreateSessionHandler();
-            var loggedInUser = sessionHandler.GetUserOrThrow();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID <= 0
+                || loggedInUser.PPNumber <= 0
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return new List<AllParaForAnnexureAssignmentModel>();
+                }
             var con = this.DatabaseConnection();
             var resp = "";
 
@@ -2012,7 +2285,14 @@ namespace AIS.Controllers
             {
             var sessionHandler = CreateSessionHandler();
             var con = this.DatabaseConnection();
-            var loggedInUser = sessionHandler.GetUserOrThrow();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID <= 0
+                || loggedInUser.PPNumber <= 0
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return new List<SettledParasMonitoringModel>();
+                }
             List<SettledParasMonitoringModel> list = new List<SettledParasMonitoringModel>();
             using (OracleCommand cmd = con.CreateCommand())
 

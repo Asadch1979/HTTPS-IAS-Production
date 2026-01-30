@@ -1235,7 +1235,14 @@ namespace AIS.Controllers
                 }
 
             var isFinalSubmission = request?.IS_FINAL == true;
-            var loggedInUser = sessionHandler.GetUserOrThrow();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID <= 0
+                || loggedInUser.PPNumber <= 0
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return new List<AuditChecklistDetailsModel>();
+                }
             var isSpecialEntity = loggedInUser.UserEntityID == 112242 || loggedInUser.UserEntityID == 112248;
             var vCatId = request?.V_CAT_ID;
             var vCatNatureId = request?.V_CAT_NATURE_ID;
@@ -5026,7 +5033,14 @@ namespace AIS.Controllers
         [HttpPost]
         public string AllocateEntitiesToAuditor(int azId, int entId, int auditorPPNO)
             {
-            _ = sessionHandler.GetUserOrThrow();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID <= 0
+                || loggedInUser.PPNumber <= 0
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return string.Empty;
+                }
             return dBConnection.AllocateEntityToAuditor(azId, entId, auditorPPNO);
             }
 
@@ -5039,7 +5053,14 @@ namespace AIS.Controllers
         [HttpPost]
         public string UpdateParaReference(int comId, int? linkId, int newRef)
             {
-            _ = sessionHandler.GetUserOrThrow();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID <= 0
+                || loggedInUser.PPNumber <= 0
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return string.Empty;
+                }
             return dBConnection.UpdateParaReference(comId, linkId, newRef);
             }
 
@@ -5072,7 +5093,14 @@ namespace AIS.Controllers
         [HttpPost]
         public List<ReferenceSearchResultModel> SearchReferences(string referenceType, string keyword)
             {
-            _ = sessionHandler.GetUserOrThrow();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID <= 0
+                || loggedInUser.PPNumber <= 0
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return new List<ReferenceSearchResultModel>();
+                }
             return dBConnection.SearchReferences(referenceType, keyword);
             }
 
@@ -5093,7 +5121,14 @@ namespace AIS.Controllers
         [HttpGet]
         public JsonResult GetReferenceEntitySummary()
             {
-            _ = sessionHandler.GetUserOrThrow();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID <= 0
+                || loggedInUser.PPNumber <= 0
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return new JsonResult(new object());
+                }
             var list = dBConnection.GetReferenceEntitySummary();
             return Json(list);
             }
@@ -5101,7 +5136,14 @@ namespace AIS.Controllers
         [HttpGet]
         public JsonResult GetEntityTaskSummary()
             {
-            _ = sessionHandler.GetUserOrThrow();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID <= 0
+                || loggedInUser.PPNumber <= 0
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return new JsonResult(new object());
+                }
             var list = dBConnection.GetEntityTaskSummary();
             return Json(list);
             }
@@ -5135,7 +5177,14 @@ namespace AIS.Controllers
         [HttpPost]
         public IActionResult ADD_PARA_STATUS_CHANGE_REQUEST(int comId, int newStatus, string makerRemarks)
             {
-            var user = sessionHandler.GetUserOrThrow();
+            var user = sessionHandler.GetUser();
+            if (user == null
+                || user.UserEntityID <= 0
+                || user.PPNumber <= 0
+                || user.UserRoleID <= 0)
+                {
+                return new JsonResult(new object());
+                }
             var resp = dBConnection.ADDPARASTATUSCHANGEREQUEST(comId, newStatus, makerRemarks, user.ID);
             return Json(new { message = resp });
             }
@@ -5150,7 +5199,14 @@ namespace AIS.Controllers
         [HttpPost]
         public IActionResult AUTHORIZE_PARA_STATUS_CHANGE_REQUEST(int logId, string action, string authRemarks)
             {
-            var user = sessionHandler.GetUserOrThrow();
+            var user = sessionHandler.GetUser();
+            if (user == null
+                || user.UserEntityID <= 0
+                || user.PPNumber <= 0
+                || user.UserRoleID <= 0)
+                {
+                return new JsonResult(new object());
+                }
             var resp = dBConnection.AUTHORIZEPARASTATUSCHANGEREQUEST(logId, action, authRemarks, user.ID);
             return Json(new { message = resp });
             }

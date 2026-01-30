@@ -12,7 +12,14 @@ namespace AIS.Controllers
         public List<RiskProcessDefinition> GetFunctionalListForDashboard()
             {
             var sessionHandler = CreateSessionHandler();
-            var loggedInUser = sessionHandler.GetUserOrThrow();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID <= 0
+                || loggedInUser.PPNumber <= 0
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return new List<RiskProcessDefinition>();
+                }
             var con = this.DatabaseConnection();
             List<RiskProcessDefinition> pdetails = new List<RiskProcessDefinition>();
             using (OracleCommand cmd = con.CreateCommand())
@@ -40,7 +47,14 @@ namespace AIS.Controllers
         public List<RiskProcessDefinition> GetViolationListForDashboard(int ENTITY_ID = 0)
             {
             var sessionHandler = CreateSessionHandler();
-            var loggedInUser = sessionHandler.GetUserOrThrow();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID <= 0
+                || loggedInUser.PPNumber <= 0
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return new List<RiskProcessDefinition>();
+                }
             var con = this.DatabaseConnection();
             List<RiskProcessDefinition> pdetails = new List<RiskProcessDefinition>();
             using (OracleCommand cmd = con.CreateCommand())
@@ -70,7 +84,14 @@ namespace AIS.Controllers
         public List<RiskProcessDefinition> GetSubViolationListForDashboard(int ENTITY_ID = 0, int PROCESS_ID = 0)
             {
             var sessionHandler = CreateSessionHandler();
-            var loggedInUser = sessionHandler.GetUserOrThrow();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID <= 0
+                || loggedInUser.PPNumber <= 0
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return new List<RiskProcessDefinition>();
+                }
             var con = this.DatabaseConnection();
             List<RiskProcessDefinition> pdetails = new List<RiskProcessDefinition>();
             using (OracleCommand cmd = con.CreateCommand())
@@ -100,7 +121,14 @@ namespace AIS.Controllers
         public List<RiskProcessDefinition> GetHOFunctionalListForDashboard(int ENTITY_ID = 0)
             {
             var sessionHandler = CreateSessionHandler();
-            var loggedInUser = sessionHandler.GetUserOrThrow();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID <= 0
+                || loggedInUser.PPNumber <= 0
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return new List<RiskProcessDefinition>();
+                }
             var con = this.DatabaseConnection();
             List<RiskProcessDefinition> pdetails = new List<RiskProcessDefinition>();
             using (OracleCommand cmd = con.CreateCommand())
@@ -129,7 +157,14 @@ namespace AIS.Controllers
         public List<RiskProcessDefinition> GetHOViolationListForDashboard(int ENTITY_ID = 0)
             {
             var sessionHandler = CreateSessionHandler();
-            var loggedInUser = sessionHandler.GetUserOrThrow();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID <= 0
+                || loggedInUser.PPNumber <= 0
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return new List<RiskProcessDefinition>();
+                }
             var con = this.DatabaseConnection();
             List<RiskProcessDefinition> pdetails = new List<RiskProcessDefinition>();
             using (OracleCommand cmd = con.CreateCommand())
@@ -183,7 +218,14 @@ namespace AIS.Controllers
         public List<UserRelationshipModel> GetchildpostingForDashboardPanel(int e_r_id = 0)
             {
             var sessionHandler = CreateSessionHandler();
-            var loggedInUser = sessionHandler.GetUserOrThrow();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID <= 0
+                || loggedInUser.PPNumber <= 0
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return new List<UserRelationshipModel>();
+                }
 
             if (e_r_id == 0)
                 e_r_id = Convert.ToInt32(loggedInUser.UserEntityID);
@@ -245,7 +287,14 @@ namespace AIS.Controllers
         public List<UserRelationshipModel> GetrealtionshiptypeForDashboardPanel()
             {
             var sessionHandler = CreateSessionHandler();
-            var loggedInUser = sessionHandler.GetUserOrThrow();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID <= 0
+                || loggedInUser.PPNumber <= 0
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return new List<UserRelationshipModel>();
+                }
 
             List<UserRelationshipModel> entitiesList = new List<UserRelationshipModel>();
             var con = this.DatabaseConnection();
@@ -276,7 +325,14 @@ namespace AIS.Controllers
         public List<FunctionalResponsibilityWiseParas> GetFunctionalResponsibilityWisePara(int PROCESS_ID = 0, int SUB_PROCESS_ID = 0, int PROCESS_DETAIL_ID = 0)
             {
             var sessionHandler = CreateSessionHandler();
-            var loggedInUser = sessionHandler.GetUserOrThrow();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID <= 0
+                || loggedInUser.PPNumber <= 0
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return new List<FunctionalResponsibilityWiseParas>();
+                }
 
             List<FunctionalResponsibilityWiseParas> list = new List<FunctionalResponsibilityWiseParas>();
             var con = this.DatabaseConnection();
@@ -322,7 +378,14 @@ namespace AIS.Controllers
         public List<FunctionalResponsibilitiesWiseParasModel> GetFunctionalResponsibilityWiseParaForDashboard(int FUNCTIONAL_ENTITY_ID = 0)
             {
             var sessionHandler = CreateSessionHandler();
-            var loggedInUser = sessionHandler.GetUserOrThrow();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID <= 0
+                || loggedInUser.PPNumber <= 0
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return new List<FunctionalResponsibilitiesWiseParasModel>();
+                }
             List<FunctionalResponsibilitiesWiseParasModel> list = new List<FunctionalResponsibilitiesWiseParasModel>();
             var con = this.DatabaseConnection();
             using (OracleCommand cmd = con.CreateCommand())
@@ -361,7 +424,14 @@ namespace AIS.Controllers
         public List<FADNewOldParaPerformanceModel> GetHOFunctionalResponsibilityWiseParaForDashboard(int PROCESS_ID = 0, int SUB_PROCESS_ID = 0, int PROCESS_DETAIL_ID = 0, int FUNCTIONAL_ENTITY_ID = 0, int DEPT_ID = 0)
             {
             var sessionHandler = CreateSessionHandler();
-            var loggedInUser = sessionHandler.GetUserOrThrow();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID <= 0
+                || loggedInUser.PPNumber <= 0
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return new List<FADNewOldParaPerformanceModel>();
+                }
             List<FADNewOldParaPerformanceModel> list = new List<FADNewOldParaPerformanceModel>();
             var con = this.DatabaseConnection();
             using (OracleCommand cmd = con.CreateCommand())
@@ -398,7 +468,14 @@ namespace AIS.Controllers
         public List<FADNewOldParaPerformanceModel> GetViolationWiseParaForDashboard(int PROCESS_ID = 0, int SUB_PROCESS_ID = 0, int PROCESS_DETAIL_ID = 0)
             {
             var sessionHandler = CreateSessionHandler();
-            var loggedInUser = sessionHandler.GetUserOrThrow();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID <= 0
+                || loggedInUser.PPNumber <= 0
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return new List<FADNewOldParaPerformanceModel>();
+                }
 
             List<FADNewOldParaPerformanceModel> list = new List<FADNewOldParaPerformanceModel>();
             var con = this.DatabaseConnection();
@@ -434,7 +511,14 @@ namespace AIS.Controllers
             {
             var sessionHandler = CreateSessionHandler();
             var con = this.DatabaseConnection();
-            var loggedInUser = sessionHandler.GetUserOrThrow();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID <= 0
+                || loggedInUser.PPNumber <= 0
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return new List<FADNewOldParaPerformanceModel>();
+                }
             List<FADNewOldParaPerformanceModel> list = new List<FADNewOldParaPerformanceModel>();
 
             using (OracleCommand cmd = con.CreateCommand())
@@ -468,7 +552,14 @@ namespace AIS.Controllers
             {
             var sessionHandler = CreateSessionHandler();
             var con = this.DatabaseConnection();
-            var loggedInUser = sessionHandler.GetUserOrThrow();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID <= 0
+                || loggedInUser.PPNumber <= 0
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return new List<FADNewOldParaPerformanceModel>();
+                }
             List<FADNewOldParaPerformanceModel> list = new List<FADNewOldParaPerformanceModel>();
 
             using (OracleCommand cmd = con.CreateCommand())
@@ -502,7 +593,14 @@ namespace AIS.Controllers
             {
             var sessionHandler = CreateSessionHandler();
             var con = this.DatabaseConnection();
-            var loggedInUser = sessionHandler.GetUserOrThrow();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID <= 0
+                || loggedInUser.PPNumber <= 0
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return new List<FADNewOldParaPerformanceModel>();
+                }
             List<FADNewOldParaPerformanceModel> list = new List<FADNewOldParaPerformanceModel>();
 
             using (OracleCommand cmd = con.CreateCommand())
@@ -535,7 +633,14 @@ namespace AIS.Controllers
         public List<NoEntitiesRiskBasePlan> GetEntitiesRiskBasePlanForDashboard(int PROCESS_ID = 0, int SUB_PROCESS_ID = 0, int PROCESS_DETAIL_ID = 0)
             {
             var sessionHandler = CreateSessionHandler();
-            var loggedInUser = sessionHandler.GetUserOrThrow();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID <= 0
+                || loggedInUser.PPNumber <= 0
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return new List<NoEntitiesRiskBasePlan>();
+                }
 
             List<NoEntitiesRiskBasePlan> list = new List<NoEntitiesRiskBasePlan>();
             var con = this.DatabaseConnection();
@@ -564,7 +669,14 @@ namespace AIS.Controllers
         public List<FADAuditPerformanceModel> GetAuditPerformanceForDashboard()
             {
             var sessionHandler = CreateSessionHandler();
-            var loggedInUser = sessionHandler.GetUserOrThrow();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID <= 0
+                || loggedInUser.PPNumber <= 0
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return new List<FADAuditPerformanceModel>();
+                }
 
             List<FADAuditPerformanceModel> list = new List<FADAuditPerformanceModel>();
             var con = this.DatabaseConnection();
@@ -596,7 +708,14 @@ namespace AIS.Controllers
         public List<AuditPerformanceChartDashboardModel> GetAuditPerformanceChartForDashboard()
             {
             var sessionHandler = CreateSessionHandler();
-            var loggedInUser = sessionHandler.GetUserOrThrow();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID <= 0
+                || loggedInUser.PPNumber <= 0
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return new List<AuditPerformanceChartDashboardModel>();
+                }
 
             List<AuditPerformanceChartDashboardModel> list = new List<AuditPerformanceChartDashboardModel>();
             var con = this.DatabaseConnection();
@@ -627,7 +746,14 @@ namespace AIS.Controllers
 
             {
             var sessionHandler = CreateSessionHandler();
-            var loggedInUser = sessionHandler.GetUserOrThrow();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID <= 0
+                || loggedInUser.PPNumber <= 0
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return new List<RepetativeParaModel>();
+                }
 
             List<RepetativeParaModel> list = new List<RepetativeParaModel>();
             var con = this.DatabaseConnection();
@@ -672,7 +798,14 @@ namespace AIS.Controllers
         public List<EntityWiseObservationModel> GetReportingOfficeWiseObservations()
             {
             var sessionHandler = CreateSessionHandler();
-            var loggedInUser = sessionHandler.GetUserOrThrow();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID <= 0
+                || loggedInUser.PPNumber <= 0
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return new List<EntityWiseObservationModel>();
+                }
             var con = this.DatabaseConnection();
 
             List<EntityWiseObservationModel> pdetails = new List<EntityWiseObservationModel>();
@@ -706,7 +839,14 @@ namespace AIS.Controllers
         public List<EntityWiseObservationModel> GetEntityWiseObservations()
             {
             var sessionHandler = CreateSessionHandler();
-            var loggedInUser = sessionHandler.GetUserOrThrow();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID <= 0
+                || loggedInUser.PPNumber <= 0
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return new List<EntityWiseObservationModel>();
+                }
             var con = this.DatabaseConnection();
 
             List<EntityWiseObservationModel> pdetails = new List<EntityWiseObservationModel>();
@@ -741,7 +881,14 @@ namespace AIS.Controllers
         public List<AnnexWiseObservationModel> GetAnnexureWiseObservations(string positionDate)
             {
             var sessionHandler = CreateSessionHandler();
-            var loggedInUser = sessionHandler.GetUserOrThrow();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID <= 0
+                || loggedInUser.PPNumber <= 0
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return new List<AnnexWiseObservationModel>();
+                }
             var con = this.DatabaseConnection();
 
             List<AnnexWiseObservationModel> pdetails = new List<AnnexWiseObservationModel>();
@@ -784,7 +931,14 @@ namespace AIS.Controllers
         public List<AnnexWiseObservationModel> GetFunctionAnnexures()
             {
             var sessionHandler = CreateSessionHandler();
-            var loggedInUser = sessionHandler.GetUserOrThrow();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID <= 0
+                || loggedInUser.PPNumber <= 0
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return new List<AnnexWiseObservationModel>();
+                }
             var con = this.DatabaseConnection();
 
             List<AnnexWiseObservationModel> pdetails = new List<AnnexWiseObservationModel>();
@@ -812,7 +966,14 @@ namespace AIS.Controllers
         public List<FunctionalAnnexureWiseObservationModel> GetEntityWiseObservationDetail(int ENTITY_ID)
             {
             var sessionHandler = CreateSessionHandler();
-            var loggedInUser = sessionHandler.GetUserOrThrow();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID <= 0
+                || loggedInUser.PPNumber <= 0
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return new List<FunctionalAnnexureWiseObservationModel>();
+                }
             var con = this.DatabaseConnection();
 
             List<FunctionalAnnexureWiseObservationModel> pdetails = new List<FunctionalAnnexureWiseObservationModel>();
@@ -849,7 +1010,14 @@ namespace AIS.Controllers
         public List<FunctionalAnnexureWiseObservationModel> GetFunctionalObservations(int ANNEX_ID, int ENTITY_ID)
             {
             var sessionHandler = CreateSessionHandler();
-            var loggedInUser = sessionHandler.GetUserOrThrow();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID <= 0
+                || loggedInUser.PPNumber <= 0
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return new List<FunctionalAnnexureWiseObservationModel>();
+                }
             var con = this.DatabaseConnection();
 
             List<FunctionalAnnexureWiseObservationModel> pdetails = new List<FunctionalAnnexureWiseObservationModel>();
@@ -883,7 +1051,14 @@ namespace AIS.Controllers
         public string GetFunctionalObservationText(int PARA_ID, string PARA_CATEGORY)
             {
             var sessionHandler = CreateSessionHandler();
-            var loggedInUser = sessionHandler.GetUserOrThrow();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID <= 0
+                || loggedInUser.PPNumber <= 0
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return new List<FunctionalAnnexureWiseObservationModel>();
+                }
             var con = this.DatabaseConnection();
             string resp = "";
 
@@ -908,7 +1083,14 @@ namespace AIS.Controllers
         public List<FunctionalAnnexureWiseObservationModel> GetFunctionalRespDetailPara(int PROCESS_ID)
             {
             var sessionHandler = CreateSessionHandler();
-            var loggedInUser = sessionHandler.GetUserOrThrow();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID <= 0
+                || loggedInUser.PPNumber <= 0
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return new List<FunctionalAnnexureWiseObservationModel>();
+                }
             var con = this.DatabaseConnection();
 
             List<FunctionalAnnexureWiseObservationModel> pdetails = new List<FunctionalAnnexureWiseObservationModel>();
@@ -940,7 +1122,14 @@ namespace AIS.Controllers
         public List<FunctionalAnnexureWiseObservationModel> GetFunctionalRespSummaryPara(int PROCESS_ID)
             {
             var sessionHandler = CreateSessionHandler();
-            var loggedInUser = sessionHandler.GetUserOrThrow();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID <= 0
+                || loggedInUser.PPNumber <= 0
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return new List<FunctionalAnnexureWiseObservationModel>();
+                }
             var con = this.DatabaseConnection();
 
             List<FunctionalAnnexureWiseObservationModel> pdetails = new List<FunctionalAnnexureWiseObservationModel>();
@@ -974,7 +1163,14 @@ namespace AIS.Controllers
 
             var sessionHandler = CreateSessionHandler();
             var con = this.DatabaseConnection();
-            var loggedInUser = sessionHandler.GetUserOrThrow();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID <= 0
+                || loggedInUser.PPNumber <= 0
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return new List<ComplianceSummaryModel>();
+                }
             List<ComplianceSummaryModel> resp = new List<ComplianceSummaryModel>();
 
             using (OracleCommand cmd = con.CreateCommand())
