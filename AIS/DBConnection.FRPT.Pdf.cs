@@ -29,6 +29,36 @@ namespace AIS.Controllers
                 };
             }
 
+        public bool IsEngagementAllowedForPdf(int engId, int ppNo, int rId, int entId)
+            {
+            using var con = DatabaseConnection();
+            using var cmd = con.CreateCommand();
+            cmd.BindByName = true;
+            cmd.CommandText = "PKG_FRPT.P_GET_ALLOWED_PDF_ENGS";
+            cmd.CommandType = CommandType.StoredProcedure;
+
+            cmd.Parameters.Add("P_PP_NO", OracleDbType.Int32).Value = ppNo;
+            cmd.Parameters.Add("P_R_ID", OracleDbType.Int32).Value = rId;
+            cmd.Parameters.Add("P_ENT_ID", OracleDbType.Int32).Value = entId;
+            cmd.Parameters.Add("O_CURSOR", OracleDbType.RefCursor, ParameterDirection.Output);
+
+            if (con.State != ConnectionState.Open)
+                {
+                con.Open();
+                }
+
+            using var reader = cmd.ExecuteReader();
+            while (reader.Read())
+                {
+                if (!reader.IsDBNull(0) && Convert.ToInt32(reader.GetValue(0)) == engId)
+                    {
+                    return true;
+                    }
+                }
+
+            return false;
+            }
+
         /* =========================================================
            HEADER
         ========================================================= */

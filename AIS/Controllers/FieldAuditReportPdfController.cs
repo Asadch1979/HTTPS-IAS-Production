@@ -174,9 +174,20 @@ namespace AIS.Controllers
 
         private bool IsEngagementAuthorized(int engId)
             {
-            return _dbConnection
-                .GetObservationEntitiesForPreConcluding()
-                .Any(item => item.ENG_ID.HasValue && item.ENG_ID.Value == engId);
+            if (!_sessionHandler.TryGetUser(out var user))
+                {
+                return false;
+                }
+
+            if (!int.TryParse(user.PPNumber, out var ppNo))
+                {
+                return false;
+                }
+
+            var rId = user.UserRoleID;
+            var entId = user.UserEntityID ?? 0;
+
+            return _dbConnection.IsEngagementAllowedForPdf(engId, ppNo, rId, entId);
             }
 
         private static byte[] RenderPdf(string html)
