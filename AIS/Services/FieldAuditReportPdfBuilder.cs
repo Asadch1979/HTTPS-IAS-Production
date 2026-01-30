@@ -36,38 +36,46 @@ namespace AIS.Services
             sb.AppendLine("<meta charset=\"utf-8\" />");
             sb.AppendLine("<style>");
             sb.AppendLine("@page { size: A4 portrait; margin: 36pt 36pt 54pt 36pt; }");
-            sb.AppendLine("body { font-family: 'Times New Roman', serif; font-size: 11pt; color: #000; }");
+            sb.AppendLine("body{ font-family: Arial, Helvetica, sans-serif; font-size: 12px; color:#111; margin: 22px; }");
             sb.AppendLine("h1, h2, h3, h4 { margin: 12pt 0 6pt; }");
-            sb.AppendLine("h1 { font-size: 20pt; text-align: center; }");
-            sb.AppendLine("h2 { font-size: 15pt; }");
+            sb.AppendLine("h1 { font-size: 18pt; text-align: center; }");
+            sb.AppendLine("h2 { font-size: 14pt; }");
             sb.AppendLine("h3 { font-size: 13pt; }");
             sb.AppendLine("h4 { font-size: 12pt; }");
+            sb.AppendLine("table, tr, td, th { page-break-inside: avoid; break-inside: avoid; }");
             sb.AppendLine("table { width: 100%; border-collapse: collapse; margin: 8pt 0; }");
             sb.AppendLine("thead { display: table-header-group; }");
-            sb.AppendLine("th, td { border: 1px solid #000; padding: 4pt 6pt; vertical-align: top; }");
-            sb.AppendLine("tr { page-break-inside: avoid; }");
-            sb.AppendLine(".grid{ width:100%; border-collapse:collapse; table-layout:fixed; }");
-            sb.AppendLine(".grid th,.grid td{ border:1px solid #000; padding:5px; font-size:12px; vertical-align:middle; }");
-            sb.AppendLine(".grid th{ font-weight:700; text-align:center; }");
+            sb.AppendLine("tfoot { display: table-footer-group; }");
+            sb.AppendLine("th, td { border: 1px solid #111; padding: 4pt 6pt; vertical-align: top; }");
+            sb.AppendLine(".grid{ width:100%; border-collapse:collapse; table-layout:fixed; margin-top:8px; }");
+            sb.AppendLine(".grid th,.grid td{ border:1px solid #111; padding:6px; font-size:12px; vertical-align:top; }");
+            sb.AppendLine(".grid th{ background:#f6f8fa; font-weight:700; text-align:center; }");
             sb.AppendLine(".grid td{ text-align:center; }");
             sb.AppendLine(".grid td.left{ text-align:left; }");
+            sb.AppendLine(".report-header{ border:1px solid #d0d7de; padding:12px 14px; border-radius:8px; margin-bottom:14px; }");
+            sb.AppendLine(".report-header .title{ font-size:18px; font-weight:700; margin:0 0 6px 0; }");
+            sb.AppendLine(".report-header .meta{ font-size:12px; color:#333; line-height:1.5; }");
             sb.AppendLine(".section { page-break-after: auto; }");
-            sb.AppendLine(".section-title { border-bottom: 1px solid #000; padding-bottom: 4pt; }");
+            sb.AppendLine(".section-title{ font-size:14px; font-weight:700; margin:18px 0 10px 0; padding:8px 10px; border-left:4px solid #111; background:#f6f8fa; }");
             sb.AppendLine(".meta-grid { width: 100%; }");
             sb.AppendLine(".meta-label { width: 35%; font-weight: bold; }");
             sb.AppendLine(".paragraph { margin: 6pt 0; }");
-            sb.AppendLine(".para-box{ border:1px solid #ced4da; border-radius:4px; padding:12px 14px; margin:10px 0; background:#fff; page-break-inside:avoid; }");
-            sb.AppendLine(".para-title{ font-weight:700; text-decoration:underline; font-size:14px; margin-bottom:10px; color:#111; }");
+            sb.AppendLine(".para-box{ border:1px solid #d0d7de; border-radius:8px; padding:12px 14px; margin:10px 0; background:#fff; page-break-inside:avoid; break-inside:avoid; }");
+            sb.AppendLine(".para-title{ font-weight:700; font-size:13px; margin:0 0 8px 0; color:#111; }");
             sb.AppendLine(".para-body{ font-size:13px; line-height:1.6; text-align:justify; white-space:normal !important; overflow-wrap:anywhere; color:#212529; width:100%; }");
             sb.AppendLine(".para-body *{ white-space:normal !important; overflow-wrap:anywhere; }");
             sb.AppendLine(".para-body table{ width:100%; border-collapse:collapse; margin-top:10px; }");
             sb.AppendLine(".para-body table th,.para-body table td{ border:1px solid #222; padding:4px 6px; vertical-align:top; }");
-            sb.AppendLine(".page-break { page-break-before: always; }");
+            sb.AppendLine(".para-sep{ border:0; border-top:1px solid #d0d7de; margin:14px 0; }");
+            sb.AppendLine(".page-break{ page-break-before: always; break-before: page; }");
+            sb.AppendLine(".break-after{ page-break-after: always; break-after: page; }");
+            sb.AppendLine(".avoid-break{ page-break-inside: avoid; break-inside: avoid; }");
             sb.AppendLine("</style>");
             sb.AppendLine("</head>");
             sb.AppendLine("<body>");
 
             AppendCoverHeader(sb, data);
+            sb.AppendLine("<div class=\"page-break\"></div>");
             AppendExecutiveSummary(sb, data);
             AppendBranchProfile(sb, data);
             AppendStaffPosition(sb, data);
@@ -91,9 +99,10 @@ namespace AIS.Services
             {
             var header = data.Header ?? new FieldAuditPdfHeaderModel();
             var meta = data.ReportMeta ?? new FieldAuditPdfReportMetaModel();
-            sb.AppendLine("<section class=\"section\">");
-            sb.AppendLine("<h1>Field Audit Report</h1>");
-            sb.AppendLine("<table class=\"meta-grid\">");
+            sb.AppendLine("<section class=\"section title-page\">");
+            sb.AppendLine("<div class=\"report-header\">");
+            sb.AppendLine("<h1 class=\"title\">Field Audit Report</h1>");
+            sb.AppendLine("<table class=\"meta-grid meta\">");
             AppendMetaRow(sb, "Bank Name", header.BankName);
             AppendMetaRow(sb, "Internal Audit Division", header.InternalAuditDivision);
             AppendMetaRow(sb, "Branch Name", header.BranchName);
@@ -103,6 +112,7 @@ namespace AIS.Services
             AppendMetaRow(sb, "Report Status", meta.ReportStatus ?? header.ReportStatus);
             AppendMetaRow(sb, "Version Number", meta.VersionNumber ?? header.VersionNumber);
             sb.AppendLine("</table>");
+            sb.AppendLine("</div>");
             sb.AppendLine("</section>");
             }
 
@@ -582,12 +592,13 @@ namespace AIS.Services
                 return;
                 }
 
-            sb.AppendLine("<div class=\"para-box\">");
+            sb.AppendLine("<div class=\"para-box avoid-break\">");
             sb.AppendLine("<div class=\"para-title\">Para Text:</div>");
             sb.Append("<div class=\"para-body\">");
             sb.Append(normalizedHtml);
             sb.AppendLine("</div>");
             sb.AppendLine("</div>");
+            sb.AppendLine("<hr class=\"para-sep\" />");
             }
 
         private static FieldAuditPdfKpiRowModel GetKpiRowForDate(IEnumerable<FieldAuditPdfKpiRowModel> rows, DateTime? date)
