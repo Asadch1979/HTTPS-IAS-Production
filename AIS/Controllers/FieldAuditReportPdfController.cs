@@ -172,20 +172,7 @@ namespace AIS.Controllers
 
         private bool IsEngagementAuthorized(int engId)
             {
-            if (!_sessionHandler.TryGetUser(out var user))
-                {
-                return false;
-                }
-
-            if (!int.TryParse(user.PPNumber, out var ppNo))
-                {
-                return false;
-                }
-
-            var rId = user.UserRoleID;
-            var entId = user.UserEntityID ?? 0;
-
-            return _dbConnection.IsEngagementAllowedForPdf(engId, ppNo, rId, entId);
+            return _dbConnection.IsEngagementAllowedForPdf(engId);
             }
 
         private static byte[] RenderPdf(string html)
