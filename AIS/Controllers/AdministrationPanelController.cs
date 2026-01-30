@@ -311,8 +311,16 @@ namespace AIS.Controllers
             ViewData["TopMenu"] = tm.GetTopMenus();
             ViewData["TopMenuPages"] = tm.GetTopMenusPages();
             ViewData["Userrelationship"] = dBConnection.Getrealtionshiptype(ViewData["PageId"] as int? ?? 0);
-            var loggedInUser = sessionHandler.GetUserOrThrow();
-            if (loggedInUser.UserRoleID == 1)
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
+                || string.IsNullOrWhiteSpace(loggedInUser.PPNumber)
+                || loggedInUser.UserRoleID <= 0)
+                {
+                ViewData["AZOfficeList"] = new List<AuditZoneModel>();
+                ViewData["ComplianceUnitsList"] = new List<AuditeeEntitiesModel>();
+                }
+            else if (loggedInUser.UserRoleID == 1)
                 {
                 ViewData["AZOfficeList"] = dBConnection.GetAuditZones();
                 ViewData["ComplianceUnitsList"] = dBConnection.GetComplianceUnits();
@@ -352,8 +360,16 @@ namespace AIS.Controllers
             ViewData["TopMenu"] = tm.GetTopMenus();
             ViewData["TopMenuPages"] = tm.GetTopMenusPages();
             ViewData["Userrelationship"] = dBConnection.Getrealtionshiptype(ViewData["PageId"] as int? ?? 0);
-            var loggedInUser = sessionHandler.GetUserOrThrow();
-            if (loggedInUser.UserRoleID == 1)
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
+                || string.IsNullOrWhiteSpace(loggedInUser.PPNumber)
+                || loggedInUser.UserRoleID <= 0)
+                {
+                ViewData["GMOffList"] = new List<GMOfficeModel>();
+                ViewData["ReportingOffList"] = new List<ReportingOfficeModel>();
+                }
+            else if (loggedInUser.UserRoleID == 1)
                 {
                 ViewData["GMOffList"] = dBConnection.GetGMOffices();
                 ViewData["ReportingOffList"] = dBConnection.GetReportingOffices();
@@ -380,8 +396,16 @@ namespace AIS.Controllers
             ViewData["TopMenu"] = tm.GetTopMenus();
             ViewData["TopMenuPages"] = tm.GetTopMenusPages();
             ViewData["Userrelationship"] = dBConnection.Getrealtionshiptype(ViewData["PageId"] as int? ?? 0);
-            var loggedInUser = sessionHandler.GetUserOrThrow();
-            if (loggedInUser.UserRoleID == 1)
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
+                || string.IsNullOrWhiteSpace(loggedInUser.PPNumber)
+                || loggedInUser.UserRoleID <= 0)
+                {
+                ViewData["AZOfficeList"] = new List<AuditZoneModel>();
+                ViewData["ComplianceUnitsList"] = new List<AuditeeEntitiesModel>();
+                }
+            else if (loggedInUser.UserRoleID == 1)
                 {
                 ViewData["AZOfficeList"] = dBConnection.GetAuditZones();
                 ViewData["ComplianceUnitsList"] = dBConnection.GetComplianceUnits();

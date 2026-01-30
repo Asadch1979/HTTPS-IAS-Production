@@ -130,7 +130,7 @@ namespace AIS.Controllers
                 {
                 if (requireActiveSession)
                     {
-                    CreateSessionHandler().GetUserOrThrow();
+                    CreateSessionHandler().GetUser();
                     }
 
                 OracleConnection con = new OracleConnection();
@@ -270,9 +270,16 @@ namespace AIS.Controllers
         public bool DisposeLoginSession()
             {
             var sessionHandler = CreateSessionHandler();
-            var loggedInUser = sessionHandler.GetUserOrThrow();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
+                || string.IsNullOrWhiteSpace(loggedInUser.PPNumber)
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return false;
+                }
 
-            var sessionUser = sessionHandler.GetUserOrThrow();
+            var sessionUser = sessionHandler.GetUser();
             var con = this.DatabaseConnection();
            
             using (OracleCommand cmd = con.CreateCommand())
@@ -294,10 +301,17 @@ namespace AIS.Controllers
         public bool IsLoginSessionExist(string PPNumber = "")
             {
             var sessionHandler = CreateSessionHandler();
-            var loggedInUser = sessionHandler.GetUserOrThrow();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
+                || string.IsNullOrWhiteSpace(loggedInUser.PPNumber)
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return false;
+                }
 
 
-            var sessionUser = sessionHandler.GetUserOrThrow();
+            var sessionUser = sessionHandler.GetUser();
 
             if (PPNumber == "")
                 PPNumber = sessionUser.PPNumber;
@@ -373,7 +387,14 @@ namespace AIS.Controllers
             {
             // Auth bypass allowed here because this method is called before session creation / for session cleanup.
             var sessionHandler = CreateSessionHandler();
-            var loggedInUser = sessionHandler.GetUserOrThrow();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
+                || string.IsNullOrWhiteSpace(loggedInUser.PPNumber)
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return false;
+                }
             bool isTerminate = false;
             if (!string.IsNullOrEmpty(loggedInUser.PPNumber))
                 {
@@ -906,7 +927,14 @@ namespace AIS.Controllers
         public List<MenuModel> GetTopMenus()
             {
             var sessionHandler = CreateSessionHandler();
-            var loggedInUser = sessionHandler.GetUserOrThrow();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
+                || string.IsNullOrWhiteSpace(loggedInUser.PPNumber)
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return new List<MenuModel>();
+                }
 
 
             var con = this.DatabaseConnection();
@@ -939,7 +967,14 @@ namespace AIS.Controllers
         public List<MenuPagesModel> GetTopMenuPages()
             {
             var sessionHandler = CreateSessionHandler();
-            var loggedInUser = sessionHandler.GetUserOrThrow();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
+                || string.IsNullOrWhiteSpace(loggedInUser.PPNumber)
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return new List<MenuPagesModel>();
+                }
             return GetTopMenuPages(loggedInUser);
             }
 
@@ -1105,7 +1140,14 @@ namespace AIS.Controllers
             {
             string resp = "";
             var sessionHandler = CreateSessionHandler();
-            var loggedInUser = sessionHandler.GetUserOrThrow();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
+                || string.IsNullOrWhiteSpace(loggedInUser.PPNumber)
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return string.Empty;
+                }
             var con = this.DatabaseConnection();
             using (OracleCommand cmd = con.CreateCommand())
                 {
@@ -1130,7 +1172,14 @@ namespace AIS.Controllers
         public List<AuditTeamModel> GetAuditTeams(int dept_code = 0, int userEntId = 0)
             {
             var sessionHandler = CreateSessionHandler();
-            var loggedInUser = sessionHandler.GetUserOrThrow();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
+                || string.IsNullOrWhiteSpace(loggedInUser.PPNumber)
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return new List<AuditTeamModel>();
+                }
             var con = this.DatabaseConnection();
             List<AuditTeamModel> teamList = new List<AuditTeamModel>();
 
@@ -1168,7 +1217,14 @@ namespace AIS.Controllers
         public string AddAuditTeam(AuditTeamModel aTeam)
             {
             var sessionHandler = CreateSessionHandler();
-            var loggedInUser = sessionHandler.GetUserOrThrow();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
+                || string.IsNullOrWhiteSpace(loggedInUser.PPNumber)
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return string.Empty;
+                }
 
 
             var con = this.DatabaseConnection();
@@ -1204,7 +1260,14 @@ namespace AIS.Controllers
             if (T_CODE != "" && T_CODE != null)
                 {
                 var sessionHandler = CreateSessionHandler();
-                var loggedInUser = sessionHandler.GetUserOrThrow();
+                var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
+                || string.IsNullOrWhiteSpace(loggedInUser.PPNumber)
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return false;
+                }
 
 
                 var con = this.DatabaseConnection();
@@ -1230,7 +1293,14 @@ namespace AIS.Controllers
         public int GetLatestTeamID()
             {
             var sessionHandler = CreateSessionHandler();
-            var loggedInUser = sessionHandler.GetUserOrThrow();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
+                || string.IsNullOrWhiteSpace(loggedInUser.PPNumber)
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return 0;
+                }
             var con = this.DatabaseConnection();
             int maxTeamId = 1;
             using (OracleCommand cmd = con.CreateCommand())
@@ -1258,7 +1328,14 @@ namespace AIS.Controllers
         public bool AddAuditCriteria(AddAuditCriteriaModel acm)
             {
             var sessionHandler = CreateSessionHandler();
-            var loggedInUser = sessionHandler.GetUserOrThrow();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
+                || string.IsNullOrWhiteSpace(loggedInUser.PPNumber)
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return false;
+                }
             bool isAlreadyAdded = true;
 
             var con = this.DatabaseConnection();
@@ -1297,7 +1374,14 @@ namespace AIS.Controllers
         public bool UpdateAuditCriteria(AddAuditCriteriaModel acm, string COMMENTS)
             {
             var sessionHandler = CreateSessionHandler();
-            var loggedInUser = sessionHandler.GetUserOrThrow();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
+                || string.IsNullOrWhiteSpace(loggedInUser.PPNumber)
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return false;
+                }
             var con = this.DatabaseConnection();
             using (OracleCommand cmd = con.CreateCommand())
                 {
@@ -1326,7 +1410,14 @@ namespace AIS.Controllers
             if (REMARKS == "")
                 REMARKS = "REFERRED BACK";
             var sessionHandler = CreateSessionHandler();
-            var loggedInUser = sessionHandler.GetUserOrThrow();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
+                || string.IsNullOrWhiteSpace(loggedInUser.PPNumber)
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return false;
+                }
             var con = this.DatabaseConnection();
             using (OracleCommand cmd = con.CreateCommand())
                 {
@@ -1352,7 +1443,14 @@ namespace AIS.Controllers
                 remarks = "APPROVED";
 
             var sessionHandler = CreateSessionHandler();
-            var loggedInUser = sessionHandler.GetUserOrThrow();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
+                || string.IsNullOrWhiteSpace(loggedInUser.PPNumber)
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return string.Empty;
+                }
 
             using var con = this.DatabaseConnection();
             using var cmd = con.CreateCommand();
@@ -1381,7 +1479,14 @@ namespace AIS.Controllers
         public List<AuditCriteriaModel> GetPendingAuditCriterias()
             {
             var sessionHandler = CreateSessionHandler();
-            var loggedInUser = sessionHandler.GetUserOrThrow();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
+                || string.IsNullOrWhiteSpace(loggedInUser.PPNumber)
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return new List<AuditCriteriaModel>();
+                }
             var con = this.DatabaseConnection();
             List<AuditCriteriaModel> criteriaList = new List<AuditCriteriaModel>();
             using (OracleCommand cmd = con.CreateCommand())
@@ -1427,7 +1532,14 @@ namespace AIS.Controllers
         public List<AuditCriteriaModel> GetRefferedBackAuditCriterias()
             {
             var sessionHandler = CreateSessionHandler();
-            var loggedInUser = sessionHandler.GetUserOrThrow();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
+                || string.IsNullOrWhiteSpace(loggedInUser.PPNumber)
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return new List<AuditCriteriaModel>();
+                }
 
             var con = this.DatabaseConnection();
             List<AuditCriteriaModel> criteriaList = new List<AuditCriteriaModel>();
@@ -1473,7 +1585,14 @@ namespace AIS.Controllers
         public List<AuditCriteriaModel> GetPostChangesAuditCriterias()
             {
             var sessionHandler = CreateSessionHandler();
-            var loggedInUser = sessionHandler.GetUserOrThrow();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
+                || string.IsNullOrWhiteSpace(loggedInUser.PPNumber)
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return new List<AuditCriteriaModel>();
+                }
             var con = this.DatabaseConnection();
             List<AuditCriteriaModel> criteriaList = new List<AuditCriteriaModel>();
             using (OracleCommand cmd = con.CreateCommand())
@@ -1527,7 +1646,14 @@ namespace AIS.Controllers
             {
             string resMsg = "";
             var sessionHandler = CreateSessionHandler();
-            var loggedInUser = sessionHandler.GetUserOrThrow();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
+                || string.IsNullOrWhiteSpace(loggedInUser.PPNumber)
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return string.Empty;
+                }
             var con = this.DatabaseConnection();
             using (OracleCommand cmd = con.CreateCommand())
                 {
@@ -1556,7 +1682,14 @@ namespace AIS.Controllers
         public List<AuditEntitiesModel> GetAuditEntities()
             {
             var sessionHandler = CreateSessionHandler();
-            var loggedInUser = sessionHandler.GetUserOrThrow();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
+                || string.IsNullOrWhiteSpace(loggedInUser.PPNumber)
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return new List<AuditEntitiesModel>();
+                }
 
 
 
@@ -1592,7 +1725,14 @@ namespace AIS.Controllers
             List<AuditeeEntitiesModel> entitiesList = new List<AuditeeEntitiesModel>();
             var con = this.DatabaseConnection();
             var sessionHandler = CreateSessionHandler();
-            var loggedInUser = sessionHandler.GetUserOrThrow();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
+                || string.IsNullOrWhiteSpace(loggedInUser.PPNumber)
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return new List<AuditeeEntitiesModel>();
+                }
 
             using (OracleCommand cmd = con.CreateCommand())
                 {
@@ -1626,7 +1766,14 @@ namespace AIS.Controllers
             {
             var con = this.DatabaseConnection();
             var sessionHandler = CreateSessionHandler();
-            var loggedInUser = sessionHandler.GetUserOrThrow();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
+                || string.IsNullOrWhiteSpace(loggedInUser.PPNumber)
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return new List<AuditeeEntitiesModel>();
+                }
             List<AuditeeEntitiesModel> entitiesList = new List<AuditeeEntitiesModel>();
             using (OracleCommand cmd = con.CreateCommand())
                 {
@@ -1686,7 +1833,14 @@ namespace AIS.Controllers
         public bool ChangePassword(string Password, string NewPassowrd)
             {
             var sessionHandler = CreateSessionHandler();
-            var loggedInUser = sessionHandler.GetUserOrThrow();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
+                || string.IsNullOrWhiteSpace(loggedInUser.PPNumber)
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return false;
+                }
 
 
 
@@ -1852,7 +2006,14 @@ namespace AIS.Controllers
         public List<TentativePlanModel> GetTentativePlansForFields(bool sessionCheck = true)
             {
             var sessionHandler = CreateSessionHandler();
-            var loggedInUser = sessionHandler.GetUserOrThrow();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
+                || string.IsNullOrWhiteSpace(loggedInUser.PPNumber)
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return new List<TentativePlanModel>();
+                }
 
 
             var con = this.DatabaseConnection();
@@ -1920,7 +2081,14 @@ namespace AIS.Controllers
         public List<AuditRefEngagementPlanModel> GetAuditEngagementPlans()
             {
             var sessionHandler = CreateSessionHandler();
-            var loggedInUser = sessionHandler.GetUserOrThrow();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
+                || string.IsNullOrWhiteSpace(loggedInUser.PPNumber)
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return new List<AuditRefEngagementPlanModel>();
+                }
             var con = this.DatabaseConnection();
             List<AuditRefEngagementPlanModel> list = new List<AuditRefEngagementPlanModel>();
             using (OracleCommand cmd = con.CreateCommand())
@@ -1953,7 +2121,14 @@ namespace AIS.Controllers
         public AuditEngagementPlanModel AddAuditEngagementPlan(AuditEngagementPlanModel ePlan)
             {
             var sessionHandler = CreateSessionHandler();
-            var loggedInUser = sessionHandler.GetUserOrThrow();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
+                || string.IsNullOrWhiteSpace(loggedInUser.PPNumber)
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return new AuditEngagementPlanModel();
+                }
             ePlan.CREATED_ON = System.DateTime.Now;
             int placeofposting = Convert.ToInt32(loggedInUser.UserEntityID);
             bool isContinue = false;
@@ -2018,7 +2193,14 @@ namespace AIS.Controllers
         public bool RefferedBackAuditEngagementPlan(int ENG_ID, string REMARKS)
             {
             var sessionHandler = CreateSessionHandler();
-            var loggedInUser = sessionHandler.GetUserOrThrow();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
+                || string.IsNullOrWhiteSpace(loggedInUser.PPNumber)
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return false;
+                }
             var con = this.DatabaseConnection();
             using (OracleCommand cmd = con.CreateCommand())
                 {
@@ -2039,7 +2221,14 @@ namespace AIS.Controllers
             {
             string resp = "";
             var sessionHandler = CreateSessionHandler();
-            var loggedInUser = sessionHandler.GetUserOrThrow();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
+                || string.IsNullOrWhiteSpace(loggedInUser.PPNumber)
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return string.Empty;
+                }
             var con = this.DatabaseConnection();
             using (OracleCommand cmd = con.CreateCommand())
                 {
@@ -2071,7 +2260,14 @@ namespace AIS.Controllers
         public bool ApproveAuditEngagementPlan(int ENG_ID)
             {
             var sessionHandler = CreateSessionHandler();
-            var loggedInUser = sessionHandler.GetUserOrThrow();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
+                || string.IsNullOrWhiteSpace(loggedInUser.PPNumber)
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return false;
+                }
             var con = this.DatabaseConnection();
             using (OracleCommand cmd = con.CreateCommand())
                 {
@@ -2091,7 +2287,14 @@ namespace AIS.Controllers
         public List<AuditPlanModel> GetAuditPlan(int period_id = 0)
             {
             var sessionHandler = CreateSessionHandler();
-            var loggedInUser = sessionHandler.GetUserOrThrow();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
+                || string.IsNullOrWhiteSpace(loggedInUser.PPNumber)
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return new List<AuditPlanModel>();
+                }
             var con = this.DatabaseConnection();
             List<AuditPlanModel> planList = new List<AuditPlanModel>();
             using (OracleCommand cmd = con.CreateCommand())
@@ -2190,7 +2393,14 @@ namespace AIS.Controllers
             var con = this.DatabaseConnection();
 
             var sessionHandler = CreateSessionHandler();
-            var loggedInUser = sessionHandler.GetUserOrThrow();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
+                || string.IsNullOrWhiteSpace(loggedInUser.PPNumber)
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return new List<GlHeadDetailsModel>();
+                }
 
             List<GlHeadDetailsModel> list = new List<GlHeadDetailsModel>();
 
@@ -2230,7 +2440,14 @@ namespace AIS.Controllers
             {
             var con = this.DatabaseConnection();
             var sessionHandler = CreateSessionHandler();
-            var loggedInUser = sessionHandler.GetUserOrThrow();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
+                || string.IsNullOrWhiteSpace(loggedInUser.PPNumber)
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return new GlHeadSubDetailsModel();
+                }
 
             GlHeadSubDetailsModel GlHeadSubDetails = new GlHeadSubDetailsModel();
             List<GlHeadSubDetailsModel> GlSubHeadList = new List<GlHeadSubDetailsModel>();
@@ -2266,7 +2483,14 @@ namespace AIS.Controllers
             {
 
             var sessionHandler = CreateSessionHandler();
-            var loggedInUser = sessionHandler.GetUserOrThrow();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
+                || string.IsNullOrWhiteSpace(loggedInUser.PPNumber)
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return new List<LoanCaseModel>();
+                }
 
             List<LoanCaseModel> list = new List<LoanCaseModel>();
             var con = this.DatabaseConnection();
@@ -2307,7 +2531,14 @@ namespace AIS.Controllers
             List<LoanCasedocModel> list = new List<LoanCasedocModel>();
 
             var sessionHandler = CreateSessionHandler();
-            var loggedInUser = sessionHandler.GetUserOrThrow();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
+                || string.IsNullOrWhiteSpace(loggedInUser.PPNumber)
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return new List<LoanCasedocModel>();
+                }
 
 
             var con = this.DatabaseConnection();
@@ -2343,7 +2574,14 @@ namespace AIS.Controllers
         public List<GlHeadDetailsModel> GetIncomeExpenceDetails(int bid = 0, int ENG_ID = 0)
             {
             var sessionHandler = CreateSessionHandler();
-            var loggedInUser = sessionHandler.GetUserOrThrow();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
+                || string.IsNullOrWhiteSpace(loggedInUser.PPNumber)
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return new List<GlHeadDetailsModel>();
+                }
             var con = this.DatabaseConnection();
             List<GlHeadDetailsModel> list = new List<GlHeadDetailsModel>();
 
@@ -2386,7 +2624,14 @@ namespace AIS.Controllers
             List<DepositAccountModel> depositacclist = new List<DepositAccountModel>();
             /*
             var sessionHandler = CreateSessionHandler();
-            var loggedInUser = sessionHandler.GetUserOrThrow();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
+                || string.IsNullOrWhiteSpace(loggedInUser.PPNumber)
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return new List<DepositAccountModel>();
+                }
 
            var con = this.DatabaseConnection();
             
@@ -2412,7 +2657,14 @@ namespace AIS.Controllers
         public List<DepositAccountModel> GetDepositAccountSubdetails(string bname = "")
             {
             var sessionHandler = CreateSessionHandler();
-            var loggedInUser = sessionHandler.GetUserOrThrow();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
+                || string.IsNullOrWhiteSpace(loggedInUser.PPNumber)
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return new List<DepositAccountModel>();
+                }
             int ENG_ID = this.GetLoggedInUserEngId();
             var con = this.DatabaseConnection();
             List<DepositAccountModel> depositaccsublist = new List<DepositAccountModel>();
@@ -2468,7 +2720,14 @@ namespace AIS.Controllers
         public List<LoanCaseModel> GetBranchDesbursementAccountdetails(int bid = 0)
             {
             var sessionHandler = CreateSessionHandler();
-            var loggedInUser = sessionHandler.GetUserOrThrow();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
+                || string.IsNullOrWhiteSpace(loggedInUser.PPNumber)
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return new List<LoanCaseModel>();
+                }
             int brId = Convert.ToInt32(loggedInUser.UserPostingBranch);
             List<LoanCaseModel> list = new List<LoanCaseModel>();
             var con = this.DatabaseConnection();
@@ -2505,7 +2764,14 @@ namespace AIS.Controllers
         public int GetLoggedInUserEngId()
             {
             var sessionHandler = CreateSessionHandler();
-            var loggedInUser = sessionHandler.GetUserOrThrow();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
+                || string.IsNullOrWhiteSpace(loggedInUser.PPNumber)
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return 0;
+                }
 
 
             var con = this.DatabaseConnection();
@@ -2598,7 +2864,14 @@ namespace AIS.Controllers
         public bool DeletePendingCriteria(int CID = 0)
             {
             var sessionHandler = CreateSessionHandler();
-            var loggedInUser = sessionHandler.GetUserOrThrow();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
+                || string.IsNullOrWhiteSpace(loggedInUser.PPNumber)
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return false;
+                }
             var con = this.DatabaseConnection();
             using (OracleCommand cmd = con.CreateCommand())
                 {
@@ -2617,7 +2890,14 @@ namespace AIS.Controllers
         public bool SubmitAuditCriteriaForApproval(int PERIOD_ID)
             {
             var sessionHandler = CreateSessionHandler();
-            var loggedInUser = sessionHandler.GetUserOrThrow();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
+                || string.IsNullOrWhiteSpace(loggedInUser.PPNumber)
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return false;
+                }
 
 
             var con = this.DatabaseConnection();
@@ -2694,7 +2974,14 @@ namespace AIS.Controllers
         public List<COSORiskModel> GetCOSORiskForDepartment(int PERIOD_ID = 0)
             {
             var sessionHandler = CreateSessionHandler();
-            var loggedInUser = sessionHandler.GetUserOrThrow();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
+                || string.IsNullOrWhiteSpace(loggedInUser.PPNumber)
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return new List<COSORiskModel>();
+                }
 
 
             var con = this.DatabaseConnection();
@@ -2733,7 +3020,14 @@ namespace AIS.Controllers
         public List<COSORiskModel> GetCOSORiskForBranches(int PERIOD_ID = 0)
             {
             var sessionHandler = CreateSessionHandler();
-            var loggedInUser = sessionHandler.GetUserOrThrow();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
+                || string.IsNullOrWhiteSpace(loggedInUser.PPNumber)
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return new List<COSORiskModel>();
+                }
 
 
             var con = this.DatabaseConnection();
@@ -2782,7 +3076,14 @@ namespace AIS.Controllers
             CAUOMAssignmentResponseModel resp = new CAUOMAssignmentResponseModel();
 
             var sessionHandler = CreateSessionHandler();
-            var loggedInUser = sessionHandler.GetUserOrThrow();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
+                || string.IsNullOrWhiteSpace(loggedInUser.PPNumber)
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return new CAUOMAssignmentResponseModel();
+                }
             var con = this.DatabaseConnection();
 
             using (OracleCommand cmd = con.CreateCommand())
@@ -2843,7 +3144,14 @@ namespace AIS.Controllers
                 encodedReply = encoderDecoder.Encrypt(om.CONTENTS_OF_OM);
             CAUOMAssignmentResponseModel resp = new CAUOMAssignmentResponseModel();
             var sessionHandler = CreateSessionHandler();
-            var loggedInUser = sessionHandler.GetUserOrThrow();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
+                || string.IsNullOrWhiteSpace(loggedInUser.PPNumber)
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return new CAUOMAssignmentResponseModel();
+                }
 
 
             var con = this.DatabaseConnection();
@@ -2899,7 +3207,14 @@ namespace AIS.Controllers
                 encodedMsg = encoderDecoder.Encrypt(om.CONTENTS_OF_OM);
             CAUOMAssignmentResponseModel resp = new CAUOMAssignmentResponseModel();
             var sessionHandler = CreateSessionHandler();
-            var loggedInUser = sessionHandler.GetUserOrThrow();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
+                || string.IsNullOrWhiteSpace(loggedInUser.PPNumber)
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return new CAUOMAssignmentResponseModel();
+                }
 
 
             var con = this.DatabaseConnection();
@@ -2934,7 +3249,14 @@ namespace AIS.Controllers
                 encodedMsg = encoderDecoder.Encrypt(om.CONTENTS_OF_OM);
             CAUOMAssignmentResponseModel resp = new CAUOMAssignmentResponseModel();
             var sessionHandler = CreateSessionHandler();
-            var loggedInUser = sessionHandler.GetUserOrThrow();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
+                || string.IsNullOrWhiteSpace(loggedInUser.PPNumber)
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return new CAUOMAssignmentResponseModel();
+                }
             var con = this.DatabaseConnection();
 
             using (OracleCommand cmd = con.CreateCommand())
@@ -2964,7 +3286,14 @@ namespace AIS.Controllers
             {
             CAUOMAssignmentModel resp = new CAUOMAssignmentModel();
             var sessionHandler = CreateSessionHandler();
-            var loggedInUser = sessionHandler.GetUserOrThrow();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
+                || string.IsNullOrWhiteSpace(loggedInUser.PPNumber)
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return new CAUOMAssignmentModel();
+                }
             var con = this.DatabaseConnection();
 
             using (OracleCommand cmd = con.CreateCommand())
@@ -2991,7 +3320,14 @@ namespace AIS.Controllers
         public List<CAUOMAssignmentModel> CAUGetAssignedOMs()
             {
             var sessionHandler = CreateSessionHandler();
-            var loggedInUser = sessionHandler.GetUserOrThrow();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
+                || string.IsNullOrWhiteSpace(loggedInUser.PPNumber)
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return new List<CAUOMAssignmentModel>();
+                }
             var con = this.DatabaseConnection();
 
 
@@ -3023,7 +3359,14 @@ namespace AIS.Controllers
         public List<AuditCCQModel> GetCCQ(int ENTITY_ID = 0)
             {
             var sessionHandler = CreateSessionHandler();
-            var loggedInUser = sessionHandler.GetUserOrThrow();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
+                || string.IsNullOrWhiteSpace(loggedInUser.PPNumber)
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return new List<AuditCCQModel>();
+                }
             var con = this.DatabaseConnection();
 
             List<AuditCCQModel> list = new List<AuditCCQModel>();
@@ -3084,7 +3427,14 @@ namespace AIS.Controllers
             {
             bool resp = false;
             var sessionHandler = CreateSessionHandler();
-            var loggedInUser = sessionHandler.GetUserOrThrow();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
+                || string.IsNullOrWhiteSpace(loggedInUser.PPNumber)
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return false;
+                }
 
 
             var con = this.DatabaseConnection();
@@ -3111,7 +3461,14 @@ namespace AIS.Controllers
         public bool AuditeeOldParaResponse(AuditeeOldParasResponseModel ob)
             {
             var sessionHandler = CreateSessionHandler();
-            var loggedInUser = sessionHandler.GetUserOrThrow();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
+                || string.IsNullOrWhiteSpace(loggedInUser.PPNumber)
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return false;
+                }
 
 
             var con = this.DatabaseConnection();
@@ -3142,7 +3499,14 @@ namespace AIS.Controllers
         public List<OldParasModel> GetOldParasAuditYear()
             {
             var sessionHandler = CreateSessionHandler();
-            var loggedInUser = sessionHandler.GetUserOrThrow();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
+                || string.IsNullOrWhiteSpace(loggedInUser.PPNumber)
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return new List<OldParasModel>();
+                }
 
 
             var con = this.DatabaseConnection();
@@ -3168,7 +3532,14 @@ namespace AIS.Controllers
         public List<OldParasModel> GetOutstandingParasAuditYear()
             {
             var sessionHandler = CreateSessionHandler();
-            var loggedInUser = sessionHandler.GetUserOrThrow();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
+                || string.IsNullOrWhiteSpace(loggedInUser.PPNumber)
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return new List<OldParasModel>();
+                }
 
 
             var con = this.DatabaseConnection();
@@ -3194,7 +3565,14 @@ namespace AIS.Controllers
         public List<UserWiseOldParasPerformanceModel> GetUserWiseOldParasPerformance()
             {
             var sessionHandler = CreateSessionHandler();
-            var loggedInUser = sessionHandler.GetUserOrThrow();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
+                || string.IsNullOrWhiteSpace(loggedInUser.PPNumber)
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return new List<UserWiseOldParasPerformanceModel>();
+                }
 
 
             var con = this.DatabaseConnection();
@@ -3226,7 +3604,14 @@ namespace AIS.Controllers
         public List<StaffPositionModel> GetStaffPosition()
             {
             var sessionHandler = CreateSessionHandler();
-            var loggedInUser = sessionHandler.GetUserOrThrow();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
+                || string.IsNullOrWhiteSpace(loggedInUser.PPNumber)
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return new List<StaffPositionModel>();
+                }
 
             List<StaffPositionModel> list = new List<StaffPositionModel>();
             var con = this.DatabaseConnection();
@@ -3262,7 +3647,14 @@ namespace AIS.Controllers
         public bool AddDivisionalHeadRemarksOnFunctionalLegacyPara(int CONCERNED_DEPT_ID = 0, string COMMENTS = "", int REF_PARA_ID = 0)
             {
             var sessionHandler = CreateSessionHandler();
-            var loggedInUser = sessionHandler.GetUserOrThrow();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
+                || string.IsNullOrWhiteSpace(loggedInUser.PPNumber)
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return false;
+                }
             var con = this.DatabaseConnection();
             using (OracleCommand cmd = con.CreateCommand())
                 {
@@ -3370,7 +3762,14 @@ namespace AIS.Controllers
             var con = this.DatabaseConnection();
 
             var sessionHandler = CreateSessionHandler();
-            var loggedInUser = sessionHandler.GetUserOrThrow();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
+                || string.IsNullOrWhiteSpace(loggedInUser.PPNumber)
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return new List<Glheadsummaryyearlymodel>();
+                }
 
             List<Glheadsummaryyearlymodel> list = new List<Glheadsummaryyearlymodel>();
 
@@ -3425,7 +3824,14 @@ namespace AIS.Controllers
         public List<DepositAccountCatModel> GetDepositCat()
             {
             var sessionHandler = CreateSessionHandler();
-            var loggedInUser = sessionHandler.GetUserOrThrow();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
+                || string.IsNullOrWhiteSpace(loggedInUser.PPNumber)
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return new List<DepositAccountCatModel>();
+                }
             int ENG_ID = this.GetLoggedInUserEngId();
 
             var con = this.DatabaseConnection();
@@ -3462,7 +3868,14 @@ namespace AIS.Controllers
 
             {
             var sessionHandler = CreateSessionHandler();
-            var loggedInUser = sessionHandler.GetUserOrThrow();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
+                || string.IsNullOrWhiteSpace(loggedInUser.PPNumber)
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return new List<DepositAccountCatDetailsModel>();
+                }
             int ENG_ID = this.GetLoggedInUserEngId();
             var con = this.DatabaseConnection();
             List<DepositAccountCatDetailsModel> depositaccsublist = new List<DepositAccountCatDetailsModel>();
@@ -3522,7 +3935,14 @@ namespace AIS.Controllers
             {
             int ENG_ID = this.GetLoggedInUserEngId();
             var sessionHandler = CreateSessionHandler();
-            var loggedInUser = sessionHandler.GetUserOrThrow();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
+                || string.IsNullOrWhiteSpace(loggedInUser.PPNumber)
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return new List<LoanSchemeModel>();
+                }
 
             List<LoanSchemeModel> list = new List<LoanSchemeModel>();
             var con = this.DatabaseConnection();
@@ -3559,7 +3979,14 @@ namespace AIS.Controllers
             {
             int ENG_ID = this.GetLoggedInUserEngId();
             var sessionHandler = CreateSessionHandler();
-            var loggedInUser = sessionHandler.GetUserOrThrow();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
+                || string.IsNullOrWhiteSpace(loggedInUser.PPNumber)
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return new List<LoanSchemeYearlyModel>();
+                }
 
             List<LoanSchemeYearlyModel> list = new List<LoanSchemeYearlyModel>();
             var con = this.DatabaseConnection();
@@ -3606,7 +4033,14 @@ namespace AIS.Controllers
         public DraftReportSummaryModel GetDraftReportSummary(int ENG_ID = 0, int OBS_ID = 0)
             {
             var sessionHandler = CreateSessionHandler();
-            var loggedInUser = sessionHandler.GetUserOrThrow();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
+                || string.IsNullOrWhiteSpace(loggedInUser.PPNumber)
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return new DraftReportSummaryModel();
+                }
             List<ManageObservations> paras = new List<ManageObservations>();
             DraftReportSummaryModel list = new DraftReportSummaryModel();
 
@@ -3643,7 +4077,14 @@ namespace AIS.Controllers
         public List<SpecialAuditPlanModel> GetSaveSpecialAuditPlan()
             {
             var sessionHandler = CreateSessionHandler();
-            var loggedInUser = sessionHandler.GetUserOrThrow();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
+                || string.IsNullOrWhiteSpace(loggedInUser.PPNumber)
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return new List<SpecialAuditPlanModel>();
+                }
             var list = new List<SpecialAuditPlanModel>();
             try
                 {
@@ -3700,7 +4141,14 @@ namespace AIS.Controllers
         public string AddSpecialAuditPlan(string NATURE, string PERIOD, string ENTITY_ID, string NO_DAYS, string PLAN_ID, string INDICATOR)
             {
             var sessionHandler = CreateSessionHandler();
-            var loggedInUser = sessionHandler.GetUserOrThrow();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
+                || string.IsNullOrWhiteSpace(loggedInUser.PPNumber)
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return string.Empty;
+                }
             string resp = "";
             var list = new List<SpecialAuditPlanModel>();
             try
@@ -3745,7 +4193,14 @@ namespace AIS.Controllers
         public string DeleteSpecialAuditPlan(string PLAN_ID, string INDICATOR)
             {
             var sessionHandler = CreateSessionHandler();
-            var loggedInUser = sessionHandler.GetUserOrThrow();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
+                || string.IsNullOrWhiteSpace(loggedInUser.PPNumber)
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return string.Empty;
+                }
             string resp = "";
 
             try
@@ -3787,7 +4242,14 @@ namespace AIS.Controllers
         public string SubmitSpecialAuditPlan(string PLAN_ID, string INDICATOR)
             {
             var sessionHandler = CreateSessionHandler();
-            var loggedInUser = sessionHandler.GetUserOrThrow();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
+                || string.IsNullOrWhiteSpace(loggedInUser.PPNumber)
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return string.Empty;
+                }
             string resp = "";
 
             try
@@ -3841,7 +4303,14 @@ namespace AIS.Controllers
             {
             var sessionHandler = CreateSessionHandler();
             var con = this.DatabaseConnection();
-            var loggedInUser = sessionHandler.GetUserOrThrow();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
+                || string.IsNullOrWhiteSpace(loggedInUser.PPNumber)
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return string.Empty;
+                }
             string resp = "";
 
             using (OracleCommand cmd = con.CreateCommand())
@@ -3874,7 +4343,14 @@ namespace AIS.Controllers
         public List<MenuPagesModel> GetMenuPagesId(string Page_Path)
             {
             var sessionHandler = CreateSessionHandler();
-            var loggedInUser = sessionHandler.GetUserOrThrow();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
+                || string.IsNullOrWhiteSpace(loggedInUser.PPNumber)
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return new List<MenuPagesModel>();
+                }
 
 
             var con = this.DatabaseConnection();

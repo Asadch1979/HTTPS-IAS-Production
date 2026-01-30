@@ -30,7 +30,8 @@ namespace AIS.Controllers
             {
             ViewData["TopMenu"] = tm.GetTopMenus();
             ViewData["TopMenuPages"] = tm.GetTopMenusPages();
-            ViewData["UserEntityName"] = sessionHandler.GetUserOrThrow().UserEntityName;
+            var loggedInUser = sessionHandler.GetUser();
+            ViewData["UserEntityName"] = loggedInUser?.UserEntityName ?? string.Empty;
             if (!User.Identity.IsAuthenticated)
                 return RedirectToAction("Index", "Login");
             else
@@ -47,7 +48,8 @@ namespace AIS.Controllers
             {
             ViewData["TopMenu"] = tm.GetTopMenus();
             ViewData["TopMenuPages"] = tm.GetTopMenusPages();
-            ViewData["UserEntityName"] = sessionHandler.GetUserOrThrow().UserEntityName;
+            var loggedInUser = sessionHandler.GetUser();
+            ViewData["UserEntityName"] = loggedInUser?.UserEntityName ?? string.Empty;
             ViewData["Userrelationship"] = dBConnection.GetrealtionshiptypeForCAU();
             if (!User.Identity.IsAuthenticated)
                 return RedirectToAction("Index", "Login");
@@ -65,7 +67,8 @@ namespace AIS.Controllers
             {
             ViewData["TopMenu"] = tm.GetTopMenus();
             ViewData["TopMenuPages"] = tm.GetTopMenusPages();
-            ViewData["UserEntityName"] = sessionHandler.GetUserOrThrow().UserEntityName;
+            var loggedInUser = sessionHandler.GetUser();
+            ViewData["UserEntityName"] = loggedInUser?.UserEntityName ?? string.Empty;
             if (!User.Identity.IsAuthenticated)
                 return RedirectToAction("Index", "Login");
             else
@@ -82,7 +85,8 @@ namespace AIS.Controllers
             {
             ViewData["TopMenu"] = tm.GetTopMenus();
             ViewData["TopMenuPages"] = tm.GetTopMenusPages();
-            ViewData["UserEntityName"] = sessionHandler.GetUserOrThrow().UserEntityName;
+            var loggedInUser = sessionHandler.GetUser();
+            ViewData["UserEntityName"] = loggedInUser?.UserEntityName ?? string.Empty;
             if (!User.Identity.IsAuthenticated)
                 return RedirectToAction("Index", "Login");
             else
@@ -99,7 +103,8 @@ namespace AIS.Controllers
             {
             ViewData["TopMenu"] = tm.GetTopMenus();
             ViewData["TopMenuPages"] = tm.GetTopMenusPages();
-            ViewData["UserEntityName"] = sessionHandler.GetUserOrThrow().UserEntityName;
+            var loggedInUser = sessionHandler.GetUser();
+            ViewData["UserEntityName"] = loggedInUser?.UserEntityName ?? string.Empty;
             if (!User.Identity.IsAuthenticated)
                 return RedirectToAction("Index", "Login");
             else
@@ -116,7 +121,8 @@ namespace AIS.Controllers
             {
             ViewData["TopMenu"] = tm.GetTopMenus();
             ViewData["TopMenuPages"] = tm.GetTopMenusPages();
-            ViewData["UserEntityName"] = sessionHandler.GetUserOrThrow().UserEntityName;
+            var loggedInUser = sessionHandler.GetUser();
+            ViewData["UserEntityName"] = loggedInUser?.UserEntityName ?? string.Empty;
             if (!User.Identity.IsAuthenticated)
                 return RedirectToAction("Index", "Login");
             else

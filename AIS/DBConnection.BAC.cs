@@ -12,7 +12,14 @@ namespace AIS.Controllers
           public List<BACAgendaModel> GetBACAgenda(int MEETING_NO)
             {
             var sessionHandler = CreateSessionHandler();
-            var loggedInUser = sessionHandler.GetUserOrThrow();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
+                || string.IsNullOrWhiteSpace(loggedInUser.PPNumber)
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return new List<BACAgendaModel>();
+                }
             var con = this.DatabaseConnection();
             List<BACAgendaModel> pdetails = new List<BACAgendaModel>();
             using (OracleCommand cmd = con.CreateCommand())
@@ -41,7 +48,14 @@ namespace AIS.Controllers
         public List<BACAgendaModel> GetBACAMeetingSummary(int MEETING_NO)
             {
             var sessionHandler = CreateSessionHandler();
-            var loggedInUser = sessionHandler.GetUserOrThrow();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
+                || string.IsNullOrWhiteSpace(loggedInUser.PPNumber)
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return new List<BACAgendaModel>();
+                }
             var con = this.DatabaseConnection();
             List<BACAgendaModel> pdetails = new List<BACAgendaModel>();
             using (OracleCommand cmd = con.CreateCommand())
@@ -70,7 +84,14 @@ namespace AIS.Controllers
         public List<BACAgendaActionablesSummaryModel> GetBACAgendaActionablesConsolidatedSummary()
             {
             var sessionHandler = CreateSessionHandler();
-            var loggedInUser = sessionHandler.GetUserOrThrow();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
+                || string.IsNullOrWhiteSpace(loggedInUser.PPNumber)
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return new List<BACAgendaActionablesSummaryModel>();
+                }
             var con = this.DatabaseConnection();
             List<BACAgendaActionablesSummaryModel> pdetails = new List<BACAgendaActionablesSummaryModel>();
             using (OracleCommand cmd = con.CreateCommand())
@@ -96,7 +117,14 @@ namespace AIS.Controllers
         public List<BACAgendaActionablesSummaryModel> GetBACAgendaActionablesSummary()
             {
             var sessionHandler = CreateSessionHandler();
-            var loggedInUser = sessionHandler.GetUserOrThrow();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
+                || string.IsNullOrWhiteSpace(loggedInUser.PPNumber)
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return new List<BACAgendaActionablesSummaryModel>();
+                }
             var con = this.DatabaseConnection();
             List<BACAgendaActionablesSummaryModel> pdetails = new List<BACAgendaActionablesSummaryModel>();
             using (OracleCommand cmd = con.CreateCommand())
@@ -127,7 +155,14 @@ namespace AIS.Controllers
         public List<BACAgendaActionablesModel> GetBACAgendaActionables(string STATUS)
             {
             var sessionHandler = CreateSessionHandler();
-            var loggedInUser = sessionHandler.GetUserOrThrow();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
+                || string.IsNullOrWhiteSpace(loggedInUser.PPNumber)
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return new List<BACAgendaActionablesModel>();
+                }
             var con = this.DatabaseConnection();
             List<BACAgendaActionablesModel> pdetails = new List<BACAgendaActionablesModel>();
             using (OracleCommand cmd = con.CreateCommand())
@@ -164,7 +199,14 @@ namespace AIS.Controllers
         public List<BACAgendaActionablesModel> GetBACAgendaActionablesWithMeetingNo(string STATUS, string MEETING_NO)
             {
             var sessionHandler = CreateSessionHandler();
-            var loggedInUser = sessionHandler.GetUserOrThrow();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
+                || string.IsNullOrWhiteSpace(loggedInUser.PPNumber)
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return new List<BACAgendaActionablesModel>();
+                }
             var con = this.DatabaseConnection();
             List<BACAgendaActionablesModel> pdetails = new List<BACAgendaActionablesModel>();
             using (OracleCommand cmd = con.CreateCommand())
@@ -202,7 +244,14 @@ namespace AIS.Controllers
         public List<BACCIAAnalysisOptionsModel> GetBACCIAAnalysisOptions()
             {
             var sessionHandler = CreateSessionHandler();
-            var loggedInUser = sessionHandler.GetUserOrThrow();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
+                || string.IsNullOrWhiteSpace(loggedInUser.PPNumber)
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return new List<BACCIAAnalysisOptionsModel>();
+                }
             var con = this.DatabaseConnection();
 
             List<BACCIAAnalysisOptionsModel> pdetails = new List<BACCIAAnalysisOptionsModel>();
@@ -231,7 +280,14 @@ namespace AIS.Controllers
         public List<BACCIAAnalysisModel> GetBACCIAAnalysis(int processId)
             {
             var sessionHandler = CreateSessionHandler();
-            var loggedInUser = sessionHandler.GetUserOrThrow();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
+                || string.IsNullOrWhiteSpace(loggedInUser.PPNumber)
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return new List<BACCIAAnalysisModel>();
+                }
             var con = this.DatabaseConnection();
 
             List<BACCIAAnalysisModel> pdetails = new List<BACCIAAnalysisModel>();
@@ -264,7 +320,14 @@ namespace AIS.Controllers
         public List<FunctionalAnnexureWiseObservationModel> GetAnalysisDetailPara(int PROCESS_ID)
             {
             var sessionHandler = CreateSessionHandler();
-            var loggedInUser = sessionHandler.GetUserOrThrow();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
+                || string.IsNullOrWhiteSpace(loggedInUser.PPNumber)
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return new List<FunctionalAnnexureWiseObservationModel>();
+                }
             var con = this.DatabaseConnection();
 
             List<FunctionalAnnexureWiseObservationModel> pdetails = new List<FunctionalAnnexureWiseObservationModel>();
@@ -297,7 +360,14 @@ namespace AIS.Controllers
         public List<FunctionalAnnexureWiseObservationModel> GetAnalysisSummaryPara(int PROCESS_ID)
             {
             var sessionHandler = CreateSessionHandler();
-            var loggedInUser = sessionHandler.GetUserOrThrow();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
+                || string.IsNullOrWhiteSpace(loggedInUser.PPNumber)
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return new List<FunctionalAnnexureWiseObservationModel>();
+                }
             var con = this.DatabaseConnection();
 
             List<FunctionalAnnexureWiseObservationModel> pdetails = new List<FunctionalAnnexureWiseObservationModel>();
