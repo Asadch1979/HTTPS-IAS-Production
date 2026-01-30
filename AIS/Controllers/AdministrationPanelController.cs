@@ -366,8 +366,8 @@ namespace AIS.Controllers
                 || string.IsNullOrWhiteSpace(loggedInUser.PPNumber)
                 || loggedInUser.UserRoleID <= 0)
                 {
-                ViewData["GMOffList"] = new List<GMOfficeModel>();
-                ViewData["ReportingOffList"] = new List<ReportingOfficeModel>();
+                ViewData["GMOffList"] = new List<AuditeeEntitiesModel>();
+                ViewData["ReportingOffList"] = new List<AuditeeEntitiesModel>();
                 }
             else if (loggedInUser.UserRoleID == 1)
                 {
@@ -1179,5 +1179,9 @@ namespace AIS.Controllers
             {
             return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
             }
+        }
+
+    internal class GMOfficeModel
+        {
         }
     }

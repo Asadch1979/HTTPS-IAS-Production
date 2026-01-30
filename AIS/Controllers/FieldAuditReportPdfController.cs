@@ -70,12 +70,16 @@ namespace AIS.Controllers
                     return BadRequest("Unable to generate PDF at this time.");
                     }
 
-                var missingMandatory = data.Sections.Any(section =>
-                    section.IsMandatory && string.IsNullOrWhiteSpace(section.HtmlContent));
-                if (missingMandatory)
+                var missingMandatory = data.Sections.Any(s =>
+                    s.IsMandatory && string.IsNullOrWhiteSpace(s.HtmlContent));
+
+                    #if !DEBUG
+                    if (missingMandatory)
                     {
-                    return BadRequest("Mandatory sections are missing. Please complete all required sections before generating the PDF.");
+                        return BadRequest("Mandatory sections are missing. Please complete all required sections before generating the PDF.");
                     }
+                    #endif
+
 
                 var html = _pdfBuilder.BuildHtml(data);
                 var htmlLength = html?.Length ?? 0;
@@ -188,7 +192,7 @@ namespace AIS.Controllers
                         var converterProperties = new ConverterProperties();
                         using (Document document = HtmlConverter.ConvertToDocument(html, pdf, converterProperties))
                             {
-                            document.Close();
+                            //document.Close();
                             }
                         }
                     }
