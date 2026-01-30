@@ -144,14 +144,12 @@ namespace AIS.Controllers
                 return authorizationResult;
                 }
 
-            if (requestedEngagementId.HasValue)
+            if (!requestedEngagementId.HasValue || requestedEngagementId.Value <= 0)
                 {
-                engId = requestedEngagementId.Value;
+                return BadRequest("engId is required.");
                 }
-            else if (!_sessionHandler.TryGetActiveEngagementId(out engId))
-                {
-                return BadRequest("An active engagement is required before generating the report.");
-                }
+
+            engId = requestedEngagementId.Value;
 
             if (!IsEngagementAuthorized(engId))
                 {
