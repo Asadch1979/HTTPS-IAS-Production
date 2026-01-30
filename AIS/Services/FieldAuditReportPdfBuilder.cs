@@ -3,9 +3,11 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace AIS.Services
     {
@@ -52,18 +54,33 @@ namespace AIS.Services
             sb.AppendLine(".grid th{ background:#f6f8fa; font-weight:700; text-align:center; }");
             sb.AppendLine(".grid td{ text-align:center; }");
             sb.AppendLine(".grid td.left{ text-align:left; }");
-            sb.AppendLine(".report-header{ border:1px solid #d0d7de; padding:12px 14px; border-radius:8px; margin-bottom:14px; }");
-            sb.AppendLine(".report-header .title{ font-size:18px; font-weight:700; margin:0 0 6px 0; }");
-            sb.AppendLine(".report-header .meta{ font-size:12px; color:#333; line-height:1.5; }");
+            sb.AppendLine(".grid th.left{ text-align:left; }");
             sb.AppendLine(".section { page-break-after: auto; }");
+            sb.AppendLine(".cover-page{ text-align:center; }");
+            sb.AppendLine(".cover-logo{ text-align:left; margin-bottom:18px; }");
+            sb.AppendLine(".cover-logo img{ height:70px; }");
+            sb.AppendLine(".cover-headings{ margin:10px 0 18px; }");
+            sb.AppendLine(".cover-headings .bank-name{ font-size:18pt; font-weight:700; margin:0; }");
+            sb.AppendLine(".cover-headings .division{ font-size:13pt; margin-top:6px; }");
+            sb.AppendLine(".cover-headings .report-title{ font-size:15pt; font-weight:700; margin-top:10px; }");
+            sb.AppendLine(".cover-box{ border:1px solid #111; padding:16px 18px; margin:16px auto 0; width:68%; text-align:left; }");
+            sb.AppendLine(".cover-box table{ border:none; margin:0; }");
+            sb.AppendLine(".cover-box td{ border:none; padding:4px 6px; }");
+            sb.AppendLine(".cover-confidential{ margin-top:22px; font-weight:700; }");
             sb.AppendLine(".section-title{ font-size:14px; font-weight:700; margin:18px 0 10px 0; padding:8px 10px; border-left:4px solid #111; background:#f6f8fa; }");
+            sb.AppendLine(".exec-summary{ line-height:1.8; text-align:justify; }");
+            sb.AppendLine(".exec-summary p{ margin:0 0 10px; }");
+            sb.AppendLine(".chart-block{ margin:12px 0; text-align:center; }");
+            sb.AppendLine(".chart-img{ width:100%; max-height:260px; object-fit:contain; }");
+            sb.AppendLine(".chart-caption{ font-size:11px; color:#444; margin-top:4px; }");
             sb.AppendLine(".meta-grid { width: 100%; }");
             sb.AppendLine(".meta-label { width: 35%; font-weight: bold; }");
             sb.AppendLine(".paragraph { margin: 6pt 0; }");
             sb.AppendLine(".para-box{ border:1px solid #d0d7de; border-radius:8px; padding:12px 14px; margin:10px 0; background:#fff; page-break-inside:avoid; break-inside:avoid; }");
             sb.AppendLine(".para-title{ font-weight:700; font-size:13px; margin:0 0 8px 0; color:#111; }");
-            sb.AppendLine(".para-body{ font-size:13px; line-height:1.6; text-align:justify; white-space:normal !important; overflow-wrap:anywhere; color:#212529; width:100%; }");
-            sb.AppendLine(".para-body *{ white-space:normal !important; overflow-wrap:anywhere; }");
+            sb.AppendLine(".para-body{ font-size:12px; line-height:1.6; text-align:justify; white-space:normal !important; overflow-wrap:anywhere; color:#212529; width:100%; }");
+            sb.AppendLine(".para-body *{ font-size:12px !important; white-space:normal !important; overflow-wrap:anywhere; }");
+            sb.AppendLine(".para-body h1,.para-body h2,.para-body h3{ font-size:13px !important; margin:6px 0 !important; }");
             sb.AppendLine(".para-body table{ width:100%; border-collapse:collapse; margin-top:10px; }");
             sb.AppendLine(".para-body table th,.para-body table td{ border:1px solid #222; padding:4px 6px; vertical-align:top; }");
             sb.AppendLine(".para-sep{ border:0; border-top:1px solid #d0d7de; margin:14px 0; }");
@@ -99,44 +116,90 @@ namespace AIS.Services
             {
             var header = data.Header ?? new FieldAuditPdfHeaderModel();
             var meta = data.ReportMeta ?? new FieldAuditPdfReportMetaModel();
-            sb.AppendLine("<section class=\"section title-page\">");
-            sb.AppendLine("<div class=\"report-header\">");
-            sb.AppendLine("<h1 class=\"title\">Field Audit Report</h1>");
-            sb.AppendLine("<table class=\"meta-grid meta\">");
-            AppendMetaRow(sb, "Bank Name", header.BankName);
-            AppendMetaRow(sb, "Internal Audit Division", header.InternalAuditDivision);
-            AppendMetaRow(sb, "Branch Name", header.BranchName);
+            var logoDataUri = GetLogoDataUri();
+            var bankName = string.IsNullOrWhiteSpace(header.BankName) ? "Zarai Taraqiati Bank Limited" : header.BankName;
+            var division = string.IsNullOrWhiteSpace(header.InternalAuditDivision) ? "Internal Audit Division" : header.InternalAuditDivision;
+
+            sb.AppendLine("<section class=\"section cover-page\">");
+            if (!string.IsNullOrWhiteSpace(logoDataUri))
+                {
+                sb.AppendLine("<div class=\"cover-logo\">");
+                sb.AppendFormat(CultureInfo.InvariantCulture, "<img src=\"{0}\" alt=\"ZTBL logo\" />", logoDataUri);
+                sb.AppendLine("</div>");
+                }
+            sb.AppendLine("<div class=\"cover-headings\">");
+            sb.AppendFormat(CultureInfo.InvariantCulture, "<div class=\"bank-name\">{0}</div>", Encode(bankName));
+            sb.AppendFormat(CultureInfo.InvariantCulture, "<div class=\"division\">{0}</div>", Encode(division));
+            sb.AppendLine("<div class=\"report-title\">Field Audit Report</div>");
+            sb.AppendLine("</div>");
+            sb.AppendLine("<div class=\"cover-box\">");
+            sb.AppendLine("<table class=\"meta-grid\">");
+            AppendMetaRow(sb, "Entity", header.EntityName);
             AppendMetaRow(sb, "Branch Code", header.BranchCode);
-            AppendMetaRow(sb, "Audit Period", header.AuditPeriod ?? meta.AuditPeriod);
+            AppendMetaRow(sb, "Period", header.AuditPeriod ?? meta.AuditPeriod);
             AppendMetaRow(sb, "Audit Dates", FormatDateRange(header.AuditStartDate, header.AuditEndDate));
-            AppendMetaRow(sb, "Report Status", meta.ReportStatus ?? header.ReportStatus);
-            AppendMetaRow(sb, "Version Number", meta.VersionNumber ?? header.VersionNumber);
+            AppendMetaRow(sb, "Status", meta.ReportStatus ?? header.ReportStatus);
+            AppendMetaRow(sb, "Version", meta.VersionNumber ?? header.VersionNumber);
             sb.AppendLine("</table>");
             sb.AppendLine("</div>");
+            sb.AppendLine("<div class=\"cover-confidential\">Confidential \u2013 Internal Use Only</div>");
             sb.AppendLine("</section>");
             }
 
         private static void AppendExecutiveSummary(StringBuilder sb, FieldAuditPdfReportData data)
             {
-            sb.AppendLine("<section class=\"section\">");
+            var factsContent = FindSectionContent(data, "EXEC_SUMMARY_FACTS", "Executive Summary – Facts");
+            var conclusionContent = FindSectionContent(data, "EXEC_SUMMARY_CONCLUSION", "Executive Summary – Conclusion & Key Messages");
+            var factsText = NormalizeToParagraphs(factsContent);
+            var conclusionText = NormalizeToParagraphs(conclusionContent);
+
+            if (string.IsNullOrWhiteSpace(factsText) && string.IsNullOrWhiteSpace(conclusionText))
+                {
+                return;
+                }
+
+            sb.AppendLine("<section class=\"section page-break\">");
             sb.AppendLine("<h2 class=\"section-title\">Executive Summary</h2>");
-            AppendNarrativeBlock(sb, "Executive Summary – Facts", FindSectionContent(data, "EXEC_SUMMARY_FACTS", "Executive Summary – Facts"));
-            AppendNarrativeBlock(sb, "Executive Summary – Conclusion &amp; Key Messages", FindSectionContent(data, "EXEC_SUMMARY_CONCLUSION", "Executive Summary – Conclusion & Key Messages"));
+            sb.AppendLine("<div class=\"exec-summary\">");
+            if (!string.IsNullOrWhiteSpace(factsText))
+                {
+                sb.AppendLine("<p><strong>Executive Summary \u2013 Facts</strong></p>");
+                sb.AppendFormat(CultureInfo.InvariantCulture, "<p>{0}</p>", factsText);
+                }
+            if (!string.IsNullOrWhiteSpace(conclusionText))
+                {
+                sb.AppendLine("<p><strong>Executive Summary \u2013 Conclusion &amp; Key Messages</strong></p>");
+                sb.AppendFormat(CultureInfo.InvariantCulture, "<p>{0}</p>", conclusionText);
+                }
+            sb.AppendLine("</div>");
             sb.AppendLine("</section>");
             }
 
         private static void AppendBranchProfile(StringBuilder sb, FieldAuditPdfReportData data)
             {
             var header = data.Header ?? new FieldAuditPdfHeaderModel();
+            var narrative = FindSectionContent(data, "BRANCH_PROFILE", "Branch Profile");
+
+            var hasHeaderData = !string.IsNullOrWhiteSpace(header.BranchName)
+                || !string.IsNullOrWhiteSpace(header.BranchCode)
+                || !string.IsNullOrWhiteSpace(header.AuditPeriod)
+                || header.AuditStartDate.HasValue
+                || header.AuditEndDate.HasValue;
+
+            var profileRows = header.BranchProfileRows?.Where(row => !string.IsNullOrWhiteSpace(row.Label)).ToList()
+                ?? new List<FieldAuditPdfKeyValueModel>();
+
+            if (profileRows.Count == 0 && !hasHeaderData && !HasMeaningfulContent(narrative))
+                {
+                return;
+                }
+
             sb.AppendLine("<section class=\"section\">");
             sb.AppendLine("<h2 class=\"section-title\">Branch / Entity Profile</h2>");
             sb.AppendLine("<h3>Branch Profile</h3>");
             sb.AppendLine("<table>");
             sb.AppendLine("<thead><tr><th>Profile Item</th><th>Details</th></tr></thead>");
             sb.AppendLine("<tbody>");
-
-            var profileRows = header.BranchProfileRows?.Where(row => !string.IsNullOrWhiteSpace(row.Label)).ToList()
-                ?? new List<FieldAuditPdfKeyValueModel>();
 
             if (profileRows.Count == 0)
                 {
@@ -156,18 +219,24 @@ namespace AIS.Services
             sb.AppendLine("</tbody>");
             sb.AppendLine("</table>");
 
-            AppendNarrativeBlock(sb, "Key Statistics Narrative", FindSectionContent(data, "BRANCH_PROFILE", "Branch Profile"));
+            AppendNarrativeBlock(sb, "Key Statistics Narrative", narrative);
             sb.AppendLine("</section>");
             }
 
         private static void AppendStaffPosition(StringBuilder sb, FieldAuditPdfReportData data)
             {
+            var rows = data.StaffRows ?? new List<FieldAuditPdfStaffRowModel>();
+            if (!rows.Any(row => HasMeaningfulContent(row.Designation) || row.Strength.HasValue || row.AsOfDate.HasValue))
+                {
+                return;
+                }
+
             sb.AppendLine("<section class=\"section\">");
             sb.AppendLine("<h2 class=\"section-title\">Staff Position</h2>");
             sb.AppendLine("<table>");
             sb.AppendLine("<thead><tr><th>Designation</th><th>Strength</th><th>As-of Date</th></tr></thead>");
             sb.AppendLine("<tbody>");
-            foreach (var row in data.StaffRows ?? new List<FieldAuditPdfStaffRowModel>())
+            foreach (var row in rows)
                 {
                 sb.AppendLine("<tr>");
                 sb.AppendFormat(CultureInfo.InvariantCulture, "<td>{0}</td>", Encode(row.Designation));
@@ -182,140 +251,166 @@ namespace AIS.Services
 
         private static void AppendKpiSnapshot(StringBuilder sb, FieldAuditPdfReportData data)
             {
-            sb.AppendLine("<section class=\"section\">");
-            sb.AppendLine("<h2 class=\"section-title\">KPI Snapshot</h2>");
             var kpiRows = data.KpiRows ?? new List<FieldAuditPdfKpiRowModel>();
-            var periods = kpiRows.Select(row => row.PeriodEndDate)
-                .Where(date => date.HasValue)
-                .Select(date => date.Value)
-                .Distinct()
-                .OrderBy(date => date)
-                .ToList();
-
-            var startDate = periods.Count > 0 ? periods.First() : (DateTime?)null;
-            var endDate = periods.Count > 0 ? periods.Last() : (DateTime?)null;
-
-            sb.AppendLine("<table class=\"grid\">");
-            sb.AppendLine("<thead>");
-            sb.AppendLine("<tr>");
-            sb.AppendLine("<th rowspan=\"2\" style=\"width:40px\">Sr. No.</th>");
-            sb.AppendLine("<th rowspan=\"2\">KPIs</th>");
-            sb.AppendLine("<th colspan=\"1\">As on Date of Audit</th>");
-            sb.AppendLine("<th colspan=\"3\">Audit Operation Period Start date (Rs. in Millions)</th>");
-            sb.AppendLine("<th colspan=\"3\">Audit Operation Period End Date (Rs. in Millions)</th>");
-            sb.AppendLine("</tr>");
-            sb.AppendLine("<tr>");
-            sb.AppendLine("<th>Actual</th>");
-            sb.AppendLine("<th>Target</th><th>Actual</th><th>%age</th>");
-            sb.AppendLine("<th>Target</th><th>Actual</th><th>%age</th>");
-            sb.AppendLine("</tr>");
-            sb.AppendLine("</thead>");
-            sb.AppendLine("<tbody>");
-
-            var groupedKpis = kpiRows.GroupBy(row =>
-                string.IsNullOrWhiteSpace(row.KpiCode) ? row.KpiLabel ?? string.Empty : row.KpiCode);
-            var index = 1;
-            foreach (var group in groupedKpis.OrderBy(group => group.Key))
+            var chartContent = FindSectionContent(data, "KPI_CHART", "KPI Chart") ?? FindSectionContent(data, "FRPT_SECTION_KPI", "KPI Snapshot");
+            var chartImages = ExtractChartImages(chartContent);
+            if (kpiRows.Count == 0 && chartImages.Count == 0)
                 {
-                var kpiLabel = group.Select(row => row.KpiLabel).FirstOrDefault(label => !string.IsNullOrWhiteSpace(label))
-                    ?? group.Key;
-                var startRow = GetKpiRowForDate(group, startDate);
-                var endRow = GetKpiRowForDate(group, endDate);
-                var latestRow = group.Where(row => row.PeriodEndDate.HasValue)
-                    .OrderByDescending(row => row.PeriodEndDate.Value)
-                    .FirstOrDefault();
-
-                sb.AppendLine("<tr>");
-                sb.AppendFormat(CultureInfo.InvariantCulture, "<td>{0}</td>", index++);
-                sb.AppendFormat(CultureInfo.InvariantCulture, "<td class=\"left\">{0}</td>", Encode(kpiLabel));
-                sb.AppendFormat(CultureInfo.InvariantCulture, "<td>{0}</td>", FormatNumber((endRow ?? latestRow)?.ActualValue));
-                sb.AppendFormat(CultureInfo.InvariantCulture, "<td>{0}</td>", FormatNumber(startRow?.TargetValue));
-                sb.AppendFormat(CultureInfo.InvariantCulture, "<td>{0}</td>", FormatNumber(startRow?.ActualValue));
-                sb.AppendFormat(CultureInfo.InvariantCulture, "<td>{0}</td>", FormatPercent(startRow?.ActualValue, startRow?.TargetValue));
-                sb.AppendFormat(CultureInfo.InvariantCulture, "<td>{0}</td>", FormatNumber(endRow?.TargetValue));
-                sb.AppendFormat(CultureInfo.InvariantCulture, "<td>{0}</td>", FormatNumber(endRow?.ActualValue));
-                sb.AppendFormat(CultureInfo.InvariantCulture, "<td>{0}</td>", FormatPercent(endRow?.ActualValue, endRow?.TargetValue));
-                sb.AppendLine("</tr>");
+                return;
                 }
 
-            sb.AppendLine("</tbody>");
-            sb.AppendLine("</table>");
+            sb.AppendLine("<section class=\"section\">");
+            sb.AppendLine("<h2 class=\"section-title\">KPI Snapshot</h2>");
+            sb.AppendLine("<div class=\"avoid-break\">");
+            AppendChartBlocks(sb, chartImages, "KPI Snapshot Chart");
+            if (kpiRows.Count > 0)
+                {
+                var periods = kpiRows.Select(row => row.PeriodEndDate)
+                    .Where(date => date.HasValue)
+                    .Select(date => date.Value)
+                    .Distinct()
+                    .OrderBy(date => date)
+                    .ToList();
+
+                var startDate = periods.Count > 0 ? periods.First() : (DateTime?)null;
+                var endDate = periods.Count > 0 ? periods.Last() : (DateTime?)null;
+
+                sb.AppendLine("<table class=\"grid\">");
+                sb.AppendLine("<thead>");
+                sb.AppendLine("<tr>");
+                sb.AppendLine("<th rowspan=\"2\" style=\"width:40px\">Sr. No.</th>");
+                sb.AppendLine("<th rowspan=\"2\">KPIs</th>");
+                sb.AppendLine("<th colspan=\"1\">As on Date of Audit</th>");
+                sb.AppendLine("<th colspan=\"3\">Audit Operation Period Start date (Rs. in Millions)</th>");
+                sb.AppendLine("<th colspan=\"3\">Audit Operation Period End Date (Rs. in Millions)</th>");
+                sb.AppendLine("</tr>");
+                sb.AppendLine("<tr>");
+                sb.AppendLine("<th>Actual</th>");
+                sb.AppendLine("<th>Target</th><th>Actual</th><th>%age</th>");
+                sb.AppendLine("<th>Target</th><th>Actual</th><th>%age</th>");
+                sb.AppendLine("</tr>");
+                sb.AppendLine("</thead>");
+                sb.AppendLine("<tbody>");
+
+                var groupedKpis = kpiRows.GroupBy(row =>
+                    string.IsNullOrWhiteSpace(row.KpiCode) ? row.KpiLabel ?? string.Empty : row.KpiCode);
+                var index = 1;
+                foreach (var group in groupedKpis.OrderBy(group => group.Key))
+                    {
+                    var kpiLabel = group.Select(row => row.KpiLabel).FirstOrDefault(label => !string.IsNullOrWhiteSpace(label))
+                        ?? group.Key;
+                    var startRow = GetKpiRowForDate(group, startDate);
+                    var endRow = GetKpiRowForDate(group, endDate);
+                    var latestRow = group.Where(row => row.PeriodEndDate.HasValue)
+                        .OrderByDescending(row => row.PeriodEndDate.Value)
+                        .FirstOrDefault();
+
+                    sb.AppendLine("<tr>");
+                    sb.AppendFormat(CultureInfo.InvariantCulture, "<td>{0}</td>", index++);
+                    sb.AppendFormat(CultureInfo.InvariantCulture, "<td class=\"left\">{0}</td>", Encode(kpiLabel));
+                    sb.AppendFormat(CultureInfo.InvariantCulture, "<td>{0}</td>", FormatNumber((endRow ?? latestRow)?.ActualValue));
+                    sb.AppendFormat(CultureInfo.InvariantCulture, "<td>{0}</td>", FormatNumber(startRow?.TargetValue));
+                    sb.AppendFormat(CultureInfo.InvariantCulture, "<td>{0}</td>", FormatNumber(startRow?.ActualValue));
+                    sb.AppendFormat(CultureInfo.InvariantCulture, "<td>{0}</td>", FormatPercent(startRow?.ActualValue, startRow?.TargetValue));
+                    sb.AppendFormat(CultureInfo.InvariantCulture, "<td>{0}</td>", FormatNumber(endRow?.TargetValue));
+                    sb.AppendFormat(CultureInfo.InvariantCulture, "<td>{0}</td>", FormatNumber(endRow?.ActualValue));
+                    sb.AppendFormat(CultureInfo.InvariantCulture, "<td>{0}</td>", FormatPercent(endRow?.ActualValue, endRow?.TargetValue));
+                    sb.AppendLine("</tr>");
+                    }
+
+                sb.AppendLine("</tbody>");
+                sb.AppendLine("</table>");
+                }
+            sb.AppendLine("</div>");
             sb.AppendLine("</section>");
             }
 
         private static void AppendNplAnalysis(StringBuilder sb, FieldAuditPdfReportData data)
             {
+            var rows = data.NplRows ?? new List<FieldAuditPdfNplRowModel>();
+            var chartContent = FindSectionContent(data, "NPL_CHART", "NPL Chart") ?? FindSectionContent(data, "FRPT_SECTION_NPL", "NPL Snapshot");
+            var chartImages = ExtractChartImages(chartContent);
+            if (rows.Count == 0 && chartImages.Count == 0)
+                {
+                return;
+                }
+
             sb.AppendLine("<section class=\"section\">");
             sb.AppendLine("<h2 class=\"section-title\">NPL Analysis</h2>");
-            var rows = data.NplRows ?? new List<FieldAuditPdfNplRowModel>();
-            sb.AppendLine("<table class=\"grid\">");
-            sb.AppendLine("<thead>");
-            sb.AppendLine("<tr>");
-            sb.AppendLine("<th rowspan=\"2\" style=\"width:140px\">NPL Portfolio</th>");
-            sb.AppendFormat(CultureInfo.InvariantCulture, "<th colspan=\"3\">{0}</th>", Encode(GetNplDateLabel(rows, true)));
-            sb.AppendFormat(CultureInfo.InvariantCulture, "<th colspan=\"3\">{0}</th>", Encode(GetNplDateLabel(rows, false)));
-            sb.AppendLine("</tr>");
-            sb.AppendLine("<tr>");
-            sb.AppendLine("<th>Cases</th><th>Outstanding Principal (Rs.)</th><th>Provision Amount (Rs.)</th>");
-            sb.AppendLine("<th>Cases</th><th>Outstanding Principal (Rs.)</th><th>Provision Amount (Rs.)</th>");
-            sb.AppendLine("</tr>");
-            sb.AppendLine("</thead>");
-            sb.AppendLine("<tbody>");
-            var orderedDates = rows.Select(row => row.PeriodEndDate)
-                .Where(date => date.HasValue)
-                .Select(date => date.Value.Date)
-                .Distinct()
-                .OrderBy(date => date)
-                .ToList();
-            DateTime? date1 = null;
-            DateTime? date2 = null;
-            if (orderedDates.Count > 0)
+            sb.AppendLine("<div class=\"avoid-break\">");
+            AppendChartBlocks(sb, chartImages, "NPL Composition Chart");
+            if (rows.Count > 0)
                 {
-                if (orderedDates.Count > 2)
+                sb.AppendLine("<table class=\"grid\">");
+                sb.AppendLine("<thead>");
+                sb.AppendLine("<tr>");
+                sb.AppendLine("<th rowspan=\"2\" style=\"width:140px\">NPL Portfolio</th>");
+                sb.AppendFormat(CultureInfo.InvariantCulture, "<th colspan=\"3\">{0}</th>", Encode(GetNplDateLabel(rows, true)));
+                sb.AppendFormat(CultureInfo.InvariantCulture, "<th colspan=\"3\">{0}</th>", Encode(GetNplDateLabel(rows, false)));
+                sb.AppendLine("</tr>");
+                sb.AppendLine("<tr>");
+                sb.AppendLine("<th>Cases</th><th>Outstanding Principal (Rs.)</th><th>Provision Amount (Rs.)</th>");
+                sb.AppendLine("<th>Cases</th><th>Outstanding Principal (Rs.)</th><th>Provision Amount (Rs.)</th>");
+                sb.AppendLine("</tr>");
+                sb.AppendLine("</thead>");
+                sb.AppendLine("<tbody>");
+                var orderedDates = rows.Select(row => row.PeriodEndDate)
+                    .Where(date => date.HasValue)
+                    .Select(date => date.Value.Date)
+                    .Distinct()
+                    .OrderBy(date => date)
+                    .ToList();
+                DateTime? date1 = null;
+                DateTime? date2 = null;
+                if (orderedDates.Count > 0)
                     {
-                    date1 = orderedDates[^2];
-                    date2 = orderedDates[^1];
+                    if (orderedDates.Count > 2)
+                        {
+                        date1 = orderedDates[^2];
+                        date2 = orderedDates[^1];
+                        }
+                    else
+                        {
+                        date1 = orderedDates.First();
+                        date2 = orderedDates.Last();
+                        }
                     }
-                else
-                    {
-                    date1 = orderedDates.First();
-                    date2 = orderedDates.Last();
-                    }
-                }
-            var buckets = new[] { "OAEM", "Substandard", "Doubtful", "Loss" };
-            var totalsDate1 = new NplAggregate();
-            var totalsDate2 = new NplAggregate();
+                var buckets = new[] { "OAEM", "Substandard", "Doubtful", "Loss" };
+                var totalsDate1 = new NplAggregate();
+                var totalsDate2 = new NplAggregate();
 
-            foreach (var bucket in buckets)
-                {
-                var bucketDate1 = AggregateNpl(rows, bucket, date1);
-                var bucketDate2 = AggregateNpl(rows, bucket, date2);
-                totalsDate1.Add(bucketDate1);
-                totalsDate2.Add(bucketDate2);
+                foreach (var bucket in buckets)
+                    {
+                    var bucketDate1 = AggregateNpl(rows, bucket, date1);
+                    var bucketDate2 = AggregateNpl(rows, bucket, date2);
+                    totalsDate1.Add(bucketDate1);
+                    totalsDate2.Add(bucketDate2);
+
+                    sb.AppendLine("<tr>");
+                    sb.AppendFormat(CultureInfo.InvariantCulture, "<td class=\"left\">{0}</td>", Encode(bucket));
+                    sb.AppendFormat(CultureInfo.InvariantCulture, "<td>{0}</td>", FormatInteger(bucketDate1.Cases));
+                    sb.AppendFormat(CultureInfo.InvariantCulture, "<td>{0}</td>", FormatNumber(bucketDate1.Outstanding));
+                    sb.AppendFormat(CultureInfo.InvariantCulture, "<td>{0}</td>", FormatNumber(bucketDate1.Provision));
+                    sb.AppendFormat(CultureInfo.InvariantCulture, "<td>{0}</td>", FormatInteger(bucketDate2.Cases));
+                    sb.AppendFormat(CultureInfo.InvariantCulture, "<td>{0}</td>", FormatNumber(bucketDate2.Outstanding));
+                    sb.AppendFormat(CultureInfo.InvariantCulture, "<td>{0}</td>", FormatNumber(bucketDate2.Provision));
+                    sb.AppendLine("</tr>");
+                    }
 
                 sb.AppendLine("<tr>");
-                sb.AppendFormat(CultureInfo.InvariantCulture, "<td class=\"left\">{0}</td>", Encode(bucket));
-                sb.AppendFormat(CultureInfo.InvariantCulture, "<td>{0}</td>", FormatInteger(bucketDate1.Cases));
-                sb.AppendFormat(CultureInfo.InvariantCulture, "<td>{0}</td>", FormatNumber(bucketDate1.Outstanding));
-                sb.AppendFormat(CultureInfo.InvariantCulture, "<td>{0}</td>", FormatNumber(bucketDate1.Provision));
-                sb.AppendFormat(CultureInfo.InvariantCulture, "<td>{0}</td>", FormatInteger(bucketDate2.Cases));
-                sb.AppendFormat(CultureInfo.InvariantCulture, "<td>{0}</td>", FormatNumber(bucketDate2.Outstanding));
-                sb.AppendFormat(CultureInfo.InvariantCulture, "<td>{0}</td>", FormatNumber(bucketDate2.Provision));
+                sb.AppendFormat(CultureInfo.InvariantCulture, "<td class=\"left\"><strong>Total</strong></td>");
+                sb.AppendFormat(CultureInfo.InvariantCulture, "<td><strong>{0}</strong></td>", FormatInteger(totalsDate1.Cases));
+                sb.AppendFormat(CultureInfo.InvariantCulture, "<td><strong>{0}</strong></td>", FormatNumber(totalsDate1.Outstanding));
+                sb.AppendFormat(CultureInfo.InvariantCulture, "<td><strong>{0}</strong></td>", FormatNumber(totalsDate1.Provision));
+                sb.AppendFormat(CultureInfo.InvariantCulture, "<td><strong>{0}</strong></td>", FormatInteger(totalsDate2.Cases));
+                sb.AppendFormat(CultureInfo.InvariantCulture, "<td><strong>{0}</strong></td>", FormatNumber(totalsDate2.Outstanding));
+                sb.AppendFormat(CultureInfo.InvariantCulture, "<td><strong>{0}</strong></td>", FormatNumber(totalsDate2.Provision));
                 sb.AppendLine("</tr>");
+
+                sb.AppendLine("</tbody>");
+                sb.AppendLine("</table>");
                 }
-
-            sb.AppendLine("<tr>");
-            sb.AppendFormat(CultureInfo.InvariantCulture, "<td class=\"left\"><strong>Total</strong></td>");
-            sb.AppendFormat(CultureInfo.InvariantCulture, "<td><strong>{0}</strong></td>", FormatInteger(totalsDate1.Cases));
-            sb.AppendFormat(CultureInfo.InvariantCulture, "<td><strong>{0}</strong></td>", FormatNumber(totalsDate1.Outstanding));
-            sb.AppendFormat(CultureInfo.InvariantCulture, "<td><strong>{0}</strong></td>", FormatNumber(totalsDate1.Provision));
-            sb.AppendFormat(CultureInfo.InvariantCulture, "<td><strong>{0}</strong></td>", FormatInteger(totalsDate2.Cases));
-            sb.AppendFormat(CultureInfo.InvariantCulture, "<td><strong>{0}</strong></td>", FormatNumber(totalsDate2.Outstanding));
-            sb.AppendFormat(CultureInfo.InvariantCulture, "<td><strong>{0}</strong></td>", FormatNumber(totalsDate2.Provision));
-            sb.AppendLine("</tr>");
-
-            sb.AppendLine("</tbody>");
-            sb.AppendLine("</table>");
+            sb.AppendLine("</div>");
             sb.AppendLine("</section>");
             }
 
@@ -324,6 +419,11 @@ namespace AIS.Services
             var significant = (data.Paras ?? new List<FieldAuditPdfParaModel>())
                 .Where(para => string.Equals(para.Risk, "High", StringComparison.OrdinalIgnoreCase) && para.IsSignificant)
                 .ToList();
+
+            if (significant.Count == 0)
+                {
+                return;
+                }
 
             sb.AppendLine("<section class=\"section\">");
             sb.AppendLine("<h2 class=\"section-title\">Significant Paras (High Risk)</h2>");
@@ -345,12 +445,21 @@ namespace AIS.Services
 
         private static void AppendAuditStatistics(StringBuilder sb, FieldAuditPdfReportData data)
             {
+            var rows = data.StatisticsRows ?? new List<FieldAuditPdfStatisticsRowModel>();
+            if (!rows.Any(row => HasMeaningfulContent(row.RiskLevel)
+                || row.ReportedCount.HasValue
+                || row.RectifiedCount.HasValue
+                || row.OutstandingCount.HasValue))
+                {
+                return;
+                }
+
             sb.AppendLine("<section class=\"section\">");
             sb.AppendLine("<h2 class=\"section-title\">Audit Statistics</h2>");
             sb.AppendLine("<table>");
             sb.AppendLine("<thead><tr><th>Risk</th><th>Reported</th><th>Rectified</th><th>Outstanding</th></tr></thead>");
             sb.AppendLine("<tbody>");
-            foreach (var row in data.StatisticsRows ?? new List<FieldAuditPdfStatisticsRowModel>())
+            foreach (var row in rows)
                 {
                 sb.AppendLine("<tr>");
                 sb.AppendFormat(CultureInfo.InvariantCulture, "<td>{0}</td>", Encode(row.RiskLevel));
@@ -367,7 +476,9 @@ namespace AIS.Services
         private static void AppendIncomeLeakage(StringBuilder sb, FieldAuditPdfReportData data)
             {
             var rows = data.IncomeLeakageRows ?? new List<FieldAuditPdfIncomeLeakageRowModel>();
-            if (rows.Count == 0)
+            if (!rows.Any(row => HasMeaningfulContent(row.Description)
+                || HasMeaningfulContent(row.CaseReference)
+                || row.Amount.HasValue))
                 {
                 return;
                 }
@@ -396,12 +507,19 @@ namespace AIS.Services
 
         private static void AppendNarrativeSections(StringBuilder sb, FieldAuditPdfReportData data)
             {
+            var hasNarrativeContent = NarrativeSectionOrder.Any(title =>
+                HasMeaningfulContent(FindSectionContent(data, null, title)));
+            if (!hasNarrativeContent)
+                {
+                return;
+                }
+
             sb.AppendLine("<section class=\"section\">");
             sb.AppendLine("<h2 class=\"section-title\">Narrative Sections</h2>");
             foreach (var title in NarrativeSectionOrder)
                 {
                 var content = FindSectionContent(data, null, title);
-                if (string.IsNullOrWhiteSpace(content))
+                if (!HasMeaningfulContent(content))
                     {
                     continue;
                     }
@@ -427,19 +545,17 @@ namespace AIS.Services
                 sb.AppendFormat(CultureInfo.InvariantCulture, "<h3>{0} Risk Paras</h3>", Encode(group.Key));
                 foreach (var para in group)
                     {
-                    sb.AppendLine("<div class=\"paragraph\">");
-                    sb.AppendFormat(CultureInfo.InvariantCulture, "<h4>Para {0}</h4>", Encode(para.ParaNo));
-                    AppendKeyValueParagraph(sb, "Annexure Code", para.AnnexureCode);
-                    AppendKeyValueParagraph(sb, "Instances", para.Instances);
-                    AppendKeyValueParagraph(sb, "Amount", para.Amount);
-                    AppendKeyValueParagraph(sb, "Gist", para.Gist);
-                    AppendParaTextBlock(sb, para.ParaDetail);
-                    AppendKeyValueParagraph(sb, "Implications", para.Implications);
-                    AppendKeyValueParagraph(sb, "Recommendations", para.Recommendations);
-                    AppendKeyValueParagraph(sb, "Management Comments", para.ManagementComments);
-                    AppendKeyValueParagraph(sb, "Auditor Comments", para.AuditorComments);
-                    AppendKeyValueParagraph(sb, "Remarks of SVP/In-charge", para.RemarksInCharge);
+                    var paraTitle = string.IsNullOrWhiteSpace(para.Gist)
+                        ? $"Para {Encode(para.ParaNo)}"
+                        : $"Para {Encode(para.ParaNo)}: {Encode(para.Gist)}";
+
+                    sb.AppendLine("<div class=\"para-box\">");
+                    sb.AppendFormat(CultureInfo.InvariantCulture, "<div class=\"para-title\">{0}</div>", paraTitle);
+                    sb.AppendLine("<div class=\"para-body\">");
+                    AppendParaBodyDetails(sb, para);
                     sb.AppendLine("</div>");
+                    sb.AppendLine("</div>");
+                    sb.AppendLine("<hr class=\"para-sep\" />");
                     }
                 }
 
@@ -448,21 +564,36 @@ namespace AIS.Services
 
         private static void AppendStaticClauses(StringBuilder sb, FieldAuditPdfReportData data)
             {
+            var disclaimer = FindSectionContent(data, "DISCLAIMER", "Disclaimer");
+            var restriction = FindSectionContent(data, "RESTRICTION_CLAUSE", "Restriction Clause");
+            if (!HasMeaningfulContent(disclaimer) && !HasMeaningfulContent(restriction))
+                {
+                return;
+                }
+
             sb.AppendLine("<section class=\"section\">");
             sb.AppendLine("<h2 class=\"section-title\">Static Clauses</h2>");
-            AppendNarrativeBlock(sb, "Disclaimer", FindSectionContent(data, "DISCLAIMER", "Disclaimer"));
-            AppendNarrativeBlock(sb, "Restriction Clause", FindSectionContent(data, "RESTRICTION_CLAUSE", "Restriction Clause"));
+            AppendNarrativeBlock(sb, "Disclaimer", disclaimer);
+            AppendNarrativeBlock(sb, "Restriction Clause", restriction);
             sb.AppendLine("</section>");
             }
 
         private static void AppendFooterSection(StringBuilder sb, FieldAuditPdfReportData data)
             {
             var meta = data.ReportMeta ?? new FieldAuditPdfReportMetaModel();
+            var generatedBy = meta.GeneratedBy;
+            var generatedOn = FormatDate(meta.GeneratedOn);
             sb.AppendLine("<section class=\"section\">");
             sb.AppendLine("<h2 class=\"section-title\">Footer</h2>");
             sb.AppendLine("<table class=\"meta-grid\">");
-            AppendMetaRow(sb, "Generated By", meta.GeneratedBy);
-            AppendMetaRow(sb, "Generated On", FormatDate(meta.GeneratedOn));
+            if (!string.IsNullOrWhiteSpace(generatedBy))
+                {
+                AppendMetaRow(sb, "Generated By", generatedBy);
+                }
+            if (!string.IsNullOrWhiteSpace(generatedOn))
+                {
+                AppendMetaRow(sb, "Generated On", generatedOn);
+                }
             AppendMetaRow(sb, "System Name", "IAS");
             AppendMetaRow(sb, "Confidentiality Note", "Confidential - Internal Use Only");
             sb.AppendLine("</table>");
@@ -497,7 +628,7 @@ namespace AIS.Services
 
         private static void AppendNarrativeBlock(StringBuilder sb, string title, string htmlContent)
             {
-            if (string.IsNullOrWhiteSpace(htmlContent))
+            if (!HasMeaningfulContent(htmlContent))
                 {
                 return;
                 }
@@ -553,6 +684,42 @@ namespace AIS.Services
             return current;
             }
 
+        private static bool HasMeaningfulContent(string htmlContent)
+            {
+            if (string.IsNullOrWhiteSpace(htmlContent))
+                {
+                return false;
+                }
+
+            var normalized = NormalizeHtml(htmlContent);
+            if (string.IsNullOrWhiteSpace(normalized))
+                {
+                return false;
+                }
+
+            var textOnly = Regex.Replace(normalized, "<.*?>", string.Empty);
+            return !string.IsNullOrWhiteSpace(WebUtility.HtmlDecode(textOnly));
+            }
+
+        private static string NormalizeToParagraphs(string htmlContent)
+            {
+            if (!HasMeaningfulContent(htmlContent))
+                {
+                return string.Empty;
+                }
+
+            var normalized = NormalizeHtml(htmlContent);
+            var withNewlines = Regex.Replace(normalized, "<\\s*br\\s*/?>", "\n", RegexOptions.IgnoreCase);
+            withNewlines = Regex.Replace(withNewlines, "</p\\s*>", "\n", RegexOptions.IgnoreCase);
+            withNewlines = Regex.Replace(withNewlines, "<[^>]+>", string.Empty);
+            var lines = withNewlines.Split('\n')
+                .Select(line => WebUtility.HtmlDecode(line).Trim())
+                .Where(line => !string.IsNullOrWhiteSpace(line))
+                .Select(line => WebUtility.HtmlEncode(line));
+
+            return string.Join("</p><p>", lines);
+            }
+
         private static string StripParaTextPrefix(string? html)
             {
             if (string.IsNullOrWhiteSpace(html))
@@ -599,6 +766,95 @@ namespace AIS.Services
             sb.AppendLine("</div>");
             sb.AppendLine("</div>");
             sb.AppendLine("<hr class=\"para-sep\" />");
+            }
+
+        private static void AppendParaBodyDetails(StringBuilder sb, FieldAuditPdfParaModel para)
+            {
+            AppendKeyValueParagraph(sb, "Annexure Code", para.AnnexureCode);
+            AppendKeyValueParagraph(sb, "Instances", para.Instances);
+            AppendKeyValueParagraph(sb, "Amount", para.Amount);
+
+            var normalizedHtml = NormalizeHtml(para.ParaDetail);
+            normalizedHtml = StripParaTextPrefix(normalizedHtml);
+            if (!string.IsNullOrWhiteSpace(normalizedHtml))
+                {
+                sb.Append(normalizedHtml);
+                }
+
+            sb.AppendLine("<table class=\"grid\">");
+            sb.AppendLine("<tbody>");
+            AppendGridRow(sb, "Implications", para.Implications);
+            AppendGridRow(sb, "Recommendations", para.Recommendations);
+            AppendGridRow(sb, "Mgmt Comments", para.ManagementComments);
+            AppendGridRow(sb, "Auditor Comments", para.AuditorComments);
+            AppendGridRow(sb, "SVP Remarks", para.RemarksInCharge);
+            sb.AppendLine("</tbody>");
+            sb.AppendLine("</table>");
+            }
+
+        private static void AppendGridRow(StringBuilder sb, string label, string value)
+            {
+            sb.AppendLine("<tr>");
+            sb.AppendFormat(CultureInfo.InvariantCulture, "<th class=\"left\">{0}</th>", Encode(label));
+            sb.AppendFormat(CultureInfo.InvariantCulture, "<td class=\"left\">{0}</td>", Encode(value));
+            sb.AppendLine("</tr>");
+            }
+
+        private static List<string> ExtractChartImages(string htmlContent)
+            {
+            var images = new List<string>();
+            if (string.IsNullOrWhiteSpace(htmlContent))
+                {
+                return images;
+                }
+
+            var normalized = NormalizeHtml(htmlContent);
+            foreach (Match match in Regex.Matches(normalized, "<img[^>]*src=[\"'](?<src>[^\"']+)[\"'][^>]*>", RegexOptions.IgnoreCase))
+                {
+                var src = match.Groups["src"].Value;
+                if (!string.IsNullOrWhiteSpace(src))
+                    {
+                    images.Add(src);
+                    }
+                }
+
+            return images;
+            }
+
+        private static void AppendChartBlocks(StringBuilder sb, List<string> images, string captionBase)
+            {
+            if (images == null || images.Count == 0)
+                {
+                return;
+                }
+
+            for (var index = 0; index < images.Count; index++)
+                {
+                var caption = images.Count > 1 ? $"{captionBase} {index + 1}" : captionBase;
+                sb.AppendLine("<div class=\"chart-block\">");
+                sb.AppendFormat(CultureInfo.InvariantCulture, "<img class=\"chart-img\" src=\"{0}\" alt=\"{1}\" />", images[index], Encode(caption));
+                sb.AppendFormat(CultureInfo.InvariantCulture, "<div class=\"chart-caption\">{0}</div>", Encode(caption));
+                sb.AppendLine("</div>");
+                }
+            }
+
+        private static string GetLogoDataUri()
+            {
+            try
+                {
+                var path = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "Images", "ztbllogo.png");
+                if (!File.Exists(path))
+                    {
+                    return string.Empty;
+                    }
+
+                var bytes = File.ReadAllBytes(path);
+                return $"data:image/png;base64,{Convert.ToBase64String(bytes)}";
+                }
+            catch
+                {
+                return string.Empty;
+                }
             }
 
         private static FieldAuditPdfKpiRowModel GetKpiRowForDate(IEnumerable<FieldAuditPdfKpiRowModel> rows, DateTime? date)
