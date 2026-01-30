@@ -71,7 +71,7 @@ namespace AIS.Controllers
             var header = new FieldAuditPdfHeaderModel();
 
             using var con = DatabaseConnection();
-            con.Open();
+           
 
             using var cmd = con.CreateCommand();
             cmd.BindByName = true;
@@ -109,7 +109,7 @@ namespace AIS.Controllers
             var meta = new FieldAuditPdfReportMetaModel();
 
             using var con = DatabaseConnection();
-            con.Open();
+           
 
             using var cmd = con.CreateCommand();
             cmd.BindByName = true;
@@ -143,7 +143,7 @@ namespace AIS.Controllers
             var sections = new List<FieldAuditPdfSectionModel>();
 
             using var con = DatabaseConnection();
-            con.Open();
+           
 
             using var cmd = con.CreateCommand();
             cmd.BindByName = true;
@@ -179,7 +179,7 @@ namespace AIS.Controllers
             var rows = new List<FieldAuditPdfKpiRowModel>();
 
             using var con = DatabaseConnection();
-            con.Open();
+           
 
             using var cmd = con.CreateCommand();
             cmd.BindByName = true;
@@ -216,7 +216,7 @@ namespace AIS.Controllers
             var rows = new List<FieldAuditPdfNplRowModel>();
 
             using var con = DatabaseConnection();
-            con.Open();
+           
 
             using var cmd = con.CreateCommand();
             cmd.BindByName = true;
@@ -252,7 +252,7 @@ namespace AIS.Controllers
             var rows = new List<FieldAuditPdfStaffRowModel>();
 
             using var con = DatabaseConnection();
-            con.Open();
+           
 
             using var cmd = con.CreateCommand();
             cmd.BindByName = true;
@@ -288,12 +288,12 @@ namespace AIS.Controllers
             var user = sessionHandler.GetUserOrThrow();
 
             using var con = DatabaseConnection();
-            con.Open();
+           
 
             using var cmd = con.CreateCommand();
             cmd.BindByName = true;
             cmd.CommandType = CommandType.StoredProcedure;
-            cmd.CommandText = "PKG_RPT.R_GETAUDITEEPARAS";
+            cmd.CommandText = "PKG_FRPT.R_GETAUDITEEPARAS";
 
             cmd.Parameters.Add("ENGID", OracleDbType.Int32).Value = engId;
             cmd.Parameters.Add("ENT_ID", OracleDbType.Int32).Value = user.UserEntityID;
@@ -335,7 +335,7 @@ namespace AIS.Controllers
             var rows = new List<FieldAuditPdfStatisticsRowModel>();
 
             using var con = DatabaseConnection();
-            con.Open();
+           
 
             using var cmd = con.CreateCommand();
             cmd.BindByName = true;
@@ -370,7 +370,7 @@ namespace AIS.Controllers
             var rows = new List<FieldAuditPdfIncomeLeakageRowModel>();
 
             using var con = DatabaseConnection();
-            con.Open();
+           
 
             using var cmd = con.CreateCommand();
             cmd.BindByName = true;
