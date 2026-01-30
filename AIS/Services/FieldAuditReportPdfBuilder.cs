@@ -44,6 +44,7 @@ namespace AIS.Services
             sb.AppendLine("h2 { font-size: 14pt; }");
             sb.AppendLine("h3 { font-size: 13pt; }");
             sb.AppendLine("h4 { font-size: 12pt; }");
+            sb.AppendLine("h2, h3, h4 { page-break-after: avoid; break-after: avoid; }");
             sb.AppendLine("table, tr, td, th { page-break-inside: avoid; break-inside: avoid; }");
             sb.AppendLine("table { width: 100%; border-collapse: collapse; margin: 8pt 0; }");
             sb.AppendLine("thead { display: table-header-group; }");
@@ -67,11 +68,12 @@ namespace AIS.Services
             sb.AppendLine(".cover-box table{ border:none; margin:0; }");
             sb.AppendLine(".cover-box td{ border:none; padding:4px 6px; }");
             sb.AppendLine(".cover-confidential{ margin-top:22px; font-weight:700; }");
-            sb.AppendLine(".section-title{ font-size:14px; font-weight:700; margin:18px 0 10px 0; padding:8px 10px; border-left:4px solid #111; background:#f6f8fa; }");
+            sb.AppendLine(".section-title{ font-size:14px; font-weight:700; margin:18px 0 10px 0; padding:8px 10px; border-left:4px solid #111; background:#f6f8fa; page-break-after: avoid; break-after: avoid; }");
             sb.AppendLine(".exec-summary{ line-height:1.8; text-align:justify; }");
             sb.AppendLine(".exec-summary p{ margin:0 0 10px; }");
             sb.AppendLine(".chart-block{ margin:12px 0; text-align:center; }");
             sb.AppendLine(".chart-img{ width:100%; max-height:260px; object-fit:contain; }");
+            sb.AppendLine(".chart-svg{ width:100%; height:auto; }");
             sb.AppendLine(".chart-caption{ font-size:11px; color:#444; margin-top:4px; }");
             sb.AppendLine(".meta-grid { width: 100%; }");
             sb.AppendLine(".meta-label { width: 35%; font-weight: bold; }");
@@ -83,6 +85,10 @@ namespace AIS.Services
             sb.AppendLine(".para-body h1,.para-body h2,.para-body h3{ font-size:13px !important; margin:6px 0 !important; }");
             sb.AppendLine(".para-body table{ width:100%; border-collapse:collapse; margin-top:10px; }");
             sb.AppendLine(".para-body table th,.para-body table td{ border:1px solid #222; padding:4px 6px; vertical-align:top; }");
+            sb.AppendLine(".para-table{ width:100%; border-collapse:collapse; margin:10px 0; page-break-inside:avoid; break-inside:avoid; }");
+            sb.AppendLine(".para-table th{ background:#f6f8fa; text-align:left; border:1px solid #d0d7de; }");
+            sb.AppendLine(".para-table td{ border:1px solid #d0d7de; padding:10px 12px; }");
+            sb.AppendLine(".para-title-cell{ font-weight:700; font-size:13px; padding:8px 10px; }");
             sb.AppendLine(".para-sep{ border:0; border-top:1px solid #d0d7de; margin:14px 0; }");
             sb.AppendLine(".page-break{ page-break-before: always; break-before: page; }");
             sb.AppendLine(".break-after{ page-break-after: always; break-after: page; }");
@@ -150,10 +156,12 @@ namespace AIS.Services
             {
             var factsContent = FindSectionContent(data, "EXEC_SUMMARY_FACTS", "Executive Summary – Facts");
             var conclusionContent = FindSectionContent(data, "EXEC_SUMMARY_CONCLUSION", "Executive Summary – Conclusion & Key Messages");
+            var summaryContent = FindSectionContent(data, "EXEC_SUMMARY", "Executive Summary");
             var factsText = NormalizeToParagraphs(factsContent);
             var conclusionText = NormalizeToParagraphs(conclusionContent);
+            var summaryText = NormalizeToParagraphs(summaryContent);
 
-            if (string.IsNullOrWhiteSpace(factsText) && string.IsNullOrWhiteSpace(conclusionText))
+            if (string.IsNullOrWhiteSpace(factsText) && string.IsNullOrWhiteSpace(conclusionText) && string.IsNullOrWhiteSpace(summaryText))
                 {
                 return;
                 }
@@ -170,6 +178,10 @@ namespace AIS.Services
                 {
                 sb.AppendLine("<p><strong>Executive Summary \u2013 Conclusion &amp; Key Messages</strong></p>");
                 sb.AppendFormat(CultureInfo.InvariantCulture, "<p>{0}</p>", conclusionText);
+                }
+            if (string.IsNullOrWhiteSpace(factsText) && string.IsNullOrWhiteSpace(conclusionText) && !string.IsNullOrWhiteSpace(summaryText))
+                {
+                sb.AppendFormat(CultureInfo.InvariantCulture, "<p>{0}</p>", summaryText);
                 }
             sb.AppendLine("</div>");
             sb.AppendLine("</section>");
@@ -238,10 +250,15 @@ namespace AIS.Services
             sb.AppendLine("<tbody>");
             foreach (var row in rows)
                 {
+                if (!HasMeaningfulContent(row.Designation) && !row.Strength.HasValue && !row.AsOfDate.HasValue)
+                    {
+                    continue;
+                    }
+
                 sb.AppendLine("<tr>");
-                sb.AppendFormat(CultureInfo.InvariantCulture, "<td>{0}</td>", Encode(row.Designation));
-                sb.AppendFormat(CultureInfo.InvariantCulture, "<td>{0}</td>", row.Strength?.ToString(CultureInfo.InvariantCulture) ?? string.Empty);
-                sb.AppendFormat(CultureInfo.InvariantCulture, "<td>{0}</td>", FormatDate(row.AsOfDate));
+                sb.AppendFormat(CultureInfo.InvariantCulture, "<td>{0}</td>", FormatCell(row.Designation));
+                sb.AppendFormat(CultureInfo.InvariantCulture, "<td>{0}</td>", FormatIntegerCell(row.Strength));
+                sb.AppendFormat(CultureInfo.InvariantCulture, "<td>{0}</td>", FormatDateCell(row.AsOfDate));
                 sb.AppendLine("</tr>");
                 }
             sb.AppendLine("</tbody>");
@@ -254,6 +271,7 @@ namespace AIS.Services
             var kpiRows = data.KpiRows ?? new List<FieldAuditPdfKpiRowModel>();
             var chartContent = FindSectionContent(data, "KPI_CHART", "KPI Chart") ?? FindSectionContent(data, "FRPT_SECTION_KPI", "KPI Snapshot");
             var chartImages = ExtractChartImages(chartContent);
+            var fallbackChart = chartImages.Count == 0 ? BuildKpiChartSvg(kpiRows) : string.Empty;
             if (kpiRows.Count == 0 && chartImages.Count == 0)
                 {
                 return;
@@ -262,7 +280,7 @@ namespace AIS.Services
             sb.AppendLine("<section class=\"section\">");
             sb.AppendLine("<h2 class=\"section-title\">KPI Snapshot</h2>");
             sb.AppendLine("<div class=\"avoid-break\">");
-            AppendChartBlocks(sb, chartImages, "KPI Snapshot Chart");
+            AppendChartBlocks(sb, chartImages, fallbackChart, "KPI Snapshot Chart");
             if (kpiRows.Count > 0)
                 {
                 var periods = kpiRows.Select(row => row.PeriodEndDate)
@@ -307,13 +325,13 @@ namespace AIS.Services
 
                     sb.AppendLine("<tr>");
                     sb.AppendFormat(CultureInfo.InvariantCulture, "<td>{0}</td>", index++);
-                    sb.AppendFormat(CultureInfo.InvariantCulture, "<td class=\"left\">{0}</td>", Encode(kpiLabel));
-                    sb.AppendFormat(CultureInfo.InvariantCulture, "<td>{0}</td>", FormatNumber((endRow ?? latestRow)?.ActualValue));
-                    sb.AppendFormat(CultureInfo.InvariantCulture, "<td>{0}</td>", FormatNumber(startRow?.TargetValue));
-                    sb.AppendFormat(CultureInfo.InvariantCulture, "<td>{0}</td>", FormatNumber(startRow?.ActualValue));
+                    sb.AppendFormat(CultureInfo.InvariantCulture, "<td class=\"left\">{0}</td>", FormatCell(kpiLabel));
+                    sb.AppendFormat(CultureInfo.InvariantCulture, "<td>{0}</td>", FormatNumberCell((endRow ?? latestRow)?.ActualValue));
+                    sb.AppendFormat(CultureInfo.InvariantCulture, "<td>{0}</td>", FormatNumberCell(startRow?.TargetValue));
+                    sb.AppendFormat(CultureInfo.InvariantCulture, "<td>{0}</td>", FormatNumberCell(startRow?.ActualValue));
                     sb.AppendFormat(CultureInfo.InvariantCulture, "<td>{0}</td>", FormatPercent(startRow?.ActualValue, startRow?.TargetValue));
-                    sb.AppendFormat(CultureInfo.InvariantCulture, "<td>{0}</td>", FormatNumber(endRow?.TargetValue));
-                    sb.AppendFormat(CultureInfo.InvariantCulture, "<td>{0}</td>", FormatNumber(endRow?.ActualValue));
+                    sb.AppendFormat(CultureInfo.InvariantCulture, "<td>{0}</td>", FormatNumberCell(endRow?.TargetValue));
+                    sb.AppendFormat(CultureInfo.InvariantCulture, "<td>{0}</td>", FormatNumberCell(endRow?.ActualValue));
                     sb.AppendFormat(CultureInfo.InvariantCulture, "<td>{0}</td>", FormatPercent(endRow?.ActualValue, endRow?.TargetValue));
                     sb.AppendLine("</tr>");
                     }
@@ -330,6 +348,7 @@ namespace AIS.Services
             var rows = data.NplRows ?? new List<FieldAuditPdfNplRowModel>();
             var chartContent = FindSectionContent(data, "NPL_CHART", "NPL Chart") ?? FindSectionContent(data, "FRPT_SECTION_NPL", "NPL Snapshot");
             var chartImages = ExtractChartImages(chartContent);
+            var fallbackChart = chartImages.Count == 0 ? BuildNplChartSvg(rows) : string.Empty;
             if (rows.Count == 0 && chartImages.Count == 0)
                 {
                 return;
@@ -338,7 +357,7 @@ namespace AIS.Services
             sb.AppendLine("<section class=\"section\">");
             sb.AppendLine("<h2 class=\"section-title\">NPL Analysis</h2>");
             sb.AppendLine("<div class=\"avoid-break\">");
-            AppendChartBlocks(sb, chartImages, "NPL Composition Chart");
+            AppendChartBlocks(sb, chartImages, fallbackChart, "NPL Composition Chart");
             if (rows.Count > 0)
                 {
                 sb.AppendLine("<table class=\"grid\">");
@@ -387,13 +406,13 @@ namespace AIS.Services
                     totalsDate2.Add(bucketDate2);
 
                     sb.AppendLine("<tr>");
-                    sb.AppendFormat(CultureInfo.InvariantCulture, "<td class=\"left\">{0}</td>", Encode(bucket));
-                    sb.AppendFormat(CultureInfo.InvariantCulture, "<td>{0}</td>", FormatInteger(bucketDate1.Cases));
-                    sb.AppendFormat(CultureInfo.InvariantCulture, "<td>{0}</td>", FormatNumber(bucketDate1.Outstanding));
-                    sb.AppendFormat(CultureInfo.InvariantCulture, "<td>{0}</td>", FormatNumber(bucketDate1.Provision));
-                    sb.AppendFormat(CultureInfo.InvariantCulture, "<td>{0}</td>", FormatInteger(bucketDate2.Cases));
-                    sb.AppendFormat(CultureInfo.InvariantCulture, "<td>{0}</td>", FormatNumber(bucketDate2.Outstanding));
-                    sb.AppendFormat(CultureInfo.InvariantCulture, "<td>{0}</td>", FormatNumber(bucketDate2.Provision));
+                    sb.AppendFormat(CultureInfo.InvariantCulture, "<td class=\"left\">{0}</td>", FormatCell(bucket));
+                    sb.AppendFormat(CultureInfo.InvariantCulture, "<td>{0}</td>", FormatIntegerCell(bucketDate1.Cases));
+                    sb.AppendFormat(CultureInfo.InvariantCulture, "<td>{0}</td>", FormatNumberCell(bucketDate1.Outstanding));
+                    sb.AppendFormat(CultureInfo.InvariantCulture, "<td>{0}</td>", FormatNumberCell(bucketDate1.Provision));
+                    sb.AppendFormat(CultureInfo.InvariantCulture, "<td>{0}</td>", FormatIntegerCell(bucketDate2.Cases));
+                    sb.AppendFormat(CultureInfo.InvariantCulture, "<td>{0}</td>", FormatNumberCell(bucketDate2.Outstanding));
+                    sb.AppendFormat(CultureInfo.InvariantCulture, "<td>{0}</td>", FormatNumberCell(bucketDate2.Provision));
                     sb.AppendLine("</tr>");
                     }
 
@@ -433,9 +452,9 @@ namespace AIS.Services
             foreach (var para in significant)
                 {
                 sb.AppendLine("<tr>");
-                sb.AppendFormat(CultureInfo.InvariantCulture, "<td>{0}</td>", Encode(para.ParaNo));
-                sb.AppendFormat(CultureInfo.InvariantCulture, "<td>{0}</td>", Encode(para.Gist));
-                sb.AppendFormat(CultureInfo.InvariantCulture, "<td>{0}</td>", Encode(para.Nature));
+                sb.AppendFormat(CultureInfo.InvariantCulture, "<td>{0}</td>", FormatCell(para.ParaNo));
+                sb.AppendFormat(CultureInfo.InvariantCulture, "<td>{0}</td>", FormatCell(para.Gist));
+                sb.AppendFormat(CultureInfo.InvariantCulture, "<td>{0}</td>", FormatCell(para.Nature));
                 sb.AppendLine("</tr>");
                 }
             sb.AppendLine("</tbody>");
@@ -461,11 +480,19 @@ namespace AIS.Services
             sb.AppendLine("<tbody>");
             foreach (var row in rows)
                 {
+                if (!HasMeaningfulContent(row.RiskLevel)
+                    && !row.ReportedCount.HasValue
+                    && !row.RectifiedCount.HasValue
+                    && !row.OutstandingCount.HasValue)
+                    {
+                    continue;
+                    }
+
                 sb.AppendLine("<tr>");
-                sb.AppendFormat(CultureInfo.InvariantCulture, "<td>{0}</td>", Encode(row.RiskLevel));
-                sb.AppendFormat(CultureInfo.InvariantCulture, "<td>{0}</td>", row.ReportedCount?.ToString(CultureInfo.InvariantCulture) ?? string.Empty);
-                sb.AppendFormat(CultureInfo.InvariantCulture, "<td>{0}</td>", row.RectifiedCount?.ToString(CultureInfo.InvariantCulture) ?? string.Empty);
-                sb.AppendFormat(CultureInfo.InvariantCulture, "<td>{0}</td>", row.OutstandingCount?.ToString(CultureInfo.InvariantCulture) ?? string.Empty);
+                sb.AppendFormat(CultureInfo.InvariantCulture, "<td>{0}</td>", FormatCell(row.RiskLevel));
+                sb.AppendFormat(CultureInfo.InvariantCulture, "<td>{0}</td>", FormatIntegerCell(row.ReportedCount));
+                sb.AppendFormat(CultureInfo.InvariantCulture, "<td>{0}</td>", FormatIntegerCell(row.RectifiedCount));
+                sb.AppendFormat(CultureInfo.InvariantCulture, "<td>{0}</td>", FormatIntegerCell(row.OutstandingCount));
                 sb.AppendLine("</tr>");
                 }
             sb.AppendLine("</tbody>");
@@ -490,10 +517,17 @@ namespace AIS.Services
             sb.AppendLine("<tbody>");
             foreach (var row in rows)
                 {
+                if (!HasMeaningfulContent(row.Description)
+                    && !HasMeaningfulContent(row.CaseReference)
+                    && !row.Amount.HasValue)
+                    {
+                    continue;
+                    }
+
                 sb.AppendLine("<tr>");
-                sb.AppendFormat(CultureInfo.InvariantCulture, "<td>{0}</td>", Encode(row.CaseReference));
-                sb.AppendFormat(CultureInfo.InvariantCulture, "<td>{0}</td>", Encode(row.Description));
-                sb.AppendFormat(CultureInfo.InvariantCulture, "<td>{0}</td>", FormatNumber(row.Amount));
+                sb.AppendFormat(CultureInfo.InvariantCulture, "<td>{0}</td>", FormatCell(row.CaseReference));
+                sb.AppendFormat(CultureInfo.InvariantCulture, "<td>{0}</td>", FormatCell(row.Description));
+                sb.AppendFormat(CultureInfo.InvariantCulture, "<td>{0}</td>", FormatNumberCell(row.Amount));
                 sb.AppendLine("</tr>");
                 }
             sb.AppendLine("<tr>");
@@ -549,12 +583,18 @@ namespace AIS.Services
                         ? $"Para {Encode(para.ParaNo)}"
                         : $"Para {Encode(para.ParaNo)}: {Encode(para.Gist)}";
 
-                    sb.AppendLine("<div class=\"para-box\">");
-                    sb.AppendFormat(CultureInfo.InvariantCulture, "<div class=\"para-title\">{0}</div>", paraTitle);
+                    sb.AppendLine("<table class=\"para-table\">");
+                    sb.AppendLine("<thead>");
+                    sb.AppendFormat(CultureInfo.InvariantCulture, "<tr><th class=\"para-title-cell\">{0}</th></tr>", paraTitle);
+                    sb.AppendLine("</thead>");
+                    sb.AppendLine("<tbody>");
+                    sb.AppendLine("<tr><td>");
                     sb.AppendLine("<div class=\"para-body\">");
                     AppendParaBodyDetails(sb, para);
                     sb.AppendLine("</div>");
-                    sb.AppendLine("</div>");
+                    sb.AppendLine("</td></tr>");
+                    sb.AppendLine("</tbody>");
+                    sb.AppendLine("</table>");
                     sb.AppendLine("<hr class=\"para-sep\" />");
                     }
                 }
@@ -604,7 +644,7 @@ namespace AIS.Services
             {
             sb.AppendLine("<tr>");
             sb.AppendFormat(CultureInfo.InvariantCulture, "<td class=\"meta-label\">{0}</td>", Encode(label));
-            sb.AppendFormat(CultureInfo.InvariantCulture, "<td>{0}</td>", Encode(value));
+            sb.AppendFormat(CultureInfo.InvariantCulture, "<td>{0}</td>", FormatCell(value));
             sb.AppendLine("</tr>");
             }
 
@@ -612,7 +652,7 @@ namespace AIS.Services
             {
             sb.AppendLine("<tr>");
             sb.AppendFormat(CultureInfo.InvariantCulture, "<td>{0}</td>", Encode(label));
-            sb.AppendFormat(CultureInfo.InvariantCulture, "<td>{0}</td>", Encode(value));
+            sb.AppendFormat(CultureInfo.InvariantCulture, "<td>{0}</td>", FormatCell(value));
             sb.AppendLine("</tr>");
             }
 
@@ -623,7 +663,7 @@ namespace AIS.Services
                 return;
                 }
 
-            sb.AppendFormat(CultureInfo.InvariantCulture, "<p><strong>{0}:</strong> {1}</p>", Encode(label), Encode(value));
+            sb.AppendFormat(CultureInfo.InvariantCulture, "<p><strong>{0}:</strong> {1}</p>", Encode(label), FormatCell(value));
             }
 
         private static void AppendNarrativeBlock(StringBuilder sb, string title, string htmlContent)
@@ -663,6 +703,11 @@ namespace AIS.Services
         private static string Encode(string input)
             {
             return string.IsNullOrWhiteSpace(input) ? string.Empty : WebUtility.HtmlEncode(input);
+            }
+
+        private static string FormatCell(string value)
+            {
+            return string.IsNullOrWhiteSpace(value) ? "-" : Encode(value);
             }
 
         private static string NormalizeHtml(string? html)
@@ -759,12 +804,13 @@ namespace AIS.Services
                 return;
                 }
 
-            sb.AppendLine("<div class=\"para-box avoid-break\">");
-            sb.AppendLine("<div class=\"para-title\">Para Text:</div>");
+            sb.AppendLine("<table class=\"para-table\">");
+            sb.AppendLine("<thead><tr><th class=\"para-title-cell\">Para Text:</th></tr></thead>");
+            sb.AppendLine("<tbody><tr><td>");
             sb.Append("<div class=\"para-body\">");
             sb.Append(normalizedHtml);
-            sb.AppendLine("</div>");
-            sb.AppendLine("</div>");
+            sb.AppendLine("</div></td></tr></tbody>");
+            sb.AppendLine("</table>");
             sb.AppendLine("<hr class=\"para-sep\" />");
             }
 
@@ -796,7 +842,7 @@ namespace AIS.Services
             {
             sb.AppendLine("<tr>");
             sb.AppendFormat(CultureInfo.InvariantCulture, "<th class=\"left\">{0}</th>", Encode(label));
-            sb.AppendFormat(CultureInfo.InvariantCulture, "<td class=\"left\">{0}</td>", Encode(value));
+            sb.AppendFormat(CultureInfo.InvariantCulture, "<td class=\"left\">{0}</td>", FormatCell(value));
             sb.AppendLine("</tr>");
             }
 
@@ -818,13 +864,29 @@ namespace AIS.Services
                     }
                 }
 
+            if (images.Count == 0)
+                {
+                var dataUriMatch = Regex.Match(normalized, "(data:image\\/(png|jpeg|jpg);base64,[A-Za-z0-9+/=]+)", RegexOptions.IgnoreCase);
+                if (dataUriMatch.Success)
+                    {
+                    images.Add(dataUriMatch.Value);
+                    }
+                }
+
             return images;
             }
 
-        private static void AppendChartBlocks(StringBuilder sb, List<string> images, string captionBase)
+        private static void AppendChartBlocks(StringBuilder sb, List<string> images, string fallbackSvg, string captionBase)
             {
             if (images == null || images.Count == 0)
                 {
+                if (!string.IsNullOrWhiteSpace(fallbackSvg))
+                    {
+                    sb.AppendLine("<div class=\"chart-block\">");
+                    sb.Append(fallbackSvg);
+                    sb.AppendFormat(CultureInfo.InvariantCulture, "<div class=\"chart-caption\">{0}</div>", Encode(captionBase));
+                    sb.AppendLine("</div>");
+                    }
                 return;
                 }
 
@@ -836,6 +898,130 @@ namespace AIS.Services
                 sb.AppendFormat(CultureInfo.InvariantCulture, "<div class=\"chart-caption\">{0}</div>", Encode(caption));
                 sb.AppendLine("</div>");
                 }
+            }
+
+        private static string BuildKpiChartSvg(List<FieldAuditPdfKpiRowModel> kpiRows)
+            {
+            if (kpiRows == null || kpiRows.Count == 0)
+                {
+                return string.Empty;
+                }
+
+            var items = kpiRows
+                .GroupBy(row => string.IsNullOrWhiteSpace(row.KpiCode) ? row.KpiLabel ?? string.Empty : row.KpiCode)
+                .Select(group =>
+                    {
+                    var row = group.Where(item => item.PeriodEndDate.HasValue)
+                        .OrderByDescending(item => item.PeriodEndDate.Value)
+                        .FirstOrDefault() ?? group.First();
+                    return new
+                        {
+                        Label = string.IsNullOrWhiteSpace(row.KpiLabel) ? row.KpiCode ?? "KPI" : row.KpiLabel,
+                        Value = row.ActualValue
+                        };
+                    })
+                .Where(item => item != null && item.Value.HasValue)
+                .Select(item => new { item.Label, Value = item.Value ?? 0m })
+                .OrderByDescending(item => item.Value)
+                .Take(6)
+                .ToList();
+
+            if (items.Count == 0)
+                {
+                return string.Empty;
+                }
+
+            var maxValue = items.Max(item => item.Value);
+            if (maxValue <= 0m)
+                {
+                return string.Empty;
+                }
+
+            const int chartWidth = 520;
+            const int labelWidth = 160;
+            const int barHeight = 14;
+            const int rowHeight = 28;
+            var chartHeight = 30 + (items.Count * rowHeight);
+            var barWidth = chartWidth - labelWidth - 40;
+
+            var sb = new StringBuilder();
+            sb.AppendFormat(CultureInfo.InvariantCulture, "<svg class=\"chart-svg\" viewBox=\"0 0 {0} {1}\" xmlns=\"http://www.w3.org/2000/svg\">", chartWidth, chartHeight);
+            sb.AppendLine("<rect width=\"100%\" height=\"100%\" fill=\"#fff\" />");
+            for (var i = 0; i < items.Count; i++)
+                {
+                var item = items[i];
+                var yBase = 20 + (i * rowHeight);
+                var barLength = (double)item.Value / (double)maxValue * barWidth;
+                sb.AppendFormat(CultureInfo.InvariantCulture, "<text x=\"0\" y=\"{0}\" font-size=\"11\" fill=\"#111\">{1}</text>", yBase, Encode(item.Label));
+                sb.AppendFormat(CultureInfo.InvariantCulture, "<rect x=\"{0}\" y=\"{1}\" width=\"{2}\" height=\"{3}\" fill=\"#4c78a8\" />", labelWidth, yBase - barHeight + 4, barLength, barHeight);
+                sb.AppendFormat(CultureInfo.InvariantCulture, "<text x=\"{0}\" y=\"{1}\" font-size=\"10\" fill=\"#111\">{2}</text>", labelWidth + barLength + 6, yBase, Encode(FormatNumber(item.Value)));
+                }
+            sb.AppendLine("</svg>");
+            return sb.ToString();
+            }
+
+        private static string BuildNplChartSvg(List<FieldAuditPdfNplRowModel> rows)
+            {
+            if (rows == null || rows.Count == 0)
+                {
+                return string.Empty;
+                }
+
+            var latestDate = rows.Select(row => row.PeriodEndDate)
+                .Where(date => date.HasValue)
+                .Select(date => date.Value.Date)
+                .OrderBy(date => date)
+                .LastOrDefault();
+            if (latestDate == default)
+                {
+                return string.Empty;
+                }
+
+            var categories = new[] { "OAEM", "Substandard", "Doubtful", "Loss" };
+            var items = categories.Select(category =>
+                {
+                var total = rows.Where(row =>
+                        row.PeriodEndDate.HasValue
+                        && row.PeriodEndDate.Value.Date == latestDate
+                        && string.Equals(row.Category, category, StringComparison.OrdinalIgnoreCase))
+                    .Sum(row => row.OutstandingAmount ?? 0m);
+                return new { Label = category, Value = total };
+                })
+                .Where(item => item.Value > 0m)
+                .ToList();
+
+            if (items.Count == 0)
+                {
+                return string.Empty;
+                }
+
+            var maxValue = items.Max(item => item.Value);
+            if (maxValue <= 0m)
+                {
+                return string.Empty;
+                }
+
+            const int chartWidth = 520;
+            const int labelWidth = 160;
+            const int barHeight = 14;
+            const int rowHeight = 28;
+            var chartHeight = 30 + (items.Count * rowHeight);
+            var barWidth = chartWidth - labelWidth - 40;
+
+            var sb = new StringBuilder();
+            sb.AppendFormat(CultureInfo.InvariantCulture, "<svg class=\"chart-svg\" viewBox=\"0 0 {0} {1}\" xmlns=\"http://www.w3.org/2000/svg\">", chartWidth, chartHeight);
+            sb.AppendLine("<rect width=\"100%\" height=\"100%\" fill=\"#fff\" />");
+            for (var i = 0; i < items.Count; i++)
+                {
+                var item = items[i];
+                var yBase = 20 + (i * rowHeight);
+                var barLength = (double)item.Value / (double)maxValue * barWidth;
+                sb.AppendFormat(CultureInfo.InvariantCulture, "<text x=\"0\" y=\"{0}\" font-size=\"11\" fill=\"#111\">{1}</text>", yBase, Encode(item.Label));
+                sb.AppendFormat(CultureInfo.InvariantCulture, "<rect x=\"{0}\" y=\"{1}\" width=\"{2}\" height=\"{3}\" fill=\"#59a14f\" />", labelWidth, yBase - barHeight + 4, barLength, barHeight);
+                sb.AppendFormat(CultureInfo.InvariantCulture, "<text x=\"{0}\" y=\"{1}\" font-size=\"10\" fill=\"#111\">{2}</text>", labelWidth + barLength + 6, yBase, Encode(FormatNumber(item.Value)));
+                }
+            sb.AppendLine("</svg>");
+            return sb.ToString();
             }
 
         private static string GetLogoDataUri()
@@ -953,6 +1139,21 @@ namespace AIS.Services
         private static string FormatNumber(decimal? value)
             {
             return value.HasValue ? value.Value.ToString("N2", CultureInfo.InvariantCulture) : string.Empty;
+            }
+
+        private static string FormatIntegerCell(int? value)
+            {
+            return value.HasValue ? value.Value.ToString(CultureInfo.InvariantCulture) : "-";
+            }
+
+        private static string FormatDateCell(DateTime? date)
+            {
+            return date.HasValue ? date.Value.ToString("dd/MM/yyyy", CultureInfo.InvariantCulture) : "-";
+            }
+
+        private static string FormatNumberCell(decimal? value)
+            {
+            return value.HasValue ? value.Value.ToString("N2", CultureInfo.InvariantCulture) : "-";
             }
 
         private sealed class NplAggregate
