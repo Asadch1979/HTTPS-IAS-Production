@@ -87,8 +87,9 @@ namespace AIS.Controllers
             {
             ViewData["TopMenu"] = tm.GetTopMenus();
             ViewData["TopMenuPages"] = tm.GetTopMenusPages();
-            ViewData["USER_ROLE_ID"] = sessionHandler.GetUserOrThrow().UserRoleID;
-            ViewData["USER_ENT_ID"] = sessionHandler.GetUserOrThrow().UserEntityID;
+            var loggedInUser = sessionHandler.GetUser();
+            ViewData["USER_ROLE_ID"] = loggedInUser?.UserRoleID ?? 0;
+            ViewData["USER_ENT_ID"] = loggedInUser?.UserEntityID;
 
             if (!User.Identity.IsAuthenticated)
                 {
@@ -96,11 +97,11 @@ namespace AIS.Controllers
                 }
             else
                 {
-                if (sessionHandler.GetUserOrThrow().UserRoleID == 12 && sessionHandler.GetUserOrThrow().UserEntityID == 112259)
+                if (loggedInUser != null && loggedInUser.UserRoleID == 12 && loggedInUser.UserEntityID == 112259)
                     {
                     return View();
                     }
-                else if (sessionHandler.GetUserOrThrow().UserRoleID == 12 && sessionHandler.GetUserOrThrow().UserEntityID == 112259)
+                else if (loggedInUser != null && loggedInUser.UserRoleID == 12 && loggedInUser.UserEntityID == 112259)
                     {
                     return View();
                     }
@@ -353,7 +354,8 @@ namespace AIS.Controllers
             ViewData["AnnexList"] = dBConnection.GetAnnexuresForChecklistDetail();
             ViewData["EntitiesList"] = dBConnection.GetEntitiesForManageAuditParas();
             ViewData["Userrelationship"] = dBConnection.GetrealtionshiptypeForParaPositionReport();
-            ViewData["LoggedInUserGroupId"] = sessionHandler.GetUserOrThrow().UserGroupID;
+            var loggedInUser = sessionHandler.GetUser();
+            ViewData["LoggedInUserGroupId"] = loggedInUser?.UserGroupID ?? 0;
 
             if (!User.Identity.IsAuthenticated)
                 {

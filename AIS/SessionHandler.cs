@@ -60,14 +60,24 @@ namespace AIS
             return user != null;
             }
 
-        public SessionUser GetUserOrThrow()
+        public SessionUser GetUser()
             {
             if (!TryGetUser(out var user))
+                {
+                return null;
+                }
+
+            return IsValidUser(user) ? user : null;
+            }
+
+        public SessionUser GetUserOrThrow()
+            {
+            var user = GetUser();
+            if (user == null)
                 {
                 throw new UnauthenticatedException();
                 }
 
-            ValidateUser(user);
             return user;
             }
 
@@ -99,6 +109,14 @@ namespace AIS
                 {
                 throw new UnauthenticatedException($"Session user is missing required fields: {string.Join(", ", missingFields)}.");
                 }
+            }
+
+        private static bool IsValidUser(SessionUser user)
+            {
+            return user != null
+                && user.UserEntityID.GetValueOrDefault() > 0
+                && user.UserRoleID > 0
+                && !string.IsNullOrWhiteSpace(user.PPNumber);
             }
 
         public void SetUser(SessionUser user)
@@ -550,7 +568,7 @@ namespace AIS
             return true;
             }
 
-        [Obsolete("Use GetUserOrThrow instead.")]
+        [Obsolete("Use GetUser instead.")]
         public SessionUser GetSessionUser()
             {
             return TryGetUser(out var user) ? user : new SessionUser();

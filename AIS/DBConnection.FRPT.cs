@@ -78,7 +78,14 @@ namespace AIS.Controllers
 
             var sessionHandler = CreateSessionHandler();
             var con = this.DatabaseConnection();
-            var loggedInUser = sessionHandler.GetUserOrThrow();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
+                || string.IsNullOrWhiteSpace(loggedInUser.PPNumber)
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return new List<FieldAuditEngagementOptionModel>();
+                }
 
             using (con)
             using (var cmd = con.CreateCommand())
@@ -423,7 +430,14 @@ namespace AIS.Controllers
                 }
 
             var sessionHandler = CreateSessionHandler();
-            var sessionUser = sessionHandler.GetUserOrThrow();
+            var sessionUser = sessionHandler.GetUser();
+            if (sessionUser == null
+                || sessionUser.UserEntityID.GetValueOrDefault() <= 0
+                || string.IsNullOrWhiteSpace(sessionUser.PPNumber)
+                || sessionUser.UserRoleID <= 0)
+                {
+                return (false, string.Empty);
+                }
             using var con = DatabaseConnection();
             EnsureConnectionOpen(con);
 
