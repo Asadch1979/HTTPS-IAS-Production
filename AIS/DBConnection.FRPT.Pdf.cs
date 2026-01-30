@@ -1,3 +1,4 @@
+using AIS.Models;
 using AIS.Models.FieldAuditReport;
 using Oracle.ManagedDataAccess.Client;
 using System;
@@ -67,6 +68,43 @@ namespace AIS.Controllers
                 }
 
             return false;
+            }
+
+        public List<FrptEngagementListRow> GetAllowedPdfEngagementDetails(int ppNo, int rId, int entId)
+            {
+            var rows = new List<FrptEngagementListRow>();
+
+            using var con = DatabaseConnection();
+            using var cmd = con.CreateCommand();
+            cmd.BindByName = true;
+            cmd.CommandText = "PKG_FRPT.P_GET_ALLOWED_PDF_ENG_DETAILS";
+            cmd.CommandType = CommandType.StoredProcedure;
+
+            cmd.Parameters.Add("P_PP_NO", OracleDbType.Int32).Value = ppNo;
+            cmd.Parameters.Add("P_R_ID", OracleDbType.Int32).Value = rId;
+            cmd.Parameters.Add("P_ENT_ID", OracleDbType.Int32).Value = entId;
+            cmd.Parameters.Add("O_CURSOR", OracleDbType.RefCursor, ParameterDirection.Output);
+
+            if (con.State != ConnectionState.Open)
+                {
+                con.Open();
+                }
+
+            using var reader = cmd.ExecuteReader();
+            while (reader.Read())
+                {
+                rows.Add(new FrptEngagementListRow
+                    {
+                    EngId = GetInt(reader, "ENG_ID"),
+                    ReportingOffice = GetString(reader, "REPORTING_OFFICE"),
+                    EntityName = GetString(reader, "ENTITY_NAME"),
+                    AuditStartDate = GetNullableDate(reader, "AUDIT_START_DATE"),
+                    AuditEndDate = GetNullableDate(reader, "AUDIT_END_DATE"),
+                    ReportStatus = GetString(reader, "REPORT_STATUS")
+                    });
+                }
+
+            return rows;
             }
 
         /* =========================================================

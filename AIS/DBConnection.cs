@@ -12,6 +12,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Data;
 using System.IO;
+using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
@@ -1020,9 +1021,57 @@ namespace AIS.Controllers
                     }
                 }
             //AppendFieldAuditReportMenuPages(modelList);
+            AppendFrptPdfEngagementMenu(modelList, user);
             con.Dispose();
             return modelList;
             }      
+
+        private void AppendFrptPdfEngagementMenu(List<MenuPagesModel> modelList, SessionUser user)
+            {
+            if (modelList == null || user == null)
+                {
+                return;
+                }
+
+            var allowedRoles = new HashSet<int> { 1, 2, 15, 16 };
+            if (!allowedRoles.Contains(user.UserRoleID))
+                {
+                return;
+                }
+
+            if (modelList.Any(item =>
+                string.Equals(item.Page_Path, "FieldAuditReport/Engagements", StringComparison.OrdinalIgnoreCase)))
+                {
+                return;
+                }
+
+            var menus = GetTopMenus();
+            var targetMenu = menus.FirstOrDefault(menu =>
+                string.Equals(menu.Menu_Name, "Administration", StringComparison.OrdinalIgnoreCase))
+                ?? menus.FirstOrDefault(menu =>
+                    string.Equals(menu.Menu_Name, "Reports", StringComparison.OrdinalIgnoreCase))
+                ?? menus.FirstOrDefault();
+
+            if (targetMenu == null)
+                {
+                return;
+                }
+
+            modelList.Add(new MenuPagesModel
+                {
+                Menu_Id = targetMenu.Menu_Id,
+                Page_Name = "FRPT PDF Engagements",
+                Page_Path = "FieldAuditReport/Engagements",
+                Page_Order = 999,
+                Page_URL = string.Empty,
+                Status = "A",
+                Sub_Menu = string.Empty,
+                Sub_Menu_Id = string.Empty,
+                Sub_Menu_Name = string.Empty,
+                Page_Key = "FRPT_PDF_ENGAGEMENTS",
+                Hide_Menu = 0
+                });
+            }
           
         public List<ApiPermissionModel> GetApiPermissions(SessionUser user)
             {
