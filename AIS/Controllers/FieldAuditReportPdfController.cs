@@ -116,6 +116,33 @@ namespace AIS.Controllers
                 }
             }
 
+        [HttpGet("Engagements")]
+        public IActionResult Engagements()
+            {
+            var (user, redirectResult) = GetUserOrRedirect();
+            if (redirectResult != null)
+                {
+                return redirectResult;
+                }
+
+            var allowedRoles = new[] { 1, 2, 15, 16 };
+            if (!allowedRoles.Contains(user.UserRoleID))
+                {
+                return StatusCode(403, "User is not authorized to access PDF engagements.");
+                }
+
+            ViewData["TopMenu"] = _topMenus.GetTopMenus();
+            ViewData["TopMenuPages"] = _topMenus.GetTopMenusPages();
+
+            if (!int.TryParse(user.PPNumber, out var ppNo))
+                {
+                return BadRequest("Invalid user session for PDF engagements.");
+                }
+
+            var rows = _dbConnection.GetAllowedPdfEngagementDetails(ppNo, user.UserRoleID, user.UserEntityID ?? 0);
+            return View("~/Views/FieldAuditReport/Engagements.cshtml", rows);
+            }
+
         private IActionResult EnsureAuthorized()
             {
             if (!_sessionHandler.TryGetUser(out _))
