@@ -40,11 +40,11 @@ namespace AIS.Services
             sb.AppendLine("h3 { font-size: 13pt; }");
             sb.AppendLine("h4 { font-size: 12pt; }");
             sb.AppendLine("h2, h3, h4 { page-break-after: avoid; break-after: avoid; }");
-            sb.AppendLine("table { width: 100%; border-collapse: collapse; margin: 8pt 0; page-break-inside: auto; break-inside: auto; }");
+            sb.AppendLine(".report-table { width: 100%; border-collapse: collapse; margin: 8pt 0; page-break-inside: auto; break-inside: auto; }");
             sb.AppendLine("tr { page-break-inside: avoid; break-inside: avoid; }");
             sb.AppendLine("thead { display: table-header-group; }");
             sb.AppendLine("tfoot { display: table-footer-group; }");
-            sb.AppendLine("th, td { border: 1px solid #111; padding: 4pt 6pt; vertical-align: top; }");
+            sb.AppendLine(".report-table th, .report-table td { border: 1px solid #111; padding: 4pt 6pt; vertical-align: top; }");
             sb.AppendLine(".grid{ width:100%; border-collapse:collapse; table-layout:fixed; margin-top:8px; }");
             sb.AppendLine(".grid th,.grid td{ border:1px solid #111; padding:6px; font-size:12px; vertical-align:top; }");
             sb.AppendLine(".grid th{ background:#f6f8fa; font-weight:700; text-align:center; }");
@@ -74,7 +74,8 @@ namespace AIS.Services
             sb.AppendLine(".chart-img{ width:100%; max-height:260px; object-fit:contain; }");
             sb.AppendLine(".chart-svg{ width:100%; height:auto; }");
             sb.AppendLine(".chart-caption{ font-size:11px; color:#444; margin-top:4px; }");
-            sb.AppendLine(".meta-grid { width: 100%; }");
+            sb.AppendLine(".meta-grid { width: 100%; border-collapse: collapse; }");
+            sb.AppendLine(".meta-grid th, .meta-grid td { border: 1px solid #111; padding: 4pt 6pt; vertical-align: top; }");
             sb.AppendLine(".meta-label { width: 35%; font-weight: bold; }");
             sb.AppendLine(".paragraph { margin: 6pt 0; }");
             sb.AppendLine(".para-box{ border:1px solid #d0d7de; border-radius:8px; padding:12px 14px; margin:10px 0; background:#fff; page-break-inside:avoid; break-inside:avoid; }");
@@ -82,14 +83,16 @@ namespace AIS.Services
             sb.AppendLine(".para-body{ font-size:12px; line-height:1.6; text-align:justify; white-space:normal !important; overflow-wrap:anywhere; color:#212529; width:100%; }");
             sb.AppendLine(".para-body *{ font-size:12px !important; white-space:normal !important; overflow-wrap:anywhere; }");
             sb.AppendLine(".para-body h1,.para-body h2,.para-body h3{ font-size:13px !important; margin:6px 0 !important; }");
-            sb.AppendLine(".para-body table{ width:100% !important; max-width:100% !important; table-layout:fixed !important; border-collapse:collapse; margin-top:10px; box-sizing:border-box; }");
-            sb.AppendLine(".para-body table th,.para-body table td{ border:1px solid #222; padding:4px 6px; vertical-align:top; word-break:break-word; overflow-wrap:anywhere; white-space:normal !important; }");
             sb.AppendLine(".para-body img{ max-width:100% !important; height:auto !important; }");
-            sb.AppendLine(".para-detail, .para-detail *{ max-width:100% !important; box-sizing:border-box !important; }");
-            sb.AppendLine(".para-detail table{ width:100% !important; max-width:100% !important; table-layout:fixed !important; border-collapse:collapse !important; }");
-            sb.AppendLine(".para-detail th,.para-detail td{ white-space:normal !important; word-break:break-word !important; overflow-wrap:anywhere !important; vertical-align:top !important; padding:3px 4px !important; font-size:10px !important; }");
-            sb.AppendLine(".para-detail col,.para-detail colgroup{ width:auto !important; }");
-            sb.AppendLine(".para-detail img{ max-width:100% !important; height:auto !important; }");
+            sb.AppendLine(".para-text table{ width:100% !important; max-width:100% !important; table-layout:auto !important; border-collapse:collapse; margin-top:10px; box-sizing:border-box; }");
+            sb.AppendLine(".para-text table th,.para-text table td{ padding:4px 6px; vertical-align:top; word-break:break-word; overflow-wrap:anywhere; white-space:normal !important; }");
+            sb.AppendLine(".para-text table[border]:not([border=\"0\"]),.para-text table[style*=\"border\"]:not([style*=\"border:0\"]):not([style*=\"border: 0\"]),.para-text table[class*=\"MsoTableGrid\"]{ table-layout:fixed !important; border-collapse:collapse; }");
+            sb.AppendLine(".para-text table[border]:not([border=\"0\"]) th,.para-text table[border]:not([border=\"0\"]) td,.para-text table[style*=\"border\"]:not([style*=\"border:0\"]):not([style*=\"border: 0\"]) th,.para-text table[style*=\"border\"]:not([style*=\"border:0\"]):not([style*=\"border: 0\"]) td,.para-text table[class*=\"MsoTableGrid\"] th,.para-text table[class*=\"MsoTableGrid\"] td{ border:1px solid #222; }");
+            sb.AppendLine(".para-text table[border=\"0\"],.para-text table[style*=\"border:none\"],.para-text table[style*=\"border: none\"],.para-text table:not([border]):not([style*=\"border\"]):not([class*=\"MsoTableGrid\"]){ table-layout:auto !important; }");
+            sb.AppendLine(".para-text.para-detail, .para-text.para-detail *{ max-width:100% !important; box-sizing:border-box !important; }");
+            sb.AppendLine(".para-text.para-detail th,.para-text.para-detail td{ white-space:normal !important; word-break:break-word !important; overflow-wrap:anywhere !important; vertical-align:top !important; padding:3px 4px !important; font-size:10px !important; }");
+            sb.AppendLine(".para-text.para-detail col,.para-text.para-detail colgroup{ width:auto !important; }");
+            sb.AppendLine(".para-text.para-detail img{ max-width:100% !important; height:auto !important; }");
             sb.AppendLine(".para-table{ width:100%; border-collapse:collapse; margin:10px 0; page-break-inside:auto; break-inside:auto; table-layout:fixed; }");
             sb.AppendLine(".para-table th{ background:#f6f8fa; text-align:left; border:1px solid #d0d7de; }");
             sb.AppendLine(".para-table td{ border:1px solid #d0d7de; padding:10px 12px; overflow:hidden; word-break:break-word; overflow-wrap:anywhere; }");
@@ -222,7 +225,7 @@ namespace AIS.Services
             sb.AppendLine("<div class=\"section-title\">Branch / Entity Profile</div>");
             sb.AppendLine("<div class=\"avoid-break\">");
             sb.AppendLine("<h3>Branch Profile</h3>");
-            sb.AppendLine("<table>");
+            sb.AppendLine("<table class=\"report-table\">");
             sb.AppendLine("<thead><tr><th>Profile Item</th><th>Details</th></tr></thead>");
             sb.AppendLine("<tbody>");
 
@@ -489,7 +492,7 @@ namespace AIS.Services
             sb.AppendLine("<div class=\"section-block\">");
             sb.AppendLine("<div class=\"section-title\">Significant Paras (High Risk)</div>");
             sb.AppendLine("<div class=\"avoid-break\">");
-            sb.AppendLine("<table>");
+            sb.AppendLine("<table class=\"report-table\">");
             sb.AppendLine("<thead><tr><th>Para No</th><th>Gist</th><th>Nature</th></tr></thead>");
             sb.AppendLine("<tbody>");
             foreach (var para in significant)
@@ -522,7 +525,7 @@ namespace AIS.Services
             sb.AppendLine("<div class=\"section-block\">");
             sb.AppendLine("<div class=\"section-title\">Audit Statistics</div>");
             sb.AppendLine("<div class=\"avoid-break\">");
-            sb.AppendLine("<table>");
+            sb.AppendLine("<table class=\"report-table\">");
             sb.AppendLine("<thead><tr><th>Risk</th><th>Reported</th><th>Rectified</th><th>Outstanding</th></tr></thead>");
             sb.AppendLine("<tbody>");
             foreach (var row in rows)
@@ -563,7 +566,7 @@ namespace AIS.Services
             sb.AppendLine("<div class=\"section-block\">");
             sb.AppendLine("<div class=\"section-title\">Income Leakage</div>");
             sb.AppendLine("<div class=\"avoid-break\">");
-            sb.AppendLine("<table>");
+            sb.AppendLine("<table class=\"report-table\">");
             sb.AppendLine("<thead><tr><th>Case</th><th>Description</th><th>Amount</th></tr></thead>");
             sb.AppendLine("<tbody>");
             foreach (var row in rows)
@@ -932,9 +935,9 @@ namespace AIS.Services
             sb.AppendLine("<table class=\"para-table\">");
             sb.AppendLine("<thead><tr><th class=\"para-title-cell\">Para Text:</th></tr></thead>");
             sb.AppendLine("<tbody><tr><td>");
-            sb.Append("<div class=\"para-body\">");
+            sb.Append("<div class=\"para-body\"><div class=\"para-text\">");
             sb.Append(normalizedHtml);
-            sb.AppendLine("</div></td></tr></tbody>");
+            sb.AppendLine("</div></div></td></tr></tbody>");
             sb.AppendLine("</table>");
             sb.AppendLine("<hr class=\"para-sep\" />");
             }
@@ -949,7 +952,7 @@ namespace AIS.Services
             normalizedHtml = StripParaTextPrefix(normalizedHtml);
             if (!string.IsNullOrWhiteSpace(normalizedHtml))
                 {
-                sb.AppendLine("<div class=\"para-detail rich-html\">");
+                sb.AppendLine("<div class=\"para-text para-detail rich-html\">");
                 sb.Append(normalizedHtml);
                 sb.AppendLine("</div>");
                 }
