@@ -140,18 +140,19 @@ namespace AIS.Services
                 }
             sb.AppendLine("<div class=\"cover-headings\">");
             sb.AppendFormat(CultureInfo.InvariantCulture, "<div class=\"bank-name\">{0}</div>", Encode(bankName));
-            sb.AppendFormat(CultureInfo.InvariantCulture, "<div class=\"division\">{0}</div>", Encode(division));
-            sb.AppendFormat(CultureInfo.InvariantCulture, "<div class=\"division\">{0}</div>", Encode(reportingLine));
+            sb.AppendFormat(CultureInfo.InvariantCulture, "<div class=\"division\">{0}</div>", Encode(division));            
             sb.AppendLine("<div class=\"report-title\">Field Audit Report</div>");
             sb.AppendLine("</div>");
             sb.AppendLine("<div class=\"cover-box\">");
-            sb.AppendLine("<div class=\"cover-details\">");
-            sb.AppendFormat(CultureInfo.InvariantCulture, "<div class=\"line\">{0}</div>", Encode(header.BranchName));
-            sb.AppendFormat(CultureInfo.InvariantCulture, "<div class=\"line\">{0}</div>", Encode(header.BranchCode));
-            sb.AppendFormat(CultureInfo.InvariantCulture, "<div class=\"line\">{0}</div>", Encode(header.Operationperiod ?? header.AuditPeriod ?? meta.AuditPeriod));
-            sb.AppendFormat(CultureInfo.InvariantCulture, "<div class=\"line\">{0}</div>", Encode(header.AuditExecuted));
-            sb.AppendFormat(CultureInfo.InvariantCulture, "<div class=\"line\">{0}</div>", Encode(header.Risk));
-            sb.AppendLine("</div>");
+            sb.AppendLine("<table class=\"meta-grid\">");
+            AppendMetaRow(sb, "Reporting Office", header.Reporting);
+            AppendMetaRow(sb, "Entity", header.EntityName);
+            AppendMetaRow(sb, "Branch Code", header.BranchCode);
+            AppendMetaRow(sb, "Audit Operation Period", header.Operationperiod);
+            AppendMetaRow(sb, "Audit Execution Dates", FormatDateRange(header.AuditStartDate, header.AuditEndDate));
+            AppendMetaRow(sb, "Risk", meta.ReportStatus ?? header.Risk);
+            AppendMetaRow(sb, "Version", meta.VersionNumber ?? header.VersionNumber);
+            sb.AppendLine("</table>");
             sb.AppendLine("</div>");
             sb.AppendLine("<div class=\"cover-confidential\">Confidential \u2013 Internal Use Only</div>");
             sb.AppendLine("</section>");
@@ -651,20 +652,24 @@ namespace AIS.Services
                 }
 
             sb.AppendLine("<section class=\"section\">");
-            sb.AppendLine("<div class=\"section-block\">");
-            sb.AppendLine("<div class=\"section-title\">Audit Paras – Detailed</div>");
+            // start on new page so it never lands at bottom after previous section
+            sb.AppendLine("<div class=\"page-break\"></div>");
+            // keep title with what follows
+            sb.AppendLine("<div class=\"section-block avoid-break\">");
+            sb.AppendLine("<div class=\"section-title keep-with-next\">Audit Paras – Detailed</div>");
             sb.AppendLine("</div>");
+
 
             foreach (var group in paras.GroupBy(para => para.Risk).OrderBy(group => group.Key))
                 {
-                sb.AppendFormat(CultureInfo.InvariantCulture, "<h3>{0} Risk Paras</h3>", Encode(group.Key));
+                sb.AppendFormat(CultureInfo.InvariantCulture, "<h3 class=\"keep-with-next\">{0} Risk Paras</h3>", Encode(group.Key));
                 foreach (var para in group)
                     {
                     var paraTitle = string.IsNullOrWhiteSpace(para.Gist)
                         ? $"Para {Encode(para.ParaNo)}"
                         : $"Para {Encode(para.ParaNo)}: {Encode(para.Gist)}";
 
-                    sb.AppendLine("<table class=\"para-table\">");
+                    sb.AppendLine("<table class=\"para-table avoid-break\">");
                     sb.AppendLine("<thead>");
                     sb.AppendFormat(CultureInfo.InvariantCulture, "<tr><th class=\"para-title-cell\">{0}</th></tr>", paraTitle);
                     sb.AppendLine("</thead>");
