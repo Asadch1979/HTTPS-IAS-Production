@@ -14,6 +14,7 @@ namespace AIS.Models.FieldAuditReport
         public List<FieldAuditPdfParaModel> Paras { get; set; } = new List<FieldAuditPdfParaModel>();
         public List<FieldAuditPdfStatisticsRowModel> StatisticsRows { get; set; } = new List<FieldAuditPdfStatisticsRowModel>();
         public List<FieldAuditPdfIncomeLeakageRowModel> IncomeLeakageRows { get; set; } = new List<FieldAuditPdfIncomeLeakageRowModel>();
+        public FieldAuditPdfOverallConclusionModel OverallConclusion { get; set; } = new FieldAuditPdfOverallConclusionModel();
         }
 
     public class FieldAuditPdfHeaderModel
@@ -107,6 +108,15 @@ namespace AIS.Models.FieldAuditReport
         public string AuditorComments { get; set; }
         public string RemarksInCharge { get; set; }
         public bool IsSignificant { get; set; }
+        }
+
+    public class FieldAuditPdfOverallConclusionModel
+        {
+        public string OverallConclusionHtml { get; set; }
+        public string NonAddressableHtml { get; set; }
+        public string FraudProneHtml { get; set; }
+        public string RegulatoryHtml { get; set; }
+        public string SafetySecurityHtml { get; set; }
         }
 
     public class FieldAuditPdfKeyValueModel
