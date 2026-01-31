@@ -157,7 +157,6 @@ namespace AIS.Controllers
                 header.AuditPeriod = GetString(reader, "AUDIT_PERIOD");
                 header.Operationperiod = GetString(reader, "Operation_Period");
                 header.AuditExecuted = GetString(reader, "AUDIT_Executed");
-                header.Risk = GetOptionalString(reader, "RISK");
                 header.AuditStartDate = GetNullableDate(reader, "AUDIT_START_DATE");
                 header.AuditEndDate = GetNullableDate(reader, "AUDIT_END_DATE");
                 header.ReportStatus = GetString(reader, "REPORT_STATUS");
