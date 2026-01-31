@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
+using System.Text.Json;
 
 namespace AIS.Controllers
     {
@@ -669,6 +670,241 @@ namespace AIS.Controllers
                 }
 
             return rows;
+            }
+
+        /* =========================================================
+           NARRATIVE SECTION: PDF STATISTICS / INCOME LEAKAGE / CONCLUSION
+        ========================================================= */
+
+        public List<FieldAuditPdfStatisticsRowInput> GetPdfStatistics(int engId, int? reportVersion)
+            {
+            var rows = new List<FieldAuditPdfStatisticsRowInput>();
+
+            using var con = DatabaseConnection();
+            EnsureConnectionOpen(con);
+
+            using var cmd = con.CreateCommand();
+            cmd.BindByName = true;
+            cmd.CommandType = CommandType.StoredProcedure;
+            cmd.CommandText = "PKG_FRPT.P_GET_PDF_STATISTICS";
+
+            cmd.Parameters.Add("P_ENG_ID", OracleDbType.Int32).Value = engId;
+            cmd.Parameters.Add("P_REPORT_VERSION", OracleDbType.Int32).Value = reportVersion ?? (object)DBNull.Value;
+            cmd.Parameters.Add("O_CURSOR", OracleDbType.RefCursor, ParameterDirection.Output);
+
+            using var reader = cmd.ExecuteReader();
+            var columns = LoadColumnMap(reader);
+            while (reader.Read())
+                {
+                rows.Add(new FieldAuditPdfStatisticsRowInput
+                    {
+                    Nature = GetOptionalString(reader, columns, "NATURE", "NATURE_OF_PARA"),
+                    Reported = GetOptionalInt(reader, columns, "REPORTED", "REPORTED_COUNT"),
+                    Rectified = GetOptionalInt(reader, columns, "RECTIFIED", "RECTIFIED_COUNT"),
+                    Outstanding = GetOptionalInt(reader, columns, "OUTSTANDING", "OUTSTANDING_COUNT"),
+                    Remarks = GetOptionalString(reader, columns, "REMARKS")
+                    });
+                }
+
+            return rows;
+            }
+
+        public void SavePdfStatistics(int engId, int? reportVersion, IEnumerable<FieldAuditPdfStatisticsRowInput> rows, string userPpNo)
+            {
+            var payload = JsonSerializer.Serialize(rows ?? Array.Empty<FieldAuditPdfStatisticsRowInput>());
+
+            using var con = DatabaseConnection();
+            EnsureConnectionOpen(con);
+
+            using var cmd = con.CreateCommand();
+            cmd.BindByName = true;
+            cmd.CommandType = CommandType.StoredProcedure;
+            cmd.CommandText = "PKG_FRPT.P_SAVE_PDF_STATISTICS";
+
+            cmd.Parameters.Add("P_ENG_ID", OracleDbType.Int32).Value = engId;
+            cmd.Parameters.Add("P_REPORT_VERSION", OracleDbType.Int32).Value = reportVersion ?? (object)DBNull.Value;
+            cmd.Parameters.Add("P_ROWS_JSON", OracleDbType.Clob).Value = payload;
+            cmd.Parameters.Add("P_USER_PPNO", OracleDbType.Varchar2).Value = userPpNo ?? string.Empty;
+
+            cmd.ExecuteNonQuery();
+            }
+
+        public List<FieldAuditIncomeLeakageRowInput> GetIncomeLeakage(int engId, int? reportVersion)
+            {
+            var rows = new List<FieldAuditIncomeLeakageRowInput>();
+
+            using var con = DatabaseConnection();
+            EnsureConnectionOpen(con);
+
+            using var cmd = con.CreateCommand();
+            cmd.BindByName = true;
+            cmd.CommandType = CommandType.StoredProcedure;
+            cmd.CommandText = "PKG_FRPT.P_GET_INCOME_LEAKAGE";
+
+            cmd.Parameters.Add("P_ENG_ID", OracleDbType.Int32).Value = engId;
+            cmd.Parameters.Add("P_REPORT_VERSION", OracleDbType.Int32).Value = reportVersion ?? (object)DBNull.Value;
+            cmd.Parameters.Add("O_CURSOR", OracleDbType.RefCursor, ParameterDirection.Output);
+
+            using var reader = cmd.ExecuteReader();
+            var columns = LoadColumnMap(reader);
+            while (reader.Read())
+                {
+                rows.Add(new FieldAuditIncomeLeakageRowInput
+                    {
+                    Description = GetOptionalString(reader, columns, "DESCRIPTION"),
+                    Area = GetOptionalString(reader, columns, "AREA"),
+                    Amount = GetOptionalDecimal(reader, columns, "AMOUNT")
+                    });
+                }
+
+            return rows;
+            }
+
+        public void SaveIncomeLeakage(int engId, int? reportVersion, IEnumerable<FieldAuditIncomeLeakageRowInput> rows, string userPpNo)
+            {
+            var payload = JsonSerializer.Serialize(rows ?? Array.Empty<FieldAuditIncomeLeakageRowInput>());
+
+            using var con = DatabaseConnection();
+            EnsureConnectionOpen(con);
+
+            using var cmd = con.CreateCommand();
+            cmd.BindByName = true;
+            cmd.CommandType = CommandType.StoredProcedure;
+            cmd.CommandText = "PKG_FRPT.P_SAVE_INCOME_LEAKAGE";
+
+            cmd.Parameters.Add("P_ENG_ID", OracleDbType.Int32).Value = engId;
+            cmd.Parameters.Add("P_REPORT_VERSION", OracleDbType.Int32).Value = reportVersion ?? (object)DBNull.Value;
+            cmd.Parameters.Add("P_ROWS_JSON", OracleDbType.Clob).Value = payload;
+            cmd.Parameters.Add("P_USER_PPNO", OracleDbType.Varchar2).Value = userPpNo ?? string.Empty;
+
+            cmd.ExecuteNonQuery();
+            }
+
+        public FieldAuditOverallConclusionInput GetOverallConclusion(int engId, int? reportVersion)
+            {
+            using var con = DatabaseConnection();
+            EnsureConnectionOpen(con);
+
+            using var cmd = con.CreateCommand();
+            cmd.BindByName = true;
+            cmd.CommandType = CommandType.StoredProcedure;
+            cmd.CommandText = "PKG_FRPT.P_GET_OVERALL_CONCLUSION";
+
+            cmd.Parameters.Add("P_ENG_ID", OracleDbType.Int32).Value = engId;
+            cmd.Parameters.Add("P_REPORT_VERSION", OracleDbType.Int32).Value = reportVersion ?? (object)DBNull.Value;
+            cmd.Parameters.Add("O_CURSOR", OracleDbType.RefCursor, ParameterDirection.Output);
+
+            using var reader = cmd.ExecuteReader();
+            if (!reader.Read())
+                {
+                return null;
+                }
+
+            var columns = LoadColumnMap(reader);
+            return new FieldAuditOverallConclusionInput
+                {
+                OverallConclusionHtml = GetOptionalString(reader, columns, "OVERALL_CONCLUSION_HTML", "OVERALL_CONCLUSION"),
+                NonAddressableHtml = GetOptionalString(reader, columns, "NON_ADDRESSABLE_HTML", "NON_ADDRESSABLE"),
+                FraudProneHtml = GetOptionalString(reader, columns, "FRAUD_PRONE_HTML", "FRAUD_PRONE"),
+                RegulatoryHtml = GetOptionalString(reader, columns, "REGULATORY_HTML", "REGULATORY"),
+                SafetySecurityHtml = GetOptionalString(reader, columns, "SAFETY_SECURITY_HTML", "SAFETY_SECURITY")
+                };
+            }
+
+        public void SaveOverallConclusion(int engId, int? reportVersion, FieldAuditOverallConclusionSaveRequest model, string userPpNo)
+            {
+            using var con = DatabaseConnection();
+            EnsureConnectionOpen(con);
+
+            using var cmd = con.CreateCommand();
+            cmd.BindByName = true;
+            cmd.CommandType = CommandType.StoredProcedure;
+            cmd.CommandText = "PKG_FRPT.P_SAVE_OVERALL_CONCLUSION";
+
+            cmd.Parameters.Add("P_ENG_ID", OracleDbType.Int32).Value = engId;
+            cmd.Parameters.Add("P_REPORT_VERSION", OracleDbType.Int32).Value = reportVersion ?? (object)DBNull.Value;
+            cmd.Parameters.Add("P_OVERALL_CONCLUSION_HTML", OracleDbType.Clob).Value = model?.OverallConclusionHtml ?? string.Empty;
+            cmd.Parameters.Add("P_NON_ADDRESSABLE_HTML", OracleDbType.Clob).Value = model?.NonAddressableHtml ?? string.Empty;
+            cmd.Parameters.Add("P_FRAUD_PRONE_HTML", OracleDbType.Clob).Value = model?.FraudProneHtml ?? string.Empty;
+            cmd.Parameters.Add("P_REGULATORY_HTML", OracleDbType.Clob).Value = model?.RegulatoryHtml ?? string.Empty;
+            cmd.Parameters.Add("P_SAFETY_SECURITY_HTML", OracleDbType.Clob).Value = model?.SafetySecurityHtml ?? string.Empty;
+            cmd.Parameters.Add("P_USER_PPNO", OracleDbType.Varchar2).Value = userPpNo ?? string.Empty;
+
+            cmd.ExecuteNonQuery();
+            }
+
+        private static HashSet<string> LoadColumnMap(IDataRecord reader)
+            {
+            var columns = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            for (var i = 0; i < reader.FieldCount; i++)
+                {
+                columns.Add(reader.GetName(i));
+                }
+
+            return columns;
+            }
+
+        private static string GetOptionalString(IDataRecord reader, HashSet<string> columns, params string[] names)
+            {
+            foreach (var name in names)
+                {
+                if (!columns.Contains(name))
+                    {
+                    continue;
+                    }
+
+                var value = reader[name];
+                if (value == DBNull.Value)
+                    {
+                    return string.Empty;
+                    }
+
+                return value?.ToString() ?? string.Empty;
+                }
+
+            return string.Empty;
+            }
+
+        private static int? GetOptionalInt(IDataRecord reader, HashSet<string> columns, params string[] names)
+            {
+            foreach (var name in names)
+                {
+                if (!columns.Contains(name))
+                    {
+                    continue;
+                    }
+
+                var value = reader[name];
+                if (value == DBNull.Value)
+                    {
+                    return null;
+                    }
+
+                return Convert.ToInt32(value);
+                }
+
+            return null;
+            }
+
+        private static decimal? GetOptionalDecimal(IDataRecord reader, HashSet<string> columns, params string[] names)
+            {
+            foreach (var name in names)
+                {
+                if (!columns.Contains(name))
+                    {
+                    continue;
+                    }
+
+                var value = reader[name];
+                if (value == DBNull.Value)
+                    {
+                    return null;
+                    }
+
+                return Convert.ToDecimal(value);
+                }
+
+            return null;
             }
 
         public List<GetTeamDetailsModel> GetFieldAuditTeamDetails(int engId)
