@@ -82,14 +82,12 @@ namespace AIS.Services
             sb.AppendLine(".para-body{ font-size:12px; line-height:1.6; text-align:justify; white-space:normal !important; overflow-wrap:anywhere; color:#212529; width:100%; }");
             sb.AppendLine(".para-body *{ font-size:12px !important; white-space:normal !important; overflow-wrap:anywhere; }");
             sb.AppendLine(".para-body h1,.para-body h2,.para-body h3{ font-size:13px !important; margin:6px 0 !important; }");
-            sb.AppendLine(".paragraph table, .para-body table, .para-detail table{ width:100% !important; max-width:100% !important; margin-top:10px; box-sizing:border-box; }");
-            sb.AppendLine(".paragraph table.bordered-table, .para-body table.bordered-table, .para-detail table.bordered-table{ table-layout:fixed !important; border-collapse:collapse; }");
-            sb.AppendLine(".paragraph table.bordered-table th, .paragraph table.bordered-table td, .para-body table.bordered-table th, .para-body table.bordered-table td, .para-detail table.bordered-table th, .para-detail table.bordered-table td{ border:1px solid #222; padding:4px 6px; vertical-align:top; word-break:break-word; overflow-wrap:anywhere; white-space:normal !important; }");
-            sb.AppendLine(".paragraph table.borderless-table, .para-body table.borderless-table, .para-detail table.borderless-table{ table-layout:auto; border-collapse:separate; }");
-            sb.AppendLine(".paragraph table.borderless-table th, .paragraph table.borderless-table td, .para-body table.borderless-table th, .para-body table.borderless-table td, .para-detail table.borderless-table th, .para-detail table.borderless-table td{ border:none; padding:4px 6px; vertical-align:top; word-break:normal; overflow-wrap:normal; white-space:normal !important; }");
+            sb.AppendLine(".para-body table{ width:100% !important; max-width:100% !important; table-layout:fixed !important; border-collapse:collapse; margin-top:10px; box-sizing:border-box; }");
+            sb.AppendLine(".para-body table th,.para-body table td{ border:1px solid #222; padding:4px 6px; vertical-align:top; word-break:break-word; overflow-wrap:anywhere; white-space:normal !important; }");
             sb.AppendLine(".para-body img{ max-width:100% !important; height:auto !important; }");
             sb.AppendLine(".para-detail, .para-detail *{ max-width:100% !important; box-sizing:border-box !important; }");
-            sb.AppendLine(".para-detail table th,.para-detail table td{ white-space:normal !important; vertical-align:top !important; padding:3px 4px !important; font-size:10px !important; }");
+            sb.AppendLine(".para-detail table{ width:100% !important; max-width:100% !important; table-layout:fixed !important; border-collapse:collapse !important; }");
+            sb.AppendLine(".para-detail th,.para-detail td{ white-space:normal !important; word-break:break-word !important; overflow-wrap:anywhere !important; vertical-align:top !important; padding:3px 4px !important; font-size:10px !important; }");
             sb.AppendLine(".para-detail col,.para-detail colgroup{ width:auto !important; }");
             sb.AppendLine(".para-detail img{ max-width:100% !important; height:auto !important; }");
             sb.AppendLine(".para-table{ width:100%; border-collapse:collapse; margin:10px 0; page-break-inside:auto; break-inside:auto; table-layout:fixed; }");
@@ -842,11 +840,6 @@ namespace AIS.Services
                 }
             while (!string.Equals(previous, current, StringComparison.Ordinal));
 
-            if (HasNestedTables(current))
-                {
-                return current;
-                }
-
             current = Regex.Replace(current, "\\swidth\\s*=\\s*[\"']?\\s*\\d+%?\\s*[\"']?", string.Empty, RegexOptions.IgnoreCase);
             current = Regex.Replace(current, "\\snowrap(\\s*=\\s*[\"']?nowrap[\"']?)?", string.Empty, RegexOptions.IgnoreCase);
             current = Regex.Replace(current, "style\\s*=\\s*[\"'][^\"']*[\"']", match =>
@@ -858,116 +851,7 @@ namespace AIS.Services
                 return style;
                 }, RegexOptions.IgnoreCase);
 
-            return NormalizeTableClasses(current);
-            }
-
-        private static string NormalizeTableClasses(string html)
-            {
-            return Regex.Replace(html, "<\\s*table\\b[^>]*>", match =>
-                {
-                var tableTag = match.Value;
-                var classToAdd = IsBorderedTable(tableTag) ? "bordered-table" : "borderless-table";
-                return AddClassToTag(tableTag, classToAdd);
-                }, RegexOptions.IgnoreCase);
-            }
-
-        private static bool HasNestedTables(string html)
-            {
-            var matches = Regex.Matches(html, "<\\s*/?\\s*table\\b[^>]*>", RegexOptions.IgnoreCase);
-            var depth = 0;
-            foreach (Match match in matches)
-                {
-                var tag = match.Value;
-                var isClosing = Regex.IsMatch(tag, "^<\\s*/", RegexOptions.IgnoreCase);
-                if (isClosing)
-                    {
-                    if (depth > 0)
-                        {
-                        depth--;
-                        }
-                    continue;
-                    }
-
-                var isSelfClosing = tag.EndsWith("/>", StringComparison.Ordinal);
-                depth++;
-                if (depth > 1)
-                    {
-                    return true;
-                    }
-
-                if (isSelfClosing)
-                    {
-                    depth--;
-                    }
-                }
-
-            return false;
-            }
-
-        private static bool IsBorderedTable(string tableTag)
-            {
-            var classMatch = Regex.Match(tableTag, "\\bclass\\s*=\\s*([\"'])(?<value>[^\"']*)\\1", RegexOptions.IgnoreCase);
-            if (classMatch.Success)
-                {
-                var classValue = classMatch.Groups["value"].Value;
-                if (Regex.IsMatch(classValue, "\\b(borderless|no[-_ ]?border)\\b", RegexOptions.IgnoreCase))
-                    {
-                    return false;
-                    }
-
-                if (Regex.IsMatch(classValue, "\\b(border|bordered|tablegrid|msotablegrid|grid)\\b", RegexOptions.IgnoreCase))
-                    {
-                    return true;
-                    }
-                }
-
-            var borderMatch = Regex.Match(tableTag, "\\bborder\\s*=\\s*([\"']?)(?<value>\\d+)\\1", RegexOptions.IgnoreCase);
-            if (borderMatch.Success && int.TryParse(borderMatch.Groups["value"].Value, out var borderValue))
-                {
-                return borderValue > 0;
-                }
-
-            var styleMatch = Regex.Match(tableTag, "\\bstyle\\s*=\\s*([\"'])(?<value>[^\"']*)\\1", RegexOptions.IgnoreCase);
-            if (styleMatch.Success)
-                {
-                var styleValue = styleMatch.Groups["value"].Value;
-                if (Regex.IsMatch(styleValue, "border\\s*:\\s*(?!\\s*(?:0|none))", RegexOptions.IgnoreCase)
-                    || Regex.IsMatch(styleValue, "border-(top|right|bottom|left)\\s*:\\s*(?!\\s*(?:0|none))", RegexOptions.IgnoreCase))
-                    {
-                    return true;
-                    }
-                }
-
-            return false;
-            }
-
-        private static string AddClassToTag(string tag, string classToAdd)
-            {
-            var classMatch = Regex.Match(tag, "\\bclass\\s*=\\s*([\"'])(?<value>[^\"']*)\\1", RegexOptions.IgnoreCase);
-            if (classMatch.Success)
-                {
-                var quote = classMatch.Groups[1].Value;
-                var existing = classMatch.Groups["value"].Value;
-                var classes = existing
-                    .Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries)
-                    .ToList();
-                if (!classes.Any(name => string.Equals(name, classToAdd, StringComparison.OrdinalIgnoreCase)))
-                    {
-                    classes.Add(classToAdd);
-                    }
-                var updated = string.Join(" ", classes);
-                return tag.Substring(0, classMatch.Index)
-                    + $"class={quote}{updated}{quote}"
-                    + tag.Substring(classMatch.Index + classMatch.Length);
-                }
-
-            var insertIndex = tag.LastIndexOf('>');
-            if (insertIndex < 0)
-                {
-                return tag;
-                }
-
-            return tag.Insert(insertIndex, $" class=\"{classToAdd}\"");
+            return current;
             }
 
         private static bool HasMeaningfulContent(string htmlContent)
