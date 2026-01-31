@@ -87,6 +87,7 @@ namespace AIS.Services
             sb.AppendLine(".para-body img{ max-width:100% !important; height:auto !important; }");
             sb.AppendLine(".para-detail, .para-detail *{ max-width:100% !important; box-sizing:border-box !important; }");
             sb.AppendLine(".para-detail table{ width:100% !important; max-width:100% !important; table-layout:fixed !important; border-collapse:collapse !important; }");
+            sb.AppendLine(".para-detail table[border=\"0\"]{ table-layout:auto !important; }");
             sb.AppendLine(".para-detail th,.para-detail td{ white-space:normal !important; word-break:break-word !important; overflow-wrap:anywhere !important; vertical-align:top !important; padding:3px 4px !important; font-size:10px !important; }");
             sb.AppendLine(".para-detail col,.para-detail colgroup{ width:auto !important; }");
             sb.AppendLine(".para-detail img{ max-width:100% !important; height:auto !important; }");
@@ -840,15 +841,27 @@ namespace AIS.Services
                 }
             while (!string.Equals(previous, current, StringComparison.Ordinal));
 
-            current = Regex.Replace(current, "\\swidth\\s*=\\s*[\"']?\\s*\\d+%?\\s*[\"']?", string.Empty, RegexOptions.IgnoreCase);
-            current = Regex.Replace(current, "\\snowrap(\\s*=\\s*[\"']?nowrap[\"']?)?", string.Empty, RegexOptions.IgnoreCase);
-            current = Regex.Replace(current, "style\\s*=\\s*[\"'][^\"']*[\"']", match =>
+            current = Regex.Replace(current, @"<(table|col|colgroup)\b[^>]*>", match =>
+                {
+                var tag = match.Value;
+                tag = Regex.Replace(tag, @"\swidth\s*=\s*[""']?\s*\d+%?\s*[""']?", string.Empty, RegexOptions.IgnoreCase);
+                tag = Regex.Replace(tag, @"style\s*=\s*[""'][^""']*[""']", styleMatch =>
+                    {
+                    var style = styleMatch.Value;
+                    style = Regex.Replace(style, @"width\s*:\s*[^;]+;?", string.Empty, RegexOptions.IgnoreCase);
+                    style = Regex.Replace(style, @"white-space\s*:\s*nowrap;?", string.Empty, RegexOptions.IgnoreCase);
+                    style = Regex.Replace(style, @"\s{2,}", " ");
+                    return style.Trim();
+                    }, RegexOptions.IgnoreCase);
+                return tag;
+                }, RegexOptions.IgnoreCase);
+            current = Regex.Replace(current, @"\snowrap(\s*=\s*[""']?nowrap[""']?)?", string.Empty, RegexOptions.IgnoreCase);
+            current = Regex.Replace(current, @"style\s*=\s*[""'][^""']*[""']", match =>
                 {
                 var style = match.Value;
-                style = Regex.Replace(style, "width\\s*:\\s*[^;]+;?", string.Empty, RegexOptions.IgnoreCase);
-                style = Regex.Replace(style, "white-space\\s*:\\s*nowrap;?", string.Empty, RegexOptions.IgnoreCase);
-                style = Regex.Replace(style, "\\s{2,}", " ");
-                return style;
+                style = Regex.Replace(style, @"white-space\s*:\s*nowrap;?", string.Empty, RegexOptions.IgnoreCase);
+                style = Regex.Replace(style, @"\s{2,}", " ");
+                return style.Trim();
                 }, RegexOptions.IgnoreCase);
 
             return current;
