@@ -40,12 +40,12 @@ namespace AIS.Services
             sb.AppendLine("h3 { font-size: 13pt; }");
             sb.AppendLine("h4 { font-size: 12pt; }");
             sb.AppendLine("h2, h3, h4 { page-break-after: avoid; break-after: avoid; }");
-            sb.AppendLine("table { width: 100%; border-collapse: collapse; margin: 8pt 0; page-break-inside: auto; break-inside: auto; }");
             sb.AppendLine("tr { page-break-inside: avoid; break-inside: avoid; }");
             sb.AppendLine("thead { display: table-header-group; }");
             sb.AppendLine("tfoot { display: table-footer-group; }");
-            sb.AppendLine("th, td { border: 1px solid #111; padding: 4pt 6pt; vertical-align: top; }");
-            sb.AppendLine(".grid{ width:100%; border-collapse:collapse; table-layout:fixed; margin-top:8px; }");
+            sb.AppendLine(".report-table{ width:100%; border-collapse:collapse; margin:8pt 0; page-break-inside:auto; break-inside:auto; }");
+            sb.AppendLine(".report-table th,.report-table td{ border:1px solid #111; padding:4pt 6pt; vertical-align:top; }");
+            sb.AppendLine(".grid{ width:100%; border-collapse:collapse; table-layout:fixed; margin-top:8px; margin-bottom:8pt; page-break-inside:auto; break-inside:auto; }");
             sb.AppendLine(".grid th,.grid td{ border:1px solid #111; padding:6px; font-size:12px; vertical-align:top; }");
             sb.AppendLine(".grid th{ background:#f6f8fa; font-weight:700; text-align:center; }");
             sb.AppendLine(".grid td{ text-align:center; }");
@@ -82,11 +82,14 @@ namespace AIS.Services
             sb.AppendLine(".para-body{ font-size:12px; line-height:1.6; text-align:justify; white-space:normal !important; overflow-wrap:anywhere; color:#212529; width:100%; }");
             sb.AppendLine(".para-body *{ font-size:12px !important; white-space:normal !important; overflow-wrap:anywhere; }");
             sb.AppendLine(".para-body h1,.para-body h2,.para-body h3{ font-size:13px !important; margin:6px 0 !important; }");
-            sb.AppendLine(".para-body table{ width:100% !important; max-width:100% !important; table-layout:fixed !important; border-collapse:collapse; margin-top:10px; box-sizing:border-box; }");
-            sb.AppendLine(".para-body table th,.para-body table td{ border:1px solid #222; padding:4px 6px; vertical-align:top; word-break:break-word; overflow-wrap:anywhere; white-space:normal !important; }");
+            sb.AppendLine(".para-text-content{ width:100%; }");
+            sb.AppendLine(".para-text-content table{ max-width:100% !important; box-sizing:border-box; margin-top:10px; }");
+            sb.AppendLine(".para-text-content table.para-data-table{ width:100% !important; table-layout:fixed !important; border-collapse:collapse; }");
+            sb.AppendLine(".para-text-content table.para-data-table th,.para-text-content table.para-data-table td{ border:1px solid #222; padding:4px 6px; vertical-align:top; word-break:break-word; overflow-wrap:anywhere; white-space:normal !important; }");
+            sb.AppendLine(".para-text-content table.para-layout-table{ width:auto; table-layout:auto; border-collapse:separate; }");
+            sb.AppendLine(".para-text-content table.para-layout-table th,.para-text-content table.para-layout-table td{ border:none; padding:4px 6px; vertical-align:top; white-space:normal !important; }");
             sb.AppendLine(".para-body img{ max-width:100% !important; height:auto !important; }");
             sb.AppendLine(".para-detail, .para-detail *{ max-width:100% !important; box-sizing:border-box !important; }");
-            sb.AppendLine(".para-detail table{ width:100% !important; max-width:100% !important; table-layout:fixed !important; border-collapse:collapse !important; }");
             sb.AppendLine(".para-detail th,.para-detail td{ white-space:normal !important; word-break:break-word !important; overflow-wrap:anywhere !important; vertical-align:top !important; padding:3px 4px !important; font-size:10px !important; }");
             sb.AppendLine(".para-detail col,.para-detail colgroup{ width:auto !important; }");
             sb.AppendLine(".para-detail img{ max-width:100% !important; height:auto !important; }");
@@ -149,7 +152,7 @@ namespace AIS.Services
             sb.AppendLine("<div class=\"report-title\">Field Audit Report</div>");
             sb.AppendLine("</div>");
             sb.AppendLine("<div class=\"cover-box\">");
-            sb.AppendLine("<table class=\"meta-grid\">");
+            sb.AppendLine("<table class=\"meta-grid report-table\">");
             AppendMetaRow(sb, "Reporting Office", header.Reporting);
             AppendMetaRow(sb, "Entity", header.EntityName);
             AppendMetaRow(sb, "Branch Code", header.BranchCode);
@@ -222,7 +225,7 @@ namespace AIS.Services
             sb.AppendLine("<div class=\"section-title\">Branch / Entity Profile</div>");
             sb.AppendLine("<div class=\"avoid-break\">");
             sb.AppendLine("<h3>Branch Profile</h3>");
-            sb.AppendLine("<table>");
+            sb.AppendLine("<table class=\"report-table\">");
             sb.AppendLine("<thead><tr><th>Profile Item</th><th>Details</th></tr></thead>");
             sb.AppendLine("<tbody>");
 
@@ -489,7 +492,7 @@ namespace AIS.Services
             sb.AppendLine("<div class=\"section-block\">");
             sb.AppendLine("<div class=\"section-title\">Significant Paras (High Risk)</div>");
             sb.AppendLine("<div class=\"avoid-break\">");
-            sb.AppendLine("<table>");
+            sb.AppendLine("<table class=\"report-table\">");
             sb.AppendLine("<thead><tr><th>Para No</th><th>Gist</th><th>Nature</th></tr></thead>");
             sb.AppendLine("<tbody>");
             foreach (var para in significant)
@@ -522,7 +525,7 @@ namespace AIS.Services
             sb.AppendLine("<div class=\"section-block\">");
             sb.AppendLine("<div class=\"section-title\">Audit Statistics</div>");
             sb.AppendLine("<div class=\"avoid-break\">");
-            sb.AppendLine("<table>");
+            sb.AppendLine("<table class=\"report-table\">");
             sb.AppendLine("<thead><tr><th>Risk</th><th>Reported</th><th>Rectified</th><th>Outstanding</th></tr></thead>");
             sb.AppendLine("<tbody>");
             foreach (var row in rows)
@@ -563,7 +566,7 @@ namespace AIS.Services
             sb.AppendLine("<div class=\"section-block\">");
             sb.AppendLine("<div class=\"section-title\">Income Leakage</div>");
             sb.AppendLine("<div class=\"avoid-break\">");
-            sb.AppendLine("<table>");
+            sb.AppendLine("<table class=\"report-table\">");
             sb.AppendLine("<thead><tr><th>Case</th><th>Description</th><th>Amount</th></tr></thead>");
             sb.AppendLine("<tbody>");
             foreach (var row in rows)
@@ -713,7 +716,7 @@ namespace AIS.Services
             sb.AppendLine("<div class=\"section-block\">");
             sb.AppendLine("<div class=\"section-title\">Footer</div>");
             sb.AppendLine("<div class=\"avoid-break\">");
-            sb.AppendLine("<table class=\"meta-grid\">");
+            sb.AppendLine("<table class=\"meta-grid report-table\">");
             if (!string.IsNullOrWhiteSpace(generatedBy))
                 {
                 AppendMetaRow(sb, "Generated By", generatedBy);
@@ -854,6 +857,57 @@ namespace AIS.Services
             return current;
             }
 
+        private static string ApplyParaTableClasses(string html)
+            {
+            if (string.IsNullOrWhiteSpace(html))
+                {
+                return html ?? string.Empty;
+                }
+
+            return Regex.Replace(html, "<table(?<attrs>[^>]*)>", match =>
+                {
+                var attrs = match.Groups["attrs"].Value;
+                var className = TableHasBorder(attrs) ? "para-data-table" : "para-layout-table";
+                var updatedAttrs = AppendCssClass(attrs, className);
+                return $"<table{updatedAttrs}>";
+                }, RegexOptions.IgnoreCase);
+            }
+
+        private static bool TableHasBorder(string attrs)
+            {
+            if (string.IsNullOrWhiteSpace(attrs))
+                {
+                return false;
+                }
+
+            var hasBorderAttribute = Regex.IsMatch(attrs, "\\bborder\\s*=\\s*[\"']?\\s*(?!0)\\d", RegexOptions.IgnoreCase);
+            var hasBorderStyle = Regex.IsMatch(attrs, "style\\s*=\\s*(\"|')[^\"']*border\\s*:\\s*(?!\\s*(0|none))[^;\"']+", RegexOptions.IgnoreCase);
+            return hasBorderAttribute || hasBorderStyle;
+            }
+
+        private static string AppendCssClass(string attrs, string className)
+            {
+            var classPattern = new Regex("\\bclass\\s*=\\s*(\"|')(?<value>[^\"']*)(\\1)", RegexOptions.IgnoreCase);
+            var match = classPattern.Match(attrs);
+            if (match.Success)
+                {
+                var existing = match.Groups["value"].Value;
+                if (Regex.IsMatch(existing, $"(^|\\s){Regex.Escape(className)}(\\s|$)"))
+                    {
+                    return attrs;
+                    }
+
+                var updated = string.IsNullOrWhiteSpace(existing)
+                    ? className
+                    : $"{existing} {className}";
+                return classPattern.Replace(attrs, $"class=\"{updated}\"", 1);
+                }
+
+            return string.IsNullOrWhiteSpace(attrs)
+                ? $" class=\"{className}\""
+                : $"{attrs} class=\"{className}\"";
+            }
+
         private static bool HasMeaningfulContent(string htmlContent)
             {
             if (string.IsNullOrWhiteSpace(htmlContent))
@@ -933,8 +987,9 @@ namespace AIS.Services
             sb.AppendLine("<thead><tr><th class=\"para-title-cell\">Para Text:</th></tr></thead>");
             sb.AppendLine("<tbody><tr><td>");
             sb.Append("<div class=\"para-body\">");
-            sb.Append(normalizedHtml);
-            sb.AppendLine("</div></td></tr></tbody>");
+            sb.Append("<div class=\"para-text-content\">");
+            sb.Append(ApplyParaTableClasses(normalizedHtml));
+            sb.AppendLine("</div></div></td></tr></tbody>");
             sb.AppendLine("</table>");
             sb.AppendLine("<hr class=\"para-sep\" />");
             }
@@ -950,7 +1005,9 @@ namespace AIS.Services
             if (!string.IsNullOrWhiteSpace(normalizedHtml))
                 {
                 sb.AppendLine("<div class=\"para-detail rich-html\">");
-                sb.Append(normalizedHtml);
+                sb.Append("<div class=\"para-text-content\">");
+                sb.Append(ApplyParaTableClasses(normalizedHtml));
+                sb.AppendLine("</div>");
                 sb.AppendLine("</div>");
                 }
 
