@@ -650,26 +650,21 @@ namespace AIS.Services
                 {
                 return;
                 }
-
             sb.AppendLine("<section class=\"section\">");
-            // start on new page so it never lands at bottom after previous section
             sb.AppendLine("<div class=\"page-break\"></div>");
-            // keep title with what follows
             sb.AppendLine("<div class=\"section-block avoid-break\">");
             sb.AppendLine("<div class=\"section-title keep-with-next\">Audit Paras – Detailed</div>");
             sb.AppendLine("</div>");
-
-
             foreach (var group in paras.GroupBy(para => para.Risk).OrderBy(group => group.Key))
                 {
-                sb.AppendFormat(CultureInfo.InvariantCulture, "<h3 class=\"keep-with-next\">{0} Risk Paras</h3>", Encode(group.Key));
+                sb.AppendFormat(CultureInfo.InvariantCulture, "<h3>{0} Risk Paras</h3>", Encode(group.Key));
                 foreach (var para in group)
                     {
                     var paraTitle = string.IsNullOrWhiteSpace(para.Gist)
                         ? $"Para {Encode(para.ParaNo)}"
                         : $"Para {Encode(para.ParaNo)}: {Encode(para.Gist)}";
 
-                    sb.AppendLine("<table class=\"para-table avoid-break\">");
+                    sb.AppendLine("<table class=\"para-table\">");
                     sb.AppendLine("<thead>");
                     sb.AppendFormat(CultureInfo.InvariantCulture, "<tr><th class=\"para-title-cell\">{0}</th></tr>", paraTitle);
                     sb.AppendLine("</thead>");
@@ -930,7 +925,7 @@ namespace AIS.Services
 
         private static void AppendParaBodyDetails(StringBuilder sb, FieldAuditPdfParaModel para)
             {
-            AppendKeyValueParagraph(sb, "Annexure", para.AnnexureCode);
+            AppendKeyValueParagraph(sb, "Annexure", para.Annexure);
             AppendKeyValueParagraph(sb, "Instances", para.Instances);
             AppendKeyValueParagraph(sb, "Amount", para.Amount);
 
@@ -938,8 +933,11 @@ namespace AIS.Services
             normalizedHtml = StripParaTextPrefix(normalizedHtml);
             if (!string.IsNullOrWhiteSpace(normalizedHtml))
                 {
+                sb.AppendLine("<div class=\"section-html rich-html\">");
                 sb.Append(normalizedHtml);
+                sb.AppendLine("</div>");
                 }
+
 
             sb.AppendLine("<table class=\"para-notes\">");
             sb.AppendLine("<tbody>");

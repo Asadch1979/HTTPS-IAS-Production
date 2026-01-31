@@ -387,7 +387,7 @@ namespace AIS.Controllers
                     Risk = GetString(reader, "RISK"),
                     ManagementComments = GetString(reader, "MANAGEMENT_REPLY"),
                     Recommendations = GetString(reader, "RECOMMENDATION"),
-                    AnnexureCode = GetOptionalString(reader, "ANNEXURE_CODE"),
+                    Annexure = GetOptionalString(reader, "ANNEXURE"),
                     Instances = GetOptionalString(reader, "INSTANCES"),
                     Amount = GetOptionalString(reader, "AMOUNT"),
                     Implications = GetOptionalString(reader, "IMPLICATIONS"),
