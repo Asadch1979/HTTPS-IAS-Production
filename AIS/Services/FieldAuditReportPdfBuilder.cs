@@ -82,20 +82,12 @@ namespace AIS.Services
             sb.AppendLine(".para-body{ font-size:12px; line-height:1.6; text-align:justify; white-space:normal !important; overflow-wrap:anywhere; color:#212529; width:100%; }");
             sb.AppendLine(".para-body *{ font-size:12px !important; white-space:normal !important; overflow-wrap:anywhere; }");
             sb.AppendLine(".para-body h1,.para-body h2,.para-body h3{ font-size:13px !important; margin:6px 0 !important; }");
-            sb.AppendLine(".para-body table{ max-width:100% !important; border-collapse:collapse; margin-top:10px; box-sizing:border-box; }");
-            sb.AppendLine(".para-body table.para-table-bordered{ width:100% !important; table-layout:fixed !important; }");
-            sb.AppendLine(".para-body table.para-table-borderless{ width:auto !important; table-layout:auto !important; margin-left:0 !important; margin-right:auto !important; }");
-            sb.AppendLine(".para-body table.para-table-bordered th,.para-body table.para-table-bordered td{ border:1px solid #222; padding:4px 6px; vertical-align:top; word-break:break-word; overflow-wrap:anywhere; white-space:normal !important; }");
-            sb.AppendLine(".para-body table.para-table-borderless th,.para-body table.para-table-borderless td{ border:none !important; padding:4px 6px; vertical-align:top; word-break:break-word; overflow-wrap:anywhere; white-space:normal !important; }");
+            sb.AppendLine(".para-body table{ width:100% !important; max-width:100% !important; table-layout:fixed !important; border-collapse:collapse; margin-top:10px; box-sizing:border-box; }");
+            sb.AppendLine(".para-body table th,.para-body table td{ border:1px solid #222; padding:4px 6px; vertical-align:top; word-break:break-word; overflow-wrap:anywhere; white-space:normal !important; }");
             sb.AppendLine(".para-body img{ max-width:100% !important; height:auto !important; }");
             sb.AppendLine(".para-detail, .para-detail *{ max-width:100% !important; box-sizing:border-box !important; }");
-            sb.AppendLine(".para-detail table{ max-width:100% !important; border-collapse:collapse !important; }");
-            sb.AppendLine(".para-detail table.para-table-bordered{ width:100% !important; table-layout:fixed !important; }");
-            sb.AppendLine(".para-detail table.para-table-borderless{ width:auto !important; table-layout:auto !important; margin-left:0 !important; margin-right:auto !important; }");
-            sb.AppendLine(".para-detail th,.para-detail td{ white-space:normal !important; word-break:break-word !important; overflow-wrap:anywhere !important; vertical-align:top !important; padding:3px 4px !important; }");
-            sb.AppendLine(".para-detail table.para-table-bordered th,.para-detail table.para-table-bordered td{ font-size:10px !important; }");
-            sb.AppendLine(".para-detail table.para-table-borderless th,.para-detail table.para-table-borderless td{ font-size:12px !important; }");
-            sb.AppendLine(".para-detail table.para-table-borderless th,.para-detail table.para-table-borderless td{ border:none !important; }");
+            sb.AppendLine(".para-detail table{ width:100% !important; max-width:100% !important; table-layout:fixed !important; border-collapse:collapse !important; }");
+            sb.AppendLine(".para-detail th,.para-detail td{ white-space:normal !important; word-break:break-word !important; overflow-wrap:anywhere !important; vertical-align:top !important; padding:3px 4px !important; font-size:10px !important; }");
             sb.AppendLine(".para-detail col,.para-detail colgroup{ width:auto !important; }");
             sb.AppendLine(".para-detail img{ max-width:100% !important; height:auto !important; }");
             sb.AppendLine(".para-table{ width:100%; border-collapse:collapse; margin:10px 0; page-break-inside:auto; break-inside:auto; table-layout:fixed; }");
@@ -848,149 +840,18 @@ namespace AIS.Services
                 }
             while (!string.Equals(previous, current, StringComparison.Ordinal));
 
-            current = NormalizeTables(current);
+            current = Regex.Replace(current, "\\swidth\\s*=\\s*[\"']?\\s*\\d+%?\\s*[\"']?", string.Empty, RegexOptions.IgnoreCase);
             current = Regex.Replace(current, "\\snowrap(\\s*=\\s*[\"']?nowrap[\"']?)?", string.Empty, RegexOptions.IgnoreCase);
             current = Regex.Replace(current, "style\\s*=\\s*[\"'][^\"']*[\"']", match =>
                 {
                 var style = match.Value;
+                style = Regex.Replace(style, "width\\s*:\\s*[^;]+;?", string.Empty, RegexOptions.IgnoreCase);
                 style = Regex.Replace(style, "white-space\\s*:\\s*nowrap;?", string.Empty, RegexOptions.IgnoreCase);
                 style = Regex.Replace(style, "\\s{2,}", " ");
                 return style;
                 }, RegexOptions.IgnoreCase);
 
             return current;
-            }
-
-        private static string NormalizeTables(string html)
-            {
-            return Regex.Replace(html, "<table\\b[^>]*>.*?</table>", match =>
-                {
-                var tableHtml = match.Value;
-                var startTagMatch = Regex.Match(tableHtml, "<table\\b[^>]*>", RegexOptions.IgnoreCase);
-                if (!startTagMatch.Success)
-                    {
-                    return tableHtml;
-                    }
-
-                var startTag = startTagMatch.Value;
-                var endTagIndex = tableHtml.LastIndexOf("</table>", StringComparison.OrdinalIgnoreCase);
-                if (endTagIndex < 0)
-                    {
-                    return tableHtml;
-                    }
-
-                var innerHtml = tableHtml.Substring(startTagMatch.Length, endTagIndex - startTagMatch.Length);
-                var normalizedStartTag = NormalizeTableStartTag(startTag, innerHtml);
-                return $"{normalizedStartTag}{innerHtml}</table>";
-                }, RegexOptions.IgnoreCase | RegexOptions.Singleline);
-            }
-
-        private static string NormalizeTableStartTag(string tableTag, string innerHtml)
-            {
-            var hasBorderAttribute = Regex.IsMatch(tableTag, "\\bborder\\s*=", RegexOptions.IgnoreCase);
-            var hasBorderedValue = Regex.IsMatch(tableTag, "\\bborder\\s*=\\s*[\"']?1[\"']?", RegexOptions.IgnoreCase);
-            var hasBorderlessValue = Regex.IsMatch(tableTag, "\\bborder\\s*=\\s*[\"']?0[\"']?", RegexOptions.IgnoreCase);
-            var hasWordClass = Regex.IsMatch(tableTag, "\\bclass\\s*=\\s*[\"'][^\"']*\\bMsoNormalTable\\b", RegexOptions.IgnoreCase);
-            var hasWidthAttribute = Regex.IsMatch(tableTag, "\\bwidth\\s*=\\s*[\"']?\\s*\\d+(?:\\.\\d+)?%?\\s*[\"']?", RegexOptions.IgnoreCase);
-            var hasWidthStylePt = Regex.IsMatch(tableTag, "style\\s*=\\s*[\"'][^\"']*width\\s*:\\s*[^;]*pt", RegexOptions.IgnoreCase);
-
-            var isBorderless = !hasBorderedValue && (hasBorderlessValue || !hasBorderAttribute || hasWordClass || hasWidthAttribute || hasWidthStylePt);
-            var columnCount = isBorderless ? GetMaxColumnCount(innerHtml) : 0;
-            var tableClass = isBorderless ? "para-table-borderless" : "para-table-bordered";
-            var columnClass = isBorderless
-                ? (columnCount > 1 ? "para-table-multi-column" : "para-table-single-column")
-                : string.Empty;
-
-            tableTag = AddClassAttribute(tableTag, $"{tableClass} {columnClass}".Trim());
-
-            if (isBorderless)
-                {
-                tableTag = Regex.Replace(tableTag, "\\swidth\\s*=\\s*[\"']?\\s*\\d+(?:\\.\\d+)?%?\\s*[\"']?", string.Empty, RegexOptions.IgnoreCase);
-                tableTag = Regex.Replace(tableTag, "\\salign\\s*=\\s*[\"']?\\s*center\\s*[\"']?", string.Empty, RegexOptions.IgnoreCase);
-                }
-
-            tableTag = Regex.Replace(tableTag, "style\\s*=\\s*[\"'](?<style>[^\"']*)[\"']", match =>
-                {
-                var style = match.Groups["style"].Value;
-                if (isBorderless)
-                    {
-                    style = RemoveStyleProperty(style, "width");
-                    style = RemoveStyleProperty(style, "mso-table-lspace");
-                    style = RemoveStyleProperty(style, "mso-table-rspace");
-                    style = RemoveStyleProperty(style, "mso-table-bspace");
-                    }
-
-                style = NormalizeStyleWhitespace(style);
-                return string.IsNullOrWhiteSpace(style) ? string.Empty : $" style=\"{style}\"";
-                }, RegexOptions.IgnoreCase);
-
-            return NormalizeTagWhitespace(tableTag);
-            }
-
-        private static int GetMaxColumnCount(string html)
-            {
-            var maxCount = 0;
-            foreach (Match rowMatch in Regex.Matches(html, "<tr\\b[^>]*>(?<row>[\\s\\S]*?)</tr>", RegexOptions.IgnoreCase))
-                {
-                var rowContent = rowMatch.Groups["row"].Value;
-                var cellCount = Regex.Matches(rowContent, "<t[dh]\\b", RegexOptions.IgnoreCase).Count;
-                if (cellCount > maxCount)
-                    {
-                    maxCount = cellCount;
-                    }
-                }
-
-            return maxCount;
-            }
-
-        private static string AddClassAttribute(string tag, string classToAdd)
-            {
-            if (string.IsNullOrWhiteSpace(classToAdd))
-                {
-                return tag;
-                }
-
-            var classMatch = Regex.Match(tag, "\\bclass\\s*=\\s*([\"'])(?<value>[^\"']*)\\1", RegexOptions.IgnoreCase);
-            if (classMatch.Success)
-                {
-                var existing = classMatch.Groups["value"].Value;
-                var classes = existing.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries).ToList();
-                foreach (var entry in classToAdd.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries))
-                    {
-                    if (!classes.Contains(entry, StringComparer.OrdinalIgnoreCase))
-                        {
-                        classes.Add(entry);
-                        }
-                    }
-
-                var updated = string.Join(" ", classes);
-                return tag.Substring(0, classMatch.Index) + $"class=\"{updated}\"" + tag.Substring(classMatch.Index + classMatch.Length);
-                }
-
-            var insertIndex = tag.LastIndexOf('>');
-            if (insertIndex < 0)
-                {
-                return tag;
-                }
-
-            return tag.Insert(insertIndex, $" class=\"{classToAdd}\"");
-            }
-
-        private static string RemoveStyleProperty(string style, string propertyName)
-            {
-            return Regex.Replace(style, $"{propertyName}\\s*:\\s*[^;]+;?", string.Empty, RegexOptions.IgnoreCase);
-            }
-
-        private static string NormalizeStyleWhitespace(string style)
-            {
-            var normalized = Regex.Replace(style, "\\s{2,}", " ").Trim();
-            normalized = Regex.Replace(normalized, "^;|;$", string.Empty).Trim();
-            return normalized;
-            }
-
-        private static string NormalizeTagWhitespace(string tag)
-            {
-            return Regex.Replace(tag, "\\s{2,}", " ");
             }
 
         private static bool HasMeaningfulContent(string htmlContent)
