@@ -85,12 +85,17 @@ namespace AIS.Services
             sb.AppendLine(".para-body table{ width:100% !important; max-width:100% !important; table-layout:fixed !important; border-collapse:collapse; margin-top:10px; box-sizing:border-box; }");
             sb.AppendLine(".para-body table th,.para-body table td{ border:1px solid #222; padding:4px 6px; vertical-align:top; word-break:break-word; overflow-wrap:anywhere; white-space:normal !important; }");
             sb.AppendLine(".para-body img{ max-width:100% !important; height:auto !important; }");
+            sb.AppendLine(".para-detail, .para-detail *{ max-width:100% !important; box-sizing:border-box !important; }");
+            sb.AppendLine(".para-detail table{ width:100% !important; max-width:100% !important; table-layout:fixed !important; border-collapse:collapse !important; }");
+            sb.AppendLine(".para-detail th,.para-detail td{ white-space:normal !important; word-break:break-word !important; overflow-wrap:anywhere !important; vertical-align:top !important; padding:3px 4px !important; font-size:10px !important; }");
+            sb.AppendLine(".para-detail col,.para-detail colgroup{ width:auto !important; }");
+            sb.AppendLine(".para-detail img{ max-width:100% !important; height:auto !important; }");
             sb.AppendLine(".para-table{ width:100%; border-collapse:collapse; margin:10px 0; page-break-inside:auto; break-inside:auto; table-layout:fixed; }");
             sb.AppendLine(".para-table th{ background:#f6f8fa; text-align:left; border:1px solid #d0d7de; }");
             sb.AppendLine(".para-table td{ border:1px solid #d0d7de; padding:10px 12px; overflow:hidden; word-break:break-word; overflow-wrap:anywhere; }");
             sb.AppendLine("table.para-notes{ width:100%; table-layout:fixed; border-collapse:collapse; }");
-            sb.AppendLine("table.para-notes th{ width:22%; font-weight:700; vertical-align:top; padding:6px; }");
-            sb.AppendLine("table.para-notes td{ width:78%; padding:6px; vertical-align:top; word-break:break-word; overflow-wrap:anywhere; }");
+            sb.AppendLine("table.para-notes th{ width:16%; font-weight:700; vertical-align:top; padding:6px; }");
+            sb.AppendLine("table.para-notes td{ width:84%; padding:6px; vertical-align:top; word-break:break-word; overflow-wrap:anywhere; }");
             sb.AppendLine(".para-title-cell{ font-weight:700; font-size:13px; padding:8px 10px; }");
             sb.AppendLine(".para-sep{ border:0; border-top:1px solid #d0d7de; margin:14px 0; }");
             sb.AppendLine(".page-break{ page-break-before: always; break-before: page; }");
@@ -835,6 +840,17 @@ namespace AIS.Services
                 }
             while (!string.Equals(previous, current, StringComparison.Ordinal));
 
+            current = Regex.Replace(current, @"\swidth\s*=\s*[""']?\s*\d+%?\s*[""']?", string.Empty, RegexOptions.IgnoreCase);
+            current = Regex.Replace(current, @"\snowrap(\s*=\s*[""']?nowrap[""']?)?", string.Empty, RegexOptions.IgnoreCase);
+            current = Regex.Replace(current, @"style\s*=\s*[""'][^""']*[""']", match =>
+                {
+                var style = match.Value;
+                style = Regex.Replace(style, @"width\s*:\s*[^;]+;?", string.Empty, RegexOptions.IgnoreCase);
+                style = Regex.Replace(style, @"white-space\s*:\s*nowrap;?", string.Empty, RegexOptions.IgnoreCase);
+                style = Regex.Replace(style, @"\s{2,}", " ");
+                return style.Trim();
+                }, RegexOptions.IgnoreCase);
+
             return current;
             }
 
@@ -933,7 +949,7 @@ namespace AIS.Services
             normalizedHtml = StripParaTextPrefix(normalizedHtml);
             if (!string.IsNullOrWhiteSpace(normalizedHtml))
                 {
-                sb.AppendLine("<div class=\"section-html rich-html\">");
+                sb.AppendLine("<div class=\"para-detail rich-html\">");
                 sb.Append(normalizedHtml);
                 sb.AppendLine("</div>");
                 }
