@@ -15,7 +15,12 @@ namespace AIS.Services
         {
         private static readonly string[] NarrativeSectionOrder =
             {
+            "Fraud Prone Indicators",
+            "Regulatory Violations",
+            "Safety & Security",
+            "Non-Addressable Findings",
             "Audit Recommendations",
+            "Overall Conclusion",
             "Audit Limitation"
             };
 
@@ -32,7 +37,7 @@ namespace AIS.Services
             sb.AppendLine("<head>");
             sb.AppendLine("<meta charset=\"utf-8\" />");
             sb.AppendLine("<style>");
-            sb.AppendLine("@page { size: A4 portrait; margin: 18mm; }");
+            sb.AppendLine("@page { size: A4 portrait; margin: 36pt 36pt 54pt 36pt; }");
             sb.AppendLine("body{ font-family: Arial, Helvetica, sans-serif; font-size: 12px; color:#111; margin: 22px; }");
             sb.AppendLine("h1, h2, h3, h4 { margin: 12pt 0 6pt; }");
             sb.AppendLine("h1 { font-size: 18pt; text-align: center; }");
@@ -40,8 +45,8 @@ namespace AIS.Services
             sb.AppendLine("h3 { font-size: 13pt; }");
             sb.AppendLine("h4 { font-size: 12pt; }");
             sb.AppendLine("h2, h3, h4 { page-break-after: avoid; break-after: avoid; }");
-            sb.AppendLine("table { width: 100%; border-collapse: collapse; margin: 8pt 0; page-break-inside: auto; break-inside: auto; }");
-            sb.AppendLine("tr { page-break-inside: avoid; break-inside: avoid; }");
+            sb.AppendLine("table, tr, td, th { page-break-inside: avoid; break-inside: avoid; }");
+            sb.AppendLine("table { width: 100%; border-collapse: collapse; margin: 8pt 0; }");
             sb.AppendLine("thead { display: table-header-group; }");
             sb.AppendLine("tfoot { display: table-footer-group; }");
             sb.AppendLine("th, td { border: 1px solid #111; padding: 4pt 6pt; vertical-align: top; }");
@@ -51,7 +56,6 @@ namespace AIS.Services
             sb.AppendLine(".grid td{ text-align:center; }");
             sb.AppendLine(".grid td.left{ text-align:left; }");
             sb.AppendLine(".grid th.left{ text-align:left; }");
-            sb.AppendLine(".section-block{ margin-bottom:18px; }");
             sb.AppendLine(".section { page-break-after: auto; }");
             sb.AppendLine(".cover-page{ text-align:center; }");
             sb.AppendLine(".cover-logo{ text-align:left; margin-bottom:18px; }");
@@ -79,13 +83,8 @@ namespace AIS.Services
             sb.AppendLine(".para-body{ font-size:12px; line-height:1.6; text-align:justify; white-space:normal !important; overflow-wrap:anywhere; color:#212529; width:100%; }");
             sb.AppendLine(".para-body *{ font-size:12px !important; white-space:normal !important; overflow-wrap:anywhere; }");
             sb.AppendLine(".para-body h1,.para-body h2,.para-body h3{ font-size:13px !important; margin:6px 0 !important; }");
-            sb.AppendLine(".para-body table{ width:100% !important; max-width:100% !important; table-layout:fixed !important; border-collapse:collapse; margin-top:10px; }");
-            sb.AppendLine(".para-body td,.para-body th{ word-break:break-word; overflow-wrap:anywhere; white-space:normal !important; }");
+            sb.AppendLine(".para-body table{ width:100%; border-collapse:collapse; margin-top:10px; }");
             sb.AppendLine(".para-body table th,.para-body table td{ border:1px solid #222; padding:4px 6px; vertical-align:top; }");
-            sb.AppendLine(".para-body img{ max-width:100% !important; height:auto !important; }");
-            sb.AppendLine("table.para-notes{ width:100%; table-layout:fixed; border-collapse:collapse; }");
-            sb.AppendLine("table.para-notes th{ width:22%; font-weight:700; vertical-align:top; padding:6px; }");
-            sb.AppendLine("table.para-notes td{ width:78%; padding:6px; vertical-align:top; word-break:break-word; overflow-wrap:anywhere; }");
             sb.AppendLine(".para-table{ width:100%; border-collapse:collapse; margin:10px 0; page-break-inside:avoid; break-inside:avoid; }");
             sb.AppendLine(".para-table th{ background:#f6f8fa; text-align:left; border:1px solid #d0d7de; }");
             sb.AppendLine(".para-table td{ border:1px solid #d0d7de; padding:10px 12px; }");
@@ -109,7 +108,6 @@ namespace AIS.Services
             AppendAuditStatistics(sb, data);
             AppendIncomeLeakage(sb, data);
             AppendNarrativeSections(sb, data);
-            AppendOverallAuditConclusion(sb, data);
             AppendDetailedParas(sb, data);
             AppendStaticClauses(sb, data);
             AppendFooterSection(sb, data);
@@ -209,9 +207,7 @@ namespace AIS.Services
                 }
 
             sb.AppendLine("<section class=\"section\">");
-            sb.AppendLine("<div class=\"section-block\">");
             sb.AppendLine("<h2 class=\"section-title\">Branch / Entity Profile</h2>");
-            sb.AppendLine("<div class=\"avoid-break\">");
             sb.AppendLine("<h3>Branch Profile</h3>");
             sb.AppendLine("<table>");
             sb.AppendLine("<thead><tr><th>Profile Item</th><th>Details</th></tr></thead>");
@@ -234,10 +230,8 @@ namespace AIS.Services
 
             sb.AppendLine("</tbody>");
             sb.AppendLine("</table>");
-            sb.AppendLine("</div>");
 
             AppendNarrativeBlock(sb, "Key Statistics Narrative", narrative);
-            sb.AppendLine("</div>");
             sb.AppendLine("</section>");
             }
 
@@ -250,9 +244,7 @@ namespace AIS.Services
                 }
 
             sb.AppendLine("<section class=\"section\">");
-            sb.AppendLine("<div class=\"section-block\">");
             sb.AppendLine("<h2 class=\"section-title\">Staff Position</h2>");
-            sb.AppendLine("<div class=\"avoid-break\">");
             sb.AppendLine("<table>");
             sb.AppendLine("<thead><tr><th>Designation</th><th>Strength</th><th>As-of Date</th></tr></thead>");
             sb.AppendLine("<tbody>");
@@ -271,8 +263,6 @@ namespace AIS.Services
                 }
             sb.AppendLine("</tbody>");
             sb.AppendLine("</table>");
-            sb.AppendLine("</div>");
-            sb.AppendLine("</div>");
             sb.AppendLine("</section>");
             }
 
@@ -288,7 +278,6 @@ namespace AIS.Services
                 }
 
             sb.AppendLine("<section class=\"section\">");
-            sb.AppendLine("<div class=\"section-block\">");
             sb.AppendLine("<h2 class=\"section-title\">KPI Snapshot</h2>");
             sb.AppendLine("<div class=\"avoid-break\">");
             AppendChartBlocks(sb, chartImages, fallbackChart, "KPI Snapshot Chart");
@@ -351,7 +340,6 @@ namespace AIS.Services
                 sb.AppendLine("</table>");
                 }
             sb.AppendLine("</div>");
-            sb.AppendLine("</div>");
             sb.AppendLine("</section>");
             }
 
@@ -367,7 +355,6 @@ namespace AIS.Services
                 }
 
             sb.AppendLine("<section class=\"section\">");
-            sb.AppendLine("<div class=\"section-block\">");
             sb.AppendLine("<h2 class=\"section-title\">NPL Analysis</h2>");
             sb.AppendLine("<div class=\"avoid-break\">");
             AppendChartBlocks(sb, chartImages, fallbackChart, "NPL Composition Chart");
@@ -443,7 +430,6 @@ namespace AIS.Services
                 sb.AppendLine("</table>");
                 }
             sb.AppendLine("</div>");
-            sb.AppendLine("</div>");
             sb.AppendLine("</section>");
             }
 
@@ -459,9 +445,7 @@ namespace AIS.Services
                 }
 
             sb.AppendLine("<section class=\"section\">");
-            sb.AppendLine("<div class=\"section-block\">");
             sb.AppendLine("<h2 class=\"section-title\">Significant Paras (High Risk)</h2>");
-            sb.AppendLine("<div class=\"avoid-break\">");
             sb.AppendLine("<table>");
             sb.AppendLine("<thead><tr><th>Para No</th><th>Gist</th><th>Nature</th></tr></thead>");
             sb.AppendLine("<tbody>");
@@ -475,8 +459,6 @@ namespace AIS.Services
                 }
             sb.AppendLine("</tbody>");
             sb.AppendLine("</table>");
-            sb.AppendLine("</div>");
-            sb.AppendLine("</div>");
             sb.AppendLine("</section>");
             }
 
@@ -492,9 +474,7 @@ namespace AIS.Services
                 }
 
             sb.AppendLine("<section class=\"section\">");
-            sb.AppendLine("<div class=\"section-block\">");
             sb.AppendLine("<h2 class=\"section-title\">Audit Statistics</h2>");
-            sb.AppendLine("<div class=\"avoid-break\">");
             sb.AppendLine("<table>");
             sb.AppendLine("<thead><tr><th>Risk</th><th>Reported</th><th>Rectified</th><th>Outstanding</th></tr></thead>");
             sb.AppendLine("<tbody>");
@@ -517,8 +497,6 @@ namespace AIS.Services
                 }
             sb.AppendLine("</tbody>");
             sb.AppendLine("</table>");
-            sb.AppendLine("</div>");
-            sb.AppendLine("</div>");
             sb.AppendLine("</section>");
             }
 
@@ -533,9 +511,7 @@ namespace AIS.Services
                 }
 
             sb.AppendLine("<section class=\"section\">");
-            sb.AppendLine("<div class=\"section-block\">");
             sb.AppendLine("<h2 class=\"section-title\">Income Leakage</h2>");
-            sb.AppendLine("<div class=\"avoid-break\">");
             sb.AppendLine("<table>");
             sb.AppendLine("<thead><tr><th>Case</th><th>Description</th><th>Amount</th></tr></thead>");
             sb.AppendLine("<tbody>");
@@ -560,8 +536,6 @@ namespace AIS.Services
             sb.AppendLine("</tr>");
             sb.AppendLine("</tbody>");
             sb.AppendLine("</table>");
-            sb.AppendLine("</div>");
-            sb.AppendLine("</div>");
             sb.AppendLine("</section>");
             }
 
@@ -589,64 +563,6 @@ namespace AIS.Services
             sb.AppendLine("</section>");
             }
 
-        private static void AppendOverallAuditConclusion(StringBuilder sb, FieldAuditPdfReportData data)
-            {
-            var sections = new[]
-                {
-                new { Label = "Overall conclusion", Titles = new[] { "Overall Conclusion" } },
-                new { Label = "Non-addressable findings", Titles = new[] { "Non-Addressable Findings" } },
-                new { Label = "Fraud prone indicators", Titles = new[] { "Fraud Prone Indicators" } },
-                new { Label = "Regulatory violations", Titles = new[] { "Regulatory Violations" } },
-                new { Label = "Safety & Security comments", Titles = new[] { "Safety & Security comments", "Safety & Security" } }
-                };
-
-            var blocks = new List<(string Label, string Html)>();
-            foreach (var section in sections)
-                {
-                string content = null;
-                foreach (var title in section.Titles)
-                    {
-                    content = FindSectionContent(data, null, title);
-                    if (HasMeaningfulContent(content))
-                        {
-                        break;
-                        }
-                    }
-
-                if (!HasMeaningfulContent(content))
-                    {
-                    continue;
-                    }
-
-                var normalized = NormalizeHtml(content);
-                if (!string.IsNullOrWhiteSpace(normalized))
-                    {
-                    blocks.Add((section.Label, normalized));
-                    }
-                }
-
-            if (blocks.Count == 0)
-                {
-                return;
-                }
-
-            sb.AppendLine("<section class=\"section\">");
-            sb.AppendLine("<div class=\"page-break\"></div>");
-            sb.AppendLine("<div class=\"section-block\">");
-            sb.AppendLine("<h2 class=\"section-title\">Overall Audit Conclusion</h2>");
-            sb.AppendLine("<div class=\"exec-summary\">");
-            foreach (var block in blocks)
-                {
-                sb.AppendFormat(CultureInfo.InvariantCulture, "<p><strong>{0}</strong></p>", Encode(block.Label));
-                sb.Append("<div class=\"paragraph\">");
-                sb.Append(block.Html);
-                sb.AppendLine("</div>");
-                }
-            sb.AppendLine("</div>");
-            sb.AppendLine("</div>");
-            sb.AppendLine("</section>");
-            }
-
         private static void AppendDetailedParas(StringBuilder sb, FieldAuditPdfReportData data)
             {
             var paras = data.Paras ?? new List<FieldAuditPdfParaModel>();
@@ -655,59 +571,35 @@ namespace AIS.Services
                 return;
                 }
 
-            var groupedParas = paras.GroupBy(para => para.Risk).OrderBy(group => group.Key).ToList();
             sb.AppendLine("<section class=\"section\">");
-            sb.AppendLine("<div class=\"section-block\">");
             sb.AppendLine("<h2 class=\"section-title\">Audit Paras – Detailed</h2>");
 
-            var isFirstContent = true;
-            foreach (var group in groupedParas)
+            foreach (var group in paras.GroupBy(para => para.Risk).OrderBy(group => group.Key))
                 {
-                if (isFirstContent)
-                    {
-                    sb.AppendLine("<div class=\"avoid-break\">");
-                    sb.AppendFormat(CultureInfo.InvariantCulture, "<h3>{0} Risk Paras</h3>", Encode(group.Key));
-                    var firstPara = group.First();
-                    AppendDetailedParaTable(sb, firstPara);
-                    sb.AppendLine("</div>");
-                    foreach (var para in group.Skip(1))
-                        {
-                        AppendDetailedParaTable(sb, para);
-                        }
-                    isFirstContent = false;
-                    continue;
-                    }
-
                 sb.AppendFormat(CultureInfo.InvariantCulture, "<h3>{0} Risk Paras</h3>", Encode(group.Key));
                 foreach (var para in group)
                     {
-                    AppendDetailedParaTable(sb, para);
+                    var paraTitle = string.IsNullOrWhiteSpace(para.Gist)
+                        ? $"Para {Encode(para.ParaNo)}"
+                        : $"Para {Encode(para.ParaNo)}: {Encode(para.Gist)}";
+
+                    sb.AppendLine("<table class=\"para-table\">");
+                    sb.AppendLine("<thead>");
+                    sb.AppendFormat(CultureInfo.InvariantCulture, "<tr><th class=\"para-title-cell\">{0}</th></tr>", paraTitle);
+                    sb.AppendLine("</thead>");
+                    sb.AppendLine("<tbody>");
+                    sb.AppendLine("<tr><td>");
+                    sb.AppendLine("<div class=\"para-body\">");
+                    AppendParaBodyDetails(sb, para);
+                    sb.AppendLine("</div>");
+                    sb.AppendLine("</td></tr>");
+                    sb.AppendLine("</tbody>");
+                    sb.AppendLine("</table>");
+                    sb.AppendLine("<hr class=\"para-sep\" />");
                     }
                 }
 
-            sb.AppendLine("</div>");
             sb.AppendLine("</section>");
-            }
-
-        private static void AppendDetailedParaTable(StringBuilder sb, FieldAuditPdfParaModel para)
-            {
-            var paraTitle = string.IsNullOrWhiteSpace(para.Gist)
-                ? $"Para {Encode(para.ParaNo)}"
-                : $"Para {Encode(para.ParaNo)}: {Encode(para.Gist)}";
-
-            sb.AppendLine("<table class=\"para-table\">");
-            sb.AppendLine("<thead>");
-            sb.AppendFormat(CultureInfo.InvariantCulture, "<tr><th class=\"para-title-cell\">{0}</th></tr>", paraTitle);
-            sb.AppendLine("</thead>");
-            sb.AppendLine("<tbody>");
-            sb.AppendLine("<tr><td>");
-            sb.AppendLine("<div class=\"para-body\">");
-            AppendParaBodyDetails(sb, para);
-            sb.AppendLine("</div>");
-            sb.AppendLine("</td></tr>");
-            sb.AppendLine("</tbody>");
-            sb.AppendLine("</table>");
-            sb.AppendLine("<hr class=\"para-sep\" />");
             }
 
         private static void AppendStaticClauses(StringBuilder sb, FieldAuditPdfReportData data)
@@ -732,9 +624,7 @@ namespace AIS.Services
             var generatedBy = meta.GeneratedBy;
             var generatedOn = FormatDate(meta.GeneratedOn);
             sb.AppendLine("<section class=\"section\">");
-            sb.AppendLine("<div class=\"section-block\">");
             sb.AppendLine("<h2 class=\"section-title\">Footer</h2>");
-            sb.AppendLine("<div class=\"avoid-break\">");
             sb.AppendLine("<table class=\"meta-grid\">");
             if (!string.IsNullOrWhiteSpace(generatedBy))
                 {
@@ -747,8 +637,6 @@ namespace AIS.Services
             AppendMetaRow(sb, "System Name", "IAS");
             AppendMetaRow(sb, "Confidentiality Note", "Confidential - Internal Use Only");
             sb.AppendLine("</table>");
-            sb.AppendLine("</div>");
-            sb.AppendLine("</div>");
             sb.AppendLine("</section>");
             }
 
@@ -928,7 +816,7 @@ namespace AIS.Services
 
         private static void AppendParaBodyDetails(StringBuilder sb, FieldAuditPdfParaModel para)
             {
-            AppendKeyValueParagraph(sb, "Annexure", para.AnnexureCode);
+            AppendKeyValueParagraph(sb, "Annexure Code", para.AnnexureCode);
             AppendKeyValueParagraph(sb, "Instances", para.Instances);
             AppendKeyValueParagraph(sb, "Amount", para.Amount);
 
@@ -939,13 +827,13 @@ namespace AIS.Services
                 sb.Append(normalizedHtml);
                 }
 
-            sb.AppendLine("<table class=\"para-notes\">");
+            sb.AppendLine("<table class=\"grid\">");
             sb.AppendLine("<tbody>");
             AppendGridRow(sb, "Implications", para.Implications);
             AppendGridRow(sb, "Recommendations", para.Recommendations);
-            AppendGridRow(sb, "Management / Branch Comments", para.ManagementComments);
-            AppendGridRow(sb, "Auditor’s Further Comments", para.AuditorComments);
-            AppendGridRow(sb, "Remarks of SVP / Incharge", para.RemarksInCharge);
+            AppendGridRow(sb, "Mgmt Comments", para.ManagementComments);
+            AppendGridRow(sb, "Auditor Comments", para.AuditorComments);
+            AppendGridRow(sb, "SVP Remarks", para.RemarksInCharge);
             sb.AppendLine("</tbody>");
             sb.AppendLine("</table>");
             }
