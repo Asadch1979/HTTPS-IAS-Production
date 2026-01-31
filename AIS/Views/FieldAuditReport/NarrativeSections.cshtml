@@ -48,6 +48,37 @@
         }
 }
 
+<style>
+    .section-title {
+        font-size: 14px;
+        font-weight: 700;
+        margin: 18px 0 10px 0;
+        padding: 8px 10px;
+        border-left: 4px solid #111;
+        background: #f6f8fa;
+    }
+
+    .rich-text-block .richText,
+    .rich-text-block .richText .richText-editor {
+        width: 100%;
+    }
+
+    .rich-text-block .richText {
+        border: 1px solid #ced4da;
+        border-radius: 0.375rem;
+        background-color: #fff;
+    }
+
+    .rich-text-block .richText .richText-editor {
+        min-height: 180px;
+        border: 1px solid #ced4da;
+    }
+
+    .rich-text-readonly .richText-editor {
+        background-color: #f8f9fa;
+    }
+</style>
+
 <div class="container-fluid">
     <div class="row">
         <div class="col-12">
@@ -202,8 +233,9 @@
                 </table>
             </div>
 
-            <div class="table-responsive mb-4">
-                <table class="table table-bordered align-middle">
+            <div class="section-title">4. Statistics of Current Audit Report</div>
+            <div class="table-responsive mb-2" id="statisticsBlock">
+                <table class="table table-bordered align-middle" id="statisticsTable">
                     <thead>
                         <tr>
                             <th>Nature of Paras</th>
@@ -214,80 +246,105 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <tr>
+                        <tr data-nature="Fraud &amp; Forgery (if any)">
                             <td>Fraud &amp; Forgery (if any)</td>
-                            <td>@(FindStatisticsRow("Fraud & Forgery")?.ReportedCount?.ToString() ?? string.Empty)</td>
-                            <td>@(FindStatisticsRow("Fraud & Forgery")?.RectifiedCount?.ToString() ?? string.Empty)</td>
-                            <td>@(FindStatisticsRow("Fraud & Forgery")?.OutstandingCount?.ToString() ?? string.Empty)</td>
-                            <td><input class="form-control" name="Fields[FIELD_204]" value="@FieldValue("FIELD_204")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                            <td><input class="form-control stats-reported" type="number" min="0" /></td>
+                            <td><input class="form-control stats-rectified" type="number" min="0" /></td>
+                            <td><input class="form-control stats-outstanding" type="number" min="0" /></td>
+                            <td><input class="form-control stats-remarks" /></td>
                         </tr>
-                        <tr>
+                        <tr data-nature="High Risk Paras">
                             <td>High Risk Paras</td>
-                            <td>@(FindStatisticsRow("High Risk")?.ReportedCount?.ToString() ?? string.Empty)</td>
-                            <td>@(FindStatisticsRow("High Risk")?.RectifiedCount?.ToString() ?? string.Empty)</td>
-                            <td>@(FindStatisticsRow("High Risk")?.OutstandingCount?.ToString() ?? string.Empty)</td>
-                            <td><input class="form-control" name="Fields[FIELD_205]" value="@FieldValue("FIELD_205")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                            <td><input class="form-control stats-reported" type="number" min="0" /></td>
+                            <td><input class="form-control stats-rectified" type="number" min="0" /></td>
+                            <td><input class="form-control stats-outstanding" type="number" min="0" /></td>
+                            <td><input class="form-control stats-remarks" /></td>
                         </tr>
-                        <tr>
+                        <tr data-nature="Medium Risk Paras">
                             <td>Medium Risk Paras</td>
-                            <td>@(FindStatisticsRow("Medium Risk")?.ReportedCount?.ToString() ?? string.Empty)</td>
-                            <td>@(FindStatisticsRow("Medium Risk")?.RectifiedCount?.ToString() ?? string.Empty)</td>
-                            <td>@(FindStatisticsRow("Medium Risk")?.OutstandingCount?.ToString() ?? string.Empty)</td>
-                            <td><input class="form-control" name="Fields[FIELD_206]" value="@FieldValue("FIELD_206")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                            <td><input class="form-control stats-reported" type="number" min="0" /></td>
+                            <td><input class="form-control stats-rectified" type="number" min="0" /></td>
+                            <td><input class="form-control stats-outstanding" type="number" min="0" /></td>
+                            <td><input class="form-control stats-remarks" /></td>
                         </tr>
-                        <tr>
+                        <tr data-nature="Low Risk Paras">
                             <td>Low Risk Paras</td>
-                            <td>@(FindStatisticsRow("Low Risk")?.ReportedCount?.ToString() ?? string.Empty)</td>
-                            <td>@(FindStatisticsRow("Low Risk")?.RectifiedCount?.ToString() ?? string.Empty)</td>
-                            <td>@(FindStatisticsRow("Low Risk")?.OutstandingCount?.ToString() ?? string.Empty)</td>
-                            <td><input class="form-control" name="Fields[FIELD_207]" value="@FieldValue("FIELD_207")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                            <td><input class="form-control stats-reported" type="number" min="0" /></td>
+                            <td><input class="form-control stats-rectified" type="number" min="0" /></td>
+                            <td><input class="form-control stats-outstanding" type="number" min="0" /></td>
+                            <td><input class="form-control stats-remarks" /></td>
                         </tr>
-                        <tr>
-                            <td>Total:</td>
-                            <td>@(FindStatisticsRow("Total")?.ReportedCount?.ToString() ?? string.Empty)</td>
-                            <td>@(FindStatisticsRow("Total")?.RectifiedCount?.ToString() ?? string.Empty)</td>
-                            <td>@(FindStatisticsRow("Total")?.OutstandingCount?.ToString() ?? string.Empty)</td>
-                            <td><input class="form-control" name="Fields[FIELD_208]" value="@FieldValue("FIELD_208")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                        <tr data-nature="Total">
+                            <td>Total</td>
+                            <td><input class="form-control stats-reported" type="number" min="0" /></td>
+                            <td><input class="form-control stats-rectified" type="number" min="0" /></td>
+                            <td><input class="form-control stats-outstanding" type="number" min="0" /></td>
+                            <td><input class="form-control stats-remarks" /></td>
                         </tr>
                     </tbody>
                 </table>
             </div>
+            <div class="d-flex flex-wrap gap-2 mb-2">
+                <button type="button" class="btn btn-primary" id="saveStatisticsBtn" @(Model.IsReadOnly ? "disabled" : string.Empty)>Save Statistics</button>
+                <button type="button" class="btn btn-outline-primary d-none" id="updateStatisticsBtn" @(Model.IsReadOnly ? "disabled" : string.Empty)>Update Statistics</button>
+            </div>
+            <div class="form-text mb-4" id="statisticsMessage"></div>
 
-            <div class="table-responsive mb-4">
-                <table class="table table-bordered align-middle">
+            <div class="section-title">5. Summary of leakage of income / identified from sample of transactions</div>
+            <div class="table-responsive mb-2" id="incomeLeakageBlock">
+                <table class="table table-bordered align-middle" id="incomeLeakageTable">
                     <thead>
                         <tr>
                             <th>Description</th>
+                            <th>Area</th>
                             <th>Amount (Rs.)</th>
+                            <th class="text-center" style="width:80px;">Action</th>
                         </tr>
                     </thead>
-                    <tbody>
+                    <tbody></tbody>
+                    <tfoot>
                         <tr>
-                            <td><input class="form-control" name="Fields[FIELD_161]" value="@FieldValue("FIELD_161")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
-                            <td><input class="form-control" name="Fields[FIELD_163]" value="@FieldValue("FIELD_163")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
+                            <th colspan="2">Total</th>
+                            <th id="incomeLeakageTotal">0</th>
+                            <th></th>
                         </tr>
-                        <tr>
-                            <td><input class="form-control" name="Fields[FIELD_164]" value="@FieldValue("FIELD_164")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
-                            <td><input class="form-control" name="Fields[FIELD_166]" value="@FieldValue("FIELD_166")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
-                        </tr>
-                        <tr>
-                            <td><input class="form-control" name="Fields[FIELD_167]" value="@FieldValue("FIELD_167")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
-                            <td><input class="form-control" name="Fields[FIELD_169]" value="@FieldValue("FIELD_169")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
-                        </tr>
-                        <tr>
-                            <td><input class="form-control" name="Fields[FIELD_170]" value="@FieldValue("FIELD_170")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
-                            <td><input class="form-control" name="Fields[FIELD_172]" value="@FieldValue("FIELD_172")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
-                        </tr>
-                        <tr>
-                            <td><input class="form-control" name="Fields[FIELD_173]" value="@FieldValue("FIELD_173")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
-                            <td><input class="form-control" name="Fields[FIELD_175]" value="@FieldValue("FIELD_175")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
-                        </tr>
-                        <tr>
-                            <td>Total</td>
-                            <td><input class="form-control" name="Fields[FIELD_176]" value="@FieldValue("FIELD_176")" @(Model.IsReadOnly ? "disabled" : string.Empty) /></td>
-                        </tr>
-                    </tbody>
+                    </tfoot>
                 </table>
+            </div>
+            <div class="d-flex flex-wrap gap-2 mb-2">
+                <button type="button" class="btn btn-outline-secondary" id="addIncomeLeakageRowBtn" @(Model.IsReadOnly ? "disabled" : string.Empty)>Add Row</button>
+                <button type="button" class="btn btn-primary" id="saveIncomeLeakageBtn" @(Model.IsReadOnly ? "disabled" : string.Empty)>Save Income Leakage</button>
+                <button type="button" class="btn btn-outline-primary d-none" id="updateIncomeLeakageBtn" @(Model.IsReadOnly ? "disabled" : string.Empty)>Update Income Leakage</button>
+            </div>
+            <div class="form-text mb-4" id="incomeLeakageMessage"></div>
+
+            <div class="section-title">6. Overall Audit Conclusion</div>
+            <div id="overallConclusionBlock">
+                <div class="mb-3 rich-text-block">
+                    <label class="form-label" for="overallConclusionEditor">Overall Audit Conclusion</label>
+                    <textarea id="overallConclusionEditor" class="form-control"></textarea>
+                </div>
+                <div class="mb-3 rich-text-block">
+                    <label class="form-label" for="nonAddressableEditor">a) Non-Addressable Findings/Exceptions</label>
+                    <textarea id="nonAddressableEditor" class="form-control"></textarea>
+                </div>
+                <div class="mb-3 rich-text-block">
+                    <label class="form-label" for="fraudProneEditor">b) Fraud Prone Indicators</label>
+                    <textarea id="fraudProneEditor" class="form-control"></textarea>
+                </div>
+                <div class="mb-3 rich-text-block">
+                    <label class="form-label" for="regulatoryEditor">c) Exceptions related to Regulatory Violations</label>
+                    <textarea id="regulatoryEditor" class="form-control"></textarea>
+                </div>
+                <div class="mb-3 rich-text-block">
+                    <label class="form-label" for="safetySecurityEditor">d) Comments on Safety &amp; Security</label>
+                    <textarea id="safetySecurityEditor" class="form-control"></textarea>
+                </div>
+                <div class="d-flex flex-wrap gap-2 mb-2">
+                    <button type="button" class="btn btn-primary" id="saveConclusionBtn" @(Model.IsReadOnly ? "disabled" : string.Empty)>Save Conclusion</button>
+                    <button type="button" class="btn btn-outline-primary d-none" id="updateConclusionBtn" @(Model.IsReadOnly ? "disabled" : string.Empty)>Update Conclusion</button>
+                </div>
+                <div class="form-text mb-4" id="conclusionMessage"></div>
             </div>
 
             @for (var index = 0; index < Model.ObservationCount; index++)
@@ -430,6 +487,368 @@
 
 @section Scripts {
     <script>
+        (function () {
+            const engagementId = @Model.EngagementId;
+            const reportVersionRaw = '@(Model.Overview?.VersionNo ?? string.Empty)';
+            const reportVersion = parseInt(reportVersionRaw || '1', 10) || 1;
+            const isReadOnly = @Model.IsReadOnly.ToString().ToLowerInvariant();
+            const urls = {
+                getStatistics: '@Url.Action("GetPdfStatistics")',
+                saveStatistics: '@Url.Action("SavePdfStatistics")',
+                getIncomeLeakage: '@Url.Action("GetIncomeLeakage")',
+                saveIncomeLeakage: '@Url.Action("SaveIncomeLeakage")',
+                getConclusion: '@Url.Action("GetOverallConclusion")',
+                saveConclusion: '@Url.Action("SaveOverallConclusion")'
+            };
+
+            if (!engagementId || engagementId <= 0) {
+                return;
+            }
+
+            const statisticsMessage = document.getElementById('statisticsMessage');
+            const incomeLeakageMessage = document.getElementById('incomeLeakageMessage');
+            const conclusionMessage = document.getElementById('conclusionMessage');
+            const saveStatisticsBtn = document.getElementById('saveStatisticsBtn');
+            const updateStatisticsBtn = document.getElementById('updateStatisticsBtn');
+            const saveIncomeLeakageBtn = document.getElementById('saveIncomeLeakageBtn');
+            const updateIncomeLeakageBtn = document.getElementById('updateIncomeLeakageBtn');
+            const addIncomeLeakageRowBtn = document.getElementById('addIncomeLeakageRowBtn');
+            const saveConclusionBtn = document.getElementById('saveConclusionBtn');
+            const updateConclusionBtn = document.getElementById('updateConclusionBtn');
+            const incomeLeakageTotal = document.getElementById('incomeLeakageTotal');
+
+            const conclusionEditors = [
+                { id: 'overallConclusionEditor', key: 'overallConclusionHtml' },
+                { id: 'nonAddressableEditor', key: 'nonAddressableHtml' },
+                { id: 'fraudProneEditor', key: 'fraudProneHtml' },
+                { id: 'regulatoryEditor', key: 'regulatoryHtml' },
+                { id: 'safetySecurityEditor', key: 'safetySecurityHtml' }
+            ];
+
+            function setMessage(element, message, isError) {
+                if (!element) {
+                    return;
+                }
+                element.textContent = message || '';
+                element.classList.remove('text-success', 'text-danger');
+                element.classList.add(isError ? 'text-danger' : 'text-success');
+            }
+
+            function setStatisticsLocked(locked) {
+                const disabled = locked || isReadOnly;
+                document.querySelectorAll('#statisticsTable input').forEach((input) => {
+                    input.disabled = disabled;
+                });
+                if (updateStatisticsBtn) {
+                    updateStatisticsBtn.classList.toggle('d-none', !locked || isReadOnly);
+                }
+            }
+
+            function setIncomeLeakageLocked(locked) {
+                const disabled = locked || isReadOnly;
+                document.querySelectorAll('#incomeLeakageTable input').forEach((input) => {
+                    input.disabled = disabled;
+                });
+                document.querySelectorAll('#incomeLeakageTable button[data-action="remove"]').forEach((button) => {
+                    button.disabled = disabled;
+                    button.classList.toggle('d-none', disabled);
+                });
+                if (addIncomeLeakageRowBtn) {
+                    addIncomeLeakageRowBtn.disabled = disabled;
+                }
+                if (updateIncomeLeakageBtn) {
+                    updateIncomeLeakageBtn.classList.toggle('d-none', !locked || isReadOnly);
+                }
+            }
+
+            function setConclusionLocked(locked) {
+                const disabled = locked || isReadOnly;
+                conclusionEditors.forEach((editor) => {
+                    setEditorReadOnly(editor.id, disabled);
+                });
+                if (updateConclusionBtn) {
+                    updateConclusionBtn.classList.toggle('d-none', !locked || isReadOnly);
+                }
+            }
+
+            function parseNumeric(value) {
+                if (value === null || value === undefined || value === '') {
+                    return null;
+                }
+                const number = Number(value);
+                return Number.isNaN(number) ? null : number;
+            }
+
+            function collectStatisticsRows() {
+                const rows = [];
+                document.querySelectorAll('#statisticsTable tbody tr').forEach((row) => {
+                    const nature = row.dataset.nature || '';
+                    const reported = parseNumeric(row.querySelector('.stats-reported')?.value);
+                    const rectified = parseNumeric(row.querySelector('.stats-rectified')?.value);
+                    const outstanding = parseNumeric(row.querySelector('.stats-outstanding')?.value);
+                    const remarks = row.querySelector('.stats-remarks')?.value || '';
+                    rows.push({
+                        nature,
+                        reported,
+                        rectified,
+                        outstanding,
+                        remarks
+                    });
+                });
+                return rows;
+            }
+
+            function applyStatisticsRows(rows) {
+                (rows || []).forEach((row) => {
+                    const match = document.querySelector(`#statisticsTable tbody tr[data-nature="${CSS.escape(row.nature || '')}"]`);
+                    if (!match) {
+                        return;
+                    }
+                    const setValue = (selector, value) => {
+                        const input = match.querySelector(selector);
+                        if (input) {
+                            input.value = value === null || value === undefined ? '' : value;
+                        }
+                    };
+                    setValue('.stats-reported', row.reported);
+                    setValue('.stats-rectified', row.rectified);
+                    setValue('.stats-outstanding', row.outstanding);
+                    setValue('.stats-remarks', row.remarks || '');
+                });
+            }
+
+            function updateIncomeLeakageTotal() {
+                let total = 0;
+                document.querySelectorAll('#incomeLeakageTable tbody tr').forEach((row) => {
+                    const amountValue = row.querySelector('[data-field="amount"]')?.value;
+                    const amount = parseFloat(amountValue);
+                    if (!Number.isNaN(amount)) {
+                        total += amount;
+                    }
+                });
+                if (incomeLeakageTotal) {
+                    incomeLeakageTotal.textContent = total.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+                }
+            }
+
+            function createIncomeLeakageRow(row = {}) {
+                const tbody = document.querySelector('#incomeLeakageTable tbody');
+                if (!tbody) {
+                    return;
+                }
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td><input class="form-control" data-field="description" value="${row.description || ''}" /></td>
+                    <td><input class="form-control" data-field="area" value="${row.area || ''}" /></td>
+                    <td><input class="form-control" data-field="amount" type="number" step="0.01" min="0" value="${row.amount ?? ''}" /></td>
+                    <td class="text-center"><button type="button" class="btn btn-sm btn-outline-danger" data-action="remove">Remove</button></td>
+                `;
+                tbody.appendChild(tr);
+
+                tr.querySelectorAll('input').forEach((input) => {
+                    input.addEventListener('input', updateIncomeLeakageTotal);
+                });
+                tr.querySelector('[data-action="remove"]')?.addEventListener('click', () => {
+                    tr.remove();
+                    updateIncomeLeakageTotal();
+                });
+                updateIncomeLeakageTotal();
+            }
+
+            function collectIncomeLeakageRows() {
+                const rows = [];
+                document.querySelectorAll('#incomeLeakageTable tbody tr').forEach((row) => {
+                    const description = row.querySelector('[data-field="description"]')?.value || '';
+                    const area = row.querySelector('[data-field="area"]')?.value || '';
+                    const amountValue = row.querySelector('[data-field="amount"]')?.value;
+                    const amount = parseNumeric(amountValue);
+                    rows.push({ description, area, amount });
+                });
+                return rows;
+            }
+
+            function setEditorHtml(textareaId, html) {
+                const $textarea = $('#' + textareaId);
+                const $editor = $textarea.closest('.richText').find('.richText-editor');
+                if ($editor.length) {
+                    $editor.html(html || '');
+                } else {
+                    $textarea.val(html || '');
+                }
+            }
+
+            function getEditorHtml(textareaId) {
+                const $textarea = $('#' + textareaId);
+                const $editor = $textarea.closest('.richText').find('.richText-editor');
+                if ($editor.length) {
+                    return $editor.html() || '';
+                }
+                return $textarea.val() || '';
+            }
+
+            function setEditorReadOnly(textareaId, readOnly) {
+                const $textarea = $('#' + textareaId);
+                const $wrapper = $textarea.closest('.richText');
+                const $editor = $wrapper.find('.richText-editor');
+                const $toolbar = $wrapper.find('.richText-toolbar');
+                $editor.attr('contenteditable', !readOnly);
+                if (readOnly) {
+                    $toolbar.hide();
+                    $wrapper.addClass('rich-text-readonly');
+                } else {
+                    $toolbar.show();
+                    $wrapper.removeClass('rich-text-readonly');
+                }
+            }
+
+            async function fetchJson(url, options) {
+                const response = await fetch(url, options);
+                const data = await response.json();
+                if (!response.ok) {
+                    throw new Error(data?.message || 'Request failed');
+                }
+                return data;
+            }
+
+            async function loadStatistics() {
+                try {
+                    const data = await fetchJson(`${urls.getStatistics}?engId=${engagementId}&reportVersion=${reportVersion}`);
+                    applyStatisticsRows(data.rows || []);
+                    setStatisticsLocked(data.locked);
+                } catch (error) {
+                    setMessage(statisticsMessage, error.message || 'Unable to load statistics.', true);
+                }
+            }
+
+            async function loadIncomeLeakage() {
+                const tbody = document.querySelector('#incomeLeakageTable tbody');
+                if (tbody) {
+                    tbody.innerHTML = '';
+                }
+                try {
+                    const data = await fetchJson(`${urls.getIncomeLeakage}?engId=${engagementId}&reportVersion=${reportVersion}`);
+                    const rows = data.rows || [];
+                    if (rows.length === 0) {
+                        createIncomeLeakageRow();
+                    } else {
+                        rows.forEach((row) => createIncomeLeakageRow(row));
+                    }
+                    setIncomeLeakageLocked(data.locked);
+                } catch (error) {
+                    createIncomeLeakageRow();
+                    setMessage(incomeLeakageMessage, error.message || 'Unable to load income leakage.', true);
+                }
+            }
+
+            async function loadConclusion() {
+                try {
+                    const data = await fetchJson(`${urls.getConclusion}?engId=${engagementId}&reportVersion=${reportVersion}`);
+                    const model = data.model || {};
+                    conclusionEditors.forEach((editor) => {
+                        setEditorHtml(editor.id, model[editor.key] || '');
+                    });
+                    setConclusionLocked(data.locked);
+                } catch (error) {
+                    setMessage(conclusionMessage, error.message || 'Unable to load conclusion.', true);
+                }
+            }
+
+            async function saveStatistics() {
+                setMessage(statisticsMessage, '', false);
+                const rows = collectStatisticsRows();
+                const hasNegative = rows.some((row) =>
+                    (row.reported !== null && row.reported < 0)
+                    || (row.rectified !== null && row.rectified < 0)
+                    || (row.outstanding !== null && row.outstanding < 0));
+                if (hasNegative) {
+                    setMessage(statisticsMessage, 'Statistics values cannot be negative.', true);
+                    return;
+                }
+
+                try {
+                    const response = await fetchJson(urls.saveStatistics, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ engId: engagementId, reportVersion, rows })
+                    });
+                    setMessage(statisticsMessage, response.message || 'Saved successfully.', false);
+                    setStatisticsLocked(true);
+                } catch (error) {
+                    setMessage(statisticsMessage, error.message || 'Unable to save statistics.', true);
+                }
+            }
+
+            async function saveIncomeLeakage() {
+                setMessage(incomeLeakageMessage, '', false);
+                const rows = collectIncomeLeakageRows();
+                const hasNegative = rows.some((row) => row.amount !== null && row.amount < 0);
+                if (hasNegative) {
+                    setMessage(incomeLeakageMessage, 'Income leakage amount cannot be negative.', true);
+                    return;
+                }
+
+                try {
+                    const response = await fetchJson(urls.saveIncomeLeakage, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ engId: engagementId, reportVersion, rows })
+                    });
+                    setMessage(incomeLeakageMessage, response.message || 'Saved successfully.', false);
+                    setIncomeLeakageLocked(true);
+                } catch (error) {
+                    setMessage(incomeLeakageMessage, error.message || 'Unable to save income leakage.', true);
+                }
+            }
+
+            async function saveConclusion() {
+                setMessage(conclusionMessage, '', false);
+                const payload = { engId: engagementId, reportVersion };
+                conclusionEditors.forEach((editor) => {
+                    payload[editor.key] = getEditorHtml(editor.id);
+                });
+                try {
+                    const response = await fetchJson(urls.saveConclusion, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                    setMessage(conclusionMessage, response.message || 'Saved successfully.', false);
+                    setConclusionLocked(true);
+                } catch (error) {
+                    setMessage(conclusionMessage, error.message || 'Unable to save conclusion.', true);
+                }
+            }
+
+            $(document).ready(function () {
+                $('.rich-text-block textarea').each(function () {
+                    $(this).richText({
+                        imageUpload: false,
+                        fileUpload: false,
+                        videoEmbed: false,
+                        urls: false
+                    });
+                });
+
+                addIncomeLeakageRowBtn?.addEventListener('click', () => createIncomeLeakageRow());
+                saveStatisticsBtn?.addEventListener('click', saveStatistics);
+                updateStatisticsBtn?.addEventListener('click', () => setStatisticsLocked(false));
+                saveIncomeLeakageBtn?.addEventListener('click', saveIncomeLeakage);
+                updateIncomeLeakageBtn?.addEventListener('click', () => setIncomeLeakageLocked(false));
+                saveConclusionBtn?.addEventListener('click', saveConclusion);
+                updateConclusionBtn?.addEventListener('click', () => setConclusionLocked(false));
+
+                loadStatistics();
+                loadIncomeLeakage();
+                loadConclusion();
+
+                if (isReadOnly) {
+                    setStatisticsLocked(true);
+                    setIncomeLeakageLocked(true);
+                    setConclusionLocked(true);
+                }
+            });
+        })();
+
         function findParaContainer(paraId) {
             return document.querySelector(`table[data-para-id='${paraId}']`);
         }

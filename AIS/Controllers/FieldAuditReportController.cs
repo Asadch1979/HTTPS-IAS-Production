@@ -430,6 +430,184 @@ namespace AIS.Controllers
             return Json(new { success = true, message = "KPI Snapshot saved.", rows = savedRows });
             }
 
+        [HttpGet]
+        public IActionResult GetPdfStatistics(int engId, int? reportVersion)
+            {
+            var redirect = EnsureAuthorized();
+            if (redirect != null)
+                {
+                return redirect;
+                }
+
+            if (engId <= 0)
+                {
+                return BadRequest(new { success = false, message = "Invalid engagement." });
+                }
+
+            var rows = _dbConnection.GetPdfStatistics(engId, reportVersion);
+            var locked = rows.Any(row => row != null &&
+                (row.Reported.HasValue || row.Rectified.HasValue || row.Outstanding.HasValue || !string.IsNullOrWhiteSpace(row.Remarks)));
+            return Json(new { success = true, rows, locked });
+            }
+
+        [HttpPost]
+        public IActionResult SavePdfStatistics([FromBody] FieldAuditPdfStatisticsSaveRequest request)
+            {
+            var redirect = EnsureAuthorized();
+            if (redirect != null)
+                {
+                return redirect;
+                }
+
+            if (request == null || request.EngId <= 0)
+                {
+                return BadRequest(new { success = false, message = "Invalid request." });
+                }
+
+            if (_dbConnection.IsFieldAuditReportFinal(request.EngId))
+                {
+                return BadRequest(new { success = false, message = "Report is finalized and cannot be edited." });
+                }
+
+            foreach (var row in request.Rows ?? new List<FieldAuditPdfStatisticsRowInput>())
+                {
+                if (row == null)
+                    {
+                    continue;
+                    }
+
+                if (row.Reported.HasValue && row.Reported.Value < 0
+                    || row.Rectified.HasValue && row.Rectified.Value < 0
+                    || row.Outstanding.HasValue && row.Outstanding.Value < 0)
+                    {
+                    return BadRequest(new { success = false, message = "Statistics values cannot be negative." });
+                    }
+                }
+
+            var user = _sessionHandler.GetUser();
+            var userPpNo = user?.PPNumber ?? string.Empty;
+            _dbConnection.SavePdfStatistics(request.EngId, request.ReportVersion, request.Rows ?? new List<FieldAuditPdfStatisticsRowInput>(), userPpNo);
+            return Json(new { success = true, message = "Saved", locked = true });
+            }
+
+        [HttpGet]
+        public IActionResult GetIncomeLeakage(int engId, int? reportVersion)
+            {
+            var redirect = EnsureAuthorized();
+            if (redirect != null)
+                {
+                return redirect;
+                }
+
+            if (engId <= 0)
+                {
+                return BadRequest(new { success = false, message = "Invalid engagement." });
+                }
+
+            var rows = _dbConnection.GetIncomeLeakage(engId, reportVersion);
+            var locked = rows.Any(row => row != null &&
+                (!string.IsNullOrWhiteSpace(row.Description)
+                || !string.IsNullOrWhiteSpace(row.Area)
+                || row.Amount.HasValue));
+            return Json(new { success = true, rows, locked });
+            }
+
+        [HttpPost]
+        public IActionResult SaveIncomeLeakage([FromBody] FieldAuditIncomeLeakageSaveRequest request)
+            {
+            var redirect = EnsureAuthorized();
+            if (redirect != null)
+                {
+                return redirect;
+                }
+
+            if (request == null || request.EngId <= 0)
+                {
+                return BadRequest(new { success = false, message = "Invalid request." });
+                }
+
+            if (_dbConnection.IsFieldAuditReportFinal(request.EngId))
+                {
+                return BadRequest(new { success = false, message = "Report is finalized and cannot be edited." });
+                }
+
+            var rows = new List<FieldAuditIncomeLeakageRowInput>();
+            foreach (var row in request.Rows ?? new List<FieldAuditIncomeLeakageRowInput>())
+                {
+                if (row == null)
+                    {
+                    continue;
+                    }
+
+                if (string.IsNullOrWhiteSpace(row.Description)
+                    && string.IsNullOrWhiteSpace(row.Area)
+                    && !row.Amount.HasValue)
+                    {
+                    continue;
+                    }
+
+                if (row.Amount.HasValue && row.Amount.Value < 0)
+                    {
+                    return BadRequest(new { success = false, message = "Income leakage amount cannot be negative." });
+                    }
+
+                rows.Add(row);
+                }
+
+            var user = _sessionHandler.GetUser();
+            var userPpNo = user?.PPNumber ?? string.Empty;
+            _dbConnection.SaveIncomeLeakage(request.EngId, request.ReportVersion, rows, userPpNo);
+            return Json(new { success = true, message = "Saved", locked = true });
+            }
+
+        [HttpGet]
+        public IActionResult GetOverallConclusion(int engId, int? reportVersion)
+            {
+            var redirect = EnsureAuthorized();
+            if (redirect != null)
+                {
+                return redirect;
+                }
+
+            if (engId <= 0)
+                {
+                return BadRequest(new { success = false, message = "Invalid engagement." });
+                }
+
+            var model = _dbConnection.GetOverallConclusion(engId, reportVersion) ?? new FieldAuditOverallConclusionInput();
+            var locked = !string.IsNullOrWhiteSpace(model.OverallConclusionHtml)
+                         || !string.IsNullOrWhiteSpace(model.NonAddressableHtml)
+                         || !string.IsNullOrWhiteSpace(model.FraudProneHtml)
+                         || !string.IsNullOrWhiteSpace(model.RegulatoryHtml)
+                         || !string.IsNullOrWhiteSpace(model.SafetySecurityHtml);
+            return Json(new { success = true, model, locked });
+            }
+
+        [HttpPost]
+        public IActionResult SaveOverallConclusion([FromBody] FieldAuditOverallConclusionSaveRequest request)
+            {
+            var redirect = EnsureAuthorized();
+            if (redirect != null)
+                {
+                return redirect;
+                }
+
+            if (request == null || request.EngId <= 0)
+                {
+                return BadRequest(new { success = false, message = "Invalid request." });
+                }
+
+            if (_dbConnection.IsFieldAuditReportFinal(request.EngId))
+                {
+                return BadRequest(new { success = false, message = "Report is finalized and cannot be edited." });
+                }
+
+            var user = _sessionHandler.GetUser();
+            var userPpNo = user?.PPNumber ?? string.Empty;
+            _dbConnection.SaveOverallConclusion(request.EngId, request.ReportVersion, request, userPpNo);
+            return Json(new { success = true, message = "Saved", locked = true });
+            }
+
         [HttpPost]
         public IActionResult SaveFieldAuditInputs(FieldAuditInputSectionViewModel model, string submitAction, string returnAction)
             {
@@ -880,5 +1058,55 @@ namespace AIS.Controllers
             "FIELD_147", "FIELD_148", "FIELD_149", "FIELD_150", "FIELD_151", "FIELD_152", "FIELD_153", "FIELD_154", "FIELD_155",
             "FIELD_156", "FIELD_157", "FIELD_158", "FIELD_159", "FIELD_160"
             };
+        }
+
+    public class FieldAuditPdfStatisticsRowInput
+        {
+        public string Nature { get; set; }
+        public int? Reported { get; set; }
+        public int? Rectified { get; set; }
+        public int? Outstanding { get; set; }
+        public string Remarks { get; set; }
+        }
+
+    public class FieldAuditIncomeLeakageRowInput
+        {
+        public string Description { get; set; }
+        public string Area { get; set; }
+        public decimal? Amount { get; set; }
+        }
+
+    public class FieldAuditPdfStatisticsSaveRequest
+        {
+        public int EngId { get; set; }
+        public int? ReportVersion { get; set; }
+        public List<FieldAuditPdfStatisticsRowInput> Rows { get; set; } = new List<FieldAuditPdfStatisticsRowInput>();
+        }
+
+    public class FieldAuditIncomeLeakageSaveRequest
+        {
+        public int EngId { get; set; }
+        public int? ReportVersion { get; set; }
+        public List<FieldAuditIncomeLeakageRowInput> Rows { get; set; } = new List<FieldAuditIncomeLeakageRowInput>();
+        }
+
+    public class FieldAuditOverallConclusionSaveRequest
+        {
+        public int EngId { get; set; }
+        public int? ReportVersion { get; set; }
+        public string OverallConclusionHtml { get; set; }
+        public string NonAddressableHtml { get; set; }
+        public string FraudProneHtml { get; set; }
+        public string RegulatoryHtml { get; set; }
+        public string SafetySecurityHtml { get; set; }
+        }
+
+    public class FieldAuditOverallConclusionInput
+        {
+        public string OverallConclusionHtml { get; set; }
+        public string NonAddressableHtml { get; set; }
+        public string FraudProneHtml { get; set; }
+        public string RegulatoryHtml { get; set; }
+        public string SafetySecurityHtml { get; set; }
         }
     }
