@@ -86,11 +86,8 @@ namespace AIS.Services
             sb.AppendLine(".para-body table th,.para-body table td{ border:1px solid #222; padding:4px 6px; vertical-align:top; word-break:break-word; overflow-wrap:anywhere; white-space:normal !important; }");
             sb.AppendLine(".para-body img{ max-width:100% !important; height:auto !important; }");
             sb.AppendLine(".para-detail, .para-detail *{ max-width:100% !important; box-sizing:border-box !important; }");
-            sb.AppendLine(".para-detail table{ max-width:100% !important; border-collapse:collapse !important; }");
-            sb.AppendLine(".para-detail table.para-table-bordered{ width:100% !important; table-layout:fixed !important; }");
-            sb.AppendLine(".para-detail table.para-table-layout{ width:auto !important; table-layout:auto !important; margin-left:0 !important; margin-right:auto !important; text-align:left !important; }");
-            sb.AppendLine(".para-detail table.para-table-bordered th,.para-detail table.para-table-bordered td{ white-space:normal !important; word-break:break-word !important; overflow-wrap:anywhere !important; vertical-align:top !important; padding:3px 4px !important; font-size:10px !important; }");
-            sb.AppendLine(".para-detail table.para-table-layout th,.para-detail table.para-table-layout td{ white-space:normal !important; overflow-wrap:break-word !important; vertical-align:top !important; padding:2px 4px !important; font-size:12px !important; }");
+            sb.AppendLine(".para-detail table{ width:100% !important; max-width:100% !important; table-layout:fixed !important; border-collapse:collapse !important; }");
+            sb.AppendLine(".para-detail th,.para-detail td{ white-space:normal !important; word-break:break-word !important; overflow-wrap:anywhere !important; vertical-align:top !important; padding:3px 4px !important; font-size:10px !important; }");
             sb.AppendLine(".para-detail col,.para-detail colgroup{ width:auto !important; }");
             sb.AppendLine(".para-detail img{ max-width:100% !important; height:auto !important; }");
             sb.AppendLine(".para-table{ width:100%; border-collapse:collapse; margin:10px 0; page-break-inside:auto; break-inside:auto; table-layout:fixed; }");
@@ -843,233 +840,18 @@ namespace AIS.Services
                 }
             while (!string.Equals(previous, current, StringComparison.Ordinal));
 
-            current = NormalizeTables(current);
+            current = Regex.Replace(current, "\\swidth\\s*=\\s*[\"']?\\s*\\d+%?\\s*[\"']?", string.Empty, RegexOptions.IgnoreCase);
             current = Regex.Replace(current, "\\snowrap(\\s*=\\s*[\"']?nowrap[\"']?)?", string.Empty, RegexOptions.IgnoreCase);
             current = Regex.Replace(current, "style\\s*=\\s*[\"'][^\"']*[\"']", match =>
                 {
                 var style = match.Value;
+                style = Regex.Replace(style, "width\\s*:\\s*[^;]+;?", string.Empty, RegexOptions.IgnoreCase);
                 style = Regex.Replace(style, "white-space\\s*:\\s*nowrap;?", string.Empty, RegexOptions.IgnoreCase);
                 style = Regex.Replace(style, "\\s{2,}", " ");
-                style = Regex.Replace(style, "style\\s*=\\s*[\"']\\s*[\"']", string.Empty, RegexOptions.IgnoreCase);
                 return style;
                 }, RegexOptions.IgnoreCase);
 
             return current;
-            }
-
-        private static string NormalizeTables(string html)
-            {
-            if (string.IsNullOrWhiteSpace(html))
-                {
-                return html ?? string.Empty;
-                }
-
-            var tagRegex = new Regex("<\\/?table\\b[^>]*>", RegexOptions.IgnoreCase);
-            var matches = tagRegex.Matches(html);
-            if (matches.Count == 0)
-                {
-                return html;
-                }
-
-            var builder = new StringBuilder();
-            var stack = new Stack<Match>();
-            var lastIndex = 0;
-
-            foreach (Match match in matches)
-                {
-                if (match.Value.StartsWith("</", StringComparison.OrdinalIgnoreCase))
-                    {
-                    if (stack.Count == 0)
-                        {
-                        continue;
-                        }
-
-                    var startMatch = stack.Pop();
-                    if (stack.Count == 0)
-                        {
-                        var startIndex = startMatch.Index;
-                        var endIndex = match.Index + match.Length;
-                        builder.Append(html.Substring(lastIndex, startIndex - lastIndex));
-                        var tableHtml = html.Substring(startIndex, endIndex - startIndex);
-                        builder.Append(ProcessTableHtml(tableHtml));
-                        lastIndex = endIndex;
-                        }
-                    }
-                else
-                    {
-                    stack.Push(match);
-                    }
-                }
-
-            if (lastIndex < html.Length)
-                {
-                builder.Append(html.Substring(lastIndex));
-                }
-
-            return builder.ToString();
-            }
-
-        private static string ProcessTableHtml(string tableHtml)
-            {
-            if (string.IsNullOrWhiteSpace(tableHtml))
-                {
-                return tableHtml ?? string.Empty;
-                }
-
-            var startTagEnd = tableHtml.IndexOf('>');
-            var endTagStart = tableHtml.LastIndexOf("</table>", StringComparison.OrdinalIgnoreCase);
-            if (startTagEnd < 0 || endTagStart < 0 || endTagStart <= startTagEnd)
-                {
-                return tableHtml;
-                }
-
-            var startTag = tableHtml.Substring(0, startTagEnd + 1);
-            var innerHtml = tableHtml.Substring(startTagEnd + 1, endTagStart - startTagEnd - 1);
-            var endTag = tableHtml.Substring(endTagStart);
-
-            var borderMatch = Regex.Match(startTag, "\\bborder\\s*=\\s*[\"']?\\s*(?<value>\\d+)\\s*[\"']?", RegexOptions.IgnoreCase);
-            var hasBorderAttr = borderMatch.Success;
-            var borderValue = hasBorderAttr && int.TryParse(borderMatch.Groups["value"].Value, out var parsed) ? parsed : 0;
-            var hasMsoClass = Regex.IsMatch(startTag, "\\bclass\\s*=\\s*[\"'][^\"']*\\bMsoNormalTable\\b[^\"']*[\"']", RegexOptions.IgnoreCase);
-            var hasWidthAttr = Regex.IsMatch(startTag, "\\bwidth\\s*=\\s*[\"']?\\s*\\d+(?:\\.\\d+)?%?\\s*[\"']?", RegexOptions.IgnoreCase);
-            var hasWidthStylePt = Regex.IsMatch(startTag, "style\\s*=\\s*[\"'][^\"']*width\\s*:\\s*\\d+(?:\\.\\d+)?pt", RegexOptions.IgnoreCase);
-
-            var isBordered = hasBorderAttr && borderValue > 0;
-            var isBorderless = !isBordered && (!hasBorderAttr || borderValue == 0 || hasMsoClass || hasWidthAttr || hasWidthStylePt);
-
-            if (isBorderless)
-                {
-                innerHtml = NormalizeTables(innerHtml);
-                innerHtml = RemoveWidthAttributes(innerHtml);
-                innerHtml = NormalizeStyleAttributes(innerHtml, removeWidthInPt: true, removeWordSpacing: true, removeTableLayout: true);
-                }
-            else
-                {
-                innerHtml = NormalizeTables(innerHtml);
-                }
-
-            var updatedStartTag = startTag;
-            if (isBorderless)
-                {
-                updatedStartTag = RemoveWidthAttributes(updatedStartTag);
-                updatedStartTag = RemoveAlignAttribute(updatedStartTag);
-                updatedStartTag = NormalizeStyleAttributes(updatedStartTag, removeWidthInPt: true, removeWordSpacing: true, removeTableLayout: true);
-                updatedStartTag = AddTableClass(updatedStartTag, "para-table-layout");
-                var columnCount = GetMaxColumnCount(innerHtml);
-                updatedStartTag = AddOrReplaceAttribute(updatedStartTag, "data-max-columns", columnCount.ToString(CultureInfo.InvariantCulture));
-                }
-            else
-                {
-                updatedStartTag = AddTableClass(updatedStartTag, "para-table-bordered");
-                }
-
-            return $"{updatedStartTag}{innerHtml}{endTag}";
-            }
-
-        private static string AddTableClass(string startTag, string className)
-            {
-            var classMatch = Regex.Match(startTag, "\\bclass\\s*=\\s*(?<quote>[\"'])(?<value>[^\"']*)(\\k<quote>)", RegexOptions.IgnoreCase);
-            if (!classMatch.Success)
-                {
-                return startTag.Insert(startTag.Length - 1, $" class=\"{className}\"");
-                }
-
-            var existing = classMatch.Groups["value"].Value;
-            var classes = existing.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries).ToList();
-            if (!classes.Contains(className))
-                {
-                classes.Add(className);
-                }
-            var updated = string.Join(" ", classes);
-            return startTag.Substring(0, classMatch.Groups["value"].Index) + updated + startTag.Substring(classMatch.Groups["value"].Index + classMatch.Groups["value"].Length);
-            }
-
-        private static string AddOrReplaceAttribute(string startTag, string attributeName, string value)
-            {
-            var attrRegex = new Regex($"\\b{Regex.Escape(attributeName)}\\s*=\\s*(?<quote>[\"'])(?<value>[^\"']*)(\\k<quote>)", RegexOptions.IgnoreCase);
-            if (attrRegex.IsMatch(startTag))
-                {
-                return attrRegex.Replace(startTag, $"{attributeName}=\"{value}\"");
-                }
-
-            return startTag.Insert(startTag.Length - 1, $" {attributeName}=\"{value}\"");
-            }
-
-        private static string RemoveAlignAttribute(string html)
-            {
-            return Regex.Replace(html, "\\salign\\s*=\\s*(\"[^\"]*\"|'[^']*'|[^\\s>]+)", string.Empty, RegexOptions.IgnoreCase);
-            }
-
-        private static string RemoveWidthAttributes(string html)
-            {
-            return Regex.Replace(html, "\\swidth\\s*=\\s*(\"[^\"]*\"|'[^']*'|[^\\s>]+)", string.Empty, RegexOptions.IgnoreCase);
-            }
-
-        private static string NormalizeStyleAttributes(string html, bool removeWidthInPt, bool removeWordSpacing, bool removeTableLayout)
-            {
-            return Regex.Replace(html, "style\\s*=\\s*(?<quote>[\"'])(?<style>[^\"']*)(\\k<quote>)", match =>
-                {
-                var styleValue = match.Groups["style"].Value;
-                var cleaned = CleanStyleValue(styleValue, removeWidthInPt, removeWordSpacing, removeTableLayout);
-                if (string.IsNullOrWhiteSpace(cleaned))
-                    {
-                    return string.Empty;
-                    }
-                var quote = match.Groups["quote"].Value;
-                return $"style={quote}{cleaned}{quote}";
-                }, RegexOptions.IgnoreCase);
-            }
-
-        private static string CleanStyleValue(string styleValue, bool removeWidthInPt, bool removeWordSpacing, bool removeTableLayout)
-            {
-            var style = styleValue;
-            if (removeWidthInPt)
-                {
-                style = Regex.Replace(style, "width\\s*:\\s*\\d+(?:\\.\\d+)?pt\\s*;?", string.Empty, RegexOptions.IgnoreCase);
-                }
-            if (removeTableLayout)
-                {
-                style = Regex.Replace(style, "table-layout\\s*:\\s*[^;]+;?", string.Empty, RegexOptions.IgnoreCase);
-                }
-            if (removeWordSpacing)
-                {
-                style = Regex.Replace(style, "mso-[^:]+\\s*:\\s*[^;]+;?", string.Empty, RegexOptions.IgnoreCase);
-                style = Regex.Replace(style, "margin-(left|right)\\s*:\\s*[^;]+;?", string.Empty, RegexOptions.IgnoreCase);
-                }
-            style = Regex.Replace(style, "white-space\\s*:\\s*nowrap\\s*;?", string.Empty, RegexOptions.IgnoreCase);
-            style = Regex.Replace(style, ";\\s*;", ";");
-            style = Regex.Replace(style, "\\s{2,}", " ");
-            style = style.Trim().Trim(';');
-            return style;
-            }
-
-        private static int GetMaxColumnCount(string innerHtml)
-            {
-            if (string.IsNullOrWhiteSpace(innerHtml))
-                {
-                return 0;
-                }
-
-            var maxColumns = 0;
-            var rowMatches = Regex.Matches(innerHtml, "<tr\\b[^>]*>(?<row>.*?)</tr>", RegexOptions.IgnoreCase | RegexOptions.Singleline);
-            foreach (Match rowMatch in rowMatches)
-                {
-                var rowContent = rowMatch.Groups["row"].Value;
-                var cellMatches = Regex.Matches(rowContent, "<t[dh]\\b[^>]*>", RegexOptions.IgnoreCase);
-                var columnCount = 0;
-                foreach (Match cellMatch in cellMatches)
-                    {
-                    var colspanMatch = Regex.Match(cellMatch.Value, "\\bcolspan\\s*=\\s*[\"']?(?<value>\\d+)\\s*[\"']?", RegexOptions.IgnoreCase);
-                    var colspan = colspanMatch.Success && int.TryParse(colspanMatch.Groups["value"].Value, out var span) ? Math.Max(span, 1) : 1;
-                    columnCount += colspan;
-                    }
-                if (columnCount > maxColumns)
-                    {
-                    maxColumns = columnCount;
-                    }
-                }
-
-            return maxColumns;
             }
 
         private static bool HasMeaningfulContent(string htmlContent)
