@@ -46,6 +46,11 @@
         {
         return paraNo.HasValue && paraNo.Value > 0 ? paraNo.Value.ToString("D2") : "--";
         }
+
+    private string FormatReadOnlyNarrative(string value)
+        {
+        return string.IsNullOrWhiteSpace(value) ? "Not available" : value;
+        }
 }
 
 <style>
@@ -76,6 +81,10 @@
 
     .rich-text-readonly .richText-editor {
         background-color: #f8f9fa;
+    }
+
+    .read-only-text {
+        white-space: pre-line;
     }
 </style>
 
@@ -414,41 +423,45 @@
                             <tr>
                                 <th>RECOMMENDATIONS</th>
                                 <td>
-                                    <textarea class="form-control w-100"
-                                              data-field="Recommendations"
-                                              data-label="RECOMMENDATIONS"
-                                              rows="4"
-                                              @(isParaLocked ? "disabled" : string.Empty)>@observation?.Recommendations</textarea>
+                                    <div class="form-control-plaintext read-only-text"
+                                         data-field="Recommendations"
+                                         data-label="RECOMMENDATIONS"
+                                         data-value="@observation?.Recommendations">
+                                        @FormatReadOnlyNarrative(observation?.Recommendations)
+                                    </div>
                                 </td>
                             </tr>
                             <tr>
                                 <th>MANAGEMENT / BRANCH COMMENTS</th>
                                 <td>
-                                    <textarea class="form-control w-100"
-                                              data-field="ManagementComments"
-                                              data-label="MANAGEMENT / BRANCH COMMENTS"
-                                              rows="4"
-                                              @(isParaLocked ? "disabled" : string.Empty)>@observation?.ManagementComments</textarea>
+                                    <div class="form-control-plaintext read-only-text"
+                                         data-field="ManagementComments"
+                                         data-label="MANAGEMENT / BRANCH COMMENTS"
+                                         data-value="@observation?.ManagementComments">
+                                        @FormatReadOnlyNarrative(observation?.ManagementComments)
+                                    </div>
                                 </td>
                             </tr>
                             <tr>
                                 <th>AUDITOR’S FURTHER COMMENTS</th>
                                 <td>
-                                    <textarea class="form-control w-100"
-                                              data-field="AuditorFurtherComments"
-                                              data-label="AUDITOR’S FURTHER COMMENTS"
-                                              rows="4"
-                                              @(isParaLocked ? "disabled" : string.Empty)>@observation?.AuditorFurtherComments</textarea>
+                                    <div class="form-control-plaintext read-only-text"
+                                         data-field="AuditorFurtherComments"
+                                         data-label="AUDITOR’S FURTHER COMMENTS"
+                                         data-value="@observation?.AuditorFurtherComments">
+                                        @FormatReadOnlyNarrative(observation?.AuditorFurtherComments)
+                                    </div>
                                 </td>
                             </tr>
                             <tr>
                                 <th>REMARKS OF SVP / INCHARGE</th>
                                 <td>
-                                    <textarea class="form-control w-100"
-                                              data-field="SvpRemarks"
-                                              data-label="REMARKS OF SVP / INCHARGE"
-                                              rows="4"
-                                              @(isParaLocked ? "disabled" : string.Empty)>@observation?.SvpRemarks</textarea>
+                                    <div class="form-control-plaintext read-only-text"
+                                         data-field="SvpRemarks"
+                                         data-label="REMARKS OF SVP / INCHARGE"
+                                         data-value="@observation?.SvpRemarks">
+                                        @FormatReadOnlyNarrative(observation?.SvpRemarks)
+                                    </div>
                                 </td>
                             </tr>
                         </tbody>
@@ -856,10 +869,10 @@
         function collectParaFields(container) {
             const fields = {};
             const missing = [];
-            container.querySelectorAll('textarea[data-field]').forEach((textarea) => {
-                const fieldName = textarea.dataset.field;
-                const label = textarea.dataset.label || fieldName;
-                const value = textarea.value || '';
+            container.querySelectorAll('[data-field]').forEach((element) => {
+                const fieldName = element.dataset.field;
+                const label = element.dataset.label || fieldName;
+                const value = element.dataset.value ?? element.value ?? element.textContent ?? '';
                 fields[fieldName] = value;
                 if (!value.trim()) {
                     missing.push(label);
