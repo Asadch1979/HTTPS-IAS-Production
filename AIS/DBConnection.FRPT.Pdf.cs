@@ -26,7 +26,26 @@ namespace AIS.Controllers
                 StaffRows = GetFieldAuditPdfStaffSnapshot(engId, reportVersion),
                 Paras = GetFieldAuditPdfParas(engId, reportVersion),
                 StatisticsRows = GetFieldAuditPdfStatistics(engId, reportVersion),
-                IncomeLeakageRows = GetFieldAuditPdfIncomeLeakage(engId, reportVersion)
+                IncomeLeakageRows = GetFieldAuditPdfIncomeLeakage(engId, reportVersion),
+                OverallConclusion = GetFieldAuditPdfOverallConclusion(engId, reportVersion)
+                };
+            }
+
+        private FieldAuditPdfOverallConclusionModel GetFieldAuditPdfOverallConclusion(int engId, int? reportVersion)
+            {
+            var input = GetOverallConclusion(engId, reportVersion);
+            if (input == null)
+                {
+                return new FieldAuditPdfOverallConclusionModel();
+                }
+
+            return new FieldAuditPdfOverallConclusionModel
+                {
+                OverallConclusionHtml = input.OverallConclusionHtml,
+                NonAddressableHtml = input.NonAddressableHtml,
+                FraudProneHtml = input.FraudProneHtml,
+                RegulatoryHtml = input.RegulatoryHtml,
+                SafetySecurityHtml = input.SafetySecurityHtml
                 };
             }
 
