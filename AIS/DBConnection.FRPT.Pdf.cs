@@ -16,7 +16,6 @@ namespace AIS.Controllers
 
         public FieldAuditPdfReportData GetFieldAuditReportPdfData(int engId, int? reportVersion)
             {
-            var overallConclusion = GetOverallConclusion(engId, reportVersion);
             return new FieldAuditPdfReportData
                 {
                 Header = GetFieldAuditPdfHeader(engId, reportVersion),
@@ -27,17 +26,7 @@ namespace AIS.Controllers
                 StaffRows = GetFieldAuditPdfStaffSnapshot(engId, reportVersion),
                 Paras = GetFieldAuditPdfParas(engId, reportVersion),
                 StatisticsRows = GetFieldAuditPdfStatistics(engId, reportVersion),
-                IncomeLeakageRows = GetFieldAuditPdfIncomeLeakage(engId, reportVersion),
-                OverallConclusion = overallConclusion == null
-                    ? null
-                    : new FieldAuditPdfOverallConclusionModel
-                        {
-                        OverallConclusionHtml = overallConclusion.OverallConclusionHtml,
-                        NonAddressableHtml = overallConclusion.NonAddressableHtml,
-                        FraudProneHtml = overallConclusion.FraudProneHtml,
-                        RegulatoryHtml = overallConclusion.RegulatoryHtml,
-                        SafetySecurityHtml = overallConclusion.SafetySecurityHtml
-                        }
+                IncomeLeakageRows = GetFieldAuditPdfIncomeLeakage(engId, reportVersion)
                 };
             }
 
