@@ -1,6 +1,4 @@
 using AIS.Models.FieldAuditReport;
-using AngleSharp.Dom;
-using AngleSharp.Html.Parser;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -84,20 +82,14 @@ namespace AIS.Services
             sb.AppendLine(".para-body{ font-size:12px; line-height:1.6; text-align:justify; white-space:normal !important; overflow-wrap:anywhere; color:#212529; width:100%; }");
             sb.AppendLine(".para-body *{ font-size:12px !important; white-space:normal !important; overflow-wrap:anywhere; }");
             sb.AppendLine(".para-body h1,.para-body h2,.para-body h3{ font-size:13px !important; margin:6px 0 !important; }");
-            sb.AppendLine(".para-body table.pdf-table-bordered{ width:100% !important; max-width:100% !important; table-layout:fixed !important; border-collapse:collapse; margin-top:10px; box-sizing:border-box; }");
-            sb.AppendLine(".para-body table.pdf-table-borderless{ width:100% !important; max-width:100% !important; table-layout:auto !important; border-collapse:collapse; margin-top:10px; box-sizing:border-box; }");
-            sb.AppendLine(".para-body table.pdf-table-bordered th,.para-body table.pdf-table-bordered td{ border:1px solid #222; padding:4px 6px; vertical-align:top; word-break:break-word; overflow-wrap:anywhere; white-space:normal !important; }");
-            sb.AppendLine(".para-body table.pdf-table-borderless th,.para-body table.pdf-table-borderless td{ border:none !important; padding:4px 6px; vertical-align:top; word-break:normal !important; overflow-wrap:normal !important; white-space:normal !important; }");
+            sb.AppendLine(".para-body table{ width:100% !important; max-width:100% !important; table-layout:fixed !important; border-collapse:collapse; margin-top:10px; box-sizing:border-box; }");
+            sb.AppendLine(".para-body table th,.para-body table td{ border:1px solid #222; padding:4px 6px; vertical-align:top; word-break:break-word; overflow-wrap:anywhere; white-space:normal !important; }");
             sb.AppendLine(".para-body img{ max-width:100% !important; height:auto !important; }");
             sb.AppendLine(".para-detail, .para-detail *{ max-width:100% !important; box-sizing:border-box !important; }");
-            sb.AppendLine(".para-detail table.pdf-table-bordered{ width:100% !important; max-width:100% !important; table-layout:fixed !important; border-collapse:collapse !important; }");
-            sb.AppendLine(".para-detail table.pdf-table-borderless{ width:100% !important; max-width:100% !important; table-layout:auto !important; border-collapse:collapse !important; }");
-            sb.AppendLine(".para-detail table.pdf-table-bordered th,.para-detail table.pdf-table-bordered td{ white-space:normal !important; word-break:break-word !important; overflow-wrap:anywhere !important; vertical-align:top !important; padding:3px 4px !important; font-size:10px !important; }");
-            sb.AppendLine(".para-detail table.pdf-table-borderless th,.para-detail table.pdf-table-borderless td{ border:none !important; white-space:normal !important; word-break:normal !important; overflow-wrap:normal !important; vertical-align:top !important; padding:3px 4px !important; font-size:10px !important; }");
+            sb.AppendLine(".para-detail table{ width:100% !important; max-width:100% !important; table-layout:fixed !important; border-collapse:collapse !important; }");
+            sb.AppendLine(".para-detail th,.para-detail td{ white-space:normal !important; word-break:break-word !important; overflow-wrap:anywhere !important; vertical-align:top !important; padding:3px 4px !important; font-size:10px !important; }");
             sb.AppendLine(".para-detail col,.para-detail colgroup{ width:auto !important; }");
             sb.AppendLine(".para-detail img{ max-width:100% !important; height:auto !important; }");
-            sb.AppendLine(".paragraph table.pdf-table-borderless{ width:100% !important; max-width:100% !important; table-layout:auto !important; border-collapse:collapse; margin-top:10px; box-sizing:border-box; }");
-            sb.AppendLine(".paragraph table.pdf-table-borderless th,.paragraph table.pdf-table-borderless td{ border:none !important; padding:4px 6px; vertical-align:top; word-break:normal !important; overflow-wrap:normal !important; white-space:normal !important; }");
             sb.AppendLine(".para-table{ width:100%; border-collapse:collapse; margin:10px 0; page-break-inside:auto; break-inside:auto; table-layout:fixed; }");
             sb.AppendLine(".para-table th{ background:#f6f8fa; text-align:left; border:1px solid #d0d7de; }");
             sb.AppendLine(".para-table td{ border:1px solid #d0d7de; padding:10px 12px; overflow:hidden; word-break:break-word; overflow-wrap:anywhere; }");
@@ -859,112 +851,7 @@ namespace AIS.Services
                 return style;
                 }, RegexOptions.IgnoreCase);
 
-            current = NormalizeTableMarkup(current);
-
             return current;
-            }
-
-        private static string NormalizeTableMarkup(string html)
-            {
-            if (string.IsNullOrWhiteSpace(html))
-                {
-                return string.Empty;
-                }
-
-            try
-                {
-                var parser = new HtmlParser();
-                var document = parser.ParseDocument($"<div id=\"pdf-html-root\">{html}</div>");
-                var root = document.QuerySelector("#pdf-html-root");
-                if (root == null)
-                    {
-                    return html;
-                    }
-
-                foreach (var table in root.QuerySelectorAll("table"))
-                    {
-                    var tableClass = DetermineTableClass(table);
-                    if (!string.IsNullOrWhiteSpace(tableClass))
-                        {
-                        AddCssClass(table, tableClass);
-                        }
-                    }
-
-                return root.InnerHtml;
-                }
-            catch
-                {
-                return html;
-                }
-            }
-
-        private static string DetermineTableClass(IElement table)
-            {
-            if (table == null)
-                {
-                return string.Empty;
-                }
-
-            var isBordered = HasBorder(table);
-            if (!isBordered)
-                {
-                foreach (var cell in table.QuerySelectorAll("th,td"))
-                    {
-                    if (!ReferenceEquals(cell.Closest("table"), table))
-                        {
-                        continue;
-                        }
-
-                    if (HasBorder(cell))
-                        {
-                        isBordered = true;
-                        break;
-                        }
-                    }
-                }
-
-            return isBordered ? "pdf-table-bordered" : "pdf-table-borderless";
-            }
-
-        private static bool HasBorder(IElement element)
-            {
-            if (element == null)
-                {
-                return false;
-                }
-
-            var borderAttribute = element.GetAttribute("border");
-            if (!string.IsNullOrWhiteSpace(borderAttribute)
-                && !string.Equals(borderAttribute.Trim(), "0", StringComparison.OrdinalIgnoreCase))
-                {
-                return true;
-                }
-
-            var style = element.GetAttribute("style");
-            if (string.IsNullOrWhiteSpace(style))
-                {
-                return false;
-                }
-
-            if (Regex.IsMatch(style, "border\\s*:\\s*(?!0(?:\\D|$)|none)[^;]+", RegexOptions.IgnoreCase))
-                {
-                return true;
-                }
-
-            return Regex.IsMatch(style, "border-(top|right|bottom|left)\\s*:\\s*(?!0(?:\\D|$)|none)[^;]+", RegexOptions.IgnoreCase);
-            }
-
-        private static void AddCssClass(IElement element, string className)
-            {
-            if (element == null || string.IsNullOrWhiteSpace(className))
-                {
-                return;
-                }
-
-            if (!element.ClassList.Contains(className))
-                {
-                element.ClassList.Add(className);
-                }
             }
 
         private static bool HasMeaningfulContent(string htmlContent)
