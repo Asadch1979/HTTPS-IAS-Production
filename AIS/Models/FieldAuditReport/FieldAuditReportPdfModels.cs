@@ -21,9 +21,14 @@ namespace AIS.Models.FieldAuditReport
         {
         public string BankName { get; set; }
         public string InternalAuditDivision { get; set; }
+        public string Reporting { get; set; }
+
         public string BranchName { get; set; }
         public string BranchCode { get; set; }
         public string AuditPeriod { get; set; }
+        public string Operationperiod { get; set; }
+        public string AuditExecuted { get; set; }
+
         public DateTime? AuditStartDate { get; set; }
         public DateTime? AuditEndDate { get; set; }
         public string ReportStatus { get; set; }

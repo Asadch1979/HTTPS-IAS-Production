@@ -151,9 +151,12 @@ namespace AIS.Controllers
                 {
                 header.BankName = GetString(reader, "BANK_NAME");
                 header.InternalAuditDivision = GetString(reader, "INTERNAL_AUDIT_DIVISION");
+                header.Reporting = GetString(reader, "Reporting_Office");
                 header.BranchName = GetString(reader, "BRANCH_NAME");
                 header.BranchCode = GetString(reader, "BRANCH_CODE");
                 header.AuditPeriod = GetString(reader, "AUDIT_PERIOD");
+                header.Operationperiod = GetString(reader, "Operation_Period");
+                header.AuditExecuted = GetString(reader, "AUDIT_Executed");
                 header.AuditStartDate = GetNullableDate(reader, "AUDIT_START_DATE");
                 header.AuditEndDate = GetNullableDate(reader, "AUDIT_END_DATE");
                 header.ReportStatus = GetString(reader, "REPORT_STATUS");
