@@ -65,6 +65,8 @@ namespace AIS.Services
             sb.AppendLine(".cover-box td{ border:none; padding:4px 6px; }");
             sb.AppendLine(".cover-confidential{ margin-top:22px; font-weight:700; }");
             sb.AppendLine(".section-title{ font-size:14px; font-weight:700; margin:18px 0 10px 0; padding:8px 10px; border-left:4px solid #111; background:#f6f8fa; page-break-after: avoid; break-after: avoid; }");
+            sb.AppendLine(".section-title.compact{ margin:8px 0 4px 0; padding:6px 10px; }");
+            sb.AppendLine(".keep-with-next{ page-break-after: avoid; break-after: avoid; }");
             sb.AppendLine(".exec-summary{ line-height:1.8; text-align:justify; }");
             sb.AppendLine(".exec-summary p{ margin:0 0 10px; }");
             sb.AppendLine(".chart-block{ margin:12px 0; text-align:center; }");
@@ -74,15 +76,15 @@ namespace AIS.Services
             sb.AppendLine(".meta-grid { width: 100%; }");
             sb.AppendLine(".meta-label { width: 35%; font-weight: bold; }");
             sb.AppendLine(".paragraph { margin: 6pt 0; }");
-            sb.AppendLine(".para-box{ border:1px solid #d0d7de; border-radius:8px; padding:12px 14px; margin:10px 0; background:#fff; page-break-inside:avoid; break-inside:avoid; }");
+            sb.AppendLine(".para-box{ border:1px solid #d0d7de; border-radius:8px; padding:12px 14px; margin:10px 0; background:#fff; page-break-inside:auto; break-inside:auto; }");
             sb.AppendLine(".para-title{ font-weight:700; font-size:13px; margin:0 0 8px 0; color:#111; }");
-            sb.AppendLine(".para-body{ font-size:12px; line-height:1.6; text-align:justify; white-space:normal !important; overflow-wrap:anywhere; color:#212529; width:100%; }");
-            sb.AppendLine(".para-body *{ font-size:12px !important; white-space:normal !important; overflow-wrap:anywhere; }");
+            sb.AppendLine(".para-body{ font-size:12px; line-height:1.6; text-align:justify; white-space:normal !important; overflow-wrap:anywhere; color:#212529; width:100%; max-width:100%; box-sizing:border-box; }");
+            sb.AppendLine(".para-body *{ font-size:12px !important; white-space:normal !important; overflow-wrap:anywhere; box-sizing:border-box; }");
             sb.AppendLine(".para-body h1,.para-body h2,.para-body h3{ font-size:13px !important; margin:6px 0 !important; }");
             sb.AppendLine(".para-body table{ width:100% !important; max-width:100% !important; table-layout:fixed !important; border-collapse:collapse; margin-top:10px; }");
             sb.AppendLine(".para-body table th,.para-body table td{ border:1px solid #222; padding:4px 6px; vertical-align:top; word-break:break-word; overflow-wrap:anywhere; white-space:normal !important; }");
             sb.AppendLine(".para-body img{ max-width:100% !important; height:auto !important; }");
-            sb.AppendLine(".para-table{ width:100%; border-collapse:collapse; margin:10px 0; page-break-inside:avoid; break-inside:avoid; }");
+            sb.AppendLine(".para-table{ width:100%; border-collapse:collapse; margin:10px 0; page-break-inside:auto; break-inside:auto; }");
             sb.AppendLine(".para-table th{ background:#f6f8fa; text-align:left; border:1px solid #d0d7de; }");
             sb.AppendLine(".para-table td{ border:1px solid #d0d7de; padding:10px 12px; }");
             sb.AppendLine("table.para-notes{ width:100%; table-layout:fixed; border-collapse:collapse; }");
@@ -93,6 +95,11 @@ namespace AIS.Services
             sb.AppendLine(".page-break{ page-break-before: always; break-before: page; }");
             sb.AppendLine(".break-after{ page-break-after: always; break-after: page; }");
             sb.AppendLine(".avoid-break{ page-break-inside: avoid; break-inside: avoid; }");
+            sb.AppendLine(".staff-list{ margin:0; padding:0; }");
+            sb.AppendLine(".staff-list p{ margin:0 0 4pt 0; }");
+            sb.AppendLine(".grid th.kpi-serial{ width:28px; }");
+            sb.AppendLine(".grid th.kpi-name{ width:240px; }");
+            sb.AppendLine(".grid td.kpi-name{ text-align:left; }");
             sb.AppendLine("</style>");
             sb.AppendLine("</head>");
             sb.AppendLine("<body>");
@@ -122,7 +129,6 @@ namespace AIS.Services
         private static void AppendCoverHeader(StringBuilder sb, FieldAuditPdfReportData data)
             {
             var header = data.Header ?? new FieldAuditPdfHeaderModel();
-            var meta = data.ReportMeta ?? new FieldAuditPdfReportMetaModel();
             var logoDataUri = GetLogoDataUri();
             var bankName = string.IsNullOrWhiteSpace(header.BankName) ? "Zarai Taraqiati Bank Limited" : header.BankName;
             var division = string.IsNullOrWhiteSpace(header.InternalAuditDivision) ? "Internal Audit Division" : header.InternalAuditDivision;
@@ -137,16 +143,16 @@ namespace AIS.Services
             sb.AppendLine("<div class=\"cover-headings\">");
             sb.AppendFormat(CultureInfo.InvariantCulture, "<div class=\"bank-name\">{0}</div>", Encode(bankName));
             sb.AppendFormat(CultureInfo.InvariantCulture, "<div class=\"division\">{0}</div>", Encode(division));
+            sb.AppendFormat(CultureInfo.InvariantCulture, "<div class=\"division\">{0}</div>", FormatCell(header.Reporting));
             sb.AppendLine("<div class=\"report-title\">Field Audit Report</div>");
             sb.AppendLine("</div>");
             sb.AppendLine("<div class=\"cover-box\">");
             sb.AppendLine("<table class=\"meta-grid\">");
-            AppendMetaRow(sb, "Entity", header.EntityName);
+            AppendMetaRow(sb, "Branch Name", header.BranchName);
             AppendMetaRow(sb, "Branch Code", header.BranchCode);
-            AppendMetaRow(sb, "Period", header.AuditPeriod ?? meta.AuditPeriod);
-            AppendMetaRow(sb, "Audit Dates", FormatDateRange(header.AuditStartDate, header.AuditEndDate));
-            AppendMetaRow(sb, "Status", meta.ReportStatus ?? header.ReportStatus);
-            AppendMetaRow(sb, "Version", meta.VersionNumber ?? header.VersionNumber);
+            AppendMetaRow(sb, "Operation Period", header.Operationperiod);
+            AppendMetaRow(sb, "Audit Executed", header.AuditExecuted);
+            AppendMetaRow(sb, "Risk", header.Risk);
             sb.AppendLine("</table>");
             sb.AppendLine("</div>");
             sb.AppendLine("<div class=\"cover-confidential\">Confidential \u2013 Internal Use Only</div>");
@@ -251,10 +257,7 @@ namespace AIS.Services
             sb.AppendLine("<section class=\"section\">");
             sb.AppendLine("<div class=\"section-block\">");
             sb.AppendLine("<div class=\"section-title\">Staff Position</div>");
-            sb.AppendLine("<div class=\"avoid-break\">");
-            sb.AppendLine("<table>");
-            sb.AppendLine("<thead><tr><th>Designation</th><th>Strength</th><th>As-of Date</th></tr></thead>");
-            sb.AppendLine("<tbody>");
+            sb.AppendLine("<div class=\"avoid-break staff-list\">");
             foreach (var row in rows)
                 {
                 if (!HasMeaningfulContent(row.Designation) && !row.Strength.HasValue && !row.AsOfDate.HasValue)
@@ -262,14 +265,8 @@ namespace AIS.Services
                     continue;
                     }
 
-                sb.AppendLine("<tr>");
-                sb.AppendFormat(CultureInfo.InvariantCulture, "<td>{0}</td>", FormatCell(row.Designation));
-                sb.AppendFormat(CultureInfo.InvariantCulture, "<td>{0}</td>", FormatIntegerCell(row.Strength));
-                sb.AppendFormat(CultureInfo.InvariantCulture, "<td>{0}</td>", FormatDateCell(row.AsOfDate));
-                sb.AppendLine("</tr>");
+                sb.AppendFormat(CultureInfo.InvariantCulture, "<p><strong>{0}</strong>: {1}</p>", FormatCell(row.Designation), FormatIntegerCell(row.Strength));
                 }
-            sb.AppendLine("</tbody>");
-            sb.AppendLine("</table>");
             sb.AppendLine("</div>");
             sb.AppendLine("</div>");
             sb.AppendLine("</section>");
@@ -288,7 +285,7 @@ namespace AIS.Services
 
             sb.AppendLine("<section class=\"section\">");
             sb.AppendLine("<div class=\"section-block\">");
-            sb.AppendLine("<div class=\"section-title\">KPI Snapshot</div>");
+            sb.AppendLine("<div class=\"section-title compact keep-with-next\">KPI Snapshot</div>");
             sb.AppendLine("<div class=\"avoid-break\">");
             AppendChartBlocks(sb, chartImages, fallbackChart, "KPI Snapshot Chart");
             if (kpiRows.Count > 0)
@@ -306,8 +303,8 @@ namespace AIS.Services
                 sb.AppendLine("<table class=\"grid\">");
                 sb.AppendLine("<thead>");
                 sb.AppendLine("<tr>");
-                sb.AppendLine("<th rowspan=\"2\" style=\"width:40px\">Sr. No.</th>");
-                sb.AppendLine("<th rowspan=\"2\">KPIs</th>");
+                sb.AppendLine("<th rowspan=\"2\" class=\"kpi-serial\">Sr</th>");
+                sb.AppendLine("<th rowspan=\"2\" class=\"kpi-name\">KPIs</th>");
                 sb.AppendLine("<th colspan=\"1\">As on Date of Audit</th>");
                 sb.AppendLine("<th colspan=\"3\">Audit Operation Period Start date (Rs. in Millions)</th>");
                 sb.AppendLine("<th colspan=\"3\">Audit Operation Period End Date (Rs. in Millions)</th>");
@@ -335,7 +332,7 @@ namespace AIS.Services
 
                     sb.AppendLine("<tr>");
                     sb.AppendFormat(CultureInfo.InvariantCulture, "<td>{0}</td>", index++);
-                    sb.AppendFormat(CultureInfo.InvariantCulture, "<td class=\"left\">{0}</td>", FormatCell(kpiLabel));
+                    sb.AppendFormat(CultureInfo.InvariantCulture, "<td class=\"kpi-name\">{0}</td>", FormatCell(kpiLabel));
                     sb.AppendFormat(CultureInfo.InvariantCulture, "<td>{0}</td>", FormatNumberCell((endRow ?? latestRow)?.ActualValue));
                     sb.AppendFormat(CultureInfo.InvariantCulture, "<td>{0}</td>", FormatNumberCell(startRow?.TargetValue));
                     sb.AppendFormat(CultureInfo.InvariantCulture, "<td>{0}</td>", FormatNumberCell(startRow?.ActualValue));
@@ -367,7 +364,7 @@ namespace AIS.Services
 
             sb.AppendLine("<section class=\"section\">");
             sb.AppendLine("<div class=\"section-block\">");
-            sb.AppendLine("<div class=\"section-title\">NPL Analysis</div>");
+            sb.AppendLine("<div class=\"section-title compact keep-with-next\">NPL Analysis</div>");
             sb.AppendLine("<div class=\"avoid-break\">");
             AppendChartBlocks(sb, chartImages, fallbackChart, "NPL Composition Chart");
             if (rows.Count > 0)

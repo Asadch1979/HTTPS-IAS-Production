@@ -28,6 +28,7 @@ namespace AIS.Models.FieldAuditReport
         public string AuditPeriod { get; set; }
         public string Operationperiod { get; set; }
         public string AuditExecuted { get; set; }
+        public string Risk { get; set; }
 
         public DateTime? AuditStartDate { get; set; }
         public DateTime? AuditEndDate { get; set; }
