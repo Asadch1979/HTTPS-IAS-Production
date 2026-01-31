@@ -52,7 +52,7 @@ namespace AIS.Services
             sb.AppendLine(".grid td.left{ text-align:left; }");
             sb.AppendLine(".grid th.left{ text-align:left; }");
             sb.AppendLine(".section { page-break-after: auto; }");
-            sb.AppendLine(".section-block{ margin-bottom:18px; }");
+            sb.AppendLine(".section-block{ margin-bottom:12px; }");
             sb.AppendLine(".cover-page{ text-align:center; }");
             sb.AppendLine(".cover-logo{ text-align:left; margin-bottom:18px; }");
             sb.AppendLine(".cover-logo img{ height:70px; }");
@@ -63,8 +63,11 @@ namespace AIS.Services
             sb.AppendLine(".cover-box{ border:1px solid #111; padding:16px 18px; margin:16px auto 0; width:68%; text-align:left; }");
             sb.AppendLine(".cover-box table{ border:none; margin:0; }");
             sb.AppendLine(".cover-box td{ border:none; padding:4px 6px; }");
+            sb.AppendLine(".cover-details{ font-size:13px; line-height:1.6; }");
+            sb.AppendLine(".cover-details .line{ margin:2px 0; }");
             sb.AppendLine(".cover-confidential{ margin-top:22px; font-weight:700; }");
-            sb.AppendLine(".section-title{ font-size:14px; font-weight:700; margin:18px 0 10px 0; padding:8px 10px; border-left:4px solid #111; background:#f6f8fa; page-break-after: avoid; break-after: avoid; }");
+            sb.AppendLine(".section-title{ font-size:14px; font-weight:700; margin:12px 0 6px 0; padding:6px 10px; border-left:4px solid #111; background:#f6f8fa; page-break-after: avoid; break-after: avoid; }");
+            sb.AppendLine(".section-block > .section-title + *{ margin-top:0 !important; }");
             sb.AppendLine(".exec-summary{ line-height:1.8; text-align:justify; }");
             sb.AppendLine(".exec-summary p{ margin:0 0 10px; }");
             sb.AppendLine(".chart-block{ margin:12px 0; text-align:center; }");
@@ -79,12 +82,12 @@ namespace AIS.Services
             sb.AppendLine(".para-body{ font-size:12px; line-height:1.6; text-align:justify; white-space:normal !important; overflow-wrap:anywhere; color:#212529; width:100%; }");
             sb.AppendLine(".para-body *{ font-size:12px !important; white-space:normal !important; overflow-wrap:anywhere; }");
             sb.AppendLine(".para-body h1,.para-body h2,.para-body h3{ font-size:13px !important; margin:6px 0 !important; }");
-            sb.AppendLine(".para-body table{ width:100% !important; max-width:100% !important; table-layout:fixed !important; border-collapse:collapse; margin-top:10px; }");
+            sb.AppendLine(".para-body table{ width:100% !important; max-width:100% !important; table-layout:fixed !important; border-collapse:collapse; margin-top:10px; box-sizing:border-box; }");
             sb.AppendLine(".para-body table th,.para-body table td{ border:1px solid #222; padding:4px 6px; vertical-align:top; word-break:break-word; overflow-wrap:anywhere; white-space:normal !important; }");
             sb.AppendLine(".para-body img{ max-width:100% !important; height:auto !important; }");
-            sb.AppendLine(".para-table{ width:100%; border-collapse:collapse; margin:10px 0; page-break-inside:avoid; break-inside:avoid; }");
+            sb.AppendLine(".para-table{ width:100%; border-collapse:collapse; margin:10px 0; page-break-inside:auto; break-inside:auto; table-layout:fixed; }");
             sb.AppendLine(".para-table th{ background:#f6f8fa; text-align:left; border:1px solid #d0d7de; }");
-            sb.AppendLine(".para-table td{ border:1px solid #d0d7de; padding:10px 12px; }");
+            sb.AppendLine(".para-table td{ border:1px solid #d0d7de; padding:10px 12px; overflow:hidden; word-break:break-word; overflow-wrap:anywhere; }");
             sb.AppendLine("table.para-notes{ width:100%; table-layout:fixed; border-collapse:collapse; }");
             sb.AppendLine("table.para-notes th{ width:22%; font-weight:700; vertical-align:top; padding:6px; }");
             sb.AppendLine("table.para-notes td{ width:78%; padding:6px; vertical-align:top; word-break:break-word; overflow-wrap:anywhere; }");
@@ -126,6 +129,7 @@ namespace AIS.Services
             var logoDataUri = GetLogoDataUri();
             var bankName = string.IsNullOrWhiteSpace(header.BankName) ? "Zarai Taraqiati Bank Limited" : header.BankName;
             var division = string.IsNullOrWhiteSpace(header.InternalAuditDivision) ? "Internal Audit Division" : header.InternalAuditDivision;
+            var reportingLine = string.IsNullOrWhiteSpace(header.Reporting) ? "Reporting" : header.Reporting;
 
             sb.AppendLine("<section class=\"section cover-page\">");
             if (!string.IsNullOrWhiteSpace(logoDataUri))
@@ -137,17 +141,17 @@ namespace AIS.Services
             sb.AppendLine("<div class=\"cover-headings\">");
             sb.AppendFormat(CultureInfo.InvariantCulture, "<div class=\"bank-name\">{0}</div>", Encode(bankName));
             sb.AppendFormat(CultureInfo.InvariantCulture, "<div class=\"division\">{0}</div>", Encode(division));
+            sb.AppendFormat(CultureInfo.InvariantCulture, "<div class=\"division\">{0}</div>", Encode(reportingLine));
             sb.AppendLine("<div class=\"report-title\">Field Audit Report</div>");
             sb.AppendLine("</div>");
             sb.AppendLine("<div class=\"cover-box\">");
-            sb.AppendLine("<table class=\"meta-grid\">");
-            AppendMetaRow(sb, "Entity", header.EntityName);
-            AppendMetaRow(sb, "Branch Code", header.BranchCode);
-            AppendMetaRow(sb, "Period", header.AuditPeriod ?? meta.AuditPeriod);
-            AppendMetaRow(sb, "Audit Dates", FormatDateRange(header.AuditStartDate, header.AuditEndDate));
-            AppendMetaRow(sb, "Status", meta.ReportStatus ?? header.ReportStatus);
-            AppendMetaRow(sb, "Version", meta.VersionNumber ?? header.VersionNumber);
-            sb.AppendLine("</table>");
+            sb.AppendLine("<div class=\"cover-details\">");
+            sb.AppendFormat(CultureInfo.InvariantCulture, "<div class=\"line\">{0}</div>", Encode(header.BranchName));
+            sb.AppendFormat(CultureInfo.InvariantCulture, "<div class=\"line\">{0}</div>", Encode(header.BranchCode));
+            sb.AppendFormat(CultureInfo.InvariantCulture, "<div class=\"line\">{0}</div>", Encode(header.Operationperiod ?? header.AuditPeriod ?? meta.AuditPeriod));
+            sb.AppendFormat(CultureInfo.InvariantCulture, "<div class=\"line\">{0}</div>", Encode(header.AuditExecuted));
+            sb.AppendFormat(CultureInfo.InvariantCulture, "<div class=\"line\">{0}</div>", Encode(header.Risk));
+            sb.AppendLine("</div>");
             sb.AppendLine("</div>");
             sb.AppendLine("<div class=\"cover-confidential\">Confidential \u2013 Internal Use Only</div>");
             sb.AppendLine("</section>");
@@ -252,9 +256,6 @@ namespace AIS.Services
             sb.AppendLine("<div class=\"section-block\">");
             sb.AppendLine("<div class=\"section-title\">Staff Position</div>");
             sb.AppendLine("<div class=\"avoid-break\">");
-            sb.AppendLine("<table>");
-            sb.AppendLine("<thead><tr><th>Designation</th><th>Strength</th><th>As-of Date</th></tr></thead>");
-            sb.AppendLine("<tbody>");
             foreach (var row in rows)
                 {
                 if (!HasMeaningfulContent(row.Designation) && !row.Strength.HasValue && !row.AsOfDate.HasValue)
@@ -262,14 +263,15 @@ namespace AIS.Services
                     continue;
                     }
 
-                sb.AppendLine("<tr>");
-                sb.AppendFormat(CultureInfo.InvariantCulture, "<td>{0}</td>", FormatCell(row.Designation));
-                sb.AppendFormat(CultureInfo.InvariantCulture, "<td>{0}</td>", FormatIntegerCell(row.Strength));
-                sb.AppendFormat(CultureInfo.InvariantCulture, "<td>{0}</td>", FormatDateCell(row.AsOfDate));
-                sb.AppendLine("</tr>");
+                var designation = string.IsNullOrWhiteSpace(row.Designation) ? string.Empty : Encode(row.Designation);
+                var strength = FormatInteger(row.Strength);
+                var line = string.IsNullOrWhiteSpace(designation)
+                    ? strength
+                    : string.IsNullOrWhiteSpace(strength)
+                        ? designation
+                        : $"{designation} - {strength}";
+                sb.AppendFormat(CultureInfo.InvariantCulture, "<div class=\"paragraph\">{0}</div>", line);
                 }
-            sb.AppendLine("</tbody>");
-            sb.AppendLine("</table>");
             sb.AppendLine("</div>");
             sb.AppendLine("</div>");
             sb.AppendLine("</section>");
@@ -286,11 +288,21 @@ namespace AIS.Services
                 return;
                 }
 
+            var hasChart = chartImages.Count > 0 || !string.IsNullOrWhiteSpace(fallbackChart);
             sb.AppendLine("<section class=\"section\">");
             sb.AppendLine("<div class=\"section-block\">");
-            sb.AppendLine("<div class=\"section-title\">KPI Snapshot</div>");
+            if (hasChart)
+                {
+                sb.AppendLine("<div class=\"avoid-break\">");
+                sb.AppendLine("<div class=\"section-title\">KPI Snapshot</div>");
+                AppendChartBlocks(sb, chartImages, fallbackChart, "KPI Snapshot Chart");
+                sb.AppendLine("</div>");
+                }
+            else
+                {
+                sb.AppendLine("<div class=\"section-title\">KPI Snapshot</div>");
+                }
             sb.AppendLine("<div class=\"avoid-break\">");
-            AppendChartBlocks(sb, chartImages, fallbackChart, "KPI Snapshot Chart");
             if (kpiRows.Count > 0)
                 {
                 var periods = kpiRows.Select(row => row.PeriodEndDate)
@@ -306,8 +318,8 @@ namespace AIS.Services
                 sb.AppendLine("<table class=\"grid\">");
                 sb.AppendLine("<thead>");
                 sb.AppendLine("<tr>");
-                sb.AppendLine("<th rowspan=\"2\" style=\"width:40px\">Sr. No.</th>");
-                sb.AppendLine("<th rowspan=\"2\">KPIs</th>");
+                sb.AppendLine("<th rowspan=\"2\" style=\"width:28px\">Sr</th>");
+                sb.AppendLine("<th rowspan=\"2\" style=\"width:220px\">KPIs</th>");
                 sb.AppendLine("<th colspan=\"1\">As on Date of Audit</th>");
                 sb.AppendLine("<th colspan=\"3\">Audit Operation Period Start date (Rs. in Millions)</th>");
                 sb.AppendLine("<th colspan=\"3\">Audit Operation Period End Date (Rs. in Millions)</th>");
@@ -365,11 +377,21 @@ namespace AIS.Services
                 return;
                 }
 
+            var hasChart = chartImages.Count > 0 || !string.IsNullOrWhiteSpace(fallbackChart);
             sb.AppendLine("<section class=\"section\">");
             sb.AppendLine("<div class=\"section-block\">");
-            sb.AppendLine("<div class=\"section-title\">NPL Analysis</div>");
+            if (hasChart)
+                {
+                sb.AppendLine("<div class=\"avoid-break\">");
+                sb.AppendLine("<div class=\"section-title\">NPL Analysis</div>");
+                AppendChartBlocks(sb, chartImages, fallbackChart, "NPL Composition Chart");
+                sb.AppendLine("</div>");
+                }
+            else
+                {
+                sb.AppendLine("<div class=\"section-title\">NPL Analysis</div>");
+                }
             sb.AppendLine("<div class=\"avoid-break\">");
-            AppendChartBlocks(sb, chartImages, fallbackChart, "NPL Composition Chart");
             if (rows.Count > 0)
                 {
                 sb.AppendLine("<table class=\"grid\">");
@@ -633,65 +655,28 @@ namespace AIS.Services
             sb.AppendLine("<div class=\"section-title\">Audit Paras – Detailed</div>");
             sb.AppendLine("</div>");
 
-            var wrappedFirstPara = false;
             foreach (var group in paras.GroupBy(para => para.Risk).OrderBy(group => group.Key))
                 {
-                if (!wrappedFirstPara)
+                sb.AppendFormat(CultureInfo.InvariantCulture, "<h3>{0} Risk Paras</h3>", Encode(group.Key));
+                foreach (var para in group)
                     {
-                    sb.AppendLine("<div class=\"avoid-break\">");
-                    sb.AppendFormat(CultureInfo.InvariantCulture, "<h3>{0} Risk Paras</h3>", Encode(group.Key));
-                    var firstParaInGroup = true;
-                    foreach (var para in group)
-                        {
-                        var paraTitle = string.IsNullOrWhiteSpace(para.Gist)
-                            ? $"Para {Encode(para.ParaNo)}"
-                            : $"Para {Encode(para.ParaNo)}: {Encode(para.Gist)}";
+                    var paraTitle = string.IsNullOrWhiteSpace(para.Gist)
+                        ? $"Para {Encode(para.ParaNo)}"
+                        : $"Para {Encode(para.ParaNo)}: {Encode(para.Gist)}";
 
-                        sb.AppendLine("<table class=\"para-table\">");
-                        sb.AppendLine("<thead>");
-                        sb.AppendFormat(CultureInfo.InvariantCulture, "<tr><th class=\"para-title-cell\">{0}</th></tr>", paraTitle);
-                        sb.AppendLine("</thead>");
-                        sb.AppendLine("<tbody>");
-                        sb.AppendLine("<tr><td>");
-                        sb.AppendLine("<div class=\"para-body\">");
-                        AppendParaBodyDetails(sb, para);
-                        sb.AppendLine("</div>");
-                        sb.AppendLine("</td></tr>");
-                        sb.AppendLine("</tbody>");
-                        sb.AppendLine("</table>");
-                        sb.AppendLine("<hr class=\"para-sep\" />");
-
-                        if (firstParaInGroup)
-                            {
-                            sb.AppendLine("</div>");
-                            wrappedFirstPara = true;
-                            firstParaInGroup = false;
-                            }
-                        }
-                    }
-                else
-                    {
-                    sb.AppendFormat(CultureInfo.InvariantCulture, "<h3>{0} Risk Paras</h3>", Encode(group.Key));
-                    foreach (var para in group)
-                        {
-                        var paraTitle = string.IsNullOrWhiteSpace(para.Gist)
-                            ? $"Para {Encode(para.ParaNo)}"
-                            : $"Para {Encode(para.ParaNo)}: {Encode(para.Gist)}";
-
-                        sb.AppendLine("<table class=\"para-table\">");
-                        sb.AppendLine("<thead>");
-                        sb.AppendFormat(CultureInfo.InvariantCulture, "<tr><th class=\"para-title-cell\">{0}</th></tr>", paraTitle);
-                        sb.AppendLine("</thead>");
-                        sb.AppendLine("<tbody>");
-                        sb.AppendLine("<tr><td>");
-                        sb.AppendLine("<div class=\"para-body\">");
-                        AppendParaBodyDetails(sb, para);
-                        sb.AppendLine("</div>");
-                        sb.AppendLine("</td></tr>");
-                        sb.AppendLine("</tbody>");
-                        sb.AppendLine("</table>");
-                        sb.AppendLine("<hr class=\"para-sep\" />");
-                        }
+                    sb.AppendLine("<table class=\"para-table\">");
+                    sb.AppendLine("<thead>");
+                    sb.AppendFormat(CultureInfo.InvariantCulture, "<tr><th class=\"para-title-cell\">{0}</th></tr>", paraTitle);
+                    sb.AppendLine("</thead>");
+                    sb.AppendLine("<tbody>");
+                    sb.AppendLine("<tr><td>");
+                    sb.AppendLine("<div class=\"para-body\">");
+                    AppendParaBodyDetails(sb, para);
+                    sb.AppendLine("</div>");
+                    sb.AppendLine("</td></tr>");
+                    sb.AppendLine("</tbody>");
+                    sb.AppendLine("</table>");
+                    sb.AppendLine("<hr class=\"para-sep\" />");
                     }
                 }
 
