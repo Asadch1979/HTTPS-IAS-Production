@@ -1253,12 +1253,19 @@ namespace AIS.Controllers
                 var term = search.Trim();
                 filtered = filtered.Where(row =>
                     (!string.IsNullOrWhiteSpace(row.S_NAME) && row.S_NAME.Contains(term, StringComparison.OrdinalIgnoreCase)) ||
-                    (!string.IsNullOrWhiteSpace(row.V_NAME) && row.V_NAME.Contains(term, StringComparison.OrdinalIgnoreCase)) ||
                     (!string.IsNullOrWhiteSpace(row.HEADING) && row.HEADING.Contains(term, StringComparison.OrdinalIgnoreCase)));
                 }
 
             var total = filtered.Count();
-            var allItems = filtered.ToList();
+            var allItems = filtered
+                .Select(row => new ChecklistDetailsRowDto
+                    {
+                    Id = row.ID,
+                    SName = row.S_NAME,
+                    VId = row.V_ID,
+                    Heading = row.HEADING
+                    })
+                .ToList();
 
             var items = allItems
                 .Skip((page - 1) * pageSize)
