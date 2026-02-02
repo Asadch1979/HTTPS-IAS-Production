@@ -20,7 +20,7 @@
             e.preventDefault();
             var formData = new FormData(this);
             $.ajax({
-                url: "/ApiCalls/UploadCircularFiles",
+                url: g_asiBaseURL + "/ApiCalls/UploadCircularFiles",
                 type: "POST",
                 data: formData,
                 processData: false,

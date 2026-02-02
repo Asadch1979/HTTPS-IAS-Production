@@ -231,7 +231,7 @@
                     Description: formData.get('Description')
                 };
 
-                var response = await fetchWithPageId('/ApiCalls/AddVersionHistory', {
+                var response = await fetchWithPageId(g_asiBaseURL + '/ApiCalls/AddVersionHistory', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
@@ -257,7 +257,7 @@
                     IsActive: formData.get('IsActive')
                 };
 
-                var response = await fetchWithPageId('/ApiCalls/UpdateVersionHistory', {
+                var response = await fetchWithPageId(g_asiBaseURL + '/ApiCalls/UpdateVersionHistory', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
