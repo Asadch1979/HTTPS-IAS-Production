@@ -54,12 +54,10 @@ namespace AIS.Middleware
                 return false;
             }
 
-            var pathBase = request.PathBase.HasValue ? request.PathBase.Value : string.Empty;
             var path = request.Path.HasValue ? request.Path.Value : string.Empty;
-            var combinedPath = string.Concat(pathBase, path);
 
-            if (combinedPath.StartsWith("/apicalls", StringComparison.OrdinalIgnoreCase) ||
-                combinedPath.StartsWith("/api", StringComparison.OrdinalIgnoreCase))
+            if (path.StartsWith("/apicalls", StringComparison.OrdinalIgnoreCase) ||
+                path.StartsWith("/api", StringComparison.OrdinalIgnoreCase))
             {
                 return true;
             }
