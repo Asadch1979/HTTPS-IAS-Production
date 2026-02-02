@@ -34,24 +34,87 @@
         $('#updatedAnnexlist').on('change', updateRiskDisplay);
 
 
-        $.ajax({
-            url: g_asiBaseURL + "/ApiCalls/checklist_details",
-            type: "POST",
-            data: {
-                'S_ID': checklistsub_id
-            },
-            cache: false,
-            success: function (data) {
-                console.log('subhcekclist', data);
-                $('#checklistDetailsPanel tbody').empty();
-                var sr = 1;
-                $.each(data, function (i, v) {
-                    $('#checklistDetailsPanel tbody').append('<tr id="obs_' + v.id + '"><td>' + sr + '</td><td>' + v.s_NAME + '</td><td>' + v.v_NAME + '</td><td>' + v.heading + '</td><td><select id="checklistaction_' + v.id + '" class="checklistaction form-select form-control" onchange="showObservationArea($(this).val(),\'obs_' + v.id + '\');" aria-label="Default select example"><option value="-1" id="-1" selected>--Please Select--</option><option value="0" id="0">No</option><option value="1" id="1">Yes</option></select></td><td id="actionTd_' + v.id + '" class="text-center"><a class="text-center text-danger" onclick="event.preventDefault();viewCreatedMemo(this,\'obs_' + v.id + '\')">View Memo</a></td></tr>');
-                    sr++;
+        var renderStart = 0;
+        var checklistTable = $('#checklistDetailsPanel').DataTable({
+            processing: true,
+            serverSide: true,
+            searching: true,
+            lengthMenu: [10, 25, 50, 100],
+            ajax: function (data, callback) {
+                var apiStart = performance.now();
+                var pageSize = data.length || 50;
+                var page = Math.floor(data.start / pageSize) + 1;
+                var searchValue = data.search ? data.search.value : '';
+
+                $.ajax({
+                    url: g_asiBaseURL + "/ApiCalls/checklist_details",
+                    type: "POST",
+                    data: {
+                        sId: checklistsub_id,
+                        page: page,
+                        pageSize: pageSize,
+                        search: searchValue
+                    },
+                    cache: false,
+                    success: function (response) {
+                        var apiDuration = performance.now() - apiStart;
+                        console.log('Checklist details API duration (ms):', apiDuration.toFixed(2));
+
+                        var items = response && response.items ? response.items : [];
+                        var total = response && typeof response.total === 'number' ? response.total : items.length;
+
+                        callback({
+                            data: items,
+                            recordsTotal: total,
+                            recordsFiltered: total
+                        });
+                    },
+                    error: function () {
+                        callback({
+                            data: [],
+                            recordsTotal: 0,
+                            recordsFiltered: 0
+                        });
+                    },
+                    dataType: "json",
                 });
-                getSubCheckListStatus();
             },
-            dataType: "json",
+            columns: [
+                {
+                    data: null,
+                    render: function (data, type, row, meta) {
+                        return meta.row + meta.settings._iDisplayStart + 1;
+                    }
+                },
+                { data: 's_NAME' },
+                { data: 'v_NAME' },
+                { data: 'heading' },
+                {
+                    data: 'id',
+                    orderable: false,
+                    render: function (data) {
+                        return '<select id="checklistaction_' + data + '" class="checklistaction form-select form-control" onchange="showObservationArea($(this).val(),\'obs_' + data + '\');" aria-label="Default select example"><option value="-1" id="-1" selected>--Please Select--</option><option value="0" id="0">No</option><option value="1" id="1">Yes</option></select>';
+                    }
+                },
+                {
+                    data: 'id',
+                    orderable: false,
+                    render: function (data) {
+                        return '<a class="text-center text-danger" onclick="event.preventDefault();viewCreatedMemo(this,\'obs_' + data + '\')">View Memo</a>';
+                    }
+                }
+            ],
+            rowCallback: function (row, data) {
+                $(row).attr('id', 'obs_' + data.id);
+            },
+            preDrawCallback: function () {
+                renderStart = performance.now();
+            },
+            drawCallback: function () {
+                var renderDuration = performance.now() - renderStart;
+                console.log('Checklist details render duration (ms):', renderDuration.toFixed(2));
+                getSubCheckListStatus();
+            }
         });
         $('#viewMemo_memo').richText({
             bold: true,
