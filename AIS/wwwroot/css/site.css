@@ -19,6 +19,29 @@ for details on configuring this project to bundle and minify static web assets. 
 .container-clob table {
     margin-left: 0px !important;
 }
+
+.container-clob table.para-table-borderless,
+.para-text-html table.para-table-borderless,
+.rich-text-viewer table.para-table-borderless,
+.rich-text-table-content table.para-table-borderless {
+    table-layout: auto !important;
+    width: auto !important;
+    max-width: 100% !important;
+    margin-left: 0 !important;
+    margin-right: auto !important;
+    text-align: left !important;
+}
+
+.container-clob table.para-table-borderless.para-table-multi-column td,
+.container-clob table.para-table-borderless.para-table-multi-column th,
+.para-text-html table.para-table-borderless.para-table-multi-column td,
+.para-text-html table.para-table-borderless.para-table-multi-column th,
+.rich-text-viewer table.para-table-borderless.para-table-multi-column td,
+.rich-text-viewer table.para-table-borderless.para-table-multi-column th,
+.rich-text-table-content table.para-table-borderless.para-table-multi-column td,
+.rich-text-table-content table.para-table-borderless.para-table-multi-column th {
+    display: table-cell;
+}
 .dt-container {
     width: 100% !important;
 }
@@ -292,4 +315,3 @@ table.dataTable thead th {
     padding: 2px;
     z-index: 1060;
 }
-

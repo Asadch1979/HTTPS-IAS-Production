@@ -371,7 +371,11 @@ $(document).ready(function () {
         if (status === 200 && isHtmlResponse(contentType, responseText)) {
             showAjaxErrorAlert(302, getErrorReferenceIdFromXhr(jqxhr), 'Your session may have expired. Please sign in again.');
         }
+
+        normalizeParaTableLayouts(document);
     });
+
+    normalizeParaTableLayouts(document);
 });
 
 
@@ -721,6 +725,140 @@ function getBase64(file) {
 
 function encryptPassword(password) {
     return btoa(password);
+}
+
+function getMaxTableColumnCount(table) {
+    if (!table) {
+        return 0;
+    }
+
+    var maxColumns = 0;
+    table.querySelectorAll('tr').forEach(function (row) {
+        var columnCount = 0;
+        row.querySelectorAll('th, td').forEach(function (cell) {
+            var span = parseInt(cell.getAttribute('colspan'), 10);
+            columnCount += Number.isNaN(span) || span < 1 ? 1 : span;
+        });
+        if (columnCount > maxColumns) {
+            maxColumns = columnCount;
+        }
+    });
+
+    return maxColumns;
+}
+
+function normalizeBorderlessTableStyles(table) {
+    if (!table) {
+        return;
+    }
+
+    table.removeAttribute('width');
+    table.removeAttribute('align');
+
+    var styleText = table.getAttribute('style') || '';
+    if (styleText) {
+        var cleanedStyles = [];
+        styleText.split(';').forEach(function (rule) {
+            var trimmedRule = rule.trim();
+            if (!trimmedRule) {
+                return;
+            }
+
+            var parts = trimmedRule.split(':');
+            if (parts.length < 2) {
+                return;
+            }
+
+            var property = parts.shift().trim().toLowerCase();
+            var value = parts.join(':').trim();
+
+            if (!property) {
+                return;
+            }
+
+            if (property === 'width' && /pt/i.test(value)) {
+                return;
+            }
+
+            if ((property === 'margin-left' || property === 'margin-right') && /pt/i.test(value)) {
+                return;
+            }
+
+            if (property.indexOf('mso-') === 0) {
+                return;
+            }
+
+            if (property === 'table-layout' && /fixed/i.test(value)) {
+                return;
+            }
+
+            cleanedStyles.push(property + ': ' + value);
+        });
+
+        if (cleanedStyles.length) {
+            table.setAttribute('style', cleanedStyles.join('; '));
+        } else {
+            table.removeAttribute('style');
+        }
+    }
+
+    table.style.tableLayout = 'auto';
+    table.style.width = 'auto';
+    table.style.maxWidth = '100%';
+    table.style.marginLeft = '0';
+    table.style.marginRight = 'auto';
+    table.style.textAlign = 'left';
+}
+
+function normalizeParaTableLayouts(root) {
+    var container = root || document;
+    var selectors = [
+        '.container-clob',
+        '.para-text-html',
+        '.rich-text-viewer',
+        '.rich-text-table-content'
+    ];
+
+    container.querySelectorAll(selectors.join(',')).forEach(function (wrapper) {
+        wrapper.querySelectorAll('table').forEach(function (table) {
+            if (table.dataset.paraTableProcessed === 'true') {
+                return;
+            }
+
+            var borderAttr = table.getAttribute('border');
+            var isBordered = borderAttr === '1';
+            var styleText = table.getAttribute('style') || '';
+            var hasWidthAttr = table.hasAttribute('width');
+            var hasWidthPt = /width\s*:\s*[\d.]+\s*pt/i.test(styleText);
+            var isWordClass = table.classList.contains('MsoNormalTable');
+            var isBorderless = !isBordered && (
+                borderAttr === null ||
+                borderAttr === '' ||
+                borderAttr === '0' ||
+                isWordClass ||
+                hasWidthAttr ||
+                hasWidthPt
+            );
+
+            if (isBordered) {
+                table.classList.add('para-table-bordered');
+                table.dataset.paraTableProcessed = 'true';
+                return;
+            }
+
+            if (isBorderless) {
+                var maxColumns = getMaxTableColumnCount(table);
+                table.classList.add('para-table-borderless');
+                if (maxColumns > 1) {
+                    table.classList.add('para-table-multi-column');
+                }
+                table.dataset.paraColumnCount = String(maxColumns);
+                normalizeBorderlessTableStyles(table);
+            }
+
+            table.dataset.paraTableProcessed = 'true';
+        });
+    });
 }
 function destroyDatatable(id) {
     if ($.fn.DataTable.isDataTable('#' + id)) {
