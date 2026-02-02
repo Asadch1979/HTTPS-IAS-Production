@@ -1224,21 +1224,6 @@ namespace AIS.Controllers
             {
             if (sId <= 0)
                 {
-                if (Request?.Query.TryGetValue("S_ID", out var querySId) == true
-                    && int.TryParse(querySId.ToString(), out var parsedQuerySId))
-                    {
-                    sId = parsedQuerySId;
-                    }
-                else if (Request?.HasFormContentType == true
-                    && Request.Form.TryGetValue("S_ID", out var formSId)
-                    && int.TryParse(formSId.ToString(), out var parsedFormSId))
-                    {
-                    sId = parsedFormSId;
-                    }
-                }
-
-            if (sId <= 0)
-                {
                 return BadRequest("Invalid request payload.");
                 }
 
