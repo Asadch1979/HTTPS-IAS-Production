@@ -242,15 +242,6 @@ function buildPageIdAwareFetchRequest(url, options) {
 
 function fetchWithPageId(url, options) {
     var request = buildPageIdAwareFetchRequest(url, options);
-    request.options = request.options || {};
-    request.options.headers = request.options.headers || {};
-    if (request.options.headers instanceof Headers) {
-        if (!request.options.headers.has('X-Requested-With')) {
-            request.options.headers.set('X-Requested-With', 'XMLHttpRequest');
-        }
-    } else if (!request.options.headers['X-Requested-With']) {
-        request.options.headers['X-Requested-With'] = 'XMLHttpRequest';
-    }
     return fetch(request.url, request.options)
         .then(function (response) {
             return handleAjaxLikeResponse(response).then(function () {

@@ -291,9 +291,8 @@
                 },
                 cache: false,
                 success: function (data) {
-                    var items = data && data.items ? data.items : data;
                     $('#updateMemo_violation').append("<option value=\"0\" id=\"0\">--Select Sub Group--</option>");
-                    $.each(items, function (index, item) {
+                    $.each(data, function (index, item) {
 
                         var className = "";
                         if (g_procDetailId == item.id) {
