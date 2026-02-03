@@ -174,9 +174,10 @@ namespace AIS.Models.FieldAuditReport
 
     public class StaffSnapshotRowModel
         {
+        public string PpNo { get; set; }
+        public string Name { get; set; }
+        public string Rank { get; set; }
         public string Designation { get; set; }
-        public int? StaffCount { get; set; }
-        public DateTime? AsOfDate { get; set; }
         }
 
     public class StaffSnapshotViewModel
