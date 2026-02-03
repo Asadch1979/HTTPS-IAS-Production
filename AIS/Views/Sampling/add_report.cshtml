@@ -14,17 +14,12 @@
     $(document).ready(function () {
         var url_string = window.location;
         var url = new URL(url_string);
-        g_engID = url.searchParams.get("engId") || 0;
+        g_engID = url.searchParams.get("engId");
         CommonValidation.attachAlnumOnly("#reportName", { allowSpace: true, maxLen: 100 });
         loadReports();
     });
 
     function loadReports() {
-        if (!g_engID) {
-            destroyDatatable('reportList');
-            $("#reportList tbody").empty();
-            return;
-        }
         $.ajax({
             url: g_asiBaseURL + "/ApiCalls/get_list_of_reports",
             type: "POST",
