@@ -104,6 +104,11 @@
 @section Scripts {
     <script>
         (() => {
+            const form = document.querySelector('form[method="post"]');
+            const engagementInput = form?.querySelector('input[name="EngagementId"]');
+            const engIdRaw = engagementInput?.value?.trim() ?? '';
+            const engIdValue = engIdRaw ? Number(engIdRaw) : null;
+            const engId = Number.isNaN(engIdValue) ? null : engIdValue;
             const saveButton = document.getElementById('save-staff-snapshot');
             const statusEl = document.getElementById('staff-snapshot-status');
             const cancelButton = document.getElementById('cancel-staff-edit');
@@ -112,9 +117,11 @@
             const rankInput = document.getElementById('staff-rank');
             const designationInput = document.getElementById('staff-designation');
             const tableBody = document.querySelector('#staff-snapshot-grid tbody');
+            const tokenInput = form?.querySelector('input[name="__RequestVerificationToken"]');
+            const requestToken = tokenInput?.value ?? '';
             let savedRows = [];
 
-            if (!tableBody || !engId) {
+            if (!tableBody) {
                 return;
             }
 
@@ -159,6 +166,12 @@
             };
 
             const loadStaffRows = () => {
+                if (!engId) {
+                    if (statusEl) {
+                        statusEl.textContent = 'Select an engagement to load staff snapshot data.';
+                    }
+                    return;
+                }
                 statusEl.textContent = 'Loading...';
                 fetch(`/FieldAuditReport/GetStaffSnapshotRows?engId=${engId}`)
                     .then(response => response.json())
@@ -222,11 +235,16 @@
                 if (saveButton?.disabled) {
                     return;
                 }
+                if (!engId) {
+                    statusEl.textContent = 'Select an engagement before saving staff snapshot data.';
+                    return;
+                }
                 statusEl.textContent = 'Saving...';
                 fetch(`/FieldAuditReport/SaveStaffSnapshotRows?engId=${engId}`, {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/json'
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken': requestToken
                     },
                     body: JSON.stringify([collectRow()])
                 })
