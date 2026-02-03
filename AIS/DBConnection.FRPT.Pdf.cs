@@ -336,9 +336,10 @@ namespace AIS.Controllers
                 {
                 rows.Add(new FieldAuditPdfStaffRowModel
                     {
-                    Designation = GetString(reader, "DESIGNATION"),
-                    Strength = GetNullableInt(reader, "STRENGTH"),
-                    AsOfDate = GetNullableDate(reader, "AS_OF_DATE")
+                    PpNo = GetString(reader, "PP_NO"),
+                    Name = GetString(reader, "NAME"),
+                    Rank = GetString(reader, "RANK"),
+                    Designation = GetString(reader, "DESIGNATION")
                     });
                 }
 

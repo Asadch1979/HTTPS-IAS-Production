@@ -5,6 +5,8 @@
     Layout = "_Layout";
     var engagementSelector = ViewData["EngagementSelector"] as AIS.Models.FieldAuditReport.FieldAuditEngagementSelectorViewModel;
     var hasEngagement = engagementSelector?.HasActiveEngagement ?? false;
+    ViewData["IsFinal"] = Model?.IsFinal ?? false;
+    ViewData["CanFinalize"] = Model?.CanFinalize ?? false;
 }
 
 <div class="container-fluid">
@@ -15,6 +17,7 @@
     </div>
 
     @await Html.PartialAsync("_GetEngagementSelector", engagementSelector)
+    @await Html.PartialAsync("_ReportActionsNav")
 
     @if (!hasEngagement)
     {

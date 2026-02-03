@@ -8,6 +8,7 @@
     var engagementSelector = ViewData["EngagementSelector"] as AIS.Models.FieldAuditReport.FieldAuditEngagementSelectorViewModel;
     var hasEngagement = engagementSelector?.HasActiveEngagement ?? false;
     var reportYear = string.IsNullOrWhiteSpace(Model?.Overview?.AUDIT_YEAR) ? "202X" : Model.Overview.AUDIT_YEAR;
+    ViewData["IsReadOnly"] = Model?.IsReadOnly ?? false;
 }
 
 @functions {
@@ -96,6 +97,7 @@
     </div>
 
     @await Html.PartialAsync("_GetEngagementSelector", engagementSelector)
+    @await Html.PartialAsync("_ReportActionsNav")
 
     @if (!hasEngagement)
     {
