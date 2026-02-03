@@ -91,20 +91,12 @@
                 'S_ID': $('#riskSubGroupSelectBox option:selected').val(),
             },
             cache: false,
-            timeout: 300000,
             success: function (data) {
                 $('#riskActivitiesSelectBox').append("<option value=\"0\" id=\"0\">--Select Sub Group--</option>");
                 $.each(data, function (index, item) {
                     $('#riskActivitiesSelectBox').append("<option value=\"" + item.id + "\"> " + item.heading + "</option>");
                 });
 
-            },
-            error: function (xhr, textStatus) {
-                if (textStatus === "timeout") {
-                    alert("Request taking longer than usual, please wait or refine search.");
-                    return;
-                }
-                alert("Request failed. Please try again.");
             },
             dataType: "json",
         });
