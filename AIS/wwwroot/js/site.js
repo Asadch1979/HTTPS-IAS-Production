@@ -844,3 +844,13 @@ function initializeDataTableWithoutExport(id) {
     });
     return dTable;
 }
+
+$(document).on('input', 'input.digits-only', function () {
+    this.value = (this.value || '').replace(/[^0-9]/g, '');
+});
+
+$(document).on('paste', 'input.digits-only', function (e) {
+    var text = (e.originalEvent.clipboardData || window.clipboardData).getData('text') || '';
+    this.value = text.replace(/[^0-9]/g, '');
+    e.preventDefault();
+});
