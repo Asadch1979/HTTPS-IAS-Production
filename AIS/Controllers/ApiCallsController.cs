@@ -1220,68 +1220,9 @@ namespace AIS.Controllers
             return dBConnection.GetAuditChecklistSub(T_ID, ENG_ID);
             }
         [HttpPost]
-        public IActionResult checklist_details(int sId, int page = 1, int pageSize = 50, string search = "")
+        public List<AuditChecklistDetailsModel> checklist_details(int S_ID)
             {
-            if (sId <= 0)
-                {
-                return BadRequest("Invalid request payload.");
-                }
-
-            var hasPagingParams = Request?.Query.ContainsKey("page") == true
-                || Request?.Query.ContainsKey("pageSize") == true
-                || Request?.Query.ContainsKey("search") == true
-                || (Request?.HasFormContentType == true
-                    && (Request.Form.ContainsKey("page")
-                        || Request.Form.ContainsKey("pageSize")
-                        || Request.Form.ContainsKey("search")));
-
-            page = page <= 0 ? 1 : page;
-            pageSize = pageSize <= 0 ? 50 : Math.Min(pageSize, 200);
-
-            var stopwatch = Stopwatch.StartNew();
-            var rows = dBConnection.GetAuditChecklistDetails(sId) ?? new List<AuditChecklistDetailsModel>();
-            stopwatch.Stop();
-            _logger.LogInformation(
-                "Checklist details query completed for S_ID {SId} in {ElapsedMilliseconds} ms (rows={RowCount}).",
-                sId,
-                stopwatch.ElapsedMilliseconds,
-                rows.Count);
-
-            IEnumerable<AuditChecklistDetailsModel> filtered = rows;
-            if (!string.IsNullOrWhiteSpace(search))
-                {
-                var term = search.Trim();
-                filtered = filtered.Where(row =>
-                    (!string.IsNullOrWhiteSpace(row.S_NAME) && row.S_NAME.Contains(term, StringComparison.OrdinalIgnoreCase)) ||
-                    (!string.IsNullOrWhiteSpace(row.HEADING) && row.HEADING.Contains(term, StringComparison.OrdinalIgnoreCase)));
-                }
-
-            var total = filtered.Count();
-            var allItems = filtered
-                .Select(row => new ChecklistDetailsRowDto
-                    {
-                    Id = row.ID,
-                    SName = row.S_NAME,
-                    VId = row.V_ID,
-                    Heading = row.HEADING
-                    })
-                .ToList();
-
-            var items = allItems
-                .Skip((page - 1) * pageSize)
-                .Take(pageSize)
-                .ToList();
-
-            if (!hasPagingParams && string.IsNullOrWhiteSpace(search))
-                {
-                return Ok(allItems);
-                }
-
-            return Ok(new
-                {
-                items,
-                total
-                });
+            return dBConnection.GetAuditChecklistDetails(S_ID);
             }
 
         [HttpPost]
