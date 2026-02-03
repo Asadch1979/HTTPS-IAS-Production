@@ -57,21 +57,19 @@ function initResponsibilitySection(config) {
         return `${ppNo || ''}|${role || ''}|${loanCase || ''}|${accountNumber || ''}`;
     }
 
-    function bindDigitsOnlyDelegated() {
-        $(document).off('input.digitsOnly', '.digits-only');
-        $(document).off('paste.digitsOnly', '.digits-only');
-        $(document).off('keydown.digitsOnly', '.digits-only');
-
-        $(document).on('input.digitsOnly', '.digits-only', function () {
+    function applyDigitsOnly($container) {
+        var $fields = $container.find('.digits-only');
+        $fields.off('.digitsOnly');
+        $fields.on('input.digitsOnly', function () {
             this.value = this.value.replace(/\D/g, '');
         });
-        $(document).on('paste.digitsOnly', '.digits-only', function () {
+        $fields.on('paste.digitsOnly', function () {
             var input = this;
             setTimeout(function () {
                 input.value = input.value.replace(/\D/g, '');
             }, 0);
         });
-        $(document).on('keydown.digitsOnly', '.digits-only', function (e) {
+        $fields.on('keydown.digitsOnly', function (e) {
             var controlKeys = ['Backspace', 'Delete', 'Tab', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End'];
             if (controlKeys.indexOf(e.key) !== -1) {
                 return;
@@ -557,7 +555,7 @@ function initResponsibilitySection(config) {
         renderPendingGrid();
     });
 
-    bindDigitsOnlyDelegated();
+    applyDigitsOnly(modal);
 
     load();
 
