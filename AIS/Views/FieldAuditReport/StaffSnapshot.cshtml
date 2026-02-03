@@ -105,10 +105,8 @@
     <script>
         (() => {
             const form = document.querySelector('form[method="post"]');
-            const engagementInput = form?.querySelector('input[name="EngagementId"]');
-            const engIdRaw = engagementInput?.value?.trim() ?? '';
-            const engIdValue = engIdRaw ? Number(engIdRaw) : null;
-            const engId = Number.isNaN(engIdValue) ? null : engIdValue;
+            const engIdValue = @((engagementSelector?.ActiveEngagementId ?? 0));
+            const engId = engIdValue > 0 ? engIdValue : null;
             const saveButton = document.getElementById('save-staff-snapshot');
             const statusEl = document.getElementById('staff-snapshot-status');
             const cancelButton = document.getElementById('cancel-staff-edit');
