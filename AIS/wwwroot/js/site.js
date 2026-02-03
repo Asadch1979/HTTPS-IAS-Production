@@ -334,7 +334,7 @@ $(document).ready(function () {
             return;
         }
 
-        if (status === 400 || status === 415 || status === 500 || status === 503 || status === 302) {
+        if (status === 400 || status === 415 || status === 500 || status === 503) {
             showApiAlertFromXhr(jqxhr, status, errorRefId);
         }
 
@@ -360,7 +360,13 @@ $(document).ready(function () {
         var responseText = jqxhr.responseText || '';
 
         if (status === 200 && isHtmlResponse(contentType, responseText)) {
-            showAjaxErrorAlert(302, getErrorReferenceIdFromXhr(jqxhr), 'Your session may have expired. Please sign in again.');
+            if (isProbablyLoginHtml(responseText)) {
+                showAjaxErrorAlert(401, getErrorReferenceIdFromXhr(jqxhr), 'Your session may have expired. Please sign in again.');
+                window.location = g_asiBaseURL + "/Login/Index";
+                return;
+            }
+            logUnexpectedHtmlSnippet(responseText);
+            showAjaxErrorAlert(status, getErrorReferenceIdFromXhr(jqxhr), 'Unexpected HTML response. Please try again.');
         }
     });
 });
@@ -574,7 +580,27 @@ function isHtmlResponse(contentType, responseText) {
     }
 
     var normalized = responseText.toLowerCase();
+    return normalized.indexOf('<html') !== -1 || normalized.indexOf('<!doctype html') !== -1;
+}
+
+function isProbablyLoginHtml(responseText) {
+    if (!responseText) {
+        return false;
+    }
+
+    var normalized = responseText.toLowerCase();
     return normalized.indexOf('login') !== -1 && normalized.indexOf('password') !== -1;
+}
+
+function logUnexpectedHtmlSnippet(responseText) {
+    if (!responseText) {
+        return;
+    }
+
+    var snippet = responseText.trim().slice(0, 300);
+    if (snippet) {
+        console.error('Unexpected HTML response snippet:', snippet);
+    }
 }
 
 function handleAjaxLikeResponse(response) {
@@ -595,21 +621,32 @@ function handleAjaxLikeResponse(response) {
     }
 
     if (response.redirected) {
-        return showApiAlertFromResponse(response, 302, errorRefId, 'Your session may have expired. Please sign in again.');
+        return showApiAlertFromResponse(response, 401, errorRefId, 'Your session may have expired. Please sign in again.');
     }
 
-    if (status === 400 || status === 415 || status === 500 || status === 503 || status === 302) {
+    if (status === 400 || status === 415 || status === 500 || status === 503) {
         return showApiAlertFromResponse(response, status, errorRefId);
     }
 
     if (status === 200 && contentType && contentType.indexOf('text/html') !== -1) {
-        return showApiAlertFromResponse(response, 302, errorRefId, 'Your session may have expired. Please sign in again.');
+        return response.clone().text().then(function (text) {
+            if (isProbablyLoginHtml(text)) {
+                return showApiAlertFromResponse(response, 401, errorRefId, 'Your session may have expired. Please sign in again.');
+            }
+            logUnexpectedHtmlSnippet(text);
+            return showApiAlertFromResponse(response, status, errorRefId, 'Unexpected HTML response. Please try again.');
+        }).catch(function () { });
     }
 
     if (status === 200 && (!contentType || contentType.indexOf('application/json') === -1)) {
         return response.clone().text().then(function (text) {
             if (isHtmlResponse(contentType, text)) {
-                showApiAlertFromXhr({ responseText: text }, 302, errorRefId, 'Your session may have expired. Please sign in again.');
+                if (isProbablyLoginHtml(text)) {
+                    showApiAlertFromXhr({ responseText: text }, 401, errorRefId, 'Your session may have expired. Please sign in again.');
+                    return;
+                }
+                logUnexpectedHtmlSnippet(text);
+                showApiAlertFromXhr({ responseText: text }, status, errorRefId, 'Unexpected HTML response. Please try again.');
             }
         }).catch(function () { });
     }
