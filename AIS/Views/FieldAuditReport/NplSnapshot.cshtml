@@ -7,6 +7,7 @@
     Layout = "_Layout";
     var engagementSelector = ViewData["EngagementSelector"] as AIS.Models.FieldAuditReport.FieldAuditEngagementSelectorViewModel;
     var hasEngagement = engagementSelector?.HasActiveEngagement ?? false;
+    ViewData["IsReadOnly"] = Model?.IsReadOnly ?? false;
 }
 
 <div class="container-fluid">
@@ -17,6 +18,7 @@
     </div>
 
     @await Html.PartialAsync("_GetEngagementSelector", engagementSelector)
+    @await Html.PartialAsync("_ReportActionsNav")
 
     @if (!hasEngagement)
     {
@@ -57,6 +59,7 @@
                                     <th>Cases</th>
                                     <th>Outstanding</th>
                                     <th>Provision</th>
+                                    <th>Action</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -111,6 +114,8 @@
         const nplCategoryOptions = [];
         const nplCategoryLookup = new Map();
         const previewTable = document.getElementById('npl-preview-table');
+        let savedRows = [];
+        let isEditing = false;
 
         const populateCategorySelect = (select, selectedValue = '') => {
             select.innerHTML = '';
@@ -309,15 +314,16 @@
             if (!savedTableBody) {
                 return;
             }
+            savedRows = rows;
             savedTableBody.innerHTML = '';
             if (!rows.length) {
                 const emptyRow = document.createElement('tr');
-                emptyRow.innerHTML = '<td colspan="5" class="text-muted">No saved data.</td>';
+                emptyRow.innerHTML = '<td colspan="6" class="text-muted">No saved data.</td>';
                 savedTableBody.appendChild(emptyRow);
                 return;
             }
 
-            rows.forEach(row => {
+            rows.forEach((row, index) => {
                 const category = row.category ?? row.Category ?? '';
                 const periodEnd = row.periodEnd ?? row.PeriodEnd ?? '';
                 const caseCount = row.caseCount ?? row.CaseCount ?? '';
@@ -331,8 +337,30 @@
                     <td>${caseCount ?? ''}</td>
                     <td>${outstandingAmount ?? ''}</td>
                     <td>${provisionAmount ?? ''}</td>
+                    <td><button type="button" class="btn btn-sm btn-outline-secondary npl-edit" data-index="${index}">Update</button></td>
                 `;
                 savedTableBody.appendChild(tr);
+            });
+
+            savedTableBody.querySelectorAll('.npl-edit').forEach(button => {
+                button.addEventListener('click', (event) => {
+                    const index = Number(event.currentTarget.dataset.index);
+                    const row = savedRows[index];
+                    if (!row) {
+                        return;
+                    }
+                    const entryTableBody = document.querySelector('#npl-snapshot-entry-table tbody');
+                    if (!entryTableBody) {
+                        return;
+                    }
+                    entryTableBody.innerHTML = '';
+                    addNplRow(row);
+                    isEditing = true;
+                    const saveButton = document.getElementById('save-npl-snapshot');
+                    const addButton = document.getElementById('add-npl-snapshot-row');
+                    saveButton.textContent = 'Update NPL Snapshot';
+                    addButton?.setAttribute('disabled', 'disabled');
+                });
             });
         };
 
@@ -440,6 +468,16 @@
                     const rows = data?.rows ?? [];
                     renderSavedRows(rows);
                     renderPreviewTable(rows);
+                    if (isEditing) {
+                        isEditing = false;
+                        saveButton.textContent = 'Save NPL Snapshot';
+                        document.getElementById('add-npl-snapshot-row')?.removeAttribute('disabled');
+                    }
+                    const entryTableBody = document.querySelector('#npl-snapshot-entry-table tbody');
+                    if (entryTableBody) {
+                        entryTableBody.innerHTML = '';
+                        addNplRow();
+                    }
                 })
                 .catch(() => {
                     statusEl.textContent = 'Unable to save NPL snapshot rows.';

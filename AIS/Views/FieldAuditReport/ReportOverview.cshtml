@@ -10,6 +10,8 @@
     string FormatNumber(int? value) => value.HasValue ? value.Value.ToString() : "-";
     var engagementSelector = ViewData["EngagementSelector"] as AIS.Models.FieldAuditReport.FieldAuditEngagementSelectorViewModel;
     var hasEngagement = engagementSelector?.HasActiveEngagement ?? false;
+    ViewData["IsFinal"] = Model?.IsFinal ?? false;
+    ViewData["CanFinalize"] = Model?.CanFinalize ?? false;
 }
 
 <div class="container-fluid">
@@ -20,6 +22,7 @@
     </div>
 
     @await Html.PartialAsync("_GetEngagementSelector", engagementSelector)
+    @await Html.PartialAsync("_ReportActionsNav")
 
     @if (!hasEngagement)
     {
@@ -98,15 +101,5 @@
             </div>
         </div>
 
-        <div class="card">
-            <div class="card-header">Actions</div>
-            <div class="card-body d-flex flex-wrap gap-2">
-                <a class="btn btn-primary @(Model.IsFinal ? "disabled" : string.Empty)" href="@Url.Action("NarrativeSections")" aria-disabled="@Model.IsFinal">Edit Narrative Sections</a>
-                <a class="btn btn-primary @(Model.IsFinal ? "disabled" : string.Empty)" href="@Url.Action("KpiSnapshot")" aria-disabled="@Model.IsFinal">Edit KPI Snapshot</a>
-                <a class="btn btn-primary @(Model.IsFinal ? "disabled" : string.Empty)" href="@Url.Action("NplSnapshot")" aria-disabled="@Model.IsFinal">Edit NPL Snapshot</a>
-                <a class="btn btn-primary @(Model.IsFinal ? "disabled" : string.Empty)" href="@Url.Action("StaffSnapshot")" aria-disabled="@Model.IsFinal">Edit Staff Snapshot</a>
-                <a class="btn btn-success @(!Model.CanFinalize ? "disabled" : string.Empty)" href="@Url.Action("FinalizeReport")" aria-disabled="@(!Model.CanFinalize)">Finalize Report</a>
-            </div>
-        </div>
     }
 </div>

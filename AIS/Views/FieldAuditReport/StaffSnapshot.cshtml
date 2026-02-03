@@ -1,37 +1,26 @@
 @model AIS.Models.FieldAuditReport.FieldAuditInputSectionViewModel
 
 @{
-    ViewData["Title"] = "Branch Profile / Key Statistics";
+    ViewData["Title"] = "Staff Snapshot";
     Layout = "_Layout";
     var engagementSelector = ViewData["EngagementSelector"] as AIS.Models.FieldAuditReport.FieldAuditEngagementSelectorViewModel;
     var hasEngagement = engagementSelector?.HasActiveEngagement ?? false;
-}
-
-@functions {
-    private string FieldValue(string key)
-        {
-        return Model?.Fields != null && Model.Fields.TryGetValue(key, out var value) ? value : string.Empty;
-        }
-
-    private string DisplayValue(string key)
-        {
-        var value = FieldValue(key);
-        return string.IsNullOrWhiteSpace(value) ? "-" : value;
-        }
+    ViewData["IsReadOnly"] = Model?.IsReadOnly ?? false;
 }
 
 <div class="container-fluid">
     <div class="row">
         <div class="col-12">
-            <h3 class="mb-3">Branch Profile / Key Statistics</h3>
+            <h3 class="mb-3">Staff Snapshot</h3>
         </div>
     </div>
 
     @await Html.PartialAsync("_GetEngagementSelector", engagementSelector)
+    @await Html.PartialAsync("_ReportActionsNav")
 
     @if (!hasEngagement)
     {
-        <div class="alert alert-warning">Select an engagement to work with branch profile and key statistics.</div>
+        <div class="alert alert-warning">Select an engagement to work with staff snapshot data.</div>
     }
 
     @if (TempData["FieldAuditReportMessage"] != null)
@@ -52,126 +41,52 @@
             <input type="hidden" name="SectionCode" value="@Model.SectionCode" />
             <input type="hidden" name="returnAction" value="StaffSnapshot" />
 
-            <div class="table-responsive mb-4">
-                <table class="table table-bordered align-middle">
-                    <thead>
-                        <tr>
-                            <th colspan="5">Branch Profile / Key Statistics</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <th colspan="2">Staff Strength</th>
-                            <th>Date of Branch Opening</th>
-                            <td colspan="2">@DisplayValue("FIELD_034")</td>
-                        </tr>
-                        <tr>
-                            <td></td>
-                            <td></td>
-                            <th>Current Audit Rating</th>
-                            <td colspan="2">@DisplayValue("FIELD_035")</td>
-                        </tr>
-                        <tr>
-                            <th>VP</th>
-                            <td><span class="staff-strength-value" data-staff-strength="VP">-</span></td>
-                            <th>Previous Audit rating</th>
-                            <td colspan="2">@DisplayValue("FIELD_037")</td>
-                        </tr>
-                        <tr>
-                            <th>AVP</th>
-                            <td><span class="staff-strength-value" data-staff-strength="AVP">-</span></td>
-                            <th>Audit Report Date</th>
-                            <td colspan="2">@DisplayValue("FIELD_039")</td>
-                        </tr>
-                        <tr>
-                            <th>OG-I</th>
-                            <td><span class="staff-strength-value" data-staff-strength="OG-I">-</span></td>
-                            <th>Audit Fieldwork Date</th>
-                            <td colspan="2">@DisplayValue("FIELD_041")</td>
-                        </tr>
-                        <tr>
-                            <th>OG-II</th>
-                            <td><span class="staff-strength-value" data-staff-strength="OG-II">-</span></td>
-                            <th>Audit cutoff date or Audit Period</th>
-                            <td>@DisplayValue("FIELD_043")</td>
-                            <td>Annual/Surprise/Special @DisplayValue("FIELD_044")</td>
-                        </tr>
-                        <tr>
-                            <th>OG-III</th>
-                            <td><span class="staff-strength-value" data-staff-strength="OG-III">-</span></td>
-                            <td></td>
-                            <td></td>
-                            <td></td>
-                        </tr>
-                        <tr>
-                            <th>Sr. Assistant</th>
-                            <td><span class="staff-strength-value" data-staff-strength="Sr. Assistant">-</span></td>
-                            <td colspan="3">Internal Auditor(s) @DisplayValue("FIELD_047")</td>
-                        </tr>
-                        <tr>
-                            <th>Assist/Typist</th>
-                            <td><span class="staff-strength-value" data-staff-strength="Assist/Typist">-</span></td>
-                            <td colspan="3">Mr. @DisplayValue("FIELD_049")</td>
-                        </tr>
-                        <tr>
-                            <th>Non-Clerical Staff</th>
-                            <td><span class="staff-strength-value" data-staff-strength="Non-Clerical Staff">-</span></td>
-                            <td colspan="3">Mr. @DisplayValue("FIELD_051")</td>
-                        </tr>
-                        <tr>
-                            <th>KSSL Staff</th>
-                            <td><span class="staff-strength-value" data-staff-strength="KSSL Staff">-</span></td>
-                            <td></td>
-                            <td></td>
-                            <td></td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-
             <div class="card mb-4">
-                <div class="card-header">Saved Data (Read-only)</div>
+                <div class="card-header">Add Staff</div>
                 <div class="card-body">
-                    <div class="table-responsive">
-                        <table class="table table-bordered align-middle" id="staff-snapshot-saved-table">
-                            <thead>
-                                <tr>
-                                    <th>Designation</th>
-                                    <th>Staff Count</th>
-                                    <th>As-of Date</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                            </tbody>
-                        </table>
+                    <div class="row g-3">
+                        <div class="col-md-3">
+                            <label class="form-label" for="staff-pp-no">PP No</label>
+                            <input type="text" class="form-control" id="staff-pp-no" @(Model.IsReadOnly ? "disabled" : string.Empty) />
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label" for="staff-name">Name</label>
+                            <input type="text" class="form-control" id="staff-name" @(Model.IsReadOnly ? "disabled" : string.Empty) />
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label" for="staff-rank">Rank</label>
+                            <input type="text" class="form-control" id="staff-rank" @(Model.IsReadOnly ? "disabled" : string.Empty) />
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label" for="staff-designation">Designation</label>
+                            <input type="text" class="form-control" id="staff-designation" @(Model.IsReadOnly ? "disabled" : string.Empty) />
+                        </div>
                     </div>
-                </div>
-            </div>
-
-            <div class="card mb-4">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <span>Staff Snapshot (Entry)</span>
-                    <button type="button" class="btn btn-outline-primary btn-sm" id="add-staff-snapshot-row" @(Model.IsReadOnly ? "disabled" : string.Empty)>
-                        <i class="fa-solid fa-plus"></i>
-                    </button>
-                </div>
-                <div class="card-body">
-                    <div class="table-responsive">
-                        <table class="table table-bordered align-middle" id="staff-snapshot-entry-table">
-                            <thead>
-                                <tr>
-                                    <th>Designation</th>
-                                    <th>Staff Count</th>
-                                    <th>As of Date</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                            </tbody>
-                        </table>
-                    </div>
-                    <div class="d-flex align-items-center gap-2">
-                        <button type="button" class="btn btn-primary" id="save-staff-snapshot" @(Model.IsReadOnly ? "disabled" : string.Empty)>Save Staff Snapshot</button>
+                    <div class="d-flex align-items-center gap-2 mt-3">
+                        <button type="button" class="btn btn-primary" id="save-staff-snapshot" @(Model.IsReadOnly ? "disabled" : string.Empty)>Save Staff</button>
+                        <button type="button" class="btn btn-outline-secondary d-none" id="cancel-staff-edit" @(Model.IsReadOnly ? "disabled" : string.Empty)>Cancel</button>
                         <span class="text-muted" id="staff-snapshot-status"></span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card mb-4">
+                <div class="card-header">Staff Snapshot</div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-bordered align-middle" id="staff-snapshot-grid">
+                            <thead>
+                                <tr>
+                                    <th>PP No</th>
+                                    <th>Name</th>
+                                    <th>Rank</th>
+                                    <th>Designation</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </div>
@@ -189,168 +104,58 @@
 @section Scripts {
     <script>
         (() => {
-            const engId = @Model.EngagementId;
-            const entryTableBody = document.querySelector('#staff-snapshot-entry-table tbody');
-            const savedTableBody = document.querySelector('#staff-snapshot-saved-table tbody');
-            const addButton = document.getElementById('add-staff-snapshot-row');
             const saveButton = document.getElementById('save-staff-snapshot');
             const statusEl = document.getElementById('staff-snapshot-status');
-            const designationOptions = [];
-            const designationLookup = new Map();
-            const staffStrengthCells = Array.from(document.querySelectorAll('[data-staff-strength]'));
+            const cancelButton = document.getElementById('cancel-staff-edit');
+            const ppNoInput = document.getElementById('staff-pp-no');
+            const nameInput = document.getElementById('staff-name');
+            const rankInput = document.getElementById('staff-rank');
+            const designationInput = document.getElementById('staff-designation');
+            const tableBody = document.querySelector('#staff-snapshot-grid tbody');
+            let savedRows = [];
 
-            if (!entryTableBody || !savedTableBody || !engId) {
+            if (!tableBody || !engId) {
                 return;
             }
 
-            const formatDate = (value) => {
-                if (!value) {
-                    return '';
-                }
-                const date = new Date(value);
-                if (Number.isNaN(date.getTime())) {
-                    return '';
-                }
-                return date.toISOString().slice(0, 10);
-            };
+            const normalizeText = (value) => (value ?? '').toString().trim();
 
-            const renderSavedRows = (rows = []) => {
-                savedTableBody.innerHTML = '';
+            const renderRows = (rows = []) => {
+                savedRows = rows;
+                tableBody.innerHTML = '';
                 if (!rows.length) {
                     const emptyRow = document.createElement('tr');
-                    emptyRow.innerHTML = '<td colspan="3" class="text-muted">No saved data.</td>';
-                    savedTableBody.appendChild(emptyRow);
+                    emptyRow.innerHTML = '<td colspan="5" class="text-muted">No saved data.</td>';
+                    tableBody.appendChild(emptyRow);
                     return;
                 }
 
-                rows.forEach(row => {
-                    const designationValue = row.designation ?? row.Designation ?? '';
-                    const designationLabel = designationLookup.get(designationValue) ?? designationValue;
-                    const staffCount = row.staffCount ?? row.StaffCount ?? '';
-                    const asOfDate = row.asOfDate ?? row.AsOfDate ?? '';
+                rows.forEach((row, index) => {
+                    const ppNo = row.ppNo ?? row.PpNo ?? '';
+                    const name = row.name ?? row.Name ?? '';
+                    const rank = row.rank ?? row.Rank ?? '';
+                    const designation = row.designation ?? row.Designation ?? '';
                     const tr = document.createElement('tr');
                     tr.innerHTML = `
-                        <td>${designationLabel || '-'}</td>
-                        <td>${staffCount ?? ''}</td>
-                        <td>${formatDate(asOfDate) || '-'}</td>
+                        <td>${ppNo || '-'}</td>
+                        <td>${name || '-'}</td>
+                        <td>${rank || '-'}</td>
+                        <td>${designation || '-'}</td>
+                        <td><button type="button" class="btn btn-sm btn-outline-secondary staff-edit" data-index="${index}">Update</button></td>
                     `;
-                    savedTableBody.appendChild(tr);
-                });
-            };
-
-            const normalizeText = (value) => (value ?? '').toString().trim().toLowerCase();
-
-            const parseDateValue = (value) => {
-                if (!value) {
-                    return null;
-                }
-                const date = new Date(value);
-                if (Number.isNaN(date.getTime())) {
-                    return null;
-                }
-                return date;
-            };
-
-            const resolveDesignationLabel = (designationValue = '') => {
-                return designationLookup.get(designationValue) ?? designationValue;
-            };
-
-            const updateStaffStrengthPreview = (rows = []) => {
-                if (!staffStrengthCells.length) {
-                    return;
-                }
-
-                const grouped = new Map();
-                rows.forEach(row => {
-                    const designationValue = row.designation ?? row.Designation ?? '';
-                    const label = resolveDesignationLabel(designationValue);
-                    if (!label) {
-                        return;
-                    }
-                    const normalizedLabel = normalizeText(label);
-                    const staffCount = row.staffCount ?? row.StaffCount ?? null;
-                    const asOfDate = row.asOfDate ?? row.AsOfDate ?? null;
-                    const dateValue = parseDateValue(asOfDate);
-
-                    if (!grouped.has(normalizedLabel)) {
-                        grouped.set(normalizedLabel, { staffCount, dateValue, order: grouped.size });
-                        return;
-                    }
-
-                    const current = grouped.get(normalizedLabel);
-                    const currentDate = current.dateValue;
-                    if (!currentDate && dateValue) {
-                        grouped.set(normalizedLabel, { staffCount, dateValue, order: current.order });
-                        return;
-                    }
-
-                    if (currentDate && dateValue && dateValue > currentDate) {
-                        grouped.set(normalizedLabel, { staffCount, dateValue, order: current.order });
-                        return;
-                    }
-
-                    if (!currentDate && !dateValue) {
-                        grouped.set(normalizedLabel, { staffCount, dateValue, order: current.order });
-                    }
+                    tableBody.appendChild(tr);
                 });
 
-                staffStrengthCells.forEach(cell => {
-                    const label = cell.dataset.staffStrength ?? '';
-                    const entry = grouped.get(normalizeText(label));
-                    if (!entry || entry.staffCount === null || entry.staffCount === undefined || entry.staffCount === '') {
-                        cell.textContent = '-';
-                        return;
-                    }
-                    cell.textContent = entry.staffCount;
+                tableBody.querySelectorAll('.staff-edit').forEach(button => {
+                    button.addEventListener('click', (event) => {
+                        const index = Number(event.currentTarget.dataset.index);
+                        const row = savedRows[index];
+                        if (!row) {
+                            return;
+                        }
+                        setEditMode(row);
+                    });
                 });
-            };
-
-            const createDesignationSelect = (selectedValue = '') => {
-                const select = document.createElement('select');
-                select.className = 'form-select';
-                const placeholder = document.createElement('option');
-                placeholder.value = '';
-                placeholder.textContent = 'Select designation';
-                select.appendChild(placeholder);
-
-                designationOptions.forEach(option => {
-                    const opt = document.createElement('option');
-                    opt.value = option.code;
-                    opt.textContent = option.label;
-                    if (option.code === selectedValue) {
-                        opt.selected = true;
-                    }
-                    select.appendChild(opt);
-                });
-
-                return select;
-            };
-
-            const addEntryRow = (row = {}) => {
-                const designation = row.designation ?? row.Designation ?? '';
-                const staffCount = row.staffCount ?? row.StaffCount ?? '';
-                const asOfDate = row.asOfDate ?? row.AsOfDate ?? '';
-                const tr = document.createElement('tr');
-                const designationCell = document.createElement('td');
-                const designationSelect = createDesignationSelect(designation);
-                designationCell.appendChild(designationSelect);
-                tr.appendChild(designationCell);
-                const countCell = document.createElement('td');
-                const countInput = document.createElement('input');
-                countInput.className = 'form-control';
-                countInput.type = 'number';
-                countInput.value = staffCount;
-                countCell.appendChild(countInput);
-                tr.appendChild(countCell);
-
-                const dateCell = document.createElement('td');
-                const dateInput = document.createElement('input');
-                dateInput.className = 'form-control';
-                dateInput.type = 'date';
-                dateInput.value = formatDate(asOfDate);
-                dateCell.appendChild(dateInput);
-                tr.appendChild(dateCell);
-                entryTableBody.appendChild(tr);
             };
 
             const loadStaffRows = () => {
@@ -359,10 +164,7 @@
                     .then(response => response.json())
                     .then(data => {
                         const rows = data?.rows ?? [];
-                        renderSavedRows(rows);
-                        updateStaffStrengthPreview(rows);
-                        entryTableBody.innerHTML = '';
-                        addEntryRow();
+                        renderRows(rows);
                         statusEl.textContent = '';
                     })
                     .catch(() => {
@@ -370,19 +172,50 @@
                     });
             };
 
-            const collectStaffRows = () => {
-                return Array.from(entryTableBody.querySelectorAll('tr')).map(row => {
-                    const cells = row.querySelectorAll('input');
-                    const designationSelect = row.querySelector('select');
-                    const designation = designationSelect?.value?.trim() ?? '';
-                    const staffCountValue = cells[0]?.value;
-                    const asOfDate = cells[1]?.value;
-                    return {
-                        designation,
-                        staffCount: staffCountValue === '' ? null : Number(staffCountValue),
-                        asOfDate: asOfDate === '' ? null : asOfDate
-                    };
-                });
+            const collectRow = () => {
+                return {
+                    ppNo: normalizeText(ppNoInput?.value),
+                    name: normalizeText(nameInput?.value),
+                    rank: normalizeText(rankInput?.value),
+                    designation: normalizeText(designationInput?.value)
+                };
+            };
+
+            const clearForm = () => {
+                if (ppNoInput) {
+                    ppNoInput.value = '';
+                }
+                if (nameInput) {
+                    nameInput.value = '';
+                }
+                if (rankInput) {
+                    rankInput.value = '';
+                }
+                if (designationInput) {
+                    designationInput.value = '';
+                }
+            };
+
+            const setEditMode = (row) => {
+                if (ppNoInput) {
+                    ppNoInput.value = row.ppNo ?? row.PpNo ?? '';
+                }
+                if (nameInput) {
+                    nameInput.value = row.name ?? row.Name ?? '';
+                }
+                if (rankInput) {
+                    rankInput.value = row.rank ?? row.Rank ?? '';
+                }
+                if (designationInput) {
+                    designationInput.value = row.designation ?? row.Designation ?? '';
+                }
+                saveButton.textContent = 'Update Staff';
+                cancelButton?.classList.remove('d-none');
+            };
+
+            const resetEditMode = () => {
+                saveButton.textContent = 'Save Staff';
+                cancelButton?.classList.add('d-none');
             };
 
             const saveStaffRows = () => {
@@ -395,7 +228,7 @@
                     headers: {
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify(collectStaffRows())
+                    body: JSON.stringify([collectRow()])
                 })
                     .then(response => response.json())
                     .then(data => {
@@ -405,43 +238,21 @@
                         }
                         statusEl.textContent = data.message ?? 'Saved.';
                         const rows = data?.rows ?? [];
-                        renderSavedRows(rows);
-                        updateStaffStrengthPreview(rows);
+                        renderRows(rows);
+                        resetEditMode();
+                        clearForm();
                     })
                     .catch(() => {
                         statusEl.textContent = 'Unable to save staff snapshot rows.';
                     });
             };
 
-            const loadDesignationOptions = () => {
-                return fetch(`/FieldAuditReport/GetStaffDesignationOptions?engId=${engId}`)
-                    .then(response => response.json())
-                    .then(data => {
-                        designationOptions.length = 0;
-                        designationLookup.clear();
-                        (data?.items ?? []).forEach(option => {
-                            if (!option) {
-                                return;
-                            }
-                            const code = option.code ?? option.Code ?? '';
-                            const label = option.label ?? option.Label ?? code;
-                            designationOptions.push({ code, label });
-                            if (code) {
-                                designationLookup.set(code, label);
-                            }
-                        });
-                    });
-            };
-
-            addButton?.addEventListener('click', () => addEntryRow());
             saveButton?.addEventListener('click', saveStaffRows);
-            loadDesignationOptions()
-                .then(loadStaffRows)
-                .catch(() => {
-                    addEntryRow();
-                    loadStaffRows();
-                    statusEl.textContent = 'Unable to load staff designation options.';
-                });
+            cancelButton?.addEventListener('click', () => {
+                clearForm();
+                resetEditMode();
+            });
+            loadStaffRows();
         })();
     </script>
 }

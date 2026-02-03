@@ -991,9 +991,10 @@ namespace AIS.Controllers
                 {
                 list.Add(new StaffSnapshotRowModel
                     {
-                    Designation = reader["DESIGNATION"] == DBNull.Value ? string.Empty : reader["DESIGNATION"].ToString(),
-                    StaffCount = reader["STAFF_COUNT"] == DBNull.Value ? (int?)null : Convert.ToInt32(reader["STAFF_COUNT"]),
-                    AsOfDate = reader["AS_OF_DATE"] == DBNull.Value ? (DateTime?)null : Convert.ToDateTime(reader["AS_OF_DATE"])
+                    PpNo = reader["PP_NO"] == DBNull.Value ? string.Empty : reader["PP_NO"].ToString(),
+                    Name = reader["NAME"] == DBNull.Value ? string.Empty : reader["NAME"].ToString(),
+                    Rank = reader["RANK"] == DBNull.Value ? string.Empty : reader["RANK"].ToString(),
+                    Designation = reader["DESIGNATION"] == DBNull.Value ? string.Empty : reader["DESIGNATION"].ToString()
                     });
                 }
 
@@ -1011,9 +1012,10 @@ namespace AIS.Controllers
             cmd.CommandText = "PKG_FRPT.P_SAVE_STAFF_SNAPSHOT";
 
             cmd.Parameters.Add("P_ENG_ID", OracleDbType.Int32).Value = engId;
+            cmd.Parameters.Add("P_PP_NO", OracleDbType.Varchar2).Value = row?.PpNo ?? string.Empty;
+            cmd.Parameters.Add("P_NAME", OracleDbType.Varchar2).Value = row?.Name ?? string.Empty;
+            cmd.Parameters.Add("P_RANK", OracleDbType.Varchar2).Value = row?.Rank ?? string.Empty;
             cmd.Parameters.Add("P_DESIGNATION", OracleDbType.Varchar2).Value = row?.Designation ?? string.Empty;
-            cmd.Parameters.Add("P_STAFF_COUNT", OracleDbType.Int32).Value = row?.StaffCount ?? (object)DBNull.Value;
-            cmd.Parameters.Add("P_AS_OF_DATE", OracleDbType.Date).Value = row?.AsOfDate ?? (object)DBNull.Value;
 
             cmd.ExecuteNonQuery();
             }

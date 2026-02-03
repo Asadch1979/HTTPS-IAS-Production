@@ -295,9 +295,10 @@ namespace AIS.Controllers
                     continue;
                     }
 
-                if (string.IsNullOrWhiteSpace(row.Designation)
-                    && !row.StaffCount.HasValue
-                    && !row.AsOfDate.HasValue)
+                if (string.IsNullOrWhiteSpace(row.PpNo)
+                    && string.IsNullOrWhiteSpace(row.Name)
+                    && string.IsNullOrWhiteSpace(row.Rank)
+                    && string.IsNullOrWhiteSpace(row.Designation))
                     {
                     continue;
                     }
