@@ -1,0 +1,46 @@
+@{
+    var isFinal = false;
+    if (ViewData["IsFinal"] is bool finalFlag)
+    {
+        isFinal = finalFlag;
+    }
+    if (!isFinal && ViewData["IsReadOnly"] is bool readOnlyFlag)
+    {
+        isFinal = readOnlyFlag;
+    }
+
+    var canFinalize = ViewData["CanFinalize"] is bool canFinalizeFlag ? canFinalizeFlag : true;
+    var currentAction = ViewContext.RouteData.Values["action"]?.ToString() ?? string.Empty;
+    var routeValues = new Dictionary<string, object>();
+    var engId = Context.Request.Query["engId"].ToString();
+    var reportVersion = Context.Request.Query["reportVersion"].ToString();
+    if (!string.IsNullOrWhiteSpace(engId))
+    {
+        routeValues["engId"] = engId;
+    }
+    if (!string.IsNullOrWhiteSpace(reportVersion))
+    {
+        routeValues["reportVersion"] = reportVersion;
+    }
+}
+
+<div class="card mb-3">
+    <div class="card-header">Actions</div>
+    <div class="card-body d-flex flex-wrap gap-2">
+        <a class="btn btn-primary @((isFinal || currentAction == "NarrativeSections") ? "disabled" : string.Empty)"
+           href="@Url.Action("NarrativeSections", routeValues)"
+           aria-disabled="@(isFinal || currentAction == "NarrativeSections")">Edit Narrative Sections</a>
+        <a class="btn btn-primary @((isFinal || currentAction == "KpiSnapshot") ? "disabled" : string.Empty)"
+           href="@Url.Action("KpiSnapshot", routeValues)"
+           aria-disabled="@(isFinal || currentAction == "KpiSnapshot")">Edit KPI Snapshot</a>
+        <a class="btn btn-primary @((isFinal || currentAction == "NplSnapshot") ? "disabled" : string.Empty)"
+           href="@Url.Action("NplSnapshot", routeValues)"
+           aria-disabled="@(isFinal || currentAction == "NplSnapshot")">Edit NPL Snapshot</a>
+        <a class="btn btn-primary @((isFinal || currentAction == "StaffSnapshot") ? "disabled" : string.Empty)"
+           href="@Url.Action("StaffSnapshot", routeValues)"
+           aria-disabled="@(isFinal || currentAction == "StaffSnapshot")">Edit Staff Snapshot</a>
+        <a class="btn btn-success @((!canFinalize || currentAction == "FinalizeReport") ? "disabled" : string.Empty)"
+           href="@Url.Action("FinalizeReport", routeValues)"
+           aria-disabled="@(!canFinalize || currentAction == "FinalizeReport")">Finalize Report</a>
+    </div>
+</div>

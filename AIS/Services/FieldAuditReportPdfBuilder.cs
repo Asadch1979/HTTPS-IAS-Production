@@ -256,31 +256,40 @@ namespace AIS.Services
         private static void AppendStaffPosition(StringBuilder sb, FieldAuditPdfReportData data)
             {
             var rows = data.StaffRows ?? new List<FieldAuditPdfStaffRowModel>();
-            if (!rows.Any(row => HasMeaningfulContent(row.Designation) || row.Strength.HasValue || row.AsOfDate.HasValue))
+            if (!rows.Any(row => HasMeaningfulContent(row.PpNo)
+                || HasMeaningfulContent(row.Name)
+                || HasMeaningfulContent(row.Rank)
+                || HasMeaningfulContent(row.Designation)))
                 {
                 return;
                 }
 
             sb.AppendLine("<section class=\"section\">");
             sb.AppendLine("<div class=\"section-block\">");
-            sb.AppendLine("<div class=\"section-title\">Staff Position</div>");
+            sb.AppendLine("<div class=\"section-title\">Staff Snapshot</div>");
             sb.AppendLine("<div class=\"avoid-break\">");
+            sb.AppendLine("<table class=\"report-table\">");
+            sb.AppendLine("<thead><tr><th>PP No</th><th>Name</th><th>Rank</th><th>Designation</th></tr></thead>");
+            sb.AppendLine("<tbody>");
             foreach (var row in rows)
                 {
-                if (!HasMeaningfulContent(row.Designation) && !row.Strength.HasValue && !row.AsOfDate.HasValue)
+                if (!HasMeaningfulContent(row.PpNo)
+                    && !HasMeaningfulContent(row.Name)
+                    && !HasMeaningfulContent(row.Rank)
+                    && !HasMeaningfulContent(row.Designation))
                     {
                     continue;
                     }
 
-                var designation = string.IsNullOrWhiteSpace(row.Designation) ? string.Empty : Encode(row.Designation);
-                var strength = FormatInteger(row.Strength);
-                var line = string.IsNullOrWhiteSpace(designation)
-                    ? strength
-                    : string.IsNullOrWhiteSpace(strength)
-                        ? designation
-                        : $"{designation} - {strength}";
-                sb.AppendFormat(CultureInfo.InvariantCulture, "<div class=\"paragraph\">{0}</div>", line);
+                sb.AppendLine("<tr>");
+                sb.AppendFormat(CultureInfo.InvariantCulture, "<td>{0}</td>", FormatCell(row.PpNo));
+                sb.AppendFormat(CultureInfo.InvariantCulture, "<td>{0}</td>", FormatCell(row.Name));
+                sb.AppendFormat(CultureInfo.InvariantCulture, "<td>{0}</td>", FormatCell(row.Rank));
+                sb.AppendFormat(CultureInfo.InvariantCulture, "<td>{0}</td>", FormatCell(row.Designation));
+                sb.AppendLine("</tr>");
                 }
+            sb.AppendLine("</tbody>");
+            sb.AppendLine("</table>");
             sb.AppendLine("</div>");
             sb.AppendLine("</div>");
             sb.AppendLine("</section>");
@@ -292,7 +301,7 @@ namespace AIS.Services
             var chartContent = FindSectionContent(data, "KPI_CHART", "KPI Chart") ?? FindSectionContent(data, "FRPT_SECTION_KPI", "KPI Snapshot");
             var chartImages = ExtractChartImages(chartContent);
             var fallbackChart = chartImages.Count == 0 ? BuildKpiChartSvg(kpiRows) : string.Empty;
-            if (kpiRows.Count == 0 && chartImages.Count == 0)
+            if (!HasMeaningfulKpiRows(kpiRows))
                 {
                 return;
                 }
@@ -381,7 +390,7 @@ namespace AIS.Services
             var chartContent = FindSectionContent(data, "NPL_CHART", "NPL Chart") ?? FindSectionContent(data, "FRPT_SECTION_NPL", "NPL Snapshot");
             var chartImages = ExtractChartImages(chartContent);
             var fallbackChart = chartImages.Count == 0 ? BuildNplChartSvg(rows) : string.Empty;
-            if (rows.Count == 0 && chartImages.Count == 0)
+            if (!HasMeaningfulNplRows(rows))
                 {
                 return;
                 }
@@ -1275,6 +1284,25 @@ namespace AIS.Services
         private static string FormatIntegerCell(int? value)
             {
             return value.HasValue ? value.Value.ToString(CultureInfo.InvariantCulture) : "-";
+            }
+
+        private static bool HasMeaningfulKpiRows(IEnumerable<FieldAuditPdfKpiRowModel> rows)
+            {
+            return rows.Any(row => HasMeaningfulContent(row.KpiLabel)
+                || HasMeaningfulContent(row.KpiCode)
+                || row.PeriodEndDate.HasValue
+                || row.ActualValue.HasValue
+                || row.TargetValue.HasValue
+                || HasMeaningfulContent(row.Unit));
+            }
+
+        private static bool HasMeaningfulNplRows(IEnumerable<FieldAuditPdfNplRowModel> rows)
+            {
+            return rows.Any(row => HasMeaningfulContent(row.Category)
+                || row.PeriodEndDate.HasValue
+                || row.CaseCount.HasValue
+                || row.OutstandingAmount.HasValue
+                || row.ProvisionAmount.HasValue);
             }
 
         private static string FormatDateCell(DateTime? date)

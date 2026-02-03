@@ -7,6 +7,7 @@
     Layout = "_Layout";
     var engagementSelector = ViewData["EngagementSelector"] as AIS.Models.FieldAuditReport.FieldAuditEngagementSelectorViewModel;
     var hasEngagement = engagementSelector?.HasActiveEngagement ?? false;
+    ViewData["IsReadOnly"] = Model?.IsReadOnly ?? false;
 }
 
 <div class="container-fluid">
@@ -17,6 +18,7 @@
     </div>
 
     @await Html.PartialAsync("_GetEngagementSelector", engagementSelector)
+    @await Html.PartialAsync("_ReportActionsNav")
 
     @if (!hasEngagement)
     {
@@ -57,6 +59,7 @@
                                     <th>Actual</th>
                                     <th>Target</th>
                                     <th>Unit</th>
+                                    <th>Action</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -117,6 +120,8 @@
             const statusEl = document.getElementById('kpi-snapshot-status');
             const kpiOptions = [];
             const previewTable = document.getElementById('kpi-preview-table');
+            let savedRows = [];
+            let isEditing = false;
 
             if (!entryTableBody || !savedTableBody || !engId) {
                 return;
@@ -251,15 +256,16 @@
             };
 
             const renderSavedRows = (rows = []) => {
+                savedRows = rows;
                 savedTableBody.innerHTML = '';
                 if (!rows.length) {
                     const emptyRow = document.createElement('tr');
-                    emptyRow.innerHTML = '<td colspan="5" class="text-muted">No saved data.</td>';
+                    emptyRow.innerHTML = '<td colspan="6" class="text-muted">No saved data.</td>';
                     savedTableBody.appendChild(emptyRow);
                     return;
                 }
 
-                rows.forEach(row => {
+                rows.forEach((row, index) => {
                     const kpiLabel = row.kpiLabel ?? row.KpiLabel ?? '';
                     const periodEnd = row.periodEnd ?? row.PeriodEnd ?? '';
                     const actualValue = row.actualValue ?? row.ActualValue ?? '';
@@ -272,8 +278,24 @@
                         <td>${actualValue ?? ''}</td>
                         <td>${targetValue ?? ''}</td>
                         <td>${unit || '-'}</td>
+                        <td><button type="button" class="btn btn-sm btn-outline-secondary kpi-edit" data-index="${index}">Update</button></td>
                     `;
                     savedTableBody.appendChild(tr);
+                });
+
+                savedTableBody.querySelectorAll('.kpi-edit').forEach(button => {
+                    button.addEventListener('click', (event) => {
+                        const index = Number(event.currentTarget.dataset.index);
+                        const row = savedRows[index];
+                        if (!row) {
+                            return;
+                        }
+                        entryTableBody.innerHTML = '';
+                        addRow(row);
+                        isEditing = true;
+                        saveButton.textContent = 'Update KPI Snapshot';
+                        addButton?.setAttribute('disabled', 'disabled');
+                    });
                 });
             };
 
@@ -414,6 +436,13 @@
                         const rows = data?.rows ?? [];
                         renderSavedRows(rows);
                         renderPreviewTable(rows);
+                        if (isEditing) {
+                            isEditing = false;
+                            saveButton.textContent = 'Save KPI Snapshot';
+                            addButton?.removeAttribute('disabled');
+                        }
+                        entryTableBody.innerHTML = '';
+                        addRow();
                     })
                     .catch(() => {
                         statusEl.textContent = 'Unable to save KPI snapshot rows.';
