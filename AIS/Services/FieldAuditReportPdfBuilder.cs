@@ -121,8 +121,8 @@ namespace AIS.Services
             AppendSignificantParas(sb, data);
             AppendAuditStatistics(sb, data);
             AppendIncomeLeakage(sb, data);
-            AppendNarrativeSections(sb, data);
             AppendOverallAuditConclusion(sb, data);
+            AppendNarrativeSections(sb, data);
             AppendDetailedParas(sb, data);
             AppendStaticClauses(sb, data);
             AppendFooterSection(sb, data);
@@ -254,11 +254,17 @@ namespace AIS.Services
 
             sb.AppendLine("<div class=\"avoid-break\">");
             sb.AppendLine("<h3>Audit Team Details</h3>");
-            sb.AppendLine("<table class=\"report-table\">");
-            sb.AppendLine("<thead><tr><th>Role</th><th>Details</th></tr></thead>");
+            sb.AppendLine("<table class=\"grid\">");
+            sb.AppendLine("<thead><tr><th class=\"left\">Role</th><th class=\"left\">Details</th></tr></thead>");
             sb.AppendLine("<tbody>");
-            AppendKeyValueRow(sb, "Team Lead", teamLead);
-            AppendKeyValueRowHtml(sb, "Team Members", teamMembersList);
+            sb.AppendLine("<tr>");
+            sb.AppendLine("<td class=\"left\">Team Lead</td>");
+            sb.AppendFormat(CultureInfo.InvariantCulture, "<td class=\"left\">{0}</td>", FormatCell(teamLead));
+            sb.AppendLine("</tr>");
+            sb.AppendLine("<tr>");
+            sb.AppendLine("<td class=\"left\">Team Members</td>");
+            sb.AppendFormat(CultureInfo.InvariantCulture, "<td class=\"left\">{0}</td>", string.IsNullOrWhiteSpace(teamMembersList) ? "-" : teamMembersList);
+            sb.AppendLine("</tr>");
             sb.AppendLine("</tbody>");
             sb.AppendLine("</table>");
             sb.AppendLine("</div>");
