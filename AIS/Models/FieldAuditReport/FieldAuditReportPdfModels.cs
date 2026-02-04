@@ -1,3 +1,4 @@
+using AIS.Models;
 using System;
 using System.Collections.Generic;
 
@@ -15,6 +16,7 @@ namespace AIS.Models.FieldAuditReport
         public List<FieldAuditPdfStatisticsRowModel> StatisticsRows { get; set; } = new List<FieldAuditPdfStatisticsRowModel>();
         public List<FieldAuditPdfIncomeLeakageRowModel> IncomeLeakageRows { get; set; } = new List<FieldAuditPdfIncomeLeakageRowModel>();
         public FieldAuditPdfOverallConclusionModel OverallConclusion { get; set; } = new FieldAuditPdfOverallConclusionModel();
+        public List<GetTeamDetailsModel> TeamDetails { get; set; } = new List<GetTeamDetailsModel>();
         }
 
     public class FieldAuditPdfHeaderModel
