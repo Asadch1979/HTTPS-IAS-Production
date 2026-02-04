@@ -387,6 +387,7 @@ namespace AIS.Controllers
                     Gist = GetString(reader, "V_HEADER"),
                     ParaDetail = GetString(reader, "V_DETAIL"),
                     Risk = GetString(reader, "RISK"),
+                    Status = GetOptionalString(reader, "STATUS", "PARA_STATUS"),
                     ManagementComments = GetString(reader, "MANAGEMENT_REPLY"),
                     Recommendations = GetString(reader, "RECOMMENDATION"),
                     Annexure = GetOptionalString(reader, "ANNEXURE"),

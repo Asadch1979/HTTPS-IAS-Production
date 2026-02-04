@@ -210,7 +210,8 @@ namespace AIS.Services
                 ["/FieldAuditReport/NplSnapshot"] = 970104,
                 ["/FieldAuditReport/StaffSnapshot"] = 970105,
                 ["/FieldAuditReport/FinalizeReport"] = 970106,
-                ["/MANReport/Home"] = 970101
+                ["/MANReport/Home"] = 970101,
+                ["/MANReport/GeneratePdf"] = 970101
                 };
 
             foreach (var entry in fieldAuditPages)
