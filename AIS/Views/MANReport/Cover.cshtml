@@ -1,0 +1,88 @@
+@model AIS.Models.ManagementReport.ManagementReportCoverViewModel
+
+@{
+    ViewData["Title"] = "Management Report Cover";
+    Layout = "_Layout";
+    var engagementSelector = ViewData["EngagementSelector"] as AIS.Models.FieldAuditReport.FieldAuditEngagementSelectorViewModel;
+    var hasEngagement = engagementSelector?.HasActiveEngagement ?? false;
+    string FormatText(string value) => string.IsNullOrWhiteSpace(value) ? "-" : value;
+    var title = string.IsNullOrWhiteSpace(Model?.Cover?.AuditedBy)
+        ? "Management Audit Report"
+        : $"{Model.Cover.AuditedBy} Report";
+}
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <h3 class="mb-3">Management Audit Report - Cover</h3>
+        </div>
+    </div>
+
+    @await Html.PartialAsync("_GetEngagementSelector", engagementSelector)
+    @await Html.PartialAsync("_ManReportNav")
+
+    @if (!hasEngagement)
+    {
+        <div class="alert alert-warning">Select an engagement to view the cover data.</div>
+    }
+
+    @if (TempData["ManReportMessage"] != null)
+    {
+        <div class="alert alert-info">@TempData["ManReportMessage"]</div>
+    }
+
+    @if (hasEngagement)
+    {
+        <div class="card mb-4">
+            <div class="card-header">Cover Details</div>
+            <div class="card-body">
+                <h4 class="text-center mb-4">@title</h4>
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <strong>Reporting Office:</strong> @FormatText(Model?.Cover?.Reporting)
+                    </div>
+                    <div class="col-md-6">
+                        <strong>Entity Name:</strong> @FormatText(Model?.Cover?.EntityName)
+                    </div>
+                    <div class="col-md-6">
+                        <strong>Audited On:</strong> @FormatText(Model?.Cover?.AuditedOn)
+                    </div>
+                    <div class="col-md-6">
+                        <strong>Audited By:</strong> @FormatText(Model?.Cover?.AuditedBy)
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card mb-4">
+            <div class="card-header">Audit Team</div>
+            <div class="card-body">
+                @if (Model.AuditTeam == null || !Model.AuditTeam.Any())
+                {
+                    <div class="text-muted">No team data available.</div>
+                }
+                else
+                {
+                    var teamLead = Model.AuditTeam.FirstOrDefault(member => string.Equals(member.ISTEAMLEAD, "Y", StringComparison.OrdinalIgnoreCase))?.MEMBER_NAME;
+                    var members = Model.AuditTeam
+                        .Where(member => !string.Equals(member.ISTEAMLEAD, "Y", StringComparison.OrdinalIgnoreCase))
+                        .Select(member => member.MEMBER_NAME)
+                        .Where(name => !string.IsNullOrWhiteSpace(name))
+                        .ToList();
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <strong>Team Lead:</strong> @FormatText(teamLead)
+                        </div>
+                        <div class="col-md-6">
+                            <strong>Members:</strong> @FormatText(string.Join(", ", members))
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <div class="d-flex flex-wrap gap-2">
+            <a class="btn btn-primary" href="@Url.Action("AuditObjectiveScope", "MANReport")">Next: Audit Objective &amp; Scope</a>
+        </div>
+    }
+</div>

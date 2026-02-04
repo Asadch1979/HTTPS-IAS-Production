@@ -19,17 +19,17 @@ using System.Threading.Tasks;
 namespace AIS.Controllers
     {
     [Route("MANReport")]
-    public class ManagementAuditReportPdfController : BaseController
+    public class MANReportPdfController : BaseController
         {
-        private readonly ILogger<ManagementAuditReportPdfController> _logger;
+        private readonly ILogger<MANReportPdfController> _logger;
         private readonly SessionHandler _sessionHandler;
         private readonly DBConnection _dbConnection;
         private readonly TopMenus _topMenus;
         private readonly IPermissionService _permissionService;
         private readonly ManagementAuditReportPdfBuilder _pdfBuilder;
 
-        public ManagementAuditReportPdfController(
-            ILogger<ManagementAuditReportPdfController> logger,
+        public MANReportPdfController(
+            ILogger<MANReportPdfController> logger,
             SessionHandler sessionHandler,
             DBConnection dbConnection,
             TopMenus topMenus,

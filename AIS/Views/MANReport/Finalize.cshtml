@@ -1,0 +1,106 @@
+@model AIS.Models.ManagementReport.ManagementReportFinalizeViewModel
+
+@{
+    ViewData["Title"] = "Finalize Management Report";
+    Layout = "_Layout";
+    var engagementSelector = ViewData["EngagementSelector"] as AIS.Models.FieldAuditReport.FieldAuditEngagementSelectorViewModel;
+    var hasEngagement = engagementSelector?.HasActiveEngagement ?? false;
+    ViewData["IsFinal"] = Model?.IsFinal ?? false;
+    ViewData["CanFinalize"] = Model?.CanFinalize ?? false;
+}
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <h3 class="mb-3">Finalize Management Audit Report</h3>
+        </div>
+    </div>
+
+    @await Html.PartialAsync("_GetEngagementSelector", engagementSelector)
+    @await Html.PartialAsync("_ManReportNav")
+
+    @if (!hasEngagement)
+    {
+        <div class="alert alert-warning">Select an engagement to review completion and finalize the report.</div>
+    }
+
+    @if (TempData["ManReportMessage"] != null)
+    {
+        <div class="alert alert-info">@TempData["ManReportMessage"]</div>
+    }
+
+    @if (Model.IsFinal)
+    {
+        <div class="alert alert-success">This report is already finalized.</div>
+    }
+    else
+    {
+        <div class="alert alert-warning">
+            Once finalized, the report becomes read-only. Any change will require a new version.
+        </div>
+    }
+
+    @if (hasEngagement)
+    {
+        <div class="card mb-4">
+            <div class="card-header">Completion Checklist</div>
+            <div class="card-body">
+                <ul class="list-group">
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        Cover Data
+                        <span class="text-@((Model.Checklist.HasCoverData ? "success" : "danger"))">
+                            <i class="fa-solid @(Model.Checklist.HasCoverData ? "fa-circle-check" : "fa-circle-xmark")"></i>
+                        </span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        Objective &amp; Scope
+                        <span class="text-@((Model.Checklist.HasObjectiveScope ? "success" : "danger"))">
+                            <i class="fa-solid @(Model.Checklist.HasObjectiveScope ? "fa-circle-check" : "fa-circle-xmark")"></i>
+                        </span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        Executive Summary
+                        <span class="text-@((Model.Checklist.HasExecutiveSummary ? "success" : "danger"))">
+                            <i class="fa-solid @(Model.Checklist.HasExecutiveSummary ? "fa-circle-check" : "fa-circle-xmark")"></i>
+                        </span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        Staff Snapshot
+                        <span class="text-@((Model.Checklist.HasStaffSnapshot ? "success" : "danger"))">
+                            <i class="fa-solid @(Model.Checklist.HasStaffSnapshot ? "fa-circle-check" : "fa-circle-xmark")"></i>
+                        </span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        Observations Available
+                        <span class="text-@((Model.Checklist.HasObservations ? "success" : "danger"))">
+                            <i class="fa-solid @(Model.Checklist.HasObservations ? "fa-circle-check" : "fa-circle-xmark")"></i>
+                        </span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        Settled Paras Available
+                        <span class="text-@((Model.Checklist.HasSettledParas ? "success" : "danger"))">
+                            <i class="fa-solid @(Model.Checklist.HasSettledParas ? "fa-circle-check" : "fa-circle-xmark")"></i>
+                        </span>
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+        <form method="post" asp-action="Finalize">
+            @Html.AntiForgeryToken()
+            <button type="submit" class="btn btn-success" @(!Model.CanFinalize ? "disabled" : string.Empty)>Finalize Report</button>
+            @if (Model.IsFinal)
+            {
+                <a class="btn btn-outline-secondary" title="Generate Report"
+                   asp-controller="MANReportPdf"
+                   asp-action="GeneratePdf"
+                   asp-route-engId="@Model.EngagementId">Generate Report</a>
+            }
+            else
+            {
+                <button type="button" class="btn btn-outline-secondary" disabled title="Generate Report">Generate Report</button>
+                <span class="text-muted ms-2">Finalize first</span>
+            }
+        </form>
+    }
+</div>

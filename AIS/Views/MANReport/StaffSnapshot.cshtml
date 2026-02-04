@@ -1,0 +1,261 @@
+@model AIS.Models.FieldAuditReport.FieldAuditInputSectionViewModel
+
+@{
+    ViewData["Title"] = "Staff Snapshot";
+    Layout = "_Layout";
+    var engagementSelector = ViewData["EngagementSelector"] as AIS.Models.FieldAuditReport.FieldAuditEngagementSelectorViewModel;
+    var hasEngagement = engagementSelector?.HasActiveEngagement ?? false;
+    ViewData["IsReadOnly"] = Model?.IsReadOnly ?? false;
+}
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <h3 class="mb-3">Staff Snapshot</h3>
+        </div>
+    </div>
+
+    @await Html.PartialAsync("_GetEngagementSelector", engagementSelector)
+    @await Html.PartialAsync("_ManReportNav")
+
+    @if (!hasEngagement)
+    {
+        <div class="alert alert-warning">Select an engagement to work with staff snapshot data.</div>
+    }
+
+    @if (TempData["ManReportMessage"] != null)
+    {
+        <div class="alert alert-info">@TempData["ManReportMessage"]</div>
+    }
+
+    @if (Model.IsReadOnly)
+    {
+        <div class="alert alert-warning">This report is FINAL and cannot be edited.</div>
+    }
+
+    @if (hasEngagement)
+    {
+        <div class="card mb-4">
+            <div class="card-header">Add Staff</div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-3">
+                        <label class="form-label" for="staff-pp-no">PP No</label>
+                        <input type="text" class="form-control" id="staff-pp-no" @(Model.IsReadOnly ? "disabled" : string.Empty) />
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label" for="staff-name">Name</label>
+                        <input type="text" class="form-control" id="staff-name" @(Model.IsReadOnly ? "disabled" : string.Empty) />
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label" for="staff-rank">Rank</label>
+                        <input type="text" class="form-control" id="staff-rank" @(Model.IsReadOnly ? "disabled" : string.Empty) />
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label" for="staff-designation">Designation</label>
+                        <input type="text" class="form-control" id="staff-designation" @(Model.IsReadOnly ? "disabled" : string.Empty) />
+                    </div>
+                </div>
+                <div class="d-flex align-items-center gap-2 mt-3">
+                    <button type="button" class="btn btn-primary" id="save-staff-snapshot" @(Model.IsReadOnly ? "disabled" : string.Empty)>Save Staff</button>
+                    <button type="button" class="btn btn-outline-secondary d-none" id="cancel-staff-edit" @(Model.IsReadOnly ? "disabled" : string.Empty)>Cancel</button>
+                    <span class="text-muted" id="staff-snapshot-status"></span>
+                </div>
+            </div>
+        </div>
+
+        <div class="card mb-4">
+            <div class="card-header">Staff Snapshot</div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-bordered align-middle" id="staff-snapshot-grid">
+                        <thead>
+                            <tr>
+                                <th>PP No</th>
+                                <th>Name</th>
+                                <th>Rank</th>
+                                <th>Designation</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="d-flex flex-wrap gap-2">
+            <a class="btn btn-outline-secondary" href="@Url.Action("ExecutiveSummary", "MANReport")">Back</a>
+            <a class="btn btn-primary" href="@Url.Action("AuditObservations", "MANReport")">Next: Audit Observations</a>
+        </div>
+    }
+</div>
+
+@section Scripts {
+    <script>
+        (() => {
+            const engIdValue = @((engagementSelector?.ActiveEngagementId ?? 0));
+            const engId = engIdValue > 0 ? engIdValue : null;
+            const saveButton = document.getElementById('save-staff-snapshot');
+            const statusEl = document.getElementById('staff-snapshot-status');
+            const cancelButton = document.getElementById('cancel-staff-edit');
+            const ppNoInput = document.getElementById('staff-pp-no');
+            const nameInput = document.getElementById('staff-name');
+            const rankInput = document.getElementById('staff-rank');
+            const designationInput = document.getElementById('staff-designation');
+            const tableBody = document.querySelector('#staff-snapshot-grid tbody');
+            let savedRows = [];
+
+            if (!tableBody) {
+                return;
+            }
+
+            const normalizeText = (value) => (value ?? '').toString().trim();
+
+            const renderRows = (rows = []) => {
+                savedRows = rows;
+                tableBody.innerHTML = '';
+                if (!rows.length) {
+                    const emptyRow = document.createElement('tr');
+                    emptyRow.innerHTML = '<td colspan="5" class="text-muted">No saved data.</td>';
+                    tableBody.appendChild(emptyRow);
+                    return;
+                }
+
+                rows.forEach((row, index) => {
+                    const ppNo = row.ppNo ?? row.PpNo ?? '';
+                    const name = row.name ?? row.Name ?? '';
+                    const rank = row.rank ?? row.Rank ?? '';
+                    const designation = row.designation ?? row.Designation ?? '';
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td>${ppNo || '-'}</td>
+                        <td>${name || '-'}</td>
+                        <td>${rank || '-'}</td>
+                        <td>${designation || '-'}</td>
+                        <td><button type="button" class="btn btn-sm btn-outline-secondary staff-edit" data-index="${index}">Update</button></td>
+                    `;
+                    tableBody.appendChild(tr);
+                });
+
+                tableBody.querySelectorAll('.staff-edit').forEach(button => {
+                    button.addEventListener('click', (event) => {
+                        const index = Number(event.currentTarget.dataset.index);
+                        const row = savedRows[index];
+                        if (!row) {
+                            return;
+                        }
+                        setEditMode(row);
+                    });
+                });
+            };
+
+            const loadStaffRows = () => {
+                if (!engId) {
+                    if (statusEl) {
+                        statusEl.textContent = 'Select an engagement to load staff snapshot data.';
+                    }
+                    return;
+                }
+                statusEl.textContent = 'Loading...';
+                fetch(`/MANReport/GetStaffSnapshotRows?engId=${engId}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        const rows = data?.rows ?? [];
+                        renderRows(rows);
+                        statusEl.textContent = '';
+                    })
+                    .catch(() => {
+                        statusEl.textContent = 'Unable to load staff snapshot rows.';
+                    });
+            };
+
+            const collectRow = () => {
+                return {
+                    ppNo: normalizeText(ppNoInput?.value),
+                    name: normalizeText(nameInput?.value),
+                    rank: normalizeText(rankInput?.value),
+                    designation: normalizeText(designationInput?.value)
+                };
+            };
+
+            const clearForm = () => {
+                if (ppNoInput) {
+                    ppNoInput.value = '';
+                }
+                if (nameInput) {
+                    nameInput.value = '';
+                }
+                if (rankInput) {
+                    rankInput.value = '';
+                }
+                if (designationInput) {
+                    designationInput.value = '';
+                }
+            };
+
+            const setEditMode = (row) => {
+                if (ppNoInput) {
+                    ppNoInput.value = row.ppNo ?? row.PpNo ?? '';
+                }
+                if (nameInput) {
+                    nameInput.value = row.name ?? row.Name ?? '';
+                }
+                if (rankInput) {
+                    rankInput.value = row.rank ?? row.Rank ?? '';
+                }
+                if (designationInput) {
+                    designationInput.value = row.designation ?? row.Designation ?? '';
+                }
+                saveButton.textContent = 'Update Staff';
+                cancelButton?.classList.remove('d-none');
+            };
+
+            const resetEditMode = () => {
+                saveButton.textContent = 'Save Staff';
+                cancelButton?.classList.add('d-none');
+            };
+
+            const saveStaffRows = () => {
+                if (saveButton?.disabled) {
+                    return;
+                }
+                if (!engId) {
+                    statusEl.textContent = 'Select an engagement before saving staff snapshot data.';
+                    return;
+                }
+                statusEl.textContent = 'Saving...';
+                fetch(`/MANReport/SaveStaffSnapshotRows?engId=${engId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify([collectRow()])
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (!data?.success) {
+                            statusEl.textContent = data?.message || 'Unable to save staff snapshot.';
+                            return;
+                        }
+                        renderRows(data.rows ?? []);
+                        statusEl.textContent = data.message || 'Saved.';
+                        clearForm();
+                        resetEditMode();
+                    })
+                    .catch(() => {
+                        statusEl.textContent = 'Unable to save staff snapshot.';
+                    });
+            };
+
+            saveButton?.addEventListener('click', saveStaffRows);
+            cancelButton?.addEventListener('click', () => {
+                clearForm();
+                resetEditMode();
+            });
+
+            loadStaffRows();
+        })();
+    </script>
+}

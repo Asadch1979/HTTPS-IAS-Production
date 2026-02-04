@@ -1,0 +1,23 @@
+@{
+    var currentAction = ViewContext.RouteData.Values["action"]?.ToString() ?? string.Empty;
+}
+
+<div class="card mb-3">
+    <div class="card-header">Navigation</div>
+    <div class="card-body d-flex flex-wrap gap-2">
+        <a class="btn btn-outline-primary @((currentAction == "Cover") ? "disabled" : string.Empty)"
+           href="@Url.Action("Cover", "MANReport")">Cover</a>
+        <a class="btn btn-outline-primary @((currentAction == "AuditObjectiveScope") ? "disabled" : string.Empty)"
+           href="@Url.Action("AuditObjectiveScope", "MANReport")">Audit Objective &amp; Scope</a>
+        <a class="btn btn-outline-primary @((currentAction == "ExecutiveSummary") ? "disabled" : string.Empty)"
+           href="@Url.Action("ExecutiveSummary", "MANReport")">Executive Summary</a>
+        <a class="btn btn-outline-primary @((currentAction == "StaffSnapshot") ? "disabled" : string.Empty)"
+           href="@Url.Action("StaffSnapshot", "MANReport")">Staff Snapshot</a>
+        <a class="btn btn-outline-primary @((currentAction == "AuditObservations") ? "disabled" : string.Empty)"
+           href="@Url.Action("AuditObservations", "MANReport")">Audit Observations</a>
+        <a class="btn btn-outline-primary @((currentAction == "ParasSettledDuringAudit") ? "disabled" : string.Empty)"
+           href="@Url.Action("ParasSettledDuringAudit", "MANReport")">Paras Settled</a>
+        <a class="btn btn-outline-primary @((currentAction == "Finalize") ? "disabled" : string.Empty)"
+           href="@Url.Action("Finalize", "MANReport")">Finalize</a>
+    </div>
+</div>

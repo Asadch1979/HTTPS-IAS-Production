@@ -9,7 +9,8 @@ namespace AIS.Models.ManagementReport
         public ManagementAuditCoverModel Cover { get; set; } = new ManagementAuditCoverModel();
         public List<FieldAuditPdfSectionModel> Sections { get; set; } = new List<FieldAuditPdfSectionModel>();
         public List<FieldAuditPdfStaffRowModel> StaffRows { get; set; } = new List<FieldAuditPdfStaffRowModel>();
-        public List<FieldAuditPdfParaModel> Paras { get; set; } = new List<FieldAuditPdfParaModel>();
+        public List<FieldAuditPdfParaModel> Observations { get; set; } = new List<FieldAuditPdfParaModel>();
+        public List<FieldAuditPdfParaModel> SettledParas { get; set; } = new List<FieldAuditPdfParaModel>();
         public List<GetTeamDetailsModel> AuditTeam { get; set; } = new List<GetTeamDetailsModel>();
         }
 

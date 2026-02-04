@@ -205,7 +205,7 @@ namespace AIS.Services
 
         private static void AppendAuditObservations(StringBuilder sb, ManagementAuditPdfReportData data)
             {
-            var paras = data.Paras ?? new List<FieldAuditPdfParaModel>();
+            var paras = data.Observations ?? new List<FieldAuditPdfParaModel>();
             if (paras.Count == 0)
                 {
                 return;
@@ -234,8 +234,7 @@ namespace AIS.Services
 
         private static void AppendSettledParas(StringBuilder sb, ManagementAuditPdfReportData data)
             {
-            var paras = data.Paras ?? new List<FieldAuditPdfParaModel>();
-            var settled = paras.Where(IsSettled).ToList();
+            var settled = data.SettledParas ?? new List<FieldAuditPdfParaModel>();
             if (settled.Count == 0)
                 {
                 return;
@@ -254,12 +253,6 @@ namespace AIS.Services
                 sb.AppendLine("</div>");
                 }
             sb.AppendLine("</section>");
-            }
-
-        private static bool IsSettled(FieldAuditPdfParaModel para)
-            {
-            return !string.IsNullOrWhiteSpace(para?.Status)
-                && para.Status.Trim().Equals("Settled", StringComparison.OrdinalIgnoreCase);
             }
 
         private static void AppendNarrativeSection(StringBuilder sb, ManagementAuditPdfReportData data, string code, string title)
