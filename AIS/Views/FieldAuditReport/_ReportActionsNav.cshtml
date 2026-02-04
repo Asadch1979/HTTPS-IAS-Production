@@ -9,7 +9,6 @@
         isFinal = readOnlyFlag;
     }
 
-    var canFinalize = ViewData["CanFinalize"] is bool canFinalizeFlag ? canFinalizeFlag : true;
     var currentAction = ViewContext.RouteData.Values["action"]?.ToString() ?? string.Empty;
     var routeValues = new Dictionary<string, object>();
     var engId = Context.Request.Query["engId"].ToString();
