@@ -107,6 +107,7 @@ namespace AIS.Models.FieldAuditReport
         public string Gist { get; set; }
         public string Nature { get; set; }
         public string Risk { get; set; }
+        public string Status { get; set; }
         public string AnnexureCode { get; set; }
         public string Annexure { get; set; }
         public string Instances { get; set; }
