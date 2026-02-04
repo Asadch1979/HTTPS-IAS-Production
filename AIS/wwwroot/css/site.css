@@ -293,3 +293,6 @@ table.dataTable thead th {
     z-index: 1060;
 }
 
+.num-right {
+    text-align: right !important;
+}

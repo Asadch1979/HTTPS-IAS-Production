@@ -40,7 +40,19 @@
            href="@Url.Action("StaffSnapshot", routeValues)"
            aria-disabled="@(isFinal || currentAction == "StaffSnapshot")">Edit Staff Snapshot</a>
         <a class="btn btn-success @((!canFinalize || currentAction == "FinalizeReport") ? "disabled" : string.Empty)"
-           href="@Url.Action("FinalizeReport", routeValues)"
-           aria-disabled="@(!canFinalize || currentAction == "FinalizeReport")">Finalize Report</a>
+           href="@Url.Action("Concluding_Closing_Audit", "Execution")"
+           aria-disabled="@(!canFinalize || currentAction == "FinalizeReport")">Finalize Report Issuance</a>
+        @if (isFinal)
+        {
+            <a class="btn btn-outline-secondary" title="Generate Report"
+               asp-controller="FieldAuditReportPdf"
+               asp-action="GeneratePdf"
+               asp-route-engId="@engId"
+               asp-route-reportVersion="@reportVersion">Generate Report</a>
+        }
+        else
+        {
+            <button type="button" class="btn btn-outline-secondary" title="Generate Report" disabled>Generate Report</button>
+        }
     </div>
 </div>
