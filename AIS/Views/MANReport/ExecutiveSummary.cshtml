@@ -1,0 +1,56 @@
+@model AIS.Models.ManagementReport.ManagementReportExecutiveSummaryViewModel
+
+@{
+    ViewData["Title"] = "Executive Summary";
+    Layout = "_Layout";
+    var engagementSelector = ViewData["EngagementSelector"] as AIS.Models.FieldAuditReport.FieldAuditEngagementSelectorViewModel;
+    var hasEngagement = engagementSelector?.HasActiveEngagement ?? false;
+    ViewData["IsReadOnly"] = Model?.IsReadOnly ?? false;
+}
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <h3 class="mb-3">Executive Summary</h3>
+        </div>
+    </div>
+
+    @await Html.PartialAsync("_GetEngagementSelector", engagementSelector)
+    @await Html.PartialAsync("_ManReportNav")
+
+    @if (!hasEngagement)
+    {
+        <div class="alert alert-warning">Select an engagement to capture the executive summary.</div>
+    }
+
+    @if (TempData["ManReportMessage"] != null)
+    {
+        <div class="alert alert-info">@TempData["ManReportMessage"]</div>
+    }
+
+    @if (Model.IsReadOnly)
+    {
+        <div class="alert alert-warning">This report is FINAL and cannot be edited.</div>
+    }
+
+    @if (hasEngagement)
+    {
+        <form method="post" asp-action="ExecutiveSummary">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="EngagementId" value="@Model.EngagementId" />
+            <div class="card mb-4">
+                <div class="card-header">Executive Summary</div>
+                <div class="card-body">
+                    <textarea class="form-control" name="ExecutiveSummary" rows="10" @(Model.IsReadOnly ? "disabled" : string.Empty)>@Model.ExecutiveSummary</textarea>
+                </div>
+            </div>
+
+            <div class="d-flex flex-wrap gap-2">
+                <a class="btn btn-outline-secondary" href="@Url.Action("AuditObjectiveScope", "MANReport")">Back</a>
+                <button type="submit" class="btn btn-primary" name="submitAction" value="save" @(Model.IsReadOnly ? "disabled" : string.Empty)>Save Draft</button>
+                <button type="submit" class="btn btn-outline-success" name="submitAction" value="complete" @(Model.IsReadOnly ? "disabled" : string.Empty)>Mark Section Complete</button>
+                <button type="submit" class="btn btn-primary" name="submitAction" value="next" @(Model.IsReadOnly ? "disabled" : string.Empty)>Next: Staff Snapshot</button>
+            </div>
+        </form>
+    }
+</div>

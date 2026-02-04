@@ -46,7 +46,7 @@ namespace AIS.Controllers
                 }
 
             var selected = selector.Options.FirstOrDefault(option => option.EngagementId == selector.ActiveEngagementId);
-            if (!IsBranchAudit(selected))
+            if (IsManagementAudit(selected))
                 {
                 return RedirectToAction("Home", "MANReport");
                 }
@@ -85,7 +85,7 @@ namespace AIS.Controllers
                 }
 
             var selected = selector.Options.FirstOrDefault(option => option.EngagementId == selector.ActiveEngagementId);
-            if (!IsBranchAudit(selected))
+            if (IsManagementAudit(selected))
                 {
                 return RedirectToAction("Home", "MANReport");
                 }
@@ -132,7 +132,7 @@ namespace AIS.Controllers
                 }
 
             var selected = selector.Options.FirstOrDefault(option => option.EngagementId == selector.ActiveEngagementId);
-            if (!IsBranchAudit(selected))
+            if (IsManagementAudit(selected))
                 {
                 return RedirectToAction("Home", "MANReport");
                 }
@@ -159,7 +159,7 @@ namespace AIS.Controllers
                 }
 
             var selected = selector.Options.FirstOrDefault(option => option.EngagementId == selector.ActiveEngagementId);
-            if (!IsBranchAudit(selected))
+            if (IsManagementAudit(selected))
                 {
                 return RedirectToAction("Home", "MANReport");
                 }
@@ -186,7 +186,7 @@ namespace AIS.Controllers
                 }
 
             var selected = selector.Options.FirstOrDefault(option => option.EngagementId == selector.ActiveEngagementId);
-            if (!IsBranchAudit(selected))
+            if (IsManagementAudit(selected))
                 {
                 return RedirectToAction("Home", "MANReport");
                 }
@@ -666,7 +666,7 @@ namespace AIS.Controllers
                 }
 
             var selected = selector.Options.FirstOrDefault(option => option.EngagementId == selector.ActiveEngagementId);
-            if (!IsBranchAudit(selected))
+            if (IsManagementAudit(selected))
                 {
                 return RedirectToAction("Home", "MANReport");
                 }
@@ -734,6 +734,14 @@ namespace AIS.Controllers
                 }
 
             _sessionHandler.SetActiveEngagementId(engagementId);
+            var selected = _dbConnection
+                .GetReportEntities()
+                .FirstOrDefault(option => option.EngagementId == engagementId);
+            if (IsManagementAudit(selected))
+                {
+                return RedirectToAction("Home", "MANReport");
+                }
+
             return RedirectToLocal(returnUrl, nameof(ReportOverview));
             }
 
@@ -832,10 +840,10 @@ namespace AIS.Controllers
             return _sessionHandler.TryGetActiveEngagementId(out engId);
             }
 
-        private static bool IsBranchAudit(FieldAuditEngagementOptionModel selected)
+        private static bool IsManagementAudit(FieldAuditEngagementOptionModel selected)
             {
             return selected != null
-                && string.Equals(selected.AuditType, "B", StringComparison.OrdinalIgnoreCase);
+                && string.Equals(selected.AuditType, "D", StringComparison.OrdinalIgnoreCase);
             }
 
         private FieldAuditEngagementSelectorViewModel BuildEngagementSelector()
