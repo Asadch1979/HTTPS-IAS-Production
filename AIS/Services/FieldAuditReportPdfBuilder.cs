@@ -1,3 +1,4 @@
+using AIS.Models;
 using AIS.Models.FieldAuditReport;
 using System;
 using System.Collections.Generic;
@@ -77,7 +78,9 @@ namespace AIS.Services
             sb.AppendLine(".meta-grid { width: 100%; border-collapse: collapse; }");
             sb.AppendLine(".meta-grid th, .meta-grid td { border: 1px solid #111; padding: 4pt 6pt; vertical-align: top; }");
             sb.AppendLine(".meta-label { width: 35%; font-weight: bold; }");
+            sb.AppendLine(".meta-grid ul { margin: 0; padding-left: 16px; }");
             sb.AppendLine(".paragraph { margin: 6pt 0; }");
+            sb.AppendLine(".num-right { text-align: right !important; }");
             sb.AppendLine(".para-box{ border:1px solid #d0d7de; border-radius:8px; padding:12px 14px; margin:10px 0; background:#fff; page-break-inside:avoid; break-inside:avoid; }");
             sb.AppendLine(".para-title{ font-weight:700; font-size:13px; margin:0 0 8px 0; color:#111; }");
             sb.AppendLine(".para-body{ font-size:12px; line-height:1.6; text-align:justify; white-space:normal !important; overflow-wrap:anywhere; color:#212529; width:100%; }");
@@ -134,10 +137,14 @@ namespace AIS.Services
             {
             var header = data.Header ?? new FieldAuditPdfHeaderModel();
             var meta = data.ReportMeta ?? new FieldAuditPdfReportMetaModel();
+            var auditTeam = data.AuditTeam ?? new List<GetTeamDetailsModel>();
             var logoDataUri = GetLogoDataUri();
             var bankName = string.IsNullOrWhiteSpace(header.BankName) ? "Zarai Taraqiati Bank Limited" : header.BankName;
             var division = string.IsNullOrWhiteSpace(header.InternalAuditDivision) ? "Internal Audit Division" : header.InternalAuditDivision;
             var reportingLine = string.IsNullOrWhiteSpace(header.Reporting) ? "Reporting" : header.Reporting;
+            var issuedOn = FormatDate(meta.GeneratedOn ?? DateTime.Now);
+            var teamLead = auditTeam.FirstOrDefault(member => string.Equals(member.ISTEAMLEAD, "Y", StringComparison.OrdinalIgnoreCase))?.MEMBER_NAME;
+            var teamMembersList = BuildTeamMembersList(auditTeam);
 
             sb.AppendLine("<section class=\"section cover-page\">");
             if (!string.IsNullOrWhiteSpace(logoDataUri))
@@ -154,11 +161,14 @@ namespace AIS.Services
             sb.AppendLine("<div class=\"cover-box\">");
             sb.AppendLine("<table class=\"meta-grid\">");
             AppendMetaRow(sb, "Reporting Office", header.Reporting);
-            AppendMetaRow(sb, "Entity", header.EntityName);
-            AppendMetaRow(sb, "Branch Code", header.BranchCode);
+            AppendMetaRow(sb, "Audit Report of: __________", header.EntityName);
+            AppendMetaRow(sb, "Entity Code", header.BranchCode);
             AppendMetaRow(sb, "Audit Operation Period", header.Operationperiod);
             AppendMetaRow(sb, "Audit Execution Dates", FormatDateRange(header.AuditStartDate, header.AuditEndDate));
-            AppendMetaRow(sb, "Risk", meta.ReportStatus ?? header.Risk);
+            AppendMetaRow(sb, "Team Lead", teamLead);
+            AppendMetaRowHtml(sb, "Team Members", teamMembersList);
+            AppendMetaRow(sb, "Risk Rating", header.Risk);
+            AppendMetaRow(sb, "Issued on", issuedOn);
             AppendMetaRow(sb, "Version", meta.VersionNumber ?? header.VersionNumber);
             sb.AppendLine("</table>");
             sb.AppendLine("</div>");
@@ -222,26 +232,21 @@ namespace AIS.Services
 
             sb.AppendLine("<section class=\"section\">");
             sb.AppendLine("<div class=\"section-block\">");
-            sb.AppendLine("<div class=\"section-title\">Branch / Entity Profile</div>");
+            sb.AppendLine("<div class=\"section-title\">Entity Profile</div>");
             sb.AppendLine("<div class=\"avoid-break\">");
-            sb.AppendLine("<h3>Branch Profile</h3>");
+            sb.AppendLine("<h3>Entity Profile</h3>");
             sb.AppendLine("<table class=\"report-table\">");
             sb.AppendLine("<thead><tr><th>Profile Item</th><th>Details</th></tr></thead>");
             sb.AppendLine("<tbody>");
 
-            if (profileRows.Count == 0)
+            AppendKeyValueRow(sb, "Reporting Office", header.Reporting);
+            AppendKeyValueRow(sb, "Entity", header.EntityName);
+            AppendKeyValueRow(sb, "Entity Code", header.BranchCode);
+            AppendKeyValueRow(sb, "Audit Operation Period", header.Operationperiod);
+            AppendKeyValueRow(sb, "Audit Execution Dates", FormatDateRange(header.AuditStartDate, header.AuditEndDate));
+            foreach (var row in profileRows)
                 {
-                AppendKeyValueRow(sb, "Branch Name", header.BranchName);
-                AppendKeyValueRow(sb, "Branch Code", header.BranchCode);
-                AppendKeyValueRow(sb, "Audit Period", header.AuditPeriod);
-                AppendKeyValueRow(sb, "Audit Dates", FormatDateRange(header.AuditStartDate, header.AuditEndDate));
-                }
-            else
-                {
-                foreach (var row in profileRows)
-                    {
-                    AppendKeyValueRow(sb, row.Label, row.Value);
-                    }
+                AppendKeyValueRow(sb, row.Label, row.Value);
                 }
 
             sb.AppendLine("</tbody>");
@@ -336,16 +341,16 @@ namespace AIS.Services
                 sb.AppendLine("<table class=\"grid\">");
                 sb.AppendLine("<thead>");
                 sb.AppendLine("<tr>");
-                sb.AppendLine("<th rowspan=\"2\" style=\"width:28px\">Sr</th>");
+                sb.AppendLine("<th rowspan=\"2\" style=\"width:28px\" class=\"num-right\">Sr</th>");
                 sb.AppendLine("<th rowspan=\"2\" style=\"width:220px\">KPIs</th>");
                 sb.AppendLine("<th colspan=\"1\">As on Date of Audit</th>");
                 sb.AppendLine("<th colspan=\"3\">Audit Operation Period Start date (Rs. in Millions)</th>");
                 sb.AppendLine("<th colspan=\"3\">Audit Operation Period End Date (Rs. in Millions)</th>");
                 sb.AppendLine("</tr>");
                 sb.AppendLine("<tr>");
-                sb.AppendLine("<th>Actual</th>");
-                sb.AppendLine("<th>Target</th><th>Actual</th><th>%age</th>");
-                sb.AppendLine("<th>Target</th><th>Actual</th><th>%age</th>");
+                sb.AppendLine("<th class=\"num-right\">Actual</th>");
+                sb.AppendLine("<th class=\"num-right\">Target</th><th class=\"num-right\">Actual</th><th class=\"num-right\">%age</th>");
+                sb.AppendLine("<th class=\"num-right\">Target</th><th class=\"num-right\">Actual</th><th class=\"num-right\">%age</th>");
                 sb.AppendLine("</tr>");
                 sb.AppendLine("</thead>");
                 sb.AppendLine("<tbody>");
@@ -364,15 +369,15 @@ namespace AIS.Services
                         .FirstOrDefault();
 
                     sb.AppendLine("<tr>");
-                    sb.AppendFormat(CultureInfo.InvariantCulture, "<td>{0}</td>", index++);
+                    sb.AppendFormat(CultureInfo.InvariantCulture, "<td class=\"num-right\">{0}</td>", index++);
                     sb.AppendFormat(CultureInfo.InvariantCulture, "<td class=\"left\">{0}</td>", FormatCell(kpiLabel));
-                    sb.AppendFormat(CultureInfo.InvariantCulture, "<td>{0}</td>", FormatNumberCell((endRow ?? latestRow)?.ActualValue));
-                    sb.AppendFormat(CultureInfo.InvariantCulture, "<td>{0}</td>", FormatNumberCell(startRow?.TargetValue));
-                    sb.AppendFormat(CultureInfo.InvariantCulture, "<td>{0}</td>", FormatNumberCell(startRow?.ActualValue));
-                    sb.AppendFormat(CultureInfo.InvariantCulture, "<td>{0}</td>", FormatPercent(startRow?.ActualValue, startRow?.TargetValue));
-                    sb.AppendFormat(CultureInfo.InvariantCulture, "<td>{0}</td>", FormatNumberCell(endRow?.TargetValue));
-                    sb.AppendFormat(CultureInfo.InvariantCulture, "<td>{0}</td>", FormatNumberCell(endRow?.ActualValue));
-                    sb.AppendFormat(CultureInfo.InvariantCulture, "<td>{0}</td>", FormatPercent(endRow?.ActualValue, endRow?.TargetValue));
+                    sb.AppendFormat(CultureInfo.InvariantCulture, "<td class=\"num-right\">{0}</td>", FormatNumberCell((endRow ?? latestRow)?.ActualValue));
+                    sb.AppendFormat(CultureInfo.InvariantCulture, "<td class=\"num-right\">{0}</td>", FormatNumberCell(startRow?.TargetValue));
+                    sb.AppendFormat(CultureInfo.InvariantCulture, "<td class=\"num-right\">{0}</td>", FormatNumberCell(startRow?.ActualValue));
+                    sb.AppendFormat(CultureInfo.InvariantCulture, "<td class=\"num-right\">{0}</td>", FormatPercent(startRow?.ActualValue, startRow?.TargetValue));
+                    sb.AppendFormat(CultureInfo.InvariantCulture, "<td class=\"num-right\">{0}</td>", FormatNumberCell(endRow?.TargetValue));
+                    sb.AppendFormat(CultureInfo.InvariantCulture, "<td class=\"num-right\">{0}</td>", FormatNumberCell(endRow?.ActualValue));
+                    sb.AppendFormat(CultureInfo.InvariantCulture, "<td class=\"num-right\">{0}</td>", FormatPercent(endRow?.ActualValue, endRow?.TargetValue));
                     sb.AppendLine("</tr>");
                     }
 
@@ -420,8 +425,8 @@ namespace AIS.Services
                 sb.AppendFormat(CultureInfo.InvariantCulture, "<th colspan=\"3\">{0}</th>", Encode(GetNplDateLabel(rows, false)));
                 sb.AppendLine("</tr>");
                 sb.AppendLine("<tr>");
-                sb.AppendLine("<th>Cases</th><th>Outstanding Principal (Rs.)</th><th>Provision Amount (Rs.)</th>");
-                sb.AppendLine("<th>Cases</th><th>Outstanding Principal (Rs.)</th><th>Provision Amount (Rs.)</th>");
+                sb.AppendLine("<th class=\"num-right\">Cases</th><th class=\"num-right\">Outstanding Principal (Rs.)</th><th class=\"num-right\">Provision Amount (Rs.)</th>");
+                sb.AppendLine("<th class=\"num-right\">Cases</th><th class=\"num-right\">Outstanding Principal (Rs.)</th><th class=\"num-right\">Provision Amount (Rs.)</th>");
                 sb.AppendLine("</tr>");
                 sb.AppendLine("</thead>");
                 sb.AppendLine("<tbody>");
@@ -459,23 +464,23 @@ namespace AIS.Services
 
                     sb.AppendLine("<tr>");
                     sb.AppendFormat(CultureInfo.InvariantCulture, "<td class=\"left\">{0}</td>", FormatCell(bucket));
-                    sb.AppendFormat(CultureInfo.InvariantCulture, "<td>{0}</td>", FormatIntegerCell(bucketDate1.Cases));
-                    sb.AppendFormat(CultureInfo.InvariantCulture, "<td>{0}</td>", FormatNumberCell(bucketDate1.Outstanding));
-                    sb.AppendFormat(CultureInfo.InvariantCulture, "<td>{0}</td>", FormatNumberCell(bucketDate1.Provision));
-                    sb.AppendFormat(CultureInfo.InvariantCulture, "<td>{0}</td>", FormatIntegerCell(bucketDate2.Cases));
-                    sb.AppendFormat(CultureInfo.InvariantCulture, "<td>{0}</td>", FormatNumberCell(bucketDate2.Outstanding));
-                    sb.AppendFormat(CultureInfo.InvariantCulture, "<td>{0}</td>", FormatNumberCell(bucketDate2.Provision));
+                    sb.AppendFormat(CultureInfo.InvariantCulture, "<td class=\"num-right\">{0}</td>", FormatIntegerCell(bucketDate1.Cases));
+                    sb.AppendFormat(CultureInfo.InvariantCulture, "<td class=\"num-right\">{0}</td>", FormatNumberCell(bucketDate1.Outstanding));
+                    sb.AppendFormat(CultureInfo.InvariantCulture, "<td class=\"num-right\">{0}</td>", FormatNumberCell(bucketDate1.Provision));
+                    sb.AppendFormat(CultureInfo.InvariantCulture, "<td class=\"num-right\">{0}</td>", FormatIntegerCell(bucketDate2.Cases));
+                    sb.AppendFormat(CultureInfo.InvariantCulture, "<td class=\"num-right\">{0}</td>", FormatNumberCell(bucketDate2.Outstanding));
+                    sb.AppendFormat(CultureInfo.InvariantCulture, "<td class=\"num-right\">{0}</td>", FormatNumberCell(bucketDate2.Provision));
                     sb.AppendLine("</tr>");
                     }
 
                 sb.AppendLine("<tr>");
                 sb.AppendFormat(CultureInfo.InvariantCulture, "<td class=\"left\"><strong>Total</strong></td>");
-                sb.AppendFormat(CultureInfo.InvariantCulture, "<td><strong>{0}</strong></td>", FormatInteger(totalsDate1.Cases));
-                sb.AppendFormat(CultureInfo.InvariantCulture, "<td><strong>{0}</strong></td>", FormatNumber(totalsDate1.Outstanding));
-                sb.AppendFormat(CultureInfo.InvariantCulture, "<td><strong>{0}</strong></td>", FormatNumber(totalsDate1.Provision));
-                sb.AppendFormat(CultureInfo.InvariantCulture, "<td><strong>{0}</strong></td>", FormatInteger(totalsDate2.Cases));
-                sb.AppendFormat(CultureInfo.InvariantCulture, "<td><strong>{0}</strong></td>", FormatNumber(totalsDate2.Outstanding));
-                sb.AppendFormat(CultureInfo.InvariantCulture, "<td><strong>{0}</strong></td>", FormatNumber(totalsDate2.Provision));
+                sb.AppendFormat(CultureInfo.InvariantCulture, "<td class=\"num-right\"><strong>{0}</strong></td>", FormatInteger(totalsDate1.Cases));
+                sb.AppendFormat(CultureInfo.InvariantCulture, "<td class=\"num-right\"><strong>{0}</strong></td>", FormatNumber(totalsDate1.Outstanding));
+                sb.AppendFormat(CultureInfo.InvariantCulture, "<td class=\"num-right\"><strong>{0}</strong></td>", FormatNumber(totalsDate1.Provision));
+                sb.AppendFormat(CultureInfo.InvariantCulture, "<td class=\"num-right\"><strong>{0}</strong></td>", FormatInteger(totalsDate2.Cases));
+                sb.AppendFormat(CultureInfo.InvariantCulture, "<td class=\"num-right\"><strong>{0}</strong></td>", FormatNumber(totalsDate2.Outstanding));
+                sb.AppendFormat(CultureInfo.InvariantCulture, "<td class=\"num-right\"><strong>{0}</strong></td>", FormatNumber(totalsDate2.Provision));
                 sb.AppendLine("</tr>");
 
                 sb.AppendLine("</tbody>");
@@ -535,7 +540,7 @@ namespace AIS.Services
             sb.AppendLine("<div class=\"section-title\">Audit Statistics</div>");
             sb.AppendLine("<div class=\"avoid-break\">");
             sb.AppendLine("<table class=\"report-table\">");
-            sb.AppendLine("<thead><tr><th>Risk</th><th>Reported</th><th>Rectified</th><th>Outstanding</th></tr></thead>");
+            sb.AppendLine("<thead><tr><th>Risk</th><th class=\"num-right\">Reported</th><th class=\"num-right\">Rectified</th><th class=\"num-right\">Outstanding</th></tr></thead>");
             sb.AppendLine("<tbody>");
             foreach (var row in rows)
                 {
@@ -549,9 +554,9 @@ namespace AIS.Services
 
                 sb.AppendLine("<tr>");
                 sb.AppendFormat(CultureInfo.InvariantCulture, "<td>{0}</td>", FormatCell(row.RiskLevel));
-                sb.AppendFormat(CultureInfo.InvariantCulture, "<td>{0}</td>", FormatIntegerCell(row.ReportedCount));
-                sb.AppendFormat(CultureInfo.InvariantCulture, "<td>{0}</td>", FormatIntegerCell(row.RectifiedCount));
-                sb.AppendFormat(CultureInfo.InvariantCulture, "<td>{0}</td>", FormatIntegerCell(row.OutstandingCount));
+                sb.AppendFormat(CultureInfo.InvariantCulture, "<td class=\"num-right\">{0}</td>", FormatIntegerCell(row.ReportedCount));
+                sb.AppendFormat(CultureInfo.InvariantCulture, "<td class=\"num-right\">{0}</td>", FormatIntegerCell(row.RectifiedCount));
+                sb.AppendFormat(CultureInfo.InvariantCulture, "<td class=\"num-right\">{0}</td>", FormatIntegerCell(row.OutstandingCount));
                 sb.AppendLine("</tr>");
                 }
             sb.AppendLine("</tbody>");
@@ -576,7 +581,7 @@ namespace AIS.Services
             sb.AppendLine("<div class=\"section-title\">Income Leakage</div>");
             sb.AppendLine("<div class=\"avoid-break\">");
             sb.AppendLine("<table class=\"report-table\">");
-            sb.AppendLine("<thead><tr><th>Case</th><th>Description</th><th>Amount</th></tr></thead>");
+            sb.AppendLine("<thead><tr><th>Case</th><th>Description</th><th class=\"num-right\">Amount</th></tr></thead>");
             sb.AppendLine("<tbody>");
             foreach (var row in rows)
                 {
@@ -590,12 +595,12 @@ namespace AIS.Services
                 sb.AppendLine("<tr>");
                 sb.AppendFormat(CultureInfo.InvariantCulture, "<td>{0}</td>", FormatCell(row.CaseReference));
                 sb.AppendFormat(CultureInfo.InvariantCulture, "<td>{0}</td>", FormatCell(row.Description));
-                sb.AppendFormat(CultureInfo.InvariantCulture, "<td>{0}</td>", FormatNumberCell(row.Amount));
+                sb.AppendFormat(CultureInfo.InvariantCulture, "<td class=\"num-right\">{0}</td>", FormatNumberCell(row.Amount));
                 sb.AppendLine("</tr>");
                 }
             sb.AppendLine("<tr>");
             sb.AppendLine("<td colspan=\"2\"><strong>Total</strong></td>");
-            sb.AppendFormat(CultureInfo.InvariantCulture, "<td>{0}</td>", FormatNumber(rows.Sum(row => row.Amount ?? 0m)));
+            sb.AppendFormat(CultureInfo.InvariantCulture, "<td class=\"num-right\">{0}</td>", FormatNumber(rows.Sum(row => row.Amount ?? 0m)));
             sb.AppendLine("</tr>");
             sb.AppendLine("</tbody>");
             sb.AppendLine("</table>");
@@ -748,6 +753,42 @@ namespace AIS.Services
             sb.AppendFormat(CultureInfo.InvariantCulture, "<td class=\"meta-label\">{0}</td>", Encode(label));
             sb.AppendFormat(CultureInfo.InvariantCulture, "<td>{0}</td>", FormatCell(value));
             sb.AppendLine("</tr>");
+            }
+
+        private static void AppendMetaRowHtml(StringBuilder sb, string label, string htmlValue)
+            {
+            sb.AppendLine("<tr>");
+            sb.AppendFormat(CultureInfo.InvariantCulture, "<td class=\"meta-label\">{0}</td>", Encode(label));
+            sb.AppendFormat(CultureInfo.InvariantCulture, "<td>{0}</td>", string.IsNullOrWhiteSpace(htmlValue) ? "-" : htmlValue);
+            sb.AppendLine("</tr>");
+            }
+
+        private static string BuildTeamMembersList(IEnumerable<GetTeamDetailsModel> auditTeam)
+            {
+            if (auditTeam == null)
+                {
+                return string.Empty;
+                }
+
+            var members = auditTeam
+                .Where(member => !string.Equals(member.ISTEAMLEAD, "Y", StringComparison.OrdinalIgnoreCase))
+                .Select(member => member.MEMBER_NAME)
+                .Where(name => !string.IsNullOrWhiteSpace(name))
+                .ToList();
+
+            if (members.Count == 0)
+                {
+                return string.Empty;
+                }
+
+            var builder = new StringBuilder();
+            builder.Append("<ul>");
+            foreach (var name in members)
+                {
+                builder.AppendFormat(CultureInfo.InvariantCulture, "<li>{0}</li>", Encode(name));
+                }
+            builder.Append("</ul>");
+            return builder.ToString();
             }
 
         private static void AppendKeyValueRow(StringBuilder sb, string label, string value)
