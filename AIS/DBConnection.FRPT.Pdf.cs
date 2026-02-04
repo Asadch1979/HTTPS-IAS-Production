@@ -27,8 +27,7 @@ namespace AIS.Controllers
                 Paras = GetFieldAuditPdfParas(engId, reportVersion),
                 StatisticsRows = GetFieldAuditPdfStatistics(engId, reportVersion),
                 IncomeLeakageRows = GetFieldAuditPdfIncomeLeakage(engId, reportVersion),
-                OverallConclusion = GetFieldAuditPdfOverallConclusion(engId, reportVersion),
-                TeamDetails = GetFieldAuditTeamDetails(engId)
+                OverallConclusion = GetFieldAuditPdfOverallConclusion(engId, reportVersion)
                 };
             }
 

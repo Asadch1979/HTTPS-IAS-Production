@@ -55,7 +55,6 @@ namespace AIS.Controllers
             var overview = _dbConnection.GetFieldAuditReportOverview(engId);
             var isFinal = _dbConnection.IsFieldAuditReportFinal(engId);
             var checklist = _dbConnection.GetFieldAuditReportChecklist(engId);
-            var auditTeam = _dbConnection.GetFieldAuditTeamDetails(engId);
             overview ??= new FieldAuditReportOverviewModel();
 
             var model = new FieldAuditReportOverviewViewModel
@@ -64,8 +63,7 @@ namespace AIS.Controllers
                 Checklist = checklist,
                 IsFinal = isFinal,
                 CanFinalize = !isFinal && checklist.IsComplete,
-                ReportStatus = isFinal ? "FINAL" : "DRAFT",
-                AuditTeam = auditTeam
+                ReportStatus = isFinal ? "FINAL" : "DRAFT"
                 };
 
             return View(model);
@@ -1006,8 +1004,6 @@ namespace AIS.Controllers
                 EntityId = overview?.EntityId ?? 0,
                 IsReadOnly = isFinal,
                 SectionCode = sectionCode,
-                OperationStartDate = overview?.OPERATION_STARTDATE,
-                OperationEndDate = overview?.OPERATION_ENDDATE,
                 Fields = fields,
                 ReportStatus = isFinal ? "FINAL" : "DRAFT",
                 AuditTeam = auditTeam,

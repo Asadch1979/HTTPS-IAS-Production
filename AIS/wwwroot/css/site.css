@@ -3,10 +3,6 @@ for details on configuring this project to bundle and minify static web assets. 
 .table td {
     word-break: break-word !important;
 }
-
-.num-right {
-    text-align: right !important;
-}
 .container-clob {
     width: 100% !important;
     margin: 10px auto !important;
@@ -296,3 +292,4 @@ table.dataTable thead th {
     padding: 2px;
     z-index: 1060;
 }
+

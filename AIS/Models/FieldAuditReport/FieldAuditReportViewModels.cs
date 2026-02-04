@@ -47,7 +47,6 @@ namespace AIS.Models.FieldAuditReport
         public bool IsFinal { get; set; }
         public bool CanFinalize { get; set; }
         public string ReportStatus { get; set; }
-        public List<GetTeamDetailsModel> AuditTeam { get; set; } = new List<GetTeamDetailsModel>();
         }
 
     public class FieldAuditEngagementOptionModel
@@ -202,8 +201,6 @@ namespace AIS.Models.FieldAuditReport
         public int EntityId { get; set; }
         public bool IsReadOnly { get; set; }
         public string SectionCode { get; set; }
-        public DateTime? OperationStartDate { get; set; }
-        public DateTime? OperationEndDate { get; set; }
         public Dictionary<string, string> Fields { get; set; } = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         public string ReportStatus { get; set; }
         public List<GetTeamDetailsModel> AuditTeam { get; set; } = new List<GetTeamDetailsModel>();

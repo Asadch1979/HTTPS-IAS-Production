@@ -1,5 +1,4 @@
 @model AIS.Models.FieldAuditReport.FieldAuditReportOverviewViewModel
-@using System.Linq
 
 @{
     ViewData["Title"] = "Field Audit Report Overview";
@@ -9,37 +8,6 @@
     string FormatRange(DateTime? start, DateTime? end) => $"{FormatDate(start)} to {FormatDate(end)}";
     string FormatText(string value) => string.IsNullOrWhiteSpace(value) ? "-" : value;
     string FormatNumber(int? value) => value.HasValue ? value.Value.ToString() : "-";
-    string FormatTeamMember(AIS.Models.GetTeamDetailsModel member)
-    {
-        if (member == null)
-        {
-            return "-";
-        }
-
-        var name = string.IsNullOrWhiteSpace(member.MEMBER_NAME) ? string.Empty : member.MEMBER_NAME.Trim();
-        var ppNo = string.IsNullOrWhiteSpace(member.MEMBER_PPNO) ? string.Empty : member.MEMBER_PPNO.Trim();
-        if (string.IsNullOrWhiteSpace(name))
-        {
-            return string.IsNullOrWhiteSpace(ppNo) ? "-" : ppNo;
-        }
-        return string.IsNullOrWhiteSpace(ppNo) ? name : $"{name} ({ppNo})";
-    }
-
-    string GetTeamLeadName()
-    {
-        var lead = Model?.AuditTeam?.FirstOrDefault(member =>
-            string.Equals(member?.ISTEAMLEAD, "Y", StringComparison.OrdinalIgnoreCase));
-        return FormatTeamMember(lead);
-    }
-
-    IEnumerable<string> GetTeamMembers()
-    {
-        return Model?.AuditTeam?
-            .Where(member => member != null && !string.Equals(member.ISTEAMLEAD, "Y", StringComparison.OrdinalIgnoreCase))
-            .Select(FormatTeamMember)
-            .Where(item => !string.IsNullOrWhiteSpace(item) && item != "-")
-            ?? Enumerable.Empty<string>();
-    }
     var engagementSelector = ViewData["EngagementSelector"] as AIS.Models.FieldAuditReport.FieldAuditEngagementSelectorViewModel;
     var hasEngagement = engagementSelector?.HasActiveEngagement ?? false;
     ViewData["IsFinal"] = Model?.IsFinal ?? false;
@@ -96,30 +64,6 @@
                     </div>
                     <div class="col-md-6">
                         <strong>Team Lead:</strong> @FormatText(Model.Overview.TEAM_LEAD)
-                    </div>
-                </div>
-                <div class="row g-3 mt-1">
-                    <div class="col-md-6">
-                        <strong>Audited Team Lead:</strong> @GetTeamLeadName()
-                    </div>
-                    <div class="col-md-6">
-                        <strong>Audited Team Members:</strong>
-                        @{
-                            var members = GetTeamMembers().ToList();
-                        }
-                        @if (members.Any())
-                        {
-                            <ul class="mb-0">
-                                @foreach (var member in members)
-                                {
-                                    <li>@member</li>
-                                }
-                            </ul>
-                        }
-                        else
-                        {
-                            <div class="text-muted">No audit team data available.</div>
-                        }
                     </div>
                 </div>
             </div>
