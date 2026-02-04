@@ -9,7 +9,6 @@
         isFinal = readOnlyFlag;
     }
 
-    var canFinalize = ViewData["CanFinalize"] is bool canFinalizeFlag ? canFinalizeFlag : true;
     var currentAction = ViewContext.RouteData.Values["action"]?.ToString() ?? string.Empty;
     var routeValues = new Dictionary<string, object>();
     var engId = Context.Request.Query["engId"].ToString();
@@ -39,8 +38,5 @@
         <a class="btn btn-primary @((isFinal || currentAction == "StaffSnapshot") ? "disabled" : string.Empty)"
            href="@Url.Action("StaffSnapshot", routeValues)"
            aria-disabled="@(isFinal || currentAction == "StaffSnapshot")">Edit Staff Snapshot</a>
-        <a class="btn btn-success @((!canFinalize || currentAction == "FinalizeReport") ? "disabled" : string.Empty)"
-           href="@Url.Action("FinalizeReport", routeValues)"
-           aria-disabled="@(!canFinalize || currentAction == "FinalizeReport")">Finalize Report</a>
     </div>
 </div>

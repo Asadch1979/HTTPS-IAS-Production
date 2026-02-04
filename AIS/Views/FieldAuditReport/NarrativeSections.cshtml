@@ -250,56 +250,35 @@
                     <thead>
                         <tr>
                             <th>Nature of Paras</th>
-                            <th>Reported</th>
-                            <th>Rectified</th>
-                            <th>Outstanding</th>
+                            <th class="num-right">Reported</th>
+                            <th class="num-right">Rectified</th>
+                            <th class="num-right">Outstanding</th>
                             <th>Remarks, if any</th>
                         </tr>
                     </thead>
                     <tbody>
-                        <tr data-nature="Fraud &amp; Forgery (if any)">
-                            <td>Fraud &amp; Forgery (if any)</td>
-                            <td><input class="form-control stats-reported" type="number" min="0" /></td>
-                            <td><input class="form-control stats-rectified" type="number" min="0" /></td>
-                            <td><input class="form-control stats-outstanding" type="number" min="0" /></td>
-                            <td><input class="form-control stats-remarks" /></td>
-                        </tr>
-                        <tr data-nature="High Risk Paras">
-                            <td>High Risk Paras</td>
-                            <td><input class="form-control stats-reported" type="number" min="0" /></td>
-                            <td><input class="form-control stats-rectified" type="number" min="0" /></td>
-                            <td><input class="form-control stats-outstanding" type="number" min="0" /></td>
-                            <td><input class="form-control stats-remarks" /></td>
-                        </tr>
-                        <tr data-nature="Medium Risk Paras">
-                            <td>Medium Risk Paras</td>
-                            <td><input class="form-control stats-reported" type="number" min="0" /></td>
-                            <td><input class="form-control stats-rectified" type="number" min="0" /></td>
-                            <td><input class="form-control stats-outstanding" type="number" min="0" /></td>
-                            <td><input class="form-control stats-remarks" /></td>
-                        </tr>
-                        <tr data-nature="Low Risk Paras">
-                            <td>Low Risk Paras</td>
-                            <td><input class="form-control stats-reported" type="number" min="0" /></td>
-                            <td><input class="form-control stats-rectified" type="number" min="0" /></td>
-                            <td><input class="form-control stats-outstanding" type="number" min="0" /></td>
-                            <td><input class="form-control stats-remarks" /></td>
-                        </tr>
-                        <tr data-nature="Total">
-                            <td>Total</td>
-                            <td><input class="form-control stats-reported" type="number" min="0" /></td>
-                            <td><input class="form-control stats-rectified" type="number" min="0" /></td>
-                            <td><input class="form-control stats-outstanding" type="number" min="0" /></td>
-                            <td><input class="form-control stats-remarks" /></td>
-                        </tr>
+                        @if (Model.StatisticsRows.Any())
+                        {
+                            foreach (var row in Model.StatisticsRows)
+                            {
+                                <tr>
+                                    <td>@row.RiskLevel</td>
+                                    <td class="num-right">@FormatNumber(row.ReportedCount)</td>
+                                    <td class="num-right">@FormatNumber(row.RectifiedCount)</td>
+                                    <td class="num-right">@FormatNumber(row.OutstandingCount)</td>
+                                    <td></td>
+                                </tr>
+                            }
+                        }
+                        else
+                        {
+                            <tr>
+                                <td colspan="5" class="text-muted">No audit statistics data available.</td>
+                            </tr>
+                        }
                     </tbody>
                 </table>
             </div>
-            <div class="d-flex flex-wrap gap-2 mb-2">
-                <button type="button" class="btn btn-primary" id="saveStatisticsBtn" @(Model.IsReadOnly ? "disabled" : string.Empty)>Save Statistics</button>
-                <button type="button" class="btn btn-outline-primary d-none" id="updateStatisticsBtn" @(Model.IsReadOnly ? "disabled" : string.Empty)>Update Statistics</button>
-            </div>
-            <div class="form-text mb-4" id="statisticsMessage"></div>
 
             <div class="section-title">5. Summary of leakage of income / identified from sample of transactions</div>
             <div class="table-responsive mb-2" id="incomeLeakageBlock">
@@ -308,7 +287,7 @@
                         <tr>
                             <th>Description</th>
                             <th>Area</th>
-                            <th>Amount (Rs.)</th>
+                            <th class="num-right">Amount (Rs.)</th>
                             <th class="text-center" style="width:80px;">Action</th>
                         </tr>
                     </thead>
@@ -316,7 +295,7 @@
                     <tfoot>
                         <tr>
                             <th colspan="2">Total</th>
-                            <th id="incomeLeakageTotal">0</th>
+                            <th id="incomeLeakageTotal" class="num-right">0</th>
                             <th></th>
                         </tr>
                     </tfoot>
@@ -508,8 +487,6 @@
             const reportVersion = parseInt(reportVersionRaw || '1', 10) || 1;
             const isReadOnly = @Model.IsReadOnly.ToString().ToLowerInvariant();
             const urls = {
-                getStatistics: '@Url.Action("GetPdfStatistics")',
-                saveStatistics: '@Url.Action("SavePdfStatistics")',
                 getIncomeLeakage: '@Url.Action("GetIncomeLeakage")',
                 saveIncomeLeakage: '@Url.Action("SaveIncomeLeakage")',
                 getConclusion: '@Url.Action("GetOverallConclusion")',
@@ -520,11 +497,8 @@
                 return;
             }
 
-            const statisticsMessage = document.getElementById('statisticsMessage');
             const incomeLeakageMessage = document.getElementById('incomeLeakageMessage');
             const conclusionMessage = document.getElementById('conclusionMessage');
-            const saveStatisticsBtn = document.getElementById('saveStatisticsBtn');
-            const updateStatisticsBtn = document.getElementById('updateStatisticsBtn');
             const saveIncomeLeakageBtn = document.getElementById('saveIncomeLeakageBtn');
             const updateIncomeLeakageBtn = document.getElementById('updateIncomeLeakageBtn');
             const addIncomeLeakageRowBtn = document.getElementById('addIncomeLeakageRowBtn');
@@ -547,16 +521,6 @@
                 element.textContent = message || '';
                 element.classList.remove('text-success', 'text-danger');
                 element.classList.add(isError ? 'text-danger' : 'text-success');
-            }
-
-            function setStatisticsLocked(locked) {
-                const disabled = locked || isReadOnly;
-                document.querySelectorAll('#statisticsTable input').forEach((input) => {
-                    input.disabled = disabled;
-                });
-                if (updateStatisticsBtn) {
-                    updateStatisticsBtn.classList.toggle('d-none', !locked || isReadOnly);
-                }
             }
 
             function setIncomeLeakageLocked(locked) {
@@ -594,44 +558,6 @@
                 return Number.isNaN(number) ? null : number;
             }
 
-            function collectStatisticsRows() {
-                const rows = [];
-                document.querySelectorAll('#statisticsTable tbody tr').forEach((row) => {
-                    const nature = row.dataset.nature || '';
-                    const reported = parseNumeric(row.querySelector('.stats-reported')?.value);
-                    const rectified = parseNumeric(row.querySelector('.stats-rectified')?.value);
-                    const outstanding = parseNumeric(row.querySelector('.stats-outstanding')?.value);
-                    const remarks = row.querySelector('.stats-remarks')?.value || '';
-                    rows.push({
-                        nature,
-                        reported,
-                        rectified,
-                        outstanding,
-                        remarks
-                    });
-                });
-                return rows;
-            }
-
-            function applyStatisticsRows(rows) {
-                (rows || []).forEach((row) => {
-                    const match = document.querySelector(`#statisticsTable tbody tr[data-nature="${CSS.escape(row.nature || '')}"]`);
-                    if (!match) {
-                        return;
-                    }
-                    const setValue = (selector, value) => {
-                        const input = match.querySelector(selector);
-                        if (input) {
-                            input.value = value === null || value === undefined ? '' : value;
-                        }
-                    };
-                    setValue('.stats-reported', row.reported);
-                    setValue('.stats-rectified', row.rectified);
-                    setValue('.stats-outstanding', row.outstanding);
-                    setValue('.stats-remarks', row.remarks || '');
-                });
-            }
-
             function updateIncomeLeakageTotal() {
                 let total = 0;
                 document.querySelectorAll('#incomeLeakageTable tbody tr').forEach((row) => {
@@ -655,7 +581,7 @@
                 tr.innerHTML = `
                     <td><input class="form-control" data-field="description" value="${row.description || ''}" /></td>
                     <td><input class="form-control" data-field="area" value="${row.area || ''}" /></td>
-                    <td><input class="form-control" data-field="amount" type="number" step="0.01" min="0" value="${row.amount ?? ''}" /></td>
+                    <td><input class="form-control num-right" data-field="amount" type="number" step="0.01" min="0" value="${row.amount ?? ''}" /></td>
                     <td class="text-center"><button type="button" class="btn btn-sm btn-outline-danger" data-action="remove">Remove</button></td>
                 `;
                 tbody.appendChild(tr);
@@ -725,16 +651,6 @@
                 return data;
             }
 
-            async function loadStatistics() {
-                try {
-                    const data = await fetchJson(`${urls.getStatistics}?engId=${engagementId}&reportVersion=${reportVersion}`);
-                    applyStatisticsRows(data.rows || []);
-                    setStatisticsLocked(data.locked);
-                } catch (error) {
-                    setMessage(statisticsMessage, error.message || 'Unable to load statistics.', true);
-                }
-            }
-
             async function loadIncomeLeakage() {
                 const tbody = document.querySelector('#incomeLeakageTable tbody');
                 if (tbody) {
@@ -765,31 +681,6 @@
                     setConclusionLocked(data.locked);
                 } catch (error) {
                     setMessage(conclusionMessage, error.message || 'Unable to load conclusion.', true);
-                }
-            }
-
-            async function saveStatistics() {
-                setMessage(statisticsMessage, '', false);
-                const rows = collectStatisticsRows();
-                const hasNegative = rows.some((row) =>
-                    (row.reported !== null && row.reported < 0)
-                    || (row.rectified !== null && row.rectified < 0)
-                    || (row.outstanding !== null && row.outstanding < 0));
-                if (hasNegative) {
-                    setMessage(statisticsMessage, 'Statistics values cannot be negative.', true);
-                    return;
-                }
-
-                try {
-                    const response = await fetchJson(urls.saveStatistics, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ engId: engagementId, reportVersion, rows })
-                    });
-                    setMessage(statisticsMessage, response.message || 'Saved successfully.', false);
-                    setStatisticsLocked(true);
-                } catch (error) {
-                    setMessage(statisticsMessage, error.message || 'Unable to save statistics.', true);
                 }
             }
 
@@ -845,19 +736,15 @@
                 });
 
                 addIncomeLeakageRowBtn?.addEventListener('click', () => createIncomeLeakageRow());
-                saveStatisticsBtn?.addEventListener('click', saveStatistics);
-                updateStatisticsBtn?.addEventListener('click', () => setStatisticsLocked(false));
                 saveIncomeLeakageBtn?.addEventListener('click', saveIncomeLeakage);
                 updateIncomeLeakageBtn?.addEventListener('click', () => setIncomeLeakageLocked(false));
                 saveConclusionBtn?.addEventListener('click', saveConclusion);
                 updateConclusionBtn?.addEventListener('click', () => setConclusionLocked(false));
 
-                loadStatistics();
                 loadIncomeLeakage();
                 loadConclusion();
 
                 if (isReadOnly) {
-                    setStatisticsLocked(true);
                     setIncomeLeakageLocked(true);
                     setConclusionLocked(true);
                 }

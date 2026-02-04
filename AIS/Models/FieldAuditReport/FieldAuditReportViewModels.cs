@@ -205,5 +205,6 @@ namespace AIS.Models.FieldAuditReport
         public string ReportStatus { get; set; }
         public List<GetTeamDetailsModel> AuditTeam { get; set; } = new List<GetTeamDetailsModel>();
         public List<FieldAuditPdfStatisticsRowModel> StatisticsRows { get; set; } = new List<FieldAuditPdfStatisticsRowModel>();
+        public FieldAuditReportOverviewModel Overview { get; set; } = new FieldAuditReportOverviewModel();
         }
     }

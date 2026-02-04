@@ -1007,7 +1007,8 @@ namespace AIS.Controllers
                 Fields = fields,
                 ReportStatus = isFinal ? "FINAL" : "DRAFT",
                 AuditTeam = auditTeam,
-                StatisticsRows = statistics
+                StatisticsRows = statistics,
+                Overview = overview ?? new FieldAuditReportOverviewModel()
                 };
             }
 
