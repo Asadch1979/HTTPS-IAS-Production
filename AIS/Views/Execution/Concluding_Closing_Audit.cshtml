@@ -110,11 +110,6 @@
 
       function closeDraftAudit() {
 
-          if(g_engId==0){
-              alert("Please select Entity to proceed");
-              return;
-          }
-
            $.ajax({
             url: g_asiBaseURL + "/ApiCalls/conclude_draft_audit",
             type: "POST",

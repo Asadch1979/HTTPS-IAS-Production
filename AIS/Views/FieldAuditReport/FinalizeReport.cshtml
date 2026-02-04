@@ -78,14 +78,14 @@
             <button type="submit" class="btn btn-success" @(!Model.CanFinalize ? "disabled" : string.Empty)>Finalize Report</button>
             @if (Model.IsFinal)
             {
-                <a class="btn btn-outline-secondary"
+                <a class="btn btn-outline-secondary" title="Generate Report"
                    asp-controller="FieldAuditReportPdf"
                    asp-action="GeneratePdf"
-                   asp-route-engId="@Model.EngagementId">Generate PDF</a>
+                   asp-route-engId="@Model.EngagementId">Generate Report</a>
             }
             else
             {
-                <button type="button" class="btn btn-outline-secondary" disabled title="Finalize first">Generate PDF</button>
+                <button type="button" class="btn btn-outline-secondary" disabled title="Generate Report">Generate Report</button>
                 <span class="text-muted ms-2">Finalize first</span>
             }
         </form>

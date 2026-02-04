@@ -31,9 +31,9 @@
                                 <td>@(row.AuditEndDate?.ToString("dd-MMM-yyyy") ?? "-")</td>
                                 <td>@(row.ReportStatus == "FINAL" ? "Finalized" : "In progress")</td>
                                 <td>
-                                    <a class="btn btn-sm btn-primary"
+                                    <a class="btn btn-sm btn-primary" title="Generate Report"
                                        href="/FieldAuditReport/GeneratePdf?engId=@row.EngId">
-                                        Generate PDF
+                                        Generate Report
                                     </a>
                                 </td>
                             </tr>

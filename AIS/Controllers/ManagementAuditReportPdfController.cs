@@ -1,3 +1,4 @@
+using AIS.Models.ManagementReport;
 using AIS.Services;
 using iText.Html2pdf;
 using iText.Kernel.Events;
