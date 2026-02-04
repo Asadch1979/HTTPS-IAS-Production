@@ -56,9 +56,9 @@
                                 <tr>
                                     <th>Category</th>
                                     <th>Period End</th>
-                                    <th>Cases</th>
-                                    <th>Outstanding</th>
-                                    <th>Provision</th>
+                                    <th class="num-right">Cases</th>
+                                    <th class="num-right">Outstanding</th>
+                                    <th class="num-right">Provision</th>
                                     <th>Action</th>
                                 </tr>
                             </thead>
@@ -83,9 +83,9 @@
                                 <tr>
                                     <th>Category</th>
                                     <th>Period End</th>
-                                    <th>Case Count</th>
-                                    <th>Outstanding Amount</th>
-                                    <th>Provision Amount</th>
+                                    <th class="num-right">Case Count</th>
+                                    <th class="num-right">Outstanding Amount</th>
+                                    <th class="num-right">Provision Amount</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -153,6 +153,11 @@
             }
             return date.toISOString().slice(0, 10);
         };
+
+        const operationDates = [
+            '@(Model.OperationStartDate?.ToString("yyyy-MM-dd") ?? string.Empty)',
+            '@(Model.OperationEndDate?.ToString("yyyy-MM-dd") ?? string.Empty)'
+        ].filter(value => value);
 
         const formatValue = (value) => {
             if (value === null || value === undefined || value === '') {
@@ -250,6 +255,7 @@
                 ['Cases', 'Outstanding', 'Provision'].forEach(label => {
                     const sub = document.createElement('th');
                     sub.textContent = label;
+                    sub.classList.add('num-right');
                     subHeaderRow.appendChild(sub);
                 });
             });
@@ -270,6 +276,9 @@
                     const casesCell = document.createElement('td');
                     const outstandingCell = document.createElement('td');
                     const provisionCell = document.createElement('td');
+                    casesCell.classList.add('num-right');
+                    outstandingCell.classList.add('num-right');
+                    provisionCell.classList.add('num-right');
                     casesCell.textContent = formatValue(entry?.caseCount);
                     outstandingCell.textContent = formatValue(entry?.outstandingAmount);
                     provisionCell.textContent = formatValue(entry?.provisionAmount);
@@ -334,9 +343,9 @@
                 tr.innerHTML = `
                     <td>${categoryLabel || '-'}</td>
                     <td>${formatDate(periodEnd) || '-'}</td>
-                    <td>${caseCount ?? ''}</td>
-                    <td>${outstandingAmount ?? ''}</td>
-                    <td>${provisionAmount ?? ''}</td>
+                    <td class="num-right">${caseCount ?? ''}</td>
+                    <td class="num-right">${outstandingAmount ?? ''}</td>
+                    <td class="num-right">${provisionAmount ?? ''}</td>
                     <td><button type="button" class="btn btn-sm btn-outline-secondary npl-edit" data-index="${index}">Update</button></td>
                 `;
                 savedTableBody.appendChild(tr);
@@ -382,16 +391,27 @@
             tr.appendChild(categoryCell);
 
             const periodCell = document.createElement('td');
-            const periodInput = document.createElement('input');
-            periodInput.className = 'form-control';
-            periodInput.type = 'date';
-            periodInput.value = formatDate(periodEnd);
-            periodCell.appendChild(periodInput);
+            const periodSelect = document.createElement('select');
+            periodSelect.className = 'form-select npl-period-select';
+            const placeholder = document.createElement('option');
+            placeholder.value = '';
+            placeholder.textContent = 'Select date';
+            periodSelect.appendChild(placeholder);
+            operationDates.forEach(dateValue => {
+                const option = document.createElement('option');
+                option.value = dateValue;
+                option.textContent = dateValue;
+                if (formatDate(periodEnd) === dateValue) {
+                    option.selected = true;
+                }
+                periodSelect.appendChild(option);
+            });
+            periodCell.appendChild(periodSelect);
             tr.appendChild(periodCell);
 
             const casesCell = document.createElement('td');
             const casesInput = document.createElement('input');
-            casesInput.className = 'form-control';
+            casesInput.className = 'form-control num-right';
             casesInput.type = 'number';
             casesInput.value = caseCount;
             casesCell.appendChild(casesInput);
@@ -399,7 +419,7 @@
 
             const outstandingCell = document.createElement('td');
             const outstandingInput = document.createElement('input');
-            outstandingInput.className = 'form-control';
+            outstandingInput.className = 'form-control num-right';
             outstandingInput.type = 'number';
             outstandingInput.step = 'any';
             outstandingInput.value = outstandingAmount;
@@ -408,7 +428,7 @@
 
             const provisionCell = document.createElement('td');
             const provisionInput = document.createElement('input');
-            provisionInput.className = 'form-control';
+            provisionInput.className = 'form-control num-right';
             provisionInput.type = 'number';
             provisionInput.step = 'any';
             provisionInput.value = provisionAmount;
@@ -426,12 +446,13 @@
 
             return Array.from(entryTableBody.querySelectorAll('tr')).map(row => {
                 const categorySelect = row.querySelector('select');
-                const cells = row.querySelectorAll('input');
+                const inputs = row.querySelectorAll('input');
+                const periodSelect = row.querySelector('.npl-period-select');
                 const category = categorySelect?.value?.trim() ?? '';
-                const periodEnd = cells[0]?.value;
-                const caseCount = cells[1]?.value;
-                const outstandingAmount = cells[2]?.value;
-                const provisionAmount = cells[3]?.value;
+                const periodEnd = periodSelect?.value;
+                const caseCount = inputs[0]?.value;
+                const outstandingAmount = inputs[1]?.value;
+                const provisionAmount = inputs[2]?.value;
                 return {
                     category,
                     periodEnd: periodEnd === '' ? null : periodEnd,

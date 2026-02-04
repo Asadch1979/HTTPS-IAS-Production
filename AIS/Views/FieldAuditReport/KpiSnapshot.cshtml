@@ -56,8 +56,8 @@
                                 <tr>
                                     <th>KPI Label</th>
                                     <th>Period End</th>
-                                    <th>Actual</th>
-                                    <th>Target</th>
+                                    <th class="num-right">Actual</th>
+                                    <th class="num-right">Target</th>
                                     <th>Unit</th>
                                     <th>Action</th>
                                 </tr>
@@ -83,8 +83,8 @@
                                 <tr>
                                     <th>KPI Label</th>
                                     <th>Period End</th>
-                                    <th>Actual Value</th>
-                                    <th>Target Value</th>
+                                    <th class="num-right">Actual Value</th>
+                                    <th class="num-right">Target Value</th>
                                     <th>Unit</th>
                                 </tr>
                             </thead>
@@ -137,6 +137,11 @@
                 }
                 return date.toISOString().slice(0, 10);
             };
+
+            const operationDates = [
+                '@(Model.OperationStartDate?.ToString("yyyy-MM-dd") ?? string.Empty)',
+                '@(Model.OperationEndDate?.ToString("yyyy-MM-dd") ?? string.Empty)'
+            ].filter(value => value);
 
             const formatValue = (value) => {
                 if (value === null || value === undefined || value === '') {
@@ -206,13 +211,14 @@
                 headerRow.appendChild(kpiHeader);
 
                 periods.forEach(period => {
-                    const th = document.createElement('th');
-                    th.colSpan = 3;
-                    th.textContent = period;
-                    headerRow.appendChild(th);
+                        const th = document.createElement('th');
+                        th.colSpan = 3;
+                        th.textContent = period;
+                        headerRow.appendChild(th);
                     ['Actual', 'Target', '%age'].forEach(label => {
                         const sub = document.createElement('th');
                         sub.textContent = label;
+                        sub.classList.add('num-right');
                         subHeaderRow.appendChild(sub);
                     });
                 });
@@ -235,6 +241,9 @@
                         const actualCell = document.createElement('td');
                         const targetCell = document.createElement('td');
                         const percentCell = document.createElement('td');
+                        actualCell.classList.add('num-right');
+                        targetCell.classList.add('num-right');
+                        percentCell.classList.add('num-right');
                         actualCell.textContent = formatValue(actualValue);
                         targetCell.textContent = formatValue(targetValue);
                         let percentText = '-';
@@ -275,8 +284,8 @@
                     tr.innerHTML = `
                         <td>${kpiLabel || '-'}</td>
                         <td>${formatDate(periodEnd) || '-'}</td>
-                        <td>${actualValue ?? ''}</td>
-                        <td>${targetValue ?? ''}</td>
+                        <td class="num-right">${actualValue ?? ''}</td>
+                        <td class="num-right">${targetValue ?? ''}</td>
                         <td>${unit || '-'}</td>
                         <td><button type="button" class="btn btn-sm btn-outline-secondary kpi-edit" data-index="${index}">Update</button></td>
                     `;
@@ -346,16 +355,27 @@
                 kpiCell.appendChild(select);
                 tr.appendChild(kpiCell);
                 const periodCell = document.createElement('td');
-                const periodInput = document.createElement('input');
-                periodInput.className = 'form-control';
-                periodInput.type = 'date';
-                periodInput.value = formatDate(periodEnd);
-                periodCell.appendChild(periodInput);
+                const periodSelect = document.createElement('select');
+                periodSelect.className = 'form-select kpi-period-select';
+                const placeholder = document.createElement('option');
+                placeholder.value = '';
+                placeholder.textContent = 'Select date';
+                periodSelect.appendChild(placeholder);
+                operationDates.forEach(dateValue => {
+                    const option = document.createElement('option');
+                    option.value = dateValue;
+                    option.textContent = dateValue;
+                    if (formatDate(periodEnd) === dateValue) {
+                        option.selected = true;
+                    }
+                    periodSelect.appendChild(option);
+                });
+                periodCell.appendChild(periodSelect);
                 tr.appendChild(periodCell);
 
                 const actualCell = document.createElement('td');
                 const actualInput = document.createElement('input');
-                actualInput.className = 'form-control';
+                actualInput.className = 'form-control num-right';
                 actualInput.type = 'number';
                 actualInput.step = 'any';
                 actualInput.value = actualValue;
@@ -364,7 +384,7 @@
 
                 const targetCell = document.createElement('td');
                 const targetInput = document.createElement('input');
-                targetInput.className = 'form-control';
+                targetInput.className = 'form-control num-right';
                 targetInput.type = 'number';
                 targetInput.step = 'any';
                 targetInput.value = targetValue;
@@ -396,13 +416,14 @@
             const collectKpiRows = () => {
                 return Array.from(entryTableBody.querySelectorAll('tr')).map(row => {
                     const kpiSelect = row.querySelector('select');
-                    const cells = row.querySelectorAll('input');
+                    const inputs = row.querySelectorAll('input');
+                    const periodSelect = row.querySelector('.kpi-period-select');
                     const kpiCode = kpiSelect?.value?.trim() ?? '';
                     const kpiLabel = kpiSelect?.selectedOptions[0]?.textContent?.trim() ?? '';
-                    const periodEnd = cells[0]?.value;
-                    const actualValue = cells[1]?.value;
-                    const targetValue = cells[2]?.value;
-                    const unit = cells[3]?.value?.trim() ?? '';
+                    const periodEnd = periodSelect?.value;
+                    const actualValue = inputs[0]?.value;
+                    const targetValue = inputs[1]?.value;
+                    const unit = inputs[2]?.value?.trim() ?? '';
                     return {
                         kpiCode,
                         kpiLabel,
