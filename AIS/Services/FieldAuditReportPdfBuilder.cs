@@ -145,6 +145,7 @@ namespace AIS.Services
             var issuedOn = FormatDate(meta.GeneratedOn ?? DateTime.Now);
             var teamLead = auditTeam.FirstOrDefault(member => string.Equals(member.ISTEAMLEAD, "Y", StringComparison.OrdinalIgnoreCase))?.MEMBER_NAME;
             var teamMembersList = BuildTeamMembersList(auditTeam);
+            var reportStatus = string.IsNullOrWhiteSpace(meta.ReportStatus) ? header.ReportStatus : meta.ReportStatus;
 
             sb.AppendLine("<section class=\"section cover-page\">");
             if (!string.IsNullOrWhiteSpace(logoDataUri))
@@ -161,15 +162,9 @@ namespace AIS.Services
             sb.AppendLine("<div class=\"cover-box\">");
             sb.AppendLine("<table class=\"meta-grid\">");
             AppendMetaRow(sb, "Reporting Office", header.Reporting);
-            AppendMetaRow(sb, "Audit Report of: __________", header.EntityName);
-            AppendMetaRow(sb, "Entity Code", header.BranchCode);
-            AppendMetaRow(sb, "Audit Operation Period", header.Operationperiod);
-            AppendMetaRow(sb, "Audit Execution Dates", FormatDateRange(header.AuditStartDate, header.AuditEndDate));
-            AppendMetaRow(sb, "Team Lead", teamLead);
-            AppendMetaRowHtml(sb, "Team Members", teamMembersList);
-            AppendMetaRow(sb, "Risk Rating", header.Risk);
-            AppendMetaRow(sb, "Issued on", issuedOn);
-            AppendMetaRow(sb, "Version", meta.VersionNumber ?? header.VersionNumber);
+            AppendMetaRow(sb, "Audit Report of:", header.EntityName);
+            AppendMetaRow(sb, "Issued on :", issuedOn);
+            AppendMetaRow(sb, "Version:", reportStatus);
             sb.AppendLine("</table>");
             sb.AppendLine("</div>");
             sb.AppendLine("<div class=\"cover-confidential\">Confidential \u2013 Internal Use Only</div>");
@@ -214,7 +209,10 @@ namespace AIS.Services
         private static void AppendBranchProfile(StringBuilder sb, FieldAuditPdfReportData data)
             {
             var header = data.Header ?? new FieldAuditPdfHeaderModel();
+            var auditTeam = data.AuditTeam ?? new List<GetTeamDetailsModel>();
             var narrative = FindSectionContent(data, "BRANCH_PROFILE", "Branch Profile");
+            var teamLead = auditTeam.FirstOrDefault(member => string.Equals(member.ISTEAMLEAD, "Y", StringComparison.OrdinalIgnoreCase))?.MEMBER_NAME;
+            var teamMembersList = BuildTeamMembersList(auditTeam);
 
             var hasHeaderData = !string.IsNullOrWhiteSpace(header.BranchName)
                 || !string.IsNullOrWhiteSpace(header.BranchCode)
@@ -240,15 +238,27 @@ namespace AIS.Services
             sb.AppendLine("<tbody>");
 
             AppendKeyValueRow(sb, "Reporting Office", header.Reporting);
-            AppendKeyValueRow(sb, "Entity", header.EntityName);
+            AppendKeyValueRow(sb, "Audit Report of:", header.EntityName);
             AppendKeyValueRow(sb, "Entity Code", header.BranchCode);
             AppendKeyValueRow(sb, "Audit Operation Period", header.Operationperiod);
             AppendKeyValueRow(sb, "Audit Execution Dates", FormatDateRange(header.AuditStartDate, header.AuditEndDate));
+            AppendKeyValueRow(sb, "Risk Rating", header.Risk);
             foreach (var row in profileRows)
                 {
                 AppendKeyValueRow(sb, row.Label, row.Value);
                 }
 
+            sb.AppendLine("</tbody>");
+            sb.AppendLine("</table>");
+            sb.AppendLine("</div>");
+
+            sb.AppendLine("<div class=\"avoid-break\">");
+            sb.AppendLine("<h3>Audit Team Details</h3>");
+            sb.AppendLine("<table class=\"report-table\">");
+            sb.AppendLine("<thead><tr><th>Role</th><th>Details</th></tr></thead>");
+            sb.AppendLine("<tbody>");
+            AppendKeyValueRow(sb, "Team Lead", teamLead);
+            AppendKeyValueRowHtml(sb, "Team Members", teamMembersList);
             sb.AppendLine("</tbody>");
             sb.AppendLine("</table>");
             sb.AppendLine("</div>");
@@ -650,7 +660,6 @@ namespace AIS.Services
                 return;
                 }
 
-            sb.AppendLine("<div class=\"page-break\"></div>");
             sb.AppendLine("<section class=\"section\">");
             sb.AppendLine("<div class=\"section-block\">");
             sb.AppendLine("<div class=\"section-title\">Overall Audit Conclusion</div>");
@@ -796,6 +805,14 @@ namespace AIS.Services
             sb.AppendLine("<tr>");
             sb.AppendFormat(CultureInfo.InvariantCulture, "<td>{0}</td>", Encode(label));
             sb.AppendFormat(CultureInfo.InvariantCulture, "<td>{0}</td>", FormatCell(value));
+            sb.AppendLine("</tr>");
+            }
+
+        private static void AppendKeyValueRowHtml(StringBuilder sb, string label, string htmlValue)
+            {
+            sb.AppendLine("<tr>");
+            sb.AppendFormat(CultureInfo.InvariantCulture, "<td>{0}</td>", Encode(label));
+            sb.AppendFormat(CultureInfo.InvariantCulture, "<td>{0}</td>", string.IsNullOrWhiteSpace(htmlValue) ? "-" : htmlValue);
             sb.AppendLine("</tr>");
             }
 
