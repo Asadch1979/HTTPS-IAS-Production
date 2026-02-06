@@ -134,5 +134,15 @@ namespace AIS.Controllers
                 return RedirectToAction("Index", "Login");
             return View("../IID/Reports");
             }
+
+        [HttpGet, HttpPost]
+        public IActionResult TaskList()
+            {
+            ViewData["TopMenu"] = tm.GetTopMenus();
+            ViewData["TopMenuPages"] = tm.GetTopMenusPages();
+            if (!User.Identity.IsAuthenticated)
+                return RedirectToAction("Index", "Login");
+            return View("../IID/TaskList");
+            }
         }
     }

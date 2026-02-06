@@ -3,29 +3,84 @@
     Layout = "_Layout";
     var planId = ViewData["PlanId"];
 }
-<h4>Plan Approval</h4>
-<form id="approvalForm">
-    <input type="hidden" name="PlanId" value="@planId" />
-    <div class="mb-2">
-        <label class="form-label">Edit Plan</label>
-        <textarea class="form-control" name="EditedPlan"></textarea>
+
+<div class="container-fluid mt-3">
+    <h4>Plan Approval</h4>
+
+    <div class="card mb-3">
+        <div class="card-header bg-light">
+            Complaint &amp; Assessment Summary
+        </div>
+        <div class="card-body">
+            <dl class="row mb-0">
+                <dt class="col-md-3">Complaint No</dt>
+                <dd class="col-md-9" id="complaintNo"></dd>
+
+                <dt class="col-md-3">Complainant Name</dt>
+                <dd class="col-md-9" id="complainantName"></dd>
+
+                <dt class="col-md-3">Assessment</dt>
+                <dd class="col-md-9" id="assessmentText"></dd>
+            </dl>
+        </div>
     </div>
-    <div class="mb-2">
-        <label class="form-label">Further Line of Action</label>
-        <textarea class="form-control" name="FurtherActions"></textarea>
+
+    <div class="card mb-3">
+        <div class="card-header bg-light">
+            Submitted Plan
+        </div>
+        <div class="card-body">
+            <p id="planDetails" class="mb-0 text-break"></p>
+        </div>
     </div>
-    <div class="mb-2">
-        <label class="form-label">Action</label>
-        <select class="form-select" name="IsApproved">
-            <option value="Y">Approve</option>
-            <option value="N">Reject</option>
-        </select>
+
+    <div class="card">
+        <div class="card-header bg-light">
+            Approval Decision
+        </div>
+        <div class="card-body">
+            <form id="approvalForm">
+                <input type="hidden" name="PlanId" value="@planId" />
+                <div class="mb-3">
+                    <label class="form-label">Edited Plan (optional)</label>
+                    <textarea class="form-control" name="EditedPlan" rows="4"></textarea>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Further Actions (optional)</label>
+                    <textarea class="form-control" name="FurtherActions" rows="3"></textarea>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Decision</label>
+                    <select class="form-select" name="IsApproved">
+                        <option value="Y">Approve</option>
+                        <option value="N">Return</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-primary">Submit Decision</button>
+            </form>
+        </div>
     </div>
-    <button type="submit" class="btn btn-primary">Submit</button>
-</form>
+</div>
+
 @section Scripts{
 <script>
     $(function(){
+        var planId = '@planId';
+
+        function loadPlanDetails(){
+            $.get(g_asiBaseURL + '/ApiCalls/GetIidPlanDetails', { planId: planId }, function(d){
+                var planRow = Array.isArray(d) ? d[0] : d;
+                if(!planRow){
+                    $('#planDetails').text('Plan details not available.');
+                    return;
+                }
+                $('#complaintNo').text(planRow.COMPLAINT_NO || planRow.complaintNo || '');
+                $('#complainantName').text(planRow.COMPLAINANT_NAME || planRow.complainantName || '');
+                $('#assessmentText').text(planRow.ASSESSMENT || planRow.assessment || '');
+                $('#planDetails').text(planRow.PLAN_DETAILS || planRow.planDetails || '');
+            });
+        }
+
         $('#approvalForm').on('submit', function(e){
             e.preventDefault();
             var data = {
@@ -40,10 +95,14 @@
                 contentType: 'application/json',
                 data: JSON.stringify(data),
                 success: function(){
-                    alert('Action recorded');
+                    var approved = data.IsApproved === 'Y';
+                    alert(approved ? 'Plan approved. Notification queued.' : 'Plan returned for updates.');
+                    window.location.href = g_asiBaseURL + '/IID/TaskList';
                 }
             });
         });
+
+        loadPlanDetails();
     });
 </script>
 }

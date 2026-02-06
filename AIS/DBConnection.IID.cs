@@ -1,3 +1,4 @@
+using AIS.Constants;
 using AIS.Models.IID;
 using Oracle.ManagedDataAccess.Client;
 using System;
@@ -47,6 +48,18 @@ namespace AIS.Controllers
                 var id = Convert.ToInt32(cmd.Parameters["o_complaint_id"].Value.ToString());
                 return id;
                 }
+            }
+
+        private static bool HasColumn(IDataRecord reader, string columnName)
+            {
+            for (var i = 0; i < reader.FieldCount; i++)
+                {
+                if (string.Equals(reader.GetName(i), columnName, StringComparison.OrdinalIgnoreCase))
+                    {
+                    return true;
+                    }
+                }
+            return false;
             }
 
         public DataTable GetComplaintsByUser()
@@ -130,7 +143,13 @@ namespace AIS.Controllers
                             UploadedFFR = rdr["UPLOADED_FFR"].ToString(),
                             UploadedEvidence = rdr["UPLOADED_EVIDENCE"].ToString(),
                             ActionRequired = rdr["ACTION_REQUIRED"].ToString(),
-                            SubmittedOn = rdr["SUBMITTED_ON"].ToString()
+                            SubmittedOn = rdr["SUBMITTED_ON"].ToString(),
+                            Status = HasColumn(rdr, "STATUS") ? rdr["STATUS"].ToString() : null,
+                            Assessment = HasColumn(rdr, "ASSESSMENT") ? rdr["ASSESSMENT"].ToString() : null,
+                            Recommendation = HasColumn(rdr, "RECOMMENDATION") ? rdr["RECOMMENDATION"].ToString() : null,
+                            AssignedUnitId = HasColumn(rdr, "ASSIGNED_UNIT_ID") && rdr["ASSIGNED_UNIT_ID"] != DBNull.Value
+                                ? Convert.ToInt32(rdr["ASSIGNED_UNIT_ID"])
+                                : 0
                             };
                         }
                     }
@@ -160,6 +179,7 @@ namespace AIS.Controllers
                 cmd.Parameters.Add("p_received_by", OracleDbType.Int32).Value = loggedInUser.PPNumber;
                 cmd.Parameters.Add("p_assessment", OracleDbType.Clob).Value = model.Assessment ?? string.Empty;
                 cmd.Parameters.Add("p_recommendation", OracleDbType.Varchar2).Value = model.Recommendation ?? string.Empty;
+                cmd.Parameters.Add("p_assigned_unit_id", OracleDbType.Int32).Value = model.AssignedUnitId;
                 cmd.Parameters.Add("o_assessment_id", OracleDbType.Int32).Direction = ParameterDirection.Output;
                 cmd.ExecuteNonQuery();
                 var id = Convert.ToInt32(cmd.Parameters["o_assessment_id"].Value.ToString());
@@ -221,6 +241,7 @@ namespace AIS.Controllers
                 cmd.CommandText = "PKG_INQ.ADD_INV_PLAN";
                 cmd.CommandType = CommandType.StoredProcedure;
                 cmd.BindByName = true;
+                model.Status = IidStatuses.PlanDrafted;
                 cmd.Parameters.Add("p_complaint_id", OracleDbType.Int32).Value = model.ComplaintId ?? (object)DBNull.Value;
                 cmd.Parameters.Add("p_plan_details", OracleDbType.Clob).Value = model.PlanDetails ?? string.Empty;
                 cmd.Parameters.Add("p_submitted_by", OracleDbType.Int32).Value = loggedInUser.PPNumber;
@@ -229,6 +250,46 @@ namespace AIS.Controllers
                 cmd.ExecuteNonQuery();
                 var id = Convert.ToInt32(cmd.Parameters["o_plan_id"].Value.ToString());
                 return id;
+                }
+            }
+
+        public DataTable GetIidTaskList(int unitId)
+            {
+            using var con = this.DatabaseConnection();
+
+            using (OracleCommand cmd = con.CreateCommand())
+                {
+                cmd.CommandText = "PKG_INQ.GET_IID_TASK_LIST";
+                cmd.CommandType = CommandType.StoredProcedure;
+                cmd.BindByName = true;
+                cmd.Parameters.Add("p_unit_id", OracleDbType.Int32).Value = unitId;
+                cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+                var dt = new DataTable();
+                using (var rdr = cmd.ExecuteReader())
+                    {
+                    dt.Load(rdr);
+                    }
+                return dt;
+                }
+            }
+
+        public DataTable GetIidPlanDetails(int planId)
+            {
+            using var con = this.DatabaseConnection();
+
+            using (OracleCommand cmd = con.CreateCommand())
+                {
+                cmd.CommandText = "PKG_INQ.GET_INV_PLAN";
+                cmd.CommandType = CommandType.StoredProcedure;
+                cmd.BindByName = true;
+                cmd.Parameters.Add("p_plan_id", OracleDbType.Int32).Value = planId;
+                cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+                var dt = new DataTable();
+                using (var rdr = cmd.ExecuteReader())
+                    {
+                    dt.Load(rdr);
+                    }
+                return dt;
                 }
             }
 
