@@ -1,3 +1,4 @@
+using AIS.Models;
 using AIS.Models.FieldAuditReport;
 using AIS.Models.ManagementReport;
 using Oracle.ManagedDataAccess.Client;

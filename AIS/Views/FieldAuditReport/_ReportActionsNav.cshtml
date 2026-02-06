@@ -38,9 +38,9 @@
         <a class="btn btn-primary @((isFinal || currentAction == "StaffSnapshot") ? "disabled" : string.Empty)"
            href="@Url.Action("StaffSnapshot", routeValues)"
            aria-disabled="@(isFinal || currentAction == "StaffSnapshot")">Edit Staff Snapshot</a>
-        <a class="btn btn-success @((!canFinalize || currentAction == "FinalizeReport") ? "disabled" : string.Empty)"
+        <a class="btn btn-success @((isFinal || currentAction == "FinalizeReport") ? "disabled" : string.Empty)"
            href="@Url.Action("Concluding_Closing_Audit", "Execution")"
-           aria-disabled="@(!canFinalize || currentAction == "FinalizeReport")">Finalize Report Issuance</a>
+           aria-disabled="@(isFinal || currentAction == "FinalizeReport")">Finalize Report Issuance</a>
         @if (isFinal)
         {
             <a class="btn btn-outline-secondary" title="Generate Report"
