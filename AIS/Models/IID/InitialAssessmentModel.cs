@@ -33,5 +33,6 @@ namespace AIS.Models.IID
         public string Assessment { get; set; }
         [PlainText]
         public string Recommendation { get; set; }
+        public int AssignedUnitId { get; set; }
         }
     }

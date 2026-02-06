@@ -4,106 +4,164 @@
     var complaintId = ViewData["ComplaintId"];
     var assessmentId = ViewData["AssessmentId"];
 }
-<h4>Head Review</h4>
-<form id="reviewForm">
-    <input type="hidden" name="ComplaintId" value="@complaintId" />
-    <input type="hidden" name="AssessmentId" value="@assessmentId" />
-    <div class="mb-2">
-        <label class="form-label">Directions</label>
-        <textarea class="form-control" name="Directions"></textarea>
+
+<div class="container-fluid mt-3">
+    <h4>Head Review</h4>
+
+    <div class="card mb-3">
+        <div class="card-header bg-light">
+            Complaint Details
+        </div>
+        <div class="card-body">
+            <dl class="row mb-0">
+                <dt class="col-md-3">Complaint ID</dt>
+                <dd class="col-md-9" id="complaintIdDisplay"></dd>
+
+                <dt class="col-md-3">Nature</dt>
+                <dd class="col-md-9" id="complaintNature"></dd>
+
+                <dt class="col-md-3">Submitted On</dt>
+                <dd class="col-md-9" id="complaintSubmittedOn"></dd>
+
+                <dt class="col-md-3">Action Required</dt>
+                <dd class="col-md-9" id="complaintActionRequired"></dd>
+
+                <dt class="col-md-3">Contents</dt>
+                <dd class="col-md-9" id="complaintContents"></dd>
+            </dl>
+        </div>
     </div>
-    <div class="mb-2">
-        <label class="form-label">Assign to I&I Unit</label>
-        <select class="form-select" name="AssignedToUnit" id="AssignedToUnit">
-            <option value="">--Select--</option>
-            <option value="1">I&IU Sukkur</option>
-            <option value="2">I&IU Multan</option>
-            <option value="3">I&IU Lahore</option>
-            <option value="4">I&IU H.O</option>
-        </select>
+
+    <div class="card mb-3">
+        <div class="card-header bg-light">
+            Initial Assessment
+        </div>
+        <div class="card-body">
+            <dl class="row mb-0">
+                <dt class="col-md-3">Assessment</dt>
+                <dd class="col-md-9" id="assessmentText"></dd>
+
+                <dt class="col-md-3">Recommendation</dt>
+                <dd class="col-md-9" id="assessmentRecommendation"></dd>
+
+                <dt class="col-md-3">Assigned Unit</dt>
+                <dd class="col-md-9" id="assessmentUnit"></dd>
+            </dl>
+        </div>
     </div>
-    <div class="mb-2">
-        <label class="form-label">Team Lead</label>
-        <select class="form-select" name="TeamLeadId" id="TeamLeadId"></select>
+
+    <div class="card">
+        <div class="card-header bg-light">
+            Decision
+        </div>
+        <div class="card-body">
+            <form id="reviewForm">
+                <input type="hidden" name="ComplaintId" value="@complaintId" />
+                <input type="hidden" name="AssessmentId" value="@assessmentId" />
+                <div class="mb-3">
+                    <label class="form-label d-block">Action</label>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="radio" name="Action" id="approveAction" value="APPROVE" checked />
+                        <label class="form-check-label" for="approveAction">Approve</label>
+                    </div>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="radio" name="Action" id="referBackAction" value="REFER_BACK" />
+                        <label class="form-check-label" for="referBackAction">Refer Back</label>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Instructions/Comments</label>
+                    <textarea class="form-control" name="Directions" rows="4"></textarea>
+                    <div class="form-text" id="commentsHint">Provide guidance for the unit or reasons for referral.</div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Assigned On</label>
+                    <input type="text" class="form-control" id="assignedOnDisplay" readonly />
+                </div>
+                <button type="submit" class="btn btn-primary">Submit Decision</button>
+            </form>
+        </div>
     </div>
-    <div class="mb-2">
-        <label class="form-label">Team Members</label>
-        <select multiple class="form-select" name="TeamMembers" id="TeamMembers"></select>
-    </div>
-    <div class="mb-2">
-        <label class="form-label">Assigned On</label>
-        <input type="date" class="form-control" name="AssignedOn" id="AssignedOn" readonly />
-    </div>
-    <div class="mb-2">
-        <label class="form-label">Due Date</label>
-        <input type="date" class="form-control" name="DueDate" id="DueDate" readonly />
-    </div>
-    <div class="mb-2">
-        <label class="form-label">Refer Back Comments</label>
-        <textarea class="form-control" name="ReferredBackComments"></textarea>
-    </div>
-    <input type="hidden" name="Action" id="Action" value="Submit" />
-    <button type="submit" class="btn btn-primary me-2" id="submitBtn">Submit</button>
-    <button type="button" class="btn btn-secondary" id="referBackBtn">Refer Back</button>
-</form>
+</div>
+
 @section Scripts{
 <script>
     $(function(){
-        function loadEmployees(){
-            var unit = $('#AssignedToUnit').val();
-            if(!unit) return;
-            $.post(g_asiBaseURL + '/ApiCalls/GetAuditEmployees', { entityId: unit }, function(d){
-                $('#TeamLeadId').empty();
-                $('#TeamMembers').empty();
-                $.each(d, function(i,v){
-                    $('#TeamLeadId').append('<option value="'+v.id+'">'+v.name+'</option>');
-                    $('#TeamMembers').append('<option value="'+v.id+'">'+v.name+'</option>');
+        var complaintId = '@complaintId';
+        var assignedUnitId = 0;
+        var unitLookup = {};
+
+        function loadUnits(){
+            $.get(g_asiBaseURL + '/ApiCalls/GetIiUnits', function(d){
+                $.each(d, function(i, unit){
+                    unitLookup[unit.unitId] = unit.unitName;
                 });
+                updateAssignedUnitLabel();
             });
         }
 
-        var today = new Date();
-        var due = new Date();
-        due.setDate(today.getDate()+10);
-        $('#AssignedOn').val(today.toISOString().substr(0,10));
-        $('#DueDate').val(due.toISOString().substr(0,10));
+        function updateAssignedUnitLabel(){
+            if(assignedUnitId && unitLookup[assignedUnitId]){
+                $('#assessmentUnit').text(unitLookup[assignedUnitId]);
+            }
+        }
 
-        $('#AssignedToUnit').on('change', loadEmployees);
+        function loadComplaint(){
+            $.post(g_asiBaseURL + '/ApiCalls/GetComplaint',{ complaintId: complaintId },function(d){
+                $('#complaintIdDisplay').text(d.complaintId || complaintId);
+                $('#complaintNature').text(d.nature || '');
+                $('#complaintSubmittedOn').text(d.submittedOn || '');
+                $('#complaintActionRequired').text(d.actionRequired || '');
+                $('#complaintContents').text(d.contents || '');
+                $('#assessmentText').text(d.assessment || '');
+                $('#assessmentRecommendation').text(d.recommendation || '');
+                assignedUnitId = d.assignedUnitId || 0;
+                updateAssignedUnitLabel();
+            });
+        }
 
-        $('#referBackBtn').on('click', function(){
-            $('#Action').val('ReferBack');
-            $('#reviewForm').submit();
-        });
-
-        $('#submitBtn').on('click', function(){
-            $('#Action').val('Submit');
-        });
+        function updateAssignedOn(){
+            var today = new Date();
+            $('#assignedOnDisplay').val(today.toISOString().split('T')[0]);
+        }
 
         $('#reviewForm').on('submit', function(e){
             e.preventDefault();
-            var teamMembers = $('#TeamMembers').val() || [];
+            var action = $('#reviewForm [name="Action"]:checked').val();
+            var directions = $('#reviewForm [name="Directions"]').val();
+
+            if(action === 'REFER_BACK' && !directions.trim()){
+                alert('Comments are required when referring back.');
+                return;
+            }
+
             var data = {
                 ComplaintId: $('#reviewForm [name="ComplaintId"]').val(),
                 AssessmentId: $('#reviewForm [name="AssessmentId"]').val(),
-                Directions: $('#reviewForm [name="Directions"]').val(),
-                AssignedToUnit: $('#reviewForm [name="AssignedToUnit"]').val(),
-                TeamLeadId: $('#reviewForm [name="TeamLeadId"]').val(),
-                TeamMembers: teamMembers.join(','),
-                AssignedOn: $('#reviewForm [name="AssignedOn"]').val(),
-                DueDate: $('#reviewForm [name="DueDate"]').val(),
-                ReferredBackComments: $('#reviewForm [name="ReferredBackComments"]').val(),
-                Action: $('#reviewForm [name="Action"]').val()
+                Directions: directions,
+                ReferredBackComments: action === 'REFER_BACK' ? directions : '',
+                Action: action
             };
+
             $.ajax({
                 url: g_asiBaseURL + '/ApiCalls/AddHeadReview',
                 method: 'POST',
                 contentType: 'application/json',
                 data: JSON.stringify(data),
                 success: function(){
-                    alert('Review submitted');
+                    alert('Decision submitted. Notification queued.');
+                    if(action === 'APPROVE'){
+                        window.location.href = g_asiBaseURL + '/IID/TaskList';
+                    } else {
+                        window.location.href = g_asiBaseURL + '/IID/InitialAssessment?complaintId=' + complaintId;
+                    }
                 }
             });
         });
+
+        loadUnits();
+        loadComplaint();
+        updateAssignedOn();
     });
 </script>
 }

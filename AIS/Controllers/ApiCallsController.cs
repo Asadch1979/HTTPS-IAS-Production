@@ -21,6 +21,7 @@ using Microsoft.Extensions.Logging;
 using Oracle.ManagedDataAccess.Client;
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
@@ -4782,6 +4783,10 @@ namespace AIS.Controllers
         [HttpPost]
         public IActionResult AddAssessment([FromBody] AIS.Models.IID.InitialAssessmentModel model)
             {
+            if (model.AssignedUnitId <= 0)
+                {
+                return BadRequest(new { message = "Assigned I&I Unit is required." });
+                }
             var id = dBConnection.AddAssessment(model);
             return Ok(new { AssessmentId = id });
             }
@@ -4789,21 +4794,20 @@ namespace AIS.Controllers
         [HttpPost]
         public IActionResult AddHeadReview([FromBody] AIS.Models.IID.HeadReviewModel model)
             {
-            var reviewId = dBConnection.AddHeadReview(model);
-
-            var emailMap = new Dictionary<int, string>
-            {
-                {1, "sukkur@iid.com"},
-                {2, "multan@iid.com"},
-                {3, "lahore@iid.com"},
-                {4, "ho@iid.com"}
-            };
-            if (emailMap.ContainsKey((int)model.AssignedToUnit))
+            if (model.AssignedToUnit == 0 && model.ComplaintId.HasValue)
                 {
-                EmailConfiguration email = new EmailConfiguration(_configuration);
-                string body = $"Complaint {model.ComplaintId} assigned to your unit.";
-                email.ConfigEmail(emailMap[model.AssignedToUnit], "", "IAS Assignment", body);
+                var complaint = dBConnection.GetComplaint(model.ComplaintId.Value);
+                if (complaint != null)
+                    {
+                    model.AssignedToUnit = complaint.AssignedUnitId;
+                    }
                 }
+
+            if (string.IsNullOrWhiteSpace(model.AssignedOn))
+                {
+                model.AssignedOn = DateTime.Now.ToString("yyyy-MM-dd");
+                }
+            var reviewId = dBConnection.AddHeadReview(model);
             return Ok(new { ReviewId = reviewId });
             }
 
@@ -4891,6 +4895,41 @@ namespace AIS.Controllers
             {
             var list = dBConnection.Get_Complaints_Without_Assessment();
             return Ok(list);
+            }
+
+        [HttpGet]
+        public IActionResult GetIiUnits()
+            {
+            var units = dBConnection.GetInspectionUnits()
+                .Select(unit => new
+                    {
+                    unitId = unit.I_ID,
+                    unitName = unit.UNIT_NAME
+                    })
+                .ToList();
+            return Ok(units);
+            }
+
+        [HttpGet]
+        public IActionResult GetIidTaskList()
+            {
+            var sessionCheck = EnsureAuthenticatedSession();
+            if (sessionCheck != null)
+                {
+                return sessionCheck;
+                }
+
+            var user = sessionHandler.GetUser();
+            var unitId = user?.UserEntityID ?? 0;
+            var list = unitId > 0 ? dBConnection.GetIidTaskList(unitId) : new DataTable();
+            return Ok(list);
+            }
+
+        [HttpGet]
+        public IActionResult GetIidPlanDetails(int planId)
+            {
+            var planDetails = dBConnection.GetIidPlanDetails(planId);
+            return Ok(planDetails);
             }
 
         [HttpPost]
