@@ -274,7 +274,15 @@ namespace AIS.Controllers
                 return BadRequest(new { success = false, message = "Invalid engagement." });
                 }
 
-            var rows = _dbConnection.GetFieldAuditStaffSnapshots(engId);
+            var rows = _dbConnection.GetManReportStaffSnapshot(engId)
+                .Select(row => new StaffSnapshotRowModel
+                    {
+                    PpNo = row.PpNo,
+                    Name = row.Name,
+                    Rank = row.Rank,
+                    Designation = row.Designation
+                    })
+                .ToList();
             return Json(new { success = true, rows });
             }
 
@@ -304,7 +312,7 @@ namespace AIS.Controllers
                     continue;
                     }
 
-                if (string.IsNullOrWhiteSpace(row.PpNo)
+                if (!row.PpNo.HasValue
                     && string.IsNullOrWhiteSpace(row.Name)
                     && string.IsNullOrWhiteSpace(row.Rank)
                     && string.IsNullOrWhiteSpace(row.Designation))
@@ -315,7 +323,15 @@ namespace AIS.Controllers
                 _dbConnection.SaveFieldAuditStaffSnapshot(engId, row);
                 }
 
-            var savedRows = _dbConnection.GetFieldAuditStaffSnapshots(engId);
+            var savedRows = _dbConnection.GetManReportStaffSnapshot(engId)
+                .Select(row => new StaffSnapshotRowModel
+                    {
+                    PpNo = row.PpNo,
+                    Name = row.Name,
+                    Rank = row.Rank,
+                    Designation = row.Designation
+                    })
+                .ToList();
             return Json(new { success = true, message = "Staff Snapshot saved.", rows = savedRows });
             }
 
@@ -582,7 +598,15 @@ namespace AIS.Controllers
             var cover = _dbConnection.GetManagementAuditCover(engId);
             var objectiveScope = _dbConnection.GetManReportObjectiveScope(engId);
             var summary = _dbConnection.GetManReportExecutiveSummary(engId);
-            var staffRows = _dbConnection.GetFieldAuditStaffSnapshots(engId);
+            var staffRows = _dbConnection.GetManReportStaffSnapshot(engId)
+                .Select(row => new StaffSnapshotRowModel
+                    {
+                    PpNo = row.PpNo,
+                    Name = row.Name,
+                    Rank = row.Rank,
+                    Designation = row.Designation
+                    })
+                .ToList();
             var observations = _dbConnection.GetManReportObservations(engId);
             var settledParas = _dbConnection.GetManReportSettledParas(engId);
 

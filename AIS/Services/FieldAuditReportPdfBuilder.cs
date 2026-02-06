@@ -277,7 +277,7 @@ namespace AIS.Services
         private static void AppendStaffPosition(StringBuilder sb, FieldAuditPdfReportData data)
             {
             var rows = data.StaffRows ?? new List<FieldAuditPdfStaffRowModel>();
-            if (!rows.Any(row => HasMeaningfulContent(row.PpNo)
+            if (!rows.Any(row => row.PpNo.HasValue
                 || HasMeaningfulContent(row.Name)
                 || HasMeaningfulContent(row.Rank)
                 || HasMeaningfulContent(row.Designation)))
@@ -294,7 +294,7 @@ namespace AIS.Services
             sb.AppendLine("<tbody>");
             foreach (var row in rows)
                 {
-                if (!HasMeaningfulContent(row.PpNo)
+                if (!row.PpNo.HasValue
                     && !HasMeaningfulContent(row.Name)
                     && !HasMeaningfulContent(row.Rank)
                     && !HasMeaningfulContent(row.Designation))
@@ -303,7 +303,7 @@ namespace AIS.Services
                     }
 
                 sb.AppendLine("<tr>");
-                sb.AppendFormat(CultureInfo.InvariantCulture, "<td>{0}</td>", FormatCell(row.PpNo));
+                sb.AppendFormat(CultureInfo.InvariantCulture, "<td>{0}</td>", FormatCell(row.PpNo?.ToString()));
                 sb.AppendFormat(CultureInfo.InvariantCulture, "<td>{0}</td>", FormatCell(row.Name));
                 sb.AppendFormat(CultureInfo.InvariantCulture, "<td>{0}</td>", FormatCell(row.Rank));
                 sb.AppendFormat(CultureInfo.InvariantCulture, "<td>{0}</td>", FormatCell(row.Designation));

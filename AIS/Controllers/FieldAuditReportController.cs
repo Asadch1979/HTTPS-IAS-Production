@@ -295,7 +295,7 @@ namespace AIS.Controllers
                     continue;
                     }
 
-                if (string.IsNullOrWhiteSpace(row.PpNo)
+                if (!row.PpNo.HasValue
                     && string.IsNullOrWhiteSpace(row.Name)
                     && string.IsNullOrWhiteSpace(row.Rank)
                     && string.IsNullOrWhiteSpace(row.Designation))

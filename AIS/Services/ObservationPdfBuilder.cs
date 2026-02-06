@@ -21,7 +21,7 @@ namespace AIS.Services
 
             var hasResponsibilities = data?.Responsibilities != null
                 && data.Responsibilities.Any(item =>
-                    !string.IsNullOrWhiteSpace(item.PpNo)
+                    item.PpNo.HasValue
                     || !string.IsNullOrWhiteSpace(item.LoanCase)
                     || !string.IsNullOrWhiteSpace(item.LcAmount));
 
@@ -61,7 +61,7 @@ namespace AIS.Services
                 builder.AppendLine("    <tbody>");
                 foreach (var responsibility in data.Responsibilities)
                     {
-                    if (string.IsNullOrWhiteSpace(responsibility.PpNo)
+                    if (!responsibility.PpNo.HasValue
                         && string.IsNullOrWhiteSpace(responsibility.LoanCase)
                         && string.IsNullOrWhiteSpace(responsibility.LcAmount))
                         {
@@ -69,7 +69,7 @@ namespace AIS.Services
                         }
 
                     builder.AppendLine("      <tr>");
-                    builder.AppendLine($"        <td>{Encode(responsibility.PpNo)}</td>");
+                    builder.AppendLine($"        <td>{Encode(responsibility.PpNo?.ToString())}</td>");
                     builder.AppendLine($"        <td>{Encode(responsibility.LoanCase)}</td>");
                     builder.AppendLine($"        <td>{Encode(responsibility.LcAmount)}</td>");
                     builder.AppendLine("      </tr>");

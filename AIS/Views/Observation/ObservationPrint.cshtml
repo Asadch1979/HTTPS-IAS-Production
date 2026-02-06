@@ -11,7 +11,7 @@
     }
     var hasResponsibilities = Model?.Responsibilities != null
         && Model.Responsibilities.Any(item =>
-            !string.IsNullOrWhiteSpace(item.PpNo)
+            item.PpNo.HasValue
             || !string.IsNullOrWhiteSpace(item.EmployeeName)
             || !string.IsNullOrWhiteSpace(item.LoanCase)
             || !string.IsNullOrWhiteSpace(item.LcAmount)
@@ -169,7 +169,7 @@
                 <tbody>
                     @foreach (var item in Model.Responsibilities)
                     {
-                        if (string.IsNullOrWhiteSpace(item.PpNo)
+                        if (!item.PpNo.HasValue
                             && string.IsNullOrWhiteSpace(item.EmployeeName)
                             && string.IsNullOrWhiteSpace(item.LoanCase)
                             && string.IsNullOrWhiteSpace(item.LcAmount)
@@ -180,7 +180,7 @@
                         }
 
                         <tr>
-                            <td>@item.PpNo</td>
+                            <td>@item.PpNo?.ToString()</td>
                             <td>@item.EmployeeName</td>
                             <td>@item.LoanCase</td>
                             <td>@item.LcAmount</td>

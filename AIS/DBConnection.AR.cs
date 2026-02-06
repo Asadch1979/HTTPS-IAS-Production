@@ -3832,7 +3832,7 @@ namespace AIS.Controllers
                         ENG_ID = rdr["ENG_ID"].ToString(),
                         OBS_ID = rdr["OBS_ID"].ToString(),
                         ROW_RESP_ID = rdr["ROW_RESP_ID"].ToString(),
-                        RESP_PP_NO = rdr["pp_no"].ToString(),
+                        RESP_PP_NO = rdr["pp_no"] == DBNull.Value ? (int?)null : Convert.ToInt32(rdr["pp_no"]),
                         EMP_NAME = rdr["EMP_NAME"].ToString(),
                         LOAN_CASE = rdr["LOANCASE"].ToString(),
                         LC_AMOUNT = rdr["LCAMOUNT"].ToString(),

@@ -3,8 +3,7 @@ namespace AIS.Models
     {
     public class FADHOUserLegacyParaUserWiseParasPerformanceModel
         {
-        [PlainText]
-        public string PP_NO { get; set; }
+        public int? PP_NO { get; set; }
         [PlainText]
         public string EMP_NAME { get; set; }
         [PlainText]

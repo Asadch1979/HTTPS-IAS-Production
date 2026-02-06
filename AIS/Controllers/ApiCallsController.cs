@@ -3967,7 +3967,7 @@ namespace AIS.Controllers
             }
         [HttpGet]
         [HttpPost]
-        public List<ComplianceProgressReportDetailModel> get_compliance_progress_report_details(string ROLE_TYPE, string PP_NO)
+        public List<ComplianceProgressReportDetailModel> get_compliance_progress_report_details(string ROLE_TYPE, int? PP_NO)
             {
             return dBConnection.GetComplianceProgressReportDetails(ROLE_TYPE, PP_NO);
             }

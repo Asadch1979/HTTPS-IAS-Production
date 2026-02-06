@@ -174,7 +174,7 @@ namespace AIS.Models.FieldAuditReport
 
     public class StaffSnapshotRowModel
         {
-        public string PpNo { get; set; }
+        public int? PpNo { get; set; }
         public string Name { get; set; }
         public string Rank { get; set; }
         public string Designation { get; set; }

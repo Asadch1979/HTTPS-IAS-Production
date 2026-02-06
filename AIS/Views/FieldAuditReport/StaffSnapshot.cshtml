@@ -136,13 +136,14 @@
                 }
 
                 rows.forEach((row, index) => {
-                    const ppNo = row.ppNo ?? row.PpNo ?? '';
+                    const ppNo = row.ppNo ?? row.PpNo;
+                    const ppNoText = ppNo === null || ppNo === undefined ? '' : ppNo.toString();
                     const name = row.name ?? row.Name ?? '';
                     const rank = row.rank ?? row.Rank ?? '';
                     const designation = row.designation ?? row.Designation ?? '';
                     const tr = document.createElement('tr');
                     tr.innerHTML = `
-                        <td>${ppNo || '-'}</td>
+                        <td>${ppNoText || '-'}</td>
                         <td>${name || '-'}</td>
                         <td>${rank || '-'}</td>
                         <td>${designation || '-'}</td>
@@ -184,8 +185,9 @@
             };
 
             const collectRow = () => {
+                const ppNoValue = normalizeText(ppNoInput?.value);
                 return {
-                    ppNo: normalizeText(ppNoInput?.value),
+                    ppNo: ppNoValue ? Number(ppNoValue) : null,
                     name: normalizeText(nameInput?.value),
                     rank: normalizeText(rankInput?.value),
                     designation: normalizeText(designationInput?.value)
@@ -209,7 +211,8 @@
 
             const setEditMode = (row) => {
                 if (ppNoInput) {
-                    ppNoInput.value = row.ppNo ?? row.PpNo ?? '';
+                    const ppNo = row.ppNo ?? row.PpNo;
+                    ppNoInput.value = ppNo === null || ppNo === undefined ? '' : ppNo.toString();
                 }
                 if (nameInput) {
                     nameInput.value = row.name ?? row.Name ?? '';

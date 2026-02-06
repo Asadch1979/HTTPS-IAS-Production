@@ -337,7 +337,7 @@ namespace AIS.Controllers
                 {
                 rows.Add(new FieldAuditPdfStaffRowModel
                     {
-                    PpNo = GetString(reader, "PP_NO"),
+                    PpNo = GetNullableInt(reader, "PP_NO"),
                     Name = GetString(reader, "NAME"),
                     Rank = GetString(reader, "RANK"),
                     Designation = GetString(reader, "DESIGNATION")

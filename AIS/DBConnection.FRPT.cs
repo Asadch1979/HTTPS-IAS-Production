@@ -991,7 +991,7 @@ namespace AIS.Controllers
                 {
                 list.Add(new StaffSnapshotRowModel
                     {
-                    PpNo = reader["PP_NO"] == DBNull.Value ? string.Empty : reader["PP_NO"].ToString(),
+                    PpNo = reader["PP_NO"] == DBNull.Value ? (int?)null : Convert.ToInt32(reader["PP_NO"]),
                     Name = reader["NAME"] == DBNull.Value ? string.Empty : reader["NAME"].ToString(),
                     Rank = reader["RANK"] == DBNull.Value ? string.Empty : reader["RANK"].ToString(),
                     Designation = reader["DESIGNATION"] == DBNull.Value ? string.Empty : reader["DESIGNATION"].ToString()
@@ -1012,7 +1012,7 @@ namespace AIS.Controllers
             cmd.CommandText = "PKG_FRPT.P_SAVE_STAFF_SNAPSHOT";
 
             cmd.Parameters.Add("P_ENG_ID", OracleDbType.Int32).Value = engId;
-            cmd.Parameters.Add("P_PP_NO", OracleDbType.Varchar2).Value = row?.PpNo ?? string.Empty;
+            cmd.Parameters.Add("P_PP_NO", OracleDbType.Int32).Value = row?.PpNo ?? (object)DBNull.Value;
             cmd.Parameters.Add("P_NAME", OracleDbType.Varchar2).Value = row?.Name ?? string.Empty;
             cmd.Parameters.Add("P_RANK", OracleDbType.Varchar2).Value = row?.Rank ?? string.Empty;
             cmd.Parameters.Add("P_DESIGNATION", OracleDbType.Varchar2).Value = row?.Designation ?? string.Empty;
