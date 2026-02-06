@@ -20,7 +20,7 @@ namespace AIS.Controllers
             using var cmd = con.CreateCommand();
             cmd.BindByName = true;
             cmd.CommandType = CommandType.StoredProcedure;
-            cmd.CommandText = "PKG_MANRPT.P_GET_AUDIT_COVER";
+            cmd.CommandText = "PKG_FRPT.P_GET_AUDIT_COVER";
 
             cmd.Parameters.Add("P_ENG_ID", OracleDbType.Int32).Value = engId;
             cmd.Parameters.Add("T_CURSOR", OracleDbType.RefCursor, ParameterDirection.Output);
@@ -39,7 +39,31 @@ namespace AIS.Controllers
 
         public List<GetTeamDetailsModel> GetManagementAuditTeamDetails(int engId)
             {
-            return GetFieldAuditTeamDetails(engId);
+            var list = new List<GetTeamDetailsModel>();
+
+            using var con = DatabaseConnection();
+            EnsureConnectionOpen(con);
+
+            using var cmd = con.CreateCommand();
+            cmd.BindByName = true;
+            cmd.CommandType = CommandType.StoredProcedure;
+            cmd.CommandText = "PKG_FRPT.P_GET_MAN_TEAM_DETAILS";
+
+            cmd.Parameters.Add("P_ENG_ID", OracleDbType.Int32).Value = engId;
+            cmd.Parameters.Add("T_CURSOR", OracleDbType.RefCursor, ParameterDirection.Output);
+
+            using var reader = cmd.ExecuteReader();
+            while (reader.Read())
+                {
+                list.Add(new GetTeamDetailsModel
+                    {
+                    MEMBER_NAME = reader["MEMBER_NAME"] == DBNull.Value ? string.Empty : reader["MEMBER_NAME"].ToString(),
+                    ROLE_TITLE = reader["ROLE_TITLE"] == DBNull.Value ? string.Empty : reader["ROLE_TITLE"].ToString(),
+                    PP_NO = reader["PP_NO"] == DBNull.Value ? (int?)null : Convert.ToInt32(reader["PP_NO"])
+                    });
+                }
+
+            return list;
             }
 
         public Dictionary<string, string> GetManReportObjectiveScope(int engId)
@@ -52,7 +76,7 @@ namespace AIS.Controllers
             using var cmd = con.CreateCommand();
             cmd.BindByName = true;
             cmd.CommandType = CommandType.StoredProcedure;
-            cmd.CommandText = "PKG_MANRPT.P_GET_MAN_OBJECTIVE_SCOPE";
+            cmd.CommandText = "PKG_FRPT.P_GET_MAN_OBJECTIVE_SCOPE";
 
             cmd.Parameters.Add("P_ENG_ID", OracleDbType.Int32).Value = engId;
             cmd.Parameters.Add("T_CURSOR", OracleDbType.RefCursor, ParameterDirection.Output);
@@ -60,24 +84,54 @@ namespace AIS.Controllers
             using var reader = cmd.ExecuteReader();
             if (reader.Read())
                 {
-                fields[ManagementReportSectionCodes.Objective] = reader[ManagementReportSectionCodes.Objective] == DBNull.Value
+                fields[ManagementReportSectionCodes.Objective] = reader["OBJECTIVE"] == DBNull.Value
                     ? string.Empty
-                    : reader[ManagementReportSectionCodes.Objective].ToString();
-                fields[ManagementReportSectionCodes.Scope] = reader[ManagementReportSectionCodes.Scope] == DBNull.Value
+                    : reader["OBJECTIVE"].ToString();
+                fields[ManagementReportSectionCodes.Scope] = reader["SCOPE"] == DBNull.Value
                     ? string.Empty
-                    : reader[ManagementReportSectionCodes.Scope].ToString();
-                fields[ManagementReportSectionCodes.Methodology] = reader[ManagementReportSectionCodes.Methodology] == DBNull.Value
+                    : reader["SCOPE"].ToString();
+                fields[ManagementReportSectionCodes.Methodology] = reader["METHODOLOGY"] == DBNull.Value
                     ? string.Empty
-                    : reader[ManagementReportSectionCodes.Methodology].ToString();
-                fields[ManagementReportSectionCodes.Disclaimer] = reader[ManagementReportSectionCodes.Disclaimer] == DBNull.Value
+                    : reader["METHODOLOGY"].ToString();
+                fields[ManagementReportSectionCodes.Disclaimer] = reader["DISCLAIMER"] == DBNull.Value
                     ? string.Empty
-                    : reader[ManagementReportSectionCodes.Disclaimer].ToString();
-                fields[ManagementReportSectionCodes.Introduction] = reader[ManagementReportSectionCodes.Introduction] == DBNull.Value
+                    : reader["DISCLAIMER"].ToString();
+                fields[ManagementReportSectionCodes.Introduction] = reader["INTRODUCTION"] == DBNull.Value
                     ? string.Empty
-                    : reader[ManagementReportSectionCodes.Introduction].ToString();
+                    : reader["INTRODUCTION"].ToString();
                 }
 
             return fields;
+            }
+
+        public List<FieldAuditPdfStaffRowModel> GetManReportStaffSnapshot(int engId)
+            {
+            var rows = new List<FieldAuditPdfStaffRowModel>();
+
+            using var con = DatabaseConnection();
+            EnsureConnectionOpen(con);
+
+            using var cmd = con.CreateCommand();
+            cmd.BindByName = true;
+            cmd.CommandType = CommandType.StoredProcedure;
+            cmd.CommandText = "PKG_FRPT.P_GET_MAN_STAFF_SNAPSHOT";
+
+            cmd.Parameters.Add("P_ENG_ID", OracleDbType.Int32).Value = engId;
+            cmd.Parameters.Add("T_CURSOR", OracleDbType.RefCursor, ParameterDirection.Output);
+
+            using var reader = cmd.ExecuteReader();
+            while (reader.Read())
+                {
+                rows.Add(new FieldAuditPdfStaffRowModel
+                    {
+                    PpNo = reader["PP_NO"] == DBNull.Value ? (int?)null : Convert.ToInt32(reader["PP_NO"]),
+                    Name = reader["STAFF_NAME"] == DBNull.Value ? string.Empty : reader["STAFF_NAME"].ToString(),
+                    Rank = reader["STAFF_RANK"] == DBNull.Value ? string.Empty : reader["STAFF_RANK"].ToString(),
+                    Designation = reader["DESIGNATION"] == DBNull.Value ? string.Empty : reader["DESIGNATION"].ToString()
+                    });
+                }
+
+            return rows;
             }
 
         public string GetManReportExecutiveSummary(int engId)
@@ -88,7 +142,7 @@ namespace AIS.Controllers
             using var cmd = con.CreateCommand();
             cmd.BindByName = true;
             cmd.CommandType = CommandType.StoredProcedure;
-            cmd.CommandText = "PKG_MANRPT.P_GET_MAN_EXEC_SUMMARY";
+            cmd.CommandText = "PKG_FRPT.P_GET_MAN_EXEC_SUMMARY";
 
             cmd.Parameters.Add("P_ENG_ID", OracleDbType.Int32).Value = engId;
             cmd.Parameters.Add("T_CURSOR", OracleDbType.RefCursor, ParameterDirection.Output);
@@ -129,7 +183,7 @@ namespace AIS.Controllers
             using var cmd = con.CreateCommand();
             cmd.BindByName = true;
             cmd.CommandType = CommandType.StoredProcedure;
-            cmd.CommandText = "PKG_MANRPT.P_GET_MAN_AUDIT_OBSERVATIONS";
+            cmd.CommandText = "PKG_FRPT.P_GET_MAN_AUDIT_OBSERVATIONS";
 
             cmd.Parameters.Add("P_ENG_ID", OracleDbType.Int32).Value = engId;
             cmd.Parameters.Add("T_CURSOR", OracleDbType.RefCursor, ParameterDirection.Output);
@@ -164,7 +218,7 @@ namespace AIS.Controllers
             using var cmd = con.CreateCommand();
             cmd.BindByName = true;
             cmd.CommandType = CommandType.StoredProcedure;
-            cmd.CommandText = "PKG_MANRPT.P_GET_MAN_SETTLED_PARAS";
+            cmd.CommandText = "PKG_FRPT.P_GET_MAN_SETTLED_PARAS";
 
             cmd.Parameters.Add("P_ENG_ID", OracleDbType.Int32).Value = engId;
             cmd.Parameters.Add("T_CURSOR", OracleDbType.RefCursor, ParameterDirection.Output);
@@ -193,7 +247,7 @@ namespace AIS.Controllers
             using var cmd = con.CreateCommand();
             cmd.BindByName = true;
             cmd.CommandType = CommandType.StoredProcedure;
-            cmd.CommandText = "PKG_MANRPT.P_GET_MAN_AUDIT_OBSERVATIONS";
+            cmd.CommandText = "PKG_FRPT.P_GET_MAN_AUDIT_OBSERVATIONS";
 
             cmd.Parameters.Add("P_ENG_ID", OracleDbType.Int32).Value = engId;
             cmd.Parameters.Add("T_CURSOR", OracleDbType.RefCursor, ParameterDirection.Output);
@@ -228,7 +282,7 @@ namespace AIS.Controllers
             using var cmd = con.CreateCommand();
             cmd.BindByName = true;
             cmd.CommandType = CommandType.StoredProcedure;
-            cmd.CommandText = "PKG_MANRPT.P_GET_MAN_SETTLED_PARAS";
+            cmd.CommandText = "PKG_FRPT.P_GET_MAN_SETTLED_PARAS";
 
             cmd.Parameters.Add("P_ENG_ID", OracleDbType.Int32).Value = engId;
             cmd.Parameters.Add("T_CURSOR", OracleDbType.RefCursor, ParameterDirection.Output);

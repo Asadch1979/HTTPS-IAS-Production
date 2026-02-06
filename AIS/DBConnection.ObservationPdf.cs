@@ -64,7 +64,7 @@ namespace AIS.Controllers
                 {
                 var responsibility = new ObservationPdfResponsibilityModel
                     {
-                    PpNo = GetString(reader, "PP_NO"),
+                    PpNo = reader["PP_NO"] == DBNull.Value ? (int?)null : Convert.ToInt32(reader["PP_NO"]),
                     EmployeeName = GetString(reader, "EMP_NAME"),
                     LoanCase = GetString(reader, "LOANCASE"),
                     LcAmount = GetString(reader, "LCAMOUNT"),
@@ -72,7 +72,7 @@ namespace AIS.Controllers
                     AcAmount = GetString(reader, "ACAMOUNT")
                     };
 
-                if (!string.IsNullOrWhiteSpace(responsibility.PpNo)
+                if (responsibility.PpNo.HasValue
                     || !string.IsNullOrWhiteSpace(responsibility.EmployeeName)
                     || !string.IsNullOrWhiteSpace(responsibility.LoanCase)
                     || !string.IsNullOrWhiteSpace(responsibility.LcAmount)

@@ -25,8 +25,7 @@ namespace AIS.Models
         public string OBS_ID { get; set; }
         [PlainText]
         public string ROW_RESP_ID { get; set; }
-        [PlainText]
-        public string RESP_PP_NO { get; set; }
+        public int? RESP_PP_NO { get; set; }
         [PlainText]
         public string EMP_NAME { get; set; }
         [PlainText]

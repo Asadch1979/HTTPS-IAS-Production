@@ -1524,7 +1524,7 @@ namespace AIS.Controllers
                     st.COMMENT_BY_ROLE = rdr["COMMENT_BY_ROLE"].ToString();
                     st.NAME = rdr["NAME"].ToString();
                     st.DESIGNATION = "";
-                    st.PP_NO = rdr["PP_NO"].ToString();
+                    st.PP_NO = rdr["PP_NO"] == DBNull.Value ? (int?)null : Convert.ToInt32(rdr["PP_NO"]);
                     st.COMMENT_ON = rdr["COMMENT_ON"].ToString();
                     st.COMMENTS = rdr["COMMENTS"].ToString();
                     st.COM_FLOW = rdr["COM_FLOW"].ToString();

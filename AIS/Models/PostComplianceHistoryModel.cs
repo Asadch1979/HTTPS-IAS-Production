@@ -13,8 +13,7 @@ namespace AIS.Models
         public string COM_STAGE { get; set; }
         [PlainText]
         public string COMMENT_BY_ROLE { get; set; }
-        [PlainText]
-        public string PP_NO { get; set; }
+        public int? PP_NO { get; set; }
         [PlainText]
         public string DESIGNATION { get; set; }
         [PlainText]

@@ -1707,7 +1707,7 @@ namespace AIS.Controllers
                     while (rdr.Read())
                         {
                         FADHOUserLegacyParaUserWiseParasPerformanceModel chk = new FADHOUserLegacyParaUserWiseParasPerformanceModel();
-                        chk.PP_NO = rdr["PPNO"].ToString();
+                        chk.PP_NO = rdr["PPNO"] == DBNull.Value ? (int?)null : Convert.ToInt32(rdr["PPNO"]);
                         chk.EMP_NAME = rdr["EMP_NAME"].ToString();
                         chk.PARA_REVIEWED = rdr["PARA_REVIEWED"].ToString();
                         chk.PARA_UPDATED = rdr["PARA_UPDATED"].ToString();
@@ -2700,7 +2700,7 @@ namespace AIS.Controllers
 
             }
 
-        public List<ComplianceProgressReportDetailModel> GetComplianceProgressReportDetails(string ROLE_TYPE, string PP_NO)
+        public List<ComplianceProgressReportDetailModel> GetComplianceProgressReportDetails(string ROLE_TYPE, int? PP_NO)
             {
             var sessionHandler = CreateSessionHandler();
 
@@ -2722,7 +2722,7 @@ namespace AIS.Controllers
                     cmd.CommandType = CommandType.StoredProcedure;
                     cmd.Parameters.Clear();
                     cmd.Parameters.Add("R_TYPE", OracleDbType.Varchar2).Value = ROLE_TYPE;
-                    cmd.Parameters.Add("P_NO", OracleDbType.Varchar2).Value = PP_NO;
+                    cmd.Parameters.Add("P_NO", OracleDbType.Int32).Value = PP_NO ?? (object)DBNull.Value;
                     cmd.Parameters.Add("T_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
                     OracleDataReader rdr = cmd.ExecuteReader();
                     while (rdr.Read())
@@ -2735,7 +2735,7 @@ namespace AIS.Controllers
                         cp.ENTITY_NAME = rdr["name"].ToString();
                         cp.ENTITY_CODE = rdr["code"].ToString();
                         cp.COM_KEY = rdr["COM_KEY"].ToString();
-                        cp.PP_NO = rdr["PP_NO"].ToString();
+                        cp.PP_NO = rdr["PP_NO"] == DBNull.Value ? (int?)null : Convert.ToInt32(rdr["PP_NO"]);
                         cp.EMP_NAME = rdr["emp_name"].ToString();
                         cp.TOTAL = rdr["Total"].ToString();
                         cp.REFERRED_BACK = rdr["Refered_back"].ToString();

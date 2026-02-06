@@ -19,7 +19,7 @@ namespace AIS.Models
 
     public class ObservationPdfResponsibilityModel
         {
-        public string PpNo { get; set; }
+        public int? PpNo { get; set; }
         public string EmployeeName { get; set; }
         public string LoanCase { get; set; }
         public string LcAmount { get; set; }

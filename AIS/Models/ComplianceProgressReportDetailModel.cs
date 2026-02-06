@@ -18,8 +18,7 @@ namespace AIS.Models
         public string ENTITY_CODE { get; set; }
         [PlainText]
         public string COM_KEY { get; set; }
-        [PlainText]
-        public string PP_NO { get; set; }
+        public int? PP_NO { get; set; }
         [PlainText]
         public string EMP_NAME { get; set; }
         [PlainText]

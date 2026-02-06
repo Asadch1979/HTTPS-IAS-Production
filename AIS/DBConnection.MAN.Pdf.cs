@@ -10,7 +10,7 @@ namespace AIS.Controllers
                 {
                 Cover = GetManagementAuditCover(engId),
                 Sections = GetManagementReportPdfSections(engId),
-                StaffRows = GetFieldAuditPdfStaffSnapshot(engId, null),
+                StaffRows = GetManReportStaffSnapshot(engId),
                 Observations = GetManReportObservationPdfParas(engId),
                 SettledParas = GetManReportSettledPdfParas(engId),
                 AuditTeam = GetManagementAuditTeamDetails(engId)

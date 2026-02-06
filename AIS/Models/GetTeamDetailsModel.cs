@@ -10,6 +10,9 @@ namespace AIS.Models
         [PlainText]
         public string MEMBER_NAME { get; set; }
         [PlainText]
+        public string ROLE_TITLE { get; set; }
+        public int? PP_NO { get; set; }
+        [PlainText]
         public string ISTEAMLEAD { get; set; }
         [PlainText]
         public string AUDIT_START_DATE { get; set; }
