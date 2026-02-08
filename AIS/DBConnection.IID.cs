@@ -119,7 +119,7 @@ namespace AIS.Controllers
                 }
             }
 
-        public List<ComplaintDropdownItemModel> GetComplaintsDropdown()
+        public List<ComplaintDropdownItemModel> GetComplaintsDropdown(int pageId)
             {
             var con = this.DatabaseConnection();
             var list = new List<ComplaintDropdownItemModel>();
@@ -131,6 +131,7 @@ namespace AIS.Controllers
                 cmd.BindByName = true;
                 cmd.Parameters.Clear();
 
+                cmd.Parameters.Add("P_PAGE_ID", OracleDbType.Int32).Value = pageId;
                 cmd.Parameters.Add("IO_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
 
                 using (OracleDataReader rdr = cmd.ExecuteReader())

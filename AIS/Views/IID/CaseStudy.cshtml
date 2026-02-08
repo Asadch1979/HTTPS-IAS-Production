@@ -69,6 +69,7 @@
 <script>
     $(function(){
         var complaintId = '@complaintId';
+        var pageId = 7;
 
         function showIidAlert(message, type){
             type = type || 'danger';
@@ -84,47 +85,8 @@
             $('#iidLoading, .iid-loading, .loading').hide();
         }
 
-        function loadComplaintDropdown(onSelected){
-            $.ajax({
-                url: g_asiBaseURL + '/ApiCalls/GetComplaintsDropdown',
-                type: 'POST',
-                success: function(resp){
-                    if(resp && resp.ok === false){
-                        showIidAlert(resp.message, 'danger');
-                        return;
-                    }
-
-                    var $dd = $('#iidComplaintSelect');
-                    $dd.empty().append('<option value="">-- Select Complaint --</option>');
-
-                    (resp || []).forEach(function(x){
-                        // expect: complaintId, displayText
-                        $dd.append('<option value="' + x.complaintId + '">' + x.displayText + '</option>');
-                    });
-
-                    if(typeof onSelected === 'function'){
-                        $dd.off('change').on('change', function(){
-                            var id = $(this).val();
-                            $('#selectedComplaintId').val(id);
-                            if(!id){
-                                showIidAlert('Please select a complaint.', 'warning');
-                                return;
-                            }
-                            onSelected(parseInt(id));
-                        });
-                    }
-
-                    if(complaintId){
-                        $dd.val(complaintId).trigger('change');
-                    }
-                },
-                error: function(xhr){
-                    showIidAlert('Failed to load complaints dropdown.', 'danger');
-                },
-                complete: function(){
-                    hideIidLoader();
-                }
-            });
+        function loadComplaintDropdown(pageId){
+            return $.post(g_asiBaseURL + '/ApiCalls/GetComplaintsDropdown', { pageId: pageId });
         }
 
         function loadPageDataByComplaintId(selectedComplaintId){
@@ -185,9 +147,40 @@
             });
         });
 
-        loadComplaintDropdown(function(selectedId){
-            loadPageDataByComplaintId(selectedId);
-        });
+        loadComplaintDropdown(pageId)
+            .done(function(resp){
+                if(resp && resp.ok === false){
+                    showIidAlert(resp.message, 'danger');
+                    return;
+                }
+
+                var $dd = $('#iidComplaintSelect');
+                $dd.empty().append('<option value="">-- Select Complaint --</option>');
+
+                (resp || []).forEach(function(x){
+                    $dd.append('<option value="' + x.complaintId + '">' + x.displayText + '</option>');
+                });
+
+                $dd.off('change').on('change', function(){
+                    var id = $(this).val();
+                    $('#selectedComplaintId').val(id);
+                    if(!id){
+                        showIidAlert('Please select a complaint.', 'warning');
+                        return;
+                    }
+                    loadPageDataByComplaintId(parseInt(id));
+                });
+
+                if(complaintId){
+                    $dd.val(complaintId).trigger('change');
+                }
+            })
+            .fail(function(){
+                showIidAlert('Failed to load complaints dropdown.', 'danger');
+            })
+            .always(function(){
+                hideIidLoader();
+            });
     });
 </script>
 }
