@@ -1,4 +1,5 @@
 using AIS.Constants;
+using AIS.Models;
 using AIS.Models.IID;
 using Oracle.ManagedDataAccess.Client;
 using System;
@@ -116,6 +117,50 @@ namespace AIS.Controllers
                     }
                 return list;
                 }
+            }
+
+        public List<InspectionUnitsModel> GetInspectionUnits()
+            {
+            var con = this.DatabaseConnection();
+            var list = new List<InspectionUnitsModel>();
+
+            using (OracleCommand cmd = con.CreateCommand())
+                {
+                cmd.CommandText = "PKG_INQ.P_GETINSPECTIONUNITS";
+                cmd.CommandType = CommandType.StoredProcedure;
+                cmd.Parameters.Clear();
+
+                // Match DB param name: IO_CURSOR OUT T_CURSOR
+                cmd.Parameters.Add("IO_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+
+                using (OracleDataReader rdr = cmd.ExecuteReader())
+                    {
+                    while (rdr.Read())
+                        {
+                        var z = new InspectionUnitsModel();
+
+                        // These must exist in the cursor output
+                        z.I_ID = Convert.ToInt32(rdr["I_ID"]);
+                        z.I_CODE = rdr["I_CODE"]?.ToString();
+                        z.UNIT_NAME = rdr["UNIT_NAME"]?.ToString();
+                        z.DISCRIPTION = rdr["DISCRIPTION"]?.ToString();
+
+                        var status = rdr["STATUS"]?.ToString();
+
+                        if (status == "Y")
+                            z.STATUS = "Active";
+                        else if (status == "N")
+                            z.STATUS = "InActive";
+                        else
+                            z.STATUS = rdr["ISACTIVE"]?.ToString(); // keep as-is if you still want this fallback
+                                                                    // but make sure ISACTIVE is also returned by the cursor
+                        list.Add(z);
+                        }
+                    }
+                }
+
+            con.Dispose();
+            return list;
             }
 
         public InitialAssessmentModel GetComplaint(int complaintId)

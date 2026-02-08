@@ -1231,39 +1231,7 @@ namespace AIS.Controllers
             return AZList;
             }
 
-        public List<InspectionUnitsModel> GetInspectionUnits()
-            {
-            var con = this.DatabaseConnection();
-            List<InspectionUnitsModel> ICList = new List<InspectionUnitsModel>();
-            using (OracleCommand cmd = con.CreateCommand())
-                {
-
-                cmd.CommandText = "pkg_ad.P_GetInspectionUnits";
-                cmd.CommandType = CommandType.StoredProcedure;
-                cmd.Parameters.Clear();
-                cmd.Parameters.Add("T_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
-                OracleDataReader rdr = cmd.ExecuteReader();
-                while (rdr.Read())
-                    {
-                    InspectionUnitsModel z = new InspectionUnitsModel();
-                    z.I_ID = Convert.ToInt32(rdr["I_ID"]);
-                    z.I_CODE = rdr["I_CODE"].ToString();
-                    z.UNIT_NAME = rdr["UNIT_NAME"].ToString();
-                    z.DISCRIPTION = rdr["DISCRIPTION"].ToString();
-                    if (rdr["STATUS"].ToString() == "Y")
-                        z.STATUS = "Active";
-                    else if (rdr["STATUS"].ToString() == "N")
-                        z.STATUS = "InActive";
-                    else
-                        z.STATUS = rdr["ISACTIVE"].ToString();
-
-                    ICList.Add(z);
-                    }
-                }
-            con.Dispose();
-            return ICList;
-            }
-
+  
         public List<BranchModel> GetBranches(int zone_code = 0, bool sessionCheck = true)
             {
             var con = this.DatabaseConnection();
