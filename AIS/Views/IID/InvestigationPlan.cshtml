@@ -6,7 +6,7 @@
 
 <div class="container-fluid mt-3">
     <h4>Investigation Plan</h4>
-    <div id="iidAlertHost"></div>
+    @await Html.PartialAsync("_ComplaintSelector")
 
     <div class="card mb-3">
         <div class="card-header bg-light">
@@ -61,18 +61,100 @@
             );
         }
 
-        function loadComplaint(){
-            $.post(g_asiBaseURL + '/ApiCalls/GetComplaint',{ complaintId: complaintId },function(d){
-                if(d && d.ok === false){
-                    showIidAlert(d.message, 'danger');
-                    return;
+        function hideIidLoader(){
+            $('#iidLoading, .iid-loading, .loading').hide();
+        }
+
+        function loadComplaintDropdown(onSelected){
+            $.ajax({
+                url: g_asiBaseURL + '/ApiCalls/GetComplaintsDropdown',
+                type: 'POST',
+                success: function(resp){
+                    if(resp && resp.ok === false){
+                        showIidAlert(resp.message, 'danger');
+                        return;
+                    }
+
+                    var $dd = $('#iidComplaintSelect');
+                    $dd.empty().append('<option value="">-- Select Complaint --</option>');
+
+                    (resp || []).forEach(function(x){
+                        // expect: complaintId, displayText
+                        $dd.append('<option value="' + x.complaintId + '">' + x.displayText + '</option>');
+                    });
+
+                    if(typeof onSelected === 'function'){
+                        $dd.off('change').on('change', function(){
+                            var id = $(this).val();
+                            $('#selectedComplaintId').val(id);
+                            if(!id){
+                                showIidAlert('Please select a complaint.', 'warning');
+                                return;
+                            }
+                            onSelected(parseInt(id));
+                        });
+                    }
+
+                    if(complaintId){
+                        $dd.val(complaintId).trigger('change');
+                    }
+                },
+                error: function(xhr){
+                    showIidAlert('Failed to load complaints dropdown.', 'danger');
+                },
+                complete: function(){
+                    hideIidLoader();
                 }
-                $('#complaintIdDisplay').text(d.complaintId || complaintId);
-                $('#complaintNature').text(d.nature || '');
-                $('#assessmentText').text(d.assessment || '');
-                $('#assessmentRecommendation').text(d.recommendation || '');
-            }).fail(function(){
-                showIidAlert('Failed to load complaint details.', 'danger');
+            });
+        }
+
+        function loadComplaintSummary(selectedComplaintId){
+            $.ajax({
+                url: g_asiBaseURL + '/ApiCalls/GetComplaint',
+                type: 'POST',
+                data: { complaintId: selectedComplaintId },
+                success: function(d){
+                    if(d && d.ok === false){
+                        showIidAlert(d.message, 'danger');
+                        return;
+                    }
+                    $('#complaintIdDisplay').text(d.complaintId || selectedComplaintId);
+                    $('#complaintNature').text(d.nature || '');
+                    $('#assessmentText').text(d.assessment || '');
+                    $('#assessmentRecommendation').text(d.recommendation || '');
+                },
+                error: function(){
+                    showIidAlert('Failed to load complaint details.', 'danger');
+                },
+                complete: function(){
+                    hideIidLoader();
+                }
+            });
+        }
+
+        function loadInvestigationPlanByComplaintId(selectedComplaintId){
+            complaintId = selectedComplaintId;
+            $('#planForm [name="ComplaintId"]').val(complaintId);
+            loadComplaintSummary(complaintId);
+
+            $.ajax({
+                url: g_asiBaseURL + '/ApiCalls/GetLatestPlanByComplaintId',
+                type: 'POST',
+                data: { complaintId: complaintId },
+                success: function(resp){
+                    if(resp && resp.ok === false){
+                        $('#planForm [name="PlanDetails"]').val('');
+                        showIidAlert(resp.message, 'warning');
+                        return;
+                    }
+                    $('#planForm [name="PlanDetails"]').val(resp.planDetails || '');
+                },
+                error: function(){
+                    showIidAlert('Failed to load investigation plan.', 'danger');
+                },
+                complete: function(){
+                    hideIidLoader();
+                }
             });
         }
 
@@ -101,7 +183,9 @@
             });
         });
 
-        loadComplaint();
+        loadComplaintDropdown(function(selectedId){
+            loadInvestigationPlanByComplaintId(selectedId);
+        });
     });
 </script>
 }

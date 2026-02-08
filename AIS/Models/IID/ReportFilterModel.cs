@@ -19,6 +19,7 @@ namespace AIS.Models.IID
         public int? BranchId { get; set; }
         public int? HOUnitTypeId { get; set; }
         public int? HOUnitId { get; set; }
+        public int? ComplaintId { get; set; }
         [PlainText]
         public string Complaint { get; set; }
         [PlainText]
