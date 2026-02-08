@@ -4,6 +4,7 @@
     var complaintId = ViewData["ComplaintId"];
 }
 <h4>Inquiry Report</h4>
+<div id="iidAlertHost"></div>
 <form id="reportForm" enctype="multipart/form-data">
     <input type="hidden" name="ComplaintId" value="@complaintId" />
     <div class="mb-2">
@@ -47,6 +48,16 @@
 @section Scripts{
 <script>
     $(function(){
+        function showIidAlert(message, type){
+            type = type || 'danger';
+            $('#iidAlertHost').html(
+                '<div class="alert alert-' + type + ' alert-dismissible fade show" role="alert">' +
+                (message || 'Unexpected error') +
+                '<button type="button" class="btn-close" data-bs-dismiss="alert"></button>' +
+                '</div>'
+            );
+        }
+
         $('#reportForm').on('submit', function(e){
             e.preventDefault();
             var fd = new FormData(this);
@@ -56,8 +67,15 @@
                 data: fd,
                 processData:false,
                 contentType:false,
-                success: function(){
-                    alert('Report submitted');
+                success: function(response){
+                    if(response && response.ok === false){
+                        showIidAlert(response.message, 'danger');
+                        return;
+                    }
+                    showIidAlert('Report submitted successfully', 'success');
+                },
+                error: function(){
+                    showIidAlert('Failed to submit inquiry report.', 'danger');
                 }
             });
         });

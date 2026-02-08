@@ -7,6 +7,7 @@
 
 <div class="container-fluid mt-3">
     <h4>Head Review</h4>
+    <div id="iidAlertHost"></div>
 
     <div class="card mb-3">
         <div class="card-header bg-light">
@@ -91,12 +92,24 @@
         var assignedUnitId = 0;
         var unitLookup = {};
 
+        function showIidAlert(message, type){
+            type = type || 'danger';
+            $('#iidAlertHost').html(
+                '<div class="alert alert-' + type + ' alert-dismissible fade show" role="alert">' +
+                (message || 'Unexpected error') +
+                '<button type="button" class="btn-close" data-bs-dismiss="alert"></button>' +
+                '</div>'
+            );
+        }
+
         function loadUnits(){
             $.get(g_asiBaseURL + '/ApiCalls/GetIiUnits', function(d){
                 $.each(d, function(i, unit){
                     unitLookup[unit.unitId] = unit.unitName;
                 });
                 updateAssignedUnitLabel();
+            }).fail(function(){
+                showIidAlert('Failed to load inspection units.', 'danger');
             });
         }
 
@@ -108,6 +121,10 @@
 
         function loadComplaint(){
             $.post(g_asiBaseURL + '/ApiCalls/GetComplaint',{ complaintId: complaintId },function(d){
+                if(d && d.ok === false){
+                    showIidAlert(d.message, 'danger');
+                    return;
+                }
                 $('#complaintIdDisplay').text(d.complaintId || complaintId);
                 $('#complaintNature').text(d.nature || '');
                 $('#complaintSubmittedOn').text(d.submittedOn || '');
@@ -117,6 +134,8 @@
                 $('#assessmentRecommendation').text(d.recommendation || '');
                 assignedUnitId = d.assignedUnitId || 0;
                 updateAssignedUnitLabel();
+            }).fail(function(){
+                showIidAlert('Failed to load complaint details.', 'danger');
             });
         }
 
@@ -131,7 +150,7 @@
             var directions = $('#reviewForm [name="Directions"]').val();
 
             if(action === 'REFER_BACK' && !directions.trim()){
-                alert('Comments are required when referring back.');
+                showIidAlert('Comments are required when referring back.', 'danger');
                 return;
             }
 
@@ -148,13 +167,20 @@
                 method: 'POST',
                 contentType: 'application/json',
                 data: JSON.stringify(data),
-                success: function(){
-                    alert('Decision submitted. Notification queued.');
+                success: function(response){
+                    if(response && response.ok === false){
+                        showIidAlert(response.message, 'danger');
+                        return;
+                    }
+                    showIidAlert('Decision submitted. Notification queued.', 'success');
                     if(action === 'APPROVE'){
                         window.location.href = g_asiBaseURL + '/IID/TaskList';
                     } else {
                         window.location.href = g_asiBaseURL + '/IID/InitialAssessment?complaintId=' + complaintId;
                     }
+                },
+                error: function(){
+                    showIidAlert('Failed to submit decision.', 'danger');
                 }
             });
         });

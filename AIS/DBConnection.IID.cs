@@ -128,6 +128,7 @@ namespace AIS.Controllers
                 {
                 cmd.CommandText = "PKG_INQ.P_GETINSPECTIONUNITS";
                 cmd.CommandType = CommandType.StoredProcedure;
+                cmd.BindByName = true;
                 cmd.Parameters.Clear();
 
                 // Match DB param name: IO_CURSOR OUT T_CURSOR

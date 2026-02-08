@@ -3,6 +3,7 @@
     Layout = "_Layout";
 }
 <h4>Submit Complaint</h4>
+<div id="iidAlertHost"></div>
 <form id="complaintForm" enctype="multipart/form-data">
     <div class="mb-2">
         <label class="form-label">Complaint No.</label>
@@ -150,6 +151,16 @@
 @section Scripts{
 <script>
     $(function(){
+        function showIidAlert(message, type){
+            type = type || 'danger';
+            $('#iidAlertHost').html(
+                '<div class="alert alert-' + type + ' alert-dismissible fade show" role="alert">' +
+                (message || 'Unexpected error') +
+                '<button type="button" class="btn-close" data-bs-dismiss="alert"></button>' +
+                '</div>'
+            );
+        }
+
         function toggleSource(){
             var val = $('#Source').val();
             if(val === 'Other'){
@@ -247,11 +258,15 @@
                 processData:false,
                 contentType:false,
                 success: function(d){
-                    alert('Complaint submitted');
+                    if(d && d.ok === false){
+                        showIidAlert(d.message, 'danger');
+                        return;
+                    }
+                    showIidAlert('Complaint submitted successfully', 'success');
                     location.reload();
                 },
                 error: function(){
-                    alert('Error submitting complaint');
+                    showIidAlert('Error submitting complaint', 'danger');
                 }
             });
         });

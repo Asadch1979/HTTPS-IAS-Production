@@ -6,6 +6,7 @@
 
 <div class="container-fluid mt-3">
     <h4>Plan Approval</h4>
+    <div id="iidAlertHost"></div>
 
     <div class="card mb-3">
         <div class="card-header bg-light">
@@ -67,6 +68,16 @@
     $(function(){
         var planId = '@planId';
 
+        function showIidAlert(message, type){
+            type = type || 'danger';
+            $('#iidAlertHost').html(
+                '<div class="alert alert-' + type + ' alert-dismissible fade show" role="alert">' +
+                (message || 'Unexpected error') +
+                '<button type="button" class="btn-close" data-bs-dismiss="alert"></button>' +
+                '</div>'
+            );
+        }
+
         function loadPlanDetails(){
             $.get(g_asiBaseURL + '/ApiCalls/GetIidPlanDetails', { planId: planId }, function(d){
                 var planRow = Array.isArray(d) ? d[0] : d;
@@ -78,6 +89,8 @@
                 $('#complainantName').text(planRow.COMPLAINANT_NAME || planRow.complainantName || '');
                 $('#assessmentText').text(planRow.ASSESSMENT || planRow.assessment || '');
                 $('#planDetails').text(planRow.PLAN_DETAILS || planRow.planDetails || '');
+            }).fail(function(){
+                showIidAlert('Failed to load plan details.', 'danger');
             });
         }
 
@@ -94,10 +107,17 @@
                 method: 'POST',
                 contentType: 'application/json',
                 data: JSON.stringify(data),
-                success: function(){
+                success: function(response){
+                    if(response && response.ok === false){
+                        showIidAlert(response.message, 'danger');
+                        return;
+                    }
                     var approved = data.IsApproved === 'Y';
-                    alert(approved ? 'Plan approved. Notification queued.' : 'Plan returned for updates.');
+                    showIidAlert(approved ? 'Plan approved. Notification queued.' : 'Plan returned for updates.', approved ? 'success' : 'warning');
                     window.location.href = g_asiBaseURL + '/IID/TaskList';
+                },
+                error: function(){
+                    showIidAlert('Failed to submit plan approval.', 'danger');
                 }
             });
         });
