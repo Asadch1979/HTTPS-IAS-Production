@@ -29,7 +29,7 @@ namespace AIS.Controllers
             {
             ViewData["TopMenu"] = tm.GetTopMenus();
             ViewData["TopMenuPages"] = tm.GetTopMenusPages();
-            ViewData["RegionList"] = dBConnection.GetGMsList();
+            ViewData["RegionList"] = dBConnection.GetRBHList(0);
             if (!User.Identity.IsAuthenticated)
                 return RedirectToAction("Index", "Login");
             return View("../IID/SubmitComplaint");
