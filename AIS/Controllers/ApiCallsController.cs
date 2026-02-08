@@ -4959,6 +4959,85 @@ namespace AIS.Controllers
                 }
             }
 
+        [HttpPost]
+        public IActionResult GetComplaintsDropdown()
+            {
+            try
+                {
+                var list = dBConnection.GetComplaintsDropdown();
+                var data = list.Select(x => new
+                    {
+                    complaintId = x.ComplaintId,
+                    displayText = $"{x.ComplaintId} | {x.Nature} | {x.Status}"
+                    }).ToList();
+                return Json(data);
+                }
+            catch (Exception ex)
+                {
+                return Json(new { ok = false, message = ex.Message });
+                }
+            }
+
+        [HttpPost]
+        public IActionResult GetLatestPlanByComplaintId(int complaintId)
+            {
+            try
+                {
+                var dt = dBConnection.GetLatestPlanByComplaintId(complaintId);
+                if (dt == null || dt.Rows.Count == 0)
+                    {
+                    return Json(new { ok = false, message = "No investigation plan found for this complaint." });
+                    }
+
+                var row = dt.Rows[0];
+                var planId = dt.Columns.Contains("PLAN_ID") && row["PLAN_ID"] != DBNull.Value ? Convert.ToInt32(row["PLAN_ID"]) : 0;
+                var planDetails = dt.Columns.Contains("PLAN_DETAILS") ? row["PLAN_DETAILS"]?.ToString() : string.Empty;
+                var complaintNo = dt.Columns.Contains("COMPLAINT_NO") ? row["COMPLAINT_NO"]?.ToString() : string.Empty;
+                var complainantName = dt.Columns.Contains("COMPLAINANT_NAME") ? row["COMPLAINANT_NAME"]?.ToString() : string.Empty;
+                var assessment = dt.Columns.Contains("ASSESSMENT") ? row["ASSESSMENT"]?.ToString() : string.Empty;
+
+                return Json(new
+                    {
+                    ok = true,
+                    planId,
+                    planDetails,
+                    complaintNo,
+                    complainantName,
+                    assessment
+                    });
+                }
+            catch (Exception ex)
+                {
+                return Json(new { ok = false, message = ex.Message });
+                }
+            }
+
+        [HttpPost]
+        public IActionResult GetLatestInquiryReportByComplaintId(int complaintId)
+            {
+            try
+                {
+                var report = dBConnection.GetLatestInquiryReportByComplaintId(complaintId);
+                if (report == null || report.ReportId <= 0)
+                    {
+                    return Json(new { ok = false, message = "No inquiry report found for this complaint." });
+                    }
+
+                return Json(new
+                    {
+                    ok = true,
+                    reportId = report.ReportId,
+                    uploadedReport = report.UploadedReport,
+                    uploadedEvidence = report.UploadedEvidence,
+                    uploadedDsa = report.UploadedDsa
+                    });
+                }
+            catch (Exception ex)
+                {
+                return Json(new { ok = false, message = ex.Message });
+                }
+            }
+
 
         [HttpPost]
         public IActionResult GetComplaintsByUser(int userId)

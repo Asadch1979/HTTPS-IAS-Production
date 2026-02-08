@@ -4,7 +4,7 @@
     var complaintId = ViewData["ComplaintId"];
 }
 <h4>Case Study</h4>
-<div id="iidAlertHost"></div>
+@await Html.PartialAsync("_ComplaintSelector")
 <form id="caseForm">
     <input type="hidden" name="ComplaintId" value="@complaintId" />
     <div class="mb-2">
@@ -68,6 +68,8 @@
 @section Scripts{
 <script>
     $(function(){
+        var complaintId = '@complaintId';
+
         function showIidAlert(message, type){
             type = type || 'danger';
             $('#iidAlertHost').html(
@@ -76,6 +78,74 @@
                 '<button type="button" class="btn-close" data-bs-dismiss="alert"></button>' +
                 '</div>'
             );
+        }
+
+        function hideIidLoader(){
+            $('#iidLoading, .iid-loading, .loading').hide();
+        }
+
+        function loadComplaintDropdown(onSelected){
+            $.ajax({
+                url: g_asiBaseURL + '/ApiCalls/GetComplaintsDropdown',
+                type: 'POST',
+                success: function(resp){
+                    if(resp && resp.ok === false){
+                        showIidAlert(resp.message, 'danger');
+                        return;
+                    }
+
+                    var $dd = $('#iidComplaintSelect');
+                    $dd.empty().append('<option value="">-- Select Complaint --</option>');
+
+                    (resp || []).forEach(function(x){
+                        // expect: complaintId, displayText
+                        $dd.append('<option value="' + x.complaintId + '">' + x.displayText + '</option>');
+                    });
+
+                    if(typeof onSelected === 'function'){
+                        $dd.off('change').on('change', function(){
+                            var id = $(this).val();
+                            $('#selectedComplaintId').val(id);
+                            if(!id){
+                                showIidAlert('Please select a complaint.', 'warning');
+                                return;
+                            }
+                            onSelected(parseInt(id));
+                        });
+                    }
+
+                    if(complaintId){
+                        $dd.val(complaintId).trigger('change');
+                    }
+                },
+                error: function(xhr){
+                    showIidAlert('Failed to load complaints dropdown.', 'danger');
+                },
+                complete: function(){
+                    hideIidLoader();
+                }
+            });
+        }
+
+        function loadPageDataByComplaintId(selectedComplaintId){
+            complaintId = selectedComplaintId;
+            $('#caseForm [name="ComplaintId"]').val(complaintId);
+            $.ajax({
+                url: g_asiBaseURL + '/ApiCalls/GetComplaint',
+                type: 'POST',
+                data: { complaintId: complaintId },
+                success: function(d){
+                    if(d && d.ok === false){
+                        showIidAlert(d.message, 'danger');
+                    }
+                },
+                error: function(){
+                    showIidAlert('Failed to load complaint details.', 'danger');
+                },
+                complete: function(){
+                    hideIidLoader();
+                }
+            });
         }
 
         $('#caseForm').on('submit', function(e){
@@ -113,6 +183,10 @@
                     showIidAlert('Failed to add case study.', 'danger');
                 }
             });
+        });
+
+        loadComplaintDropdown(function(selectedId){
+            loadPageDataByComplaintId(selectedId);
         });
     });
 </script>

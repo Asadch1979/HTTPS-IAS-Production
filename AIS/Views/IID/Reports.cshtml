@@ -3,7 +3,7 @@
     Layout = "_Layout";
 }
 <h4>Inquiry Reports</h4>
-<div id="iidAlertHost"></div>
+@await Html.PartialAsync("_ComplaintSelector")
 <form id="filterForm" class="row g-2">
     <div class="col">
         <input class="form-control" type="date" placeholder="Date From" name="DateFrom" />
@@ -90,6 +90,49 @@
                 '<button type="button" class="btn-close" data-bs-dismiss="alert"></button>' +
                 '</div>'
             );
+        }
+
+        function hideIidLoader(){
+            $('#iidLoading, .iid-loading, .loading').hide();
+        }
+
+        function loadComplaintDropdown(onSelected){
+            $.ajax({
+                url: g_asiBaseURL + '/ApiCalls/GetComplaintsDropdown',
+                type: 'POST',
+                success: function(resp){
+                    if(resp && resp.ok === false){
+                        showIidAlert(resp.message, 'danger');
+                        return;
+                    }
+
+                    var $dd = $('#iidComplaintSelect');
+                    $dd.empty().append('<option value="">-- Select Complaint --</option>');
+
+                    (resp || []).forEach(function(x){
+                        // expect: complaintId, displayText
+                        $dd.append('<option value="' + x.complaintId + '">' + x.displayText + '</option>');
+                    });
+
+                    if(typeof onSelected === 'function'){
+                        $dd.off('change').on('change', function(){
+                            var id = $(this).val();
+                            $('#selectedComplaintId').val(id);
+                            if(!id){
+                                showIidAlert('Please select a complaint.', 'warning');
+                                return;
+                            }
+                            onSelected(parseInt(id));
+                        });
+                    }
+                },
+                error: function(xhr){
+                    showIidAlert('Failed to load complaints dropdown.', 'danger');
+                },
+                complete: function(){
+                    hideIidLoader();
+                }
+            });
         }
 
         function loadRegions(){
@@ -183,6 +226,7 @@
 
         $('#filterForm').on('submit', function(e){
             e.preventDefault();
+            var selectedComplaintId = $('#selectedComplaintId').val();
             var data = {
                 DateFrom: $('#filterForm [name="DateFrom"]').val(),
                 DateTo: $('#filterForm [name="DateTo"]').val(),
@@ -194,7 +238,8 @@
                 BranchId: $('#filterForm [name="BranchId"]').val(),
                 HOUnitTypeId: $('#filterForm [name="HOUnitTypeId"]').val(),
                 HOUnitId: $('#filterForm [name="HOUnitId"]').val(),
-                Status: $('#filterForm [name="Status"]').val()
+                Status: $('#filterForm [name="Status"]').val(),
+                ComplaintId: selectedComplaintId ? parseInt(selectedComplaintId) : null
             };
             $.ajax({
                 url: g_asiBaseURL + '/ApiCalls/GetReports',
@@ -222,6 +267,10 @@
                     showIidAlert('Failed to load reports.', 'danger');
                 }
             });
+        });
+
+        loadComplaintDropdown(function(){
+            // Optional filter only; no additional action needed on change.
         });
     });
 </script>

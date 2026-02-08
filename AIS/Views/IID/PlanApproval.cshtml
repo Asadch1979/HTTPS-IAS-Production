@@ -1,12 +1,13 @@
 @{
     ViewData["Title"] = "Plan Approval";
     Layout = "_Layout";
+    var complaintId = ViewData["ComplaintId"];
     var planId = ViewData["PlanId"];
 }
 
 <div class="container-fluid mt-3">
     <h4>Plan Approval</h4>
-    <div id="iidAlertHost"></div>
+    @await Html.PartialAsync("_ComplaintSelector")
 
     <div class="card mb-3">
         <div class="card-header bg-light">
@@ -66,6 +67,7 @@
 @section Scripts{
 <script>
     $(function(){
+        var complaintId = '@complaintId';
         var planId = '@planId';
 
         function showIidAlert(message, type){
@@ -78,8 +80,55 @@
             );
         }
 
-        function loadPlanDetails(){
-            $.get(g_asiBaseURL + '/ApiCalls/GetIidPlanDetails', { planId: planId }, function(d){
+        function hideIidLoader(){
+            $('#iidLoading, .iid-loading, .loading').hide();
+        }
+
+        function loadComplaintDropdown(onSelected){
+            $.ajax({
+                url: g_asiBaseURL + '/ApiCalls/GetComplaintsDropdown',
+                type: 'POST',
+                success: function(resp){
+                    if(resp && resp.ok === false){
+                        showIidAlert(resp.message, 'danger');
+                        return;
+                    }
+
+                    var $dd = $('#iidComplaintSelect');
+                    $dd.empty().append('<option value="">-- Select Complaint --</option>');
+
+                    (resp || []).forEach(function(x){
+                        // expect: complaintId, displayText
+                        $dd.append('<option value="' + x.complaintId + '">' + x.displayText + '</option>');
+                    });
+
+                    if(typeof onSelected === 'function'){
+                        $dd.off('change').on('change', function(){
+                            var id = $(this).val();
+                            $('#selectedComplaintId').val(id);
+                            if(!id){
+                                showIidAlert('Please select a complaint.', 'warning');
+                                return;
+                            }
+                            onSelected(parseInt(id));
+                        });
+                    }
+
+                    if(complaintId){
+                        $dd.val(complaintId).trigger('change');
+                    }
+                },
+                error: function(xhr){
+                    showIidAlert('Failed to load complaints dropdown.', 'danger');
+                },
+                complete: function(){
+                    hideIidLoader();
+                }
+            });
+        }
+
+        function loadPlanDetailsByPlanId(selectedPlanId){
+            $.get(g_asiBaseURL + '/ApiCalls/GetIidPlanDetails', { planId: selectedPlanId }, function(d){
                 var planRow = Array.isArray(d) ? d[0] : d;
                 if(!planRow){
                     $('#planDetails').text('Plan details not available.');
@@ -91,6 +140,36 @@
                 $('#planDetails').text(planRow.PLAN_DETAILS || planRow.planDetails || '');
             }).fail(function(){
                 showIidAlert('Failed to load plan details.', 'danger');
+            }).always(function(){
+                hideIidLoader();
+            });
+        }
+
+        function loadPlanApprovalByComplaintId(selectedComplaintId){
+            complaintId = selectedComplaintId;
+            $.ajax({
+                url: g_asiBaseURL + '/ApiCalls/GetLatestPlanByComplaintId',
+                type: 'POST',
+                data: { complaintId: complaintId },
+                success: function(resp){
+                    if(resp && resp.ok === false){
+                        $('#planDetails').text('Plan details not available.');
+                        showIidAlert(resp.message, 'warning');
+                        return;
+                    }
+                    planId = resp.planId;
+                    $('#approvalForm [name="PlanId"]').val(planId);
+                    $('#complaintNo').text(resp.complaintNo || '');
+                    $('#complainantName').text(resp.complainantName || '');
+                    $('#assessmentText').text(resp.assessment || '');
+                    $('#planDetails').text(resp.planDetails || '');
+                },
+                error: function(){
+                    showIidAlert('Failed to load plan details.', 'danger');
+                },
+                complete: function(){
+                    hideIidLoader();
+                }
             });
         }
 
@@ -122,7 +201,14 @@
             });
         });
 
-        loadPlanDetails();
+        if(planId){
+            $('#approvalForm [name="PlanId"]').val(planId);
+            loadPlanDetailsByPlanId(planId);
+        }
+
+        loadComplaintDropdown(function(selectedId){
+            loadPlanApprovalByComplaintId(selectedId);
+        });
     });
 </script>
 }

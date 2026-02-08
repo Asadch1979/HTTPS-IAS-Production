@@ -119,6 +119,38 @@ namespace AIS.Controllers
                 }
             }
 
+        public List<ComplaintDropdownItemModel> GetComplaintsDropdown()
+            {
+            var con = this.DatabaseConnection();
+            var list = new List<ComplaintDropdownItemModel>();
+
+            using (OracleCommand cmd = con.CreateCommand())
+                {
+                cmd.CommandText = "PKG_INQ.GET_COMPLAINTS_DD";
+                cmd.CommandType = CommandType.StoredProcedure;
+                cmd.BindByName = true;
+                cmd.Parameters.Clear();
+
+                cmd.Parameters.Add("IO_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+
+                using (OracleDataReader rdr = cmd.ExecuteReader())
+                    {
+                    while (rdr.Read())
+                        {
+                        list.Add(new ComplaintDropdownItemModel
+                            {
+                            ComplaintId = rdr["COMPLAINT_ID"] == DBNull.Value ? 0 : Convert.ToInt32(rdr["COMPLAINT_ID"]),
+                            Nature = rdr["NATURE"]?.ToString(),
+                            Status = rdr["STATUS"]?.ToString()
+                            });
+                        }
+                    }
+                }
+
+            con.Dispose();
+            return list;
+            }
+
         public List<InspectionUnitsModel> GetInspectionUnits()
             {
             var con = this.DatabaseConnection();
@@ -336,6 +368,55 @@ namespace AIS.Controllers
                     dt.Load(rdr);
                     }
                 return dt;
+                }
+            }
+
+        public DataTable GetLatestPlanByComplaintId(int complaintId)
+            {
+            using var con = this.DatabaseConnection();
+
+            using (OracleCommand cmd = con.CreateCommand())
+                {
+                cmd.CommandText = "PKG_INQ.GET_LATEST_PLAN_BY_COMPLAINT";
+                cmd.CommandType = CommandType.StoredProcedure;
+                cmd.BindByName = true;
+                cmd.Parameters.Add("p_complaint_id", OracleDbType.Int32).Value = complaintId;
+                cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+                var dt = new DataTable();
+                using (var rdr = cmd.ExecuteReader())
+                    {
+                    dt.Load(rdr);
+                    }
+                return dt;
+                }
+            }
+
+        public InquiryReportFilesModel GetLatestInquiryReportByComplaintId(int complaintId)
+            {
+            using var con = this.DatabaseConnection();
+
+            using (OracleCommand cmd = con.CreateCommand())
+                {
+                cmd.CommandText = "PKG_INQ.GET_LATEST_INQUIRY_REPORT_BY_COMPLAINT";
+                cmd.CommandType = CommandType.StoredProcedure;
+                cmd.BindByName = true;
+                cmd.Parameters.Add("p_complaint_id", OracleDbType.Int32).Value = complaintId;
+                cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+                InquiryReportFilesModel model = null;
+                using (var rdr = cmd.ExecuteReader())
+                    {
+                    if (rdr.Read())
+                        {
+                        model = new InquiryReportFilesModel
+                            {
+                            ReportId = rdr["REPORT_ID"] == DBNull.Value ? 0 : Convert.ToInt32(rdr["REPORT_ID"]),
+                            UploadedReport = rdr["UPLOADED_REPORT"]?.ToString(),
+                            UploadedEvidence = rdr["UPLOADED_EVIDENCE"]?.ToString(),
+                            UploadedDsa = rdr["UPLOADED_DSA"]?.ToString()
+                            };
+                        }
+                    }
+                return model;
                 }
             }
 
