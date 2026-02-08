@@ -4,6 +4,7 @@
     var reportId = ViewData["ReportId"];
 }
 <h4>Final Approval</h4>
+<div id="iidAlertHost"></div>
 <div class="mb-3" id="reportFiles">
     <h6>Report Downloads</h6>
     <div id="reportLinks" class="small text-muted">Loading...</div>
@@ -26,6 +27,16 @@
 @section Scripts{
 <script>
     $(function(){
+        function showIidAlert(message, type){
+            type = type || 'danger';
+            $('#iidAlertHost').html(
+                '<div class="alert alert-' + type + ' alert-dismissible fade show" role="alert">' +
+                (message || 'Unexpected error') +
+                '<button type="button" class="btn-close" data-bs-dismiss="alert"></button>' +
+                '</div>'
+            );
+        }
+
         function loadReportFiles(){
             $.ajax({
                 url: g_asiBaseURL + '/ApiCalls/GetInquiryReportFiles',
@@ -33,6 +44,10 @@
                 contentType: 'application/json',
                 data: JSON.stringify({ ReportId: $('#approvalForm [name="ReportId"]').val() }),
                 success: function(d){
+                    if(d && d.ok === false){
+                        showIidAlert(d.message, 'danger');
+                        return;
+                    }
                     var links = [];
                     if(d && d.uploadedReport){
                         links.push('<a href="'+g_asiBaseURL+'/Uploads/'+d.uploadedReport+'" target="_blank">Report</a>');
@@ -49,6 +64,9 @@
                         links.push('<a href="'+g_asiBaseURL+'/Uploads/'+d.uploadedDsa+'" target="_blank">DSA</a>');
                     }
                     $('#reportLinks').html(links.length ? links.join('<br/>') : 'No files available.');
+                },
+                error: function(){
+                    showIidAlert('Failed to load report files.', 'danger');
                 }
             });
         }
@@ -67,8 +85,15 @@
                 method: 'POST',
                 contentType: 'application/json',
                 data: JSON.stringify(data),
-                success: function(){
-                    alert('Action saved');
+                success: function(response){
+                    if(response && response.ok === false){
+                        showIidAlert(response.message, 'danger');
+                        return;
+                    }
+                    showIidAlert('Action saved', 'success');
+                },
+                error: function(){
+                    showIidAlert('Failed to submit approval.', 'danger');
                 }
             });
         });

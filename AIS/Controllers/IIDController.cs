@@ -22,6 +22,9 @@ namespace AIS.Controllers
         public override void OnActionExecuting(ActionExecutingContext context)
             {
             base.OnActionExecuting(context);
+
+            var u = sessionHandler.GetUser();
+            ViewData["UserId"] = u?.PPNumber ?? "";
             }
 
         [HttpGet, HttpPost]
@@ -29,9 +32,9 @@ namespace AIS.Controllers
             {
             ViewData["TopMenu"] = tm.GetTopMenus();
             ViewData["TopMenuPages"] = tm.GetTopMenusPages();
-            ViewData["RegionList"] = dBConnection.GetRBHList(0);
             if (!User.Identity.IsAuthenticated)
                 return RedirectToAction("Index", "Login");
+            ViewData["RegionList"] = dBConnection.GetRBHList(0);
             return View("../IID/SubmitComplaint");
             }
 

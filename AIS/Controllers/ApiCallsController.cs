@@ -4706,166 +4706,236 @@ namespace AIS.Controllers
         [HttpPost]
         public IActionResult SubmitComplaint([FromForm] AIS.Models.IID.ComplaintModel model)
             {
-            if (string.IsNullOrWhiteSpace(model.PertainsTo))
+            try
                 {
-                return BadRequest(new { message = "PertainsTo is required." });
-                }
-
-            if (string.Equals(model.Source, "Other", StringComparison.OrdinalIgnoreCase))
-                {
-                if (string.IsNullOrWhiteSpace(model.SourceOtherText))
+                if (string.IsNullOrWhiteSpace(model.PertainsTo))
                     {
-                    return BadRequest(new { message = "Source other text is required." });
+                    return Json(new { ok = false, message = "PertainsTo is required." });
                     }
-                }
-            else
-                {
-                model.SourceOtherText = null;
-                }
 
-            if (string.Equals(model.PertainsTo, "HO", StringComparison.OrdinalIgnoreCase))
-                {
-                model.FieldType = null;
-                model.HOUnitTypeId = null;
-                model.HOUnitId = null;
-                model.RegionId = null;
-                model.BranchId = null;
-                }
-            else if (string.Equals(model.PertainsTo, "FIELD", StringComparison.OrdinalIgnoreCase))
-                {
-                if (string.Equals(model.FieldType, "HO_UNIT", StringComparison.OrdinalIgnoreCase))
+                if (string.Equals(model.Source, "Other", StringComparison.OrdinalIgnoreCase))
                     {
-                    if (!model.HOUnitTypeId.HasValue || !model.HOUnitId.HasValue)
+                    if (string.IsNullOrWhiteSpace(model.SourceOtherText))
                         {
-                        return BadRequest(new { message = "HO Unit Type and HO Unit are required." });
+                        return Json(new { ok = false, message = "Source other text is required." });
                         }
-                    model.RegionId = null;
-                    model.BranchId = null;
-                    }
-                else if (string.Equals(model.FieldType, "BRANCH", StringComparison.OrdinalIgnoreCase))
-                    {
-                    if (!model.RegionId.HasValue || !model.BranchId.HasValue)
-                        {
-                        return BadRequest(new { message = "Region and Branch are required." });
-                        }
-                    model.HOUnitTypeId = null;
-                    model.HOUnitId = null;
                     }
                 else
                     {
-                    return BadRequest(new { message = "FieldType is required for Field complaints." });
+                    model.SourceOtherText = null;
                     }
-                }
-            else
-                {
-                return BadRequest(new { message = "PertainsTo must be HO or FIELD." });
-                }
 
-            var complaintFile = Request.Form.Files.GetFile("UploadedComplaint");
-            var ffrFile = Request.Form.Files.GetFile("UploadedFFR");
-            var evidenceFiles = Request.Form.Files.GetFiles("UploadedEvidence");
-            model.UploadedComplaint = SaveUploadFile(complaintFile);
-            model.UploadedFFR = SaveUploadFile(ffrFile);
-            var evidenceNames = new List<string>();
-            foreach (var file in evidenceFiles)
-                {
-                var savedFile = SaveUploadFile(file);
-                if (!string.IsNullOrEmpty(savedFile))
+                if (string.Equals(model.PertainsTo, "HO", StringComparison.OrdinalIgnoreCase))
                     {
-                    evidenceNames.Add(savedFile);
+                    model.FieldType = null;
+                    model.HOUnitTypeId = null;
+                    model.HOUnitId = null;
+                    model.RegionId = null;
+                    model.BranchId = null;
                     }
+                else if (string.Equals(model.PertainsTo, "FIELD", StringComparison.OrdinalIgnoreCase))
+                    {
+                    if (string.Equals(model.FieldType, "HO_UNIT", StringComparison.OrdinalIgnoreCase))
+                        {
+                        if (!model.HOUnitTypeId.HasValue || !model.HOUnitId.HasValue)
+                            {
+                            return Json(new { ok = false, message = "HO Unit Type and HO Unit are required." });
+                            }
+                        model.RegionId = null;
+                        model.BranchId = null;
+                        }
+                    else if (string.Equals(model.FieldType, "BRANCH", StringComparison.OrdinalIgnoreCase))
+                        {
+                        if (!model.RegionId.HasValue || !model.BranchId.HasValue)
+                            {
+                            return Json(new { ok = false, message = "Region and Branch are required." });
+                            }
+                        model.HOUnitTypeId = null;
+                        model.HOUnitId = null;
+                        }
+                    else
+                        {
+                        return Json(new { ok = false, message = "FieldType is required for Field complaints." });
+                        }
+                    }
+                else
+                    {
+                    return Json(new { ok = false, message = "PertainsTo must be HO or FIELD." });
+                    }
+
+                var complaintFile = Request.Form.Files.GetFile("UploadedComplaint");
+                var ffrFile = Request.Form.Files.GetFile("UploadedFFR");
+                var evidenceFiles = Request.Form.Files.GetFiles("UploadedEvidence");
+                model.UploadedComplaint = SaveUploadFile(complaintFile);
+                model.UploadedFFR = SaveUploadFile(ffrFile);
+                var evidenceNames = new List<string>();
+                foreach (var file in evidenceFiles)
+                    {
+                    var savedFile = SaveUploadFile(file);
+                    if (!string.IsNullOrEmpty(savedFile))
+                        {
+                        evidenceNames.Add(savedFile);
+                        }
+                    }
+                model.UploadedEvidence = string.Join(";", evidenceNames);
+                var id = dBConnection.SubmitComplaint(model);
+                return Json(new { ok = id > 0, complaintId = id });
                 }
-            model.UploadedEvidence = string.Join(";", evidenceNames);
-            var id = dBConnection.SubmitComplaint(model);
-            return Ok(new { ComplaintId = id });
+            catch (Exception ex)
+                {
+                return Json(new { ok = false, message = ex.Message });
+                }
             }
 
         [HttpPost]
         public IActionResult AddAssessment([FromBody] AIS.Models.IID.InitialAssessmentModel model)
             {
-            if (model.AssignedUnitId <= 0)
+            try
                 {
-                return BadRequest(new { message = "Assigned I&I Unit is required." });
+                var id = dBConnection.AddAssessment(model);
+                return Json(new { ok = id > 0, id });
                 }
-            var id = dBConnection.AddAssessment(model);
-            return Ok(new { AssessmentId = id });
+            catch (Exception ex)
+                {
+                return Json(new { ok = false, message = ex.Message });
+                }
             }
 
         [HttpPost]
         public IActionResult AddHeadReview([FromBody] AIS.Models.IID.HeadReviewModel model)
             {
-            if (model.AssignedToUnit == 0 && model.ComplaintId.HasValue)
+            try
                 {
-                var complaint = dBConnection.GetComplaint(model.ComplaintId.Value);
-                if (complaint != null)
-                    {
-                    model.AssignedToUnit = complaint.AssignedUnitId;
-                    }
+                var id = dBConnection.AddHeadReview(model);
+                return Json(new { ok = id > 0, id });
                 }
-
-            if (string.IsNullOrWhiteSpace(model.AssignedOn))
+            catch (Exception ex)
                 {
-                model.AssignedOn = DateTime.Now.ToString("yyyy-MM-dd");
+                return Json(new { ok = false, message = ex.Message });
                 }
-            var reviewId = dBConnection.AddHeadReview(model);
-            return Ok(new { ReviewId = reviewId });
             }
 
         [HttpPost]
         public IActionResult AddInvestigationPlan([FromBody] AIS.Models.IID.InvestigationPlanModel model)
             {
-            var id = dBConnection.AddInvestigationPlan(model);
-            return Ok(new { PlanId = id });
+            try
+                {
+                var id = dBConnection.AddInvestigationPlan(model);
+                return Json(new { ok = id > 0, id });
+                }
+            catch (Exception ex)
+                {
+                return Json(new { ok = false, message = ex.Message });
+                }
             }
 
         [HttpPost]
         public IActionResult AddPlanApproval([FromBody] AIS.Models.IID.PlanApprovalModel model)
             {
-            var id = dBConnection.AddPlanApproval(model);
-            return Ok(new { ApprovalId = id });
+            try
+                {
+                var id = dBConnection.AddPlanApproval(model);
+                return Json(new { ok = id > 0, id });
+                }
+            catch (Exception ex)
+                {
+                return Json(new { ok = false, message = ex.Message });
+                }
             }
 
         [HttpPost]
-        public IActionResult AddInquiryReport([FromForm] AIS.Models.IID.InquiryReportModel model)
+        public IActionResult AddInquiryReport([FromBody] AIS.Models.IID.InquiryReportModel model)
             {
-            var reportFile = Request.Form.Files.GetFile("UploadedReport");
-            var evidenceFiles = Request.Form.Files.GetFiles("UploadedEvidence");
-            var dsaFile = Request.Form.Files.GetFile("UploadedDsa");
-            model.UploadedReport = SaveUploadFile(reportFile);
-            var evidenceNames = new List<string>();
-            foreach (var file in evidenceFiles)
+            try
                 {
-                var savedFile = SaveUploadFile(file);
-                if (!string.IsNullOrEmpty(savedFile))
+                if (model == null && Request.HasFormContentType)
                     {
-                    evidenceNames.Add(savedFile);
+                    var form = Request.Form;
+                    model = new AIS.Models.IID.InquiryReportModel
+                        {
+                        ComplaintId = int.TryParse(form["ComplaintId"], out var parsedComplaintId) ? parsedComplaintId : null,
+                        NameComplainant = form["NameComplainant"],
+                        NameAccused = form["NameAccused"],
+                        Gist = form["Gist"],
+                        Proceedings = form["Proceedings"],
+                        Findings = form["Findings"],
+                        Recommendation = form["Recommendation"]
+                        };
                     }
+
+                if (model == null)
+                    {
+                    return Json(new { ok = false, message = "Inquiry report payload is required." });
+                    }
+
+                if (Request.HasFormContentType)
+                    {
+                    var reportFile = Request.Form.Files.GetFile("UploadedReport");
+                    var evidenceFiles = Request.Form.Files.GetFiles("UploadedEvidence");
+                    var dsaFile = Request.Form.Files.GetFile("UploadedDsa");
+                    model.UploadedReport = SaveUploadFile(reportFile);
+                    var evidenceNames = new List<string>();
+                    foreach (var file in evidenceFiles)
+                        {
+                        var savedFile = SaveUploadFile(file);
+                        if (!string.IsNullOrEmpty(savedFile))
+                            {
+                            evidenceNames.Add(savedFile);
+                            }
+                        }
+                    model.UploadedEvidence = string.Join(";", evidenceNames);
+                    model.UploadedDsa = SaveUploadFile(dsaFile);
+                    }
+
+                var id = dBConnection.AddInquiryReport(model);
+                return Json(new { ok = id > 0, id });
                 }
-            model.UploadedEvidence = string.Join(";", evidenceNames);
-            model.UploadedDsa = SaveUploadFile(dsaFile);
-            var id = dBConnection.AddInquiryReport(model);
-            return Ok(new { ReportId = id });
+            catch (Exception ex)
+                {
+                return Json(new { ok = false, message = ex.Message });
+                }
             }
 
         [HttpPost]
         public IActionResult AddAnalysis([FromBody] AIS.Models.IID.AnalysisModel model)
             {
-            var id = dBConnection.AddAnalysis(model);
-            return Ok(new { AnalysisId = id });
+            try
+                {
+                var id = dBConnection.AddAnalysis(model);
+                return Json(new { ok = id > 0, id });
+                }
+            catch (Exception ex)
+                {
+                return Json(new { ok = false, message = ex.Message });
+                }
             }
 
         [HttpPost]
         public IActionResult AddFinalApproval([FromBody] AIS.Models.IID.FinalApprovalModel model)
             {
-            var id = dBConnection.AddFinalApproval(model);
-            return Ok(new { FinalApprovalId = id });
+            try
+                {
+                var id = dBConnection.AddFinalApproval(model);
+                return Json(new { ok = id > 0, id });
+                }
+            catch (Exception ex)
+                {
+                return Json(new { ok = false, message = ex.Message });
+                }
             }
 
         [HttpPost]
         public IActionResult AddCaseStudy([FromBody] AIS.Models.IID.CaseStudyModel model)
             {
-            var id = dBConnection.AddCaseStudy(model);
-            return Ok(new { CaseStudyId = id });
+            try
+                {
+                var id = dBConnection.AddCaseStudy(model);
+                return Json(new { ok = id > 0, id });
+                }
+            catch (Exception ex)
+                {
+                return Json(new { ok = false, message = ex.Message });
+                }
             }
 
         [HttpPost]
@@ -4878,23 +4948,50 @@ namespace AIS.Controllers
         [HttpPost]
         public IActionResult GetReports([FromBody] AIS.Models.IID.ReportFilterModel filter)
             {
-            var list = dBConnection.GetReports(filter);
-            return Ok(list);
+            try
+                {
+                var list = dBConnection.GetReports(filter);
+                return Json(list);
+                }
+            catch (Exception ex)
+                {
+                return Json(new { ok = false, message = ex.Message });
+                }
             }
 
 
         [HttpPost]
-        public IActionResult GetComplaintsByUser()
+        public IActionResult GetComplaintsByUser(int userId)
             {
-            var list = dBConnection.GetComplaintsByUser();
-            return Ok(list);
+            try
+                {
+                var list = dBConnection.GetComplaintsByUser();
+                return Json(list);
+                }
+            catch (Exception ex)
+                {
+                return Json(new { ok = false, message = ex.Message });
+                }
             }
 
         [HttpPost]
         public IActionResult GetComplaintsWithoutAssessment()
             {
-            var list = dBConnection.Get_Complaints_Without_Assessment();
-            return Ok(list);
+            try
+                {
+                var list = dBConnection.Get_Complaints_Without_Assessment();
+                var data = list.Select(x => new
+                    {
+                    complaintId = x.ComplaintId,
+                    nature = x.Nature,
+                    submittedOn = x.SubmittedOn
+                    }).ToList();
+                return Json(data);
+                }
+            catch (Exception ex)
+                {
+                return Json(new { ok = false, message = ex.Message });
+                }
             }
 
         [HttpGet]
@@ -4935,8 +5032,35 @@ namespace AIS.Controllers
         [HttpPost]
         public IActionResult GetComplaint(int complaintId)
             {
-            var complaint = dBConnection.GetComplaint(complaintId);
-            return Ok(complaint);
+            try
+                {
+                var c = dBConnection.GetComplaint(complaintId);
+                if (c == null)
+                    {
+                    return Json(new { ok = false, message = "Complaint not found" });
+                    }
+
+                return Json(new
+                    {
+                    ok = true,
+                    complaintId = c.ComplaintId,
+                    nature = c.Nature,
+                    contents = c.Contents,
+                    uploadedComplaint = c.UploadedComplaint,
+                    uploadedFFR = c.UploadedFFR,
+                    uploadedEvidence = c.UploadedEvidence,
+                    actionRequired = c.ActionRequired,
+                    submittedOn = c.SubmittedOn,
+                    status = c.Status,
+                    assessment = c.Assessment,
+                    recommendation = c.Recommendation,
+                    assignedUnitId = c.AssignedUnitId
+                    });
+                }
+            catch (Exception ex)
+                {
+                return Json(new { ok = false, message = ex.Message });
+                }
             }
 
         [HttpGet]

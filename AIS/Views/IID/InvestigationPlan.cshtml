@@ -6,6 +6,7 @@
 
 <div class="container-fluid mt-3">
     <h4>Investigation Plan</h4>
+    <div id="iidAlertHost"></div>
 
     <div class="card mb-3">
         <div class="card-header bg-light">
@@ -50,12 +51,28 @@
     $(function(){
         var complaintId = '@complaintId';
 
+        function showIidAlert(message, type){
+            type = type || 'danger';
+            $('#iidAlertHost').html(
+                '<div class="alert alert-' + type + ' alert-dismissible fade show" role="alert">' +
+                (message || 'Unexpected error') +
+                '<button type="button" class="btn-close" data-bs-dismiss="alert"></button>' +
+                '</div>'
+            );
+        }
+
         function loadComplaint(){
             $.post(g_asiBaseURL + '/ApiCalls/GetComplaint',{ complaintId: complaintId },function(d){
+                if(d && d.ok === false){
+                    showIidAlert(d.message, 'danger');
+                    return;
+                }
                 $('#complaintIdDisplay').text(d.complaintId || complaintId);
                 $('#complaintNature').text(d.nature || '');
                 $('#assessmentText').text(d.assessment || '');
                 $('#assessmentRecommendation').text(d.recommendation || '');
+            }).fail(function(){
+                showIidAlert('Failed to load complaint details.', 'danger');
             });
         }
 
@@ -70,9 +87,16 @@
                 method: 'POST',
                 contentType: 'application/json',
                 data: JSON.stringify(data),
-                success: function(){
-                    alert('Plan submitted for approval.');
+                success: function(response){
+                    if(response && response.ok === false){
+                        showIidAlert(response.message, 'danger');
+                        return;
+                    }
+                    showIidAlert('Plan submitted for approval.', 'success');
                     window.location.href = g_asiBaseURL + '/IID/TaskList';
+                },
+                error: function(){
+                    showIidAlert('Failed to submit plan.', 'danger');
                 }
             });
         });
