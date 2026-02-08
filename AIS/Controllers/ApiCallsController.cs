@@ -4960,14 +4960,16 @@ namespace AIS.Controllers
             }
 
         [HttpPost]
-        public IActionResult GetComplaintsDropdown()
+        public IActionResult GetComplaintsDropdown(int pageId)
             {
             try
                 {
-                var list = dBConnection.GetComplaintsDropdown();
+                var list = dBConnection.GetComplaintsDropdown(pageId);
                 var data = list.Select(x => new
                     {
                     complaintId = x.ComplaintId,
+                    nature = x.Nature,
+                    status = x.Status,
                     displayText = $"{x.ComplaintId} | {x.Nature} | {x.Status}"
                     }).ToList();
                 return Json(data);
