@@ -1,0 +1,343 @@
+@{
+    ViewData["Title"] = "FFR Part I";
+    Layout = "_Layout";
+    var complaintIdQuery = Context.Request.Query["complaintId"].ToString();
+    var ffrIdQuery = Context.Request.Query["ffrId"].ToString();
+    var complaintIdValue = string.IsNullOrWhiteSpace(complaintIdQuery) ? "0" : complaintIdQuery;
+    var ffrIdValue = string.IsNullOrWhiteSpace(ffrIdQuery) ? "0" : ffrIdQuery;
+    var queryString = $"?complaintId={complaintIdValue}&ffrId={ffrIdValue}";
+}
+
+<style>
+    @@media print {
+        .navbar,
+        .sidebar,
+        .no-print,
+        .btn {
+            display: none !important;
+        }
+
+        body {
+            background: #fff;
+        }
+    }
+</style>
+
+<div class="d-flex justify-content-between align-items-center mb-3 no-print">
+    <h4 class="mb-0">FFR Part I</h4>
+    <button type="button" class="btn btn-outline-secondary" onclick="window.print();">Print</button>
+</div>
+
+<div class="mb-3 no-print">
+    <div class="d-flex gap-2">
+        <span class="badge bg-primary">Part 1</span>
+        <span class="badge bg-light text-dark">Part 2</span>
+        <span class="badge bg-light text-dark">Part 3</span>
+    </div>
+    <div class="mt-2">
+        <a class="btn btn-link p-0" href="@($"/IID/FFR_PART2{queryString}")">Next → Part 2</a>
+    </div>
+</div>
+
+<form id="ffrPart1Form" enctype="multipart/form-data" action="#" method="post">
+    <input type="hidden" name="ComplaintId" value="@complaintIdValue" />
+    <input type="hidden" name="FfrId" value="@ffrIdValue" />
+
+    <div class="card mb-3">
+        <div class="card-header">Routing Details</div>
+        <div class="card-body">
+            <div class="mb-2">
+                <label class="form-label">Pertains To</label>
+                <select class="form-select" id="PertainsTo" name="PertainsTo" required>
+                    <option value="">--Select--</option>
+                    <option value="HO">HO</option>
+                    <option value="FIELD">Field</option>
+                </select>
+            </div>
+            <div class="mb-2 d-none" id="fieldTypeDiv">
+                <label class="form-label">Field Type</label>
+                <select class="form-select" id="FieldType" name="FieldType">
+                    <option value="">--Select--</option>
+                    <option value="HO_UNIT">HO Units</option>
+                    <option value="BRANCH">Branch</option>
+                </select>
+            </div>
+            <div class="mb-2 d-none" id="hoUnitTypeDiv">
+                <label class="form-label">HO Unit Type</label>
+                <select class="form-select" id="HOUnitTypeId" name="HOUnitTypeId">
+                    <option value="">--Select HO Unit Type--</option>
+                </select>
+            </div>
+            <div class="mb-2 d-none" id="hoUnitDiv">
+                <label class="form-label">HO Unit</label>
+                <select class="form-select" id="HOUnitId" name="HOUnitId">
+                    <option value="">--Select HO Unit--</option>
+                </select>
+            </div>
+            <div class="mb-2 d-none" id="regionDiv">
+                <label class="form-label">Region</label>
+                <select class="form-select" id="RegionId" name="RegionId">
+                    <option value="">--Select Region--</option>
+                    @{
+                        if (ViewData["RegionList"] != null)
+                        {
+                            foreach (var item in (dynamic)(ViewData["RegionList"]))
+                            {
+                                <option value="@item.CODE">@item.NAME</option>
+                            }
+                        }
+                    }
+                </select>
+            </div>
+            <div class="mb-2 d-none" id="branchDiv">
+                <label class="form-label">Branch</label>
+                <select class="form-select" id="BranchId" name="BranchId">
+                    <option value="">--Select Branch--</option>
+                </select>
+            </div>
+            <div class="mb-2">
+                <label class="form-label">Originating Department</label>
+                <select class="form-select" id="Source" name="Source" required>
+                    <option value="">--Select--</option>
+                    <option>Internal</option>
+                    <option>External</option>
+                    <option>Anonymous</option>
+                    <option>Regulatory</option>
+                    <option>Other</option>
+                </select>
+            </div>
+            <div class="mb-2 d-none" id="sourceOtherDiv">
+                <label class="form-label">Source (Other)</label>
+                <input type="text" class="form-control" name="SourceOtherText" />
+            </div>
+            <div class="mb-2">
+                <label class="form-label">Nature</label>
+                <select class="form-select" name="Nature" required>
+                    <option value="">--Select--</option>
+                    <option>Fraud &amp; Forgery</option>
+                    <option>Embezzlement of loan/partial loan amount</option>
+                    <option>Embezzlement of recovery amount</option>
+                    <option>Embezzlement of deposits</option>
+                    <option>Loan processing issues</option>
+                    <option>Fake/disputed collaterals</option>
+                    <option>Getting illegal gratification</option>
+                    <option>NOC/ Redemption issues</option>
+                    <option>Recovery/ Repayment issues</option>
+                    <option>Service Charges issues</option>
+                    <option>Misbehavior</option>
+                    <option>Miscellaneous</option>
+                    <option>Short payment of cash</option>
+                    <option>Timings related issues</option>
+                </select>
+            </div>
+            <div class="mb-2">
+                <label class="form-label">Reference No</label>
+                <input type="text" class="form-control" name="ReferenceNo" />
+            </div>
+            <div class="mb-2">
+                <label class="form-label">FFR Date</label>
+                <input type="date" class="form-control" name="FFRDate" />
+            </div>
+        </div>
+    </div>
+
+    <div class="card mb-3">
+        <div class="card-header">Brief of Incident Reported</div>
+        <div class="card-body">
+            <div class="mb-2">
+                <label class="form-label">Date of Incident</label>
+                <input type="date" class="form-control" name="IncidentDate" />
+            </div>
+            <div class="mb-2">
+                <label class="form-label">Where/Venue</label>
+                <input type="text" class="form-control" name="IncidentVenue" />
+            </div>
+            <div class="mb-2">
+                <label class="form-label">How incident happened</label>
+                <textarea class="form-control" name="IncidentNarrative"></textarea>
+            </div>
+        </div>
+    </div>
+
+    <div class="card mb-3">
+        <div class="card-header">Complainant Particulars</div>
+        <div class="card-body">
+            <div class="mb-2">
+                <label class="form-label">Name</label>
+                <input type="text" class="form-control" name="ComplainantName" />
+            </div>
+            <div class="mb-2">
+                <label class="form-label">CNIC</label>
+                <input type="text" class="form-control" name="ComplainantCNIC" />
+            </div>
+            <div class="mb-2">
+                <label class="form-label">LC/Account No</label>
+                <input type="text" class="form-control" name="AccountNo" />
+            </div>
+            <div class="mb-2">
+                <label class="form-label">Mobile No</label>
+                <input type="text" class="form-control" name="ComplainantMobile" />
+            </div>
+            <div class="mb-2">
+                <label class="form-label">Address</label>
+                <textarea class="form-control" name="ComplainantAddress"></textarea>
+            </div>
+        </div>
+    </div>
+
+    <div class="card mb-3">
+        <div class="card-header">Accused Details</div>
+        <div class="card-body">
+            <div class="mb-2">
+                <label class="form-label">Main Accused Details</label>
+                <textarea class="form-control" name="MainAccused"></textarea>
+            </div>
+            <div class="mb-2">
+                <label class="form-label">Co-Accused Details</label>
+                <textarea class="form-control" name="CoAccused"></textarea>
+            </div>
+        </div>
+    </div>
+
+    <div class="card mb-3">
+        <div class="card-header">Accusations</div>
+        <div class="card-body">
+            <div class="mb-2">
+                <label class="form-label">Details of Accusations</label>
+                <textarea class="form-control" name="Accusations"></textarea>
+            </div>
+        </div>
+    </div>
+
+    <div class="card mb-3">
+        <div class="card-header">Narrative Details</div>
+        <div class="card-body">
+            <div class="mb-2">
+                <label class="form-label">Approach Adopted</label>
+                <textarea class="form-control" name="ApproachAdopted"></textarea>
+            </div>
+            <div class="mb-2">
+                <label class="form-label">Details of Record Scrutinized</label>
+                <textarea class="form-control" name="RecordScrutinized"></textarea>
+            </div>
+            <div class="mb-2">
+                <label class="form-label">Root Cause / Why</label>
+                <textarea class="form-control" name="RootCause"></textarea>
+            </div>
+            <div class="mb-2">
+                <label class="form-label">Key Findings</label>
+                <textarea class="form-control" name="KeyFindings"></textarea>
+            </div>
+            <div class="mb-2">
+                <label class="form-label">Clear Recommendations</label>
+                <textarea class="form-control" name="ClearRecommendations"></textarea>
+            </div>
+        </div>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-header">Attachments</div>
+        <div class="card-body">
+            <label class="form-label">Upload Attachments</label>
+            <input type="file" class="form-control" name="Attachments" multiple />
+        </div>
+    </div>
+
+    <div class="d-flex flex-wrap gap-2 no-print">
+        <button type="button" class="btn btn-outline-secondary">Save Draft</button>
+        <a class="btn btn-primary" href="@($"/IID/FFR_PART2{queryString}")">Next</a>
+        <button type="button" class="btn btn-outline-secondary" onclick="window.print();">Print</button>
+    </div>
+</form>
+
+@section Scripts{
+<script>
+    $(function(){
+        function toggleSource(){
+            var val = $('#Source').val();
+            if(val === 'Other'){
+                $('#sourceOtherDiv').removeClass('d-none');
+                $('#sourceOtherDiv input').prop('disabled', false);
+            } else {
+                $('#sourceOtherDiv').addClass('d-none');
+                $('#sourceOtherDiv input').prop('disabled', true).val('');
+            }
+        }
+
+        function togglePertainsTo(){
+            var pertainsTo = $('#PertainsTo').val();
+            $('#fieldTypeDiv,#hoUnitTypeDiv,#hoUnitDiv,#regionDiv,#branchDiv').addClass('d-none');
+            $('#FieldType,#HOUnitTypeId,#HOUnitId,#RegionId,#BranchId').prop('disabled', true);
+
+            if(pertainsTo === 'FIELD'){
+                $('#fieldTypeDiv').removeClass('d-none');
+                $('#FieldType').prop('disabled', false);
+                toggleFieldType();
+            }
+        }
+
+        function toggleFieldType(){
+            var fieldType = $('#FieldType').val();
+            $('#hoUnitTypeDiv,#hoUnitDiv,#regionDiv,#branchDiv').addClass('d-none');
+            $('#HOUnitTypeId,#HOUnitId,#RegionId,#BranchId').prop('disabled', true);
+
+            if(fieldType === 'HO_UNIT'){
+                $('#hoUnitTypeDiv,#hoUnitDiv').removeClass('d-none');
+                $('#HOUnitTypeId,#HOUnitId').prop('disabled', false);
+                loadHoUnitTypes();
+            } else if(fieldType === 'BRANCH'){
+                $('#regionDiv,#branchDiv').removeClass('d-none');
+                $('#RegionId,#BranchId').prop('disabled', false);
+            }
+        }
+
+        function loadHoUnitTypes(){
+            if($('#HOUnitTypeId option').length > 1){
+                return;
+            }
+            $.post(g_asiBaseURL + '/ApiCalls/get_ho_unit_types', {}, function(d){
+                $('#HOUnitTypeId').empty().append('<option value="">--Select HO Unit Type--</option>');
+                $.each(d, function(i,v){
+                    var id = v.divisionid || v.DIVISIONID;
+                    var name = v.name || v.NAME;
+                    $('#HOUnitTypeId').append('<option value="'+id+'">'+name+'</option>');
+                });
+            });
+        }
+
+        function loadHoUnits(){
+            var typeId = $('#HOUnitTypeId').val();
+            $('#HOUnitId').empty().append('<option value="">--Select HO Unit--</option>');
+            if(!typeId){
+                return;
+            }
+            $.post(g_asiBaseURL + '/ApiCalls/get_ho_units', { divisionId: typeId }, function(d){
+                $.each(d, function(i,v){
+                    var id = v.id || v.ID;
+                    var name = v.name || v.NAME;
+                    $('#HOUnitId').append('<option value="'+id+'">'+name+'</option>');
+                });
+            });
+        }
+
+        $('#Source').on('change', toggleSource);
+        $('#PertainsTo').on('change', togglePertainsTo);
+        $('#FieldType').on('change', toggleFieldType);
+        $('#HOUnitTypeId').on('change', loadHoUnits);
+
+        $('#RegionId').on('change', function(){
+            if($(this).val()){
+                $('#BranchId').empty().append('<option value="">--Select Branch--</option>');
+                $.post(g_asiBaseURL + '/ApiCalls/get_zone_Branches', { ZONEID: $(this).val() }, function(d){
+                    $.each(d, function(i,v){
+                        $('#BranchId').append('<option value="'+v.branchid+'">'+v.branchname+'</option>');
+                    });
+                });
+            }
+        });
+
+        toggleSource();
+        togglePertainsTo();
+    });
+</script>
+}
