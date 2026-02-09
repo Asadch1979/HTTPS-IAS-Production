@@ -12,9 +12,13 @@ namespace AIS.Models.IID
         [PlainText]
         public string SourceOtherText { get; set; }
         [PlainText]
+        public string ReceivedFrom { get; set; }
+        [PlainText]
         public string PertainsTo { get; set; }
         [PlainText]
         public string FieldType { get; set; }
+        public int? LocationTypeId { get; set; }
+        public int? GMOfficeId { get; set; }
         public int? HOUnitTypeId { get; set; }
         public int? HOUnitId { get; set; }
         public int? RegionId { get; set; }
