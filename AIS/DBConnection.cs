@@ -1022,7 +1022,6 @@ namespace AIS.Controllers
                 }
             //AppendFieldAuditReportMenuPages(modelList);
             AppendFrptPdfEngagementMenu(modelList, user);
-            AppendComplianceFfrMenu(modelList, user);
             con.Dispose();
             return modelList;
             }      
@@ -1070,46 +1069,6 @@ namespace AIS.Controllers
                 Sub_Menu_Id = string.Empty,
                 Sub_Menu_Name = string.Empty,
                 Page_Key = "FRPT_PDF_ENGAGEMENTS",
-                Hide_Menu = 0
-                });
-            }
-
-        private void AppendComplianceFfrMenu(List<MenuPagesModel> modelList, SessionUser user)
-            {
-            if (modelList == null || user == null)
-                {
-                return;
-                }
-
-            if (modelList.Any(item =>
-                string.Equals(item.Page_Path, "IID/FFR_PART1?complaintId=0", StringComparison.OrdinalIgnoreCase)
-                || string.Equals(item.Page_Path, "IID/FFR_PART1", StringComparison.OrdinalIgnoreCase)))
-                {
-                return;
-                }
-
-            var menus = GetTopMenus();
-            var targetMenu = menus.FirstOrDefault(menu =>
-                string.Equals(menu.Menu_Name, "Compliance", StringComparison.OrdinalIgnoreCase))
-                ?? menus.FirstOrDefault();
-
-            if (targetMenu == null)
-                {
-                return;
-                }
-
-            modelList.Add(new MenuPagesModel
-                {
-                Menu_Id = targetMenu.Menu_Id,
-                Page_Name = "Create FFR",
-                Page_Path = "IID/FFR_PART1?complaintId=0",
-                Page_Order = 999,
-                Page_URL = string.Empty,
-                Status = "A",
-                Sub_Menu = string.Empty,
-                Sub_Menu_Id = string.Empty,
-                Sub_Menu_Name = string.Empty,
-                Page_Key = "IID_CREATE_FFR",
                 Hide_Menu = 0
                 });
             }

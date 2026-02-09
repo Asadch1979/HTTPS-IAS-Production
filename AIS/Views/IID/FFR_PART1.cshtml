@@ -5,14 +5,7 @@
     var ffrIdQuery = Context.Request.Query["ffrId"].ToString();
     var complaintIdValue = string.IsNullOrWhiteSpace(complaintIdQuery) ? "0" : complaintIdQuery;
     var ffrIdValue = string.IsNullOrWhiteSpace(ffrIdQuery) ? "0" : ffrIdQuery;
-    var ffrModel = ViewData["FFRPart1"] as AIS.Models.IID.FFRPart1Model;
-    if (ffrModel != null && complaintIdValue == "0" && ffrModel.ComplaintId > 0)
-    {
-        complaintIdValue = ffrModel.ComplaintId.ToString();
-    }
     var queryString = $"?complaintId={complaintIdValue}&ffrId={ffrIdValue}";
-    var natureList = ViewData["NatureList"] as IEnumerable<string> ?? Enumerable.Empty<string>();
-    var sourceList = ViewData["SourceList"] as IEnumerable<string> ?? Enumerable.Empty<string>();
 }
 
 <style>
@@ -42,11 +35,11 @@
         <span class="badge bg-light text-dark">Part 3</span>
     </div>
     <div class="mt-2">
-        <button type="submit" form="ffrPart1Form" class="btn btn-link p-0">Next → Part 2</button>
+        <a class="btn btn-link p-0" href="@($"/IID/FFR_PART2{queryString}")">Next → Part 2</a>
     </div>
 </div>
 
-<form id="ffrPart1Form" enctype="multipart/form-data" asp-action="FFR_PART1" asp-controller="IID" method="post">
+<form id="ffrPart1Form" enctype="multipart/form-data" action="#" method="post">
     <input type="hidden" name="ComplaintId" value="@complaintIdValue" />
     <input type="hidden" name="FfrId" value="@ffrIdValue" />
 
@@ -57,27 +50,27 @@
                 <label class="form-label">Pertains To</label>
                 <select class="form-select" id="PertainsTo" name="PertainsTo" required>
                     <option value="">--Select--</option>
-                    <option value="HO" selected="@(ffrModel?.PertainsTo == "HO" ? "selected" : null)">HO</option>
-                    <option value="FIELD" selected="@(ffrModel?.PertainsTo == "FIELD" ? "selected" : null)">Field</option>
+                    <option value="HO">HO</option>
+                    <option value="FIELD">Field</option>
                 </select>
             </div>
             <div class="mb-2 d-none" id="fieldTypeDiv">
                 <label class="form-label">Field Type</label>
                 <select class="form-select" id="FieldType" name="FieldType">
                     <option value="">--Select--</option>
-                    <option value="HO_UNIT" selected="@(ffrModel?.FieldType == "HO_UNIT" ? "selected" : null)">HO Units</option>
-                    <option value="BRANCH" selected="@(ffrModel?.FieldType == "BRANCH" ? "selected" : null)">Branch</option>
+                    <option value="HO_UNIT">HO Units</option>
+                    <option value="BRANCH">Branch</option>
                 </select>
             </div>
             <div class="mb-2 d-none" id="hoUnitTypeDiv">
                 <label class="form-label">HO Unit Type</label>
-                <select class="form-select" id="HOUnitTypeId" name="HOUnitTypeId" data-selected="@ffrModel?.HOUnitTypeId">
+                <select class="form-select" id="HOUnitTypeId" name="HOUnitTypeId">
                     <option value="">--Select HO Unit Type--</option>
                 </select>
             </div>
             <div class="mb-2 d-none" id="hoUnitDiv">
                 <label class="form-label">HO Unit</label>
-                <select class="form-select" id="HOUnitId" name="HOUnitId" data-selected="@ffrModel?.HOUnitId">
+                <select class="form-select" id="HOUnitId" name="HOUnitId">
                     <option value="">--Select HO Unit--</option>
                 </select>
             </div>
@@ -90,7 +83,7 @@
                         {
                             foreach (var item in (dynamic)(ViewData["RegionList"]))
                             {
-                                <option value="@item.CODE" selected="@(ffrModel?.RegionId?.ToString() == item.CODE.ToString() ? "selected" : null)">@item.NAME</option>
+                                <option value="@item.CODE">@item.NAME</option>
                             }
                         }
                     }
@@ -98,7 +91,7 @@
             </div>
             <div class="mb-2 d-none" id="branchDiv">
                 <label class="form-label">Branch</label>
-                <select class="form-select" id="BranchId" name="BranchId" data-selected="@ffrModel?.BranchId">
+                <select class="form-select" id="BranchId" name="BranchId">
                     <option value="">--Select Branch--</option>
                 </select>
             </div>
@@ -106,33 +99,44 @@
                 <label class="form-label">Originating Department</label>
                 <select class="form-select" id="Source" name="Source" required>
                     <option value="">--Select--</option>
-                    @foreach (var item in sourceList)
-                    {
-                        <option value="@item" selected="@(ffrModel?.Source == item ? "selected" : null)">@item</option>
-                    }
+                    <option>Internal</option>
+                    <option>External</option>
+                    <option>Anonymous</option>
+                    <option>Regulatory</option>
+                    <option>Other</option>
                 </select>
             </div>
             <div class="mb-2 d-none" id="sourceOtherDiv">
                 <label class="form-label">Source (Other)</label>
-                <input type="text" class="form-control" name="SourceOtherText" value="@ffrModel?.SourceOtherText" />
+                <input type="text" class="form-control" name="SourceOtherText" />
             </div>
             <div class="mb-2">
                 <label class="form-label">Nature</label>
                 <select class="form-select" name="Nature" required>
                     <option value="">--Select--</option>
-                    @foreach (var item in natureList)
-                    {
-                        <option value="@item" selected="@(ffrModel?.Nature == item ? "selected" : null)">@item</option>
-                    }
+                    <option>Fraud &amp; Forgery</option>
+                    <option>Embezzlement of loan/partial loan amount</option>
+                    <option>Embezzlement of recovery amount</option>
+                    <option>Embezzlement of deposits</option>
+                    <option>Loan processing issues</option>
+                    <option>Fake/disputed collaterals</option>
+                    <option>Getting illegal gratification</option>
+                    <option>NOC/ Redemption issues</option>
+                    <option>Recovery/ Repayment issues</option>
+                    <option>Service Charges issues</option>
+                    <option>Misbehavior</option>
+                    <option>Miscellaneous</option>
+                    <option>Short payment of cash</option>
+                    <option>Timings related issues</option>
                 </select>
             </div>
             <div class="mb-2">
                 <label class="form-label">Reference No</label>
-                <input type="text" class="form-control" name="ReferenceNo" value="@ffrModel?.ReferenceNo" />
+                <input type="text" class="form-control" name="ReferenceNo" />
             </div>
             <div class="mb-2">
                 <label class="form-label">FFR Date</label>
-                <input type="date" class="form-control" name="FFRDate" value="@ffrModel?.FFRDate" />
+                <input type="date" class="form-control" name="FFRDate" />
             </div>
         </div>
     </div>
@@ -142,15 +146,15 @@
         <div class="card-body">
             <div class="mb-2">
                 <label class="form-label">Date of Incident</label>
-                <input type="date" class="form-control" name="IncidentDate" value="@ffrModel?.IncidentDate" />
+                <input type="date" class="form-control" name="IncidentDate" />
             </div>
             <div class="mb-2">
                 <label class="form-label">Where/Venue</label>
-                <input type="text" class="form-control" name="IncidentVenue" value="@ffrModel?.IncidentVenue" />
+                <input type="text" class="form-control" name="IncidentVenue" />
             </div>
             <div class="mb-2">
                 <label class="form-label">How incident happened</label>
-                <textarea class="form-control" name="IncidentNarrative">@ffrModel?.IncidentNarrative</textarea>
+                <textarea class="form-control" name="IncidentNarrative"></textarea>
             </div>
         </div>
     </div>
@@ -160,23 +164,23 @@
         <div class="card-body">
             <div class="mb-2">
                 <label class="form-label">Name</label>
-                <input type="text" class="form-control" name="ComplainantName" value="@ffrModel?.ComplainantName" />
+                <input type="text" class="form-control" name="ComplainantName" />
             </div>
             <div class="mb-2">
                 <label class="form-label">CNIC</label>
-                <input type="text" class="form-control" name="ComplainantCNIC" value="@ffrModel?.ComplainantCNIC" />
+                <input type="text" class="form-control" name="ComplainantCNIC" />
             </div>
             <div class="mb-2">
                 <label class="form-label">LC/Account No</label>
-                <input type="text" class="form-control" name="AccountNo" value="@ffrModel?.AccountNo" />
+                <input type="text" class="form-control" name="AccountNo" />
             </div>
             <div class="mb-2">
                 <label class="form-label">Mobile No</label>
-                <input type="text" class="form-control" name="ComplainantMobile" value="@ffrModel?.ComplainantMobile" />
+                <input type="text" class="form-control" name="ComplainantMobile" />
             </div>
             <div class="mb-2">
                 <label class="form-label">Address</label>
-                <textarea class="form-control" name="ComplainantAddress">@ffrModel?.ComplainantAddress</textarea>
+                <textarea class="form-control" name="ComplainantAddress"></textarea>
             </div>
         </div>
     </div>
@@ -186,11 +190,11 @@
         <div class="card-body">
             <div class="mb-2">
                 <label class="form-label">Main Accused Details</label>
-                <textarea class="form-control" name="MainAccused">@ffrModel?.MainAccused</textarea>
+                <textarea class="form-control" name="MainAccused"></textarea>
             </div>
             <div class="mb-2">
                 <label class="form-label">Co-Accused Details</label>
-                <textarea class="form-control" name="CoAccused">@ffrModel?.CoAccused</textarea>
+                <textarea class="form-control" name="CoAccused"></textarea>
             </div>
         </div>
     </div>
@@ -200,7 +204,7 @@
         <div class="card-body">
             <div class="mb-2">
                 <label class="form-label">Details of Accusations</label>
-                <textarea class="form-control" name="Accusations">@ffrModel?.Accusations</textarea>
+                <textarea class="form-control" name="Accusations"></textarea>
             </div>
         </div>
     </div>
@@ -210,23 +214,23 @@
         <div class="card-body">
             <div class="mb-2">
                 <label class="form-label">Approach Adopted</label>
-                <textarea class="form-control" name="ApproachAdopted">@ffrModel?.ApproachAdopted</textarea>
+                <textarea class="form-control" name="ApproachAdopted"></textarea>
             </div>
             <div class="mb-2">
                 <label class="form-label">Details of Record Scrutinized</label>
-                <textarea class="form-control" name="RecordScrutinized">@ffrModel?.RecordScrutinized</textarea>
+                <textarea class="form-control" name="RecordScrutinized"></textarea>
             </div>
             <div class="mb-2">
                 <label class="form-label">Root Cause / Why</label>
-                <textarea class="form-control" name="RootCause">@ffrModel?.RootCause</textarea>
+                <textarea class="form-control" name="RootCause"></textarea>
             </div>
             <div class="mb-2">
                 <label class="form-label">Key Findings</label>
-                <textarea class="form-control" name="KeyFindings">@ffrModel?.KeyFindings</textarea>
+                <textarea class="form-control" name="KeyFindings"></textarea>
             </div>
             <div class="mb-2">
                 <label class="form-label">Clear Recommendations</label>
-                <textarea class="form-control" name="ClearRecommendations">@ffrModel?.ClearRecommendations</textarea>
+                <textarea class="form-control" name="ClearRecommendations"></textarea>
             </div>
         </div>
     </div>
@@ -241,7 +245,7 @@
 
     <div class="d-flex flex-wrap gap-2 no-print">
         <button type="button" class="btn btn-outline-secondary">Save Draft</button>
-        <button type="submit" class="btn btn-primary">Next</button>
+        <a class="btn btn-primary" href="@($"/IID/FFR_PART2{queryString}")">Next</a>
         <button type="button" class="btn btn-outline-secondary" onclick="window.print();">Print</button>
     </div>
 </form>
@@ -298,11 +302,6 @@
                     var name = v.name || v.NAME;
                     $('#HOUnitTypeId').append('<option value="'+id+'">'+name+'</option>');
                 });
-                var selectedType = $('#HOUnitTypeId').data('selected');
-                if(selectedType){
-                    $('#HOUnitTypeId').val(String(selectedType));
-                    loadHoUnits();
-                }
             });
         }
 
@@ -318,10 +317,6 @@
                     var name = v.name || v.NAME;
                     $('#HOUnitId').append('<option value="'+id+'">'+name+'</option>');
                 });
-                var selectedUnit = $('#HOUnitId').data('selected');
-                if(selectedUnit){
-                    $('#HOUnitId').val(String(selectedUnit));
-                }
             });
         }
 
@@ -337,19 +332,12 @@
                     $.each(d, function(i,v){
                         $('#BranchId').append('<option value="'+v.branchid+'">'+v.branchname+'</option>');
                     });
-                    var selectedBranch = $('#BranchId').data('selected');
-                    if(selectedBranch){
-                        $('#BranchId').val(String(selectedBranch));
-                    }
                 });
             }
         });
 
         toggleSource();
         togglePertainsTo();
-        if($('#RegionId').val()){
-            $('#RegionId').trigger('change');
-        }
     });
 </script>
 }

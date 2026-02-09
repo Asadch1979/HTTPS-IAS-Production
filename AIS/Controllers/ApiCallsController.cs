@@ -4764,9 +4764,10 @@ namespace AIS.Controllers
                     }
 
                 var complaintFile = Request.Form.Files.GetFile("UploadedComplaint");
+                var ffrFile = Request.Form.Files.GetFile("UploadedFFR");
                 var evidenceFiles = Request.Form.Files.GetFiles("UploadedEvidence");
                 model.UploadedComplaint = SaveUploadFile(complaintFile);
-                model.ReceivedFrom = model.Source;
+                model.UploadedFFR = SaveUploadFile(ffrFile);
                 var evidenceNames = new List<string>();
                 foreach (var file in evidenceFiles)
                     {
