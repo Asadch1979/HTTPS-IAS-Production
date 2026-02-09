@@ -1,0 +1,121 @@
+@{
+    ViewData["Title"] = "FFR Part II";
+    Layout = "_Layout";
+    var complaintIdQuery = Context.Request.Query["complaintId"].ToString();
+    var ffrIdQuery = Context.Request.Query["ffrId"].ToString();
+    var complaintIdValue = string.IsNullOrWhiteSpace(complaintIdQuery) ? "0" : complaintIdQuery;
+    var ffrIdValue = string.IsNullOrWhiteSpace(ffrIdQuery) ? "0" : ffrIdQuery;
+    var queryString = $"?complaintId={complaintIdValue}&ffrId={ffrIdValue}";
+}
+
+<style>
+    @@media print {
+        .navbar,
+        .sidebar,
+        .no-print,
+        .btn {
+            display: none !important;
+        }
+
+        body {
+            background: #fff;
+        }
+    }
+</style>
+
+<div class="d-flex justify-content-between align-items-center mb-3 no-print">
+    <h4 class="mb-0">FFR Part II</h4>
+    <button type="button" class="btn btn-outline-secondary" onclick="window.print();">Print</button>
+</div>
+
+<div class="mb-3 no-print">
+    <div class="d-flex gap-2">
+        <span class="badge bg-light text-dark">Part 1</span>
+        <span class="badge bg-primary">Part 2</span>
+        <span class="badge bg-light text-dark">Part 3</span>
+    </div>
+    <div class="mt-2 d-flex gap-3">
+        <a class="btn btn-link p-0" href="@($"/IID/FFR_PART1{queryString}")">← Back to Part 1</a>
+        <a class="btn btn-link p-0" href="@($"/IID/FFR_PART3{queryString}")">Next → Part 3</a>
+    </div>
+</div>
+
+<form id="ffrPart2Form" action="#" method="post">
+    <input type="hidden" name="ComplaintId" value="@complaintIdValue" />
+    <input type="hidden" name="FfrId" value="@ffrIdValue" />
+
+    <div class="card mb-3">
+        <div class="card-header">Statement of Complainant</div>
+        <div class="card-body">
+            <div class="mb-2">
+                <label class="form-label">Time of recording</label>
+                <input type="time" class="form-control" name="ComplainantStatementTime" />
+            </div>
+            <div class="mb-2">
+                <label class="form-label">Place</label>
+                <input type="text" class="form-control" name="ComplainantStatementPlace" />
+            </div>
+            <div class="mb-2">
+                <label class="form-label">Mode</label>
+                <select class="form-select" name="ComplainantStatementMode">
+                    <option value="">--Select--</option>
+                    <option>Written</option>
+                    <option>Audio</option>
+                    <option>Video</option>
+                </select>
+            </div>
+            <div class="mb-2">
+                <label class="form-label">Key points</label>
+                <textarea class="form-control" name="ComplainantStatementPoints"></textarea>
+            </div>
+        </div>
+    </div>
+
+    <div class="card mb-3">
+        <div class="card-header">Statement of Accused</div>
+        <div class="card-body">
+            <div class="mb-2">
+                <label class="form-label">Time of recording</label>
+                <input type="time" class="form-control" name="AccusedStatementTime" />
+            </div>
+            <div class="mb-2">
+                <label class="form-label">Place</label>
+                <input type="text" class="form-control" name="AccusedStatementPlace" />
+            </div>
+            <div class="mb-2">
+                <label class="form-label">Mode</label>
+                <select class="form-select" name="AccusedStatementMode">
+                    <option value="">--Select--</option>
+                    <option>Written</option>
+                    <option>Audio</option>
+                    <option>Video</option>
+                </select>
+            </div>
+            <div class="mb-2">
+                <label class="form-label">Key points</label>
+                <textarea class="form-control" name="AccusedStatementPoints"></textarea>
+            </div>
+        </div>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-header">Evidence</div>
+        <div class="card-body">
+            <div class="mb-2">
+                <label class="form-label">Primary evidence attached</label>
+                <textarea class="form-control" name="PrimaryEvidence"></textarea>
+            </div>
+            <div class="mb-2">
+                <label class="form-label">Circumstantial/Secondary evidence</label>
+                <textarea class="form-control" name="SecondaryEvidence"></textarea>
+            </div>
+        </div>
+    </div>
+
+    <div class="d-flex flex-wrap gap-2 no-print">
+        <a class="btn btn-outline-secondary" href="@($"/IID/FFR_PART1{queryString}")">Back</a>
+        <button type="button" class="btn btn-outline-secondary">Save Draft</button>
+        <a class="btn btn-primary" href="@($"/IID/FFR_PART3{queryString}")">Next</a>
+        <button type="button" class="btn btn-outline-secondary" onclick="window.print();">Print</button>
+    </div>
+</form>
