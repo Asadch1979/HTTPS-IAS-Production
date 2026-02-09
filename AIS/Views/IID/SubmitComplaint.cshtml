@@ -1,6 +1,8 @@
 @{
     ViewData["Title"] = "Submit Complaint";
     Layout = "_Layout";
+    var natureList = ViewData["NatureList"] as IEnumerable<string> ?? Enumerable.Empty<string>();
+    var sourceList = ViewData["SourceList"] as IEnumerable<string> ?? Enumerable.Empty<string>();
 }
 <h4>Submit Complaint</h4>
 <div id="iidAlertHost"></div>
@@ -45,20 +47,10 @@
                         <label class="form-label">Nature of Complaint</label>
                         <select class="form-select" name="Nature" required>
                             <option value="">--Select--</option>
-                            <option>Fraud & Forgery</option>
-                            <option>Embezzlement of loan/partial loan amount</option>
-                            <option>Embezzlement of recovery amount</option>
-                            <option>Embezzlement of deposits</option>
-                            <option>Loan processing issues</option>
-                            <option>Fake/disputed collaterals</option>
-                            <option>Getting illegal gratification</option>
-                            <option>NOC/ Redemption issues</option>
-                            <option>Recovery/ Repayment issues</option>
-                            <option>Service Charges issues</option>
-                            <option>Misbehavior</option>
-                            <option>Miscellaneous</option>
-                            <option>Short payment of cash</option>
-                            <option>Timings related issues</option>
+                            @foreach (var item in natureList)
+                            {
+                                <option value="@item">@item</option>
+                            }
                         </select>
                     </div>
                     <div class="mb-2">
@@ -74,11 +66,10 @@
                         <label class="form-label">Source</label>
                         <select class="form-select" id="Source" name="Source" required>
                             <option value="">--Select--</option>
-                            <option>Internal</option>
-                            <option>External</option>
-                            <option>Anonymous</option>
-                            <option>Regulatory</option>
-                            <option>Other</option>
+                            @foreach (var item in sourceList)
+                            {
+                                <option value="@item">@item</option>
+                            }
                         </select>
                     </div>
                     <div class="mb-2 d-none" id="sourceOtherDiv">
