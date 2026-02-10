@@ -40,33 +40,6 @@
     </div>
 
 
-    <div class="card mb-3">
-        <div class="card-header bg-light">
-            Complaint Details
-        </div>
-        <div class="card-body">
-            <dl class="row mb-0">
-                <dt class="col-md-3">Complaint ID</dt>
-                <dd class="col-md-9" id="complaintIdDisplay"></dd>
-
-                <dt class="col-md-3">Nature</dt>
-                <dd class="col-md-9" id="complaintNature"></dd>
-
-                <dt class="col-md-3">Submitted On</dt>
-                <dd class="col-md-9" id="complaintSubmittedOn"></dd>
-
-                <dt class="col-md-3">Action Required</dt>
-                <dd class="col-md-9" id="complaintActionRequired"></dd>
-
-                <dt class="col-md-3">Contents</dt>
-                <dd class="col-md-9" id="complaintContents"></dd>
-
-                <dt class="col-md-3">Attachments</dt>
-                <dd class="col-md-9" id="complaintAttachments"></dd>
-            </dl>
-        </div>
-    </div>
-
     <div class="card">
         <div class="card-header bg-light">
             Assessment Entry
@@ -121,24 +94,6 @@
             return $.post(g_asiBaseURL + '/ApiCalls/GetComplaintsDropdown', { pageId: pageId });
         }
 
-        function renderAttachments(data){
-            var html = '';
-            if(data.uploadedComplaint){
-                html += '<a href="'+g_asiBaseURL+'/Uploads/'+data.uploadedComplaint+'" target="_blank">Complaint</a><br/>';
-            }
-            if(data.uploadedFFR){
-                html += '<a href="'+g_asiBaseURL+'/Uploads/'+data.uploadedFFR+'" target="_blank">FFR</a><br/>';
-            }
-            if(data.uploadedEvidence){
-                var arr = data.uploadedEvidence.split(';');
-                $.each(arr,function(i,f){
-                    if(f) html += '<a href="'+g_asiBaseURL+'/Uploads/'+f+'" target="_blank">Evidence '+(i+1)+'</a><br/>';
-                });
-            }
-            return html || '<span class="text-muted">No attachments</span>';
-        }
-
-
         function renderSimpleLink(fileName, text){
             return fileName ? '<a href="'+g_asiBaseURL+'/Uploads/'+fileName+'" target="_blank">'+text+'</a>' : '<span class="text-muted">N/A</span>';
         }
@@ -162,12 +117,6 @@
                         showIidAlert(d.message, 'danger');
                         return;
                     }
-                    $('#complaintIdDisplay').text(d.complaintId || complaintId);
-                    $('#complaintNature').text(d.nature || '');
-                    $('#complaintSubmittedOn').text(d.submittedOn || '');
-                    $('#complaintActionRequired').text(d.actionRequired || '');
-                    $('#complaintContents').text(d.contents || '');
-                    $('#complaintAttachments').html(renderAttachments(d));
 
                     $('#ctxComplaintNo').text(d.complaintNo || '');
                     $('#ctxCategory').text(d.category || '');
