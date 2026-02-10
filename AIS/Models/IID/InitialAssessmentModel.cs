@@ -6,7 +6,25 @@ namespace AIS.Models.IID
         // Complaint details
         public int? ComplaintId { get; set; }
         [PlainText]
+        public string ComplaintNo { get; set; }
+        [PlainText]
         public string Nature { get; set; }
+        [PlainText]
+        public string Category { get; set; }
+        [PlainText]
+        public string ComplainantName { get; set; }
+        [PlainText]
+        public string CNIC { get; set; }
+        [PlainText]
+        public string CellularNumber { get; set; }
+        [PlainText]
+        public string MailingAddress { get; set; }
+        [PlainText]
+        public string Gender { get; set; }
+        [PlainText]
+        public string ReceivedFrom { get; set; }
+        [PlainText]
+        public string LocationTypeText { get; set; }
         [PlainText]
         public string Contents { get; set; }
         [PlainText]
