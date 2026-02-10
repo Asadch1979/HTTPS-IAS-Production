@@ -1,10 +1,11 @@
+@model AIS.Models.IID.FFRPart2Model
 @{
     ViewData["Title"] = "FFR Part II";
     Layout = "_Layout";
     var complaintIdQuery = Context.Request.Query["complaintId"].ToString();
     var ffrIdQuery = Context.Request.Query["ffrId"].ToString();
-    var complaintIdValue = string.IsNullOrWhiteSpace(complaintIdQuery) ? "0" : complaintIdQuery;
-    var ffrIdValue = string.IsNullOrWhiteSpace(ffrIdQuery) ? "0" : ffrIdQuery;
+    var complaintIdValue = (Model?.ComplaintId ?? 0) > 0 ? Model.ComplaintId.ToString() : (string.IsNullOrWhiteSpace(complaintIdQuery) ? "0" : complaintIdQuery);
+    var ffrIdValue = Model?.FfrId?.ToString() ?? (string.IsNullOrWhiteSpace(ffrIdQuery) ? "0" : ffrIdQuery);
     var queryString = $"?complaintId={complaintIdValue}&ffrId={ffrIdValue}";
 }
 
@@ -36,11 +37,11 @@
     </div>
     <div class="mt-2 d-flex gap-3">
         <a class="btn btn-link p-0" href="@($"/IID/FFR_PART1{queryString}")">← Back to Part 1</a>
-        <a class="btn btn-link p-0" href="@($"/IID/FFR_PART3{queryString}")">Next → Part 3</a>
+        <button class="btn btn-link p-0" type="submit" form="ffrPart2Form">Next → Part 3</button>
     </div>
 </div>
 
-<form id="ffrPart2Form" action="#" method="post">
+<form id="ffrPart2Form" action="@Url.Action("FFR_PART2","IID")" method="post">
     <input type="hidden" name="ComplaintId" value="@complaintIdValue" />
     <input type="hidden" name="FfrId" value="@ffrIdValue" />
 
@@ -49,24 +50,24 @@
         <div class="card-body">
             <div class="mb-2">
                 <label class="form-label">Time of recording</label>
-                <input type="time" class="form-control" name="ComplainantStatementTime" />
+                <input type="time" class="form-control" name="ComplainantStatementTime" value="@Model?.ComplainantStatementTime" />
             </div>
             <div class="mb-2">
                 <label class="form-label">Place</label>
-                <input type="text" class="form-control" name="ComplainantStatementPlace" />
+                <input type="text" class="form-control" name="ComplainantStatementPlace" value="@Model?.ComplainantStatementPlace" />
             </div>
             <div class="mb-2">
                 <label class="form-label">Mode</label>
                 <select class="form-select" name="ComplainantStatementMode">
                     <option value="">--Select--</option>
-                    <option>Written</option>
-                    <option>Audio</option>
-                    <option>Video</option>
+                    <option selected="@(Model?.ComplainantStatementMode == "Written" ? "selected" : null)">Written</option>
+                    <option selected="@(Model?.ComplainantStatementMode == "Audio" ? "selected" : null)">Audio</option>
+                    <option selected="@(Model?.ComplainantStatementMode == "Video" ? "selected" : null)">Video</option>
                 </select>
             </div>
             <div class="mb-2">
                 <label class="form-label">Key points</label>
-                <textarea class="form-control" name="ComplainantStatementPoints"></textarea>
+                <textarea class="form-control" name="ComplainantStatementPoints">@Model?.ComplainantStatementPoints</textarea>
             </div>
         </div>
     </div>
@@ -76,24 +77,24 @@
         <div class="card-body">
             <div class="mb-2">
                 <label class="form-label">Time of recording</label>
-                <input type="time" class="form-control" name="AccusedStatementTime" />
+                <input type="time" class="form-control" name="AccusedStatementTime" value="@Model?.AccusedStatementTime" />
             </div>
             <div class="mb-2">
                 <label class="form-label">Place</label>
-                <input type="text" class="form-control" name="AccusedStatementPlace" />
+                <input type="text" class="form-control" name="AccusedStatementPlace" value="@Model?.AccusedStatementPlace" />
             </div>
             <div class="mb-2">
                 <label class="form-label">Mode</label>
                 <select class="form-select" name="AccusedStatementMode">
                     <option value="">--Select--</option>
-                    <option>Written</option>
-                    <option>Audio</option>
-                    <option>Video</option>
+                    <option selected="@(Model?.AccusedStatementMode == "Written" ? "selected" : null)">Written</option>
+                    <option selected="@(Model?.AccusedStatementMode == "Audio" ? "selected" : null)">Audio</option>
+                    <option selected="@(Model?.AccusedStatementMode == "Video" ? "selected" : null)">Video</option>
                 </select>
             </div>
             <div class="mb-2">
                 <label class="form-label">Key points</label>
-                <textarea class="form-control" name="AccusedStatementPoints"></textarea>
+                <textarea class="form-control" name="AccusedStatementPoints">@Model?.AccusedStatementPoints</textarea>
             </div>
         </div>
     </div>
@@ -103,11 +104,11 @@
         <div class="card-body">
             <div class="mb-2">
                 <label class="form-label">Primary evidence attached</label>
-                <textarea class="form-control" name="PrimaryEvidence"></textarea>
+                <textarea class="form-control" name="PrimaryEvidence">@Model?.PrimaryEvidence</textarea>
             </div>
             <div class="mb-2">
                 <label class="form-label">Circumstantial/Secondary evidence</label>
-                <textarea class="form-control" name="SecondaryEvidence"></textarea>
+                <textarea class="form-control" name="SecondaryEvidence">@Model?.SecondaryEvidence</textarea>
             </div>
         </div>
     </div>
@@ -115,7 +116,7 @@
     <div class="d-flex flex-wrap gap-2 no-print">
         <a class="btn btn-outline-secondary" href="@($"/IID/FFR_PART1{queryString}")">Back</a>
         <button type="button" class="btn btn-outline-secondary">Save Draft</button>
-        <a class="btn btn-primary" href="@($"/IID/FFR_PART3{queryString}")">Next</a>
+        <button type="submit" class="btn btn-primary">Next</button>
         <button type="button" class="btn btn-outline-secondary" onclick="window.print();">Print</button>
     </div>
 </form>
