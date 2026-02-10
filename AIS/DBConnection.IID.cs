@@ -512,7 +512,16 @@ namespace AIS.Controllers
                         model = new InitialAssessmentModel
                             {
                             ComplaintId = complaintId,
+                            ComplaintNo = HasColumn(rdr, "COMPLAINT_NO") ? rdr["COMPLAINT_NO"].ToString() : null,
                             Nature = rdr["NATURE"].ToString(),
+                            Category = HasColumn(rdr, "CATEGORY") ? rdr["CATEGORY"].ToString() : null,
+                            ComplainantName = HasColumn(rdr, "COMPLAINANT_NAME") ? rdr["COMPLAINANT_NAME"].ToString() : null,
+                            CNIC = HasColumn(rdr, "CNIC") ? rdr["CNIC"].ToString() : null,
+                            CellularNumber = HasColumn(rdr, "CELLULAR_NUMBER") ? rdr["CELLULAR_NUMBER"].ToString() : null,
+                            MailingAddress = HasColumn(rdr, "MAILING_ADDRESS") ? rdr["MAILING_ADDRESS"].ToString() : null,
+                            Gender = HasColumn(rdr, "GENDER") ? rdr["GENDER"].ToString() : null,
+                            ReceivedFrom = HasColumn(rdr, "RECEIVED_FROM") ? rdr["RECEIVED_FROM"].ToString() : null,
+                            LocationTypeText = HasColumn(rdr, "LOCATION_TYPE") ? rdr["LOCATION_TYPE"].ToString() : null,
                             Contents = rdr["CONTENTS"].ToString(),
                             UploadedComplaint = rdr["UPLOADED_COMPLAINT"].ToString(),
                             UploadedFFR = string.Empty,
@@ -522,6 +531,10 @@ namespace AIS.Controllers
                             Status = HasColumn(rdr, "STATUS") ? rdr["STATUS"].ToString() : null,
                             Assessment = HasColumn(rdr, "ASSESSMENT") ? rdr["ASSESSMENT"].ToString() : null,
                             Recommendation = HasColumn(rdr, "RECOMMENDATION") ? rdr["RECOMMENDATION"].ToString() : null,
+                            LocationTypeId = HasColumn(rdr, "LOCATION_TYPE_ID") && rdr["LOCATION_TYPE_ID"] != DBNull.Value ? Convert.ToInt32(rdr["LOCATION_TYPE_ID"]) : (int?)null,
+                            GMOfficeId = HasColumn(rdr, "GM_OFFICE_ID") && rdr["GM_OFFICE_ID"] != DBNull.Value ? Convert.ToInt32(rdr["GM_OFFICE_ID"]) : (int?)null,
+                            RegionId = HasColumn(rdr, "REGION_ID") && rdr["REGION_ID"] != DBNull.Value ? Convert.ToInt32(rdr["REGION_ID"]) : (int?)null,
+                            BranchId = HasColumn(rdr, "BRANCH_ID") && rdr["BRANCH_ID"] != DBNull.Value ? Convert.ToInt32(rdr["BRANCH_ID"]) : (int?)null,
                             AssignedUnitId = HasColumn(rdr, "ASSIGNED_UNIT_ID") && rdr["ASSIGNED_UNIT_ID"] != DBNull.Value
                                 ? Convert.ToInt32(rdr["ASSIGNED_UNIT_ID"])
                                 : 0
@@ -645,6 +658,133 @@ namespace AIS.Controllers
                     dt.Load(rdr);
                     }
                 return dt;
+                }
+            }
+
+        public int EnqueueEmail(string eventCode, int? refId1, int? refId2, string mailTo, string mailCc, string subject, string body)
+            {
+            using var con = this.DatabaseConnection();
+
+            using (OracleCommand cmd = con.CreateCommand())
+                {
+                cmd.CommandText = "PKG_INQ.P_ENQUEUE_EMAIL";
+                cmd.CommandType = CommandType.StoredProcedure;
+                cmd.BindByName = true;
+                cmd.Parameters.Add("p_event_code", OracleDbType.Varchar2).Value = eventCode ?? string.Empty;
+                cmd.Parameters.Add("p_ref_id1", OracleDbType.Int32).Value = refId1 ?? (object)DBNull.Value;
+                cmd.Parameters.Add("p_ref_id2", OracleDbType.Int32).Value = refId2 ?? (object)DBNull.Value;
+                cmd.Parameters.Add("p_mail_to", OracleDbType.Varchar2).Value = mailTo ?? string.Empty;
+                cmd.Parameters.Add("p_mail_cc", OracleDbType.Varchar2).Value = mailCc ?? string.Empty;
+                cmd.Parameters.Add("p_subject", OracleDbType.Varchar2).Value = subject ?? string.Empty;
+                cmd.Parameters.Add("p_body", OracleDbType.Clob).Value = body ?? string.Empty;
+                cmd.Parameters.Add("o_email_id", OracleDbType.Int32).Direction = ParameterDirection.Output;
+                cmd.ExecuteNonQuery();
+                return Convert.ToInt32(cmd.Parameters["o_email_id"].Value.ToString());
+                }
+            }
+
+        public List<EmailQueueItemModel> GetEmailQueue(string status, DateTime? fromDate, DateTime? toDate)
+            {
+            using var con = this.DatabaseConnection();
+            var items = new List<EmailQueueItemModel>();
+
+            using (OracleCommand cmd = con.CreateCommand())
+                {
+                cmd.CommandText = "PKG_INQ.P_GET_EMAIL_QUEUE";
+                cmd.CommandType = CommandType.StoredProcedure;
+                cmd.BindByName = true;
+                cmd.Parameters.Add("p_status", OracleDbType.Varchar2).Value = string.IsNullOrWhiteSpace(status) ? (object)DBNull.Value : status;
+                cmd.Parameters.Add("p_from_date", OracleDbType.Date).Value = fromDate ?? (object)DBNull.Value;
+                cmd.Parameters.Add("p_to_date", OracleDbType.Date).Value = toDate ?? (object)DBNull.Value;
+                cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+                using (var rdr = cmd.ExecuteReader())
+                    {
+                    while (rdr.Read())
+                        {
+                        items.Add(new EmailQueueItemModel
+                            {
+                            EmailId = Convert.ToInt32(rdr["EMAIL_ID"]),
+                            EventCode = rdr["EVENT_CODE"]?.ToString(),
+                            RefId1 = rdr["REF_ID1"] == DBNull.Value ? (int?)null : Convert.ToInt32(rdr["REF_ID1"]),
+                            RefId2 = rdr["REF_ID2"] == DBNull.Value ? (int?)null : Convert.ToInt32(rdr["REF_ID2"]),
+                            MailTo = rdr["MAIL_TO"]?.ToString(),
+                            MailCc = rdr["MAIL_CC"]?.ToString(),
+                            Subject = rdr["SUBJECT"]?.ToString(),
+                            Body = rdr["BODY"]?.ToString(),
+                            Status = rdr["STATUS"]?.ToString(),
+                            CreatedOn = rdr["CREATED_ON"] == DBNull.Value ? null : Convert.ToDateTime(rdr["CREATED_ON"]).ToString("yyyy-MM-dd HH:mm:ss"),
+                            SentOn = rdr["SENT_ON"] == DBNull.Value ? null : Convert.ToDateTime(rdr["SENT_ON"]).ToString("yyyy-MM-dd HH:mm:ss"),
+                            ErrorText = rdr["ERROR_TEXT"]?.ToString()
+                            });
+                        }
+                    }
+                }
+
+            return items;
+            }
+
+        public void MarkEmailSent(int emailId)
+            {
+            using var con = this.DatabaseConnection();
+            using (OracleCommand cmd = con.CreateCommand())
+                {
+                cmd.CommandText = "PKG_INQ.P_MARK_EMAIL_SENT";
+                cmd.CommandType = CommandType.StoredProcedure;
+                cmd.BindByName = true;
+                cmd.Parameters.Add("p_email_id", OracleDbType.Int32).Value = emailId;
+                cmd.ExecuteNonQuery();
+                }
+            }
+
+        public void MarkEmailFailed(int emailId, string errorText)
+            {
+            using var con = this.DatabaseConnection();
+            using (OracleCommand cmd = con.CreateCommand())
+                {
+                cmd.CommandText = "PKG_INQ.P_MARK_EMAIL_FAILED";
+                cmd.CommandType = CommandType.StoredProcedure;
+                cmd.BindByName = true;
+                cmd.Parameters.Add("p_email_id", OracleDbType.Int32).Value = emailId;
+                cmd.Parameters.Add("p_error_text", OracleDbType.Varchar2).Value = errorText ?? string.Empty;
+                cmd.ExecuteNonQuery();
+                }
+            }
+
+        public int? GetComplaintIdByPlanId(int? planId)
+            {
+            if (!planId.HasValue || planId.Value <= 0)
+                {
+                return null;
+                }
+
+            using var con = this.DatabaseConnection();
+            using (OracleCommand cmd = con.CreateCommand())
+                {
+                cmd.CommandText = "SELECT COMPLAINT_ID FROM T_AU_IID_INV_PLAN WHERE PLAN_ID = :p_plan_id";
+                cmd.CommandType = CommandType.Text;
+                cmd.BindByName = true;
+                cmd.Parameters.Add("p_plan_id", OracleDbType.Int32).Value = planId.Value;
+                var result = cmd.ExecuteScalar();
+                return result == null || result == DBNull.Value ? (int?)null : Convert.ToInt32(result);
+                }
+            }
+
+        public int? GetComplaintIdByReportId(int? reportId)
+            {
+            if (!reportId.HasValue || reportId.Value <= 0)
+                {
+                return null;
+                }
+
+            using var con = this.DatabaseConnection();
+            using (OracleCommand cmd = con.CreateCommand())
+                {
+                cmd.CommandText = "SELECT COMPLAINT_ID FROM T_AU_IID_INQUIRY_REPORT WHERE REPORT_ID = :p_report_id";
+                cmd.CommandType = CommandType.Text;
+                cmd.BindByName = true;
+                cmd.Parameters.Add("p_report_id", OracleDbType.Int32).Value = reportId.Value;
+                var result = cmd.ExecuteScalar();
+                return result == null || result == DBNull.Value ? (int?)null : Convert.ToInt32(result);
                 }
             }
 

@@ -4834,6 +4834,21 @@ namespace AIS.Controllers
             try
                 {
                 var id = dBConnection.AddPlanApproval(model);
+                if (id > 0 && string.Equals(model?.IsApproved, "Y", StringComparison.OrdinalIgnoreCase))
+                    {
+                    var complaintId = dBConnection.GetComplaintIdByPlanId(model?.PlanId);
+                    if (complaintId.HasValue)
+                        {
+                        dBConnection.EnqueueEmail(
+                            "IID_PLAN_APPROVED",
+                            complaintId,
+                            model?.PlanId,
+                            string.Empty,
+                            string.Empty,
+                            "IID Plan Approved",
+                            $"Investigation plan approved for complaint ID {complaintId.Value}.");
+                        }
+                    }
                 return Json(new { ok = id > 0, id });
                 }
             catch (Exception ex)
@@ -4915,6 +4930,21 @@ namespace AIS.Controllers
             try
                 {
                 var id = dBConnection.AddFinalApproval(model);
+                if (id > 0 && string.Equals(model?.Decision, "APPROVE", StringComparison.OrdinalIgnoreCase))
+                    {
+                    var complaintId = dBConnection.GetComplaintIdByReportId(model?.ReportId);
+                    if (complaintId.HasValue)
+                        {
+                        dBConnection.EnqueueEmail(
+                            "IID_INQUIRY_APPROVED",
+                            complaintId,
+                            model?.ReportId,
+                            string.Empty,
+                            string.Empty,
+                            "IID Inquiry Approved",
+                            $"Inquiry approved for complaint ID {complaintId.Value}.");
+                        }
+                    }
                 return Json(new { ok = id > 0, id });
                 }
             catch (Exception ex)
@@ -5098,8 +5128,19 @@ namespace AIS.Controllers
 
             var user = sessionHandler.GetUser();
             var unitId = user?.UserEntityID ?? 0;
-            var list = unitId > 0 ? dBConnection.GetIidTaskList(unitId) : new DataTable();
-            return Ok(list);
+            var dt = unitId > 0 ? dBConnection.GetIidTaskList(unitId) : new DataTable();
+            var rows = dt.AsEnumerable().Select(row => new AIS.Models.IID.TaskListRowModel
+                {
+                ComplaintId = row["COMPLAINT_ID"] == DBNull.Value ? 0 : Convert.ToInt32(row["COMPLAINT_ID"]),
+                ComplaintNo = row["COMPLAINT_NO"]?.ToString(),
+                ComplainantName = row["COMPLAINANT_NAME"]?.ToString(),
+                AssignedOn = row["ASSIGNED_ON"]?.ToString(),
+                Status = row["STATUS"]?.ToString(),
+                AssignedUnitId = row["ASSIGNED_UNIT_ID"] == DBNull.Value ? 0 : Convert.ToInt32(row["ASSIGNED_UNIT_ID"]),
+                PlanId = row["PLAN_ID"] == DBNull.Value ? (int?)null : Convert.ToInt32(row["PLAN_ID"])
+                }).ToList();
+
+            return Ok(rows);
             }
 
         [HttpGet]
@@ -5124,7 +5165,20 @@ namespace AIS.Controllers
                     {
                     ok = true,
                     complaintId = c.ComplaintId,
+                    complaintNo = c.ComplaintNo,
                     nature = c.Nature,
+                    category = c.Category,
+                    complainantName = c.ComplainantName,
+                    cnic = c.CNIC,
+                    cellularNumber = c.CellularNumber,
+                    mailingAddress = c.MailingAddress,
+                    gender = c.Gender,
+                    receivedFrom = c.ReceivedFrom,
+                    locationTypeId = c.LocationTypeId,
+                    locationTypeText = c.LocationTypeText,
+                    gmOfficeId = c.GMOfficeId,
+                    regionId = c.RegionId,
+                    branchId = c.BranchId,
                     contents = c.Contents,
                     uploadedComplaint = c.UploadedComplaint,
                     uploadedFFR = c.UploadedFFR,
