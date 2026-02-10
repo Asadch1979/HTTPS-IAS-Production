@@ -39,24 +39,7 @@
         </dl></div></div></div>
     </div>
 
-
-    <div class="card mb-3">
-        <div class="card-header bg-light">
-            Complaint &amp; Assessment Summary
-        </div>
-        <div class="card-body">
-            <dl class="row mb-0">
-                <dt class="col-md-3">Complaint No</dt>
-                <dd class="col-md-9" id="complaintNo"></dd>
-
-                <dt class="col-md-3">Complainant Name</dt>
-                <dd class="col-md-9" id="complainantName"></dd>
-
-                <dt class="col-md-3">Assessment</dt>
-                <dd class="col-md-9" id="assessmentText"></dd>
-            </dl>
-        </div>
-    </div>
+    @await Html.PartialAsync("_InitialAssessmentSummary")
 
     <div class="card mb-3">
         <div class="card-header bg-light">
@@ -165,9 +148,9 @@
                     $('#planDetails').text('Plan details not available.');
                     return;
                 }
-                $('#complaintNo').text(planRow.COMPLAINT_NO || planRow.complaintNo || '');
-                $('#complainantName').text(planRow.COMPLAINANT_NAME || planRow.complainantName || '');
                 $('#assessmentText').text(planRow.ASSESSMENT || planRow.assessment || '');
+                $('#assessmentRecommendation').text(planRow.RECOMMENDATION || planRow.recommendation || '');
+                $('#assessmentUnit').text(planRow.ASSIGNED_UNIT_ID || planRow.assignedUnitId || '');
                 $('#planDetails').text(planRow.PLAN_DETAILS || planRow.planDetails || '');
             }).fail(function(){
                 showIidAlert('Failed to load plan details.', 'danger');
@@ -190,10 +173,10 @@
                     }
                     planId = resp.planId;
                     $('#approvalForm [name="PlanId"]').val(planId);
-                    $('#complaintNo').text(resp.complaintNo || '');
                     fillComplaintContext(resp, complaintId);
-                    $('#complainantName').text(resp.complainantName || '');
                     $('#assessmentText').text(resp.assessment || '');
+                    $('#assessmentRecommendation').text(resp.recommendation || '');
+                    $('#assessmentUnit').text(resp.assignedUnitId || '');
                     $('#planDetails').text(resp.planDetails || '');
                 },
                 error: function(){

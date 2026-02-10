@@ -38,27 +38,7 @@
         </dl></div></div></div>
     </div>
 
-
-    <div class="card mb-3">
-        <div class="card-header bg-light">
-            Complaint &amp; Assessment Summary
-        </div>
-        <div class="card-body">
-            <dl class="row mb-0">
-                <dt class="col-md-3">Complaint ID</dt>
-                <dd class="col-md-9" id="complaintIdDisplay"></dd>
-
-                <dt class="col-md-3">Nature</dt>
-                <dd class="col-md-9" id="complaintNature"></dd>
-
-                <dt class="col-md-3">Assessment</dt>
-                <dd class="col-md-9" id="assessmentText"></dd>
-
-                <dt class="col-md-3">Recommendation</dt>
-                <dd class="col-md-9" id="assessmentRecommendation"></dd>
-            </dl>
-        </div>
-    </div>
+    @await Html.PartialAsync("_InitialAssessmentSummary")
 
     <div class="card">
         <div class="card-header bg-light">
@@ -149,10 +129,9 @@
                         showIidAlert(d.message, 'danger');
                         return;
                     }
-                    $('#complaintIdDisplay').text(d.complaintId || selectedComplaintId);
-                    $('#complaintNature').text(d.nature || '');
                     $('#assessmentText').text(d.assessment || '');
                     $('#assessmentRecommendation').text(d.recommendation || '');
+                    $('#assessmentUnit').text(d.assignedUnitId || '');
                 },
                 error: function(){
                     showIidAlert('Failed to load complaint details.', 'danger');
