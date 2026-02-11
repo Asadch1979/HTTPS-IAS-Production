@@ -1,9 +1,8 @@
-@model AIS.Models.IID.HeadReviewModel
 @{
     ViewData["Title"] = "Head Review";
     Layout = "_Layout";
-    var complaintId = Model?.ComplaintId;
-    var assessmentId = Model?.AssessmentId;
+    var complaintId = ViewData["ComplaintId"];
+    var assessmentId = ViewData["AssessmentId"];
 }
 
 <div class="container-fluid mt-3">
@@ -48,13 +47,9 @@
             Decision
         </div>
         <div class="card-body">
-            <form asp-action="HeadReview" asp-controller="IID" method="post" id="reviewForm">
-    @Html.AntiForgeryToken()
-                <input type="hidden" asp-for="ComplaintId" />
-                <input type="hidden" asp-for="AssessmentId" />
-                <input type="hidden" asp-for="AssignedToUnit" />
-                <input type="hidden" asp-for="Action" />
-                <input type="hidden" asp-for="ReferredBackComments" />
+            <form id="reviewForm">
+                <input type="hidden" name="ComplaintId" value="@complaintId" />
+                <input type="hidden" name="AssessmentId" value="@assessmentId" />
                 <div class="mb-3">
                     <label class="form-label d-block">Action</label>
                     <div class="form-check form-check-inline">
@@ -68,14 +63,12 @@
                 </div>
                 <div class="mb-3">
                     <label class="form-label">Instructions/Comments</label>
-                    <textarea class="form-control" asp-for="Directions" rows="4"></textarea>
-                    <span asp-validation-for="Directions" class="text-danger"></span>
+                    <textarea class="form-control" name="Directions" rows="4"></textarea>
                     <div class="form-text" id="commentsHint">Provide guidance for the unit or reasons for referral.</div>
                 </div>
                 <div class="mb-3">
                     <label class="form-label">Assigned On</label>
                     <input type="text" class="form-control" id="assignedOnDisplay" readonly />
-                    <input type="hidden" asp-for="AssignedOn" />
                 </div>
                 <button type="submit" class="btn btn-primary">Submit Decision</button>
             </form>
@@ -180,7 +173,6 @@
                     $('#assessmentText').text(d.assessment || '');
                     $('#assessmentRecommendation').text(d.recommendation || '');
                     assignedUnitId = d.assignedUnitId || 0;
-                    $('#reviewForm [name="AssignedToUnit"]').val(assignedUnitId);
                     updateAssignedUnitLabel();
                 },
                 error: function(){
@@ -194,20 +186,21 @@
 
         function updateAssignedOn(){
             var today = new Date();
-            var dateValue = today.toISOString().split('T')[0];
-            $('#assignedOnDisplay').val(dateValue);
-            $('#reviewForm [name="AssignedOn"]').val(dateValue);
+            $('#assignedOnDisplay').val(today.toISOString().split('T')[0]);
         }
 
-        $('#reviewForm').on('change', '[name="Action"]', function(){ $('#reviewForm [name="Action"]').val($(this).val()); });
-
-        $('#reviewForm').on('iid-submit', function(e){
+        $('#reviewForm').on('submit', function(e){
             e.preventDefault();
             var action = $('#reviewForm [name="Action"]:checked').val();
             var directions = $('#reviewForm [name="Directions"]').val();
 
-            $('#reviewForm [name=\"Action\"][value=\"' + action + '\"]').prop('checked', true);
-            $('#reviewForm [name=\"ReferredBackComments\"]').val(action === 'REFER_BACK' ? directions : '');
+            var data = {
+                ComplaintId: $('#reviewForm [name="ComplaintId"]').val(),
+                AssessmentId: $('#reviewForm [name="AssessmentId"]').val(),
+                Directions: directions,
+                ReferredBackComments: action === 'REFER_BACK' ? directions : '',
+                Action: action
+            };
 
             $.ajax({
                 url: g_asiBaseURL + '/ApiCalls/AddHeadReview',

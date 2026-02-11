@@ -1,12 +1,10 @@
-@model AIS.Models.IID.ComplaintModel
 @{
     ViewData["Title"] = "Submit Complaint";
     Layout = "_Layout";
 }
 <h4>Submit Complaint</h4>
 <div id="iidAlertHost"></div>
-<form asp-action="SubmitComplaint" asp-controller="IID" method="post" enctype="multipart/form-data" id="complaintForm">
-    @Html.AntiForgeryToken()
+<form id="complaintForm" enctype="multipart/form-data">
     <div class="row g-3">
         <div class="col-12 col-lg-6">
             <div class="card h-100">
@@ -14,23 +12,23 @@
                 <div class="card-body">
                     <div class="mb-2">
                         <label class="form-label">Name of Complainant</label>
-                        <input type="text" class="form-control" asp-for="ComplainantName" required />
+                        <input type="text" class="form-control" name="ComplainantName" required />
                     </div>
                     <div class="mb-2">
                         <label class="form-label">CNIC</label>
-                        <input type="text" class="form-control" asp-for="CNIC" pattern="\d{5}-\d{7}-\d{1}" placeholder="12345-1234567-1" required />
+                        <input type="text" class="form-control" name="CNIC" pattern="\d{5}-\d{7}-\d{1}" placeholder="12345-1234567-1" required />
                     </div>
                     <div class="mb-2">
                         <label class="form-label">Cellular Number</label>
-                        <input type="text" class="form-control" asp-for="CellularNumber" pattern="03\d{9}" placeholder="03XXXXXXXXX" required />
+                        <input type="text" class="form-control" name="CellularNumber" pattern="03\d{9}" placeholder="03XXXXXXXXX" required />
                     </div>
                     <div class="mb-2">
                         <label class="form-label">Mailing Address</label>
-                        <input type="text" class="form-control" asp-for="MailingAddress" required />
+                        <input type="text" class="form-control" name="MailingAddress" required />
                     </div>
                     <div class="mb-2">
                         <label class="form-label">Gender</label>
-                        <select class="form-select" asp-for="Gender" required>
+                        <select class="form-select" name="Gender" required>
                             <option value="">--Select Gender--</option>
                             <option>Male</option>
                             <option>Female</option>
@@ -45,7 +43,7 @@
                 <div class="card-body">
                     <div class="mb-2">
                         <label class="form-label">Nature of Complaint</label>
-                        <select class="form-select" asp-for="Nature" required>
+                        <select class="form-select" name="Nature" required>
                             <option value="">--Select--</option>
                             <option>Fraud & Forgery</option>
                             <option>Embezzlement of loan/partial loan amount</option>
@@ -65,7 +63,7 @@
                     </div>
                     <div class="mb-2">
                         <label class="form-label">Category</label>
-                        <select class="form-select" asp-for="Category" required>
+                        <select class="form-select" name="Category" required>
                             <option value="">--Select--</option>
                             <option>Complaint</option>
                             <option>Reference</option>
@@ -74,7 +72,7 @@
                     </div>
                     <div class="mb-2">
                         <label class="form-label">Source</label>
-                        <select class="form-select" id="Source" asp-for="Source" required>
+                        <select class="form-select" id="Source" name="Source" required>
                             <option value="">--Select--</option>
                             <option>Internal</option>
                             <option>External</option>
@@ -85,11 +83,11 @@
                     </div>
                     <div class="mb-2 d-none" id="sourceOtherDiv">
                         <label class="form-label">Source (Other)</label>
-                        <input type="text" class="form-control" asp-for="SourceOtherText" />
+                        <input type="text" class="form-control" name="SourceOtherText" />
                     </div>
                     <div class="mb-2">
                         <label class="form-label">Pertains To</label>
-                        <select class="form-select" id="PertainsTo" asp-for="PertainsTo" required>
+                        <select class="form-select" id="PertainsTo" name="PertainsTo" required>
                             <option value="">--Select--</option>
                             <option value="HO">HO</option>
                             <option value="FIELD">Field</option>
@@ -97,7 +95,7 @@
                     </div>
                     <div class="mb-2 d-none" id="fieldTypeDiv">
                         <label class="form-label">Field Type</label>
-                        <select class="form-select" id="FieldType" asp-for="FieldType">
+                        <select class="form-select" id="FieldType" name="FieldType">
                             <option value="">--Select--</option>
                             <option value="HO_UNIT">HO Units</option>
                             <option value="BRANCH">Branch</option>
@@ -105,19 +103,19 @@
                     </div>
                     <div class="mb-2 d-none" id="hoUnitTypeDiv">
                         <label class="form-label">HO Unit Type</label>
-                        <select class="form-select" id="HOUnitTypeId" asp-for="HOUnitTypeId">
+                        <select class="form-select" id="HOUnitTypeId" name="HOUnitTypeId">
                             <option value="">--Select HO Unit Type--</option>
                         </select>
                     </div>
                     <div class="mb-2 d-none" id="hoUnitDiv">
                         <label class="form-label">HO Unit</label>
-                        <select class="form-select" id="HOUnitId" asp-for="HOUnitId">
+                        <select class="form-select" id="HOUnitId" name="HOUnitId">
                             <option value="">--Select HO Unit--</option>
                         </select>
                     </div>
                     <div class="mb-2 d-none" id="regionDiv">
                         <label class="form-label">Region</label>
-                        <select class="form-select" id="RegionId" asp-for="RegionId">
+                        <select class="form-select" id="RegionId" name="RegionId">
                             <option value="">--Select Region--</option>
                             @{
                                 if (ViewData["RegionList"] != null)
@@ -132,13 +130,13 @@
                     </div>
                     <div class="mb-2 d-none" id="branchDiv">
                         <label class="form-label">Branch</label>
-                        <select class="form-select" id="BranchId" asp-for="BranchId">
+                        <select class="form-select" id="BranchId" name="BranchId">
                             <option value="">--Select Branch--</option>
                         </select>
                     </div>
                     <div class="mb-2">
                         <label class="form-label">Contents of Complaint</label>
-                        <textarea class="form-control" asp-for="Contents" required></textarea>
+                        <textarea class="form-control" name="Contents" required></textarea>
                     </div>
                     <div class="mb-2">
                         <label class="form-label">Upload Complaint (PDF)</label>
@@ -146,7 +144,7 @@
                     </div>
                     <div class="mb-2">
                         <label class="form-label">Action Required from I&ID</label>
-                        <textarea class="form-control" asp-for="ActionRequired"></textarea>
+                        <textarea class="form-control" name="ActionRequired"></textarea>
                     </div>
                 </div>
             </div>
@@ -254,7 +252,7 @@
         toggleSource();
         togglePertainsTo();
 
-        $('#complaintForm').on('iid-submit', function(e){
+        $('#complaintForm').on('submit', function(e){
             e.preventDefault();
             var fd = new FormData(this);
             $.ajax({

@@ -37,7 +37,7 @@ namespace AIS.Controllers
             ViewData["UserId"] = u?.PPNumber ?? "";
             }
 
-        [HttpGet]
+        [HttpGet, HttpPost]
         public IActionResult SubmitComplaint()
             {
             ViewData["TopMenu"] = tm.GetTopMenus();
@@ -45,37 +45,7 @@ namespace AIS.Controllers
             if (!User.Identity.IsAuthenticated)
                 return RedirectToAction("Index", "Login");
             ViewData["RegionList"] = dBConnection.GetRBHList(0);
-            return View("../IID/SubmitComplaint", new ComplaintModel());
-            }
-
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public IActionResult SubmitComplaint(ComplaintModel model, IFormFile UploadedComplaint)
-            {
-            ViewData["TopMenu"] = tm.GetTopMenus();
-            ViewData["TopMenuPages"] = tm.GetTopMenusPages();
-            if (!User.Identity.IsAuthenticated)
-                return RedirectToAction("Index", "Login");
-            ViewData["RegionList"] = dBConnection.GetRBHList(0);
-
-            if (UploadedComplaint != null)
-                {
-                model.UploadedComplaint = SaveUploadFile(UploadedComplaint);
-                }
-
-            if (!ModelState.IsValid)
-                {
-                return View("../IID/SubmitComplaint", model);
-                }
-
-            var complaintId = dBConnection.SubmitComplaint(model);
-            if (complaintId <= 0)
-                {
-                ModelState.AddModelError(string.Empty, "Unable to submit complaint.");
-                return View("../IID/SubmitComplaint", model);
-                }
-
-            return RedirectToAction("InitialAssessment", new { complaintId });
+            return View("../IID/SubmitComplaint");
             }
 
         [HttpGet]
@@ -203,7 +173,7 @@ namespace AIS.Controllers
             return RedirectToAction("FFR_PART1");
             }
 
-        [HttpGet]
+        [HttpGet, HttpPost]
         public IActionResult InitialAssessment(int complaintId)
             {
             ViewData["TopMenu"] = tm.GetTopMenus();
@@ -211,235 +181,86 @@ namespace AIS.Controllers
             if (!User.Identity.IsAuthenticated)
                 return RedirectToAction("Index", "Login");
 
-            var model = dBConnection.GetComplaint(complaintId) ?? new InitialAssessmentModel();
-            model.ComplaintId = complaintId;
-            return View("../IID/InitialAssessment", model);
+            ViewData["ComplaintId"] = complaintId;
+            return View("../IID/InitialAssessment");
             }
 
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public IActionResult InitialAssessment(InitialAssessmentModel model)
-            {
-            ViewData["TopMenu"] = tm.GetTopMenus();
-            ViewData["TopMenuPages"] = tm.GetTopMenusPages();
-            if (!User.Identity.IsAuthenticated)
-                return RedirectToAction("Index", "Login");
-
-            if (model.ComplaintId.GetValueOrDefault() <= 0) ModelState.AddModelError("ComplaintId", "ComplaintId missing.");
-            if (model.AssignedUnitId <= 0) ModelState.AddModelError("AssignedUnitId", "Assigned unit is required.");
-
-            if (!ModelState.IsValid)
-                return View("../IID/InitialAssessment", model);
-
-            dBConnection.AddAssessment(model);
-            return RedirectToAction("HeadReview", new { complaintId = model.ComplaintId });
-            }
-
-        [HttpGet]
+        [HttpGet, HttpPost]
         public IActionResult HeadReview(int complaintId, int assessmentId = 0)
             {
             ViewData["TopMenu"] = tm.GetTopMenus();
             ViewData["TopMenuPages"] = tm.GetTopMenusPages();
             if (!User.Identity.IsAuthenticated)
                 return RedirectToAction("Index", "Login");
-            var complaint = dBConnection.GetComplaint(complaintId) ?? new InitialAssessmentModel();
-            var model = new HeadReviewModel
-                {
-                ComplaintId = complaintId,
-                AssessmentId = assessmentId,
-                AssignedToUnit = complaint.AssignedUnitId,
-                AssignedOn = DateTime.Now.ToString("yyyy-MM-dd")
-                };
-            return View("../IID/HeadReview", model);
+            ViewData["ComplaintId"] = complaintId;
+            ViewData["AssessmentId"] = assessmentId;
+            return View("../IID/HeadReview");
             }
 
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public IActionResult HeadReview(HeadReviewModel model)
-            {
-            ViewData["TopMenu"] = tm.GetTopMenus();
-            ViewData["TopMenuPages"] = tm.GetTopMenusPages();
-            if (!User.Identity.IsAuthenticated)
-                return RedirectToAction("Index", "Login");
-
-            if (model.ComplaintId.GetValueOrDefault() <= 0) ModelState.AddModelError("ComplaintId", "ComplaintId missing.");
-            if (model.AssignedToUnit <= 0) ModelState.AddModelError("AssignedToUnit", "Assigned unit is required.");
-
-            if (!ModelState.IsValid)
-                return View("../IID/HeadReview", model);
-
-            dBConnection.AddHeadReview(model);
-            if (string.Equals(model.Action, "REFER_BACK", StringComparison.OrdinalIgnoreCase))
-                return RedirectToAction("InitialAssessment", new { complaintId = model.ComplaintId });
-            return RedirectToAction("TaskList");
-            }
-
-        [HttpGet]
+        [HttpGet, HttpPost]
         public IActionResult InvestigationPlan(int complaintId)
             {
             ViewData["TopMenu"] = tm.GetTopMenus();
             ViewData["TopMenuPages"] = tm.GetTopMenusPages();
             if (!User.Identity.IsAuthenticated)
                 return RedirectToAction("Index", "Login");
-            var model = new InvestigationPlanModel { ComplaintId = complaintId };
-            return View("../IID/InvestigationPlan", model);
+            ViewData["ComplaintId"] = complaintId;
+            return View("../IID/InvestigationPlan");
             }
 
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public IActionResult InvestigationPlan(InvestigationPlanModel model)
-            {
-            ViewData["TopMenu"] = tm.GetTopMenus();
-            ViewData["TopMenuPages"] = tm.GetTopMenusPages();
-            if (!User.Identity.IsAuthenticated)
-                return RedirectToAction("Index", "Login");
-
-            if (model.ComplaintId.GetValueOrDefault() <= 0) ModelState.AddModelError("ComplaintId", "ComplaintId missing.");
-            if (!ModelState.IsValid)
-                return View("../IID/InvestigationPlan", model);
-
-            dBConnection.AddInvestigationPlan(model);
-            return RedirectToAction("PlanApproval");
-            }
-
-        [HttpGet]
+        [HttpGet, HttpPost]
         public IActionResult PlanApproval(int planId)
             {
             ViewData["TopMenu"] = tm.GetTopMenus();
             ViewData["TopMenuPages"] = tm.GetTopMenusPages();
             if (!User.Identity.IsAuthenticated)
                 return RedirectToAction("Index", "Login");
-            var model = new PlanApprovalModel { PlanId = planId };
-            return View("../IID/PlanApproval", model);
+            ViewData["PlanId"] = planId;
+            return View("../IID/PlanApproval");
             }
 
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public IActionResult PlanApproval(PlanApprovalModel model)
-            {
-            ViewData["TopMenu"] = tm.GetTopMenus();
-            ViewData["TopMenuPages"] = tm.GetTopMenusPages();
-            if (!User.Identity.IsAuthenticated)
-                return RedirectToAction("Index", "Login");
-
-            if (model.PlanId.GetValueOrDefault() <= 0) ModelState.AddModelError("PlanId", "PlanId missing.");
-            if (!ModelState.IsValid)
-                return View("../IID/PlanApproval", model);
-
-            dBConnection.AddPlanApproval(model);
-            return RedirectToAction("TaskList");
-            }
-
-        [HttpGet]
+        [HttpGet, HttpPost]
         public IActionResult InquiryReport(int complaintId)
             {
             ViewData["TopMenu"] = tm.GetTopMenus();
             ViewData["TopMenuPages"] = tm.GetTopMenusPages();
             if (!User.Identity.IsAuthenticated)
                 return RedirectToAction("Index", "Login");
-            var model = new InquiryReportModel { ComplaintId = complaintId };
-            return View("../IID/InquiryReport", model);
+            ViewData["ComplaintId"] = complaintId;
+            return View("../IID/InquiryReport");
             }
 
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public IActionResult InquiryReport(InquiryReportModel model)
-            {
-            ViewData["TopMenu"] = tm.GetTopMenus();
-            ViewData["TopMenuPages"] = tm.GetTopMenusPages();
-            if (!User.Identity.IsAuthenticated)
-                return RedirectToAction("Index", "Login");
-
-            if (model.ComplaintId.GetValueOrDefault() <= 0) ModelState.AddModelError("ComplaintId", "ComplaintId missing.");
-            if (!ModelState.IsValid)
-                return View("../IID/InquiryReport", model);
-
-            var reportId = dBConnection.AddInquiryReport(model);
-            return RedirectToAction("Analysis", new { reportId });
-            }
-
-        [HttpGet]
+        [HttpGet, HttpPost]
         public IActionResult Analysis(int reportId)
             {
             ViewData["TopMenu"] = tm.GetTopMenus();
             ViewData["TopMenuPages"] = tm.GetTopMenusPages();
             if (!User.Identity.IsAuthenticated)
                 return RedirectToAction("Index", "Login");
-            var model = new AnalysisModel { ReportId = reportId };
-            return View("../IID/Analysis", model);
+            ViewData["ReportId"] = reportId;
+            return View("../IID/Analysis");
             }
 
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public IActionResult Analysis(AnalysisModel model)
-            {
-            ViewData["TopMenu"] = tm.GetTopMenus();
-            ViewData["TopMenuPages"] = tm.GetTopMenusPages();
-            if (!User.Identity.IsAuthenticated)
-                return RedirectToAction("Index", "Login");
-
-            if (model.ReportId.GetValueOrDefault() <= 0) ModelState.AddModelError("ReportId", "ReportId missing.");
-            if (!ModelState.IsValid)
-                return View("../IID/Analysis", model);
-
-            dBConnection.AddAnalysis(model);
-            return RedirectToAction("FinalApproval", new { reportId = model.ReportId });
-            }
-
-        [HttpGet]
+        [HttpGet, HttpPost]
         public IActionResult FinalApproval(int reportId)
             {
             ViewData["TopMenu"] = tm.GetTopMenus();
             ViewData["TopMenuPages"] = tm.GetTopMenusPages();
             if (!User.Identity.IsAuthenticated)
                 return RedirectToAction("Index", "Login");
-            var model = new FinalApprovalModel { ReportId = reportId };
-            return View("../IID/FinalApproval", model);
+            ViewData["ReportId"] = reportId;
+            return View("../IID/FinalApproval");
             }
 
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public IActionResult FinalApproval(FinalApprovalModel model)
-            {
-            ViewData["TopMenu"] = tm.GetTopMenus();
-            ViewData["TopMenuPages"] = tm.GetTopMenusPages();
-            if (!User.Identity.IsAuthenticated)
-                return RedirectToAction("Index", "Login");
-
-            if (model.ReportId.GetValueOrDefault() <= 0) ModelState.AddModelError("ReportId", "ReportId missing.");
-            if (!ModelState.IsValid)
-                return View("../IID/FinalApproval", model);
-
-            dBConnection.AddFinalApproval(model);
-            return RedirectToAction("CaseStudy");
-            }
-
-        [HttpGet]
+        [HttpGet, HttpPost]
         public IActionResult CaseStudy(int complaintId)
             {
             ViewData["TopMenu"] = tm.GetTopMenus();
             ViewData["TopMenuPages"] = tm.GetTopMenusPages();
             if (!User.Identity.IsAuthenticated)
                 return RedirectToAction("Index", "Login");
-            var model = new CaseStudyModel { ComplaintId = complaintId };
-            return View("../IID/CaseStudy", model);
-            }
-
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public IActionResult CaseStudy(CaseStudyModel model)
-            {
-            ViewData["TopMenu"] = tm.GetTopMenus();
-            ViewData["TopMenuPages"] = tm.GetTopMenusPages();
-            if (!User.Identity.IsAuthenticated)
-                return RedirectToAction("Index", "Login");
-
-            if (model.ComplaintId.GetValueOrDefault() <= 0) ModelState.AddModelError("ComplaintId", "ComplaintId missing.");
-            if (!ModelState.IsValid)
-                return View("../IID/CaseStudy", model);
-
-            dBConnection.AddCaseStudy(model);
-            return RedirectToAction("TaskList");
+            ViewData["ComplaintId"] = complaintId;
+            return View("../IID/CaseStudy");
             }
 
         [HttpGet, HttpPost]

@@ -1,9 +1,8 @@
-@model AIS.Models.IID.AnalysisModel
 @{
     ViewData["Title"] = "Analysis";
     Layout = "_Layout";
-    var complaintId = ViewData["ComplaintId"]?.ToString();
-    var reportId = Model?.ReportId;
+    var complaintId = ViewData["ComplaintId"];
+    var reportId = ViewData["ReportId"];
 }
 <h4>Analysis</h4>
 @await Html.PartialAsync("_ComplaintSelector")
@@ -11,39 +10,38 @@
     <h6>Report Downloads</h6>
     <div id="reportLinks" class="small text-muted">Loading...</div>
 </div>
-<form asp-action="Analysis" asp-controller="IID" method="post" id="analysisForm">
-    @Html.AntiForgeryToken()
-    <input type="hidden" asp-for="ReportId" />
+<form id="analysisForm">
+    <input type="hidden" name="ReportId" value="@reportId" />
     <div class="mb-2">
         <label class="form-label">Policy Gaps</label>
-        <textarea class="form-control" asp-for="PolicyGaps"></textarea>
+        <textarea class="form-control" name="PolicyGaps"></textarea>
     </div>
     <div class="mb-2">
         <label class="form-label">Control Gaps</label>
-        <textarea class="form-control" asp-for="ControlGaps"></textarea>
+        <textarea class="form-control" name="ControlGaps"></textarea>
     </div>
     <div class="mb-2">
         <label class="form-label">Procedural Violations</label>
-        <textarea class="form-control" asp-for="ProceduralViolations"></textarea>
+        <textarea class="form-control" name="ProceduralViolations"></textarea>
     </div>
     <div class="mb-2">
         <label class="form-label">Forward To</label>
-        <input type="text" class="form-control" asp-for="ForwardTo" />
+        <input type="text" class="form-control" name="ForwardTo" />
     </div>
     <div class="mb-2">
         <label class="form-label">Comments</label>
-        <textarea class="form-control" asp-for="Comments"></textarea>
+        <textarea class="form-control" name="Comments"></textarea>
     </div>
     <div class="mb-2">
         <label class="form-label">Decision</label>
-        <select class="form-select" asp-for="Decision" id="Decision">
+        <select class="form-select" name="Decision" id="Decision">
             <option value="FORWARD">Forward</option>
             <option value="REFER_BACK">Refer Back</option>
         </select>
     </div>
     <div class="mb-2 d-none" id="referBackDiv">
         <label class="form-label">Refer Back Comments</label>
-        <textarea class="form-control" asp-for="ReferBackComments"></textarea>
+        <textarea class="form-control" name="ReferBackComments"></textarea>
     </div>
     <button type="submit" class="btn btn-primary">Submit Analysis</button>
 </form>
@@ -182,7 +180,7 @@
         $('#Decision').on('change', toggleDecision);
         toggleDecision();
 
-        $('#analysisForm').on('iid-submit', function(e){
+        $('#analysisForm').on('submit', function(e){
             e.preventDefault();
             var data = {
                 ReportId: $('#analysisForm [name="ReportId"]').val(),
