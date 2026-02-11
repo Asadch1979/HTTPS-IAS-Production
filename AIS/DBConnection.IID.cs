@@ -539,9 +539,13 @@ namespace AIS.Controllers
                             GMOfficeId = HasColumn(rdr, "GM_OFFICE_ID") && rdr["GM_OFFICE_ID"] != DBNull.Value ? Convert.ToInt32(rdr["GM_OFFICE_ID"]) : (int?)null,
                             RegionId = HasColumn(rdr, "REGION_ID") && rdr["REGION_ID"] != DBNull.Value ? Convert.ToInt32(rdr["REGION_ID"]) : (int?)null,
                             BranchId = HasColumn(rdr, "BRANCH_ID") && rdr["BRANCH_ID"] != DBNull.Value ? Convert.ToInt32(rdr["BRANCH_ID"]) : (int?)null,
+                            GMOffice = HasColumn(rdr, "GM_OFFICE") ? rdr["GM_OFFICE"]?.ToString() : null,
+                            Region = HasColumn(rdr, "REGION") ? rdr["REGION"]?.ToString() : null,
+                            Branch = HasColumn(rdr, "BRANCH") ? rdr["BRANCH"]?.ToString() : null,
                             AssignedUnitId = HasColumn(rdr, "ASSIGNED_UNIT_ID") && rdr["ASSIGNED_UNIT_ID"] != DBNull.Value
                                 ? Convert.ToInt32(rdr["ASSIGNED_UNIT_ID"])
-                                : 0
+                                : 0,
+                            AssignedUnit = HasColumn(rdr, "ASSIGNED_UNIT") ? rdr["ASSIGNED_UNIT"]?.ToString() : null
                             };
                         }
                     }

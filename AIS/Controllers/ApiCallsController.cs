@@ -5216,6 +5216,9 @@ namespace AIS.Controllers
                     gmOfficeId = c.GMOfficeId,
                     regionId = c.RegionId,
                     branchId = c.BranchId,
+                    gmOffice = c.GMOffice,
+                    region = c.Region,
+                    branch = c.Branch,
                     contents = c.Contents,
                     uploadedComplaint = c.UploadedComplaint,
                     uploadedFFR = c.UploadedFFR,
@@ -5225,7 +5228,8 @@ namespace AIS.Controllers
                     status = c.Status,
                     assessment = c.Assessment,
                     recommendation = c.Recommendation,
-                    assignedUnitId = c.AssignedUnitId
+                    assignedUnitId = c.AssignedUnitId,
+                    assignedUnit = c.AssignedUnit
                     });
                 }
             catch (Exception ex)

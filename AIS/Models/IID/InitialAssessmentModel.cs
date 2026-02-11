@@ -44,6 +44,12 @@ namespace AIS.Models.IID
         public int? GMOfficeId { get; set; }
         public int? RegionId { get; set; }
         public int? BranchId { get; set; }
+        [PlainText]
+        public string GMOffice { get; set; }
+        [PlainText]
+        public string Region { get; set; }
+        [PlainText]
+        public string Branch { get; set; }
 
         // Assessment details
         public int? ReceivedBy { get; set; }
@@ -52,5 +58,7 @@ namespace AIS.Models.IID
         [PlainText]
         public string Recommendation { get; set; }
         public int AssignedUnitId { get; set; }
+        [PlainText]
+        public string AssignedUnit { get; set; }
         }
     }
