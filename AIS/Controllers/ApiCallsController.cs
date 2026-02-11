@@ -3,9 +3,10 @@ using AIS.Models;
 using AIS.Models.AIS.Models;
 using AIS.Models.AIS.Models.Execution;
 using AIS.Models.HD;
+using AIS.Models.IID;
 using AIS.Models.Reports;
-using AIS.Models.SM;
 using AIS.Models.Requests;
+using AIS.Models.SM;
 using AIS.Security.Cryptography;
 using AIS.Security.PasswordPolicy;
 using AIS.Services;
@@ -4813,7 +4814,8 @@ namespace AIS.Controllers
             }
 
         [HttpPost]
-        public IActionResult AddHeadReview([FromBody] AIS.Models.IID.HeadReviewModel model)
+      //  [Consumes("application/x-www-form-urlencoded")]
+        public IActionResult AddHeadReview([FromForm] HeadReviewModel model)
             {
             try
                 {

@@ -45,25 +45,19 @@ namespace AIS.Models.SM
                 "ACCOUNT_CATEGORY",
                 "ACCOUNT_STATUS",
                 "RISK",
-
                 "TRAN_DATE_DISP",
-
                 "TRAN_AUTH_DATE_DISP",
-
                 "TRANSACTIONMASTERCODE",
                 "TRANSACTION_DISCRIPTION",
                 "TR_AMOUNT",
                 "ACCOUNT_BALANCE",
-
+                "EXCEPTION_DATE_DISP",
+                "EXCEPTION_AMOUNT",
                 "LAST_TRAN_DATE_DISP",
-
                 "SOURCE_OF_FUND",
                 "NATURE_OF_TRANSACTION",
-
                 "DATE_OF_CLOSURE_DISP",
-
                 "ZAKAT_EXEMPTED_DATE_DISP",
-
                 "TXN_COUNT_PERIOD",
                 "TOTAL_DR_PERIOD",
                 "TOTAL_CR_PERIOD",
