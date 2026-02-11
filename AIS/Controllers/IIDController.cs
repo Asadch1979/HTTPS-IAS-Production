@@ -274,13 +274,13 @@ namespace AIS.Controllers
             }
 
         [HttpGet, HttpPost]
-        public IActionResult TaskList()
+        public IActionResult TaskListIID()
             {
             ViewData["TopMenu"] = tm.GetTopMenus();
             ViewData["TopMenuPages"] = tm.GetTopMenusPages();
             if (!User.Identity.IsAuthenticated)
                 return RedirectToAction("Index", "Login");
-            return View("../IID/TaskList");
+            return View("../IID/TaskListIID");
             }
 
         private string SaveUploadFile(IFormFile file)
