@@ -1,7 +1,8 @@
+@model AIS.Models.IID.InvestigationPlanModel
 @{
     ViewData["Title"] = "Investigation Plan";
     Layout = "_Layout";
-    var complaintId = ViewData["ComplaintId"];
+    var complaintId = Model?.ComplaintId;
 }
 
 <div class="container-fluid mt-3">
@@ -45,11 +46,12 @@
             Plan Details
         </div>
         <div class="card-body">
-            <form id="planForm">
-                <input type="hidden" name="ComplaintId" value="@complaintId" />
+            <form asp-action="InvestigationPlan" asp-controller="IID" method="post" id="planForm">
+    @Html.AntiForgeryToken()
+                <input type="hidden" asp-for="ComplaintId" />
                 <div class="mb-3">
                     <label class="form-label">Plan Details</label>
-                    <textarea class="form-control" name="PlanDetails" rows="6"></textarea>
+                    <textarea class="form-control" asp-for="PlanDetails" rows="6"></textarea>
                 </div>
                 <button type="submit" class="btn btn-primary">Submit Plan for Approval</button>
             </form>
@@ -168,7 +170,7 @@
             });
         }
 
-        $('#planForm').on('submit', function(e){
+        $('#planForm').on('iid-submit', function(e){
             e.preventDefault();
             var data = {
                 ComplaintId: $('#planForm [name="ComplaintId"]').val(),

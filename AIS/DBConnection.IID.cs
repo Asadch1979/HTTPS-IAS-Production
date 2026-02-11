@@ -10,6 +10,22 @@ namespace AIS.Controllers
     {
     public partial class DBConnection
         {
+        private static void LogIidProcDebug(string procName, params (string Key, object Value)[] values)
+            {
+            var parts = new List<string>();
+            foreach (var item in values)
+                {
+                if (item.Value is string text && text.Length > 120)
+                    {
+                    parts.Add($"{item.Key}=len:{text.Length}");
+                    }
+                else
+                    {
+                    parts.Add($"{item.Key}={item.Value ?? "null"}");
+                    }
+                }
+            System.Diagnostics.Debug.WriteLine($"[IID-DB] {procName}: {string.Join(", ", parts)}");
+            }
         public int SubmitComplaint(ComplaintModel model)
             {
             var sessionHandler = CreateSessionHandler();
@@ -563,6 +579,7 @@ namespace AIS.Controllers
                 cmd.CommandText = "PKG_INQ.ADD_ASSESSMENT";
                 cmd.CommandType = CommandType.StoredProcedure;
                 cmd.BindByName = true;
+                LogIidProcDebug("PKG_INQ.P_ADD_INITIAL_ASSESSMENT", ("complaintId", model.ComplaintId), ("assignedUnitId", model.AssignedUnitId), ("recommendation", model.Recommendation), ("assessment", model.Assessment));
                 cmd.Parameters.Add("p_complaint_id", OracleDbType.Int32).Value = model.ComplaintId ?? (object)DBNull.Value;
                 cmd.Parameters.Add("p_received_by", OracleDbType.Int32).Value = loggedInUser.PPNumber;
                 cmd.Parameters.Add("p_assessment", OracleDbType.Clob).Value = model.Assessment ?? string.Empty;
@@ -593,6 +610,7 @@ namespace AIS.Controllers
                 cmd.CommandText = "PKG_INQ.ADD_HEAD_REVIEW";
                 cmd.CommandType = CommandType.StoredProcedure;
                 cmd.BindByName = true;
+                LogIidProcDebug("PKG_INQ.P_ADD_HEAD_REVIEW", ("complaintId", model.ComplaintId), ("assessmentId", model.AssessmentId), ("assignedToUnit", model.AssignedToUnit), ("action", model.Action), ("directions", model.Directions));
                 cmd.Parameters.Add("p_complaint_id", OracleDbType.Int32).Value = model.ComplaintId ?? (object)DBNull.Value;
                 cmd.Parameters.Add("p_assessment_id", OracleDbType.Int32).Value = model.AssessmentId ?? (object)DBNull.Value;
                 cmd.Parameters.Add("p_reviewed_by", OracleDbType.Int32).Value = loggedInUser.PPNumber;
@@ -629,6 +647,7 @@ namespace AIS.Controllers
                 cmd.CommandText = "PKG_INQ.ADD_INV_PLAN";
                 cmd.CommandType = CommandType.StoredProcedure;
                 cmd.BindByName = true;
+                LogIidProcDebug("PKG_INQ.P_ADD_INVESTIGATION_PLAN", ("complaintId", model.ComplaintId), ("planDetails", model.PlanDetails));
                 model.Status = IidStatuses.PlanDrafted;
                 cmd.Parameters.Add("p_complaint_id", OracleDbType.Int32).Value = model.ComplaintId ?? (object)DBNull.Value;
                 cmd.Parameters.Add("p_plan_details", OracleDbType.Clob).Value = model.PlanDetails ?? string.Empty;
@@ -875,6 +894,7 @@ namespace AIS.Controllers
                 cmd.CommandText = "PKG_INQ.ADD_PLAN_APPROVAL";
                 cmd.CommandType = CommandType.StoredProcedure;
                 cmd.BindByName = true;
+                LogIidProcDebug("PKG_INQ.P_ADD_PLAN_APPROVAL", ("planId", model.PlanId), ("isApproved", model.IsApproved), ("editedPlan", model.EditedPlan));
                 cmd.Parameters.Add("p_plan_id", OracleDbType.Int32).Value = model.PlanId ?? (object)DBNull.Value;
                 cmd.Parameters.Add("p_approved_by", OracleDbType.Int32).Value = loggedInUser.PPNumber;
                 cmd.Parameters.Add("p_is_approved", OracleDbType.Varchar2).Value = model.IsApproved ?? string.Empty;
@@ -905,6 +925,7 @@ namespace AIS.Controllers
                 cmd.CommandText = "PKG_INQ.ADD_INQUIRY_REPORT";
                 cmd.CommandType = CommandType.StoredProcedure;
                 cmd.BindByName = true;
+                LogIidProcDebug("PKG_INQ.P_ADD_INQUIRY_REPORT", ("complaintId", model.ComplaintId), ("gist", model.Gist), ("recommendation", model.Recommendation));
                 var submittedOn = DateTime.Now;
                 cmd.Parameters.Add("p_complaint_id", OracleDbType.Int32).Value = model.ComplaintId ?? (object)DBNull.Value;
                 cmd.Parameters.Add("p_name_complainant", OracleDbType.Varchar2).Value = model.NameComplainant ?? string.Empty;
@@ -943,6 +964,7 @@ namespace AIS.Controllers
                 cmd.CommandText = "PKG_INQ.ADD_ANALYSIS";
                 cmd.CommandType = CommandType.StoredProcedure;
                 cmd.BindByName = true;
+                LogIidProcDebug("PKG_INQ.P_ADD_ANALYSIS", ("reportId", model.ReportId), ("decision", model.Decision), ("comments", model.Comments));
                 cmd.Parameters.Add("p_report_id", OracleDbType.Int32).Value = model.ReportId ?? (object)DBNull.Value;
                 cmd.Parameters.Add("p_policy_gaps", OracleDbType.Clob).Value = model.PolicyGaps ?? string.Empty;
                 cmd.Parameters.Add("p_control_gaps", OracleDbType.Clob).Value = model.ControlGaps ?? string.Empty;
@@ -977,6 +999,7 @@ namespace AIS.Controllers
                 cmd.CommandText = "PKG_INQ.ADD_FINAL_APPROVAL";
                 cmd.CommandType = CommandType.StoredProcedure;
                 cmd.BindByName = true;
+                LogIidProcDebug("PKG_INQ.P_ADD_FINAL_APPROVAL", ("reportId", model.ReportId), ("decision", model.Decision), ("comments", model.Comments));
                 cmd.Parameters.Add("p_report_id", OracleDbType.Int32).Value = model.ReportId ?? (object)DBNull.Value;
                 cmd.Parameters.Add("p_comments", OracleDbType.Clob).Value = model.Comments ?? string.Empty;
                 cmd.Parameters.Add("p_approved", OracleDbType.Varchar2).Value = model.Decision ?? string.Empty;
@@ -1035,6 +1058,7 @@ namespace AIS.Controllers
                 cmd.CommandText = "PKG_INQ.ADD_CASE_STUDY";
                 cmd.CommandType = CommandType.StoredProcedure;
                 cmd.BindByName = true;
+                LogIidProcDebug("PKG_INQ.P_ADD_CASE_STUDY", ("complaintId", model.ComplaintId), ("status", model.Status), ("gist", model.Gist));
                 cmd.Parameters.Add("p_complaint_id", OracleDbType.Int32).Value = model.ComplaintId ?? (object)DBNull.Value;
                 cmd.Parameters.Add("p_origin_process_owner", OracleDbType.Varchar2).Value = model.OriginProcessOwner ?? string.Empty;
                 cmd.Parameters.Add("p_name_complainant", OracleDbType.Varchar2).Value = model.NameComplainant ?? string.Empty;

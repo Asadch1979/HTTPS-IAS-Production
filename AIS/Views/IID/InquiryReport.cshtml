@@ -1,35 +1,37 @@
+@model AIS.Models.IID.InquiryReportModel
 @{
     ViewData["Title"] = "Inquiry Report";
     Layout = "_Layout";
-    var complaintId = ViewData["ComplaintId"];
+    var complaintId = Model?.ComplaintId;
 }
 <h4>Inquiry Report</h4>
 @await Html.PartialAsync("_ComplaintSelector")
-<form id="reportForm" enctype="multipart/form-data">
-    <input type="hidden" name="ComplaintId" value="@complaintId" />
+<form asp-action="InquiryReport" asp-controller="IID" method="post" enctype="multipart/form-data" id="reportForm">
+    @Html.AntiForgeryToken()
+    <input type="hidden" asp-for="ComplaintId" />
     <div class="mb-2">
         <label class="form-label">Name of Complainant</label>
-        <input type="text" class="form-control" name="NameComplainant" required />
+        <input type="text" class="form-control" asp-for="NameComplainant" required />
     </div>
     <div class="mb-2">
         <label class="form-label">Name of Accused</label>
-        <input type="text" class="form-control" name="NameAccused" required />
+        <input type="text" class="form-control" asp-for="NameAccused" required />
     </div>
     <div class="mb-2">
         <label class="form-label">Gist</label>
-        <textarea class="form-control" name="Gist" required></textarea>
+        <textarea class="form-control" asp-for="Gist" required></textarea>
     </div>
     <div class="mb-2">
         <label class="form-label">Proceedings</label>
-        <textarea class="form-control" name="Proceedings" required></textarea>
+        <textarea class="form-control" asp-for="Proceedings" required></textarea>
     </div>
     <div class="mb-2">
         <label class="form-label">Findings</label>
-        <textarea class="form-control" name="Findings" required></textarea>
+        <textarea class="form-control" asp-for="Findings" required></textarea>
     </div>
     <div class="mb-2">
         <label class="form-label">Recommendation</label>
-        <textarea class="form-control" name="Recommendation" required></textarea>
+        <textarea class="form-control" asp-for="Recommendation" required></textarea>
     </div>
     <div class="mb-2">
         <label class="form-label">Upload Inquiry Report (PDF)</label>
@@ -90,7 +92,7 @@
             });
         }
 
-        $('#reportForm').on('submit', function(e){
+        $('#reportForm').on('iid-submit', function(e){
             e.preventDefault();
             var fd = new FormData(this);
             $.ajax({

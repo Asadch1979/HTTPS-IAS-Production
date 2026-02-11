@@ -1,67 +1,69 @@
+@model AIS.Models.IID.CaseStudyModel
 @{
     ViewData["Title"] = "Case Study";
     Layout = "_Layout";
-    var complaintId = ViewData["ComplaintId"];
+    var complaintId = Model?.ComplaintId;
 }
 <h4>Case Study</h4>
 @await Html.PartialAsync("_ComplaintSelector")
-<form id="caseForm">
-    <input type="hidden" name="ComplaintId" value="@complaintId" />
+<form asp-action="CaseStudy" asp-controller="IID" method="post" id="caseForm">
+    @Html.AntiForgeryToken()
+    <input type="hidden" asp-for="ComplaintId" />
     <div class="mb-2">
         <label class="form-label">Originating Process Owner</label>
-        <input class="form-control" name="OriginProcessOwner" />
+        <input class="form-control" asp-for="OriginProcessOwner" />
     </div>
     <div class="mb-2">
         <label class="form-label">Name</label>
-        <input class="form-control" name="NameComplainant" />
+        <input class="form-control" asp-for="NameComplainant" />
     </div>
     <div class="mb-2">
         <label class="form-label">Branch</label>
-        <input class="form-control" name="Branch" />
+        <input class="form-control" asp-for="Branch" />
     </div>
     <div class="mb-2">
         <label class="form-label">Gist</label>
-        <textarea class="form-control" name="Gist"></textarea>
+        <textarea class="form-control" asp-for="Gist"></textarea>
     </div>
     <div class="mb-2">
         <label class="form-label">Outcome</label>
-        <textarea class="form-control" name="Outcome"></textarea>
+        <textarea class="form-control" asp-for="Outcome"></textarea>
     </div>
     <div class="mb-2">
         <label class="form-label">Modus Operandi</label>
-        <textarea class="form-control" name="ModusOperandi"></textarea>
+        <textarea class="form-control" asp-for="ModusOperandi"></textarea>
     </div>
     <div class="mb-2">
         <label class="form-label">Key Lessons / Controls Gaps Summary</label>
-        <textarea class="form-control" name="Gaps"></textarea>
+        <textarea class="form-control" asp-for="Gaps"></textarea>
     </div>
     <div class="mb-2">
         <label class="form-label">Root Cause</label>
-        <textarea class="form-control" name="RootCause"></textarea>
+        <textarea class="form-control" asp-for="RootCause"></textarea>
     </div>
     <div class="mb-2">
         <label class="form-label">Policy Gaps Identified</label>
-        <textarea class="form-control" name="PolicyGapsIdentified"></textarea>
+        <textarea class="form-control" asp-for="PolicyGapsIdentified"></textarea>
     </div>
     <div class="mb-2">
         <label class="form-label">Violated Policy/SOP References</label>
-        <textarea class="form-control" name="ControlViolations"></textarea>
+        <textarea class="form-control" asp-for="ControlViolations"></textarea>
     </div>
     <div class="mb-2">
         <label class="form-label">Risk Identified</label>
-        <textarea class="form-control" name="RiskIdentified"></textarea>
+        <textarea class="form-control" asp-for="RiskIdentified"></textarea>
     </div>
     <div class="mb-2">
         <label class="form-label">Regulatory Compliance Failure</label>
-        <textarea class="form-control" name="RegulatoryComplianceFailure"></textarea>
+        <textarea class="form-control" asp-for="RegulatoryComplianceFailure"></textarea>
     </div>
     <div class="mb-2">
         <label class="form-label">Actions/Administrative Action Summary</label>
-        <textarea class="form-control" name="ActionsRec"></textarea>
+        <textarea class="form-control" asp-for="ActionsRec"></textarea>
     </div>
     <div class="mb-2">
         <label class="form-label">Status</label>
-        <input class="form-control" name="Status" />
+        <input class="form-control" asp-for="Status" />
     </div>
     <button type="submit" class="btn btn-primary">Submit</button>
 </form>
@@ -110,24 +112,24 @@
             });
         }
 
-        $('#caseForm').on('submit', function(e){
+        $('#caseForm').on('iid-submit', function(e){
             e.preventDefault();
             var data = {
                 ComplaintId: $('#caseForm [name="ComplaintId"]').val(),
-                OriginProcessOwner: $('#caseForm [name="OriginProcessOwner"]').val(),
-                NameComplainant: $('#caseForm [name="NameComplainant"]').val(),
-                Branch: $('#caseForm [name="Branch"]').val(),
-                Gist: $('#caseForm [name="Gist"]').val(),
-                Outcome: $('#caseForm [name="Outcome"]').val(),
-                ModusOperandi: $('#caseForm [name="ModusOperandi"]').val(),
-                Gaps: $('#caseForm [name="Gaps"]').val(),
-                RootCause: $('#caseForm [name="RootCause"]').val(),
-                PolicyGapsIdentified: $('#caseForm [name="PolicyGapsIdentified"]').val(),
-                ControlViolations: $('#caseForm [name="ControlViolations"]').val(),
-                RiskIdentified: $('#caseForm [name="RiskIdentified"]').val(),
-                RegulatoryComplianceFailure: $('#caseForm [name="RegulatoryComplianceFailure"]').val(),
-                ActionsRec: $('#caseForm [name="ActionsRec"]').val(),
-                Status: $('#caseForm [name="Status"]').val()
+                OriginProcessOwner: $('#caseForm [asp-for="OriginProcessOwner"]').val(),
+                NameComplainant: $('#caseForm [asp-for="NameComplainant"]').val(),
+                Branch: $('#caseForm [asp-for="Branch"]').val(),
+                Gist: $('#caseForm [asp-for="Gist"]').val(),
+                Outcome: $('#caseForm [asp-for="Outcome"]').val(),
+                ModusOperandi: $('#caseForm [asp-for="ModusOperandi"]').val(),
+                Gaps: $('#caseForm [asp-for="Gaps"]').val(),
+                RootCause: $('#caseForm [asp-for="RootCause"]').val(),
+                PolicyGapsIdentified: $('#caseForm [asp-for="PolicyGapsIdentified"]').val(),
+                ControlViolations: $('#caseForm [asp-for="ControlViolations"]').val(),
+                RiskIdentified: $('#caseForm [asp-for="RiskIdentified"]').val(),
+                RegulatoryComplianceFailure: $('#caseForm [asp-for="RegulatoryComplianceFailure"]').val(),
+                ActionsRec: $('#caseForm [asp-for="ActionsRec"]').val(),
+                Status: $('#caseForm [asp-for="Status"]').val()
             };
             $.ajax({
                 url: g_asiBaseURL + '/ApiCalls/AddCaseStudy',
