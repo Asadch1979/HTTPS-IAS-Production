@@ -51,7 +51,7 @@
             <form id="reviewForm" asp-action="HeadReview" asp-controller="IID" method="post">
                 @Html.AntiForgeryToken()
                 <input type="hidden" asp-for="ComplaintId" value="@complaintId" />
-                <input type="hidden" asp-for="AssessmentId" value="@assessmentId" />
+                <input type="hidden" name="AssessmentId" id="AssessmentId" value="@assessmentId" />
                 <input type="hidden" asp-for="AssignedToUnit" />
                 <div class="mb-3">
                     <label class="form-label d-block">Action</label>
@@ -87,6 +87,7 @@
 <script>
     $(function(){
         var complaintId = '@complaintId';
+        var currentAssessmentId = '@assessmentId';
         var assignedUnitId = 0;
         var assignedUnitName = "";
         var unitLookup = {};
@@ -187,6 +188,9 @@
                     fillComplaintContext(d, complaintId);
                     $('#assessmentText').text(d.assessment || '');
                     $('#assessmentRecommendation').text(d.recommendation || '');
+                    currentAssessmentId = d.assessmentId || d.AssessmentId || currentAssessmentId || 0;
+                    $('#AssessmentId').val(currentAssessmentId);
+
                     assignedUnitId = d.assignedUnitId || 0;
                     assignedUnitName = d.assignedUnit || '';
                     $('#reviewForm [name="AssignedToUnit"]').val(assignedUnitId || '');
@@ -208,43 +212,41 @@
 
         $('#reviewForm').on('submit', function(e){
             e.preventDefault();
+
             var action = $('#reviewForm [name="Action"]:checked').val();
-            var directions = $('#reviewForm [name="Directions"]').val();
+            var complaintId = $('#reviewForm [name="ComplaintId"]').val();
+            var assignedToUnit = $('#reviewForm [name="AssignedToUnit"]').val();
 
-            var data = {
-                ComplaintId: $('#reviewForm [name="ComplaintId"]').val(),
-                AssessmentId: $('#reviewForm [name="AssessmentId"]').val(),
-                AssignedToUnit: $('#reviewForm [name="AssignedToUnit"]').val(),
-                Directions: directions,
-                ReferredBackComments: action === 'REFER_BACK' ? directions : '',
-                Action: action
-            };
-
-            if(action === 'APPROVE' && !data.AssignedToUnit){
+            if(action === 'APPROVE' && !assignedToUnit){
                 showIidAlert('Assigned unit is required.', 'danger');
                 return;
             }
 
-            $.ajax({
-                url: g_asiBaseURL + '/ApiCalls/AddHeadReview',
-                method: 'POST',
-                contentType: 'application/json',
-                data: JSON.stringify(data),
-                success: function(response){
-                    if(response && response.ok === false){
-                        showIidAlert(response.message, 'danger');
-                        return;
-                    }
-                    showIidAlert('Decision submitted. Notification queued.', 'success');
-                    if(action === 'APPROVE'){
-                        window.location.href = g_asiBaseURL + '/IID/TaskList';
-                    } else {
-                        window.location.href = g_asiBaseURL + '/IID/InitialAssessment?complaintId=' + complaintId;
-                    }
-                },
-                error: function(){
-                    showIidAlert('Failed to submit decision.', 'danger');
+            var assessmentIdValue = $('#AssessmentId').val() || currentAssessmentId || '@assessmentId';
+            $('#AssessmentId').val(assessmentIdValue);
+
+            var data = $(this).serialize();
+            if(!/AssessmentId=/.test(data) || /AssessmentId=(?:0)?(?:&|$)/.test(data)){
+                data = data.replace(/(^|&)AssessmentId=[^&]*/,'').replace(/^&/,'');
+                data += (data ? '&' : '') + 'AssessmentId=' + encodeURIComponent(assessmentIdValue);
+            }
+
+            $.post(g_asiBaseURL + '/ApiCalls/AddHeadReview', data, function(response){
+                if(response && response.ok === false){
+                    showIidAlert(response.message, 'danger');
+                    return;
                 }
+
+                var taskListLink = '<a class="ms-2" href="' + g_asiBaseURL + '/IID/TaskList">Open Task List</a>';
+                if(action !== 'APPROVE'){
+                    var backLink = '<a class="ms-2" href="' + g_asiBaseURL + '/IID/InitialAssessment?complaintId=' + complaintId + '">Back to Assessment</a>';
+                    showIidAlert('Decision submitted. Notification queued.' + taskListLink + backLink, 'success');
+                    return;
+                }
+
+                showIidAlert('Decision submitted. Notification queued.' + taskListLink, 'success');
+            }).fail(function(){
+                showIidAlert('Failed to submit decision.', 'danger');
             });
         });
 
