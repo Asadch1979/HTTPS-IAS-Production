@@ -1,3 +1,4 @@
+@model AIS.Models.IID.InitialAssessmentModel
 @{
     ViewData["Title"] = "Initial Assessment";
     Layout = "_Layout";
@@ -45,15 +46,16 @@
             Assessment Entry
         </div>
         <div class="card-body">
-            <form id="assessmentForm">
-                <input type="hidden" name="ComplaintId" value="@complaintId" />
+            <form id="assessmentForm" asp-action="InitialAssessment" asp-controller="IID" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" asp-for="ComplaintId" value="@complaintId" />
                 <div class="mb-3">
                     <label class="form-label">Assessment</label>
-                    <textarea class="form-control" name="Assessment" rows="4"></textarea>
+                    <textarea class="form-control" asp-for="Assessment" rows="4"></textarea>
                 </div>
                 <div class="mb-3">
                     <label class="form-label">Recommendation</label>
-                    <select class="form-select" name="Recommendation">
+                    <select class="form-select" asp-for="Recommendation">
                         <option value="">--Select--</option>
                         <option value="Qualify">Qualify</option>
                         <option value="Not Qualify">Not Qualify</option>
@@ -61,7 +63,7 @@
                 </div>
                 <div class="mb-3">
                     <label class="form-label">Assigned I&amp;I Unit</label>
-                    <select class="form-select" name="AssignedUnitId" id="AssignedUnitId" required></select>
+                    <select class="form-select" asp-for="AssignedUnitId" id="AssignedUnitId" required></select>
                 </div>
                 <button type="submit" class="btn btn-primary">Save Assessment</button>
             </form>

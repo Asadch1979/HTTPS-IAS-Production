@@ -73,6 +73,7 @@ namespace AIS.Controllers
             using (OracleCommand cmd = con.CreateCommand())
                 {
                 cmd.CommandText = "PKG_INQ.P_SAVE_COMPLAINT_IAID";
+                LogIidSaveDebug("PKG_INQ.P_SAVE_COMPLAINT_IAID", $"ComplaintId={complaintId}, Nature={model?.Nature}, Category={model?.Category}, ContentsLength={(model?.Contents ?? string.Empty).Length}");
                 cmd.CommandType = CommandType.StoredProcedure;
                 cmd.BindByName = true;
                 cmd.Parameters.Add("P_COMPLAINT_ID", OracleDbType.Int32).Value = complaintId;
@@ -117,6 +118,7 @@ namespace AIS.Controllers
             using (OracleCommand cmd = con.CreateCommand())
                 {
                 cmd.CommandText = "PKG_INQ.P_SAVE_FFR_P1";
+                LogIidSaveDebug("PKG_INQ.P_SAVE_FFR_P1", $"ComplaintId={complaintId}, Source={model?.Source}, Nature={model?.Nature}, AttachmentsLength={(model?.AttachmentsPath ?? string.Empty).Length}");
                 cmd.CommandType = CommandType.StoredProcedure;
                 cmd.BindByName = true;
                 cmd.Parameters.Add("P_COMPLAINT_ID", OracleDbType.Int32).Value = complaintId;
@@ -156,6 +158,7 @@ namespace AIS.Controllers
             using (OracleCommand cmd = con.CreateCommand())
                 {
                 cmd.CommandText = "PKG_INQ.P_SAVE_FFR_P2";
+                LogIidSaveDebug("PKG_INQ.P_SAVE_FFR_P2", $"ComplaintId={complaintId}, ComplainantStatementTime={model?.ComplainantStatementTime}, PrimaryEvidenceLength={(model?.PrimaryEvidence ?? string.Empty).Length}");
                 cmd.CommandType = CommandType.StoredProcedure;
                 cmd.BindByName = true;
                 cmd.Parameters.Add("P_COMPLAINT_ID", OracleDbType.Int32).Value = complaintId;
@@ -180,6 +183,7 @@ namespace AIS.Controllers
             using (OracleCommand cmd = con.CreateCommand())
                 {
                 cmd.CommandText = "PKG_INQ.P_SAVE_FFR_P3";
+                LogIidSaveDebug("PKG_INQ.P_SAVE_FFR_P3", $"ComplaintId={complaintId}, AuditHighlighted={model?.AuditHighlighted}, PolicyViolatedLength={(model?.PolicyViolated ?? string.Empty).Length}");
                 cmd.CommandType = CommandType.StoredProcedure;
                 cmd.BindByName = true;
                 cmd.Parameters.Add("P_COMPLAINT_ID", OracleDbType.Int32).Value = complaintId;
@@ -561,6 +565,7 @@ namespace AIS.Controllers
             using (OracleCommand cmd = con.CreateCommand())
                 {
                 cmd.CommandText = "PKG_INQ.ADD_ASSESSMENT";
+                LogIidSaveDebug("PKG_INQ.ADD_ASSESSMENT", $"ComplaintId={model?.ComplaintId}, AssignedUnitId={model?.AssignedUnitId}, AssessmentLength={(model?.Assessment ?? string.Empty).Length}");
                 cmd.CommandType = CommandType.StoredProcedure;
                 cmd.BindByName = true;
                 cmd.Parameters.Add("p_complaint_id", OracleDbType.Int32).Value = model.ComplaintId ?? (object)DBNull.Value;
@@ -591,6 +596,7 @@ namespace AIS.Controllers
             using (OracleCommand cmd = con.CreateCommand())
                 {
                 cmd.CommandText = "PKG_INQ.ADD_HEAD_REVIEW";
+                LogIidSaveDebug("PKG_INQ.ADD_HEAD_REVIEW", $"ComplaintId={model?.ComplaintId}, AssessmentId={model?.AssessmentId}, AssignedToUnit={model?.AssignedToUnit}, Action={model?.Action}");
                 cmd.CommandType = CommandType.StoredProcedure;
                 cmd.BindByName = true;
                 cmd.Parameters.Add("p_complaint_id", OracleDbType.Int32).Value = model.ComplaintId ?? (object)DBNull.Value;
@@ -627,6 +633,7 @@ namespace AIS.Controllers
             using (OracleCommand cmd = con.CreateCommand())
                 {
                 cmd.CommandText = "PKG_INQ.ADD_INV_PLAN";
+                LogIidSaveDebug("PKG_INQ.ADD_INV_PLAN", $"ComplaintId={model?.ComplaintId}, PlanDetailsLength={(model?.PlanDetails ?? string.Empty).Length}");
                 cmd.CommandType = CommandType.StoredProcedure;
                 cmd.BindByName = true;
                 model.Status = IidStatuses.PlanDrafted;
@@ -873,6 +880,7 @@ namespace AIS.Controllers
             using (OracleCommand cmd = con.CreateCommand())
                 {
                 cmd.CommandText = "PKG_INQ.ADD_PLAN_APPROVAL";
+                LogIidSaveDebug("PKG_INQ.ADD_PLAN_APPROVAL", $"PlanId={model?.PlanId}, IsApproved={model?.IsApproved}, EditedPlanLength={(model?.EditedPlan ?? string.Empty).Length}");
                 cmd.CommandType = CommandType.StoredProcedure;
                 cmd.BindByName = true;
                 cmd.Parameters.Add("p_plan_id", OracleDbType.Int32).Value = model.PlanId ?? (object)DBNull.Value;
@@ -903,6 +911,7 @@ namespace AIS.Controllers
             using (OracleCommand cmd = con.CreateCommand())
                 {
                 cmd.CommandText = "PKG_INQ.ADD_INQUIRY_REPORT";
+                LogIidSaveDebug("PKG_INQ.ADD_INQUIRY_REPORT", $"ComplaintId={model?.ComplaintId}, NameAccused={model?.NameAccused}, FindingsLength={(model?.Findings ?? string.Empty).Length}");
                 cmd.CommandType = CommandType.StoredProcedure;
                 cmd.BindByName = true;
                 var submittedOn = DateTime.Now;
@@ -941,6 +950,7 @@ namespace AIS.Controllers
             using (OracleCommand cmd = con.CreateCommand())
                 {
                 cmd.CommandText = "PKG_INQ.ADD_ANALYSIS";
+                LogIidSaveDebug("PKG_INQ.ADD_ANALYSIS", $"ReportId={model?.ReportId}, Decision={model?.Decision}, CommentsLength={(model?.Comments ?? string.Empty).Length}");
                 cmd.CommandType = CommandType.StoredProcedure;
                 cmd.BindByName = true;
                 cmd.Parameters.Add("p_report_id", OracleDbType.Int32).Value = model.ReportId ?? (object)DBNull.Value;
@@ -975,6 +985,7 @@ namespace AIS.Controllers
             using (OracleCommand cmd = con.CreateCommand())
                 {
                 cmd.CommandText = "PKG_INQ.ADD_FINAL_APPROVAL";
+                LogIidSaveDebug("PKG_INQ.ADD_FINAL_APPROVAL", $"ReportId={model?.ReportId}, Decision={model?.Decision}, CommentsLength={(model?.Comments ?? string.Empty).Length}");
                 cmd.CommandType = CommandType.StoredProcedure;
                 cmd.BindByName = true;
                 cmd.Parameters.Add("p_report_id", OracleDbType.Int32).Value = model.ReportId ?? (object)DBNull.Value;
@@ -1033,6 +1044,7 @@ namespace AIS.Controllers
             using (OracleCommand cmd = con.CreateCommand())
                 {
                 cmd.CommandText = "PKG_INQ.ADD_CASE_STUDY";
+                LogIidSaveDebug("PKG_INQ.ADD_CASE_STUDY", $"ComplaintId={model?.ComplaintId}, Branch={model?.Branch}, GistLength={(model?.Gist ?? string.Empty).Length}");
                 cmd.CommandType = CommandType.StoredProcedure;
                 cmd.BindByName = true;
                 cmd.Parameters.Add("p_complaint_id", OracleDbType.Int32).Value = model.ComplaintId ?? (object)DBNull.Value;
@@ -1055,6 +1067,12 @@ namespace AIS.Controllers
                 var id = Convert.ToInt32(cmd.Parameters["o_case_id"].Value.ToString());
                 return id;
                 }
+            }
+
+
+        private static void LogIidSaveDebug(string procedureName, string summary)
+            {
+            System.Diagnostics.Debug.WriteLine($"[IID SAVE] Procedure={procedureName}; {summary}");
             }
 
         public DataTable GetReports(ReportFilterModel filter)

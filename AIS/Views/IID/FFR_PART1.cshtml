@@ -40,16 +40,17 @@
     </div>
 </div>
 
-<form id="ffrPart1Form" enctype="multipart/form-data" action="@Url.Action("FFR_PART1","IID")" method="post">
-    <input type="hidden" name="ComplaintId" value="@complaintIdValue" />
-    <input type="hidden" name="FfrId" value="@ffrIdValue" />
+<form id="ffrPart1Form" asp-action="FFR_PART1" asp-controller="IID" method="post" enctype="multipart/form-data">
+    @Html.AntiForgeryToken()
+    <input type="hidden" asp-for="ComplaintId" value="@complaintIdValue" />
+    <input type="hidden" asp-for="FfrId" value="@ffrIdValue" />
 
     <div class="card mb-3">
         <div class="card-header">Routing Details</div>
         <div class="card-body">
             <div class="mb-2">
                 <label class="form-label">Pertains To</label>
-                <select class="form-select" id="PertainsTo" name="PertainsTo" required>
+                <select class="form-select" id="PertainsTo" asp-for="PertainsTo" required>
                     <option value="">--Select--</option>
                     <option value="HO" selected="@(Model?.PertainsTo == "HO" ? "selected" : null)">HO</option>
                     <option value="FIELD" selected="@(Model?.PertainsTo == "FIELD" ? "selected" : null)">Field</option>
@@ -57,7 +58,7 @@
             </div>
             <div class="mb-2 d-none" id="fieldTypeDiv">
                 <label class="form-label">Field Type</label>
-                <select class="form-select" id="FieldType" name="FieldType">
+                <select class="form-select" id="FieldType" asp-for="FieldType">
                     <option value="">--Select--</option>
                     <option value="HO_UNIT" selected="@(Model?.FieldType == "HO_UNIT" ? "selected" : null)">HO Units</option>
                     <option value="BRANCH" selected="@(Model?.FieldType == "BRANCH" ? "selected" : null)">Branch</option>
@@ -65,19 +66,19 @@
             </div>
             <div class="mb-2 d-none" id="hoUnitTypeDiv">
                 <label class="form-label">HO Unit Type</label>
-                <select class="form-select" id="HOUnitTypeId" name="HOUnitTypeId">
+                <select class="form-select" id="HOUnitTypeId" asp-for="HOUnitTypeId">
                     <option value="">--Select HO Unit Type--</option>
                 </select>
             </div>
             <div class="mb-2 d-none" id="hoUnitDiv">
                 <label class="form-label">HO Unit</label>
-                <select class="form-select" id="HOUnitId" name="HOUnitId">
+                <select class="form-select" id="HOUnitId" asp-for="HOUnitId">
                     <option value="">--Select HO Unit--</option>
                 </select>
             </div>
             <div class="mb-2 d-none" id="regionDiv">
                 <label class="form-label">Region</label>
-                <select class="form-select" id="RegionId" name="RegionId">
+                <select class="form-select" id="RegionId" asp-for="RegionId">
                     <option value="">--Select Region--</option>
                     @{
                         if (ViewData["RegionList"] != null)
@@ -92,13 +93,13 @@
             </div>
             <div class="mb-2 d-none" id="branchDiv">
                 <label class="form-label">Branch</label>
-                <select class="form-select" id="BranchId" name="BranchId">
+                <select class="form-select" id="BranchId" asp-for="BranchId">
                     <option value="">--Select Branch--</option>
                 </select>
             </div>
             <div class="mb-2">
                 <label class="form-label">Originating Department</label>
-                <select class="form-select" id="Source" name="Source" required>
+                <select class="form-select" id="Source" asp-for="Source" required>
                     <option value="">--Select--</option>
                     <option selected="@(Model?.Source == "Internal" ? "selected" : null)">Internal</option>
                     <option selected="@(Model?.Source == "External" ? "selected" : null)">External</option>
@@ -109,11 +110,11 @@
             </div>
             <div class="mb-2 d-none" id="sourceOtherDiv">
                 <label class="form-label">Source (Other)</label>
-                <input type="text" class="form-control" name="SourceOtherText" value="@Model?.SourceOtherText" />
+                <input type="text" class="form-control" asp-for="SourceOtherText" value="@Model?.SourceOtherText" />
             </div>
             <div class="mb-2">
                 <label class="form-label">Nature</label>
-                <select class="form-select" name="Nature" required>
+                <select class="form-select" asp-for="Nature" required>
                     <option value="">--Select--</option>
                     <option selected="@(Model?.Nature == "Fraud & Forgery" ? "selected" : null)">Fraud &amp; Forgery</option>
                     <option selected="@(Model?.Nature == "Embezzlement of loan/partial loan amount" ? "selected" : null)">Embezzlement of loan/partial loan amount</option>
@@ -133,11 +134,11 @@
             </div>
             <div class="mb-2">
                 <label class="form-label">Reference No</label>
-                <input type="text" class="form-control" name="ReferenceNo" value="@Model?.ReferenceNo" />
+                <input type="text" class="form-control" asp-for="ReferenceNo" value="@Model?.ReferenceNo" />
             </div>
             <div class="mb-2">
                 <label class="form-label">FFR Date</label>
-                <input type="date" class="form-control" name="FFRDate" value="@Model?.FFRDate" />
+                <input type="date" class="form-control" asp-for="FFRDate" value="@Model?.FFRDate" />
             </div>
         </div>
     </div>
@@ -147,15 +148,15 @@
         <div class="card-body">
             <div class="mb-2">
                 <label class="form-label">Date of Incident</label>
-                <input type="date" class="form-control" name="IncidentDate" value="@Model?.IncidentDate" />
+                <input type="date" class="form-control" asp-for="IncidentDate" value="@Model?.IncidentDate" />
             </div>
             <div class="mb-2">
                 <label class="form-label">Where/Venue</label>
-                <input type="text" class="form-control" name="IncidentVenue" value="@Model?.IncidentVenue" />
+                <input type="text" class="form-control" asp-for="IncidentVenue" value="@Model?.IncidentVenue" />
             </div>
             <div class="mb-2">
                 <label class="form-label">How incident happened</label>
-                <textarea class="form-control" name="IncidentNarrative">@Model?.IncidentNarrative</textarea>
+                <textarea class="form-control" asp-for="IncidentNarrative">@Model?.IncidentNarrative</textarea>
             </div>
         </div>
     </div>
@@ -165,23 +166,23 @@
         <div class="card-body">
             <div class="mb-2">
                 <label class="form-label">Name</label>
-                <input type="text" class="form-control" name="ComplainantName" value="@Model?.ComplainantName" />
+                <input type="text" class="form-control" asp-for="ComplainantName" value="@Model?.ComplainantName" />
             </div>
             <div class="mb-2">
                 <label class="form-label">CNIC</label>
-                <input type="text" class="form-control" name="ComplainantCNIC" value="@Model?.ComplainantCNIC" />
+                <input type="text" class="form-control" asp-for="ComplainantCNIC" value="@Model?.ComplainantCNIC" />
             </div>
             <div class="mb-2">
                 <label class="form-label">LC/Account No</label>
-                <input type="text" class="form-control" name="AccountNo" value="@Model?.AccountNo" />
+                <input type="text" class="form-control" asp-for="AccountNo" value="@Model?.AccountNo" />
             </div>
             <div class="mb-2">
                 <label class="form-label">Mobile No</label>
-                <input type="text" class="form-control" name="ComplainantMobile" value="@Model?.ComplainantMobile" />
+                <input type="text" class="form-control" asp-for="ComplainantMobile" value="@Model?.ComplainantMobile" />
             </div>
             <div class="mb-2">
                 <label class="form-label">Address</label>
-                <textarea class="form-control" name="ComplainantAddress">@Model?.ComplainantAddress</textarea>
+                <textarea class="form-control" asp-for="ComplainantAddress">@Model?.ComplainantAddress</textarea>
             </div>
         </div>
     </div>
@@ -191,11 +192,11 @@
         <div class="card-body">
             <div class="mb-2">
                 <label class="form-label">Main Accused Details</label>
-                <textarea class="form-control" name="MainAccused">@Model?.MainAccused</textarea>
+                <textarea class="form-control" asp-for="MainAccused">@Model?.MainAccused</textarea>
             </div>
             <div class="mb-2">
                 <label class="form-label">Co-Accused Details</label>
-                <textarea class="form-control" name="CoAccused">@Model?.CoAccused</textarea>
+                <textarea class="form-control" asp-for="CoAccused">@Model?.CoAccused</textarea>
             </div>
         </div>
     </div>
@@ -205,7 +206,7 @@
         <div class="card-body">
             <div class="mb-2">
                 <label class="form-label">Details of Accusations</label>
-                <textarea class="form-control" name="Accusations">@Model?.Accusations</textarea>
+                <textarea class="form-control" asp-for="Accusations">@Model?.Accusations</textarea>
             </div>
         </div>
     </div>
@@ -215,23 +216,23 @@
         <div class="card-body">
             <div class="mb-2">
                 <label class="form-label">Approach Adopted</label>
-                <textarea class="form-control" name="ApproachAdopted">@Model?.ApproachAdopted</textarea>
+                <textarea class="form-control" asp-for="ApproachAdopted">@Model?.ApproachAdopted</textarea>
             </div>
             <div class="mb-2">
                 <label class="form-label">Details of Record Scrutinized</label>
-                <textarea class="form-control" name="RecordScrutinized">@Model?.RecordScrutinized</textarea>
+                <textarea class="form-control" asp-for="RecordScrutinized">@Model?.RecordScrutinized</textarea>
             </div>
             <div class="mb-2">
                 <label class="form-label">Root Cause / Why</label>
-                <textarea class="form-control" name="RootCause">@Model?.RootCause</textarea>
+                <textarea class="form-control" asp-for="RootCause">@Model?.RootCause</textarea>
             </div>
             <div class="mb-2">
                 <label class="form-label">Key Findings</label>
-                <textarea class="form-control" name="KeyFindings">@Model?.KeyFindings</textarea>
+                <textarea class="form-control" asp-for="KeyFindings">@Model?.KeyFindings</textarea>
             </div>
             <div class="mb-2">
                 <label class="form-label">Clear Recommendations</label>
-                <textarea class="form-control" name="ClearRecommendations">@Model?.ClearRecommendations</textarea>
+                <textarea class="form-control" asp-for="ClearRecommendations">@Model?.ClearRecommendations</textarea>
             </div>
         </div>
     </div>
@@ -240,7 +241,7 @@
         <div class="card-header">Attachments</div>
         <div class="card-body">
             <label class="form-label">Upload Attachments</label>
-            <input type="file" class="form-control" name="Attachments" multiple />
+            <input type="file" class="form-control" asp-for="Attachments" multiple />
         </div>
     </div>
 
@@ -263,21 +264,21 @@
             var val = $('#Source').val();
             if(val === 'Other'){
                 $('#sourceOtherDiv').removeClass('d-none');
-                $('#sourceOtherDiv input').prop('disabled', false);
+                $('#sourceOtherDiv input');
             } else {
                 $('#sourceOtherDiv').addClass('d-none');
-                $('#sourceOtherDiv input').prop('disabled', true).val('');
+                $('#sourceOtherDiv input').val('');
             }
         }
 
         function togglePertainsTo(){
             var pertainsTo = $('#PertainsTo').val();
             $('#fieldTypeDiv,#hoUnitTypeDiv,#hoUnitDiv,#regionDiv,#branchDiv').addClass('d-none');
-            $('#FieldType,#HOUnitTypeId,#HOUnitId,#RegionId,#BranchId').prop('disabled', true);
+            $('#FieldType,#HOUnitTypeId,#HOUnitId,#RegionId,#BranchId');
 
             if(pertainsTo === 'FIELD'){
                 $('#fieldTypeDiv').removeClass('d-none');
-                $('#FieldType').prop('disabled', false);
+                $('#FieldType');
                 toggleFieldType();
             }
         }
@@ -285,15 +286,15 @@
         function toggleFieldType(){
             var fieldType = $('#FieldType').val();
             $('#hoUnitTypeDiv,#hoUnitDiv,#regionDiv,#branchDiv').addClass('d-none');
-            $('#HOUnitTypeId,#HOUnitId,#RegionId,#BranchId').prop('disabled', true);
+            $('#HOUnitTypeId,#HOUnitId,#RegionId,#BranchId');
 
             if(fieldType === 'HO_UNIT'){
                 $('#hoUnitTypeDiv,#hoUnitDiv').removeClass('d-none');
-                $('#HOUnitTypeId,#HOUnitId').prop('disabled', false);
+                $('#HOUnitTypeId,#HOUnitId');
                 loadHoUnitTypes();
             } else if(fieldType === 'BRANCH'){
                 $('#regionDiv,#branchDiv').removeClass('d-none');
-                $('#RegionId,#BranchId').prop('disabled', false);
+                $('#RegionId,#BranchId');
             }
         }
 

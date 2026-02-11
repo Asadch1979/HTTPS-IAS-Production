@@ -1,3 +1,4 @@
+@model AIS.Models.IID.InvestigationPlanModel
 @{
     ViewData["Title"] = "Investigation Plan";
     Layout = "_Layout";
@@ -45,11 +46,12 @@
             Plan Details
         </div>
         <div class="card-body">
-            <form id="planForm">
-                <input type="hidden" name="ComplaintId" value="@complaintId" />
+            <form id="planForm" asp-action="InvestigationPlan" asp-controller="IID" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" asp-for="ComplaintId" value="@complaintId" />
                 <div class="mb-3">
                     <label class="form-label">Plan Details</label>
-                    <textarea class="form-control" name="PlanDetails" rows="6"></textarea>
+                    <textarea class="form-control" asp-for="PlanDetails" rows="6"></textarea>
                 </div>
                 <button type="submit" class="btn btn-primary">Submit Plan for Approval</button>
             </form>
