@@ -125,7 +125,7 @@
                     $('#ctxUploadedComplaint').html(renderSimpleLink(d.uploadedComplaint, 'Complaint'));
                     $('#ctxUploadedEvidence').html(renderEvidenceLinks(d.uploadedEvidence));
                     $('#ctxStatus').text(d.status || '');
-                    $('#ctxAssignedUnit').text(d.assignedUnitId || '');
+                    $('#ctxAssignedUnit').text(d.assignedUnit || d.assignedUnitId || '');
                     $('#ctxAssessment').text(d.assessment || '');
                     $('#ctxRecommendation').text(d.recommendation || '');
                     $('#ctxComplainantName').text(d.complainantName || '');
@@ -135,9 +135,9 @@
                     $('#ctxGender').text(d.gender || '');
                     $('#ctxReceivedFrom').text(d.receivedFrom || '');
                     $('#ctxLocationType').text(d.locationTypeText || d.locationTypeId || '');
-                    $('#ctxGmOffice').text(d.gmOfficeId || '');
-                    $('#ctxRegion').text(d.regionId || '');
-                    $('#ctxBranch').text(d.branchId || '');
+                    $('#ctxGmOffice').text(d.gmOffice || d.gmOfficeId || '');
+                    $('#ctxRegion').text(d.region || d.regionId || '');
+                    $('#ctxBranch').text(d.branch || d.branchId || '');
 
                     if (d.status === referredBackStatus) {
                         $('#assessmentForm [name="Assessment"]').val(d.assessment || '');

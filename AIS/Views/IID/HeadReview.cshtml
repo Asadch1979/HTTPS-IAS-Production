@@ -88,6 +88,7 @@
     $(function(){
         var complaintId = '@complaintId';
         var assignedUnitId = 0;
+        var assignedUnitName = "";
         var unitLookup = {};
         var pageId = 2;
 
@@ -128,7 +129,7 @@
             $('#ctxUploadedEvidence').html(renderEvidenceLinks(d.uploadedEvidence));
             $('#ctxSubmittedOn').text(d.submittedOn || '');
             $('#ctxStatus').text(d.status || '');
-            $('#ctxAssignedUnit').text(d.assignedUnitId || '');
+            $('#ctxAssignedUnit').text(d.assignedUnit || d.assignedUnitId || '');
             $('#ctxAssessment').text(d.assessment || '');
             $('#ctxRecommendation').text(d.recommendation || '');
             $('#ctxComplainantName').text(d.complainantName || '');
@@ -138,9 +139,9 @@
             $('#ctxGender').text(d.gender || '');
             $('#ctxReceivedFrom').text(d.receivedFrom || '');
             $('#ctxLocationType').text(d.locationTypeText || d.locationTypeId || '');
-            $('#ctxGmOffice').text(d.gmOfficeId || '');
-            $('#ctxRegion').text(d.regionId || '');
-            $('#ctxBranch').text(d.branchId || '');
+            $('#ctxGmOffice').text(d.gmOffice || d.gmOfficeId || '');
+            $('#ctxRegion').text(d.region || d.regionId || '');
+            $('#ctxBranch').text(d.branch || d.branchId || '');
         }
 
         function loadComplaintDropdown(pageId){
@@ -159,8 +160,15 @@
         }
 
         function updateAssignedUnitLabel(){
+            if(assignedUnitName){
+                $('#assessmentUnit').text(assignedUnitName);
+                $('#assignedUnitDisplay').val(assignedUnitName);
+                return;
+            }
+
             if(assignedUnitId && unitLookup[assignedUnitId]){
                 $('#assessmentUnit').text(unitLookup[assignedUnitId]);
+                $('#assignedUnitDisplay').val(unitLookup[assignedUnitId]);
             }
         }
 
@@ -180,8 +188,8 @@
                     $('#assessmentText').text(d.assessment || '');
                     $('#assessmentRecommendation').text(d.recommendation || '');
                     assignedUnitId = d.assignedUnitId || 0;
+                    assignedUnitName = d.assignedUnit || '';
                     $('#reviewForm [name="AssignedToUnit"]').val(assignedUnitId || '');
-                    $('#assignedUnitDisplay').val(assignedUnitId || '');
                     updateAssignedUnitLabel();
                 },
                 error: function(){
