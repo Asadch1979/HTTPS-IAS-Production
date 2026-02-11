@@ -1,3 +1,4 @@
+@model AIS.Models.IID.FinalApprovalModel
 @{
     ViewData["Title"] = "Final Approval";
     Layout = "_Layout";
@@ -10,15 +11,16 @@
     <h6>Report Downloads</h6>
     <div id="reportLinks" class="small text-muted">Loading...</div>
 </div>
-<form id="approvalForm">
-    <input type="hidden" name="ReportId" value="@reportId" />
+<form id="approvalForm" asp-action="FinalApproval" asp-controller="IID" method="post">
+                @Html.AntiForgeryToken()
+    <input type="hidden" asp-for="ReportId" value="@reportId" />
     <div class="mb-2">
         <label class="form-label">Comments</label>
-        <textarea class="form-control" name="Comments"></textarea>
+        <textarea class="form-control" asp-for="Comments"></textarea>
     </div>
     <div class="mb-2">
         <label class="form-label">Decision</label>
-        <select class="form-select" name="Decision">
+        <select class="form-select" asp-for="Decision">
             <option value="APPROVE">Approve</option>
             <option value="REFER_BACK">Refer Back</option>
         </select>

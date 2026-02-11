@@ -4791,6 +4791,18 @@ namespace AIS.Controllers
             {
             try
                 {
+                if (model == null)
+                    {
+                    return Json(new { ok = false, message = "Assessment payload is required." });
+                    }
+                if (!model.ComplaintId.HasValue || model.ComplaintId.Value <= 0)
+                    {
+                    return Json(new { ok = false, message = "ComplaintId is required." });
+                    }
+                if (model.AssignedUnitId <= 0)
+                    {
+                    return Json(new { ok = false, message = "Assigned unit is required." });
+                    }
                 var id = dBConnection.AddAssessment(model);
                 return Json(new { ok = id > 0, id });
                 }
@@ -4805,6 +4817,22 @@ namespace AIS.Controllers
             {
             try
                 {
+                if (model == null)
+                    {
+                    return Json(new { ok = false, message = "Head review payload is required." });
+                    }
+                if (!model.ComplaintId.HasValue || model.ComplaintId.Value <= 0)
+                    {
+                    return Json(new { ok = false, message = "ComplaintId is required." });
+                    }
+                if (!model.AssessmentId.HasValue || model.AssessmentId.Value <= 0)
+                    {
+                    return Json(new { ok = false, message = "AssessmentId is required." });
+                    }
+                if (string.Equals(model.Action, "APPROVE", StringComparison.OrdinalIgnoreCase) && model.AssignedToUnit <= 0)
+                    {
+                    return Json(new { ok = false, message = "Assigned unit is required." });
+                    }
                 var id = dBConnection.AddHeadReview(model);
                 return Json(new { ok = id > 0, id });
                 }
@@ -4819,6 +4847,10 @@ namespace AIS.Controllers
             {
             try
                 {
+                if (model == null || !model.ComplaintId.HasValue || model.ComplaintId.Value <= 0)
+                    {
+                    return Json(new { ok = false, message = "ComplaintId is required." });
+                    }
                 var id = dBConnection.AddInvestigationPlan(model);
                 return Json(new { ok = id > 0, id });
                 }
@@ -4833,6 +4865,10 @@ namespace AIS.Controllers
             {
             try
                 {
+                if (model == null || !model.PlanId.HasValue || model.PlanId.Value <= 0)
+                    {
+                    return Json(new { ok = false, message = "PlanId is required." });
+                    }
                 var id = dBConnection.AddPlanApproval(model);
                 if (id > 0 && string.Equals(model?.IsApproved, "Y", StringComparison.OrdinalIgnoreCase))
                     {
@@ -4858,28 +4894,17 @@ namespace AIS.Controllers
             }
 
         [HttpPost]
-        public IActionResult AddInquiryReport([FromBody] AIS.Models.IID.InquiryReportModel model)
+        public IActionResult AddInquiryReport([FromForm] AIS.Models.IID.InquiryReportModel model)
             {
             try
                 {
-                if (model == null && Request.HasFormContentType)
-                    {
-                    var form = Request.Form;
-                    model = new AIS.Models.IID.InquiryReportModel
-                        {
-                        ComplaintId = int.TryParse(form["ComplaintId"], out var parsedComplaintId) ? parsedComplaintId : null,
-                        NameComplainant = form["NameComplainant"],
-                        NameAccused = form["NameAccused"],
-                        Gist = form["Gist"],
-                        Proceedings = form["Proceedings"],
-                        Findings = form["Findings"],
-                        Recommendation = form["Recommendation"]
-                        };
-                    }
-
                 if (model == null)
                     {
                     return Json(new { ok = false, message = "Inquiry report payload is required." });
+                    }
+                if (!model.ComplaintId.HasValue || model.ComplaintId.Value <= 0)
+                    {
+                    return Json(new { ok = false, message = "ComplaintId is required." });
                     }
 
                 if (Request.HasFormContentType)
@@ -4915,6 +4940,10 @@ namespace AIS.Controllers
             {
             try
                 {
+                if (model == null || !model.ReportId.HasValue || model.ReportId.Value <= 0)
+                    {
+                    return Json(new { ok = false, message = "ReportId is required." });
+                    }
                 var id = dBConnection.AddAnalysis(model);
                 return Json(new { ok = id > 0, id });
                 }
@@ -4929,6 +4958,10 @@ namespace AIS.Controllers
             {
             try
                 {
+                if (model == null || !model.ReportId.HasValue || model.ReportId.Value <= 0)
+                    {
+                    return Json(new { ok = false, message = "ReportId is required." });
+                    }
                 var id = dBConnection.AddFinalApproval(model);
                 if (id > 0 && string.Equals(model?.Decision, "APPROVE", StringComparison.OrdinalIgnoreCase))
                     {
@@ -4958,6 +4991,10 @@ namespace AIS.Controllers
             {
             try
                 {
+                if (model == null || !model.ComplaintId.HasValue || model.ComplaintId.Value <= 0)
+                    {
+                    return Json(new { ok = false, message = "ComplaintId is required." });
+                    }
                 var id = dBConnection.AddCaseStudy(model);
                 return Json(new { ok = id > 0, id });
                 }

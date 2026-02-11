@@ -40,9 +40,10 @@
     </div>
 </div>
 
-<form id="ffrPart3Form" action="@Url.Action("FFR_PART3","IID")" method="post">
-    <input type="hidden" name="ComplaintId" value="@complaintIdValue" />
-    <input type="hidden" name="FfrId" value="@ffrIdValue" />
+<form id="ffrPart3Form" asp-action="FFR_PART3" asp-controller="IID" method="post">
+    @Html.AntiForgeryToken()
+    <input type="hidden" asp-for="ComplaintId" value="@complaintIdValue" />
+    <input type="hidden" asp-for="FfrId" value="@ffrIdValue" />
 
     <div class="card mb-3">
         <div class="card-header">Highlighted in Latest Audit Report?</div>
@@ -50,21 +51,21 @@
             <div class="mb-2">
                 <label class="form-label d-block">Highlighted in latest audit report?</label>
                 <div class="form-check form-check-inline">
-                    <input class="form-check-input" type="radio" name="AuditHighlighted" id="AuditHighlightedYes" value="Yes" checked="@(Model?.AuditHighlighted == "Yes" ? "checked" : null)" />
+                    <input class="form-check-input" type="radio" asp-for="AuditHighlighted" id="AuditHighlightedYes" value="Yes" checked="@(Model?.AuditHighlighted == "Yes" ? "checked" : null)" />
                     <label class="form-check-label" for="AuditHighlightedYes">Yes</label>
                 </div>
                 <div class="form-check form-check-inline">
-                    <input class="form-check-input" type="radio" name="AuditHighlighted" id="AuditHighlightedNo" value="No" checked="@(Model?.AuditHighlighted == "No" ? "checked" : null)" />
+                    <input class="form-check-input" type="radio" asp-for="AuditHighlighted" id="AuditHighlightedNo" value="No" checked="@(Model?.AuditHighlighted == "No" ? "checked" : null)" />
                     <label class="form-check-label" for="AuditHighlightedNo">No</label>
                 </div>
                 <div class="form-check form-check-inline">
-                    <input class="form-check-input" type="radio" name="AuditHighlighted" id="AuditHighlightedNa" value="NA" checked="@(Model?.AuditHighlighted == "NA" ? "checked" : null)" />
+                    <input class="form-check-input" type="radio" asp-for="AuditHighlighted" id="AuditHighlightedNa" value="NA" checked="@(Model?.AuditHighlighted == "NA" ? "checked" : null)" />
                     <label class="form-check-label" for="AuditHighlightedNa">NA</label>
                 </div>
             </div>
             <div class="mb-2 d-none" id="auditHighlightDetails">
                 <label class="form-label">If Yes, provide details</label>
-                <textarea class="form-control" name="AuditHighlightDetails">@Model?.AuditHighlightDetails</textarea>
+                <textarea class="form-control" asp-for="AuditHighlightDetails">@Model?.AuditHighlightDetails</textarea>
             </div>
         </div>
     </div>
@@ -73,28 +74,28 @@
         <div class="card-header">Probable Implications</div>
         <div class="card-body">
             <div class="form-check">
-                <input class="form-check-input" type="checkbox" id="ImplicationReputational" name="ImplicationReputational" checked="@(Model?.ImplicationReputational == true ? "checked" : null)" />
+                <input class="form-check-input" type="checkbox" id="ImplicationReputational" asp-for="ImplicationReputational" checked="@(Model?.ImplicationReputational == true ? "checked" : null)" />
                 <label class="form-check-label" for="ImplicationReputational">Reputational Loss</label>
             </div>
             <div class="form-check">
-                <input class="form-check-input" type="checkbox" id="ImplicationOperational" name="ImplicationOperational" checked="@(Model?.ImplicationOperational == true ? "checked" : null)" />
+                <input class="form-check-input" type="checkbox" id="ImplicationOperational" asp-for="ImplicationOperational" checked="@(Model?.ImplicationOperational == true ? "checked" : null)" />
                 <label class="form-check-label" for="ImplicationOperational">Operational Risk</label>
             </div>
             <div class="form-check">
-                <input class="form-check-input" type="checkbox" id="ImplicationFinancial" name="ImplicationFinancial" checked="@(Model?.ImplicationFinancial == true ? "checked" : null)" />
+                <input class="form-check-input" type="checkbox" id="ImplicationFinancial" asp-for="ImplicationFinancial" checked="@(Model?.ImplicationFinancial == true ? "checked" : null)" />
                 <label class="form-check-label" for="ImplicationFinancial">Financial Risk/Loss</label>
             </div>
             <div class="form-check">
-                <input class="form-check-input" type="checkbox" id="ImplicationPrecedence" name="ImplicationPrecedence" checked="@(Model?.ImplicationPrecedence == true ? "checked" : null)" />
+                <input class="form-check-input" type="checkbox" id="ImplicationPrecedence" asp-for="ImplicationPrecedence" checked="@(Model?.ImplicationPrecedence == true ? "checked" : null)" />
                 <label class="form-check-label" for="ImplicationPrecedence">Poor Precedence</label>
             </div>
             <div class="form-check">
-                <input class="form-check-input" type="checkbox" id="ImplicationOther" name="ImplicationOther" checked="@(Model?.ImplicationOther == true ? "checked" : null)" />
+                <input class="form-check-input" type="checkbox" id="ImplicationOther" asp-for="ImplicationOther" checked="@(Model?.ImplicationOther == true ? "checked" : null)" />
                 <label class="form-check-label" for="ImplicationOther">Other</label>
             </div>
             <div class="mt-2 d-none" id="ImplicationOtherDetails">
                 <label class="form-label">Other (details)</label>
-                <input type="text" class="form-control" name="ImplicationOtherDetails" value="@Model?.ImplicationOtherDetails" />
+                <input type="text" class="form-control" asp-for="ImplicationOtherDetails" value="@Model?.ImplicationOtherDetails" />
             </div>
         </div>
     </div>
@@ -104,11 +105,11 @@
         <div class="card-body">
             <div class="mb-2">
                 <label class="form-label">Policy/Circular/SOP violated</label>
-                <textarea class="form-control" name="PolicyViolated">@Model?.PolicyViolated</textarea>
+                <textarea class="form-control" asp-for="PolicyViolated">@Model?.PolicyViolated</textarea>
             </div>
             <div class="mb-2">
                 <label class="form-label">Gaps in SOPs / Weak internal controls identified</label>
-                <textarea class="form-control" name="SopGaps">@Model?.SopGaps</textarea>
+                <textarea class="form-control" asp-for="SopGaps">@Model?.SopGaps</textarea>
             </div>
         </div>
     </div>
@@ -117,11 +118,11 @@
         <div class="card-header">Action Recommended</div>
         <div class="card-body">
             <div class="form-check">
-                <input class="form-check-input" type="radio" name="ActionRecommended" id="ActionNoProbe" value="No further probe required" checked="@(Model?.ActionRecommended == "No further probe required" ? "checked" : null)" />
+                <input class="form-check-input" type="radio" asp-for="ActionRecommended" id="ActionNoProbe" value="No further probe required" checked="@(Model?.ActionRecommended == "No further probe required" ? "checked" : null)" />
                 <label class="form-check-label" for="ActionNoProbe">No further probe required</label>
             </div>
             <div class="form-check">
-                <input class="form-check-input" type="radio" name="ActionRecommended" id="ActionFurtherProbe" value="Further probe required" checked="@(Model?.ActionRecommended == "Further probe required" ? "checked" : null)" />
+                <input class="form-check-input" type="radio" asp-for="ActionRecommended" id="ActionFurtherProbe" value="Further probe required" checked="@(Model?.ActionRecommended == "Further probe required" ? "checked" : null)" />
                 <label class="form-check-label" for="ActionFurtherProbe">Further probe required</label>
             </div>
         </div>

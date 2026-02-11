@@ -1,3 +1,4 @@
+@model AIS.Models.IID.HeadReviewModel
 @{
     ViewData["Title"] = "Head Review";
     Layout = "_Layout";
@@ -47,28 +48,34 @@
             Decision
         </div>
         <div class="card-body">
-            <form id="reviewForm">
-                <input type="hidden" name="ComplaintId" value="@complaintId" />
-                <input type="hidden" name="AssessmentId" value="@assessmentId" />
+            <form id="reviewForm" asp-action="HeadReview" asp-controller="IID" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" asp-for="ComplaintId" value="@complaintId" />
+                <input type="hidden" asp-for="AssessmentId" value="@assessmentId" />
+                <input type="hidden" asp-for="AssignedToUnit" />
                 <div class="mb-3">
                     <label class="form-label d-block">Action</label>
                     <div class="form-check form-check-inline">
-                        <input class="form-check-input" type="radio" name="Action" id="approveAction" value="APPROVE" checked />
+                        <input class="form-check-input" type="radio" asp-for="Action" id="approveAction" value="APPROVE" checked />
                         <label class="form-check-label" for="approveAction">Approve</label>
                     </div>
                     <div class="form-check form-check-inline">
-                        <input class="form-check-input" type="radio" name="Action" id="referBackAction" value="REFER_BACK" />
+                        <input class="form-check-input" type="radio" asp-for="Action" id="referBackAction" value="REFER_BACK" />
                         <label class="form-check-label" for="referBackAction">Refer Back</label>
                     </div>
                 </div>
                 <div class="mb-3">
                     <label class="form-label">Instructions/Comments</label>
-                    <textarea class="form-control" name="Directions" rows="4"></textarea>
+                    <textarea class="form-control" asp-for="Directions" rows="4"></textarea>
                     <div class="form-text" id="commentsHint">Provide guidance for the unit or reasons for referral.</div>
                 </div>
                 <div class="mb-3">
                     <label class="form-label">Assigned On</label>
                     <input type="text" class="form-control" id="assignedOnDisplay" readonly />
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Assigned I&amp;I Unit</label>
+                    <input type="text" class="form-control" id="assignedUnitDisplay" readonly />
                 </div>
                 <button type="submit" class="btn btn-primary">Submit Decision</button>
             </form>
@@ -173,6 +180,8 @@
                     $('#assessmentText').text(d.assessment || '');
                     $('#assessmentRecommendation').text(d.recommendation || '');
                     assignedUnitId = d.assignedUnitId || 0;
+                    $('#reviewForm [name="AssignedToUnit"]').val(assignedUnitId || '');
+                    $('#assignedUnitDisplay').val(assignedUnitId || '');
                     updateAssignedUnitLabel();
                 },
                 error: function(){
@@ -197,10 +206,16 @@
             var data = {
                 ComplaintId: $('#reviewForm [name="ComplaintId"]').val(),
                 AssessmentId: $('#reviewForm [name="AssessmentId"]').val(),
+                AssignedToUnit: $('#reviewForm [name="AssignedToUnit"]').val(),
                 Directions: directions,
                 ReferredBackComments: action === 'REFER_BACK' ? directions : '',
                 Action: action
             };
+
+            if(action === 'APPROVE' && !data.AssignedToUnit){
+                showIidAlert('Assigned unit is required.', 'danger');
+                return;
+            }
 
             $.ajax({
                 url: g_asiBaseURL + '/ApiCalls/AddHeadReview',

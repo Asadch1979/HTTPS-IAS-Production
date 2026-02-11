@@ -41,24 +41,25 @@
     </div>
 </div>
 
-<form id="ffrPart2Form" action="@Url.Action("FFR_PART2","IID")" method="post">
-    <input type="hidden" name="ComplaintId" value="@complaintIdValue" />
-    <input type="hidden" name="FfrId" value="@ffrIdValue" />
+<form id="ffrPart2Form" asp-action="FFR_PART2" asp-controller="IID" method="post">
+    @Html.AntiForgeryToken()
+    <input type="hidden" asp-for="ComplaintId" value="@complaintIdValue" />
+    <input type="hidden" asp-for="FfrId" value="@ffrIdValue" />
 
     <div class="card mb-3">
         <div class="card-header">Statement of Complainant</div>
         <div class="card-body">
             <div class="mb-2">
                 <label class="form-label">Time of recording</label>
-                <input type="time" class="form-control" name="ComplainantStatementTime" value="@Model?.ComplainantStatementTime" />
+                <input type="time" class="form-control" asp-for="ComplainantStatementTime" value="@Model?.ComplainantStatementTime" />
             </div>
             <div class="mb-2">
                 <label class="form-label">Place</label>
-                <input type="text" class="form-control" name="ComplainantStatementPlace" value="@Model?.ComplainantStatementPlace" />
+                <input type="text" class="form-control" asp-for="ComplainantStatementPlace" value="@Model?.ComplainantStatementPlace" />
             </div>
             <div class="mb-2">
                 <label class="form-label">Mode</label>
-                <select class="form-select" name="ComplainantStatementMode">
+                <select class="form-select" asp-for="ComplainantStatementMode">
                     <option value="">--Select--</option>
                     <option selected="@(Model?.ComplainantStatementMode == "Written" ? "selected" : null)">Written</option>
                     <option selected="@(Model?.ComplainantStatementMode == "Audio" ? "selected" : null)">Audio</option>
@@ -67,7 +68,7 @@
             </div>
             <div class="mb-2">
                 <label class="form-label">Key points</label>
-                <textarea class="form-control" name="ComplainantStatementPoints">@Model?.ComplainantStatementPoints</textarea>
+                <textarea class="form-control" asp-for="ComplainantStatementPoints">@Model?.ComplainantStatementPoints</textarea>
             </div>
         </div>
     </div>
@@ -77,15 +78,15 @@
         <div class="card-body">
             <div class="mb-2">
                 <label class="form-label">Time of recording</label>
-                <input type="time" class="form-control" name="AccusedStatementTime" value="@Model?.AccusedStatementTime" />
+                <input type="time" class="form-control" asp-for="AccusedStatementTime" value="@Model?.AccusedStatementTime" />
             </div>
             <div class="mb-2">
                 <label class="form-label">Place</label>
-                <input type="text" class="form-control" name="AccusedStatementPlace" value="@Model?.AccusedStatementPlace" />
+                <input type="text" class="form-control" asp-for="AccusedStatementPlace" value="@Model?.AccusedStatementPlace" />
             </div>
             <div class="mb-2">
                 <label class="form-label">Mode</label>
-                <select class="form-select" name="AccusedStatementMode">
+                <select class="form-select" asp-for="AccusedStatementMode">
                     <option value="">--Select--</option>
                     <option selected="@(Model?.AccusedStatementMode == "Written" ? "selected" : null)">Written</option>
                     <option selected="@(Model?.AccusedStatementMode == "Audio" ? "selected" : null)">Audio</option>
@@ -94,7 +95,7 @@
             </div>
             <div class="mb-2">
                 <label class="form-label">Key points</label>
-                <textarea class="form-control" name="AccusedStatementPoints">@Model?.AccusedStatementPoints</textarea>
+                <textarea class="form-control" asp-for="AccusedStatementPoints">@Model?.AccusedStatementPoints</textarea>
             </div>
         </div>
     </div>
@@ -104,11 +105,11 @@
         <div class="card-body">
             <div class="mb-2">
                 <label class="form-label">Primary evidence attached</label>
-                <textarea class="form-control" name="PrimaryEvidence">@Model?.PrimaryEvidence</textarea>
+                <textarea class="form-control" asp-for="PrimaryEvidence">@Model?.PrimaryEvidence</textarea>
             </div>
             <div class="mb-2">
                 <label class="form-label">Circumstantial/Secondary evidence</label>
-                <textarea class="form-control" name="SecondaryEvidence">@Model?.SecondaryEvidence</textarea>
+                <textarea class="form-control" asp-for="SecondaryEvidence">@Model?.SecondaryEvidence</textarea>
             </div>
         </div>
     </div>
