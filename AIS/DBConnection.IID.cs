@@ -534,6 +534,7 @@ namespace AIS.Controllers
                             SubmittedOn = rdr["SUBMITTED_ON"].ToString(),
                             Status = HasColumn(rdr, "STATUS") ? rdr["STATUS"].ToString() : null,
                             Assessment = HasColumn(rdr, "ASSESSMENT") ? rdr["ASSESSMENT"].ToString() : null,
+                            AssessmentId = HasColumn(rdr, "assessment_id") && rdr["assessment_id"] != DBNull.Value ? Convert.ToInt32(rdr["assessment_id"]) : (int?)null,                            
                             Recommendation = HasColumn(rdr, "RECOMMENDATION") ? rdr["RECOMMENDATION"].ToString() : null,
                             LocationTypeId = HasColumn(rdr, "LOCATION_TYPE_ID") && rdr["LOCATION_TYPE_ID"] != DBNull.Value ? Convert.ToInt32(rdr["LOCATION_TYPE_ID"]) : (int?)null,
                             GMOfficeId = HasColumn(rdr, "GM_OFFICE_ID") && rdr["GM_OFFICE_ID"] != DBNull.Value ? Convert.ToInt32(rdr["GM_OFFICE_ID"]) : (int?)null,

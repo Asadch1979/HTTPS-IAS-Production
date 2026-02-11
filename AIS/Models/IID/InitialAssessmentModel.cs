@@ -55,6 +55,7 @@ namespace AIS.Models.IID
         public int? ReceivedBy { get; set; }
         [PlainText]
         public string Assessment { get; set; }
+        public int? AssessmentId { get; set; }
         [PlainText]
         public string Recommendation { get; set; }
         public int AssignedUnitId { get; set; }

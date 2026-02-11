@@ -5227,6 +5227,7 @@ namespace AIS.Controllers
                     submittedOn = c.SubmittedOn,
                     status = c.Status,
                     assessment = c.Assessment,
+                    assessmentId = c.AssessmentId,
                     recommendation = c.Recommendation,
                     assignedUnitId = c.AssignedUnitId,
                     assignedUnit = c.AssignedUnit
