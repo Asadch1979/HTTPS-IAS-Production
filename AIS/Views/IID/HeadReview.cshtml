@@ -87,6 +87,7 @@
 <script>
     $(function(){
         var complaintId = '@complaintId';
+        var currentAssessmentId = '@assessmentId';
         var assignedUnitId = 0;
         var assignedUnitName = "";
         var unitLookup = {};
@@ -187,6 +188,9 @@
                     fillComplaintContext(d, complaintId);
                     $('#assessmentText').text(d.assessment || '');
                     $('#assessmentRecommendation').text(d.recommendation || '');
+                    currentAssessmentId = d.assessmentId || d.AssessmentId || currentAssessmentId || 0;
+                    $('#AssessmentId').val(currentAssessmentId);
+
                     assignedUnitId = d.assignedUnitId || 0;
                     assignedUnitName = d.assignedUnit || '';
                     $('#reviewForm [name="AssignedToUnit"]').val(assignedUnitId || '');
@@ -218,9 +222,13 @@
                 return;
             }
 
+            var assessmentIdValue = $('#AssessmentId').val() || currentAssessmentId || '@assessmentId';
+            $('#AssessmentId').val(assessmentIdValue);
+
             var data = $(this).serialize();
-            if(!/AssessmentId=/.test(data)){
-                data += '&AssessmentId=' + encodeURIComponent($('#AssessmentId').val() || '@assessmentId');
+            if(!/AssessmentId=/.test(data) || /AssessmentId=(?:0)?(?:&|$)/.test(data)){
+                data = data.replace(/(^|&)AssessmentId=[^&]*/,'').replace(/^&/,'');
+                data += (data ? '&' : '') + 'AssessmentId=' + encodeURIComponent(assessmentIdValue);
             }
 
             $.post(g_asiBaseURL + '/ApiCalls/AddHeadReview', data, function(response){
