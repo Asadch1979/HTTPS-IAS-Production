@@ -49,11 +49,96 @@
             <form id="planForm" asp-action="InvestigationPlan" asp-controller="IID" method="post">
                 @Html.AntiForgeryToken()
                 <input type="hidden" asp-for="ComplaintId" value="@complaintId" />
-                <div class="mb-3">
-                    <label class="form-label">Plan Details</label>
-                    <textarea class="form-control" asp-for="PlanDetails" rows="6"></textarea>
+
+                <!-- This is what we will submit to existing API (backward compatible) -->
+                <input type="hidden" name="PlanDetails" id="PlanText" />
+
+                <div class="row g-2">
+                    <div class="col-md-6">
+                        <label class="form-label">Investigation Risk</label>
+                        <select class="form-select" id="InvestigationRisk" required>
+                            <option value="">--Select--</option>
+                            <option>High</option>
+                            <option>Medium</option>
+                            <option>Low</option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label">Investigation Size</label>
+                        <select class="form-select" id="InvestigationSize" required>
+                            <option value="">--Select--</option>
+                            <option>Small</option>
+                            <option>Medium</option>
+                            <option>Large</option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label">No of Days</label>
+                        <input type="number" class="form-control" id="NoOfDays" min="0" step="1" required />
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label">Travelling Day</label>
+                        <input type="number" class="form-control" id="TravellingDay" min="0" step="1" required />
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label">Investigation Tenure (From)</label>
+                        <input type="date" class="form-control" id="TenureFrom" required />
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label">Investigation Tenure (To)</label>
+                        <input type="date" class="form-control" id="TenureTo" required />
+                    </div>
                 </div>
-                <button type="submit" class="btn btn-primary">Submit Plan for Approval</button>
+
+                <hr class="my-3"/>
+
+                <div class="mb-2">
+                    <label class="form-label">Investigation Activities</label>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-check"><input class="form-check-input act" type="checkbox" value="Interview accused/ complainant" id="act1"><label class="form-check-label" for="act1">1. Interview accused/ complainant.</label></div>
+                            <div class="form-check"><input class="form-check-input act" type="checkbox" value="Interview Other Branch Staff" id="act2"><label class="form-check-label" for="act2">2. Interview Other Branch Staff</label></div>
+                            <div class="form-check"><input class="form-check-input act" type="checkbox" value="Scrutiny of Branch Operational Documents" id="act3"><label class="form-check-label" for="act3">3. Scrutiny of Branch Operational Documents.</label></div>
+                            <div class="form-check"><input class="form-check-input act" type="checkbox" value="Loan Cases Scrutiny" id="act4"><label class="form-check-label" for="act4">4. Loan Cases Scrutiny</label></div>
+                            <div class="form-check"><input class="form-check-input act" type="checkbox" value="CCTV recording check" id="act5"><label class="form-check-label" for="act5">5. CCTV recording check</label></div>
+                            <div class="form-check"><input class="form-check-input act" type="checkbox" value="Field Visit to meet Borrowers" id="act6"><label class="form-check-label" for="act6">6. Field Visit to meet Borrowers</label></div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-check"><input class="form-check-input act" type="checkbox" value="Spot Verification" id="act7"><label class="form-check-label" for="act7">7. Spot Verification</label></div>
+                            <div class="form-check"><input class="form-check-input act" type="checkbox" value="Revenue Office/Record verification" id="act8"><label class="form-check-label" for="act8">8. Revenue Office/Record verification</label></div>
+                            <div class="form-check"><input class="form-check-input act" type="checkbox" value="Regional Office Visit" id="act9"><label class="form-check-label" for="act9">9. Regional Office Visit</label></div>
+                            <div class="form-check"><input class="form-check-input act" type="checkbox" value="Visit of Other Organizations" id="act10"><label class="form-check-label" for="act10">10. Visit of Other Organizations.</label></div>
+                            <div class="form-check"><input class="form-check-input act" type="checkbox" value="Other" id="act11"><label class="form-check-label" for="act11">11. Other</label></div>
+                            <div class="mt-2">
+                                <input type="text" class="form-control" id="OtherActivityText" placeholder="If Other, specify..." />
+                            </div>
+                        </div>
+                    </div>
+                    <small class="text-muted d-block mt-1">At least one activity must be selected.</small>
+                </div>
+
+                <hr class="my-3"/>
+
+                <div class="row g-2">
+                    <div class="col-md-6">
+                        <label class="form-label">Team Lead</label>
+                        <input type="text" class="form-control" id="TeamLead" required />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Team Member</label>
+                        <input type="text" class="form-control" id="TeamMember" required />
+                        <small class="text-muted">If multiple, separate with comma.</small>
+                    </div>
+                </div>
+
+                <div class="mt-3">
+                    <button type="submit" class="btn btn-primary">Submit Plan</button>
+                </div>
             </form>
         </div>
     </div>
@@ -131,6 +216,7 @@
                         showIidAlert(d.message, 'danger');
                         return;
                     }
+                    fillComplaintContext(d, selectedComplaintId);
                     $('#assessmentText').text(d.assessment || '');
                     $('#assessmentRecommendation').text(d.recommendation || '');
                     $('#assessmentUnit').text(d.assignedUnit || d.assignedUnitId || '');
@@ -155,11 +241,11 @@
                 data: { complaintId: complaintId },
                 success: function(resp){
                     if(resp && resp.ok === false){
-                        $('#planForm [name="PlanDetails"]').val('');
+                        $('#PlanText').val('');
                         showIidAlert(resp.message, 'warning');
                         return;
                     }
-                    $('#planForm [name="PlanDetails"]').val(resp.planDetails || '');
+                    $('#PlanText').val(resp.planDetails || '');
                 },
                 error: function(){
                     showIidAlert('Failed to load investigation plan.', 'danger');
@@ -170,11 +256,78 @@
             });
         }
 
+        function buildPlanText(){
+            var risk = $('#InvestigationRisk').val();
+            var size = $('#InvestigationSize').val();
+            var days = $('#NoOfDays').val();
+            var tDays = $('#TravellingDay').val();
+            var from = $('#TenureFrom').val();
+            var to = $('#TenureTo').val();
+            var teamLead = $('#TeamLead').val();
+            var teamMember = $('#TeamMember').val();
+
+            var acts = [];
+            $('.act:checked').each(function(){
+                acts.push($(this).val());
+            });
+
+            var otherText = ($('#OtherActivityText').val() || '').trim();
+            if (acts.indexOf('Other') >= 0 && otherText) {
+                acts[acts.indexOf('Other')] = 'Other: ' + otherText;
+            }
+
+            var plan =
+                'Investigation Risk: ' + risk + '\\n' +
+                'Investigation Size: ' + size + '\\n' +
+                'No of Days: ' + days + '\\n' +
+                'Investigation Tenure: From ' + from + ' To ' + to + '\\n' +
+                'Travelling Day: ' + tDays + '\\n' +
+                'Investigation Activities: ' + (acts.length ? acts.join(', ') : '') + '\\n' +
+                'Team Lead: ' + teamLead + '\\n' +
+                'Team Member(s): ' + teamMember;
+
+            return { text: plan, activityCount: acts.length };
+        }
+
         $('#planForm').on('submit', function(e){
             e.preventDefault();
+
+            // Required field check (front-end)
+            var missing = false;
+            $('#planForm').find('input, select, textarea').each(function(){
+                var $el = $(this);
+                if ($el.prop('disabled')) return;
+
+                // Only validate required visible inputs + selects; skip hidden PlanText because we fill it
+                if ($el.attr('type') === 'hidden') return;
+
+                if ($el.prop('required')) {
+                    if (!$el.val() || !$el.val().toString().trim()) {
+                        missing = true;
+                        $el.focus();
+                        return false;
+                    }
+                }
+            });
+
+            var built = buildPlanText();
+            if (missing) {
+                alert('Please fill all mandatory fields.');
+                return;
+            }
+
+            // Must select at least one activity
+            if (built.activityCount === 0) {
+                alert('Please select at least one Investigation Activity.');
+                return;
+            }
+
+            // Fill hidden Plan field (backward compatible with existing API)
+            $('#PlanText').val(built.text);
+
             var data = {
                 ComplaintId: $('#planForm [name="ComplaintId"]').val(),
-                PlanDetails: $('#planForm [name="PlanDetails"]').val()
+                PlanDetails: $('#PlanText').val()
             };
             $.ajax({
                 url: g_asiBaseURL + '/ApiCalls/AddInvestigationPlan',

@@ -51,7 +51,8 @@
                 <input type="hidden" asp-for="ComplaintId" value="@complaintId" />
                 <div class="mb-3">
                     <label class="form-label">Assessment</label>
-                    <textarea class="form-control" asp-for="Assessment" rows="4"></textarea>
+                    <textarea class="form-control" asp-for="Assessment" rows="4" maxlength="4000"></textarea>
+                    <small class="text-muted">Note: Special characters like & and ( ) should be allowed. If saving fails, backend validation needs update.</small>
                 </div>
                 <div class="mb-3">
                     <label class="form-label">Recommendation</label>
