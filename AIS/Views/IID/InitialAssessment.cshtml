@@ -72,6 +72,22 @@
     </div>
 </div>
 
+
+<div class="modal fade" id="iidAlertModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="iidAlertTitle">Message</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body" id="iidAlertBody"></div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-primary" data-bs-dismiss="modal">OK</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 @section Scripts{
 <script>
     $(function(){
@@ -79,14 +95,10 @@
         var referredBackStatus = 'REFERRED_BACK';
         var pageId = 1;
 
-        function showIidAlert(message, type){
-            type = type || 'danger';
-            $('#iidAlertHost').html(
-                '<div class="alert alert-' + type + ' alert-dismissible fade show" role="alert">' +
-                (message || 'Unexpected error') +
-                '<button type="button" class="btn-close" data-bs-dismiss="alert"></button>' +
-                '</div>'
-            );
+        function showIidAlert(title, message){
+            $('#iidAlertTitle').text(title || 'Message');
+            $('#iidAlertBody').text(message || '');
+            $('#iidAlertModal').modal('show');
         }
 
         function hideIidLoader(){
@@ -117,7 +129,7 @@
                 data: { complaintId: complaintId },
                 success: function(d){
                     if(d && d.ok === false){
-                        showIidAlert(d.message, 'danger');
+                        showIidAlert('Failed', d.message || 'Operation failed.');
                         return;
                     }
 
@@ -149,7 +161,7 @@
                     }
                 },
                 error: function(){
-                    showIidAlert('Failed to load complaint details. Please refresh.', 'danger');
+                    showIidAlert('Failed', 'Failed to load complaint details. Please refresh.');
                 },
                 complete: function(){
                     hideIidLoader();
@@ -164,7 +176,7 @@
                     $('#AssignedUnitId').append('<option value="'+unit.unitId+'">'+unit.unitName+'</option>');
                 });
             }).fail(function(){
-                showIidAlert('Failed to load inspection units.', 'danger');
+                showIidAlert('Failed', 'Failed to load inspection units.');
             });
         }
 
@@ -178,7 +190,7 @@
             };
 
             if(!data.AssignedUnitId){
-                showIidAlert('Assigned I&I Unit is required.', 'danger');
+                showIidAlert('Failed', 'Assigned I&I Unit is required.');
                 return;
             }
 
@@ -189,14 +201,15 @@
                 data: JSON.stringify(data),
                 success: function(response){
                     if(response && response.ok === false){
-                        showIidAlert(response.message, 'danger');
+                        showIidAlert('Failed', response.message || 'Operation failed.');
                         return;
                     }
                     var assessmentId = response.id || response.assessmentId || response.AssessmentId || 0;
-                    window.location.href = g_asiBaseURL + '/IID/HeadReview?complaintId=' + complaintId + '&assessmentId=' + assessmentId;
+                    showIidAlert('Success', 'Assessment saved successfully.');
+                    loadPageDataByComplaintId(parseInt(complaintId));
                 },
                 error: function(){
-                    showIidAlert('Failed to save assessment.', 'danger');
+                    showIidAlert('Failed', 'Could not save assessment.');
                 }
             });
         });
@@ -205,7 +218,7 @@
         loadComplaintDropdown(pageId)
             .done(function(resp){
                 if(resp && resp.ok === false){
-                    showIidAlert(resp.message, 'danger');
+                    showIidAlert('Failed', resp.message || 'Operation failed.');
                     return;
                 }
 
@@ -220,7 +233,7 @@
                     var id = $(this).val();
                     $('#selectedComplaintId').val(id);
                     if(!id){
-                        showIidAlert('Please select a complaint.', 'warning');
+                        showIidAlert('Failed', 'Please select a complaint.');
                         return;
                     }
                     loadPageDataByComplaintId(parseInt(id));
@@ -231,7 +244,7 @@
                 }
             })
             .fail(function(){
-                showIidAlert('Failed to load complaints dropdown.', 'danger');
+                showIidAlert('Failed', 'Failed to load complaints dropdown.');
             })
             .always(function(){
                 hideIidLoader();

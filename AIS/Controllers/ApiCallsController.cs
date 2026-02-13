@@ -4764,10 +4764,11 @@ namespace AIS.Controllers
                     return Json(new { ok = false, message = "PertainsTo must be HO or FIELD." });
                     }
 
-                var complaintFile = Request.Form.Files.GetFile("UploadedComplaint");
-                var evidenceFiles = Request.Form.Files.GetFiles("UploadedEvidence");
+                var complaintFile = Request.Form.Files.GetFile("ComplaintFile");
+                var ffrFile = Request.Form.Files.GetFile("FfrFile");
+                var evidenceFiles = Request.Form.Files.GetFiles("OtherEvidence");
                 model.UploadedComplaint = SaveUploadFile(complaintFile);
-                model.UploadedFFR = string.Empty;
+                model.UploadedFFR = SaveUploadFile(ffrFile);
                 var evidenceNames = new List<string>();
                 foreach (var file in evidenceFiles)
                     {

@@ -4,7 +4,6 @@
     Layout = "_Layout";
 }
 <h4>Submit Complaint</h4>
-<div id="iidAlertHost"></div>
 <form id="complaintForm" asp-action="SubmitComplaint" asp-controller="IID" method="post" enctype="multipart/form-data">
     @Html.AntiForgeryToken()
     <div class="row g-3">
@@ -156,7 +155,7 @@
                     </div>
                     <div class="mb-2">
                         <label class="form-label">Upload Other Evidence</label>
-                        <input type="file" class="form-control" name="OtherEvidence" multiple required />
+                        <input type="file" class="form-control" name="OtherEvidence" multiple />
                     </div>
                     <div class="mb-2">
                         <label class="form-label">Action Required from I&ID</label>
@@ -169,17 +168,29 @@
     </div>
     <button type="submit" class="btn btn-primary">Submit</button>
 </form>
+
+<div class="modal fade" id="iidAlertModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="iidAlertTitle">Message</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body" id="iidAlertBody"></div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-primary" data-bs-dismiss="modal">OK</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 @section Scripts{
 <script>
     $(function(){
-        function showIidAlert(message, type){
-            type = type || 'danger';
-            $('#iidAlertHost').html(
-                '<div class="alert alert-' + type + ' alert-dismissible fade show" role="alert">' +
-                (message || 'Unexpected error') +
-                '<button type="button" class="btn-close" data-bs-dismiss="alert"></button>' +
-                '</div>'
-            );
+        function showIidAlert(title, message){
+            $('#iidAlertTitle').text(title || 'Message');
+            $('#iidAlertBody').text(message || '');
+            $('#iidAlertModal').modal('show');
         }
 
         function toggleSource(){
@@ -310,7 +321,7 @@
             });
 
             if (!isValid) {
-                alert('Please fill all mandatory fields before submitting.');
+                showIidAlert('Failed', 'Please fill all mandatory fields before submitting.');
                 // Optionally focus first invalid field
                 var $first = $('#complaintForm').find('[name="'+firstInvalidName+'"]');
                 if ($first.length) $first.focus();
@@ -326,14 +337,13 @@
                 contentType:false,
                 success: function(d){
                     if(d && d.ok === false){
-                        showIidAlert(d.message, 'danger');
+                        showIidAlert('Failed', d.message || 'Error submitting complaint.');
                         return;
                     }
-                    showIidAlert('Complaint submitted successfully', 'success');
-                    location.reload();
+                    showIidAlert('Success', 'Complaint saved successfully.');
                 },
-                error: function(){
-                    showIidAlert('Error submitting complaint', 'danger');
+                error: function(xhr){
+                    showIidAlert('Failed', (xhr && xhr.responseText) || 'Error submitting complaint.');
                 }
             });
         });
