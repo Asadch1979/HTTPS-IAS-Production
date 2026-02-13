@@ -8,6 +8,8 @@ namespace AIS.Models.FieldAuditReport
         {
         public FieldAuditPdfHeaderModel Header { get; set; } = new FieldAuditPdfHeaderModel();
         public FieldAuditPdfReportMetaModel ReportMeta { get; set; } = new FieldAuditPdfReportMetaModel();
+        public string GeneratedByName { get; set; }
+        public string GeneratedByPPNo { get; set; }
         public List<FieldAuditPdfSectionModel> Sections { get; set; } = new List<FieldAuditPdfSectionModel>();
         public List<FieldAuditPdfKpiRowModel> KpiRows { get; set; } = new List<FieldAuditPdfKpiRowModel>();
         public List<FieldAuditPdfNplRowModel> NplRows { get; set; } = new List<FieldAuditPdfNplRowModel>();
