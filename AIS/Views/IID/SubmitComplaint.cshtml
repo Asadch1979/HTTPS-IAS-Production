@@ -341,6 +341,7 @@
                         return;
                     }
                     showIidAlert('Success', 'Complaint saved successfully.');
+                    $('#iidAlertModal').off('hidden.bs.modal').on('hidden.bs.modal', function () { location.reload(); });
                 },
                 error: function(xhr){
                     showIidAlert('Failed', (xhr && xhr.responseText) || 'Error submitting complaint.');
