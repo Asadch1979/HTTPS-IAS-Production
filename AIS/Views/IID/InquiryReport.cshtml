@@ -95,6 +95,12 @@
         $('#reportForm').on('submit', function(e){
             e.preventDefault();
             var fd = new FormData(this);
+            var selectedComplaintId = $('#reportForm [name="ComplaintId"]').val();
+            if(!selectedComplaintId || selectedComplaintId === '0'){
+                showIidAlert('Required', 'Please select a complaint.');
+                return;
+            }
+
             $.ajax({
                 url: g_asiBaseURL + '/ApiCalls/AddInquiryReport',
                 type: 'POST',
@@ -107,6 +113,7 @@
                         return;
                     }
                     showIidAlert('Report submitted successfully', 'success');
+                    location.reload();
                 },
                 error: function(){
                     showIidAlert('Failed to submit inquiry report.', 'danger');
@@ -131,8 +138,7 @@
                 $dd.off('change').on('change', function(){
                     var id = $(this).val();
                     $('#selectedComplaintId').val(id);
-                    if(!id){
-                        showIidAlert('Please select a complaint.', 'warning');
+                    if(!id || id === '0'){
                         return;
                     }
                     loadPageDataByComplaintId(parseInt(id));

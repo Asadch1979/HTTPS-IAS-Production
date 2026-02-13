@@ -158,6 +158,12 @@
                 Comments: $('#approvalForm [name="Comments"]').val(),
                 Decision: $('#approvalForm [name="Decision"]').val()
             };
+            var selectedComplaintId = $('#selectedComplaintId').val();
+            if(!selectedComplaintId || selectedComplaintId === '0'){
+                showIidAlert('Required', 'Please select a complaint.');
+                return;
+            }
+
             $.ajax({
                 url: g_asiBaseURL + '/ApiCalls/AddFinalApproval',
                 method: 'POST',
@@ -169,6 +175,7 @@
                         return;
                     }
                     showIidAlert('Action saved', 'success');
+                    location.reload();
                 },
                 error: function(){
                     showIidAlert('Failed to submit approval.', 'danger');
@@ -193,8 +200,7 @@
                 $dd.off('change').on('change', function(){
                     var id = $(this).val();
                     $('#selectedComplaintId').val(id);
-                    if(!id){
-                        showIidAlert('Please select a complaint.', 'warning');
+                    if(!id || id === '0'){
                         return;
                     }
                     loadPageDataByComplaintId(parseInt(id));

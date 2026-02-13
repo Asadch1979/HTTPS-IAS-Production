@@ -9,35 +9,7 @@
     <h4>Investigation Plan</h4>
     @await Html.PartialAsync("_ComplaintSelector")
 
-    <div class="row g-3 mb-3">
-        <div class="col-12 col-lg-6"><div class="card h-100"><div class="card-header bg-light">Complainant Particulars</div><div class="card-body"><dl class="row mb-0">
-            <dt class="col-md-5">Complainant Name</dt><dd class="col-md-7" id="ctxComplainantName"></dd>
-            <dt class="col-md-5">CNIC</dt><dd class="col-md-7" id="ctxCnic"></dd>
-            <dt class="col-md-5">Cellular Number</dt><dd class="col-md-7" id="ctxCellularNumber"></dd>
-            <dt class="col-md-5">Mailing Address</dt><dd class="col-md-7" id="ctxMailingAddress"></dd>
-            <dt class="col-md-5">Gender</dt><dd class="col-md-7" id="ctxGender"></dd>
-            <dt class="col-md-5">Received From</dt><dd class="col-md-7" id="ctxReceivedFrom"></dd>
-            <dt class="col-md-5">Location Type</dt><dd class="col-md-7" id="ctxLocationType"></dd>
-            <dt class="col-md-5">GM Office</dt><dd class="col-md-7" id="ctxGmOffice"></dd>
-            <dt class="col-md-5">Region</dt><dd class="col-md-7" id="ctxRegion"></dd>
-            <dt class="col-md-5">Branch</dt><dd class="col-md-7" id="ctxBranch"></dd>
-        </dl></div></div></div>
-        <div class="col-12 col-lg-6"><div class="card h-100"><div class="card-header bg-light">Complaint Details</div><div class="card-body"><dl class="row mb-0">
-            <dt class="col-md-5">Complaint ID</dt><dd class="col-md-7" id="ctxComplaintId"></dd>
-            <dt class="col-md-5">Complaint No</dt><dd class="col-md-7" id="ctxComplaintNo"></dd>
-            <dt class="col-md-5">Nature</dt><dd class="col-md-7" id="ctxNature"></dd>
-            <dt class="col-md-5">Category</dt><dd class="col-md-7" id="ctxCategory"></dd>
-            <dt class="col-md-5">Contents</dt><dd class="col-md-7" id="ctxContents"></dd>
-            <dt class="col-md-5">Action Required</dt><dd class="col-md-7" id="ctxActionRequired"></dd>
-            <dt class="col-md-5">Uploaded Complaint</dt><dd class="col-md-7" id="ctxUploadedComplaint"></dd>
-            <dt class="col-md-5">Uploaded Evidence</dt><dd class="col-md-7" id="ctxUploadedEvidence"></dd>
-            <dt class="col-md-5">Submitted On</dt><dd class="col-md-7" id="ctxSubmittedOn"></dd>
-            <dt class="col-md-5">Status</dt><dd class="col-md-7" id="ctxStatus"></dd>
-            <dt class="col-md-5">Assigned Unit</dt><dd class="col-md-7" id="ctxAssignedUnit"></dd>
-            <dt class="col-md-5">Assessment</dt><dd class="col-md-7" id="ctxAssessment"></dd>
-            <dt class="col-md-5">Recommendation</dt><dd class="col-md-7" id="ctxRecommendation"></dd>
-        </dl></div></div></div>
-    </div>
+    <div id="iidComplaintDetailsRoot"></div>
 
     @await Html.PartialAsync("_InitialAssessmentSummary")
 
@@ -161,6 +133,7 @@
 </div>
 
 @section Scripts{
+<script src="~/js/iid/complaintDetails.js"></script>
 <script>
     $(function(){
         var complaintId = '@complaintId';
@@ -177,43 +150,6 @@
         }
 
 
-        function renderSimpleLink(fileName, text){
-            return fileName ? '<a href="'+g_asiBaseURL+'/Uploads/'+fileName+'" target="_blank">'+text+'</a>' : '<span class="text-muted">N/A</span>';
-        }
-
-        function renderEvidenceLinks(files){
-            if(!files){ return '<span class="text-muted">N/A</span>'; }
-            var out = [];
-            files.split(';').forEach(function(f, i){ if(f){ out.push('<a href="'+g_asiBaseURL+'/Uploads/'+f+'" target="_blank">Evidence '+(i+1)+'</a>'); } });
-            return out.length ? out.join('<br/>') : '<span class="text-muted">N/A</span>';
-        }
-
-        function fillComplaintContext(d, fallbackComplaintId){
-            $('#ctxComplaintId').text(d.complaintId || fallbackComplaintId || '');
-            $('#ctxComplaintNo').text(d.complaintNo || '');
-            $('#ctxNature').text(d.nature || '');
-            $('#ctxCategory').text(d.category || '');
-            $('#ctxContents').text(d.contents || '');
-            $('#ctxActionRequired').text(d.actionRequired || '');
-            $('#ctxUploadedComplaint').html(renderSimpleLink(d.uploadedComplaint, 'Complaint'));
-            $('#ctxUploadedEvidence').html(renderEvidenceLinks(d.uploadedEvidence));
-            $('#ctxSubmittedOn').text(d.submittedOn || '');
-            $('#ctxStatus').text(d.status || '');
-            $('#ctxAssignedUnit').text(d.assignedUnit || d.assignedUnitId || '');
-            $('#ctxAssessment').text(d.assessment || '');
-            $('#ctxRecommendation').text(d.recommendation || '');
-            $('#ctxComplainantName').text(d.complainantName || '');
-            $('#ctxCnic').text(d.cnic || '');
-            $('#ctxCellularNumber').text(d.cellularNumber || '');
-            $('#ctxMailingAddress').text(d.mailingAddress || '');
-            $('#ctxGender').text(d.gender || '');
-            $('#ctxReceivedFrom').text(d.receivedFrom || '');
-            $('#ctxLocationType').text(d.locationTypeText || d.locationTypeId || '');
-            $('#ctxGmOffice').text(d.gmOffice || d.gmOfficeId || '');
-            $('#ctxRegion').text(d.region || d.regionId || '');
-            $('#ctxBranch').text(d.branch || d.branchId || '');
-        }
-
         function loadComplaintDropdown(pageId){
             return $.post(g_asiBaseURL + '/ApiCalls/GetComplaintsDropdown', { pageId: pageId });
         }
@@ -228,10 +164,11 @@
                         showIidAlert('Failed', d.message || 'Operation failed.');
                         return;
                     }
-                    fillComplaintContext(d, selectedComplaintId);
-                    $('#assessmentText').text(d.assessment || '');
-                    $('#assessmentRecommendation').text(d.recommendation || '');
-                    $('#assessmentUnit').text(d.assignedUnit || d.assignedUnitId || '');
+                    var normalized = iidNormalizeComplaint(d);
+                    iidRenderComplaintDetails('#iidComplaintDetailsRoot', normalized);
+                    $('#assessmentText').text(normalized.Assessment || '');
+                    $('#assessmentRecommendation').text(normalized.Recommendation || '');
+                    $('#assessmentUnit').text(normalized.AssignedUnit || '');
                 },
                 error: function(){
                     showIidAlert('Failed', 'Failed to load complaint details.');
@@ -341,6 +278,11 @@
                 ComplaintId: $('#planForm [name="ComplaintId"]').val(),
                 PlanDetails: $('#PlanText').val()
             };
+
+            if(!data.ComplaintId || data.ComplaintId === '0'){
+                showIidAlert('Required', 'Please select a complaint.');
+                return;
+            }
             $.ajax({
                 url: g_asiBaseURL + '/ApiCalls/AddInvestigationPlan',
                 method: 'POST',
@@ -352,7 +294,9 @@
                         return;
                     }
                     showIidAlert('Success', 'Saved successfully.');
-                    
+                    $('#iidAlertModal').off('hidden.bs.modal').on('hidden.bs.modal', function () {
+                        location.reload();
+                    });
                 },
                 error: function(){
                     showIidAlert('Failed', 'Failed to submit plan.');
@@ -377,8 +321,8 @@
                 $dd.off('change').on('change', function(){
                     var id = $(this).val();
                     $('#selectedComplaintId').val(id);
-                    if(!id){
-                        showIidAlert('Failed', 'Please select a complaint.');
+                    if(!id || id === '0'){
+                        $('#iidComplaintDetailsRoot').html('');
                         return;
                     }
                     loadInvestigationPlanByComplaintId(parseInt(id));

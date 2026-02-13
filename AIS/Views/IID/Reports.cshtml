@@ -252,8 +252,7 @@
                 $dd.off('change').on('change', function(){
                     var id = $(this).val();
                     $('#selectedComplaintId').val(id);
-                    if(!id){
-                        showIidAlert('Please select a complaint.', 'warning');
+                    if(!id || id === '0'){
                         return;
                     }
                     loadReports();
