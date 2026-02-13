@@ -459,7 +459,8 @@ namespace AIS.Controllers
                 return RedirectToAction(nameof(Finalize));
                 }
 
-            _dbConnection.FinalizeFieldAuditReport(engId);
+            var finalizeResult = _dbConnection.FinalizeFieldAuditReport(engId);
+            TempData["ManReportMessage"] = finalizeResult?.Message ?? string.Empty;
             return RedirectToAction(nameof(Finalize));
             }
 

@@ -687,35 +687,35 @@ namespace AIS.Controllers
             }
 
         [HttpPost]
+        [ValidateAntiForgeryToken]
         public IActionResult FinalizeReport(FinalizeReportViewModel model)
             {
-            var redirect = EnsureAuthorized();
-            if (redirect != null)
+            try
                 {
-                return redirect;
-                }
+                var redirect = EnsureAuthorized();
+                if (redirect != null)
+                    {
+                    return Json(new { success = false, message = "Session expired. Please log in again." });
+                    }
 
-            if (!TryResolveEngagementId(out var engId))
+                if (!TryResolveEngagementId(out var engId))
+                    {
+                    return Json(new { success = false, message = "Select an engagement to continue." });
+                    }
+
+                if (_dbConnection.IsFieldAuditReportFinal(engId))
+                    {
+                    return Json(new { success = true, message = "Report Finalized" });
+                    }
+
+                var result = _dbConnection.FinalizeFieldAuditReport(engId);
+                return Json(new { success = result.IsFinalized, message = result.Message ?? string.Empty });
+                }
+            catch (Exception ex)
                 {
-                TempData["FieldAuditReportMessage"] = "Select an engagement to continue.";
-                return RedirectToAction(nameof(ReportOverview));
+                _logger.LogError(ex, "Failed to finalize field audit report.");
+                return Json(new { success = false, message = "Unable to finalize report. Please try again or contact support." });
                 }
-
-            if (_dbConnection.IsFieldAuditReportFinal(engId))
-                {
-                return RedirectToAction(nameof(ReportOverview));
-                }
-
-            var checklist = _dbConnection.GetFieldAuditReportChecklist(engId);
-            if (!checklist.IsComplete)
-                {
-                TempData["FieldAuditReportMessage"] = "Complete all mandatory sections before finalizing.";
-                return RedirectToAction(nameof(FinalizeReport));
-                }
-
-            _dbConnection.FinalizeFieldAuditReport(engId);
-
-            return RedirectToAction(nameof(ReportOverview));
             }
 
         [HttpPost]

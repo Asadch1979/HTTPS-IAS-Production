@@ -40,6 +40,12 @@ namespace AIS.Models.FieldAuditReport
         public bool IsComplete => HasKpiSnapshot && HasNplSnapshot && HasStaffSnapshot && MandatoryNarrativesComplete;
         }
 
+    public class FieldAuditFinalizeResult
+        {
+        public bool IsFinalized { get; set; }
+        public string Message { get; set; }
+        }
+
     public class FieldAuditReportOverviewViewModel
         {
         public FieldAuditReportOverviewModel Overview { get; set; } = new FieldAuditReportOverviewModel();

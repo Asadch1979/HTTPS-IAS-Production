@@ -1087,18 +1087,50 @@ namespace AIS.Controllers
            FINALIZE
         ========================================================= */
 
-        public void FinalizeFieldAuditReport(int engId)
+        public FieldAuditFinalizeResult FinalizeFieldAuditReport(int engId)
             {
-            using var con = DatabaseConnection();
-            EnsureConnectionOpen(con);
+            const string defaultMessage = "Unable to finalize report. No response from procedure.";
 
-            using var cmd = con.CreateCommand();
-            cmd.BindByName = true;
-            cmd.CommandType = CommandType.StoredProcedure;
-            cmd.CommandText = "PKG_FRPT.P_FINALIZE_REPORT";
+            try
+                {
+                using var con = DatabaseConnection();
+                EnsureConnectionOpen(con);
 
-            cmd.Parameters.Add("P_ENG_ID", OracleDbType.Int32).Value = engId;
-            cmd.ExecuteNonQuery();
+                using var cmd = con.CreateCommand();
+                cmd.BindByName = true;
+                cmd.CommandType = CommandType.StoredProcedure;
+                cmd.CommandText = "PKG_FRPT.P_FINALIZE_REPORT";
+
+                cmd.Parameters.Add("P_ENG_ID", OracleDbType.Int32).Value = engId;
+                cmd.Parameters.Add("IO_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+
+                using var reader = cmd.ExecuteReader();
+                var message = defaultMessage;
+
+                if (reader.Read())
+                    {
+                    message = reader["REMARKS"]?.ToString();
+                    if (string.IsNullOrWhiteSpace(message))
+                        {
+                        message = defaultMessage;
+                        }
+                    }
+
+                return new FieldAuditFinalizeResult
+                    {
+                    Message = message,
+                    IsFinalized = string.Equals(message, "Report Finalized", StringComparison.OrdinalIgnoreCase)
+                    };
+                }
+            catch (Exception ex)
+                {
+                Console.WriteLine($"Error finalizing field audit report for ENG_ID {engId}: {ex.Message}");
+                return new FieldAuditFinalizeResult
+                    {
+                    IsFinalized = false,
+                    Message = "Unable to finalize report. Please try again or contact support."
+                    };
+                }
             }
 
         private static void EnsureConnectionOpen(OracleConnection connection)
