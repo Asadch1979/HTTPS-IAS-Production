@@ -80,6 +80,22 @@
     </div>
 </div>
 
+
+<div class="modal fade" id="iidAlertModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="iidAlertTitle">Message</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body" id="iidAlertBody"></div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-primary" data-bs-dismiss="modal">OK</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 @section Scripts{
 <script>
     $(function(){
@@ -87,14 +103,10 @@
         var planId = '@planId';
         var pageId = 4;
 
-        function showIidAlert(message, type){
-            type = type || 'danger';
-            $('#iidAlertHost').html(
-                '<div class="alert alert-' + type + ' alert-dismissible fade show" role="alert">' +
-                (message || 'Unexpected error') +
-                '<button type="button" class="btn-close" data-bs-dismiss="alert"></button>' +
-                '</div>'
-            );
+        function showIidAlert(title, message){
+            $('#iidAlertTitle').text(title || 'Message');
+            $('#iidAlertBody').text(message || '');
+            $('#iidAlertModal').modal('show');
         }
 
         function hideIidLoader(){
@@ -155,7 +167,7 @@
                 $('#assessmentUnit').text(planRow.ASSIGNED_UNIT_ID || planRow.assignedUnitId || '');
                 $('#planDetails').text(planRow.PLAN_DETAILS || planRow.planDetails || '');
             }).fail(function(){
-                showIidAlert('Failed to load plan details.', 'danger');
+                showIidAlert('Failed', 'Failed to load plan details.');
             }).always(function(){
                 hideIidLoader();
             });
@@ -170,7 +182,7 @@
                 success: function(resp){
                     if(resp && resp.ok === false){
                         $('#planDetails').text('Plan details not available.');
-                        showIidAlert(resp.message, 'warning');
+                        showIidAlert('Failed', resp.message || 'Operation failed.');
                         return;
                     }
                     planId = resp.planId;
@@ -182,7 +194,7 @@
                     $('#planDetails').text(resp.planDetails || '');
                 },
                 error: function(){
-                    showIidAlert('Failed to load plan details.', 'danger');
+                    showIidAlert('Failed', 'Failed to load plan details.');
                 },
                 complete: function(){
                     hideIidLoader();
@@ -205,15 +217,15 @@
                 data: JSON.stringify(data),
                 success: function(response){
                     if(response && response.ok === false){
-                        showIidAlert(response.message, 'danger');
+                        showIidAlert('Failed', response.message || 'Operation failed.');
                         return;
                     }
                     var approved = data.IsApproved === 'Y';
-                    showIidAlert(approved ? 'Plan approved. Notification queued.' : 'Plan returned for updates.', approved ? 'success' : 'warning');
-                    window.location.href = g_asiBaseURL + '/IID/TaskList';
+                    showIidAlert('Success', 'Saved successfully.');
+                    
                 },
                 error: function(){
-                    showIidAlert('Failed to submit plan approval.', 'danger');
+                    showIidAlert('Failed', 'Failed to submit plan approval.');
                 }
             });
         });
@@ -226,7 +238,7 @@
         loadComplaintDropdown(pageId)
             .done(function(resp){
                 if(resp && resp.ok === false){
-                    showIidAlert(resp.message, 'danger');
+                    showIidAlert('Failed', resp.message || 'Operation failed.');
                     return;
                 }
 
@@ -241,7 +253,7 @@
                     var id = $(this).val();
                     $('#selectedComplaintId').val(id);
                     if(!id){
-                        showIidAlert('Please select a complaint.', 'warning');
+                        showIidAlert('Failed', 'Please select a complaint.');
                         return;
                     }
                     loadPlanApprovalByComplaintId(parseInt(id));
@@ -252,7 +264,7 @@
                 }
             })
             .fail(function(){
-                showIidAlert('Failed to load complaints dropdown.', 'danger');
+                showIidAlert('Failed', 'Failed to load complaints dropdown.');
             })
             .always(function(){
                 hideIidLoader();
