@@ -6,6 +6,8 @@ namespace AIS.Models.ManagementReport
     {
     public class ManagementAuditPdfReportData
         {
+        public string GeneratedByName { get; set; }
+        public string GeneratedByPPNo { get; set; }
         public ManagementAuditCoverModel Cover { get; set; } = new ManagementAuditCoverModel();
         public List<FieldAuditPdfSectionModel> Sections { get; set; } = new List<FieldAuditPdfSectionModel>();
         public List<FieldAuditPdfStaffRowModel> StaffRows { get; set; } = new List<FieldAuditPdfStaffRowModel>();
