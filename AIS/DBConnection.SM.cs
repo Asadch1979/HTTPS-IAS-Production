@@ -875,6 +875,21 @@ namespace AIS.Controllers
                     chk.DISCRIPTION = rdr["DISCRIPTION"].ToString();
                     chk.LOAN_STATUS = rdr["loan_status"].ToString();
                     chk.REPORT_INDICATOR = rdr["IND"].ToString();
+                    chk.ReportingPeriod = rdr["REPORTING_PERIOD"] == DBNull.Value
+                        ? null
+                        : rdr["REPORTING_PERIOD"].ToString();
+
+                    object excObj = DBNull.Value;
+                    try
+                        {
+                        excObj = rdr["EXCEPTION_COUNT"];
+                        }
+                    catch (IndexOutOfRangeException)
+                        {
+                        excObj = rdr["EXC_COUNT"];
+                        }
+
+                    chk.ExceptionCount = excObj == DBNull.Value ? (int?)null : Convert.ToInt32(excObj);
                     list.Add(chk);
                     }
                 }

@@ -15,6 +15,10 @@ namespace AIS.Models
         [PlainText]
         public string REPORT_TYPE { get; set; }
 
+        [PlainText]
+        public string? ReportingPeriod { get; set; }
+        public int? ExceptionCount { get; set; }
+
 
 
 
