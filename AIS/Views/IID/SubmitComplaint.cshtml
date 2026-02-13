@@ -43,6 +43,13 @@
             <div class="card h-100">
                 <div class="card-header fw-semibold">Complaint Details</div>
                 <div class="card-body">
+                    <!-- Complaint No removed from UI; pass 0 so DB auto-generates -->
+                    <input type="hidden" asp-for="ComplaintNo" value="0" />
+
+                    <div class="mb-2">
+                        <label class="form-label">Received On</label>
+                        <input type="date" class="form-control" name="ReceivedOn" required />
+                    </div>
                     <div class="mb-2">
                         <label class="form-label">Nature of Complaint</label>
                         <select class="form-select" asp-for="Nature" required>
@@ -142,11 +149,20 @@
                     </div>
                     <div class="mb-2">
                         <label class="form-label">Upload Complaint (PDF)</label>
-                        <input type="file" class="form-control" asp-for="UploadedComplaint" />
+                        <input type="file" class="form-control" asp-for="UploadedComplaint" accept="application/pdf" required />
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label">Upload FFR (PDF)</label>
+                        <input type="file" class="form-control" name="UploadedFFR" accept="application/pdf" required />
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label">Upload Other Evidence</label>
+                        <input type="file" class="form-control" name="UploadedEvidence" multiple required />
                     </div>
                     <div class="mb-2">
                         <label class="form-label">Action Required from I&ID</label>
-                        <textarea class="form-control" asp-for="ActionRequired"></textarea>
+                        <textarea class="form-control" asp-for="ActionRequired" maxlength="1000" required></textarea>
+                        <small class="text-muted">Max 1000 characters.</small>
                     </div>
                 </div>
             </div>
@@ -256,6 +272,51 @@
 
         $('#complaintForm').on('submit', function(e){
             e.preventDefault();
+
+            var isValid = true;
+            var firstInvalidName = '';
+
+            $('#complaintForm').find('input, select, textarea').each(function(){
+                var $el = $(this);
+
+                if ($el.prop('disabled')) return;
+
+                var isRequired = $el.prop('required');
+                if (!isRequired) return;
+
+                var tag = ($el.prop('tagName') || '').toLowerCase();
+                var type = ($el.attr('type') || '').toLowerCase();
+
+                if (type === 'file') {
+                    if (!this.files || this.files.length === 0) {
+                        isValid = false;
+                        firstInvalidName = $el.attr('name') || 'file';
+                        return false;
+                    }
+                } else if (tag === 'select') {
+                    if (!$el.val()) {
+                        isValid = false;
+                        firstInvalidName = $el.attr('name') || 'select';
+                        return false;
+                    }
+                } else {
+                    if (!$el.val() || !$el.val().toString().trim()) {
+                        isValid = false;
+                        firstInvalidName = $el.attr('name') || 'field';
+                        return false;
+                    }
+                }
+            });
+
+            if (!isValid) {
+                alert('Please fill all mandatory fields before submitting.');
+                var $first = $('#complaintForm').find('[name="' + firstInvalidName + '"]');
+                if ($first.length) {
+                    $first.focus();
+                }
+                return;
+            }
+
             var fd = new FormData(this);
             $.ajax({
                 url: g_asiBaseURL + '/ApiCalls/SubmitComplaint',
