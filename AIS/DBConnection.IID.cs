@@ -529,7 +529,7 @@ namespace AIS.Controllers
                             LocationTypeText = HasColumn(rdr, "LOCATION_TYPE") ? rdr["LOCATION_TYPE"].ToString() : null,
                             Contents = rdr["CONTENTS"].ToString(),
                             UploadedComplaint = rdr["UPLOADED_COMPLAINT"].ToString(),
-                            UploadedFFR = string.Empty,
+                            UploadedFFR = rdr["UPLOADED_FFR"].ToString(),
                             UploadedEvidence = rdr["UPLOADED_EVIDENCE"].ToString(),
                             ActionRequired = rdr["ACTION_REQUIRED"].ToString(),
                             SubmittedOn = rdr["SUBMITTED_ON"].ToString(),

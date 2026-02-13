@@ -27,7 +27,7 @@
             Contents: iidPick(raw, 'contents', 'Contents'),
             ActionRequired: iidPick(raw, 'actionRequired', 'ActionRequired'),
             UploadedComplaint: iidPick(raw, 'uploadedComplaint', 'UploadedComplaint', 'UPLOADED_COMPLAINT'),
-            UploadedFFR: iidPick(raw, 'UploadedFFR', 'uploaded_FFR', 'uploaded_ffr', 'UPLOADED_FFR'),
+            UploadedFFR: iidPick(raw, 'UploadedFFR', 'uploaded_FFR', 'uploadedFFR', 'UPLOADED_FFR'),
             UploadedEvidence: iidPick(raw, 'uploadedEvidence', 'UploadedEvidence', 'UPLOADED_EVIDENCE'),
             SubmittedOn: iidPick(raw, 'submittedOn', 'SubmittedOn'),
             Status: iidPick(raw, 'status', 'Status'),
