@@ -31,6 +31,9 @@
             success: function (data) {
                 if (data.length > 0) {
                     populateTable(data);
+                } else {
+                    destroyDatatable('listOfSamples');
+                    $("#listOfSamples tbody").html('<tr><td colspan="6" class="text-center">No data found.</td></tr>');
                 }
             },
             dataType: "json",
@@ -43,10 +46,18 @@
                  
 
                 data.forEach((item, index) => {
+        var reportingPeriod =
+            item.reportingPeriod ?? item.ReportingPeriod ?? item.REPORTING_PERIOD ?? '';
+
+        var exceptionCount =
+            item.exceptionCount ?? item.ExceptionCount ?? item.EXCEPTION_COUNT ?? item.EXC_COUNT ?? 0;
+
         let row = `<tr>
             <td>${index + 1}</td>
             <td>${item.reporT_TITLE}</td>
             <td class="text-center">${item.discription}</td>
+            <td>${reportingPeriod}</td>
+            <td class="text-center">${exceptionCount}</td>
             <td class="text-center">
                 <button class="btn btn-danger btn-sm" onclick="viewSample(${item.reporT_ID}, ${item.loaN_STATUS}, '${item.reporT_INDICATOR}', '${item.reporT_TITLE.replace(/'/g, "\\'")}', '${item.discription.replace(/'/g, "\\'")}')">
                     View
@@ -95,6 +106,8 @@
                             <th class="col-md-auto">Sr. No.</th>
                             <th class="col-md-auto">Report Name List</th>
                             <th class="col-md-auto">Things to be checked</th>
+                            <th>Reporting Period</th>
+                            <th class="text-center">Exception Count</th>
                             <th class="col-md-auto text-center">View</th>
                         </tr>
                     </thead>
