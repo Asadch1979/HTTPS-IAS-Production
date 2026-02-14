@@ -643,10 +643,34 @@ namespace AIS.Controllers
                 cmd.CommandType = CommandType.StoredProcedure;
                 cmd.BindByName = true;
                 model.Status = IidStatuses.PlanDrafted;
-                cmd.Parameters.Add("p_complaint_id", OracleDbType.Int32).Value = model.ComplaintId ?? (object)DBNull.Value;
+
+                cmd.Parameters.Add("p_complaint_id", OracleDbType.Int32).Value = model.ComplaintId;
                 cmd.Parameters.Add("p_plan_details", OracleDbType.Clob).Value = model.PlanDetails ?? string.Empty;
-                cmd.Parameters.Add("p_submitted_by", OracleDbType.Int32).Value = loggedInUser.PPNumber;
+                cmd.Parameters.Add("p_submitted_by", OracleDbType.Int32).Value = model.SubmittedBy;
                 cmd.Parameters.Add("p_status", OracleDbType.Varchar2).Value = model.Status ?? string.Empty;
+
+                // New params (must match PL/SQL signature EXACTLY)
+                cmd.Parameters.Add("p_inv_risk", OracleDbType.Varchar2).Value = model.InvestigationRisk ?? string.Empty;
+                cmd.Parameters.Add("p_inv_size", OracleDbType.Varchar2).Value = model.InvestigationSize ?? string.Empty;
+
+                cmd.Parameters.Add("p_no_of_days", OracleDbType.Int32).Value =
+                    model.NoOfDays.HasValue ? model.NoOfDays.Value : (object)DBNull.Value;
+
+                cmd.Parameters.Add("p_travelling_days", OracleDbType.Int32).Value =
+                    model.TravellingDays.HasValue ? model.TravellingDays.Value : (object)DBNull.Value;
+
+                cmd.Parameters.Add("p_team_lead", OracleDbType.Varchar2).Value = model.TeamLead ?? string.Empty;
+                cmd.Parameters.Add("p_team_members", OracleDbType.Varchar2).Value = model.TeamMembers ?? string.Empty;
+
+                cmd.Parameters.Add("p_start_date", OracleDbType.Date).Value =
+                    model.StartDate.HasValue ? model.StartDate.Value : (object)DBNull.Value;
+
+                cmd.Parameters.Add("p_end_date", OracleDbType.Date).Value =
+                    model.EndDate.HasValue ? model.EndDate.Value : (object)DBNull.Value;
+
+                // If ACTIVITIES_TEXT exists in table/proc
+                cmd.Parameters.Add("p_activities_text", OracleDbType.Varchar2).Value = model.ActivitiesText ?? string.Empty;
+
                 cmd.Parameters.Add("o_plan_id", OracleDbType.Int32).Direction = ParameterDirection.Output;
                 cmd.ExecuteNonQuery();
                 var id = Convert.ToInt32(cmd.Parameters["o_plan_id"].Value.ToString());
@@ -801,10 +825,9 @@ namespace AIS.Controllers
                 }
             }
 
-        public DataTable GetIidPlanDetails(int planId)
+        public InvestigationPlanModel GetIidPlanDetails(int planId)
             {
-            using var con = this.DatabaseConnection();
-
+            var con = this.DatabaseConnection();
             using (OracleCommand cmd = con.CreateCommand())
                 {
                 cmd.CommandText = "PKG_INQ.GET_INV_PLAN";
@@ -812,12 +835,37 @@ namespace AIS.Controllers
                 cmd.BindByName = true;
                 cmd.Parameters.Add("p_plan_id", OracleDbType.Int32).Value = planId;
                 cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
-                var dt = new DataTable();
+
+                InvestigationPlanModel model = null;
+
                 using (var rdr = cmd.ExecuteReader())
                     {
-                    dt.Load(rdr);
+                    if (rdr.Read())
+                        {
+                        model = new InvestigationPlanModel
+                            {
+                            PlanId = rdr["PLAN_ID"] == DBNull.Value ? 0 : Convert.ToInt32(rdr["PLAN_ID"]),
+                            ComplaintId = rdr["COMPLAINT_ID"] == DBNull.Value ? 0 : Convert.ToInt32(rdr["COMPLAINT_ID"]),
+                            PlanDetails = rdr["PLAN_DETAILS"]?.ToString(),
+                            SubmittedBy = rdr["SUBMITTED_BY"] == DBNull.Value ? 0 : Convert.ToInt32(rdr["SUBMITTED_BY"]),
+                            SubmittedOn = rdr["SUBMITTED_ON"] == DBNull.Value ? (DateTime?)null : Convert.ToDateTime(rdr["SUBMITTED_ON"]),
+                            Status = rdr["STATUS"]?.ToString(),
+                            PlanTitle = rdr["PLAN_TITLE"]?.ToString(),
+                            StartDate = rdr["START_DATE"] == DBNull.Value ? (DateTime?)null : Convert.ToDateTime(rdr["START_DATE"]),
+                            EndDate = rdr["END_DATE"] == DBNull.Value ? (DateTime?)null : Convert.ToDateTime(rdr["END_DATE"]),
+                            InvestigationRisk = HasColumn(rdr, "INVESTIGATION_RISK") ? rdr["INVESTIGATION_RISK"]?.ToString() : null,
+                            InvestigationSize = HasColumn(rdr, "INVESTIGATION_SIZE") ? rdr["INVESTIGATION_SIZE"]?.ToString() : null,
+                            NoOfDays = HasColumn(rdr, "NO_OF_DAYS") && rdr["NO_OF_DAYS"] != DBNull.Value ? Convert.ToInt32(rdr["NO_OF_DAYS"]) : (int?)null,
+                            TravellingDays = HasColumn(rdr, "TRAVELLING_DAYS") && rdr["TRAVELLING_DAYS"] != DBNull.Value ? Convert.ToInt32(rdr["TRAVELLING_DAYS"]) : (int?)null,
+                            TeamLead = HasColumn(rdr, "TEAM_LEAD") ? rdr["TEAM_LEAD"]?.ToString() : null,
+                            TeamMembers = HasColumn(rdr, "TEAM_MEMBERS") ? rdr["TEAM_MEMBERS"]?.ToString() : null,
+                            ActivitiesText = HasColumn(rdr, "ACTIVITIES_TEXT") ? rdr["ACTIVITIES_TEXT"]?.ToString() : null
+                            };
+                        }
                     }
-                return dt;
+
+                con.Dispose();
+                return model;
                 }
             }
 
