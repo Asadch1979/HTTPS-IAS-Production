@@ -56,14 +56,10 @@
                     </div>
 
                     <div class="col-md-6">
-                        <label class="form-label">Investigation Tenure (From)</label>
+                        <label class="form-label">Inquiry Conduction Date</label>
                         <input type="date" class="form-control" id="TenureFrom" required />
                     </div>
 
-                    <div class="col-md-6">
-                        <label class="form-label">Investigation Tenure (To)</label>
-                        <input type="date" class="form-control" id="TenureTo" required />
-                    </div>
                 </div>
 
                 <hr class="my-3"/>
@@ -237,7 +233,6 @@
                 noOfDays: $('#NoOfDays').val() ? parseInt($('#NoOfDays').val(), 10) : null,
                 travellingDays: $('#TravellingDay').val() ? parseInt($('#TravellingDay').val(), 10) : null,
                 startDate: $('#TenureFrom').val() ? $('#TenureFrom').val() : null,
-                endDate: $('#TenureTo').val() ? $('#TenureTo').val() : null,
                 teamLead: ($('#TeamLead').val() || '').trim(),
                 teamMembers: ($('#TeamMember').val() || '').trim(),
                 activitiesText: acts.join(', ')
@@ -247,7 +242,7 @@
 
             if (!payload.complaintId || payload.complaintId <= 0) { alert('ComplaintId is required.'); return; }
             if (!payload.investigationRisk || !payload.investigationSize || !payload.noOfDays
-                || !payload.startDate || !payload.endDate || !payload.teamLead || !payload.teamMembers) {
+                || !payload.startDate || !payload.teamLead || !payload.teamMembers) {
                 alert('Please fill all mandatory fields.'); return;
             }
             if (!payload.activitiesText) { alert('Please select at least one Investigation Activity.'); return; }
