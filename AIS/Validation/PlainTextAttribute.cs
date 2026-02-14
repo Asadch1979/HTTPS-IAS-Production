@@ -24,10 +24,10 @@ namespace AIS.Validation
                 return new ValidationResult("Invalid text value.");
             }
 
-            char[] forbiddenCharacters = { '<', '>', '=', '@', ':', '\\', '"' };
+            char[] forbiddenCharacters = { '<', '>', '=', '@', '\\', '"' };
             if (text.IndexOfAny(forbiddenCharacters) >= 0)
             {
-                return new ValidationResult("The characters <, >, =, @, :, \\, and \" are not allowed.");
+                return new ValidationResult("The characters <, >, =, @, \\, and \" are not allowed.");
             }
 
             if (!Regex.IsMatch(text, AllowedPattern))
