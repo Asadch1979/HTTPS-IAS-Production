@@ -5184,9 +5184,9 @@ namespace AIS.Controllers
             }
 
         [HttpGet]
-        public IActionResult GetIidPlanDetails(int planId)
+        public IActionResult GetIidPlanDetails(int complaintId)
             {
-            var planDetails = dBConnection.GetIidPlanDetails(planId);
+            var planDetails = dBConnection.GetIidPlanDetails(complaintId);
             return Ok(planDetails);
             }
 

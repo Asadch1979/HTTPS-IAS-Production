@@ -822,15 +822,15 @@ namespace AIS.Controllers
                 }
             }
 
-        public InvestigationPlanModel GetIidPlanDetails(int planId)
+        public InvestigationPlanModel GetIidPlanDetails(int complaintId)
             {
-            var con = this.DatabaseConnection();
+            using var con = this.DatabaseConnection();
             using (OracleCommand cmd = con.CreateCommand())
                 {
                 cmd.CommandText = "PKG_INQ.GET_INV_PLAN";
                 cmd.CommandType = CommandType.StoredProcedure;
                 cmd.BindByName = true;
-                cmd.Parameters.Add("p_plan_id", OracleDbType.Int32).Value = planId;
+                cmd.Parameters.Add("p_complaint_id", OracleDbType.Int32).Value = complaintId;
                 cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
 
                 InvestigationPlanModel model = null;
@@ -839,28 +839,33 @@ namespace AIS.Controllers
                     {
                     if (rdr.Read())
                         {
-                        model = new InvestigationPlanModel
+                        model = new InvestigationPlanModel();
+
+                        for (int i = 0; i < rdr.FieldCount; i++)
                             {
-                            PlanId = rdr["PLAN_ID"] == DBNull.Value ? 0 : Convert.ToInt32(rdr["PLAN_ID"]),
-                            ComplaintId = rdr["COMPLAINT_ID"] == DBNull.Value ? 0 : Convert.ToInt32(rdr["COMPLAINT_ID"]),
-                            PlanDetails = rdr["PLAN_DETAILS"]?.ToString(),
-                            SubmittedBy = rdr["SUBMITTED_BY"] == DBNull.Value ? 0 : Convert.ToInt32(rdr["SUBMITTED_BY"]),
-                            SubmittedOn = rdr["SUBMITTED_ON"] == DBNull.Value ? (DateTime?)null : Convert.ToDateTime(rdr["SUBMITTED_ON"]),
-                            Status = rdr["STATUS"]?.ToString(),
-                            PlanTitle = rdr["PLAN_TITLE"]?.ToString(),
-                            StartDate = rdr["START_DATE"] == DBNull.Value ? (DateTime?)null : Convert.ToDateTime(rdr["START_DATE"]),
-                            InvestigationRisk = HasColumn(rdr, "INVESTIGATION_RISK") ? rdr["INVESTIGATION_RISK"]?.ToString() : null,
-                            InvestigationSize = HasColumn(rdr, "INVESTIGATION_SIZE") ? rdr["INVESTIGATION_SIZE"]?.ToString() : null,
-                            NoOfDays = HasColumn(rdr, "NO_OF_DAYS") && rdr["NO_OF_DAYS"] != DBNull.Value ? Convert.ToInt32(rdr["NO_OF_DAYS"]) : (int?)null,
-                            TravellingDays = HasColumn(rdr, "TRAVELLING_DAYS") && rdr["TRAVELLING_DAYS"] != DBNull.Value ? Convert.ToInt32(rdr["TRAVELLING_DAYS"]) : (int?)null,
-                            TeamLead = HasColumn(rdr, "TEAM_LEAD") ? rdr["TEAM_LEAD"]?.ToString() : null,
-                            TeamMembers = HasColumn(rdr, "TEAM_MEMBERS") ? rdr["TEAM_MEMBERS"]?.ToString() : null,
-                            ActivitiesText = HasColumn(rdr, "ACTIVITIES_TEXT") ? rdr["ACTIVITIES_TEXT"]?.ToString() : null
-                            };
+                            var columnName = rdr.GetName(i);
+                            var rawValue = rdr.IsDBNull(i) ? null : rdr.GetValue(i);
+                            model.AdditionalFields[columnName] = rawValue?.ToString() ?? string.Empty;
+                            }
+
+                        model.PlanId = HasColumn(rdr, "PLAN_ID") && rdr["PLAN_ID"] != DBNull.Value ? Convert.ToInt32(rdr["PLAN_ID"]) : 0;
+                        model.ComplaintId = HasColumn(rdr, "COMPLAINT_ID") && rdr["COMPLAINT_ID"] != DBNull.Value ? Convert.ToInt32(rdr["COMPLAINT_ID"]) : complaintId;
+                        model.PlanDetails = HasColumn(rdr, "PLAN_DETAILS") ? rdr["PLAN_DETAILS"]?.ToString() : string.Empty;
+                        model.SubmittedBy = HasColumn(rdr, "SUBMITTED_BY") && rdr["SUBMITTED_BY"] != DBNull.Value ? Convert.ToInt32(rdr["SUBMITTED_BY"]) : 0;
+                        model.SubmittedOn = HasColumn(rdr, "SUBMITTED_ON") && rdr["SUBMITTED_ON"] != DBNull.Value ? Convert.ToDateTime(rdr["SUBMITTED_ON"]) : (DateTime?)null;
+                        model.Status = HasColumn(rdr, "STATUS") ? rdr["STATUS"]?.ToString() : string.Empty;
+                        model.PlanTitle = HasColumn(rdr, "PLAN_TITLE") ? rdr["PLAN_TITLE"]?.ToString() : string.Empty;
+                        model.StartDate = HasColumn(rdr, "START_DATE") && rdr["START_DATE"] != DBNull.Value ? Convert.ToDateTime(rdr["START_DATE"]) : (DateTime?)null;
+                        model.InvestigationRisk = HasColumn(rdr, "INVESTIGATION_RISK") ? rdr["INVESTIGATION_RISK"]?.ToString() : string.Empty;
+                        model.InvestigationSize = HasColumn(rdr, "INVESTIGATION_SIZE") ? rdr["INVESTIGATION_SIZE"]?.ToString() : string.Empty;
+                        model.NoOfDays = HasColumn(rdr, "NO_OF_DAYS") && rdr["NO_OF_DAYS"] != DBNull.Value ? Convert.ToInt32(rdr["NO_OF_DAYS"]) : (int?)null;
+                        model.TravellingDays = HasColumn(rdr, "TRAVELLING_DAYS") && rdr["TRAVELLING_DAYS"] != DBNull.Value ? Convert.ToInt32(rdr["TRAVELLING_DAYS"]) : (int?)null;
+                        model.TeamLead = HasColumn(rdr, "TEAM_LEAD") ? rdr["TEAM_LEAD"]?.ToString() : string.Empty;
+                        model.TeamMembers = HasColumn(rdr, "TEAM_MEMBERS") ? rdr["TEAM_MEMBERS"]?.ToString() : string.Empty;
+                        model.ActivitiesText = HasColumn(rdr, "ACTIVITIES_TEXT") ? rdr["ACTIVITIES_TEXT"]?.ToString() : string.Empty;
                         }
                     }
 
-                con.Dispose();
                 return model;
                 }
             }
