@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using AIS.Validation;
 
 namespace AIS.Models.IID
@@ -41,5 +42,7 @@ namespace AIS.Models.IID
 
         [PlainText]
         public string ActivitiesText { get; set; }      // ACTIVITIES_TEXT (if added)
+
+        public Dictionary<string, string> AdditionalFields { get; set; } = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
     }
 }
