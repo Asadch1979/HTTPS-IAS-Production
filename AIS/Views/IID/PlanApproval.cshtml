@@ -28,25 +28,28 @@
             Approval Decision
         </div>
         <div class="card-body">
-            <form id="approvalForm" asp-action="PlanApproval" asp-controller="IID" method="post">
-                @Html.AntiForgeryToken()
-                <input type="hidden" asp-for="PlanId" value="@planId" />
-                <div class="mb-3">
-                    <label class="form-label">Edited Plan (optional)</label>
-                    <textarea class="form-control" asp-for="EditedPlan" rows="4"></textarea>
+            <form id="approvalForm">
+                <input type="hidden" name="PlanId" value="@planId" />
+
+                <div class="mb-2">
+                    <label class="form-label">Edit Plan</label>
+                    <textarea class="form-control" name="EditedPlan" required></textarea>
                 </div>
-                <div class="mb-3">
-                    <label class="form-label">Further Actions (optional)</label>
-                    <textarea class="form-control" asp-for="FurtherActions" rows="3"></textarea>
+
+                <div class="mb-2">
+                    <label class="form-label">Further Line of Action</label>
+                    <textarea class="form-control" name="FurtherActions" required></textarea>
                 </div>
-                <div class="mb-3">
-                    <label class="form-label">Decision</label>
-                    <select class="form-select" asp-for="IsApproved">
+
+                <div class="mb-2">
+                    <label class="form-label">Action</label>
+                    <select class="form-select" name="IsApproved" required>
                         <option value="Y">Approve</option>
-                        <option value="N">Return</option>
+                        <option value="N">Reject</option>
                     </select>
                 </div>
-                <button type="submit" class="btn btn-primary">Submit Decision</button>
+
+                <button type="submit" class="btn btn-primary">Submit</button>
             </form>
         </div>
     </div>
@@ -141,36 +144,25 @@
 
         $('#approvalForm').on('submit', function(e){
             e.preventDefault();
-            var data = {
-                PlanId: $('#approvalForm [name="PlanId"]').val(),
-                EditedPlan: $('#approvalForm [name="EditedPlan"]').val(),
-                FurtherActions: $('#approvalForm [name="FurtherActions"]').val(),
-                IsApproved: $('#approvalForm [name="IsApproved"]').val()
-            };
+
+            // simple required check
+            var ok = true;
+            $('#approvalForm').find('[required]').each(function(){
+                if (!$(this).val() || !$(this).val().toString().trim()) { ok = false; $(this).focus(); return false; }
+            });
+            if (!ok) { alert('Please fill all mandatory fields.'); return; }
 
             var selectedComplaintId = $('#selectedComplaintId').val();
             if(!selectedComplaintId || selectedComplaintId === '0'){
                 showIidAlert('Required', 'Please select a complaint.');
                 return;
             }
-            $.ajax({
-                url: g_asiBaseURL + '/ApiCalls/AddPlanApproval',
-                method: 'POST',
-                contentType: 'application/json',
-                data: JSON.stringify(data),
-                success: function(response){
-                    if(response && response.ok === false){
-                        showIidAlert('Failed', response.message || 'Operation failed.');
-                        return;
-                    }
-                    showIidAlert('Success', 'Saved successfully.');
-                    $('#iidAlertModal').off('hidden.bs.modal').on('hidden.bs.modal', function () {
-                        location.reload();
-                    });
-                },
-                error: function(){
-                    showIidAlert('Failed', 'Failed to submit plan approval.');
-                }
+
+            var data = $(this).serialize();
+            $.post(g_asiBaseURL + '/ApiCalls/AddPlanApproval', data, function(){
+                alert('Action recorded');
+            }).fail(function(){
+                alert('Error saving approval');
             });
         });
 
