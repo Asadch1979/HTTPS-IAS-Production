@@ -822,7 +822,7 @@ namespace AIS.Controllers
                 }
             }
 
-        public InvestigationPlanModel GetIidPlanDetails(int complaintId)
+        public IDictionary<string, object> GetIidPlanDetails(int complaintId)
             {
             using var con = this.DatabaseConnection();
             using (OracleCommand cmd = con.CreateCommand())
@@ -833,36 +833,40 @@ namespace AIS.Controllers
                 cmd.Parameters.Add("p_complaint_id", OracleDbType.Int32).Value = complaintId;
                 cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
 
-                InvestigationPlanModel model = null;
+                IDictionary<string, object> model = null;
+
+                string FormatDate(object value)
+                    {
+                    if (value == null || value == DBNull.Value)
+                        {
+                        return string.Empty;
+                        }
+
+                    return Convert.ToDateTime(value).ToString("yyyy-MM-dd");
+                    }
 
                 using (var rdr = cmd.ExecuteReader())
                     {
                     if (rdr.Read())
                         {
-                        model = new InvestigationPlanModel();
-
-                        for (int i = 0; i < rdr.FieldCount; i++)
+                        model = new Dictionary<string, object>
                             {
-                            var columnName = rdr.GetName(i);
-                            var rawValue = rdr.IsDBNull(i) ? null : rdr.GetValue(i);
-                            model.AdditionalFields[columnName] = rawValue?.ToString() ?? string.Empty;
-                            }
-
-                        model.PlanId = HasColumn(rdr, "PLAN_ID") && rdr["PLAN_ID"] != DBNull.Value ? Convert.ToInt32(rdr["PLAN_ID"]) : 0;
-                        model.ComplaintId = HasColumn(rdr, "COMPLAINT_ID") && rdr["COMPLAINT_ID"] != DBNull.Value ? Convert.ToInt32(rdr["COMPLAINT_ID"]) : complaintId;
-                        model.PlanDetails = HasColumn(rdr, "PLAN_DETAILS") ? rdr["PLAN_DETAILS"]?.ToString() : string.Empty;
-                        model.SubmittedBy = HasColumn(rdr, "SUBMITTED_BY") && rdr["SUBMITTED_BY"] != DBNull.Value ? Convert.ToInt32(rdr["SUBMITTED_BY"]) : 0;
-                        model.SubmittedOn = HasColumn(rdr, "SUBMITTED_ON") && rdr["SUBMITTED_ON"] != DBNull.Value ? Convert.ToDateTime(rdr["SUBMITTED_ON"]) : (DateTime?)null;
-                        model.Status = HasColumn(rdr, "STATUS") ? rdr["STATUS"]?.ToString() : string.Empty;
-                        model.PlanTitle = HasColumn(rdr, "PLAN_TITLE") ? rdr["PLAN_TITLE"]?.ToString() : string.Empty;
-                        model.StartDate = HasColumn(rdr, "START_DATE") && rdr["START_DATE"] != DBNull.Value ? Convert.ToDateTime(rdr["START_DATE"]) : (DateTime?)null;
-                        model.InvestigationRisk = HasColumn(rdr, "INVESTIGATION_RISK") ? rdr["INVESTIGATION_RISK"]?.ToString() : string.Empty;
-                        model.InvestigationSize = HasColumn(rdr, "INVESTIGATION_SIZE") ? rdr["INVESTIGATION_SIZE"]?.ToString() : string.Empty;
-                        model.NoOfDays = HasColumn(rdr, "NO_OF_DAYS") && rdr["NO_OF_DAYS"] != DBNull.Value ? Convert.ToInt32(rdr["NO_OF_DAYS"]) : (int?)null;
-                        model.TravellingDays = HasColumn(rdr, "TRAVELLING_DAYS") && rdr["TRAVELLING_DAYS"] != DBNull.Value ? Convert.ToInt32(rdr["TRAVELLING_DAYS"]) : (int?)null;
-                        model.TeamLead = HasColumn(rdr, "TEAM_LEAD") ? rdr["TEAM_LEAD"]?.ToString() : string.Empty;
-                        model.TeamMembers = HasColumn(rdr, "TEAM_MEMBERS") ? rdr["TEAM_MEMBERS"]?.ToString() : string.Empty;
-                        model.ActivitiesText = HasColumn(rdr, "ACTIVITIES_TEXT") ? rdr["ACTIVITIES_TEXT"]?.ToString() : string.Empty;
+                            ["planId"] = HasColumn(rdr, "PLAN_ID") && rdr["PLAN_ID"] != DBNull.Value ? Convert.ToInt32(rdr["PLAN_ID"]) : 0,
+                            ["complaintId"] = HasColumn(rdr, "COMPLAINT_ID") && rdr["COMPLAINT_ID"] != DBNull.Value ? Convert.ToInt32(rdr["COMPLAINT_ID"]) : complaintId,
+                            ["planDetails"] = HasColumn(rdr, "PLAN_DETAILS") ? rdr["PLAN_DETAILS"]?.ToString() ?? string.Empty : string.Empty,
+                            ["submittedBy"] = HasColumn(rdr, "SUBMITTED_BY") && rdr["SUBMITTED_BY"] != DBNull.Value ? Convert.ToInt32(rdr["SUBMITTED_BY"]) : 0,
+                            ["submittedOn"] = HasColumn(rdr, "SUBMITTED_ON") ? FormatDate(rdr["SUBMITTED_ON"]) : string.Empty,
+                            ["status"] = HasColumn(rdr, "STATUS") ? rdr["STATUS"]?.ToString() ?? string.Empty : string.Empty,
+                            ["planTitle"] = HasColumn(rdr, "PLAN_TITLE") ? rdr["PLAN_TITLE"]?.ToString() ?? string.Empty : string.Empty,
+                            ["investigationRisk"] = HasColumn(rdr, "INVESTIGATION_RISK") ? rdr["INVESTIGATION_RISK"]?.ToString() ?? string.Empty : string.Empty,
+                            ["investigationSize"] = HasColumn(rdr, "INVESTIGATION_SIZE") ? rdr["INVESTIGATION_SIZE"]?.ToString() ?? string.Empty : string.Empty,
+                            ["noOfDays"] = HasColumn(rdr, "NO_OF_DAYS") && rdr["NO_OF_DAYS"] != DBNull.Value ? Convert.ToInt32(rdr["NO_OF_DAYS"]) : (int?)null,
+                            ["travellingDays"] = HasColumn(rdr, "TRAVELLING_DAYS") && rdr["TRAVELLING_DAYS"] != DBNull.Value ? Convert.ToInt32(rdr["TRAVELLING_DAYS"]) : (int?)null,
+                            ["startDate"] = HasColumn(rdr, "START_DATE") ? FormatDate(rdr["START_DATE"]) : string.Empty,
+                            ["teamLead"] = HasColumn(rdr, "TEAM_LEAD") ? rdr["TEAM_LEAD"]?.ToString() ?? string.Empty : string.Empty,
+                            ["teamMembers"] = HasColumn(rdr, "TEAM_MEMBERS") ? rdr["TEAM_MEMBERS"]?.ToString() ?? string.Empty : string.Empty,
+                            ["activitiesText"] = HasColumn(rdr, "ACTIVITIES_TEXT") ? rdr["ACTIVITIES_TEXT"]?.ToString() ?? string.Empty : string.Empty
+                            };
                         }
                     }
 
