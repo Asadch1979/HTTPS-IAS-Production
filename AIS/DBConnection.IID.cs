@@ -665,9 +665,6 @@ namespace AIS.Controllers
                 cmd.Parameters.Add("p_start_date", OracleDbType.Date).Value =
                     model.StartDate.HasValue ? model.StartDate.Value : (object)DBNull.Value;
 
-                cmd.Parameters.Add("p_end_date", OracleDbType.Date).Value =
-                    model.EndDate.HasValue ? model.EndDate.Value : (object)DBNull.Value;
-
                 // If ACTIVITIES_TEXT exists in table/proc
                 cmd.Parameters.Add("p_activities_text", OracleDbType.Varchar2).Value = model.ActivitiesText ?? string.Empty;
 
@@ -852,7 +849,6 @@ namespace AIS.Controllers
                             Status = rdr["STATUS"]?.ToString(),
                             PlanTitle = rdr["PLAN_TITLE"]?.ToString(),
                             StartDate = rdr["START_DATE"] == DBNull.Value ? (DateTime?)null : Convert.ToDateTime(rdr["START_DATE"]),
-                            EndDate = rdr["END_DATE"] == DBNull.Value ? (DateTime?)null : Convert.ToDateTime(rdr["END_DATE"]),
                             InvestigationRisk = HasColumn(rdr, "INVESTIGATION_RISK") ? rdr["INVESTIGATION_RISK"]?.ToString() : null,
                             InvestigationSize = HasColumn(rdr, "INVESTIGATION_SIZE") ? rdr["INVESTIGATION_SIZE"]?.ToString() : null,
                             NoOfDays = HasColumn(rdr, "NO_OF_DAYS") && rdr["NO_OF_DAYS"] != DBNull.Value ? Convert.ToInt32(rdr["NO_OF_DAYS"]) : (int?)null,

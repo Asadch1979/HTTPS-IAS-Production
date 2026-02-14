@@ -22,7 +22,6 @@
                 @Html.AntiForgeryToken()
                 <input type="hidden" asp-for="ComplaintId" value="@complaintId" />
 
-                <!-- This is what we will submit to existing API (backward compatible) -->
                 <input type="hidden" name="PlanDetails" id="PlanText" />
 
                 <div class="row g-2">
@@ -57,14 +56,10 @@
                     </div>
 
                     <div class="col-md-6">
-                        <label class="form-label">Investigation Tenure (From)</label>
+                        <label class="form-label">Inquiry Conduction Date</label>
                         <input type="date" class="form-control" id="TenureFrom" required />
                     </div>
 
-                    <div class="col-md-6">
-                        <label class="form-label">Investigation Tenure (To)</label>
-                        <input type="date" class="form-control" id="TenureTo" required />
-                    </div>
                 </div>
 
                 <hr class="my-3"/>
@@ -106,6 +101,12 @@
                         <input type="text" class="form-control" id="TeamMember" required />
                         <small class="text-muted">If multiple, separate with comma.</small>
                     </div>
+                </div>
+
+                <div class="mt-3">
+                    <label class="form-label">Optional Plan Note</label>
+                    <textarea class="form-control" id="PlanNote" rows="2" maxlength="2000" placeholder="Optional short note for plan details (leave blank if not needed)"></textarea>
+                    <small class="text-muted">PlanDetails will only store this optional note (or remain empty).</small>
                 </div>
 
                 <div class="mt-3">
@@ -194,7 +195,9 @@
                         showIidAlert('Failed', resp.message || 'Operation failed.');
                         return;
                     }
-                    $('#PlanText').val(resp.planDetails || '');
+                    var planNote = (resp.planDetails || '').trim();
+                    $('#PlanText').val(planNote);
+                    $('#PlanNote').val(planNote);
                 },
                 error: function(){
                     showIidAlert('Failed', 'Failed to load investigation plan.');
@@ -203,39 +206,6 @@
                     hideIidLoader();
                 }
             });
-        }
-
-        function buildPlanText(){
-            var risk = $('#InvestigationRisk').val();
-            var size = $('#InvestigationSize').val();
-            var days = $('#NoOfDays').val();
-            var tDays = $('#TravellingDay').val();
-            var from = $('#TenureFrom').val();
-            var to = $('#TenureTo').val();
-            var teamLead = $('#TeamLead').val();
-            var teamMember = $('#TeamMember').val();
-
-            var acts = [];
-            $('.act:checked').each(function(){
-                acts.push($(this).val());
-            });
-
-            var otherText = ($('#OtherActivityText').val() || '').trim();
-            if (acts.indexOf('Other') >= 0 && otherText) {
-                acts[acts.indexOf('Other')] = 'Other: ' + otherText;
-            }
-
-            var plan =
-                'Investigation Risk: ' + risk + '\\n' +
-                'Investigation Size: ' + size + '\\n' +
-                'No of Days: ' + days + '\\n' +
-                'Investigation Tenure: From ' + from + ' To ' + to + '\\n' +
-                'Travelling Day: ' + tDays + '\\n' +
-                'Investigation Activities: ' + (acts.length ? acts.join(', ') : '') + '\\n' +
-                'Team Lead: ' + teamLead + '\\n' +
-                'Team Member(s): ' + teamMember;
-
-            return { text: plan, activityCount: acts.length };
         }
 
         $('#planForm').on('submit', function (e) {
@@ -250,11 +220,8 @@
                 acts[acts.indexOf('Other')] = 'Other: ' + otherText;
             }
 
-            var planDetails = ($('#PlanText').val() || '').trim();
-            if (!planDetails) {
-                planDetails = buildPlanText().text;
-                $('#PlanText').val(planDetails);
-            }
+            var planDetails = ($('#PlanNote').val() || '').trim();
+            $('#PlanText').val(planDetails);
 
             var payload = {
                 complaintId: parseInt(($('input[name="ComplaintId"]').val() || '0'), 10),
@@ -266,7 +233,6 @@
                 noOfDays: $('#NoOfDays').val() ? parseInt($('#NoOfDays').val(), 10) : null,
                 travellingDays: $('#TravellingDay').val() ? parseInt($('#TravellingDay').val(), 10) : null,
                 startDate: $('#TenureFrom').val() ? $('#TenureFrom').val() : null,
-                endDate: $('#TenureTo').val() ? $('#TenureTo').val() : null,
                 teamLead: ($('#TeamLead').val() || '').trim(),
                 teamMembers: ($('#TeamMember').val() || '').trim(),
                 activitiesText: acts.join(', ')
@@ -276,7 +242,7 @@
 
             if (!payload.complaintId || payload.complaintId <= 0) { alert('ComplaintId is required.'); return; }
             if (!payload.investigationRisk || !payload.investigationSize || !payload.noOfDays
-                || !payload.startDate || !payload.endDate || !payload.teamLead || !payload.teamMembers) {
+                || !payload.startDate || !payload.teamLead || !payload.teamMembers) {
                 alert('Please fill all mandatory fields.'); return;
             }
             if (!payload.activitiesText) { alert('Please select at least one Investigation Activity.'); return; }

@@ -32,7 +32,6 @@ namespace AIS.Models.IID
         public int? TravellingDays { get; set; }        // TRAVELLING_DAYS
 
         public DateTime? StartDate { get; set; }        // START_DATE
-        public DateTime? EndDate { get; set; }          // END_DATE
 
         [PlainText]
         public string TeamLead { get; set; }            // TEAM_LEAD
