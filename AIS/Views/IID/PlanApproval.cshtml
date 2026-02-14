@@ -75,7 +75,7 @@
 <script src="~/js/iid/complaintDetails.js"></script>
 <script>
     $(function(){
-        var complaintId = '@complaintId';
+        var complaintId = parseInt('@complaintId' || '0', 10) || 0;
         var planId = '@planId';
         var pageId = 4;
 
@@ -112,8 +112,31 @@
             });
         }
 
+        function loadComplaintDetails(selectedComplaintId){
+            return $.post(g_asiBaseURL + '/ApiCalls/GetComplaint', { complaintId: selectedComplaintId })
+                .done(function(d){
+                    if(d && d.ok === false){
+                        showIidAlert('Failed', d.message || 'Operation failed.');
+                        return;
+                    }
+
+                    var normalized = iidNormalizeComplaint(d);
+                    iidRenderComplaintDetails('#iidComplaintDetailsRoot', normalized);
+
+                    $('#assessmentText').text(normalized.Assessment || '');
+                    $('#assessmentRecommendation').text(normalized.Recommendation || '');
+                    $('#assessmentUnit').text(normalized.AssignedUnit || '');
+                })
+                .fail(function(){
+                    $('#iidComplaintDetailsRoot').html('<div class="text-danger">Failed to load complaint details.</div>');
+                });
+        }
+
         function loadPlanApprovalByComplaintId(selectedComplaintId){
             complaintId = selectedComplaintId;
+
+            loadComplaintDetails(complaintId);
+
             $.ajax({
                 url: g_asiBaseURL + '/ApiCalls/GetLatestPlanByComplaintId',
                 type: 'POST',
@@ -124,14 +147,13 @@
                         showIidAlert('Failed', resp.message || 'Operation failed.');
                         return;
                     }
-                    planId = resp.planId;
+                    planId = resp.planId || resp.PLAN_ID || planId;
                     $('#approvalForm [name="PlanId"]').val(planId);
-                    var normalized = iidNormalizeComplaint(resp);
-                    iidRenderComplaintDetails('#iidComplaintDetailsRoot', normalized);
-                    $('#assessmentText').text(normalized.Assessment || '');
-                    $('#assessmentRecommendation').text(normalized.Recommendation || '');
-                    $('#assessmentUnit').text(normalized.AssignedUnit || '');
-                    $('#planDetails').text(resp.planDetails || '');
+                    $('#planDetails').text(resp.planDetails || resp.PLAN_DETAILS || '');
+
+                    $('#assessmentText').text(resp.ASSESSMENT || resp.assessment || $('#assessmentText').text());
+                    $('#assessmentRecommendation').text(resp.RECOMMENDATION || resp.recommendation || $('#assessmentRecommendation').text());
+                    $('#assessmentUnit').text(resp.ASSIGNED_UNIT_ID || resp.assignedUnitId || $('#assessmentUnit').text());
                 },
                 error: function(){
                     showIidAlert('Failed', 'Failed to load plan details.');
@@ -192,11 +214,11 @@
                         $('#iidComplaintDetailsRoot').html('');
                         return;
                     }
-                    loadPlanApprovalByComplaintId(parseInt(id));
+                    loadPlanApprovalByComplaintId(parseInt(id, 10));
                 });
 
-                if(complaintId){
-                    $dd.val(complaintId).trigger('change');
+                if(complaintId > 0){
+                    $dd.val(String(complaintId)).trigger('change');
                 }
             })
             .fail(function(){
