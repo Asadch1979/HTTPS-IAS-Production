@@ -4850,7 +4850,7 @@ namespace AIS.Controllers
             {
             try
                 {
-                if (model == null || !model.ComplaintId.HasValue || model.ComplaintId.Value <= 0)
+                if (model == null || model.ComplaintId <= 0)
                     {
                     return Json(new { ok = false, message = "ComplaintId is required." });
                     }
@@ -4864,7 +4864,7 @@ namespace AIS.Controllers
             }
 
         [HttpPost]
-        public IActionResult AddPlanApproval([FromBody] AIS.Models.IID.PlanApprovalModel model)
+        public IActionResult AddPlanApproval(AIS.Models.IID.PlanApprovalModel model)
             {
             try
                 {
