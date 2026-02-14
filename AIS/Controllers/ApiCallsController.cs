@@ -5098,9 +5098,16 @@ namespace AIS.Controllers
                     {
                     ok = true,
                     reportId = report.ReportId,
+                    nameComplainant = report.NameComplainant,
+                    nameAccused = report.NameAccused,
+                    gist = report.Gist,
+                    proceedings = report.Proceedings,
+                    findings = report.Findings,
+                    recommendation = report.Recommendation,
                     uploadedReport = report.UploadedReport,
                     uploadedEvidence = report.UploadedEvidence,
-                    uploadedDsa = report.UploadedDsa
+                    uploadedDsa = report.UploadedDsa,
+                    submittedOn = report.SubmittedOn
                     });
                 }
             catch (Exception ex)

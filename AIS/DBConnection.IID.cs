@@ -913,9 +913,16 @@ namespace AIS.Controllers
                         model = new InquiryReportFilesModel
                             {
                             ReportId = rdr["REPORT_ID"] == DBNull.Value ? 0 : Convert.ToInt32(rdr["REPORT_ID"]),
+                            NameComplainant = HasColumn(rdr, "NAME_COMPLAINANT") ? rdr["NAME_COMPLAINANT"]?.ToString() : string.Empty,
+                            NameAccused = HasColumn(rdr, "NAME_ACCUSED") ? rdr["NAME_ACCUSED"]?.ToString() : string.Empty,
+                            Gist = HasColumn(rdr, "GIST") ? rdr["GIST"]?.ToString() : string.Empty,
+                            Proceedings = HasColumn(rdr, "PROCEEDINGS") ? rdr["PROCEEDINGS"]?.ToString() : string.Empty,
+                            Findings = HasColumn(rdr, "FINDINGS") ? rdr["FINDINGS"]?.ToString() : string.Empty,
+                            Recommendation = HasColumn(rdr, "RECOMMENDATION") ? rdr["RECOMMENDATION"]?.ToString() : string.Empty,
                             UploadedReport = rdr["UPLOADED_REPORT"]?.ToString(),
                             UploadedEvidence = rdr["UPLOADED_EVIDENCE"]?.ToString(),
-                            UploadedDsa = rdr["UPLOADED_DSA"]?.ToString()
+                            UploadedDsa = rdr["UPLOADED_DSA"]?.ToString(),
+                            SubmittedOn = HasColumn(rdr, "SUBMITTED_ON") ? FormatDate(rdr["SUBMITTED_ON"]) : string.Empty
                             };
                         }
                     }
