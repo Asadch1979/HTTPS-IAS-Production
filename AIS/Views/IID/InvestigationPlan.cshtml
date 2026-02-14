@@ -205,88 +205,101 @@
             });
         }
 
-        function buildPlanText(payload){
-            return [
-                'Investigation Risk: ' + payload.investigationRisk,
-                'Investigation Size: ' + payload.investigationSize,
-                'No of Days: ' + payload.noOfDays,
-                'Investigation Tenure: From ' + payload.startDate + ' To ' + payload.endDate,
-                'Travelling Day: ' + (payload.travellingDays === null ? '' : payload.travellingDays),
-                'Investigation Activities: ' + payload.activitiesText,
-                'Team Lead: ' + payload.teamLead,
-                'Team Member(s): ' + payload.teamMembers
-            ].join('\\n');
-        }
-
-        $('#planForm').on('submit', function (e) {
-            e.preventDefault();
-
-            var token = $('input[name="__RequestVerificationToken"]', this).val();
+        function buildPlanText(){
+            var risk = $('#InvestigationRisk').val();
+            var size = $('#InvestigationSize').val();
+            var days = $('#NoOfDays').val();
+            var tDays = $('#TravellingDay').val();
+            var from = $('#TenureFrom').val();
+            var to = $('#TenureTo').val();
+            var teamLead = $('#TeamLead').val();
+            var teamMember = $('#TeamMember').val();
 
             var acts = [];
             $('.act:checked').each(function(){
                 acts.push($(this).val());
             });
+
             var otherText = ($('#OtherActivityText').val() || '').trim();
             if (acts.indexOf('Other') >= 0 && otherText) {
                 acts[acts.indexOf('Other')] = 'Other: ' + otherText;
             }
 
-            var planDetails = ($('#PlanText').val() || '').trim();
+            var plan =
+                'Investigation Risk: ' + risk + '\\n' +
+                'Investigation Size: ' + size + '\\n' +
+                'No of Days: ' + days + '\\n' +
+                'Investigation Tenure: From ' + from + ' To ' + to + '\\n' +
+                'Travelling Day: ' + tDays + '\\n' +
+                'Investigation Activities: ' + (acts.length ? acts.join(', ') : '') + '\\n' +
+                'Team Lead: ' + teamLead + '\\n' +
+                'Team Member(s): ' + teamMember;
 
-            var payload = {
-                complaintId: parseInt(($('input[name="ComplaintId"]').val() || '0'), 10),
-                planDetails: planDetails,
-                status: 'Plan Drafted',
-                planTitle: 'Investigation Plan',
-                investigationRisk: ($('#InvestigationRisk').val() || '').trim(),
-                investigationSize: ($('#InvestigationSize').val() || '').trim(),
-                noOfDays: $('#NoOfDays').val() ? parseInt($('#NoOfDays').val(), 10) : null,
-                travellingDays: $('#TravellingDay').val() ? parseInt($('#TravellingDay').val(), 10) : null,
-                startDate: $('#TenureFrom').val() ? $('#TenureFrom').val() : null,
-                endDate: $('#TenureTo').val() ? $('#TenureTo').val() : null,
-                teamLead: ($('#TeamLead').val() || '').trim(),
-                teamMembers: ($('#TeamMember').val() || '').trim(),
-                activitiesText: acts.join(', ')
+            return { text: plan, activityCount: acts.length };
+        }
+
+        $('#planForm').on('submit', function(e){
+            e.preventDefault();
+
+            // Required field check (front-end)
+            var missing = false;
+            $('#planForm').find('input, select, textarea').each(function(){
+                var $el = $(this);
+                if ($el.prop('disabled')) return;
+
+                // Only validate required visible inputs + selects; skip hidden PlanText because we fill it
+                if ($el.attr('type') === 'hidden') return;
+
+                if ($el.prop('required')) {
+                    if (!$el.val() || !$el.val().toString().trim()) {
+                        missing = true;
+                        $el.focus();
+                        return false;
+                    }
+                }
+            });
+
+            var built = buildPlanText();
+            if (missing) {
+                showIidAlert('Failed', 'Please fill all mandatory fields.');
+                return;
+            }
+
+            // Must select at least one activity
+            if (built.activityCount === 0) {
+                showIidAlert('Failed', 'Please select at least one Investigation Activity.');
+                return;
+            }
+
+            // Fill hidden Plan field (backward compatible with existing API)
+            $('#PlanText').val(built.text);
+
+            var data = {
+                ComplaintId: $('#planForm [name="ComplaintId"]').val(),
+                PlanDetails: $('#PlanText').val()
             };
 
-            payload.planDetails = payload.planDetails || buildPlanText(payload);
-            $('#PlanText').val(payload.planDetails);
-
-            if (!payload.complaintId || payload.complaintId <= 0) {
-                alert('ComplaintId is required.');
+            if(!data.ComplaintId || data.ComplaintId === '0'){
+                showIidAlert('Required', 'Please select a complaint.');
                 return;
             }
-            if (!payload.investigationRisk || !payload.investigationSize || !payload.noOfDays
-                || !payload.startDate || !payload.endDate || !payload.teamLead || !payload.teamMembers) {
-                alert('Please fill all mandatory fields.');
-                return;
-            }
-            if (!payload.activitiesText) {
-                alert('Please select at least one Investigation Activity.');
-                return;
-            }
-
-            console.log('payload', payload);
-
             $.ajax({
                 url: g_asiBaseURL + '/ApiCalls/AddInvestigationPlan',
-                type: 'POST',
-                contentType: 'application/json; charset=utf-8',
-                dataType: 'json',
-                data: JSON.stringify(payload),
-                headers: { 'RequestVerificationToken': token },
-                success: function(resp){
-                    if (resp && resp.ok) {
-                        alert('Plan submitted. Plan ID: ' + resp.id);
+                method: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify(data),
+                success: function(response){
+                    if(response && response.ok === false){
+                        showIidAlert('Failed', response.message || 'Operation failed.');
+                        return;
                     }
-                    else {
-                        alert((resp && resp.message) ? resp.message : 'Failed.');
-                    }
+                    showIidAlert('Success', 'Saved successfully.');
+                    $('#iidAlertModal').off('hidden.bs.modal').on('hidden.bs.modal', function () {
+                        location.reload();
+                    });
                 },
-                error: function(xhr){
-                    console.log('HTTP', xhr.status, xhr.responseText);
-                    alert('Error submitting plan. Check console.');
+                error: function(){
+                    showIidAlert('Failed', 'Failed to submit plan.');
                 }
             });
         });
