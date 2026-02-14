@@ -238,68 +238,70 @@
             return { text: plan, activityCount: acts.length };
         }
 
-        $('#planForm').on('submit', function(e){
+        $('#planForm').on('submit', function (e) {
             e.preventDefault();
 
-            // Required field check (front-end)
-            var missing = false;
-            $('#planForm').find('input, select, textarea').each(function(){
-                var $el = $(this);
-                if ($el.prop('disabled')) return;
+            var token = $('input[name="__RequestVerificationToken"]', this).val();
 
-                // Only validate required visible inputs + selects; skip hidden PlanText because we fill it
-                if ($el.attr('type') === 'hidden') return;
-
-                if ($el.prop('required')) {
-                    if (!$el.val() || !$el.val().toString().trim()) {
-                        missing = true;
-                        $el.focus();
-                        return false;
-                    }
-                }
-            });
-
-            var built = buildPlanText();
-            if (missing) {
-                showIidAlert('Failed', 'Please fill all mandatory fields.');
-                return;
+            var acts = [];
+            $('.act:checked').each(function(){ acts.push($(this).val()); });
+            var otherText = ($('#OtherActivityText').val() || '').trim();
+            if (acts.indexOf('Other') >= 0 && otherText) {
+                acts[acts.indexOf('Other')] = 'Other: ' + otherText;
             }
 
-            // Must select at least one activity
-            if (built.activityCount === 0) {
-                showIidAlert('Failed', 'Please select at least one Investigation Activity.');
-                return;
+            var planDetails = ($('#PlanText').val() || '').trim();
+            if (!planDetails) {
+                planDetails = buildPlanText().text;
+                $('#PlanText').val(planDetails);
             }
 
-            // Fill hidden Plan field (backward compatible with existing API)
-            $('#PlanText').val(built.text);
-
-            var data = {
-                ComplaintId: $('#planForm [name="ComplaintId"]').val(),
-                PlanDetails: $('#PlanText').val()
+            var payload = {
+                complaintId: parseInt(($('input[name="ComplaintId"]').val() || '0'), 10),
+                planDetails: planDetails,
+                status: 'Plan Drafted',
+                planTitle: 'Investigation Plan',
+                investigationRisk: ($('#InvestigationRisk').val() || '').trim(),
+                investigationSize: ($('#InvestigationSize').val() || '').trim(),
+                noOfDays: $('#NoOfDays').val() ? parseInt($('#NoOfDays').val(), 10) : null,
+                travellingDays: $('#TravellingDay').val() ? parseInt($('#TravellingDay').val(), 10) : null,
+                startDate: $('#TenureFrom').val() ? $('#TenureFrom').val() : null,
+                endDate: $('#TenureTo').val() ? $('#TenureTo').val() : null,
+                teamLead: ($('#TeamLead').val() || '').trim(),
+                teamMembers: ($('#TeamMember').val() || '').trim(),
+                activitiesText: acts.join(', ')
             };
 
-            if(!data.ComplaintId || data.ComplaintId === '0'){
-                showIidAlert('Required', 'Please select a complaint.');
-                return;
+            console.log('payload', payload);
+
+            if (!payload.complaintId || payload.complaintId <= 0) { alert('ComplaintId is required.'); return; }
+            if (!payload.investigationRisk || !payload.investigationSize || !payload.noOfDays
+                || !payload.startDate || !payload.endDate || !payload.teamLead || !payload.teamMembers) {
+                alert('Please fill all mandatory fields.'); return;
             }
+            if (!payload.activitiesText) { alert('Please select at least one Investigation Activity.'); return; }
+
             $.ajax({
                 url: g_asiBaseURL + '/ApiCalls/AddInvestigationPlan',
-                method: 'POST',
-                contentType: 'application/json',
-                data: JSON.stringify(data),
-                success: function(response){
-                    if(response && response.ok === false){
-                        showIidAlert('Failed', response.message || 'Operation failed.');
-                        return;
+                type: 'POST',
+                contentType: 'application/json; charset=utf-8',
+                dataType: 'json',
+                data: JSON.stringify(payload),
+                headers: { 'RequestVerificationToken': token },
+                success: function(resp){
+                    if (resp && resp.ok) {
+                        showIidAlert('Success', 'Plan submitted. Plan ID: ' + resp.id);
+                        $('#iidAlertModal').off('hidden.bs.modal').on('hidden.bs.modal', function () {
+                            location.reload();
+                        });
                     }
-                    showIidAlert('Success', 'Saved successfully.');
-                    $('#iidAlertModal').off('hidden.bs.modal').on('hidden.bs.modal', function () {
-                        location.reload();
-                    });
+                    else {
+                        alert((resp && resp.message) ? resp.message : 'Failed.');
+                    }
                 },
-                error: function(){
-                    showIidAlert('Failed', 'Failed to submit plan.');
+                error: function(xhr){
+                    console.log('HTTP', xhr.status, xhr.responseText);
+                    alert('Error submitting plan. Check console.');
                 }
             });
         });
