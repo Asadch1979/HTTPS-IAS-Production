@@ -103,13 +103,23 @@
             return $.post(g_asiBaseURL + '/ApiCalls/GetComplaintsDropdown', { pageId: pageId });
         }
 
-        function toLabel(key){
-            return String(key || '')
-                .replace(/_/g, ' ')
-                .replace(/([a-z])([A-Z])/g, '$1 $2')
-                .replace(/\s+/g, ' ')
-                .trim();
-        }
+        var submittedPlanFields = [
+            { key: 'planId', label: 'Plan Id' },
+            { key: 'complaintId', label: 'Complaint Id' },
+            { key: 'planDetails', label: 'Plan Details' },
+            { key: 'submittedBy', label: 'Submitted By' },
+            { key: 'submittedOn', label: 'Submitted On' },
+            { key: 'status', label: 'Status' },
+            { key: 'planTitle', label: 'Plan Title' },
+            { key: 'investigationRisk', label: 'Investigation Risk' },
+            { key: 'investigationSize', label: 'Investigation Size' },
+            { key: 'noOfDays', label: 'No Of Days' },
+            { key: 'travellingDays', label: 'Travelling Days' },
+            { key: 'startDate', label: 'Start Date' },
+            { key: 'teamLead', label: 'Team Lead' },
+            { key: 'teamMembers', label: 'Team Members' },
+            { key: 'activitiesText', label: 'Activities Text' }
+        ];
 
         function renderSubmittedPlanGrid(planRow){
             var $body = $('#submittedPlanGrid tbody');
@@ -120,35 +130,13 @@
                 return;
             }
 
-            var ignoreKeys = { additionalFields: true, AdditionalFields: true };
-            var rows = [];
-
-            Object.keys(planRow).forEach(function(key){
-                if(ignoreKeys[key]){
-                    return;
-                }
-                rows.push({ key: key, value: planRow[key] });
-            });
-
-            var additional = planRow.additionalFields || planRow.AdditionalFields || {};
-            Object.keys(additional).forEach(function(key){
-                var exists = rows.some(function(r){ return String(r.key).toLowerCase() === String(key).toLowerCase(); });
-                if(!exists){
-                    rows.push({ key: key, value: additional[key] });
-                }
-            });
-
-            if(rows.length === 0){
-                $body.append('<tr><td colspan="2" class="text-muted">Plan details not available.</td></tr>');
-                return;
-            }
-
-            rows.forEach(function(item){
-                var value = item.value;
+            submittedPlanFields.forEach(function(field){
+                var value = planRow[field.key];
                 if(value === null || typeof value === 'undefined'){
                     value = '';
                 }
-                $body.append('<tr><td>' + $('<div/>').text(toLabel(item.key)).html() + '</td><td class="text-break">' + $('<div/>').text(String(value)).html() + '</td></tr>');
+
+                $body.append('<tr><td>' + $('<div/>').text(field.label).html() + '</td><td class="text-break">' + $('<div/>').text(String(value)).html() + '</td></tr>');
             });
         }
 
@@ -162,7 +150,7 @@
                     return;
                 }
 
-                planId = planRow.planId || planRow.PlanId || planRow.PLAN_ID || '';
+                planId = planRow.planId || '';
                 $('#approvalForm [name="PlanId"]').val(planId);
                 $('#assessmentText').text(planRow.ASSESSMENT || planRow.assessment || $('#assessmentText').text());
                 $('#assessmentRecommendation').text(planRow.RECOMMENDATION || planRow.recommendation || $('#assessmentRecommendation').text());
