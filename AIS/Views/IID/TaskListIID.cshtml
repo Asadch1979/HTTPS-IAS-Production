@@ -44,7 +44,7 @@
         function buildActions(row){
             var status = resolveValue(row, 'STATUS', 'status', 'Status');
             var complaintId = resolveValue(row, 'COMPLAINT_ID', 'complaintId', 'ComplaintId');
-                        var planId = resolveValue(row, 'PLAN_ID', 'planId', 'PlanId');
+            var planId = resolveValue(row, 'PLAN_ID', 'planId', 'PlanId');
             var planExists = planId && Number(planId) > 0;
 
             var actions = [];
@@ -63,6 +63,10 @@
 
             if(status === statuses.qcCleared){
                 actions.push('<a href="' + g_asiBaseURL + '/IID/InquiryReport?complaintId=' + complaintId + '">Submit Final Report</a>');
+            }
+
+            if(complaintId){
+                actions.push('<a href="' + g_asiBaseURL + '/IID/InquiryReport?complaintId=' + complaintId + '">Inquiry Report</a>');
             }
 
             actions.push('<a href="' + g_asiBaseURL + '/sampling/list_reports?engId=' + complaintId + '">Exception Reports</a>');
