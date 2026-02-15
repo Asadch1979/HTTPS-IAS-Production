@@ -5641,6 +5641,57 @@ namespace AIS.Controllers
                 }
             }
 
+
+        [HttpPost]
+        public IActionResult GetIidInqWizardData([FromBody] AIS.Models.IID.InquiryReport.IidInqComplaintRequest request)
+            {
+            try
+                {
+                var complaintId = request?.ComplaintId ?? 0;
+                var data = new
+                    {
+                    accusations = dBConnection.GetIidInqAccusationsByComplaintId(complaintId),
+                    accused = dBConnection.GetIidInqAccusedListByComplaintId(complaintId),
+                    recordsScrutinized = dBConnection.GetIidInqRecordsByComplaintId(complaintId),
+                    statementsRegister = dBConnection.GetIidInqStatementsByComplaintId(complaintId),
+                    evidenceFiles = dBConnection.GetIidInqEvidenceFilesByComplaintId(complaintId),
+                    violations = dBConnection.GetIidInqViolationsByComplaintId(complaintId),
+                    dsa = dBConnection.GetIidInqDsaByComplaintId(complaintId)
+                    };
+                return Json(new { ok = true, data });
+                }
+            catch (Exception ex)
+                {
+                return Json(new { ok = false, message = ex.Message });
+                }
+            }
+
+        [HttpPost]
+        public IActionResult FinalizeIidInquiryReport([FromBody] AIS.Models.IID.InquiryReport.IidInqComplaintRequest request)
+            {
+            try
+                {
+                var complaintId = request?.ComplaintId ?? 0;
+                if (complaintId <= 0)
+                    {
+                    return Json(new { ok = false, message = "ComplaintId is required." });
+                    }
+
+                var evidence = dBConnection.GetIidInqEvidenceFilesByComplaintId(complaintId);
+                if (evidence == null || evidence.Count == 0)
+                    {
+                    return Json(new { ok = false, message = "At least one evidence file is required before finalization." });
+                    }
+
+                var rows = dBConnection.FinalizeIidInquiryReport(complaintId, sessionHandler.GetUser()?.UserEntityID);
+                return Json(new { ok = rows > 0, message = rows > 0 ? "Inquiry report finalized successfully." : "Finalization failed." });
+                }
+            catch (Exception ex)
+                {
+                return Json(new { ok = false, message = ex.Message });
+                }
+            }
+
         [HttpGet]
         [HttpPost]
         public List<string> get_fad_desk_officer_audit_periods()

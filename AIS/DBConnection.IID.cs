@@ -1808,6 +1808,19 @@ namespace AIS.Controllers
             return 1;
             }
 
+        public int FinalizeIidInquiryReport(long complaintId, long? updatedBy)
+            {
+            using var con = this.DatabaseConnection();
+            using var cmd = con.CreateCommand();
+            cmd.CommandText = "PKG_INQ.P_FINALIZE_IID_INQUIRY_REPORT";
+            cmd.CommandType = CommandType.StoredProcedure;
+            cmd.BindByName = true;
+            cmd.Parameters.Add("P_COMPLAINT_ID", OracleDbType.Int64).Value = complaintId;
+            cmd.Parameters.Add("P_UPDATED_BY", OracleDbType.Int64).Value = updatedBy ?? (object)DBNull.Value;
+            cmd.ExecuteNonQuery();
+            return 1;
+            }
+
 
         private static void LogIidSaveDebug(string procedureName, string summary)
             {
