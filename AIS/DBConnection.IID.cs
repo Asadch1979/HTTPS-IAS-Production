@@ -1,7 +1,9 @@
 using AIS.Constants;
 using AIS.Models;
 using AIS.Models.IID;
+using AIS.Models.IID.InquiryReport;
 using Oracle.ManagedDataAccess.Client;
+using Oracle.ManagedDataAccess.Types;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -1133,6 +1135,677 @@ namespace AIS.Controllers
                 var id = Convert.ToInt32(cmd.Parameters["o_case_id"].Value.ToString());
                 return id;
                 }
+            }
+
+        private static string GetStringValue(OracleDataReader reader, string columnName)
+            {
+            if (!HasColumn(reader, columnName))
+                {
+                return string.Empty;
+                }
+
+            var value = reader[columnName];
+            if (value == null || value == DBNull.Value)
+                {
+                return string.Empty;
+                }
+
+            if (value is OracleClob clob)
+                {
+                using (clob)
+                    {
+                    return clob.IsNull ? string.Empty : clob.Value;
+                    }
+                }
+
+            return value.ToString() ?? string.Empty;
+            }
+
+        private static long GetLongValue(OracleDataReader reader, string columnName)
+            {
+            if (!HasColumn(reader, columnName) || reader[columnName] == DBNull.Value)
+                {
+                return 0;
+                }
+
+            return Convert.ToInt64(reader[columnName]);
+            }
+
+        private static long? GetNullableLongValue(OracleDataReader reader, string columnName)
+            {
+            if (!HasColumn(reader, columnName) || reader[columnName] == DBNull.Value)
+                {
+                return null;
+                }
+
+            return Convert.ToInt64(reader[columnName]);
+            }
+
+        private static int GetIntValue(OracleDataReader reader, string columnName)
+            {
+            if (!HasColumn(reader, columnName) || reader[columnName] == DBNull.Value)
+                {
+                return 0;
+                }
+
+            return Convert.ToInt32(reader[columnName]);
+            }
+
+        private static int? GetNullableIntValue(OracleDataReader reader, string columnName)
+            {
+            if (!HasColumn(reader, columnName) || reader[columnName] == DBNull.Value)
+                {
+                return null;
+                }
+
+            return Convert.ToInt32(reader[columnName]);
+            }
+
+        private static DateTime GetDateValue(OracleDataReader reader, string columnName)
+            {
+            if (!HasColumn(reader, columnName) || reader[columnName] == DBNull.Value)
+                {
+                return DateTime.MinValue;
+                }
+
+            return Convert.ToDateTime(reader[columnName]);
+            }
+
+        private static DateTime? GetNullableDateValue(OracleDataReader reader, string columnName)
+            {
+            if (!HasColumn(reader, columnName) || reader[columnName] == DBNull.Value)
+                {
+                return null;
+                }
+
+            return Convert.ToDateTime(reader[columnName]);
+            }
+
+        public List<IidInqAccusationRow> GetIidInqAccusationsByComplaintId(long complaintId)
+            {
+            using var con = this.DatabaseConnection();
+            using var cmd = con.CreateCommand();
+            cmd.CommandText = "PKG_INQ.P_GET_INQ_ACCUSATIONS";
+            cmd.CommandType = CommandType.StoredProcedure;
+            cmd.BindByName = true;
+            cmd.Parameters.Add("P_COMPLAINT_ID", OracleDbType.Int64).Value = complaintId;
+            cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+
+            var list = new List<IidInqAccusationRow>();
+            using var rdr = cmd.ExecuteReader();
+            while (rdr.Read())
+                {
+                list.Add(new IidInqAccusationRow
+                    {
+                    AccusationId = GetLongValue(rdr, "ACCUSATION_ID"),
+                    ComplaintId = GetLongValue(rdr, "COMPLAINT_ID"),
+                    AccusationText = GetStringValue(rdr, "ACCUSATION_TEXT"),
+                    SortOrder = GetIntValue(rdr, "SORT_ORDER"),
+                    Status = GetStringValue(rdr, "STATUS"),
+                    CreatedBy = GetNullableLongValue(rdr, "CREATED_BY"),
+                    CreatedOn = GetDateValue(rdr, "CREATED_ON"),
+                    UpdatedBy = GetNullableLongValue(rdr, "UPDATED_BY"),
+                    UpdatedOn = GetNullableDateValue(rdr, "UPDATED_ON")
+                    });
+                }
+
+            return list;
+            }
+
+        public int AddIidInqAccusation(IidInqAccusationRow model)
+            {
+            using var con = this.DatabaseConnection();
+            using var cmd = con.CreateCommand();
+            cmd.CommandText = "PKG_INQ.P_ADD_INQ_ACCUSATION";
+            cmd.CommandType = CommandType.StoredProcedure;
+            cmd.BindByName = true;
+            cmd.Parameters.Add("P_COMPLAINT_ID", OracleDbType.Int64).Value = model.ComplaintId;
+            cmd.Parameters.Add("P_ACCUSATION_TEXT", OracleDbType.Clob).Value = model.AccusationText ?? string.Empty;
+            cmd.Parameters.Add("P_SORT_ORDER", OracleDbType.Int32).Value = model.SortOrder;
+            cmd.Parameters.Add("P_STATUS", OracleDbType.Varchar2).Value = model.Status ?? string.Empty;
+            cmd.Parameters.Add("P_CREATED_BY", OracleDbType.Int64).Value = model.CreatedBy ?? (object)DBNull.Value;
+            cmd.ExecuteNonQuery();
+            return 1;
+            }
+
+        public int UpdateIidInqAccusation(IidInqAccusationRow model)
+            {
+            using var con = this.DatabaseConnection();
+            using var cmd = con.CreateCommand();
+            cmd.CommandText = "PKG_INQ.P_UPDATE_INQ_ACCUSATION";
+            cmd.CommandType = CommandType.StoredProcedure;
+            cmd.BindByName = true;
+            cmd.Parameters.Add("P_ACCUSATION_ID", OracleDbType.Int64).Value = model.AccusationId;
+            cmd.Parameters.Add("P_ACCUSATION_TEXT", OracleDbType.Clob).Value = model.AccusationText ?? string.Empty;
+            cmd.Parameters.Add("P_SORT_ORDER", OracleDbType.Int32).Value = model.SortOrder;
+            cmd.Parameters.Add("P_STATUS", OracleDbType.Varchar2).Value = model.Status ?? string.Empty;
+            cmd.Parameters.Add("P_UPDATED_BY", OracleDbType.Int64).Value = model.UpdatedBy ?? (object)DBNull.Value;
+            cmd.ExecuteNonQuery();
+            return 1;
+            }
+
+        public int DeleteIidInqAccusation(long accusationId, long userId)
+            {
+            using var con = this.DatabaseConnection();
+            using var cmd = con.CreateCommand();
+            cmd.CommandText = "PKG_INQ.P_DELETE_INQ_ACCUSATION";
+            cmd.CommandType = CommandType.StoredProcedure;
+            cmd.BindByName = true;
+            cmd.Parameters.Add("P_ACCUSATION_ID", OracleDbType.Int64).Value = accusationId;
+            cmd.Parameters.Add("P_UPDATED_BY", OracleDbType.Int64).Value = userId;
+            cmd.ExecuteNonQuery();
+            return 1;
+            }
+
+        public List<IidInqAccusedRow> GetIidInqAccusedListByComplaintId(long complaintId)
+            {
+            using var con = this.DatabaseConnection();
+            using var cmd = con.CreateCommand();
+            cmd.CommandText = "PKG_INQ.P_GET_INQ_ACCUSED_LIST";
+            cmd.CommandType = CommandType.StoredProcedure;
+            cmd.BindByName = true;
+            cmd.Parameters.Add("P_COMPLAINT_ID", OracleDbType.Int64).Value = complaintId;
+            cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+
+            var list = new List<IidInqAccusedRow>();
+            using var rdr = cmd.ExecuteReader();
+            while (rdr.Read())
+                {
+                list.Add(new IidInqAccusedRow
+                    {
+                    AccusedRowId = GetLongValue(rdr, "ACCUSED_ROW_ID"),
+                    ComplaintId = GetLongValue(rdr, "COMPLAINT_ID"),
+                    PersonName = GetStringValue(rdr, "PERSON_NAME"),
+                    Designation = GetStringValue(rdr, "DESIGNATION"),
+                    RoleType = GetStringValue(rdr, "ROLE_TYPE"),
+                    PpnoNumber = GetStringValue(rdr, "PPNO_NUMBER"),
+                    Cnic = GetStringValue(rdr, "CNIC"),
+                    PostingPlace = GetStringValue(rdr, "POSTING_PLACE"),
+                    Remarks = GetStringValue(rdr, "REMARKS"),
+                    SortOrder = GetIntValue(rdr, "SORT_ORDER"),
+                    Status = GetStringValue(rdr, "STATUS"),
+                    CreatedBy = GetNullableLongValue(rdr, "CREATED_BY"),
+                    CreatedOn = GetDateValue(rdr, "CREATED_ON"),
+                    UpdatedBy = GetNullableLongValue(rdr, "UPDATED_BY"),
+                    UpdatedOn = GetNullableDateValue(rdr, "UPDATED_ON")
+                    });
+                }
+
+            return list;
+            }
+
+        public int AddIidInqAccused(IidInqAccusedRow model)
+            {
+            using var con = this.DatabaseConnection();
+            using var cmd = con.CreateCommand();
+            cmd.CommandText = "PKG_INQ.P_ADD_INQ_ACCUSED";
+            cmd.CommandType = CommandType.StoredProcedure;
+            cmd.BindByName = true;
+            cmd.Parameters.Add("P_COMPLAINT_ID", OracleDbType.Int64).Value = model.ComplaintId;
+            cmd.Parameters.Add("P_PERSON_NAME", OracleDbType.Varchar2).Value = model.PersonName ?? string.Empty;
+            cmd.Parameters.Add("P_DESIGNATION", OracleDbType.Varchar2).Value = model.Designation ?? string.Empty;
+            cmd.Parameters.Add("P_ROLE_TYPE", OracleDbType.Varchar2).Value = model.RoleType ?? string.Empty;
+            cmd.Parameters.Add("P_PPNO_NUMBER", OracleDbType.Varchar2).Value = model.PpnoNumber ?? string.Empty;
+            cmd.Parameters.Add("P_CNIC", OracleDbType.Varchar2).Value = model.Cnic ?? string.Empty;
+            cmd.Parameters.Add("P_POSTING_PLACE", OracleDbType.Varchar2).Value = model.PostingPlace ?? string.Empty;
+            cmd.Parameters.Add("P_REMARKS", OracleDbType.Clob).Value = model.Remarks ?? string.Empty;
+            cmd.Parameters.Add("P_SORT_ORDER", OracleDbType.Int32).Value = model.SortOrder;
+            cmd.Parameters.Add("P_STATUS", OracleDbType.Varchar2).Value = model.Status ?? string.Empty;
+            cmd.Parameters.Add("P_CREATED_BY", OracleDbType.Int64).Value = model.CreatedBy ?? (object)DBNull.Value;
+            cmd.ExecuteNonQuery();
+            return 1;
+            }
+
+        public int UpdateIidInqAccused(IidInqAccusedRow model)
+            {
+            using var con = this.DatabaseConnection();
+            using var cmd = con.CreateCommand();
+            cmd.CommandText = "PKG_INQ.P_UPDATE_INQ_ACCUSED";
+            cmd.CommandType = CommandType.StoredProcedure;
+            cmd.BindByName = true;
+            cmd.Parameters.Add("P_ACCUSED_ROW_ID", OracleDbType.Int64).Value = model.AccusedRowId;
+            cmd.Parameters.Add("P_PERSON_NAME", OracleDbType.Varchar2).Value = model.PersonName ?? string.Empty;
+            cmd.Parameters.Add("P_DESIGNATION", OracleDbType.Varchar2).Value = model.Designation ?? string.Empty;
+            cmd.Parameters.Add("P_ROLE_TYPE", OracleDbType.Varchar2).Value = model.RoleType ?? string.Empty;
+            cmd.Parameters.Add("P_PPNO_NUMBER", OracleDbType.Varchar2).Value = model.PpnoNumber ?? string.Empty;
+            cmd.Parameters.Add("P_CNIC", OracleDbType.Varchar2).Value = model.Cnic ?? string.Empty;
+            cmd.Parameters.Add("P_POSTING_PLACE", OracleDbType.Varchar2).Value = model.PostingPlace ?? string.Empty;
+            cmd.Parameters.Add("P_REMARKS", OracleDbType.Clob).Value = model.Remarks ?? string.Empty;
+            cmd.Parameters.Add("P_SORT_ORDER", OracleDbType.Int32).Value = model.SortOrder;
+            cmd.Parameters.Add("P_STATUS", OracleDbType.Varchar2).Value = model.Status ?? string.Empty;
+            cmd.Parameters.Add("P_UPDATED_BY", OracleDbType.Int64).Value = model.UpdatedBy ?? (object)DBNull.Value;
+            cmd.ExecuteNonQuery();
+            return 1;
+            }
+
+        public int DeleteIidInqAccused(long accusedRowId, long userId)
+            {
+            using var con = this.DatabaseConnection();
+            using var cmd = con.CreateCommand();
+            cmd.CommandText = "PKG_INQ.P_DELETE_INQ_ACCUSED";
+            cmd.CommandType = CommandType.StoredProcedure;
+            cmd.BindByName = true;
+            cmd.Parameters.Add("P_ACCUSED_ROW_ID", OracleDbType.Int64).Value = accusedRowId;
+            cmd.Parameters.Add("P_UPDATED_BY", OracleDbType.Int64).Value = userId;
+            cmd.ExecuteNonQuery();
+            return 1;
+            }
+
+        public List<IidInqRecordRow> GetIidInqRecordsByComplaintId(long complaintId)
+            {
+            using var con = this.DatabaseConnection();
+            using var cmd = con.CreateCommand();
+            cmd.CommandText = "PKG_INQ.P_GET_INQ_RECORDS";
+            cmd.CommandType = CommandType.StoredProcedure;
+            cmd.BindByName = true;
+            cmd.Parameters.Add("P_COMPLAINT_ID", OracleDbType.Int64).Value = complaintId;
+            cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+
+            var list = new List<IidInqRecordRow>();
+            using var rdr = cmd.ExecuteReader();
+            while (rdr.Read())
+                {
+                list.Add(new IidInqRecordRow
+                    {
+                    RecId = GetLongValue(rdr, "REC_ID"),
+                    ComplaintId = GetLongValue(rdr, "COMPLAINT_ID"),
+                    RecordTitle = GetStringValue(rdr, "RECORD_TITLE"),
+                    RecordDetails = GetStringValue(rdr, "RECORD_DETAILS"),
+                    SortOrder = GetIntValue(rdr, "SORT_ORDER"),
+                    Status = GetStringValue(rdr, "STATUS"),
+                    CreatedBy = GetNullableLongValue(rdr, "CREATED_BY"),
+                    CreatedOn = GetDateValue(rdr, "CREATED_ON"),
+                    UpdatedBy = GetNullableLongValue(rdr, "UPDATED_BY"),
+                    UpdatedOn = GetNullableDateValue(rdr, "UPDATED_ON")
+                    });
+                }
+
+            return list;
+            }
+
+        public int AddIidInqRecord(IidInqRecordRow model)
+            {
+            using var con = this.DatabaseConnection();
+            using var cmd = con.CreateCommand();
+            cmd.CommandText = "PKG_INQ.P_ADD_INQ_RECORD";
+            cmd.CommandType = CommandType.StoredProcedure;
+            cmd.BindByName = true;
+            cmd.Parameters.Add("P_COMPLAINT_ID", OracleDbType.Int64).Value = model.ComplaintId;
+            cmd.Parameters.Add("P_RECORD_TITLE", OracleDbType.Varchar2).Value = model.RecordTitle ?? string.Empty;
+            cmd.Parameters.Add("P_RECORD_DETAILS", OracleDbType.Clob).Value = model.RecordDetails ?? string.Empty;
+            cmd.Parameters.Add("P_SORT_ORDER", OracleDbType.Int32).Value = model.SortOrder;
+            cmd.Parameters.Add("P_STATUS", OracleDbType.Varchar2).Value = model.Status ?? string.Empty;
+            cmd.Parameters.Add("P_CREATED_BY", OracleDbType.Int64).Value = model.CreatedBy ?? (object)DBNull.Value;
+            cmd.ExecuteNonQuery();
+            return 1;
+            }
+
+        public int UpdateIidInqRecord(IidInqRecordRow model)
+            {
+            using var con = this.DatabaseConnection();
+            using var cmd = con.CreateCommand();
+            cmd.CommandText = "PKG_INQ.P_UPDATE_INQ_RECORD";
+            cmd.CommandType = CommandType.StoredProcedure;
+            cmd.BindByName = true;
+            cmd.Parameters.Add("P_REC_ID", OracleDbType.Int64).Value = model.RecId;
+            cmd.Parameters.Add("P_RECORD_TITLE", OracleDbType.Varchar2).Value = model.RecordTitle ?? string.Empty;
+            cmd.Parameters.Add("P_RECORD_DETAILS", OracleDbType.Clob).Value = model.RecordDetails ?? string.Empty;
+            cmd.Parameters.Add("P_SORT_ORDER", OracleDbType.Int32).Value = model.SortOrder;
+            cmd.Parameters.Add("P_STATUS", OracleDbType.Varchar2).Value = model.Status ?? string.Empty;
+            cmd.Parameters.Add("P_UPDATED_BY", OracleDbType.Int64).Value = model.UpdatedBy ?? (object)DBNull.Value;
+            cmd.ExecuteNonQuery();
+            return 1;
+            }
+
+        public int DeleteIidInqRecord(long recId, long userId)
+            {
+            using var con = this.DatabaseConnection();
+            using var cmd = con.CreateCommand();
+            cmd.CommandText = "PKG_INQ.P_DELETE_INQ_RECORD";
+            cmd.CommandType = CommandType.StoredProcedure;
+            cmd.BindByName = true;
+            cmd.Parameters.Add("P_REC_ID", OracleDbType.Int64).Value = recId;
+            cmd.Parameters.Add("P_UPDATED_BY", OracleDbType.Int64).Value = userId;
+            cmd.ExecuteNonQuery();
+            return 1;
+            }
+
+        public List<IidInqStatementRow> GetIidInqStatementsByComplaintId(long complaintId)
+            {
+            using var con = this.DatabaseConnection();
+            using var cmd = con.CreateCommand();
+            cmd.CommandText = "PKG_INQ.P_GET_INQ_STATEMENTS";
+            cmd.CommandType = CommandType.StoredProcedure;
+            cmd.BindByName = true;
+            cmd.Parameters.Add("P_COMPLAINT_ID", OracleDbType.Int64).Value = complaintId;
+            cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+
+            var list = new List<IidInqStatementRow>();
+            using var rdr = cmd.ExecuteReader();
+            while (rdr.Read())
+                {
+                list.Add(new IidInqStatementRow
+                    {
+                    StatementId = GetLongValue(rdr, "STATEMENT_ID"),
+                    ComplaintId = GetLongValue(rdr, "COMPLAINT_ID"),
+                    PersonName = GetStringValue(rdr, "PERSON_NAME"),
+                    RoleType = GetStringValue(rdr, "ROLE_TYPE"),
+                    PpnoNumber = GetStringValue(rdr, "PPNO_NUMBER"),
+                    Cnic = GetStringValue(rdr, "CNIC"),
+                    StatementDatetime = GetNullableDateValue(rdr, "STATEMENT_DATETIME"),
+                    Place = GetStringValue(rdr, "PLACE"),
+                    ModeType = GetStringValue(rdr, "MODE_TYPE"),
+                    KeyPoints = GetStringValue(rdr, "KEY_POINTS"),
+                    Status = GetStringValue(rdr, "STATUS"),
+                    CreatedBy = GetNullableLongValue(rdr, "CREATED_BY"),
+                    CreatedOn = GetDateValue(rdr, "CREATED_ON"),
+                    UpdatedBy = GetNullableLongValue(rdr, "UPDATED_BY"),
+                    UpdatedOn = GetNullableDateValue(rdr, "UPDATED_ON")
+                    });
+                }
+
+            return list;
+            }
+
+        public int AddIidInqStatement(IidInqStatementRow model)
+            {
+            using var con = this.DatabaseConnection();
+            using var cmd = con.CreateCommand();
+            cmd.CommandText = "PKG_INQ.P_ADD_INQ_STATEMENT";
+            cmd.CommandType = CommandType.StoredProcedure;
+            cmd.BindByName = true;
+            cmd.Parameters.Add("P_COMPLAINT_ID", OracleDbType.Int64).Value = model.ComplaintId;
+            cmd.Parameters.Add("P_PERSON_NAME", OracleDbType.Varchar2).Value = model.PersonName ?? string.Empty;
+            cmd.Parameters.Add("P_ROLE_TYPE", OracleDbType.Varchar2).Value = model.RoleType ?? string.Empty;
+            cmd.Parameters.Add("P_PPNO_NUMBER", OracleDbType.Varchar2).Value = model.PpnoNumber ?? string.Empty;
+            cmd.Parameters.Add("P_CNIC", OracleDbType.Varchar2).Value = model.Cnic ?? string.Empty;
+            cmd.Parameters.Add("P_STATEMENT_DATETIME", OracleDbType.Date).Value = model.StatementDatetime ?? (object)DBNull.Value;
+            cmd.Parameters.Add("P_PLACE", OracleDbType.Varchar2).Value = model.Place ?? string.Empty;
+            cmd.Parameters.Add("P_MODE_TYPE", OracleDbType.Varchar2).Value = model.ModeType ?? string.Empty;
+            cmd.Parameters.Add("P_KEY_POINTS", OracleDbType.Clob).Value = model.KeyPoints ?? string.Empty;
+            cmd.Parameters.Add("P_STATUS", OracleDbType.Varchar2).Value = model.Status ?? string.Empty;
+            cmd.Parameters.Add("P_CREATED_BY", OracleDbType.Int64).Value = model.CreatedBy ?? (object)DBNull.Value;
+            cmd.ExecuteNonQuery();
+            return 1;
+            }
+
+        public int UpdateIidInqStatement(IidInqStatementRow model)
+            {
+            using var con = this.DatabaseConnection();
+            using var cmd = con.CreateCommand();
+            cmd.CommandText = "PKG_INQ.P_UPDATE_INQ_STATEMENT";
+            cmd.CommandType = CommandType.StoredProcedure;
+            cmd.BindByName = true;
+            cmd.Parameters.Add("P_STATEMENT_ID", OracleDbType.Int64).Value = model.StatementId;
+            cmd.Parameters.Add("P_PERSON_NAME", OracleDbType.Varchar2).Value = model.PersonName ?? string.Empty;
+            cmd.Parameters.Add("P_ROLE_TYPE", OracleDbType.Varchar2).Value = model.RoleType ?? string.Empty;
+            cmd.Parameters.Add("P_PPNO_NUMBER", OracleDbType.Varchar2).Value = model.PpnoNumber ?? string.Empty;
+            cmd.Parameters.Add("P_CNIC", OracleDbType.Varchar2).Value = model.Cnic ?? string.Empty;
+            cmd.Parameters.Add("P_STATEMENT_DATETIME", OracleDbType.Date).Value = model.StatementDatetime ?? (object)DBNull.Value;
+            cmd.Parameters.Add("P_PLACE", OracleDbType.Varchar2).Value = model.Place ?? string.Empty;
+            cmd.Parameters.Add("P_MODE_TYPE", OracleDbType.Varchar2).Value = model.ModeType ?? string.Empty;
+            cmd.Parameters.Add("P_KEY_POINTS", OracleDbType.Clob).Value = model.KeyPoints ?? string.Empty;
+            cmd.Parameters.Add("P_STATUS", OracleDbType.Varchar2).Value = model.Status ?? string.Empty;
+            cmd.Parameters.Add("P_UPDATED_BY", OracleDbType.Int64).Value = model.UpdatedBy ?? (object)DBNull.Value;
+            cmd.ExecuteNonQuery();
+            return 1;
+            }
+
+        public int DeleteIidInqStatement(long statementId, long userId)
+            {
+            using var con = this.DatabaseConnection();
+            using var cmd = con.CreateCommand();
+            cmd.CommandText = "PKG_INQ.P_DELETE_INQ_STATEMENT";
+            cmd.CommandType = CommandType.StoredProcedure;
+            cmd.BindByName = true;
+            cmd.Parameters.Add("P_STATEMENT_ID", OracleDbType.Int64).Value = statementId;
+            cmd.Parameters.Add("P_UPDATED_BY", OracleDbType.Int64).Value = userId;
+            cmd.ExecuteNonQuery();
+            return 1;
+            }
+
+        public List<IidInqEvidenceFileRow> GetIidInqEvidenceFilesByComplaintId(long complaintId)
+            {
+            using var con = this.DatabaseConnection();
+            using var cmd = con.CreateCommand();
+            cmd.CommandText = "PKG_INQ.P_GET_INQ_EVIDENCE_FILES";
+            cmd.CommandType = CommandType.StoredProcedure;
+            cmd.BindByName = true;
+            cmd.Parameters.Add("P_COMPLAINT_ID", OracleDbType.Int64).Value = complaintId;
+            cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+
+            var list = new List<IidInqEvidenceFileRow>();
+            using var rdr = cmd.ExecuteReader();
+            while (rdr.Read())
+                {
+                list.Add(new IidInqEvidenceFileRow
+                    {
+                    EvidenceId = GetLongValue(rdr, "EVIDENCE_ID"),
+                    ComplaintId = GetLongValue(rdr, "COMPLAINT_ID"),
+                    EvidenceType = GetStringValue(rdr, "EVIDENCE_TYPE"),
+                    Description = GetStringValue(rdr, "DESCRIPTION"),
+                    FileName = GetStringValue(rdr, "FILE_NAME"),
+                    FilePath = GetStringValue(rdr, "FILE_PATH"),
+                    FileExt = GetStringValue(rdr, "FILE_EXT"),
+                    FileSizeKb = GetNullableIntValue(rdr, "FILE_SIZE_KB"),
+                    Status = GetStringValue(rdr, "STATUS"),
+                    UploadedBy = GetNullableLongValue(rdr, "UPLOADED_BY"),
+                    UploadedOn = GetDateValue(rdr, "UPLOADED_ON"),
+                    UpdatedBy = GetNullableLongValue(rdr, "UPDATED_BY"),
+                    UpdatedOn = GetNullableDateValue(rdr, "UPDATED_ON")
+                    });
+                }
+
+            return list;
+            }
+
+        public int AddIidInqEvidenceFile(IidInqEvidenceFileRow model)
+            {
+            using var con = this.DatabaseConnection();
+            using var cmd = con.CreateCommand();
+            cmd.CommandText = "PKG_INQ.P_ADD_INQ_EVIDENCE_FILE";
+            cmd.CommandType = CommandType.StoredProcedure;
+            cmd.BindByName = true;
+            cmd.Parameters.Add("P_COMPLAINT_ID", OracleDbType.Int64).Value = model.ComplaintId;
+            cmd.Parameters.Add("P_EVIDENCE_TYPE", OracleDbType.Varchar2).Value = model.EvidenceType ?? string.Empty;
+            cmd.Parameters.Add("P_DESCRIPTION", OracleDbType.Clob).Value = model.Description ?? string.Empty;
+            cmd.Parameters.Add("P_FILE_NAME", OracleDbType.Varchar2).Value = model.FileName ?? string.Empty;
+            cmd.Parameters.Add("P_FILE_PATH", OracleDbType.Varchar2).Value = model.FilePath ?? string.Empty;
+            cmd.Parameters.Add("P_FILE_EXT", OracleDbType.Varchar2).Value = model.FileExt ?? string.Empty;
+            cmd.Parameters.Add("P_FILE_SIZE_KB", OracleDbType.Int32).Value = model.FileSizeKb ?? (object)DBNull.Value;
+            cmd.Parameters.Add("P_STATUS", OracleDbType.Varchar2).Value = model.Status ?? string.Empty;
+            cmd.Parameters.Add("P_UPLOADED_BY", OracleDbType.Int64).Value = model.UploadedBy ?? (object)DBNull.Value;
+            cmd.ExecuteNonQuery();
+            return 1;
+            }
+
+        public int DeleteIidInqEvidenceFile(long evidenceId, long userId)
+            {
+            using var con = this.DatabaseConnection();
+            using var cmd = con.CreateCommand();
+            cmd.CommandText = "PKG_INQ.P_DELETE_INQ_EVIDENCE_FILE";
+            cmd.CommandType = CommandType.StoredProcedure;
+            cmd.BindByName = true;
+            cmd.Parameters.Add("P_EVIDENCE_ID", OracleDbType.Int64).Value = evidenceId;
+            cmd.Parameters.Add("P_UPDATED_BY", OracleDbType.Int64).Value = userId;
+            cmd.ExecuteNonQuery();
+            return 1;
+            }
+
+        public List<IidInqViolationRow> GetIidInqViolationsByComplaintId(long complaintId)
+            {
+            using var con = this.DatabaseConnection();
+            using var cmd = con.CreateCommand();
+            cmd.CommandText = "PKG_INQ.P_GET_INQ_VIOLATIONS";
+            cmd.CommandType = CommandType.StoredProcedure;
+            cmd.BindByName = true;
+            cmd.Parameters.Add("P_COMPLAINT_ID", OracleDbType.Int64).Value = complaintId;
+            cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+
+            var list = new List<IidInqViolationRow>();
+            using var rdr = cmd.ExecuteReader();
+            while (rdr.Read())
+                {
+                list.Add(new IidInqViolationRow
+                    {
+                    ViolationId = GetLongValue(rdr, "VIOLATION_ID"),
+                    ComplaintId = GetLongValue(rdr, "COMPLAINT_ID"),
+                    Category = GetStringValue(rdr, "CATEGORY"),
+                    ViolationDetail = GetStringValue(rdr, "VIOLATION_DETAIL"),
+                    ReferenceText = GetStringValue(rdr, "REFERENCE_TEXT"),
+                    Recommendation = GetStringValue(rdr, "RECOMMENDATION"),
+                    SortOrder = GetIntValue(rdr, "SORT_ORDER"),
+                    Status = GetStringValue(rdr, "STATUS"),
+                    CreatedBy = GetNullableLongValue(rdr, "CREATED_BY"),
+                    CreatedOn = GetDateValue(rdr, "CREATED_ON"),
+                    UpdatedBy = GetNullableLongValue(rdr, "UPDATED_BY"),
+                    UpdatedOn = GetNullableDateValue(rdr, "UPDATED_ON")
+                    });
+                }
+
+            return list;
+            }
+
+        public int AddIidInqViolation(IidInqViolationRow model)
+            {
+            using var con = this.DatabaseConnection();
+            using var cmd = con.CreateCommand();
+            cmd.CommandText = "PKG_INQ.P_ADD_INQ_VIOLATION";
+            cmd.CommandType = CommandType.StoredProcedure;
+            cmd.BindByName = true;
+            cmd.Parameters.Add("P_COMPLAINT_ID", OracleDbType.Int64).Value = model.ComplaintId;
+            cmd.Parameters.Add("P_CATEGORY", OracleDbType.Varchar2).Value = model.Category ?? string.Empty;
+            cmd.Parameters.Add("P_VIOLATION_DETAIL", OracleDbType.Clob).Value = model.ViolationDetail ?? string.Empty;
+            cmd.Parameters.Add("P_REFERENCE_TEXT", OracleDbType.Clob).Value = model.ReferenceText ?? string.Empty;
+            cmd.Parameters.Add("P_RECOMMENDATION", OracleDbType.Clob).Value = model.Recommendation ?? string.Empty;
+            cmd.Parameters.Add("P_SORT_ORDER", OracleDbType.Int32).Value = model.SortOrder;
+            cmd.Parameters.Add("P_STATUS", OracleDbType.Varchar2).Value = model.Status ?? string.Empty;
+            cmd.Parameters.Add("P_CREATED_BY", OracleDbType.Int64).Value = model.CreatedBy ?? (object)DBNull.Value;
+            cmd.ExecuteNonQuery();
+            return 1;
+            }
+
+        public int UpdateIidInqViolation(IidInqViolationRow model)
+            {
+            using var con = this.DatabaseConnection();
+            using var cmd = con.CreateCommand();
+            cmd.CommandText = "PKG_INQ.P_UPDATE_INQ_VIOLATION";
+            cmd.CommandType = CommandType.StoredProcedure;
+            cmd.BindByName = true;
+            cmd.Parameters.Add("P_VIOLATION_ID", OracleDbType.Int64).Value = model.ViolationId;
+            cmd.Parameters.Add("P_CATEGORY", OracleDbType.Varchar2).Value = model.Category ?? string.Empty;
+            cmd.Parameters.Add("P_VIOLATION_DETAIL", OracleDbType.Clob).Value = model.ViolationDetail ?? string.Empty;
+            cmd.Parameters.Add("P_REFERENCE_TEXT", OracleDbType.Clob).Value = model.ReferenceText ?? string.Empty;
+            cmd.Parameters.Add("P_RECOMMENDATION", OracleDbType.Clob).Value = model.Recommendation ?? string.Empty;
+            cmd.Parameters.Add("P_SORT_ORDER", OracleDbType.Int32).Value = model.SortOrder;
+            cmd.Parameters.Add("P_STATUS", OracleDbType.Varchar2).Value = model.Status ?? string.Empty;
+            cmd.Parameters.Add("P_UPDATED_BY", OracleDbType.Int64).Value = model.UpdatedBy ?? (object)DBNull.Value;
+            cmd.ExecuteNonQuery();
+            return 1;
+            }
+
+        public int DeleteIidInqViolation(long violationId, long userId)
+            {
+            using var con = this.DatabaseConnection();
+            using var cmd = con.CreateCommand();
+            cmd.CommandText = "PKG_INQ.P_DELETE_INQ_VIOLATION";
+            cmd.CommandType = CommandType.StoredProcedure;
+            cmd.BindByName = true;
+            cmd.Parameters.Add("P_VIOLATION_ID", OracleDbType.Int64).Value = violationId;
+            cmd.Parameters.Add("P_UPDATED_BY", OracleDbType.Int64).Value = userId;
+            cmd.ExecuteNonQuery();
+            return 1;
+            }
+
+        public List<IidInqDsaRow> GetIidInqDsaByComplaintId(long complaintId)
+            {
+            using var con = this.DatabaseConnection();
+            using var cmd = con.CreateCommand();
+            cmd.CommandText = "PKG_INQ.P_GET_INQ_DSA";
+            cmd.CommandType = CommandType.StoredProcedure;
+            cmd.BindByName = true;
+            cmd.Parameters.Add("P_COMPLAINT_ID", OracleDbType.Int64).Value = complaintId;
+            cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+
+            var list = new List<IidInqDsaRow>();
+            using var rdr = cmd.ExecuteReader();
+            while (rdr.Read())
+                {
+                list.Add(new IidInqDsaRow
+                    {
+                    DsaId = GetLongValue(rdr, "DSA_ID"),
+                    ComplaintId = GetLongValue(rdr, "COMPLAINT_ID"),
+                    PersonName = GetStringValue(rdr, "PERSON_NAME"),
+                    Designation = GetStringValue(rdr, "DESIGNATION"),
+                    PpnoNumber = GetStringValue(rdr, "PPNO_NUMBER"),
+                    Cnic = GetStringValue(rdr, "CNIC"),
+                    DsaStatus = GetStringValue(rdr, "DSA_STATUS"),
+                    Remarks = GetStringValue(rdr, "REMARKS"),
+                    SortOrder = GetIntValue(rdr, "SORT_ORDER"),
+                    Status = GetStringValue(rdr, "STATUS"),
+                    CreatedBy = GetNullableLongValue(rdr, "CREATED_BY"),
+                    CreatedOn = GetDateValue(rdr, "CREATED_ON"),
+                    UpdatedBy = GetNullableLongValue(rdr, "UPDATED_BY"),
+                    UpdatedOn = GetNullableDateValue(rdr, "UPDATED_ON")
+                    });
+                }
+
+            return list;
+            }
+
+        public int AddIidInqDsa(IidInqDsaRow model)
+            {
+            using var con = this.DatabaseConnection();
+            using var cmd = con.CreateCommand();
+            cmd.CommandText = "PKG_INQ.P_ADD_INQ_DSA";
+            cmd.CommandType = CommandType.StoredProcedure;
+            cmd.BindByName = true;
+            cmd.Parameters.Add("P_COMPLAINT_ID", OracleDbType.Int64).Value = model.ComplaintId;
+            cmd.Parameters.Add("P_PERSON_NAME", OracleDbType.Varchar2).Value = model.PersonName ?? string.Empty;
+            cmd.Parameters.Add("P_DESIGNATION", OracleDbType.Varchar2).Value = model.Designation ?? string.Empty;
+            cmd.Parameters.Add("P_PPNO_NUMBER", OracleDbType.Varchar2).Value = model.PpnoNumber ?? string.Empty;
+            cmd.Parameters.Add("P_CNIC", OracleDbType.Varchar2).Value = model.Cnic ?? string.Empty;
+            cmd.Parameters.Add("P_DSA_STATUS", OracleDbType.Varchar2).Value = model.DsaStatus ?? string.Empty;
+            cmd.Parameters.Add("P_REMARKS", OracleDbType.Clob).Value = model.Remarks ?? string.Empty;
+            cmd.Parameters.Add("P_SORT_ORDER", OracleDbType.Int32).Value = model.SortOrder;
+            cmd.Parameters.Add("P_STATUS", OracleDbType.Varchar2).Value = model.Status ?? string.Empty;
+            cmd.Parameters.Add("P_CREATED_BY", OracleDbType.Int64).Value = model.CreatedBy ?? (object)DBNull.Value;
+            cmd.ExecuteNonQuery();
+            return 1;
+            }
+
+        public int UpdateIidInqDsa(IidInqDsaRow model)
+            {
+            using var con = this.DatabaseConnection();
+            using var cmd = con.CreateCommand();
+            cmd.CommandText = "PKG_INQ.P_UPDATE_INQ_DSA";
+            cmd.CommandType = CommandType.StoredProcedure;
+            cmd.BindByName = true;
+            cmd.Parameters.Add("P_DSA_ID", OracleDbType.Int64).Value = model.DsaId;
+            cmd.Parameters.Add("P_PERSON_NAME", OracleDbType.Varchar2).Value = model.PersonName ?? string.Empty;
+            cmd.Parameters.Add("P_DESIGNATION", OracleDbType.Varchar2).Value = model.Designation ?? string.Empty;
+            cmd.Parameters.Add("P_PPNO_NUMBER", OracleDbType.Varchar2).Value = model.PpnoNumber ?? string.Empty;
+            cmd.Parameters.Add("P_CNIC", OracleDbType.Varchar2).Value = model.Cnic ?? string.Empty;
+            cmd.Parameters.Add("P_DSA_STATUS", OracleDbType.Varchar2).Value = model.DsaStatus ?? string.Empty;
+            cmd.Parameters.Add("P_REMARKS", OracleDbType.Clob).Value = model.Remarks ?? string.Empty;
+            cmd.Parameters.Add("P_SORT_ORDER", OracleDbType.Int32).Value = model.SortOrder;
+            cmd.Parameters.Add("P_STATUS", OracleDbType.Varchar2).Value = model.Status ?? string.Empty;
+            cmd.Parameters.Add("P_UPDATED_BY", OracleDbType.Int64).Value = model.UpdatedBy ?? (object)DBNull.Value;
+            cmd.ExecuteNonQuery();
+            return 1;
+            }
+
+        public int DeleteIidInqDsa(long dsaId, long userId)
+            {
+            using var con = this.DatabaseConnection();
+            using var cmd = con.CreateCommand();
+            cmd.CommandText = "PKG_INQ.P_DELETE_INQ_DSA";
+            cmd.CommandType = CommandType.StoredProcedure;
+            cmd.BindByName = true;
+            cmd.Parameters.Add("P_DSA_ID", OracleDbType.Int64).Value = dsaId;
+            cmd.Parameters.Add("P_UPDATED_BY", OracleDbType.Int64).Value = userId;
+            cmd.ExecuteNonQuery();
+            return 1;
             }
 
 

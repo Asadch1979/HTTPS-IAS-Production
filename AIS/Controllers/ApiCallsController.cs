@@ -5249,6 +5249,398 @@ namespace AIS.Controllers
                 }
             }
 
+
+        [HttpPost]
+        public IActionResult GetIidInqAccusations([FromBody] AIS.Models.IID.InquiryReport.IidInqComplaintRequest request)
+            {
+            try
+                {
+                var data = dBConnection.GetIidInqAccusationsByComplaintId(request?.ComplaintId ?? 0);
+                return Json(new { ok = true, data });
+                }
+            catch (Exception ex)
+                {
+                return Json(new { ok = false, message = ex.Message });
+                }
+            }
+
+        [HttpPost]
+        public IActionResult AddIidInqAccusation([FromBody] AIS.Models.IID.InquiryReport.IidInqAccusationRow model)
+            {
+            try
+                {
+                var rows = dBConnection.AddIidInqAccusation(model);
+                return Json(new { ok = rows > 0, data = rows });
+                }
+            catch (Exception ex)
+                {
+                return Json(new { ok = false, message = ex.Message });
+                }
+            }
+
+        [HttpPost]
+        public IActionResult UpdateIidInqAccusation([FromBody] AIS.Models.IID.InquiryReport.IidInqAccusationRow model)
+            {
+            try
+                {
+                var rows = dBConnection.UpdateIidInqAccusation(model);
+                return Json(new { ok = rows > 0, data = rows });
+                }
+            catch (Exception ex)
+                {
+                return Json(new { ok = false, message = ex.Message });
+                }
+            }
+
+        [HttpPost]
+        public IActionResult DeleteIidInqAccusation([FromBody] AIS.Models.IID.InquiryReport.IidInqDeleteRequest request)
+            {
+            try
+                {
+                var rows = dBConnection.DeleteIidInqAccusation(request?.Id ?? 0, request?.UserId ?? 0);
+                return Json(new { ok = rows > 0, data = rows });
+                }
+            catch (Exception ex)
+                {
+                return Json(new { ok = false, message = ex.Message });
+                }
+            }
+
+        [HttpPost]
+        public IActionResult GetIidInqAccusedList([FromBody] AIS.Models.IID.InquiryReport.IidInqComplaintRequest request)
+            {
+            try
+                {
+                var data = dBConnection.GetIidInqAccusedListByComplaintId(request?.ComplaintId ?? 0);
+                return Json(new { ok = true, data });
+                }
+            catch (Exception ex)
+                {
+                return Json(new { ok = false, message = ex.Message });
+                }
+            }
+
+        [HttpPost]
+        public IActionResult AddIidInqAccused([FromBody] AIS.Models.IID.InquiryReport.IidInqAccusedRow model)
+            {
+            try
+                {
+                var rows = dBConnection.AddIidInqAccused(model);
+                return Json(new { ok = rows > 0, data = rows });
+                }
+            catch (Exception ex)
+                {
+                return Json(new { ok = false, message = ex.Message });
+                }
+            }
+
+        [HttpPost]
+        public IActionResult UpdateIidInqAccused([FromBody] AIS.Models.IID.InquiryReport.IidInqAccusedRow model)
+            {
+            try
+                {
+                var rows = dBConnection.UpdateIidInqAccused(model);
+                return Json(new { ok = rows > 0, data = rows });
+                }
+            catch (Exception ex)
+                {
+                return Json(new { ok = false, message = ex.Message });
+                }
+            }
+
+        [HttpPost]
+        public IActionResult DeleteIidInqAccused([FromBody] AIS.Models.IID.InquiryReport.IidInqDeleteRequest request)
+            {
+            try
+                {
+                var rows = dBConnection.DeleteIidInqAccused(request?.Id ?? 0, request?.UserId ?? 0);
+                return Json(new { ok = rows > 0, data = rows });
+                }
+            catch (Exception ex)
+                {
+                return Json(new { ok = false, message = ex.Message });
+                }
+            }
+
+        [HttpPost]
+        public IActionResult GetIidInqRecords([FromBody] AIS.Models.IID.InquiryReport.IidInqComplaintRequest request)
+            {
+            try
+                {
+                var data = dBConnection.GetIidInqRecordsByComplaintId(request?.ComplaintId ?? 0);
+                return Json(new { ok = true, data });
+                }
+            catch (Exception ex)
+                {
+                return Json(new { ok = false, message = ex.Message });
+                }
+            }
+
+        [HttpPost]
+        public IActionResult AddIidInqRecord([FromBody] AIS.Models.IID.InquiryReport.IidInqRecordRow model)
+            {
+            try
+                {
+                var rows = dBConnection.AddIidInqRecord(model);
+                return Json(new { ok = rows > 0, data = rows });
+                }
+            catch (Exception ex)
+                {
+                return Json(new { ok = false, message = ex.Message });
+                }
+            }
+
+        [HttpPost]
+        public IActionResult UpdateIidInqRecord([FromBody] AIS.Models.IID.InquiryReport.IidInqRecordRow model)
+            {
+            try
+                {
+                var rows = dBConnection.UpdateIidInqRecord(model);
+                return Json(new { ok = rows > 0, data = rows });
+                }
+            catch (Exception ex)
+                {
+                return Json(new { ok = false, message = ex.Message });
+                }
+            }
+
+        [HttpPost]
+        public IActionResult DeleteIidInqRecord([FromBody] AIS.Models.IID.InquiryReport.IidInqDeleteRequest request)
+            {
+            try
+                {
+                var rows = dBConnection.DeleteIidInqRecord(request?.Id ?? 0, request?.UserId ?? 0);
+                return Json(new { ok = rows > 0, data = rows });
+                }
+            catch (Exception ex)
+                {
+                return Json(new { ok = false, message = ex.Message });
+                }
+            }
+
+        [HttpPost]
+        public IActionResult GetIidInqStatements([FromBody] AIS.Models.IID.InquiryReport.IidInqComplaintRequest request)
+            {
+            try
+                {
+                var data = dBConnection.GetIidInqStatementsByComplaintId(request?.ComplaintId ?? 0);
+                return Json(new { ok = true, data });
+                }
+            catch (Exception ex)
+                {
+                return Json(new { ok = false, message = ex.Message });
+                }
+            }
+
+        [HttpPost]
+        public IActionResult AddIidInqStatement([FromBody] AIS.Models.IID.InquiryReport.IidInqStatementRow model)
+            {
+            try
+                {
+                var rows = dBConnection.AddIidInqStatement(model);
+                return Json(new { ok = rows > 0, data = rows });
+                }
+            catch (Exception ex)
+                {
+                return Json(new { ok = false, message = ex.Message });
+                }
+            }
+
+        [HttpPost]
+        public IActionResult UpdateIidInqStatement([FromBody] AIS.Models.IID.InquiryReport.IidInqStatementRow model)
+            {
+            try
+                {
+                var rows = dBConnection.UpdateIidInqStatement(model);
+                return Json(new { ok = rows > 0, data = rows });
+                }
+            catch (Exception ex)
+                {
+                return Json(new { ok = false, message = ex.Message });
+                }
+            }
+
+        [HttpPost]
+        public IActionResult DeleteIidInqStatement([FromBody] AIS.Models.IID.InquiryReport.IidInqDeleteRequest request)
+            {
+            try
+                {
+                var rows = dBConnection.DeleteIidInqStatement(request?.Id ?? 0, request?.UserId ?? 0);
+                return Json(new { ok = rows > 0, data = rows });
+                }
+            catch (Exception ex)
+                {
+                return Json(new { ok = false, message = ex.Message });
+                }
+            }
+
+        [HttpPost]
+        public IActionResult GetIidInqEvidenceFiles([FromBody] AIS.Models.IID.InquiryReport.IidInqComplaintRequest request)
+            {
+            try
+                {
+                var data = dBConnection.GetIidInqEvidenceFilesByComplaintId(request?.ComplaintId ?? 0);
+                return Json(new { ok = true, data });
+                }
+            catch (Exception ex)
+                {
+                return Json(new { ok = false, message = ex.Message });
+                }
+            }
+
+        [HttpPost]
+        public IActionResult AddIidInqEvidenceFile([FromForm] AIS.Models.IID.InquiryReport.IidInqEvidenceFileRow model)
+            {
+            try
+                {
+                if (Request.HasFormContentType)
+                    {
+                    var evidenceFile = Request.Form.Files.GetFile("file");
+                    if (evidenceFile != null)
+                        {
+                        var savedFile = SaveUploadFile(evidenceFile);
+                        model.FileName = evidenceFile.FileName;
+                        model.FilePath = savedFile;
+                        model.FileExt = Path.GetExtension(evidenceFile.FileName);
+                        model.FileSizeKb = Convert.ToInt32(Math.Ceiling(evidenceFile.Length / 1024d));
+                        }
+                    }
+
+                var rows = dBConnection.AddIidInqEvidenceFile(model);
+                return Json(new { ok = rows > 0, data = rows });
+                }
+            catch (Exception ex)
+                {
+                return Json(new { ok = false, message = ex.Message });
+                }
+            }
+
+        [HttpPost]
+        public IActionResult DeleteIidInqEvidenceFile([FromBody] AIS.Models.IID.InquiryReport.IidInqDeleteRequest request)
+            {
+            try
+                {
+                var rows = dBConnection.DeleteIidInqEvidenceFile(request?.Id ?? 0, request?.UserId ?? 0);
+                return Json(new { ok = rows > 0, data = rows });
+                }
+            catch (Exception ex)
+                {
+                return Json(new { ok = false, message = ex.Message });
+                }
+            }
+
+        [HttpPost]
+        public IActionResult GetIidInqViolations([FromBody] AIS.Models.IID.InquiryReport.IidInqComplaintRequest request)
+            {
+            try
+                {
+                var data = dBConnection.GetIidInqViolationsByComplaintId(request?.ComplaintId ?? 0);
+                return Json(new { ok = true, data });
+                }
+            catch (Exception ex)
+                {
+                return Json(new { ok = false, message = ex.Message });
+                }
+            }
+
+        [HttpPost]
+        public IActionResult AddIidInqViolation([FromBody] AIS.Models.IID.InquiryReport.IidInqViolationRow model)
+            {
+            try
+                {
+                var rows = dBConnection.AddIidInqViolation(model);
+                return Json(new { ok = rows > 0, data = rows });
+                }
+            catch (Exception ex)
+                {
+                return Json(new { ok = false, message = ex.Message });
+                }
+            }
+
+        [HttpPost]
+        public IActionResult UpdateIidInqViolation([FromBody] AIS.Models.IID.InquiryReport.IidInqViolationRow model)
+            {
+            try
+                {
+                var rows = dBConnection.UpdateIidInqViolation(model);
+                return Json(new { ok = rows > 0, data = rows });
+                }
+            catch (Exception ex)
+                {
+                return Json(new { ok = false, message = ex.Message });
+                }
+            }
+
+        [HttpPost]
+        public IActionResult DeleteIidInqViolation([FromBody] AIS.Models.IID.InquiryReport.IidInqDeleteRequest request)
+            {
+            try
+                {
+                var rows = dBConnection.DeleteIidInqViolation(request?.Id ?? 0, request?.UserId ?? 0);
+                return Json(new { ok = rows > 0, data = rows });
+                }
+            catch (Exception ex)
+                {
+                return Json(new { ok = false, message = ex.Message });
+                }
+            }
+
+        [HttpPost]
+        public IActionResult GetIidInqDsa([FromBody] AIS.Models.IID.InquiryReport.IidInqComplaintRequest request)
+            {
+            try
+                {
+                var data = dBConnection.GetIidInqDsaByComplaintId(request?.ComplaintId ?? 0);
+                return Json(new { ok = true, data });
+                }
+            catch (Exception ex)
+                {
+                return Json(new { ok = false, message = ex.Message });
+                }
+            }
+
+        [HttpPost]
+        public IActionResult AddIidInqDsa([FromBody] AIS.Models.IID.InquiryReport.IidInqDsaRow model)
+            {
+            try
+                {
+                var rows = dBConnection.AddIidInqDsa(model);
+                return Json(new { ok = rows > 0, data = rows });
+                }
+            catch (Exception ex)
+                {
+                return Json(new { ok = false, message = ex.Message });
+                }
+            }
+
+        [HttpPost]
+        public IActionResult UpdateIidInqDsa([FromBody] AIS.Models.IID.InquiryReport.IidInqDsaRow model)
+            {
+            try
+                {
+                var rows = dBConnection.UpdateIidInqDsa(model);
+                return Json(new { ok = rows > 0, data = rows });
+                }
+            catch (Exception ex)
+                {
+                return Json(new { ok = false, message = ex.Message });
+                }
+            }
+
+        [HttpPost]
+        public IActionResult DeleteIidInqDsa([FromBody] AIS.Models.IID.InquiryReport.IidInqDeleteRequest request)
+            {
+            try
+                {
+                var rows = dBConnection.DeleteIidInqDsa(request?.Id ?? 0, request?.UserId ?? 0);
+                return Json(new { ok = rows > 0, data = rows });
+                }
+            catch (Exception ex)
+                {
+                return Json(new { ok = false, message = ex.Message });
+                }
+            }
+
         [HttpGet]
         [HttpPost]
         public List<string> get_fad_desk_officer_audit_periods()
