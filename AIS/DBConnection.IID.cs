@@ -924,7 +924,7 @@ namespace AIS.Controllers
                             UploadedReport = rdr["UPLOADED_REPORT"]?.ToString(),
                             UploadedEvidence = rdr["UPLOADED_EVIDENCE"]?.ToString(),
                             UploadedDsa = rdr["UPLOADED_DSA"]?.ToString(),
-                            SubmittedOn = HasColumn(rdr, "SUBMITTED_ON") ? FormatDate(rdr["SUBMITTED_ON"]) : string.Empty
+                            SubmittedOn = HasColumn(rdr, "SUBMITTED_ON") ? rdr["SUBMITTED_ON"]?.ToString() : string.Empty
                             };
                         }
                     }
