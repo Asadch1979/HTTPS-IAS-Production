@@ -16,13 +16,21 @@
             </div>
             <span id="reportStatusBadge" class="badge bg-secondary">Draft</span>
         </div>
+        <div class="row g-2 mt-2 small">
+            <div class="col-md-4 col-12">
+                <div class="snap-label">Complainant Name</div>
+                <div id="headerComplainantName" class="snap-value">N/A</div>
+            </div>
+        </div>
         <div id="snapshotStrip" class="row g-2 mt-2 small"></div>
     </div>
 </div>
 
+<div id="iidComplaintHiddenCache" class="d-none" style="display:none;"></div>
+
 <div class="stepper-wrap sticky-top bg-white py-2 mb-3">
     <div class="d-flex justify-content-between align-items-center mb-2">
-        <strong id="stepCounter">Step 1 of 10</strong>
+        <strong id="stepCounter">Step 1 of 9</strong>
         <span class="text-muted small">Click any step to navigate</span>
     </div>
     <div id="wizardStepper" class="wizard-stepper"></div>
@@ -32,13 +40,7 @@
     @Html.AntiForgeryToken()
     <input type="hidden" name="ComplaintId" value="@complaintId" />
 
-    <div class="wizard-section card mb-3" data-step="1">
-        <div class="card-body">
-            <h5 class="mb-3">Snapshot</h5>
-            <p class="text-muted mb-0">Complaint snapshot is read-only and auto-loaded from Complaint ID.</p>
-        </div>
-    </div>
-
+    <div class="wizard-section card mb-3" data-step="1"></div>
     <div class="wizard-section card mb-3 d-none" data-step="2"></div>
     <div class="wizard-section card mb-3 d-none" data-step="3"></div>
     <div class="wizard-section card mb-3 d-none" data-step="4"></div>
@@ -47,7 +49,6 @@
     <div class="wizard-section card mb-3 d-none" data-step="7"></div>
     <div class="wizard-section card mb-3 d-none" data-step="8"></div>
     <div class="wizard-section card mb-3 d-none" data-step="9"></div>
-    <div class="wizard-section card mb-3 d-none" data-step="10"></div>
 </form>
 
 @section Scripts {
@@ -65,17 +66,16 @@ $(function(){
         { id: 6, code: 'EVIDENCE', title: 'Evidence' },
         { id: 7, code: 'FINDINGS', title: 'Findings' },
         { id: 8, code: 'VIOLATIONS', title: 'Violations Matrix' },
-        { id: 9, code: 'RECOMMENDATIONS', title: 'Recommendations' },
-        { id: 10, code: 'ATTACHMENTS', title: 'Attachments' }
+        { id: 9, code: 'RECOMMENDATIONS', title: 'Recommendations' }
     ];
 
     var state = {
         snapshot: {},
         parties: { complainantName: '', accusedName: '', accusedDesignation: '', backgroundIntro: '', gistOfComplaint: '', originReference: '' },
         accusations: { accusationItems: [''], accusedRows: [{ mainAccused: '', coAccused: '' }] },
-        proceedings: { methodology: '', recordScrutinized: [''], statementRegister: [{ person: '', role: '', dateTime: '', place: '' }] },
+        proceedings: { methodology: '', recordScrutinized: [''], statementRegister: [{ person: '', role: 'Complainant', ppno: '', dateTime: '', place: '' }] },
         criticalPoints: { complainantPoints: '', accusedPoints: '' },
-        evidence: { materialEvidence: [''], circumstantialEvidence: [''], implications: '' },
+        evidence: { materialEvidence: [''], circumstantialEvidence: [''], implications: '', evidenceUploads: [] },
         findings: { findingsList: [''], policyReferences: [{ reference: '', note: '' }] },
         violations: {
             internal: { na: false, justification: '', rows: [{ detail: '', reference: '', recommendation: '' }] },
@@ -83,7 +83,6 @@ $(function(){
             control: { na: false, justification: '', rows: [{ detail: '', reference: '', recommendation: '' }] }
         },
         recommendations: { recommendationsList: [''], rootCause: '', reportedInAudit: '', auditDetails: '', dsaFramedAgainst: [''] },
-        attachments: { reportFile: null, evidenceFiles: [], dsaFile: null, existingReport: '', existingEvidence: '', existingDsa: '' },
         submittedOn: ''
     };
 
@@ -93,6 +92,59 @@ $(function(){
             escapeHtml(message) + '<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>');
     }
 
+    function normalizeComplaint(raw){
+        if(window.iidNormalizeComplaint){ return window.iidNormalizeComplaint(raw || {}); }
+        return raw || {};
+    }
+
+    function getComplaintValue(source, keys, fallback){
+        for(var i = 0; i < keys.length; i++){
+            var key = keys[i];
+            if(source && source[key] !== undefined && source[key] !== null && String(source[key]).trim() !== ''){
+                return source[key];
+            }
+        }
+        return fallback || '';
+    }
+
+    function renderComplaintCache(complaint){
+        var html = '';
+        if(window.iidRenderComplaintDetails){
+            window.iidRenderComplaintDetails('#iidComplaintHiddenCache', complaint);
+            return;
+        }
+        html += '<div class="card"><div class="card-body">';
+        html += '<h6>Complainant Particulars</h6>';
+        html += '<div>Name: ' + escapeHtml(getComplaintValue(complaint, ['ComplainantName', 'NameComplainant', 'complainantName'], 'N/A')) + '</div>';
+        html += '<div>CNIC: ' + escapeHtml(getComplaintValue(complaint, ['ComplainantCnic', 'CNIC', 'cnic'], 'N/A')) + '</div>';
+        html += '<h6 class="mt-2">Complaint Details</h6>';
+        html += '<div>Complaint No: ' + escapeHtml(getComplaintValue(complaint, ['ComplaintNo', 'complaintNo'], 'N/A')) + '</div>';
+        html += '<div>Origin/Reference: ' + escapeHtml(getComplaintValue(complaint, ['OriginReference', 'FfrSource', 'ffrSource', 'source'], 'N/A')) + '</div>';
+        html += '</div></div>';
+        $('#iidComplaintHiddenCache').html(html);
+    }
+
+    function syncComplaintIntoState(){
+        var c = window._iidComplaint || {};
+        var complainantName = getComplaintValue(c, ['ComplainantName', 'NameComplainant', 'complainantName'], '');
+        var originReference = getComplaintValue(c, ['OriginReference', 'FfrSource', 'ffrSource', 'source'], '');
+        var complainantCnic = getComplaintValue(c, ['ComplainantCnic', 'CNIC', 'cnic'], '');
+
+        state.parties.complainantName = complainantName || state.parties.complainantName;
+        state.parties.originReference = originReference || state.parties.originReference;
+
+        if(state.proceedings.statementRegister && state.proceedings.statementRegister.length){
+            var first = state.proceedings.statementRegister[0];
+            if(!first.role){ first.role = 'Complainant'; }
+            if((first.role || '').toLowerCase() === 'complainant' || !first.person){
+                first.person = state.parties.complainantName || first.person;
+                if(!first.ppno){ first.ppno = complainantCnic; }
+            }
+        }
+
+        $('#headerComplainantName').text(complainantName || 'N/A');
+    }
+
     function renderStepper(){
         var html = steps.map(function(s){
             var done = isStepCompleted(s.id);
@@ -100,7 +152,7 @@ $(function(){
             return '<button type="button" class="' + cls + '" data-step-jump="' + s.id + '"><span class="num">' + s.id + '</span><span>' + s.title + '</span><small>' + (done ? 'Completed' : 'Incomplete') + '</small></button>';
         }).join('');
         $('#wizardStepper').html(html);
-        $('#stepCounter').text('Step ' + currentStep + ' of 10');
+        $('#stepCounter').text('Step ' + currentStep + ' of ' + steps.length);
     }
 
     function renderSnapshotStrip(){
@@ -116,18 +168,12 @@ $(function(){
         }).join(''));
     }
 
-    function parseJson(text){
-        if(!text){ return null; }
-        try { return JSON.parse(text); } catch(e){ return null; }
-    }
+    function parseJson(text){ if(!text){ return null; } try { return JSON.parse(text); } catch(e){ return null; } }
 
     function hydrateDraft(resp){
         if(!resp || !resp.ok){ return; }
-        state.parties.complainantName = resp.nameComplainant || '';
+        state.parties.complainantName = resp.nameComplainant || state.parties.complainantName;
         state.parties.accusedName = resp.nameAccused || '';
-        state.attachments.existingReport = resp.uploadedReport || '';
-        state.attachments.existingEvidence = resp.uploadedEvidence || '';
-        state.attachments.existingDsa = resp.uploadedDsa || '';
         state.submittedOn = resp.submittedOn || '';
 
         var gistObj = parseJson(resp.gist);
@@ -152,6 +198,12 @@ $(function(){
         if(recObj){ state.recommendations = $.extend(state.recommendations, recObj); }
         else if(resp.recommendation){ state.recommendations.recommendationsList = [resp.recommendation]; }
 
+        if(resp.uploadedEvidence){
+            state.evidence.evidenceUploads = String(resp.uploadedEvidence).split(';').filter(function(x){ return $.trim(x); }).map(function(name){
+                return { name: $.trim(name), uploadedOn: '', existing: true };
+            });
+        }
+
         if(resp.submittedOn){
             isLocked = true;
             $('#reportStatusBadge').removeClass('bg-secondary').addClass('bg-success').text('Submitted');
@@ -167,46 +219,59 @@ $(function(){
         return '<div class="mb-3"><label class="form-label">' + label + '</label><div class="help-text">' + hint + '</div>' + rows + '<button type="button" class="btn btn-outline-primary btn-sm" data-add-row="' + section + '.' + key + '">Add Row</button></div>';
     }
 
+    function evidenceListHtml(){
+        var rows = (state.evidence.evidenceUploads || []).map(function(file, i){
+            return '<tr><td>' + escapeHtml(file.name || '') + '</td><td>' + escapeHtml(file.uploadedOn || 'N/A') + '</td><td><button type="button" class="btn btn-outline-danger btn-sm" data-remove-evidence="' + i + '">Remove</button></td></tr>';
+        }).join('');
+        return '<div class="mb-3"><label class="form-label">Evidence Upload(s)</label><input type="file" id="uploadedEvidence" class="form-control" accept="application/pdf,image/*,.doc,.docx" multiple>' +
+            '<div class="help-text">Upload at least one evidence file. Evidence is mandatory for final submission.</div></div>' +
+            '<div class="table-responsive"><table class="table table-sm"><thead><tr><th>File Name</th><th>Uploaded On</th><th></th></tr></thead><tbody>' + (rows || '<tr><td colspan="3" class="text-muted">No evidence uploaded yet.</td></tr>') + '</tbody></table></div>';
+    }
+
     function renderSection(step){
         var host = $('.wizard-section[data-step="' + step + '"]');
         var html = '<div class="card-body"><div class="validation-summary alert alert-warning d-none"></div>';
 
+        if(step === 1){
+            html += '<h5>Snapshot</h5><p class="text-muted mb-0">Complaint particulars and complaint details are preloaded and cached for this wizard.</p>';
+        }
         if(step === 2){
             html += '<h5>Parties</h5><div class="row g-3">' +
-                '<div class="col-md-6"><label class="form-label">Complainant Name</label><input class="form-control" data-bind="parties.complainantName" value="' + escapeHtml(state.parties.complainantName) + '"><div class="help-text">Enter full official name.</div></div>' +
+                '<div class="col-md-6"><label class="form-label">Complainant Name</label><input readonly class="form-control bg-light" data-bind="parties.complainantName" value="' + escapeHtml(state.parties.complainantName) + '"></div>' +
+                '<div class="col-md-6"><label class="form-label">Origin/Reference (FFR/Source)</label><input readonly class="form-control bg-light" data-bind="parties.originReference" value="' + escapeHtml(state.parties.originReference) + '"></div>' +
                 '<div class="col-md-6"><label class="form-label">Accused Name</label><input class="form-control" data-bind="parties.accusedName" value="' + escapeHtml(state.parties.accusedName) + '"></div>' +
                 '<div class="col-md-6"><label class="form-label">Accused Designation/Posting</label><input class="form-control" data-bind="parties.accusedDesignation" value="' + escapeHtml(state.parties.accusedDesignation) + '"></div>' +
-                '<div class="col-md-6"><label class="form-label">Origin/Reference (FFR/Source)</label><input class="form-control" data-bind="parties.originReference" value="' + escapeHtml(state.parties.originReference) + '"></div>' +
                 '<div class="col-12"><label class="form-label">Background / Intro</label><textarea class="form-control" data-bind="parties.backgroundIntro">' + escapeHtml(state.parties.backgroundIntro) + '</textarea></div>' +
                 '<div class="col-12"><label class="form-label">Gist of Complaint</label><textarea class="form-control" data-bind="parties.gistOfComplaint">' + escapeHtml(state.parties.gistOfComplaint) + '</textarea></div></div>';
         }
         if(step === 3){
             html += '<h5>Accusations</h5>' + listEditorHtml('accusations', 'accusationItems', 'Accusations List', 'Add allegation bullets in Annex-A style.');
-            var rows = (state.accusations.accusedRows || []).map(function(r, i){
+            var aRows = (state.accusations.accusedRows || []).map(function(r, i){
                 return '<tr><td><input class="form-control" data-bind="accusations.accusedRows[' + i + '].mainAccused" value="' + escapeHtml(r.mainAccused) + '"></td><td><input class="form-control" data-bind="accusations.accusedRows[' + i + '].coAccused" value="' + escapeHtml(r.coAccused) + '"></td><td><button type="button" class="btn btn-outline-danger btn-sm" data-remove-row="accusations.accusedRows" data-index="' + i + '">Remove</button></td></tr>';
             }).join('');
-            html += '<label class="form-label">Main/Co-Accused Mapping</label><table class="table table-sm"><thead><tr><th>Main Accused</th><th>Co-Accused</th><th></th></tr></thead><tbody>' + rows + '</tbody></table><button type="button" class="btn btn-outline-primary btn-sm" data-add-row="accusations.accusedRows">Add Row</button>';
+            html += '<label class="form-label">Main/Co-Accused Mapping</label><table class="table table-sm"><thead><tr><th>Main Accused</th><th>Co-Accused</th><th></th></tr></thead><tbody>' + aRows + '</tbody></table><button type="button" class="btn btn-outline-primary btn-sm" data-add-row="accusations.accusedRows">Add Row</button>';
         }
         if(step === 4){
-            html += '<h5>Proceedings</h5><div class="mb-3"><label class="form-label">Inquiry Methodology / Proceedings</label><textarea class="form-control" data-bind="proceedings.methodology">' + escapeHtml(state.proceedings.methodology) + '</textarea></div>' +
-                listEditorHtml('proceedings','recordScrutinized','Record Scrutinized','Add each record reviewed.');
+            html += '<h5>Proceedings</h5><div class="mb-3"><label class="form-label">Inquiry Methodology / Proceedings</label><textarea class="form-control" data-bind="proceedings.methodology">' + escapeHtml(state.proceedings.methodology) + '</textarea></div>';
+            html += listEditorHtml('proceedings', 'recordScrutinized', 'Record Scrutinized', 'Add records/documents scrutinized.');
             var sRows = (state.proceedings.statementRegister || []).map(function(r, i){
-                return '<tr><td><input class="form-control" data-bind="proceedings.statementRegister[' + i + '].person" value="' + escapeHtml(r.person) + '"></td><td><input class="form-control" data-bind="proceedings.statementRegister[' + i + '].role" value="' + escapeHtml(r.role) + '"></td><td><input class="form-control" data-bind="proceedings.statementRegister[' + i + '].dateTime" value="' + escapeHtml(r.dateTime) + '"></td><td><input class="form-control" data-bind="proceedings.statementRegister[' + i + '].place" value="' + escapeHtml(r.place) + '"></td><td><button type="button" class="btn btn-outline-danger btn-sm" data-remove-row="proceedings.statementRegister" data-index="' + i + '">Remove</button></td></tr>';
+                return '<tr><td><input class="form-control" data-bind="proceedings.statementRegister[' + i + '].person" value="' + escapeHtml(r.person) + '"></td><td><input class="form-control" data-bind="proceedings.statementRegister[' + i + '].role" value="' + escapeHtml(r.role) + '"></td><td><input class="form-control" data-bind="proceedings.statementRegister[' + i + '].ppno" value="' + escapeHtml(r.ppno) + '"></td><td><input type="datetime-local" class="form-control" data-bind="proceedings.statementRegister[' + i + '].dateTime" value="' + escapeHtml(r.dateTime) + '"></td><td><input class="form-control" data-bind="proceedings.statementRegister[' + i + '].place" value="' + escapeHtml(r.place) + '"></td><td><button type="button" class="btn btn-outline-danger btn-sm" data-remove-row="proceedings.statementRegister" data-index="' + i + '">Remove</button></td></tr>';
             }).join('');
-            html += '<label class="form-label">Statement Register</label><table class="table table-sm"><thead><tr><th>Person</th><th>Role</th><th>Date/Time</th><th>Place</th><th></th></tr></thead><tbody>' + sRows + '</tbody></table><button type="button" class="btn btn-outline-primary btn-sm" data-add-row="proceedings.statementRegister">Add Entry</button>';
+            html += '<label class="form-label">Statement Register</label><table class="table table-sm"><thead><tr><th>Person</th><th>Role</th><th>PPNO</th><th>Date/Time</th><th>Place</th><th></th></tr></thead><tbody>' + sRows + '</tbody></table><button type="button" class="btn btn-outline-primary btn-sm" data-add-row="proceedings.statementRegister">Add Row</button>';
         }
         if(step === 5){
-            html += '<h5>Critical Points</h5><div class="row g-3"><div class="col-12"><label class="form-label">Critical points of Complainant</label><textarea class="form-control" data-bind="criticalPoints.complainantPoints">' + escapeHtml(state.criticalPoints.complainantPoints) + '</textarea></div><div class="col-12"><label class="form-label">Critical points of Accused</label><textarea class="form-control" data-bind="criticalPoints.accusedPoints">' + escapeHtml(state.criticalPoints.accusedPoints) + '</textarea></div></div>';
+            html += '<h5>Critical Points</h5><div class="row g-3"><div class="col-md-6"><label class="form-label">Critical points of Complainant</label><textarea class="form-control" data-bind="criticalPoints.complainantPoints">' + escapeHtml(state.criticalPoints.complainantPoints) + '</textarea></div><div class="col-md-6"><label class="form-label">Critical points of Accused</label><textarea class="form-control" data-bind="criticalPoints.accusedPoints">' + escapeHtml(state.criticalPoints.accusedPoints) + '</textarea></div></div>';
         }
         if(step === 6){
-            html += '<h5>Evidence</h5>' + listEditorHtml('evidence','materialEvidence','Material Evidence','Add physical/documentary evidence entries.') + listEditorHtml('evidence','circumstantialEvidence','Circumstantial Evidence','Add circumstantial references.') + '<div class="mb-3"><label class="form-label">Implications / Notes</label><textarea class="form-control" data-bind="evidence.implications">' + escapeHtml(state.evidence.implications) + '</textarea></div>';
+            html += '<h5>Evidence</h5>' + listEditorHtml('evidence', 'materialEvidence', 'Material Evidence', 'Add material evidence points.') + listEditorHtml('evidence', 'circumstantialEvidence', 'Circumstantial Evidence', 'Add circumstantial evidence points.') +
+                '<div class="mb-3"><label class="form-label">Implications/Notes</label><textarea class="form-control" data-bind="evidence.implications">' + escapeHtml(state.evidence.implications) + '</textarea></div>' + evidenceListHtml();
         }
         if(step === 7){
-            html += '<h5>Findings</h5>' + listEditorHtml('findings','findingsList','Findings','Add each finding separately.');
+            html += '<h5>Findings</h5>' + listEditorHtml('findings','findingsList','Findings List','Add concise findings.');
             var pRows = (state.findings.policyReferences || []).map(function(r, i){
                 return '<tr><td><input class="form-control" data-bind="findings.policyReferences[' + i + '].reference" value="' + escapeHtml(r.reference) + '"></td><td><input class="form-control" data-bind="findings.policyReferences[' + i + '].note" value="' + escapeHtml(r.note) + '"></td><td><button type="button" class="btn btn-outline-danger btn-sm" data-remove-row="findings.policyReferences" data-index="' + i + '">Remove</button></td></tr>';
             }).join('');
-            html += '<label class="form-label">Policy/SOP/Circular References</label><table class="table table-sm"><thead><tr><th>Reference</th><th>Note</th><th></th></tr></thead><tbody>' + pRows + '</tbody></table><button type="button" class="btn btn-outline-primary btn-sm" data-add-row="findings.policyReferences">Add Reference</button>';
+            html += '<label class="form-label">Policy / SOP / Circular References</label><table class="table table-sm"><thead><tr><th>Reference</th><th>Note</th><th></th></tr></thead><tbody>' + pRows + '</tbody></table><button type="button" class="btn btn-outline-primary btn-sm" data-add-row="findings.policyReferences">Add Reference</button>';
         }
         if(step === 8){
             html += '<h5>Violations Matrix</h5>' + violationsBlock('internal','Internal / Procedural Violations') + violationsBlock('policy','Policy Gaps') + violationsBlock('control','Control Violations');
@@ -216,11 +281,6 @@ $(function(){
                 '<div class="mb-3"><label class="form-label">Root Cause</label><textarea class="form-control" data-bind="recommendations.rootCause">' + escapeHtml(state.recommendations.rootCause) + '</textarea></div>' +
                 '<div class="row g-3"><div class="col-md-6"><label class="form-label">Reported in audit report?</label><select class="form-select" data-bind="recommendations.reportedInAudit"><option value="">Select</option><option value="Yes" ' + (state.recommendations.reportedInAudit === 'Yes' ? 'selected' : '') + '>Yes</option><option value="No" ' + (state.recommendations.reportedInAudit === 'No' ? 'selected' : '') + '>No</option></select></div>' +
                 '<div class="col-md-6"><label class="form-label">Audit report details (if Yes)</label><input class="form-control" data-bind="recommendations.auditDetails" value="' + escapeHtml(state.recommendations.auditDetails) + '"></div></div>';
-        }
-        if(step === 10){
-            html += '<h5>Attachments</h5><div class="row g-3"><div class="col-md-6"><label class="form-label">Inquiry Report PDF</label><input type="file" class="form-control" id="uploadedReport" accept="application/pdf"><div class="help-text">Existing: ' + escapeHtml(state.attachments.existingReport || 'None') + '</div></div>' +
-                '<div class="col-md-6"><label class="form-label">DSA Upload</label><input type="file" class="form-control" id="uploadedDsa" accept=".doc,.docx,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"><div class="help-text">Existing: ' + escapeHtml(state.attachments.existingDsa || 'None') + '</div></div>' +
-                '<div class="col-12"><label class="form-label">Evidence upload(s)</label><input type="file" multiple class="form-control" id="uploadedEvidence" accept="application/pdf"><div class="help-text">Existing: ' + escapeHtml(state.attachments.existingEvidence || 'None') + '</div></div></div>';
         }
 
         html += actionButtons(step) + '</div>';
@@ -237,7 +297,7 @@ $(function(){
     }
 
     function actionButtons(step){
-        return '<div class="d-flex justify-content-between mt-4"><div><button type="button" class="btn btn-outline-secondary" data-prev ' + (step === 1 ? 'disabled' : '') + '>Previous</button></div><div class="d-flex gap-2"><button type="button" class="btn btn-primary" data-save>Save Section</button><button type="button" class="btn btn-success" data-next>' + (step === 10 ? 'Review' : 'Next') + '</button>' + (step === 10 ? '<button type="button" class="btn btn-danger" id="finalSubmitBtn">Final Submit</button>' : '') + '</div></div>';
+        return '<div class="d-flex justify-content-between mt-4"><div><button type="button" class="btn btn-outline-secondary" data-prev ' + (step === 1 ? 'disabled' : '') + '>Previous</button></div><div class="d-flex gap-2"><button type="button" class="btn btn-primary" data-save>Save Section</button><button type="button" class="btn btn-success" data-next>' + (step === steps.length ? 'Review' : 'Next') + '</button>' + (step === steps.length ? '<button type="button" class="btn btn-danger" id="finalSubmitBtn">Final Submit</button>' : '') + '</div></div>';
     }
 
     function getByPath(path){ return path.split('.').reduce(function(a, p){ var m = p.match(/(\w+)\[(\d+)\]/); return m ? (a[m[1]] || [])[parseInt(m[2])] : a[p]; }, state); }
@@ -251,6 +311,15 @@ $(function(){
         if(lm){ obj[lm[1]][parseInt(lm[2])] = value; } else { obj[last] = value; }
     }
 
+    function addRow(path){
+        var arr = getByPath(path);
+        if(path.indexOf('accusedRows')>0){ arr.push({ mainAccused:'', coAccused:'' }); }
+        else if(path.indexOf('statementRegister')>0){ arr.push({ person:'', role:'', ppno:'', dateTime:'', place:'' }); }
+        else if(path.indexOf('policyReferences')>0){ arr.push({ reference:'', note:'' }); }
+        else if(path.indexOf('.rows')>0){ arr.push({ detail:'', reference:'', recommendation:'' }); }
+        else { arr.push(''); }
+    }
+
     function bindSectionEvents(){
         $('.wizard-section[data-step="' + currentStep + '"] [data-bind]').off('input change').on('input change', function(){
             var bind = $(this).data('bind');
@@ -259,25 +328,17 @@ $(function(){
         });
     }
 
-    function addRow(path){
-        var arr = getByPath(path);
-        if(path.indexOf('accusedRows')>0){ arr.push({ mainAccused:'', coAccused:'' }); }
-        else if(path.indexOf('statementRegister')>0){ arr.push({ person:'', role:'', dateTime:'', place:'' }); }
-        else if(path.indexOf('policyReferences')>0){ arr.push({ reference:'', note:'' }); }
-        else if(path.indexOf('.rows')>0){ arr.push({ detail:'', reference:'', recommendation:'' }); }
-        else { arr.push(''); }
-    }
-
     function validateStep(step){
         var missing = [];
         function filled(v){ return !!(v && String(v).trim()); }
         function oneFilled(arr, fn){ return (arr || []).some(fn || filled); }
+
         if(step === 2){
             if(!filled(state.parties.complainantName)) missing.push('Complainant Name');
+            if(!filled(state.parties.originReference)) missing.push('Origin/Reference');
             if(!filled(state.parties.accusedName)) missing.push('Accused Name');
             if(!filled(state.parties.backgroundIntro)) missing.push('Background / Intro');
             if(!filled(state.parties.gistOfComplaint)) missing.push('Gist of Complaint');
-            if(!filled(state.parties.originReference)) missing.push('Origin/Reference');
         }
         if(step === 3){
             if(!oneFilled(state.accusations.accusationItems)) missing.push('At least 1 accusation item');
@@ -286,25 +347,40 @@ $(function(){
         if(step === 4){
             if(!filled(state.proceedings.methodology)) missing.push('Inquiry Methodology / Proceedings');
             if(!oneFilled(state.proceedings.recordScrutinized)) missing.push('Record scrutinized (at least 1)');
-            if(!oneFilled(state.proceedings.statementRegister, function(r){ return filled(r.person)&&filled(r.role)&&filled(r.dateTime)&&filled(r.place);} )) missing.push('Statement register (at least 1 complete entry)');
+            if(!oneFilled(state.proceedings.statementRegister, function(r){ return filled(r.person)&&filled(r.role)&&filled(r.ppno)&&filled(r.dateTime)&&filled(r.place);} )) missing.push('Statement register (at least 1 complete entry)');
         }
-        if(step === 5){ if(!filled(state.criticalPoints.complainantPoints)) missing.push('Critical points of Complainant'); if(!filled(state.criticalPoints.accusedPoints)) missing.push('Critical points of Accused'); }
-        if(step === 6){ if(!oneFilled(state.evidence.materialEvidence)) missing.push('Material evidence'); if(!oneFilled(state.evidence.circumstantialEvidence)) missing.push('Circumstantial evidence'); if(!filled(state.evidence.implications)) missing.push('Implications/notes'); }
-        if(step === 7){ if(!oneFilled(state.findings.findingsList)) missing.push('At least 1 finding'); if(!oneFilled(state.findings.policyReferences, function(r){ return filled(r.reference);} )) missing.push('Policy/SOP/Circular reference'); }
-        if(step === 8){ ['internal','policy','control'].forEach(function(k){ var b = state.violations[k]; var ok = b.na ? filled(b.justification) : oneFilled(b.rows, function(r){ return filled(r.detail)&&filled(r.reference)&&filled(r.recommendation); }); if(!ok) missing.push('Violations matrix: ' + k);}); }
-        if(step === 9){ if(!oneFilled(state.recommendations.recommendationsList)) missing.push('At least 1 recommendation'); if(!filled(state.recommendations.rootCause)) missing.push('Root Cause'); if(!filled(state.recommendations.reportedInAudit)) missing.push('Reported in audit report?'); if(state.recommendations.reportedInAudit==='Yes' && !filled(state.recommendations.auditDetails)) missing.push('Audit details required when Yes'); if(!oneFilled(state.recommendations.dsaFramedAgainst)) missing.push('DSA framed against'); }
-        if(step === 10){
-            var hasReport = !!state.attachments.reportFile || !!state.attachments.existingReport;
-            var hasEvidence = (state.attachments.evidenceFiles || []).length > 0 || !!state.attachments.existingEvidence;
-            var hasDsa = !!state.attachments.dsaFile || !!state.attachments.existingDsa;
-            if(!hasReport) missing.push('Inquiry Report PDF upload');
-            if(!hasEvidence) missing.push('Evidence upload(s)');
-            if(!hasDsa) missing.push('DSA upload');
+        if(step === 5){
+            if(!filled(state.criticalPoints.complainantPoints)) missing.push('Critical points of Complainant');
+            if(!filled(state.criticalPoints.accusedPoints)) missing.push('Critical points of Accused');
+        }
+        if(step === 6){
+            if(!oneFilled(state.evidence.materialEvidence)) missing.push('Material evidence');
+            if(!oneFilled(state.evidence.circumstantialEvidence)) missing.push('Circumstantial evidence');
+            if(!filled(state.evidence.implications)) missing.push('Implications/notes');
+            if(!(state.evidence.evidenceUploads || []).length) missing.push('At least one evidence upload');
+        }
+        if(step === 7){
+            if(!oneFilled(state.findings.findingsList)) missing.push('At least 1 finding');
+            if(!oneFilled(state.findings.policyReferences, function(r){ return filled(r.reference);} )) missing.push('Policy/SOP/Circular reference');
+        }
+        if(step === 8){
+            ['internal','policy','control'].forEach(function(k){
+                var b = state.violations[k];
+                var ok = b.na ? filled(b.justification) : oneFilled(b.rows, function(r){ return filled(r.detail)&&filled(r.reference)&&filled(r.recommendation); });
+                if(!ok) missing.push('Violations matrix: ' + k);
+            });
+        }
+        if(step === 9){
+            if(!oneFilled(state.recommendations.recommendationsList)) missing.push('At least 1 recommendation');
+            if(!filled(state.recommendations.rootCause)) missing.push('Root Cause');
+            if(!filled(state.recommendations.reportedInAudit)) missing.push('Reported in audit report?');
+            if(state.recommendations.reportedInAudit==='Yes' && !filled(state.recommendations.auditDetails)) missing.push('Audit details required when Yes');
+            if(!oneFilled(state.recommendations.dsaFramedAgainst)) missing.push('DSA framed against');
         }
         return missing;
     }
 
-    function isStepCompleted(step){ return validateStep(step).length === 0 || step === 1; }
+    function isStepCompleted(step){ return step === 1 || validateStep(step).length === 0; }
 
     function showValidation(step, errors){
         var host = $('.wizard-section[data-step="' + step + '"] .validation-summary');
@@ -323,10 +399,7 @@ $(function(){
         fd.append('Proceedings', JSON.stringify(state.proceedings));
         fd.append('Findings', JSON.stringify({ findings: state.findings, violations: state.violations }));
         fd.append('Recommendation', JSON.stringify(state.recommendations));
-
-        if(state.attachments.reportFile){ fd.append('UploadedReport', state.attachments.reportFile); }
-        (state.attachments.evidenceFiles || []).forEach(function(file){ fd.append('UploadedEvidence', file); });
-        if(state.attachments.dsaFile){ fd.append('UploadedDsa', state.attachments.dsaFile); }
+        (state.evidence.evidenceUploads || []).forEach(function(file){ if(file.raw){ fd.append('UploadedEvidence', file.raw); } });
         return fd;
     }
 
@@ -334,6 +407,7 @@ $(function(){
         var errs = validateStep(step);
         showValidation(step, errs);
         if(errs.length){ return $.Deferred().reject().promise(); }
+
         var sectionCode = steps[step - 1].code;
         return $.ajax({
             url: g_asiBaseURL + '/ApiCalls/AddInquiryReport',
@@ -344,42 +418,17 @@ $(function(){
         }).done(function(resp){
             if(resp && resp.ok === false){ showAlert(resp.message || 'Save failed.', 'danger'); return; }
             showAlert(isFinal ? 'Final submit completed successfully.' : ('Section ' + sectionCode + ' saved successfully.'), 'success');
-            if(step === 10){
-                if(state.attachments.reportFile){ state.attachments.existingReport = state.attachments.reportFile.name; }
-                if((state.attachments.evidenceFiles || []).length){ state.attachments.existingEvidence = state.attachments.evidenceFiles.map(function(x){ return x.name; }).join(';'); }
-                if(state.attachments.dsaFile){ state.attachments.existingDsa = state.attachments.dsaFile.name; }
-            }
+            state.evidence.evidenceUploads = (state.evidence.evidenceUploads || []).map(function(x){ return $.extend({}, x, { raw: null, existing: true }); });
             if(isFinal){
                 isLocked = true;
                 $('#reportStatusBadge').removeClass('bg-secondary').addClass('bg-success').text('Submitted');
                 $('.wizard-section input, .wizard-section textarea, .wizard-section select, .wizard-section button').prop('disabled', true);
             }
             renderStepper();
-        }).fail(function(){ showAlert('Failed to save section.', 'danger'); });
-    }
-
-    function loadAll(){
-        if(!complaintId){
-            showAlert('Complaint ID is missing. Open this page from Task List.', 'danger');
-            $('button').prop('disabled', true);
-            return;
-        }
-        $.post(g_asiBaseURL + '/ApiCalls/GetComplaint', { complaintId: complaintId }).done(function(c){
-            state.snapshot = {
-                complaintNo: c.complaintNo,
-                submittedOn: c.submittedOn,
-                region: c.region,
-                branch: c.branch,
-                category: c.category,
-                nature: c.nature
-            };
-            renderSnapshotStrip();
-        });
-
-        $.post(g_asiBaseURL + '/ApiCalls/GetLatestInquiryReportByComplaintId', { complaintId: complaintId }).done(function(resp){
-            hydrateDraft(resp);
             renderCurrent();
-        }).fail(function(){ renderCurrent(); });
+        }).fail(function(){
+            showAlert('Failed to save section.', 'danger');
+        });
     }
 
     function renderCurrent(){
@@ -390,30 +439,88 @@ $(function(){
         bindSectionEvents();
     }
 
+    function loadAll(){
+        if(!complaintId){
+            showAlert('Complaint ID is missing. Open this page from Task List.', 'danger');
+            $('button').prop('disabled', true);
+            return;
+        }
+
+        $.post(g_asiBaseURL + '/ApiCalls/GetComplaint', { complaintId: complaintId }).done(function(c){
+            var normalized = normalizeComplaint(c);
+            window._iidComplaint = normalized;
+            renderComplaintCache(normalized);
+
+            state.snapshot = {
+                complaintNo: getComplaintValue(normalized, ['ComplaintNo', 'complaintNo'], c.complaintNo),
+                submittedOn: getComplaintValue(normalized, ['SubmittedOn', 'submittedOn'], c.submittedOn),
+                region: getComplaintValue(normalized, ['Region', 'region'], c.region),
+                branch: getComplaintValue(normalized, ['Branch', 'branch'], c.branch),
+                category: getComplaintValue(normalized, ['Category', 'category'], c.category),
+                nature: getComplaintValue(normalized, ['Nature', 'nature'], c.nature)
+            };
+            syncComplaintIntoState();
+            renderSnapshotStrip();
+        }).fail(function(){
+            showAlert('Failed to load complaint details.', 'danger');
+        }).always(function(){
+            $.post(g_asiBaseURL + '/ApiCalls/GetLatestInquiryReportByComplaintId', { complaintId: complaintId }).done(function(resp){
+                hydrateDraft(resp);
+                syncComplaintIntoState();
+                renderCurrent();
+            }).fail(function(){
+                syncComplaintIntoState();
+                renderCurrent();
+            });
+        });
+    }
+
     $(document).on('click', '[data-step-jump]', function(){ currentStep = parseInt($(this).data('step-jump')); renderCurrent(); });
     $(document).on('click', '[data-add-row]', function(){ addRow($(this).data('add-row')); renderCurrent(); });
-    $(document).on('click', '[data-remove-row]', function(){ var arr = getByPath($(this).data('remove-row')); arr.splice(parseInt($(this).data('index')), 1); if(!arr.length){ addRow($(this).data('remove-row')); } renderCurrent(); });
+    $(document).on('click', '[data-remove-row]', function(){
+        var arr = getByPath($(this).data('remove-row'));
+        arr.splice(parseInt($(this).data('index')), 1);
+        if(!arr.length){ addRow($(this).data('remove-row')); }
+        renderCurrent();
+    });
+    $(document).on('click', '[data-remove-evidence]', function(){
+        state.evidence.evidenceUploads.splice(parseInt($(this).data('remove-evidence')), 1);
+        renderCurrent();
+    });
+    $(document).on('change', '#uploadedEvidence', function(){
+        var files = Array.prototype.slice.call(this.files || []);
+        var stamp = new Date().toLocaleString();
+        files.forEach(function(file){ state.evidence.evidenceUploads.push({ name: file.name, uploadedOn: stamp, raw: file, existing: false }); });
+        this.value = '';
+        renderCurrent();
+    });
     $(document).on('click', '[data-prev]', function(){ if(currentStep > 1){ currentStep--; renderCurrent(); } });
-    $(document).on('click', '[data-next]', function(){ var errs = validateStep(currentStep); showValidation(currentStep, errs); if(errs.length){ return; } if(currentStep < 10){ currentStep++; renderCurrent(); } });
+    $(document).on('click', '[data-next]', function(){
+        var errs = validateStep(currentStep);
+        showValidation(currentStep, errs);
+        if(errs.length){ return; }
+        if(currentStep < steps.length){ currentStep++; renderCurrent(); }
+    });
     $(document).on('click', '[data-save]', function(){ saveSection(currentStep, false); });
-    $(document).on('change', '#uploadedReport', function(){ state.attachments.reportFile = this.files[0] || null; });
-    $(document).on('change', '#uploadedEvidence', function(){ state.attachments.evidenceFiles = Array.prototype.slice.call(this.files || []); });
-    $(document).on('change', '#uploadedDsa', function(){ state.attachments.dsaFile = this.files[0] || null; });
     $(document).on('click', '#finalSubmitBtn', function(){
         var allComplete = steps.every(function(s){ return isStepCompleted(s.id); });
-        if(!allComplete){ showAlert('Complete all mandatory steps before final submit.', 'danger'); return; }
-        saveSection(10, true);
+        if(!allComplete){ showAlert('Complete all mandatory sections before final submit.', 'danger'); return; }
+        saveSection(steps.length, true);
     });
 
     loadAll();
 });
 </script>
 <style>
-.wizard-stepper{display:grid;grid-template-columns:repeat(10,minmax(110px,1fr));gap:.4rem;overflow:auto}
+.wizard-stepper{display:grid;grid-template-columns:repeat(9,minmax(120px,1fr));gap:.4rem;overflow:auto}
 .step-pill{border:1px solid #ced4da;background:#fff;border-radius:.5rem;padding:.35rem .5rem;text-align:left}
-.step-pill .num{font-weight:700;margin-right:.35rem}.step-pill small{display:block;color:#6c757d}
-.step-pill.active{border-color:#0d6efd;box-shadow:0 0 0 2px rgba(13,110,253,.15)}.step-pill.completed{background:#ecf9f0;border-color:#198754}
-.snap-label{color:#6c757d}.snap-value{font-weight:600}.help-text{font-size:.8rem;color:#6c757d}
+.step-pill .num{font-weight:700;margin-right:.35rem}
+.step-pill small{display:block;color:#6c757d}
+.step-pill.active{border-color:#0d6efd;box-shadow:0 0 0 2px rgba(13,110,253,.15)}
+.step-pill.completed{background:#ecf9f0;border-color:#198754}
+.snap-label{color:#6c757d}
+.snap-value{font-weight:600}
+.help-text{font-size:.8rem;color:#6c757d}
 .validation-summary{font-size:.9rem}
 </style>
 }
