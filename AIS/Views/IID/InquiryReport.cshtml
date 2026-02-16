@@ -54,6 +54,8 @@ $(function(){
     var currentStep = 1;
     var isLocked = false;
     var userId = 0;
+    var alertTimer = null;
+    var accusedRoleOptions = ['Main', 'Co'];
     var steps = [
         { id: 1, code: 'SNAPSHOT', title: 'Snapshot' },
         { id: 2, code: 'ACCUSATIONS', title: 'Accusations' },
@@ -76,30 +78,52 @@ $(function(){
         evidence: [],
         violations: [{ violationId: 0, category: 'Internal', violationDetail: '', referenceText: '', recommendation: '', sortOrder: 1 }],
         dsa: [{ dsaId: 0, personName: '', designation: '', ppnoNumber: '', cnic: '', dsaStatus: '', remarks: '', sortOrder: 1 }],
-        deleteQueue: { accusations: [], accused: [], records: [], statements: [], violations: [], dsa: [] }
+        deleteQueue: { accusations: [], accused: [], records: [], statements: [], violations: [], dsa: [] },
+        savedSteps: { 1: true, 2: false, 3: false, 4: false, 5: false, 6: false, 7: false, 8: false },
+        dirtySteps: {}
     };
-
-    function apiPostJson(path, payload){
-        return $.ajax({
-            url: g_asiBaseURL + path,
-            method: 'POST',
-            data: JSON.stringify(payload || {}),
-            contentType: 'application/json; charset=utf-8',
-            dataType: 'json'
-        });
-    }
 
     function token(){ return $('#iidAntiForgeryWrap input[name="__RequestVerificationToken"]').val(); }
     function esc(v){ return $('<div/>').text(v || '').html(); }
+    function extractData(resp){ return (resp && (resp.data || resp.Data)) || []; }
+
+    function getResponseMessage(resp){
+        if(!resp){ return ''; }
+        if(resp.message){ return resp.message; }
+        if(resp.data && resp.data.message){ return resp.data.message; }
+        return '';
+    }
+
+    function ensureApiSuccess(resp, fallback){
+        if(resp && resp.ok === false){
+            throw new Error(getResponseMessage(resp) || fallback || 'Operation failed.');
+        }
+        return resp;
+    }
+
     function showAlert(message, type){
+        clearTimeout(alertTimer);
         $('#iidAlertHost').html('<div class="alert alert-' + (type || 'danger') + ' alert-dismissible fade show">' +
             esc(message) + '<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>');
+        alertTimer = setTimeout(function(){ $('#iidAlertHost .alert').alert('close'); }, 4500);
+    }
+
+    function markDirty(step){
+        if(step > 1){ state.dirtySteps[step] = true; state.savedSteps[step] = false; }
+    }
+
+    function hasUnsavedStep(step){ return !!state.dirtySteps[step]; }
+
+    function isStepSaved(step){
+        if(step === 1){ return true; }
+        return !!state.savedSteps[step] && !state.dirtySteps[step];
     }
 
     function renderStepper(){
         $('#stepCounter').text('Step ' + currentStep + ' of ' + steps.length);
         $('#wizardStepper').html(steps.map(function(s){
-            return '<button type="button" class="step-pill ' + (s.id===currentStep?'active':'') + ' ' + (isStepCompleted(s.id)?'completed':'') + '" data-step-jump="' + s.id + '"><span class="num">' + s.id + '</span>' + esc(s.title) + '</button>';
+            var saved = isStepSaved(s.id);
+            return '<button type="button" class="step-pill ' + (s.id===currentStep?'active':'') + ' ' + (saved?'completed':'not-saved') + '" data-step-jump="' + s.id + '"><span class="num">' + s.id + '</span>' + esc(s.title) + '<span class="step-state ms-2 badge ' + (saved?'bg-success':'bg-secondary') + '">' + (saved?'Saved':'Not Saved') + '</span></button>';
         }).join(''));
     }
 
@@ -119,77 +143,46 @@ $(function(){
         return '<div class="d-flex justify-content-between mt-4"><button type="button" class="btn btn-outline-secondary" data-prev ' + (step===1?'disabled':'') + '>Previous</button><div class="d-flex gap-2"><button type="button" class="btn btn-primary" data-save>Save Section</button><button type="button" class="btn btn-success" data-next>' + (step===steps.length?'Review':'Next') + '</button>' + (step===steps.length?'<button type="button" class="btn btn-danger" id="finalSubmitBtn">Final Submit</button>':'') + '</div></div>';
     }
 
+    function roleOptionsHtml(selected){
+        return accusedRoleOptions.map(function(opt){ return '<option value="' + esc(opt) + '" ' + (opt===selected?'selected':'') + '>' + esc(opt) + '</option>'; }).join('');
+    }
+
     function renderSection(step){
         var h = $('.wizard-section[data-step="' + step + '"]');
         var html = '<div class="card-body"><div class="validation-summary alert alert-warning d-none"></div>';
         if(step === 1){
             var snap = state.snapshot || {};
             html += '<h5>Snapshot</h5><p class="text-muted">Complaint and complainant data loaded using <code>/ApiCalls/GetComplaint</code>.</p>';
-            html += '<div class="row g-3">' +
-                '<div class="col-lg-6"><div class="card border-0 bg-light"><div class="card-body">' +
-                '<h6 class="mb-3">Complainant Details</h6>' +
-                '<div class="row g-2 small">' +
-                '<div class="col-6"><span class="text-muted">Name</span><div class="fw-semibold">' + esc(snap.complainantName || 'N/A') + '</div></div>' +
-                '<div class="col-6"><span class="text-muted">CNIC</span><div class="fw-semibold">' + esc(snap.cnic || 'N/A') + '</div></div>' +
-                '<div class="col-6"><span class="text-muted">Cell No</span><div>' + esc(snap.cellularNumber || 'N/A') + '</div></div>' +
-                '<div class="col-6"><span class="text-muted">Gender</span><div>' + esc(snap.gender || 'N/A') + '</div></div>' +
-                '<div class="col-12"><span class="text-muted">Address</span><div>' + esc(snap.mailingAddress || 'N/A') + '</div></div>' +
-                '<div class="col-12"><span class="text-muted">Received From</span><div>' + esc(snap.receivedFrom || 'N/A') + '</div></div>' +
-                '</div></div></div></div>' +
-                '<div class="col-lg-6"><div class="card border-0 bg-light"><div class="card-body">' +
-                '<h6 class="mb-3">Complaint Details</h6>' +
-                '<div class="row g-2 small">' +
-                '<div class="col-6"><span class="text-muted">Complaint No</span><div class="fw-semibold">' + esc(snap.complaintNo || 'N/A') + '</div></div>' +
-                '<div class="col-6"><span class="text-muted">Submitted On</span><div>' + esc(snap.submittedOn || 'N/A') + '</div></div>' +
-                '<div class="col-6"><span class="text-muted">Nature</span><div>' + esc(snap.nature || 'N/A') + '</div></div>' +
-                '<div class="col-6"><span class="text-muted">Category</span><div>' + esc(snap.category || 'N/A') + '</div></div>' +
-                '<div class="col-6"><span class="text-muted">Region</span><div>' + esc(snap.region || 'N/A') + '</div></div>' +
-                '<div class="col-6"><span class="text-muted">Branch</span><div>' + esc(snap.branch || 'N/A') + '</div></div>' +
-                '<div class="col-12"><span class="text-muted">Action Required</span><div>' + esc(snap.actionRequired || 'N/A') + '</div></div>' +
-                '<div class="col-12"><span class="text-muted">Contents</span><div>' + esc(snap.contents || 'N/A') + '</div></div>' +
-                '</div></div></div></div>' +
-                '</div>';
+            html += '<div class="row g-3"><div class="col-lg-6"><div class="card border-0 bg-light"><div class="card-body"><h6 class="mb-3">Complainant Details</h6><div class="row g-2 small"><div class="col-6"><span class="text-muted">Name</span><div class="fw-semibold">' + esc(snap.complainantName || 'N/A') + '</div></div><div class="col-6"><span class="text-muted">CNIC</span><div class="fw-semibold">' + esc(snap.cnic || 'N/A') + '</div></div><div class="col-6"><span class="text-muted">Cell No</span><div>' + esc(snap.cellularNumber || 'N/A') + '</div></div><div class="col-6"><span class="text-muted">Gender</span><div>' + esc(snap.gender || 'N/A') + '</div></div><div class="col-12"><span class="text-muted">Address</span><div>' + esc(snap.mailingAddress || 'N/A') + '</div></div><div class="col-12"><span class="text-muted">Received From</span><div>' + esc(snap.receivedFrom || 'N/A') + '</div></div></div></div></div></div><div class="col-lg-6"><div class="card border-0 bg-light"><div class="card-body"><h6 class="mb-3">Complaint Details</h6><div class="row g-2 small"><div class="col-6"><span class="text-muted">Complaint No</span><div class="fw-semibold">' + esc(snap.complaintNo || 'N/A') + '</div></div><div class="col-6"><span class="text-muted">Submitted On</span><div>' + esc(snap.submittedOn || 'N/A') + '</div></div><div class="col-6"><span class="text-muted">Nature</span><div>' + esc(snap.nature || 'N/A') + '</div></div><div class="col-6"><span class="text-muted">Category</span><div>' + esc(snap.category || 'N/A') + '</div></div><div class="col-6"><span class="text-muted">Region</span><div>' + esc(snap.region || 'N/A') + '</div></div><div class="col-6"><span class="text-muted">Branch</span><div>' + esc(snap.branch || 'N/A') + '</div></div><div class="col-12"><span class="text-muted">Action Required</span><div>' + esc(snap.actionRequired || 'N/A') + '</div></div><div class="col-12"><span class="text-muted">Contents</span><div>' + esc(snap.contents || 'N/A') + '</div></div></div></div></div></div></div>';
         }
         if(step === 2){
-            var rowsA = state.accusations.map(function(r,i){
-                return '<tr><td>' + rowInput('accusations['+i+'].accusationText', r.accusationText) + '</td><td><button type="button" class="btn btn-outline-danger btn-sm" data-remove-row="accusations" data-index="'+i+'">Remove</button></td></tr>';
-            }).join('');
+            var rowsA = state.accusations.map(function(r,i){ return '<tr data-row-id="' + (r.accusationId || 0) + '"><td>' + rowInput('accusations['+i+'].accusationText', r.accusationText) + '</td><td><button type="button" class="btn btn-outline-danger btn-sm" data-remove-row="accusations" data-index="'+i+'">Remove</button></td></tr>'; }).join('');
             html += '<h5>Accusations</h5><table class="table table-sm"><thead><tr><th>Accusation</th><th></th></tr></thead><tbody>' + rowsA + '</tbody></table><button type="button" class="btn btn-outline-primary btn-sm" data-add-row="accusations">Add Row</button>';
         }
         if(step === 3){
             var rowsAc = state.accused.map(function(r,i){
-                return '<tr><td>'+rowInput('accused['+i+'].personName',r.personName)+'</td><td>'+rowInput('accused['+i+'].designation',r.designation)+'</td><td><select class="form-select" data-bind="accused['+i+'].roleType"><option value="Main" '+(r.roleType==='Main'?'selected':'')+'>Main</option><option value="Co" '+(r.roleType==='Co'?'selected':'')+'>Co</option></select></td><td>'+rowInput('accused['+i+'].ppnoNumber',r.ppnoNumber)+'</td><td>'+rowInput('accused['+i+'].cnic',r.cnic)+'</td><td><button type="button" class="btn btn-outline-danger btn-sm" data-remove-row="accused" data-index="'+i+'">Remove</button></td></tr>';
+                return '<tr data-row-id="' + (r.accusedRowId || 0) + '"><td><input type="hidden" data-bind="accused['+i+'].accusedRowId" value="' + esc(r.accusedRowId || 0) + '">' + rowInput('accused['+i+'].personName',r.personName) + '</td><td>'+rowInput('accused['+i+'].designation',r.designation)+'</td><td><select class="form-select" data-bind="accused['+i+'].roleType">' + roleOptionsHtml(r.roleType || 'Main') + '</select></td><td>'+rowInput('accused['+i+'].ppnoNumber',r.ppnoNumber)+'</td><td>'+rowInput('accused['+i+'].cnic',r.cnic)+'</td><td><button type="button" class="btn btn-outline-danger btn-sm" data-remove-row="accused" data-index="'+i+'">Remove</button></td></tr>';
             }).join('');
             html += '<h5>Accused List</h5><table class="table table-sm"><thead><tr><th>Name</th><th>Designation</th><th>Role</th><th>PPNO</th><th>CNIC</th><th></th></tr></thead><tbody>'+rowsAc+'</tbody></table><button type="button" class="btn btn-outline-primary btn-sm" data-add-row="accused">Add Row</button>';
         }
         if(step === 4){
-            var rowsR = state.records.map(function(r,i){
-                return '<tr><td>'+rowInput('records['+i+'].recordTitle',r.recordTitle)+'</td><td>'+rowInput('records['+i+'].recordDetails',r.recordDetails)+'</td><td><button type="button" class="btn btn-outline-danger btn-sm" data-remove-row="records" data-index="'+i+'">Remove</button></td></tr>';
-            }).join('');
-            html += '<h5>Record Scrutinized</h5><table class="table table-sm"><thead><tr><th>Title</th><th>Details</th><th></th></tr></thead><tbody>'+rowsR+'</tbody></table><button type="button" class="btn btn-outline-primary btn-sm" data-add-row="records">Add Row</button>';
+            var rowsR = state.records.map(function(r,i){ return '<tr data-row-id="' + (r.recId || 0) + '"><td>'+rowInput('records['+i+'].recordTitle',r.recordTitle)+'</td><td>'+rowInput('records['+i+'].recordDetails',r.recordDetails)+'</td><td><button type="button" class="btn btn-outline-danger btn-sm" data-remove-row="records" data-index="'+i+'">Remove</button></td></tr>'; }).join('');
+            html += '<h5>Record Scrutinized</h5><table class="table table-sm"><thead><tr><th>Record Title</th><th>Details</th><th></th></tr></thead><tbody>'+rowsR+'</tbody></table><button type="button" class="btn btn-outline-primary btn-sm" data-add-row="records">Add Row</button>';
         }
         if(step === 5){
-            var rowsS = state.statements.map(function(r,i){
-                return '<tr><td>'+rowInput('statements['+i+'].personName',r.personName)+'</td><td>'+rowInput('statements['+i+'].roleType',r.roleType)+'</td><td>'+rowInput('statements['+i+'].ppnoNumber',r.ppnoNumber)+'</td><td>'+rowInput('statements['+i+'].cnic',r.cnic)+'</td><td>'+rowInput('statements['+i+'].statementDatetime',r.statementDatetime,'datetime-local')+'</td><td>'+rowInput('statements['+i+'].place',r.place)+'</td><td><button type="button" class="btn btn-outline-danger btn-sm" data-remove-row="statements" data-index="'+i+'">Remove</button></td></tr>';
-            }).join('');
+            var rowsS = state.statements.map(function(r,i){ return '<tr data-row-id="' + (r.statementId || 0) + '"><td>'+rowInput('statements['+i+'].personName',r.personName)+'</td><td>'+rowInput('statements['+i+'].roleType',r.roleType)+'</td><td>'+rowInput('statements['+i+'].ppnoNumber',r.ppnoNumber)+'</td><td>'+rowInput('statements['+i+'].cnic',r.cnic)+'</td><td>'+rowInput('statements['+i+'].statementDatetime',r.statementDatetime,'datetime-local')+'</td><td>'+rowInput('statements['+i+'].place',r.place)+'</td><td><button type="button" class="btn btn-outline-danger btn-sm" data-remove-row="statements" data-index="'+i+'">Remove</button></td></tr>'; }).join('');
             html += '<h5>Statement Register</h5><div class="help-text mb-2">PPNO is mandatory. Complainant statement defaults PPNO to complainant CNIC.</div><table class="table table-sm"><thead><tr><th>Person</th><th>Role</th><th>PPNO</th><th>CNIC</th><th>Date/Time</th><th>Place</th><th></th></tr></thead><tbody>'+rowsS+'</tbody></table><button type="button" class="btn btn-outline-primary btn-sm" data-add-row="statements">Add Row</button>';
         }
         if(step === 6){
-            var rowsE = state.evidence.map(function(r){
-                return '<tr><td>'+esc(r.fileName)+'</td><td>'+esc(r.evidenceType || 'N/A')+'</td><td>'+esc(r.uploadedOn || 'N/A')+'</td><td><button type="button" class="btn btn-outline-danger btn-sm" data-delete-evidence="'+ r.evidenceId +'">Remove</button></td></tr>';
-            }).join('');
+            var rowsE = state.evidence.map(function(r){ return '<tr><td>'+esc(r.fileName)+'</td><td>'+esc(r.evidenceType || 'N/A')+'</td><td>'+esc(r.uploadedOn || 'N/A')+'</td><td><button type="button" class="btn btn-outline-danger btn-sm" data-delete-evidence="'+ r.evidenceId +'">Remove</button></td></tr>'; }).join('');
             html += '<h5>Evidence</h5><div class="mb-3"><label class="form-label">Upload evidence files</label><input id="uploadedEvidence" type="file" class="form-control" multiple></div><table class="table table-sm"><thead><tr><th>File</th><th>Type</th><th>Uploaded On</th><th></th></tr></thead><tbody>' + (rowsE || '<tr><td colspan="4" class="text-muted">No evidence uploaded.</td></tr>') + '</tbody></table>';
         }
         if(step === 7){
-            var rowsV = state.violations.map(function(r,i){
-                return '<tr><td>'+rowInput('violations['+i+'].category',r.category)+'</td><td>'+rowInput('violations['+i+'].violationDetail',r.violationDetail)+'</td><td>'+rowInput('violations['+i+'].referenceText',r.referenceText)+'</td><td>'+rowInput('violations['+i+'].recommendation',r.recommendation)+'</td><td><button type="button" class="btn btn-outline-danger btn-sm" data-remove-row="violations" data-index="'+i+'">Remove</button></td></tr>';
-            }).join('');
+            var rowsV = state.violations.map(function(r,i){ return '<tr data-row-id="' + (r.violationId || 0) + '"><td>'+rowInput('violations['+i+'].category',r.category)+'</td><td>'+rowInput('violations['+i+'].violationDetail',r.violationDetail)+'</td><td>'+rowInput('violations['+i+'].referenceText',r.referenceText)+'</td><td>'+rowInput('violations['+i+'].recommendation',r.recommendation)+'</td><td><button type="button" class="btn btn-outline-danger btn-sm" data-remove-row="violations" data-index="'+i+'">Remove</button></td></tr>'; }).join('');
             html += '<h5>Violations (Annex-III)</h5><table class="table table-sm"><thead><tr><th>Category</th><th>Detail</th><th>Reference</th><th>Recommendation</th><th></th></tr></thead><tbody>'+rowsV+'</tbody></table><button type="button" class="btn btn-outline-primary btn-sm" data-add-row="violations">Add Row</button>';
         }
         if(step === 8){
-            var rowsD = state.dsa.map(function(r,i){
-                return '<tr><td>'+rowInput('dsa['+i+'].personName',r.personName)+'</td><td>'+rowInput('dsa['+i+'].designation',r.designation)+'</td><td>'+rowInput('dsa['+i+'].ppnoNumber',r.ppnoNumber)+'</td><td>'+rowInput('dsa['+i+'].cnic',r.cnic)+'</td><td>'+rowInput('dsa['+i+'].dsaStatus',r.dsaStatus)+'</td><td><button type="button" class="btn btn-outline-danger btn-sm" data-remove-row="dsa" data-index="'+i+'">Remove</button></td></tr>';
-            }).join('');
+            var rowsD = state.dsa.map(function(r,i){ return '<tr data-row-id="' + (r.dsaId || 0) + '"><td>'+rowInput('dsa['+i+'].personName',r.personName)+'</td><td>'+rowInput('dsa['+i+'].designation',r.designation)+'</td><td>'+rowInput('dsa['+i+'].ppnoNumber',r.ppnoNumber)+'</td><td>'+rowInput('dsa['+i+'].cnic',r.cnic)+'</td><td>'+rowInput('dsa['+i+'].dsaStatus',r.dsaStatus)+'</td><td><button type="button" class="btn btn-outline-danger btn-sm" data-remove-row="dsa" data-index="'+i+'">Remove</button></td></tr>'; }).join('');
             html += '<h5>DSA</h5><table class="table table-sm"><thead><tr><th>Person</th><th>Designation</th><th>PPNO</th><th>CNIC</th><th>Status</th><th></th></tr></thead><tbody>'+rowsD+'</tbody></table><button type="button" class="btn btn-outline-primary btn-sm" data-add-row="dsa">Add Row</button>';
         }
         html += sectionActions(step) + '</div>';
@@ -203,6 +196,8 @@ $(function(){
             var m = key.match(/^(\w+)\[(\d+)\]\.(\w+)$/);
             if(!m){ return; }
             state[m[1]][parseInt(m[2],10)][m[3]] = $(this).val();
+            markDirty(currentStep);
+            renderStepper();
         });
     }
 
@@ -225,8 +220,6 @@ $(function(){
         host.removeClass('d-none').html('<strong>Missing mandatory fields:</strong><ul class="mb-0">' + errors.map(function(e){ return '<li>' + esc(e) + '</li>'; }).join('') + '</ul>');
     }
 
-    function isStepCompleted(step){ return step === 1 || validateStep(step).length === 0; }
-
     function ensureOneRow(section){
         if(state[section].length){ return; }
         if(section === 'accusations') state.accusations.push({ accusationId: 0, accusationText: '', sortOrder: 1 });
@@ -237,16 +230,17 @@ $(function(){
         if(section === 'dsa') state.dsa.push({ dsaId: 0, personName: '', designation: '', ppnoNumber: '', cnic: '', dsaStatus: '', remarks: '', sortOrder: 1 });
     }
 
-    function markForDelete(section, row){
-        var idKeyMap = { accusations: 'accusationId', accused: 'accusedRowId', records: 'recId', statements: 'statementId', violations: 'violationId', dsa: 'dsaId' };
-        var id = row[idKeyMap[section]];
-        if(id && id > 0){ state.deleteQueue[section].push(id); }
-    }
-
     function saveCollection(opts){
         var queue = $.Deferred().resolve().promise();
+        var lastMessage = '';
+
         (state.deleteQueue[opts.section] || []).forEach(function(id){
-            queue = queue.then(function(){ return opts.deleteFn(id, userId).then(function(resp){ return ensureApiSuccess(resp, 'Delete failed.'); }); });
+            queue = queue.then(function(){
+                return opts.deleteFn(id, userId).then(function(resp){
+                    ensureApiSuccess(resp, 'Delete failed.');
+                    lastMessage = getResponseMessage(resp) || lastMessage;
+                });
+            });
         });
         state.deleteQueue[opts.section] = [];
 
@@ -254,26 +248,39 @@ $(function(){
             var payload = opts.map(row, idx);
             queue = queue.then(function(){
                 var request = row[opts.idKey] ? opts.updateFn(payload) : opts.addFn(payload);
-                return request.then(function(resp){ return ensureApiSuccess(resp, 'Save failed.'); });
+                return request.then(function(resp){
+                    ensureApiSuccess(resp, 'Save failed.');
+                    lastMessage = getResponseMessage(resp) || lastMessage;
+                });
             });
         });
-        return queue.then(function(){ return opts.loadFn(complaintId); }).done(function(resp){ ensureApiSuccess(resp, 'Load failed.'); opts.hydrate(resp); });
+
+        return queue.then(function(){ return opts.loadFn(complaintId); }).then(function(resp){
+            ensureApiSuccess(resp, 'Load failed.');
+            opts.hydrate(resp);
+            return { message: lastMessage || opts.successMessage };
+        });
     }
 
-    function extractData(resp){ return (resp && (resp.data || resp.Data)) || []; }
+    function loadStepData(step){
+        if(step < 2 || step > 8){ return $.Deferred().resolve().promise(); }
+        var cfg = {
+            2: { loadFn: window.iidGetInqAccusations, hydrate: function(resp){ state.accusations = extractData(resp).map(function(x){ return { accusationId: x.accusationId, accusationText: x.accusationText, sortOrder: x.sortOrder || 1 }; }); ensureOneRow('accusations'); }, section: 'accusations' },
+            3: { loadFn: window.iidGetInqAccusedList, hydrate: function(resp){ state.accused = extractData(resp).map(function(x){ x.roleType = accusedRoleOptions.indexOf(x.roleType) >= 0 ? x.roleType : 'Main'; return x; }); ensureOneRow('accused'); }, section: 'accused' },
+            4: { loadFn: window.iidGetInqRecords, hydrate: function(resp){ state.records = extractData(resp); ensureOneRow('records'); }, section: 'records' },
+            5: { loadFn: window.iidGetInqStatements, hydrate: function(resp){ state.statements = extractData(resp); ensureOneRow('statements'); }, section: 'statements' },
+            6: { loadFn: window.iidGetInqEvidenceFiles, hydrate: function(resp){ state.evidence = extractData(resp); }, section: 'evidence' },
+            7: { loadFn: window.iidGetInqViolations, hydrate: function(resp){ state.violations = extractData(resp); ensureOneRow('violations'); }, section: 'violations' },
+            8: { loadFn: window.iidGetInqDsa, hydrate: function(resp){ state.dsa = extractData(resp); ensureOneRow('dsa'); }, section: 'dsa' }
+        }[step];
 
-    function getResponseMessage(resp){
-        if(!resp){ return ''; }
-        if(resp.message){ return resp.message; }
-        if(resp.data && resp.data.message){ return resp.data.message; }
-        return '';
-    }
-
-    function ensureApiSuccess(resp, fallback){
-        if(resp && resp.ok === false){
-            throw new Error(getResponseMessage(resp) || fallback || 'Operation failed.');
-        }
-        return resp;
+        return cfg.loadFn(complaintId).then(function(resp){
+            ensureApiSuccess(resp, 'Failed to load saved step data.');
+            cfg.hydrate(resp);
+            state.dirtySteps[step] = false;
+            var list = cfg.section === 'evidence' ? state.evidence : state[cfg.section];
+            state.savedSteps[step] = (list || []).some(function(x){ return Object.keys(x || {}).some(function(k){ return k.toLowerCase().indexOf('id') >= 0 && Number(x[k] || 0) > 0; }); });
+        });
     }
 
     function saveStep(step){
@@ -282,65 +289,48 @@ $(function(){
         if(errs.length){ return $.Deferred().reject().promise(); }
 
         if(step === 2){
-            return saveCollection({
-                section: 'accusations', rows: state.accusations.filter(function(x){ return x.accusationText && x.accusationText.trim(); }), idKey: 'accusationId',
-                addFn: window.iidAddInqAccusation, updateFn: window.iidUpdateInqAccusation, deleteFn: window.iidDeleteInqAccusation, loadFn: window.iidGetInqAccusations,
-                map: function(row, idx){ return { accusationId: row.accusationId || 0, complaintId: complaintId, accusationText: row.accusationText, sortOrder: idx + 1, status: 'A', createdBy: userId, updatedBy: userId }; },
-                hydrate: function(resp){ state.accusations = extractData(resp).map(function(x){ return { accusationId: x.accusationId, accusationText: x.accusationText, sortOrder: x.sortOrder || 1 }; }); ensureOneRow('accusations'); }
-            }).done(function(){ showAlert('Accusations saved successfully.', 'success'); });
+            return saveCollection({ section: 'accusations', rows: state.accusations.filter(function(x){ return x.accusationText && x.accusationText.trim(); }), idKey: 'accusationId', addFn: window.iidAddInqAccusation, updateFn: window.iidUpdateInqAccusation, deleteFn: window.iidDeleteInqAccusation, loadFn: window.iidGetInqAccusations, map: function(row, idx){ return { accusationId: row.accusationId || 0, complaintId: complaintId, accusationText: row.accusationText, sortOrder: idx + 1, status: 'A', createdBy: userId, updatedBy: userId }; }, hydrate: function(resp){ state.accusations = extractData(resp).map(function(x){ return { accusationId: x.accusationId, accusationText: x.accusationText, sortOrder: x.sortOrder || 1 }; }); ensureOneRow('accusations'); }, successMessage: 'Accusations saved successfully.' });
         }
         if(step === 3){
-            return saveCollection({
-                section: 'accused', rows: state.accused.filter(function(x){ return x.personName && x.personName.trim(); }), idKey: 'accusedRowId',
-                addFn: window.iidAddInqAccused, updateFn: window.iidUpdateInqAccused, deleteFn: window.iidDeleteInqAccused, loadFn: window.iidGetInqAccusedList,
-                map: function(row, idx){ return $.extend({}, row, { complaintId: complaintId, sortOrder: idx + 1, status: 'A', createdBy: userId, updatedBy: userId }); },
-                hydrate: function(resp){ state.accused = extractData(resp); ensureOneRow('accused'); }
-            }).done(function(){ showAlert('Accused list saved successfully.', 'success'); });
+            return saveCollection({ section: 'accused', rows: state.accused.filter(function(x){ return x.personName && x.personName.trim(); }), idKey: 'accusedRowId', addFn: window.iidAddInqAccused, updateFn: window.iidUpdateInqAccused, deleteFn: window.iidDeleteInqAccused, loadFn: window.iidGetInqAccusedList, map: function(row, idx){ return $.extend({}, row, { complaintId: complaintId, sortOrder: idx + 1, status: 'A', createdBy: userId, updatedBy: userId }); }, hydrate: function(resp){ state.accused = extractData(resp).map(function(x){ x.roleType = accusedRoleOptions.indexOf(x.roleType) >= 0 ? x.roleType : 'Main'; return x; }); ensureOneRow('accused'); }, successMessage: 'Accused list saved successfully.' });
         }
         if(step === 4){
-            return saveCollection({
-                section: 'records', rows: state.records.filter(function(x){ return ((x.recordTitle || '') + (x.recordDetails || '')).trim(); }), idKey: 'recId',
-                addFn: window.iidAddInqRecord, updateFn: window.iidUpdateInqRecord, deleteFn: window.iidDeleteInqRecord, loadFn: window.iidGetInqRecords,
-                map: function(row, idx){ return $.extend({}, row, { complaintId: complaintId, sortOrder: idx + 1, status: 'A', createdBy: userId, updatedBy: userId }); },
-                hydrate: function(resp){ state.records = extractData(resp); ensureOneRow('records'); }
-            }).done(function(){ showAlert('Record scrutinized saved successfully.', 'success'); });
+            return saveCollection({ section: 'records', rows: state.records.filter(function(x){ return ((x.recordTitle || '') + (x.recordDetails || '')).trim(); }), idKey: 'recId', addFn: window.iidAddInqRecord, updateFn: window.iidUpdateInqRecord, deleteFn: window.iidDeleteInqRecord, loadFn: window.iidGetInqRecords, map: function(row, idx){ return $.extend({}, row, { complaintId: complaintId, sortOrder: idx + 1, status: 'A', createdBy: userId, updatedBy: userId }); }, hydrate: function(resp){ state.records = extractData(resp); ensureOneRow('records'); }, successMessage: 'Record scrutinized saved successfully.' });
         }
         if(step === 5){
-            return saveCollection({
-                section: 'statements', rows: state.statements.filter(function(x){ return x.personName && x.ppnoNumber; }), idKey: 'statementId',
-                addFn: window.iidAddInqStatement, updateFn: window.iidUpdateInqStatement, deleteFn: window.iidDeleteInqStatement, loadFn: window.iidGetInqStatements,
-                map: function(row){ return $.extend({}, row, { complaintId: complaintId, status: 'A', createdBy: userId, updatedBy: userId }); },
-                hydrate: function(resp){ state.statements = extractData(resp); ensureOneRow('statements'); }
-            }).done(function(){ showAlert('Statement register saved successfully.', 'success'); });
+            return saveCollection({ section: 'statements', rows: state.statements.filter(function(x){ return x.personName && x.ppnoNumber; }), idKey: 'statementId', addFn: window.iidAddInqStatement, updateFn: window.iidUpdateInqStatement, deleteFn: window.iidDeleteInqStatement, loadFn: window.iidGetInqStatements, map: function(row){ return $.extend({}, row, { complaintId: complaintId, status: 'A', createdBy: userId, updatedBy: userId }); }, hydrate: function(resp){ state.statements = extractData(resp); ensureOneRow('statements'); }, successMessage: 'Statement register saved successfully.' });
         }
         if(step === 6){
-            return window.iidGetInqEvidenceFiles(complaintId).done(function(resp){ ensureApiSuccess(resp, 'Failed to load evidence list.'); state.evidence = extractData(resp); showAlert('Evidence list refreshed from database.', 'success'); });
+            return window.iidGetInqEvidenceFiles(complaintId).then(function(resp){ ensureApiSuccess(resp, 'Failed to load evidence list.'); state.evidence = extractData(resp); return { message: 'Evidence list refreshed from database.' }; });
         }
         if(step === 7){
-            return saveCollection({
-                section: 'violations', rows: state.violations.filter(function(x){ return x.violationDetail && x.referenceText && x.recommendation; }), idKey: 'violationId',
-                addFn: window.iidAddInqViolation, updateFn: window.iidUpdateInqViolation, deleteFn: window.iidDeleteInqViolation, loadFn: window.iidGetInqViolations,
-                map: function(row, idx){ return $.extend({}, row, { complaintId: complaintId, sortOrder: idx + 1, status: 'A', createdBy: userId, updatedBy: userId }); },
-                hydrate: function(resp){ state.violations = extractData(resp); ensureOneRow('violations'); }
-            }).done(function(){ showAlert('Violations saved successfully.', 'success'); });
+            return saveCollection({ section: 'violations', rows: state.violations.filter(function(x){ return x.violationDetail && x.referenceText && x.recommendation; }), idKey: 'violationId', addFn: window.iidAddInqViolation, updateFn: window.iidUpdateInqViolation, deleteFn: window.iidDeleteInqViolation, loadFn: window.iidGetInqViolations, map: function(row, idx){ return $.extend({}, row, { complaintId: complaintId, sortOrder: idx + 1, status: 'A', createdBy: userId, updatedBy: userId }); }, hydrate: function(resp){ state.violations = extractData(resp); ensureOneRow('violations'); }, successMessage: 'Violations saved successfully.' });
         }
         if(step === 8){
-            return saveCollection({
-                section: 'dsa', rows: state.dsa.filter(function(x){ return x.personName || x.dsaStatus; }), idKey: 'dsaId',
-                addFn: window.iidAddInqDsa, updateFn: window.iidUpdateInqDsa, deleteFn: window.iidDeleteInqDsa, loadFn: window.iidGetInqDsa,
-                map: function(row, idx){ return $.extend({}, row, { complaintId: complaintId, sortOrder: idx + 1, status: 'A', createdBy: userId, updatedBy: userId }); },
-                hydrate: function(resp){ state.dsa = extractData(resp); ensureOneRow('dsa'); }
-            }).done(function(){ showAlert('DSA saved successfully.', 'success'); });
+            return saveCollection({ section: 'dsa', rows: state.dsa.filter(function(x){ return x.personName || x.dsaStatus; }), idKey: 'dsaId', addFn: window.iidAddInqDsa, updateFn: window.iidUpdateInqDsa, deleteFn: window.iidDeleteInqDsa, loadFn: window.iidGetInqDsa, map: function(row, idx){ return $.extend({}, row, { complaintId: complaintId, sortOrder: idx + 1, status: 'A', createdBy: userId, updatedBy: userId }); }, hydrate: function(resp){ state.dsa = extractData(resp); ensureOneRow('dsa'); }, successMessage: 'DSA saved successfully.' });
         }
-        return $.Deferred().resolve().promise();
+        return $.Deferred().resolve({ message: 'Saved.' }).promise();
     }
 
-    function renderCurrent(){
-        renderSection(currentStep);
-        $('.wizard-section').addClass('d-none');
-        $('.wizard-section[data-step="' + currentStep + '"]').removeClass('d-none');
-        renderStepper();
-        bindStepInputs();
+    function renderCurrent(skipLoad){
+        var render = function(){
+            renderSection(currentStep);
+            $('.wizard-section').addClass('d-none');
+            $('.wizard-section[data-step="' + currentStep + '"]').removeClass('d-none');
+            renderStepper();
+            bindStepInputs();
+        };
+        if(skipLoad){ render(); return; }
+        loadStepData(currentStep).always(render);
+    }
+
+    function navigateToStep(nextStep){
+        if(hasUnsavedStep(currentStep)){
+            showAlert('You have unsaved changes. Save before moving.', 'warning');
+            return;
+        }
+        currentStep = nextStep;
+        renderCurrent();
     }
 
     function loadComplaint(){
@@ -351,59 +341,26 @@ $(function(){
             state.complainantCnic = c.cnic || '';
             $('#headerComplainantName').text(state.complainantName || 'N/A');
             $('#iidComplaintHiddenCache').text(JSON.stringify(c));
-            state.snapshot = {
-                complaintNo: c.complaintNo,
-                submittedOn: c.submittedOn,
-                region: c.region,
-                branch: c.branch,
-                category: c.category,
-                nature: c.nature,
-                complainantName: c.complainantName,
-                cnic: c.cnic,
-                cellularNumber: c.cellularNumber,
-                mailingAddress: c.mailingAddress,
-                gender: c.gender,
-                receivedFrom: c.receivedFrom,
-                actionRequired: c.actionRequired,
-                contents: c.contents
-            };
+            state.snapshot = { complaintNo: c.complaintNo, submittedOn: c.submittedOn, region: c.region, branch: c.branch, category: c.category, nature: c.nature, complainantName: c.complainantName, cnic: c.cnic, cellularNumber: c.cellularNumber, mailingAddress: c.mailingAddress, gender: c.gender, receivedFrom: c.receivedFrom, actionRequired: c.actionRequired, contents: c.contents };
             renderSnapshotStrip();
             if(state.statements.length && !state.statements[0].ppnoNumber){ state.statements[0].ppnoNumber = state.complainantCnic; state.statements[0].cnic = state.complainantCnic; }
         });
     }
 
-    function hydrateFromWizardData(w){
-        state.accusations = (w.accusations || []).map(function(x){ return { accusationId: x.accusationId, accusationText: x.accusationText, sortOrder: x.sortOrder || 1 }; });
-        state.accused = w.accused || [];
-        state.records = w.recordsScrutinized || [];
-        state.statements = w.statementsRegister || [];
-        state.evidence = w.evidenceFiles || [];
-        state.violations = w.violations || [];
-        state.dsa = w.dsa || [];
-        ensureOneRow('accusations'); ensureOneRow('accused'); ensureOneRow('records'); ensureOneRow('statements'); ensureOneRow('violations'); ensureOneRow('dsa');
-    }
-
-    function loadWizardData(){
-        return apiPostJson('/ApiCalls/GetIidInqWizardData', { complaintId: complaintId }).done(function(resp){
-            ensureApiSuccess(resp, 'Failed to load wizard data.');
-            hydrateFromWizardData(resp.data || {});
-        });
-    }
-
     function finalizeReport(){
-        return apiPostJson('/ApiCalls/FinalizeIidInquiryReport', { complaintId: complaintId }).done(function(resp){
+        return $.ajax({ url: g_asiBaseURL + '/ApiCalls/FinalizeIidInquiryReport', method: 'POST', contentType: 'application/json; charset=utf-8', dataType: 'json', data: JSON.stringify({ complaintId: complaintId }) }).done(function(resp){
             if(!resp || resp.ok === false){ showAlert(getResponseMessage(resp) || 'Finalize failed.', 'danger'); return; }
             isLocked = true;
             $('#reportStatusBadge').removeClass('bg-secondary').addClass('bg-success').text('Submitted');
             showAlert(resp.message || 'Inquiry report finalized successfully.', 'success');
-            renderCurrent();
+            renderCurrent(true);
         });
     }
 
-    $(document).on('click', '[data-step-jump]', function(){ currentStep = parseInt($(this).data('step-jump'), 10); renderCurrent(); });
-    $(document).on('click', '[data-prev]', function(){ if(currentStep > 1){ currentStep--; renderCurrent(); } });
-    $(document).on('click', '[data-next]', function(){ var e = validateStep(currentStep); showValidation(currentStep, e); if(!e.length && currentStep < steps.length){ currentStep++; renderCurrent(); } });
-    $(document).on('click', '[data-save]', function(){ saveStep(currentStep).always(renderCurrent); });
+    $(document).on('click', '[data-step-jump]', function(){ navigateToStep(parseInt($(this).data('step-jump'), 10)); });
+    $(document).on('click', '[data-prev]', function(){ if(currentStep > 1){ navigateToStep(currentStep - 1); } });
+    $(document).on('click', '[data-next]', function(){ var e = validateStep(currentStep); showValidation(currentStep, e); if(!e.length && currentStep < steps.length){ navigateToStep(currentStep + 1); } });
+    $(document).on('click', '[data-save]', function(){ saveStep(currentStep).done(function(result){ state.savedSteps[currentStep] = true; state.dirtySteps[currentStep] = false; showAlert((result && result.message) || 'Saved successfully.', 'success'); renderCurrent(true); }).fail(function(err){ showAlert((err && err.message) || 'Save failed.', 'danger'); }); });
 
     $(document).on('click', '[data-add-row]', function(){
         var s = $(this).data('add-row');
@@ -413,17 +370,33 @@ $(function(){
         if(s==='statements') state.statements.push({ statementId: 0, personName: '', roleType: '', ppnoNumber: '', cnic: '', statementDatetime: '', place: '', modeType: '', keyPoints: '' });
         if(s==='violations') state.violations.push({ violationId: 0, category: 'Internal', violationDetail: '', referenceText: '', recommendation: '', sortOrder: state.violations.length + 1 });
         if(s==='dsa') state.dsa.push({ dsaId: 0, personName: '', designation: '', ppnoNumber: '', cnic: '', dsaStatus: '', remarks: '', sortOrder: state.dsa.length + 1 });
-        renderCurrent();
+        markDirty(currentStep);
+        renderCurrent(true);
     });
 
     $(document).on('click', '[data-remove-row]', function(){
         var section = $(this).data('remove-row');
         var idx = parseInt($(this).data('index'), 10);
         var row = state[section][idx];
-        markForDelete(section, row);
+
+        if(section === 'accused' && row && row.accusedRowId > 0){
+            window.iidDeleteInqAccused(row.accusedRowId, userId || 0).then(function(resp){
+                ensureApiSuccess(resp, 'Failed to delete accused row.');
+                showAlert(getResponseMessage(resp) || 'Accused row removed successfully.', 'success');
+                return loadStepData(3);
+            }).done(function(){ state.savedSteps[3] = true; state.dirtySteps[3] = false; renderCurrent(true); }).fail(function(err){ showAlert((err && err.message) || 'Failed to delete accused row.', 'danger'); });
+            return;
+        }
+
+        if(row){
+            var idKeyMap = { accusations: 'accusationId', records: 'recId', statements: 'statementId', violations: 'violationId', dsa: 'dsaId' };
+            var idKey = idKeyMap[section];
+            if(idKey && row[idKey] && row[idKey] > 0){ state.deleteQueue[section].push(row[idKey]); }
+        }
         state[section].splice(idx, 1);
         ensureOneRow(section);
-        renderCurrent();
+        markDirty(currentStep);
+        renderCurrent(true);
     });
 
     $(document).on('change', '#uploadedEvidence', function(){
@@ -439,25 +412,34 @@ $(function(){
                 fd.append('Status', 'A');
                 fd.append('UploadedBy', userId || 0);
                 fd.append('file', file);
-                return window.iidAddInqEvidenceFile(fd).then(function(resp){ return ensureApiSuccess(resp, 'Evidence upload failed.'); });
+                return window.iidAddInqEvidenceFile(fd).then(function(resp){ ensureApiSuccess(resp, 'Evidence upload failed.'); return getResponseMessage(resp) || 'Uploaded successfully'; });
             });
         });
-        chain.then(function(){ return window.iidGetInqEvidenceFiles(complaintId); }).done(function(resp){
-            ensureApiSuccess(resp, 'Failed to refresh evidence list.');
-            state.evidence = extractData(resp);
-            showAlert('Evidence uploaded and saved successfully.', 'success');
-            renderCurrent();
-        }).fail(function(){ showAlert('Evidence upload failed.', 'danger'); });
+        chain.then(function(msg){
+            return window.iidGetInqEvidenceFiles(complaintId).then(function(resp){
+                ensureApiSuccess(resp, 'Failed to refresh evidence list.');
+                state.evidence = extractData(resp);
+                state.savedSteps[6] = true;
+                state.dirtySteps[6] = false;
+                showAlert(msg || 'Uploaded successfully', 'success');
+                renderCurrent(true);
+            });
+        }).fail(function(err){ showAlert((err && err.message) || 'Evidence upload failed.', 'danger'); });
         this.value = '';
     });
 
     $(document).on('click', '[data-delete-evidence]', function(){
         var evidenceId = parseInt($(this).data('delete-evidence'), 10);
-        window.iidDeleteInqEvidenceFile(evidenceId, userId || 0).then(function(resp){ ensureApiSuccess(resp, 'Failed to delete evidence file.'); return window.iidGetInqEvidenceFiles(complaintId); }).done(function(resp){
-            ensureApiSuccess(resp, 'Failed to refresh evidence list.');
-            state.evidence = extractData(resp);
-            renderCurrent();
-        }).fail(function(){ showAlert('Failed to delete evidence file.', 'danger'); });
+        window.iidDeleteInqEvidenceFile(evidenceId, userId || 0).then(function(resp){
+            ensureApiSuccess(resp, 'Failed to delete evidence file.');
+            var msg = getResponseMessage(resp) || 'Evidence removed successfully.';
+            return window.iidGetInqEvidenceFiles(complaintId).then(function(loadResp){
+                ensureApiSuccess(loadResp, 'Failed to refresh evidence list.');
+                state.evidence = extractData(loadResp);
+                showAlert(msg, 'success');
+                renderCurrent(true);
+            });
+        }).fail(function(err){ showAlert((err && err.message) || 'Failed to delete evidence file.', 'danger'); });
     });
 
     $(document).on('click', '#finalSubmitBtn', function(){
@@ -467,23 +449,20 @@ $(function(){
         finalizeReport();
     });
 
-    if(!complaintId){
-        showAlert('Complaint ID is missing. Open this page from Task List.', 'danger');
-        return;
-    }
+    if(!complaintId){ showAlert('Complaint ID is missing. Open this page from Task List.', 'danger'); return; }
 
-    loadComplaint()
-        .then(function(){ return loadWizardData(); })
-        .done(function(){ renderCurrent(); })
-        .fail(function(){ showAlert('Failed to load inquiry wizard data.', 'danger'); renderCurrent(); });
+    loadComplaint().done(function(){ renderCurrent(); }).fail(function(){ showAlert('Failed to load inquiry wizard data.', 'danger'); renderCurrent(true); });
 });
 </script>
+
 <style>
 .wizard-stepper{display:grid;grid-template-columns:repeat(8,minmax(140px,1fr));gap:.4rem;overflow:auto}
 .step-pill{border:1px solid #ced4da;background:#fff;border-radius:.5rem;padding:.35rem .5rem;text-align:left}
 .step-pill .num{font-weight:700;margin-right:.35rem}
 .step-pill.active{border-color:#0d6efd;box-shadow:0 0 0 2px rgba(13,110,253,.15)}
 .step-pill.completed{background:#ecf9f0;border-color:#198754}
+.step-pill.not-saved{background:#fff5f5;border-color:#dc3545}
+.step-state{font-size:.68rem;vertical-align:middle}
 .snap-label{color:#6c757d}
 .snap-value{font-weight:600}
 .help-text{font-size:.8rem;color:#6c757d}
