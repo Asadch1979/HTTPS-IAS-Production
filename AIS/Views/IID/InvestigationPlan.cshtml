@@ -57,7 +57,7 @@
 
                     <div class="col-md-6">
                         <label class="form-label">Inquiry Conduction Date</label>
-                        <input type="date" class="form-control" id="TenureFrom" required />
+                        <input type="date" class="form-control" id="TenureFrom" data-allow-future="true" required />
                     </div>
 
                 </div>
@@ -139,6 +139,13 @@
     $(function(){
         var complaintId = '@complaintId';
         var pageId = 3;
+        var todayDate = new Date();
+        todayDate.setHours(0, 0, 0, 0);
+        var minInquiryDate = new Date(todayDate);
+        minInquiryDate.setDate(minInquiryDate.getDate() + 1);
+        var minInquiryDateStr = minInquiryDate.toISOString().split('T')[0];
+
+        $('#TenureFrom').attr('min', minInquiryDateStr);
 
         function showIidAlert(title, message){
             $('#iidAlertTitle').text(title || 'Message');
@@ -246,6 +253,11 @@
                 alert('Please fill all mandatory fields.'); return;
             }
             if (!payload.activitiesText) { alert('Please select at least one Investigation Activity.'); return; }
+
+            if (payload.startDate && payload.startDate <= todayDate.toISOString().split('T')[0]) {
+                alert('Inquiry Conduction Date must be a future date.');
+                return;
+            }
 
             $.ajax({
                 url: g_asiBaseURL + '/ApiCalls/AddInvestigationPlan',
