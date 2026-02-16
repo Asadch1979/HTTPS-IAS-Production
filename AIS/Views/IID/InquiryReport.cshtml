@@ -123,7 +123,32 @@ $(function(){
         var h = $('.wizard-section[data-step="' + step + '"]');
         var html = '<div class="card-body"><div class="validation-summary alert alert-warning d-none"></div>';
         if(step === 1){
-            html += '<h5>Snapshot</h5><p class="text-muted mb-0">Complaint and complainant data loaded using <code>/ApiCalls/GetComplaint</code>.</p>';
+            var snap = state.snapshot || {};
+            html += '<h5>Snapshot</h5><p class="text-muted">Complaint and complainant data loaded using <code>/ApiCalls/GetComplaint</code>.</p>';
+            html += '<div class="row g-3">' +
+                '<div class="col-lg-6"><div class="card border-0 bg-light"><div class="card-body">' +
+                '<h6 class="mb-3">Complainant Details</h6>' +
+                '<div class="row g-2 small">' +
+                '<div class="col-6"><span class="text-muted">Name</span><div class="fw-semibold">' + esc(snap.complainantName || 'N/A') + '</div></div>' +
+                '<div class="col-6"><span class="text-muted">CNIC</span><div class="fw-semibold">' + esc(snap.cnic || 'N/A') + '</div></div>' +
+                '<div class="col-6"><span class="text-muted">Cell No</span><div>' + esc(snap.cellularNumber || 'N/A') + '</div></div>' +
+                '<div class="col-6"><span class="text-muted">Gender</span><div>' + esc(snap.gender || 'N/A') + '</div></div>' +
+                '<div class="col-12"><span class="text-muted">Address</span><div>' + esc(snap.mailingAddress || 'N/A') + '</div></div>' +
+                '<div class="col-12"><span class="text-muted">Received From</span><div>' + esc(snap.receivedFrom || 'N/A') + '</div></div>' +
+                '</div></div></div></div>' +
+                '<div class="col-lg-6"><div class="card border-0 bg-light"><div class="card-body">' +
+                '<h6 class="mb-3">Complaint Details</h6>' +
+                '<div class="row g-2 small">' +
+                '<div class="col-6"><span class="text-muted">Complaint No</span><div class="fw-semibold">' + esc(snap.complaintNo || 'N/A') + '</div></div>' +
+                '<div class="col-6"><span class="text-muted">Submitted On</span><div>' + esc(snap.submittedOn || 'N/A') + '</div></div>' +
+                '<div class="col-6"><span class="text-muted">Nature</span><div>' + esc(snap.nature || 'N/A') + '</div></div>' +
+                '<div class="col-6"><span class="text-muted">Category</span><div>' + esc(snap.category || 'N/A') + '</div></div>' +
+                '<div class="col-6"><span class="text-muted">Region</span><div>' + esc(snap.region || 'N/A') + '</div></div>' +
+                '<div class="col-6"><span class="text-muted">Branch</span><div>' + esc(snap.branch || 'N/A') + '</div></div>' +
+                '<div class="col-12"><span class="text-muted">Action Required</span><div>' + esc(snap.actionRequired || 'N/A') + '</div></div>' +
+                '<div class="col-12"><span class="text-muted">Contents</span><div>' + esc(snap.contents || 'N/A') + '</div></div>' +
+                '</div></div></div></div>' +
+                '</div>';
         }
         if(step === 2){
             var rowsA = state.accusations.map(function(r,i){
@@ -221,18 +246,35 @@ $(function(){
     function saveCollection(opts){
         var queue = $.Deferred().resolve().promise();
         (state.deleteQueue[opts.section] || []).forEach(function(id){
-            queue = queue.then(function(){ return opts.deleteFn(id, userId); });
+            queue = queue.then(function(){ return opts.deleteFn(id, userId).then(function(resp){ return ensureApiSuccess(resp, 'Delete failed.'); }); });
         });
         state.deleteQueue[opts.section] = [];
 
         opts.rows.forEach(function(row, idx){
             var payload = opts.map(row, idx);
-            queue = queue.then(function(){ return row[opts.idKey] ? opts.updateFn(payload) : opts.addFn(payload); });
+            queue = queue.then(function(){
+                var request = row[opts.idKey] ? opts.updateFn(payload) : opts.addFn(payload);
+                return request.then(function(resp){ return ensureApiSuccess(resp, 'Save failed.'); });
+            });
         });
-        return queue.then(function(){ return opts.loadFn(complaintId); }).done(function(resp){ opts.hydrate(resp); });
+        return queue.then(function(){ return opts.loadFn(complaintId); }).done(function(resp){ ensureApiSuccess(resp, 'Load failed.'); opts.hydrate(resp); });
     }
 
     function extractData(resp){ return (resp && (resp.data || resp.Data)) || []; }
+
+    function getResponseMessage(resp){
+        if(!resp){ return ''; }
+        if(resp.message){ return resp.message; }
+        if(resp.data && resp.data.message){ return resp.data.message; }
+        return '';
+    }
+
+    function ensureApiSuccess(resp, fallback){
+        if(resp && resp.ok === false){
+            throw new Error(getResponseMessage(resp) || fallback || 'Operation failed.');
+        }
+        return resp;
+    }
 
     function saveStep(step){
         var errs = validateStep(step);
@@ -272,7 +314,7 @@ $(function(){
             }).done(function(){ showAlert('Statement register saved successfully.', 'success'); });
         }
         if(step === 6){
-            return window.iidGetInqEvidenceFiles(complaintId).done(function(resp){ state.evidence = extractData(resp); showAlert('Evidence list refreshed from database.', 'success'); });
+            return window.iidGetInqEvidenceFiles(complaintId).done(function(resp){ ensureApiSuccess(resp, 'Failed to load evidence list.'); state.evidence = extractData(resp); showAlert('Evidence list refreshed from database.', 'success'); });
         }
         if(step === 7){
             return saveCollection({
@@ -303,6 +345,7 @@ $(function(){
 
     function loadComplaint(){
         return $.post(g_asiBaseURL + '/ApiCalls/GetComplaint', { complaintId: complaintId }).done(function(resp){
+            ensureApiSuccess(resp, 'Failed to load complaint snapshot.');
             var c = resp || {};
             state.complainantName = c.complainantName || '';
             state.complainantCnic = c.cnic || '';
@@ -313,7 +356,16 @@ $(function(){
                 submittedOn: c.submittedOn,
                 region: c.region,
                 branch: c.branch,
-                category: c.category
+                category: c.category,
+                nature: c.nature,
+                complainantName: c.complainantName,
+                cnic: c.cnic,
+                cellularNumber: c.cellularNumber,
+                mailingAddress: c.mailingAddress,
+                gender: c.gender,
+                receivedFrom: c.receivedFrom,
+                actionRequired: c.actionRequired,
+                contents: c.contents
             };
             renderSnapshotStrip();
             if(state.statements.length && !state.statements[0].ppnoNumber){ state.statements[0].ppnoNumber = state.complainantCnic; state.statements[0].cnic = state.complainantCnic; }
@@ -333,14 +385,14 @@ $(function(){
 
     function loadWizardData(){
         return apiPostJson('/ApiCalls/GetIidInqWizardData', { complaintId: complaintId }).done(function(resp){
-            if(resp && resp.ok === false){ throw new Error(resp.message || 'Failed to load wizard data.'); }
+            ensureApiSuccess(resp, 'Failed to load wizard data.');
             hydrateFromWizardData(resp.data || {});
         });
     }
 
     function finalizeReport(){
         return apiPostJson('/ApiCalls/FinalizeIidInquiryReport', { complaintId: complaintId }).done(function(resp){
-            if(!resp || resp.ok === false){ showAlert((resp && resp.message) || 'Finalize failed.', 'danger'); return; }
+            if(!resp || resp.ok === false){ showAlert(getResponseMessage(resp) || 'Finalize failed.', 'danger'); return; }
             isLocked = true;
             $('#reportStatusBadge').removeClass('bg-secondary').addClass('bg-success').text('Submitted');
             showAlert(resp.message || 'Inquiry report finalized successfully.', 'success');
@@ -387,10 +439,11 @@ $(function(){
                 fd.append('Status', 'A');
                 fd.append('UploadedBy', userId || 0);
                 fd.append('file', file);
-                return window.iidAddInqEvidenceFile(fd);
+                return window.iidAddInqEvidenceFile(fd).then(function(resp){ return ensureApiSuccess(resp, 'Evidence upload failed.'); });
             });
         });
         chain.then(function(){ return window.iidGetInqEvidenceFiles(complaintId); }).done(function(resp){
+            ensureApiSuccess(resp, 'Failed to refresh evidence list.');
             state.evidence = extractData(resp);
             showAlert('Evidence uploaded and saved successfully.', 'success');
             renderCurrent();
@@ -400,7 +453,8 @@ $(function(){
 
     $(document).on('click', '[data-delete-evidence]', function(){
         var evidenceId = parseInt($(this).data('delete-evidence'), 10);
-        window.iidDeleteInqEvidenceFile(evidenceId, userId || 0).then(function(){ return window.iidGetInqEvidenceFiles(complaintId); }).done(function(resp){
+        window.iidDeleteInqEvidenceFile(evidenceId, userId || 0).then(function(resp){ ensureApiSuccess(resp, 'Failed to delete evidence file.'); return window.iidGetInqEvidenceFiles(complaintId); }).done(function(resp){
+            ensureApiSuccess(resp, 'Failed to refresh evidence list.');
             state.evidence = extractData(resp);
             renderCurrent();
         }).fail(function(){ showAlert('Failed to delete evidence file.', 'danger'); });

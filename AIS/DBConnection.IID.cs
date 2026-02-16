@@ -1221,6 +1221,47 @@ namespace AIS.Controllers
             return Convert.ToDateTime(reader[columnName]);
             }
 
+        private static IidInqProcResult ExecuteIidResult(OracleCommand cmd)
+            {
+            var result = new IidInqProcResult
+                {
+                Ok = true,
+                Message = "Operation completed successfully.",
+                Id = null
+                };
+
+            using var rdr = cmd.ExecuteReader();
+            if (!rdr.Read())
+                {
+                return result;
+                }
+
+            var okValue = GetStringValue(rdr, "OK");
+            var message = GetStringValue(rdr, "MESSAGE");
+
+            if (!string.IsNullOrWhiteSpace(okValue))
+                {
+                result.Ok = okValue.Equals("Y", StringComparison.OrdinalIgnoreCase)
+                    || okValue.Equals("1", StringComparison.OrdinalIgnoreCase)
+                    || okValue.Equals("TRUE", StringComparison.OrdinalIgnoreCase)
+                    || okValue.Equals("T", StringComparison.OrdinalIgnoreCase)
+                    || okValue.Equals("OK", StringComparison.OrdinalIgnoreCase);
+                }
+
+            if (!string.IsNullOrWhiteSpace(message))
+                {
+                result.Message = message;
+                }
+
+            var id = GetNullableLongValue(rdr, "ID");
+            if (id.HasValue)
+                {
+                result.Id = id.Value;
+                }
+
+            return result;
+            }
+
         public List<IidInqAccusationRow> GetIidInqAccusationsByComplaintId(long complaintId)
             {
             using var con = this.DatabaseConnection();
@@ -1252,7 +1293,7 @@ namespace AIS.Controllers
             return list;
             }
 
-        public int AddIidInqAccusation(IidInqAccusationRow model)
+        public IidInqProcResult AddIidInqAccusation(IidInqAccusationRow model)
             {
             using var con = this.DatabaseConnection();
             using var cmd = con.CreateCommand();
@@ -1262,13 +1303,12 @@ namespace AIS.Controllers
             cmd.Parameters.Add("P_COMPLAINT_ID", OracleDbType.Int64).Value = model.ComplaintId;
             cmd.Parameters.Add("P_ACCUSATION_TEXT", OracleDbType.Clob).Value = model.AccusationText ?? string.Empty;
             cmd.Parameters.Add("P_SORT_ORDER", OracleDbType.Int32).Value = model.SortOrder;
-            cmd.Parameters.Add("P_STATUS", OracleDbType.Varchar2).Value = model.Status ?? string.Empty;
             cmd.Parameters.Add("P_CREATED_BY", OracleDbType.Int64).Value = model.CreatedBy ?? (object)DBNull.Value;
-            cmd.ExecuteNonQuery();
-            return 1;
+            cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+            return ExecuteIidResult(cmd);
             }
 
-        public int UpdateIidInqAccusation(IidInqAccusationRow model)
+        public IidInqProcResult UpdateIidInqAccusation(IidInqAccusationRow model)
             {
             using var con = this.DatabaseConnection();
             using var cmd = con.CreateCommand();
@@ -1278,13 +1318,12 @@ namespace AIS.Controllers
             cmd.Parameters.Add("P_ACCUSATION_ID", OracleDbType.Int64).Value = model.AccusationId;
             cmd.Parameters.Add("P_ACCUSATION_TEXT", OracleDbType.Clob).Value = model.AccusationText ?? string.Empty;
             cmd.Parameters.Add("P_SORT_ORDER", OracleDbType.Int32).Value = model.SortOrder;
-            cmd.Parameters.Add("P_STATUS", OracleDbType.Varchar2).Value = model.Status ?? string.Empty;
             cmd.Parameters.Add("P_UPDATED_BY", OracleDbType.Int64).Value = model.UpdatedBy ?? (object)DBNull.Value;
-            cmd.ExecuteNonQuery();
-            return 1;
+            cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+            return ExecuteIidResult(cmd);
             }
 
-        public int DeleteIidInqAccusation(long accusationId, long userId)
+        public IidInqProcResult DeleteIidInqAccusation(long accusationId, long userId)
             {
             using var con = this.DatabaseConnection();
             using var cmd = con.CreateCommand();
@@ -1293,8 +1332,8 @@ namespace AIS.Controllers
             cmd.BindByName = true;
             cmd.Parameters.Add("P_ACCUSATION_ID", OracleDbType.Int64).Value = accusationId;
             cmd.Parameters.Add("P_UPDATED_BY", OracleDbType.Int64).Value = userId;
-            cmd.ExecuteNonQuery();
-            return 1;
+            cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+            return ExecuteIidResult(cmd);
             }
 
         public List<IidInqAccusedRow> GetIidInqAccusedListByComplaintId(long complaintId)
@@ -1334,7 +1373,7 @@ namespace AIS.Controllers
             return list;
             }
 
-        public int AddIidInqAccused(IidInqAccusedRow model)
+        public IidInqProcResult AddIidInqAccused(IidInqAccusedRow model)
             {
             using var con = this.DatabaseConnection();
             using var cmd = con.CreateCommand();
@@ -1348,15 +1387,14 @@ namespace AIS.Controllers
             cmd.Parameters.Add("P_PPNO_NUMBER", OracleDbType.Varchar2).Value = model.PpnoNumber ?? string.Empty;
             cmd.Parameters.Add("P_CNIC", OracleDbType.Varchar2).Value = model.Cnic ?? string.Empty;
             cmd.Parameters.Add("P_POSTING_PLACE", OracleDbType.Varchar2).Value = model.PostingPlace ?? string.Empty;
-            cmd.Parameters.Add("P_REMARKS", OracleDbType.Clob).Value = model.Remarks ?? string.Empty;
+            cmd.Parameters.Add("P_REMARKS", OracleDbType.Varchar2).Value = model.Remarks ?? string.Empty;
             cmd.Parameters.Add("P_SORT_ORDER", OracleDbType.Int32).Value = model.SortOrder;
-            cmd.Parameters.Add("P_STATUS", OracleDbType.Varchar2).Value = model.Status ?? string.Empty;
             cmd.Parameters.Add("P_CREATED_BY", OracleDbType.Int64).Value = model.CreatedBy ?? (object)DBNull.Value;
-            cmd.ExecuteNonQuery();
-            return 1;
+            cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+            return ExecuteIidResult(cmd);
             }
 
-        public int UpdateIidInqAccused(IidInqAccusedRow model)
+        public IidInqProcResult UpdateIidInqAccused(IidInqAccusedRow model)
             {
             using var con = this.DatabaseConnection();
             using var cmd = con.CreateCommand();
@@ -1370,15 +1408,14 @@ namespace AIS.Controllers
             cmd.Parameters.Add("P_PPNO_NUMBER", OracleDbType.Varchar2).Value = model.PpnoNumber ?? string.Empty;
             cmd.Parameters.Add("P_CNIC", OracleDbType.Varchar2).Value = model.Cnic ?? string.Empty;
             cmd.Parameters.Add("P_POSTING_PLACE", OracleDbType.Varchar2).Value = model.PostingPlace ?? string.Empty;
-            cmd.Parameters.Add("P_REMARKS", OracleDbType.Clob).Value = model.Remarks ?? string.Empty;
+            cmd.Parameters.Add("P_REMARKS", OracleDbType.Varchar2).Value = model.Remarks ?? string.Empty;
             cmd.Parameters.Add("P_SORT_ORDER", OracleDbType.Int32).Value = model.SortOrder;
-            cmd.Parameters.Add("P_STATUS", OracleDbType.Varchar2).Value = model.Status ?? string.Empty;
             cmd.Parameters.Add("P_UPDATED_BY", OracleDbType.Int64).Value = model.UpdatedBy ?? (object)DBNull.Value;
-            cmd.ExecuteNonQuery();
-            return 1;
+            cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+            return ExecuteIidResult(cmd);
             }
 
-        public int DeleteIidInqAccused(long accusedRowId, long userId)
+        public IidInqProcResult DeleteIidInqAccused(long accusedRowId, long userId)
             {
             using var con = this.DatabaseConnection();
             using var cmd = con.CreateCommand();
@@ -1387,8 +1424,8 @@ namespace AIS.Controllers
             cmd.BindByName = true;
             cmd.Parameters.Add("P_ACCUSED_ROW_ID", OracleDbType.Int64).Value = accusedRowId;
             cmd.Parameters.Add("P_UPDATED_BY", OracleDbType.Int64).Value = userId;
-            cmd.ExecuteNonQuery();
-            return 1;
+            cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+            return ExecuteIidResult(cmd);
             }
 
         public List<IidInqRecordRow> GetIidInqRecordsByComplaintId(long complaintId)
@@ -1423,7 +1460,7 @@ namespace AIS.Controllers
             return list;
             }
 
-        public int AddIidInqRecord(IidInqRecordRow model)
+        public IidInqProcResult AddIidInqRecord(IidInqRecordRow model)
             {
             using var con = this.DatabaseConnection();
             using var cmd = con.CreateCommand();
@@ -1432,15 +1469,14 @@ namespace AIS.Controllers
             cmd.BindByName = true;
             cmd.Parameters.Add("P_COMPLAINT_ID", OracleDbType.Int64).Value = model.ComplaintId;
             cmd.Parameters.Add("P_RECORD_TITLE", OracleDbType.Varchar2).Value = model.RecordTitle ?? string.Empty;
-            cmd.Parameters.Add("P_RECORD_DETAILS", OracleDbType.Clob).Value = model.RecordDetails ?? string.Empty;
+            cmd.Parameters.Add("P_RECORD_DETAILS", OracleDbType.Varchar2).Value = model.RecordDetails ?? string.Empty;
             cmd.Parameters.Add("P_SORT_ORDER", OracleDbType.Int32).Value = model.SortOrder;
-            cmd.Parameters.Add("P_STATUS", OracleDbType.Varchar2).Value = model.Status ?? string.Empty;
             cmd.Parameters.Add("P_CREATED_BY", OracleDbType.Int64).Value = model.CreatedBy ?? (object)DBNull.Value;
-            cmd.ExecuteNonQuery();
-            return 1;
+            cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+            return ExecuteIidResult(cmd);
             }
 
-        public int UpdateIidInqRecord(IidInqRecordRow model)
+        public IidInqProcResult UpdateIidInqRecord(IidInqRecordRow model)
             {
             using var con = this.DatabaseConnection();
             using var cmd = con.CreateCommand();
@@ -1449,15 +1485,14 @@ namespace AIS.Controllers
             cmd.BindByName = true;
             cmd.Parameters.Add("P_REC_ID", OracleDbType.Int64).Value = model.RecId;
             cmd.Parameters.Add("P_RECORD_TITLE", OracleDbType.Varchar2).Value = model.RecordTitle ?? string.Empty;
-            cmd.Parameters.Add("P_RECORD_DETAILS", OracleDbType.Clob).Value = model.RecordDetails ?? string.Empty;
+            cmd.Parameters.Add("P_RECORD_DETAILS", OracleDbType.Varchar2).Value = model.RecordDetails ?? string.Empty;
             cmd.Parameters.Add("P_SORT_ORDER", OracleDbType.Int32).Value = model.SortOrder;
-            cmd.Parameters.Add("P_STATUS", OracleDbType.Varchar2).Value = model.Status ?? string.Empty;
             cmd.Parameters.Add("P_UPDATED_BY", OracleDbType.Int64).Value = model.UpdatedBy ?? (object)DBNull.Value;
-            cmd.ExecuteNonQuery();
-            return 1;
+            cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+            return ExecuteIidResult(cmd);
             }
 
-        public int DeleteIidInqRecord(long recId, long userId)
+        public IidInqProcResult DeleteIidInqRecord(long recId, long userId)
             {
             using var con = this.DatabaseConnection();
             using var cmd = con.CreateCommand();
@@ -1466,8 +1501,8 @@ namespace AIS.Controllers
             cmd.BindByName = true;
             cmd.Parameters.Add("P_REC_ID", OracleDbType.Int64).Value = recId;
             cmd.Parameters.Add("P_UPDATED_BY", OracleDbType.Int64).Value = userId;
-            cmd.ExecuteNonQuery();
-            return 1;
+            cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+            return ExecuteIidResult(cmd);
             }
 
         public List<IidInqStatementRow> GetIidInqStatementsByComplaintId(long complaintId)
@@ -1507,7 +1542,7 @@ namespace AIS.Controllers
             return list;
             }
 
-        public int AddIidInqStatement(IidInqStatementRow model)
+        public IidInqProcResult AddIidInqStatement(IidInqStatementRow model)
             {
             using var con = this.DatabaseConnection();
             using var cmd = con.CreateCommand();
@@ -1523,13 +1558,12 @@ namespace AIS.Controllers
             cmd.Parameters.Add("P_PLACE", OracleDbType.Varchar2).Value = model.Place ?? string.Empty;
             cmd.Parameters.Add("P_MODE_TYPE", OracleDbType.Varchar2).Value = model.ModeType ?? string.Empty;
             cmd.Parameters.Add("P_KEY_POINTS", OracleDbType.Clob).Value = model.KeyPoints ?? string.Empty;
-            cmd.Parameters.Add("P_STATUS", OracleDbType.Varchar2).Value = model.Status ?? string.Empty;
             cmd.Parameters.Add("P_CREATED_BY", OracleDbType.Int64).Value = model.CreatedBy ?? (object)DBNull.Value;
-            cmd.ExecuteNonQuery();
-            return 1;
+            cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+            return ExecuteIidResult(cmd);
             }
 
-        public int UpdateIidInqStatement(IidInqStatementRow model)
+        public IidInqProcResult UpdateIidInqStatement(IidInqStatementRow model)
             {
             using var con = this.DatabaseConnection();
             using var cmd = con.CreateCommand();
@@ -1545,13 +1579,12 @@ namespace AIS.Controllers
             cmd.Parameters.Add("P_PLACE", OracleDbType.Varchar2).Value = model.Place ?? string.Empty;
             cmd.Parameters.Add("P_MODE_TYPE", OracleDbType.Varchar2).Value = model.ModeType ?? string.Empty;
             cmd.Parameters.Add("P_KEY_POINTS", OracleDbType.Clob).Value = model.KeyPoints ?? string.Empty;
-            cmd.Parameters.Add("P_STATUS", OracleDbType.Varchar2).Value = model.Status ?? string.Empty;
             cmd.Parameters.Add("P_UPDATED_BY", OracleDbType.Int64).Value = model.UpdatedBy ?? (object)DBNull.Value;
-            cmd.ExecuteNonQuery();
-            return 1;
+            cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+            return ExecuteIidResult(cmd);
             }
 
-        public int DeleteIidInqStatement(long statementId, long userId)
+        public IidInqProcResult DeleteIidInqStatement(long statementId, long userId)
             {
             using var con = this.DatabaseConnection();
             using var cmd = con.CreateCommand();
@@ -1560,8 +1593,8 @@ namespace AIS.Controllers
             cmd.BindByName = true;
             cmd.Parameters.Add("P_STATEMENT_ID", OracleDbType.Int64).Value = statementId;
             cmd.Parameters.Add("P_UPDATED_BY", OracleDbType.Int64).Value = userId;
-            cmd.ExecuteNonQuery();
-            return 1;
+            cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+            return ExecuteIidResult(cmd);
             }
 
         public List<IidInqEvidenceFileRow> GetIidInqEvidenceFilesByComplaintId(long complaintId)
@@ -1599,7 +1632,7 @@ namespace AIS.Controllers
             return list;
             }
 
-        public int AddIidInqEvidenceFile(IidInqEvidenceFileRow model)
+        public IidInqProcResult AddIidInqEvidenceFile(IidInqEvidenceFileRow model)
             {
             using var con = this.DatabaseConnection();
             using var cmd = con.CreateCommand();
@@ -1613,13 +1646,12 @@ namespace AIS.Controllers
             cmd.Parameters.Add("P_FILE_PATH", OracleDbType.Varchar2).Value = model.FilePath ?? string.Empty;
             cmd.Parameters.Add("P_FILE_EXT", OracleDbType.Varchar2).Value = model.FileExt ?? string.Empty;
             cmd.Parameters.Add("P_FILE_SIZE_KB", OracleDbType.Int32).Value = model.FileSizeKb ?? (object)DBNull.Value;
-            cmd.Parameters.Add("P_STATUS", OracleDbType.Varchar2).Value = model.Status ?? string.Empty;
             cmd.Parameters.Add("P_UPLOADED_BY", OracleDbType.Int64).Value = model.UploadedBy ?? (object)DBNull.Value;
-            cmd.ExecuteNonQuery();
-            return 1;
+            cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+            return ExecuteIidResult(cmd);
             }
 
-        public int DeleteIidInqEvidenceFile(long evidenceId, long userId)
+        public IidInqProcResult DeleteIidInqEvidenceFile(long evidenceId, long userId)
             {
             using var con = this.DatabaseConnection();
             using var cmd = con.CreateCommand();
@@ -1628,8 +1660,8 @@ namespace AIS.Controllers
             cmd.BindByName = true;
             cmd.Parameters.Add("P_EVIDENCE_ID", OracleDbType.Int64).Value = evidenceId;
             cmd.Parameters.Add("P_UPDATED_BY", OracleDbType.Int64).Value = userId;
-            cmd.ExecuteNonQuery();
-            return 1;
+            cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+            return ExecuteIidResult(cmd);
             }
 
         public List<IidInqViolationRow> GetIidInqViolationsByComplaintId(long complaintId)
@@ -1666,7 +1698,7 @@ namespace AIS.Controllers
             return list;
             }
 
-        public int AddIidInqViolation(IidInqViolationRow model)
+        public IidInqProcResult AddIidInqViolation(IidInqViolationRow model)
             {
             using var con = this.DatabaseConnection();
             using var cmd = con.CreateCommand();
@@ -1676,16 +1708,15 @@ namespace AIS.Controllers
             cmd.Parameters.Add("P_COMPLAINT_ID", OracleDbType.Int64).Value = model.ComplaintId;
             cmd.Parameters.Add("P_CATEGORY", OracleDbType.Varchar2).Value = model.Category ?? string.Empty;
             cmd.Parameters.Add("P_VIOLATION_DETAIL", OracleDbType.Clob).Value = model.ViolationDetail ?? string.Empty;
-            cmd.Parameters.Add("P_REFERENCE_TEXT", OracleDbType.Clob).Value = model.ReferenceText ?? string.Empty;
+            cmd.Parameters.Add("P_REFERENCE_TEXT", OracleDbType.Varchar2).Value = model.ReferenceText ?? string.Empty;
             cmd.Parameters.Add("P_RECOMMENDATION", OracleDbType.Clob).Value = model.Recommendation ?? string.Empty;
             cmd.Parameters.Add("P_SORT_ORDER", OracleDbType.Int32).Value = model.SortOrder;
-            cmd.Parameters.Add("P_STATUS", OracleDbType.Varchar2).Value = model.Status ?? string.Empty;
             cmd.Parameters.Add("P_CREATED_BY", OracleDbType.Int64).Value = model.CreatedBy ?? (object)DBNull.Value;
-            cmd.ExecuteNonQuery();
-            return 1;
+            cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+            return ExecuteIidResult(cmd);
             }
 
-        public int UpdateIidInqViolation(IidInqViolationRow model)
+        public IidInqProcResult UpdateIidInqViolation(IidInqViolationRow model)
             {
             using var con = this.DatabaseConnection();
             using var cmd = con.CreateCommand();
@@ -1695,16 +1726,15 @@ namespace AIS.Controllers
             cmd.Parameters.Add("P_VIOLATION_ID", OracleDbType.Int64).Value = model.ViolationId;
             cmd.Parameters.Add("P_CATEGORY", OracleDbType.Varchar2).Value = model.Category ?? string.Empty;
             cmd.Parameters.Add("P_VIOLATION_DETAIL", OracleDbType.Clob).Value = model.ViolationDetail ?? string.Empty;
-            cmd.Parameters.Add("P_REFERENCE_TEXT", OracleDbType.Clob).Value = model.ReferenceText ?? string.Empty;
+            cmd.Parameters.Add("P_REFERENCE_TEXT", OracleDbType.Varchar2).Value = model.ReferenceText ?? string.Empty;
             cmd.Parameters.Add("P_RECOMMENDATION", OracleDbType.Clob).Value = model.Recommendation ?? string.Empty;
             cmd.Parameters.Add("P_SORT_ORDER", OracleDbType.Int32).Value = model.SortOrder;
-            cmd.Parameters.Add("P_STATUS", OracleDbType.Varchar2).Value = model.Status ?? string.Empty;
             cmd.Parameters.Add("P_UPDATED_BY", OracleDbType.Int64).Value = model.UpdatedBy ?? (object)DBNull.Value;
-            cmd.ExecuteNonQuery();
-            return 1;
+            cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+            return ExecuteIidResult(cmd);
             }
 
-        public int DeleteIidInqViolation(long violationId, long userId)
+        public IidInqProcResult DeleteIidInqViolation(long violationId, long userId)
             {
             using var con = this.DatabaseConnection();
             using var cmd = con.CreateCommand();
@@ -1713,8 +1743,8 @@ namespace AIS.Controllers
             cmd.BindByName = true;
             cmd.Parameters.Add("P_VIOLATION_ID", OracleDbType.Int64).Value = violationId;
             cmd.Parameters.Add("P_UPDATED_BY", OracleDbType.Int64).Value = userId;
-            cmd.ExecuteNonQuery();
-            return 1;
+            cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+            return ExecuteIidResult(cmd);
             }
 
         public List<IidInqDsaRow> GetIidInqDsaByComplaintId(long complaintId)
@@ -1753,7 +1783,7 @@ namespace AIS.Controllers
             return list;
             }
 
-        public int AddIidInqDsa(IidInqDsaRow model)
+        public IidInqProcResult AddIidInqDsa(IidInqDsaRow model)
             {
             using var con = this.DatabaseConnection();
             using var cmd = con.CreateCommand();
@@ -1766,15 +1796,14 @@ namespace AIS.Controllers
             cmd.Parameters.Add("P_PPNO_NUMBER", OracleDbType.Varchar2).Value = model.PpnoNumber ?? string.Empty;
             cmd.Parameters.Add("P_CNIC", OracleDbType.Varchar2).Value = model.Cnic ?? string.Empty;
             cmd.Parameters.Add("P_DSA_STATUS", OracleDbType.Varchar2).Value = model.DsaStatus ?? string.Empty;
-            cmd.Parameters.Add("P_REMARKS", OracleDbType.Clob).Value = model.Remarks ?? string.Empty;
+            cmd.Parameters.Add("P_REMARKS", OracleDbType.Varchar2).Value = model.Remarks ?? string.Empty;
             cmd.Parameters.Add("P_SORT_ORDER", OracleDbType.Int32).Value = model.SortOrder;
-            cmd.Parameters.Add("P_STATUS", OracleDbType.Varchar2).Value = model.Status ?? string.Empty;
             cmd.Parameters.Add("P_CREATED_BY", OracleDbType.Int64).Value = model.CreatedBy ?? (object)DBNull.Value;
-            cmd.ExecuteNonQuery();
-            return 1;
+            cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+            return ExecuteIidResult(cmd);
             }
 
-        public int UpdateIidInqDsa(IidInqDsaRow model)
+        public IidInqProcResult UpdateIidInqDsa(IidInqDsaRow model)
             {
             using var con = this.DatabaseConnection();
             using var cmd = con.CreateCommand();
@@ -1787,15 +1816,14 @@ namespace AIS.Controllers
             cmd.Parameters.Add("P_PPNO_NUMBER", OracleDbType.Varchar2).Value = model.PpnoNumber ?? string.Empty;
             cmd.Parameters.Add("P_CNIC", OracleDbType.Varchar2).Value = model.Cnic ?? string.Empty;
             cmd.Parameters.Add("P_DSA_STATUS", OracleDbType.Varchar2).Value = model.DsaStatus ?? string.Empty;
-            cmd.Parameters.Add("P_REMARKS", OracleDbType.Clob).Value = model.Remarks ?? string.Empty;
+            cmd.Parameters.Add("P_REMARKS", OracleDbType.Varchar2).Value = model.Remarks ?? string.Empty;
             cmd.Parameters.Add("P_SORT_ORDER", OracleDbType.Int32).Value = model.SortOrder;
-            cmd.Parameters.Add("P_STATUS", OracleDbType.Varchar2).Value = model.Status ?? string.Empty;
             cmd.Parameters.Add("P_UPDATED_BY", OracleDbType.Int64).Value = model.UpdatedBy ?? (object)DBNull.Value;
-            cmd.ExecuteNonQuery();
-            return 1;
+            cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+            return ExecuteIidResult(cmd);
             }
 
-        public int DeleteIidInqDsa(long dsaId, long userId)
+        public IidInqProcResult DeleteIidInqDsa(long dsaId, long userId)
             {
             using var con = this.DatabaseConnection();
             using var cmd = con.CreateCommand();
@@ -1804,8 +1832,8 @@ namespace AIS.Controllers
             cmd.BindByName = true;
             cmd.Parameters.Add("P_DSA_ID", OracleDbType.Int64).Value = dsaId;
             cmd.Parameters.Add("P_UPDATED_BY", OracleDbType.Int64).Value = userId;
-            cmd.ExecuteNonQuery();
-            return 1;
+            cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+            return ExecuteIidResult(cmd);
             }
 
         public int FinalizeIidInquiryReport(long complaintId, long? updatedBy)

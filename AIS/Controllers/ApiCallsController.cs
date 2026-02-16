@@ -5270,7 +5270,7 @@ namespace AIS.Controllers
             try
                 {
                 var rows = dBConnection.AddIidInqAccusation(model);
-                return Json(new { ok = rows > 0, data = rows });
+                return Json(new { ok = rows?.Ok ?? false, message = rows?.Message, data = rows });
                 }
             catch (Exception ex)
                 {
@@ -5284,7 +5284,7 @@ namespace AIS.Controllers
             try
                 {
                 var rows = dBConnection.UpdateIidInqAccusation(model);
-                return Json(new { ok = rows > 0, data = rows });
+                return Json(new { ok = rows?.Ok ?? false, message = rows?.Message, data = rows });
                 }
             catch (Exception ex)
                 {
@@ -5298,7 +5298,7 @@ namespace AIS.Controllers
             try
                 {
                 var rows = dBConnection.DeleteIidInqAccusation(request?.Id ?? 0, request?.UserId ?? 0);
-                return Json(new { ok = rows > 0, data = rows });
+                return Json(new { ok = rows?.Ok ?? false, message = rows?.Message, data = rows });
                 }
             catch (Exception ex)
                 {
@@ -5326,7 +5326,7 @@ namespace AIS.Controllers
             try
                 {
                 var rows = dBConnection.AddIidInqAccused(model);
-                return Json(new { ok = rows > 0, data = rows });
+                return Json(new { ok = rows?.Ok ?? false, message = rows?.Message, data = rows });
                 }
             catch (Exception ex)
                 {
@@ -5340,7 +5340,7 @@ namespace AIS.Controllers
             try
                 {
                 var rows = dBConnection.UpdateIidInqAccused(model);
-                return Json(new { ok = rows > 0, data = rows });
+                return Json(new { ok = rows?.Ok ?? false, message = rows?.Message, data = rows });
                 }
             catch (Exception ex)
                 {
@@ -5354,7 +5354,7 @@ namespace AIS.Controllers
             try
                 {
                 var rows = dBConnection.DeleteIidInqAccused(request?.Id ?? 0, request?.UserId ?? 0);
-                return Json(new { ok = rows > 0, data = rows });
+                return Json(new { ok = rows?.Ok ?? false, message = rows?.Message, data = rows });
                 }
             catch (Exception ex)
                 {
@@ -5382,7 +5382,7 @@ namespace AIS.Controllers
             try
                 {
                 var rows = dBConnection.AddIidInqRecord(model);
-                return Json(new { ok = rows > 0, data = rows });
+                return Json(new { ok = rows?.Ok ?? false, message = rows?.Message, data = rows });
                 }
             catch (Exception ex)
                 {
@@ -5396,7 +5396,7 @@ namespace AIS.Controllers
             try
                 {
                 var rows = dBConnection.UpdateIidInqRecord(model);
-                return Json(new { ok = rows > 0, data = rows });
+                return Json(new { ok = rows?.Ok ?? false, message = rows?.Message, data = rows });
                 }
             catch (Exception ex)
                 {
@@ -5410,7 +5410,7 @@ namespace AIS.Controllers
             try
                 {
                 var rows = dBConnection.DeleteIidInqRecord(request?.Id ?? 0, request?.UserId ?? 0);
-                return Json(new { ok = rows > 0, data = rows });
+                return Json(new { ok = rows?.Ok ?? false, message = rows?.Message, data = rows });
                 }
             catch (Exception ex)
                 {
@@ -5438,7 +5438,7 @@ namespace AIS.Controllers
             try
                 {
                 var rows = dBConnection.AddIidInqStatement(model);
-                return Json(new { ok = rows > 0, data = rows });
+                return Json(new { ok = rows?.Ok ?? false, message = rows?.Message, data = rows });
                 }
             catch (Exception ex)
                 {
@@ -5452,7 +5452,7 @@ namespace AIS.Controllers
             try
                 {
                 var rows = dBConnection.UpdateIidInqStatement(model);
-                return Json(new { ok = rows > 0, data = rows });
+                return Json(new { ok = rows?.Ok ?? false, message = rows?.Message, data = rows });
                 }
             catch (Exception ex)
                 {
@@ -5466,7 +5466,7 @@ namespace AIS.Controllers
             try
                 {
                 var rows = dBConnection.DeleteIidInqStatement(request?.Id ?? 0, request?.UserId ?? 0);
-                return Json(new { ok = rows > 0, data = rows });
+                return Json(new { ok = rows?.Ok ?? false, message = rows?.Message, data = rows });
                 }
             catch (Exception ex)
                 {
@@ -5507,7 +5507,7 @@ namespace AIS.Controllers
                     }
 
                 var rows = dBConnection.AddIidInqEvidenceFile(model);
-                return Json(new { ok = rows > 0, data = rows });
+                return Json(new { ok = rows?.Ok ?? false, message = rows?.Message, data = rows });
                 }
             catch (Exception ex)
                 {
@@ -5521,7 +5521,7 @@ namespace AIS.Controllers
             try
                 {
                 var rows = dBConnection.DeleteIidInqEvidenceFile(request?.Id ?? 0, request?.UserId ?? 0);
-                return Json(new { ok = rows > 0, data = rows });
+                return Json(new { ok = rows?.Ok ?? false, message = rows?.Message, data = rows });
                 }
             catch (Exception ex)
                 {
@@ -5549,7 +5549,7 @@ namespace AIS.Controllers
             try
                 {
                 var rows = dBConnection.AddIidInqViolation(model);
-                return Json(new { ok = rows > 0, data = rows });
+                return Json(new { ok = rows?.Ok ?? false, message = rows?.Message, data = rows });
                 }
             catch (Exception ex)
                 {
@@ -5563,7 +5563,7 @@ namespace AIS.Controllers
             try
                 {
                 var rows = dBConnection.UpdateIidInqViolation(model);
-                return Json(new { ok = rows > 0, data = rows });
+                return Json(new { ok = rows?.Ok ?? false, message = rows?.Message, data = rows });
                 }
             catch (Exception ex)
                 {
@@ -5577,7 +5577,7 @@ namespace AIS.Controllers
             try
                 {
                 var rows = dBConnection.DeleteIidInqViolation(request?.Id ?? 0, request?.UserId ?? 0);
-                return Json(new { ok = rows > 0, data = rows });
+                return Json(new { ok = rows?.Ok ?? false, message = rows?.Message, data = rows });
                 }
             catch (Exception ex)
                 {
@@ -5605,7 +5605,7 @@ namespace AIS.Controllers
             try
                 {
                 var rows = dBConnection.AddIidInqDsa(model);
-                return Json(new { ok = rows > 0, data = rows });
+                return Json(new { ok = rows?.Ok ?? false, message = rows?.Message, data = rows });
                 }
             catch (Exception ex)
                 {
@@ -5619,7 +5619,7 @@ namespace AIS.Controllers
             try
                 {
                 var rows = dBConnection.UpdateIidInqDsa(model);
-                return Json(new { ok = rows > 0, data = rows });
+                return Json(new { ok = rows?.Ok ?? false, message = rows?.Message, data = rows });
                 }
             catch (Exception ex)
                 {
@@ -5633,7 +5633,7 @@ namespace AIS.Controllers
             try
                 {
                 var rows = dBConnection.DeleteIidInqDsa(request?.Id ?? 0, request?.UserId ?? 0);
-                return Json(new { ok = rows > 0, data = rows });
+                return Json(new { ok = rows?.Ok ?? false, message = rows?.Message, data = rows });
                 }
             catch (Exception ex)
                 {
