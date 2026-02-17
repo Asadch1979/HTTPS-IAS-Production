@@ -792,8 +792,11 @@ function getPdfExportButtonConfig(overrides) {
             typeof pdfMake.createPdf === 'function' &&
             pdfMake.vfs &&
             typeof pdfMake.vfs === 'object' &&
-            Object.keys(pdfMake.vfs).length > 0 &&
-            !(pdfMake.version && pdfMake.version.indexOf('placeholder') === 0);
+            Object.keys(pdfMake.vfs).length > 0;
+
+        if (hasPdfMake && pdfMake.version && pdfMake.version.indexOf('placeholder') === 0) {
+            console.warn('PDF export is using a placeholder pdfMake build. Export quality may be limited.');
+        }
 
         if (!hasPdfMake) {
             console.error('PDF export failed: pdfMake is missing or invalid.');
