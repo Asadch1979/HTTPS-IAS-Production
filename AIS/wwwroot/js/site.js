@@ -789,7 +789,11 @@ function getPdfExportButtonConfig(overrides) {
     mergedConfig.action = function (e, dt, button, config) {
         var pdfMake = window.pdfMake;
         var hasPdfMake = pdfMake &&
-            typeof pdfMake.createPdf === 'function';
+            typeof pdfMake.createPdf === 'function' &&
+            pdfMake.vfs &&
+            typeof pdfMake.vfs === 'object' &&
+            Object.keys(pdfMake.vfs).length > 0 &&
+            !(pdfMake.version && pdfMake.version.indexOf('placeholder') === 0);
 
         if (!hasPdfMake) {
             console.error('PDF export failed: pdfMake is missing or invalid.');
