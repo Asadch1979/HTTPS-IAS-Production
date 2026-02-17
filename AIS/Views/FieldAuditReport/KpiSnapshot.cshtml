@@ -299,7 +299,7 @@
                             return;
                         }
                         entryTableBody.innerHTML = '';
-                        addRow(row);
+                        addRow(row, { isEdit: true });
                         isEditing = true;
                         saveButton.textContent = 'Update KPI Snapshot';
                         addButton?.setAttribute('disabled', 'disabled');
@@ -330,7 +330,7 @@
                 return select;
             };
 
-            const addRow = (row = {}) => {
+            const addRow = (row = {}, options = {}) => {
                 const kpiCode = row.kpiCode ?? row.KpiCode ?? '';
                 const kpiLabel = row.kpiLabel ?? row.KpiLabel ?? '';
                 const periodEnd = row.periodEnd ?? row.PeriodEnd ?? '';
@@ -379,6 +379,11 @@
                 actualInput.className = 'form-control num-right';
                 actualInput.type = 'number';
                 actualInput.step = 'any';
+                actualInput.name = 'actualFigure';
+                actualInput.dataset.kpiField = 'actualFigure';
+                if (options.isEdit) {
+                    actualInput.id = 'kpiActual';
+                }
                 actualInput.value = actualValue;
                 actualCell.appendChild(actualInput);
                 tr.appendChild(actualCell);
@@ -388,6 +393,11 @@
                 targetInput.className = 'form-control num-right';
                 targetInput.type = 'number';
                 targetInput.step = 'any';
+                targetInput.name = 'targetFigure';
+                targetInput.dataset.kpiField = 'targetFigure';
+                if (options.isEdit) {
+                    targetInput.id = 'kpiTarget';
+                }
                 targetInput.value = targetValue;
                 targetCell.appendChild(targetInput);
                 tr.appendChild(targetCell);
@@ -417,13 +427,12 @@
             const collectKpiRows = () => {
                 return Array.from(entryTableBody.querySelectorAll('tr')).map(row => {
                     const kpiSelect = row.querySelector('select');
-                    const cells = row.querySelectorAll('input');
                     const kpiCode = kpiSelect?.value?.trim() ?? '';
                     const kpiLabel = kpiSelect?.selectedOptions[0]?.textContent?.trim() ?? '';
                     const periodEnd = row.querySelector('[data-period-select="true"]')?.value;
-                    const actualValue = cells[1]?.value;
-                    const targetValue = cells[2]?.value;
-                    const unit = cells[3]?.value?.trim() ?? '';
+                    const actualValue = row.querySelector('input[data-kpi-field="actualFigure"]')?.value ?? '';
+                    const targetValue = row.querySelector('input[data-kpi-field="targetFigure"]')?.value ?? '';
+                    const unit = row.querySelector('td:last-child input')?.value?.trim() ?? '';
                     return {
                         kpiCode,
                         kpiLabel,
@@ -440,12 +449,14 @@
                     return;
                 }
                 statusEl.textContent = 'Saving...';
+                const payloadRows = collectKpiRows();
+                console.log('KPI payload mapping check', payloadRows.map(row => ({ actualFigure: row.actualValue, targetFigure: row.targetValue })));
                 fetch(`/FieldAuditReport/SaveKpiSnapshotRows?engId=${engId}`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify(collectKpiRows())
+                    body: JSON.stringify(payloadRows)
                 })
                     .then(response => response.json())
                     .then(data => {
