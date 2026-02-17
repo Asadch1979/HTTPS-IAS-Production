@@ -34,7 +34,6 @@
     window.iidAddInqStatement = function (payload) { return iidPostJson('/ApiCalls/AddIidInqStatement', payload); };
     window.iidUpdateInqStatement = function (payload) { return iidPostJson('/ApiCalls/UpdateIidInqStatement', payload); };
     window.iidDeleteInqStatement = function (id, userId) { return iidPostJson('/ApiCalls/DeleteIidInqStatement', { id: id, userId: userId }); };
-    window.iidGetEmployeeByPpno = function (ppNo) { return $.ajax({ url: (window.g_asiBaseURL || '') + '/ApiCalls/get_responsible_by_pp', method: 'POST', data: { PP_NO: ppNo } }); };
 
     window.iidGetInqEvidenceFiles = function (complaintId) { return iidPostJson('/ApiCalls/GetIidInqEvidenceFiles', { complaintId: complaintId }); };
     window.iidAddInqEvidenceFile = function (formData) { return iidPost('/ApiCalls/AddIidInqEvidenceFile', formData, true); };
