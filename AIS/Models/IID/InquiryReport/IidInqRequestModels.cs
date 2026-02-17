@@ -10,4 +10,9 @@ namespace AIS.Models.IID.InquiryReport
         public long Id { get; set; }
         public long UserId { get; set; }
         }
+
+    public class IidEmployeeInfoRequest
+        {
+        public long PpNo { get; set; }
+        }
     }

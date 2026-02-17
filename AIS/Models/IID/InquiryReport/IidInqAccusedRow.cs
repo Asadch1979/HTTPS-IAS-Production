@@ -10,6 +10,8 @@ namespace AIS.Models.IID.InquiryReport
         [PlainText]
         public string PersonName { get; set; }
         [PlainText]
+        public string FatherName { get; set; }
+        [PlainText]
         public string Designation { get; set; }
         [PlainText]
         public string RoleType { get; set; }
