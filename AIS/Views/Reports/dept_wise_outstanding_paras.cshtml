@@ -230,9 +230,7 @@
                                         footer: true
                                     }
                                 },
-                                {
-                                    extend: 'pdfHtml5',
-                                    text: 'Export To PDF',
+                                getPdfExportButtonConfig({
                                     className: 'btn btn-danger',
                                     exportOptions: {
                                         columns: function (idx, data, node) {
@@ -240,7 +238,7 @@
                                         },
                                         footer: true
                                     }
-                                }
+                                })
                             ],
                             lengthMenu: [
                                 [10, 50, 100, -1],
