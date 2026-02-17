@@ -755,24 +755,11 @@ function destroyDatatable(id) {
         $('#' + id).DataTable().clear().destroy();
     }
 }
-function getPdfExportButtonConfig(overrides) {
-    var baseConfig = {
+function getPdfExportButtonConfig() {
+    return {
         extend: 'pdfHtml5',
         orientation: 'landscape',
         pageSize: 'A4',
-        text: 'Export To PDF',
-        customize: function (doc) {
-            var userDisplay = String(window.IAS_USER_DISPLAY || 'IAS User').trim() || 'IAS User';
-            doc.watermark = {
-                text: userDisplay,
-                color: '#1f2937',
-                opacity: 0.08,
-                bold: true,
-                italics: false,
-                angle: -35,
-                fontSize: 64
-            };
-        },
         action: function (e, dt, button, config) {
             var pdfMake = window.pdfMake;
             var hasPdfMake = pdfMake &&
@@ -786,8 +773,7 @@ function getPdfExportButtonConfig(overrides) {
                 return;
             }
 
-            var exportOptions = config && config.exportOptions ? config.exportOptions : undefined;
-            var exportData = dt.buttons.exportData(exportOptions);
+            var exportData = dt.buttons.exportData(config.exportOptions);
             var hasContent = exportData &&
                 Array.isArray(exportData.body) &&
                 exportData.body.some(function (row) {
@@ -805,12 +791,6 @@ function getPdfExportButtonConfig(overrides) {
             $.fn.dataTable.ext.buttons.pdfHtml5.action.call(this, e, dt, button, config);
         }
     };
-
-    if (overrides && typeof overrides === 'object') {
-        return $.extend(true, {}, baseConfig, overrides);
-    }
-
-    return baseConfig;
 }
 function initializeDataTable(id) {
     if ($.fn.DataTable.isDataTable('#' + id)) {
