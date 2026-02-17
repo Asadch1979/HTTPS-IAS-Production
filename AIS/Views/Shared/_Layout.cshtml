@@ -77,6 +77,7 @@
 
     <script nonce="@nonce">
         window.PAGE_ID = Number(@((int?)ViewData["PageId"] ?? 0)) || 0;
+        window.IAS_USER_DISPLAY = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(userDisplay ?? ""));
     </script>
 
     <title>@ViewData["Title"] - IAS</title>
@@ -98,6 +99,7 @@
     <script src="~/lib/crypto/crypto-js.min.js"></script>
     <script src="~/lib/datatable/datatables.min.js"></script>
     <script src="~/lib/datatable/jszip.min.js"></script>
+    <script src="~/lib/datatable/pdfmake.min.js"></script>
     <script src="~/lib/datatable/vfs_fonts.js"></script>
     <script src="~/lib/datatable/pako.min.js"></script>
 
@@ -408,7 +410,28 @@
 
         /* Collapsed sidebar (desktop) */
         body.ias-sidebar-collapsed .ias-shell{
-            grid-template-columns: var(--ias-sidebar-collapsed-w) 1fr;
+            grid-template-columns: 1fr;
+        }
+        body.ias-sidebar-collapsed .ias-sidebar{
+            position: fixed;
+            left: 0;
+            top: 0;
+            width: var(--ias-sidebar-w);
+            z-index: 1040;
+            transform: translateX(calc(-1 * var(--ias-sidebar-w)));
+            transition: transform .2s ease;
+        }
+        body.ias-sidebar-collapsed.ias-sidebar-peek .ias-sidebar{
+            transform: translateX(0);
+        }
+        .ias-sidebar-edge-trigger{
+            display:none;
+            position: fixed;
+            left: 0;
+            top: 0;
+            width: 14px;
+            height: 100vh;
+            z-index: 1045;
         }
         body.ias-sidebar-collapsed .ias-sidebar__searchwrap,
         body.ias-sidebar-collapsed .ias-nav-title,
@@ -433,6 +456,7 @@
                 transition: transform .2s ease;
                 z-index: 1040;
             }
+            .ias-sidebar-edge-trigger{ display:none !important; }
             body.ias-sidebar-open .ias-sidebar{
                 transform: translateX(0);
             }
@@ -454,12 +478,17 @@
         body.ias-hide-sidebar .ias-backdrop{
             display:none;
         }
+
+        @@media (min-width: 992px){
+            body.ias-sidebar-collapsed .ias-sidebar-edge-trigger{ display:block; }
+        }
     </style>
 </head>
 
 <body data-page-id="@((int?)ViewData["PageId"] ?? 0)" class="@(hideSidebar ? "ias-hide-sidebar" : "")">
     @if (!hideSidebar)
     {
+        <div class="ias-sidebar-edge-trigger" id="iasSidebarEdgeTrigger" aria-hidden="true"></div>
         <div class="ias-backdrop" id="iasSidebarBackdrop" aria-hidden="true"></div>
     }
 
@@ -672,26 +701,86 @@
 
     <script nonce="@nonce">
         (function(){
+            if (document.body.classList.contains('ias-hide-sidebar')) return;
+
+            var desktopMedia = window.matchMedia('(min-width: 992px)');
+            var canUseHover = window.matchMedia('(hover: hover) and (pointer: fine)');
+            var autoHideEnabled = desktopMedia.matches && canUseHover.matches;
+
             // Persist collapsed state (desktop)
             try{
-                var collapsed = localStorage.getItem('ias.sidebar.collapsed') === '1';
+                var storedCollapsed = localStorage.getItem('ias.sidebar.collapsed');
+                var collapsed = storedCollapsed === null ? true : storedCollapsed === '1';
                 if (collapsed) document.body.classList.add('ias-sidebar-collapsed');
             }catch(e){}
 
+            var openTimer = null;
+            var closeTimer = null;
+            var AUTO_OPEN_DELAY = 80;
+            var AUTO_CLOSE_DELAY = 280;
+
+            function clearAutoHideTimers(){
+                if (openTimer){ clearTimeout(openTimer); openTimer = null; }
+                if (closeTimer){ clearTimeout(closeTimer); closeTimer = null; }
+            }
+
+            function setDesktopSidebarPeek(shouldPeek){
+                if (!desktopMedia.matches) return;
+                if (shouldPeek){
+                    document.body.classList.add('ias-sidebar-peek');
+                } else {
+                    document.body.classList.remove('ias-sidebar-peek');
+                }
+            }
+
+            function scheduleDesktopOpen(){
+                if (!autoHideEnabled || !document.body.classList.contains('ias-sidebar-collapsed')) return;
+                if (closeTimer){ clearTimeout(closeTimer); closeTimer = null; }
+                if (openTimer) return;
+                openTimer = setTimeout(function(){
+                    openTimer = null;
+                    setDesktopSidebarPeek(true);
+                }, AUTO_OPEN_DELAY);
+            }
+
+            function scheduleDesktopClose(){
+                if (!autoHideEnabled || !document.body.classList.contains('ias-sidebar-collapsed')) return;
+                if (openTimer){ clearTimeout(openTimer); openTimer = null; }
+                if (closeTimer) return;
+                closeTimer = setTimeout(function(){
+                    closeTimer = null;
+                    setDesktopSidebarPeek(false);
+                }, AUTO_CLOSE_DELAY);
+            }
+
             // Collapse toggle (desktop)
             var collapseBtn = document.getElementById('iasSidebarCollapseBtn');
+            var collapseIcon = document.getElementById('iasSidebarCollapseIcon');
+            function updateCollapseIcon(){
+                if (!collapseIcon) return;
+                collapseIcon.className = document.body.classList.contains('ias-sidebar-collapsed')
+                    ? 'fa-solid fa-angles-right'
+                    : 'fa-solid fa-angles-left';
+            }
+
             if (collapseBtn){
                 collapseBtn.addEventListener('click', function(){
                     document.body.classList.toggle('ias-sidebar-collapsed');
+                    setDesktopSidebarPeek(false);
+                    clearAutoHideTimers();
+                    updateCollapseIcon();
                     try{
                         localStorage.setItem('ias.sidebar.collapsed', document.body.classList.contains('ias-sidebar-collapsed') ? '1' : '0');
                     }catch(e){}
                 });
             }
+            updateCollapseIcon();
 
             // Mobile open/close
             var toggleBtn = document.getElementById('iasSidebarToggleBtn');
             var backdrop = document.getElementById('iasSidebarBackdrop');
+            var edgeTrigger = document.getElementById('iasSidebarEdgeTrigger');
+            var sidebar = document.getElementById('iasSidebar');
             function closeMobile(){
                 document.body.classList.remove('ias-sidebar-open');
             }
@@ -707,6 +796,45 @@
             }
             if (backdrop){
                 backdrop.addEventListener('click', closeMobile);
+            }
+
+            if (edgeTrigger){
+                edgeTrigger.addEventListener('mouseenter', scheduleDesktopOpen);
+            }
+            if (sidebar){
+                sidebar.addEventListener('mouseenter', function(){
+                    if (document.body.classList.contains('ias-sidebar-collapsed')){
+                        scheduleDesktopOpen();
+                    }
+                });
+                sidebar.addEventListener('mouseleave', scheduleDesktopClose);
+            }
+
+            document.addEventListener('click', function(evt){
+                var navLink = evt.target && evt.target.closest ? evt.target.closest('.ias-page-link') : null;
+                if (!navLink || !desktopMedia.matches) return;
+                clearAutoHideTimers();
+                setDesktopSidebarPeek(false);
+                if (!document.body.classList.contains('ias-sidebar-collapsed')){
+                    document.body.classList.add('ias-sidebar-collapsed');
+                    updateCollapseIcon();
+                    try{ localStorage.setItem('ias.sidebar.collapsed', '1'); }catch(e){}
+                }
+            }, true);
+
+            function handleViewportModeChange(){
+                autoHideEnabled = desktopMedia.matches && canUseHover.matches;
+                clearAutoHideTimers();
+                if (!autoHideEnabled){
+                    setDesktopSidebarPeek(false);
+                }
+            }
+            if (desktopMedia.addEventListener){
+                desktopMedia.addEventListener('change', handleViewportModeChange);
+                canUseHover.addEventListener('change', handleViewportModeChange);
+            }else{
+                desktopMedia.addListener(handleViewportModeChange);
+                canUseHover.addListener(handleViewportModeChange);
             }
 
             // Sidebar accordion + search + Home quick links hook
