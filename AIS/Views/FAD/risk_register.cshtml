@@ -300,7 +300,7 @@
                 ordering: false,
                 dom: '<"top"lfB>rt<"bottom"ip><"clear">',
                 buttons: [
-                    { extend: 'pdfHtml5', orientation: 'landscape', pageSize: 'A4' },
+                    getPdfExportButtonConfig(),
                     getExcelExportButtonConfig('Export to Excel'),
                     getCsvExportButtonConfig('Export to CSV'),
                     { extend: 'copyHtml5', text: 'Copy to Clipboard' }
