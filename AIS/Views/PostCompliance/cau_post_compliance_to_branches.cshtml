@@ -49,14 +49,17 @@
                                 }
                             }
                         },
-                        getPdfExportButtonConfig({
+                        {
+                            extend: 'pdfHtml5',
+                            text: 'Export To PDF',
+                            className: 'btn btn-danger',
                             exportOptions: {
                                 columns: function (idx, data, node) {
                                     // Exclude columns with the class 'hide-export'
                                     return !$(node).hasClass('hide-export');
                                 }
                             }
-                        })
+                        }
                     ],
                     lengthMenu: [
                         [10, 50, 100, -1],

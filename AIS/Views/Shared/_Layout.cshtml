@@ -77,8 +77,6 @@
 
     <script nonce="@nonce">
         window.PAGE_ID = Number(@((int?)ViewData["PageId"] ?? 0)) || 0;
-        window.IAS_HIDE_SIDEBAR = @hideSidebar.ToString().ToLowerInvariant();
-        window.IAS_USER_DISPLAY = @Html.Raw(System.Text.Json.JsonSerializer.Serialize((string.IsNullOrWhiteSpace(userPosting) ? userDisplay : $"{userDisplay} - {userPosting}")));
     </script>
 
     <title>@ViewData["Title"] - IAS</title>
@@ -100,7 +98,6 @@
     <script src="~/lib/crypto/crypto-js.min.js"></script>
     <script src="~/lib/datatable/datatables.min.js"></script>
     <script src="~/lib/datatable/jszip.min.js"></script>
-    <script src="~/lib/datatable/pdfmake.min.js"></script>
     <script src="~/lib/datatable/vfs_fonts.js"></script>
     <script src="~/lib/datatable/pako.min.js"></script>
 
@@ -675,41 +672,20 @@
 
     <script nonce="@nonce">
         (function(){
-            var hideSidebar = !!window.IAS_HIDE_SIDEBAR;
-            var isMobileLayout = window.matchMedia('(max-width: 991.98px)').matches;
-            var isTouchDevice = window.matchMedia('(hover: none), (pointer: coarse)').matches;
-            var enableDesktopAutoHide = !hideSidebar && !isMobileLayout && !isTouchDevice;
-            var OPEN_EDGE_PX = 20;
-            var OPEN_DELAY_MS = 120;
-            var CLOSE_DELAY_MS = 260;
-            var openTimer = null;
-            var closeTimer = null;
-
-            function clearSidebarTimers(){
-                if (openTimer){ clearTimeout(openTimer); openTimer = null; }
-                if (closeTimer){ clearTimeout(closeTimer); closeTimer = null; }
-            }
-
-            function setCollapsedState(collapsed){
-                document.body.classList.toggle('ias-sidebar-collapsed', !!collapsed);
-                try{ localStorage.setItem('ias.sidebar.collapsed', collapsed ? '1' : '0'); }catch(e){}
-            }
-
-            if (!hideSidebar){
-                try{
-                    var stored = localStorage.getItem('ias.sidebar.collapsed');
-                    var collapsed = stored === null ? true : stored === '1';
-                    document.body.classList.toggle('ias-sidebar-collapsed', collapsed);
-                }catch(e){
-                    document.body.classList.add('ias-sidebar-collapsed');
-                }
-            }
+            // Persist collapsed state (desktop)
+            try{
+                var collapsed = localStorage.getItem('ias.sidebar.collapsed') === '1';
+                if (collapsed) document.body.classList.add('ias-sidebar-collapsed');
+            }catch(e){}
 
             // Collapse toggle (desktop)
             var collapseBtn = document.getElementById('iasSidebarCollapseBtn');
             if (collapseBtn){
                 collapseBtn.addEventListener('click', function(){
-                    setCollapsedState(!document.body.classList.contains('ias-sidebar-collapsed'));
+                    document.body.classList.toggle('ias-sidebar-collapsed');
+                    try{
+                        localStorage.setItem('ias.sidebar.collapsed', document.body.classList.contains('ias-sidebar-collapsed') ? '1' : '0');
+                    }catch(e){}
                 });
             }
 
@@ -731,53 +707,6 @@
             }
             if (backdrop){
                 backdrop.addEventListener('click', closeMobile);
-            }
-
-            if (enableDesktopAutoHide){
-                var sidebar = document.querySelector('.ias-sidebar');
-                if (sidebar){
-                    var scheduleOpen = function(){
-                        if (!document.body.classList.contains('ias-sidebar-collapsed')) return;
-                        if (openTimer) return;
-                        openTimer = setTimeout(function(){
-                            setCollapsedState(false);
-                            openTimer = null;
-                        }, OPEN_DELAY_MS);
-                    };
-
-                    var scheduleClose = function(){
-                        if (document.body.classList.contains('ias-sidebar-collapsed')) return;
-                        if (closeTimer) return;
-                        closeTimer = setTimeout(function(){
-                            setCollapsedState(true);
-                            closeTimer = null;
-                        }, CLOSE_DELAY_MS);
-                    };
-
-                    document.addEventListener('mousemove', function(evt){
-                        if (evt.clientX <= OPEN_EDGE_PX){
-                            if (closeTimer){ clearTimeout(closeTimer); closeTimer = null; }
-                            scheduleOpen();
-                        } else if (evt.clientX > sidebar.offsetWidth + 30){
-                            if (openTimer){ clearTimeout(openTimer); openTimer = null; }
-                            scheduleClose();
-                        }
-                    });
-
-                    sidebar.addEventListener('mouseenter', function(){
-                        if (closeTimer){ clearTimeout(closeTimer); closeTimer = null; }
-                    });
-                    sidebar.addEventListener('mouseleave', function(){
-                        scheduleClose();
-                    });
-
-                    document.querySelectorAll('a[href]').forEach(function(link){
-                        link.addEventListener('click', function(){
-                            setCollapsedState(true);
-                            clearSidebarTimers();
-                        });
-                    });
-                }
             }
 
             // Sidebar accordion + search + Home quick links hook
