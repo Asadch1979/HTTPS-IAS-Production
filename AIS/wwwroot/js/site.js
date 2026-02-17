@@ -755,11 +755,28 @@ function destroyDatatable(id) {
         $('#' + id).DataTable().clear().destroy();
     }
 }
-function getPdfExportButtonConfig() {
-    return {
+function getPdfExportButtonConfig(overrides) {
+    var defaultConfig = {
         extend: 'pdfHtml5',
+        text: 'Export To PDF',
+        className: 'btn btn-danger',
         orientation: 'landscape',
         pageSize: 'A4',
+        customize: function (doc) {
+            var watermarkText = String(window.IAS_USER_DISPLAY || '').trim() || 'IAS User';
+            doc.background = function (currentPage, pageCount, pageSize) {
+                return {
+                    text: watermarkText,
+                    color: '#808080',
+                    opacity: 0.12,
+                    bold: true,
+                    fontSize: 58,
+                    alignment: 'center',
+                    margin: [0, pageSize.height * 0.35, 0, 0],
+                    angle: -35
+                };
+            };
+        },
         action: function (e, dt, button, config) {
             var pdfMake = window.pdfMake;
             var hasPdfMake = pdfMake &&
@@ -791,6 +808,8 @@ function getPdfExportButtonConfig() {
             $.fn.dataTable.ext.buttons.pdfHtml5.action.call(this, e, dt, button, config);
         }
     };
+
+    return $.extend(true, {}, defaultConfig, overrides || {});
 }
 function initializeDataTable(id) {
     if ($.fn.DataTable.isDataTable('#' + id)) {
