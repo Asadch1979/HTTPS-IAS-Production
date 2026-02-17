@@ -67,7 +67,6 @@
     }
 
     var year = DateTime.Now.Year;
-    var userWatermarkDisplay = string.IsNullOrWhiteSpace(userPosting) ? userDisplay : $"{userDisplay} - {userPosting}";
 }
 <!DOCTYPE html>
 <html lang="en">
@@ -78,7 +77,6 @@
 
     <script nonce="@nonce">
         window.PAGE_ID = Number(@((int?)ViewData["PageId"] ?? 0)) || 0;
-        window.IAS_USER_DISPLAY = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(userWatermarkDisplay));
         window.IAS_HIDE_SIDEBAR = @Html.Raw((hideSidebar ? "true" : "false"));
     </script>
 
@@ -101,7 +99,6 @@
     <script src="~/lib/crypto/crypto-js.min.js"></script>
     <script src="~/lib/datatable/datatables.min.js"></script>
     <script src="~/lib/datatable/jszip.min.js"></script>
-    <script src="~/lib/datatable/pdfmake.min.js"></script>
     <script src="~/lib/datatable/vfs_fonts.js"></script>
     <script src="~/lib/datatable/pako.min.js"></script>
 
