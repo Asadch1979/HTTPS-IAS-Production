@@ -1,6 +1,9 @@
 @model AIS.Models.FieldAuditReport.NarrativeSectionsViewModel
 @using System
 @using System.Linq
+@using Microsoft.AspNetCore.Html
+@using System.Text.RegularExpressions
+@using System.Net
 
 @{
     ViewData["Title"] = "Field Audit Report";
@@ -48,9 +51,30 @@
         return paraNo.HasValue && paraNo.Value > 0 ? paraNo.Value.ToString("D2") : "--";
         }
 
-    private string FormatReadOnlyNarrative(string value)
+    private IHtmlContent FormatReadOnlyNarrative(string value)
         {
-        return string.IsNullOrWhiteSpace(value) ? "Not available" : value;
+        if (string.IsNullOrWhiteSpace(value))
+            return new HtmlString("Not available");
+
+        var s = value.Trim();
+
+        // Basic safety: remove script tags + inline event handlers
+        // (keeps common formatting tags like div/span/p/br/b/i/ul/li/table etc.)
+        s = Regex.Replace(s, "<script\\b[^<]*(?:(?!<\\/script>)<[^<]*)*<\\/script>", "", RegexOptions.IgnoreCase);
+        s = Regex.Replace(s, "\\son\\w+\\s*=\\s*(['\"]).*?\\1", "", RegexOptions.IgnoreCase);
+        s = Regex.Replace(s, "javascript:", "", RegexOptions.IgnoreCase);
+
+        // If it looks like HTML, render as HTML
+        var looksHtml = Regex.IsMatch(s, "<\\s*/?\\s*[a-zA-Z][^>]*>");
+        if (looksHtml)
+            return new HtmlString(s);
+
+        // Otherwise treat as plain text (encode + preserve line breaks)
+        var encoded = WebUtility.HtmlEncode(s)
+            .Replace("\r\n", "\n")
+            .Replace("\n", "<br/>");
+
+        return new HtmlString(encoded);
         }
 }
 
@@ -86,6 +110,14 @@
 
     .read-only-text {
         white-space: pre-line;
+    }
+
+    .read-only-text div, .read-only-text p {
+        margin: 0 0 8px;
+    }
+
+    .read-only-text span {
+        white-space: normal;
     }
 </style>
 
