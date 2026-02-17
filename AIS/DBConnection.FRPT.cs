@@ -1,6 +1,7 @@
 ﻿using AIS.Models;
 using AIS.Models.FieldAuditReport;
 using Oracle.ManagedDataAccess.Client;
+using Oracle.ManagedDataAccess.Types;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -190,7 +191,17 @@ namespace AIS.Controllers
                         return string.Empty;
                         }
 
-                    return value.ToString();
+                    if (value is OracleClob oracleClob)
+                        {
+                        return oracleClob.IsNull ? string.Empty : oracleClob.Value;
+                        }
+
+                    if (value is OracleString oracleString)
+                        {
+                        return oracleString.IsNull ? string.Empty : oracleString.Value;
+                        }
+
+                    return Convert.ToString(value) ?? string.Empty;
                     }
 
                 return string.Empty;
@@ -414,7 +425,7 @@ namespace AIS.Controllers
                     ParaDetail = GetString("PARA_Detail", "PARA_DETAIL"),
                     Implications = GetString("IMPLICATIONS"),
                     Recommendations = GetString("RECOMMENDATIONS"),
-                    ManagementComments = GetString("MANAGEMENT_COMMENTS", "MANAGEMENT_BRANCH_COMMENTS"),
+                    ManagementComments = GetString("MANAGEMENT_COMMENTS", "MANAGEMENT_BRANCH_COMMENTS", "MANAGEMENT_REPLY", "REPLY"),
                     AuditorFurtherComments = GetString("AUDITOR_FURTHER_COMMENTS", "AUDITOR_COMMENTS"),
                     SvpRemarks = GetString("SVP_REMARKS", "REMARKS_OF_SVP")
                     });

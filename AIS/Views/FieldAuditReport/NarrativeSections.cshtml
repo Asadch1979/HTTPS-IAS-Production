@@ -761,7 +761,8 @@
             container.querySelectorAll('[data-field]').forEach((element) => {
                 const fieldName = element.dataset.field;
                 const label = element.dataset.label || fieldName;
-                const value = element.dataset.value ?? element.value ?? element.textContent ?? '';
+                const rawValue = element.dataset.value ?? element.value ?? element.textContent ?? '';
+                const value = (rawValue ?? '').toString();
                 fields[fieldName] = value;
                 if (!value.trim()) {
                     missing.push(label);
