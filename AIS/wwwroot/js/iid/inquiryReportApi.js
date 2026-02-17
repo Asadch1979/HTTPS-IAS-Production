@@ -21,6 +21,10 @@
     window.iidDeleteInqAccusation = function (id, userId) { return iidPostJson('/ApiCalls/DeleteIidInqAccusation', { id: id, userId: userId }); };
 
     window.iidGetInqAccusedList = function (complaintId) { return iidPostJson('/ApiCalls/GetIidInqAccusedList', { complaintId: complaintId }); };
+
+    window.iidGetIidInqAccusedListByComplaintId = function (complaintId) { return iidPostJson('/ApiCalls/GetIidInqAccusedListByComplaintId', { complaintId: complaintId }); };
+    window.iidGetIidStatementRegisterByComplaintId = function (complaintId) { return iidPostJson('/ApiCalls/GetIidStatementRegisterByComplaintId', { complaintId: complaintId }); };
+    window.iidSaveIidStatementRegisterRow = function (payload) { return iidPostJson('/ApiCalls/SaveIidStatementRegisterRow', payload); };
     window.iidAddInqAccused = function (payload) { return iidPostJson('/ApiCalls/AddIidInqAccused', payload); };
     window.iidUpdateInqAccused = function (payload) { return iidPostJson('/ApiCalls/UpdateIidInqAccused', payload); };
     window.iidDeleteInqAccused = function (id, userId) { return iidPostJson('/ApiCalls/DeleteIidInqAccused', { id: id, userId: userId }); };
