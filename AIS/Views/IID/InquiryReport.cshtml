@@ -74,7 +74,8 @@ $(function(){
         accusations: [{ accusationId: 0, accusationText: '', sortOrder: 1 }],
         accused: [{ accusedRowId: 0, personName: '', designation: '', roleType: 'Main', ppnoNumber: '', cnic: '', postingPlace: '', remarks: '', sortOrder: 1 }],
         records: [{ recId: 0, recordTitle: '', recordDetails: '', sortOrder: 1 }],
-        statements: [{ statementId: 0, personName: '', roleType: 'Complainant', ppnoNumber: '', cnic: '', statementDatetime: '', place: '', modeType: 'In Person', keyPoints: '' }],
+        statements: [],
+        statementDrafts: { complainant: emptyStatementEntry('Complainant'), accused: emptyStatementEntry('Accused') },
         evidence: [],
         violations: [{ violationId: 0, category: 'Internal', violationDetail: '', referenceText: '', recommendation: '', sortOrder: 1 }],
         dsa: [{ dsaId: 0, personName: '', designation: '', ppnoNumber: '', cnic: '', dsaStatus: '', remarks: '', sortOrder: 1 }],
@@ -147,6 +148,52 @@ $(function(){
         return accusedRoleOptions.map(function(opt){ return '<option value="' + esc(opt) + '" ' + (opt===selected?'selected':'') + '>' + esc(opt) + '</option>'; }).join('');
     }
 
+    function emptyStatementEntry(role){
+        return {
+            statementId: 0,
+            roleType: role,
+            ppnoNumber: '',
+            personName: '',
+            fatherName: '',
+            cnic: '',
+            statementDatetime: '',
+            place: '',
+            modeType: 'In Person',
+            keyPoints: ''
+        };
+    }
+
+    function normalizeDigits(v, maxLen){
+        var out = String(v || '').replace(/\D/g, '');
+        if(maxLen){ out = out.substring(0, maxLen); }
+        return out;
+    }
+
+    function toDateTimeLocal(v){
+        if(!v){ return ''; }
+        var raw = String(v);
+        if(raw.indexOf('T') >= 0){ return raw.substring(0, 16); }
+        var d = new Date(raw);
+        if(isNaN(d.getTime())){ return ''; }
+        var pad = function(n){ return n < 10 ? '0' + n : '' + n; };
+        return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()) + 'T' + pad(d.getHours()) + ':' + pad(d.getMinutes());
+    }
+
+    function mapStatementRow(x){
+        return {
+            statementId: x.statementId || 0,
+            roleType: x.roleType || 'Complainant',
+            ppnoNumber: x.ppnoNumber || '',
+            personName: x.personName || '',
+            fatherName: x.fatherName || '',
+            cnic: normalizeDigits(x.cnic || '', 13),
+            statementDatetime: toDateTimeLocal(x.statementDatetime),
+            place: x.place || '',
+            modeType: x.modeType || 'In Person',
+            keyPoints: x.keyPoints || ''
+        };
+    }
+
     function renderSection(step){
         var h = $('.wizard-section[data-step="' + step + '"]');
         var html = '<div class="card-body"><div class="validation-summary alert alert-warning d-none"></div>';
@@ -169,11 +216,44 @@ $(function(){
             var rowsR = state.records.map(function(r,i){ return '<tr data-row-id="' + (r.recId || 0) + '"><td>'+rowInput('records['+i+'].recordTitle',r.recordTitle)+'</td><td>'+rowInput('records['+i+'].recordDetails',r.recordDetails)+'</td><td><button type="button" class="btn btn-outline-danger btn-sm" data-remove-row="records" data-index="'+i+'">Remove</button></td></tr>'; }).join('');
             html += '<h5>Record Scrutinized</h5><table class="table table-sm"><thead><tr><th>Record Title</th><th>Details</th><th></th></tr></thead><tbody>'+rowsR+'</tbody></table><button type="button" class="btn btn-outline-primary btn-sm" data-add-row="records">Add Row</button>';
         }
+
         if(step === 5){
-            var rowsS = state.statements.map(function(r,i){ return '<tr data-row-id="' + (r.statementId || 0) + '"><td>'+rowInput('statements['+i+'].personName',r.personName)+'</td><td>'+rowInput('statements['+i+'].roleType',r.roleType)+'</td><td>'+rowInput('statements['+i+'].ppnoNumber',r.ppnoNumber)+'</td><td>'+rowInput('statements['+i+'].cnic',r.cnic)+'</td><td>'+rowInput('statements['+i+'].statementDatetime',r.statementDatetime,'datetime-local')+'</td><td>'+rowInput('statements['+i+'].place',r.place)+'</td><td><button type="button" class="btn btn-outline-danger btn-sm" data-remove-row="statements" data-index="'+i+'">Remove</button></td></tr>'; }).join('');
-            html += '<h5>Statement Register</h5><div class="help-text mb-2">PPNO is mandatory. Complainant statement defaults PPNO to complainant CNIC.</div><table class="table table-sm"><thead><tr><th>Person</th><th>Role</th><th>PPNO</th><th>CNIC</th><th>Date/Time</th><th>Place</th><th></th></tr></thead><tbody>'+rowsS+'</tbody></table><button type="button" class="btn btn-outline-primary btn-sm" data-add-row="statements">Add Row</button>';
+            var complainantRows = state.statements.filter(function(x){ return (x.roleType || '').toLowerCase() === 'complainant'; });
+            var accusedRows = state.statements.filter(function(x){ return (x.roleType || '').toLowerCase() === 'accused'; });
+            var cDraft = state.statementDrafts.complainant;
+            var aDraft = state.statementDrafts.accused;
+            var complainantGrid = complainantRows.map(function(r){
+                return '<tr data-row-id="' + (r.statementId || 0) + '"><td>' + esc(r.cnic) + '</td><td>' + esc(r.personName) + '</td><td>' + esc(r.fatherName || '') + '</td><td>' + esc(r.statementDatetime) + '</td><td>' + esc(r.place) + '</td><td><button type="button" class="btn btn-outline-secondary btn-sm me-1" data-edit-statement="' + (r.statementId || 0) + '">Edit</button><button type="button" class="btn btn-outline-danger btn-sm" data-remove-statement="' + (r.statementId || 0) + '">Remove</button></td></tr>';
+            }).join('');
+            var accusedGrid = accusedRows.map(function(r){
+                return '<tr data-row-id="' + (r.statementId || 0) + '"><td>' + esc(r.ppnoNumber || '') + '</td><td>' + esc(r.personName) + '</td><td>' + esc(r.fatherName || '') + '</td><td>' + esc(r.cnic) + '</td><td>' + esc(r.statementDatetime) + '</td><td>' + esc(r.place) + '</td><td><button type="button" class="btn btn-outline-secondary btn-sm me-1" data-edit-statement="' + (r.statementId || 0) + '">Edit</button><button type="button" class="btn btn-outline-danger btn-sm" data-remove-statement="' + (r.statementId || 0) + '">Remove</button></td></tr>';
+            }).join('');
+
+            html += '<h5>Statement Register</h5><div class="alert alert-info py-2">Grids below always show saved database records.</div>';
+            html += '<div class="card mb-3"><div class="card-body"><h6 class="mb-3">Complainant Statement</h6><div class="row g-2">'
+                + '<div class="col-md-3"><label class="form-label">CNIC <span class="text-danger">*</span></label><input class="form-control" data-statement-entry="complainant.cnic" value="' + esc(cDraft.cnic) + '" maxlength="13" inputmode="numeric" placeholder="Digits only"></div>'
+                + '<div class="col-md-3"><label class="form-label">Name <span class="text-danger">*</span></label><input class="form-control" data-statement-entry="complainant.personName" value="' + esc(cDraft.personName) + '"></div>'
+                + '<div class="col-md-3"><label class="form-label">Father Name <span class="text-danger">*</span></label><input class="form-control" data-statement-entry="complainant.fatherName" value="' + esc(cDraft.fatherName || '') + '"></div>'
+                + '<div class="col-md-3"><label class="form-label">Date/Time <span class="text-danger">*</span></label><input type="datetime-local" class="form-control" data-statement-entry="complainant.statementDatetime" value="' + esc(cDraft.statementDatetime) + '"></div>'
+                + '<div class="col-md-9"><label class="form-label">Place of Statement <span class="text-danger">*</span></label><input class="form-control" data-statement-entry="complainant.place" value="' + esc(cDraft.place) + '"></div>'
+                + '<div class="col-md-3 d-flex align-items-end"><button type="button" class="btn btn-primary w-100" data-save-statement="complainant">Save Complainant</button></div>'
+                + '</div><div class="table-responsive mt-3"><table class="table table-sm"><thead><tr><th>CNIC</th><th>Name</th><th>Father Name</th><th>Date/Time</th><th>Place</th><th>Action</th></tr></thead><tbody>' + (complainantGrid || '<tr><td colspan="6" class="text-muted">No complainant statements found.</td></tr>') + '</tbody></table></div></div></div>';
+
+            html += '<div class="card"><div class="card-body"><h6 class="mb-3">Accused Statement</h6><div class="row g-2 align-items-end mb-3">'
+                + '<div class="col-md-3"><label class="form-label">PPNO</label><input class="form-control" data-accused-search-ppno value="" inputmode="numeric" placeholder="Numeric only"></div>'
+                + '<div class="col-md-2"><button type="button" class="btn btn-outline-primary w-100" data-search-accused>Search</button></div>'
+                + '</div><div class="row g-2">'
+                + '<div class="col-md-2"><label class="form-label">PPNO</label><input class="form-control" data-statement-entry="accused.ppnoNumber" value="' + esc(aDraft.ppnoNumber) + '" inputmode="numeric"></div>'
+                + '<div class="col-md-3"><label class="form-label">Name <span class="text-danger">*</span></label><input class="form-control" data-statement-entry="accused.personName" value="' + esc(aDraft.personName) + '"></div>'
+                + '<div class="col-md-3"><label class="form-label">Father Name <span class="text-danger">*</span></label><input class="form-control" data-statement-entry="accused.fatherName" value="' + esc(aDraft.fatherName || '') + '"></div>'
+                + '<div class="col-md-2"><label class="form-label">CNIC <span class="text-danger">*</span></label><input class="form-control" data-statement-entry="accused.cnic" value="' + esc(aDraft.cnic) + '" maxlength="13" inputmode="numeric" placeholder="Digits only"></div>'
+                + '<div class="col-md-2"><label class="form-label">Date/Time <span class="text-danger">*</span></label><input type="datetime-local" class="form-control" data-statement-entry="accused.statementDatetime" value="' + esc(aDraft.statementDatetime) + '"></div>'
+                + '<div class="col-md-10"><label class="form-label">Place of Statement <span class="text-danger">*</span></label><input class="form-control" data-statement-entry="accused.place" value="' + esc(aDraft.place) + '"></div>'
+                + '<div class="col-md-2 d-flex align-items-end"><button type="button" class="btn btn-primary w-100" data-save-statement="accused">Save Accused</button></div>'
+                + '</div><div class="table-responsive mt-3"><table class="table table-sm"><thead><tr><th>PPNO</th><th>Name</th><th>Father Name</th><th>CNIC</th><th>Date/Time</th><th>Place</th><th>Action</th></tr></thead><tbody>' + (accusedGrid || '<tr><td colspan="7" class="text-muted">No accused statements found.</td></tr>') + '</tbody></table></div></div></div>';
         }
         if(step === 6){
+{
             var rowsE = state.evidence.map(function(r){ return '<tr><td>'+esc(r.fileName)+'</td><td>'+esc(r.evidenceType || 'N/A')+'</td><td>'+esc(r.uploadedOn || 'N/A')+'</td><td><button type="button" class="btn btn-outline-danger btn-sm" data-delete-evidence="'+ r.evidenceId +'">Remove</button></td></tr>'; }).join('');
             html += '<h5>Evidence</h5><div class="mb-3"><label class="form-label">Upload evidence files</label><input id="uploadedEvidence" type="file" class="form-control" multiple></div><table class="table table-sm"><thead><tr><th>File</th><th>Type</th><th>Uploaded On</th><th></th></tr></thead><tbody>' + (rowsE || '<tr><td colspan="4" class="text-muted">No evidence uploaded.</td></tr>') + '</tbody></table>';
         }
@@ -201,13 +281,86 @@ $(function(){
         });
     }
 
+
+    function setStatementDraft(role, field, value){
+        var draft = state.statementDrafts[role];
+        if(!draft){ return; }
+        var nextVal = value;
+        if(field === 'cnic'){ nextVal = normalizeDigits(value, 13); }
+        if(field === 'ppnoNumber'){ nextVal = normalizeDigits(value); }
+        draft[field] = nextVal;
+        markDirty(5);
+    }
+
+    function validateStatementEntry(role){
+        var d = state.statementDrafts[role];
+        var errors = [];
+        if(!d){ return ['Invalid statement role.']; }
+        if(!d.personName || !String(d.personName).trim()){ errors.push('Name is required.'); }
+        if(!d.fatherName || !String(d.fatherName).trim()){ errors.push('Father Name is required.'); }
+        if(!d.statementDatetime || !String(d.statementDatetime).trim()){ errors.push('Date/Time is required.'); }
+        if(!d.place || !String(d.place).trim()){ errors.push('Place of Statement is required.'); }
+
+        var cnic = normalizeDigits(d.cnic, 13);
+        d.cnic = cnic;
+        if(!cnic || cnic.length !== 13){ errors.push('CNIC must be 13 digits.'); }
+
+        if(role === 'accused' && d.ppnoNumber && normalizeDigits(d.ppnoNumber) !== String(d.ppnoNumber)){
+            errors.push('PPNO must be numeric only.');
+        }
+        return errors;
+    }
+
+    function statementPayload(role){
+        var d = state.statementDrafts[role];
+        return {
+            statementId: d.statementId || 0,
+            complaintId: complaintId,
+            personName: d.personName,
+            fatherName: d.fatherName,
+            roleType: role === 'complainant' ? 'Complainant' : 'Accused',
+            ppnoNumber: role === 'complainant' ? '' : (d.ppnoNumber || ''),
+            cnic: normalizeDigits(d.cnic, 13),
+            statementDatetime: d.statementDatetime,
+            place: d.place,
+            modeType: 'In Person',
+            keyPoints: '',
+            status: 'A',
+            createdBy: userId,
+            updatedBy: userId
+        };
+    }
+
+    function saveStatement(role){
+        var errors = validateStatementEntry(role);
+        showValidation(5, errors);
+        if(errors.length){ return $.Deferred().reject({ message: errors[0] }).promise(); }
+
+        var payload = statementPayload(role);
+        var req = payload.statementId > 0 ? window.iidUpdateInqStatement(payload) : window.iidAddInqStatement(payload);
+
+        return req.then(function(resp){
+            ensureApiSuccess(resp, 'Failed to save statement.');
+            var msg = getResponseMessage(resp) || 'Statement saved successfully.';
+            return window.iidGetInqStatements(complaintId).then(function(loadResp){
+                ensureApiSuccess(loadResp, 'Failed to reload statements.');
+                state.statements = extractData(loadResp).map(mapStatementRow);
+                state.statementDrafts[role] = emptyStatementEntry(role === 'complainant' ? 'Complainant' : 'Accused');
+                state.savedSteps[5] = true;
+                state.dirtySteps[5] = false;
+                showValidation(5, []);
+                return { message: msg };
+            });
+        });
+    }
+
     function validateStep(step){
         var errs = [];
         var has = function(v){ return !!(v && String(v).trim()); };
         if(step === 2 && !state.accusations.some(function(x){ return has(x.accusationText); })) errs.push('At least one accusation is required.');
         if(step === 3 && !state.accused.some(function(x){ return has(x.personName); })) errs.push('At least one accused row is required.');
         if(step === 4 && !state.records.some(function(x){ return has(x.recordTitle) || has(x.recordDetails); })) errs.push('At least one record scrutinized row is required.');
-        if(step === 5 && !state.statements.some(function(x){ return has(x.personName) && has(x.ppnoNumber) && has(x.place) && has(x.statementDatetime); })) errs.push('Statement register requires at least one complete row (including PPNO).');
+        if(step === 5 && !state.statements.length) errs.push('Add at least one statement record before final submit.');
         if(step === 6 && !state.evidence.length) errs.push('At least one evidence file is mandatory.');
         if(step === 7 && !state.violations.some(function(x){ return has(x.category) && has(x.violationDetail) && has(x.referenceText) && has(x.recommendation); })) errs.push('At least one complete violation row is required.');
         if(step === 8 && !state.dsa.some(function(x){ return has(x.personName) || has(x.dsaStatus); })) errs.push('At least one DSA row is required.');
@@ -225,7 +378,6 @@ $(function(){
         if(section === 'accusations') state.accusations.push({ accusationId: 0, accusationText: '', sortOrder: 1 });
         if(section === 'accused') state.accused.push({ accusedRowId: 0, personName: '', designation: '', roleType: 'Main', ppnoNumber: '', cnic: '', postingPlace: '', remarks: '', sortOrder: 1 });
         if(section === 'records') state.records.push({ recId: 0, recordTitle: '', recordDetails: '', sortOrder: 1 });
-        if(section === 'statements') state.statements.push({ statementId: 0, personName: '', roleType: 'Complainant', ppnoNumber: state.complainantCnic || '', cnic: state.complainantCnic || '', statementDatetime: '', place: '', modeType: 'In Person', keyPoints: '' });
         if(section === 'violations') state.violations.push({ violationId: 0, category: 'Internal', violationDetail: '', referenceText: '', recommendation: '', sortOrder: 1 });
         if(section === 'dsa') state.dsa.push({ dsaId: 0, personName: '', designation: '', ppnoNumber: '', cnic: '', dsaStatus: '', remarks: '', sortOrder: 1 });
     }
@@ -268,7 +420,7 @@ $(function(){
             2: { loadFn: window.iidGetInqAccusations, hydrate: function(resp){ state.accusations = extractData(resp).map(function(x){ return { accusationId: x.accusationId, accusationText: x.accusationText, sortOrder: x.sortOrder || 1 }; }); ensureOneRow('accusations'); }, section: 'accusations' },
             3: { loadFn: window.iidGetInqAccusedList, hydrate: function(resp){ state.accused = extractData(resp).map(function(x){ x.roleType = accusedRoleOptions.indexOf(x.roleType) >= 0 ? x.roleType : 'Main'; return x; }); ensureOneRow('accused'); }, section: 'accused' },
             4: { loadFn: window.iidGetInqRecords, hydrate: function(resp){ state.records = extractData(resp); ensureOneRow('records'); }, section: 'records' },
-            5: { loadFn: window.iidGetInqStatements, hydrate: function(resp){ state.statements = extractData(resp); ensureOneRow('statements'); }, section: 'statements' },
+            5: { loadFn: window.iidGetInqStatements, hydrate: function(resp){ state.statements = extractData(resp).map(mapStatementRow); state.statementDrafts.complainant = emptyStatementEntry('Complainant'); state.statementDrafts.accused = emptyStatementEntry('Accused'); }, section: 'statements' },
             6: { loadFn: window.iidGetInqEvidenceFiles, hydrate: function(resp){ state.evidence = extractData(resp); }, section: 'evidence' },
             7: { loadFn: window.iidGetInqViolations, hydrate: function(resp){ state.violations = extractData(resp); ensureOneRow('violations'); }, section: 'violations' },
             8: { loadFn: window.iidGetInqDsa, hydrate: function(resp){ state.dsa = extractData(resp); ensureOneRow('dsa'); }, section: 'dsa' }
@@ -298,7 +450,11 @@ $(function(){
             return saveCollection({ section: 'records', rows: state.records.filter(function(x){ return ((x.recordTitle || '') + (x.recordDetails || '')).trim(); }), idKey: 'recId', addFn: window.iidAddInqRecord, updateFn: window.iidUpdateInqRecord, deleteFn: window.iidDeleteInqRecord, loadFn: window.iidGetInqRecords, map: function(row, idx){ return $.extend({}, row, { complaintId: complaintId, sortOrder: idx + 1, status: 'A', createdBy: userId, updatedBy: userId }); }, hydrate: function(resp){ state.records = extractData(resp); ensureOneRow('records'); }, successMessage: 'Record scrutinized saved successfully.' });
         }
         if(step === 5){
-            return saveCollection({ section: 'statements', rows: state.statements.filter(function(x){ return x.personName && x.ppnoNumber; }), idKey: 'statementId', addFn: window.iidAddInqStatement, updateFn: window.iidUpdateInqStatement, deleteFn: window.iidDeleteInqStatement, loadFn: window.iidGetInqStatements, map: function(row){ return $.extend({}, row, { complaintId: complaintId, status: 'A', createdBy: userId, updatedBy: userId }); }, hydrate: function(resp){ state.statements = extractData(resp); ensureOneRow('statements'); }, successMessage: 'Statement register saved successfully.' });
+            return window.iidGetInqStatements(complaintId).then(function(resp){
+                ensureApiSuccess(resp, 'Failed to load statement register.');
+                state.statements = extractData(resp).map(mapStatementRow);
+                return { message: 'Statement register reloaded from database.' };
+            });
         }
         if(step === 6){
             return window.iidGetInqEvidenceFiles(complaintId).then(function(resp){ ensureApiSuccess(resp, 'Failed to load evidence list.'); state.evidence = extractData(resp); return { message: 'Evidence list refreshed from database.' }; });
@@ -343,7 +499,6 @@ $(function(){
             $('#iidComplaintHiddenCache').text(JSON.stringify(c));
             state.snapshot = { complaintNo: c.complaintNo, submittedOn: c.submittedOn, region: c.region, branch: c.branch, category: c.category, nature: c.nature, complainantName: c.complainantName, cnic: c.cnic, cellularNumber: c.cellularNumber, mailingAddress: c.mailingAddress, gender: c.gender, receivedFrom: c.receivedFrom, actionRequired: c.actionRequired, contents: c.contents };
             renderSnapshotStrip();
-            if(state.statements.length && !state.statements[0].ppnoNumber){ state.statements[0].ppnoNumber = state.complainantCnic; state.statements[0].cnic = state.complainantCnic; }
         });
     }
 
@@ -367,7 +522,6 @@ $(function(){
         if(s==='accusations') state.accusations.push({ accusationId: 0, accusationText: '', sortOrder: state.accusations.length + 1 });
         if(s==='accused') state.accused.push({ accusedRowId: 0, personName: '', designation: '', roleType: 'Main', ppnoNumber: '', cnic: '', postingPlace: '', remarks: '', sortOrder: state.accused.length + 1 });
         if(s==='records') state.records.push({ recId: 0, recordTitle: '', recordDetails: '', sortOrder: state.records.length + 1 });
-        if(s==='statements') state.statements.push({ statementId: 0, personName: '', roleType: '', ppnoNumber: '', cnic: '', statementDatetime: '', place: '', modeType: '', keyPoints: '' });
         if(s==='violations') state.violations.push({ violationId: 0, category: 'Internal', violationDetail: '', referenceText: '', recommendation: '', sortOrder: state.violations.length + 1 });
         if(s==='dsa') state.dsa.push({ dsaId: 0, personName: '', designation: '', ppnoNumber: '', cnic: '', dsaStatus: '', remarks: '', sortOrder: state.dsa.length + 1 });
         markDirty(currentStep);
@@ -440,6 +594,74 @@ $(function(){
                 renderCurrent(true);
             });
         }).fail(function(err){ showAlert((err && err.message) || 'Failed to delete evidence file.', 'danger'); });
+    });
+
+
+    $(document).on('input change', '[data-statement-entry]', function(){
+        var key = String($(this).data('statement-entry') || '');
+        var m = key.match(/^(complainant|accused)\.(\w+)$/);
+        if(!m){ return; }
+        setStatementDraft(m[1], m[2], $(this).val());
+        if(m[2] === 'cnic' || m[2] === 'ppnoNumber'){
+            $(this).val(state.statementDrafts[m[1]][m[2]] || '');
+        }
+        renderStepper();
+    });
+
+    $(document).on('click', '[data-save-statement]', function(){
+        var role = String($(this).data('save-statement') || '');
+        saveStatement(role).done(function(result){
+            showAlert((result && result.message) || 'Saved successfully.', 'success');
+            renderCurrent(true);
+        }).fail(function(err){
+            showAlert((err && err.message) || 'Failed to save statement.', 'danger');
+        });
+    });
+
+    $(document).on('click', '[data-remove-statement]', function(){
+        var id = parseInt($(this).data('remove-statement'), 10) || 0;
+        if(!id){ showAlert('Invalid statement row.', 'danger'); return; }
+        window.iidDeleteInqStatement(id, userId || 0).then(function(resp){
+            ensureApiSuccess(resp, 'Failed to delete statement row.');
+            var msg = getResponseMessage(resp) || 'Statement row removed successfully.';
+            return window.iidGetInqStatements(complaintId).then(function(loadResp){
+                ensureApiSuccess(loadResp, 'Failed to reload statements.');
+                state.statements = extractData(loadResp).map(mapStatementRow);
+                state.savedSteps[5] = true;
+                state.dirtySteps[5] = false;
+                showAlert(msg, 'success');
+                renderCurrent(true);
+            });
+        }).fail(function(err){ showAlert((err && err.message) || 'Failed to delete statement row.', 'danger'); });
+    });
+
+    $(document).on('click', '[data-edit-statement]', function(){
+        var id = parseInt($(this).data('edit-statement'), 10) || 0;
+        var row = state.statements.find(function(x){ return (x.statementId || 0) === id; });
+        if(!row){ showAlert('Statement row not found.', 'danger'); return; }
+        var role = ((row.roleType || '').toLowerCase() === 'accused') ? 'accused' : 'complainant';
+        state.statementDrafts[role] = $.extend({}, emptyStatementEntry(role === 'complainant' ? 'Complainant' : 'Accused'), row, { roleType: role === 'complainant' ? 'Complainant' : 'Accused' });
+        markDirty(5);
+        renderCurrent(true);
+    });
+
+    $(document).on('click', '[data-search-accused]', function(){
+        var ppno = normalizeDigits($('.wizard-section[data-step="5"] [data-accused-search-ppno]').val());
+        if(!ppno){ showAlert('Enter numeric PPNO to search.', 'warning'); return; }
+        window.iidGetEmployeeByPpno(ppno).then(function(resp){
+            var item = (resp && resp[0]) ? resp[0] : resp;
+            if(!item || !item.ppNo && !item.PPNo && !item.ppNumber && !item.PPNumber){
+                showAlert('No employee record found for entered PPNO.', 'warning');
+                return;
+            }
+            state.statementDrafts.accused.ppnoNumber = normalizeDigits(item.ppNo || item.PPNo || item.ppNumber || item.PPNumber || ppno);
+            state.statementDrafts.accused.personName = item.empName || item.EmpName || item.name || item.Name || '';
+            state.statementDrafts.accused.fatherName = item.fatherName || item.FatherName || '';
+            state.statementDrafts.accused.cnic = normalizeDigits(item.cnic || item.CNIC || '', 13);
+            markDirty(5);
+            renderCurrent(true);
+            showAlert('Employee details loaded. You can edit before save.', 'success');
+        }).fail(function(){ showAlert('Failed to lookup employee by PPNO.', 'danger'); });
     });
 
     $(document).on('click', '#finalSubmitBtn', function(){
