@@ -48,8 +48,7 @@
                                 }
                             }
                         },
-                        {
-                            extend: 'pdfHtml5',
+                        getPdfExportButtonConfig({
                             text: 'Export To PDF',
                             className: 'btn btn-danger',
                             exportOptions: {
@@ -58,7 +57,7 @@
                                     return !$(node).hasClass('hide-export');
                                 }
                             }
-                        }
+                        })
                     ],
                     lengthMenu: [
                         [10, 50, 100, -1],

@@ -755,42 +755,68 @@ function destroyDatatable(id) {
         $('#' + id).DataTable().clear().destroy();
     }
 }
-function getPdfExportButtonConfig() {
-    return {
+function getPdfWatermarkDisplayName() {
+    var value = String(window.IAS_USER_DISPLAY || '').trim();
+    return value || 'IAS User';
+}
+
+function getPdfExportButtonConfig(overrides) {
+    var baseConfig = {
         extend: 'pdfHtml5',
         orientation: 'landscape',
-        pageSize: 'A4',
-        action: function (e, dt, button, config) {
-            var pdfMake = window.pdfMake;
-            var hasPdfMake = pdfMake &&
-                typeof pdfMake.createPdf === 'function' &&
-                pdfMake.vfs &&
-                Object.keys(pdfMake.vfs).length > 0 &&
-                !(pdfMake.version && pdfMake.version.indexOf('placeholder') === 0);
-            if (!hasPdfMake) {
-                console.error('PDF export failed: pdfMake is missing or invalid.');
-                alert('PDF export is unavailable right now. Please refresh the page or contact support.');
-                return;
-            }
+        pageSize: 'A4'
+    };
 
-            var exportData = dt.buttons.exportData(config.exportOptions);
-            var hasContent = exportData &&
-                Array.isArray(exportData.body) &&
-                exportData.body.some(function (row) {
-                    return Array.isArray(row) && row.some(function (cell) {
-                        return String(cell || '').trim().length > 0;
-                    });
-                });
+    var mergedConfig = $.extend(true, {}, baseConfig, overrides || {});
+    var userCustomize = typeof mergedConfig.customize === 'function' ? mergedConfig.customize : null;
 
-            if (!hasContent) {
-                console.error('PDF export failed: no data available for export.');
-                alert('There is no data to export to PDF.');
-                return;
-            }
+    mergedConfig.customize = function (doc) {
+        doc.watermark = {
+            text: getPdfWatermarkDisplayName(),
+            color: '#6b7280',
+            opacity: 0.12,
+            bold: true,
+            italics: false,
+            fontSize: 72,
+            angle: -35
+        };
 
-            $.fn.dataTable.ext.buttons.pdfHtml5.action.call(this, e, dt, button, config);
+        if (userCustomize) {
+            userCustomize.apply(this, arguments);
         }
     };
+
+    mergedConfig.action = function (e, dt, button, config) {
+        var pdfMake = window.pdfMake;
+        var hasPdfMake = pdfMake &&
+            typeof pdfMake.createPdf === 'function';
+
+        if (!hasPdfMake) {
+            console.error('PDF export failed: pdfMake is missing or invalid.');
+            alert('PDF export is unavailable right now. Please refresh the page or contact support.');
+            return;
+        }
+
+        var effectiveConfig = config || mergedConfig;
+        var exportData = dt.buttons.exportData(effectiveConfig.exportOptions);
+        var hasContent = exportData &&
+            Array.isArray(exportData.body) &&
+            exportData.body.some(function (row) {
+                return Array.isArray(row) && row.some(function (cell) {
+                    return String(cell || '').trim().length > 0;
+                });
+            });
+
+        if (!hasContent) {
+            console.error('PDF export failed: no data available for export.');
+            alert('There is no data to export to PDF.');
+            return;
+        }
+
+        $.fn.dataTable.ext.buttons.pdfHtml5.action.call(this, e, dt, button, effectiveConfig);
+    };
+
+    return mergedConfig;
 }
 function initializeDataTable(id) {
     if ($.fn.DataTable.isDataTable('#' + id)) {
