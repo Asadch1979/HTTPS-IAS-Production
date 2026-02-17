@@ -72,7 +72,10 @@ $(function(){
         complainantName: '',
         complainantCnic: '',
         accusations: [{ accusationId: 0, accusationText: '', sortOrder: 1 }],
-        accused: [{ accusedRowId: 0, personName: '', designation: '', roleType: 'Main', ppnoNumber: '', cnic: '', postingPlace: '', remarks: '', sortOrder: 1 }],
+        accusedEmployeeRows: [],
+        accusedManualRows: [],
+        accusedEmployeeDraft: { ppnoNumber: '', personName: '', fatherName: '', cnic: '', designation: '', roleType: 'Main' },
+        accusedManualDraft: { personName: '', fatherName: '', cnic: '', designation: '', roleType: 'Main' },
         records: [{ recId: 0, recordTitle: '', recordDetails: '', sortOrder: 1 }],
         statements: { complainant: [], accused: [] },
         statementDrafts: {
@@ -166,10 +169,40 @@ $(function(){
             html += '<h5>Accusations</h5><table class="table table-sm"><thead><tr><th>Accusation</th><th></th></tr></thead><tbody>' + rowsA + '</tbody></table><button type="button" class="btn btn-outline-primary btn-sm" data-add-row="accusations">Add Row</button>';
         }
         if(step === 3){
-            var rowsAc = state.accused.map(function(r,i){
-                return '<tr data-row-id="' + (r.accusedRowId || 0) + '"><td><input type="hidden" data-bind="accused['+i+'].accusedRowId" value="' + esc(r.accusedRowId || 0) + '">' + rowInput('accused['+i+'].personName',r.personName) + '</td><td>'+rowInput('accused['+i+'].designation',r.designation)+'</td><td><select class="form-select" data-bind="accused['+i+'].roleType">' + roleOptionsHtml(r.roleType || 'Main') + '</select></td><td>'+rowInput('accused['+i+'].ppnoNumber',r.ppnoNumber)+'</td><td>'+rowInput('accused['+i+'].cnic',r.cnic)+'</td><td><button type="button" class="btn btn-outline-danger btn-sm" data-remove-row="accused" data-index="'+i+'">Remove</button></td></tr>';
+            var rowsEmp = state.accusedEmployeeRows.map(function(r){
+                return '<tr data-row-id="' + (r.accusedRowId || 0) + '"><td>' + esc(r.ppnoNumber) + '</td><td>' + esc(r.personName) + '</td><td>' + esc(r.fatherName) + '</td><td>' + esc(r.cnic) + '</td><td>' + esc(r.designation) + '</td><td>' + esc(r.roleType) + '</td><td><button type="button" class="btn btn-outline-danger btn-sm" data-remove-accused="employee" data-id="' + (r.accusedRowId || 0) + '">Remove</button></td></tr>';
             }).join('');
-            html += '<h5>Accused List</h5><table class="table table-sm"><thead><tr><th>Name</th><th>Designation</th><th>Role</th><th>PPNO</th><th>CNIC</th><th></th></tr></thead><tbody>'+rowsAc+'</tbody></table><button type="button" class="btn btn-outline-primary btn-sm" data-add-row="accused">Add Row</button>';
+            var rowsManual = state.accusedManualRows.map(function(r){
+                return '<tr data-row-id="' + (r.accusedRowId || 0) + '"><td>' + esc(r.personName) + '</td><td>' + esc(r.fatherName) + '</td><td>' + esc(r.cnic) + '</td><td>' + esc(r.designation) + '</td><td>' + esc(r.roleType) + '</td><td><button type="button" class="btn btn-outline-danger btn-sm" data-remove-accused="manual" data-id="' + (r.accusedRowId || 0) + '">Remove</button></td></tr>';
+            }).join('');
+
+            html += '<h5>Accused List</h5>' +
+                '<div class="card border-0 bg-light mb-3"><div class="card-body">' +
+                    '<h6 class="mb-3">Employee Accused (PPNO based)</h6>' +
+                    '<div class="row g-2 align-items-end">' +
+                        '<div class="col-md-2"><label class="form-label">PPNO</label><input type="text" class="form-control" maxlength="20" data-step3-field="employee.ppnoNumber" value="' + esc(state.accusedEmployeeDraft.ppnoNumber) + '"></div>' +
+                        '<div class="col-md-2"><button type="button" class="btn btn-outline-primary w-100" data-step3-search>Search</button></div>' +
+                        '<div class="col-md-2"><label class="form-label">Name</label><input type="text" class="form-control" data-step3-field="employee.personName" value="' + esc(state.accusedEmployeeDraft.personName) + '"></div>' +
+                        '<div class="col-md-2"><label class="form-label">Father Name</label><input type="text" class="form-control" data-step3-field="employee.fatherName" value="' + esc(state.accusedEmployeeDraft.fatherName) + '"></div>' +
+                        '<div class="col-md-2"><label class="form-label">CNIC</label><input type="text" class="form-control" maxlength="13" data-step3-field="employee.cnic" value="' + esc(state.accusedEmployeeDraft.cnic) + '"></div>' +
+                        '<div class="col-md-1"><label class="form-label">Role</label><select class="form-select" data-step3-field="employee.roleType">' + roleOptionsHtml(state.accusedEmployeeDraft.roleType || 'Main') + '</select></div>' +
+                        '<div class="col-md-1"><label class="form-label">Designation</label><input type="text" class="form-control" data-step3-field="employee.designation" value="' + esc(state.accusedEmployeeDraft.designation) + '"></div>' +
+                        '<div class="col-md-2"><button type="button" class="btn btn-primary w-100" data-step3-save="employee">Save Employee Accused</button></div>' +
+                    '</div>' +
+                    '<div class="table-responsive mt-3"><table class="table table-sm"><thead><tr><th>PPNO</th><th>Name</th><th>Father Name</th><th>CNIC</th><th>Designation</th><th>Role</th><th>Action</th></tr></thead><tbody>' + (rowsEmp || '<tr><td colspan="7" class="text-muted">No employee accused rows saved.</td></tr>') + '</tbody></table></div>' +
+                '</div></div>' +
+                '<div class="card border-0 bg-light"><div class="card-body">' +
+                    '<h6 class="mb-3">Non-Employee / Manual Accused</h6>' +
+                    '<div class="row g-2 align-items-end">' +
+                        '<div class="col-md-3"><label class="form-label">Name</label><input type="text" class="form-control" data-step3-field="manual.personName" value="' + esc(state.accusedManualDraft.personName) + '"></div>' +
+                        '<div class="col-md-3"><label class="form-label">Father Name</label><input type="text" class="form-control" data-step3-field="manual.fatherName" value="' + esc(state.accusedManualDraft.fatherName) + '"></div>' +
+                        '<div class="col-md-2"><label class="form-label">CNIC</label><input type="text" class="form-control" maxlength="13" data-step3-field="manual.cnic" value="' + esc(state.accusedManualDraft.cnic) + '"></div>' +
+                        '<div class="col-md-2"><label class="form-label">Designation</label><input type="text" class="form-control" data-step3-field="manual.designation" value="' + esc(state.accusedManualDraft.designation) + '"></div>' +
+                        '<div class="col-md-2"><label class="form-label">Role</label><select class="form-select" data-step3-field="manual.roleType">' + roleOptionsHtml(state.accusedManualDraft.roleType || 'Main') + '</select></div>' +
+                        '<div class="col-md-2"><button type="button" class="btn btn-primary w-100" data-step3-save="manual">Save Manual Accused</button></div>' +
+                    '</div>' +
+                    '<div class="table-responsive mt-3"><table class="table table-sm"><thead><tr><th>Name</th><th>Father Name</th><th>CNIC</th><th>Designation</th><th>Role</th><th>Action</th></tr></thead><tbody>' + (rowsManual || '<tr><td colspan="6" class="text-muted">No manual accused rows saved.</td></tr>') + '</tbody></table></div>' +
+                '</div></div>';
         }
         if(step === 4){
             var rowsR = state.records.map(function(r,i){ return '<tr data-row-id="' + (r.recId || 0) + '"><td>'+rowInput('records['+i+'].recordTitle',r.recordTitle)+'</td><td>'+rowInput('records['+i+'].recordDetails',r.recordDetails)+'</td><td><button type="button" class="btn btn-outline-danger btn-sm" data-remove-row="records" data-index="'+i+'">Remove</button></td></tr>'; }).join('');
@@ -243,6 +276,33 @@ $(function(){
             renderStepper();
         });
 
+        host.find('[data-step3-field]').off('input change keypress paste').on('keypress', function(e){
+            var key = String($(this).data('step3-field') || '');
+            if(key.indexOf('.cnic') < 0 && key.indexOf('.ppnoNumber') < 0){ return; }
+            if(e.which && !/\d/.test(String.fromCharCode(e.which))){
+                e.preventDefault();
+            }
+        }).on('input change', function(){
+            var key = String($(this).data('step3-field') || '');
+            var parts = key.split('.');
+            if(parts.length !== 2){ return; }
+            var group = parts[0];
+            var field = parts[1];
+            var draft = group === 'employee' ? state.accusedEmployeeDraft : state.accusedManualDraft;
+            var val = $(this).val();
+            if(field === 'cnic' || field === 'ppnoNumber'){ val = digitsOnly(val); }
+            if(field === 'cnic'){ val = val.substring(0, 13); $(this).val(val); }
+            if(field === 'ppnoNumber'){ $(this).val(val); }
+            draft[field] = val;
+        }).on('paste', function(e){
+            var key = String($(this).data('step3-field') || '');
+            if(key.indexOf('.cnic') < 0 && key.indexOf('.ppnoNumber') < 0){ return; }
+            var paste = (e.originalEvent || e).clipboardData.getData('text') || '';
+            if(/\D/.test(paste)){
+                e.preventDefault();
+            }
+        });
+
         host.find('[data-step5-field]').off('input change').on('input change', function(){
             var key = String($(this).data('step5-field') || '');
             var parts = key.split('.');
@@ -269,7 +329,7 @@ $(function(){
         var errs = [];
         var has = function(v){ return !!(v && String(v).trim()); };
         if(step === 2 && !state.accusations.some(function(x){ return has(x.accusationText); })) errs.push('At least one accusation is required.');
-        if(step === 3 && !state.accused.some(function(x){ return has(x.personName); })) errs.push('At least one accused row is required.');
+        if(step === 3 && !state.accusedEmployeeRows.length && !state.accusedManualRows.length) errs.push('At least one accused row is required.');
         if(step === 4 && !state.records.some(function(x){ return has(x.recordTitle) || has(x.recordDetails); })) errs.push('At least one record scrutinized row is required.');
         if(step === 5 && !state.statements.complainant.length && !state.statements.accused.length) errs.push('At least one complainant or accused statement is required.');
         if(step === 6 && !state.evidence.length) errs.push('At least one evidence file is mandatory.');
@@ -287,13 +347,93 @@ $(function(){
     function ensureOneRow(section){
         if(state[section].length){ return; }
         if(section === 'accusations') state.accusations.push({ accusationId: 0, accusationText: '', sortOrder: 1 });
-        if(section === 'accused') state.accused.push({ accusedRowId: 0, personName: '', designation: '', roleType: 'Main', ppnoNumber: '', cnic: '', postingPlace: '', remarks: '', sortOrder: 1 });
         if(section === 'records') state.records.push({ recId: 0, recordTitle: '', recordDetails: '', sortOrder: 1 });
         if(section === 'violations') state.violations.push({ violationId: 0, category: 'Internal', violationDetail: '', referenceText: '', recommendation: '', sortOrder: 1 });
         if(section === 'dsa') state.dsa.push({ dsaId: 0, personName: '', designation: '', ppnoNumber: '', cnic: '', dsaStatus: '', remarks: '', sortOrder: 1 });
     }
 
     function digitsOnly(value){ return String(value || '').replace(/\D/g, ''); }
+
+    function normalizeAccusedDraft(draft, isEmployee){
+        var row = $.extend({}, draft || {});
+        row.cnic = digitsOnly(row.cnic).substring(0, 13);
+        row.ppnoNumber = isEmployee ? digitsOnly(row.ppnoNumber) : '';
+        row.personName = row.personName || '';
+        row.fatherName = row.fatherName || '';
+        row.designation = row.designation || '';
+        row.roleType = accusedRoleOptions.indexOf(row.roleType) >= 0 ? row.roleType : 'Main';
+        return row;
+    }
+
+    function splitAccusedRows(rows){
+        var employee = [];
+        var manual = [];
+        (rows || []).forEach(function(x){
+            var row = {
+                accusedRowId: x.accusedRowId || 0,
+                personName: x.personName || '',
+                fatherName: x.fatherName || x.postingPlace || '',
+                designation: x.designation || '',
+                roleType: accusedRoleOptions.indexOf(x.roleType) >= 0 ? x.roleType : 'Main',
+                ppnoNumber: digitsOnly(x.ppnoNumber || ''),
+                cnic: digitsOnly(x.cnic || '').substring(0, 13)
+            };
+            if(row.ppnoNumber){ employee.push(row); }
+            else { manual.push(row); }
+        });
+        state.accusedEmployeeRows = employee;
+        state.accusedManualRows = manual;
+    }
+
+    function clearAccusedDraft(type){
+        if(type === 'employee'){
+            state.accusedEmployeeDraft = { ppnoNumber: '', personName: '', fatherName: '', cnic: '', designation: '', roleType: 'Main' };
+            return;
+        }
+        state.accusedManualDraft = { personName: '', fatherName: '', cnic: '', designation: '', roleType: 'Main' };
+    }
+
+    function saveAccusedSection(type){
+        var isEmployee = type === 'employee';
+        var draft = normalizeAccusedDraft(isEmployee ? state.accusedEmployeeDraft : state.accusedManualDraft, isEmployee);
+        var errors = [];
+        if(isEmployee && !draft.ppnoNumber){ errors.push('PPNO is required.'); }
+        if(!draft.personName.trim()){ errors.push('Name is required.'); }
+        if(!draft.fatherName.trim()){ errors.push('Father Name is required.'); }
+        if(draft.cnic.length !== 13){ errors.push('CNIC must be 13 digits.'); }
+        if(!draft.designation.trim()){ errors.push('Designation is required.'); }
+        if(!draft.roleType){ errors.push('Role is required.'); }
+        if(errors.length){ return $.Deferred().reject({ message: errors.join(' ') }).promise(); }
+
+        var payload = {
+            accusedRowId: 0,
+            complaintId: complaintId,
+            personName: draft.personName,
+            fatherName: draft.fatherName,
+            designation: draft.designation,
+            roleType: draft.roleType,
+            ppnoNumber: draft.ppnoNumber,
+            cnic: draft.cnic,
+            postingPlace: draft.fatherName,
+            remarks: '',
+            sortOrder: (state.accusedEmployeeRows.length + state.accusedManualRows.length) + 1,
+            status: 'A',
+            createdBy: userId,
+            updatedBy: userId
+        };
+
+        return window.iidAddInqAccused(payload).then(function(resp){
+            ensureApiSuccess(resp, 'Failed to save accused row.');
+            var msg = getResponseMessage(resp) || 'Accused row saved successfully.';
+            return loadStepData(3).then(function(){
+                clearAccusedDraft(type);
+                state.savedSteps[3] = state.accusedEmployeeRows.length > 0 || state.accusedManualRows.length > 0;
+                state.dirtySteps[3] = false;
+                renderCurrent(true);
+                return { message: msg };
+            });
+        });
+    }
 
     function clearStatementDraft(role){
         if(role === 'complainant'){
@@ -400,7 +540,7 @@ $(function(){
         if(step < 2 || step > 8){ return $.Deferred().resolve().promise(); }
         var cfg = {
             2: { loadFn: window.iidGetInqAccusations, hydrate: function(resp){ state.accusations = extractData(resp).map(function(x){ return { accusationId: x.accusationId, accusationText: x.accusationText, sortOrder: x.sortOrder || 1 }; }); ensureOneRow('accusations'); }, section: 'accusations' },
-            3: { loadFn: window.iidGetInqAccusedList, hydrate: function(resp){ state.accused = extractData(resp).map(function(x){ x.roleType = accusedRoleOptions.indexOf(x.roleType) >= 0 ? x.roleType : 'Main'; return x; }); ensureOneRow('accused'); }, section: 'accused' },
+            3: { loadFn: window.iidGetInqAccusedList, hydrate: function(resp){ splitAccusedRows(extractData(resp)); clearAccusedDraft('employee'); clearAccusedDraft('manual'); }, section: 'accusedRows' },
             4: { loadFn: window.iidGetInqRecords, hydrate: function(resp){ state.records = extractData(resp); ensureOneRow('records'); }, section: 'records' },
             5: { loadFn: window.iidGetInqStatements, hydrate: function(resp){
                 var rows = extractData(resp);
@@ -422,7 +562,7 @@ $(function(){
                 state.savedSteps[step] = state.statements.complainant.length > 0 || state.statements.accused.length > 0;
                 return;
             }
-            var list = cfg.section === 'evidence' ? state.evidence : state[cfg.section];
+            var list = cfg.section === 'evidence' ? state.evidence : (cfg.section === 'accusedRows' ? state.accusedEmployeeRows.concat(state.accusedManualRows) : state[cfg.section]);
             state.savedSteps[step] = (list || []).some(function(x){ return Object.keys(x || {}).some(function(k){ return k.toLowerCase().indexOf('id') >= 0 && Number(x[k] || 0) > 0; }); });
         });
     }
@@ -436,7 +576,11 @@ $(function(){
             return saveCollection({ section: 'accusations', rows: state.accusations.filter(function(x){ return x.accusationText && x.accusationText.trim(); }), idKey: 'accusationId', addFn: window.iidAddInqAccusation, updateFn: window.iidUpdateInqAccusation, deleteFn: window.iidDeleteInqAccusation, loadFn: window.iidGetInqAccusations, map: function(row, idx){ return { accusationId: row.accusationId || 0, complaintId: complaintId, accusationText: row.accusationText, sortOrder: idx + 1, status: 'A', createdBy: userId, updatedBy: userId }; }, hydrate: function(resp){ state.accusations = extractData(resp).map(function(x){ return { accusationId: x.accusationId, accusationText: x.accusationText, sortOrder: x.sortOrder || 1 }; }); ensureOneRow('accusations'); }, successMessage: 'Accusations saved successfully.' });
         }
         if(step === 3){
-            return saveCollection({ section: 'accused', rows: state.accused.filter(function(x){ return x.personName && x.personName.trim(); }), idKey: 'accusedRowId', addFn: window.iidAddInqAccused, updateFn: window.iidUpdateInqAccused, deleteFn: window.iidDeleteInqAccused, loadFn: window.iidGetInqAccusedList, map: function(row, idx){ return $.extend({}, row, { complaintId: complaintId, sortOrder: idx + 1, status: 'A', createdBy: userId, updatedBy: userId }); }, hydrate: function(resp){ state.accused = extractData(resp).map(function(x){ x.roleType = accusedRoleOptions.indexOf(x.roleType) >= 0 ? x.roleType : 'Main'; return x; }); ensureOneRow('accused'); }, successMessage: 'Accused list saved successfully.' });
+            return loadStepData(3).then(function(){
+                state.savedSteps[3] = state.accusedEmployeeRows.length > 0 || state.accusedManualRows.length > 0;
+                state.dirtySteps[3] = false;
+                return { message: 'Accused list refreshed from database.' };
+            });
         }
         if(step === 4){
             return saveCollection({ section: 'records', rows: state.records.filter(function(x){ return ((x.recordTitle || '') + (x.recordDetails || '')).trim(); }), idKey: 'recId', addFn: window.iidAddInqRecord, updateFn: window.iidUpdateInqRecord, deleteFn: window.iidDeleteInqRecord, loadFn: window.iidGetInqRecords, map: function(row, idx){ return $.extend({}, row, { complaintId: complaintId, sortOrder: idx + 1, status: 'A', createdBy: userId, updatedBy: userId }); }, hydrate: function(resp){ state.records = extractData(resp); ensureOneRow('records'); }, successMessage: 'Record scrutinized saved successfully.' });
@@ -505,6 +649,49 @@ $(function(){
     $(document).on('click', '[data-next]', function(){ var e = validateStep(currentStep); showValidation(currentStep, e); if(!e.length && currentStep < steps.length){ navigateToStep(currentStep + 1); } });
     $(document).on('click', '[data-save]', function(){ saveStep(currentStep).done(function(result){ state.savedSteps[currentStep] = true; state.dirtySteps[currentStep] = false; showAlert((result && result.message) || 'Saved successfully.', 'success'); renderCurrent(true); }).fail(function(err){ showAlert((err && err.message) || 'Save failed.', 'danger'); }); });
 
+    $(document).on('click', '[data-step3-search]', function(){
+        var ppno = digitsOnly(state.accusedEmployeeDraft.ppnoNumber);
+        state.accusedEmployeeDraft.ppnoNumber = ppno;
+        if(!ppno){ showAlert('PPNO is required for search.', 'danger'); renderCurrent(true); return; }
+        window.iidGetIidEmployeeInfo(ppno).done(function(resp){
+            if(!resp || resp.ok === false){
+                showAlert((resp && resp.message) || 'No employee found for this PPNO', 'danger');
+                return;
+            }
+            var emp = resp.data || {};
+            state.accusedEmployeeDraft.ppnoNumber = digitsOnly(emp.ppno || ppno);
+            state.accusedEmployeeDraft.personName = emp.name || '';
+            state.accusedEmployeeDraft.fatherName = emp.fatherName || '';
+            state.accusedEmployeeDraft.cnic = digitsOnly(emp.cnic || '').substring(0, 13);
+            renderCurrent(true);
+            showAlert('Employee details loaded. You can edit before save.', 'success');
+        }).fail(function(){ showAlert('Employee lookup failed for entered PPNO.', 'danger'); });
+    });
+
+    $(document).on('click', '[data-step3-save]', function(){
+        var type = $(this).data('step3-save');
+        saveAccusedSection(type).done(function(resp){
+            showAlert((resp && resp.message) || 'Accused row saved successfully.', 'success');
+        }).fail(function(err){
+            showAlert((err && err.message) || 'Failed to save accused row.', 'danger');
+        });
+    });
+
+    $(document).on('click', '[data-remove-accused]', function(){
+        var id = parseInt($(this).data('id'), 10) || 0;
+        if(!id){ showAlert('Invalid accused row id.', 'danger'); return; }
+        window.iidDeleteInqAccused(id, userId || 0).then(function(resp){
+            ensureApiSuccess(resp, 'Failed to delete accused row.');
+            var msg = getResponseMessage(resp) || 'Accused row removed successfully.';
+            return loadStepData(3).then(function(){
+                state.savedSteps[3] = state.accusedEmployeeRows.length > 0 || state.accusedManualRows.length > 0;
+                state.dirtySteps[3] = false;
+                renderCurrent(true);
+                showAlert(msg, 'success');
+            });
+        }).fail(function(err){ showAlert((err && err.message) || 'Failed to delete accused row.', 'danger'); });
+    });
+
     $(document).on('click', '[data-step5-save]', function(){
         var role = $(this).data('step5-save');
         saveStatementSection(role).done(function(resp){
@@ -548,7 +735,6 @@ $(function(){
     $(document).on('click', '[data-add-row]', function(){
         var s = $(this).data('add-row');
         if(s==='accusations') state.accusations.push({ accusationId: 0, accusationText: '', sortOrder: state.accusations.length + 1 });
-        if(s==='accused') state.accused.push({ accusedRowId: 0, personName: '', designation: '', roleType: 'Main', ppnoNumber: '', cnic: '', postingPlace: '', remarks: '', sortOrder: state.accused.length + 1 });
         if(s==='records') state.records.push({ recId: 0, recordTitle: '', recordDetails: '', sortOrder: state.records.length + 1 });
         if(s==='violations') state.violations.push({ violationId: 0, category: 'Internal', violationDetail: '', referenceText: '', recommendation: '', sortOrder: state.violations.length + 1 });
         if(s==='dsa') state.dsa.push({ dsaId: 0, personName: '', designation: '', ppnoNumber: '', cnic: '', dsaStatus: '', remarks: '', sortOrder: state.dsa.length + 1 });
@@ -560,15 +746,6 @@ $(function(){
         var section = $(this).data('remove-row');
         var idx = parseInt($(this).data('index'), 10);
         var row = state[section][idx];
-
-        if(section === 'accused' && row && row.accusedRowId > 0){
-            window.iidDeleteInqAccused(row.accusedRowId, userId || 0).then(function(resp){
-                ensureApiSuccess(resp, 'Failed to delete accused row.');
-                showAlert(getResponseMessage(resp) || 'Accused row removed successfully.', 'success');
-                return loadStepData(3);
-            }).done(function(){ state.savedSteps[3] = true; state.dirtySteps[3] = false; renderCurrent(true); }).fail(function(err){ showAlert((err && err.message) || 'Failed to delete accused row.', 'danger'); });
-            return;
-        }
 
         if(row){
             var idKeyMap = { accusations: 'accusationId', records: 'recId', violations: 'violationId', dsa: 'dsaId' };

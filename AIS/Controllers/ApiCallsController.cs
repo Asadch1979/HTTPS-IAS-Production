@@ -5318,6 +5318,29 @@ namespace AIS.Controllers
             }
 
         [HttpPost]
+        public IActionResult GetIidEmployeeInfo([FromBody] AIS.Models.IID.InquiryReport.IidEmployeeInfoRequest request)
+            {
+            try
+                {
+                var data = dBConnection.GetIidEmployeeInfo(request?.PpNo ?? 0);
+                if (data == null)
+                    {
+                    return Json(new { ok = false, message = "No employee found for this PPNO", data = (object)null });
+                    }
+                return Json(new
+                    {
+                    ok = true,
+                    message = "Employee found.",
+                    data = new { ppno = data.Ppno, name = data.Name, fatherName = data.FatherName, cnic = data.Cnic }
+                    });
+                }
+            catch (Exception ex)
+                {
+                return Json(new { ok = false, message = ex.Message, data = (object)null });
+                }
+            }
+
+        [HttpPost]
         public IActionResult GetIidInqAccusedList([FromBody] AIS.Models.IID.InquiryReport.IidInqComplaintRequest request)
             {
             try

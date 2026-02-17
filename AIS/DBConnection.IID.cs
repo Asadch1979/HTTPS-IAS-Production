@@ -7,6 +7,7 @@ using Oracle.ManagedDataAccess.Types;
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Text;
 
 namespace AIS.Controllers
     {
@@ -1336,6 +1337,31 @@ namespace AIS.Controllers
             return ExecuteIidResult(cmd);
             }
 
+        public IidEmployeeInfoModel GetIidEmployeeInfo(long ppNo)
+            {
+            using var con = this.DatabaseConnection();
+            using var cmd = con.CreateCommand();
+            cmd.CommandText = "PKG_INQ.GET_EMPLOYEE_INFO";
+            cmd.CommandType = CommandType.StoredProcedure;
+            cmd.BindByName = true;
+            cmd.Parameters.Add("P_PP_NO", OracleDbType.Int64).Value = ppNo;
+            cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+
+            using var rdr = cmd.ExecuteReader();
+            if (!rdr.Read())
+                {
+                return null;
+                }
+
+            return new IidEmployeeInfoModel
+                {
+                Ppno = GetStringValue(rdr, "PPNO"),
+                Name = GetStringValue(rdr, "ENAME"),
+                FatherName = GetStringValue(rdr, "FATHERNAME"),
+                Cnic = DigitsOnly(GetStringValue(rdr, "CNIC"))
+                };
+            }
+
         public List<IidInqAccusedRow> GetIidInqAccusedListByComplaintId(long complaintId)
             {
             using var con = this.DatabaseConnection();
@@ -1355,10 +1381,11 @@ namespace AIS.Controllers
                     AccusedRowId = GetLongValue(rdr, "ACCUSED_ROW_ID"),
                     ComplaintId = GetLongValue(rdr, "COMPLAINT_ID"),
                     PersonName = GetStringValue(rdr, "PERSON_NAME"),
+                    FatherName = HasColumn(rdr, "FATHER_NAME") ? GetStringValue(rdr, "FATHER_NAME") : GetStringValue(rdr, "POSTING_PLACE"),
                     Designation = GetStringValue(rdr, "DESIGNATION"),
                     RoleType = GetStringValue(rdr, "ROLE_TYPE"),
                     PpnoNumber = GetStringValue(rdr, "PPNO_NUMBER"),
-                    Cnic = GetStringValue(rdr, "CNIC"),
+                    Cnic = DigitsOnly(GetStringValue(rdr, "CNIC")),
                     PostingPlace = GetStringValue(rdr, "POSTING_PLACE"),
                     Remarks = GetStringValue(rdr, "REMARKS"),
                     SortOrder = GetIntValue(rdr, "SORT_ORDER"),
@@ -1385,8 +1412,8 @@ namespace AIS.Controllers
             cmd.Parameters.Add("P_DESIGNATION", OracleDbType.Varchar2).Value = model.Designation ?? string.Empty;
             cmd.Parameters.Add("P_ROLE_TYPE", OracleDbType.Varchar2).Value = model.RoleType ?? string.Empty;
             cmd.Parameters.Add("P_PPNO_NUMBER", OracleDbType.Varchar2).Value = model.PpnoNumber ?? string.Empty;
-            cmd.Parameters.Add("P_CNIC", OracleDbType.Varchar2).Value = model.Cnic ?? string.Empty;
-            cmd.Parameters.Add("P_POSTING_PLACE", OracleDbType.Varchar2).Value = model.PostingPlace ?? string.Empty;
+            cmd.Parameters.Add("P_CNIC", OracleDbType.Varchar2).Value = DigitsOnly(model.Cnic);
+            cmd.Parameters.Add("P_POSTING_PLACE", OracleDbType.Varchar2).Value = string.IsNullOrWhiteSpace(model.FatherName) ? model.PostingPlace ?? string.Empty : model.FatherName;
             cmd.Parameters.Add("P_REMARKS", OracleDbType.Varchar2).Value = model.Remarks ?? string.Empty;
             cmd.Parameters.Add("P_SORT_ORDER", OracleDbType.Int32).Value = model.SortOrder;
             cmd.Parameters.Add("P_CREATED_BY", OracleDbType.Int64).Value = model.CreatedBy ?? (object)DBNull.Value;
@@ -1406,8 +1433,8 @@ namespace AIS.Controllers
             cmd.Parameters.Add("P_DESIGNATION", OracleDbType.Varchar2).Value = model.Designation ?? string.Empty;
             cmd.Parameters.Add("P_ROLE_TYPE", OracleDbType.Varchar2).Value = model.RoleType ?? string.Empty;
             cmd.Parameters.Add("P_PPNO_NUMBER", OracleDbType.Varchar2).Value = model.PpnoNumber ?? string.Empty;
-            cmd.Parameters.Add("P_CNIC", OracleDbType.Varchar2).Value = model.Cnic ?? string.Empty;
-            cmd.Parameters.Add("P_POSTING_PLACE", OracleDbType.Varchar2).Value = model.PostingPlace ?? string.Empty;
+            cmd.Parameters.Add("P_CNIC", OracleDbType.Varchar2).Value = DigitsOnly(model.Cnic);
+            cmd.Parameters.Add("P_POSTING_PLACE", OracleDbType.Varchar2).Value = string.IsNullOrWhiteSpace(model.FatherName) ? model.PostingPlace ?? string.Empty : model.FatherName;
             cmd.Parameters.Add("P_REMARKS", OracleDbType.Varchar2).Value = model.Remarks ?? string.Empty;
             cmd.Parameters.Add("P_SORT_ORDER", OracleDbType.Int32).Value = model.SortOrder;
             cmd.Parameters.Add("P_UPDATED_BY", OracleDbType.Int64).Value = model.UpdatedBy ?? (object)DBNull.Value;
@@ -1526,7 +1553,7 @@ namespace AIS.Controllers
                     PersonName = GetStringValue(rdr, "PERSON_NAME"),
                     RoleType = GetStringValue(rdr, "ROLE_TYPE"),
                     PpnoNumber = GetStringValue(rdr, "PPNO_NUMBER"),
-                    Cnic = GetStringValue(rdr, "CNIC"),
+                    Cnic = DigitsOnly(GetStringValue(rdr, "CNIC")),
                     StatementDatetime = GetNullableDateValue(rdr, "STATEMENT_DATETIME"),
                     Place = GetStringValue(rdr, "PLACE"),
                     ModeType = GetStringValue(rdr, "MODE_TYPE"),
@@ -1553,7 +1580,7 @@ namespace AIS.Controllers
             cmd.Parameters.Add("P_PERSON_NAME", OracleDbType.Varchar2).Value = model.PersonName ?? string.Empty;
             cmd.Parameters.Add("P_ROLE_TYPE", OracleDbType.Varchar2).Value = model.RoleType ?? string.Empty;
             cmd.Parameters.Add("P_PPNO_NUMBER", OracleDbType.Varchar2).Value = model.PpnoNumber ?? string.Empty;
-            cmd.Parameters.Add("P_CNIC", OracleDbType.Varchar2).Value = model.Cnic ?? string.Empty;
+            cmd.Parameters.Add("P_CNIC", OracleDbType.Varchar2).Value = DigitsOnly(model.Cnic);
             cmd.Parameters.Add("P_STATEMENT_DATETIME", OracleDbType.Date).Value = model.StatementDatetime ?? (object)DBNull.Value;
             cmd.Parameters.Add("P_PLACE", OracleDbType.Varchar2).Value = model.Place ?? string.Empty;
             cmd.Parameters.Add("P_MODE_TYPE", OracleDbType.Varchar2).Value = model.ModeType ?? string.Empty;
@@ -1574,7 +1601,7 @@ namespace AIS.Controllers
             cmd.Parameters.Add("P_PERSON_NAME", OracleDbType.Varchar2).Value = model.PersonName ?? string.Empty;
             cmd.Parameters.Add("P_ROLE_TYPE", OracleDbType.Varchar2).Value = model.RoleType ?? string.Empty;
             cmd.Parameters.Add("P_PPNO_NUMBER", OracleDbType.Varchar2).Value = model.PpnoNumber ?? string.Empty;
-            cmd.Parameters.Add("P_CNIC", OracleDbType.Varchar2).Value = model.Cnic ?? string.Empty;
+            cmd.Parameters.Add("P_CNIC", OracleDbType.Varchar2).Value = DigitsOnly(model.Cnic);
             cmd.Parameters.Add("P_STATEMENT_DATETIME", OracleDbType.Date).Value = model.StatementDatetime ?? (object)DBNull.Value;
             cmd.Parameters.Add("P_PLACE", OracleDbType.Varchar2).Value = model.Place ?? string.Empty;
             cmd.Parameters.Add("P_MODE_TYPE", OracleDbType.Varchar2).Value = model.ModeType ?? string.Empty;
@@ -1768,7 +1795,7 @@ namespace AIS.Controllers
                     PersonName = GetStringValue(rdr, "PERSON_NAME"),
                     Designation = GetStringValue(rdr, "DESIGNATION"),
                     PpnoNumber = GetStringValue(rdr, "PPNO_NUMBER"),
-                    Cnic = GetStringValue(rdr, "CNIC"),
+                    Cnic = DigitsOnly(GetStringValue(rdr, "CNIC")),
                     DsaStatus = GetStringValue(rdr, "DSA_STATUS"),
                     Remarks = GetStringValue(rdr, "REMARKS"),
                     SortOrder = GetIntValue(rdr, "SORT_ORDER"),
@@ -1794,7 +1821,7 @@ namespace AIS.Controllers
             cmd.Parameters.Add("P_PERSON_NAME", OracleDbType.Varchar2).Value = model.PersonName ?? string.Empty;
             cmd.Parameters.Add("P_DESIGNATION", OracleDbType.Varchar2).Value = model.Designation ?? string.Empty;
             cmd.Parameters.Add("P_PPNO_NUMBER", OracleDbType.Varchar2).Value = model.PpnoNumber ?? string.Empty;
-            cmd.Parameters.Add("P_CNIC", OracleDbType.Varchar2).Value = model.Cnic ?? string.Empty;
+            cmd.Parameters.Add("P_CNIC", OracleDbType.Varchar2).Value = DigitsOnly(model.Cnic);
             cmd.Parameters.Add("P_DSA_STATUS", OracleDbType.Varchar2).Value = model.DsaStatus ?? string.Empty;
             cmd.Parameters.Add("P_REMARKS", OracleDbType.Varchar2).Value = model.Remarks ?? string.Empty;
             cmd.Parameters.Add("P_SORT_ORDER", OracleDbType.Int32).Value = model.SortOrder;
@@ -1814,7 +1841,7 @@ namespace AIS.Controllers
             cmd.Parameters.Add("P_PERSON_NAME", OracleDbType.Varchar2).Value = model.PersonName ?? string.Empty;
             cmd.Parameters.Add("P_DESIGNATION", OracleDbType.Varchar2).Value = model.Designation ?? string.Empty;
             cmd.Parameters.Add("P_PPNO_NUMBER", OracleDbType.Varchar2).Value = model.PpnoNumber ?? string.Empty;
-            cmd.Parameters.Add("P_CNIC", OracleDbType.Varchar2).Value = model.Cnic ?? string.Empty;
+            cmd.Parameters.Add("P_CNIC", OracleDbType.Varchar2).Value = DigitsOnly(model.Cnic);
             cmd.Parameters.Add("P_DSA_STATUS", OracleDbType.Varchar2).Value = model.DsaStatus ?? string.Empty;
             cmd.Parameters.Add("P_REMARKS", OracleDbType.Varchar2).Value = model.Remarks ?? string.Empty;
             cmd.Parameters.Add("P_SORT_ORDER", OracleDbType.Int32).Value = model.SortOrder;
@@ -1834,6 +1861,23 @@ namespace AIS.Controllers
             cmd.Parameters.Add("P_UPDATED_BY", OracleDbType.Int64).Value = userId;
             cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
             return ExecuteIidResult(cmd);
+            }
+
+        private static string DigitsOnly(string value)
+            {
+            if (string.IsNullOrWhiteSpace(value))
+                {
+                return string.Empty;
+                }
+            var buffer = new StringBuilder();
+            foreach (var ch in value)
+                {
+                if (char.IsDigit(ch))
+                    {
+                    buffer.Append(ch);
+                    }
+                }
+            return buffer.ToString();
             }
 
         public int FinalizeIidInquiryReport(long complaintId, long? updatedBy)
