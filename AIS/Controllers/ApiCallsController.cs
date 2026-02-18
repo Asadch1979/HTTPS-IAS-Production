@@ -463,6 +463,18 @@ namespace AIS.Controllers
                     {
                     return InvalidModelStateResponse();
                     }
+
+                if (ContainsHtmlEncodedPayload(item.model?.T_NAME))
+                    {
+                    ModelState.AddModelError($"[{item.index}].T_NAME", "HTML content is not allowed in team name.");
+                    return InvalidModelStateResponse();
+                    }
+
+                if (ContainsHtmlEncodedPayload(item.model?.NAME))
+                    {
+                    ModelState.AddModelError($"[{item.index}].NAME", "HTML content is not allowed in team member name.");
+                    return InvalidModelStateResponse();
+                    }
                 }
 
             var responses = new List<string>();
@@ -484,6 +496,25 @@ namespace AIS.Controllers
                 }
 
             return Ok(new { Status = true });
+            }
+
+        private static bool ContainsHtmlEncodedPayload(string value)
+            {
+            if (string.IsNullOrWhiteSpace(value))
+                {
+                return false;
+                }
+
+            var input = value.Trim();
+
+            return input.Contains("&lt;", StringComparison.OrdinalIgnoreCase)
+                || input.Contains("&gt;", StringComparison.OrdinalIgnoreCase)
+                || input.Contains("&#60;", StringComparison.OrdinalIgnoreCase)
+                || input.Contains("&#62;", StringComparison.OrdinalIgnoreCase)
+                || input.Contains("&#x3c;", StringComparison.OrdinalIgnoreCase)
+                || input.Contains("&#x3e;", StringComparison.OrdinalIgnoreCase)
+                || input.Contains("javascript:", StringComparison.OrdinalIgnoreCase)
+                || Regex.IsMatch(input, @"on\w+\s*=", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
             }
 
         [HttpPost]
