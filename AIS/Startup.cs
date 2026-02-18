@@ -87,6 +87,7 @@ namespace AIS
             services.AddScoped<SessionAuthorizationFilter>();
             services.AddScoped<PostModelValidationFilter>();
             services.AddScoped<IObjectScopeAuthorizer, ObjectScopeAuthorizer>();
+            services.AddScoped<AIS.Security.IObjectScopeAuthorizerService, AIS.Security.ObjectScopeAuthorizer>();
             services.AddScoped<ObjectScopeAuthorizationFilter>();
             services.AddScoped<LoginAttemptTracker>();
             services.AddSingleton<PasswordPolicyValidator>();
