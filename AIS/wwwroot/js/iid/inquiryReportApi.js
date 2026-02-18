@@ -45,6 +45,9 @@
     window.iidAddInqEvidenceFile = function (formData) { return iidPost('/ApiCalls/AddIidInqEvidenceFile', formData, true); };
     window.iidDeleteInqEvidenceFile = function (id, userId) { return iidPostJson('/ApiCalls/DeleteIidInqEvidenceFile', { id: id, userId: userId }); };
 
+    window.iidGetInqFindingsRecomm = function (complaintId) { return iidPostJson('/ApiCalls/GetIidInqFindingsRecomm', { complaintId: complaintId }); };
+    window.iidSaveInqFindingsRecomm = function (payload) { return iidPostJson('/ApiCalls/SaveIidInqFindingsRecomm', payload); };
+
     window.iidGetInqViolations = function (complaintId) { return iidPostJson('/ApiCalls/GetIidInqViolations', { complaintId: complaintId }); };
     window.iidAddInqViolation = function (payload) { return iidPostJson('/ApiCalls/AddIidInqViolation', payload); };
     window.iidUpdateInqViolation = function (payload) { return iidPostJson('/ApiCalls/UpdateIidInqViolation', payload); };

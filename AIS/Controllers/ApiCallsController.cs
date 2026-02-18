@@ -5554,6 +5554,35 @@ namespace AIS.Controllers
                 }
             }
 
+
+        [HttpPost]
+        public IActionResult GetIidInqFindingsRecomm([FromBody] AIS.Models.IID.InquiryReport.IidInqComplaintRequest request)
+            {
+            try
+                {
+                var data = dBConnection.GetIidInqFindingsRecommByComplaintId(request?.ComplaintId ?? 0);
+                return Json(new { ok = true, data });
+                }
+            catch (Exception ex)
+                {
+                return Json(new { ok = false, message = ex.Message });
+                }
+            }
+
+        [HttpPost]
+        public IActionResult SaveIidInqFindingsRecomm([FromBody] AIS.Models.IID.InquiryReport.IidInqFindingsRecommRow model)
+            {
+            try
+                {
+                var rows = dBConnection.SaveIidInqFindingsRecomm(model?.ComplaintId ?? 0, model?.FindingText, model?.RecommendationText);
+                return Json(BuildIidSaveResponse(rows, "Findings and recommendations saved."));
+                }
+            catch (Exception ex)
+                {
+                return Json(new { ok = false, message = ex.Message });
+                }
+            }
+
         [HttpPost]
         public IActionResult GetIidInqViolations([FromBody] AIS.Models.IID.InquiryReport.IidInqComplaintRequest request)
             {
@@ -5679,6 +5708,7 @@ namespace AIS.Controllers
                     recordsScrutinized = dBConnection.GetIidInqRecordsByComplaintId(complaintId),
                     statementsRegister = dBConnection.GetIidInqStatementsByComplaintId(complaintId),
                     evidenceFiles = dBConnection.GetIidInqEvidenceFilesByComplaintId(complaintId),
+                    findingsRecommendations = dBConnection.GetIidInqFindingsRecommByComplaintId(complaintId),
                     violations = dBConnection.GetIidInqViolationsByComplaintId(complaintId),
                     dsa = dBConnection.GetIidInqDsaByComplaintId(complaintId)
                     };

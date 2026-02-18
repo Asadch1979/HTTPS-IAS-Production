@@ -1774,6 +1774,53 @@ namespace AIS.Controllers
             return ExecuteIidResult(cmd);
             }
 
+
+        public List<IidInqFindingsRecommRow> GetIidInqFindingsRecommByComplaintId(long complaintId)
+            {
+            using var con = this.DatabaseConnection();
+            using var cmd = con.CreateCommand();
+            cmd.CommandText = "PKG_INQ.GET_INQ_FINDINGS_RECOMM";
+            cmd.CommandType = CommandType.StoredProcedure;
+            cmd.BindByName = true;
+            cmd.Parameters.Add("p_complaint_id", OracleDbType.Int64).Value = complaintId;
+            cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+
+            var list = new List<IidInqFindingsRecommRow>();
+            using var rdr = cmd.ExecuteReader();
+            while (rdr.Read())
+                {
+                list.Add(new IidInqFindingsRecommRow
+                    {
+                    ComplaintId = GetLongValue(rdr, "COMPLAINT_ID"),
+                    FindingText = GetStringValue(rdr, "FINDING_TEXT"),
+                    RecommendationText = GetStringValue(rdr, "RECOM_TEXT"),
+                    Ppno = GetStringValue(rdr, "PPNO"),
+                    UpdatedOn = GetNullableDateValue(rdr, "UPDATED_ON")
+                    });
+                }
+
+            return list;
+            }
+
+        public IidInqProcResult SaveIidInqFindingsRecomm(long complaintId, string findingText, string recommendationText)
+            {
+            var sessionHandler = CreateSessionHandler();
+            var loggedInUser = sessionHandler.GetUser();
+            var ppno = loggedInUser?.PPNumber ?? string.Empty;
+
+            using var con = this.DatabaseConnection();
+            using var cmd = con.CreateCommand();
+            cmd.CommandText = "PKG_INQ.SAVE_INQ_FINDINGS_RECOMM";
+            cmd.CommandType = CommandType.StoredProcedure;
+            cmd.BindByName = true;
+            cmd.Parameters.Add("p_complaint_id", OracleDbType.Int64).Value = complaintId;
+            cmd.Parameters.Add("p_finding_text", OracleDbType.Clob).Value = findingText ?? string.Empty;
+            cmd.Parameters.Add("p_recom_text", OracleDbType.Clob).Value = recommendationText ?? string.Empty;
+            cmd.Parameters.Add("p_ppno", OracleDbType.Varchar2).Value = ppno;
+            cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+            return ExecuteIidResult(cmd);
+            }
+
         public List<IidInqDsaRow> GetIidInqDsaByComplaintId(long complaintId)
             {
             using var con = this.DatabaseConnection();
