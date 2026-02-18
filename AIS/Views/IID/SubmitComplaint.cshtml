@@ -46,7 +46,7 @@
                     <input type="hidden" name="ComplaintNo" value="0" />
                     <div class="mb-2">
                         <label class="form-label">Received On</label>
-                        <input type="date" class="form-control" name="ReceivedOn" required />
+                        <input type="date" class="form-control" id="ReceivedOn" name="ReceivedOn" required />
                     </div>
                     <div class="mb-2">
                         <label class="form-label">Nature of Complaint</label>
@@ -193,6 +193,12 @@
             $('#iidAlertModal').modal('show');
         }
 
+        function getTodayDate(){
+            var now = new Date();
+            var localDate = new Date(now.getTime() - (now.getTimezoneOffset() * 60000));
+            return localDate.toISOString().split('T')[0];
+        }
+
         function toggleSource(){
             var val = $('#Source').val();
             if(val === 'Other'){
@@ -280,6 +286,9 @@
         toggleSource();
         togglePertainsTo();
 
+        var today = getTodayDate();
+        $('#ReceivedOn').attr('max', today);
+
         $('#complaintForm').on('submit', function(e){
             e.preventDefault();
 
@@ -329,6 +338,13 @@
             }
 
             var fd = new FormData(this);
+            var receivedOnDate = $('#ReceivedOn').val();
+            if(receivedOnDate && receivedOnDate > today){
+                showIidAlert('Failed', 'Received On date cannot be a future date.');
+                $('#ReceivedOn').focus();
+                return;
+            }
+
             $.ajax({
                 url: g_asiBaseURL + '/ApiCalls/SubmitComplaint',
                 type: 'POST',
