@@ -213,19 +213,19 @@
                                       
                     <div class="form-group">
                         <label>Menu Name</label>
-                        <input  class="form-control" id="menu_name_field" />
+                        <input class="form-control alnum-only" id="menu_name_field" data-allow-amp="true" data-allow-question="true" data-maxlen="100" />
                     </div>
                     <div class="form-group">
                         <label>Menu Description</label>
-                        <input class="form-control" id="menu_desc_field" />
+                        <input class="form-control" id="menu_desc_field" data-validate="plain-text" />
                     </div>
                       <div class="form-group">
                         <label>Menu Order</label>
-                        <input  class="form-control" id="menu_order_field" />
+                        <input class="form-control alnum-only" id="menu_order_field" data-allow-amp="false" data-allow-question="false" data-maxlen="5" />
                     </div>
                     <div class="form-group">
                         <label>Status</label>
-                        <input class="form-control" id="menu_status_field" />
+                        <input class="form-control alnum-only" id="menu_status_field" data-allow-amp="false" data-allow-question="false" data-maxlen="10" />
                     </div>
                     
                 </form>

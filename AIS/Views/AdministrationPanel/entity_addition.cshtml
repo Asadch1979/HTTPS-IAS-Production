@@ -359,7 +359,7 @@
                 <label>Entity Name</label>
             </div>
             <div class="col-md-7">
-                <input class="form-control" id="entityNameTextBar" type="text" />
+                <input class="form-control alnum-only" id="entityNameTextBar" type="text" data-allow-amp="true" data-allow-question="true" data-maxlen="150" />
             </div>
             <div class="col-md-2">
                 <button onclick="getEntityDetailsByName();" class="btn btn-danger w-100"> Find</button>
@@ -372,7 +372,7 @@
                 <label>Entity Code</label>
             </div>
             <div class="col-md-7">
-                <input id="entityCodeTextBar" class="form-control" type="text" />
+                <input id="entityCodeTextBar" class="form-control alnum-only" type="text" data-allow-amp="true" data-allow-question="true" data-maxlen="50" />
             </div>
             <div class="col-md-2">
                 <button onclick="getEntityDetailsByCode();" class="btn btn-danger w-100"> Find</button>
@@ -424,7 +424,7 @@
                     <label>Entity Name</label>
                 </div>
                 <div class="col-md-7">
-                    <input class="form-control" id="AISentityNameTextBar" type="text" />
+                    <input class="form-control alnum-only" id="AISentityNameTextBar" type="text" data-allow-amp="true" data-allow-question="true" data-maxlen="150" />
                 </div>
                 <div class="col-md-2">
                     <button onclick="getAISEntityDetailsByName();" class="btn btn-danger w-100"> Find</button>
@@ -437,7 +437,7 @@
                     <label>Entity Code</label>
                 </div>
                 <div class="col-md-7">
-                    <input id="AISentityCodeTextBar" class="form-control" type="text" />
+                    <input id="AISentityCodeTextBar" class="form-control alnum-only" type="text" data-allow-amp="true" data-allow-question="true" data-maxlen="50" />
                 </div>
                 <div class="col-md-2">
                     <button onclick="getAISEntityDetailsByCode();" class="btn btn-danger w-100"> Find</button>
@@ -508,7 +508,7 @@
                             <label>Entity Code</label>
                         </div>
                         <div class="row col-md-8">
-                            <input id="entCodeField" class="form-control" type="text" />
+                            <input id="entCodeField" class="form-control alnum-only" type="text" data-allow-amp="true" data-allow-question="true" data-maxlen="50" />
                         </div>
                     </div>
                     <div class="row col-md-12 mt-3">
@@ -516,7 +516,7 @@
                             <label>Entity Name</label>
                         </div>
                         <div class="row col-md-8">
-                            <input id="entNameField" class="form-control" type="text" />
+                            <input id="entNameField" class="form-control alnum-only" type="text" data-allow-amp="true" data-allow-question="true" data-maxlen="150" />
                         </div>
                     </div>
                     <div class="row col-md-12 mt-3">
@@ -524,7 +524,7 @@
                             <label>Entity Description</label>
                         </div>
                         <div class="row col-md-8">
-                            <textarea class="form-control" id="entDescField"> </textarea>
+                            <textarea class="form-control" id="entDescField" data-validate="plain-text"> </textarea>
                         </div>
                     </div>
 
@@ -625,7 +625,7 @@
                             <label>Entity Code</label>
                         </div>
                         <div class="row col-md-8">
-                            <input id="addentCodeField" class="form-control" type="text" />
+                            <input id="addentCodeField" class="form-control alnum-only" type="text" data-allow-amp="true" data-allow-question="true" data-maxlen="50" />
                         </div>
                     </div>
                     <div class="row col-md-12 mt-3">
@@ -633,7 +633,7 @@
                             <label>Entity Name</label>
                         </div>
                         <div class="row col-md-8">
-                            <input id="addentNameField" class="form-control" type="text" />
+                            <input id="addentNameField" class="form-control alnum-only" type="text" data-allow-amp="true" data-allow-question="true" data-maxlen="150" />
                         </div>
                     </div>
                     <div class="row col-md-12 mt-3">
@@ -641,7 +641,7 @@
                             <label>Entity Description</label>
                         </div>
                         <div class="row col-md-8">
-                            <textarea class="form-control" id="addentDescField"> </textarea>
+                            <textarea class="form-control" id="addentDescField" data-validate="plain-text"> </textarea>
                         </div>
                     </div>
 
