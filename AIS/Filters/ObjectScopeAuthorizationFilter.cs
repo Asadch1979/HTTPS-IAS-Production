@@ -129,7 +129,10 @@ namespace AIS.Filters
 
                 if (!_pageIdResolver.TryResolvePageId(context.HttpContext, out var pageId) || pageId <= 0)
                     {
-                    context.Result = BuildObjectScopeForbiddenResult();
+                    _logger.LogDebug(
+                        "Skipping object-scope filter check because PAGE_ID could not be resolved for {Path}; request will proceed to downstream authorization.",
+                        context.HttpContext.Request.Path);
+                    await next();
                     return;
                     }
 
