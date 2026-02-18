@@ -75,7 +75,7 @@
     <h3>List of Groups</h3>
     <div class="row">
         <div class="col-md-10">
-            <input class="form-control" id="searchTableRecord" type="text" placeholder="Search..">
+            <input class="form-control" id="searchTableRecord" type="text" data-allow-amp="true" data-allow-question="true" data-maxlen="150" placeholder="Search..">
         </div>
         <div class="col-md-2">
             <button onclick="newGroupSetup();" class="btn btn-danger w-100">Add New</button>
@@ -139,12 +139,12 @@
                 <form>
                     <div class="form-group">
                         <label for="groupNameModalField">Group Name</label>
-                        <input type="text" class="form-control" id="groupNameModalField" aria-describedby="brcode" placeholder="Group Name">
+                        <input type="text" class="form-control alnum-only" id="groupNameModalField" aria-describedby="brcode" placeholder="Group Name" data-allow-amp="true" data-allow-question="true" data-maxlen="100">
 
                     </div>
                     <div class="form-group">
                         <label for="groupDescModalField">Group Description</label>
-                        <textarea rows="3"  class="form-control" id="groupDescModalField" placeholder="Group Description"></textarea>
+                        <textarea rows="3"  class="form-control" id="groupDescModalField" placeholder="Group Description" data-validate="plain-text"></textarea>
                     </div>
                     <div class="form-group">
                         <label for="groupStatusModalField">Status</label>
