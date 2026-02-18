@@ -8,6 +8,7 @@ using AIS.Models.Reports;
 using AIS.Models.Requests;
 using AIS.Models.SM;
 using AIS.Security.Cryptography;
+using AIS.Security;
 using AIS.Security.PasswordPolicy;
 using AIS.Services;
 using AIS.Utilities;
@@ -27,6 +28,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
@@ -48,6 +50,8 @@ namespace AIS.Controllers
         private readonly IConfiguration _configuration;
         private readonly SecurityTokenService _tokenService;
         private readonly PasswordPolicyValidator _passwordPolicyValidator;
+        private readonly IPageIdResolver _pageIdResolver;
+        private readonly IObjectScopeAuthorizerService _objectScopeAuthorizer;
         private static readonly Regex AlphaNumericWithSpacesRegex = new Regex("^[A-Za-z0-9 &]+$", RegexOptions.Compiled);
 
         public ApiCallsController(
@@ -58,7 +62,9 @@ namespace AIS.Controllers
             IHttpContextAccessor httpContextAccessor,
             IConfiguration configuration,
             SecurityTokenService tokenService,
-            PasswordPolicyValidator passwordPolicyValidator)
+            PasswordPolicyValidator passwordPolicyValidator,
+            IPageIdResolver pageIdResolver,
+            IObjectScopeAuthorizerService objectScopeAuthorizer)
             {
             _logger = logger;
             sessionHandler = _sessionHandler;
@@ -68,11 +74,211 @@ namespace AIS.Controllers
             _configuration = configuration;
             _tokenService = tokenService;
             _passwordPolicyValidator = passwordPolicyValidator;
+            _pageIdResolver = pageIdResolver;
+            _objectScopeAuthorizer = objectScopeAuthorizer;
             }
 
         public override void OnActionExecuting(ActionExecutingContext context)
             {
+            if (!TryEnforceObjectScopeAuthorization(context, out var denyResult))
+                {
+                context.Result = denyResult;
+                return;
+                }
+
             base.OnActionExecuting(context);
+            }
+
+        private bool TryEnforceObjectScopeAuthorization(ActionExecutingContext context, out IActionResult denyResult)
+            {
+            denyResult = null;
+            if (context == null)
+                {
+                denyResult = BuildUnauthorizedObjectScopeResult();
+                return false;
+                }
+
+            var ids = ExtractObjectScopeIdentifiers(context);
+            if (ids.Count == 0)
+                {
+                return true;
+                }
+
+            if (!sessionHandler.TryGetUser(out var user) || user == null || !long.TryParse(user.PPNumber, out var ppno) || ppno <= 0)
+                {
+                denyResult = BuildUnauthorizedObjectScopeResult();
+                return false;
+                }
+
+            if (!_pageIdResolver.TryResolvePageId(context.HttpContext, out var pageId) || pageId <= 0)
+                {
+                denyResult = BuildUnauthorizedObjectScopeResult();
+                return false;
+                }
+
+            foreach (var id in ids)
+                {
+                var isAllowed = id.Scope == ObjectScopeType.Engagement
+                    ? _objectScopeAuthorizer.CanAccessEng(ppno, pageId, id.Value)
+                    : _objectScopeAuthorizer.CanAccessCom(ppno, pageId, id.Value);
+
+                if (!isAllowed)
+                    {
+                    denyResult = BuildUnauthorizedObjectScopeResult();
+                    return false;
+                    }
+                }
+
+            return true;
+            }
+
+        private IActionResult BuildUnauthorizedObjectScopeResult()
+            {
+            return StatusCode(StatusCodes.Status403Forbidden, new { success = false, message = "Unauthorized access." });
+            }
+
+        private static List<ObjectScopeId> ExtractObjectScopeIdentifiers(ActionExecutingContext context)
+            {
+            var ids = new List<ObjectScopeId>();
+            var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+            foreach (var item in context.ActionArguments)
+                {
+                ExtractFromValue(item.Key, item.Value, ids, seen);
+                }
+
+            foreach (var queryItem in context.HttpContext.Request.Query)
+                {
+                if (queryItem.Value.Count == 0)
+                    {
+                    continue;
+                    }
+
+                foreach (var queryValue in queryItem.Value)
+                    {
+                    ExtractFromValue(queryItem.Key, queryValue, ids, seen);
+                    }
+                }
+
+            return ids;
+            }
+
+        private static void ExtractFromValue(string key, object value, ICollection<ObjectScopeId> ids, ISet<string> seen)
+            {
+            if (TryGetScopeType(key, out var scopeType) && TryConvertToLong(value, out var numeric) && numeric > 0)
+                {
+                AddIdentifier(scopeType, numeric, ids, seen);
+                return;
+                }
+
+            if (value == null || value is string)
+                {
+                return;
+                }
+
+            var type = value.GetType();
+            if (type.IsPrimitive || value is decimal || value is DateTime || value is Guid)
+                {
+                return;
+                }
+
+            if (value is System.Collections.IEnumerable enumerable)
+                {
+                foreach (var item in enumerable)
+                    {
+                    ExtractFromValue(key, item, ids, seen);
+                    }
+                return;
+                }
+
+            foreach (var property in type.GetProperties(BindingFlags.Public | BindingFlags.Instance))
+                {
+                if (!property.CanRead || property.GetIndexParameters().Length > 0)
+                    {
+                    continue;
+                    }
+
+                var propValue = property.GetValue(value);
+                ExtractFromValue(property.Name, propValue, ids, seen);
+                }
+            }
+
+        private static void AddIdentifier(ObjectScopeType scopeType, long numeric, ICollection<ObjectScopeId> ids, ISet<string> seen)
+            {
+            var key = scopeType + ":" + numeric;
+            if (seen.Add(key))
+                {
+                ids.Add(new ObjectScopeId(scopeType, numeric));
+                }
+            }
+
+        private static bool TryGetScopeType(string key, out ObjectScopeType scopeType)
+            {
+            scopeType = ObjectScopeType.Engagement;
+            if (string.IsNullOrWhiteSpace(key))
+                {
+                return false;
+                }
+
+            var normalized = key.Replace("_", string.Empty).Trim().ToLowerInvariant();
+            if (normalized == "engid")
+                {
+                scopeType = ObjectScopeType.Engagement;
+                return true;
+                }
+
+            if (normalized == "comid")
+                {
+                scopeType = ObjectScopeType.Compliance;
+                return true;
+                }
+
+            return false;
+            }
+
+        private static bool TryConvertToLong(object value, out long numeric)
+            {
+            switch (value)
+                {
+                case null:
+                    numeric = 0;
+                    return false;
+                case long longValue:
+                    numeric = longValue;
+                    return true;
+                case int intValue:
+                    numeric = intValue;
+                    return true;
+                case short shortValue:
+                    numeric = shortValue;
+                    return true;
+                case decimal decimalValue when decimalValue <= long.MaxValue && decimalValue >= long.MinValue:
+                    numeric = decimal.ToInt64(decimalValue);
+                    return true;
+                case string stringValue:
+                    return long.TryParse(stringValue, out numeric);
+                default:
+                    numeric = 0;
+                    return false;
+                }
+            }
+
+        private readonly struct ObjectScopeId
+            {
+            public ObjectScopeId(ObjectScopeType scope, long value)
+                {
+                Scope = scope;
+                Value = value;
+                }
+
+            public ObjectScopeType Scope { get; }
+            public long Value { get; }
+            }
+
+        private enum ObjectScopeType
+            {
+            Engagement,
+            Compliance
             }
 
         private IActionResult EnsureAuthenticatedSession()
