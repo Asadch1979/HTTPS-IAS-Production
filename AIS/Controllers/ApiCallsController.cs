@@ -34,7 +34,6 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using ServicesCsvSanitizer = AIS.Services.CsvSanitizer;
 
-
 namespace AIS.Controllers
     {
     [IgnoreAntiforgeryToken]
@@ -767,7 +766,6 @@ namespace AIS.Controllers
                 br = dBConnection.UpdateBranch(br);
             return br;
             }
-
 
         [HttpPost]
         public ControlViolationsModel add_control_violation(ControlViolationsModel cv)
@@ -1590,9 +1588,6 @@ namespace AIS.Controllers
                 });
             }
 
-
-
-
         [HttpPost]
         [Consumes("application/json")]
         public IActionResult save_observations_cau(
@@ -1664,8 +1659,6 @@ namespace AIS.Controllers
                 Message = responses
                 });
             }
-
-
 
         [HttpPost]
         public async Task<bool> reply_observation([FromForm] ObservationResponseModel or, [FromForm] string SUBFOLDER)
@@ -1760,7 +1753,7 @@ namespace AIS.Controllers
                 NEW_PARA_ID = NumericParsing.ToIntOrDefault(req.NEW_PARA_ID),
                 PARA_NO = req.PARA_NO,
                 PARA_TEXT = req.PARA_TEXT,
-                OBS_GIST = req.OBS_GIST,                
+                OBS_GIST = req.OBS_GIST,
                 INDICATOR = req.INDICATOR,
                 AUDIT_PERIOD = req.AUDIT_PERIOD,
                 OBS_RISK_ID = req.OBS_RISK_ID ?? 0,
@@ -1825,7 +1818,6 @@ namespace AIS.Controllers
             return dBConnection.GetSubChecklistStatus(ENG_ID, S_ID);
             }
 
-
         [HttpGet]
         [HttpPost]
         public List<ManageObservations> get_observation_branches(int ENG_ID = 0, int OBS_ID = 0)
@@ -1848,7 +1840,7 @@ namespace AIS.Controllers
 
             string response = "";
             response = dBConnection.AddObservationGistAndRecommendation(model.OBS_ID, model.GIST_OF_PARA, model.AUDITOR_RECOMMENDATION);
-            return "{\"Status\":true,\"Message\":\"" + response + "\"}"; 
+            return "{\"Status\":true,\"Message\":\"" + response + "\"}";
             }
         [HttpGet]
         [HttpPost]
@@ -1924,7 +1916,6 @@ namespace AIS.Controllers
             {
             return dBConnection.GetDepositAccountcatdetails(catid);
             }
-
 
         [HttpPost]
         public List<LoanCaseModel> GetBranchDesbursementaccountdetails(int b_id)
@@ -2120,8 +2111,6 @@ namespace AIS.Controllers
             return resp;
             }
 
-
-
         [HttpGet]
         [HttpPost]
         public List<AssignedObservations> get_assigned_observation(int ENG_ID)
@@ -2311,7 +2300,6 @@ namespace AIS.Controllers
             return "{\"Status\":true,\"Message\":\"" + response + "\"}";
             }
 
-
         [HttpPost]
         public List<LoanCasedocModel> Getloancasedocuments(int ENG_ID)
             {
@@ -2344,15 +2332,11 @@ namespace AIS.Controllers
 
             }
 
-
-
         [HttpPost]
         public bool addinpectioncriteria(string fquat = "", string squat = "", string tquat = "", string frquat = "")
             {
             return true;// dBConnection.AddInspectionCriteria(fquat, squat, tquat, frquat);
             }
-
-
 
         [HttpPost]
 
@@ -2507,7 +2491,6 @@ namespace AIS.Controllers
             return dBConnection.GetOldParasBranchComplianceTextForZoneRef(REF_P, PARA_CATEGORY, REPLY_DATE, OBS_ID);
             }
 
-
         [HttpGet]
         [HttpPost]
         public GetOldParasBranchComplianceTextModel get_old_para_imp_text(int PID, string REF_P, string PARA_CATEGORY, string REPLY_DATE, string OBS_ID)
@@ -2527,7 +2510,6 @@ namespace AIS.Controllers
             {
             return dBConnection.GetOldParasBranchComplianceTextForHeadAZ(PID, REF_P, OBS_ID, PARA_CATEGORY, REPLY_DATE);
             }
-
 
         [HttpPost]
         public async Task<string> submit_post_audit_compliance(string OLD_PARA_ID, int NEW_PARA_ID, string INDICATOR, string COMPLIANCE, string COMMENTS, List<AuditeeResponseEvidenceModel> EVIDENCE_LIST, string SUBFOLDER)
@@ -2644,7 +2626,6 @@ namespace AIS.Controllers
             return dBConnection.GetAllParaText(COM_ID);
             }
 
-
         [HttpGet]
         [HttpPost]
         public List<AuditeeOldParasPpnoModel> get_old_paras_for_monitoring_ppno(int ppno)
@@ -2728,7 +2709,6 @@ namespace AIS.Controllers
             return "{\"Status\":true,\"Message\":\"" + response + "\"}";
             }
 
-
         [HttpPost]
 
         public string Add_Para_Change_status_Request(string COM_ID, int NEW_STATUS, string REMARKS, string IND, string Action_IND)
@@ -2737,7 +2717,6 @@ namespace AIS.Controllers
             response = dBConnection.AddChangeStatusRequestForPara(COM_ID, NEW_STATUS, REMARKS, IND, Action_IND);
             return "{\"Status\":true,\"Message\":\"" + response + "\"}";
             }
-
 
         [HttpGet]
         [HttpPost]
@@ -2786,9 +2765,6 @@ namespace AIS.Controllers
             {
             return dBConnection.GetTeamDetails(ENG_ID);
             }
-
-
-
 
         [HttpGet]
         [HttpPost]
@@ -2877,7 +2853,6 @@ namespace AIS.Controllers
 
             }
 
-
         [HttpPost]
         public string update_legacy_para_with_responsibilities_no_changes_AZ(AddLegacyParaModel LEGACY_PARA)
             {
@@ -2911,7 +2886,6 @@ namespace AIS.Controllers
         public List<AuditPlanReportModel> GetFADAuditPlan(int ENT_ID, int Z_ID, int RISK, int SIZE)
             {
             return dBConnection.GetFadAuditPlanReport(ENT_ID, Z_ID, RISK, SIZE);
-
 
             }
         [HttpGet]
@@ -3456,7 +3430,6 @@ namespace AIS.Controllers
 
             }
 
-
         [HttpGet]
         [HttpPost]
         public List<FunctionalAnnexureWiseObservationModel> get_functional_resp_summary_paras(int PROCESS_ID)
@@ -3544,7 +3517,6 @@ namespace AIS.Controllers
             {
             return dBConnection.GetDuplicateSubProcesses(SUB_PROCESS_ID);
             }
-
 
         [HttpGet]
         [HttpPost]
@@ -3648,14 +3620,12 @@ namespace AIS.Controllers
             return dBConnection.GetHREntitiesForAdminPanelEntityAddition(ENTITY_NAME, ENTITY_CODE);
             }
 
-
         [HttpGet]
         [HttpPost]
         public List<AISEntitiesModel> get_ais_entities_for_admin_panel_entity_addition(string ENTITY_NAME, string ENTITY_CODE, int ENT_TYPE_ID = 0)
             {
             return dBConnection.GetAISEntitiesForAdminPanelEntityAddition(ENTITY_NAME, ENTITY_CODE, ENT_TYPE_ID);
             }
-
 
         [HttpPost]
         public string update_ais_entity_for_admin_panel_entity_addition(string ENTITY_ID, string ENTITY_NAME, string ENTITY_CODE, string AUDITABLE, string AUDIT_BY_ID, string ENTITY_TYPE_ID, string ENT_DESC, string STATUS)
@@ -3686,15 +3656,12 @@ namespace AIS.Controllers
 
             }
 
-
         [HttpPost]
         public string update_ais_entity_mapping_for_admin_panel_entity_addition(string P_ENTITY_ID, string ENTITY_ID, string RELATION_TYPE_ID)
             {
             return "{\"Status\":true,\"Message\":\"" + dBConnection.UpdateAISEntityMappingForAdminPanelEntityAddition(P_ENTITY_ID, ENTITY_ID, RELATION_TYPE_ID) + "\"}";
 
             }
-
-
 
         [HttpGet]
         [HttpPost]
@@ -3762,7 +3729,6 @@ namespace AIS.Controllers
             return "{\"Status\":true,\"Message\":\"" + dBConnection.AddWorkingFixedAssets(ENGID, A_NAME, PHY_EX, FAR, DIFF, REM) + "\"}";
 
             }
-
 
         [HttpGet]
         [HttpPost]
@@ -3892,7 +3858,6 @@ namespace AIS.Controllers
             return dBConnection.GetComplianceFlowByEntityType(ENTITY_TYPE_ID, GROUP_ID);
             }
 
-
         [HttpGet]
         [HttpPost]
         public List<DepttWiseOutstandingParasModel> get_outstanding_paras_for_entity_type_id(string ENTITY_TYPE_ID, string P_REF_DATE, int P_USE_TRUNC = 0)
@@ -3933,7 +3898,6 @@ namespace AIS.Controllers
             {
             return "{\"Status\":true,\"Message\":\"" + dBConnection.AuditEngagementObsStatusReversal(ENG_ID, NEW_STATUS_ID, OBS_IDS) + "\"}";
             }
-
 
         [HttpGet]
         [HttpPost]
@@ -4051,7 +4015,6 @@ namespace AIS.Controllers
             apm.END_DATE = DateTime.ParseExact(auditPeriod.ENDDATE, "MM/dd/yyyy", null);
             return "{\"Status\":true,\"Message\":\"" + dBConnection.AddAuditPeriod(apm) + "\"}";
 
-
             }
 
         [HttpPost]
@@ -4151,18 +4114,18 @@ namespace AIS.Controllers
             if (!System.Text.RegularExpressions.Regex.IsMatch(ANNEX_CODE ?? string.Empty, @"^[A-Za-z0-9&]+$") ||
                 !System.Text.RegularExpressions.Regex.IsMatch(HEADING ?? string.Empty, @"^[A-Za-z0-9 &]+$"))
                 {
-                return "{\"Status\":false,\"Message\":\"VALIDATION_ERROR\"}"; 
+                return "{\"Status\":false,\"Message\":\"VALIDATION_ERROR\"}";
                 }
-            return "{\"Status\":true,\"Message\":\"" + dBConnection.AddAnnexure(ANNEX_CODE, HEADING, PROCESS_ID, FUNCTION_OWNER_ID, FUNCTION_ID_1, FUNCTION_ID_2, RISK_ID, MAX_NUMBER, GRAVITY, WEIGHTAGE) + "\"}";    
+            return "{\"Status\":true,\"Message\":\"" + dBConnection.AddAnnexure(ANNEX_CODE, HEADING, PROCESS_ID, FUNCTION_OWNER_ID, FUNCTION_ID_1, FUNCTION_ID_2, RISK_ID, MAX_NUMBER, GRAVITY, WEIGHTAGE) + "\"}";
             }
         [HttpPost]
         public string update_annexure(int ANNEX_ID = 0, int PROCESS_ID = 0, int FUNCTION_OWNER_ID = 0, int FUNCTION_ID_1 = 0, int FUNCTION_ID_2 = 0, string HEADING = "", int RISK_ID = 0, string MAX_NUMBER = "", string GRAVITY = "", string WEIGHTAGE = "")
             {
             if (!System.Text.RegularExpressions.Regex.IsMatch(HEADING ?? string.Empty, @"^[A-Za-z0-9 &]+$"))
                 {
-                return "{\"Status\":false,\"Message\":\"VALIDATION_ERROR\"}"; 
+                return "{\"Status\":false,\"Message\":\"VALIDATION_ERROR\"}";
                 }
-            return "{\"Status\":true,\"Message\":\"" + dBConnection.UpdateAnnexure(ANNEX_ID, HEADING, PROCESS_ID, FUNCTION_OWNER_ID, FUNCTION_ID_1, FUNCTION_ID_2, RISK_ID, MAX_NUMBER, GRAVITY, WEIGHTAGE) + "\"}";    
+            return "{\"Status\":true,\"Message\":\"" + dBConnection.UpdateAnnexure(ANNEX_ID, HEADING, PROCESS_ID, FUNCTION_OWNER_ID, FUNCTION_ID_1, FUNCTION_ID_2, RISK_ID, MAX_NUMBER, GRAVITY, WEIGHTAGE) + "\"}";
             }
         [HttpPost]
         public string generate_traditional_risk_rating_of_engagement(int ENG_ID)
@@ -4535,7 +4498,6 @@ namespace AIS.Controllers
                     }
                 };
             }
-
 
         [HttpGet]
         [HttpPost]
@@ -5353,7 +5315,6 @@ namespace AIS.Controllers
                 }
             }
 
-
         [HttpPost]
         public IActionResult GetComplaintsByUser(int userId)
             {
@@ -5485,7 +5446,6 @@ namespace AIS.Controllers
                 return Json(new { ok = false, message = ex.Message });
                 }
             }
-
 
         private object BuildIidSaveResponse(AIS.Models.IID.InquiryReport.IidInqProcResult rows, string fallbackMessage)
             {
@@ -5912,7 +5872,6 @@ namespace AIS.Controllers
                 }
             }
 
-
         [HttpPost]
         public IActionResult GetIidInqWizardData([FromBody] AIS.Models.IID.InquiryReport.IidInqComplaintRequest request)
             {
@@ -6011,133 +5970,6 @@ namespace AIS.Controllers
         //    return dBConnection.GetAuditEmployees(entityId);
         //    }
 
-        [HttpPost]
-        public List<IdNameModel> GetRelationTypes()
-            {
-            return dBConnection.GetRelationTypes();
-            }
-
-        [HttpPost]
-        public List<IdNameModel> GetReportingOffices(int relationTypeId)
-            {
-            return dBConnection.GetReportingOffices(relationTypeId);
-            }
-
-        [HttpPost]
-        public List<EntityModel> GetEntitiesForOffice(int reportingOfficeId)
-            {
-            return dBConnection.Get_Entities_For_Office(reportingOfficeId);
-            }
-
-        [HttpPost]
-        [EnableRateLimiting("FileTransferPolicy")]
-        public IActionResult UploadCircularFile(int circularId, IFormFile file)
-            {
-            if (file == null || file.Length == 0)
-                return BadRequest("No file uploaded.");
-
-            var uploadedBy = User.Identity?.Name ?? "anonymous";
-            using (var ms = new MemoryStream())
-                {
-                file.CopyTo(ms);
-                var model = new CircularDocumentModel
-                    {
-                    CircularId = circularId,
-                    FileName = file.FileName,
-                    FileType = file.ContentType,
-                    FileSize = file.Length,
-                    FileBlob = ms.ToArray(),
-                    UploadedBy = uploadedBy
-                    };
-                var db = CreateDbConnection();
-                var status = db.SaveCircularDocument(model);
-                }
-            return Ok("File uploaded successfully!");
-            }
-
-        [HttpPost]
-        [EnableRateLimiting("FileTransferPolicy")]
-        public IActionResult UploadCircularFiles(int circularId, List<IFormFile> files)
-            {
-            if (files == null || files.Count == 0)
-                return BadRequest("No files uploaded.");
-            var db = CreateDbConnection();
-            var uploadedBy = User.Identity?.Name ?? "anonymous";
-            int successCount = 0;
-            foreach (var file in files)
-                {
-                using (var ms = new MemoryStream())
-                    {
-                    file.CopyTo(ms);
-                    string status;
-                    db.InsertCircularDoc(
-                        circularId,
-                        file.FileName,
-                        file.ContentType,
-                        file.Length,
-                        ms.ToArray(),
-                        uploadedBy,
-                        out status
-                    );
-                    if (status != null && status.StartsWith("Success"))
-                        successCount++;
-                    }
-                }
-            return Ok($"{successCount} file(s) uploaded successfully.");
-            }
-
-        [HttpGet]
-        [EnableRateLimiting("FileTransferPolicy")]
-        public IActionResult DownloadCircularFileFromDb(int docId)
-            {
-            var db = CreateDbConnection();
-            var doc = db.GetCircularDocument(docId);
-            if (doc == null || doc.FileBlob == null) return NotFound();
-            return File(doc.FileBlob, doc.FileType ?? "application/octet-stream", doc.FileName);
-            }
-
-
-        [HttpPost]
-        public string AllocateEntitiesToAuditor(int azId, int entId, int auditorPPNO)
-            {
-            var loggedInUser = sessionHandler.GetUser();
-            if (loggedInUser == null
-                || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
-                || string.IsNullOrWhiteSpace(loggedInUser.PPNumber)
-                || loggedInUser.UserRoleID <= 0)
-                {
-                return string.Empty;
-                }
-            return dBConnection.AllocateEntityToAuditor(azId, entId, auditorPPNO);
-            }
-
-        [HttpPost]
-        public List<ObservationReferenceModel> GetObservationsForReferenceUpdate(int? entId, int? assignedAuditorId, int? referenceId)
-            {
-            return dBConnection.GetObservationsForReferenceUpdate(entId, assignedAuditorId, referenceId);
-            }
-
-        [HttpPost]
-        public string UpdateParaReference(int comId, int? linkId, int newRef)
-            {
-            var loggedInUser = sessionHandler.GetUser();
-            if (loggedInUser == null
-                || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
-                || string.IsNullOrWhiteSpace(loggedInUser.PPNumber)
-                || loggedInUser.UserRoleID <= 0)
-                {
-                return string.Empty;
-                }
-            return dBConnection.UpdateParaReference(comId, linkId, newRef);
-            }
-
-        [HttpGet]
-        public IActionResult GetPendingReferenceParas()
-            {
-            var list = dBConnection.GetPendingReferenceParas();
-            return Json(list);
-            }
-
         [HttpGet]
         public IActionResult GetParaReferenceData(int comId)
             {
@@ -6149,12 +5981,6 @@ namespace AIS.Controllers
         public string SaveParaReferences([FromBody] SaveParaReferencesRequestModel model)
             {
             return dBConnection.SaveParaReferences(model.ComId.GetValueOrDefault(), model.References);
-            }
-
-        [HttpPost]
-        public List<UpdateLogModel> GetUpdateLog(int comId)
-            {
-            return dBConnection.GetUpdateLog(comId);
             }
 
         [HttpPost]
@@ -6176,28 +6002,6 @@ namespace AIS.Controllers
             {
             var detail = dBConnection.GetReferenceDetail(refId);
             return Json(detail);
-            }
-
-        [HttpGet]
-        public JsonResult GetPendingParas(int entityId, int auditYear)
-            {
-            var list = dBConnection.GetPendingParas(entityId, auditYear);
-            return Json(list);
-            }
-
-        [HttpGet]
-        public JsonResult GetReferenceEntitySummary()
-            {
-            var loggedInUser = sessionHandler.GetUser();
-            if (loggedInUser == null
-                || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
-                || string.IsNullOrWhiteSpace(loggedInUser.PPNumber)
-                || loggedInUser.UserRoleID <= 0)
-                {
-                return Json(Array.Empty<object>());
-                }
-            var list = dBConnection.GetReferenceEntitySummary();
-            return Json(list);
             }
 
         [HttpGet]
@@ -6308,8 +6112,6 @@ namespace AIS.Controllers
             {
             return DateTime.TryParseExact(value ?? string.Empty, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out date);
             }
-
-
 
         [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
         public IActionResult Error()

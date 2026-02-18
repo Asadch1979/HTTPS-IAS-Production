@@ -12,104 +12,6 @@ namespace AIS.Controllers
     public partial class DBConnection : Controller, IDBConnection
         {
 
-        public string SaveCircularDocument(CircularDocumentModel model)
-            {
-            var sessionHandler = CreateSessionHandler();
-            var loggedInUser = sessionHandler.GetUser();
-            if (loggedInUser == null
-                || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
-                || string.IsNullOrWhiteSpace(loggedInUser.PPNumber)
-                || loggedInUser.UserRoleID <= 0)
-                {
-                return string.Empty;
-                }
-
-            using (var con = this.DatabaseConnection())
-                {
-               
-                using (var cmd = con.CreateCommand())
-                    {
-                    cmd.CommandText = "PKG_FAD.P_InsertCircularDoc";
-                    cmd.CommandType = CommandType.StoredProcedure;
-                    cmd.Parameters.Add("p_circular_id", OracleDbType.Int32).Value = model.CircularId;
-                    cmd.Parameters.Add("p_file_name", OracleDbType.Varchar2).Value = model.FileName;
-                    cmd.Parameters.Add("p_file_type", OracleDbType.Varchar2).Value = model.FileType;
-                    cmd.Parameters.Add("p_file_size", OracleDbType.Int32).Value = model.FileSize;
-                    cmd.Parameters.Add("p_file_blob", OracleDbType.Blob).Value = model.FileBlob;
-                    cmd.Parameters.Add("p_uploaded_by", OracleDbType.Varchar2).Value = model.UploadedBy;
-                    cmd.Parameters.Add("o_status", OracleDbType.Varchar2, 200).Direction = ParameterDirection.Output;
-                    cmd.ExecuteNonQuery();
-                    var status = cmd.Parameters["o_status"].Value?.ToString();
-                    return status;
-                    }
-                }
-            }
-
-        public void InsertCircularDoc(
-            int circularId,
-            string fileName,
-            string fileType,
-            long fileSize,
-            byte[] fileBlob,
-            string uploadedBy,
-            out string status)
-            {
-            using (var con = this.DatabaseConnection())
-                {
-               
-                using (var cmd = con.CreateCommand())
-                    {
-                    cmd.CommandText = "PKG_FAD.P_InsertCircularDoc";
-                    cmd.CommandType = CommandType.StoredProcedure;
-                    cmd.Parameters.Add("p_circular_id", OracleDbType.Int32).Value = circularId;
-                    cmd.Parameters.Add("p_file_name", OracleDbType.Varchar2).Value = fileName;
-                    cmd.Parameters.Add("p_file_type", OracleDbType.Varchar2).Value = fileType;
-                    cmd.Parameters.Add("p_file_size", OracleDbType.Int32).Value = fileSize;
-                    cmd.Parameters.Add("p_file_blob", OracleDbType.Blob).Value = fileBlob;
-                    cmd.Parameters.Add("p_uploaded_by", OracleDbType.Varchar2).Value = uploadedBy;
-                    cmd.Parameters.Add("o_status", OracleDbType.Varchar2, 200).Direction = ParameterDirection.Output;
-                    cmd.ExecuteNonQuery();
-                    status = cmd.Parameters["o_status"].Value?.ToString();
-                    }
-                }
-            }
-
-        public CircularDocumentModel GetCircularDocument(int docId)
-            {
-            using (var con = this.DatabaseConnection())
-                {
-               
-                using (var cmd = con.CreateCommand())
-                    {
-                    cmd.CommandText = "PKG_FAD.P_GetCircularDoc";
-                    cmd.CommandType = CommandType.StoredProcedure;
-                    cmd.Parameters.Add("p_doc_id", OracleDbType.Int32).Value = docId;
-                    cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
-
-                    using (var rdr = cmd.ExecuteReader())
-                        {
-                        if (rdr.Read())
-                            {
-                            return new CircularDocumentModel
-                                {
-                                DocId = docId,
-                                CircularId = rdr["CIRCULAR_ID"] == DBNull.Value ? 0 : Convert.ToInt32(rdr["CIRCULAR_ID"]),
-                                FileName = rdr["FILE_NAME"].ToString(),
-                                FileType = rdr["FILE_TYPE"].ToString(),
-                                FileSize = rdr["FILE_SIZE"] == DBNull.Value ? 0 : Convert.ToInt64(rdr["FILE_SIZE"]),
-                                FileBlob = rdr["FILE_BLOB"] == DBNull.Value ? null : ((OracleBlob)rdr.GetOracleBlob(rdr.GetOrdinal("FILE_BLOB"))).Value,
-                                UploadedBy = rdr["UPLOADED_BY"].ToString(),
-                                UploadedOn = rdr["UPLOADED_ON"] == DBNull.Value ? DateTime.MinValue : Convert.ToDateTime(rdr["UPLOADED_ON"])
-                                };
-                            }
-                        }
-                    }
-                }
-            return null;
-            }
-
-
-
         public List<AuditChecklistAnnexureCircularModel> GetAuditChecklistAnnexureCirculars()
             {
 
@@ -124,7 +26,7 @@ namespace AIS.Controllers
                 }
             var list = new List<AuditChecklistAnnexureCircularModel>();
             var con = this.DatabaseConnection();
-           
+
             using (var cmd = con.CreateCommand())
                 {
                 cmd.CommandText = "PKG_FAD.P_GetAuditChecklistAnnexureCirculars";
@@ -156,19 +58,13 @@ namespace AIS.Controllers
             return list;
             }
 
-
-
-
-
-
-
         public List<ObservationResponsiblePPNOModel> GetResponsibilityForAuthorize(int C_ID)
             {
             var sessionHandler = CreateSessionHandler();
             var list = new List<ObservationResponsiblePPNOModel>();
             using (var con = this.DatabaseConnection())
                 {
-               
+
                 using (OracleCommand cmd = con.CreateCommand())
                     {
                     cmd.CommandText = "pkg_ar.P_Get_responsibility_for_Authorize";
@@ -201,7 +97,6 @@ namespace AIS.Controllers
             return list;
             }
 
-
         public List<AuditEmployeeModel> GetFadAuditEmployees()
             {
             var sessionHandler = CreateSessionHandler();
@@ -214,7 +109,6 @@ namespace AIS.Controllers
                 return new List<AuditEmployeeModel>();
                 }
             var con = this.DatabaseConnection();
-           
 
             var list = new List<AuditEmployeeModel>();
             using (var cmd = con.CreateCommand())
@@ -313,9 +207,6 @@ namespace AIS.Controllers
             return resp;
             }
 
-
-
-
         public List<ManageAuditParasModel> GetObservationsForManageAuditParas(int ENTITY_ID = 0, int OBS_ID = 0)
             {
             var sessionHandler = CreateSessionHandler();
@@ -325,7 +216,6 @@ namespace AIS.Controllers
                 {
                 using (var con = this.DatabaseConnection())
                     {
-                   
 
                     var loggedInUser = sessionHandler.GetUser();
             if (loggedInUser == null
@@ -381,7 +271,7 @@ namespace AIS.Controllers
             viewMemoModel para = null;
             using (var con = this.DatabaseConnection())
                 {
-               
+
                 var loggedInUser = sessionHandler.GetUser();
                 if (loggedInUser == null
                     || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
@@ -434,7 +324,7 @@ namespace AIS.Controllers
             var list = new List<ObservationResponsiblePPNOModel>();
             using (var con = this.DatabaseConnection())
                 {
-               
+
                 using (OracleCommand cmd = con.CreateCommand())
                     {
                     cmd.CommandText = "pkg_ar.GetResponsiblePPNOforoldPara";
@@ -462,8 +352,6 @@ namespace AIS.Controllers
                 }
             return list;
             }
-
-
 
         public List<ManageAuditParasModel> GetObservationsForMangeAuditParasForAuthorization()
             {
@@ -565,202 +453,6 @@ namespace AIS.Controllers
             con.Dispose();
             return list;
             }
-        public List<IdNameModel> GetRelationTypes()
-            {
-            var sessionHandler = CreateSessionHandler();
-            var loggedInUser = sessionHandler.GetUser();
-            if (loggedInUser == null
-                || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
-                || string.IsNullOrWhiteSpace(loggedInUser.PPNumber)
-                || loggedInUser.UserRoleID <= 0)
-                {
-                return new List<IdNameModel>();
-                }
-            var con = this.DatabaseConnection();
-           
-
-            var list = new List<IdNameModel>();
-            using (var cmd = con.CreateCommand())
-                {
-                cmd.CommandText = "PKG_FAD.P_GetRelationTypes";
-                cmd.CommandType = CommandType.StoredProcedure;
-                cmd.Parameters.Add("R_ID", OracleDbType.Int32).Value = loggedInUser.UserRoleID;
-                cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
-                using (var rdr = cmd.ExecuteReader())
-                    {
-                    while (rdr.Read())
-                        {
-                        list.Add(new IdNameModel
-                            {
-                            Id = rdr["ID"] == DBNull.Value ? 0 : Convert.ToInt32(rdr["ID"]),
-                            Name = rdr["NAME"].ToString()
-                            });
-                        }
-                    }
-                }
-            con.Close();
-            return list;
-            }
-
-        public List<IdNameModel> GetReportingOffices(int relationTypeId)
-            {
-            var sessionHandler = CreateSessionHandler();
-            var loggedInUser = sessionHandler.GetUser();
-            if (loggedInUser == null
-                || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
-                || string.IsNullOrWhiteSpace(loggedInUser.PPNumber)
-                || loggedInUser.UserRoleID <= 0)
-                {
-                return new List<IdNameModel>();
-                }
-            var con = this.DatabaseConnection();
-           
-
-            var list = new List<IdNameModel>();
-            using (var cmd = con.CreateCommand())
-                {
-                cmd.CommandText = "PKG_FAD.P_GetReportingOffices";
-                cmd.CommandType = CommandType.StoredProcedure;
-                cmd.Parameters.Add("p_relation_id", OracleDbType.Int32).Value = relationTypeId;
-                cmd.Parameters.Add("R_ID", OracleDbType.Int32).Value = loggedInUser.UserRoleID;
-                cmd.Parameters.Add("ENT_ID", OracleDbType.Int32).Value = loggedInUser.UserEntityID;
-                cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
-                using (var rdr = cmd.ExecuteReader())
-                    {
-                    while (rdr.Read())
-                        {
-                        list.Add(new IdNameModel
-                            {
-                            Id = rdr["ID"] == DBNull.Value ? 0 : Convert.ToInt32(rdr["ID"]),
-                            Name = rdr["NAME"].ToString()
-                            });
-                        }
-                    }
-                }
-            con.Close();
-            return list;
-            }
-
-        public List<EntityModel> Get_Entities_For_Office(int reportingOfficeId)
-            {
-            var sessionHandler = CreateSessionHandler();
-            var loggedInUser = sessionHandler.GetUser();
-            if (loggedInUser == null
-                || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
-                || string.IsNullOrWhiteSpace(loggedInUser.PPNumber)
-                || loggedInUser.UserRoleID <= 0)
-                {
-                return new List<EntityModel>();
-                }
-            var con = this.DatabaseConnection();
-           
-
-            var list = new List<EntityModel>();
-            using (var cmd = con.CreateCommand())
-                {
-                cmd.CommandText = "PKG_FAD.P_GetEntitiesForOffice";
-                cmd.CommandType = CommandType.StoredProcedure;
-                cmd.Parameters.Add("p_office_id", OracleDbType.Int32).Value = reportingOfficeId;
-                cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
-                using (var rdr = cmd.ExecuteReader())
-                    {
-                    while (rdr.Read())
-                        {
-                        list.Add(new EntityModel
-                            {
-                            EntityId = rdr["ENTITY_ID"] == DBNull.Value ? 0 : Convert.ToInt32(rdr["ENTITY_ID"]),
-                            EntityCode = rdr["ENTITY_CODE"]?.ToString(),
-                            Name = rdr["NAME"].ToString(),
-                            Type = rdr["TYPE"]?.ToString(),
-                            Allocatedto = rdr["ALLOCATEDTO"]?.ToString(),
-                            TotalParas = rdr["TOTAL_PARAS"] == DBNull.Value ? 0 : Convert.ToInt32(rdr["TOTAL_PARAS"])
-                            });
-                        }
-                    }
-                }
-            con.Close();
-            return list;
-            }
-
-        public string AllocateEntityToAuditor(int azId, int entId, int auditorPpno)
-            {
-            var sessionHandler = CreateSessionHandler();
-            var loggedInUser = sessionHandler.GetUser();
-            if (loggedInUser == null
-                || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
-                || string.IsNullOrWhiteSpace(loggedInUser.PPNumber)
-                || loggedInUser.UserRoleID <= 0)
-                {
-                return string.Empty;
-                }
-            var con = this.DatabaseConnection();
-            string result = "";
-            using (OracleCommand cmd = con.CreateCommand())
-                {
-                cmd.CommandText = "pkg_fad.P_allocate_entity_to_auditor";
-                cmd.CommandType = CommandType.StoredProcedure;
-                cmd.Parameters.Clear();
-                cmd.Parameters.Add("p_az_id", OracleDbType.Int32).Value = azId;
-                cmd.Parameters.Add("p_ent_id", OracleDbType.Int32).Value = entId;
-                cmd.Parameters.Add("p_auditor_ppno", OracleDbType.Int32).Value = auditorPpno;
-                cmd.Parameters.Add("p_assigned_by", OracleDbType.Int32).Value = loggedInUser.PPNumber;
-                cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
-                using (OracleDataReader rdr = cmd.ExecuteReader())
-                    {
-                    if (rdr.Read())
-                        {
-                        result = rdr["remarks"].ToString();
-                        }
-                    }
-                }
-            con.Dispose();
-            return result;
-            }
-
-
-
-        public List<ObservationReferenceModel> GetObservationsForReferenceUpdate(int? entId, int? assignedAuditorId, int? referenceId)
-            {
-            var sessionHandler = CreateSessionHandler();
-            var loggedInUser = sessionHandler.GetUser();
-            if (loggedInUser == null
-                || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
-                || string.IsNullOrWhiteSpace(loggedInUser.PPNumber)
-                || loggedInUser.UserRoleID <= 0)
-                {
-                return new List<ObservationReferenceModel>();
-                }
-            var con = this.DatabaseConnection();
-           
-
-            var list = new List<ObservationReferenceModel>();
-            using (var cmd = con.CreateCommand())
-                {
-                cmd.CommandText = "PKG_FAD.P_GetObservationsForReferenceUpdate";
-                cmd.CommandType = CommandType.StoredProcedure;
-                cmd.Parameters.Add("p_ent_id", OracleDbType.Int32).Value = entId ?? (object)DBNull.Value;
-                cmd.Parameters.Add("p_auditor", OracleDbType.Int32).Value = assignedAuditorId ?? (object)DBNull.Value;
-                cmd.Parameters.Add("p_ref_id", OracleDbType.Int32).Value = referenceId ?? (object)DBNull.Value;
-                cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
-                using (var rdr = cmd.ExecuteReader())
-                    {
-                    while (rdr.Read())
-                        {
-                        list.Add(new ObservationReferenceModel
-                            {
-                            ComId = rdr["COM_ID"] == DBNull.Value ? 0 : Convert.ToInt32(rdr["COM_ID"]),
-                            EntId = rdr["ENT_ID"] == DBNull.Value ? 0 : Convert.ToInt32(rdr["ENT_ID"]),
-                            ParaTitle = rdr["PARA_TITLE"].ToString(),
-                            ReferenceType = rdr["REFERENCE_TYPE"].ToString(),
-                            AssignedAuditorId = rdr["ASSIGNED_AUDITOR"] == DBNull.Value ? null : (int?)Convert.ToInt32(rdr["ASSIGNED_AUDITOR"]),
-                            Status = rdr["STATUS"].ToString()
-                            });
-                        }
-                    }
-                }
-            con.Close();
-            return list;
-            }
 
         public string UpdateParaReference(int comId, int? linkId, int newRef)
             {
@@ -785,47 +477,6 @@ namespace AIS.Controllers
             return result.remarks;
             }
 
-        public List<UpdateLogModel> GetUpdateLog(int comId)
-            {
-            var sessionHandler = CreateSessionHandler();
-            var loggedInUser = sessionHandler.GetUser();
-            if (loggedInUser == null
-                || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
-                || string.IsNullOrWhiteSpace(loggedInUser.PPNumber)
-                || loggedInUser.UserRoleID <= 0)
-                {
-                return new List<UpdateLogModel>();
-                }
-            var con = this.DatabaseConnection();
-           
-
-            var list = new List<UpdateLogModel>();
-            using (var cmd = con.CreateCommand())
-                {
-                cmd.CommandText = "PKG_FAD.P_GetReferenceUpdateLog";
-                cmd.CommandType = CommandType.StoredProcedure;
-                cmd.Parameters.Add("p_com_id", OracleDbType.Int32).Value = comId;
-                cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
-                using (var rdr = cmd.ExecuteReader())
-                    {
-                    while (rdr.Read())
-                        {
-                        list.Add(new UpdateLogModel
-                            {
-                            Date = rdr["ACTION_DATE"] == DBNull.Value ? DateTime.MinValue : Convert.ToDateTime(rdr["ACTION_DATE"]),
-                            User = rdr["ACTION_USER"].ToString(),
-                            Field = rdr["ACTION_FIELD"].ToString(),
-                            OldValue = rdr["OLD_VALUE"].ToString(),
-                            NewValue = rdr["NEW_VALUE"].ToString(),
-                            ActionType = rdr["ACTION_TYPE"].ToString()
-                            });
-                        }
-                    }
-                }
-            con.Close();
-            return list;
-            }
-
         public List<ReferenceSearchResultModel> SearchReferences(string referenceType, string keyword)
             {
             var sessionHandler = CreateSessionHandler();
@@ -838,7 +489,6 @@ namespace AIS.Controllers
                 return new List<ReferenceSearchResultModel>();
                 }
             var con = this.DatabaseConnection();
-           
 
             var list = new List<ReferenceSearchResultModel>();
             using (var cmd = con.CreateCommand())
@@ -869,39 +519,6 @@ namespace AIS.Controllers
             return list;
             }
 
-
-        public List<PendingParaModel> GetPendingParas(int entityId, int auditYear)
-            {
-            var list = new List<PendingParaModel>();
-            using (var con = this.DatabaseConnection())
-                {
-               
-                using (var cmd = con.CreateCommand())
-                    {
-                    cmd.CommandText = "PKG_FAD.P_GetPendingParas";
-                    cmd.CommandType = CommandType.StoredProcedure;
-                    cmd.Parameters.Add("p_entity_id", OracleDbType.Int32).Value = entityId;
-                    cmd.Parameters.Add("p_audit_year", OracleDbType.Int32).Value = auditYear;
-                    cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
-                    using (var rdr = cmd.ExecuteReader())
-                        {
-                        while (rdr.Read())
-                            {
-                            list.Add(new PendingParaModel
-                                {
-                                ParaId = Convert.ToInt32(rdr["PARA_ID"]),
-                                AuditYear = rdr["AUDIT_YEAR"].ToString(),
-                                ParaNo = rdr["PARA_NO"].ToString(),
-                                Gist = rdr["GIST"].ToString(),
-                                Risk = rdr["RISK"].ToString()
-                                });
-                            }
-                        }
-                    }
-                }
-            return list;
-            }
-
         public List<EntityTaskSummaryModel> GetEntityTaskSummary()
             {
             var sessionHandler = CreateSessionHandler();
@@ -916,7 +533,7 @@ namespace AIS.Controllers
             var list = new List<EntityTaskSummaryModel>();
             using (var con = this.DatabaseConnection())
                 {
-               
+
                 using (var cmd = con.CreateCommand())
                     {
                     cmd.CommandText = "PKG_FAD.P_GetEntityTaskSummary";
@@ -935,77 +552,6 @@ namespace AIS.Controllers
                                 AuditYear = rdr["AUDIT_YEAR"].ToString(),
                                 TotalParas = Convert.ToInt32(rdr["TOTAL_PARAS"]),
                                 ParasUpdated = Convert.ToInt32(rdr["PARAS_UPDATED"])
-                                });
-                            }
-                        }
-                    }
-                }
-            return list;
-            }
-
-        public List<ReferenceEntitySummaryModel> GetReferenceEntitySummary()
-            {
-            var sessionHandler = CreateSessionHandler();
-            var loggedInUser = sessionHandler.GetUser();
-            if (loggedInUser == null
-                || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
-                || string.IsNullOrWhiteSpace(loggedInUser.PPNumber)
-                || loggedInUser.UserRoleID <= 0)
-                {
-                return new List<ReferenceEntitySummaryModel>();
-                }
-            var list = new List<ReferenceEntitySummaryModel>();
-            using (var con = this.DatabaseConnection())
-                {
-               
-                using (var cmd = con.CreateCommand())
-                    {
-                    cmd.CommandText = "PKG_FAD.P_GetEntityTaskSummary";
-                    cmd.CommandType = CommandType.StoredProcedure;
-                    cmd.Parameters.Add("p_auditor_ppno", OracleDbType.Int32).Value = loggedInUser.PPNumber;
-                    cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
-                    using (var rdr = cmd.ExecuteReader())
-                        {
-                        while (rdr.Read())
-                            {
-                            list.Add(new ReferenceEntitySummaryModel
-                                {
-                                EntityId = Convert.ToInt32(rdr["ENTITY_ID"]),
-                                EntityCode = rdr["ENTITY_CODE"].ToString(),
-                                EntityName = rdr["ENTITY_NAME"].ToString(),
-                                AuditPeriod = rdr["AUDIT_PERIOD"].ToString(),
-                                TotalParas = Convert.ToInt32(rdr["TOTAL_PARAS"]),
-                                UpdatedParas = Convert.ToInt32(rdr["UPDATED_PARAS"]),
-                                Pendency = Convert.ToInt32(rdr["PENDENCY"])
-                                });
-                            }
-                        }
-                    }
-                }
-            return list;
-            }
-
-        public List<PendingReferenceParaModel> GetPendingReferenceParas()
-            {
-            var list = new List<PendingReferenceParaModel>();
-            using (var con = this.DatabaseConnection())
-                {
-               
-                using (var cmd = con.CreateCommand())
-                    {
-                    cmd.CommandText = "PKG_FAD.P_GetPendingReferenceParas";
-                    cmd.CommandType = CommandType.StoredProcedure;
-                    cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
-                    using (var rdr = cmd.ExecuteReader())
-                        {
-                        while (rdr.Read())
-                            {
-                            list.Add(new PendingReferenceParaModel
-                                {
-                                ComId = rdr["COM_ID"] == DBNull.Value ? 0 : Convert.ToInt32(rdr["COM_ID"]),
-                                AuditPeriod = rdr["AUDIT_PERIOD"]?.ToString(),
-                                ParaNo = rdr["PARA_NO"]?.ToString(),
-                                GistOfParas = rdr["GIST_OF_PARAS"]?.ToString()
                                 });
                             }
                         }
@@ -1049,7 +595,7 @@ namespace AIS.Controllers
             var list = new List<ParaReferenceLinkModel>();
             using (var con = this.DatabaseConnection())
                 {
-               
+
                 using (var cmd = con.CreateCommand())
                     {
                     cmd.CommandText = "PKG_FAD.P_GetParaReferences";
@@ -1089,7 +635,7 @@ namespace AIS.Controllers
             var list = new List<int>();
             using (var con = this.DatabaseConnection())
                 {
-               
+
                 using (var cmd = con.CreateCommand())
                     {
                     cmd.CommandText = "PKG_FAD.P_GetParaReferences";
@@ -1113,7 +659,7 @@ namespace AIS.Controllers
             string text = string.Empty;
             using (var con = this.DatabaseConnection())
                 {
-               
+
                 using (var cmd = con.CreateCommand())
                     {
                     cmd.CommandText = "PKG_FAD.P_GetParaText";
@@ -1156,7 +702,7 @@ namespace AIS.Controllers
             {
             using (var con = this.DatabaseConnection())
                 {
-               
+
                 using (var cmd = con.CreateCommand())
                     {
                     cmd.CommandText = "PKG_FAD.P_ManageReference";
@@ -1281,7 +827,7 @@ namespace AIS.Controllers
             var result = new List<ParaModel>();
             using (var con = DatabaseConnection())
                 {
-               
+
                 using (OracleCommand cmd = con.CreateCommand())
                     {
                     cmd.CommandText = "PKG_FAD.P_GET_PARA_STATUS_REQUEST";
@@ -1316,7 +862,7 @@ namespace AIS.Controllers
             {
             using (var con = DatabaseConnection())
                 {
-               
+
                 using (OracleCommand cmd = con.CreateCommand())
                     {
                     cmd.CommandText = "PKG_FAD.P_ADD_PARA_STATUS_CHANGE";
@@ -1345,7 +891,7 @@ namespace AIS.Controllers
             var result = new List<ParaStatusChangeLogModel>();
             using (var con = DatabaseConnection())
                 {
-               
+
                 using (OracleCommand cmd = con.CreateCommand())
                     {
                     cmd.CommandText = "PKG_FAD.P_GET_PARA_STATUS_AUTHORIZATION";
@@ -1402,12 +948,11 @@ namespace AIS.Controllers
             return resp;
             }
 
-
         public string AUTHORIZEPARASTATUSCHANGEREQUEST(int logId, string action, string authRemarks, int userId)
             {
             using (var con = DatabaseConnection())
                 {
-               
+
                 using (OracleCommand cmd = con.CreateCommand())
                     {
                     cmd.CommandText = "PKG_FAD.P_AUTHORIZE_PARA_STATUS_CHANGE";
@@ -1688,7 +1233,6 @@ namespace AIS.Controllers
                         chk.PROCESS_DETAIL = Convert.ToInt32(rdr["PROCESS_DETAIL"].ToString());
                         chk.PARA_TEXT = rdr["PARA_TEXT"].ToString();
 
-
                         }
 
                     chk.GIST_OF_PARAS = rdr["GIST_OF_PARAS"].ToString();
@@ -1700,8 +1244,6 @@ namespace AIS.Controllers
                         chk.PARA_RESP = this.GetLegacyParaResponsiblePersonsFAD(PARA_REF);
                     list.Add(chk);
                     }
-
-
 
                 }
             con.Dispose();
@@ -1979,7 +1521,6 @@ namespace AIS.Controllers
                     chk.PARA_CHANGE_REQUEST_STATUS = rdr["TEMP_STATUS_FOR_CHANGE"].ToString();
 
                     chk.REMARKS = rdr["REMARKS"].ToString();
-
 
                     list.Add(chk);
                     }
@@ -2532,7 +2073,7 @@ namespace AIS.Controllers
             var sessionHandler = CreateSessionHandler();
 
             var con = this.DatabaseConnection();
-           
+
             List<ParaTextModel> paraTexts = new List<ParaTextModel>();
             using (OracleCommand cmd = con.CreateCommand())
                 {
