@@ -17,6 +17,8 @@ namespace AIS.Models.IID
         public string Findings { get; set; }
         [PlainText]
         public string Recommendation { get; set; }
+        public string FindingsHtml { get; set; }
+        public string RecommendationsHtml { get; set; }
         [PlainText]
         public string UploadedReport { get; set; }
         [PlainText]

@@ -31,7 +31,7 @@
 
 <div class="stepper-wrap sticky-top bg-white py-2 mb-3">
     <div class="d-flex justify-content-between align-items-center mb-2">
-        <strong id="stepCounter">Step 1 of 8</strong>
+        <strong id="stepCounter">Step 1 of 9</strong>
         <span class="text-muted small">Click any step to navigate</span>
     </div>
     <div id="wizardStepper" class="wizard-stepper"></div>
@@ -45,9 +45,11 @@
 <div class="wizard-section card mb-3 d-none" data-step="6"></div>
 <div class="wizard-section card mb-3 d-none" data-step="7"></div>
 <div class="wizard-section card mb-3 d-none" data-step="8"></div>
+<div class="wizard-section card mb-3 d-none" data-step="9"></div>
 
 @section Scripts {
 <script src="~/js/iid/inquiryReportApi.js"></script>
+<script src="https://cdn.tiny.cloud/1/no-api-key/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>
 <script>
 $(function(){
     var complaintId = parseInt('@complaintId') || 0;
@@ -63,8 +65,9 @@ $(function(){
         { id: 4, code: 'RECORDS', title: 'Record Scrutinized' },
         { id: 5, code: 'STATEMENTS', title: 'Statement Register' },
         { id: 6, code: 'EVIDENCE', title: 'Evidence' },
-        { id: 7, code: 'VIOLATIONS', title: 'Violations' },
-        { id: 8, code: 'DSA', title: 'DSA / Finalize' }
+        { id: 7, code: 'FINDINGS_RECOMM', title: 'Findings & Recommendations' },
+        { id: 8, code: 'VIOLATIONS', title: 'Violations' },
+        { id: 9, code: 'DSA', title: 'DSA / Finalize' }
     ];
 
     var state = {
@@ -79,10 +82,11 @@ $(function(){
         records: [{ recId: 0, recordTitle: '', recordDetails: '', sortOrder: 1 }],
         statementRegister: { pending: [], saved: [] },
         evidence: [],
+        findingsRecomm: { findingText: '', recommendationText: '' },
         violations: [{ violationId: 0, category: 'Internal', violationDetail: '', referenceText: '', recommendation: '', sortOrder: 1 }],
         dsa: [{ dsaId: 0, personName: '', designation: '', ppnoNumber: '', cnic: '', dsaStatus: '', remarks: '', sortOrder: 1 }],
         deleteQueue: { accusations: [], accused: [], records: [], violations: [], dsa: [] },
-        savedSteps: { 1: true, 2: false, 3: false, 4: false, 5: false, 6: false, 7: false, 8: false },
+        savedSteps: { 1: true, 2: false, 3: false, 4: false, 5: false, 6: false, 7: false, 8: false, 9: false },
         dirtySteps: {}
     };
 
@@ -149,6 +153,40 @@ $(function(){
 
     function roleOptionsHtml(selected){
         return accusedRoleOptions.map(function(opt){ return '<option value="' + esc(opt) + '" ' + (opt===selected?'selected':'') + '>' + esc(opt) + '</option>'; }).join('');
+    }
+
+    function destroyTinyMce(){
+        if(window.tinymce){
+            var active = window.tinymce.get('findingTextHtml');
+            if(active){ active.remove(); }
+            active = window.tinymce.get('recommendationTextHtml');
+            if(active){ active.remove(); }
+        }
+    }
+
+    function initTinyMceEditors(){
+        if(currentStep !== 7 || !window.tinymce){ return; }
+        ['findingTextHtml','recommendationTextHtml'].forEach(function(editorId){
+            if(window.tinymce.get(editorId)){ return; }
+            window.tinymce.init({
+                selector: '#' + editorId,
+                menubar: false,
+                height: 320,
+                plugins: 'lists link table code',
+                toolbar: 'undo redo | blocks | bold italic underline | bullist numlist | alignleft aligncenter alignright | link table | code',
+                setup: function(editor){
+                    editor.on('change keyup', function(){
+                        if(editor.id === 'findingTextHtml'){
+                            state.findingsRecomm.findingText = editor.getContent();
+                        } else {
+                            state.findingsRecomm.recommendationText = editor.getContent();
+                        }
+                        markDirty(7);
+                        renderStepper();
+                    });
+                }
+            });
+        });
     }
 
     function renderSection(step){
@@ -242,16 +280,32 @@ $(function(){
             html += '<h5>Evidence</h5><div class="mb-3"><label class="form-label">Upload evidence files</label><input id="uploadedEvidence" type="file" class="form-control" multiple></div><table class="table table-sm"><thead><tr><th>File</th><th>Type</th><th>Uploaded On</th><th></th></tr></thead><tbody>' + (rowsE || '<tr><td colspan="4" class="text-muted">No evidence uploaded.</td></tr>') + '</tbody></table>';
         }
         if(step === 7){
+            html += '<h5>Findings & Recommendations</h5>' +
+                '<div class="card border-0 bg-light mb-3"><div class="card-body">' +
+                    '<label class="form-label fw-semibold">Findings</label>' +
+                    '<textarea id="findingTextHtml" class="form-control" rows="12">' + esc(state.findingsRecomm.findingText || '') + '</textarea>' +
+                '</div></div>' +
+                '<div class="card border-0 bg-light">' +
+                    '<div class="card-body">' +
+                        '<label class="form-label fw-semibold">Recommendations</label>' +
+                        '<textarea id="recommendationTextHtml" class="form-control" rows="12">' + esc(state.findingsRecomm.recommendationText || '') + '</textarea>' +
+                        '<div class="mt-3"><button type="button" class="btn btn-primary" data-save-findings-recomm>Save Findings & Recommendations</button></div>' +
+                    '</div>' +
+                '</div>';
+        }
+        if(step === 8){
             var rowsV = state.violations.map(function(r,i){ return '<tr data-row-id="' + (r.violationId || 0) + '"><td>'+rowInput('violations['+i+'].category',r.category)+'</td><td>'+rowInput('violations['+i+'].violationDetail',r.violationDetail)+'</td><td>'+rowInput('violations['+i+'].referenceText',r.referenceText)+'</td><td>'+rowInput('violations['+i+'].recommendation',r.recommendation)+'</td><td><button type="button" class="btn btn-outline-danger btn-sm" data-remove-row="violations" data-index="'+i+'">Remove</button></td></tr>'; }).join('');
             html += '<h5>Violations (Annex-III)</h5><table class="table table-sm"><thead><tr><th>Category</th><th>Detail</th><th>Reference</th><th>Recommendation</th><th></th></tr></thead><tbody>'+rowsV+'</tbody></table><button type="button" class="btn btn-outline-primary btn-sm" data-add-row="violations">Add Row</button>';
         }
-        if(step === 8){
+        if(step === 9){
             var rowsD = state.dsa.map(function(r,i){ return '<tr data-row-id="' + (r.dsaId || 0) + '"><td>'+rowInput('dsa['+i+'].personName',r.personName)+'</td><td>'+rowInput('dsa['+i+'].designation',r.designation)+'</td><td>'+rowInput('dsa['+i+'].ppnoNumber',r.ppnoNumber)+'</td><td>'+rowInput('dsa['+i+'].cnic',r.cnic)+'</td><td>'+rowInput('dsa['+i+'].dsaStatus',r.dsaStatus)+'</td><td><button type="button" class="btn btn-outline-danger btn-sm" data-remove-row="dsa" data-index="'+i+'">Remove</button></td></tr>'; }).join('');
             html += '<h5>DSA</h5><table class="table table-sm"><thead><tr><th>Person</th><th>Designation</th><th>PPNO</th><th>CNIC</th><th>Status</th><th></th></tr></thead><tbody>'+rowsD+'</tbody></table><button type="button" class="btn btn-outline-primary btn-sm" data-add-row="dsa">Add Row</button>';
         }
         html += sectionActions(step) + '</div>';
+        destroyTinyMce();
         h.html(html);
         if(isLocked){ h.find('input,textarea,select,button').prop('disabled', true); }
+        initTinyMceEditors();
     }
 
     function bindStepInputs(){
@@ -325,8 +379,9 @@ $(function(){
         if(step === 4 && !state.records.some(function(x){ return has(x.recordTitle) || has(x.recordDetails); })) errs.push('At least one record scrutinized row is required.');
         if(step === 5 && !state.statementRegister.saved.length) errs.push('At least one saved statement is required.');
         if(step === 6 && !state.evidence.length) errs.push('At least one evidence file is mandatory.');
-        if(step === 7 && !state.violations.some(function(x){ return has(x.category) && has(x.violationDetail) && has(x.referenceText) && has(x.recommendation); })) errs.push('At least one complete violation row is required.');
-        if(step === 8 && !state.dsa.some(function(x){ return has(x.personName) || has(x.dsaStatus); })) errs.push('At least one DSA row is required.');
+        if(step === 7 && !has(state.findingsRecomm.findingText) && !has(state.findingsRecomm.recommendationText)) errs.push('Findings or recommendations are required.');
+        if(step === 8 && !state.violations.some(function(x){ return has(x.category) && has(x.violationDetail) && has(x.referenceText) && has(x.recommendation); })) errs.push('At least one complete violation row is required.');
+        if(step === 9 && !state.dsa.some(function(x){ return has(x.personName) || has(x.dsaStatus); })) errs.push('At least one DSA row is required.');
         return errs;
     }
 
@@ -544,7 +599,7 @@ $(function(){
     }
 
     function loadStepData(step){
-        if(step < 2 || step > 8){ return $.Deferred().resolve().promise(); }
+        if(step < 2 || step > 9){ return $.Deferred().resolve().promise(); }
         var cfg = {
             2: { loadFn: window.iidGetInqAccusations, hydrate: function(resp){ state.accusations = extractData(resp).map(function(x){ return { accusationId: x.accusationId, accusationText: x.accusationText, sortOrder: x.sortOrder || 1 }; }); ensureOneRow('accusations'); }, section: 'accusations' },
             3: { loadFn: window.iidGetInqAccusedList, hydrate: function(resp){ splitAccusedRows(extractData(resp)); clearAccusedDraft('employee'); clearAccusedDraft('manual'); }, section: 'accusedRows' },
@@ -560,8 +615,9 @@ $(function(){
                     mergeStatementRegister(resp.accusedRows || [], resp.savedRows || []);
                 }, section: 'statementRegister' },
             6: { loadFn: window.iidGetInqEvidenceFiles, hydrate: function(resp){ state.evidence = extractData(resp); }, section: 'evidence' },
-            7: { loadFn: window.iidGetInqViolations, hydrate: function(resp){ state.violations = extractData(resp); ensureOneRow('violations'); }, section: 'violations' },
-            8: { loadFn: window.iidGetInqDsa, hydrate: function(resp){ state.dsa = extractData(resp); ensureOneRow('dsa'); }, section: 'dsa' }
+            7: { loadFn: window.iidGetInqFindingsRecomm, hydrate: function(resp){ var row = extractData(resp)[0] || {}; state.findingsRecomm = { findingText: row.findingText || '', recommendationText: row.recommendationText || '' }; }, section: 'findingsRecomm' },
+            8: { loadFn: window.iidGetInqViolations, hydrate: function(resp){ state.violations = extractData(resp); ensureOneRow('violations'); }, section: 'violations' },
+            9: { loadFn: window.iidGetInqDsa, hydrate: function(resp){ state.dsa = extractData(resp); ensureOneRow('dsa'); }, section: 'dsa' }
         }[step];
 
         return cfg.loadFn(complaintId).then(function(resp){
@@ -570,6 +626,10 @@ $(function(){
             state.dirtySteps[step] = false;
             if(step === 5){
                 state.savedSteps[step] = state.statementRegister.saved.length > 0;
+                return;
+            }
+            if(cfg.section === 'findingsRecomm'){
+                state.savedSteps[step] = !!(state.findingsRecomm.findingText || state.findingsRecomm.recommendationText);
                 return;
             }
             var list = cfg.section === 'evidence' ? state.evidence : (cfg.section === 'accusedRows' ? state.accusedEmployeeRows.concat(state.accusedManualRows) : state[cfg.section]);
@@ -602,9 +662,17 @@ $(function(){
             return window.iidGetInqEvidenceFiles(complaintId).then(function(resp){ ensureApiSuccess(resp, 'Failed to load evidence list.'); state.evidence = extractData(resp); return { message: 'Evidence list refreshed from database.' }; });
         }
         if(step === 7){
-            return saveCollection({ section: 'violations', rows: state.violations.filter(function(x){ return x.violationDetail && x.referenceText && x.recommendation; }), idKey: 'violationId', addFn: window.iidAddInqViolation, updateFn: window.iidUpdateInqViolation, deleteFn: window.iidDeleteInqViolation, loadFn: window.iidGetInqViolations, map: function(row, idx){ return $.extend({}, row, { complaintId: complaintId, sortOrder: idx + 1, status: 'A', createdBy: userId, updatedBy: userId }); }, hydrate: function(resp){ state.violations = extractData(resp); ensureOneRow('violations'); }, successMessage: 'Violations saved successfully.' });
+            return window.iidSaveInqFindingsRecomm({ complaintId: complaintId, findingText: state.findingsRecomm.findingText || '', recommendationText: state.findingsRecomm.recommendationText || '' }).then(function(resp){
+                ensureApiSuccess(resp, 'Findings & recommendations save failed.');
+                state.savedSteps[7] = true;
+                state.dirtySteps[7] = false;
+                return { message: getResponseMessage(resp) || 'Findings & recommendations saved successfully.' };
+            });
         }
         if(step === 8){
+            return saveCollection({ section: 'violations', rows: state.violations.filter(function(x){ return x.violationDetail && x.referenceText && x.recommendation; }), idKey: 'violationId', addFn: window.iidAddInqViolation, updateFn: window.iidUpdateInqViolation, deleteFn: window.iidDeleteInqViolation, loadFn: window.iidGetInqViolations, map: function(row, idx){ return $.extend({}, row, { complaintId: complaintId, sortOrder: idx + 1, status: 'A', createdBy: userId, updatedBy: userId }); }, hydrate: function(resp){ state.violations = extractData(resp); ensureOneRow('violations'); }, successMessage: 'Violations saved successfully.' });
+        }
+        if(step === 9){
             return saveCollection({ section: 'dsa', rows: state.dsa.filter(function(x){ return x.personName || x.dsaStatus; }), idKey: 'dsaId', addFn: window.iidAddInqDsa, updateFn: window.iidUpdateInqDsa, deleteFn: window.iidDeleteInqDsa, loadFn: window.iidGetInqDsa, map: function(row, idx){ return $.extend({}, row, { complaintId: complaintId, sortOrder: idx + 1, status: 'A', createdBy: userId, updatedBy: userId }); }, hydrate: function(resp){ state.dsa = extractData(resp); ensureOneRow('dsa'); }, successMessage: 'DSA saved successfully.' });
         }
         return $.Deferred().resolve({ message: 'Saved.' }).promise();
@@ -780,6 +848,15 @@ $(function(){
         }).fail(function(err){ showAlert((err && err.message) || 'Failed to delete evidence file.', 'danger'); });
     });
 
+    $(document).on('click', '[data-save-findings-recomm]', function(){
+        saveStep(7).done(function(result){
+            showAlert((result && result.message) || 'Saved successfully.', 'success');
+            renderCurrent(true);
+        }).fail(function(err){
+            showAlert((err && err.message) || 'Save failed.', 'danger');
+        });
+    });
+
     $(document).on('click', '#finalSubmitBtn', function(){
         var errors = [];
         for(var i=2;i<=steps.length;i++){ errors = errors.concat(validateStep(i)); }
@@ -794,7 +871,7 @@ $(function(){
 </script>
 
 <style>
-.wizard-stepper{display:grid;grid-template-columns:repeat(8,minmax(140px,1fr));gap:.4rem;overflow:auto}
+.wizard-stepper{display:grid;grid-template-columns:repeat(9,minmax(140px,1fr));gap:.4rem;overflow:auto}
 .step-pill{border:1px solid #ced4da;background:#fff;border-radius:.5rem;padding:.35rem .5rem;text-align:left}
 .step-pill .num{font-weight:700;margin-right:.35rem}
 .step-pill.active{border-color:#0d6efd;box-shadow:0 0 0 2px rgba(13,110,253,.15)}
