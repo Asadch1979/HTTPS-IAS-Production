@@ -128,7 +128,27 @@
             },
             cache: false,
             success: function (data) {
-                location.reload();
+                if (data && data.Status) {
+                    location.reload();
+                    return;
+                }
+
+                var msg = (data && (data.Message || data.message)) || "Unable to save team.";
+                Swal.fire({ icon: "error", title: "Validation error", text: msg });
+            },
+            error: function (xhr) {
+                var response = xhr && xhr.responseJSON ? xhr.responseJSON : null;
+                var msg = "Unable to save team.";
+
+                if (response) {
+                    if (response.message) {
+                        msg = response.message;
+                    } else if (response.errors && response.errors.length > 0) {
+                        msg = response.errors.map(function (e) { return e.error || e; }).join("\n");
+                    }
+                }
+
+                Swal.fire({ icon: "error", title: "Validation error", text: msg });
             },
             dataType: "json",
         });
