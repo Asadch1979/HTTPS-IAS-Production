@@ -789,40 +789,40 @@ namespace AIS.Controllers
 
         public int? GetComplaintIdByPlanId(int? planId)
             {
-            if (!planId.HasValue || planId.Value <= 0)
-                {
-                return null;
-                }
+            if (!planId.HasValue || planId.Value <= 0) return null;
 
             using var con = this.DatabaseConnection();
-            using (OracleCommand cmd = con.CreateCommand())
-                {
-                cmd.CommandText = "SELECT COMPLAINT_ID FROM T_AU_IID_INV_PLAN WHERE PLAN_ID = :p_plan_id";
-                cmd.CommandType = CommandType.Text;
-                cmd.BindByName = true;
-                cmd.Parameters.Add("p_plan_id", OracleDbType.Int32).Value = planId.Value;
-                var result = cmd.ExecuteScalar();
-                return result == null || result == DBNull.Value ? (int?)null : Convert.ToInt32(result);
-                }
+            using var cmd = con.CreateCommand();
+            cmd.CommandText = "PKG_INQ.P_GET_COMPLAINT_ID_BY_PLAN";
+            cmd.CommandType = CommandType.StoredProcedure;
+            cmd.BindByName = true;
+
+            cmd.Parameters.Add("P_PLAN_ID", OracleDbType.Int32).Value = planId.Value;
+            cmd.Parameters.Add("O_COMPLAINT_ID", OracleDbType.Int32).Direction = ParameterDirection.Output;
+
+            cmd.ExecuteNonQuery();
+
+            var v = cmd.Parameters["O_COMPLAINT_ID"].Value;
+            return (v == null || v == DBNull.Value) ? (int?)null : Convert.ToInt32(v);
             }
 
         public int? GetComplaintIdByReportId(int? reportId)
             {
-            if (!reportId.HasValue || reportId.Value <= 0)
-                {
-                return null;
-                }
+            if (!reportId.HasValue || reportId.Value <= 0) return null;
 
             using var con = this.DatabaseConnection();
-            using (OracleCommand cmd = con.CreateCommand())
-                {
-                cmd.CommandText = "SELECT COMPLAINT_ID FROM T_AU_IID_INQUIRY_REPORT WHERE REPORT_ID = :p_report_id";
-                cmd.CommandType = CommandType.Text;
-                cmd.BindByName = true;
-                cmd.Parameters.Add("p_report_id", OracleDbType.Int32).Value = reportId.Value;
-                var result = cmd.ExecuteScalar();
-                return result == null || result == DBNull.Value ? (int?)null : Convert.ToInt32(result);
-                }
+            using var cmd = con.CreateCommand();
+            cmd.CommandText = "PKG_INQ.P_GET_COMPLAINT_ID_BY_REPORT";
+            cmd.CommandType = CommandType.StoredProcedure;
+            cmd.BindByName = true;
+
+            cmd.Parameters.Add("P_REPORT_ID", OracleDbType.Int32).Value = reportId.Value;
+            cmd.Parameters.Add("O_COMPLAINT_ID", OracleDbType.Int32).Direction = ParameterDirection.Output;
+
+            cmd.ExecuteNonQuery();
+
+            var v = cmd.Parameters["O_COMPLAINT_ID"].Value;
+            return (v == null || v == DBNull.Value) ? (int?)null : Convert.ToInt32(v);
             }
 
         public IDictionary<string, object> GetIidPlanDetails(int complaintId)
