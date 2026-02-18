@@ -2,13 +2,11 @@ using AIS.Models;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
-using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
 using AIS.Services;
 
 namespace AIS.Controllers
@@ -21,9 +19,6 @@ namespace AIS.Controllers
         private readonly SessionHandler sessionHandler;
         private readonly IPermissionService _permissionService;
         private readonly DBConnection dBConnection;
-        private readonly IHttpContextAccessor _httpContextAccessor;
-        private readonly IConfiguration _configuration;
-        private readonly AIS.Security.Cryptography.SecurityTokenService _tokenService;
         public FADController(
             ILogger<FADController> logger,
             SessionHandler _sessionHandler,
@@ -37,21 +32,7 @@ namespace AIS.Controllers
             dBConnection = _dbCon;
             tm = _tpMenu;
             _permissionService = permissionService;
-            _httpContextAccessor = httpContextAccessor;
-            _configuration = configuration;
-            _tokenService = tokenService;
             }
-
-        private DBConnection CreateDbConnection()
-            {
-            if (_httpContextAccessor?.HttpContext == null)
-                throw new InvalidOperationException("HTTP context accessor is not available for database operations.");
-            if (_configuration == null)
-                throw new InvalidOperationException("Configuration dependency is not available for database operations.");
-
-            return DBConnection.CreateFromHttpContext(_httpContextAccessor, _configuration, sessionHandler, _tokenService);
-            }
-
 
         public IActionResult observation_review()
             {
@@ -74,25 +55,7 @@ namespace AIS.Controllers
                     return View("~/Views/FAD/FAD_TASK/observation_review.cshtml");
                 }
             }
-        public IActionResult review_gist_recommendation()
-            {
-            ViewData["TopMenu"] = tm.GetTopMenus();
-            ViewData["TopMenuPages"] = tm.GetTopMenusPages();
-            ViewData["ZonesList"] = dBConnection.GetZonesoldparamointoring();
-            if (!User.Identity.IsAuthenticated)
-                {
-                return RedirectToAction("Index", "Login");
-                }
-            else
-                {
-                if (!this.UserHasPagePermissionForCurrentAction(sessionHandler)) //MIGRATION_PERMISSION_CHECK (Controller)
-                    {
-                    return RedirectToAction("Index", "PageNotFound");
-                    }
-                else
-                    return View("~/Views/FAD/review_gist_recommendation.cshtml");
-                }
-            }
+
         public IActionResult Para_shifting()
             {
             ViewData["TopMenu"] = tm.GetTopMenus();
@@ -159,96 +122,6 @@ namespace AIS.Controllers
                 }
             }
 
-        public IActionResult AllocateEntityToAuditor()
-            {
-            ViewData["TopMenu"] = tm.GetTopMenus();
-            ViewData["TopMenuPages"] = tm.GetTopMenusPages();
-            if (!User.Identity.IsAuthenticated)
-                return RedirectToAction("Index", "Login");
-            else
-                {
-                if (!this.UserHasPagePermissionForCurrentAction(sessionHandler)) //MIGRATION_PERMISSION_CHECK (Controller)
-                    return RedirectToAction("Index", "PageNotFound");
-                else
-                    return View("~/Views/FAD/AllocateEntityToAuditor.cshtml");
-                }
-            }
-
-        public IActionResult ReferenceUpdateList()
-            {
-            ViewData["TopMenu"] = tm.GetTopMenus();
-            ViewData["TopMenuPages"] = tm.GetTopMenusPages();
-            if (!User.Identity.IsAuthenticated)
-                return RedirectToAction("Index", "Login");
-            else
-                {
-                if (!this.UserHasPagePermissionForCurrentAction(sessionHandler)) //MIGRATION_PERMISSION_CHECK (Controller)
-                    return RedirectToAction("Index", "PageNotFound");
-                else
-                    return View("~/Views/FAD/ReferenceUpdateList.cshtml");
-                }
-            }
-
-        public IActionResult ReferenceEntitySummary()
-            {
-            ViewData["TopMenu"] = tm.GetTopMenus();
-            ViewData["TopMenuPages"] = tm.GetTopMenusPages();
-            if (!User.Identity.IsAuthenticated)
-                return RedirectToAction("Index", "Login");
-            else
-                {
-                if (!this.UserHasPagePermissionForCurrentAction(sessionHandler)) //MIGRATION_PERMISSION_CHECK (Controller)
-                    return RedirectToAction("Index", "PageNotFound");
-                else
-                    return View("~/Views/FAD/ReferenceEntitySummary.cshtml");
-                }
-            }
-
-        public IActionResult ReferenceUpdateEdit(int comId)
-            {
-            ViewData["TopMenu"] = tm.GetTopMenus();
-            ViewData["TopMenuPages"] = tm.GetTopMenusPages();
-            if (!User.Identity.IsAuthenticated)
-                return RedirectToAction("Index", "Login");
-            else
-                {
-                if (!this.UserHasPagePermissionForCurrentAction(sessionHandler)) //MIGRATION_PERMISSION_CHECK (Controller)
-                    return RedirectToAction("Index", "PageNotFound");
-                else
-                    return View("~/Views/FAD/ReferenceUpdateEdit.cshtml", comId);
-                }
-            }
-
-        public IActionResult ReferenceUpdateLog(int comId)
-            {
-            ViewData["TopMenu"] = tm.GetTopMenus();
-            ViewData["TopMenuPages"] = tm.GetTopMenusPages();
-            if (!User.Identity.IsAuthenticated)
-                return RedirectToAction("Index", "Login");
-            else
-                {
-                if (!this.UserHasPagePermissionForCurrentAction(sessionHandler)) //MIGRATION_PERMISSION_CHECK (Controller)
-                    return RedirectToAction("Index", "PageNotFound");
-                else
-                    return View("~/Views/FAD/ReferenceUpdateLog.cshtml", comId);
-                }
-            }
-
-        public IActionResult ReferenceDisplay(int comId)
-            {
-            ViewData["TopMenu"] = tm.GetTopMenus();
-            ViewData["TopMenuPages"] = tm.GetTopMenusPages();
-            if (!User.Identity.IsAuthenticated)
-                return RedirectToAction("Index", "Login");
-            else
-                {
-                if (!this.UserHasPagePermissionForCurrentAction(sessionHandler)) //MIGRATION_PERMISSION_CHECK (Controller)
-                    return RedirectToAction("Index", "PageNotFound");
-                else
-                    return View("~/Views/FAD/ReferenceDisplay.cshtml", comId);
-                }
-            }
-
         public IActionResult Fad_Desk_rpt()
             {
             ViewData["TopMenu"] = tm.GetTopMenus();
@@ -261,21 +134,6 @@ namespace AIS.Controllers
                     return RedirectToAction("Index", "PageNotFound");
                 else
                     return View("~/Views/FAD/FAD_TASK/Fad_Desk_rpt.cshtml");
-                }
-            }
-
-        public IActionResult ViewParaReferences(int comId)
-            {
-            ViewData["TopMenu"] = tm.GetTopMenus();
-            ViewData["TopMenuPages"] = tm.GetTopMenusPages();
-            if (!User.Identity.IsAuthenticated)
-                return RedirectToAction("Index", "Login");
-            else
-                {
-                if (!this.UserHasPagePermissionForCurrentAction(sessionHandler)) //MIGRATION_PERMISSION_CHECK (Controller)
-                    return RedirectToAction("Index", "PageNotFound");
-                else
-                    return View("~/Views/FAD/ViewParaReferences.cshtml", comId);
                 }
             }
 
@@ -308,16 +166,6 @@ namespace AIS.Controllers
                 else
                     return View("~/Views/FAD/AuthorizeParaStatus.cshtml");
                 }
-            }
-
-        public IActionResult Upload_Circular_Document()
-            {
-            var db = CreateDbConnection();
-            var circulars = db.GetAuditChecklistAnnexureCirculars();
-            ViewBag.Circulars = circulars
-                .Select(c => new SelectListItem { Value = c.ID.ToString(), Text = c.InstructionsTitle })
-                .ToList();
-            return View();
             }
 
         public IActionResult Error()
