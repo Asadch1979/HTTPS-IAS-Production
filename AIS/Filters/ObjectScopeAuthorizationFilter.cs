@@ -1,12 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
 using System.Threading.Tasks;
 using AIS.Middleware;
 using AIS.Models;
-using AIS.Security;
-using AIS.Services;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Controllers;
@@ -31,21 +28,15 @@ namespace AIS.Filters
 
         private readonly SessionHandler _sessionHandler;
         private readonly IObjectScopeAuthorizer _scopeAuthorizer;
-        private readonly IObjectScopeAuthorizerService _objectScopeAuthorizer;
-        private readonly IPageIdResolver _pageIdResolver;
         private readonly ILogger<ObjectScopeAuthorizationFilter> _logger;
 
         public ObjectScopeAuthorizationFilter(
             SessionHandler sessionHandler,
             IObjectScopeAuthorizer scopeAuthorizer,
-            IObjectScopeAuthorizerService objectScopeAuthorizer,
-            IPageIdResolver pageIdResolver,
             ILogger<ObjectScopeAuthorizationFilter> logger)
             {
             _sessionHandler = sessionHandler ?? throw new ArgumentNullException(nameof(sessionHandler));
             _scopeAuthorizer = scopeAuthorizer ?? throw new ArgumentNullException(nameof(scopeAuthorizer));
-            _objectScopeAuthorizer = objectScopeAuthorizer ?? throw new ArgumentNullException(nameof(objectScopeAuthorizer));
-            _pageIdResolver = pageIdResolver ?? throw new ArgumentNullException(nameof(pageIdResolver));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             }
 
@@ -118,38 +109,6 @@ namespace AIS.Filters
                 return;
                 }
 
-            var objectIds = ExtractObjectIdentifiers(context);
-            if (objectIds.Count > 0)
-                {
-                if (!long.TryParse(user.PPNumber, out var ppno) || ppno <= 0)
-                    {
-                    context.Result = BuildObjectScopeForbiddenResult();
-                    return;
-                    }
-
-                if (!_pageIdResolver.TryResolvePageId(context.HttpContext, out var pageId) || pageId <= 0)
-                    {
-                    _logger.LogDebug(
-                        "Skipping object-scope filter check because PAGE_ID could not be resolved for {Path}; request will proceed to downstream authorization.",
-                        context.HttpContext.Request.Path);
-                    await next();
-                    return;
-                    }
-
-                foreach (var objectId in objectIds)
-                    {
-                    var isAllowed = objectId.Scope == ObjectScopeType.Engagement
-                        ? _objectScopeAuthorizer.CanAccessEng(ppno, pageId, objectId.Value)
-                        : _objectScopeAuthorizer.CanAccessCom(ppno, pageId, objectId.Value);
-
-                    if (!isAllowed)
-                        {
-                        context.Result = BuildObjectScopeForbiddenResult();
-                        return;
-                        }
-                    }
-                }
-
             await next();
             }
 
@@ -217,95 +176,6 @@ namespace AIS.Filters
             return UserIdentifierNames.Contains(normalizedKey);
             }
 
-        private static IReadOnlyList<ObjectIdentifier> ExtractObjectIdentifiers(ActionExecutingContext context)
-            {
-            var identifiers = new List<ObjectIdentifier>();
-            var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-
-            foreach (var argument in context.ActionArguments)
-                {
-                ExtractObjectIdentifiers(argument.Key, argument.Value, identifiers, seen);
-                }
-
-            foreach (var query in context.HttpContext.Request.Query)
-                {
-                foreach (var value in query.Value)
-                    {
-                    ExtractObjectIdentifiers(query.Key, value, identifiers, seen);
-                    }
-                }
-
-            return identifiers;
-            }
-
-        private static void ExtractObjectIdentifiers(string key, object value, ICollection<ObjectIdentifier> identifiers, ISet<string> seen)
-            {
-            if (TryGetObjectScope(key, out var scope) && TryConvertToLong(value, out var numeric) && numeric > 0)
-                {
-                var objectKey = scope + ":" + numeric;
-                if (seen.Add(objectKey))
-                    {
-                    identifiers.Add(new ObjectIdentifier(scope, numeric));
-                    }
-                return;
-                }
-
-            if (value == null || value is string)
-                {
-                return;
-                }
-
-            var type = value.GetType();
-            if (type.IsPrimitive || value is decimal || value is DateTime || value is Guid)
-                {
-                return;
-                }
-
-            if (value is System.Collections.IEnumerable enumerable)
-                {
-                foreach (var item in enumerable)
-                    {
-                    ExtractObjectIdentifiers(key, item, identifiers, seen);
-                    }
-
-                return;
-                }
-
-            foreach (var property in type.GetProperties(BindingFlags.Public | BindingFlags.Instance))
-                {
-                if (!property.CanRead || property.GetIndexParameters().Length > 0)
-                    {
-                    continue;
-                    }
-
-                ExtractObjectIdentifiers(property.Name, property.GetValue(value), identifiers, seen);
-                }
-            }
-
-        private static bool TryGetObjectScope(string key, out ObjectScopeType scope)
-            {
-            scope = ObjectScopeType.Engagement;
-            if (string.IsNullOrWhiteSpace(key))
-                {
-                return false;
-                }
-
-            var normalized = key.Replace("_", string.Empty).Trim().ToLowerInvariant();
-            if (normalized == "engid")
-                {
-                scope = ObjectScopeType.Engagement;
-                return true;
-                }
-
-            if (normalized == "comid")
-                {
-                scope = ObjectScopeType.Compliance;
-                return true;
-                }
-
-            return false;
-            }
-
         private static bool TryConvertToLong(object value, out long numeric)
             {
             switch (value)
@@ -322,9 +192,6 @@ namespace AIS.Filters
                 case short s:
                     numeric = s;
                     return true;
-                case decimal d when d <= long.MaxValue && d >= long.MinValue:
-                    numeric = decimal.ToInt64(d);
-                    return true;
                 case string str when long.TryParse(str, out var parsed):
                     numeric = parsed;
                     return true;
@@ -332,24 +199,6 @@ namespace AIS.Filters
                     numeric = 0;
                     return false;
                 }
-            }
-
-        private readonly struct ObjectIdentifier
-            {
-            public ObjectIdentifier(ObjectScopeType scope, long value)
-                {
-                Scope = scope;
-                Value = value;
-                }
-
-            public ObjectScopeType Scope { get; }
-            public long Value { get; }
-            }
-
-        private enum ObjectScopeType
-            {
-            Engagement,
-            Compliance
             }
 
         private void LogDenial(ActionExecutingContext context, IReadOnlyCollection<ScopedIdentifier> identifiers, ScopeDecision decision)
@@ -387,14 +236,6 @@ namespace AIS.Filters
             {
             var statusCode = existingResult?.StatusCode ?? StatusCodes.Status403Forbidden;
             return BuildApiResult(statusCode, reason);
-            }
-
-        private static IActionResult BuildObjectScopeForbiddenResult()
-            {
-            return new JsonResult(new { success = false, message = "Unauthorized access." })
-                {
-                StatusCode = StatusCodes.Status403Forbidden
-                };
             }
         }
     }
