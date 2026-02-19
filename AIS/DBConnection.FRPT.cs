@@ -276,6 +276,21 @@ namespace AIS.Controllers
                 };
             }
 
+        public FieldAuditPeriodRangeModel GetFieldAuditOperationPeriodRange(int engId)
+            {
+            var overview = GetFieldAuditReportOverview(engId);
+            if (overview == null)
+                {
+                return new FieldAuditPeriodRangeModel();
+                }
+
+            return new FieldAuditPeriodRangeModel
+                {
+                AuditPeriodFrom = overview.OPERATION_STARTDATE,
+                AuditPeriodTo = overview.OPERATION_ENDDATE
+                };
+            }
+
         /* =========================================================
            NARRATIVE SECTIONS
         ========================================================= */
@@ -612,16 +627,18 @@ namespace AIS.Controllers
             cmd.Parameters.Add("O_CURSOR", OracleDbType.RefCursor, ParameterDirection.Output);
 
             using var reader = cmd.ExecuteReader();
+            var columns = LoadColumnMap(reader);
             while (reader.Read())
                 {
                 list.Add(new KpiSnapshotRowModel
                     {
-                    KpiCode = reader["KPI_CODE"] == DBNull.Value ? string.Empty : reader["KPI_CODE"].ToString(),
-                    KpiLabel = reader["KPI_LABEL"] == DBNull.Value ? string.Empty : reader["KPI_LABEL"].ToString(),
-                    PeriodEnd = reader["PERIOD_END"] == DBNull.Value ? (DateTime?)null : Convert.ToDateTime(reader["PERIOD_END"]),
-                    ActualValue = reader["ACTUAL_VALUE"] == DBNull.Value ? (decimal?)null : Convert.ToDecimal(reader["ACTUAL_VALUE"]),
-                    TargetValue = reader["TARGET_VALUE"] == DBNull.Value ? (decimal?)null : Convert.ToDecimal(reader["TARGET_VALUE"]),
-                    Unit = reader["UNIT"] == DBNull.Value ? string.Empty : reader["UNIT"].ToString()
+                    SnapshotId = GetOptionalInt(reader, columns, "SNAPSHOT_ID", "ID"),
+                    KpiCode = GetOptionalString(reader, columns, "KPI_CODE"),
+                    KpiLabel = GetOptionalString(reader, columns, "KPI_LABEL"),
+                    PeriodEnd = GetOptionalDate(reader, columns, "PERIOD_END"),
+                    ActualValue = GetOptionalDecimal(reader, columns, "ACTUAL", "ACTUAL_VALUE"),
+                    TargetValue = GetOptionalDecimal(reader, columns, "TARGET", "TARGET_VALUE"),
+                    Unit = GetOptionalString(reader, columns, "UNIT")
                     });
                 }
 
@@ -645,8 +662,8 @@ namespace AIS.Controllers
             cmd.Parameters.Add("P_KPI_CODE", OracleDbType.Varchar2).Value = row?.KpiCode ?? string.Empty;
             cmd.Parameters.Add("P_KPI_LABEL", OracleDbType.Varchar2).Value = row?.KpiLabel ?? string.Empty;
             cmd.Parameters.Add("P_PERIOD_END", OracleDbType.Date).Value = row?.PeriodEnd ?? (object)DBNull.Value;
-            cmd.Parameters.Add("P_ACTUAL_VALUE", OracleDbType.Decimal).Value = row?.ActualValue ?? (object)DBNull.Value;
-            cmd.Parameters.Add("P_TARGET_VALUE", OracleDbType.Decimal).Value = row?.TargetValue ?? (object)DBNull.Value;
+            cmd.Parameters.Add("P_ACTUAL", OracleDbType.Decimal).Value = row?.ActualValue ?? (object)DBNull.Value;
+            cmd.Parameters.Add("P_TARGET", OracleDbType.Decimal).Value = row?.TargetValue ?? (object)DBNull.Value;
             cmd.Parameters.Add("P_UNIT", OracleDbType.Varchar2).Value = row?.Unit ?? string.Empty;
 
             cmd.ExecuteNonQuery();
@@ -918,6 +935,27 @@ namespace AIS.Controllers
             return null;
             }
 
+        private static DateTime? GetOptionalDate(IDataRecord reader, HashSet<string> columns, params string[] names)
+            {
+            foreach (var name in names)
+                {
+                if (!columns.Contains(name))
+                    {
+                    continue;
+                    }
+
+                var value = reader[name];
+                if (value == DBNull.Value)
+                    {
+                    return null;
+                    }
+
+                return Convert.ToDateTime(value);
+                }
+
+            return null;
+            }
+
         public List<GetTeamDetailsModel> GetFieldAuditTeamDetails(int engId)
             {
             return GetTeamDetails(engId);
@@ -943,15 +981,17 @@ namespace AIS.Controllers
             cmd.Parameters.Add("O_CURSOR", OracleDbType.RefCursor, ParameterDirection.Output);
 
             using var reader = cmd.ExecuteReader();
+            var columns = LoadColumnMap(reader);
             while (reader.Read())
                 {
                 list.Add(new NplSnapshotRowModel
                     {
-                    Category = reader["CATEGORY"] == DBNull.Value ? string.Empty : reader["CATEGORY"].ToString(),
-                    PeriodEnd = reader["PERIOD_END"] == DBNull.Value ? (DateTime?)null : Convert.ToDateTime(reader["PERIOD_END"]),
-                    CaseCount = reader["CASE_COUNT"] == DBNull.Value ? (int?)null : Convert.ToInt32(reader["CASE_COUNT"]),
-                    OutstandingAmount = reader["OUTSTANDING_AMOUNT"] == DBNull.Value ? (decimal?)null : Convert.ToDecimal(reader["OUTSTANDING_AMOUNT"]),
-                    ProvisionAmount = reader["PROVISION_AMOUNT"] == DBNull.Value ? (decimal?)null : Convert.ToDecimal(reader["PROVISION_AMOUNT"])
+                    SnapshotId = GetOptionalInt(reader, columns, "SNAPSHOT_ID", "ID"),
+                    Category = GetOptionalString(reader, columns, "CATEGORY"),
+                    PeriodEnd = GetOptionalDate(reader, columns, "PERIOD_END"),
+                    CaseCount = GetOptionalInt(reader, columns, "CASES", "CASE_COUNT"),
+                    OutstandingAmount = GetOptionalDecimal(reader, columns, "OUTSTANDING", "OUTSTANDING_AMOUNT"),
+                    ProvisionAmount = GetOptionalDecimal(reader, columns, "PROVISION", "PROVISION_AMOUNT")
                     });
                 }
 
@@ -971,9 +1011,25 @@ namespace AIS.Controllers
             cmd.Parameters.Add("P_ENG_ID", OracleDbType.Int32).Value = engId;
             cmd.Parameters.Add("P_CATEGORY", OracleDbType.Varchar2).Value = row?.Category ?? string.Empty;
             cmd.Parameters.Add("P_PERIOD_END", OracleDbType.Date).Value = row?.PeriodEnd ?? (object)DBNull.Value;
-            cmd.Parameters.Add("P_CASE_COUNT", OracleDbType.Int32).Value = row?.CaseCount ?? (object)DBNull.Value;
-            cmd.Parameters.Add("P_OUTSTANDING_AMOUNT", OracleDbType.Decimal).Value = row?.OutstandingAmount ?? (object)DBNull.Value;
-            cmd.Parameters.Add("P_PROVISION_AMOUNT", OracleDbType.Decimal).Value = row?.ProvisionAmount ?? (object)DBNull.Value;
+            cmd.Parameters.Add("P_CASES", OracleDbType.Int32).Value = row?.CaseCount ?? (object)DBNull.Value;
+            cmd.Parameters.Add("P_OUTSTANDING", OracleDbType.Decimal).Value = row?.OutstandingAmount ?? (object)DBNull.Value;
+            cmd.Parameters.Add("P_PROVISION", OracleDbType.Decimal).Value = row?.ProvisionAmount ?? (object)DBNull.Value;
+
+            cmd.ExecuteNonQuery();
+            }
+
+        public void DeleteFieldAuditNplSnapshot(int engId, int snapshotId)
+            {
+            using var con = DatabaseConnection();
+            EnsureConnectionOpen(con);
+
+            using var cmd = con.CreateCommand();
+            cmd.BindByName = true;
+            cmd.CommandType = CommandType.StoredProcedure;
+            cmd.CommandText = "PKG_FRPT.P_DELETE_NPL_SNAPSHOT";
+
+            cmd.Parameters.Add("P_ENG_ID", OracleDbType.Int32).Value = engId;
+            cmd.Parameters.Add("P_SNAPSHOT_ID", OracleDbType.Int32).Value = snapshotId;
 
             cmd.ExecuteNonQuery();
             }

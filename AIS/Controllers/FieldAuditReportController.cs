@@ -252,6 +252,24 @@ namespace AIS.Controllers
             }
 
         [HttpGet]
+        public IActionResult GetOperationPeriodRange(int engId)
+            {
+            var redirect = EnsureAuthorized();
+            if (redirect != null)
+                {
+                return redirect;
+                }
+
+            if (engId <= 0)
+                {
+                return BadRequest(new { success = false, message = "Invalid engagement." });
+                }
+
+            var range = _dbConnection.GetFieldAuditOperationPeriodRange(engId);
+            return Json(new { success = true, auditPeriodFrom = range?.AuditPeriodFrom, auditPeriodTo = range?.AuditPeriodTo });
+            }
+
+        [HttpGet]
         public IActionResult GetStaffSnapshotRows(int engId)
             {
             var redirect = EnsureAuthorized();
@@ -368,6 +386,30 @@ namespace AIS.Controllers
 
             var savedRows = _dbConnection.GetFieldAuditNplSnapshots(engId);
             return Json(new { success = true, message = "NPL Snapshot saved.", rows = savedRows });
+            }
+
+        [HttpPost]
+        public IActionResult DeleteNplSnapshot(int engId, int snapshotId)
+            {
+            var redirect = EnsureAuthorized();
+            if (redirect != null)
+                {
+                return redirect;
+                }
+
+            if (engId <= 0 || snapshotId <= 0)
+                {
+                return BadRequest(new { success = false, message = "Invalid request." });
+                }
+
+            if (_dbConnection.IsFieldAuditReportFinal(engId))
+                {
+                return BadRequest(new { success = false, message = "Report is finalized and cannot be edited." });
+                }
+
+            _dbConnection.DeleteFieldAuditNplSnapshot(engId, snapshotId);
+            var savedRows = _dbConnection.GetFieldAuditNplSnapshots(engId);
+            return Json(new { success = true, message = "NPL Snapshot deleted.", rows = savedRows });
             }
 
         [HttpGet]
