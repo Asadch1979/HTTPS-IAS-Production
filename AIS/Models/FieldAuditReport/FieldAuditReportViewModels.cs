@@ -128,7 +128,6 @@ namespace AIS.Models.FieldAuditReport
 
     public class KpiSnapshotRowModel
         {
-        public int? SnapshotId { get; set; }
         public string KpiCode { get; set; }
         public string KpiLabel { get; set; }
         public DateTime? PeriodEnd { get; set; }
@@ -165,18 +164,11 @@ namespace AIS.Models.FieldAuditReport
 
     public class NplSnapshotRowModel
         {
-        public int? SnapshotId { get; set; }
         public string Category { get; set; }
         public DateTime? PeriodEnd { get; set; }
         public int? CaseCount { get; set; }
         public decimal? OutstandingAmount { get; set; }
         public decimal? ProvisionAmount { get; set; }
-        }
-
-    public class FieldAuditPeriodRangeModel
-        {
-        public DateTime? AuditPeriodFrom { get; set; }
-        public DateTime? AuditPeriodTo { get; set; }
         }
 
     public class NplSnapshotViewModel

@@ -122,10 +122,10 @@
             const previewTable = document.getElementById('kpi-preview-table');
             let savedRows = [];
             let isEditing = false;
-            const periodRange = {
-                min: '',
-                max: ''
-            };
+            const operationDates = [
+                '@(Model.Overview?.OPERATION_STARTDATE?.ToString("yyyy-MM-dd") ?? string.Empty)',
+                '@(Model.Overview?.OPERATION_ENDDATE?.ToString("yyyy-MM-dd") ?? string.Empty)'
+            ].filter(value => value);
 
             if (!entryTableBody || !savedTableBody || !engId) {
                 return;
@@ -355,18 +355,23 @@
                 kpiCell.appendChild(select);
                 tr.appendChild(kpiCell);
                 const periodCell = document.createElement('td');
-                const periodInput = document.createElement('input');
-                periodInput.className = 'form-control';
-                periodInput.type = 'date';
-                periodInput.dataset.periodSelect = 'true';
-                if (periodRange.min) {
-                    periodInput.min = periodRange.min;
-                }
-                if (periodRange.max) {
-                    periodInput.max = periodRange.max;
-                }
-                periodInput.value = formatDate(periodEnd) || '';
-                periodCell.appendChild(periodInput);
+                const periodSelect = document.createElement('select');
+                periodSelect.className = 'form-select';
+                periodSelect.dataset.periodSelect = 'true';
+                const placeholder = document.createElement('option');
+                placeholder.value = '';
+                placeholder.textContent = 'Select date';
+                periodSelect.appendChild(placeholder);
+                operationDates.forEach(date => {
+                    const option = document.createElement('option');
+                    option.value = date;
+                    option.textContent = date;
+                    if (formatDate(periodEnd) === date) {
+                        option.selected = true;
+                    }
+                    periodSelect.appendChild(option);
+                });
+                periodCell.appendChild(periodSelect);
                 tr.appendChild(periodCell);
 
                 const actualCell = document.createElement('td');
@@ -445,6 +450,7 @@
                 }
                 statusEl.textContent = 'Saving...';
                 const payloadRows = collectKpiRows();
+                console.log('KPI payload mapping check', payloadRows.map(row => ({ actualFigure: row.actualValue, targetFigure: row.targetValue })));
                 fetch(`/FieldAuditReport/SaveKpiSnapshotRows?engId=${engId}`, {
                     method: 'POST',
                     headers: {
@@ -475,45 +481,28 @@
                     });
             };
 
-            const loadPeriodRange = () => {
-                return fetch(`/FieldAuditReport/GetOperationPeriodRange?engId=${engId}`)
-                    .then(response => response.json())
-                    .then(data => {
-                        periodRange.min = formatDate(data?.auditPeriodFrom ?? data?.AuditPeriodFrom ?? '');
-                        periodRange.max = formatDate(data?.auditPeriodTo ?? data?.AuditPeriodTo ?? '');
-                    })
-                    .catch(() => {
-                        periodRange.min = '';
-                        periodRange.max = '';
-                    });
-            };
-
             addButton?.addEventListener('click', () => addRow());
             saveButton?.addEventListener('click', saveKpiRows);
-
-            Promise.all([
-                loadPeriodRange(),
-                fetch(`/FieldAuditReport/GetKpiOptions?engId=${engId}`)
-                    .then(response => response.json())
-                    .then(data => {
-                        kpiOptions.length = 0;
-                        (data?.items ?? []).forEach(item => {
-                            if (!item) {
-                                return;
-                            }
-                            kpiOptions.push({
-                                kpiCode: item.kpiCode ?? item.KpiCode ?? '',
-                                kpiLabel: item.kpiLabel ?? item.KpiLabel ?? '',
-                                unit: item.unit ?? item.Unit ?? ''
-                            });
+            fetch(`/FieldAuditReport/GetKpiOptions?engId=${engId}`)
+                .then(response => response.json())
+                .then(data => {
+                    kpiOptions.length = 0;
+                    (data?.items ?? []).forEach(item => {
+                        if (!item) {
+                            return;
+                        }
+                        kpiOptions.push({
+                            kpiCode: item.kpiCode ?? item.KpiCode ?? '',
+                            kpiLabel: item.kpiLabel ?? item.KpiLabel ?? '',
+                            unit: item.unit ?? item.Unit ?? ''
                         });
-                    })
-                    .catch(() => {
-                        statusEl.textContent = 'Unable to load KPI options.';
-                    })
-            ]).finally(() => {
-                loadKpiRows();
-            });
+                    });
+                    loadKpiRows();
+                })
+                .catch(() => {
+                    statusEl.textContent = 'Unable to load KPI options.';
+                    loadKpiRows();
+                });
         })();
     </script>
 }
