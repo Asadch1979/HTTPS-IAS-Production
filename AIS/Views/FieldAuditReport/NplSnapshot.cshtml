@@ -413,6 +413,7 @@
             const casesInput = document.createElement('input');
             casesInput.className = 'form-control num-right';
             casesInput.type = 'number';
+            casesInput.dataset.field = 'caseCount';
             casesInput.value = caseCount;
             casesCell.appendChild(casesInput);
             tr.appendChild(casesCell);
@@ -422,6 +423,7 @@
             outstandingInput.className = 'form-control num-right';
             outstandingInput.type = 'number';
             outstandingInput.step = 'any';
+            outstandingInput.dataset.field = 'outstandingAmount';
             outstandingInput.value = outstandingAmount;
             outstandingCell.appendChild(outstandingInput);
             tr.appendChild(outstandingCell);
@@ -431,6 +433,7 @@
             provisionInput.className = 'form-control num-right';
             provisionInput.type = 'number';
             provisionInput.step = 'any';
+            provisionInput.dataset.field = 'provisionAmount';
             provisionInput.value = provisionAmount;
             provisionCell.appendChild(provisionInput);
             tr.appendChild(provisionCell);
@@ -446,12 +449,11 @@
 
             return Array.from(entryTableBody.querySelectorAll('tr')).map(row => {
                 const categorySelect = row.querySelector('select');
-                const cells = row.querySelectorAll('input');
                 const category = categorySelect?.value?.trim() ?? '';
                 const periodEnd = row.querySelector('[data-period-select="true"]')?.value;
-                const caseCount = cells[1]?.value;
-                const outstandingAmount = cells[2]?.value;
-                const provisionAmount = cells[3]?.value;
+                const caseCount = row.querySelector('[data-field="caseCount"]')?.value;
+                const outstandingAmount = row.querySelector('[data-field="outstandingAmount"]')?.value;
+                const provisionAmount = row.querySelector('[data-field="provisionAmount"]')?.value;
                 return {
                     category,
                     periodEnd: periodEnd === '' ? null : periodEnd,
