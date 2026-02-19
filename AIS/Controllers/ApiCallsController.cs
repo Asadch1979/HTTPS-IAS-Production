@@ -189,6 +189,31 @@ namespace AIS.Controllers
             }
 
         [HttpPost]
+        public IActionResult DeleteNplSnapshot([FromForm] int snapshotId, [FromForm] int engId)
+            {
+            var auth = EnsureAuthenticatedSession();
+            if (auth != null)
+                {
+                return auth;
+                }
+
+            if (snapshotId <= 0 || engId <= 0)
+                {
+                return BadRequest(new { success = false, message = "Invalid request." });
+                }
+
+            using var db = CreateDbConnection();
+            if (db.IsFieldAuditReportFinal(engId))
+                {
+                return BadRequest(new { success = false, message = "Report is finalized and cannot be edited." });
+                }
+
+            db.DeleteFieldAuditNplSnapshot(engId, snapshotId);
+            var rows = db.GetFieldAuditNplSnapshots(engId);
+            return Json(new { success = true, message = "NPL Snapshot deleted.", rows });
+            }
+
+        [HttpPost]
         public async Task<IActionResult> upload_post_compliance_evidences(List<IFormFile> files)
             {
             // Directory path where files will be stored

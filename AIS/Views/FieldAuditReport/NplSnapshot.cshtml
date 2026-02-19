@@ -116,10 +116,10 @@
         const previewTable = document.getElementById('npl-preview-table');
         let savedRows = [];
         let isEditing = false;
-        const operationDates = [
-            '@(Model.Overview?.OPERATION_STARTDATE?.ToString("yyyy-MM-dd") ?? string.Empty)',
-            '@(Model.Overview?.OPERATION_ENDDATE?.ToString("yyyy-MM-dd") ?? string.Empty)'
-        ].filter(value => value);
+        const periodRange = {
+            min: '',
+            max: ''
+        };
 
         const populateCategorySelect = (select, selectedValue = '') => {
             select.innerHTML = '';
@@ -345,7 +345,10 @@
                     <td class="num-right">${caseCount ?? ''}</td>
                     <td class="num-right">${outstandingAmount ?? ''}</td>
                     <td class="num-right">${provisionAmount ?? ''}</td>
-                    <td><button type="button" class="btn btn-sm btn-outline-secondary npl-edit" data-index="${index}">Update</button></td>
+                    <td>
+                        <button type="button" class="btn btn-sm btn-outline-secondary npl-edit" data-index="${index}">Update</button>
+                        <button type="button" class="btn btn-sm btn-outline-danger npl-delete" data-index="${index}">Delete</button>
+                    </td>
                 `;
                 savedTableBody.appendChild(tr);
             });
@@ -370,6 +373,21 @@
                     addButton?.setAttribute('disabled', 'disabled');
                 });
             });
+
+            savedTableBody.querySelectorAll('.npl-delete').forEach(button => {
+                button.addEventListener('click', (event) => {
+                    const index = Number(event.currentTarget.dataset.index);
+                    const row = savedRows[index];
+                    if (!row) {
+                        return;
+                    }
+                    const snapshotId = row.snapshotId ?? row.SnapshotId ?? 0;
+                    if (!snapshotId) {
+                        return;
+                    }
+                    deleteNplRow(snapshotId);
+                });
+            });
         };
 
         const addNplRow = (row = {}) => {
@@ -390,23 +408,18 @@
             tr.appendChild(categoryCell);
 
             const periodCell = document.createElement('td');
-            const periodSelect = document.createElement('select');
-            periodSelect.className = 'form-select';
-            periodSelect.dataset.periodSelect = 'true';
-            const placeholder = document.createElement('option');
-            placeholder.value = '';
-            placeholder.textContent = 'Select date';
-            periodSelect.appendChild(placeholder);
-            operationDates.forEach(date => {
-                const option = document.createElement('option');
-                option.value = date;
-                option.textContent = date;
-                if (formatDate(periodEnd) === date) {
-                    option.selected = true;
-                }
-                periodSelect.appendChild(option);
-            });
-            periodCell.appendChild(periodSelect);
+            const periodInput = document.createElement('input');
+            periodInput.className = 'form-control';
+            periodInput.type = 'date';
+            periodInput.dataset.periodSelect = 'true';
+            if (periodRange.min) {
+                periodInput.min = periodRange.min;
+            }
+            if (periodRange.max) {
+                periodInput.max = periodRange.max;
+            }
+            periodInput.value = formatDate(periodEnd) || '';
+            periodCell.appendChild(periodInput);
             tr.appendChild(periodCell);
 
             const casesCell = document.createElement('td');
@@ -449,9 +462,9 @@
                 const cells = row.querySelectorAll('input');
                 const category = categorySelect?.value?.trim() ?? '';
                 const periodEnd = row.querySelector('[data-period-select="true"]')?.value;
-                const caseCount = cells[1]?.value;
-                const outstandingAmount = cells[2]?.value;
-                const provisionAmount = cells[3]?.value;
+                const caseCount = cells[0]?.value;
+                const outstandingAmount = cells[1]?.value;
+                const provisionAmount = cells[2]?.value;
                 return {
                     category,
                     periodEnd: periodEnd === '' ? null : periodEnd,
@@ -460,6 +473,47 @@
                     provisionAmount: provisionAmount === '' ? null : Number(provisionAmount)
                 };
             });
+        };
+
+        const deleteNplRow = (snapshotId) => {
+            const engId = @Model.EngagementId;
+            const statusEl = document.getElementById('npl-snapshot-status');
+            statusEl.textContent = 'Deleting...';
+
+            const formData = new URLSearchParams();
+            formData.append('snapshotId', snapshotId);
+            formData.append('engId', engId);
+
+            fetch('/ApiCalls/DeleteNplSnapshot', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                },
+                body: formData.toString()
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (!data?.success) {
+                        statusEl.textContent = data?.message ?? 'Unable to delete NPL snapshot row.';
+                        return;
+                    }
+                    statusEl.textContent = data.message ?? 'Deleted.';
+                    const rows = data?.rows ?? [];
+                    renderSavedRows(rows);
+                    renderPreviewTable(rows);
+                    const entryTableBody = document.querySelector('#npl-snapshot-entry-table tbody');
+                    if (entryTableBody) {
+                        entryTableBody.innerHTML = '';
+                        addNplRow();
+                    }
+                    isEditing = false;
+                    const saveButton = document.getElementById('save-npl-snapshot');
+                    saveButton.textContent = 'Save NPL Snapshot';
+                    document.getElementById('add-npl-snapshot-row')?.removeAttribute('disabled');
+                })
+                .catch(() => {
+                    statusEl.textContent = 'Unable to delete NPL snapshot row.';
+                });
         };
 
         const saveNplRows = () => {
@@ -507,27 +561,43 @@
         document.getElementById('add-npl-snapshot-row')?.addEventListener('click', () => addNplRow());
         document.getElementById('save-npl-snapshot')?.addEventListener('click', saveNplRows);
         const engId = @Model.EngagementId;
-        fetch(`/FieldAuditReport/GetNplCategoryOptions?engId=${engId}`)
-            .then(response => response.json())
-            .then(data => {
-                nplCategoryOptions.length = 0;
-                nplCategoryLookup.clear();
-                (data?.items ?? []).forEach(option => {
-                    if (!option) {
-                        return;
-                    }
-                    const code = option.code ?? option.Code ?? '';
-                    const label = option.label ?? option.Label ?? code;
-                    nplCategoryOptions.push({ code, label });
-                    if (code) {
-                        nplCategoryLookup.set(code, label);
-                    }
+        const loadPeriodRange = () => {
+            return fetch(`/FieldAuditReport/GetOperationPeriodRange?engId=${engId}`)
+                .then(response => response.json())
+                .then(data => {
+                    periodRange.min = formatDate(data?.auditPeriodFrom ?? data?.AuditPeriodFrom ?? '');
+                    periodRange.max = formatDate(data?.auditPeriodTo ?? data?.AuditPeriodTo ?? '');
+                })
+                .catch(() => {
+                    periodRange.min = '';
+                    periodRange.max = '';
                 });
-                loadNplRows();
-            })
-            .catch(() => {
-                document.getElementById('npl-snapshot-status').textContent = 'Unable to load NPL categories.';
-                loadNplRows();
-            });
+        };
+
+        Promise.all([
+            loadPeriodRange(),
+            fetch(`/FieldAuditReport/GetNplCategoryOptions?engId=${engId}`)
+                .then(response => response.json())
+                .then(data => {
+                    nplCategoryOptions.length = 0;
+                    nplCategoryLookup.clear();
+                    (data?.items ?? []).forEach(option => {
+                        if (!option) {
+                            return;
+                        }
+                        const code = option.code ?? option.Code ?? '';
+                        const label = option.label ?? option.Label ?? code;
+                        nplCategoryOptions.push({ code, label });
+                        if (code) {
+                            nplCategoryLookup.set(code, label);
+                        }
+                    });
+                })
+                .catch(() => {
+                    document.getElementById('npl-snapshot-status').textContent = 'Unable to load NPL categories.';
+                })
+        ]).finally(() => {
+            loadNplRows();
+        });
     </script>
 }
