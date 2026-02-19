@@ -10,7 +10,6 @@
     Layout = "_Layout";
     var engagementSelector = ViewData["EngagementSelector"] as AIS.Models.FieldAuditReport.FieldAuditEngagementSelectorViewModel;
     var hasEngagement = engagementSelector?.HasActiveEngagement ?? false;
-    var reportYear = string.IsNullOrWhiteSpace(Model?.Overview?.AUDIT_YEAR) ? "202X" : Model.Overview.AUDIT_YEAR;
     ViewData["IsReadOnly"] = Model?.IsReadOnly ?? false;
 }
 
@@ -167,7 +166,7 @@
                         <strong>Operation Period:</strong> @FormatRange(Model.Overview.OPERATION_STARTDATE, Model.Overview.OPERATION_ENDDATE)
                     </div>
                     <div class="col-md-6">
-                        <strong>Team Exist Audit:</strong> @FormatRange(Model.Overview.AUDIT_STARTED_ON, Model.Overview.TEAM_EXIST)
+                        <strong>Audit Execution Dates:</strong> @FormatRange(Model.Overview.AuditStartDate, Model.Overview.AuditEndDate)
                     </div>
                 </div>
                 <div class="row g-3 mt-1">
@@ -186,47 +185,6 @@
             <input type="hidden" name="EntityId" value="@Model.EntityId" />
             <input type="hidden" name="SectionCode" value="@Model.SectionCode" />
             <input type="hidden" name="returnAction" value="NarrativeSections" />
-
-            <div class="table-responsive mb-4">
-                <table class="table table-bordered align-middle">
-                    <tbody>
-                        <tr>
-                            <td>
-                                <div>@Model.ReportStatus</div>
-                                <div>INTERNAL AUDIT REPORT-@reportYear</div>
-                            </td>
-                            <td>
-                                <div>
-                                    Branch @FormatText(Model.Overview.ENTITY_NAME) [Code: @FormatText(Model.Overview.EntityCode)]
-                                </div>
-                                <div>
-                                    Audit Date: @FormatDate(Model.Overview.AUDIT_STARTED_ON)
-                                </div>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td colspan="2">
-                                <div>
-                                    Audit Start Date: @FormatDate(Model.Overview.OPERATION_STARTDATE)
-                                </div>
-                                <div>
-                                    Audit Completion Date: @FormatDate(Model.Overview.TEAM_EXIST)
-                                </div>
-                                <div>
-                                    Audit Period: @FormatRange(Model.Overview.OPERATION_STARTDATE, Model.Overview.OPERATION_ENDDATE)
-                                </div>
-                                <div>AUDIT CONDUCTED BY:</div>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td colspan="2">
-                                <div>NOTE:</div>
-                                <div>This audit report is highly confidential, therefore, not to be shared with any third party without approval of IAD at H.O.</div>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
 
             <div class="table-responsive mb-4">
                 <table class="table table-bordered align-middle">
