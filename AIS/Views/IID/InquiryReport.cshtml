@@ -57,7 +57,7 @@ $(function(){
     var isLocked = false;
     var userId = 0;
     var alertTimer = null;
-    var accusedRoleOptions = ['Main', 'Co'];
+    var accusedRoleOptions = ['Main', 'Co', 'Witness'];
     var steps = [
         { id: 1, code: 'SNAPSHOT', title: 'Snapshot' },
         { id: 2, code: 'ACCUSATIONS', title: 'Accusations' },
@@ -503,7 +503,7 @@ $(function(){
 
     function normalizeStatementRegisterRow(accused){
         accused = accused || {};
-        var accusedId = parseInt(accused.accusedId || accused.accuseD_ID || accused.id || accused.rowId || 0, 10) || 0;
+        var accusedId = parseInt(accused.accusedId || accused.accusedRowId || accused.accuseD_ID || accused.id || accused.rowId || 0, 10) || 0;
         var ppno = digitsOnly(accused.ppnoNumber || accused.ppno || accused.ppNo || accused.PP_NO || '');
         var cnic = digitsOnly(accused.cnic || accused.cniC_NO || accused.CNIC || '').substring(0, 13);
         return {
@@ -511,10 +511,12 @@ $(function(){
             ppnoNumber: ppno,
             personName: accused.personName || accused.name || accused.emP_NAME || '',
             fatherName: accused.fatherName || accused.fatheR_NAME || '',
+            roleType: accused.roleType || accused.rolE_TYPE || 'Main',
             cnic: cnic,
             statementDatetime: '',
             statementDatetimeDisplay: '',
-            place: ''
+            place: '',
+            statementId: 0
         };
     }
 
@@ -526,14 +528,16 @@ $(function(){
         var savedMap = {};
         (savedRows || []).forEach(function(item){
             var normalized = {
-                accusedId: parseInt(item.accusedId || item.accuseD_ID || item.id || 0, 10) || 0,
+                accusedId: parseInt(item.accusedId || item.accusedRowId || item.accuseD_ID || item.id || 0, 10) || 0,
                 ppnoNumber: digitsOnly(item.ppnoNumber || item.ppno || item.ppNo || ''),
                 personName: item.personName || item.name || '',
                 fatherName: item.fatherName || item.fatheR_NAME || '',
+                roleType: item.roleType || item.rolE_TYPE || 'Main',
                 cnic: digitsOnly(item.cnic || item.cniC_NO || '').substring(0, 13),
                 statementDatetime: item.statementDatetime || item.stmtDatetime || item.datE_TIME || '',
                 statementDatetimeDisplay: item.statementDatetimeDisplay || item.statementDatetime || item.stmtDatetime || item.datE_TIME || '',
-                place: item.place || item.statementPlace || item.stmT_PLACE || ''
+                place: item.place || item.statementPlace || item.stmT_PLACE || '',
+                statementId: parseInt(item.statementId || item.statemenT_ID || item.id || 0, 10) || 0
             };
             savedMap[getStatementRowKey(normalized)] = normalized;
         });
@@ -566,15 +570,23 @@ $(function(){
         if(errors.length){ return $.Deferred().reject({ message: errors.join(' ') }).promise(); }
 
         var payload = {
+            statementId: row.statementId || 0,
             complaintId: complaintId,
-            accusedId: row.accusedId || 0,
+            personName: row.personName || '',
+            roleType: row.roleType || 'Main',
             ppnoNumber: row.ppnoNumber || '',
             cnic: row.cnic || '',
-            statementDateTime: row.statementDatetime,
-            statementPlace: row.place
+            statementDatetime: row.statementDatetime,
+            place: row.place,
+            modeType: '',
+            keyPoints: '',
+            status: 'A',
+            createdBy: userId,
+            updatedBy: userId
         };
 
-        return window.iidSaveIidStatementRegisterRow(payload).then(function(resp){
+        var request = payload.statementId > 0 ? window.iidUpdateInqStatement(payload) : window.iidAddInqStatement(payload);
+        return request.then(function(resp){
             ensureApiSuccess(resp, 'Failed to save statement register row.');
             return loadStepData(5).then(function(){
                 state.savedSteps[5] = state.statementRegister.saved.length > 0;
@@ -624,7 +636,7 @@ $(function(){
             3: { loadFn: window.iidGetInqAccusedList, hydrate: function(resp){ splitAccusedRows(extractData(resp)); clearAccusedDraft('employee'); clearAccusedDraft('manual'); }, section: 'accusedRows' },
             4: { loadFn: window.iidGetInqRecords, hydrate: function(resp){ state.records = extractData(resp); ensureOneRow('records'); }, section: 'records' },
             5: { loadFn: function(id){
-                    return $.when(window.iidGetIidInqAccusedListByComplaintId(id), window.iidGetIidStatementRegisterByComplaintId(id)).then(function(accusedResp, savedResp){
+                    return $.when(window.iidGetInqAccusedList(id), window.iidGetInqStatements(id)).then(function(accusedResp, savedResp){
                         return {
                             accusedRows: extractData(accusedResp && accusedResp[0] ? accusedResp[0] : accusedResp),
                             savedRows: extractData(savedResp && savedResp[0] ? savedResp[0] : savedResp)
