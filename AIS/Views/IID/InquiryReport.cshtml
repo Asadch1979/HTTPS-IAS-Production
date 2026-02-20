@@ -575,13 +575,24 @@ $(function(){
         if(!row){ return $.Deferred().reject({ message: 'Invalid pending statement row.' }).promise(); }
 
         row.cnic = digitsOnly(row.cnic).substring(0, 13);
+        row.ppnoNumber = digitsOnly(row.ppnoNumber);
+
         var errors = [];
         if(!row.statementDatetime){ errors.push('Date/Time is required.'); }
         if(!row.place || !row.place.trim()){ errors.push('Place of statement is required.'); }
         if(errors.length){ return $.Deferred().reject({ message: errors.join(' ') }).promise(); }
 
+        var matchedStatementId = parseInt(row.statementId || 0, 10) || 0;
+        if(matchedStatementId <= 0){
+            var pendingKey = getStatementRowKey(row);
+            var existing = (state.statementRegister.saved || []).find(function(savedRow){
+                return getStatementRowKey(savedRow) === pendingKey;
+            });
+            matchedStatementId = parseInt(existing && existing.statementId || 0, 10) || 0;
+        }
+
         var payload = {
-            statementId: row.statementId || 0,
+            statementId: matchedStatementId,
             complaintId: complaintId,
             personName: row.personName || '',
             roleType: row.roleType || 'Main',
