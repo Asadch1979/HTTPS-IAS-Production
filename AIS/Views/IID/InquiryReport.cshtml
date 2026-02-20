@@ -521,7 +521,18 @@ $(function(){
     }
 
     function getStatementRowKey(row){
-        return String(parseInt(row.accusedId || 0, 10) || 0) + '|' + String(row.ppnoNumber || '') + '|' + String(row.cnic || '');
+        var ppno = digitsOnly(row && row.ppnoNumber).trim();
+        if(ppno){ return 'PPNO|' + ppno; }
+
+        var cnic = digitsOnly(row && row.cnic).substring(0, 13);
+        if(cnic){ return 'CNIC|' + cnic; }
+
+        var accusedId = parseInt(row && row.accusedId || 0, 10) || 0;
+        if(accusedId > 0){ return 'ACCUSED|' + accusedId; }
+
+        var personName = String((row && row.personName) || '').trim().toLowerCase();
+        var fatherName = String((row && row.fatherName) || '').trim().toLowerCase();
+        return 'NAME|' + personName + '|FATHER|' + fatherName;
     }
 
     function mergeStatementRegister(accusedRows, savedRows){
