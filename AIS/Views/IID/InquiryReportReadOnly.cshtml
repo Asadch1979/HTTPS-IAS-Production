@@ -1,0 +1,100 @@
+@{
+    ViewData["Title"] = "Inquiry Report (Read Only)";
+    Layout = "_Layout";
+    var complaintId = (int?)ViewData["ComplaintId"] ?? 0;
+}
+
+<div class="container-fluid mt-3" id="iidReadOnlyRoot" data-complaint-id="@complaintId">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h4 class="text-success mb-0">Inquiry Report (Read Only)</h4>
+        <div class="d-flex gap-2">
+            <a class="btn btn-outline-secondary" href="@Url.Action("MonitoringDashboard", "IID")">Back</a>
+            <button type="button" id="btnExportInquiryPdf" class="btn btn-danger">Export PDF</button>
+        </div>
+    </div>
+
+    <div id="iidReadOnlyAlertHost"></div>
+
+    <div class="card shadow-sm mb-3">
+        <div class="card-header bg-light"><strong>Complaint Summary</strong></div>
+        <div class="card-body">
+            <div class="row g-3" id="summaryGrid"></div>
+        </div>
+    </div>
+
+    <div class="card shadow-sm mb-3">
+        <div class="card-header bg-light"><strong>Accused &amp; Accusations</strong></div>
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-lg-6">
+                    <h6>Accused List</h6>
+                    <div class="table-responsive">
+                        <table class="table table-sm table-bordered" id="tblAccused"><thead><tr><th>Name</th><th>Designation</th><th>PP No</th></tr></thead><tbody></tbody></table>
+                    </div>
+                </div>
+                <div class="col-lg-6">
+                    <h6>Accusations</h6>
+                    <div class="table-responsive">
+                        <table class="table table-sm table-bordered" id="tblAccusations"><thead><tr><th>Accusation</th></tr></thead><tbody></tbody></table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card shadow-sm mb-3">
+        <div class="card-header bg-light"><strong>Records Scrutinized</strong></div>
+        <div class="card-body table-responsive">
+            <table class="table table-sm table-bordered" id="tblRecords"><thead><tr><th>Record Title</th><th>Details</th></tr></thead><tbody></tbody></table>
+        </div>
+    </div>
+
+    <div class="card shadow-sm mb-3">
+        <div class="card-header bg-light"><strong>Statement Register</strong></div>
+        <div class="card-body table-responsive">
+            <table class="table table-sm table-bordered" id="tblStatements"><thead><tr><th>Name</th><th>Role</th><th>Date</th><th>Mode</th></tr></thead><tbody></tbody></table>
+        </div>
+    </div>
+
+    <div class="card shadow-sm mb-3">
+        <div class="card-header bg-light"><strong>Evidence Files</strong></div>
+        <div class="card-body table-responsive">
+            <table class="table table-sm table-bordered" id="tblEvidence"><thead><tr><th>File</th><th>Type</th><th>Uploaded On</th></tr></thead><tbody></tbody></table>
+        </div>
+    </div>
+
+    <div class="card shadow-sm mb-3">
+        <div class="card-header bg-light"><strong>Violations</strong></div>
+        <div class="card-body table-responsive">
+            <table class="table table-sm table-bordered" id="tblViolations"><thead><tr><th>Category</th><th>Detail</th><th>Reference</th><th>Recommendation</th></tr></thead><tbody></tbody></table>
+        </div>
+    </div>
+
+    <div class="card shadow-sm mb-3">
+        <div class="card-header bg-light"><strong>DSA List</strong></div>
+        <div class="card-body table-responsive">
+            <table class="table table-sm table-bordered" id="tblDsa"><thead><tr><th>Person</th><th>Designation</th><th>PP No</th><th>Status</th></tr></thead><tbody></tbody></table>
+        </div>
+    </div>
+
+    <div class="card shadow-sm mb-3">
+        <div class="card-header bg-light"><strong>Inquiry Report Narrative</strong></div>
+        <div class="card-body">
+            <div class="mb-3"><div class="text-muted small">Gist</div><div id="txtGist" class="border rounded p-2 bg-light"></div></div>
+            <div class="mb-3"><div class="text-muted small">Proceedings</div><div id="txtProceedings" class="border rounded p-2 bg-light"></div></div>
+            <div class="mb-3"><div class="text-muted small">Findings</div><div id="txtFindings" class="border rounded p-2 bg-light"></div></div>
+            <div class="mb-0"><div class="text-muted small">Recommendation</div><div id="txtRecommendation" class="border rounded p-2 bg-light"></div></div>
+        </div>
+    </div>
+
+    <div class="card shadow-sm mb-3">
+        <div class="card-header bg-light"><strong>Final Approvals / Comments</strong></div>
+        <div class="card-body table-responsive">
+            <table class="table table-sm table-bordered" id="tblApprovals"><thead><tr><th>Stage</th><th>By</th><th>Comments</th><th>Date</th></tr></thead><tbody></tbody></table>
+        </div>
+    </div>
+</div>
+
+@section Scripts{
+<script src="~/js/iid/inquiryReportReadOnly.js"></script>
+}
