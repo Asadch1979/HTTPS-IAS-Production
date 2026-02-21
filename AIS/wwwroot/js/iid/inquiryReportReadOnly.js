@@ -97,7 +97,34 @@
         });
     }
 
+    function extractErrorMessage(xhr) {
+        var fallback = 'Failed to export PDF.';
+        if (!xhr) { return fallback; }
+
+        var responseText = xhr.responseText;
+        if (!responseText && xhr.response instanceof Blob) {
+            return fallback;
+        }
+
+        if (responseText) {
+            try {
+                var parsed = JSON.parse(responseText);
+                return parsed.message || parsed.error || fallback;
+            } catch (e) {
+                return responseText || fallback;
+            }
+        }
+
+        return fallback;
+    }
+
     function exportPdf(complaintId) {
+        var $btn = $('#btnExportInquiryPdf');
+        if ($btn.prop('disabled')) { return; }
+
+        var original = $btn.text();
+        $btn.prop('disabled', true).text('Exporting...');
+
         $.ajax({
             url: (window.g_asiBaseURL || '') + '/ApiCalls/ExportIidInquiryReportPdf',
             method: 'POST',
@@ -119,8 +146,10 @@
             a.click();
             document.body.removeChild(a);
             window.URL.revokeObjectURL(url);
-        }).fail(function () {
-            showAlert('Failed to export PDF.');
+        }).fail(function (xhr) {
+            showAlert(extractErrorMessage(xhr));
+        }).always(function () {
+            $btn.prop('disabled', false).text(original);
         });
     }
 
