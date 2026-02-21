@@ -283,6 +283,27 @@ namespace AIS.Controllers
             return View("../IID/TaskListIID");
             }
 
+        [HttpGet]
+        public IActionResult MonitoringDashboard()
+            {
+            ViewData["TopMenu"] = tm.GetTopMenus();
+            ViewData["TopMenuPages"] = tm.GetTopMenusPages();
+            if (!User.Identity.IsAuthenticated)
+                return RedirectToAction("Index", "Login");
+            return View("../IID/MonitoringDashboard");
+            }
+
+        [HttpGet]
+        public IActionResult InquiryReportReadOnly(int complaintId)
+            {
+            ViewData["TopMenu"] = tm.GetTopMenus();
+            ViewData["TopMenuPages"] = tm.GetTopMenusPages();
+            if (!User.Identity.IsAuthenticated)
+                return RedirectToAction("Index", "Login");
+            ViewData["ComplaintId"] = complaintId;
+            return View("../IID/InquiryReportReadOnly");
+            }
+
         private string SaveUploadFile(IFormFile file)
             {
             if (file == null || file.Length == 0)

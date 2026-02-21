@@ -1,0 +1,37 @@
+@{
+    ViewData["Title"] = "Monitoring Dashboard";
+    Layout = "_Layout";
+}
+
+<div class="container-fluid mt-3">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h4 class="text-success mb-0">Monitoring Dashboard</h4>
+    </div>
+
+    <div id="monitoringAlertHost"></div>
+
+    <div class="card shadow-sm">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table id="iidMonitoringTable" class="table table-hover table-bordered table-striped table-sm mb-0 w-100">
+                    <thead class="table-success">
+                        <tr>
+                            <th>Complaint No</th>
+                            <th>Complainant Name</th>
+                            <th>Nature</th>
+                            <th>Source</th>
+                            <th>I&amp;I Unit</th>
+                            <th>Status</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts{
+<script src="~/js/iid/monitoringDashboard.js"></script>
+}
