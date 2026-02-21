@@ -570,15 +570,40 @@ $(function(){
         state.statementRegister.saved = saved;
     }
 
+    function normalizeStatementDatetime(value){
+        var raw = String(value || '').trim();
+        if(!raw){ return ''; }
+
+        if(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(raw)){
+            return raw + ':00';
+        }
+
+        if(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}$/.test(raw)){
+            return raw;
+        }
+
+        var parsed = new Date(raw);
+        if(isNaN(parsed.getTime())){ return ''; }
+
+        var yyyy = parsed.getFullYear();
+        var mm = String(parsed.getMonth() + 1).padStart(2, '0');
+        var dd = String(parsed.getDate()).padStart(2, '0');
+        var hh = String(parsed.getHours()).padStart(2, '0');
+        var mi = String(parsed.getMinutes()).padStart(2, '0');
+        var ss = String(parsed.getSeconds()).padStart(2, '0');
+        return yyyy + '-' + mm + '-' + dd + 'T' + hh + ':' + mi + ':' + ss;
+    }
+
     function saveStatementRow(index){
         var row = state.statementRegister.pending[index];
         if(!row){ return $.Deferred().reject({ message: 'Invalid pending statement row.' }).promise(); }
 
         row.cnic = digitsOnly(row.cnic).substring(0, 13);
         row.ppnoNumber = digitsOnly(row.ppnoNumber);
+        row.statementDatetime = normalizeStatementDatetime(row.statementDatetime);
 
         var errors = [];
-        if(!row.statementDatetime){ errors.push('Date/Time is required.'); }
+        if(!row.statementDatetime){ errors.push('A valid Date/Time is required.'); }
         if(!row.place || !row.place.trim()){ errors.push('Place of statement is required.'); }
         if(errors.length){ return $.Deferred().reject({ message: errors.join(' ') }).promise(); }
 
@@ -594,12 +619,14 @@ $(function(){
         var payload = {
             statementId: matchedStatementId,
             complaintId: complaintId,
+            accusedId: parseInt(row.accusedId || 0, 10) || 0,
             personName: row.personName || '',
             roleType: row.roleType || 'Main',
             ppnoNumber: row.ppnoNumber || '',
             cnic: row.cnic || '',
             statementDatetime: row.statementDatetime,
             place: row.place,
+            placeOfStatement: row.place,
             modeType: '',
             keyPoints: '',
             status: 'A',
@@ -607,8 +634,7 @@ $(function(){
             updatedBy: userId
         };
 
-        var request = payload.statementId > 0 ? window.iidUpdateInqStatement(payload) : window.iidAddInqStatement(payload);
-        return request.then(function(resp){
+        return window.iidUpdateInqStatement(payload).then(function(resp){
             ensureApiSuccess(resp, 'Failed to save statement register row.');
             return loadStepData(5).then(function(){
                 state.savedSteps[5] = state.statementRegister.saved.length > 0;

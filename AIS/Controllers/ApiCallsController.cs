@@ -5476,8 +5476,17 @@ namespace AIS.Controllers
             {
             try
                 {
-                var rows = dBConnection.UpdateIidInqStatement(model);
-                return Json(BuildIidSaveResponse(rows, "Statement row updated."));
+                if (model == null)
+                    {
+                    return Json(new { ok = false, message = "Statement payload is required." });
+                    }
+
+                var isUpdate = model.StatementId > 0;
+                var rows = isUpdate
+                    ? dBConnection.UpdateIidInqStatement(model)
+                    : dBConnection.AddIidInqStatement(model);
+
+                return Json(BuildIidSaveResponse(rows, isUpdate ? "Statement row updated." : "Statement row saved."));
                 }
             catch (Exception ex)
                 {
