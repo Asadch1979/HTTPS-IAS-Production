@@ -70,33 +70,6 @@ namespace AIS
             if (sessionHandler.IsUserLoggedIn())
                 {
                 var menus = dBConnection.GetTopMenuPages();
-                var iidMenuId = menus
-                    .Where(x => !string.IsNullOrWhiteSpace(x.Page_Path) && x.Page_Path.StartsWith("IID/", StringComparison.OrdinalIgnoreCase))
-                    .Select(x => x.Menu_Id)
-                    .FirstOrDefault();
-
-                var dashboardExists = menus.Any(x => string.Equals(x.Page_Path, "IID/MonitoringDashboard", StringComparison.OrdinalIgnoreCase));
-                if (iidMenuId > 0 && !dashboardExists)
-                    {
-                    var maxOrder = menus.Where(x => x.Menu_Id == iidMenuId).Select(x => x.Page_Order).DefaultIfEmpty(0).Max();
-                    menus.Add(new MenuPagesModel
-                        {
-                        Id = 0,
-                        Menu_Id = iidMenuId,
-                        PageId = 0,
-                        Page_Name = "Monitoring Dashboard",
-                        Page_Key = "IID_MONITORING_DASHBOARD",
-                        Page_URL = "",
-                        Page_Path = "IID/MonitoringDashboard",
-                        Page_Order = maxOrder + 1,
-                        Status = "ACTIVE",
-                        Sub_Menu = "IID",
-                        Sub_Menu_Id = "IID",
-                        Sub_Menu_Name = "IID",
-                        Hide_Menu = 0
-                        });
-                    }
-
                 sessionHandler.CacheMenuPages(menus);
                 foreach (var item in menus)
                     {
