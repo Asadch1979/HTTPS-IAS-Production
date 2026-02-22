@@ -5755,6 +5755,60 @@ namespace AIS.Controllers
                 }
             }
 
+        [HttpPost]
+        public IActionResult GetIidInquiryReportReadOnlyData([FromBody] AIS.Models.IID.InquiryReport.IidInqComplaintRequest request)
+            {
+            try
+                {
+                var complaintId = request?.ComplaintId ?? 0;
+                if (complaintId <= 0)
+                    {
+                    return Json(new { ok = false, message = "ComplaintId is required." });
+                    }
+
+                var complaint = dBConnection.GetComplaint((int)complaintId);
+                if (complaint == null)
+                    {
+                    return Json(new { ok = false, message = "Complaint not found." });
+                    }
+
+                var findings = dBConnection.GetIidInqFindingsRecommByComplaintId(complaintId).FirstOrDefault();
+
+                var payload = new
+                    {
+                    complaintHeader = new
+                        {
+                        complaintId = complaint.ComplaintId,
+                        complaintNo = complaint.ComplaintNo,
+                        nature = complaint.Nature,
+                        source = complaint.ReceivedFrom,
+                        unitName = complaint.AssignedUnit,
+                        status = complaint.Status,
+                        complainantName = complaint.ComplainantName
+                        },
+                    accusations = dBConnection.GetIidInqAccusationsByComplaintId(complaintId),
+                    accused = dBConnection.GetIidInqAccusedListByComplaintId(complaintId),
+                    recordsScrutinized = dBConnection.GetIidInqRecordsByComplaintId(complaintId),
+                    statementRegister = dBConnection.GetIidInqStatementsByComplaintId(complaintId),
+                    evidenceFiles = dBConnection.GetIidInqEvidenceFilesByComplaintId(complaintId),
+                    violations = dBConnection.GetIidInqViolationsByComplaintId(complaintId),
+                    dsa = dBConnection.GetIidInqDsaByComplaintId(complaintId),
+                    finalApprovals = new object[0],
+                    inquiryReport = new
+                        {
+                        findings = findings?.FindingText,
+                        recommendation = findings?.RecommendationText
+                        }
+                    };
+
+                return Json(payload);
+                }
+            catch (Exception ex)
+                {
+                return Json(new { ok = false, message = ex.Message });
+                }
+            }
+
         [HttpGet]
         [HttpPost]
         public List<string> get_fad_desk_officer_audit_periods()

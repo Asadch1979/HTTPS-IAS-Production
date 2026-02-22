@@ -29,7 +29,7 @@
                 '<td>' + esc(field(row, ['complainantName', 'ComplainantName', 'COMPLAINANT_NAME'])) + '</td>' +
                 '<td>' + esc(field(row, ['nature', 'Nature', 'NATURE'])) + '</td>' +
                 '<td>' + esc(field(row, ['source', 'Source', 'SOURCE'])) + '</td>' +
-                '<td>' + esc(field(row, ['unitName', 'UnitName', 'UNIT_NAME'])) + '</td>' +
+                '<td>' + esc(field(row, ['unitName', 'UnitName', 'ASSIGNED_UNIT', 'UNIT_NAME'])) + '</td>' +
                 '<td>' + esc(field(row, ['status', 'Status', 'STATUS'])) + '</td>' +
                 '<td><a class="btn btn-sm btn-outline-primary" href="' + (window.g_asiBaseURL || '') + '/IID/InquiryReportReadOnly?complaintId=' + encodeURIComponent(complaintId || 0) + '">View</a></td>' +
                 '</tr>';
@@ -41,11 +41,10 @@
 
     function loadActiveComplaints() {
         $.ajax({
-            url: (window.g_asiBaseURL || '') + '/ApiCalls/GetIidActiveComplaints',
+            url: (window.g_asiBaseURL || '') + '/ApiCalls/GetComplaintsByUser',
             method: 'POST',
-            contentType: 'application/json; charset=utf-8',
             dataType: 'json',
-            data: JSON.stringify({ page: 1, pageSize: 200, filters: {} })
+            data: { userId: 0 }
         }).done(function (resp) {
             if (resp && resp.ok === false) {
                 showAlert(resp.message || 'Could not load active complaints.');

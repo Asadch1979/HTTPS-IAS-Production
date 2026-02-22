@@ -1,4 +1,6 @@
 (function (window) {
+    var inquiryPageId = 5;
+
     function esc(v) { return $('<div/>').text(v || '').html(); }
     function pick(obj, keys, fallback) {
         obj = obj || {};
@@ -63,20 +65,20 @@
         var header = pick(payload, ['complaintHeader', 'header', 'summary'], {}) || {};
         bindSummary(header);
 
-        bindRows('#tblAccused', toList(payload, ['accusedList', 'accused']), [['name', 'employeeName', 'accusedName'], ['designation', 'employeeDesignation'], ['ppNo', 'ppno']]);
-        bindRows('#tblAccusations', toList(payload, ['accusations', 'accusedAccusations']), [['accusation', 'title', 'details']]);
-        bindRows('#tblRecords', toList(payload, ['recordsScrutinized', 'records']), [['recordTitle', 'title'], ['details', 'recordDetail']]);
-        bindRows('#tblStatements', toList(payload, ['statementRegister', 'statements']), [['name', 'personName'], ['role', 'designation'], ['statementDate', 'date'], ['mode', 'recordingMode']]);
-        bindRows('#tblEvidence', toList(payload, ['evidenceFiles', 'evidence']), [['fileName', 'name'], ['fileType', 'type'], ['uploadedOn', 'date']]);
-        bindRows('#tblViolations', toList(payload, ['violationsList', 'violations']), [['category'], ['detail', 'details'], ['reference'], ['recommendation']]);
-        bindRows('#tblDsa', toList(payload, ['dsaList', 'dsa']), [['person', 'name'], ['designation'], ['ppNo', 'ppno'], ['status']]);
+        bindRows('#tblAccused', toList(payload, ['accusedList', 'accused']), [['name', 'personName', 'employeeName', 'accusedName'], ['designation', 'employeeDesignation'], ['ppNo', 'ppno', 'ppnoNumber']]);
+        bindRows('#tblAccusations', toList(payload, ['accusations', 'accusedAccusations']), [['accusation', 'accusationText', 'title', 'details']]);
+        bindRows('#tblRecords', toList(payload, ['recordsScrutinized', 'records']), [['recordTitle', 'title'], ['details', 'recordDetails', 'recordDetail']]);
+        bindRows('#tblStatements', toList(payload, ['statementRegister', 'statements']), [['name', 'personName'], ['role', 'roleType', 'designation'], ['statementDate', 'statementDatetime', 'date'], ['mode', 'modeType', 'recordingMode']]);
+        bindRows('#tblEvidence', toList(payload, ['evidenceFiles', 'evidence']), [['fileName', 'name'], ['fileType', 'fileExt', 'evidenceType', 'type'], ['uploadedOn', 'date']]);
+        bindRows('#tblViolations', toList(payload, ['violationsList', 'violations']), [['category'], ['detail', 'violationDetail', 'details'], ['reference', 'referenceText'], ['recommendation']]);
+        bindRows('#tblDsa', toList(payload, ['dsaList', 'dsa']), [['person', 'personName', 'name'], ['designation'], ['ppNo', 'ppno', 'ppnoNumber'], ['status', 'dsaStatus']]);
         bindRows('#tblApprovals', toList(payload, ['finalApprovals', 'approvals', 'comments']), [['stage'], ['approvedBy', 'by'], ['comments', 'comment'], ['approvedOn', 'date']]);
 
         var report = pick(payload, ['inquiryReport', 'report'], payload);
-        setNarrative('#txtGist', pick(report, ['gist', 'Gist']));
+        setNarrative('#txtGist', pick(report, ['gist', 'Gist', 'findingText', 'FindingText']));
         setNarrative('#txtProceedings', pick(report, ['proceedings', 'Proceedings']));
-        setNarrative('#txtFindings', pick(report, ['findings', 'Findings']));
-        setNarrative('#txtRecommendation', pick(report, ['recommendation', 'Recommendation']));
+        setNarrative('#txtFindings', pick(report, ['findings', 'Findings', 'findingText', 'FindingText']));
+        setNarrative('#txtRecommendation', pick(report, ['recommendation', 'Recommendation', 'recommendationText', 'RecommendationText']));
     }
 
     function loadReadOnlyData(complaintId) {
@@ -97,30 +99,21 @@
         });
     }
 
-    function extractErrorMessage(xhr) {
-        var fallback = 'Failed to export PDF.';
-        if (!xhr) { return fallback; }
-
-        var responseText = xhr.responseText;
-        if (!responseText && xhr.response instanceof Blob) {
-            return fallback;
-        }
-
-        if (responseText) {
-            try {
-                var parsed = JSON.parse(responseText);
-                return parsed.message || parsed.error || fallback;
-            } catch (e) {
-                return responseText || fallback;
-            }
-        }
-
-        return fallback;
+    function loadComplaintDropdown(selectedComplaintId) {
+        return $.post((window.g_asiBaseURL || '') + '/ApiCalls/GetComplaintsDropdown', { pageId: inquiryPageId })
+            .done(function (list) {
+                var $dd = $('#ddlInquiryComplaint');
+                $dd.empty().append('<option value="0">--Select Inquiry--</option>');
+                (list || []).forEach(function (x) {
+                    var selected = Number(x.complaintId) === Number(selectedComplaintId) ? ' selected' : '';
+                    $dd.append('<option value="' + esc(x.complaintId) + '"' + selected + '>' + esc(x.displayText) + '</option>');
+                });
+            });
     }
 
     function exportPdf(complaintId) {
         var $btn = $('#btnExportInquiryPdf');
-        if ($btn.prop('disabled')) { return; }
+        if ($btn.prop('disabled') || !complaintId) { return; }
 
         var original = $btn.text();
         $btn.prop('disabled', true).text('Exporting...');
@@ -146,8 +139,8 @@
             a.click();
             document.body.removeChild(a);
             window.URL.revokeObjectURL(url);
-        }).fail(function (xhr) {
-            showAlert(extractErrorMessage(xhr));
+        }).fail(function () {
+            showAlert('Failed to export PDF.');
         }).always(function () {
             $btn.prop('disabled', false).text(original);
         });
@@ -155,12 +148,21 @@
 
     $(function () {
         var complaintId = Number($('#iidReadOnlyRoot').data('complaint-id')) || 0;
-        if (!complaintId) {
-            showAlert('Complaint id is missing from request.');
-            return;
+
+        loadComplaintDropdown(complaintId).fail(function () {
+            showAlert('Failed to load inquiry dropdown.');
+        });
+
+        $('#ddlInquiryComplaint').on('change', function () {
+            var selectedId = Number($(this).val()) || 0;
+            if (!selectedId) { return; }
+            window.location.href = (window.g_asiBaseURL || '') + '/IID/InquiryReportReadOnly?complaintId=' + encodeURIComponent(selectedId);
+        });
+
+        if (complaintId) {
+            loadReadOnlyData(complaintId);
         }
 
-        loadReadOnlyData(complaintId);
         $('#btnExportInquiryPdf').on('click', function () { exportPdf(complaintId); });
     });
 }(window));
