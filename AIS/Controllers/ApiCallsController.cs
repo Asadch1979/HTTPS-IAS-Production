@@ -5593,6 +5593,81 @@ namespace AIS.Controllers
             }
 
         [HttpPost]
+        public IActionResult GetIidAccusationsForFindings([FromBody] AIS.Models.IID.InquiryReport.ComplaintIdRequest request)
+            {
+            try
+                {
+                var rows = dBConnection.GetIidAccusationsForFindings(request?.ComplaintId ?? 0);
+                return Json(new { ok = true, rows });
+                }
+            catch (Exception ex)
+                {
+                return Json(new { ok = false, message = ex.Message, rows = new object[0] });
+                }
+            }
+
+        [HttpPost]
+        public IActionResult GetIidFindingsRecommByAccusation([FromBody] AIS.Models.IID.InquiryReport.FindingsRecommGetRequest request)
+            {
+            try
+                {
+                var model = dBConnection.GetIidFindingsRecommByAccusation(request?.ComplaintId ?? 0, request?.AccusationId ?? 0);
+                return Json(new
+                    {
+                    ok = true,
+                    complaintId = model?.ComplaintId ?? (request?.ComplaintId ?? 0),
+                    accusationId = model?.AccusationId ?? (request?.AccusationId ?? 0),
+                    findingText = model?.FindingText ?? string.Empty,
+                    recomText = model?.RecommendationText ?? string.Empty,
+                    ppno = model?.Ppno ?? string.Empty,
+                    savedOn = model?.UpdatedOn
+                    });
+                }
+            catch (Exception ex)
+                {
+                return Json(new { ok = false, message = ex.Message });
+                }
+            }
+
+        [HttpPost]
+        public IActionResult SaveIidFindingsRecommByAccusation([FromBody] AIS.Models.IID.InquiryReport.FindingsRecommRequest request)
+            {
+            try
+                {
+                var ppno = sessionHandler?.GetUser()?.PPNumber ?? string.Empty;
+                var rows = dBConnection.SaveIidFindingsRecommByAccusation(
+                    request?.ComplaintId ?? 0,
+                    request?.AccusationId ?? 0,
+                    request?.FindingText,
+                    request?.RecomText,
+                    ppno);
+                return Json(new
+                    {
+                    ok = rows?.Ok ?? false,
+                    message = string.IsNullOrWhiteSpace(rows?.Message) ? "Findings and recommendation saved." : rows.Message
+                    });
+                }
+            catch (Exception ex)
+                {
+                return Json(new { ok = false, message = ex.Message });
+                }
+            }
+
+        [HttpPost]
+        public IActionResult GetIidFindingsRecommStatus([FromBody] AIS.Models.IID.InquiryReport.ComplaintIdRequest request)
+            {
+            try
+                {
+                var rows = dBConnection.GetIidFindingsRecommStatus(request?.ComplaintId ?? 0);
+                return Json(new { ok = true, rows });
+                }
+            catch (Exception ex)
+                {
+                return Json(new { ok = false, message = ex.Message, rows = new object[0] });
+                }
+            }
+
+        [HttpPost]
         public IActionResult GetIidInqViolations([FromBody] AIS.Models.IID.InquiryReport.IidInqComplaintRequest request)
             {
             try

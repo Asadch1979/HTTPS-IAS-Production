@@ -1821,6 +1821,119 @@ namespace AIS.Controllers
             return ExecuteIidResult(cmd);
             }
 
+        public List<IidAccusationForFindingsRow> GetIidAccusationsForFindings(long complaintId)
+            {
+            using var con = this.DatabaseConnection();
+            using var cmd = con.CreateCommand();
+            cmd.CommandText = "PKG_INQ.GET_IID_ACCUSATIONS_FOR_FINDINGS";
+            cmd.CommandType = CommandType.StoredProcedure;
+            cmd.BindByName = true;
+            cmd.Parameters.Add("p_complaint_id", OracleDbType.Int64).Value = complaintId;
+            cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+
+            var list = new List<IidAccusationForFindingsRow>();
+            using var rdr = cmd.ExecuteReader();
+            while (rdr.Read())
+                {
+                list.Add(new IidAccusationForFindingsRow
+                    {
+                    AccusationId = GetLongValue(rdr, "ACCUSATION_ID"),
+                    AccusationText = GetStringValue(rdr, "ACCUSATION_TEXT")
+                    });
+                }
+
+            return list;
+            }
+
+        public IidInqFindingsRecommRow GetIidFindingsRecommByAccusation(long complaintId, long accusationId)
+            {
+            using var con = this.DatabaseConnection();
+            using var cmd = con.CreateCommand();
+            cmd.CommandText = "PKG_INQ.GET_INQ_FINDINGS_RECOMM";
+            cmd.CommandType = CommandType.StoredProcedure;
+            cmd.BindByName = true;
+            cmd.Parameters.Add("p_complaint_id", OracleDbType.Int64).Value = complaintId;
+            cmd.Parameters.Add("p_accusation_id", OracleDbType.Int64).Value = accusationId;
+            cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+
+            using var rdr = cmd.ExecuteReader();
+            if (!rdr.Read())
+                {
+                return new IidInqFindingsRecommRow
+                    {
+                    ComplaintId = complaintId,
+                    AccusationId = accusationId,
+                    FindingText = string.Empty,
+                    RecommendationText = string.Empty,
+                    Ppno = string.Empty,
+                    UpdatedOn = null
+                    };
+                }
+
+            return new IidInqFindingsRecommRow
+                {
+                ComplaintId = GetLongValue(rdr, "COMPLAINT_ID"),
+                AccusationId = GetLongValue(rdr, "ACCUSATION_ID"),
+                FindingText = GetStringValue(rdr, "FINDING_TEXT"),
+                RecommendationText = GetStringValue(rdr, "RECOM_TEXT"),
+                Ppno = GetStringValue(rdr, "PPNO"),
+                UpdatedOn = GetNullableDateValue(rdr, "UPDATED_ON")
+                };
+            }
+
+        public IidInqProcResult SaveIidFindingsRecommByAccusation(long complaintId, long accusationId, string findingText, string recomText, string ppno)
+            {
+            using var con = this.DatabaseConnection();
+            using var cmd = con.CreateCommand();
+            cmd.CommandText = "PKG_INQ.SAVE_INQ_FINDINGS_RECOMM";
+            cmd.CommandType = CommandType.StoredProcedure;
+            cmd.BindByName = true;
+            cmd.Parameters.Add("p_complaint_id", OracleDbType.Int64).Value = complaintId;
+            cmd.Parameters.Add("p_accusation_id", OracleDbType.Int64).Value = accusationId;
+            cmd.Parameters.Add("p_finding_text", OracleDbType.Clob).Value = findingText ?? string.Empty;
+            cmd.Parameters.Add("p_recom_text", OracleDbType.Clob).Value = recomText ?? string.Empty;
+            cmd.Parameters.Add("p_ppno", OracleDbType.Varchar2).Value = ppno ?? string.Empty;
+            cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+            return ExecuteIidResult(cmd);
+            }
+
+        public List<IidFindingsRecommStatusRow> GetIidFindingsRecommStatus(long complaintId)
+            {
+            using var con = this.DatabaseConnection();
+            using var cmd = con.CreateCommand();
+            cmd.CommandText = "PKG_INQ.GET_INQ_FIND_RECOMM_STATUS";
+            cmd.CommandType = CommandType.StoredProcedure;
+            cmd.BindByName = true;
+            cmd.Parameters.Add("p_complaint_id", OracleDbType.Int64).Value = complaintId;
+            cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+
+            var list = new List<IidFindingsRecommStatusRow>();
+            using var rdr = cmd.ExecuteReader();
+            while (rdr.Read())
+                {
+                list.Add(new IidFindingsRecommStatusRow
+                    {
+                    AccusationId = GetLongValue(rdr, "ACCUSATION_ID"),
+                    AccusationText = GetStringValue(rdr, "ACCUSATION_TEXT"),
+                    IsSaved = GetStringValue(rdr, "IS_SAVED"),
+                    SavedOn = GetNullableDateValue(rdr, "SAVED_ON")
+                    });
+                }
+
+            if (list.Count == 0 || !list.Exists(x => x.AccusationId == 0))
+                {
+                list.Insert(0, new IidFindingsRecommStatusRow
+                    {
+                    AccusationId = 0,
+                    AccusationText = "Additional Charges",
+                    IsSaved = "N",
+                    SavedOn = null
+                    });
+                }
+
+            return list;
+            }
+
         public List<IidInqDsaRow> GetIidInqDsaByComplaintId(long complaintId)
             {
             using var con = this.DatabaseConnection();
