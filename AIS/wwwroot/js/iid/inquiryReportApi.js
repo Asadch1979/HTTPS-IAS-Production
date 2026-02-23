@@ -47,6 +47,10 @@
 
     window.iidGetInqFindingsRecomm = function (complaintId) { return iidPostJson('/ApiCalls/GetIidInqFindingsRecomm', { complaintId: complaintId }); };
     window.iidSaveInqFindingsRecomm = function (payload) { return iidPostJson('/ApiCalls/SaveIidInqFindingsRecomm', payload); };
+    window.iidGetIidAccusationsForFindings = function (complaintId) { return iidPostJson('/ApiCalls/GetIidAccusationsForFindings', { complaintId: complaintId }); };
+    window.iidGetIidFindingsRecommByAccusation = function (payload) { return iidPostJson('/ApiCalls/GetIidFindingsRecommByAccusation', payload); };
+    window.iidSaveIidFindingsRecommByAccusation = function (payload) { return iidPostJson('/ApiCalls/SaveIidFindingsRecommByAccusation', payload); };
+    window.iidGetIidFindingsRecommStatus = function (complaintId) { return iidPostJson('/ApiCalls/GetIidFindingsRecommStatus', { complaintId: complaintId }); };
 
     window.iidGetInqViolations = function (complaintId) { return iidPostJson('/ApiCalls/GetIidInqViolations', { complaintId: complaintId }); };
     window.iidAddInqViolation = function (payload) { return iidPostJson('/ApiCalls/AddIidInqViolation', payload); };

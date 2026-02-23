@@ -58,6 +58,8 @@ $(function(){
     var userId = 0;
     var alertTimer = null;
     var accusedRoleOptions = ['Main', 'Co', 'Witness'];
+    var additionalChargesId = -1;
+    var additionalChargesText = 'Additional Charges';
     var steps = [
         { id: 1, code: 'SNAPSHOT', title: 'Snapshot' },
         { id: 2, code: 'ACCUSATIONS', title: 'Accusations' },
@@ -82,7 +84,13 @@ $(function(){
         records: [{ recId: 0, recordTitle: '', recordDetails: '', sortOrder: 1 }],
         statementRegister: { pending: [], saved: [] },
         evidence: [],
-        findingsRecomm: { findingText: '', recommendationText: '' },
+        findingsRecomm: {
+            selectedAccusationId: '',
+            findingText: '',
+            recommendationText: '',
+            accusationOptions: [],
+            statusRows: []
+        },
         violations: [{ violationId: 0, category: 'Internal', violationDetail: '', referenceText: '', recommendation: '', sortOrder: 1 }],
         dsa: [{ dsaId: 0, personName: '', designation: '', ppnoNumber: '', cnic: '', dsaStatus: '', remarks: '', sortOrder: 1 }],
         deleteQueue: { accusations: [], accused: [], records: [], violations: [], dsa: [] },
@@ -191,7 +199,13 @@ $(function(){
         applyFindingsEditorContent();
     }
 
-    function applyFindingsEditorContent(){
+    function applyFindingsEditorContent(findingText, recommendationText){
+        var findingValue = typeof findingText === 'undefined' ? state.findingsRecomm.findingText : findingText;
+        var recommendationValue = typeof recommendationText === 'undefined' ? state.findingsRecomm.recommendationText : recommendationText;
+
+        state.findingsRecomm.findingText = findingValue || '';
+        state.findingsRecomm.recommendationText = recommendationValue || '';
+
         var setEditors = function(){
             var findingEditor = window.tinymce && window.tinymce.get('findingTextHtml');
             if(findingEditor){ findingEditor.setContent(state.findingsRecomm.findingText || ''); }
@@ -199,13 +213,150 @@ $(function(){
             if(recommendationEditor){ recommendationEditor.setContent(state.findingsRecomm.recommendationText || ''); }
         };
 
-        if(!window.tinymce){ return; }
+        if(!window.tinymce){
+            $('#findingTextHtml').val(state.findingsRecomm.findingText || '');
+            $('#recommendationTextHtml').val(state.findingsRecomm.recommendationText || '');
+            return;
+        }
         if(window.tinymce.get('findingTextHtml') || window.tinymce.get('recommendationTextHtml')){
             setEditors();
             return;
         }
 
         window.tinymce.once('AddEditor', function(){ setEditors(); });
+    }
+
+    function normalizeStatusValue(row){
+        return String((row && (row.isSaved || row.status || row.savedStatus)) || '').toUpperCase();
+    }
+
+    function isStatusRowSaved(row){
+        if(!row){ return false; }
+        if(typeof row.isSaved === 'boolean'){ return row.isSaved; }
+        var normalized = normalizeStatusValue(row);
+        return normalized === 'Y' || normalized === 'YES' || normalized === 'SAVED' || normalized === 'TRUE' || normalized === '1';
+    }
+
+    function formatSavedOn(value){
+        if(!value){ return '—'; }
+        var d = new Date(value);
+        if(isNaN(d.getTime())){ return value; }
+        return d.toLocaleString();
+    }
+
+    function buildFindingsAccusationList(baseRows){
+        var map = {};
+        (baseRows || []).forEach(function(row){
+            var id = parseInt(row.accusationId, 10);
+            if(isNaN(id)){ return; }
+            map[id] = { accusationId: id, accusationText: row.accusationText || ('Accusation #' + id) };
+        });
+        map[additionalChargesId] = { accusationId: additionalChargesId, accusationText: additionalChargesText };
+        return Object.keys(map).map(function(key){ return map[key]; }).sort(function(a, b){
+            if(a.accusationId === additionalChargesId){ return 1; }
+            if(b.accusationId === additionalChargesId){ return -1; }
+            return a.accusationId - b.accusationId;
+        });
+    }
+
+    function upsertFindingsStatusRow(row){
+        if(!row){ return; }
+        var id = parseInt(row.accusationId, 10);
+        if(isNaN(id)){ return; }
+        var idx = state.findingsRecomm.statusRows.findIndex(function(x){ return parseInt(x.accusationId, 10) === id; });
+        if(idx >= 0){
+            state.findingsRecomm.statusRows[idx] = $.extend({}, state.findingsRecomm.statusRows[idx], row);
+        } else {
+            state.findingsRecomm.statusRows.push(row);
+        }
+    }
+
+    function syncFindingsStatusRows(statusRows){
+        var merged = {};
+        (state.findingsRecomm.accusationOptions || []).forEach(function(opt){
+            var id = parseInt(opt.accusationId, 10);
+            if(isNaN(id)){ return; }
+            merged[id] = { accusationId: id, accusationText: opt.accusationText || ('Accusation #' + id), isSaved: false, savedOn: null };
+        });
+        (statusRows || []).forEach(function(row){
+            var id = parseInt(row.accusationId, 10);
+            if(isNaN(id)){ return; }
+            merged[id] = $.extend({}, merged[id] || { accusationId: id, accusationText: row.accusationText || ('Accusation #' + id) }, row);
+        });
+        if(!merged[additionalChargesId]){
+            merged[additionalChargesId] = { accusationId: additionalChargesId, accusationText: additionalChargesText, isSaved: false, savedOn: null };
+        }
+        state.findingsRecomm.statusRows = Object.keys(merged).map(function(key){ return merged[key]; }).sort(function(a, b){
+            if(a.accusationId === additionalChargesId){ return 1; }
+            if(b.accusationId === additionalChargesId){ return -1; }
+            return a.accusationId - b.accusationId;
+        });
+    }
+
+    function renderFindingsStatusGrid(){
+        var rows = state.findingsRecomm.statusRows || [];
+        var savedCount = rows.filter(isStatusRowSaved).length;
+        $('#findingsStatusSummary').text('Saved: ' + savedCount + ' / Total: ' + rows.length);
+
+        var body = rows.map(function(r){
+            var saved = isStatusRowSaved(r);
+            return '<tr>' +
+                '<td>' + esc(r.accusationText || '') + '</td>' +
+                '<td><span class="badge ' + (saved ? 'bg-success' : 'bg-warning text-dark') + '">' + (saved ? 'Saved' : 'Not Saved') + '</span></td>' +
+                '<td>' + esc(formatSavedOn(r.savedOn || r.lastSavedOn)) + '</td>' +
+                '<td><button type="button" class="btn btn-outline-primary btn-sm" data-findings-view-edit="' + esc(String(r.accusationId || '')) + '">View/Edit</button></td>' +
+                '</tr>';
+        }).join('');
+
+        $('#findingsStatusGridBody').html(body || '<tr><td colspan="4" class="text-muted">No accusations available.</td></tr>');
+    }
+
+    function loadFindingsForSelection(selectedAccusationId){
+        var parsedId = parseInt(selectedAccusationId, 10);
+        if(isNaN(parsedId)){
+            applyFindingsEditorContent('', '');
+            return $.Deferred().resolve().promise();
+        }
+
+        return window.iidGetIidFindingsRecommByAccusation({ complaintId: complaintId, accusationId: parsedId }).then(function(resp){
+            ensureApiSuccess(resp, 'Failed to load findings for selected accusation.');
+            var data = resp && (resp.data || resp.Data || {});
+            var found = !!(data && (data.found === true || data.found === 'Y' || data.found === 'y' || data.found === 1));
+            if(found){
+                applyFindingsEditorContent(data.findingsText || data.findingText || '', data.recommendationText || '');
+            } else {
+                applyFindingsEditorContent('', '');
+            }
+            renderStepper();
+        });
+    }
+
+    function loadFindingsStatusGrid(){
+        return window.iidGetIidFindingsRecommStatus(complaintId).then(function(resp){
+            ensureApiSuccess(resp, 'Failed to load findings status grid.');
+            syncFindingsStatusRows(extractData(resp));
+            state.savedSteps[7] = state.findingsRecomm.statusRows.some(isStatusRowSaved);
+            renderFindingsStatusGrid();
+        });
+    }
+
+    function loadFindingsModule(){
+        return window.iidGetIidAccusationsForFindings(complaintId).then(function(resp){
+            ensureApiSuccess(resp, 'Failed to load accusations for findings.');
+            state.findingsRecomm.accusationOptions = buildFindingsAccusationList(extractData(resp));
+            var selectedId = String(state.findingsRecomm.selectedAccusationId || '');
+            var exists = (state.findingsRecomm.accusationOptions || []).some(function(opt){ return String(opt.accusationId) === selectedId; });
+            if(!selectedId || !exists){
+                state.findingsRecomm.selectedAccusationId = '';
+            }
+            syncFindingsStatusRows([]);
+            return loadFindingsStatusGrid().then(function(){
+                if(state.findingsRecomm.selectedAccusationId !== '' && state.findingsRecomm.selectedAccusationId !== null && typeof state.findingsRecomm.selectedAccusationId !== 'undefined'){
+                    return loadFindingsForSelection(state.findingsRecomm.selectedAccusationId);
+                }
+                applyFindingsEditorContent('', '');
+            });
+        });
     }
 
     function renderSection(step){
@@ -299,16 +450,44 @@ $(function(){
             html += '<h5>Evidence</h5><div class="mb-3"><label class="form-label">Upload evidence files</label><input id="uploadedEvidence" type="file" class="form-control" multiple></div><table class="table table-sm"><thead><tr><th>File</th><th>Type</th><th>Uploaded On</th><th></th></tr></thead><tbody>' + (rowsE || '<tr><td colspan="4" class="text-muted">No evidence uploaded.</td></tr>') + '</tbody></table>';
         }
         if(step === 7){
+            var accusationOptions = (state.findingsRecomm.accusationOptions || []).map(function(opt){
+                var id = String(opt.accusationId);
+                var selected = String(state.findingsRecomm.selectedAccusationId || '') === id ? ' selected' : '';
+                return '<option value="' + esc(id) + '"' + selected + '>' + esc(opt.accusationText || '') + '</option>';
+            }).join('');
+
             html += '<h5>Findings & Recommendations</h5>' +
                 '<div class="card border-0 bg-light mb-3"><div class="card-body">' +
-                    '<label class="form-label fw-semibold">Findings</label>' +
+                    '<div class="row g-3 mb-3">' +
+                        '<div class="col-md-6">' +
+                            '<label class="form-label fw-semibold">Accusation <span class="text-danger">*</span></label>' +
+                            '<select id="findingsAccusationSelect" class="form-select" data-findings-accusation-select>' +
+                                '<option value="">Select Accusation</option>' + accusationOptions +
+                            '</select>' +
+                        '</div>' +
+                    '</div>' +
+                    '<label class="form-label fw-semibold">Findings <span class="text-danger">*</span></label>' +
                     '<textarea id="findingTextHtml" class="form-control" rows="12">' + esc(state.findingsRecomm.findingText || '') + '</textarea>' +
                 '</div></div>' +
-                '<div class="card border-0 bg-light">' +
+                '<div class="card border-0 bg-light mb-3">' +
                     '<div class="card-body">' +
-                        '<label class="form-label fw-semibold">Recommendations</label>' +
+                        '<label class="form-label fw-semibold">Recommendations <span class="text-danger">*</span></label>' +
                         '<textarea id="recommendationTextHtml" class="form-control" rows="12">' + esc(state.findingsRecomm.recommendationText || '') + '</textarea>' +
                         '<div class="mt-3"><button type="button" class="btn btn-primary" data-save-findings-recomm>Save Findings & Recommendations</button></div>' +
+                    '</div>' +
+                '</div>' +
+                '<div class="card border">' +
+                    '<div class="card-body">' +
+                        '<div class="d-flex justify-content-between align-items-center mb-2">' +
+                            '<h6 class="mb-0">Saved Status</h6>' +
+                            '<span id="findingsStatusSummary" class="fw-semibold">Saved: 0 / Total: 0</span>' +
+                        '</div>' +
+                        '<div class="table-responsive">' +
+                            '<table class="table table-sm align-middle">' +
+                                '<thead><tr><th>Accusation Title</th><th>Status</th><th>Last Saved On</th><th>Action</th></tr></thead>' +
+                                '<tbody id="findingsStatusGridBody"><tr><td colspan="4" class="text-muted">No accusations available.</td></tr></tbody>' +
+                            '</table>' +
+                        '</div>' +
                     '</div>' +
                 '</div>';
         }
@@ -325,6 +504,7 @@ $(function(){
         h.html(html);
         if(isLocked){ h.find('input,textarea,select,button').prop('disabled', true); }
         initTinyMceEditors();
+        if(step === 7){ renderFindingsStatusGrid(); }
     }
 
     function bindStepInputs(){
@@ -398,7 +578,13 @@ $(function(){
         if(step === 4 && !state.records.some(function(x){ return has(x.recordTitle) || has(x.recordDetails); })) errs.push('At least one record scrutinized row is required.');
         if(step === 5 && !state.statementRegister.saved.length) errs.push('At least one saved statement is required.');
         if(step === 6 && !state.evidence.length) errs.push('At least one evidence file is mandatory.');
-        if(step === 7 && !has(state.findingsRecomm.findingText) && !has(state.findingsRecomm.recommendationText)) errs.push('Findings or recommendations are required.');
+        if(step === 7){
+            if(window.tinymce && window.tinymce.get('findingTextHtml')){ state.findingsRecomm.findingText = window.tinymce.get('findingTextHtml').getContent(); }
+            if(window.tinymce && window.tinymce.get('recommendationTextHtml')){ state.findingsRecomm.recommendationText = window.tinymce.get('recommendationTextHtml').getContent(); }
+            if(state.findingsRecomm.selectedAccusationId === '' || state.findingsRecomm.selectedAccusationId === null || typeof state.findingsRecomm.selectedAccusationId === 'undefined') errs.push('Accusation selection is required.');
+            if(!has(state.findingsRecomm.findingText)) errs.push('Findings text is required.');
+            if(!has(state.findingsRecomm.recommendationText)) errs.push('Recommendation text is required.');
+        }
         if(step === 8 && !state.violations.some(function(x){ return has(x.category) && has(x.violationDetail) && has(x.referenceText) && has(x.recommendation); })) errs.push('At least one complete violation row is required.');
         if(step === 9 && !state.dsa.some(function(x){ return has(x.personName) || has(x.dsaStatus); })) errs.push('At least one DSA row is required.');
         return errs;
@@ -694,7 +880,7 @@ $(function(){
                     mergeStatementRegister(resp.accusedRows || [], resp.savedRows || []);
                 }, section: 'statementRegister' },
             6: { loadFn: window.iidGetInqEvidenceFiles, hydrate: function(resp){ state.evidence = extractData(resp); }, section: 'evidence' },
-            7: { loadFn: window.iidGetInqFindingsRecomm, hydrate: function(resp){ var row = extractData(resp)[0] || {}; state.findingsRecomm = { findingText: row.findingText || '', recommendationText: row.recommendationText || '' }; }, section: 'findingsRecomm' },
+            7: { loadFn: loadFindingsModule, hydrate: function(){}, section: 'findingsRecomm' },
             8: { loadFn: window.iidGetInqViolations, hydrate: function(resp){ state.violations = extractData(resp); ensureOneRow('violations'); }, section: 'violations' },
             9: { loadFn: window.iidGetInqDsa, hydrate: function(resp){ state.dsa = extractData(resp); ensureOneRow('dsa'); }, section: 'dsa' }
         }[step];
@@ -708,7 +894,7 @@ $(function(){
                 return;
             }
             if(cfg.section === 'findingsRecomm'){
-                state.savedSteps[step] = !!(state.findingsRecomm.findingText || state.findingsRecomm.recommendationText);
+                state.savedSteps[step] = (state.findingsRecomm.statusRows || []).some(isStatusRowSaved);
                 return;
             }
             var list = cfg.section === 'evidence' ? state.evidence : (cfg.section === 'accusedRows' ? state.accusedEmployeeRows.concat(state.accusedManualRows) : state[cfg.section]);
@@ -741,16 +927,20 @@ $(function(){
             return window.iidGetInqEvidenceFiles(complaintId).then(function(resp){ ensureApiSuccess(resp, 'Failed to load evidence list.'); state.evidence = extractData(resp); return { message: 'Evidence list refreshed from database.' }; });
         }
         if(step === 7){
+            var selectedAccusationId = parseInt(state.findingsRecomm.selectedAccusationId, 10);
             var findingHtml = (window.tinymce && window.tinymce.get('findingTextHtml') ? window.tinymce.get('findingTextHtml').getContent() : state.findingsRecomm.findingText) || '';
             var recommendationHtml = (window.tinymce && window.tinymce.get('recommendationTextHtml') ? window.tinymce.get('recommendationTextHtml').getContent() : state.findingsRecomm.recommendationText) || '';
             state.findingsRecomm.findingText = findingHtml;
             state.findingsRecomm.recommendationText = recommendationHtml;
 
-            return window.iidSaveInqFindingsRecomm({ complaintId: complaintId, findingText: findingHtml, recommendationText: recommendationHtml }).then(function(resp){
+            return window.iidSaveIidFindingsRecommByAccusation({ complaintId: complaintId, accusationId: selectedAccusationId, findingsText: findingHtml, recommendationText: recommendationHtml }).then(function(resp){
                 ensureApiSuccess(resp, 'Findings & recommendations save failed.');
-                state.savedSteps[7] = true;
-                state.dirtySteps[7] = false;
-                return { message: getResponseMessage(resp) || 'Findings & recommendations saved successfully.' };
+                upsertFindingsStatusRow({ accusationId: selectedAccusationId, accusationText: (state.findingsRecomm.accusationOptions || []).filter(function(x){ return parseInt(x.accusationId, 10) === selectedAccusationId; }).map(function(x){ return x.accusationText; })[0] || '', isSaved: true, savedOn: (resp && resp.savedOn) || (resp && resp.data && resp.data.savedOn) || new Date().toISOString() });
+                return loadFindingsStatusGrid().then(function(){
+                    state.savedSteps[7] = (state.findingsRecomm.statusRows || []).some(isStatusRowSaved);
+                    state.dirtySteps[7] = false;
+                    return { message: getResponseMessage(resp) || 'Findings & recommendations saved successfully.' };
+                });
             });
         }
         if(step === 8){
@@ -930,6 +1120,23 @@ $(function(){
                 renderCurrent(true);
             });
         }).fail(function(err){ showAlert((err && err.message) || 'Failed to delete evidence file.', 'danger'); });
+    });
+
+    $(document).on('change', '[data-findings-accusation-select]', function(){
+        state.findingsRecomm.selectedAccusationId = $(this).val();
+        markDirty(7);
+        loadFindingsForSelection(state.findingsRecomm.selectedAccusationId).fail(function(err){
+            showAlert((err && err.message) || 'Failed to load findings for selected accusation.', 'danger');
+        });
+    });
+
+    $(document).on('click', '[data-findings-view-edit]', function(){
+        var accusationId = String($(this).data('findings-view-edit') || '');
+        state.findingsRecomm.selectedAccusationId = accusationId;
+        $('#findingsAccusationSelect').val(accusationId);
+        loadFindingsForSelection(accusationId).fail(function(err){
+            showAlert((err && err.message) || 'Failed to load findings for selected accusation.', 'danger');
+        });
     });
 
     $(document).on('click', '[data-save-findings-recomm]', function(){
