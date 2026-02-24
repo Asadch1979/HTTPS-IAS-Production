@@ -674,6 +674,60 @@ else
                 }
             }
 
+            async function authenticateSbpAccess() {
+                resetInactivityTimer();
+
+                let hasSessionAccess = false;
+                try {
+                    hasSessionAccess = sessionStorage.getItem(AUTH_STORAGE_KEY) === 'true';
+                } catch (error) {
+                    hasSessionAccess = false;
+                }
+
+                if (hasSessionAccess) {
+                    return true;
+                }
+
+                const password = window.prompt('Please enter SBP observation password to continue:');
+                if (password === null) {
+                    return false;
+                }
+
+                const trimmedPassword = password.trim();
+                if (!trimmedPassword) {
+                    await showBlockingAlert('Authentication Required', 'Password is required to continue.');
+                    return false;
+                }
+
+                try {
+                    const response = await fetchWithPageId(API_BASE_URL + '/ApiCalls/Authenticate', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(trimmedPassword)
+                    });
+
+                    const payload = await parseApiResponse(response);
+                    const isOk = response.ok && payload && payload.success === true;
+                    const message = payload && payload.message ? payload.message : '';
+
+                    if (!isOk) {
+                        await showBlockingAlert('Access Denied', message || 'Invalid password.');
+                        return false;
+                    }
+
+                    try {
+                        sessionStorage.setItem(AUTH_STORAGE_KEY, 'true');
+                    } catch (error) {
+                        // ignore storage errors
+                    }
+
+                    return true;
+                } catch (error) {
+                    await showBlockingAlert('Error', 'Unable to validate password. Please try again.');
+                    return false;
+                }
+            }
+
             async function ensureAuthenticated(callback) {
                 const authenticated = await authenticateSbpAccess();
                 if (!authenticated) {
