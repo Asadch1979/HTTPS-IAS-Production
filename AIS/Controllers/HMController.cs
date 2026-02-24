@@ -105,8 +105,15 @@ namespace AIS.Controllers
                 return View("~/Views/HM/SbpObservationRegister.cshtml", CreateRegisterViewModel(false));
                 }
 
+            if (!sessionHandler.HasSbpAccess())
+                {
+                TempData["ErrorMessage"] = "Please authenticate to access SBP Observation Register.";
+                var model = CreateRegisterViewModel(false, null, "Please authenticate to access SBP Observation Register.", null, FetchObservationTypes());
+                return View(model);
+                }
+
             var observationTypes = FetchObservationTypes();
-            var model = CreateRegisterViewModel(false, null, null, null, observationTypes);
+            var model = CreateRegisterViewModel(true, Enumerable.Empty<SBPObservationRegisterItem>(), null, null, observationTypes);
             return View(model);
             }
 
@@ -245,8 +252,14 @@ namespace AIS.Controllers
                     {
                     return View("~/Views/HM/SbpObservationHistory.cshtml");
                     }
-                else
-                    return View();
+
+                if (!sessionHandler.HasSbpAccess())
+                    {
+                    TempData["ErrorMessage"] = "Please authenticate to access SBP Observation Register.";
+                    return RedirectToAction("Index", "Home");
+                    }
+
+                return View();
                 }
             }
 
@@ -264,8 +277,14 @@ namespace AIS.Controllers
                     {
                     return View("~/Views/HM/ManageSbpPassword.cshtml");
                     }
-                else
-                    return View();
+
+                if (!sessionHandler.HasSbpAccess())
+                    {
+                    TempData["ErrorMessage"] = "Please authenticate to access SBP Observation Register.";
+                    return RedirectToAction("Index", "Home");
+                    }
+
+                return View();
                 }
             }
 

@@ -9,6 +9,7 @@ namespace AIS.Session
         public const string AllowedApiPaths = "session:allowed-api-paths";
         public const string Bootstrapped = "session:bootstrapped";
         public const string SbpAccessGranted = "session:sbp:access";
+        public const string SbpAccessGrantedAt = "session:sbp:access:granted-at";
         public const string SessionStamp = "session:stamp";
         public const string UserRole = "session:user-role";
         public const string IsSuperUser = "session:is-super-user";

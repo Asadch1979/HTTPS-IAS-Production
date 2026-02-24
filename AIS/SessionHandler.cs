@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text.Json;
@@ -169,6 +170,7 @@ namespace AIS
             Session.Remove(SessionKeys.User);
             Session.Remove("_sessionId");
             Session.Remove(SessionKeys.SbpAccessGranted);
+            Session.Remove(SessionKeys.SbpAccessGrantedAt);
             Session.Remove(SessionKeys.SessionStamp);
             Session.Remove(SessionKeys.AllowedViewIds);
             Session.Remove(SessionKeys.AllowedApiPaths);
@@ -698,12 +700,41 @@ namespace AIS
                 }
 
             Session.SetString(SessionKeys.SbpAccessGranted, "Y");
+            Session.SetString(SessionKeys.SbpAccessGrantedAt, DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString(CultureInfo.InvariantCulture));
             }
 
         public bool HasSbpAccess()
             {
-            var value = Session?.GetString(SessionKeys.SbpAccessGranted);
-            return string.Equals(value, "Y", StringComparison.OrdinalIgnoreCase);
+            var session = Session;
+            if (session == null || !session.IsAvailable)
+                {
+                return false;
+                }
+
+            var value = session.GetString(SessionKeys.SbpAccessGranted);
+            if (!string.Equals(value, "Y", StringComparison.OrdinalIgnoreCase))
+                {
+                return false;
+                }
+
+            const long maxAgeSeconds = 15 * 60;
+            var issuedAtRaw = session.GetString(SessionKeys.SbpAccessGrantedAt);
+            if (!long.TryParse(issuedAtRaw, NumberStyles.Integer, CultureInfo.InvariantCulture, out var issuedAtUnixSeconds))
+                {
+                session.Remove(SessionKeys.SbpAccessGranted);
+                session.Remove(SessionKeys.SbpAccessGrantedAt);
+                return false;
+                }
+
+            var nowUnixSeconds = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+            if ((nowUnixSeconds - issuedAtUnixSeconds) > maxAgeSeconds)
+                {
+                session.Remove(SessionKeys.SbpAccessGranted);
+                session.Remove(SessionKeys.SbpAccessGrantedAt);
+                return false;
+                }
+
+            return true;
             }
 
         public string IssueSessionStamp(SessionUser user)
