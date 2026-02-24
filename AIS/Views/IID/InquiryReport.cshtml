@@ -58,7 +58,7 @@ $(function(){
     var userId = 0;
     var alertTimer = null;
     var accusedRoleOptions = ['Main', 'Co', 'Witness'];
-    var additionalChargesId = -1;
+    var additionalChargesId = 0;
     var additionalChargesText = 'Additional Charges';
     var steps = [
         { id: 1, code: 'SNAPSHOT', title: 'Snapshot' },
@@ -100,7 +100,19 @@ $(function(){
 
     function token(){ return $('#iidAntiForgeryWrap input[name="__RequestVerificationToken"]').val(); }
     function esc(v){ return $('<div/>').text(v || '').html(); }
-    function extractData(resp){ return (resp && (resp.data || resp.Data)) || []; }
+    function extractData(resp){
+        var payload = resp;
+        if(payload && !Array.isArray(payload)){
+            payload = payload.data || payload.Data || payload;
+        }
+
+        if(Array.isArray(payload)){ return payload; }
+        if(payload && Array.isArray(payload.rows)){ return payload.rows; }
+        if(payload && Array.isArray(payload.Rows)){ return payload.Rows; }
+        if(payload && payload.data && Array.isArray(payload.data)){ return payload.data; }
+        if(payload && payload.Data && Array.isArray(payload.Data)){ return payload.Data; }
+        return [];
+    }
 
     function getResponseMessage(resp){
         if(!resp){ return ''; }
@@ -247,9 +259,9 @@ $(function(){
     function buildFindingsAccusationList(baseRows){
         var map = {};
         (baseRows || []).forEach(function(row){
-            var id = parseInt(row.accusationId, 10);
+            var id = parseInt(row.accusationId || row.AccusationId || row.id || row.Id, 10);
             if(isNaN(id)){ return; }
-            map[id] = { accusationId: id, accusationText: row.accusationText || ('Accusation #' + id) };
+            map[id] = { accusationId: id, accusationText: row.accusationText || row.AccusationText || row.text || row.Text || ('Accusation #' + id) };
         });
         map[additionalChargesId] = { accusationId: additionalChargesId, accusationText: additionalChargesText };
         return Object.keys(map).map(function(key){ return map[key]; }).sort(function(a, b){
