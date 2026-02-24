@@ -674,7 +674,12 @@ else
                 }
             }
 
-            function ensureAuthenticated(callback) {
+            async function ensureAuthenticated(callback) {
+                const authenticated = await authenticateSbpAccess();
+                if (!authenticated) {
+                    return;
+                }
+
                 if (typeof callback === 'function') {
                     callback();
                 }
