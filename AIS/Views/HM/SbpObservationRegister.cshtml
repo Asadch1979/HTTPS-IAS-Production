@@ -424,7 +424,7 @@ else
                         clearAuthError();
                     });
 
-                    $unlockButton.on('click', function (event) {
+                    $unlockButton.on('click', async function (event) {
                         event.preventDefault();
 
                         const password = ($passwordInput.val() || '').trim();
@@ -439,41 +439,44 @@ else
                         $unlockButton.prop('disabled', true)
                             .html('<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Authenticating...');
 
-                        $.ajax({
-                            url: API_BASE_URL + '/ApiCalls/Authenticate',
-                            type: 'POST',
-                            contentType: 'application/json',
-                            data: JSON.stringify(password),
-                            success: function (res) {
-                                const rawSuccess = res ? res.success : null;
-                                const isOk = rawSuccess === true
-                                    || rawSuccess === 1
-                                    || rawSuccess === '1'
-                                    || (typeof rawSuccess === 'string' && rawSuccess.toLowerCase() === 'true');
-                                const msg = res && res.message ? res.message : '';
+                        try {
+                            const response = await fetch(API_BASE_URL + '/ApiCalls/Authenticate', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify(password)
+                            });
 
-                                if (isOk) {
-                                    clearAuthError();
-                                    alert(msg || 'Authenticated successfully.');
-                                    try {
-                                        sessionStorage.setItem(AUTH_STORAGE_KEY, 'true');
-                                        sessionStorage.setItem(AUTH_RETAIN_STORAGE_KEY, 'true');
-                                    } catch (error) {
-                                        // ignore storage errors
-                                    }
-                                    window.location.reload();
-                                    return;
-                                }
-
-                                showAuthError(msg || 'Invalid password');
-                            },
-                            error: function () {
-                                showAuthError('Unable to authenticate right now. Please try again.');
-                            },
-                            complete: function () {
-                                $unlockButton.prop('disabled', false).html(originalHtml);
+                            let payload = null;
+                            try {
+                                payload = await response.json();
+                            } catch (error) {
+                                payload = null;
                             }
-                        });
+
+                            const isOk = response.ok && payload && payload.success === true;
+                            const msg = payload && payload.message ? payload.message : '';
+
+                            if (isOk) {
+                                clearAuthError();
+                                await showBlockingAlert('Authentication Successful', msg || 'Access granted to SBP Observation Register.');
+                                try {
+                                    sessionStorage.setItem(AUTH_STORAGE_KEY, 'true');
+                                    sessionStorage.setItem(AUTH_RETAIN_STORAGE_KEY, 'true');
+                                } catch (error) {
+                                    // ignore storage errors
+                                }
+                                window.location.reload();
+                                return;
+                            }
+
+                            showAuthError(msg || 'Invalid password');
+                            await showBlockingAlert('Access Denied', msg || 'Invalid password.');
+                        } catch (error) {
+                            showAuthError('Unable to authenticate right now. Please try again.');
+                            await showBlockingAlert('Error', 'Unable to validate password. Please try again.');
+                        } finally {
+                            $unlockButton.prop('disabled', false).html(originalHtml);
+                        }
                     });
                 });
 
@@ -675,6 +678,39 @@ else
                 if (typeof callback === 'function') {
                     callback();
                 }
+            }
+
+            function showBlockingAlert(title, message) {
+                return new Promise(function (resolve) {
+                    const modalId = 'sbpBlockingAlertModal';
+                    $('#' + modalId).remove();
+
+                    const modalHtml = `<div class="modal fade" id="${modalId}" tabindex="-1" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+                        <div class="modal-dialog modal-dialog-centered">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title">${escapeHtml(title || 'Notice')}</h5>
+                                </div>
+                                <div class="modal-body">
+                                    <p class="mb-0">${escapeHtml(message || '')}</p>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-primary" data-bs-dismiss="modal">OK</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>`;
+
+                    $('body').append(modalHtml);
+                    const modalElement = document.getElementById(modalId);
+                    const modal = new bootstrap.Modal(modalElement, { backdrop: 'static', keyboard: false });
+                    modalElement.addEventListener('hidden.bs.modal', function () {
+                        modal.dispose();
+                        $(modalElement).remove();
+                        resolve();
+                    }, { once: true });
+                    modal.show();
+                });
             }
 
             function handleObservationTypeChange() {
