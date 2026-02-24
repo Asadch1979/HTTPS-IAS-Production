@@ -151,11 +151,8 @@
             if (!value) {
                 return '';
             }
-            const date = new Date(value);
-            if (Number.isNaN(date.getTime())) {
-                return '';
-            }
-            return date.toISOString().slice(0, 10);
+            const normalized = `${value}`;
+            return normalized.length >= 10 ? normalized.slice(0, 10) : normalized;
         };
 
         const formatValue = (value) => {
@@ -186,22 +183,11 @@
                     return;
                 }
                 if (!periodMap.has(formatted)) {
-                    const dateValue = new Date(periodEnd);
-                    periodMap.set(formatted, {
-                        key: formatted,
-                        sortValue: Number.isNaN(dateValue.getTime()) ? null : dateValue.getTime()
-                    });
+                    periodMap.set(formatted, formatted);
                 }
             });
 
-            const periods = Array.from(periodMap.values())
-                .sort((a, b) => {
-                    if (a.sortValue !== null && b.sortValue !== null) {
-                        return a.sortValue - b.sortValue;
-                    }
-                    return a.key.localeCompare(b.key);
-                })
-                .map(item => item.key);
+            const periods = Array.from(periodMap.values()).sort((a, b) => a.localeCompare(b));
 
             const categoryOrder = ['oaem', 'substandard', 'doubtful', 'loss'];
             const categoryMap = new Map();
