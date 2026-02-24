@@ -371,43 +371,6 @@ else
                 directions: false,
                 response: false
             };
-            const showBlockingAlert = function (title, message) {
-                const safeTitle = title || 'Message';
-                const safeMessage = message || '';
-
-                return new Promise(function (resolve) {
-                    const modalHtml = `
-                        <div class="modal fade" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
-                            <div class="modal-dialog modal-dialog-centered">
-                                <div class="modal-content">
-                                    <div class="modal-header">
-                                        <h5 class="modal-title">${safeTitle}</h5>
-                                    </div>
-                                    <div class="modal-body">
-                                        <p class="mb-0">${safeMessage}</p>
-                                    </div>
-                                    <div class="modal-footer">
-                                        <button type="button" class="btn btn-primary" data-bs-dismiss="modal">OK</button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>`;
-
-                    const $modal = $(modalHtml);
-                    $('body').append($modal);
-                    const modalElement = $modal.get(0);
-                    const modalInstance = new bootstrap.Modal(modalElement);
-
-                    $modal.on('hidden.bs.modal', function () {
-                        modalInstance.dispose();
-                        $modal.remove();
-                        resolve();
-                    });
-
-                    modalInstance.show();
-                });
-            };
-
             const observationModalState = {
                 mode: 'add',
                 paraId: 0,
@@ -481,33 +444,31 @@ else
                             type: 'POST',
                             contentType: 'application/json',
                             data: JSON.stringify(password),
-                            success: async function (res) {
-                                const isOk = res && res.success === true;
+                            success: function (res) {
+                                const rawSuccess = res ? res.success : null;
+                                const isOk = rawSuccess === true
+                                    || rawSuccess === 1
+                                    || rawSuccess === '1'
+                                    || (typeof rawSuccess === 'string' && rawSuccess.toLowerCase() === 'true');
                                 const msg = res && res.message ? res.message : '';
 
                                 if (isOk) {
                                     clearAuthError();
+                                    alert(msg || 'Authenticated successfully.');
                                     try {
                                         sessionStorage.setItem(AUTH_STORAGE_KEY, 'true');
                                         sessionStorage.setItem(AUTH_RETAIN_STORAGE_KEY, 'true');
                                     } catch (error) {
                                         // ignore storage errors
                                     }
-
-                                    await showBlockingAlert('Authentication Successful', msg || 'Access granted to SBP Observation Register.');
                                     window.location.reload();
                                     return;
                                 }
 
-                                await showBlockingAlert('Access Denied', msg || 'Invalid password. Access denied.');
-                                showAuthError(msg || 'Invalid password. Access denied.');
+                                showAuthError(msg || 'Invalid password');
                             },
-                            error: async function (xhr) {
-                                const message = xhr && xhr.responseJSON && xhr.responseJSON.message
-                                    ? xhr.responseJSON.message
-                                    : 'Unable to validate password. Please try again.';
-                                await showBlockingAlert('Error', message);
-                                showAuthError(message);
+                            error: function () {
+                                showAuthError('Unable to authenticate right now. Please try again.');
                             },
                             complete: function () {
                                 $unlockButton.prop('disabled', false).html(originalHtml);

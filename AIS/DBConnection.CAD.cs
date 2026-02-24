@@ -121,23 +121,24 @@ namespace AIS.Controllers
                 || string.IsNullOrWhiteSpace(loggedInUser.PPNumber)
                 || loggedInUser.UserRoleID <= 0)
             {
-                return new SBPPasswordValidationResult { Success = false, Message = "Invalid password." };
+                return new SBPPasswordValidationResult { Success = false, Message = string.Empty };
             }
-
-            if (string.IsNullOrWhiteSpace(inputPassword))
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
+                || string.IsNullOrWhiteSpace(loggedInUser.PPNumber)
+                || loggedInUser.UserRoleID <= 0)
             {
-                return new SBPPasswordValidationResult { Success = false, Message = "Invalid password." };
+                return new SBPPasswordValidationResult();
             }
-
             var result = new SBPPasswordValidationResult { Success = false, Message = "Invalid password." };
-            try
+            using (var con = this.DatabaseConnection())
             {
-                using (var con = this.DatabaseConnection())
+
                 using (var cmd = con.CreateCommand())
                 {
                     cmd.CommandText = "PKG_HD.P_VALIDATE_SBP_PASSWORD";
                     cmd.CommandType = CommandType.StoredProcedure;
-                    var hashedInput = HashPassword(inputPassword);
+                    var hashedInput = HashPassword(inputPassword ?? string.Empty);
                     cmd.Parameters.Add("p_input_key", OracleDbType.Varchar2, 200).Value = hashedInput;
                     var output = new OracleParameter("p_is_valid", OracleDbType.Varchar2, 1)
                     {
@@ -146,16 +147,10 @@ namespace AIS.Controllers
                     cmd.Parameters.Add(output);
                     cmd.ExecuteNonQuery();
                     var flag = (output.Value ?? string.Empty).ToString();
-                    result.Success = string.Equals(flag, "Y", StringComparison.Ordinal);
+                    result.Success = string.Equals(flag, "Y", StringComparison.OrdinalIgnoreCase);
                     result.Message = result.Success ? "Authenticated." : "Invalid password.";
                 }
             }
-            catch
-            {
-                result.Success = false;
-                result.Message = "Invalid password.";
-            }
-
             return result;
         }
 

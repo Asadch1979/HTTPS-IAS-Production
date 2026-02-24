@@ -169,7 +169,6 @@ namespace AIS
             Session.Remove(SessionKeys.User);
             Session.Remove("_sessionId");
             Session.Remove(SessionKeys.SbpAccessGranted);
-            Session.Remove(SessionKeys.SbpAccessGrantedAtUtc);
             Session.Remove(SessionKeys.SessionStamp);
             Session.Remove(SessionKeys.AllowedViewIds);
             Session.Remove(SessionKeys.AllowedApiPaths);
@@ -699,33 +698,12 @@ namespace AIS
                 }
 
             Session.SetString(SessionKeys.SbpAccessGranted, "Y");
-            Session.SetString(SessionKeys.SbpAccessGrantedAtUtc, DateTime.UtcNow.ToString("O"));
             }
 
         public bool HasSbpAccess()
             {
-            var session = Session;
-            var value = session?.GetString(SessionKeys.SbpAccessGranted);
-            if (!string.Equals(value, "Y", StringComparison.OrdinalIgnoreCase))
-                {
-                return false;
-                }
-
-            var grantedAtRaw = session?.GetString(SessionKeys.SbpAccessGrantedAtUtc);
-            if (!DateTime.TryParse(grantedAtRaw, null, System.Globalization.DateTimeStyles.RoundtripKind, out var grantedAtUtc))
-                {
-                return false;
-                }
-
-            var elapsed = DateTime.UtcNow - grantedAtUtc.ToUniversalTime();
-            if (elapsed > TimeSpan.FromMinutes(15))
-                {
-                session?.Remove(SessionKeys.SbpAccessGranted);
-                session?.Remove(SessionKeys.SbpAccessGrantedAtUtc);
-                return false;
-                }
-
-            return true;
+            var value = Session?.GetString(SessionKeys.SbpAccessGranted);
+            return string.Equals(value, "Y", StringComparison.OrdinalIgnoreCase);
             }
 
         public string IssueSessionStamp(SessionUser user)
