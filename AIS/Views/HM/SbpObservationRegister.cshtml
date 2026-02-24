@@ -685,40 +685,6 @@ else
                 }
             }
 
-            async function authenticateSbpAccess() {
-                const password = window.prompt('Enter SBP Observation Register password');
-                if (typeof password !== 'string' || !password.trim().length) {
-                    await showBlockingAlert('Access Denied', 'Password is required.');
-                    return false;
-                }
-
-                try {
-                    const response = await fetch(API_BASE_URL + '/ApiCalls/Authenticate', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(password)
-                    });
-
-                    let data = null;
-                    try {
-                        data = await response.json();
-                    } catch (error) {
-                        data = null;
-                    }
-
-                    if (!response.ok || !data || data.success !== true) {
-                        await showBlockingAlert('Access Denied', (data && data.message) ? data.message : 'Invalid password.');
-                        return false;
-                    }
-
-                    await showBlockingAlert('Authentication Successful', data.message || 'Access granted to SBP Observation Register.');
-                    return true;
-                } catch (error) {
-                    await showBlockingAlert('Error', 'Unable to validate password. Please try again.');
-                    return false;
-                }
-            }
-
             function showBlockingAlert(title, message) {
                 return new Promise(function (resolve) {
                     const modalId = 'sbpBlockingAlertModal';
