@@ -108,7 +108,7 @@ namespace AIS.Controllers
             {
             if (!sessionHandler.HasSbpAccess())
                 {
-                return StatusCode(StatusCodes.Status403Forbidden, new { error = "forbidden", message = "SBP access is not authorized for this session." });
+                return Unauthorized(new { success = false, message = "SBP access not authorized. Please authenticate first." });
                 }
 
             return null;
@@ -1003,11 +1003,27 @@ namespace AIS.Controllers
         [HttpPost]
         public IActionResult Authenticate([FromBody] string password)
             {
-            var db = CreateDbConnection();
-            var result = db.ValidateSbpAccessPassword(password);
-
-            if (result.Success)
+            try
                 {
+                if (string.IsNullOrWhiteSpace(password))
+                    {
+                    return BadRequest(new { success = false, message = "Password is required." });
+                    }
+
+                var db = CreateDbConnection();
+                var result = db.ValidateSbpAccessPassword(password);
+
+                if (result == null || !result.Success)
+                    {
+                    return Unauthorized(new
+                        {
+                        success = false,
+                        message = string.IsNullOrWhiteSpace(result?.Message)
+                            ? "Invalid password. Access denied."
+                            : result.Message
+                        });
+                    }
+
                 try
                     {
                     sessionHandler.GrantSbpAccess();
@@ -1017,9 +1033,14 @@ namespace AIS.Controllers
                     _logger.LogError(ex, "Unable to persist SBP authentication state.");
                     return StatusCode(StatusCodes.Status500InternalServerError, new { success = false, message = "Session could not be updated." });
                     }
-                }
 
-            return Ok(result);
+                return Ok(new { success = true, message = "Authentication successful." });
+                }
+            catch (Exception ex)
+                {
+                _logger.LogError(ex, "Error while authenticating SBP access password.");
+                return StatusCode(StatusCodes.Status500InternalServerError, new { success = false, message = "An error occurred while validating the password." });
+                }
             }
 
         [HttpPost]

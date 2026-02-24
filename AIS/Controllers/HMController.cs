@@ -106,7 +106,8 @@ namespace AIS.Controllers
                 }
 
             var observationTypes = FetchObservationTypes();
-            var model = CreateRegisterViewModel(false, null, null, null, observationTypes);
+            var hasSbpAccess = sessionHandler.HasSbpAccess();
+            var model = CreateRegisterViewModel(hasSbpAccess, null, null, null, observationTypes);
             return View(model);
             }
 
@@ -239,15 +240,19 @@ namespace AIS.Controllers
                 {
                 return RedirectToAction("Index", "Login");
                 }
-            else
+
+            if (!sessionHandler.HasSbpAccess())
                 {
-                if (!this.UserHasPagePermissionForCurrentAction(sessionHandler)) //MIGRATION_PERMISSION_CHECK (Controller)
-                    {
-                    return View("~/Views/HM/SbpObservationHistory.cshtml");
-                    }
-                else
-                    return View();
+                TempData["ErrorMessage"] = "Please authenticate to access SBP Observation Register.";
+                return RedirectToAction("Index", "Home");
                 }
+
+            if (!this.UserHasPagePermissionForCurrentAction(sessionHandler)) //MIGRATION_PERMISSION_CHECK (Controller)
+                {
+                return View("~/Views/HM/SbpObservationHistory.cshtml");
+                }
+
+            return View();
             }
 
         public IActionResult ManageSbpPassword(int paraID)
