@@ -290,7 +290,8 @@ namespace AIS.Controllers
             ViewData["TopMenuPages"] = tm.GetTopMenusPages();
             if (!User.Identity.IsAuthenticated)
                 return RedirectToAction("Index", "Login");
-            return View("../IID/MonitoringDashboard");
+            var rows = dBConnection.GetComplaintsByUser();
+            return View("../IID/MonitoringDashboard", rows);
             }
 
         [HttpGet]

@@ -367,7 +367,7 @@ namespace AIS.Controllers
             return auditFlag;
             }
 
-        public DataTable GetComplaintsByUser()
+        public List<ComplaintRowDto> GetComplaintsByUser()
             {
             var sessionHandler = CreateSessionHandler();
             var loggedInUser = sessionHandler.GetUser();
@@ -376,23 +376,42 @@ namespace AIS.Controllers
                 || string.IsNullOrWhiteSpace(loggedInUser.PPNumber)
                 || loggedInUser.UserRoleID <= 0)
                 {
-                return new DataTable();
+                return new List<ComplaintRowDto>();
                 }
+
+            if (!int.TryParse(loggedInUser.PPNumber, out var parsedPpno))
+                {
+                return new List<ComplaintRowDto>();
+                }
+
             using var con = this.DatabaseConnection();
-           
+
             using (OracleCommand cmd = con.CreateCommand())
                 {
                 cmd.CommandText = "PKG_INQ.GET_COMPLAINTS";
                 cmd.CommandType = CommandType.StoredProcedure;
                 cmd.BindByName = true;
-                cmd.Parameters.Add("p_user_id", OracleDbType.Int32).Value = loggedInUser.PPNumber;
+                cmd.Parameters.Add("p_user_id", OracleDbType.Int32).Value = parsedPpno;
                 cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
-                var dt = new DataTable();
+                var complaints = new List<ComplaintRowDto>();
                 using (var rdr = cmd.ExecuteReader())
                     {
-                    dt.Load(rdr);
+                    while (rdr.Read())
+                        {
+                        complaints.Add(new ComplaintRowDto
+                            {
+                            ComplaintId = rdr["COMPLAINT_ID"] != DBNull.Value ? Convert.ToInt64(rdr["COMPLAINT_ID"]) : 0,
+                            ComplaintNo = rdr["COMPLAINT_NO"]?.ToString() ?? string.Empty,
+                            ComplainantName = rdr["COMPLAINANT_NAME"]?.ToString() ?? string.Empty,
+                            Nature = rdr["NATURE"]?.ToString() ?? string.Empty,
+                            Source = rdr["SOURCE"]?.ToString() ?? string.Empty,
+                            AssignedUnitId = rdr["ASSIGNED_UNIT_ID"] != DBNull.Value ? Convert.ToInt32(rdr["ASSIGNED_UNIT_ID"]) : (int?)null,
+                            Status = rdr["STATUS"]?.ToString() ?? string.Empty,
+                            SubmittedOn = rdr["SUBMITTED_ON"]?.ToString() ?? string.Empty
+                            });
+                        }
                     }
-                return dt;
+                return complaints;
                 }
             }
 

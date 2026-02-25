@@ -1,3 +1,4 @@
+@model List<AIS.Models.IID.ComplaintRowDto>
 @{
     ViewData["Title"] = "Monitoring Dashboard";
     Layout = "_Layout";
@@ -25,7 +26,29 @@
                             <th>Action</th>
                         </tr>
                     </thead>
-                    <tbody></tbody>
+                    <tbody>
+                        @foreach (var row in Model ?? new List<AIS.Models.IID.ComplaintRowDto>())
+                        {
+                            <tr>
+                                <td>@row.ComplaintNo</td>
+                                <td>@row.ComplainantName</td>
+                                <td>@row.Nature</td>
+                                <td>@row.Source</td>
+                                <td>@(row.AssignedUnitId?.ToString() ?? "")</td>
+                                <td>@row.Status</td>
+                                <td>
+                                    @if (row.ComplaintId > 0)
+                                    {
+                                        <a class="btn btn-sm btn-outline-primary" href="@Url.Action("InquiryReportReadOnly", "IID", new { complaintId = row.ComplaintId })">View</a>
+                                    }
+                                    else
+                                    {
+                                        <button type="button" class="btn btn-sm btn-outline-secondary" disabled>View</button>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
                 </table>
             </div>
         </div>
