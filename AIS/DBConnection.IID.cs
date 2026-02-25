@@ -1779,10 +1779,12 @@ namespace AIS.Controllers
             {
             using var con = this.DatabaseConnection();
             using var cmd = con.CreateCommand();
+            var accusationId = 0;
             cmd.CommandText = "PKG_INQ.GET_INQ_FINDINGS_RECOMM";
             cmd.CommandType = CommandType.StoredProcedure;
             cmd.BindByName = true;
             cmd.Parameters.Add("p_complaint_id", OracleDbType.Int64).Value = complaintId;
+            cmd.Parameters.Add("p_accusation_id", OracleDbType.Int64).Value = accusationId;
             cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
 
             var list = new List<IidInqFindingsRecommRow>();
@@ -1825,7 +1827,7 @@ namespace AIS.Controllers
             {
             using var con = this.DatabaseConnection();
             using var cmd = con.CreateCommand();
-            cmd.CommandText = "PKG_INQ.GET_IID_ACCUSATIONS_FOR_FINDINGS";
+            cmd.CommandText = "PKG_INQ.P_GET_INQ_ACCUSATIONS";
             cmd.CommandType = CommandType.StoredProcedure;
             cmd.BindByName = true;
             cmd.Parameters.Add("p_complaint_id", OracleDbType.Int64).Value = complaintId;

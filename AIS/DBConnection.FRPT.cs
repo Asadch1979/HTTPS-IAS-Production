@@ -267,9 +267,9 @@ namespace AIS.Controllers
                 AUDIT_YEAR = GetString("AUDIT_YEAR", "AUDIT_PERIOD"),
                 REPORTING_OFFICE = GetString("REPORTING_OFFICE"),
                 ENTITY_NAME = GetString("ENTITY_NAME"),
-                OPERATION_STARTDATE = GetDate("OPERATION_STARTDATE", "AUDIT_STARTDATE"),
-                OPERATION_ENDDATE = GetDate("OPERATION_ENDDATE", "AUDIT_ENDDATE"),
-                AUDIT_STARTED_ON = GetDate("AUDIT_STARTED_ON", "AUDIT_STARTDATE"),
+                OPERATION_STARTDATE = GetDate("OPERATION_STARTDATE"),
+                OPERATION_ENDDATE = GetDate("OPERATION_ENDDATE"),
+                AUDIT_STARTED_ON = GetDate("AUDIT_STARTDATE"),
                 TEAM_EXIST = GetDate("TEAM_EXIST"),
                 TOTAL_MEMBERS = GetInt("TOTAL_MEMBERS"),
                 TEAM_LEAD = GetString("TEAM_LEAD", "TEAM_NAME")
