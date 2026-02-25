@@ -5131,12 +5131,12 @@ namespace AIS.Controllers
             }
 
         [HttpPost]
-        public IActionResult GetComplaintsByUser(int userId)
+        public IActionResult GetComplaintsByUser()
             {
             try
                 {
-                var list = dBConnection.GetComplaintsByUser();
-                return Json(list);
+                var rows = dBConnection.GetComplaintsByUser();
+                return Json(new { ok = true, rows });
                 }
             catch (Exception ex)
                 {
