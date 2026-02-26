@@ -405,7 +405,7 @@ namespace AIS.Controllers
                             ComplainantName = rdr["COMPLAINANT_NAME"]?.ToString() ?? string.Empty,
                             Nature = rdr["NATURE"]?.ToString() ?? string.Empty,
                             Source = rdr["SOURCE"]?.ToString() ?? string.Empty,
-                            AssignedUnitId = rdr["ASSIGNED_UNIT_ID"] != DBNull.Value ? Convert.ToInt32(rdr["ASSIGNED_UNIT_ID"]) : (int?)null,
+                            AssignedUnit = rdr["ASSIGNED_UNIT"]?.ToString() ?? string.Empty,
                             Status = rdr["STATUS"]?.ToString() ?? string.Empty,
                             SubmittedOn = rdr["SUBMITTED_ON"]?.ToString() ?? string.Empty
                             });
