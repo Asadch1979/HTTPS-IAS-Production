@@ -455,10 +455,9 @@ namespace AIS.Controllers
                 return BadRequest(new { Status = false, Message = "No team members supplied." });
                 }
 
-            var newTeamId = dBConnection.GetLatestTeamID();
-            foreach (var item in AUDIT_TEAM.Select((model, index) => (model, index)))
+            for (var index = 0; index < AUDIT_TEAM.Count; index++)
                 {
-                if (!TryValidateModel(item.model, prefix: $"[{item.index}]") || !ModelState.IsValid)
+                if (!TryValidateModel(AUDIT_TEAM[index], prefix: $"[{index}]"))
                     {
                     return InvalidModelStateResponse();
                     }
@@ -476,6 +475,12 @@ namespace AIS.Controllers
                     }
                 }
 
+            if (!ModelState.IsValid)
+                {
+                return InvalidModelStateResponse();
+                }
+
+            var newTeamId = dBConnection.GetLatestTeamID();
             var responses = new List<string>();
             foreach (var item in AUDIT_TEAM)
                 {
@@ -494,7 +499,7 @@ namespace AIS.Controllers
                 responses.Add(dBConnection.AddAuditTeam(ateam));
                 }
 
-            return Ok(new { Status = true });
+            return Ok(new { Status = true, Message = "Team saved successfully." });
             }
 
         private static bool ContainsHtmlEncodedPayload(string value)
