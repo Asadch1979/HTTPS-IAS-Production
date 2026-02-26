@@ -89,12 +89,14 @@ $(function(){
             findingText: '',
             recommendationText: '',
             accusationOptions: [],
-            statusRows: []
+            statusRows: [],
+            outcomes: {}
         },
         violations: [{ violationId: 0, category: 'Internal', violationDetail: '', referenceText: '', recommendation: '', sortOrder: 1 }],
         dsa: [{ dsaId: 0, personName: '', designation: '', ppnoNumber: '', cnic: '', dsaStatus: '', remarks: '', sortOrder: 1 }],
         deleteQueue: { accusations: [], accused: [], records: [], violations: [], dsa: [] },
         savedSteps: { 1: true, 2: false, 3: false, 4: false, 5: false, 6: false, 7: false, 8: false, 9: false },
+        isDsaVisible: true,
         dirtySteps: {}
     };
 
@@ -146,9 +148,35 @@ $(function(){
         return !!state.savedSteps[step] && !state.dirtySteps[step];
     }
 
+    function getVisibleSteps(){
+        return steps.filter(function(s){ return s.id !== 9 || state.isDsaVisible; });
+    }
+
+    function getStepPosition(stepId){
+        var visible = getVisibleSteps();
+        var idx = visible.findIndex(function(s){ return s.id === stepId; });
+        return { index: idx, total: visible.length };
+    }
+
+    function getNextVisibleStep(stepId){
+        var visible = getVisibleSteps();
+        var idx = visible.findIndex(function(s){ return s.id === stepId; });
+        if(idx < 0 || idx >= visible.length - 1){ return null; }
+        return visible[idx + 1].id;
+    }
+
+    function getPreviousVisibleStep(stepId){
+        var visible = getVisibleSteps();
+        var idx = visible.findIndex(function(s){ return s.id === stepId; });
+        if(idx <= 0){ return null; }
+        return visible[idx - 1].id;
+    }
+
     function renderStepper(){
-        $('#stepCounter').text('Step ' + currentStep + ' of ' + steps.length);
-        $('#wizardStepper').html(steps.map(function(s){
+        var pos = getStepPosition(currentStep);
+        var stepNumber = pos.index >= 0 ? (pos.index + 1) : 1;
+        $('#stepCounter').text('Step ' + stepNumber + ' of ' + pos.total);
+        $('#wizardStepper').html(getVisibleSteps().map(function(s){
             var saved = isStepSaved(s.id);
             return '<button type="button" class="step-pill ' + (s.id===currentStep?'active':'') + ' ' + (saved?'completed':'not-saved') + '" data-step-jump="' + s.id + '"><span class="num">' + s.id + '</span>' + esc(s.title) + '<span class="step-state ms-2 badge ' + (saved?'bg-success':'bg-secondary') + '">' + (saved?'Saved':'Not Saved') + '</span></button>';
         }).join(''));
@@ -167,8 +195,11 @@ $(function(){
     }
 
     function sectionActions(step){
-        var saveBtn = step === 5 ? '' : '<button type="button" class="btn btn-primary" data-save>Save Section</button>';
-        return '<div class="d-flex justify-content-between mt-4"><button type="button" class="btn btn-outline-secondary" data-prev ' + (step===1?'disabled':'') + '>Previous</button><div class="d-flex gap-2">' + saveBtn + '<button type="button" class="btn btn-success" data-next>' + (step===steps.length?'Review':'Next') + '</button>' + (step===steps.length?'<button type="button" class="btn btn-danger" id="finalSubmitBtn">Final Submit</button>':'') + '</div></div>';
+        var prevStep = getPreviousVisibleStep(step);
+        var nextStep = getNextVisibleStep(step);
+        var saveBtn = step === 5 ? '' : '<button type="button" class="btn btn-primary" data-save>Mark Completed</button>';
+        var finalSubmitBtn = step === 7 ? '<button type="button" class="btn btn-danger" id="finalSubmitBtn">Final Submit</button>' : '';
+        return '<div class="d-flex justify-content-between mt-4"><button type="button" class="btn btn-outline-secondary" data-prev ' + (!prevStep?'disabled':'') + '>Previous</button><div class="d-flex gap-2">' + saveBtn + '<button type="button" class="btn btn-success" data-next>' + (!nextStep?'Review':'Next') + '</button>' + finalSubmitBtn + '</div></div>';
     }
 
     function roleOptionsHtml(selected){
@@ -310,17 +341,26 @@ $(function(){
         var savedCount = rows.filter(isStatusRowSaved).length;
         $('#findingsStatusSummary').text('Saved: ' + savedCount + ' / Total: ' + rows.length);
 
+        var outcomeOptionsHtml = function(selected){
+            return '<option value="">Select Outcome</option>' +
+                '<option value="Established" ' + (selected === 'Established' ? 'selected' : '') + '>Established</option>' +
+                '<option value="Not Established" ' + (selected === 'Not Established' ? 'selected' : '') + '>Not Established</option>';
+        };
+
         var body = rows.map(function(r){
             var saved = isStatusRowSaved(r);
+            var id = parseInt(r.accusationId, 10);
+            var selectedOutcome = state.findingsRecomm.outcomes[id] || '';
             return '<tr>' +
                 '<td>' + esc(r.accusationText || '') + '</td>' +
                 '<td><span class="badge ' + (saved ? 'bg-success' : 'bg-warning text-dark') + '">' + (saved ? 'Saved' : 'Not Saved') + '</span></td>' +
+                '<td><label class="form-label mb-1">Outcome</label><select class="form-select outcome-select" data-accusation-id="' + esc(String(r.accusationId || '')) + '">' + outcomeOptionsHtml(selectedOutcome) + '</select></td>' +
                 '<td>' + esc(formatSavedOn(r.savedOn || r.lastSavedOn)) + '</td>' +
                 '<td><button type="button" class="btn btn-outline-primary btn-sm" data-findings-view-edit="' + esc(String(r.accusationId || '')) + '">View/Edit</button></td>' +
                 '</tr>';
         }).join('');
 
-        $('#findingsStatusGridBody').html(body || '<tr><td colspan="4" class="text-muted">No accusations available.</td></tr>');
+        $('#findingsStatusGridBody').html(body || '<tr><td colspan="5" class="text-muted">No accusations available.</td></tr>');
     }
 
     function loadFindingsForSelection(selectedAccusationId){
@@ -334,11 +374,13 @@ $(function(){
             ensureApiSuccess(resp, 'Failed to load findings for selected accusation.');
             var data = resp && (resp.data || resp.Data || {});
             var found = !!(data && (data.found === true || data.found === 'Y' || data.found === 'y' || data.found === 1));
+            state.findingsRecomm.outcomes[parsedId] = (data && (data.outcome || data.Outcome || '')) || '';
             if(found){
-                applyFindingsEditorContent(data.findingsText || data.findingText || '', data.recommendationText || '');
+                applyFindingsEditorContent(data.findingsText || data.findingText || '', data.recommendationText || data.recomText || '');
             } else {
                 applyFindingsEditorContent('', '');
             }
+            updateDsaVisibility();
             renderStepper();
         });
     }
@@ -346,10 +388,34 @@ $(function(){
     function loadFindingsStatusGrid(){
         return window.iidGetIidFindingsRecommStatus(complaintId).then(function(resp){
             ensureApiSuccess(resp, 'Failed to load findings status grid.');
-            syncFindingsStatusRows(extractData(resp));
+            var rows = extractData(resp);
+            rows.forEach(function(row){
+                var id = parseInt(row.accusationId, 10);
+                if(!isNaN(id)){
+                    state.findingsRecomm.outcomes[id] = row.outcome || row.Outcome || state.findingsRecomm.outcomes[id] || '';
+                }
+            });
+            syncFindingsStatusRows(rows);
             state.savedSteps[7] = state.findingsRecomm.statusRows.some(isStatusRowSaved);
             renderFindingsStatusGrid();
+            updateDsaVisibility();
         });
+    }
+
+    function hasEstablishedOutcome(){
+        var values = Object.keys(state.findingsRecomm.outcomes || {}).map(function(key){ return state.findingsRecomm.outcomes[key]; });
+        return values.some(function(val){ return String(val || '').toLowerCase() === 'established'; });
+    }
+
+    function updateDsaVisibility(){
+        var shouldShowDsa = hasEstablishedOutcome();
+        state.isDsaVisible = shouldShowDsa;
+        if(!shouldShowDsa){
+            state.savedSteps[9] = true;
+            state.dirtySteps[9] = false;
+            if(currentStep === 9){ currentStep = 7; }
+        }
+        renderStepper();
     }
 
     function loadFindingsModule(){
@@ -496,8 +562,8 @@ $(function(){
                         '</div>' +
                         '<div class="table-responsive">' +
                             '<table class="table table-sm align-middle">' +
-                                '<thead><tr><th>Accusation Title</th><th>Status</th><th>Last Saved On</th><th>Action</th></tr></thead>' +
-                                '<tbody id="findingsStatusGridBody"><tr><td colspan="4" class="text-muted">No accusations available.</td></tr></tbody>' +
+                                '<thead><tr><th>Accusation Title</th><th>Status</th><th>Outcome</th><th>Last Saved On</th><th>Action</th></tr></thead>' +
+                                '<tbody id="findingsStatusGridBody"><tr><td colspan="5" class="text-muted">No accusations available.</td></tr></tbody>' +
                             '</table>' +
                         '</div>' +
                     '</div>' +
@@ -596,10 +662,44 @@ $(function(){
             if(state.findingsRecomm.selectedAccusationId === '' || state.findingsRecomm.selectedAccusationId === null || typeof state.findingsRecomm.selectedAccusationId === 'undefined') errs.push('Accusation selection is required.');
             if(!has(state.findingsRecomm.findingText)) errs.push('Findings text is required.');
             if(!has(state.findingsRecomm.recommendationText)) errs.push('Recommendation text is required.');
+            var selectedOutcome = state.findingsRecomm.outcomes[parseInt(state.findingsRecomm.selectedAccusationId, 10)] || '';
+            if(!has(selectedOutcome)) errs.push('Outcome is required for selected accusation.');
         }
         if(step === 8 && !state.violations.some(function(x){ return has(x.category) && has(x.violationDetail) && has(x.referenceText) && has(x.recommendation); })) errs.push('At least one complete violation row is required.');
-        if(step === 9 && !state.dsa.some(function(x){ return has(x.personName) || has(x.dsaStatus); })) errs.push('At least one DSA row is required.');
+        if(step === 9 && state.isDsaVisible && !state.dsa.some(function(x){ return has(x.personName) || has(x.dsaStatus); })) errs.push('At least one DSA row is required.');
         return errs;
+    }
+
+    function validateStepForFinalSubmit(step){
+        var missingFields = [];
+        var has = function(v){ return !!(v && String(v).trim()); };
+        if(step === 2 && !state.accusations.some(function(x){ return has(x.accusationText); })) missingFields.push('At least one accusation is required');
+        if(step === 3 && !state.accusedEmployeeRows.length && !state.accusedManualRows.length) missingFields.push('At least one accused row is required');
+        if(step === 4 && !state.records.some(function(x){ return has(x.recordTitle) || has(x.recordDetails); })) missingFields.push('At least one record scrutinized row is required');
+        if(step === 5){
+            if(!state.statementRegister.saved.length){
+                missingFields.push('At least one saved statement is required');
+            } else {
+                state.statementRegister.pending.forEach(function(row){
+                    if(!has(row.place)){
+                        missingFields.push('Place of Statement (' + (row.ppnoNumber || row.personName || 'Unknown') + ')');
+                    }
+                });
+            }
+        }
+        if(step === 6 && !state.evidence.length) missingFields.push('Upload Evidence File');
+        if(step === 7){
+            (state.findingsRecomm.statusRows || []).forEach(function(row){
+                var id = parseInt(row.accusationId, 10);
+                if(isNaN(id)){ return; }
+                if(!has(state.findingsRecomm.outcomes[id])){
+                    missingFields.push('Outcome (Accusation: ' + (row.accusationText || ('#' + id)) + ')');
+                }
+            });
+        }
+        if(step === 8 && !state.violations.some(function(x){ return has(x.category) && has(x.violationDetail) && has(x.referenceText) && has(x.recommendation); })) missingFields.push('At least one complete violation row is required');
+        if(step === 9 && state.isDsaVisible && !state.dsa.some(function(x){ return has(x.personName) || has(x.dsaStatus); })) missingFields.push('At least one DSA row is required');
+        return { ok: missingFields.length === 0, missingFields: missingFields };
     }
 
     function showValidation(step, errors){
@@ -942,12 +1042,13 @@ $(function(){
             var selectedAccusationId = parseInt(state.findingsRecomm.selectedAccusationId, 10);
             var findingHtml = (window.tinymce && window.tinymce.get('findingTextHtml') ? window.tinymce.get('findingTextHtml').getContent() : state.findingsRecomm.findingText) || '';
             var recommendationHtml = (window.tinymce && window.tinymce.get('recommendationTextHtml') ? window.tinymce.get('recommendationTextHtml').getContent() : state.findingsRecomm.recommendationText) || '';
+            var outcome = state.findingsRecomm.outcomes[selectedAccusationId] || '';
             state.findingsRecomm.findingText = findingHtml;
             state.findingsRecomm.recommendationText = recommendationHtml;
 
-            return window.iidSaveIidFindingsRecommByAccusation({ complaintId: complaintId, accusationId: selectedAccusationId, findingsText: findingHtml, recommendationText: recommendationHtml }).then(function(resp){
+            return window.iidSaveIidFindingsRecommByAccusation({ complaintId: complaintId, accusationId: selectedAccusationId, findingsText: findingHtml, recomText: recommendationHtml, outcome: outcome }).then(function(resp){
                 ensureApiSuccess(resp, 'Findings & recommendations save failed.');
-                upsertFindingsStatusRow({ accusationId: selectedAccusationId, accusationText: (state.findingsRecomm.accusationOptions || []).filter(function(x){ return parseInt(x.accusationId, 10) === selectedAccusationId; }).map(function(x){ return x.accusationText; })[0] || '', isSaved: true, savedOn: (resp && resp.savedOn) || (resp && resp.data && resp.data.savedOn) || new Date().toISOString() });
+                upsertFindingsStatusRow({ accusationId: selectedAccusationId, accusationText: (state.findingsRecomm.accusationOptions || []).filter(function(x){ return parseInt(x.accusationId, 10) === selectedAccusationId; }).map(function(x){ return x.accusationText; })[0] || '', isSaved: true, outcome: outcome, savedOn: (resp && resp.savedOn) || (resp && resp.data && resp.data.savedOn) || new Date().toISOString() });
                 return loadFindingsStatusGrid().then(function(){
                     state.savedSteps[7] = (state.findingsRecomm.statusRows || []).some(isStatusRowSaved);
                     state.dirtySteps[7] = false;
@@ -985,6 +1086,48 @@ $(function(){
         renderCurrent();
     }
 
+    function markSectionCompleted(step){
+        var errs = validateStep(step);
+        if(step === 7){
+            var step7Completion = validateStepForFinalSubmit(7);
+            errs = errs.concat(step7Completion.missingFields);
+        }
+        showValidation(step, errs);
+        if(errs.length){ return $.Deferred().reject({ message: 'Please complete required fields before marking this section completed.' }).promise(); }
+        state.savedSteps[step] = true;
+        state.dirtySteps[step] = false;
+        renderStepper();
+        return $.Deferred().resolve({ message: 'Section marked completed.' }).promise();
+    }
+
+    function showFinalSubmitErrors(missingSections, missingFieldsBySection){
+        var html = '<div><strong>Missing sections:</strong> ' + esc(missingSections.join(', ')) + '</div>';
+        html += '<div class="mt-2"><strong>Missing fields:</strong><ul>';
+        Object.keys(missingFieldsBySection).forEach(function(section){
+            missingFieldsBySection[section].forEach(function(field){
+                html += '<li><strong>' + esc(section) + '</strong> → ' + esc(field) + '</li>';
+            });
+        });
+        html += '</ul></div>';
+
+        if(window.bootstrap && window.bootstrap.Modal){
+            var modal = $('#iidValidationModal');
+            if(!modal.length){
+                $('body').append('<div class="modal fade" id="iidValidationModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-lg"><div class="modal-content"><div class="modal-header"><h5 class="modal-title">Final Submit Validation</h5><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button></div><div class="modal-body" id="iidValidationModalBody"></div><div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button></div></div></div></div>');
+                modal = $('#iidValidationModal');
+            }
+            $('#iidValidationModalBody').html(html);
+            window.bootstrap.Modal.getOrCreateInstance(modal[0]).show();
+            return;
+        }
+
+        var lines = ['Missing sections: ' + missingSections.join(', '), 'Missing fields:'];
+        Object.keys(missingFieldsBySection).forEach(function(section){
+            missingFieldsBySection[section].forEach(function(field){ lines.push('- ' + section + ' -> ' + field); });
+        });
+        alert(lines.join('\n'));
+    }
+
     function loadComplaint(){
         return $.post(g_asiBaseURL + '/ApiCalls/GetComplaint', { complaintId: complaintId }).done(function(resp){
             ensureApiSuccess(resp, 'Failed to load complaint snapshot.');
@@ -1009,9 +1152,21 @@ $(function(){
     }
 
     $(document).on('click', '[data-step-jump]', function(){ navigateToStep(parseInt($(this).data('step-jump'), 10)); });
-    $(document).on('click', '[data-prev]', function(){ if(currentStep > 1){ navigateToStep(currentStep - 1); } });
-    $(document).on('click', '[data-next]', function(){ var e = validateStep(currentStep); showValidation(currentStep, e); if(!e.length && currentStep < steps.length){ navigateToStep(currentStep + 1); } });
-    $(document).on('click', '[data-save]', function(){ saveStep(currentStep).done(function(result){ state.savedSteps[currentStep] = true; state.dirtySteps[currentStep] = false; showAlert((result && result.message) || 'Saved successfully.', 'success'); renderCurrent(true); }).fail(function(err){ showAlert((err && err.message) || 'Save failed.', 'danger'); }); });
+    $(document).on('click', '[data-prev]', function(){ var prevStep = getPreviousVisibleStep(currentStep); if(prevStep){ navigateToStep(prevStep); } });
+    $(document).on('click', '[data-next]', function(){ var e = validateStep(currentStep); showValidation(currentStep, e); if(!e.length){ var nextStep = getNextVisibleStep(currentStep); if(nextStep){ navigateToStep(nextStep); } } });
+    $(document).on('click', '[data-save]', function(){
+        var action = currentStep === 7 ? markSectionCompleted(currentStep) : saveStep(currentStep);
+        action.done(function(result){
+            if(currentStep !== 7){
+                state.savedSteps[currentStep] = true;
+                state.dirtySteps[currentStep] = false;
+            }
+            showAlert((result && result.message) || 'Saved successfully.', 'success');
+            renderCurrent(true);
+        }).fail(function(err){
+            showAlert((err && err.message) || 'Save failed.', 'danger');
+        });
+    });
 
     $(document).on('click', '[data-step3-search]', function(){
         var ppno = digitsOnly(state.accusedEmployeeDraft.ppnoNumber);
@@ -1160,16 +1315,47 @@ $(function(){
         });
     });
 
+    $(document).on('change', '.outcome-select', function(){
+        var accusationId = parseInt($(this).data('accusation-id'), 10);
+        if(isNaN(accusationId)){ return; }
+        state.findingsRecomm.outcomes[accusationId] = $(this).val() || '';
+        markDirty(7);
+        updateDsaVisibility();
+    });
+
     $(document).on('click', '#finalSubmitBtn', function(){
-        var errors = [];
-        for(var i=2;i<=steps.length;i++){ errors = errors.concat(validateStep(i)); }
-        if(errors.length){ showAlert('Complete all mandatory sections before final submit.', 'danger'); return; }
+        var mandatorySteps = [2,3,4,5,6,7,8].concat(state.isDsaVisible ? [9] : []);
+        var sectionValidators = mandatorySteps.map(function(stepId){
+            var stepInfo = steps.filter(function(s){ return s.id === stepId; })[0] || { title: 'Step ' + stepId };
+            return {
+                stepId: stepId,
+                stepTitle: stepInfo.title,
+                validate: function(){ return validateStepForFinalSubmit(stepId); }
+            };
+        });
+
+        var missingSections = [];
+        var missingFieldsBySection = {};
+        sectionValidators.forEach(function(validator){
+            var result = validator.validate();
+            if(!result.ok){
+                missingSections.push(validator.stepTitle);
+                missingFieldsBySection[validator.stepTitle] = result.missingFields;
+            }
+        });
+
+        if(missingSections.length){
+            showFinalSubmitErrors(missingSections, missingFieldsBySection);
+            return;
+        }
         finalizeReport();
     });
 
     if(!complaintId){ showAlert('Complaint ID is missing. Open this page from Task List.', 'danger'); return; }
 
-    loadComplaint().done(function(){ renderCurrent(); }).fail(function(){ showAlert('Failed to load inquiry wizard data.', 'danger'); renderCurrent(true); });
+    loadComplaint().done(function(){
+        loadStepData(7).always(function(){ renderCurrent(); });
+    }).fail(function(){ showAlert('Failed to load inquiry wizard data.', 'danger'); renderCurrent(true); });
 });
 </script>
 
