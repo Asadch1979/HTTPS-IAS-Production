@@ -108,8 +108,8 @@ namespace AIS.Controllers
             if (!sessionHandler.HasSbpAccess())
                 {
                 TempData["ErrorMessage"] = "Please authenticate to access SBP Observation Register.";
-                var model = CreateRegisterViewModel(false, null, "Please authenticate to access SBP Observation Register.", null, FetchObservationTypes());
-                return View(model);
+                var md = CreateRegisterViewModel(false, null, "Please authenticate to access SBP Observation Register.", null, FetchObservationTypes());
+                return View(md);
                 }
 
             var observationTypes = FetchObservationTypes();
