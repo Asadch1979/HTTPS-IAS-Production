@@ -81,16 +81,22 @@
                         <label class="form-label">Source</label>
                         <select class="form-select" id="Source" asp-for="Source" required>
                             <option value="">--Select--</option>
-                            <option>Internal</option>
-                            <option>External</option>
-                            <option>Anonymous</option>
-                            <option>Regulatory</option>
-                            <option>Other</option>
+                            <option>SQ&amp;CMD</option>
+                            <option>President Office</option>
+                            <option>Chairman Office</option>
+                            <option>HO Department (Specify Manually)</option>
+                            <option>NAB</option>
+                            <option>FIA</option>
+                            <option>SBP</option>
+                            <option>Banking Muhtasib</option>
+                            <option>Prime Minister Secretariat</option>
+                            <option>Ministry of Finance</option>
+                            <option>Others (Specify Manually)</option>
                         </select>
                     </div>
                     <div class="mb-2 d-none" id="sourceOtherDiv">
-                        <label class="form-label">Source (Other)</label>
-                        <input type="text" class="form-control" asp-for="SourceOtherText" />
+                        <label class="form-label" id="sourceOtherLabel">Specify Source</label>
+                        <input type="text" class="form-control" id="SourceOtherText" asp-for="SourceOtherText" />
                     </div>
                     <div class="mb-2">
                         <label class="form-label">Pertains To</label>
@@ -199,14 +205,28 @@
             return localDate.toISOString().split('T')[0];
         }
 
-        function toggleSource(){
-            var val = $('#Source').val();
-            if(val === 'Other'){
-                $('#sourceOtherDiv').removeClass('d-none');
-                $('#sourceOtherDiv input');
+        function toggleSourceManual(){
+            var selectedText = $('#Source option:selected').text() || '';
+            var $manualDiv = $('#sourceOtherDiv');
+            var $manualInput = $('#SourceOtherText');
+            var $manualLabel = $('#sourceOtherLabel');
+            var requiresManual = selectedText.indexOf('(Specify Manually)') !== -1;
+
+            if(requiresManual){
+                $manualDiv.removeClass('d-none');
+                $manualInput.prop('required', true);
+
+                if(selectedText.indexOf('HO Department') !== -1){
+                    $manualLabel.text('HO Department Name');
+                    $manualInput.attr('placeholder', 'Enter HO Department Name');
+                } else {
+                    $manualLabel.text('Other Source Name');
+                    $manualInput.attr('placeholder', 'Enter Source Name');
+                }
             } else {
-                $('#sourceOtherDiv').addClass('d-none');
-                $('#sourceOtherDiv input').val('');
+                $manualDiv.addClass('d-none');
+                $manualInput.val('').prop('required', false).attr('placeholder', '');
+                $manualLabel.text('Specify Source');
             }
         }
 
@@ -266,7 +286,7 @@
             });
         }
 
-        $('#Source').on('change', toggleSource);
+        $('#Source').on('change', toggleSourceManual);
         $('#PertainsTo').on('change', togglePertainsTo);
         $('#FieldType').on('change', toggleFieldType);
         $('#HOUnitTypeId').on('change', loadHoUnits);
@@ -283,7 +303,7 @@
         });
 
 
-        toggleSource();
+        toggleSourceManual();
         togglePertainsTo();
 
         var today = getTodayDate();
