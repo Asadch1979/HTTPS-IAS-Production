@@ -1,0 +1,116 @@
+<div id="inquiryReportPrintTemplate" class="d-none">
+    <div class="print-a4-wrap">
+        <div class="print-title text-center">
+            <div class="fw-bold">INQUIRY REPORT</div>
+            <div class="fw-bold">INTO COMPLAINT NO. <span id="ptComplaintNo">-</span></div>
+            <div>(<span id="ptBranchTop">-</span>)</div>
+            <div>Conducted by</div>
+            <div>INVESTIGATION &amp; INQUIRY UNIT H.O</div>
+            <div class="mt-2 fw-bold">Annex-II</div>
+        </div>
+
+        <div class="text-center fw-bold mt-2">INQUIRY REPORT</div>
+        <div class="d-flex justify-content-between mb-2 mt-2">
+            <div><strong>Dated:</strong> <span id="ptReportDate">-</span></div>
+            <div><strong>Branch:</strong> <span id="ptBranchName">-</span></div>
+            <div><strong>Region:</strong> <span id="ptRegionName">-</span></div>
+        </div>
+
+        <h6>Complaint Details /Incident Reported</h6>
+        <p id="ptComplaintDetails">N/A</p>
+
+        <h6>Complainant Details (CNIC No./LC. No./Account No. /Mobile Number &amp; Address)</h6>
+        <p id="ptComplainantDetails">N/A</p>
+
+        <h6>Reference Details and Originating Process Center</h6>
+        <p id="ptReferenceDetails">N/A</p>
+
+        <h6>Details of Accusations (Annex-A)</h6>
+        <p id="ptAccusationsPara">N/A</p>
+
+        <h6>Main Alleged Accused Details (Name, Designation &amp; PP.NO.)</h6>
+        <p id="ptMainAccused">N/A</p>
+
+        <h6>Alleged Co-accused Details (Name, Designation &amp; PP.No)</h6>
+        <p id="ptCoAccused">N/A</p>
+
+        <h6>Inquiry Proceedings (Approach &amp; Methodology Adopted)</h6>
+        <p id="ptProceedings">N/A</p>
+
+        <h6>Details of Record Scrutinized</h6>
+        <p id="ptRecordsPara">N/A</p>
+
+        <h6>Time and place of Recording Statement of Complainant (In camera Session Please)</h6>
+        <p id="ptStatementsComplainant">N/A</p>
+
+        <h6>Time and place of Recording Statement of Accused (In camera Session Please)</h6>
+        <p id="ptStatementsAccused">N/A</p>
+
+        <h6>Details of Material Evidence with probable Implications</h6>
+        <p id="ptEvidencePara">N/A</p>
+
+        <h6>Details of Findings with probable Implications / corresponding reference of Policy/Procedure/SOPs/Circular Instructions Violated</h6>
+        <p id="ptFindingsPara">N/A</p>
+
+        <h6>Details of Clear Recommendations with probable Implications</h6>
+        <p id="ptRecommendationsPara">N/A</p>
+
+        <h6>Name with PP.No. of accused against whom DSAs framed</h6>
+        <p id="ptDsaPara">N/A</p>
+
+        <h6>Summary of Violations Statement</h6>
+        <p>Attached as Annex-III</p>
+
+        <div class="print-page-break"></div>
+
+        <div class="text-center fw-bold">Annex-III</div>
+        <div class="text-center fw-semibold mb-2">List of Internal /Procedural Violations/Policy Gaps / Control violations</div>
+        <h6>INTERNAL/PROCEDURAL VIOLATIONS</h6>
+        <p id="ptViolationsPara">N/A</p>
+    </div>
+</div>
+
+<style>
+@@media print {
+    body.printing-inquiry-report > :not(#inquiryReportPrintTemplate) {
+        display: none !important;
+    }
+
+    body.printing-inquiry-report #inquiryReportPrintTemplate {
+        display: block !important;
+        margin: 0;
+        padding: 0;
+    }
+}
+
+.print-a4-wrap {
+    width: 210mm;
+    min-height: 297mm;
+    margin: 0 auto;
+    background: #fff;
+    color: #000;
+    padding: 12mm 12mm 10mm;
+    font-size: 13px;
+    line-height: 1.4;
+}
+
+.print-title {
+    line-height: 1.35;
+}
+
+.print-a4-wrap h6 {
+    font-weight: 700;
+    margin-top: 10px;
+    margin-bottom: 4px;
+}
+
+.print-a4-wrap p {
+    margin-bottom: 8px;
+    white-space: pre-line;
+}
+
+.print-page-break {
+    page-break-before: always;
+    break-before: page;
+}
+</style>

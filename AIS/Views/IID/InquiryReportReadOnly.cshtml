@@ -9,7 +9,7 @@
         <h4 class="text-success mb-0">Inquiry Report (Read Only)</h4>
         <div class="d-flex gap-2">
             <a class="btn btn-outline-secondary" href="@Url.Action("MonitoringDashboard", "IID")">Back</a>
-            <button type="button" id="btnExportInquiryPdf" class="btn btn-danger">Export PDF</button>
+            <button type="button" id="btnGenerateInquiryPdf" class="btn btn-danger">Generate PDF</button>
         </div>
     </div>
 
@@ -108,7 +108,10 @@
             <table class="table table-sm table-bordered" id="tblApprovals"><thead><tr><th>Stage</th><th>By</th><th>Comments</th><th>Date</th></tr></thead><tbody></tbody></table>
         </div>
     </div>
+
 </div>
+
+@await Html.PartialAsync("_InquiryReport_PrintTemplate")
 
 @section Scripts{
 <script src="~/js/iid/inquiryReportReadOnly.js"></script>

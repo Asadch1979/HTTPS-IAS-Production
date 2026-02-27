@@ -1,5 +1,6 @@
 (function (window) {
     var inquiryPageId = 5;
+    var lastPayload = null;
 
     function esc(v) { return $('<div/>').text(v || '').html(); }
     function pick(obj, keys, fallback) {
@@ -62,6 +63,7 @@
     }
 
     function bindAll(payload) {
+        lastPayload = payload || {};
         var header = pick(payload, ['complaintHeader', 'header', 'summary'], {}) || {};
         bindSummary(header);
 
@@ -79,6 +81,132 @@
         setNarrative('#txtProceedings', pick(report, ['proceedings', 'Proceedings']));
         setNarrative('#txtFindings', pick(report, ['findings', 'Findings', 'findingText', 'FindingText']));
         setNarrative('#txtRecommendation', pick(report, ['recommendation', 'Recommendation', 'recommendationText', 'RecommendationText']));
+    }
+
+    function formatDateTitlePart(value) {
+        if (!value) { return new Date().toISOString().slice(0, 10); }
+        var dt = new Date(value);
+        if (isNaN(dt.getTime())) {
+            var cleaned = value.toString().trim().replace(/[\s/\\:]+/g, '-');
+            return cleaned || new Date().toISOString().slice(0, 10);
+        }
+        return dt.toISOString().slice(0, 10);
+    }
+
+    function cleanFilePart(value, fallback) {
+        var text = (value || fallback || '').toString().trim();
+        return (text || fallback || 'NA').replace(/[^A-Za-z0-9._-]+/g, '_').replace(/^_+|_+$/g, '');
+    }
+
+    function formatRowsParagraph(rows, mapFn) {
+        if (!rows || !rows.length) { return 'N/A'; }
+        return rows.map(function (row, idx) {
+            return (idx + 1) + '. ' + mapFn(row);
+        }).join('\n');
+    }
+
+    function fillPrintTemplate(payload) {
+        var header = pick(payload, ['complaintHeader', 'header', 'summary'], {}) || {};
+        var report = pick(payload, ['inquiryReport', 'report'], payload) || {};
+        var accused = toList(payload, ['accusedList', 'accused']);
+        var accusations = toList(payload, ['accusations', 'accusedAccusations']);
+        var records = toList(payload, ['recordsScrutinized', 'records']);
+        var statements = toList(payload, ['statementRegister', 'statements']);
+        var evidence = toList(payload, ['evidenceFiles', 'evidence']);
+        var violations = toList(payload, ['violationsList', 'violations']);
+        var dsa = toList(payload, ['dsaList', 'dsa']);
+
+        var complaintNo = pick(header, ['complaintNo', 'ComplaintNo'], 'N/A');
+        var branchName = pick(header, ['branchName', 'BranchName', 'branch', 'Branch', 'unitName', 'UnitName'], 'N/A');
+        var regionName = pick(header, ['regionName', 'RegionName', 'region', 'Region'], 'N/A');
+        var reportDate = pick(header, ['reportDate', 'ReportDate', 'updatedOn', 'UpdatedOn'], new Date().toISOString().slice(0, 10));
+
+        $('#ptComplaintNo').text(complaintNo);
+        $('#ptBranchTop,#ptBranchName').text(branchName);
+        $('#ptRegionName').text(regionName);
+        $('#ptReportDate').text(reportDate);
+        $('#ptComplaintDetails').text(pick(report, ['gist', 'Gist', 'findingText', 'FindingText'], 'N/A'));
+        $('#ptComplainantDetails').text([pick(header, ['complainantName', 'ComplainantName'], ''), pick(header, ['complainantCnic', 'ComplainantCNIC', 'cnic', 'CNIC'], '')].filter(Boolean).join(', ') || 'N/A');
+        $('#ptReferenceDetails').text(pick(header, ['source', 'Source', 'nature', 'Nature'], 'N/A'));
+        $('#ptAccusationsPara').text(formatRowsParagraph(accusations, function (row) {
+            return pick(row, ['accusation', 'accusationText', 'title', 'details'], 'N/A');
+        }));
+
+        var mainAccused = accused.filter(function (x) {
+            var role = (pick(x, ['roleType', 'role', 'accusedRole'], '') || '').toString().toLowerCase();
+            return role.indexOf('main') >= 0 || role.indexOf('primary') >= 0;
+        });
+        var coAccused = accused.filter(function (x) {
+            return mainAccused.indexOf(x) < 0;
+        });
+
+        function accusedLine(row) {
+            return [pick(row, ['name', 'personName', 'employeeName', 'accusedName'], ''), pick(row, ['designation', 'employeeDesignation'], ''), pick(row, ['ppNo', 'ppno', 'ppnoNumber'], '')].filter(Boolean).join(', ');
+        }
+
+        $('#ptMainAccused').text(formatRowsParagraph(mainAccused.length ? mainAccused : accused, accusedLine));
+        $('#ptCoAccused').text(formatRowsParagraph(coAccused, accusedLine));
+        $('#ptProceedings').text(pick(report, ['proceedings', 'Proceedings'], 'N/A'));
+        $('#ptRecordsPara').text(formatRowsParagraph(records, function (row) {
+            return [pick(row, ['recordTitle', 'title'], ''), pick(row, ['details', 'recordDetails', 'recordDetail'], '')].filter(Boolean).join(' - ');
+        }));
+
+        var complainantSt = statements.filter(function (s) {
+            var role = (pick(s, ['role', 'roleType', 'designation'], '') || '').toString().toLowerCase();
+            return role.indexOf('complain') >= 0;
+        });
+        var accusedSt = statements.filter(function (s) {
+            return complainantSt.indexOf(s) < 0;
+        });
+        function statementLine(s) {
+            return [pick(s, ['name', 'personName'], ''), pick(s, ['statementDate', 'statementDatetime', 'date'], ''), pick(s, ['mode', 'modeType', 'recordingMode'], '')].filter(Boolean).join(', ');
+        }
+        $('#ptStatementsComplainant').text(formatRowsParagraph(complainantSt, statementLine));
+        $('#ptStatementsAccused').text(formatRowsParagraph(accusedSt, statementLine));
+        $('#ptEvidencePara').text(formatRowsParagraph(evidence, function (row) { return pick(row, ['fileName', 'name'], 'N/A'); }));
+        $('#ptFindingsPara').text(pick(report, ['findings', 'Findings', 'findingText', 'FindingText'], 'N/A'));
+        $('#ptRecommendationsPara').text(pick(report, ['recommendation', 'Recommendation', 'recommendationText', 'RecommendationText'], 'N/A'));
+        $('#ptDsaPara').text(formatRowsParagraph(dsa, function (row) {
+            return [pick(row, ['person', 'personName', 'name'], ''), pick(row, ['designation'], ''), pick(row, ['ppNo', 'ppno', 'ppnoNumber'], '')].filter(Boolean).join(', ');
+        }));
+        $('#ptViolationsPara').text(formatRowsParagraph(violations, function (row) {
+            return [pick(row, ['detail', 'violationDetail', 'details'], ''), pick(row, ['reference', 'referenceText'], ''), pick(row, ['recommendation'], '')].filter(Boolean).join(' | ');
+        }));
+
+        return {
+            complaintNo: complaintNo,
+            branchName: branchName,
+            reportDate: reportDate
+        };
+    }
+
+    function generatePdf(complaintId) {
+        var $btn = $('#btnGenerateInquiryPdf');
+        if ($btn.prop('disabled') || !complaintId || !lastPayload) { return; }
+
+        var originalBtnText = $btn.text();
+        var originalTitle = document.title;
+        $btn.prop('disabled', true).text('Preparing...');
+
+        var titleParts = fillPrintTemplate(lastPayload);
+        var fileName = [
+            'InquiryReport',
+            cleanFilePart(titleParts.complaintNo, complaintId),
+            cleanFilePart(titleParts.branchName, 'Branch'),
+            cleanFilePart(formatDateTitlePart(titleParts.reportDate), new Date().toISOString().slice(0, 10))
+        ].join('_');
+
+        document.title = fileName;
+        document.body.classList.add('printing-inquiry-report');
+
+        setTimeout(function () {
+            window.print();
+            setTimeout(function () {
+                document.body.classList.remove('printing-inquiry-report');
+                document.title = originalTitle;
+                $btn.prop('disabled', false).text(originalBtnText);
+            }, 300);
+        }, 100);
     }
 
     function loadReadOnlyData(complaintId) {
@@ -111,41 +239,6 @@
             });
     }
 
-    function exportPdf(complaintId) {
-        var $btn = $('#btnExportInquiryPdf');
-        if ($btn.prop('disabled') || !complaintId) { return; }
-
-        var original = $btn.text();
-        $btn.prop('disabled', true).text('Exporting...');
-
-        $.ajax({
-            url: (window.g_asiBaseURL || '') + '/ApiCalls/ExportIidInquiryReportPdf',
-            method: 'POST',
-            contentType: 'application/json; charset=utf-8',
-            data: JSON.stringify({ complaintId: complaintId }),
-            xhrFields: { responseType: 'blob' }
-        }).done(function (blob, status, xhr) {
-            var fileName = 'InquiryReport_' + complaintId + '.pdf';
-            var disposition = xhr.getResponseHeader('Content-Disposition') || '';
-            var match = disposition.match(/filename\*?=(?:UTF-8''|\")?([^\";]+)/i);
-            if (match && match[1]) {
-                fileName = decodeURIComponent(match[1].replace(/\"/g, '').trim());
-            }
-            var url = window.URL.createObjectURL(blob);
-            var a = document.createElement('a');
-            a.href = url;
-            a.download = fileName;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            window.URL.revokeObjectURL(url);
-        }).fail(function () {
-            showAlert('Failed to export PDF.');
-        }).always(function () {
-            $btn.prop('disabled', false).text(original);
-        });
-    }
-
     $(function () {
         var complaintId = Number($('#iidReadOnlyRoot').data('complaint-id')) || 0;
 
@@ -163,6 +256,6 @@
             loadReadOnlyData(complaintId);
         }
 
-        $('#btnExportInquiryPdf').on('click', function () { exportPdf(complaintId); });
+        $('#btnGenerateInquiryPdf').on('click', function () { generatePdf(complaintId); });
     });
 }(window));
