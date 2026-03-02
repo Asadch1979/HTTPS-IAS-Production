@@ -24,7 +24,7 @@
                 @Html.AntiForgeryToken()
                 <input type="hidden" asp-for="ComplaintId" value="@complaintId" />
                 <input type="hidden" name="AssessmentId" id="AssessmentId" value="@assessmentId" />
-                <input type="hidden" asp-for="AssignedToUnit" />
+                
                 <div class="mb-3">
                     <label class="form-label d-block">Action</label>
                     <div class="form-check form-check-inline">
@@ -47,7 +47,9 @@
                 </div>
                 <div class="mb-3">
                     <label class="form-label">Assigned I&amp;I Unit</label>
-                    <input type="text" class="form-control" id="assignedUnitDisplay" readonly />
+                    <select class="form-select" asp-for="AssignedToUnit" id="AssignedToUnit" required>
+                        <option value="">--Select--</option>
+                    </select>
                 </div>
                 <button type="submit" class="btn btn-primary">Submit Decision</button>
             </form>
@@ -78,8 +80,6 @@
         var complaintId = '@complaintId';
         var currentAssessmentId = '@assessmentId';
         var assignedUnitId = 0;
-        var assignedUnitName = "";
-        var unitLookup = {};
         var pageId = 2;
 
         function showIidAlert(title, message){
@@ -96,30 +96,17 @@
         function loadComplaintDropdown(pageId){
             return $.post(g_asiBaseURL + '/ApiCalls/GetComplaintsDropdown', { pageId: pageId });
         }
-
         function loadUnits(){
-            $.get(g_asiBaseURL + '/ApiCalls/GetIiUnits', function(d){
+            $('#AssignedToUnit').empty().append('<option value="">--Select--</option>');
+            return $.get(g_asiBaseURL + '/ApiCalls/GetIiUnits', function(d){
                 $.each(d, function(i, unit){
-                    unitLookup[unit.unitId] = unit.unitName;
+                    $('#AssignedToUnit').append('<option value="'+unit.unitId+'">'+unit.unitName+'</option>');
                 });
-                updateAssignedUnitLabel();
             }).fail(function(){
                 showIidAlert('Failed', 'Failed to load inspection units.');
             });
         }
 
-        function updateAssignedUnitLabel(){
-            if(assignedUnitName){
-                $('#assessmentUnit').text(assignedUnitName);
-                $('#assignedUnitDisplay').val(assignedUnitName);
-                return;
-            }
-
-            if(assignedUnitId && unitLookup[assignedUnitId]){
-                $('#assessmentUnit').text(unitLookup[assignedUnitId]);
-                $('#assignedUnitDisplay').val(unitLookup[assignedUnitId]);
-            }
-        }
 
         function loadPageDataByComplaintId(selectedComplaintId){
             complaintId = selectedComplaintId;
@@ -140,10 +127,8 @@
                     currentAssessmentId = d.assessmentId || d.AssessmentId || currentAssessmentId || 0;
                     $('#AssessmentId').val(currentAssessmentId);
 
-                    assignedUnitId = d.assignedUnitId || 0;
-                    assignedUnitName = normalized.AssignedUnit || '';
-                    $('#reviewForm [name="AssignedToUnit"]').val(assignedUnitId || '');
-                    updateAssignedUnitLabel();
+                    assignedUnitId = d.assignedUnitId || d.AssignedToUnit || d.assignedToUnit || d.AssignedUnitId || 0;
+                    $('#AssignedToUnit').val(String(assignedUnitId || '')).trigger('change');
                 },
                 error: function(){
                     showIidAlert('Failed', 'Failed to load complaint details.');
@@ -200,7 +185,11 @@
             });
         });
 
-        loadUnits();
+        loadUnits().then(function(){
+            if(assignedUnitId){
+                $('#AssignedToUnit').val(String(assignedUnitId)).trigger('change');
+            }
+        });
         loadComplaintDropdown(pageId)
             .done(function(resp){
                 if(resp && resp.ok === false){
