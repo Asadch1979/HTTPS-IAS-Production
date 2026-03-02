@@ -844,6 +844,55 @@ namespace AIS.Controllers
             return (v == null || v == DBNull.Value) ? (int?)null : Convert.ToInt32(v);
             }
 
+
+
+        public IDictionary<string, object> GetHeadReviewByComplaintId(int complaintId)
+            {
+            using var con = this.DatabaseConnection();
+            using (OracleCommand cmd = con.CreateCommand())
+                {
+                cmd.CommandText = "PKG_INQ.GET_HEAD_REVIEW";
+                cmd.CommandType = CommandType.StoredProcedure;
+                cmd.BindByName = true;
+                cmd.Parameters.Add("p_complaint_id", OracleDbType.Int32).Value = complaintId;
+                cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+
+                IDictionary<string, object> model = null;
+
+                string FormatDate(object value)
+                    {
+                    if (value == null || value == DBNull.Value)
+                        {
+                        return string.Empty;
+                        }
+
+                    return Convert.ToDateTime(value).ToString("yyyy-MM-dd");
+                    }
+
+                using (var rdr = cmd.ExecuteReader())
+                    {
+                    if (rdr.Read())
+                        {
+                        model = new Dictionary<string, object>
+                            {
+                            ["reviewId"] = HasColumn(rdr, "REVIEW_ID") && rdr["REVIEW_ID"] != DBNull.Value ? Convert.ToInt32(rdr["REVIEW_ID"]) : 0,
+                            ["complaintId"] = HasColumn(rdr, "COMPLAINT_ID") && rdr["COMPLAINT_ID"] != DBNull.Value ? Convert.ToInt32(rdr["COMPLAINT_ID"]) : complaintId,
+                            ["assessmentId"] = HasColumn(rdr, "ASSESSMENT_ID") && rdr["ASSESSMENT_ID"] != DBNull.Value ? Convert.ToInt32(rdr["ASSESSMENT_ID"]) : 0,
+                            ["directions"] = HasColumn(rdr, "DIRECTIONS") ? rdr["DIRECTIONS"]?.ToString() ?? string.Empty : string.Empty,
+                            ["assignedToUnit"] = HasColumn(rdr, "ASSIGNED_TO_UNIT") && rdr["ASSIGNED_TO_UNIT"] != DBNull.Value ? Convert.ToInt32(rdr["ASSIGNED_TO_UNIT"]) : 0,
+                            ["teamLeadId"] = HasColumn(rdr, "TEAM_LEAD") && rdr["TEAM_LEAD"] != DBNull.Value ? Convert.ToInt32(rdr["TEAM_LEAD"]) : (int?)null,
+                            ["teamMembers"] = HasColumn(rdr, "TEAM_MEMBERS") ? rdr["TEAM_MEMBERS"]?.ToString() ?? string.Empty : string.Empty,
+                            ["assignedOn"] = HasColumn(rdr, "ASSIGNED_ON") ? FormatDate(rdr["ASSIGNED_ON"]) : string.Empty,
+                            ["dueDate"] = HasColumn(rdr, "DUE_DATE") ? FormatDate(rdr["DUE_DATE"]) : string.Empty,
+                            ["referredBackComments"] = HasColumn(rdr, "REFERRED_BACK_COMMENTS") ? rdr["REFERRED_BACK_COMMENTS"]?.ToString() ?? string.Empty : string.Empty,
+                            ["action"] = HasColumn(rdr, "ACTION") ? rdr["ACTION"]?.ToString() ?? string.Empty : string.Empty
+                            };
+                        }
+                    }
+
+                return model;
+                }
+            }
         public IDictionary<string, object> GetIidPlanDetails(int complaintId)
             {
             using var con = this.DatabaseConnection();
