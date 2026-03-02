@@ -157,7 +157,8 @@
                     </div>
                     <div class="mb-2">
                         <label class="form-label">Upload FFR (PDF)</label>
-                        <input type="file" class="form-control" name="FfrFile" accept="application/pdf" required />
+                        <input type="file" class="form-control" id="FfrFile" name="FfrFile" accept="application/pdf" />
+                        <small class="text-danger d-none" id="ffrValidationMessage">FFR upload is mandatory when Source is SQ&amp;CMD.</small>
                     </div>
                     <div class="mb-2">
                         <label class="form-label">Upload Other Evidence</label>
@@ -230,6 +231,15 @@
             }
         }
 
+        function onSourceChange(){
+            var sourceValue = ($('#Source').val() || '').trim();
+            var requiresFfr = sourceValue === 'SQ&CMD';
+            $('#FfrFile').prop('required', requiresFfr);
+            if(!requiresFfr){
+                $('#ffrValidationMessage').addClass('d-none');
+            }
+        }
+
         function togglePertainsTo(){
             var pertainsTo = $('#PertainsTo').val();
             $('#fieldTypeDiv,#hoUnitTypeDiv,#hoUnitDiv,#regionDiv,#branchDiv').addClass('d-none');
@@ -286,7 +296,10 @@
             });
         }
 
-        $('#Source').on('change', toggleSourceManual);
+        $('#Source').on('change', function(){
+            toggleSourceManual();
+            onSourceChange();
+        });
         $('#PertainsTo').on('change', togglePertainsTo);
         $('#FieldType').on('change', toggleFieldType);
         $('#HOUnitTypeId').on('change', loadHoUnits);
@@ -304,6 +317,7 @@
 
 
         toggleSourceManual();
+        onSourceChange();
         togglePertainsTo();
 
         var today = getTodayDate();
@@ -359,6 +373,20 @@
 
             var fd = new FormData(this);
             var receivedOnDate = $('#ReceivedOn').val();
+            var selectedSource = ($('#Source').val() || '').trim();
+            var hasFfr = $('#FfrFile')[0] && $('#FfrFile')[0].files && $('#FfrFile')[0].files.length > 0;
+
+            if(selectedSource === 'SQ&CMD' && !hasFfr){
+                $('#ffrValidationMessage').removeClass('d-none');
+                showIidAlert('Failed', 'FFR upload is mandatory when Source is SQ&CMD.');
+                $('#FfrFile').focus();
+                return;
+            }
+
+            if(selectedSource !== 'SQ&CMD'){
+                $('#ffrValidationMessage').addClass('d-none');
+            }
+
             if(receivedOnDate && receivedOnDate > today){
                 showIidAlert('Failed', 'Received On date cannot be a future date.');
                 $('#ReceivedOn').focus();
