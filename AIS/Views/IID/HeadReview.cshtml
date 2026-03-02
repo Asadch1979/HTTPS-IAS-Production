@@ -42,16 +42,6 @@
                     <div class="form-text" id="commentsHint">Provide guidance for the unit or reasons for referral.</div>
                 </div>
                 <div class="mb-3">
-                    <label class="form-label">Team Lead</label>
-                    <select class="form-select" asp-for="TeamLeadId" id="TeamLeadId">
-                        <option value="">--Select Team Lead--</option>
-                    </select>
-                </div>
-                <div class="mb-3">
-                    <label class="form-label">Team Members</label>
-                    <textarea class="form-control" asp-for="TeamMembers" id="TeamMembers" rows="3" placeholder="Enter team members"></textarea>
-                </div>
-                <div class="mb-3">
                     <label class="form-label">Assigned On</label>
                     <input type="text" class="form-control" id="assignedOnDisplay" readonly />
                 </div>
@@ -90,8 +80,6 @@
         var assignedUnitId = 0;
         var assignedUnitName = "";
         var unitLookup = {};
-        var employeeLookup = {};
-        var manualAssignedOn = false;
         var pageId = 2;
 
         function showIidAlert(title, message){
@@ -117,61 +105,6 @@
                 updateAssignedUnitLabel();
             }).fail(function(){
                 showIidAlert('Failed', 'Failed to load inspection units.');
-            });
-        }
-
-        function loadTeamLeads(){
-            return $.get(g_asiBaseURL + '/ApiCalls/get_audit_emp', function(d){
-                var $ddl = $('#TeamLeadId');
-                $ddl.empty().append('<option value="">--Select Team Lead--</option>');
-                $.each(d || [], function(i, emp){
-                    var id = emp.ppno || emp.PPNO || emp.employeeId || emp.EMPLOYEE_ID || emp.id || emp.ID;
-                    var name = emp.name || emp.NAME || emp.fullName || emp.FULL_NAME || emp.empName || emp.EMP_NAME || ('PPNO ' + id);
-                    if(!id){ return; }
-                    employeeLookup[String(id)] = name;
-                    $ddl.append('<option value="' + id + '">' + name + ' (' + id + ')</option>');
-                });
-            }).fail(function(){
-                showIidAlert('Failed', 'Failed to load team leads.');
-            });
-        }
-
-        function loadHeadReviewByComplaintId(selectedComplaintId){
-            return $.post(g_asiBaseURL + '/ApiCalls/GetHeadReviewByComplaintId', { complaintId: selectedComplaintId }, function(resp){
-                if(resp && resp.ok === false){
-                    showIidAlert('Failed', resp.message || 'Failed to load head review details.');
-                    return;
-                }
-
-                var data = (resp && (resp.data || resp.Data)) || null;
-                if(!data){
-                    $('#reviewForm [name="Directions"]').val('');
-                    $('#reviewForm [name="TeamLeadId"]').val('');
-                    $('#reviewForm [name="TeamMembers"]').val('');
-                    $('#reviewForm [name="Action"][value="APPROVE"]').prop('checked', true);
-                    return;
-                }
-
-                $('#reviewForm [name="Directions"]').val(data.directions || data.Directions || '');
-                $('#reviewForm [name="TeamMembers"]').val(data.teamMembers || data.TeamMembers || '');
-
-                var teamLeadId = (data.teamLeadId || data.TeamLeadId || '').toString();
-                if(teamLeadId){
-                    $('#TeamLeadId').val(teamLeadId);
-                } else {
-                    $('#TeamLeadId').val('');
-                }
-
-                var action = (data.action || data.Action || 'APPROVE').toString().toUpperCase();
-                $('#reviewForm [name="Action"][value="' + action + '"]').prop('checked', true);
-
-                var assignedOn = (data.assignedOn || data.AssignedOn || '').toString();
-                if(assignedOn){
-                    $('#assignedOnDisplay').val(assignedOn);
-                    manualAssignedOn = true;
-                }
-            }).fail(function(){
-                showIidAlert('Failed', 'Failed to load saved head review details.');
             });
         }
 
@@ -211,7 +144,6 @@
                     assignedUnitName = normalized.AssignedUnit || '';
                     $('#reviewForm [name="AssignedToUnit"]').val(assignedUnitId || '');
                     updateAssignedUnitLabel();
-                    loadHeadReviewByComplaintId(complaintId);
                 },
                 error: function(){
                     showIidAlert('Failed', 'Failed to load complaint details.');
@@ -223,7 +155,6 @@
         }
 
         function updateAssignedOn(){
-            if(manualAssignedOn){ return; }
             var today = new Date();
             $('#assignedOnDisplay').val(today.toISOString().split('T')[0]);
         }
@@ -234,8 +165,6 @@
             var action = $('#reviewForm [name="Action"]:checked').val();
             var complaintId = $('#reviewForm [name="ComplaintId"]').val();
             var assignedToUnit = $('#reviewForm [name="AssignedToUnit"]').val();
-            var teamLeadId = ($('#TeamLeadId').val() || '').trim();
-            var teamMembers = ($('#TeamMembers').val() || '').trim();
 
             if(!complaintId || complaintId === '0'){
                 showIidAlert('Required', 'Please select a complaint.');
@@ -247,22 +176,10 @@
                 return;
             }
 
-            if(action === 'APPROVE' && !teamLeadId){
-                showIidAlert('Failed', 'Team lead is required.');
-                return;
-            }
-
-            if(action === 'APPROVE' && !teamMembers){
-                showIidAlert('Failed', 'Team members are required.');
-                return;
-            }
-
             var assessmentIdValue = $('#AssessmentId').val() || currentAssessmentId || '@assessmentId';
             $('#AssessmentId').val(assessmentIdValue);
 
-            var serializedData = $(this).serializeArray();
-            serializedData.push({ name: 'AssignedOn', value: $('#assignedOnDisplay').val() || '' });
-            var data = $.param(serializedData);
+            var data = $(this).serialize();
             if(!/AssessmentId=/.test(data) || /AssessmentId=(?:0)?(?:&|$)/.test(data)){
                 data = data.replace(/(^|&)AssessmentId=[^&]*/,'').replace(/^&/,'');
                 data += (data ? '&' : '') + 'AssessmentId=' + encodeURIComponent(assessmentIdValue);
@@ -284,7 +201,6 @@
         });
 
         loadUnits();
-        loadTeamLeads();
         loadComplaintDropdown(pageId)
             .done(function(resp){
                 if(resp && resp.ok === false){

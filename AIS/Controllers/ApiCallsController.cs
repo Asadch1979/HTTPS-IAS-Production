@@ -4860,25 +4860,6 @@ namespace AIS.Controllers
             }
 
         [HttpPost]
-        public IActionResult GetHeadReviewByComplaintId([FromForm] int complaintId)
-            {
-            try
-                {
-                if (complaintId <= 0)
-                    {
-                    return Json(new { ok = false, message = "ComplaintId is required." });
-                    }
-
-                var data = dBConnection.GetHeadReviewByComplaintId(complaintId);
-                return Json(new { ok = true, data });
-                }
-            catch (Exception ex)
-                {
-                return Json(new { ok = false, message = ex.Message });
-                }
-            }
-
-        [HttpPost]
         public IActionResult AddInvestigationPlan([FromBody] AIS.Models.IID.InvestigationPlanModel model)
             {
             try
