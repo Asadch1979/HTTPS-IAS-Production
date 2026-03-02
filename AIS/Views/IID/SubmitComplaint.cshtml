@@ -157,7 +157,8 @@
                     </div>
                     <div class="mb-2">
                         <label class="form-label">Upload FFR (PDF)</label>
-                        <input type="file" class="form-control" name="FfrFile" accept="application/pdf" required />
+                        <input type="file" class="form-control" id="FfrFile" name="FfrFile" accept="application/pdf" />
+                        <div class="text-danger small mt-1 d-none" id="ffrRequiredError">FFR is mandatory for Source SQ&amp;CMD.</div>
                     </div>
                     <div class="mb-2">
                         <label class="form-label">Upload Other Evidence</label>
@@ -227,6 +228,25 @@
                 $manualDiv.addClass('d-none');
                 $manualInput.val('').prop('required', false).attr('placeholder', '');
                 $manualLabel.text('Specify Source');
+            }
+
+            toggleFfrRequirement();
+        }
+
+        function isSqCmdSource(){
+            var selectedSource = ($('#Source').val() || '').trim();
+            return selectedSource === 'SQ&CMD';
+        }
+
+        function toggleFfrRequirement(){
+            var required = isSqCmdSource();
+            var $ffrFile = $('#FfrFile');
+            var $ffrError = $('#ffrRequiredError');
+            $ffrFile.prop('required', required);
+
+            if(!required){
+                $ffrFile[0].setCustomValidity('');
+                $ffrError.addClass('d-none');
             }
         }
 
@@ -359,6 +379,20 @@
 
             var fd = new FormData(this);
             var receivedOnDate = $('#ReceivedOn').val();
+            var isFFRRequired = isSqCmdSource();
+            var ffrFileValue = ($('#FfrFile').val() || '').trim();
+
+            if(isFFRRequired && !ffrFileValue){
+                $('#FfrFile')[0].setCustomValidity('FFR is mandatory for Source SQ&CMD.');
+                $('#ffrRequiredError').removeClass('d-none');
+                alert('FFR is mandatory for Source SQ&CMD.');
+                $('#FfrFile').focus();
+                return;
+            }
+
+            $('#FfrFile')[0].setCustomValidity('');
+            $('#ffrRequiredError').addClass('d-none');
+
             if(receivedOnDate && receivedOnDate > today){
                 showIidAlert('Failed', 'Received On date cannot be a future date.');
                 $('#ReceivedOn').focus();

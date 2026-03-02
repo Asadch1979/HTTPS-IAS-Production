@@ -49,6 +49,7 @@
 
 @section Scripts {
 <script src="~/js/iid/inquiryReportApi.js"></script>
+<script src="~/js/iid/complaintDetails.js"></script>
 <script src="~/lib/tinymce/tinymce.min.js"></script>
 <script>
 $(function(){
@@ -336,16 +337,19 @@ $(function(){
         });
     }
 
+    function findingsOutcomeOptionsHtml(selected){
+        return '<option value="">Select Outcome</option>' +
+            '<option value="Established" ' + (selected === 'Established' ? 'selected' : '') + '>Established</option>' +
+            '<option value="Not Established" ' + (selected === 'Not Established' ? 'selected' : '') + '>Not Established</option>' +
+            '<option value="Sub-judice" ' + (selected === 'Sub-judice' ? 'selected' : '') + '>Sub-judice</option>' +
+            '<option value="Withdrawn Closed" ' + (selected === 'Withdrawn Closed' ? 'selected' : '') + '>Withdrawn Closed</option>' +
+            '<option value="Transfer Closed" ' + (selected === 'Transfer Closed' ? 'selected' : '') + '>Transfer Closed</option>';
+    }
+
     function renderFindingsStatusGrid(){
         var rows = state.findingsRecomm.statusRows || [];
         var savedCount = rows.filter(isStatusRowSaved).length;
         $('#findingsStatusSummary').text('Saved: ' + savedCount + ' / Total: ' + rows.length);
-
-        var outcomeOptionsHtml = function(selected){
-            return '<option value="">Select Outcome</option>' +
-                '<option value="Established" ' + (selected === 'Established' ? 'selected' : '') + '>Established</option>' +
-                '<option value="Not Established" ' + (selected === 'Not Established' ? 'selected' : '') + '>Not Established</option>';
-        };
 
         var body = rows.map(function(r){
             var saved = isStatusRowSaved(r);
@@ -354,7 +358,7 @@ $(function(){
             return '<tr>' +
                 '<td>' + esc(r.accusationText || '') + '</td>' +
                 '<td><span class="badge ' + (saved ? 'bg-success' : 'bg-warning text-dark') + '">' + (saved ? 'Saved' : 'Not Saved') + '</span></td>' +
-                '<td><label class="form-label mb-1">Outcome</label><select class="form-select outcome-select" data-accusation-id="' + esc(String(r.accusationId || '')) + '">' + outcomeOptionsHtml(selectedOutcome) + '</select></td>' +
+                '<td>' + esc(selectedOutcome || '—') + '</td>' +
                 '<td>' + esc(formatSavedOn(r.savedOn || r.lastSavedOn)) + '</td>' +
                 '<td><button type="button" class="btn btn-outline-primary btn-sm" data-findings-view-edit="' + esc(String(r.accusationId || '')) + '">View/Edit</button></td>' +
                 '</tr>';
@@ -377,8 +381,10 @@ $(function(){
             state.findingsRecomm.outcomes[parsedId] = (data && (data.outcome || data.Outcome || '')) || '';
             if(found){
                 applyFindingsEditorContent(data.findingsText || data.findingText || '', data.recommendationText || data.recomText || '');
+                $('#findingsOutcomeSelect').val(state.findingsRecomm.outcomes[parsedId] || '');
             } else {
                 applyFindingsEditorContent('', '');
+                $('#findingsOutcomeSelect').val('');
             }
             updateDsaVisibility();
             renderStepper();
@@ -437,6 +443,24 @@ $(function(){
         });
     }
 
+
+    function complaintFileLink(value){
+        var fileValue = String(value || '').trim();
+        if(!fileValue){ return '<span class="text-muted">Not uploaded</span>'; }
+        var href = window.iidFileCell ? window.iidFileCell(fileValue, (window.g_asiBaseURL || '') + '/Uploads') : '';
+        return href || '<span class="text-muted">Not uploaded</span>';
+    }
+
+    function uploadedDocumentsBlock(snap){
+        return '<div class="card border-0 bg-light mt-3"><div class="card-body">' +
+            '<h6 class="mb-3">Uploaded Documents</h6>' +
+            '<ul class="list-group list-group-flush">' +
+                '<li class="list-group-item px-0 d-flex justify-content-between"><span>Complaint</span><span>' + complaintFileLink(snap.uploadedComplaint) + '</span></li>' +
+                '<li class="list-group-item px-0 d-flex justify-content-between"><span>FFR</span><span>' + complaintFileLink(snap.uploadedFFR) + '</span></li>' +
+                '<li class="list-group-item px-0 d-flex justify-content-between"><span>Evidence</span><span>' + complaintFileLink(snap.uploadedEvidence) + '</span></li>' +
+            '</ul></div></div>';
+    }
+
     function renderSection(step){
         var h = $('.wizard-section[data-step="' + step + '"]');
         var html = '<div class="card-body"><div class="validation-summary alert alert-warning d-none"></div>';
@@ -444,6 +468,7 @@ $(function(){
             var snap = state.snapshot || {};
             html += '<h5>Snapshot</h5><p class="text-muted">Complaint and complainant data loaded.</p>';
             html += '<div class="row g-3"><div class="col-lg-6"><div class="card border-0 bg-light"><div class="card-body"><h6 class="mb-3">Complainant Details</h6><div class="row g-2 small"><div class="col-6"><span class="text-muted">Name</span><div class="fw-semibold">' + esc(snap.complainantName || 'N/A') + '</div></div><div class="col-6"><span class="text-muted">CNIC</span><div class="fw-semibold">' + esc(snap.cnic || 'N/A') + '</div></div><div class="col-6"><span class="text-muted">Cell No</span><div>' + esc(snap.cellularNumber || 'N/A') + '</div></div><div class="col-6"><span class="text-muted">Gender</span><div>' + esc(snap.gender || 'N/A') + '</div></div><div class="col-12"><span class="text-muted">Address</span><div>' + esc(snap.mailingAddress || 'N/A') + '</div></div><div class="col-12"><span class="text-muted">Received From</span><div>' + esc(snap.receivedFrom || 'N/A') + '</div></div></div></div></div></div><div class="col-lg-6"><div class="card border-0 bg-light"><div class="card-body"><h6 class="mb-3">Complaint Details</h6><div class="row g-2 small"><div class="col-6"><span class="text-muted">Complaint No</span><div class="fw-semibold">' + esc(snap.complaintNo || 'N/A') + '</div></div><div class="col-6"><span class="text-muted">Submitted On</span><div>' + esc(snap.submittedOn || 'N/A') + '</div></div><div class="col-6"><span class="text-muted">Nature</span><div>' + esc(snap.nature || 'N/A') + '</div></div><div class="col-6"><span class="text-muted">Category</span><div>' + esc(snap.category || 'N/A') + '</div></div><div class="col-6"><span class="text-muted">Region</span><div>' + esc(snap.region || 'N/A') + '</div></div><div class="col-6"><span class="text-muted">Branch</span><div>' + esc(snap.branch || 'N/A') + '</div></div><div class="col-12"><span class="text-muted">Action Required</span><div>' + esc(snap.actionRequired || 'N/A') + '</div></div><div class="col-12"><span class="text-muted">Contents</span><div>' + esc(snap.contents || 'N/A') + '</div></div></div></div></div></div></div>';
+            html += uploadedDocumentsBlock(snap);
         }
         if(step === 2){
             var rowsA = state.accusations.map(function(r,i){ return '<tr data-row-id="' + (r.accusationId || 0) + '"><td>' + rowInput('accusations['+i+'].accusationText', r.accusationText) + '</td><td><button type="button" class="btn btn-outline-danger btn-sm" data-remove-row="accusations" data-index="'+i+'">Remove</button></td></tr>'; }).join('');
@@ -551,6 +576,10 @@ $(function(){
                     '<div class="card-body">' +
                         '<label class="form-label fw-semibold">Recommendations <span class="text-danger">*</span></label>' +
                         '<textarea id="recommendationTextHtml" class="form-control" rows="12">' + esc(state.findingsRecomm.recommendationText || '') + '</textarea>' +
+                        '<div class="mt-3">' +
+                            '<label class="form-label fw-semibold">Outcome <span class="text-danger">*</span></label>' +
+                            '<select id="findingsOutcomeSelect" class="form-select">' + findingsOutcomeOptionsHtml(state.findingsRecomm.outcomes[parseInt(state.findingsRecomm.selectedAccusationId, 10)] || '') + '</select>' +
+                        '</div>' +
                         '<div class="mt-3"><button type="button" class="btn btn-primary" data-save-findings-recomm>Save Findings & Recommendations</button></div>' +
                     '</div>' +
                 '</div>' +
@@ -1136,7 +1165,7 @@ $(function(){
             state.complainantCnic = c.cnic || '';
             $('#headerComplainantName').text(state.complainantName || 'N/A');
             $('#iidComplaintHiddenCache').text(JSON.stringify(c));
-            state.snapshot = { complaintNo: c.complaintNo, submittedOn: c.submittedOn, region: c.region, branch: c.branch, category: c.category, nature: c.nature, complainantName: c.complainantName, cnic: c.cnic, cellularNumber: c.cellularNumber, mailingAddress: c.mailingAddress, gender: c.gender, receivedFrom: c.receivedFrom, actionRequired: c.actionRequired, contents: c.contents };
+            state.snapshot = { complaintNo: c.complaintNo, submittedOn: c.submittedOn, region: c.region, branch: c.branch, category: c.category, nature: c.nature, complainantName: c.complainantName, cnic: c.cnic, cellularNumber: c.cellularNumber, mailingAddress: c.mailingAddress, gender: c.gender, receivedFrom: c.receivedFrom, actionRequired: c.actionRequired, contents: c.contents, uploadedComplaint: c.uploadedComplaint || c.UploadedComplaint, uploadedFFR: c.uploadedFFR || c.UploadedFFR || c.uploaded_FFR, uploadedEvidence: c.uploadedEvidence || c.UploadedEvidence };
             renderSnapshotStrip();
         });
     }
@@ -1315,12 +1344,13 @@ $(function(){
         });
     });
 
-    $(document).on('change', '.outcome-select', function(){
-        var accusationId = parseInt($(this).data('accusation-id'), 10);
+    $(document).on('change', '#findingsOutcomeSelect', function(){
+        var accusationId = parseInt(state.findingsRecomm.selectedAccusationId, 10);
         if(isNaN(accusationId)){ return; }
         state.findingsRecomm.outcomes[accusationId] = $(this).val() || '';
         markDirty(7);
         updateDsaVisibility();
+        renderFindingsStatusGrid();
     });
 
     $(document).on('click', '#finalSubmitBtn', function(){
