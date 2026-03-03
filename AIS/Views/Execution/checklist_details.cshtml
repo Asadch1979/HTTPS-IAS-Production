@@ -328,4 +328,7 @@
     </div>
 </div>
 
+<script>
+    window.__checklistDetailsAnnexList = @Html.Raw(Json.Serialize(ViewData["AnnexList"]));
+</script>
 <script src="~/js/csp/Views_Execution_checklist_details.js?v=1"></script>
