@@ -1,5 +1,14 @@
     var g_endId = 0;
     $(document).ready(function () {
+        $(document).on('click', '.js-history-back', function () {
+            window.history.back();
+        });
+
+        $(document).on('click', '.js-proceed-checklist-details', function (event) {
+            event.preventDefault();
+            proceedToChecklistDetails($(this).data('sub-id'));
+        });
+
         var url_string = window.location;
         var url = new URL(url_string);
         var checklist_id = url.searchParams.get("id");
@@ -17,7 +26,7 @@
                 $('#subchecklistPanel tbody').empty();
                 var sr = 1;
                $.each(data, function (i, v) {
-                    $('#subchecklistPanel tbody').append('<tr id="' + v.s_ID + '"><td>' + sr + '</td><td>' + v.t_NAME + '</td><td>' + v.heading + '</td><td class="text-center"><span class="badge text-bg-danger rounded-pill d-inline">' + v.status + '</span></td><td class="text-center"><a href="#" onclick="event.preventDefault();proceedToChecklistDetails(' + v.s_ID + ')">Checklist Details</a></td></tr>');
+                    $('#subchecklistPanel tbody').append('<tr id="' + v.s_ID + '"><td>' + sr + '</td><td>' + v.t_NAME + '</td><td>' + v.heading + '</td><td class="text-center"><span class="badge text-bg-danger rounded-pill d-inline">' + v.status + '</span></td><td class="text-center"><a href="#" class="js-proceed-checklist-details" data-sub-id="' + v.s_ID + '">Checklist Details</a></td></tr>');
                    sr++;
                 });
 

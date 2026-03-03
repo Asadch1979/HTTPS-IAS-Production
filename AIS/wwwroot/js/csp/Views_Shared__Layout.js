@@ -1,4 +1,8 @@
         (function(){
+            var pageIdMeta = document.querySelector("meta[name='page-id']");
+            var hideSidebarMeta = document.querySelector("meta[name='ias-hide-sidebar']");
+            window.PAGE_ID = Number(pageIdMeta ? pageIdMeta.getAttribute('content') : 0) || 0;
+            window.IAS_HIDE_SIDEBAR = hideSidebarMeta ? (hideSidebarMeta.getAttribute('content') === 'true') : false;
             var sidebar = document.getElementById('iasSidebar');
             var isDesktop = window.matchMedia('(min-width: 992px)').matches;
             var sidebarDisabled = !!window.IAS_HIDE_SIDEBAR || !sidebar;
@@ -49,6 +53,10 @@
                     if (event.clientX <= 18 && document.body.classList.contains('ias-sidebar-collapsed')){
                         if (!openTimer){
                             openTimer = setTimeout(function(){
+            var pageIdMeta = document.querySelector("meta[name='page-id']");
+            var hideSidebarMeta = document.querySelector("meta[name='ias-hide-sidebar']");
+            window.PAGE_ID = Number(pageIdMeta ? pageIdMeta.getAttribute('content') : 0) || 0;
+            window.IAS_HIDE_SIDEBAR = hideSidebarMeta ? (hideSidebarMeta.getAttribute('content') === 'true') : false;
                                 setSidebarCollapsed(false, false);
                                 openTimer = null;
                             }, 120);
@@ -64,6 +72,10 @@
                         if (pointerAway){
                             if (!closeTimer){
                                 closeTimer = setTimeout(function(){
+            var pageIdMeta = document.querySelector("meta[name='page-id']");
+            var hideSidebarMeta = document.querySelector("meta[name='ias-hide-sidebar']");
+            window.PAGE_ID = Number(pageIdMeta ? pageIdMeta.getAttribute('content') : 0) || 0;
+            window.IAS_HIDE_SIDEBAR = hideSidebarMeta ? (hideSidebarMeta.getAttribute('content') === 'true') : false;
                                     setSidebarCollapsed(true, false);
                                     closeTimer = null;
                                 }, 260);
@@ -85,6 +97,10 @@
                 sidebar.addEventListener('mouseleave', function(){
                     if (!document.body.classList.contains('ias-sidebar-collapsed') && !closeTimer){
                         closeTimer = setTimeout(function(){
+            var pageIdMeta = document.querySelector("meta[name='page-id']");
+            var hideSidebarMeta = document.querySelector("meta[name='ias-hide-sidebar']");
+            window.PAGE_ID = Number(pageIdMeta ? pageIdMeta.getAttribute('content') : 0) || 0;
+            window.IAS_HIDE_SIDEBAR = hideSidebarMeta ? (hideSidebarMeta.getAttribute('content') === 'true') : false;
                             setSidebarCollapsed(true, false);
                             closeTimer = null;
                         }, 260);
