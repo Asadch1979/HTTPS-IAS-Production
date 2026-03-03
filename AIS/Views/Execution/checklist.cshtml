@@ -6,17 +6,7 @@
     ViewData["Title"] = "Checklist";
     Layout = "_Layout";
 }
-<script type="text/javascript">
-    var g_endId = 0;
-    $(document).ready(function () {
-        var url_string = window.location;
-        var url = new URL(url_string);
-        g_endId = url.searchParams.get("engId");
-    });
-    function proceedToSubChecklist(id) {
-        window.location.href = g_asiBaseURL + '/Execution/subchecklist?engId=' + g_endId + '&id=' + id;
-    }
-</script>
+
     <div class="row mt-3">
         <div>
             <center>
@@ -66,3 +56,4 @@
             </tbody>
         </table>
     </div>
+<script src="~/js/csp/Views_Execution_checklist.js?v=1"></script>

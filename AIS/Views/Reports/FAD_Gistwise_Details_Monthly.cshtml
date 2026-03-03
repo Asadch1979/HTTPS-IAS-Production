@@ -6,18 +6,7 @@
     ViewData["Title"] = "FAD_Gistwise_Details_Monthly";
     Layout = "_Layout";
 }
-<script>
-    $(document).ready(function () {
-        $("#searchTableRecord").on("keyup", function () {
-            var value = $(this).val().toLowerCase();
-            $("#A_P_E_T tbody tr").filter(function () {
-                $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1)
-            });
-        });
 
-
-    });
-</script>
 
 <div class="row col-md-12 mt-3">
     <h3 style=" display:block;color: #be0e43">FAD Monthly Gistwise Details</h3>
@@ -85,3 +74,4 @@
 <div class="col-md-12 offset-md-12 mt-4">
     <button id="printPreview_btn" class="btn btn-danger" style="float:right; margin-bottom:10px;">Download Report/Print</button>
 </div>
+<script src="~/js/csp/Views_Reports_FAD_Gistwise_Details_Monthly.js?v=1"></script>
