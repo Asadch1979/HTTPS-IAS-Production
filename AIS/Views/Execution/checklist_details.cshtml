@@ -36,7 +36,7 @@
     </table>
 </div>
 <div class="row mt-3">
-    <button type="button" class="col-md-3 btn btn-secondary js-history-back">Back to Sub Process</button>
+    <button onclick="history.back()" class="col-md-3 btn btn-secondary">Back to Sub Process</button>
 </div>
 
 
@@ -90,7 +90,7 @@
                         <label for="viewMemo_loancase">Responsible PP NO.</label>
                         <div class="row col-sm-12">
                             <div class="d-flex justify-content-end mb-2">
-                                <button type="button" class="rounded-circle btn btn-danger btn-sm js-open-responsible-pps" aria-label="Add responsible person">
+                                <button type="button" onclick="openResponsiblePPs();" class="rounded-circle btn btn-danger btn-sm" aria-label="Add responsible person">
                                     <i class="fa fa-plus text-white"></i>
                                 </button>
                             </div>
@@ -148,7 +148,7 @@
                 </form>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-danger js-save-memo">Save Memo</button>
+                <button onclick="saveMemoContent();" type="button" class="btn btn-danger">Save Memo</button>
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
             </div>
         </div>
@@ -172,14 +172,14 @@
                         <div class="row col-sm-12">
                             <div class="col-sm-5">
                                 <label for="viewMemo_memo">Loan Case No.</label>
-                                <input type="text" class="form-control digits-only" id="responsibleLCNoEntryField" inputmode="numeric" pattern="[0-9]*" autocomplete="off" data-digits-only="true" />
+                                <input type="text" class="form-control digits-only" id="responsibleLCNoEntryField" inputmode="numeric" pattern="[0-9]*" autocomplete="off" oninput="this.value=this.value.replace(/[^0-9]/g,'');" onpaste="var t=(event.clipboardData||window.clipboardData).getData('text'); this.value=t.replace(/[^0-9]/g,''); event.preventDefault();" />
                             </div>
                             <div class="col-sm-5">
                                 <label for="responsibleBrCodeEntryField">Branch Code <small class="text-muted">(0-9 only)</small></label>
-                                <input type="text" class="form-control digits-only" id="responsibleBrCodeEntryField" aria-describedby="brcode" placeholder="Branch Code (digits only)" inputmode="numeric" pattern="[0-9]*" autocomplete="off" data-digits-only="true" />
+                                <input type="text" class="form-control digits-only" id="responsibleBrCodeEntryField" aria-describedby="brcode" placeholder="Branch Code (digits only)" inputmode="numeric" pattern="[0-9]*" autocomplete="off" oninput="this.value=this.value.replace(/[^0-9]/g,'');" onpaste="var t=(event.clipboardData||window.clipboardData).getData('text'); this.value=t.replace(/[^0-9]/g,''); event.preventDefault();" />
                             </div>
                             <div class="col-sm-2 d-flex align-items-end">
-                                <button type="button" class="btn btn-danger w-100 js-get-lc-details">Find</button>
+                                <button onclick="getLCDetails();" type="button" class="btn btn-danger w-100">Find</button>
                             </div>
                         </div>
                     </div>
@@ -190,26 +190,26 @@
                                                 <div id="findBYPPNOPanel" class="mt-2 row col-md-12">
                             <div class="col-md-2">
                                 <label for="responsiblePPNoEntryField" class="form-label">PPNO</label>
-                                <input id="responsiblePPNoEntryField" class="form-control digits-only" type="text" placeholder="Enter PP. No." inputmode="numeric" pattern="[0-9]*" autocomplete="off" data-digits-only="true" />
+                                <input id="responsiblePPNoEntryField" class="form-control digits-only" type="text" placeholder="Enter PP. No." inputmode="numeric" pattern="[0-9]*" autocomplete="off" oninput="this.value=this.value.replace(/[^0-9]/g,'');" onpaste="var t=(event.clipboardData||window.clipboardData).getData('text'); this.value=t.replace(/[^0-9]/g,''); event.preventDefault();" />
                             </div>
                             <div class="col-md-2">
                                 <label for="responsibleLoanNumberEntryField" class="form-label">Loan Case No</label>
-                                <input id="responsibleLoanNumberEntryField" class="form-control digits-only" type="text" placeholder="Enter LC No." inputmode="numeric" pattern="[0-9]*" autocomplete="off" data-digits-only="true" />
+                                <input id="responsibleLoanNumberEntryField" class="form-control digits-only" type="text" placeholder="Enter LC No." inputmode="numeric" pattern="[0-9]*" autocomplete="off" oninput="this.value=this.value.replace(/[^0-9]/g,'');" onpaste="var t=(event.clipboardData||window.clipboardData).getData('text'); this.value=t.replace(/[^0-9]/g,''); event.preventDefault();" />
                             </div>
                             <div class="col-md-2">
                                 <label for="responsibleLoanAmountEntryField" class="form-label">Loan Amount</label>
-                                <input id="responsibleLoanAmountEntryField" class="form-control digits-only" type="text" placeholder="Enter LC Amount" inputmode="numeric" pattern="[0-9]*" autocomplete="off" data-digits-only="true" />
+                                <input id="responsibleLoanAmountEntryField" class="form-control digits-only" type="text" placeholder="Enter LC Amount" inputmode="numeric" pattern="[0-9]*" autocomplete="off" oninput="this.value=this.value.replace(/[^0-9]/g,'');" onpaste="var t=(event.clipboardData||window.clipboardData).getData('text'); this.value=t.replace(/[^0-9]/g,''); event.preventDefault();" />
                             </div>
                             <div class="col-md-2">
                                 <label for="responsibleAccountNumberEntryField" class="form-label">Account No</label>
-                                <input id="responsibleAccountNumberEntryField" class="form-control digits-only" type="text" placeholder="Enter Account Number" inputmode="numeric" pattern="[0-9]*" autocomplete="off" data-digits-only="true" />
+                                <input id="responsibleAccountNumberEntryField" class="form-control digits-only" type="text" placeholder="Enter Account Number" inputmode="numeric" pattern="[0-9]*" autocomplete="off" oninput="this.value=this.value.replace(/[^0-9]/g,'');" onpaste="var t=(event.clipboardData||window.clipboardData).getData('text'); this.value=t.replace(/[^0-9]/g,''); event.preventDefault();" />
                             </div>
                             <div class="col-md-2">
                                 <label for="responsibleAccountAmountEntryField" class="form-label">Account Amount</label>
-                                <input id="responsibleAccountAmountEntryField" class="form-control digits-only" type="text" placeholder="Enter Account Amount" inputmode="numeric" pattern="[0-9]*" autocomplete="off" data-digits-only="true" />
+                                <input id="responsibleAccountAmountEntryField" class="form-control digits-only" type="text" placeholder="Enter Account Amount" inputmode="numeric" pattern="[0-9]*" autocomplete="off" oninput="this.value=this.value.replace(/[^0-9]/g,'');" onpaste="var t=(event.clipboardData||window.clipboardData).getData('text'); this.value=t.replace(/[^0-9]/g,''); event.preventDefault();" />
                             </div>
                             <div class="col-md-2 d-flex align-items-end">
-                                <button type="button" class="col-md-2 btn btn-success w-100 js-get-matched-pp">Select</button>
+                                <button type="button" onclick="getMatchedPP();" class="col-md-2 btn btn-success w-100">Select</button>
                             </div>
                         </div>
                     </div>
@@ -236,9 +236,9 @@
                 </form>
             </div>
             <div class="modal-footer">
-                <button id="addResponsibleButton" type="button" class="btn btn-danger js-responsibility-action" data-action="A">Add Responsibility</button>
-                <button id="updateResponsibleButton" type="button" class="btn btn-success d-none js-responsibility-action" data-action="U">Update Responsibility</button>
-                <button id="deleteResponsibleButton" type="button" class="btn btn-danger d-none js-responsibility-action" data-action="D">Delete Responsibility</button>
+                <button id="addResponsibleButton" onclick="addResponsibilityToMainTable('A');" type="button" class="btn btn-danger">Add Responsibility</button>
+                <button id="updateResponsibleButton" onclick="addResponsibilityToMainTable('U');" type="button" class="btn btn-success d-none">Update Responsibility</button>
+                <button id="deleteResponsibleButton" onclick="addResponsibilityToMainTable('D');" type="button" class="btn btn-danger d-none">Delete Responsibility</button>
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
             </div>
         </div>

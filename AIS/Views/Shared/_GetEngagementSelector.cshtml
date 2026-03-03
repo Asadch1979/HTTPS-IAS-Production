@@ -19,7 +19,7 @@
                 {
                     <form method="post" asp-action="SetActiveEngagement" id="frptEngagementForm">
                         <input type="hidden" name="returnUrl" value="@returnUrl" />
-                        <select name="engagementId" class="form-select js-engagement-select">
+                        <select name="engagementId" class="form-select" onchange="return validateEngagementSelection(this);">
                             <option value="0">--Select Engagement--</option>
                             @if (Model?.Options != null)
                             {
@@ -37,8 +37,8 @@
                 {
                     <form method="post" asp-action="ClearEngagement" class="d-inline">
                         <input type="hidden" name="returnUrl" value="@returnUrl" />
-                        <button type="submit" class="btn btn-outline-danger js-confirm-clear-engagement"
-                                data-confirm-message="Changing the engagement will clear the current Field Audit Report context. Do you want to continue?">
+                        <button type="submit" class="btn btn-outline-danger"
+                                onclick="return confirm('Changing the engagement will clear the current Field Audit Report context. Do you want to continue?');">
                             Change Engagement
                         </button>
                     </form>
