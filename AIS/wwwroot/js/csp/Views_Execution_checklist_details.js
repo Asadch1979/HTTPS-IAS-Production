@@ -8,7 +8,7 @@
     var g_selectedRespRow = null;
 
     var g_selectedRiskId = 0;
-    var g_annexList = @Json.Serialize(ViewData["AnnexList"]);
+    var g_annexList = window.__checklistDetailsAnnexList || [];
     $(document).ready(function () {
         var url_string = window.location;
         var url = new URL(url_string);
