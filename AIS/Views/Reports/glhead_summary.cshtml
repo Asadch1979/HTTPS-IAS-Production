@@ -22,21 +22,7 @@
     }
 </style>
 
-<script type="text/javascript">
 
-
-    $(document).ready(function () {
-        var gl_Id = 0;
-        $('#sidebar_policy').hide();
-        $("#searchTableRecord").on("keyup", function () {
-            var value = $(this).val().toLowerCase();
-            $("#listOfGlHead tbody tr").filter(function () {
-                $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1)
-            });
-        });
-    });
-
-</script>
 
 <div class="row col-md-12 mt-3">
     <h4 style="display: block; color: #be0e43">GL Head Summary</h4>
@@ -110,3 +96,5 @@
     <button onclick="history.back()" class="btn btn-primary" style="color:white">Return</button>
 
 </div>
+
+<script src="~/js/csp/Views_Reports_glhead_summary.js?v=1"></script>

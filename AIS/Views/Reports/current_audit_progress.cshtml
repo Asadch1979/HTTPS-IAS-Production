@@ -8,35 +8,7 @@
 }
 
 
-<script type="text/javascript">
-    function GetCurrentAuditProgress() {
-        $('#CurrentAuditProgressGrid tbody').empty();
-        if ($('#auditDepartmentSelectBox').val() != 0) {
-            $.ajax({
-                url: g_asiBaseURL + "/ApiCalls/get_current_audit_progress",
-                type: "POST",
-                data: {
-                    'ENTITY_ID': $('#auditDepartmentSelectBox').val()
-                },
-                cache: false,
-                success: function (data) {
-                    var sr = 1;
-                    $.each(data, function (i, v) {
 
-                        $('#CurrentAuditProgressGrid tbody').append('<tr><td>' + sr + '</td><td>' + v.name + '</td><td>' + v.area + '</td><td>' + v.obS_COUNT + '</td></tr>');
-                        sr++;
-
-                    });
-                },
-                dataType: "json",
-            });
-        }
-        
-       
-    }
-
-
-</script>
 
 <div class="mt-3 mb-4">
     <h3 style="color: #be0e43">Progress of Current Audit</h3>
@@ -84,3 +56,5 @@
 </div>
 
 
+
+<script src="~/js/csp/Views_Reports_current_audit_progress.js?v=1"></script>
