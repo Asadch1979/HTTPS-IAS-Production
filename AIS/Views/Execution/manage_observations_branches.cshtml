@@ -35,7 +35,7 @@
         </div>
         <div class="col-md-10">
             <input id="entityNameField" disabled="disabled" class="form-control ml-1 d-none" type="text" />
-            <select id="entitySelectField" onchange="getEntityObservation()" class="form-control form-select">
+            <select id="entitySelectField" data-change="getEntityObservation()" class="form-control form-select">
                 <option value="0" id="0">--Select Audit Entity--</option>
                 @{
                     if (ViewData["EntitiesList"] != null)
@@ -101,7 +101,7 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                <button onclick="finalCommentsButtonSave();" id="finalCommentsButtonSave" type="button" class="btn btn-danger">Submit</button>
+                <button data-click="finalCommentsButtonSave();" id="finalCommentsButtonSave" type="button" class="btn btn-danger">Submit</button>
             </div>
         </div>
     </div>
@@ -146,7 +146,7 @@
 
                     <div class="form-group mb-3">
                         <label for="updateMemo_process" class="font-weight-bold">Process</label>
-                        <select id="updateMemo_process" onchange="getSubProcessList();" class="form-select form-control" aria-label="Default select example">
+                        <select id="updateMemo_process" data-change="getSubProcessList();" class="form-select form-control" aria-label="Default select example">
                             <option value="0" id="0" selected="selected">--Select Voilation Category--</option>
                             @{
                                 if (ViewData["ProcessList"] != null)
@@ -161,7 +161,7 @@
                     </div>
                     <div class="form-group mb-3">
                         <label for="updateMemo_subprocess" class="font-weight-bold">Sub Process</label>
-                        <select id="updateMemo_subprocess" onchange="getSubProcessViolationList();" class="form-select form-control" aria-label="Default select example">
+                        <select id="updateMemo_subprocess" data-change="getSubProcessViolationList();" class="form-select form-control" aria-label="Default select example">
                         </select>
 
                     </div>
@@ -184,7 +184,7 @@
                         <label for="update_listofRespPersons" class="font-weight-bold">Responsible Personals</label>
                         <div class="row col-sm-12">
                             <div class="d-flex justify-content-end mb-2">
-                                <button type="button" onclick="openResponsiblePPs();" class="rounded-circle btn btn-danger btn-sm" aria-label="Add responsible person">
+                                <button type="button" data-click="openResponsiblePPs();" class="rounded-circle btn btn-danger btn-sm" aria-label="Add responsible person">
                                     <i class="fa fa-plus text-white"></i>
                                 </button>
                             </div>
@@ -256,11 +256,11 @@
                 </form>
             </div>
             <div class="modal-footer">
-                <button id="dropButton_update" onclick="dropObservation(g_obsId,7,g_riskId);" type="button" data-bs-dismiss="modal" class="btn btn-danger d-none">Drop Observation</button>
-                <button id="submitAuditeeButton_update" onclick="submitObservationToAuditee(g_obsId, 2, g_riskId);" type="button" class="btn btn-danger d-none">Submit to Auditee</button>
-                <button id="addDraftButton_update" onclick="updateObservationStatus(g_obsId,5,g_riskId);" type="button" class="btn btn-primary d-none">Add to Draft</button>
-                <button id="settleButton_update" onclick="updateObservationStatus(g_obsId,4,g_riskId);" type="button" class="btn btn-success d-none">Settle</button>
-                <button id="updateMemoContent_submit" onclick="finalUpdateMemoContent(g_obsId);" type="button" data-bs-dismiss="modal" class="btn btn-danger">Update Memo Text</button>
+                <button id="dropButton_update" data-click="dropObservation(g_obsId,7,g_riskId);" type="button" data-bs-dismiss="modal" class="btn btn-danger d-none">Drop Observation</button>
+                <button id="submitAuditeeButton_update" data-click="submitObservationToAuditee(g_obsId, 2, g_riskId);" type="button" class="btn btn-danger d-none">Submit to Auditee</button>
+                <button id="addDraftButton_update" data-click="updateObservationStatus(g_obsId,5,g_riskId);" type="button" class="btn btn-primary d-none">Add to Draft</button>
+                <button id="settleButton_update" data-click="updateObservationStatus(g_obsId,4,g_riskId);" type="button" class="btn btn-success d-none">Settle</button>
+                <button id="updateMemoContent_submit" data-click="finalUpdateMemoContent(g_obsId);" type="button" data-bs-dismiss="modal" class="btn btn-danger">Update Memo Text</button>
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
             </div>
         </div>
@@ -283,14 +283,14 @@
                         <div class="row col-sm-12">
                             <div class="col-sm-5">
                                 <label for="viewMemo_memo">Loan Case No.</label>
-                                <input type="text" class="form-control digits-only" id="responsibleLCNoEntryField" inputmode="numeric" pattern="[0-9]*" autocomplete="off" oninput="this.value=this.value.replace(/[^0-9]/g,'');" onpaste="var t=(event.clipboardData||window.clipboardData).getData('text'); this.value=t.replace(/[^0-9]/g,''); event.preventDefault();" />
+                                <input type="text" class="form-control digits-only" id="responsibleLCNoEntryField" inputmode="numeric" pattern="[0-9]*" autocomplete="off" data-digits-only="true" />
                             </div>
                             <div class="col-sm-5">
                                 <label for="responsibleBrCodeEntryField">Branch Code <small class="text-muted">(0-9 only)</small></label>
-                                <input type="text" class="form-control digits-only" id="responsibleBrCodeEntryField" aria-describedby="brcode" placeholder="Branch Code (digits only)" inputmode="numeric" pattern="[0-9]*" autocomplete="off" oninput="this.value=this.value.replace(/[^0-9]/g,'');" onpaste="var t=(event.clipboardData||window.clipboardData).getData('text'); this.value=t.replace(/[^0-9]/g,''); event.preventDefault();" />
+                                <input type="text" class="form-control digits-only" id="responsibleBrCodeEntryField" aria-describedby="brcode" placeholder="Branch Code (digits only)" inputmode="numeric" pattern="[0-9]*" autocomplete="off" data-digits-only="true" />
                             </div>
                             <div class="col-sm-2 d-flex align-items-end">
-                                <button onclick="respSectionUpdate.getLCDetails();" type="button" class="btn btn-danger w-100">Find</button>
+                                <button data-click="respSectionUpdate.getLCDetails();" type="button" class="btn btn-danger w-100">Find</button>
                             </div>
                         </div>
                     </div>
@@ -301,26 +301,26 @@
                                                 <div id="findBYPPNOPanel" class="mt-2 row col-md-12">
                             <div class="col-md-2">
                                 <label for="responsiblePPNoEntryField" class="form-label">PPNO</label>
-                                <input id="responsiblePPNoEntryField" class="form-control digits-only" type="text" placeholder="Enter PP. No." inputmode="numeric" pattern="[0-9]*" autocomplete="off" oninput="this.value=this.value.replace(/[^0-9]/g,'');" onpaste="var t=(event.clipboardData||window.clipboardData).getData('text'); this.value=t.replace(/[^0-9]/g,''); event.preventDefault();" />
+                                <input id="responsiblePPNoEntryField" class="form-control digits-only" type="text" placeholder="Enter PP. No." inputmode="numeric" pattern="[0-9]*" autocomplete="off" data-digits-only="true" />
                             </div>
                             <div class="col-md-2">
                                 <label for="responsibleLoanNumberEntryField" class="form-label">Loan Case No</label>
-                                <input id="responsibleLoanNumberEntryField" class="form-control digits-only" type="text" placeholder="Enter LC No." inputmode="numeric" pattern="[0-9]*" autocomplete="off" oninput="this.value=this.value.replace(/[^0-9]/g,'');" onpaste="var t=(event.clipboardData||window.clipboardData).getData('text'); this.value=t.replace(/[^0-9]/g,''); event.preventDefault();" />
+                                <input id="responsibleLoanNumberEntryField" class="form-control digits-only" type="text" placeholder="Enter LC No." inputmode="numeric" pattern="[0-9]*" autocomplete="off" data-digits-only="true" />
                             </div>
                             <div class="col-md-2">
                                 <label for="responsibleLoanAmountEntryField" class="form-label">Loan Amount</label>
-                                <input id="responsibleLoanAmountEntryField" class="form-control digits-only" type="text" placeholder="Enter LC Amount" inputmode="numeric" pattern="[0-9]*" autocomplete="off" oninput="this.value=this.value.replace(/[^0-9]/g,'');" onpaste="var t=(event.clipboardData||window.clipboardData).getData('text'); this.value=t.replace(/[^0-9]/g,''); event.preventDefault();" />
+                                <input id="responsibleLoanAmountEntryField" class="form-control digits-only" type="text" placeholder="Enter LC Amount" inputmode="numeric" pattern="[0-9]*" autocomplete="off" data-digits-only="true" />
                             </div>
                             <div class="col-md-2">
                                 <label for="responsibleAccountNumberEntryField" class="form-label">Account No</label>
-                                <input id="responsibleAccountNumberEntryField" class="form-control digits-only" type="text" placeholder="Enter Account Number" inputmode="numeric" pattern="[0-9]*" autocomplete="off" oninput="this.value=this.value.replace(/[^0-9]/g,'');" onpaste="var t=(event.clipboardData||window.clipboardData).getData('text'); this.value=t.replace(/[^0-9]/g,''); event.preventDefault();" />
+                                <input id="responsibleAccountNumberEntryField" class="form-control digits-only" type="text" placeholder="Enter Account Number" inputmode="numeric" pattern="[0-9]*" autocomplete="off" data-digits-only="true" />
                             </div>
                             <div class="col-md-2">
                                 <label for="responsibleAccountAmountEntryField" class="form-label">Account Amount</label>
-                                <input id="responsibleAccountAmountEntryField" class="form-control digits-only" type="text" placeholder="Enter Account Amount" inputmode="numeric" pattern="[0-9]*" autocomplete="off" oninput="this.value=this.value.replace(/[^0-9]/g,'');" onpaste="var t=(event.clipboardData||window.clipboardData).getData('text'); this.value=t.replace(/[^0-9]/g,''); event.preventDefault();" />
+                                <input id="responsibleAccountAmountEntryField" class="form-control digits-only" type="text" placeholder="Enter Account Amount" inputmode="numeric" pattern="[0-9]*" autocomplete="off" data-digits-only="true" />
                             </div>
                             <div class="col-md-2 d-flex align-items-end">
-                                <button type="button" onclick="respSectionUpdate.getMatchedPP();" class="col-md-2 btn btn-success w-100">Select</button>
+                                <button type="button" data-click="respSectionUpdate.getMatchedPP();" class="col-md-2 btn btn-success w-100">Select</button>
                             </div>
                         </div>
                     </div>
@@ -404,7 +404,7 @@
                 </form>
             </div>
             <div class="modal-footer">
-                <button onclick="submitObservationToAuditeeAfterDSAIssuance();" type="button" class="btn btn-danger">Issue DSA to selected Responsibles</button>
+                <button data-click="submitObservationToAuditeeAfterDSAIssuance();" type="button" class="btn btn-danger">Issue DSA to selected Responsibles</button>
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
             </div>
         </div>

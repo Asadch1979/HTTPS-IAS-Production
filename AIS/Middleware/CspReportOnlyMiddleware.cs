@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Hosting;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -18,7 +19,7 @@ namespace AIS.Middleware
         private readonly string _policy;
         private readonly string _reportUri;
 
-        public CspReportOnlyMiddleware(RequestDelegate next, IConfiguration configuration)
+        public CspReportOnlyMiddleware(RequestDelegate next, IConfiguration configuration, IHostEnvironment environment)
         {
             _next = next ?? throw new ArgumentNullException(nameof(next));
             if (configuration == null)
@@ -42,6 +43,13 @@ namespace AIS.Middleware
             var imageSources = ReadList(configuration, "SecurityHeaders:CspExtraImgSrc");
             var connectSources = ReadList(configuration, "SecurityHeaders:CspExtraConnectSrc");
             var frameSources = ReadList(configuration, "SecurityHeaders:CspExtraFrameSrc");
+
+            if (environment != null && environment.IsDevelopment())
+            {
+                connectSources.Add("http://localhost:58804");
+                connectSources.Add("ws://localhost:58804");
+                connectSources.Add("wss://localhost:44331");
+            }
 
             var directives = new List<string>
             {

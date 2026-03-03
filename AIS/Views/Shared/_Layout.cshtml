@@ -75,10 +75,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="base-url" content="@baseUrl" />
 
-    <script nonce="@nonce">
-        window.PAGE_ID = Number(@((int?)ViewData["PageId"] ?? 0)) || 0;
-        window.IAS_HIDE_SIDEBAR = @Html.Raw((hideSidebar ? "true" : "false"));
-    </script>
+    <meta name="ias-page-id" content="@((int?)ViewData["PageId"] ?? 0)" />
+    <meta name="ias-hide-sidebar" content="@(hideSidebar ? "true" : "false")" />
+    <script src="~/js/csp/layoutPageContext.js" asp-append-version="true"></script>
 
     <title>@ViewData["Title"] - IAS</title>
 
@@ -659,6 +658,7 @@
     <script src="~/js/navigation.js" asp-append-version="true"></script>
     <script src="~/js/idleSessionHandler.js"></script>
     <script src="~/js/common-validation.js" asp-append-version="true"></script>
+    <script src="~/js/csp/inlineEventBridge.js" asp-append-version="true"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
     <script src="~/js/referenceSection.js" asp-append-version="true"></script>
     <script src="~/js/circular.js" asp-append-version="true"></script>

@@ -19,6 +19,27 @@
         $('#updatedAnnexlist').on('change', updateRiskDisplay);
 
 
+        $(document).on('change', '.checklistaction', function () {
+            showObservationArea($(this).val(), $(this).data('observation-id'));
+        });
+
+        $(document).on('click', '.js-view-created-memo', function (event) {
+            event.preventDefault();
+            viewCreatedMemo(this, $(this).data('observation-id'));
+        });
+
+        $(document).on('click', '.js-update-resp-row', function (event) {
+            event.preventDefault();
+            updateRespRow(this);
+        });
+
+        $(document).on('click', '.js-delete-resp-row', function (event) {
+            event.preventDefault();
+            deleteRespRow(this);
+        });
+
+
+
         $.ajax({
             url: g_asiBaseURL + "/ApiCalls/checklist_details",
             type: "POST",
@@ -32,7 +53,7 @@
                 $('#checklistDetailsPanel tbody').empty();
                 var sr = 1;
                 $.each(data, function (i, v) {
-                    $('#checklistDetailsPanel tbody').append('<tr id="obs_' + v.id + '"><td>' + sr + '</td><td>' + v.s_NAME + '</td><td>' + v.v_NAME + '</td><td>' + v.heading + '</td><td><select id="checklistaction_' + v.id + '" class="checklistaction form-select form-control" onchange="showObservationArea($(this).val(),\'obs_' + v.id + '\');" aria-label="Default select example"><option value="-1" id="-1" selected>--Please Select--</option><option value="0" id="0">No</option><option value="1" id="1">Yes</option></select></td><td id="actionTd_' + v.id + '" class="text-center"><a class="text-center text-danger" onclick="event.preventDefault();viewCreatedMemo(this,\'obs_' + v.id + '\')">View Memo</a></td></tr>');
+                    $('#checklistDetailsPanel tbody').append('<tr id="obs_' + v.id + '"><td>' + sr + '</td><td>' + v.s_NAME + '</td><td>' + v.v_NAME + '</td><td>' + v.heading + '</td><td><select id="checklistaction_' + v.id + '" class="checklistaction form-select form-control" data-observation-id="obs_' + v.id + '" aria-label="Default select example"><option value="-1" id="-1" selected>--Please Select--</option><option value="0" id="0">No</option><option value="1" id="1">Yes</option></select></td><td id="actionTd_' + v.id + '" class="text-center"><a href="#" class="text-center text-danger js-view-created-memo" data-observation-id="obs_' + v.id + '">View Memo</a></td></tr>');
                     sr++;
                 });
                 getSubCheckListStatus();
@@ -307,7 +328,7 @@
                 $.each(tempobj.RESPONSIBLE_PPNO, function (j, pp) {
                     var srNo = $('#listofRespPersons tbody tr').length;
                     srNo++;
-                    $('#listofRespPersons tbody').append('<tr data-pp="' + (pp.PP_NO || '') + '" data-loan="' + (pp.LOAN_CASE || '') + '" data-account="' + (pp.ACCOUNT_NUMBER || '') + '" data-lcamount="' + (pp.LC_AMOUNT || '') + '" data-accamount="' + (pp.ACC_AMOUNT || '') + '" data-emp="' + (pp.EMP_NAME || '') + '"><td>' + srNo + '</td><td>' + pp.PP_NO + '</td><td>' + pp.EMP_NAME + '</td><td>' + pp.LOAN_CASE + '</td><td>' + pp.LC_AMOUNT + '</td><td>' + pp.ACCOUNT_NUMBER + '</td><td>' + pp.ACC_AMOUNT + '</td><td class="text-center"><a href="#" onclick="event.preventDefault();updateRespRow(this);">Update</a></td><td class="text-center"><a href="#" class="text-danger" onclick="event.preventDefault();deleteRespRow(this);">Delete</a></td></tr>');
+                    $('#listofRespPersons tbody').append('<tr data-pp="' + (pp.PP_NO || '') + '" data-loan="' + (pp.LOAN_CASE || '') + '" data-account="' + (pp.ACCOUNT_NUMBER || '') + '" data-lcamount="' + (pp.LC_AMOUNT || '') + '" data-accamount="' + (pp.ACC_AMOUNT || '') + '" data-emp="' + (pp.EMP_NAME || '') + '"><td>' + srNo + '</td><td>' + pp.PP_NO + '</td><td>' + pp.EMP_NAME + '</td><td>' + pp.LOAN_CASE + '</td><td>' + pp.LC_AMOUNT + '</td><td>' + pp.ACCOUNT_NUMBER + '</td><td>' + pp.ACC_AMOUNT + '</td><td class="text-center"><a href="#" class="js-update-resp-row">Update</a></td><td class="text-center"><a href="#" class="text-danger js-delete-resp-row">Delete</a></td></tr>');
                 });
             }
         } else {
@@ -496,10 +517,10 @@
                         <td>${item.accountNumber || ''}</td>
                         <td>${item.accAmount || ''}</td>
                         <td class="text-center">
-                            <a href="#" onclick="event.preventDefault(); updateRespRow(this);">Update</a>
+                            <a href="#" class="js-update-resp-row">Update</a>
                         </td>
                         <td class="text-center">
-                            <a href="#" class="text-danger" onclick="event.preventDefault(); deleteRespRow(this);">Delete</a>
+                            <a href="#" class="text-danger js-delete-resp-row">Delete</a>
                         </td>
                     </tr>
                 `);
