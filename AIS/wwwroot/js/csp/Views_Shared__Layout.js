@@ -1,4 +1,9 @@
         (function(){
+            var body = document.body || document.querySelector('body');
+            if (body){
+                window.PAGE_ID = Number(body.getAttribute('data-page-id') || 0) || 0;
+                window.IAS_HIDE_SIDEBAR = String(body.getAttribute('data-hide-sidebar') || "false").toLowerCase() === "true";
+            }
             var sidebar = document.getElementById('iasSidebar');
             var isDesktop = window.matchMedia('(min-width: 992px)').matches;
             var sidebarDisabled = !!window.IAS_HIDE_SIDEBAR || !sidebar;
@@ -49,6 +54,11 @@
                     if (event.clientX <= 18 && document.body.classList.contains('ias-sidebar-collapsed')){
                         if (!openTimer){
                             openTimer = setTimeout(function(){
+            var body = document.body || document.querySelector('body');
+            if (body){
+                window.PAGE_ID = Number(body.getAttribute('data-page-id') || 0) || 0;
+                window.IAS_HIDE_SIDEBAR = String(body.getAttribute('data-hide-sidebar') || "false").toLowerCase() === "true";
+            }
                                 setSidebarCollapsed(false, false);
                                 openTimer = null;
                             }, 120);
@@ -64,6 +74,11 @@
                         if (pointerAway){
                             if (!closeTimer){
                                 closeTimer = setTimeout(function(){
+            var body = document.body || document.querySelector('body');
+            if (body){
+                window.PAGE_ID = Number(body.getAttribute('data-page-id') || 0) || 0;
+                window.IAS_HIDE_SIDEBAR = String(body.getAttribute('data-hide-sidebar') || "false").toLowerCase() === "true";
+            }
                                     setSidebarCollapsed(true, false);
                                     closeTimer = null;
                                 }, 260);
@@ -85,6 +100,11 @@
                 sidebar.addEventListener('mouseleave', function(){
                     if (!document.body.classList.contains('ias-sidebar-collapsed') && !closeTimer){
                         closeTimer = setTimeout(function(){
+            var body = document.body || document.querySelector('body');
+            if (body){
+                window.PAGE_ID = Number(body.getAttribute('data-page-id') || 0) || 0;
+                window.IAS_HIDE_SIDEBAR = String(body.getAttribute('data-hide-sidebar') || "false").toLowerCase() === "true";
+            }
                             setSidebarCollapsed(true, false);
                             closeTimer = null;
                         }, 260);

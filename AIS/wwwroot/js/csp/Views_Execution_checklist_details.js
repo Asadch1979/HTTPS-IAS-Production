@@ -32,7 +32,7 @@
                 $('#checklistDetailsPanel tbody').empty();
                 var sr = 1;
                 $.each(data, function (i, v) {
-                    $('#checklistDetailsPanel tbody').append('<tr id="obs_' + v.id + '"><td>' + sr + '</td><td>' + v.s_NAME + '</td><td>' + v.v_NAME + '</td><td>' + v.heading + '</td><td><select id="checklistaction_' + v.id + '" class="checklistaction form-select form-control" onchange="showObservationArea($(this).val(),\'obs_' + v.id + '\');" aria-label="Default select example"><option value="-1" id="-1" selected>--Please Select--</option><option value="0" id="0">No</option><option value="1" id="1">Yes</option></select></td><td id="actionTd_' + v.id + '" class="text-center"><a class="text-center text-danger" onclick="event.preventDefault();viewCreatedMemo(this,\'obs_' + v.id + '\')">View Memo</a></td></tr>');
+                    $('#checklistDetailsPanel tbody').append('<tr id="obs_' + v.id + '"><td>' + sr + '</td><td>' + v.s_NAME + '</td><td>' + v.v_NAME + '</td><td>' + v.heading + '</td><td><select id="checklistaction_' + v.id + '" class="checklistaction form-select form-control" data-action="checklist-action" data-observation-id="obs_' + v.id + '" aria-label="Default select example"><option value="-1" id="-1" selected>--Please Select--</option><option value="0" id="0">No</option><option value="1" id="1">Yes</option></select></td><td id="actionTd_' + v.id + '" class="text-center"><a href="#" class="text-center text-danger" data-action="view-created-memo" data-observation-id="obs_' + v.id + '">View Memo</a></td></tr>');
                     sr++;
                 });
                 getSubCheckListStatus();
@@ -307,7 +307,7 @@
                 $.each(tempobj.RESPONSIBLE_PPNO, function (j, pp) {
                     var srNo = $('#listofRespPersons tbody tr').length;
                     srNo++;
-                    $('#listofRespPersons tbody').append('<tr data-pp="' + (pp.PP_NO || '') + '" data-loan="' + (pp.LOAN_CASE || '') + '" data-account="' + (pp.ACCOUNT_NUMBER || '') + '" data-lcamount="' + (pp.LC_AMOUNT || '') + '" data-accamount="' + (pp.ACC_AMOUNT || '') + '" data-emp="' + (pp.EMP_NAME || '') + '"><td>' + srNo + '</td><td>' + pp.PP_NO + '</td><td>' + pp.EMP_NAME + '</td><td>' + pp.LOAN_CASE + '</td><td>' + pp.LC_AMOUNT + '</td><td>' + pp.ACCOUNT_NUMBER + '</td><td>' + pp.ACC_AMOUNT + '</td><td class="text-center"><a href="#" onclick="event.preventDefault();updateRespRow(this);">Update</a></td><td class="text-center"><a href="#" class="text-danger" onclick="event.preventDefault();deleteRespRow(this);">Delete</a></td></tr>');
+                    $('#listofRespPersons tbody').append('<tr data-pp="' + (pp.PP_NO || '') + '" data-loan="' + (pp.LOAN_CASE || '') + '" data-account="' + (pp.ACCOUNT_NUMBER || '') + '" data-lcamount="' + (pp.LC_AMOUNT || '') + '" data-accamount="' + (pp.ACC_AMOUNT || '') + '" data-emp="' + (pp.EMP_NAME || '') + '"><td>' + srNo + '</td><td>' + pp.PP_NO + '</td><td>' + pp.EMP_NAME + '</td><td>' + pp.LOAN_CASE + '</td><td>' + pp.LC_AMOUNT + '</td><td>' + pp.ACCOUNT_NUMBER + '</td><td>' + pp.ACC_AMOUNT + '</td><td class="text-center"><a href="#" data-action="update-resp-row">Update</a></td><td class="text-center"><a href="#" class="text-danger" data-action="delete-resp-row">Delete</a></td></tr>');
                 });
             }
         } else {
@@ -496,10 +496,10 @@
                         <td>${item.accountNumber || ''}</td>
                         <td>${item.accAmount || ''}</td>
                         <td class="text-center">
-                            <a href="#" onclick="event.preventDefault(); updateRespRow(this);">Update</a>
+                            <a href="#" data-action="update-resp-row">Update</a>
                         </td>
                         <td class="text-center">
-                            <a href="#" class="text-danger" onclick="event.preventDefault(); deleteRespRow(this);">Delete</a>
+                            <a href="#" class="text-danger" data-action="delete-resp-row">Delete</a>
                         </td>
                     </tr>
                 `);
@@ -532,7 +532,7 @@
                         $('#checklistaction_' + v.cD_ID).val(1);
                         $('#checklistaction_' + v.cD_ID).attr('disabled', true);
                         $('#actionTd_'+v.cD_ID).empty();
-                        $('#actionTd_' + v.cD_ID).append('<a class="text-center text-danger" onclick = "ObservationViewerPanel(' + v.obS_ID + ')"> View Memo </a>');
+                        $('#actionTd_' + v.cD_ID).append('<a href="#" class="text-center text-danger" data-action="observation-viewer" data-observation-id="' + v.obS_ID + '">View Memo</a>');
 
                     }
                     else if (v.status == 'N') {
@@ -582,3 +582,64 @@
         });
 
     }
+
+
+$(document).on('change', "[data-action='checklist-action']", function () {
+    showObservationArea($(this).val(), $(this).data('observation-id'));
+});
+
+$(document).on('click', "[data-action='view-created-memo']", function (event) {
+    event.preventDefault();
+    viewCreatedMemo(this, $(this).data('observation-id'));
+});
+
+$(document).on('click', "[data-action='update-resp-row']", function (event) {
+    event.preventDefault();
+    updateRespRow(this);
+});
+
+$(document).on('click', "[data-action='delete-resp-row']", function (event) {
+    event.preventDefault();
+    deleteRespRow(this);
+});
+
+$(document).on('click', "[data-action='history-back']", function () {
+    window.history.back();
+});
+
+$(document).on('click', "[data-action='open-responsible-pps']", function () {
+    openResponsiblePPs();
+});
+
+$(document).on('click', "[data-action='save-memo']", function () {
+    saveMemoContent();
+});
+
+$(document).on('click', "[data-action='find-lc-details']", function () {
+    getLCDetails();
+});
+
+$(document).on('click', "[data-action='select-matched-pp']", function () {
+    getMatchedPP();
+});
+
+$(document).on('click', "[data-action='responsibility-main']", function () {
+    addResponsibilityToMainTable($(this).data('mode'));
+});
+
+$(document).on('input paste', "[data-digits-only='true']", function (event) {
+    var input = this;
+    if (event.type === 'paste') {
+        event.preventDefault();
+        var clipboard = (event.originalEvent && event.originalEvent.clipboardData) || window.clipboardData;
+        var text = clipboard ? clipboard.getData('text') : '';
+        input.value = (text || '').replace(/[^0-9]/g, '');
+        return;
+    }
+    input.value = input.value.replace(/[^0-9]/g, '');
+});
+
+$(document).on('click', "[data-action='observation-viewer']", function (event) {
+    event.preventDefault();
+    ObservationViewerPanel($(this).data('observation-id'));
+});

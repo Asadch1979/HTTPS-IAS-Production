@@ -75,10 +75,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="base-url" content="@baseUrl" />
 
-    <script nonce="@nonce">
-        window.PAGE_ID = Number(@((int?)ViewData["PageId"] ?? 0)) || 0;
-        window.IAS_HIDE_SIDEBAR = @Html.Raw((hideSidebar ? "true" : "false"));
-    </script>
 
     <title>@ViewData["Title"] - IAS</title>
 
@@ -458,7 +454,7 @@
     </style>
 </head>
 
-<body data-page-id="@((int?)ViewData["PageId"] ?? 0)" class="@(hideSidebar ? "ias-hide-sidebar" : "")">
+<body data-page-id="@((int?)ViewData["PageId"] ?? 0)" data-hide-sidebar="@(hideSidebar ? "true" : "false")" class="@(hideSidebar ? "ias-hide-sidebar" : "")">
     @if (!hideSidebar)
     {
         <div class="ias-backdrop" id="iasSidebarBackdrop" aria-hidden="true"></div>

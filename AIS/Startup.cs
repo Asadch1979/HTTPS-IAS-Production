@@ -361,6 +361,14 @@ namespace AIS
             var fontSources = MergeSources(GetConfiguredSources("SecurityHeaders:CspExtraFontSrc"));
             var imageSources = MergeSources(GetConfiguredSources("SecurityHeaders:CspExtraImgSrc"));
             var connectSources = MergeSources(GetConfiguredSources("SecurityHeaders:CspExtraConnectSrc"));
+            if (string.Equals(Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT"), Environments.Development, StringComparison.OrdinalIgnoreCase))
+                {
+                connectSources = MergeSources(
+                    connectSources,
+                    "http://localhost:58804",
+                    "ws://localhost:58804",
+                    "wss://localhost:44331");
+                }
 
             return string.Join("; ", new[]
                 {
