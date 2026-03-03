@@ -24,29 +24,7 @@
     }
 </style>
 
-<script type="text/javascript">
 
-    $(document).ready(function () {
-
-        getb_depositinfo();
-
-        $('#sidebar_policy').hide();
-        $("#searchTableRecord").on("keyup", function () {
-            var value = $(this).val().toLowerCase();
-            $("#b_d_T tbody tr").filter(function () {
-                $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1)
-            });
-        });
-
-
-    });
-
- 
-
-
-
-
-</script>
 <div class="row col-md-12 mt-3">
     <h4 style="display: block; color: #be0e43">Staff Position Information</h4>
 </div>
@@ -139,3 +117,4 @@
 
     </div>
 </div>
+<script src="~/js/csp/Views_Execution_staff_pos_info.js?v=1"></script>

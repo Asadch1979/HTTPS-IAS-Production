@@ -3,68 +3,7 @@
     Layout = "_Layout";
 }
 
-<script type="text/javascript">
-    var g_engId = 0;
-    var g_reportID = 0;
-    var g_rID = 0;
-    $(document).ready(function() {
-        var url_string = window.location;
-        var url = new URL(url_string);
-        g_engId = url.searchParams.get("engId");
-        g_reportID  = url.searchParams.get("report_id");
-        g_rID = url.searchParams.get("r_IND");
-        loadexceptionReport();
-    });
 
-    function loadexceptionReport(){
-        $("#wait").show();
-        destroyDatatable('account_exception_report');
-        $.ajax({
-            url: g_asiBaseURL + "/ApiCalls/get_exception_account_report            
-            type: "POST",
-            Cache: false,
-            data:{ENG_ID: g_engId , R_IND : g_indID, RPT_ID : g_reportID},
-            sucess: function (data) {
-                if(data.lenght > 0) {
-                    populateTable(data);
-                }
-            },
-            dataType: "json",
-            complete: function(){
-                $("#wait").hide();
-            },
-        });
-    function populateTable(data) {
-        $('#wait').show();
-        var TableBody = $("account_exception_report tbody");
-        tablebody.empty();
-
-        $.each(data, function(index, item){
-            var row = `<tr>
-        <td>${index + 1}</td> 
-        <td>${item.accounT_NO}</td>
-        <td>${item.accounT_TITLE}</td>
-        <td>${item.customeR_NAME}</td>
-        <td>${item.dob_DISP || item.doB_DISP || item.dob || ""}</td>
-        <td>${item.phonE_CELL}</td>
-        <td>${item.cnic}</td>
-        <td>${item.cniC_EXPIRY_DATE_DISP || item.cniC_EXPIRY_DATE || ""}</td>
-        <td>${item.accounT_TYPE}</td>
-        <td>${item.accounT_CATEGORY}</td>
-         <td>
-            <a href="./account_document?engId=${g_engId}&acNo=${item.accounT_NO}" class="btn btn-primary btn-sm">Documents</a>
-        </td>
-        <td>
-            <a href="./account_transaction?engId=${g_engId}&acNo=${item.accounT_NO}" class="btn btn-success btn-sm">Transactions</a>
-        </td>
-    </tr>`;
-        tableBody.append(row);
-          });
-        initializeDataTable('account_exception_report');
-        $('#wait').hide();
-    }
-
-</script>
 <link rel="stylesheet" href="~/css/sampling.css" />
 <div class="container-fluid mt-4">
     <div class="card card-sample shadow-sm">
@@ -96,3 +35,4 @@
         </div>
     </div>
 </div>
+<script src="~/js/csp/Views_Sampling_Account_exception_details.js?v=1"></script>
