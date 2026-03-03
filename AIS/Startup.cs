@@ -21,6 +21,8 @@ using System;
 using Microsoft.Extensions.Logging;
 using System.Text.Json.Serialization;
 using AIS.Utilities.Json;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace AIS
     {
@@ -261,6 +263,32 @@ namespace AIS
 
             app.Use(async (context, next) =>
                 {
+                if (!Configuration.GetValue<bool>("SecurityHeaders:CspEnabled"))
+                    {
+                    await next();
+                    return;
+                    }
+
+                context.Response.OnStarting(() =>
+                    {
+                    if (context.Response.ContentType != null
+                        && context.Response.ContentType.StartsWith("text/html", StringComparison.OrdinalIgnoreCase))
+                        {
+                        var headerName = Configuration.GetValue<bool>("SecurityHeaders:CspReportOnly")
+                            ? "Content-Security-Policy-Report-Only"
+                            : "Content-Security-Policy";
+
+                        context.Response.Headers[headerName] = BuildCspPolicy();
+                        }
+
+                    return System.Threading.Tasks.Task.CompletedTask;
+                    });
+
+                await next();
+                });
+
+            app.Use(async (context, next) =>
+                {
                 if (HttpMethods.IsTrace(context.Request.Method))
                     {
                     context.Response.StatusCode = StatusCodes.Status405MethodNotAllowed;
@@ -308,6 +336,127 @@ namespace AIS
             {
             var ip = context?.Connection?.RemoteIpAddress?.ToString() ?? "unknown";
             return $"{policyName}:{ip}";
+            }
+
+        private string BuildCspPolicy()
+            {
+            var reportUri = Configuration["SecurityHeaders:CspReportUriPath"];
+            if (string.IsNullOrWhiteSpace(reportUri))
+                {
+                reportUri = "/api/security/csp-report";
+                }
+
+            var scriptSources = MergeSources(
+                GetConfiguredSources("SecurityHeaders:CspExtraScriptSrc"),
+                // Library discovery from _Layout and Views/**.cshtml script tags (external CDN only)
+                "https://cdnjs.cloudflare.com",
+                "https://html2canvas.hertzen.com",
+                "https://cdn.jsdelivr.net");
+
+            var styleSources = MergeSources(
+                GetConfiguredSources("SecurityHeaders:CspExtraStyleSrc"),
+                // Library discovery from Views/**.cshtml link tags (external CDN only)
+                "https://cdn.jsdelivr.net");
+
+            var fontSources = MergeSources(GetConfiguredSources("SecurityHeaders:CspExtraFontSrc"));
+            var imageSources = MergeSources(GetConfiguredSources("SecurityHeaders:CspExtraImgSrc"));
+            var connectSources = MergeSources(GetConfiguredSources("SecurityHeaders:CspExtraConnectSrc"));
+
+            return string.Join("; ", new[]
+                {
+                "default-src 'self'",
+                "base-uri 'self'",
+                "object-src 'none'",
+                "form-action 'self'",
+                "frame-ancestors 'none'",
+                "img-src 'self' data: blob:" + JoinSources(imageSources),
+                "font-src 'self' data:" + JoinSources(fontSources),
+                "connect-src 'self'" + JoinSources(connectSources),
+                "script-src 'self'" + JoinSources(scriptSources),
+                "style-src 'self' 'unsafe-inline'" + JoinSources(styleSources),
+                "upgrade-insecure-requests",
+                $"report-uri {reportUri}"
+                });
+            }
+
+        private List<string> GetConfiguredSources(string key)
+            {
+            var section = Configuration.GetSection(key);
+            var values = section.Get<string[]>();
+            if (values != null && values.Length > 0)
+                {
+                return values.Where(v => !string.IsNullOrWhiteSpace(v)).Select(v => v.Trim()).ToList();
+                }
+
+            var commaSeparated = Configuration[key];
+            if (string.IsNullOrWhiteSpace(commaSeparated))
+                {
+                return new List<string>();
+                }
+
+            return commaSeparated
+                .Split(',', StringSplitOptions.RemoveEmptyEntries)
+                .Select(value => value.Trim())
+                .Where(value => !string.IsNullOrWhiteSpace(value))
+                .ToList();
+            }
+
+        private static List<string> MergeSources(IEnumerable<string> configured, params string[] discovered)
+            {
+            var finalSources = new List<string>();
+
+            if (configured != null)
+                {
+                foreach (var source in configured)
+                    {
+                    AddUniqueSource(finalSources, source);
+                    }
+                }
+
+            if (discovered != null)
+                {
+                foreach (var source in discovered)
+                    {
+                    AddUniqueSource(finalSources, source);
+                    }
+                }
+
+            return finalSources;
+            }
+
+        private static void AddUniqueSource(List<string> sources, string source)
+            {
+            if (string.IsNullOrWhiteSpace(source))
+                {
+                return;
+                }
+
+            var normalized = source.Trim().TrimEnd('/');
+            if (normalized.Length == 0)
+                {
+                return;
+                }
+
+            if (!sources.Contains(normalized, StringComparer.OrdinalIgnoreCase))
+                {
+                sources.Add(normalized);
+                }
+            }
+
+        private static string JoinSources(IEnumerable<string> sources)
+            {
+            if (sources == null)
+                {
+                return string.Empty;
+                }
+
+            var list = sources.Where(source => !string.IsNullOrWhiteSpace(source)).ToList();
+            if (list.Count == 0)
+                {
+                return string.Empty;
+                }
+
+            return " " + string.Join(" ", list);
             }
 
         }
