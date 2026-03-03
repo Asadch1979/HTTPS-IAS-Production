@@ -258,6 +258,7 @@ namespace AIS
                 Configuration["Email:From"]);
 
             app.UseHttpsRedirection();
+            app.UseMiddleware<CspReportOnlyMiddleware>();
 
             app.Use(async (context, next) =>
                 {
