@@ -278,7 +278,7 @@ namespace AIS
                             ? "Content-Security-Policy-Report-Only"
                             : "Content-Security-Policy";
 
-                        context.Response.Headers[headerName] = BuildCspPolicy();
+                        context.Response.Headers[headerName] = BuildCspPolicy(env.IsDevelopment());
                         }
 
                     return System.Threading.Tasks.Task.CompletedTask;
@@ -338,7 +338,7 @@ namespace AIS
             return $"{policyName}:{ip}";
             }
 
-        private string BuildCspPolicy()
+        private string BuildCspPolicy(bool isDevelopment)
             {
             var reportUri = Configuration["SecurityHeaders:CspReportUriPath"];
             if (string.IsNullOrWhiteSpace(reportUri))
@@ -361,6 +361,12 @@ namespace AIS
             var fontSources = MergeSources(GetConfiguredSources("SecurityHeaders:CspExtraFontSrc"));
             var imageSources = MergeSources(GetConfiguredSources("SecurityHeaders:CspExtraImgSrc"));
             var connectSources = MergeSources(GetConfiguredSources("SecurityHeaders:CspExtraConnectSrc"));
+            if (isDevelopment)
+                {
+                AddUniqueSource(connectSources, "http://localhost:58804");
+                AddUniqueSource(connectSources, "ws://localhost:58804");
+                AddUniqueSource(connectSources, "wss://localhost:44331");
+                }
 
             return string.Join("; ", new[]
                 {

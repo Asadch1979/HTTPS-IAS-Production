@@ -10,6 +10,61 @@
     var g_selectedRiskId = 0;
     var g_annexList = @Json.Serialize(ViewData["AnnexList"]);
     $(document).ready(function () {
+        $(document).on('click', '.js-history-back', function () {
+            window.history.back();
+        });
+
+        $(document).on('click', '.js-open-responsible-pps', function () {
+            openResponsiblePPs();
+        });
+
+        $(document).on('click', '.js-save-memo', function () {
+            saveMemoContent();
+        });
+
+        $(document).on('click', '.js-get-lc-details', function () {
+            getLCDetails();
+        });
+
+        $(document).on('click', '.js-get-matched-pp', function () {
+            getMatchedPP();
+        });
+
+        $(document).on('click', '.js-responsibility-action', function () {
+            addResponsibilityToMainTable($(this).data('action'));
+        });
+
+        $(document).on('change', 'select[data-observation-select]', function () {
+            var rowId = $(this).data('target-row');
+            showObservationArea($(this).val(), rowId);
+        });
+
+        $(document).on('click', '.js-view-created-memo', function (event) {
+            event.preventDefault();
+            viewCreatedMemo(this, $(this).data('row-id'));
+        });
+
+        $(document).on('click', '.js-update-resp-row', function (event) {
+            event.preventDefault();
+            updateRespRow(this);
+        });
+
+        $(document).on('click', '.js-delete-resp-row', function (event) {
+            event.preventDefault();
+            deleteRespRow(this);
+        });
+
+        $(document).on('input', '[data-digits-only="true"]', function () {
+            this.value = this.value.replace(/[^0-9]/g, '');
+        });
+
+        $(document).on('paste', '[data-digits-only="true"]', function (event) {
+            var clipboard = event.originalEvent && event.originalEvent.clipboardData ? event.originalEvent.clipboardData : (window.clipboardData || null);
+            var text = clipboard ? clipboard.getData('text') : '';
+            this.value = (text || '').replace(/[^0-9]/g, '');
+            event.preventDefault();
+        });
+
         var url_string = window.location;
         var url = new URL(url_string);
         var checklistsub_id = url.searchParams.get("id");
@@ -32,7 +87,7 @@
                 $('#checklistDetailsPanel tbody').empty();
                 var sr = 1;
                 $.each(data, function (i, v) {
-                    $('#checklistDetailsPanel tbody').append('<tr id="obs_' + v.id + '"><td>' + sr + '</td><td>' + v.s_NAME + '</td><td>' + v.v_NAME + '</td><td>' + v.heading + '</td><td><select id="checklistaction_' + v.id + '" class="checklistaction form-select form-control" onchange="showObservationArea($(this).val(),\'obs_' + v.id + '\');" aria-label="Default select example"><option value="-1" id="-1" selected>--Please Select--</option><option value="0" id="0">No</option><option value="1" id="1">Yes</option></select></td><td id="actionTd_' + v.id + '" class="text-center"><a class="text-center text-danger" onclick="event.preventDefault();viewCreatedMemo(this,\'obs_' + v.id + '\')">View Memo</a></td></tr>');
+                    $('#checklistDetailsPanel tbody').append('<tr id="obs_' + v.id + '"><td>' + sr + '</td><td>' + v.s_NAME + '</td><td>' + v.v_NAME + '</td><td>' + v.heading + '</td><td><select id="checklistaction_' + v.id + '" class="checklistaction form-select form-control" data-observation-select="true" data-target-row="obs_' + v.id + '" aria-label="Default select example"><option value="-1" id="-1" selected>--Please Select--</option><option value="0" id="0">No</option><option value="1" id="1">Yes</option></select></td><td id="actionTd_' + v.id + '" class="text-center"><a href="#" class="text-center text-danger js-view-created-memo" data-row-id="obs_' + v.id + '">View Memo</a></td></tr>');
                     sr++;
                 });
                 getSubCheckListStatus();
@@ -307,7 +362,7 @@
                 $.each(tempobj.RESPONSIBLE_PPNO, function (j, pp) {
                     var srNo = $('#listofRespPersons tbody tr').length;
                     srNo++;
-                    $('#listofRespPersons tbody').append('<tr data-pp="' + (pp.PP_NO || '') + '" data-loan="' + (pp.LOAN_CASE || '') + '" data-account="' + (pp.ACCOUNT_NUMBER || '') + '" data-lcamount="' + (pp.LC_AMOUNT || '') + '" data-accamount="' + (pp.ACC_AMOUNT || '') + '" data-emp="' + (pp.EMP_NAME || '') + '"><td>' + srNo + '</td><td>' + pp.PP_NO + '</td><td>' + pp.EMP_NAME + '</td><td>' + pp.LOAN_CASE + '</td><td>' + pp.LC_AMOUNT + '</td><td>' + pp.ACCOUNT_NUMBER + '</td><td>' + pp.ACC_AMOUNT + '</td><td class="text-center"><a href="#" onclick="event.preventDefault();updateRespRow(this);">Update</a></td><td class="text-center"><a href="#" class="text-danger" onclick="event.preventDefault();deleteRespRow(this);">Delete</a></td></tr>');
+                    $('#listofRespPersons tbody').append('<tr data-pp="' + (pp.PP_NO || '') + '" data-loan="' + (pp.LOAN_CASE || '') + '" data-account="' + (pp.ACCOUNT_NUMBER || '') + '" data-lcamount="' + (pp.LC_AMOUNT || '') + '" data-accamount="' + (pp.ACC_AMOUNT || '') + '" data-emp="' + (pp.EMP_NAME || '') + '"><td>' + srNo + '</td><td>' + pp.PP_NO + '</td><td>' + pp.EMP_NAME + '</td><td>' + pp.LOAN_CASE + '</td><td>' + pp.LC_AMOUNT + '</td><td>' + pp.ACCOUNT_NUMBER + '</td><td>' + pp.ACC_AMOUNT + '</td><td class="text-center"><a href="#" class="js-update-resp-row">Update</a></td><td class="text-center"><a href="#" class="text-danger js-delete-resp-row">Delete</a></td></tr>');
                 });
             }
         } else {
@@ -496,10 +551,10 @@
                         <td>${item.accountNumber || ''}</td>
                         <td>${item.accAmount || ''}</td>
                         <td class="text-center">
-                            <a href="#" onclick="event.preventDefault(); updateRespRow(this);">Update</a>
+                            <a href="#" class="js-update-resp-row">Update</a>
                         </td>
                         <td class="text-center">
-                            <a href="#" class="text-danger" onclick="event.preventDefault(); deleteRespRow(this);">Delete</a>
+                            <a href="#" class="text-danger js-delete-resp-row">Delete</a>
                         </td>
                     </tr>
                 `);
