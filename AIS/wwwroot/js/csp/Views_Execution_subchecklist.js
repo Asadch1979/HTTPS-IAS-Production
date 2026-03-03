@@ -4,6 +4,11 @@
         var url = new URL(url_string);
         var checklist_id = url.searchParams.get("id");
         g_endId = url.searchParams.get("engId");
+        $(document).on('click', '.js-checklist-details-link', function (event) {
+            event.preventDefault();
+            proceedToChecklistDetails($(this).data('sub-id'));
+        });
+
         $.ajax({
             url: g_asiBaseURL + "/ApiCalls/sub_checklist",
             type: "POST",
@@ -17,7 +22,7 @@
                 $('#subchecklistPanel tbody').empty();
                 var sr = 1;
                $.each(data, function (i, v) {
-                    $('#subchecklistPanel tbody').append('<tr id="' + v.s_ID + '"><td>' + sr + '</td><td>' + v.t_NAME + '</td><td>' + v.heading + '</td><td class="text-center"><span class="badge text-bg-danger rounded-pill d-inline">' + v.status + '</span></td><td class="text-center"><a href="#" onclick="event.preventDefault();proceedToChecklistDetails(' + v.s_ID + ')">Checklist Details</a></td></tr>');
+                    $('#subchecklistPanel tbody').append('<tr id="' + v.s_ID + '"><td>' + sr + '</td><td>' + v.t_NAME + '</td><td>' + v.heading + '</td><td class="text-center"><span class="badge text-bg-danger rounded-pill d-inline">' + v.status + '</span></td><td class="text-center"><a href="#" class="js-checklist-details-link" data-sub-id="' + v.s_ID + '">Checklist Details</a></td></tr>');
                    sr++;
                 });
 
