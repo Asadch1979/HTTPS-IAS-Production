@@ -6,77 +6,7 @@
     ViewData["Title"] = "Change Status Request for Current Paras";
     Layout = "_Layout";
 }
-<script>
-    var g_paraId = 0;
-    var refp = 0;
-    var g_obsList = [];
 
-    function getLegacyPara() {
-
-        $('#manageObsPanel tbody').empty();
-        $.ajax({
-            url: g_asiBaseURL + "/ApiCalls/get_current_paras_for_status_change_request",
-            type: "POST",
-            data: {
-                'ENTITY_ID': $('#entitySelectField').val()
-            },
-            cache: false,
-            success: function (data) {
-                g_obsList = data;
-
-                $.each(data, function (index, child) {
-                    $('#manageObsPanel tbody').append('<tr id="div_' + child.id + '"><td><p class="fw-normal mb-1">' + child.entitY_NAME + '</p></td><td><p class="fw-normal mb-1">' + child.audiT_PERIOD + '</p></td><td><p class="fw-normal mb-1">' + child.parA_NO + '</p></td><td><p class="fw-normal mb-1">' + child.gisT_OF_PARAS + '</p></td><td><p class="fw-normal mb-1">' + child.amounT_INVOLVED + '</p></td><td class="col-md-1" style="text-align:center"><p  class="fw-normal mb-1" >' + child.voL_I_II + '</p></td><td class="col-md-1" style="text-align:center"><p  class="fw-normal mb-1" >' + child.parA_STATUS + '</p></td><td class="text-center"><a class="text-center text-primary" style="cursor:pointer;" onclick="event.preventDefault();paraText(\'' + child.id + '\');">View Para Text</a></td><td class="text-center"><a class="text-center text-danger" style="cursor:pointer;" onclick="parastatuschange(\'' + child.id + '\');">Change Status</a></td></tr>')
-                });
-
-            },
-
-            dataType: "json",
-        });
-
-    }
-
-    function paraText(id) {
-        $('#paraTextDisplayModel').modal('show');
-        $('#paraTextModelPanel').empty();
-
-        $.get(g_asiBaseURL + "/ApiCalls/GetIASPARATEXT", { comId: id }, function (data) {
-            $('#paraTextModelPanel').html(data);
-        });
-
-    }
-    function parastatuschange(id) {
-        refp = id;
-        $('#process_detail').modal('show');
-    }
-
-    function Publishchange() {
-
-        if ($('#Reason_Unsettle').val() == "") {
-            alert("Please enter Reply");
-            return;
-        }
-        $.ajax({
-            url: g_asiBaseURL + "/ApiCalls/Add_New_Para_Change_status_Request",
-            type: "POST",
-            data: {
-                'REFID': refp,
-                'NEW_STATUS': $('#checklistDetailField').val(),
-                'REMARKS': $('#Reason_Unsettle').val()
-            },
-            cache: false,
-            success: function (data) {
-                $('#process_detail').modal('hide');
-                showApiAlert(data);
-                onAlertCallback(reloadLocation);
-
-            },
-            dataType: "json",
-        });
-    }
-    function reloadLocation() {
-        getLegacyPara();
-    }
-</script>
 
 <div class="row">
     <div class="col-md-12 mt-3">
@@ -206,3 +136,5 @@
 
 
 
+
+<script src="~/js/csp/Views_PostCompliance_change_status_new_Para.js?v=1"></script>
