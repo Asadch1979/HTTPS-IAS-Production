@@ -163,7 +163,17 @@
 </style>
 
 
-
+<script type="text/javascript">
+    $('#document').ready(function () {
+       
+        $('.template_box').richText({
+            imageUpload: false,
+            fileUpload: false,
+            videoEmbed: false,
+            urls: false
+        });
+    });
+</script>
 
 
 
@@ -631,5 +641,3 @@
 <br />
 <br />
 <hr class="section-sep" />
-
-<script src="~/js/csp/Views_Reports_audit_report.js?v=1"></script>

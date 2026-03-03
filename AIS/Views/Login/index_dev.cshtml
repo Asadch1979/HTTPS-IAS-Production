@@ -233,7 +233,17 @@
     </div>
 </div>
 
-
+<script nonce="@nonce">
+    // Simple password show/hide (does not interfere with login.js)
+    (function(){
+        var btn = document.getElementById('togglePasswordBtn');
+        var input = document.getElementById('inputPassword');
+        if(!btn || !input) return;
+        btn.addEventListener('click', function(){
+            input.type = (input.type === 'password') ? 'text' : 'password';
+        });
+    })();
+</script>
 
 <form id="killSessionForm" method="post" action="@Url.Action("KillSession", "Login")" class="d-none">
     @Html.AntiForgeryToken()
@@ -282,5 +292,3 @@
         </div>
     </div>
 </div>
-
-<script src="~/js/csp/Views_Login_index_dev.js?v=1"></script>

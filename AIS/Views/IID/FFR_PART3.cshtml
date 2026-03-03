@@ -137,7 +137,31 @@
 </form>
 
 @section Scripts{
+<script>
+    $(function(){
+        function toggleAuditDetails(){
+            var isYes = $('#AuditHighlightedYes').is(':checked');
+            if(isYes){
+                $('#auditHighlightDetails').removeClass('d-none');
+            } else {
+                $('#auditHighlightDetails').addClass('d-none');
+            }
+        }
 
+        function toggleOtherImplication(){
+            if($('#ImplicationOther').is(':checked')){
+                $('#ImplicationOtherDetails').removeClass('d-none');
+            } else {
+                $('#ImplicationOtherDetails').addClass('d-none');
+                $('#ImplicationOtherDetails input').val('');
+            }
+        }
 
-    <script src="~/js/csp/Views_IID_FFR_PART3.js?v=1"></script>
+        $('input[name="AuditHighlighted"]').on('change', toggleAuditDetails);
+        $('#ImplicationOther').on('change', toggleOtherImplication);
+
+        toggleAuditDetails();
+        toggleOtherImplication();
+    });
+</script>
 }

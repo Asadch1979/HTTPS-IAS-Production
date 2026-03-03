@@ -183,7 +183,9 @@
 </div>
 
 @section Scripts {
-    
-
-    <script src="~/js/csp/Views_Engagement_task_list.js?v=1"></script>
+    <script type="text/javascript">
+        $(document).ready(function () {
+            initializeDataTable('taskListTable');
+        });
+    </script>
 }
