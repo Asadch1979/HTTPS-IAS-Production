@@ -179,6 +179,11 @@
     </div>
 </div>
 
+<script type="application/json" id="page-data">
+@Html.Raw(System.Text.Json.JsonSerializer.Serialize(new {
+    RequestedParaId = requestedParaId
+}))
+</script>
 @section Scripts {
     <script src="~/js/csp/Views_HM_SbpObservationHistory.js?v=1"></script>
     
