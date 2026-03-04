@@ -14,10 +14,7 @@
 
         function buildActions(row){
             var status = resolveValue(row, 'STATUS', 'status', 'Status');
-            var complaintIdRaw = resolveValue(row, 'COMPLAINT_ID', 'complaintId', 'ComplaintId');
-            var complaintId = parseInt(complaintIdRaw, 10);
-            if(isNaN(complaintId)){ complaintId = 0; }
-
+            var complaintId = resolveValue(row, 'COMPLAINT_ID', 'complaintId', 'ComplaintId');
             var planId = resolveValue(row, 'PLAN_ID', 'planId', 'PlanId');
             var planExists = planId && Number(planId) > 0;
 
@@ -39,7 +36,7 @@
                 actions.push('<a href="' + g_asiBaseURL + '/IID/InquiryReport?complaintId=' + complaintId + '">Submit Final Report</a>');
             }
 
-            if(complaintId > 0){
+            if(complaintId){
                 actions.push('<a href="' + g_asiBaseURL + '/IID/InquiryReport?complaintId=' + complaintId + '">Inquiry Report</a>');
             }
 
