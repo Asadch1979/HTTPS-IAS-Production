@@ -1,3 +1,21 @@
+window.addEventListener("error", function (e) {
+    console.error("JS error:", e.message, e.filename, e.lineno, e.colno);
+});
+window.addEventListener("unhandledrejection", function (e) {
+    console.error("Promise rejection:", e.reason);
+});
+
+function getPageData() {
+    const el = document.getElementById("page-data");
+    if (!el) return {};
+    try {
+        return JSON.parse(el.textContent || "{}");
+    } catch (err) {
+        console.error("Failed to parse #page-data JSON:", err);
+        return {};
+    }
+}
+
     var g_obsId = 0;
     var g_entityID = 0;
     var g_newStatusId = 0;
@@ -6,7 +24,8 @@
     var g_currentStatus = 0;
     var g_obsList = [];
     var g_selectedRiskId = 0;
-    var g_annexList = @Json.Serialize(ViewData["AnnexList"]);
+    const pageData = getPageData();
+    var g_annexList = pageData.AnnexList || [];
     var g_processId = 0;
     var g_subProcessId = 0;
     var g_checklistId = 0;
@@ -21,6 +40,7 @@
         }
     }
     $(document).ready(function () {
+        console.log("Loaded manage_observations_branches JS", { g_obsId, g_entityID });
         $('#entitySelectField').select2();
         var entName = $('#manageObsPanel tbody .entity_name_field:first').text();
         $('#entityNameField').val(entName);

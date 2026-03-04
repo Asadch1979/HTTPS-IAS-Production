@@ -1,3 +1,21 @@
+window.addEventListener("error", function (e) {
+    console.error("JS error:", e.message, e.filename, e.lineno, e.colno);
+});
+window.addEventListener("unhandledrejection", function (e) {
+    console.error("Promise rejection:", e.reason);
+});
+
+function getPageData() {
+    const el = document.getElementById("page-data");
+    if (!el) return {};
+    try {
+        return JSON.parse(el.textContent || "{}");
+    } catch (err) {
+        console.error("Failed to parse #page-data JSON:", err);
+        return {};
+    }
+}
+
     var g_obsId = 0;
     var g_newStatusId = 0;
     var g_entityID = 0;
@@ -9,8 +27,10 @@
     var g_selectedRiskId = 0;
     var g_statusId = 0;
     var respSection = null;
-    var g_annexList = @Json.Serialize(ViewData["AnnexList"]);
+    const pageData = getPageData();
+    var g_annexList = pageData.AnnexList || [];
     $(document).ready(function () {
+        console.log("Loaded draft_audit_report_branch JS", { g_obsId, g_entityID });
         $('#entitySelectField').select2();
         var entName = $('#manageObsPanel tbody .entity_name_field:first').text();
         $('#entityNameField').val(entName);

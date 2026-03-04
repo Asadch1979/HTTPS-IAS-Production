@@ -272,4 +272,9 @@
         </div>
     </div>
 </div>
+<script type="application/json" id="page-data">
+@Html.Raw(System.Text.Json.JsonSerializer.Serialize(new {
+    AnnexList = ViewData["AnnexList"]
+}))
+</script>
 <script src="~/js/csp/Views_Execution_cau_observation.js?v=1"></script>

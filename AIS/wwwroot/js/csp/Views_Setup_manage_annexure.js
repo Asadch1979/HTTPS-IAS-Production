@@ -1,8 +1,28 @@
-    var g_annexList = @Json.Serialize(ViewData["AnnexList"]);
+window.addEventListener("error", function (e) {
+    console.error("JS error:", e.message, e.filename, e.lineno, e.colno);
+});
+window.addEventListener("unhandledrejection", function (e) {
+    console.error("Promise rejection:", e.reason);
+});
+
+function getPageData() {
+    const el = document.getElementById("page-data");
+    if (!el) return {};
+    try {
+        return JSON.parse(el.textContent || "{}");
+    } catch (err) {
+        console.error("Failed to parse #page-data JSON:", err);
+        return {};
+    }
+}
+
+    const pageData = getPageData();
+    var g_annexList = pageData.AnnexList || [];
     var g_procId = 0;
     var g_annexId = 0;
     var g_subProcList = [];
     $(document).ready(function () {
+        console.log("Loaded manage_annexure JS", { annexCount: g_annexList.length });
         $("#searchTableRecord").on("keyup", function () {
             var value = $(this).val().toLowerCase();
             $("#auditeeEntitiesList tbody tr").filter(function () {
