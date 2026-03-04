@@ -1,19 +1,3 @@
-window.addEventListener("error", function (e) {
-    console.error("JS error:", e.message, e.filename, e.lineno, e.colno);
-});
-window.addEventListener("unhandledrejection", function (e) {
-    console.error("Promise rejection:", e.reason);
-});
-
-function getPageData() {
-    var el = document.getElementById("page-data");
-    if (!el) return {};
-    try { return JSON.parse(el.textContent || "{}"); } catch (error) {
-        console.error("Invalid #page-data JSON", error);
-        return {};
-    }
-}
-
         var g_com_id = 0;
         var g_np_id = 0;
         var g_op_id = 0;
@@ -25,8 +9,7 @@ function getPageData() {
         var g_stagedResp = [];
         var g_index = 0;
         var g_ele = null;
-        var pageData = getPageData();
-    var g_annexList = pageData.AnnexList || [];
+        var g_annexList = @Json.Serialize(ViewData["AnnexList"]);
         var g_selectedRiskId = 0;
         function normalizeRequiredInt(value) {
             var trimmed = $.trim(value);
@@ -90,7 +73,6 @@ function getPageData() {
             renderPendingGrid();
         }
         $(document).ready(function () {
-        console.log("Loaded Views_Execution_manage_audit_paras_authorized.js JS");
             $('#paraTextViewer').richText({
                 imageUpload: false,
                 fileUpload: false,

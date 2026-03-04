@@ -405,11 +405,6 @@
     </div>
 </div>
 @section Scripts {
-    <script type="application/json" id="page-data">
-@Html.Raw(System.Text.Json.JsonSerializer.Serialize(new {
-    AnnexList = ViewData["AnnexList"]
-}))
-</script>
-<script src="~/js/csp/Views_Execution_draft_audit_report_branch.js?v=1"></script>
+    <script src="~/js/csp/Views_Execution_draft_audit_report_branch.js?v=1"></script>
     <script src="~/js/responsibilitySection.js"></script>
 }

@@ -1,19 +1,3 @@
-window.addEventListener("error", function (e) {
-    console.error("JS error:", e.message, e.filename, e.lineno, e.colno);
-});
-window.addEventListener("unhandledrejection", function (e) {
-    console.error("Promise rejection:", e.reason);
-});
-
-function getPageData() {
-    var el = document.getElementById("page-data");
-    if (!el) return {};
-    try { return JSON.parse(el.textContent || "{}"); } catch (error) {
-        console.error("Invalid #page-data JSON", error);
-        return {};
-    }
-}
-
     var g_respUser = [];
     var g_memoObj = [];
     var g_observationId = 0;
@@ -24,14 +8,13 @@ function getPageData() {
     var g_selectedRespRow = null;
 
     var g_selectedRiskId = 0;
-    var pageData = getPageData();
-    var g_annexList = pageData.AnnexList || [];
+    var g_annexList = @Json.Serialize(ViewData["AnnexList"]);
     $(document).ready(function () {
-        var url = new URL(window.location.href);
+        var url_string = window.location;
+        var url = new URL(url_string);
         var checklistsub_id = url.searchParams.get("id");
-        g_engId = url.searchParams.get("engId");
         S_ID = checklistsub_id;
-        console.log("Loaded checklist_details JS", { S_ID: S_ID, g_engId: g_engId });
+        g_engId = url.searchParams.get("engId");
         $('#updatedAnnexlist').select2({ dropdownParent: $('#viewMemoModel') });
         $('#updatedAnnexlist').on('change', updateRiskDisplay);
 

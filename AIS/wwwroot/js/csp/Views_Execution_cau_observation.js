@@ -1,26 +1,9 @@
-window.addEventListener("error", function (e) {
-    console.error("JS error:", e.message, e.filename, e.lineno, e.colno);
-});
-window.addEventListener("unhandledrejection", function (e) {
-    console.error("Promise rejection:", e.reason);
-});
-
-function getPageData() {
-    var el = document.getElementById("page-data");
-    if (!el) return {};
-    try { return JSON.parse(el.textContent || "{}"); } catch (error) {
-        console.error("Invalid #page-data JSON", error);
-        return {};
-    }
-}
-
     var g_engId = 0;
     var g_respUser = [];
     var g_stagedResp = [];
     var g_selectedRespRow = null;
     var g_selectedRiskId = 0;
-    var pageData = getPageData();
-    var g_annexList = pageData.AnnexList || [];
+    var g_annexList = @Json.Serialize(ViewData["AnnexList"]);
 
     function normalizeRequiredInt(value) {
         var trimmed = $.trim(value);
@@ -43,7 +26,6 @@ function getPageData() {
         var url_string = window.location;
         var url = new URL(url_string);
         g_engId = url.searchParams.get("engId");
-        console.log("Loaded Views_Execution_cau_observation.js JS", { g_engId: g_engId });
         $('#template_box').richText({
             bold: true,
             italic: true,

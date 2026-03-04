@@ -1,19 +1,3 @@
-window.addEventListener("error", function (e) {
-    console.error("JS error:", e.message, e.filename, e.lineno, e.colno);
-});
-window.addEventListener("unhandledrejection", function (e) {
-    console.error("Promise rejection:", e.reason);
-});
-
-function getPageData() {
-    var el = document.getElementById("page-data");
-    if (!el) return {};
-    try { return JSON.parse(el.textContent || "{}"); } catch (error) {
-        console.error("Invalid #page-data JSON", error);
-        return {};
-    }
-}
-
         (function () {
             const AUTH_KEY = 'SBP_AUTH';
             const RETAIN_KEY = 'SBP_AUTH_RETAIN';
@@ -40,8 +24,7 @@ function getPageData() {
                 videoEmbed: false,
                 urls: false
             };
-            const pageData = getPageData();
-            const requestedParaId = Number(pageData.requestedParaId || 0);
+            const requestedParaId = Number(@Json.Serialize(requestedParaId));
             const queryParams = new URLSearchParams(window.location.search);
             const queryParaId = parseInt(queryParams.get('paraId'), 10) || 0;
             const API_BASE_URL = (typeof g_aisBaseURL === 'string' && g_aisBaseURL)
@@ -149,7 +132,6 @@ function getPageData() {
             }
 
             $(document).ready(function () {
-        console.log("Loaded Views_HM_SbpObservationHistory.js JS");
                 $('#pageParaId').text(currentParaId > 0 ? currentParaId : '-');
 
                 if (!currentParaId) {
