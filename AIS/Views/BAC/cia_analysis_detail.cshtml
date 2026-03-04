@@ -10,7 +10,7 @@
 </div>
 <div class="row col-md-12 mt-3">
     <div class="col-md-12">
-           <select onchange="getBACSubProcess();" id="BACAnalysisOptionBox" class="form-control">
+           <select data-onchange="getBACSubProcess();" id="BACAnalysisOptionBox" class="form-control">
                <option>--Select Process--</option>
                 @{
                     if (ViewData["OptionList"] != null)
@@ -28,7 +28,7 @@
 </div>
 <div class="row col-md-12 mt-3">
     <div class="col-md-12">
-        <select onchange="getBACChecklist();" id="BACAnalysisOptionBox" class="form-control">
+        <select data-onchange="getBACChecklist();" id="BACAnalysisOptionBox" class="form-control">
             <option>--Select Syb Process--</option>
           
 

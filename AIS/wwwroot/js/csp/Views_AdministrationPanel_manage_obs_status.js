@@ -32,7 +32,7 @@
                 $('#manageObservationStatusGrid tbody').empty();
                 $.each(data, function (i, v) {
 
-                    $('#manageObservationStatusGrid tbody').append('<tr><td>' + ++i + '</td><td>' + v.statuS_ID + '</td><td>' + v.statuS_NAME + '</td><td>' + v.iS_ACTIVE + '</td><td>' + v.code + '</td><td>' + v.satisfied + '</td><td><a href="#" onclick="event.preventDefault();UpdateManageObservation(' + v.statuS_ID + ');" class="text-danger">Update</a></td></tr>');
+                    $('#manageObservationStatusGrid tbody').append('<tr><td>' + ++i + '</td><td>' + v.statuS_ID + '</td><td>' + v.statuS_NAME + '</td><td>' + v.iS_ACTIVE + '</td><td>' + v.code + '</td><td>' + v.satisfied + '</td><td><a href="#" data-onclick="event.preventDefault();UpdateManageObservation(' + v.statuS_ID + ');" class="text-danger">Update</a></td></tr>');
 
                 });
 

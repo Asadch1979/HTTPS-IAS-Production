@@ -40,7 +40,7 @@
             <td class="text-center">${item.totaL_COUNT}</td>
             <td class="text-center">${item.samplE_COUNT}</td>
             <td class="text-center">
-            <button class="btn btn-danger btn-sm" onclick="viewSample(${item.samplE_ID}, ${item.loaN_STATUS}, '${item.samplE_INDICATOR}', '${item.samplE_TYPE}')">                    View
+            <button class="btn btn-danger btn-sm" data-onclick="viewSample(${item.samplE_ID}, ${item.loaN_STATUS}, '${item.samplE_INDICATOR}', '${item.samplE_TYPE}')">                    View
                 </button>
             </td>
         </tr>`;

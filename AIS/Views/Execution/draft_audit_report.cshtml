@@ -28,7 +28,7 @@
         </div>
         <div class="col-md-10">
             <input id="entityNameField" disabled="disabled" class="form-control ml-1 d-none" type="text" />
-            <select id="entitySelectField" onchange="getEntityObservation()" class="form-control form-select">
+            <select id="entitySelectField" data-onchange="getEntityObservation()" class="form-control form-select">
                 <option value="0" id="0">--Select Audit Entity--</option>
                 @{
                     if (ViewData["EntitiesList"] != null)
@@ -112,7 +112,7 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                <button onclick="finalCommentsButtonSave();" id="finalCommentsButtonSave" type="button" class="btn btn-danger">Submit</button>
+                <button data-onclick="finalCommentsButtonSave();" id="finalCommentsButtonSave" type="button" class="btn btn-danger">Submit</button>
             </div>
         </div>
     </div>
@@ -132,7 +132,7 @@
 
                     <div class="form-group">
                         <label for="viewMemo_process_ObSent" class="font-weight-bold">Violation</label>
-                        <select id="viewMemo_process_ObSent" onchange="getViolationNatureOfProcess();" class="form-select form-control">
+                        <select id="viewMemo_process_ObSent" data-onchange="getViolationNatureOfProcess();" class="form-select form-control">
                             <option value="0" id="0" selected="selected">--Select Voilation Category--</option>
                             @{
                                 if (ViewData["Voilation_Cat"] != null)
@@ -202,9 +202,9 @@
                 </form>
             </div>
             <div class="modal-footer">
-                <button id="update_audit_obs_button" onclick="updateObservationDetails(g_obsId);" type="button" class="btn btn-primary">Update Para Details</button>
-                <button id="un_settle_audit_obs_button" onclick="updateObservationStatus(g_obsId,8);" type="button" data-bs-dismiss="modal" class="btn btn-danger">Add to Final Report</button>
-                <button id="settle_audit_obs_button" onclick="updateObservationStatus(g_obsId, 9);" type="button" data-bs-dismiss="modal" class="btn btn-success">Settle</button>
+                <button id="update_audit_obs_button" data-onclick="updateObservationDetails(g_obsId);" type="button" class="btn btn-primary">Update Para Details</button>
+                <button id="un_settle_audit_obs_button" data-onclick="updateObservationStatus(g_obsId,8);" type="button" data-bs-dismiss="modal" class="btn btn-danger">Add to Final Report</button>
+                <button id="settle_audit_obs_button" data-onclick="updateObservationStatus(g_obsId, 9);" type="button" data-bs-dismiss="modal" class="btn btn-success">Settle</button>
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
             </div>
         </div>

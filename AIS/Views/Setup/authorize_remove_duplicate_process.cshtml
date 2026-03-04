@@ -29,7 +29,7 @@
 
 <div class="row col-md-12">
     <label class="form-label font-weight-bold">Process</label>
-    <select id="checklistSelectField" onchange="getProcessesForMergeDuplicate();" class="form-select form-control">
+    <select id="checklistSelectField" data-onchange="getProcessesForMergeDuplicate();" class="form-select form-control">
         <option value="0" id="0" selected>--Select Process--</option>
         @{
             if (ViewData["ProcessList"] != null)
@@ -66,7 +66,7 @@
 
 
 <div class="row col-md-12 mt-3">
-    <button onclick="authorizeMergeDuplicate();" class="btn btn-danger offset-md-9 col-md-3">Auhtorize</button>
+    <button data-onclick="authorizeMergeDuplicate();" class="btn btn-danger offset-md-9 col-md-3">Auhtorize</button>
 </div>
 
 <script src="~/js/csp/Views_Setup_authorize_remove_duplicate_process.js?v=1"></script>

@@ -30,7 +30,7 @@
                 console.log(data);
                 $.each(data, function (i, v) {
 
-                    $('#manageObsPanel').append('<tr><td>' + ++i + '</td><td>' + v.v_NUMBER + '</td><td>' + v.a_NATURE + '</td><td>' + v.observation + '</td><td>' + v.parA_NO + '</td><td><a href="#" onclick="event.preventDefault();updateVoucherChecking(' + v.V_ID + ');"></a></td></tr>');
+                    $('#manageObsPanel').append('<tr><td>' + ++i + '</td><td>' + v.v_NUMBER + '</td><td>' + v.a_NATURE + '</td><td>' + v.observation + '</td><td>' + v.parA_NO + '</td><td><a href="#" data-onclick="event.preventDefault();updateVoucherChecking(' + v.V_ID + ');"></a></td></tr>');
 
                 })
 

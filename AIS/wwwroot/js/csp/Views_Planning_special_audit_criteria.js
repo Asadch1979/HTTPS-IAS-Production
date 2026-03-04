@@ -21,7 +21,7 @@
                 g_preCreatedPlans=data;
                 $.each(data, function (index, row) {
 
-                    $('#auditCriteriaListBox tbody').append("<tr id=" + row.plaN_ID + "><td>" + ++index + "</td><td>" + row.nature + "</td><td>" + row.audiT_PERIOD + "</td><td>" + row.reportinG_OFFICE + "</td><td>" + row.entitY_NAME + "</td><td>" + row.nO_DAYS + "</td><td>" + row.auditeD_BY + "</td><td><a href=\"#\" class=\"text-primary\" onclick=\"event.preventDefault();UpdateCriteriaRecordFromGrid(" + row.plaN_ID + ");\">Edit</a></td><td><a href=\"#\" class=\"text-danger\" onclick=\"event.preventDefault();DeleteCriteriaRecordFromGrid(" + row.plaN_ID + ");\">Delete</a></td><td><a href=\"#\" class=\"text-success\" onclick=\"event.preventDefault();SubmitCriteriaRecordFromGrid(" + row.plaN_ID + ");\">Submit</a></td></tr>");
+                    $('#auditCriteriaListBox tbody').append("<tr id=" + row.plaN_ID + "><td>" + ++index + "</td><td>" + row.nature + "</td><td>" + row.audiT_PERIOD + "</td><td>" + row.reportinG_OFFICE + "</td><td>" + row.entitY_NAME + "</td><td>" + row.nO_DAYS + "</td><td>" + row.auditeD_BY + "</td><td><a href=\"#\" class=\"text-primary\" data-onclick=\"event.preventDefault();UpdateCriteriaRecordFromGrid(" + row.plaN_ID + ");\">Edit</a></td><td><a href=\"#\" class=\"text-danger\" data-onclick=\"event.preventDefault();DeleteCriteriaRecordFromGrid(" + row.plaN_ID + ");\">Delete</a></td><td><a href=\"#\" class=\"text-success\" data-onclick=\"event.preventDefault();SubmitCriteriaRecordFromGrid(" + row.plaN_ID + ");\">Submit</a></td></tr>");
                 });
             },
             dataType: "json",

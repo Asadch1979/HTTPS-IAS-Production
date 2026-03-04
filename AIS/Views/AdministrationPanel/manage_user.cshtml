@@ -18,7 +18,7 @@
         <label>Relationship Type</label>
     </div>
     <div class="col-md-10">
-        <select id="RelationshipField" onchange="getrelation();" class="form-control form-select">
+        <select id="RelationshipField" data-onchange="getrelation();" class="form-control form-select">
             <option id="0" value="0" selected="selected">--Select Relationship Type--</option>
 
             @{
@@ -42,7 +42,7 @@
         <label>Controlling/Reporting Office</label>
     </div>
     <div class="col-md-4">
-        <select id="controlingsearch" onchange="getplacepost();" class="form-control form-select">
+        <select id="controlingsearch" data-onchange="getplacepost();" class="form-control form-select">
             <option id="0" value="0" selected="selected">--Select Controlling/Reporting Office--</option>
         </select>
     </div>
@@ -184,15 +184,15 @@
             <label>Reset Password</label>
         </div>
         <div class="col-md-10">
-            <input id="resetpassword" type="checkbox" onclick="checkBoxClicked()"/>
+            <input id="resetpassword" type="checkbox" data-onclick="checkBoxClicked()"/>
         </div>
     </div>
 </div>
 
 <div class="row col-md-12 mt-1">
-    <button id="findButton" onclick="findButtonClickHandler();" class="btn btn-danger col-md-2" style="margin-left:auto;">Find</button>
-    <button id="saveChangesButton" onclick="saveButtonClickHandler();" class="btn btn-success col-md-2 d-none" style="margin-left:auto;">Save Changes</button>
-    <button id="addNewUserChangesButton" onclick="addNewUserButtonClickHandler();" class="btn btn-success col-md-2 d-none" style="margin-left:auto;">Add New User</button>
+    <button id="findButton" data-onclick="findButtonClickHandler();" class="btn btn-danger col-md-2" style="margin-left:auto;">Find</button>
+    <button id="saveChangesButton" data-onclick="saveButtonClickHandler();" class="btn btn-success col-md-2 d-none" style="margin-left:auto;">Save Changes</button>
+    <button id="addNewUserChangesButton" data-onclick="addNewUserButtonClickHandler();" class="btn btn-success col-md-2 d-none" style="margin-left:auto;">Add New User</button>
 
 </div>
 <div class="mt-1">

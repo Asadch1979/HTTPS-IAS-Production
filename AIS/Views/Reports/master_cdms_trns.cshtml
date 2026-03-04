@@ -18,7 +18,7 @@
     </div>
     
 
-    <select id="auditPeriodSelectBox" onchange="populateTable();" class="form-control col-md-4">
+    <select id="auditPeriodSelectBox" data-onchange="populateTable();" class="form-control col-md-4">
         <option value="0">--Select Audit Period--</option>
         @{
         if (ViewData["AuditPeriodList"] != null)

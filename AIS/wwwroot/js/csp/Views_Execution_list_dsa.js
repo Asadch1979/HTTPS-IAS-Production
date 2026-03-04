@@ -26,13 +26,13 @@
                     <td>${item.lC_AMOUNT || ''}</td>
                     <td>${item.dsA_STATUS || ''}</td>
                     <td>
-                      <a onclick="viewDSAContent(${item.id},1);" href="#" class="text-primary">View DSA Content</a>
+                      <a data-onclick="viewDSAContent(${item.id},1);" href="#" class="text-primary">View DSA Content</a>
                     </td>
                      <td>
-                      <a onclick="updateDSAContent(${item.id},1);" href="#" class="text-primary">Update DSA Heading</a>
+                      <a data-onclick="updateDSAContent(${item.id},1);" href="#" class="text-primary">Update DSA Heading</a>
                     </td>
                     <td>
-                      <a href="#" onclick="forwardSubmissionOfDSAToFAD(${item.id});" class="text-danger">${item.statuS_UP || ''}</a>
+                      <a href="#" data-onclick="forwardSubmissionOfDSAToFAD(${item.id});" class="text-danger">${item.statuS_UP || ''}</a>
                     </td>
                   </tr>`;
                 tbody.append(row);
@@ -52,13 +52,13 @@
                     <td>${item.lC_AMOUNT || ''}</td>
                     <td>${item.dsA_STATUS || ''}</td>
                     <td>
-                      <a onclick="viewDSAContent(${item.id},0);" href="#" class="text-primary">View Content</a>
+                      <a data-onclick="viewDSAContent(${item.id},0);" href="#" class="text-primary">View Content</a>
                     </td>
                     <td>
-                      <a href="#" onclick="refferedBackDSAToAZ(${item.id});" class="text-danger">${item.statuS_DOWN || ''}</a>
+                      <a href="#" data-onclick="refferedBackDSAToAZ(${item.id});" class="text-danger">${item.statuS_DOWN || ''}</a>
                     </td>
                     <td>
-                      <a href="#" onclick="forwardSubmissionOfDSAToDPD(${item.id});" class="text-success">${item.statuS_UP || ''}</a>
+                      <a href="#" data-onclick="forwardSubmissionOfDSAToDPD(${item.id});" class="text-success">${item.statuS_UP || ''}</a>
                     </td>
                   </tr>`;
                 tbody.append(row);
@@ -79,13 +79,13 @@
                     <td>${item.lC_AMOUNT || ''}</td>
                     <td>${item.dsA_STATUS || ''}</td>
                     <td>
-                      <a onclick="viewDSAContent(${item.id},0);" href="#" class="text-primary">View Content</a>
+                      <a data-onclick="viewDSAContent(${item.id},0);" href="#" class="text-primary">View Content</a>
                     </td>
                     <td>
-                      <a href="#" onclick="refferedBackDSAToHeadFAD(${item.id});" class="text-danger">${item.statuS_DOWN || ''}</a>
+                      <a href="#" data-onclick="refferedBackDSAToHeadFAD(${item.id});" class="text-danger">${item.statuS_DOWN || ''}</a>
                     </td>
                     <td>
-                      <a href="#" onclick="AcknowledgeDSAByDPD(${item.id});" class="text-success">${item.statuS_UP || ''}</a>
+                      <a href="#" data-onclick="AcknowledgeDSAByDPD(${item.id});" class="text-success">${item.statuS_UP || ''}</a>
                     </td>
                   </tr>`;
                 tbody.append(row);

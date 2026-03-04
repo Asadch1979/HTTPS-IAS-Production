@@ -12,7 +12,7 @@
             <input class="form-control" id="searchTableRecord" type="text" placeholder="Search..">
         </div>
         <div class="col-md-3">
-            <button onclick="newDeptSetup();" class="btn btn-danger w-100">Add New Department</button>
+            <button data-onclick="newDeptSetup();" class="btn btn-danger w-100">Add New Department</button>
         </div>
     </div>
     <br>
@@ -59,7 +59,7 @@
                                 }
                             </td>
                             <td class="dept_action">
-                                <button type="button" class="btn btn-link text-danger btn-sm btn-rounded" onclick="setupDepartment('@item.CODE','@item.NAME','@item.DIV_NAME','@item.STATUS','@item.ID','@item.DIV_ID','@item.AUDITED_BY_DEPID');">
+                                <button type="button" class="btn btn-link text-danger btn-sm btn-rounded" data-onclick="setupDepartment('@item.CODE','@item.NAME','@item.DIV_NAME','@item.STATUS','@item.ID','@item.DIV_ID','@item.AUDITED_BY_DEPID');">
                                     Edit
                                 </button>
                             </td>
@@ -133,7 +133,7 @@
                 </form>
             </div>
             <div class="modal-footer">
-                <button onclick="publishDepartmentChanges();" type="button" class="btn btn-danger">Save changes</button>
+                <button data-onclick="publishDepartmentChanges();" type="button" class="btn btn-danger">Save changes</button>
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
             </div>
         </div>

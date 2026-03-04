@@ -17,7 +17,7 @@
 </div>
 
 <div class="row col-md-12 mt-3">
-    <button onclick="setupNewComplianceHierarchy();" class="btn btn-danger col-md-4 offset-md-8">Setup New Compliance Hierarchy</button>
+    <button data-onclick="setupNewComplianceHierarchy();" class="btn btn-danger col-md-4 offset-md-8">Setup New Compliance Hierarchy</button>
 </div>
 <div id="listOfComplianceHierarchyContainer" class="row mt-3">
 
@@ -62,7 +62,7 @@
                             <input id="inchargePPNo" type="text" class="form-control" placeholder="P.P.Number" aria-label="P.P.Number" aria-describedby="basic-addon2">
                         </div>
                         <div class="col-md-2">
-                            <button id="searchbtn" onclick="getMatchedPP($('#inchargePPNo').val(),'inchargeEmpName');" class="btn btn-danger w-100">Search</button>
+                            <button id="searchbtn" data-onclick="getMatchedPP($('#inchargePPNo').val(),'inchargeEmpName');" class="btn btn-danger w-100">Search</button>
                         </div>
                         <div class="row col-md-12 mt-2">
                             <div class="col-md-2"> <label>Employee Name</label></div>
@@ -85,7 +85,7 @@
                             <input id="settlementPPNo" type="text" class="form-control" placeholder="P.P.Number" aria-label="P.P.Number" aria-describedby="basic-addon2">
                         </div>
                         <div class="col-md-2">
-                            <button id="searchbtn" onclick="getMatchedPP($('#settlementPPNo').val(),'settlementEmpName');" class="btn btn-danger w-100">Search</button>
+                            <button id="searchbtn" data-onclick="getMatchedPP($('#settlementPPNo').val(),'settlementEmpName');" class="btn btn-danger w-100">Search</button>
                         </div>
                         <div class="row col-md-12 mt-2">
                             <div class="col-md-2"> <label>Employee Name</label></div>
@@ -97,7 +97,7 @@
                 </div>
 
                 <div class="modal-footer mt-2">
-                    <button type="button" onclick="publishUpdateComplianceHierarchy();" class="btn btn-danger">Update</button>
+                    <button type="button" data-onclick="publishUpdateComplianceHierarchy();" class="btn btn-danger">Update</button>
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
                 </div>
             </div>
@@ -144,7 +144,7 @@
                             <input id="addnew_inchargePPNo" type="text" class="form-control" placeholder="P.P.Number" aria-label="P.P.Number" aria-describedby="basic-addon2">
                         </div>
                         <div class="col-md-2">
-                            <button id="addnew_searchbtn" onclick="getMatchedPP($('#addnew_inchargePPNo').val(),'addnew_inchargeEmpName');" class="btn btn-danger w-100">Search</button>
+                            <button id="addnew_searchbtn" data-onclick="getMatchedPP($('#addnew_inchargePPNo').val(),'addnew_inchargeEmpName');" class="btn btn-danger w-100">Search</button>
                         </div>
                         <div class="row col-md-12 mt-2">
                             <div class="col-md-2"> <label>Employee Name</label></div>
@@ -167,7 +167,7 @@
                             <input id="addnew_settlementPPNo" type="text" class="form-control" placeholder="P.P.Number" aria-label="P.P.Number" aria-describedby="basic-addon2">
                         </div>
                         <div class="col-md-2">
-                            <button id="searchbtn" onclick="getMatchedPP($('#addnew_settlementPPNo').val(),'addnew_settlementEmpName');" class="btn btn-danger w-100">Search</button>
+                            <button id="searchbtn" data-onclick="getMatchedPP($('#addnew_settlementPPNo').val(),'addnew_settlementEmpName');" class="btn btn-danger w-100">Search</button>
                         </div>
                         <div class="row col-md-12 mt-2">
                             <div class="col-md-2"> <label>Employee Name</label></div>
@@ -179,7 +179,7 @@
                 </div>
 
                 <div class="modal-footer mt-2">
-                    <button type="button" onclick="publishAddNewComplianceHierarchy();" class="btn btn-danger">Add</button>
+                    <button type="button" data-onclick="publishAddNewComplianceHierarchy();" class="btn btn-danger">Add</button>
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
                 </div>
             </div>

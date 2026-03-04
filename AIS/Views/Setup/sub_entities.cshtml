@@ -18,7 +18,7 @@
             <input class="form-control" id="searchTableRecord" type="text" placeholder="Search..">
         </div>
         <div class="col-md-2">
-            <button onclick="newSubEntitySetup();" class="btn btn-danger w-100">Add New</button>
+            <button data-onclick="newSubEntitySetup();" class="btn btn-danger w-100">Add New</button>
         </div>
     </div>
     <br>
@@ -60,7 +60,7 @@
                                 }
                             </td>
                             <td>
-                                <button type="button" class="btn btn-link text-danger btn-sm btn-rounded" onclick="setupSubEntity('@item.DIV_ID','@item.DEP_ID','@item.NAME','@item.STATUS','@item.ID');">
+                                <button type="button" class="btn btn-link text-danger btn-sm btn-rounded" data-onclick="setupSubEntity('@item.DIV_ID','@item.DEP_ID','@item.NAME','@item.STATUS','@item.ID');">
                                     Edit
                                 </button>
                             </td>
@@ -140,7 +140,7 @@
                 </form>
             </div>
             <div class="modal-footer">
-                <button onclick="publishSubEntityChanges();" type="button" class="btn btn-danger">Save changes</button>
+                <button data-onclick="publishSubEntityChanges();" type="button" class="btn btn-danger">Save changes</button>
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
             </div>
         </div>

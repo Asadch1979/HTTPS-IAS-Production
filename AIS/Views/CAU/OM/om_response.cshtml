@@ -13,7 +13,7 @@
         <label class="font-weight-bold">O.M/Para No.</label>
     </div>
     <div class="row col-md-12">
-        <select id="assignedOM_box" onchange="getOMContents();" class="form-select form-control">
+        <select id="assignedOM_box" data-onchange="getOMContents();" class="form-select form-control">
             <option value="0" id="0" selected="selected" >--Select O.M/Para No--</option>
         </select>
     </div>
@@ -53,7 +53,7 @@
 
 <div class="row col-md-12 mt-4">
     <div class="col-md-12 mt-3 mb-4">
-        <button onclick="forwardOmToDept();" style="float:right;" class="btn btn-danger col-md-2">Forward</button>
+        <button data-onclick="forwardOmToDept();" style="float:right;" class="btn btn-danger col-md-2">Forward</button>
 
     </div>
 

@@ -19,7 +19,7 @@
         </div>
         <div class="col-md-10">
             <input id="entityNameField" disabled="disabled" class="form-control ml-1 d-none" type="text" />
-            <select id="entitySelectField" data-change="getEntityObservations()" class="form-control form-select">
+            <select id="entitySelectField" data-onchange="getEntityObservations()" class="form-control form-select">
                 <option value="0" id="0">--Select Audit Entity--</option>
                 @{
                     if (ViewData["EntitiesList"] != null)
@@ -53,7 +53,7 @@
     </table>
 
     <div class="row col-md-12 mt-3" id="preConcludingActionHandler">
-        <button data-click="submitPreConcluding();" class="col-md-3 btn btn-success" style="margin-left:10px;">Submit Pre Concluding</button>
+        <button data-onclick="submitPreConcluding();" class="col-md-3 btn btn-success" style="margin-left:10px;">Submit Pre Concluding</button>
     </div>
 </div>
 
@@ -71,7 +71,7 @@
 
                     <div class="form-group">
                         <label for="viewMemo_process_ObSent" class="font-weight-bold">Process</label>
-                        <select id="viewMemo_process_ObSent" data-change="getSubCheckListOfProcess();" class="form-select form-control">
+                        <select id="viewMemo_process_ObSent" data-onchange="getSubCheckListOfProcess();" class="form-select form-control">
                             <option value="0" id="0" selected="selected">--Select Voilation Category--</option>
                             @{
                                 if (ViewData["Voilation_Cat"] != null)
@@ -160,8 +160,8 @@
                 </form>
             </div>
             <div class="modal-footer">
-                <button id="gist_recom_inc_pre_con" data-click="saveObservationGistandRecommendation(g_obsId);" type="button" class="btn btn-primary">Save Title & Recommendation</button>
-                <button id="update_audit_obs_button" data-click="updateObservationDetails(g_obsId);" type="button" class="btn btn-danger">Update Para Details</button>
+                <button id="gist_recom_inc_pre_con" data-onclick="saveObservationGistandRecommendation(g_obsId);" type="button" class="btn btn-primary">Save Title & Recommendation</button>
+                <button id="update_audit_obs_button" data-onclick="updateObservationDetails(g_obsId);" type="button" class="btn btn-danger">Update Para Details</button>
 
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
             </div>

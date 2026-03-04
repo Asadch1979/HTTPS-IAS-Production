@@ -11,7 +11,7 @@
                 success: function (data) {
                     g_obsList = data;
                     $.each(data, function (i, v) {                      
-                        $('#manageObsPanel tbody').append('<tr id="assignedObRow_' + v.obS_ID + '"><td>' + v.audiT_YEAR + '</td><td>' + v.memO_NUMBER + '</td><td class="text-center">' + sdate + '</td><td class="text-center">' + edate + '</td><td class="text-center">' + opsdate + '</td><td class="text-center">' + opedate + '</td><td class="text-center">' + v.status + '</td><td class="text-center"><a onclick="event.preventDefault();showMemo(' + v.obS_ID + ',' + v.resP_ID + ');" class="text-hover font-weight-bold text-success">Reply</a></td></tr>');
+                        $('#manageObsPanel tbody').append('<tr id="assignedObRow_' + v.obS_ID + '"><td>' + v.audiT_YEAR + '</td><td>' + v.memO_NUMBER + '</td><td class="text-center">' + sdate + '</td><td class="text-center">' + edate + '</td><td class="text-center">' + opsdate + '</td><td class="text-center">' + opedate + '</td><td class="text-center">' + v.status + '</td><td class="text-center"><a data-onclick="event.preventDefault();showMemo(' + v.obS_ID + ',' + v.resP_ID + ');" class="text-hover font-weight-bold text-success">Reply</a></td></tr>');
 
                     });
 

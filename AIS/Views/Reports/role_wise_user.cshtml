@@ -34,7 +34,7 @@
 <div class="row col-md-12 mt-3">
     <div class="row col-md-6 mr-2">
         <label>Select Division</label>
-        <select id="divSelectionBox" onchange="ShowSelectedDivisionDepartments();" class="form-select form-control" aria-label="Default select example">
+        <select id="divSelectionBox" data-onchange="ShowSelectedDivisionDepartments();" class="form-select form-control" aria-label="Default select example">
             <option value="0" id="0" selected>--Select Division--</option>
             @{
                 if (ViewData["DivisionsList"] != null)
@@ -49,7 +49,7 @@
     </div>
     <div class="row col-md-6">
         <label>Select Department</label>
-        <select id="divDeptSelectionBox" onchange="getSubEntities();" class="form-select form-control" aria-label="Default select example">
+        <select id="divDeptSelectionBox" data-onchange="getSubEntities();" class="form-select form-control" aria-label="Default select example">
             <option value="0" id="0">--Select Department--</option>
         </select>
     </div>

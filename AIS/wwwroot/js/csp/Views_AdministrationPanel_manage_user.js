@@ -169,7 +169,7 @@
 
                 g_userList = data;
                 $.each(data, function (index, user) {
-                    $('#userListTable tbody').append('<tr id="userrecordrow_' + user.id + '"><td>' + user.name + '</td><td>' + user.ppNumber + '</td><td>' + user.userParentEntityName + '</td><td>' + user.userEntityName + '</td><td>' + user.email + '</td><td>' + user.userRole + '</td><td>' + user.isActive + '</td><td><a class="text-danger editmode" href="#" onclick="event.preventDefault();editUserDetails(' + user.id + ')">Edit</a><a class="text-danger cancelmode d-none" href="#" onclick="cancelEditUserDetails(' + user.id + ')">Cancel</a></td></tr>')
+                    $('#userListTable tbody').append('<tr id="userrecordrow_' + user.id + '"><td>' + user.name + '</td><td>' + user.ppNumber + '</td><td>' + user.userParentEntityName + '</td><td>' + user.userEntityName + '</td><td>' + user.email + '</td><td>' + user.userRole + '</td><td>' + user.isActive + '</td><td><a class="text-danger editmode" href="#" data-onclick="event.preventDefault();editUserDetails(' + user.id + ')">Edit</a><a class="text-danger cancelmode d-none" href="#" data-onclick="cancelEditUserDetails(' + user.id + ')">Cancel</a></td></tr>')
                 });
 
             },

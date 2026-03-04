@@ -265,7 +265,7 @@ $(document).ready(function () {
         closeFuncCalled();
     });
 
-    $('body').append('<div id="confirmAlertMessagesPopup" class="modal" tabindex="-1" role="dialog"><div class="modal-dialog" role="document">  <div class="modal-content">    <div class="modal-header">      <h5 class="modal-title">Confirmation Box</h5>      <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>    </div>    <div class="modal-body">      <div id="content_confirmAlertMessagesPopup"></div>    </div>    <div class="modal-footer"><button type="button" onclick="event.preventDefault();onConfirmationCallback();" class="btn btn-danger" data-bs-dismiss="modal">Yes</button><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">No</button>    </div>  </div></div></div >');
+    $('body').append('<div id="confirmAlertMessagesPopup" class="modal" tabindex="-1" role="dialog"><div class="modal-dialog" role="document">  <div class="modal-content">    <div class="modal-header">      <h5 class="modal-title">Confirmation Box</h5>      <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>    </div>    <div class="modal-body">      <div id="content_confirmAlertMessagesPopup"></div>    </div>    <div class="modal-footer"><button type="button" data-onclick="event.preventDefault();onConfirmationCallback();" class="btn btn-danger" data-bs-dismiss="modal">Yes</button><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">No</button>    </div>  </div></div></div >');
     $('#confirmAlertMessagesPopup').on('hidden.bs.modal', function (e) {
         confirmAlertcloseFuncCalled();
     });

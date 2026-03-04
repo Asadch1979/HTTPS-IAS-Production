@@ -22,7 +22,7 @@
   
     
         <label> Audit Department</label>
-        <select id="A_dept" onchange="ShowBranchInfoBox();" class="form-select form-control" aria-label="Default select example">
+        <select id="A_dept" data-onchange="ShowBranchInfoBox();" class="form-select form-control" aria-label="Default select example">
             <option value="0" id="0">--Select Branch--</option>
             <option value="1" id="0">472-CORPORATE AUDIT DEPARTMENT</option>
             <option value="1" id="0">473-FIELD AUDIT DEPARTMENT</option>
@@ -37,7 +37,7 @@
 
     <div class="row col-md-6 mr-2 mt-3">
         <label>Select Zone</label>
-        <select id="auditZoneSelectionBox" onchange="ShowSelectedZonesBranches();" class="form-select form-control" aria-label="Default select example">
+        <select id="auditZoneSelectionBox" data-onchange="ShowSelectedZonesBranches();" class="form-select form-control" aria-label="Default select example">
             <option value="0" id="0" selected>--Select Zone--</option>
             @{
                 if (ViewData["AuditZonesList"] != null)
@@ -52,7 +52,7 @@
     </div>
     <div class="row col-md-6 mt-3">
         <label>Select Branch</label>
-        <select id="branchSelectionBox" onchange="ShowBranchInfoBox();" class="form-select form-control" aria-label="Default select example">
+        <select id="branchSelectionBox" data-onchange="ShowBranchInfoBox();" class="form-select form-control" aria-label="Default select example">
             <option value="0" id="0">--Select Branch--</option>
         </select>
     </div>
@@ -62,7 +62,7 @@
 <div class="row col-md-12 mt-3">
     <div class="row col-md-6 mr-2">
         <label>Select Division</label>
-        <select id="divSelectionBox" onchange="ShowSelectedDivisionDepartments();" class="form-select form-control" aria-label="Default select example">
+        <select id="divSelectionBox" data-onchange="ShowSelectedDivisionDepartments();" class="form-select form-control" aria-label="Default select example">
             <option value="0" id="0" selected>--Select Division--</option>
             @{
                 if (ViewData["DivisionsList"] != null)
@@ -77,7 +77,7 @@
     </div>
     <div class="row col-md-6">
         <label>Select Department</label>
-        <select id="divDeptSelectionBox" onchange="getSubEntities();" class="form-select form-control" aria-label="Default select example">
+        <select id="divDeptSelectionBox" data-onchange="getSubEntities();" class="form-select form-control" aria-label="Default select example">
             <option value="0" id="0">--Select Department--</option>
         </select>
     </div>

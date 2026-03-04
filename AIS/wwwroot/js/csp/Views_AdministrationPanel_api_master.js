@@ -44,8 +44,8 @@
                     + '<td>' + (item.httpMethod || '') + '</td>'
                     + '<td>' + statusLabel + '</td>'
                     + '<td>'
-                    + '<button class="btn btn-sm btn-outline-primary me-2" type="button" onclick="openApiMasterModal(' + apiId + ');">Edit</button>'
-                    + '<button class="btn btn-sm btn-outline-secondary" type="button" onclick="disableApiMaster(' + apiId + ');">Disable</button>'
+                    + '<button class="btn btn-sm btn-outline-primary me-2" type="button" data-onclick="openApiMasterModal(' + apiId + ');">Edit</button>'
+                    + '<button class="btn btn-sm btn-outline-secondary" type="button" data-onclick="disableApiMaster(' + apiId + ');">Disable</button>'
                     + '</td>'
                     + '</tr>';
 

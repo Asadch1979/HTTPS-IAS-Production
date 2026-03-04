@@ -540,10 +540,10 @@ function reloadLocation() {
                         <td>${item.accountNumber || ''}</td>
                         <td>${item.accAmount || ''}</td>
                         <td class="text-center">
-                            <a href="#" onclick="event.preventDefault(); updateRespRow(this);">Update</a>
+                            <a href="#" data-onclick="event.preventDefault(); updateRespRow(this);">Update</a>
                         </td>
                         <td class="text-center">
-                            <a href="#" class="text-danger" onclick="event.preventDefault(); deleteRespRow(this);">Delete</a>
+                            <a href="#" class="text-danger" data-onclick="event.preventDefault(); deleteRespRow(this);">Delete</a>
                         </td>
                     </tr>
                 `);

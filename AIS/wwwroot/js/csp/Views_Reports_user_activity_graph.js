@@ -23,7 +23,7 @@
                         var status = 'Approved';
                         period.starT_DATE = period.starT_DATE.split('T')[0];
                         period.enD_DATE = period.enD_DATE.split('T')[0];
-                        $('#listOfAuditPeriods tbody').append('<tr id=teamcode_' + period.id + '><td class="searchable"><p class="fw-normal mb-1">' + srNo + '</p></td><td class="searchable"><p class="fw-normal mb-1">' + period.description + ' </p></td><td class="searchable"><p class="empName fw-normal mb-1">' + period.starT_DATE + ' </p></td><td class="searchable"><p class="empName fw-normal mb-1">' + period.enD_DATE + ' </p></td><td class="searchable"><p class="empName fw-normal mb-1">' + status + ' </p></td><td><small onclick="event.preventDefault();getAuditPlan(' + period.id + ')" class="text-danger planDetails">Details</small></td></tr>');
+                        $('#listOfAuditPeriods tbody').append('<tr id=teamcode_' + period.id + '><td class="searchable"><p class="fw-normal mb-1">' + srNo + '</p></td><td class="searchable"><p class="fw-normal mb-1">' + period.description + ' </p></td><td class="searchable"><p class="empName fw-normal mb-1">' + period.starT_DATE + ' </p></td><td class="searchable"><p class="empName fw-normal mb-1">' + period.enD_DATE + ' </p></td><td class="searchable"><p class="empName fw-normal mb-1">' + status + ' </p></td><td><small data-onclick="event.preventDefault();getAuditPlan(' + period.id + ')" class="text-danger planDetails">Details</small></td></tr>');
                         srNo++;
                     });
 

@@ -22,7 +22,7 @@
             success: function (data) {
                 console.log(data);
                 $.each(data, function (i, v) {
-                    $('#manageObsPanel').append('<tr><td>' + ++i + '</td><td>' + v.denominatioN_VAULT + '</td><td>' + v.nO_CURRENCY_NOTES_VAULT + '</td><td>' + v.totaL_AMOUNT_VAULT + '</td><td>' + v.denominatioN_SAFE_REGISTER + '</td><td>' + v.nO_CURRENCY_NOTES_SAFE_REGISTER + '</td><td>' + v.totaL_AMOUNT_SAFE_REGISTER + '</td><td>' + v.difference + '</td><td><a href="#" onclick="event.preventDefault();updateVoucherChecking(' + v.V_ID + ');"></a></td></tr>');
+                    $('#manageObsPanel').append('<tr><td>' + ++i + '</td><td>' + v.denominatioN_VAULT + '</td><td>' + v.nO_CURRENCY_NOTES_VAULT + '</td><td>' + v.totaL_AMOUNT_VAULT + '</td><td>' + v.denominatioN_SAFE_REGISTER + '</td><td>' + v.nO_CURRENCY_NOTES_SAFE_REGISTER + '</td><td>' + v.totaL_AMOUNT_SAFE_REGISTER + '</td><td>' + v.difference + '</td><td><a href="#" data-onclick="event.preventDefault();updateVoucherChecking(' + v.V_ID + ');"></a></td></tr>');
 
                 })
 

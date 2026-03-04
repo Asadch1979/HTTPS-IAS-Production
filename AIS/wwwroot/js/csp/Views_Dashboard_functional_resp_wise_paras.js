@@ -29,7 +29,7 @@
                             '<td align="center">' + v.risk + '</td>' +
                             '<td align="left">' + v.gist + '</td>' +
                             '<td align="center">' +
-                                '<a href="#" onclick="event.preventDefault();getParaText( \'' + v.obS_ID + '\', \'' + v.parA_CATEGORY + '\');">View Para Text</a>' +
+                                '<a href="#" data-onclick="event.preventDefault();getParaText( \'' + v.obS_ID + '\', \'' + v.parA_CATEGORY + '\');">View Para Text</a>' +
                             '</td>' +
                         '</tr>'
                     );

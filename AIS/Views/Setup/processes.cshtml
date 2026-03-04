@@ -96,7 +96,7 @@
 <div class="row col-md-12">
     <div class="col-md-6 mt-4">
         <div class="treeview-colorful w-20 border border-secondary mx-4 my-4" style="margin:0px !important">
-            <button onclick="addNewProcess();" class="btn btn-md btn-success ml-4 mt-4">Add New Process</button>
+            <button data-onclick="addNewProcess();" class="btn btn-md btn-success ml-4 mt-4">Add New Process</button>
             <hr>
             <ul id="processList" class="mt-4 ml-4 mb-4">
                 @{
@@ -106,7 +106,7 @@
                         foreach (var item in (dynamic)(ViewData["ProcessList"]))
                         {
                             <li id="procItem_@item.P_ID">
-                                <span onclick="getProcessChilds(@item.P_ID)" class="caret">@item.P_NAME</span>
+                                <span data-onclick="getProcessChilds(@item.P_ID)" class="caret">@item.P_NAME</span>
                             </li>
                         }
 
@@ -140,7 +140,7 @@
                 </div>
                 <div class="form-group">
                     <label for="viewerViolationNameModalField">Violation</label>
-                    <select id="viewerViolationNameModalField" onchange="getControlViolationMaxNumber();" class="form-select form-control">
+                    <select id="viewerViolationNameModalField" data-onchange="getControlViolationMaxNumber();" class="form-select form-control">
                         <option selected="selected" value="0" id="0">--Select Control Violation--</option>
                         @{
                             if (ViewData["ControlViolationsList"] != null)
@@ -268,7 +268,7 @@
                 </form>
             </div>
             <div class="modal-footer">
-                <button onclick="publishNewProcess();" type="button" class="btn btn-danger">Save changes</button>
+                <button data-onclick="publishNewProcess();" type="button" class="btn btn-danger">Save changes</button>
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
             </div>
         </div>
@@ -315,7 +315,7 @@
                 </form>
             </div>
             <div class="modal-footer">
-                <button onclick="publishNewSubProcess();" type="button" class="btn btn-danger">Save changes</button>
+                <button data-onclick="publishNewSubProcess();" type="button" class="btn btn-danger">Save changes</button>
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
             </div>
         </div>
@@ -344,7 +344,7 @@
                     </div>
                     <div class="form-group">
                         <label for="tranControlOwnerModalField">Control Violation</label>
-                        <select id="tranControlOwnerModalField" onchange="getControlViolationMaxNumber();" class="form-select form-control">
+                        <select id="tranControlOwnerModalField" data-onchange="getControlViolationMaxNumber();" class="form-select form-control">
                             <option selected="selected" value="0" id="0">--Select Control Violation--</option>
                             @{
                                 if (ViewData["ControlViolationsList"] != null)
@@ -419,7 +419,7 @@
                 </form>
             </div>
             <div class="modal-footer">
-                <button onclick="publishNewSubProcessTransaction();" type="button" class="btn btn-danger">Save changes</button>
+                <button data-onclick="publishNewSubProcessTransaction();" type="button" class="btn btn-danger">Save changes</button>
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
             </div>
         </div>

@@ -42,7 +42,7 @@
                 g_obsList = data;
                 $.each(data, function (index, child) {
                     child.audiT_PERIOD = child.audiT_PERIOD.split(' ')[0];
-                    $('#manageObsPanel tbody').append('<tr id="' + child.parA_ID + '"><td><p class="fw-normal mb-1">' + child.entitY_NAME + '</p></td><td><p class="fw-normal mb-1">' + child.audiT_PERIOD + '</p></td><td><p class="fw-normal mb-1">' + child.parA_NO + '</p></td><td><p class="fw-normal mb-1">' + child.gisT_OF_PARAS + '</p></td><td class="text-center"><a class="text-center text-danger" style="cursor:pointer;" onclick="event.preventDefault();processdetails(' + child.parA_ID + ');">Add Para Text</a></td><td class="text-center"><a class="text-center text-danger" style="cursor:pointer;" onclick="viewCompliance(' + child.parA_ID + ');">Add Compliance</a></td></tr>')
+                    $('#manageObsPanel tbody').append('<tr id="' + child.parA_ID + '"><td><p class="fw-normal mb-1">' + child.entitY_NAME + '</p></td><td><p class="fw-normal mb-1">' + child.audiT_PERIOD + '</p></td><td><p class="fw-normal mb-1">' + child.parA_NO + '</p></td><td><p class="fw-normal mb-1">' + child.gisT_OF_PARAS + '</p></td><td class="text-center"><a class="text-center text-danger" style="cursor:pointer;" data-onclick="event.preventDefault();processdetails(' + child.parA_ID + ');">Add Para Text</a></td><td class="text-center"><a class="text-center text-danger" style="cursor:pointer;" data-onclick="viewCompliance(' + child.parA_ID + ');">Add Compliance</a></td></tr>')
                 });
                 setTimeout(function () {
                     if (g_paraId != 0) {
@@ -212,7 +212,7 @@
     }
 
     function addComplianceToComplianceGrid() {
-        $('#manageCompliancePanel tbody').append('<tr id="tr_' + $('#complianceReceivedOn').val() + '"><td>' + $('#complianceReceivedOn').val() + '</td><td><div>' + $('#complianceAuditee').val() + '</div></td><td><div>' + $('#complianceAuditeeRemarks').val() + '</div></td><td>' + $('#CnIRecommendations').val() + '</td><td class="text-center"><a href="#" onclick="event.preventDefault();deleteRespRow(this);">Delete</a></td></tr>');
+        $('#manageCompliancePanel tbody').append('<tr id="tr_' + $('#complianceReceivedOn').val() + '"><td>' + $('#complianceReceivedOn').val() + '</td><td><div>' + $('#complianceAuditee').val() + '</div></td><td><div>' + $('#complianceAuditeeRemarks').val() + '</div></td><td>' + $('#CnIRecommendations').val() + '</td><td class="text-center"><a href="#" data-onclick="event.preventDefault();deleteRespRow(this);">Delete</a></td></tr>');
 
         $('#submit_compliance_model').modal('hide');
 
