@@ -510,7 +510,7 @@ function getPageData() {
                 }
 
                 const encodedId = encodeHtml(responseId);
-                return '<td class="text-center text-nowrap"><button class="btn btn-sm btn-primary" data-response-id="' + encodedId + '" onclick="editResponse(this.dataset.responseId)">Edit</button></td>';
+                return '<td class="text-center text-nowrap"><button class="btn btn-sm btn-primary" data-response-id="' + encodedId + '" data-onclick="editResponse(this.dataset.responseId)">Edit</button></td>';
             }
 
             function formatDate(value) {

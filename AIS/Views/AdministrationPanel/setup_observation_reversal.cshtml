@@ -18,7 +18,7 @@
         <label>Relationship Type</label>
     </div>
     <div class="col-md-10">
-        <select id="RelationshipField" onchange="getrelation();" class="form-control form-select">
+        <select id="RelationshipField" data-onchange="getrelation();" class="form-control form-select">
             <option id="0" value="0" selected="selected">--Select Relationship Type--</option>
 
 
@@ -43,7 +43,7 @@
         <label>Controlling/Reporting Office</label>
     </div>
     <div class="col-md-4">
-        <select id="controlingsearch" onchange="getplacepost();" class="form-control form-select">
+        <select id="controlingsearch" data-onchange="getplacepost();" class="form-control form-select">
             <option id="0" value="0" selected="selected">--Select Controlling/Reporting Office--</option>
         </select>
     </div>
@@ -53,7 +53,7 @@
         <label>Place of Posting</label>
     </div>
     <div class="col-md-4">
-        <select id="childposting" onchange="getEngagementDetails();" class="form-control form-select">
+        <select id="childposting" data-onchange="getEngagementDetails();" class="form-control form-select">
             <option id="0" value="0" selected="selected">--Select Place of Posting--</option>
 
         </select>
@@ -115,7 +115,7 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                <button onclick="updateMemoStatuses();" type="button" data-bs-dismiss="modal" class="btn btn-success">Update Status</button>
+                <button data-onclick="updateMemoStatuses();" type="button" data-bs-dismiss="modal" class="btn btn-success">Update Status</button>
 
             </div>
         </div>
@@ -158,7 +158,7 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                <button onclick="updateMemoNumber();" type="button" data-bs-dismiss="modal" class="btn btn-success">Update Memo Number</button>
+                <button data-onclick="updateMemoNumber();" type="button" data-bs-dismiss="modal" class="btn btn-success">Update Memo Number</button>
 
             </div>
         </div>
@@ -185,7 +185,7 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                <button onclick="updateNewMemoNumber();" type="button" data-bs-dismiss="modal" class="btn btn-success">Update Memo Number</button>
+                <button data-onclick="updateNewMemoNumber();" type="button" data-bs-dismiss="modal" class="btn btn-success">Update Memo Number</button>
 
             </div>
         </div>
@@ -208,7 +208,7 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                <button onclick="updateNewStatus();" type="button" data-bs-dismiss="modal" class="btn btn-success">Update Status</button>
+                <button data-onclick="updateNewStatus();" type="button" data-bs-dismiss="modal" class="btn btn-success">Update Status</button>
 
             </div>
         </div>
@@ -251,7 +251,7 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                <button onclick="updateNewStatusRequest();" type="button" data-bs-dismiss="modal" class="btn btn-success">Save Changes</button>
+                <button data-onclick="updateNewStatusRequest();" type="button" data-bs-dismiss="modal" class="btn btn-success">Save Changes</button>
 
             </div>
         </div>

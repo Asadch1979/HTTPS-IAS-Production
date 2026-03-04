@@ -315,7 +315,7 @@ else
 
                 <div class="modal-footer">
                     <button class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button class="btn btn-success" onclick="saveCompliance()">Save Response</button>
+                    <button class="btn btn-success" data-onclick="saveCompliance()">Save Response</button>
                 </div>
 
             </div>
@@ -637,8 +637,8 @@ else
 
                     if (requestId > 0) {
                         actionsHtml = `<div class="d-flex flex-wrap gap-2 justify-content-center">
-                            <button type="button" class="btn btn-sm btn-success" onclick="approveRequest(${requestId})">Approve</button>
-                            <button type="button" class="btn btn-sm btn-danger" onclick="rejectRequest(${requestId})">Reject</button>
+                            <button type="button" class="btn btn-sm btn-success" data-onclick="approveRequest(${requestId})">Approve</button>
+                            <button type="button" class="btn btn-sm btn-danger" data-onclick="rejectRequest(${requestId})">Reject</button>
                         </div>`;
                     }
 
@@ -1171,14 +1171,14 @@ else
                                 const responseId = row && Number(row.LatestResponseId) ? Number(row.LatestResponseId) : 0;
                                 const attrResponse = responseId > 0 ? escapeHtml(String(responseId)) : '';
                                 const responseButton = responseId > 0
-                                    ? `<button class="btn btn-sm btn-outline-warning"${disabledAttr} data-response="${attrResponse}" onclick="requestDeleteResponse(this.dataset.response)">Request Delete Response</button>`
+                                    ? `<button class="btn btn-sm btn-outline-warning"${disabledAttr} data-response="${attrResponse}" data-onclick="requestDeleteResponse(this.dataset.response)">Request Delete Response</button>`
                                     : '';
                                 return `
                                     <div class="d-flex justify-content-around align-items-center flex-wrap gap-2">
-                                        <button class="btn btn-sm btn-primary"${disabledAttr} data-para="${attrPara}" data-ref="${attrRef}" onclick="updateObservation(this.dataset.para)">Update</button>
-                                        <button class="btn btn-sm btn-warning"${disabledAttr} data-para="${attrPara}" data-ref="${attrRef}" onclick="addCompliance(this.dataset.para)">Compliance</button>
-                                        <button class="btn btn-sm btn-info"${disabledAttr} data-para="${attrPara}" onclick="viewHistory(this.dataset.para)">History</button>
-                                        <button class="btn btn-sm btn-outline-danger"${disabledAttr} data-para="${attrPara}" onclick="requestDeleteObservation(this.dataset.para)">Request Delete</button>
+                                        <button class="btn btn-sm btn-primary"${disabledAttr} data-para="${attrPara}" data-ref="${attrRef}" data-onclick="updateObservation(this.dataset.para)">Update</button>
+                                        <button class="btn btn-sm btn-warning"${disabledAttr} data-para="${attrPara}" data-ref="${attrRef}" data-onclick="addCompliance(this.dataset.para)">Compliance</button>
+                                        <button class="btn btn-sm btn-info"${disabledAttr} data-para="${attrPara}" data-onclick="viewHistory(this.dataset.para)">History</button>
+                                        <button class="btn btn-sm btn-outline-danger"${disabledAttr} data-para="${attrPara}" data-onclick="requestDeleteObservation(this.dataset.para)">Request Delete</button>
                                         ${responseButton}
                                     </div>
                                 `;

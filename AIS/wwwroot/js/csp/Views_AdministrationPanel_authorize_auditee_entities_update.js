@@ -31,7 +31,7 @@
                         '<td>' + getVal(v, 'erisk') + '</td>' +
                         '<td>' + getVal(v, 'esize') + '</td>' +
                         '<td>' +
-                        '<a href="#" onclick="event.preventDefault();openCompare(' + id + ');" class="text-danger me-2">View</a>' +
+                        '<a href="#" data-onclick="event.preventDefault();openCompare(' + id + ');" class="text-danger me-2">View</a>' +
                         '</td></tr>');
                 });
             },

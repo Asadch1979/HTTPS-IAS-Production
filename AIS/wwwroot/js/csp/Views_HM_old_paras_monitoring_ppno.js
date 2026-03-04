@@ -12,7 +12,7 @@
                 $.each(data, function (i, v) {
                     $('#manageObsPanel tbody').append(
                         '<tr id="assignedObRow_' + (v.oldParaId ?? i) + '"><td>' +
-                        (i + 1) + '</td><td>' + v.entityName + '</td><td>' + v.auditPeriod + '</td><td>' + v.annex + '</td><td>' + v.paraNo + '</td><td>' + v.gistOfParas + '</td><td>' + v.amount + '</td><td><a href="#" class="text-danger text-center" style="cursor:pointer;" onclick="event.preventDefault();viewParaText(\'' + v.comId + '\',\'' + v.ind + '\')"> View Para</a></td></tr>'
+                        (i + 1) + '</td><td>' + v.entityName + '</td><td>' + v.auditPeriod + '</td><td>' + v.annex + '</td><td>' + v.paraNo + '</td><td>' + v.gistOfParas + '</td><td>' + v.amount + '</td><td><a href="#" class="text-danger text-center" style="cursor:pointer;" data-onclick="event.preventDefault();viewParaText(\'' + v.comId + '\',\'' + v.ind + '\')"> View Para</a></td></tr>'
                     );
                 });
                 initializeDataTable('manageObsPanel');

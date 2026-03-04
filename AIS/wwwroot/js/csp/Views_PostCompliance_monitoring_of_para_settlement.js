@@ -19,7 +19,7 @@
                 g_obsList = data;
 
                 $.each(data, function (index, child) {
-                    $('#manageObsPanel tbody').append('<tr><td><p class="fw-normal mb-1">' + child.reportinG_OFFICE + '</p><td><p class="fw-normal mb-1">' + child.entitY_NAME + '</p></td><td><p class="fw-normal mb-1">' + child.audiT_PERIOD + '</p></td><td><p class="fw-normal mb-1">' + child.parA_NO + '</p></td><td><p class="fw-normal mb-1">' + child.settleD_BY + '</p></td><td><p class="fw-normal mb-1">' + child.settleD_ON + '</p></td><td><p class="fw-normal mb-1">' + child.risk + '</p></td><td><a href="#" onclick="event.preventDefault();getParaText(\'' + child.coM_ID + '\');">View Para Text</a></td><td><a href="#" onclick="viewParaCompliance(\'' + child.reF_P + '\',\'' + child.aU_OBS_ID + '\' );" >View Compliance</a></td><td><a href="#" onclick="markActionComments(\'' + child.reF_P + '\',\'' + child.aU_OBS_ID + '\' );" >Comments</a></td></tr>')
+                    $('#manageObsPanel tbody').append('<tr><td><p class="fw-normal mb-1">' + child.reportinG_OFFICE + '</p><td><p class="fw-normal mb-1">' + child.entitY_NAME + '</p></td><td><p class="fw-normal mb-1">' + child.audiT_PERIOD + '</p></td><td><p class="fw-normal mb-1">' + child.parA_NO + '</p></td><td><p class="fw-normal mb-1">' + child.settleD_BY + '</p></td><td><p class="fw-normal mb-1">' + child.settleD_ON + '</p></td><td><p class="fw-normal mb-1">' + child.risk + '</p></td><td><a href="#" data-onclick="event.preventDefault();getParaText(\'' + child.coM_ID + '\');">View Para Text</a></td><td><a href="#" data-onclick="viewParaCompliance(\'' + child.reF_P + '\',\'' + child.aU_OBS_ID + '\' );" >View Compliance</a></td><td><a href="#" data-onclick="markActionComments(\'' + child.reF_P + '\',\'' + child.aU_OBS_ID + '\' );" >Comments</a></td></tr>')
                 });
                  initializeDataTable("manageObsPanel");
 
@@ -68,7 +68,7 @@
                     var lastCol = '';
 
                     if (i == 0)
-                        lastCol = '<td rowspan="' + rowSpan + '"><a href=\"#\" onclick=\"getComplianceText(' + v.coM_SEQ_NO + ');;\">View Compliance</a></td>';
+                        lastCol = '<td rowspan="' + rowSpan + '"><a href=\"#\" data-onclick=\"getComplianceText(' + v.coM_SEQ_NO + ');;\">View Compliance</a></td>';
 
                     $('#manageComplianceHistPanel tbody').append('<tr><td><div>' + v.attendeD_BY + '</div></td><td><div>' + v.name + '</div></td><td><div>' + v.designation + '</div></td><td>' + v.remarks + '</td>' + lastCol + '</tr>');
 

@@ -76,7 +76,7 @@
         <h5>Reporting Office</h5>
     </div>
     <div class="col-md-8">
-        <select id="auditCriteriaRepField" onchange="getAuditableEntities();" class="form-select form-control" aria-label="Default select example">
+        <select id="auditCriteriaRepField" data-onchange="getAuditableEntities();" class="form-select form-control" aria-label="Default select example">
             <option value="0" id="0" selected>--Select Reporting Office--</option>
             @{
                 if (ViewData["ReportingOfficeList"] != null)
@@ -115,7 +115,7 @@
 
 
 <div class="col-md-12 mt-3">
-    <button id="saveButtonSpecialPlan" onclick="addRecordToauditCriteriaListBox();" class="col-md-2 btn btn-danger">Save</button>
+    <button id="saveButtonSpecialPlan" data-onclick="addRecordToauditCriteriaListBox();" class="col-md-2 btn btn-danger">Save</button>
 </div>
 
 <div class="col-md-12">

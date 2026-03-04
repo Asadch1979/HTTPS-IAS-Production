@@ -10,13 +10,13 @@
 </div>
 
 <div class="row col-md-12 mt-3">
-    <button onclick="setupNewMenu();" class="btn btn-danger offset-md-10 col-md-2">Add New</button>
+    <button data-onclick="setupNewMenu();" class="btn btn-danger offset-md-10 col-md-2">Add New</button>
 </div>
 
 
 `
 <div class="row col-md-12 mt-3">
-    <button onclick="getMenuPages();"  class="btn btn-primary offset-md-10 col-md-2">Find</button>
+    <button data-onclick="getMenuPages();"  class="btn btn-primary offset-md-10 col-md-2">Find</button>
 </div>
 
 <div class="row col-md-12 mt-3">
@@ -69,7 +69,7 @@
                 </form>
             </div>
             <div class="modal-footer">
-                <button type="button" onclick="publishUpdateMenuChanges();" class="btn btn-danger">Save Changes</button>
+                <button type="button" data-onclick="publishUpdateMenuChanges();" class="btn btn-danger">Save Changes</button>
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
             </div>
         </div>

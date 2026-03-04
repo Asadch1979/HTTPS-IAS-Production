@@ -35,7 +35,7 @@
                 g_entRecord = data;
                 $('#entityTypesGrid tbody').empty();
                 $.each(data, function (i, v) {
-                    $('#entityTypesGrid tbody').append('<tr><td>' + ++i + '</td><td>' + v.autid + '</td><td>' + v.entitycode + '</td><td>' + v.entitytypedesc + '</td><td>' + v.auditable + '</td><td>' + v.auditedby + '</td><td>' + v.auditeD_BY_ENTITY + '</td><td>' + v.audiT_TYPE + '</td><td><a href="#" onclick="event.preventDefault();UpdateEntityType(' + v.autid + ');" class="text-danger">Update</a></td></tr>');
+                    $('#entityTypesGrid tbody').append('<tr><td>' + ++i + '</td><td>' + v.autid + '</td><td>' + v.entitycode + '</td><td>' + v.entitytypedesc + '</td><td>' + v.auditable + '</td><td>' + v.auditedby + '</td><td>' + v.auditeD_BY_ENTITY + '</td><td>' + v.audiT_TYPE + '</td><td><a href="#" data-onclick="event.preventDefault();UpdateEntityType(' + v.autid + ');" class="text-danger">Update</a></td></tr>');
                 });
 
             },

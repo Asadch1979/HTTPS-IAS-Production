@@ -132,7 +132,7 @@ function getPageData() {
                     success: function (data) {
                         g_allObs = data;
                         $.each(data, function (i, v) {
-                                $('#manageObsPanel tbody').append('<tr><td class="text-center">' + (i + 1) + '</td><td class="text-center">' + v.auditee + '</td><td class="text-center">' + v.audiT_PERIOD + '</td><td>' + v.parA_NO + '</td><td>' + v.annex + '</td><td>' + v.obS_RISK + '</td><td>' + v.obS_GIST + '</td><td>' + v.updateD_BY + '</td><td>' + v.updateD_ON + '</td><td class="text-center"><a onclick="event.preventDefault();ObservationViewerPanel(\'' + i + '\')" href="#" class="text-hover">View Para Details</a></td></tr>');
+                                $('#manageObsPanel tbody').append('<tr><td class="text-center">' + (i + 1) + '</td><td class="text-center">' + v.auditee + '</td><td class="text-center">' + v.audiT_PERIOD + '</td><td>' + v.parA_NO + '</td><td>' + v.annex + '</td><td>' + v.obS_RISK + '</td><td>' + v.obS_GIST + '</td><td>' + v.updateD_BY + '</td><td>' + v.updateD_ON + '</td><td class="text-center"><a data-onclick="event.preventDefault();ObservationViewerPanel(\'' + i + '\')" href="#" class="text-hover">View Para Details</a></td></tr>');
                         });
                         initializeDataTable('manageObsPanel');
                     },
@@ -573,8 +573,8 @@ function getPageData() {
                             '<td>' + v.acC_AMOUNT + '</td>' +
                             '<td>' + act + '</td>' +
                             '<td>' + v.remarks + '</td>' +
-                            '<td class="text-center"><a href="#" onclick="event.preventDefault();updateRespRow(this);">Update</a></td>' +
-                            '<td class="text-center"><a href="#" class="text-danger" onclick="event.preventDefault();deleteRespRow(this);">Delete</a></td>' +
+                            '<td class="text-center"><a href="#" data-onclick="event.preventDefault();updateRespRow(this);">Update</a></td>' +
+                            '<td class="text-center"><a href="#" class="text-danger" data-onclick="event.preventDefault();deleteRespRow(this);">Delete</a></td>' +
                             '</tr>'
                         );
                         sr_c++;

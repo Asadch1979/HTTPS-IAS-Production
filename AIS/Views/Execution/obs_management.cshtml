@@ -21,7 +21,7 @@
         </div>
         <div class="col-md-10">
             <input id="entityNameField" disabled="disabled" class="form-control ml-1 d-none" type="text" />
-            <select id="entitySelectField" onchange="getEntityObservationSummary();" class="form-control form-select">
+            <select id="entitySelectField" data-onchange="getEntityObservationSummary();" class="form-control form-select">
                 <option value="0" id="0">--Select Audit Entity--</option>
                 @{
                     if (ViewData["EntitiesList"] != null)
@@ -61,7 +61,7 @@
     </div>
 
     <div class="row col-md-12  mt-3">
-        <button onclick="getEntityObservation();" class="btn btn-danger offset-md-9 col-md-3">View Details</button>
+        <button data-onclick="getEntityObservation();" class="btn btn-danger offset-md-9 col-md-3">View Details</button>
     </div>
     <div id="manageObsPanel_parent" class="row col-md-12 mt-3">
         <table id="manageObsPanel" class="table table-hover table-bordered table-hover mt-3 table-striped">
@@ -103,7 +103,7 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                <button onclick="finalCommentsButtonSave();" id="finalCommentsButtonSave" type="button" class="btn btn-danger">Submit</button>
+                <button data-onclick="finalCommentsButtonSave();" id="finalCommentsButtonSave" type="button" class="btn btn-danger">Submit</button>
             </div>
         </div>
     </div>
@@ -185,8 +185,8 @@
                 </form>
             </div>
             <div class="modal-footer">
-                <button id="dropButton_memoReply" onclick="dropObservation(g_obsId,7,g_riskId);" type="button" data-bs-dismiss="modal" class="btn btn-danger d-none">Drop Observation</button>
-                <button id="submitAuditeeButton_memoReply" onclick="submitObservationToAuditee(g_obsId, 2, g_riskId);" type="button" data-bs-dismiss="modal" class="btn btn-danger d-none">Submit to Auditee</button>
+                <button id="dropButton_memoReply" data-onclick="dropObservation(g_obsId,7,g_riskId);" type="button" data-bs-dismiss="modal" class="btn btn-danger d-none">Drop Observation</button>
+                <button id="submitAuditeeButton_memoReply" data-onclick="submitObservationToAuditee(g_obsId, 2, g_riskId);" type="button" data-bs-dismiss="modal" class="btn btn-danger d-none">Submit to Auditee</button>
                
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
             </div>
@@ -240,7 +240,7 @@
             </div>
             <div class="modal-footer">
 
-                <button id="updateMemoContent_submit" onclick="finalUpdateMemoContent(g_obsId);" type="button" data-bs-dismiss="modal" class="btn btn-danger">Update Memo Text</button>
+                <button id="updateMemoContent_submit" data-onclick="finalUpdateMemoContent(g_obsId);" type="button" data-bs-dismiss="modal" class="btn btn-danger">Update Memo Text</button>
 
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
             </div>

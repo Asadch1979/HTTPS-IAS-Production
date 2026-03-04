@@ -16,7 +16,7 @@
                 <label for="periodEndModalField"><b>Process</b><span class="text-danger">*</span></label>
             </div>
             <div class="col-md-5">
-            <select id="ZoneSelectField" onchange="" class="form-control form-select">
+            <select id="ZoneSelectField" data-onchange="" class="form-control form-select">
                 <option value="-1" id="-1">--Select Process--</option>
                 @{
                     if (ViewData["FADZoneList"] != null)
@@ -39,7 +39,7 @@
                 <label for="periodEndModalField"><b>Area</b><span class="text-danger">*</span></label>
             </div>
             <div class="col-md-5">
-                <select id="ZoneSelectField" onchange="" class="form-control form-select">
+                <select id="ZoneSelectField" data-onchange="" class="form-control form-select">
                     <option value="-1" id="-1">--Select Area--</option>
                     @{
                         if (ViewData["FADZoneList"] != null)
@@ -55,7 +55,7 @@
                 </select>
             </div>
              <div class="col-md-4 justify-content-center">
-            <button onclick="getReportContents();" class="btn btn-danger w-50"> Find </button>
+            <button data-onclick="getReportContents();" class="btn btn-danger w-50"> Find </button>
         </div>
 
         </div>
@@ -117,7 +117,7 @@
 
         <div class="col-md-12  mt-4">
             <div style="display:flex; flex-direction:row-reverse">
-                <button id="printPreview_btn" class="btn btn-danger" onclick="CreatePDFfromHTML();">Download Report/Print</button>
+                <button id="printPreview_btn" class="btn btn-danger" data-onclick="CreatePDFfromHTML();">Download Report/Print</button>
             </div>
 
         </div>

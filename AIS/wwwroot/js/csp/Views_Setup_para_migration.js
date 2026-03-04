@@ -35,7 +35,7 @@
 
                 $.each(data, function (i, v) {
 
-                    $('#ais_entity_find_panel tbody').append('<tr><td>' + ++i + '</td><td>' + v.entitY_ID + '</td><td>' + v.entitY_CODE + '</td><td>' + v.entitY_NAME + '</td><td>' + v.typE_ID + '</td><td>' + v.audiT_BY + '</td><td>' + v.auditable + '</td><td>' + v.status + '</td><td><input id="' + v.entitY_ID + '_entSource" type="text" class="form-control entSource" /></td><td><input id="' + v.entitY_ID + '_entDestination" class="form-control entDestination" type="text" /></td><td><a onclick="event.preventDefault();paraMigrationProceed(' + v.entitY_ID + ');" href="#" class="text-danger text-center">Proceed Para Migration</a></td></tr>');
+                    $('#ais_entity_find_panel tbody').append('<tr><td>' + ++i + '</td><td>' + v.entitY_ID + '</td><td>' + v.entitY_CODE + '</td><td>' + v.entitY_NAME + '</td><td>' + v.typE_ID + '</td><td>' + v.audiT_BY + '</td><td>' + v.auditable + '</td><td>' + v.status + '</td><td><input id="' + v.entitY_ID + '_entSource" type="text" class="form-control entSource" /></td><td><input id="' + v.entitY_ID + '_entDestination" class="form-control entDestination" type="text" /></td><td><a data-onclick="event.preventDefault();paraMigrationProceed(' + v.entitY_ID + ');" href="#" class="text-danger text-center">Proceed Para Migration</a></td></tr>');
                 });
 
 
@@ -64,7 +64,7 @@
 
                 $.each(data, function (i, v) {
 
-                    $('#entity_find_panel tbody').append('<tr><td>' + ++i + '</td><td>' + v.reportinG_CODE + '</td><td>' + v.reportinG_NAME + '</td><td>' + v.reportinG_STATUS + '</td><td>' + v.reportinG_INDICATOR + '</td><td>' + v.entitY_CODE + '</td><td>' + v.entitY_NAME + '</td><td>' + v.entitY_STATUS + '</td><td>' + v.entitY_INDICATOR + '</td><td><a href="#" onclick="event.preventDefault();AddNewAISEntity(\'' + v.entitY_NAME + '\',\'' + v.entitY_CODE + '\');">Add Entity in AIS</a></td></tr>');
+                    $('#entity_find_panel tbody').append('<tr><td>' + ++i + '</td><td>' + v.reportinG_CODE + '</td><td>' + v.reportinG_NAME + '</td><td>' + v.reportinG_STATUS + '</td><td>' + v.reportinG_INDICATOR + '</td><td>' + v.entitY_CODE + '</td><td>' + v.entitY_NAME + '</td><td>' + v.entitY_STATUS + '</td><td>' + v.entitY_INDICATOR + '</td><td><a href="#" data-onclick="event.preventDefault();AddNewAISEntity(\'' + v.entitY_NAME + '\',\'' + v.entitY_CODE + '\');">Add Entity in AIS</a></td></tr>');
                 });
 
 
@@ -90,7 +90,7 @@
                 g_aisEntitiesRec = data;
                 $.each(data, function (i, v) {
 
-                    $('#ais_entity_find_panel tbody').append('<tr><td>' + ++i + '</td><td>' + v.entitY_ID + '</td><td>' + v.entitY_CODE + '</td><td>' + v.entitY_NAME + '</td><td>' + v.typE_ID + '</td><td>' + v.audiT_BY + '</td><td>' + v.auditable + '</td><td>' + v.status + '</td><td><input id="' + v.entitY_ID + '_entSource" type="text" class="form-control entSource" /></td><td><input id="' + v.entitY_ID + '_entDestination" class="form-control entDestination" type="text" /></td><td><a onclick="event.preventDefault();paraMigrationProceed(' + v.entitY_ID + ');" href="#" class="text-danger text-center">Proceed Para Migration</a></td></tr>');
+                    $('#ais_entity_find_panel tbody').append('<tr><td>' + ++i + '</td><td>' + v.entitY_ID + '</td><td>' + v.entitY_CODE + '</td><td>' + v.entitY_NAME + '</td><td>' + v.typE_ID + '</td><td>' + v.audiT_BY + '</td><td>' + v.auditable + '</td><td>' + v.status + '</td><td><input id="' + v.entitY_ID + '_entSource" type="text" class="form-control entSource" /></td><td><input id="' + v.entitY_ID + '_entDestination" class="form-control entDestination" type="text" /></td><td><a data-onclick="event.preventDefault();paraMigrationProceed(' + v.entitY_ID + ');" href="#" class="text-danger text-center">Proceed Para Migration</a></td></tr>');
                 });
 
 
@@ -123,7 +123,7 @@
                 g_aisEntitiesRec = data;
                 $.each(data, function (i, v) {
 
-                    $('#ais_entity_find_panel tbody').append('<tr><td>' + ++i + '</td><td>' + v.entitY_ID + '</td><td>' + v.entitY_CODE + '</td><td>' + v.entitY_NAME + '</td><td>' + v.typE_ID + '</td><td>' + v.audiT_BY + '</td><td>' + v.auditable + '</td><td>' + v.status + '</td><td><a onclick="event.preventDefault();updateAISEntity(' + v.entitY_ID + ');" href="#">Update Entity</a></td><td><a onclick="event.preventDefault();updateAISEntityMapping(' + v.entitY_ID + ');" href="#">Update Entity Mapping</a></td></tr>');
+                    $('#ais_entity_find_panel tbody').append('<tr><td>' + ++i + '</td><td>' + v.entitY_ID + '</td><td>' + v.entitY_CODE + '</td><td>' + v.entitY_NAME + '</td><td>' + v.typE_ID + '</td><td>' + v.audiT_BY + '</td><td>' + v.auditable + '</td><td>' + v.status + '</td><td><a data-onclick="event.preventDefault();updateAISEntity(' + v.entitY_ID + ');" href="#">Update Entity</a></td><td><a data-onclick="event.preventDefault();updateAISEntityMapping(' + v.entitY_ID + ');" href="#">Update Entity Mapping</a></td></tr>');
                 });
 
             },

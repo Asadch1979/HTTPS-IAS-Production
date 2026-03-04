@@ -14,7 +14,7 @@
             <input class="form-control" id="searchTableRecord" type="text" placeholder="Search..">
         </div>
         <div class="col-md-2">
-            <button onclick="newBranchSetup();" class="btn btn-danger w-100">Add New</button>
+            <button data-onclick="newBranchSetup();" class="btn btn-danger w-100">Add New</button>
         </div>
     </div>
     <br>
@@ -72,7 +72,7 @@
                                 }
                             </td>
                             <td>
-                                <button type="button" class="btn btn-link text-danger btn-sm btn-rounded" onclick="setupBranch('@item.BRANCHCODE','@item.BRANCHNAME','@item.ZONE_NAME','@item.ZONEID','@item.BRANCH_SIZE','@item.BRANCH_SIZE_ID','@risk','@item.ISACTIVE','@item.BRANCHID');">
+                                <button type="button" class="btn btn-link text-danger btn-sm btn-rounded" data-onclick="setupBranch('@item.BRANCHCODE','@item.BRANCHNAME','@item.ZONE_NAME','@item.ZONEID','@item.BRANCH_SIZE','@item.BRANCH_SIZE_ID','@risk','@item.ISACTIVE','@item.BRANCHID');">
                                     Edit
                                 </button>
                             </td>
@@ -161,7 +161,7 @@
                 </form>
             </div>
             <div class="modal-footer">
-                <button onclick="publishBranchChanges();" type="button" class="btn btn-danger">Save changes</button>
+                <button data-onclick="publishBranchChanges();" type="button" class="btn btn-danger">Save changes</button>
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
             </div>
         </div>

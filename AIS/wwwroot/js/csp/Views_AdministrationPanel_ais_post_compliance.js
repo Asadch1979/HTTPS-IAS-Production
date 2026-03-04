@@ -99,7 +99,7 @@
                             if (val === undefined) val = v[f.toUpperCase()];
                             row += '<td>' + (val !== undefined ? val : '') + '</td>';
                         });
-                        row += '<td><button class="btn btn-sm btn-primary" onclick="openUpdateModal(' + idx + ');">Update</button></td></tr>';
+                        row += '<td><button class="btn btn-sm btn-primary" data-onclick="openUpdateModal(' + idx + ');">Update</button></td></tr>';
                         $('#manageObsPanel tbody').append(row);
                     });
                     initializeDataTable('manageObsPanel');

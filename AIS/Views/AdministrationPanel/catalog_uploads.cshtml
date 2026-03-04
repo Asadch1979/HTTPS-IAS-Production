@@ -24,8 +24,8 @@ else
                     <p class="text-muted">Upload and sync API catalog entries.</p>
                     <input class="form-control mb-2" type="file" id="apiCatalogFile" accept=".csv" />
                     <div class="d-flex gap-2">
-                        <button class="btn btn-outline-primary" type="button" onclick="validateCatalog('api');">Validate</button>
-                        <button class="btn btn-primary" type="button" id="apiCatalogApplyBtn" onclick="applyCatalog('api');" disabled>Apply</button>
+                        <button class="btn btn-outline-primary" type="button" data-onclick="validateCatalog('api');">Validate</button>
+                        <button class="btn btn-primary" type="button" id="apiCatalogApplyBtn" data-onclick="applyCatalog('api');" disabled>Apply</button>
                     </div>
                     <div class="mt-3" id="apiCatalogSummary"></div>
                     <div class="table-responsive mt-3">
@@ -52,8 +52,8 @@ else
                     <p class="text-muted">Upload and sync page ID mappings.</p>
                     <input class="form-control mb-2" type="file" id="pageCatalogFile" accept=".xlsx" />
                     <div class="d-flex gap-2">
-                        <button class="btn btn-outline-primary" type="button" onclick="validateCatalog('page');">Validate</button>
-                        <button class="btn btn-primary" type="button" id="pageCatalogApplyBtn" onclick="applyCatalog('page');" disabled>Apply</button>
+                        <button class="btn btn-outline-primary" type="button" data-onclick="validateCatalog('page');">Validate</button>
+                        <button class="btn btn-primary" type="button" id="pageCatalogApplyBtn" data-onclick="applyCatalog('page');" disabled>Apply</button>
                     </div>
                     <div class="mt-3" id="pageCatalogSummary"></div>
                     <div class="table-responsive mt-3">

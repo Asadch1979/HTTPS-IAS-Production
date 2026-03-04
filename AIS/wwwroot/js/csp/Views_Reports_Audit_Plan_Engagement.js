@@ -70,7 +70,7 @@
             success: function (data) {
                 g_engArr = data;
                 $.each(data, function (i, v) {
-                    $('#observation_panel tbody').append('<tr><td align="center"> ' + ++i + '</td><td  align="left">' + v.enG_ID + '</td><td  align="left">' + v.reportinG_OFFICE + '</td><td align="left">' + v.entitY_NAME + '</td><td align="left">' + v.audiT_START_DATE.split(" ")[0] + '</td><td align="left">' + v.audiT_END_DATE.split(" ")[0] + '</td><td align="left">' + v.totaL_DAYS + '</td><td align="left">' + v.delaY_DAYS + '</td><td align="left">' + v.enG_STATUS + '</td><td><small onclick="event.preventDefault();engagementPlanDetail(' + v.enG_ID + ')" class="text-danger cursor-pointer">Details</small></td></tr>');
+                    $('#observation_panel tbody').append('<tr><td align="center"> ' + ++i + '</td><td  align="left">' + v.enG_ID + '</td><td  align="left">' + v.reportinG_OFFICE + '</td><td align="left">' + v.entitY_NAME + '</td><td align="left">' + v.audiT_START_DATE.split(" ")[0] + '</td><td align="left">' + v.audiT_END_DATE.split(" ")[0] + '</td><td align="left">' + v.totaL_DAYS + '</td><td align="left">' + v.delaY_DAYS + '</td><td align="left">' + v.enG_STATUS + '</td><td><small data-onclick="event.preventDefault();engagementPlanDetail(' + v.enG_ID + ')" class="text-danger cursor-pointer">Details</small></td></tr>');
 
                 });
 

@@ -210,7 +210,7 @@
                     var sr = 0;
                     $.each(data, function (i, v) {
                         sr++;
-                        $('#auditeeEntitiesList tbody').append('<tr id="tr_' + v.s_ID + '"><td>' + sr + '</td><td>' + v.heading + '</td><td style="cursor:pointer;"><a class="text-danger" onclick="event.preventDefault();openUpdateSubCheclist(' + v.s_ID + ', ' + v.id + ')">Update</a></td></tr>');
+                        $('#auditeeEntitiesList tbody').append('<tr id="tr_' + v.s_ID + '"><td>' + sr + '</td><td>' + v.heading + '</td><td style="cursor:pointer;"><a class="text-danger" data-onclick="event.preventDefault();openUpdateSubCheclist(' + v.s_ID + ', ' + v.id + ')">Update</a></td></tr>');
 
                     });
                 },

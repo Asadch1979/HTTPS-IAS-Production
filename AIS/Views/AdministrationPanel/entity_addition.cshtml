@@ -28,7 +28,7 @@
                 <input class="form-control alnum-only" id="entityNameTextBar" type="text" data-allow-amp="true" data-allow-question="true" data-maxlen="150" />
             </div>
             <div class="col-md-2">
-                <button onclick="getEntityDetailsByName();" class="btn btn-danger w-100"> Find</button>
+                <button data-onclick="getEntityDetailsByName();" class="btn btn-danger w-100"> Find</button>
             </div>
         </div>
     </div>
@@ -41,7 +41,7 @@
                 <input id="entityCodeTextBar" class="form-control alnum-only" type="text" data-allow-amp="true" data-allow-question="true" data-maxlen="50" />
             </div>
             <div class="col-md-2">
-                <button onclick="getEntityDetailsByCode();" class="btn btn-danger w-100"> Find</button>
+                <button data-onclick="getEntityDetailsByCode();" class="btn btn-danger w-100"> Find</button>
             </div>
         </div>
     </div>
@@ -66,12 +66,12 @@
             <tbody>
             </tbody>
         </table>
-        <button onclick="clearHREntitiesPanel();" class="btn btn-sm btn-success offset-md-11 col-md-1 mt-1"> Clear Table</button>
+        <button data-onclick="clearHREntitiesPanel();" class="btn btn-sm btn-success offset-md-11 col-md-1 mt-1"> Clear Table</button>
     </div>
 
 
     <div class="col-md-12 row mt-3">
-        <button onclick="AddNewAISEntity();" class="btn btn-danger col-md-3"> Add New Entity in AIS</button>
+        <button data-onclick="AddNewAISEntity();" class="btn btn-danger col-md-3"> Add New Entity in AIS</button>
 
     </div>
     <div class="col-md-12 row mt-3">
@@ -93,7 +93,7 @@
                     <input class="form-control alnum-only" id="AISentityNameTextBar" type="text" data-allow-amp="true" data-allow-question="true" data-maxlen="150" />
                 </div>
                 <div class="col-md-2">
-                    <button onclick="getAISEntityDetailsByName();" class="btn btn-danger w-100"> Find</button>
+                    <button data-onclick="getAISEntityDetailsByName();" class="btn btn-danger w-100"> Find</button>
                 </div>
             </div>
         </div>
@@ -106,7 +106,7 @@
                     <input id="AISentityCodeTextBar" class="form-control alnum-only" type="text" data-allow-amp="true" data-allow-question="true" data-maxlen="50" />
                 </div>
                 <div class="col-md-2">
-                    <button onclick="getAISEntityDetailsByCode();" class="btn btn-danger w-100"> Find</button>
+                    <button data-onclick="getAISEntityDetailsByCode();" class="btn btn-danger w-100"> Find</button>
                 </div>
             </div>
         </div>
@@ -130,7 +130,7 @@
                 <tbody>
                 </tbody>
             </table>
-            <button onclick="clearAISEntitiesPanel();" class="btn btn-sm btn-success offset-md-11 col-md-1 mt-1"> Clear Table</button>
+            <button data-onclick="clearAISEntitiesPanel();" class="btn btn-sm btn-success offset-md-11 col-md-1 mt-1"> Clear Table</button>
         </div>
 
 
@@ -248,7 +248,7 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                <button onclick="saveUpdateChangesInAISEntity();" type="button" data-bs-dismiss="modal" class="btn btn-success">Save Changes</button>
+                <button data-onclick="saveUpdateChangesInAISEntity();" type="button" data-bs-dismiss="modal" class="btn btn-success">Save Changes</button>
 
             </div>
         </div>
@@ -365,7 +365,7 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                <button onclick="saveAddInAISEntity();" type="button" data-bs-dismiss="modal" class="btn btn-success">Save Changes</button>
+                <button data-onclick="saveAddInAISEntity();" type="button" data-bs-dismiss="modal" class="btn btn-success">Save Changes</button>
 
             </div>
         </div>
@@ -417,7 +417,7 @@
                             <label>Parent Entity Type</label>
                         </div>
                         <div class="row col-md-8">
-                            <select onchange="getOnChageList();" id="mapentTypeField" class="form-select form-control">
+                            <select data-onchange="getOnChageList();" id="mapentTypeField" class="form-select form-control">
                                 <option value="0" id="0" selected>--Select Entity--</option>
                                 @{
                                     if (ViewData["AuditEntitiesType"] != null)
@@ -471,8 +471,8 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                <button onclick="saveInsertAISEntityMapping();" type="button" data-bs-dismiss="modal" class="btn btn-danger">Add Mapping</button>
-                <button onclick="saveUpdateAISEntityMapping();" type="button" data-bs-dismiss="modal" class="btn btn-success">Update Mapping</button>
+                <button data-onclick="saveInsertAISEntityMapping();" type="button" data-bs-dismiss="modal" class="btn btn-danger">Add Mapping</button>
+                <button data-onclick="saveUpdateAISEntityMapping();" type="button" data-bs-dismiss="modal" class="btn btn-success">Update Mapping</button>
 
             </div>
         </div>

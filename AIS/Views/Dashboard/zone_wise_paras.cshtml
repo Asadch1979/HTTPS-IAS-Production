@@ -19,7 +19,7 @@
                 <label class="text-bold">Relationship Type</label>
             </div>
             <div class="col-md-10">
-                <select id="RelationshipField" onchange="getrelation();" class="form-control form-select">
+                <select id="RelationshipField" data-onchange="getrelation();" class="form-control form-select">
                     <option id="0" value="0" selected="selected">--Select Relationship Type--</option>
 
 
@@ -44,7 +44,7 @@
                 <label class="text-bold">Controlling/Reporting Office</label>
             </div>
             <div class="col-md-4">
-                <select id="controlingsearch" onchange="getplacepost();" class="form-control form-select">
+                <select id="controlingsearch" data-onchange="getplacepost();" class="form-control form-select">
                     <option id="0" value="0" selected="selected">--Select Controlling/Reporting Office--</option>
                 </select>
             </div>
@@ -62,15 +62,15 @@
         </div>
         <div class="row col-md-12 mt-3">
             <div class="offset-md-6 col-md-2">
-                <button onclick="getLegacyEntityObservation();" class="btn btn-success w-100">Search Legacy Paras</button>
+                <button data-onclick="getLegacyEntityObservation();" class="btn btn-success w-100">Search Legacy Paras</button>
             </div>
 
              <div class="col-md-2">
-                <button onclick="getAISEntityObservation();" class="btn btn-primary w-100">Search AIS Paras</button>
+                <button data-onclick="getAISEntityObservation();" class="btn btn-primary w-100">Search AIS Paras</button>
             </div>
 
             <div class="col-md-2">
-                <button onclick="getEntityObservation();" class="btn btn-danger w-100">Search Total Paras</button>
+                <button data-onclick="getEntityObservation();" class="btn btn-danger w-100">Search Total Paras</button>
             </div>
             
            

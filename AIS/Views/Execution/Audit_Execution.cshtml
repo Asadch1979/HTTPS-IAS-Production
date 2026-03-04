@@ -10,7 +10,7 @@
         <div>
             <h5>Violation</h5>
         </div>
-        <select id="riskGroupSelectBox" onchange="div_risksubcategoryShowHide();" class="form-select form-control" aria-label="Default select example">
+        <select id="riskGroupSelectBox" data-onchange="div_risksubcategoryShowHide();" class="form-select form-control" aria-label="Default select example">
             <option value="0" id="0" selected="selected">--Select Voilation Category--</option>
             @{
                 if (ViewData["Voilation_Cat"] != null)
@@ -26,7 +26,7 @@
     </div>
     <div id="div_risksubcategory" style="display:none;" class="col-md-12 mt-3">
         <h5>Nature/Area</h5>
-        <select id="riskSubGroupSelectBox" onchange="div_activityContainerShowHide();" class="form-select form-control" aria-label="Default select example">
+        <select id="riskSubGroupSelectBox" data-onchange="div_activityContainerShowHide();" class="form-select form-control" aria-label="Default select example">
         </select>
     </div>
     <div id="div_activityContainer" style="display:none;" class="col-md-12 mt-3">
@@ -110,7 +110,7 @@
 
 
         <div class="row col-md-12 mt-5">
-            <button onclick="saveChecklistObservations();" class="btn btn-success" style="margin-left: 10px;">Save Observation</button>
+            <button data-onclick="saveChecklistObservations();" class="btn btn-success" style="margin-left: 10px;">Save Observation</button>
         </div>
 
     </div>

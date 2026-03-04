@@ -21,7 +21,7 @@
             cache: false,
             success: function (data) {
                 $.each(data, function (i, v) {
-                    $('#entity_compliance_flow_grid').append('<tr><td>' + ++i + '</td><td>' + v.entitY_TYPE_NAME + '</td><td>' + v.grouP_NAME + '</td><td>' + v.nexT_GROUP_NAME + '</td><td>' + v.preV_GROUP_NAME + '</td><td>' + v.comP_UP_STATUS_DESC + '</td><td>' + v.comP_DOWN_STATUS_DESC + '</td><td><a href="#" onclick="event.preventDefault();updateComplianceFlow(' + v.id + ',' + v.entitY_TYPE_ID + ', ' + v.grouP_ID + ');">Edit</a></td></tr>');
+                    $('#entity_compliance_flow_grid').append('<tr><td>' + ++i + '</td><td>' + v.entitY_TYPE_NAME + '</td><td>' + v.grouP_NAME + '</td><td>' + v.nexT_GROUP_NAME + '</td><td>' + v.preV_GROUP_NAME + '</td><td>' + v.comP_UP_STATUS_DESC + '</td><td>' + v.comP_DOWN_STATUS_DESC + '</td><td><a href="#" data-onclick="event.preventDefault();updateComplianceFlow(' + v.id + ',' + v.entitY_TYPE_ID + ', ' + v.grouP_ID + ');">Edit</a></td></tr>');
                 });
 
             },

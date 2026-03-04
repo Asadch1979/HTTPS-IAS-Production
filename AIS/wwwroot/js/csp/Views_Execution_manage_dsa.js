@@ -118,7 +118,7 @@
                 success: function (data) {
                     g_allObs = data;
                     $.each(data, function (i, v) {
-                        $('#manageObsPanel tbody').append('<tr><td class="text-center">' + (i + 1) + '</td><td class="text-center">' + v.audiT_PERIOD + '</td><td>' + v.parA_NO + '</td><td>' + v.annex + '</td><td>' + v.obS_RISK + '</td><td>' + v.obS_GIST + '</td><td>' + v.updateD_BY + '</td><td>' + v.updateD_ON + '</td><td class="text-center"><a onclick="event.preventDefault();ObservationViewerPanel(\'' + i + '\')" href="#" class="text-hover">Update Para Details</a></td><td class="text-center"><a onclick="event.preventDefault();DeleteDuplicatePara(\'' + v.neW_PARA_ID + '\',\'' + v.olD_PARA_ID + '\', \'' + v.p_TYPE_IND + '\')" href="#" class="text-hover">Delete Duplicate Para</a></td></tr>');
+                        $('#manageObsPanel tbody').append('<tr><td class="text-center">' + (i + 1) + '</td><td class="text-center">' + v.audiT_PERIOD + '</td><td>' + v.parA_NO + '</td><td>' + v.annex + '</td><td>' + v.obS_RISK + '</td><td>' + v.obS_GIST + '</td><td>' + v.updateD_BY + '</td><td>' + v.updateD_ON + '</td><td class="text-center"><a data-onclick="event.preventDefault();ObservationViewerPanel(\'' + i + '\')" href="#" class="text-hover">Update Para Details</a></td><td class="text-center"><a data-onclick="event.preventDefault();DeleteDuplicatePara(\'' + v.neW_PARA_ID + '\',\'' + v.olD_PARA_ID + '\', \'' + v.p_TYPE_IND + '\')" href="#" class="text-hover">Delete Duplicate Para</a></td></tr>');
                     });
                     initializeDataTable('manageObsPanel');
                 },
@@ -254,7 +254,7 @@
                 var sr_c = 1;
                 $.each(data, function (i, v) {
                     if (v.indicator == "O") {
-                        $('#listofRespPersons tbody').append('<tr data-pp="' + (v.pP_NO || '') + '" data-loan="' + (v.loaN_CASE || '') + '" data-account="' + (v.accounT_NUMBER || '') + '" data-lcamount="' + (v.lC_AMOUNT || '') + '" data-accamount="' + (v.acC_AMOUNT || '') + '" data-emp="' + (v.emP_NAME || '') + '"><td>' + sr + '</td><td>' + v.pP_NO + '</td><td>' + v.emP_NAME + '</td><td>' + v.loaN_CASE + '</td><td>' + v.lC_AMOUNT + '</td><td>' + v.accounT_NUMBER + '</td><td>' + v.acC_AMOUNT + '</td><td>' + v.remarks + '</td><td class="text-center"><a href="#" onclick="event.preventDefault();updateRespRow(this);">Update</a></td><td class="text-center"><a href="#" class="text-danger" onclick="event.preventDefault();deleteRespRow(this);">Delete</a></td></tr>');
+                        $('#listofRespPersons tbody').append('<tr data-pp="' + (v.pP_NO || '') + '" data-loan="' + (v.loaN_CASE || '') + '" data-account="' + (v.accounT_NUMBER || '') + '" data-lcamount="' + (v.lC_AMOUNT || '') + '" data-accamount="' + (v.acC_AMOUNT || '') + '" data-emp="' + (v.emP_NAME || '') + '"><td>' + sr + '</td><td>' + v.pP_NO + '</td><td>' + v.emP_NAME + '</td><td>' + v.loaN_CASE + '</td><td>' + v.lC_AMOUNT + '</td><td>' + v.accounT_NUMBER + '</td><td>' + v.acC_AMOUNT + '</td><td>' + v.remarks + '</td><td class="text-center"><a href="#" data-onclick="event.preventDefault();updateRespRow(this);">Update</a></td><td class="text-center"><a href="#" class="text-danger" data-onclick="event.preventDefault();deleteRespRow(this);">Delete</a></td></tr>');
                         sr++
                     }
                     else {
@@ -313,7 +313,7 @@
             }
             var srNo = $('#listofRespPersons tbody tr').length;
             srNo++;
-            //  $('#listofRespPersons tbody').append('<tr id="tr_' + g_respUser[0].ppNumber + '"><td>' + srNo + '</td><td>' + g_respUser[0].ppNumber + '</td><td>' + g_respUser[0].name + '</td><td>' + $('#resp_loan_case').val() + '</td><td>' + $('#resp_loan_amount').val() + '</td><td>' + $('#resp_account_number').val() + '</td><td>' + $('#resp_account_amount').val() + '</td><td>' + $('#resp_remarks').val() + '</td><td class="text-center"><a href="#" onclick="event.preventDefault();updateRespRow(this);">Update / Delete</a></td></tr>');
+            //  $('#listofRespPersons tbody').append('<tr id="tr_' + g_respUser[0].ppNumber + '"><td>' + srNo + '</td><td>' + g_respUser[0].ppNumber + '</td><td>' + g_respUser[0].name + '</td><td>' + $('#resp_loan_case').val() + '</td><td>' + $('#resp_loan_amount').val() + '</td><td>' + $('#resp_account_number').val() + '</td><td>' + $('#resp_account_amount').val() + '</td><td>' + $('#resp_remarks').val() + '</td><td class="text-center"><a href="#" data-onclick="event.preventDefault();updateRespRow(this);">Update / Delete</a></td></tr>');
             g_respUsersArr.push(g_respUser[0]);
             var v = g_allObs[g_index];
             g_np_id = v.neW_PARA_ID;
