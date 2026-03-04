@@ -327,4 +327,11 @@
         </div>
     </div>
 </div>
+<script type="application/json" id="page-data">
+@Html.Raw(System.Text.Json.JsonSerializer.Serialize(new {
+    AnnexList = ViewData["AnnexList"],
+    EngId = Context.Request.Query["engId"].ToString(),
+    SubId = Context.Request.Query["id"].ToString()
+}))
+</script>
 <script src="~/js/csp/Views_Execution_checklist_details.js?v=1"></script>

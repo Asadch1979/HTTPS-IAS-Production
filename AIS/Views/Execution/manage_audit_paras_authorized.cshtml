@@ -241,7 +241,12 @@
     </div>
 
     @section Scripts {
-    <script src="~/js/csp/Views_Execution_manage_audit_paras_authorized.js?v=1"></script>
+    <script type="application/json" id="page-data">
+@Html.Raw(System.Text.Json.JsonSerializer.Serialize(new {
+    AnnexList = ViewData["AnnexList"]
+}))
+</script>
+<script src="~/js/csp/Views_Execution_manage_audit_paras_authorized.js?v=1"></script>
         <script src="~/js/referenceSection.js"></script>
         <script src="~/js/responsibilitySectionUpdate.js"></script>
         
