@@ -1,5 +1,20 @@
 $(function(){
-    var complaintId = parseInt('@complaintId') || 0;
+    console.log('Views_IID_InquiryReport.js loaded.');
+
+    function getComplaintId(){
+        var queryComplaintId = parseInt(new URLSearchParams(window.location.search).get('complaintId'), 10);
+        if(!isNaN(queryComplaintId) && queryComplaintId > 0){ return queryComplaintId; }
+
+        var metaComplaintId = parseInt($('meta[name="iid-complaint-id"]').attr('content'), 10);
+        if(!isNaN(metaComplaintId) && metaComplaintId > 0){ return metaComplaintId; }
+
+        var hiddenComplaintId = parseInt($('#iidComplaintId').val(), 10);
+        if(!isNaN(hiddenComplaintId) && hiddenComplaintId > 0){ return hiddenComplaintId; }
+
+        return 0;
+    }
+
+    var complaintId = getComplaintId();
     var currentStep = 1;
     var isLocked = false;
     var userId = 0;
