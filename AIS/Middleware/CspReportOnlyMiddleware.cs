@@ -16,7 +16,8 @@ namespace AIS.Middleware
         private readonly RequestDelegate _next;
         private readonly bool _enabled;
         private readonly bool _reportOnly;
-        private readonly string _policy;
+        private readonly string _reportOnlyPolicy;
+        private readonly string _enforcedPolicy;
         private readonly string _reportUri;
 
         public CspReportOnlyMiddleware(RequestDelegate next, IConfiguration configuration, IHostEnvironment environment)
@@ -64,11 +65,17 @@ namespace AIS.Middleware
                 BuildDirective("img-src", imageSources, "data:", "blob:"),
                 BuildDirective("connect-src", connectSources),
                 BuildDirective("frame-src", frameSources),
-                "upgrade-insecure-requests",
                 $"report-uri {_reportUri}"
             };
 
-            _policy = string.Join("; ", directives.Where(d => !string.IsNullOrWhiteSpace(d))) + ";";
+            _reportOnlyPolicy = string.Join("; ", directives.Where(d => !string.IsNullOrWhiteSpace(d))) + ";";
+
+            var enforcedDirectives = new List<string>(directives)
+            {
+                "upgrade-insecure-requests"
+            };
+
+            _enforcedPolicy = string.Join("; ", enforcedDirectives.Where(d => !string.IsNullOrWhiteSpace(d))) + ";";
         }
 
         public async Task InvokeAsync(HttpContext context)
@@ -87,7 +94,8 @@ namespace AIS.Middleware
                 }
 
                 var headerName = _reportOnly ? ReportOnlyHeader : EnforcedHeader;
-                context.Response.Headers[headerName] = _policy;
+                var policy = _reportOnly ? _reportOnlyPolicy : _enforcedPolicy;
+                context.Response.Headers[headerName] = policy;
                 return Task.CompletedTask;
             });
 

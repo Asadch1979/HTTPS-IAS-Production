@@ -223,6 +223,12 @@ namespace AIS.Services
                 return true;
                 }
 
+            if (path.Equals("/ApiCalls/get_all_public_holidays", StringComparison.OrdinalIgnoreCase) &&
+                (HttpMethods.IsGet(method) || HttpMethods.IsPost(method)))
+                {
+                return true;
+                }
+
             return false;
             }
 

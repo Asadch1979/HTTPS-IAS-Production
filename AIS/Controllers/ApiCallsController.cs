@@ -11,6 +11,7 @@ using AIS.Security.Cryptography;
 using AIS.Security.PasswordPolicy;
 using AIS.Services;
 using AIS.Utilities;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -5918,9 +5919,10 @@ namespace AIS.Controllers
             return dBConnection.AddPublicHoliday(model);
             }
 
+        [AllowAnonymous]
         [HttpGet]
         [HttpPost]
-        public List<PublicHolidayModel> get_all_public_holidays([FromBody] HolidayYearModel input)
+        public List<PublicHolidayModel> get_all_public_holidays(HolidayYearModel input)
             {
             int year = input?.year ?? 0;
             return dBConnection.GetAllPublicHolidays(year);
