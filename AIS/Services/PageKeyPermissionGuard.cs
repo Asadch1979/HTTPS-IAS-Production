@@ -166,76 +166,118 @@ namespace AIS.Services
         return true;
         }
 
-        private static bool IsApiPermissionExempt(HttpRequest request)
+        private bool IsApiPermissionExempt(HttpRequest request)
             {
+            var pathBase = request?.PathBase.Value ?? string.Empty;
             var path = request?.Path.Value ?? string.Empty;
             var method = request?.Method ?? string.Empty;
+
+            _logger.LogInformation(
+                "TEMP UAT - API exemption check values: PathBase='{PathBase}', Path='{Path}', PathValueCompared='{PathValueCompared}', Method='{Method}'.",
+                pathBase,
+                request?.Path,
+                path,
+                method);
+
             if (string.IsNullOrWhiteSpace(path))
                 {
                 return false;
                 }
 
-            if (path.Equals("/Home/DoChangePassword", StringComparison.OrdinalIgnoreCase) &&
+            var normalizedPath = NormalizeApiExemptPath(pathBase, path);
+
+            if ((path.Equals("/Home/DoChangePassword", StringComparison.OrdinalIgnoreCase) ||
+                normalizedPath.Equals("/Home/DoChangePassword", StringComparison.OrdinalIgnoreCase)) &&
                 HttpMethods.IsPost(method))
                 {
                 return true;
                 }
 
-            if (path.Equals("/Home/Change_Password", StringComparison.OrdinalIgnoreCase) &&
+            if ((path.Equals("/Home/Change_Password", StringComparison.OrdinalIgnoreCase) ||
+                normalizedPath.Equals("/Home/Change_Password", StringComparison.OrdinalIgnoreCase)) &&
                 HttpMethods.IsGet(method))
                 {
                 return true;
                 }
 
-            if (path.Equals("/Home/Logout", StringComparison.OrdinalIgnoreCase) &&
+            if ((path.Equals("/Home/Logout", StringComparison.OrdinalIgnoreCase) ||
+                normalizedPath.Equals("/Home/Logout", StringComparison.OrdinalIgnoreCase)) &&
                 (HttpMethods.IsGet(method) || HttpMethods.IsPost(method)))
                 {
                 return true;
                 }
 
-            if (path.Equals("/Home/KeepAlive", StringComparison.OrdinalIgnoreCase) &&
+            if ((path.Equals("/Home/KeepAlive", StringComparison.OrdinalIgnoreCase) ||
+                normalizedPath.Equals("/Home/KeepAlive", StringComparison.OrdinalIgnoreCase)) &&
                 HttpMethods.IsGet(method))
                 {
                 return true;
                 }
 
-            if (path.Equals("/Login/DoLogin", StringComparison.OrdinalIgnoreCase) &&
+            if ((path.Equals("/Login/DoLogin", StringComparison.OrdinalIgnoreCase) ||
+                normalizedPath.Equals("/Login/DoLogin", StringComparison.OrdinalIgnoreCase)) &&
                 HttpMethods.IsPost(method))
                 {
                 return true;
                 }
 
-            if (path.Equals("/Login/Index", StringComparison.OrdinalIgnoreCase) &&
+            if ((path.Equals("/Login/Index", StringComparison.OrdinalIgnoreCase) ||
+                normalizedPath.Equals("/Login/Index", StringComparison.OrdinalIgnoreCase)) &&
                 HttpMethods.IsGet(method))
                 {
                 return true;
                 }
 
-            if (path.Equals("/Login/Index_Dev", StringComparison.OrdinalIgnoreCase) &&
+            if ((path.Equals("/Login/Index_Dev", StringComparison.OrdinalIgnoreCase) ||
+                normalizedPath.Equals("/Login/Index_Dev", StringComparison.OrdinalIgnoreCase)) &&
                 HttpMethods.IsGet(method))
                 {
                 return true;
                 }
 
-            if (path.Equals("/Login/Maintenance", StringComparison.OrdinalIgnoreCase) &&
+            if ((path.Equals("/Login/Maintenance", StringComparison.OrdinalIgnoreCase) ||
+                normalizedPath.Equals("/Login/Maintenance", StringComparison.OrdinalIgnoreCase)) &&
                 HttpMethods.IsGet(method))
                 {
                 return true;
                 }
 
-            if (path.Equals("/ApiCalls/get_all_public_holidays", StringComparison.OrdinalIgnoreCase) &&
+            if ((path.Equals("/ApiCalls/get_all_public_holidays", StringComparison.OrdinalIgnoreCase) ||
+                normalizedPath.Equals("/ApiCalls/get_all_public_holidays", StringComparison.OrdinalIgnoreCase)) &&
                 (HttpMethods.IsGet(method) || HttpMethods.IsPost(method)))
                 {
                 return true;
                 }
 
-            if (path.Equals("/ApiCalls/get_user_name", StringComparison.OrdinalIgnoreCase) &&
+            if ((path.Equals("/ApiCalls/get_user_name", StringComparison.OrdinalIgnoreCase) ||
+                normalizedPath.Equals("/ApiCalls/get_user_name", StringComparison.OrdinalIgnoreCase)) &&
                 (HttpMethods.IsGet(method) || HttpMethods.IsPost(method)))
                 {
                 return true;
                 }
 
             return false;
+            }
+
+        private static string NormalizeApiExemptPath(string pathBase, string path)
+            {
+            if (string.IsNullOrWhiteSpace(path))
+                {
+                return string.Empty;
+                }
+
+            if (string.IsNullOrWhiteSpace(pathBase))
+                {
+                return path;
+                }
+
+            if (path.StartsWith(pathBase, StringComparison.OrdinalIgnoreCase))
+                {
+                var normalized = path.Substring(pathBase.Length);
+                return string.IsNullOrWhiteSpace(normalized) ? "/" : normalized;
+                }
+
+            return path;
             }
 
         }
