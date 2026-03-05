@@ -278,12 +278,6 @@ namespace AIS.Controllers
                     return View("~/Views/HM/ManageSbpPassword.cshtml");
                     }
 
-                if (!sessionHandler.HasSbpAccess())
-                    {
-                    TempData["ErrorMessage"] = "Please authenticate to access SBP Observation Register.";
-                    return RedirectToAction("Index", "Home");
-                    }
-
                 return View();
                 }
             }

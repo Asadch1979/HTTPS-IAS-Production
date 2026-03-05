@@ -229,6 +229,12 @@ namespace AIS.Services
                 return true;
                 }
 
+            if (path.Equals("/ApiCalls/get_user_name", StringComparison.OrdinalIgnoreCase) &&
+                (HttpMethods.IsGet(method) || HttpMethods.IsPost(method)))
+                {
+                return true;
+                }
+
             return false;
             }
 
