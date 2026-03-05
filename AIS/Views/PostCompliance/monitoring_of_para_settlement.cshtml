@@ -17,7 +17,7 @@
             <label><b>Entity:</b></label>
         </div>
         <div class="col-md-10">
-            <select id="entitySelectField" data-onchange="getSettledParasForMonitoring();" class="form-control form-select">
+            <select id="entitySelectField" class="form-control form-select">
                 <option value="0" id="0">--Select Audit Entity--</option>
                 @{
                     if (ViewData["EntitiesList"] != null)
@@ -169,7 +169,7 @@
                 </form>
             </div>
             <div class="modal-footer">
-                <button data-onclick="saveCommentsOnSettledCompliance();" type="button" class="btn btn-danger" data-bs-dismiss="modal">Save Comments</button>
+                <button id="saveCommentsOnSettledComplianceBtn" type="button" class="btn btn-danger" data-bs-dismiss="modal">Save Comments</button>
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
             </div>
         </div>
