@@ -1,0 +1,6 @@
+@model AIS.Models.FieldAuditWorkflow.FieldAuditWorkflowViewModel
+<h5 class="text-danger mb-3">Audit Report Compilation</h5>
+<div class="row g-3">
+    <div class="col-md-6"><div class="border rounded p-3"><strong>Entity:</strong> @(Model.ReportOverview?.EntityName ?? "-")<br /><strong>Audit Period:</strong> @(Model.ReportOverview?.AuditPeriod ?? "-")</div></div>
+    <div class="col-md-6"><div class="border rounded p-3"><strong>KPI Snapshot:</strong> @(Model.ReportChecklist?.HasKpiSnapshot == true ? "Completed" : "Pending")<br /><strong>Narratives:</strong> @(Model.ReportChecklist?.MandatoryNarrativesComplete == true ? "Completed" : "Pending")</div></div>
+</div>
