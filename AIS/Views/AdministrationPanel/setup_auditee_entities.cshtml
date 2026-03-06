@@ -31,7 +31,7 @@
         <label>Entity Type</label>
     </div>
     <div class="col-md-10">
-        <select id="entityTypeSelectField" data-onchange="ShowEntities();" class="form-control form-select">
+        <select id="entityTypeSelectField" data-change="ShowEntities();" class="form-control form-select">
             <option id="0" value="0" selected="selected">--Select Entity Type--</option>
             @{
                 if (ViewData["AuditEntitiesType"] != null)
@@ -92,7 +92,7 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                <button data-onclick="saveEntity();" type="button" data-bs-dismiss="modal" class="btn btn-success">Save</button>
+                <button data-click="saveEntity();" type="button" data-bs-dismiss="modal" class="btn btn-success">Save</button>
 
             </div>
         </div>

@@ -69,7 +69,7 @@
                                 <p class="fw-normal mb-1">@item.RISK</p>
                             </td>
                             <td>
-                                <button type="button" class="btn btn-link text-danger btn-sm btn-rounded" data-onclick="recommendReferProcTransaction('@item.ID');">
+                                <button type="button" class="btn btn-link text-danger btn-sm btn-rounded" data-click="recommendReferProcTransaction('@item.ID');">
                                     Details
                                 </button>
                             </td>
@@ -127,8 +127,8 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                <button data-onclick="refferedBackProcTransaction();" type="button" class="btn btn-danger">Refer Back</button>
-                <button data-onclick="recommendProcTransaction();" type="button" class="btn btn-success">Recommend</button>
+                <button data-click="refferedBackProcTransaction();" type="button" class="btn btn-danger">Refer Back</button>
+                <button data-click="recommendProcTransaction();" type="button" class="btn btn-success">Recommend</button>
 
             </div>
         </div>

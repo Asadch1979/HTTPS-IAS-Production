@@ -19,7 +19,7 @@
         </div>
         <div class="col-md-10">
             <input id="PeriodNameField" disabled="disabled" class="form-control ml-1 d-none" type="text"  />
-            <select id="entitySelectField" data-onchange="getEntityObservation()" class="form-control form-select">
+            <select id="entitySelectField" data-change="getEntityObservation()" class="form-control form-select">
                 <option value="0" id="0">--Select Audit Period--</option>
                 @{
                 if (ViewData["EntitiesList"] != null)
@@ -40,7 +40,7 @@
         </div>
         <div class="col-md-10">
             <input id="entityNameField" disabled="disabled" class="form-control ml-1 d-none" type="text" />
-            <select id="entitySelectField" data-onchange="getEntityObservation()" class="form-control form-select">
+            <select id="entitySelectField" data-change="getEntityObservation()" class="form-control form-select">
                 <option value="0" id="0">--Select Audit Entity--</option>
                 @{
                     if (ViewData["EntitiesList"] != null)
@@ -229,7 +229,7 @@
                 </form>
             </div>
             <div class="modal-footer">
-                <button id="replyButton_memoReply" data-onclick="replyMemo();" type="button" data-bs-dismiss="modal" class="btn btn-danger">Reply</button>
+                <button id="replyButton_memoReply" data-click="replyMemo();" type="button" data-bs-dismiss="modal" class="btn btn-danger">Reply</button>
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
             </div>
         </div>

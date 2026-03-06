@@ -56,14 +56,14 @@
                         });
 
                         if(item.indicator=="Y")
-                            $('#bacanalysis_panel tbody').append("<tr><td>" + sr + "</td><td class=\"heading_field\">" + item.heading + "</td><td>" + item.annex + "</td><td class=\"text-right\">" + item.newcount + "</td><td class=\"text-right\">" + item.oldcount + "</td><td class=\"text-right\">" + item.count + "</td><td style=\"vertical-align: middle;\" rowspan=\"" + mergeRow + "\">" + item.auditcomments + "</td><td class=\"actionsCol\"><a href=\"#\" data-onclick=\"getParaViewerDetails(" + item.id + ");\">View Detail</a></td><td class=\"actionsCol\"><a  href=\"#\" data-onclick=\"getParaSummaryDetails(" + item.id + ");\">View Summary</a></td></tr>");
+                            $('#bacanalysis_panel tbody').append("<tr><td>" + sr + "</td><td class=\"heading_field\">" + item.heading + "</td><td>" + item.annex + "</td><td class=\"text-right\">" + item.newcount + "</td><td class=\"text-right\">" + item.oldcount + "</td><td class=\"text-right\">" + item.count + "</td><td style=\"vertical-align: middle;\" rowspan=\"" + mergeRow + "\">" + item.auditcomments + "</td><td class=\"actionsCol\"><a href=\"#\" data-click=\"getParaViewerDetails(" + item.id + ");\">View Detail</a></td><td class=\"actionsCol\"><a  href=\"#\" data-click=\"getParaSummaryDetails(" + item.id + ");\">View Summary</a></td></tr>");
                         else
                             $('#bacanalysis_panel tbody').append("<tr><td>" + sr + "</td><td class=\"heading_field\">" + item.heading + "</td><td>" + item.annex + "</td><td class=\"text-right\">" + item.newcount + "</td><td class=\"text-right\">" + item.oldcount + "</td><td class=\"text-right\">" + item.count + "</td><td style=\"vertical-align: middle;\" rowspan=\"" + mergeRow + "\">" + item.auditcomments + "</td><td class=\"actionsCol\"></td><td class=\"actionsCol\"></td></tr>");
                         heading_check = item.heading;
                     }
                     else{
                         if (item.indicator == "Y")
-                            $('#bacanalysis_panel tbody').append("<tr><td>" + sr + "</td><td class=\"heading_field\">" + item.heading + "</td><td>" + item.annex + "</td><td class=\"text-right\">" + item.newcount + "</td><td class=\"text-right\">" + item.oldcount + "</td><td class=\"text-right\">" + item.count + "</td><td class=\"actionsCol\"><a href=\"#\" data-onclick=\"getParaViewerDetails(" + item.id + ");\">View Detail</a></td><td class=\"actionsCol\"><a href=\"#\" data-onclick=\"getParaSummaryDetails(" + item.id + ");\">View Summary</a></td></tr>");
+                            $('#bacanalysis_panel tbody').append("<tr><td>" + sr + "</td><td class=\"heading_field\">" + item.heading + "</td><td>" + item.annex + "</td><td class=\"text-right\">" + item.newcount + "</td><td class=\"text-right\">" + item.oldcount + "</td><td class=\"text-right\">" + item.count + "</td><td class=\"actionsCol\"><a href=\"#\" data-click=\"getParaViewerDetails(" + item.id + ");\">View Detail</a></td><td class=\"actionsCol\"><a href=\"#\" data-click=\"getParaSummaryDetails(" + item.id + ");\">View Summary</a></td></tr>");
                         else
                             $('#bacanalysis_panel tbody').append("<tr><td>" + sr + "</td><td class=\"heading_field\">" + item.heading + "</td><td>" + item.annex + "</td><td class=\"text-right\">" + item.newcount + "</td><td class=\"text-right\">" + item.oldcount + "</td><td class=\"text-right\">" + item.count + "</td><td class=\"actionsCol\" ></td><td class=\"actionsCol\"></td></tr>");
 
@@ -127,7 +127,7 @@
 
                 $.each(data, function (index, item) {
 
-                    $('#entitywise_panel tbody').append("<tr><td>" + sr + "</td><td>" + item.name + "</td><td>" + item.audiT_PERIOD + "</td> <td class=\"text-right\">" + item.parA_NO + "</td><td><a href=\"#\" data-onclick=\"getParaText(" + item.id + ", '"+item.parA_CATEGORY+"');\">View Para Text</a></td></tr>");
+                    $('#entitywise_panel tbody').append("<tr><td>" + sr + "</td><td>" + item.name + "</td><td>" + item.audiT_PERIOD + "</td> <td class=\"text-right\">" + item.parA_NO + "</td><td><a href=\"#\" data-click=\"getParaText(" + item.id + ", '"+item.parA_CATEGORY+"');\">View Para Text</a></td></tr>");
                     sr++;
                 });
 

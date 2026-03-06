@@ -36,7 +36,7 @@
     <div class="row col-md-8">
         
 
-            <select id="auditZoneSelectionBox" data-onchange="ShowSelectedZonesBranches();" class="form-select form-control" aria-label="Default select example">
+            <select id="auditZoneSelectionBox" data-change="ShowSelectedZonesBranches();" class="form-select form-control" aria-label="Default select example">
                 <option value="0" id="0" selected>--Select Operational Audit Cluster--</option>
 
                 @{
@@ -59,7 +59,7 @@
     </div>
     <div class="row col-md-8">
        
-        <select id="branchSelectionBox" data-onchange="ShowBranchInfoBox();" class="form-select form-control" aria-label="Default select example" multiple autofocus size="15">
+        <select id="branchSelectionBox" data-change="ShowBranchInfoBox();" class="form-select form-control" aria-label="Default select example" multiple autofocus size="15">
             
             <option value="0" id="0">--Select Audit Branch--</option>
 
@@ -72,7 +72,7 @@
     <div class="row col-md-6 mt-3">
         <!--  <button class="btn-primary" style="float:right">Save</button>
         <div class="row col-md-12 mt-3">-->
-        <button data-onclick="addRecordToZoneBranchMap();" class="col-md-2 btn btn-danger">Save</button>
+        <button data-click="addRecordToZoneBranchMap();" class="col-md-2 btn btn-danger">Save</button>
     </div>
 
 </div>

@@ -31,7 +31,7 @@
                 g_entRecord = data;
                 $('#entityMappingGrid tbody').empty();
                 $.each(data, function (i, v) {
-                    $('#entityMappingGrid tbody').append('<tr><td>' + ++i + '</td><td>' + v.relatioN_TYPE_ID + '</td><td>' + v.p_TYPE_ID + '</td><td>' + v.c_TYPE_ID + '</td><td>' + v.parenT_CODE + '</td><td>' + v.chilD_CODE + '</td><td>' + v.parenT_ID + '</td><td>' + v.entitY_ID + '</td><td>' + v.p_NAME + '</td><td>' + v.c_NAME + '</td><td>' + v.status + '</td><td><a href="#" data-onclick="event.preventDefault();UpdateEntityType(' + v.autid + ');" class="text-danger">Update</a></td></tr>');
+                    $('#entityMappingGrid tbody').append('<tr><td>' + ++i + '</td><td>' + v.relatioN_TYPE_ID + '</td><td>' + v.p_TYPE_ID + '</td><td>' + v.c_TYPE_ID + '</td><td>' + v.parenT_CODE + '</td><td>' + v.chilD_CODE + '</td><td>' + v.parenT_ID + '</td><td>' + v.entitY_ID + '</td><td>' + v.p_NAME + '</td><td>' + v.c_NAME + '</td><td>' + v.status + '</td><td><a href="#" data-click="event.preventDefault();UpdateEntityType(' + v.autid + ');" class="text-danger">Update</a></td></tr>');
                 });
             },
             dataType: "json",
@@ -62,7 +62,7 @@
                 g_entRecord = data;
                 $('#entityMappingGrid tbody').empty();
                 $.each(data, function (i, v) {
-                    $('#entityMappingGrid tbody').append('<tr><td>' + ++i + '</td><td>' + v.relatioN_TYPE_ID + '</td><td>' + v.p_TYPE_ID + '</td><td>' + v.c_TYPE_ID + '</td><td>' + v.parenT_CODE + '</td><td>' + v.chilD_CODE + '</td><td>' + v.parenT_ID + '</td><td>' + v.entitY_ID + '</td><td>' + v.p_NAME + '</td><td>' + v.c_NAME + '</td><td>' + v.status + '</td><td><a href="#" data-onclick="event.preventDefault();UpdateEntityType(' + v.autid + ');" class="text-danger">Update</a></td></tr>');
+                    $('#entityMappingGrid tbody').append('<tr><td>' + ++i + '</td><td>' + v.relatioN_TYPE_ID + '</td><td>' + v.p_TYPE_ID + '</td><td>' + v.c_TYPE_ID + '</td><td>' + v.parenT_CODE + '</td><td>' + v.chilD_CODE + '</td><td>' + v.parenT_ID + '</td><td>' + v.entitY_ID + '</td><td>' + v.p_NAME + '</td><td>' + v.c_NAME + '</td><td>' + v.status + '</td><td><a href="#" data-click="event.preventDefault();UpdateEntityType(' + v.autid + ');" class="text-danger">Update</a></td></tr>');
                 });
             },
             dataType: "json",

@@ -104,7 +104,7 @@
     <div class="row col-md-12 mt-1">
         <div class="col-md-3 mb-3">
             <label>Relationship Type</label>
-            <select id="RelationshipField" data-onchange="getrelation();" class="form-control form-select">
+            <select id="RelationshipField" data-change="getrelation();" class="form-control form-select">
                 <option id="0" value="0" selected="selected">--Select Relationship Type--</option>
                 @{
                     if (ViewData["Userrelationship"] != null)
@@ -119,7 +119,7 @@
         </div>
         <div class="col-md-3 mb-3">
             <label>Controlling/Reporting Office</label>
-            <select id="controlingsearch" data-onchange="getplacepost();" class="form-control form-select">
+            <select id="controlingsearch" data-change="getplacepost();" class="form-control form-select">
                 <option id="0" value="0" selected="selected">--Select Controlling/Reporting Office--</option>
             </select>
         </div>
@@ -140,7 +140,7 @@
    
     <div class="row col-md-12 mt-3">
         <div class="col-md-12">
-            <button class="btn btn-primary" data-onclick="findParas();">Search</button>
+            <button class="btn btn-primary" data-click="findParas();">Search</button>
         </div>
     </div>
     <div class="row col-md-12 mt-3" id="paraStatusTableDiv"></div>
@@ -176,7 +176,7 @@
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-primary" data-onclick="submitStatusChange();">Submit</button>
+                <button type="button" class="btn btn-primary" data-click="submitStatusChange();">Submit</button>
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
             </div>
         </div>

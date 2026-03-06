@@ -20,7 +20,7 @@
                 success: function (data) {
                   
                     $.each(data, function (i, v) {
-                        $('#zoneiwseperformance tbody').append(' <tr><td class="text-center">' + v.checklist + '</td><td>' + v.total_Paras + '</td><td>' + v.setteled_Para + '</td><td>' + v.unsetteled_Para + '</td><td>' + v.ratio + '</td><td>' + v.r1 + '</td><td>' + v.r2 + '</td><td>' + v.r3 + '</td><td class="text-center"><a data-onclick="event.preventDefault();ObservationViewerPanel(' + v.obS_ID + ',' + v.obS_STATUS_ID + ', ' + v.obS_RISK_ID + ')" href="#" class="text-hover">View Memo</a></td></tr>');
+                        $('#zoneiwseperformance tbody').append(' <tr><td class="text-center">' + v.checklist + '</td><td>' + v.total_Paras + '</td><td>' + v.setteled_Para + '</td><td>' + v.unsetteled_Para + '</td><td>' + v.ratio + '</td><td>' + v.r1 + '</td><td>' + v.r2 + '</td><td>' + v.r3 + '</td><td class="text-center"><a data-click="event.preventDefault();ObservationViewerPanel(' + v.obS_ID + ',' + v.obS_STATUS_ID + ', ' + v.obS_RISK_ID + ')" href="#" class="text-hover">View Memo</a></td></tr>');
                     });
                   
 

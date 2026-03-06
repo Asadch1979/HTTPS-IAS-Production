@@ -19,7 +19,7 @@
             <h6>Region Office</h6>
         </div>
         <div class="col-md-8">
-            <select id="loanGMField" data-onchange="getZoneOffice();" class="form-select form-control" aria-label="Default select example">
+            <select id="loanGMField" data-change="getZoneOffice();" class="form-select form-control" aria-label="Default select example">
                 <option value="0" id="0" selected>--Select Region Office--</option>
                 @{
                     if (ViewData["GMsList"] != null)
@@ -118,7 +118,7 @@
 
     <div class="row col-md-12 mt-3">
 
-        <button data-onclick="getLoanDetail();" class="btn btn-primary offset-md-9 col-md-3">Search</button>
+        <button data-click="getLoanDetail();" class="btn btn-primary offset-md-9 col-md-3">Search</button>
 
     </div>
 

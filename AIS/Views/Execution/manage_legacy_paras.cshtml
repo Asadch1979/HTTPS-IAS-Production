@@ -18,7 +18,7 @@
     <div class="row col-md-12 mt-3">
         <div class="row w-100">
             <div class="col-md-6 offset-md-6">
-                <select id="totalPageSize" data-onchange="addRecordToGrid();" style="display: inline-block;float: right;width: 100px;margin-left: 10px;" class="form-control">
+                <select id="totalPageSize" data-change="addRecordToGrid();" style="display: inline-block;float: right;width: 100px;margin-left: 10px;" class="form-control">
                     <option selected="selected" value="10">10</option>
                     <option value="20">20</option>
                     <option value="50">50</option>
@@ -48,9 +48,9 @@
     </div>
     <div class="row w-100">
             <div class="col-md-6 offset-md-6">
-            <button data-onclick="nextPageClick();" style="display:inline-block; float:right;" class="btn btn-primary btn-sm">Next</button>
+            <button data-click="nextPageClick();" style="display:inline-block; float:right;" class="btn btn-primary btn-sm">Next</button>
             <p id="pageNoField" style="display:inline-block;float:right; margin-right:5px; margin-left:5px;" class="text-primary">Page 1 of 100</p>                    
-            <button data-onclick="prevPageClick();" style="display:inline-block;float:right;" class="btn btn-primary btn-sm">Previous</button>
+            <button data-click="prevPageClick();" style="display:inline-block;float:right;" class="btn btn-primary btn-sm">Previous</button>
             <p id="totalRecordsNoField" style="display:inline-block;float:right; margin-right:5px; margin-left:5px;" class="text-primary">Total Records: </p>
         </div>
            

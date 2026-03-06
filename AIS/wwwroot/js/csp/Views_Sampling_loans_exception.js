@@ -50,8 +50,8 @@
                 <td>${item.disB_DATE_DISP || item.disb_DATE_DISP || item.disbDateDisp || item.disB_DATE || item.disb_DATE || ""}</td>
                 <td>${formatCurrency(item.deV_AMOUNT)}</td>
                 <td>${formatCurrency(item.outstanding)}</td>
-                <td><a href="#" data-onclick="event.preventDefault();getLoanTransactions(${item.loaN_DISB_ID});" >View Transactions</a></td>
-                <td><a href="#" data-onclick="event.preventDefault();getLoanDocuments(${item.loaN_DISB_ID});" >View Documents</a></td>
+                <td><a href="#" data-click="event.preventDefault();getLoanTransactions(${item.loaN_DISB_ID});" >View Transactions</a></td>
+                <td><a href="#" data-click="event.preventDefault();getLoanDocuments(${item.loaN_DISB_ID});" >View Documents</a></td>
             </tr>`;
             tableBody.append(row);
         });

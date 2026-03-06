@@ -27,7 +27,7 @@
                             @(item.Status == 9 ? "Settled" : "Unsettled")
                         </span>
                     </td>
-                    <td class="text-center"><a href="#" class="text-primary" data-onclick="event.preventDefault();viewParaText('@item.ComId');">View Para Text</a>   |   <a href="#" class="text-danger" data-onclick="event.preventDefault();openChangeStatusModal('@item.ComId', @item.Status);">Change Status</a></td>
+                    <td class="text-center"><a href="#" class="text-primary" data-click="event.preventDefault();viewParaText('@item.ComId');">View Para Text</a>   |   <a href="#" class="text-danger" data-click="event.preventDefault();openChangeStatusModal('@item.ComId', @item.Status);">Change Status</a></td>
                 </tr>
             }
         }

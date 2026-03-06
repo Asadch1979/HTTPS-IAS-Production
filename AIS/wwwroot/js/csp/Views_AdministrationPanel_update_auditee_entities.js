@@ -17,7 +17,7 @@
                 g_entities = data;
                 $.each(data, function (i, v) {
                     var id = getVal(v, 'entitY_ID');
-                    $('#entitiesGrid tbody').append('<tr><td>' + id + '</td><td>' + getVal(v, 'code') + '</td><td>' + getVal(v, 'name') + '</td><td>' + getVal(v, 'active') + '</td><td>' + getVal(v, 'auditbY_NAME') + '</td><td>' + getVal(v, 'auditable') + '</td><td>' + getVal(v, 'address') + '</td><td>' + getVal(v, 'telephone') + '</td><td>' + getVal(v, 'emaiL_ADDRESS') + '</td><td>' + getVal(v, 'erisk') + '</td><td>' + getVal(v, 'esize') + '</td><td><a href="#" data-onclick="event.preventDefault();editEntity(' + id + ');" class="text-danger">Update</a></td></tr>');
+                    $('#entitiesGrid tbody').append('<tr><td>' + id + '</td><td>' + getVal(v, 'code') + '</td><td>' + getVal(v, 'name') + '</td><td>' + getVal(v, 'active') + '</td><td>' + getVal(v, 'auditbY_NAME') + '</td><td>' + getVal(v, 'auditable') + '</td><td>' + getVal(v, 'address') + '</td><td>' + getVal(v, 'telephone') + '</td><td>' + getVal(v, 'emaiL_ADDRESS') + '</td><td>' + getVal(v, 'erisk') + '</td><td>' + getVal(v, 'esize') + '</td><td><a href="#" data-click="event.preventDefault();editEntity(' + id + ');" class="text-danger">Update</a></td></tr>');
                 });
             },
             dataType: "json",

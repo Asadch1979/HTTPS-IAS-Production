@@ -27,7 +27,7 @@
         if ($('#auditCriteriaVisitField').is(':checked'))
             visit = "Yes";
 
-        $('#auditCriteriaListBox tbody').append('<tr><td value="' + $('#auditCriteriaPeriodField option:selected').val() + '">' + period + '</td><td value="' + $('#auditCriteriaEntityField option:selected').val() + '">' + entityName + '</td><td value="' + $('#auditCriteriaRiskField option:selected').val() + '">' + risk + '</td><td value="' + $('#auditCriteriaFreqField option:selected').val() + '">' + freq + '</td><td value="' + $('#auditCriteriaSizeField option:selected').val() + '">' + size + '</td><td value="' + days + '">' + days + '</td><td value="' + visit + '">' + visit + '</td><td><a class="text-hover text-danger">' + g_status + '</a></td><td><a data-onclick=DeleteCriteriaRecordFromGrid(this); class="text-hover text-danger">Delete</a></td></tr>')
+        $('#auditCriteriaListBox tbody').append('<tr><td value="' + $('#auditCriteriaPeriodField option:selected').val() + '">' + period + '</td><td value="' + $('#auditCriteriaEntityField option:selected').val() + '">' + entityName + '</td><td value="' + $('#auditCriteriaRiskField option:selected').val() + '">' + risk + '</td><td value="' + $('#auditCriteriaFreqField option:selected').val() + '">' + freq + '</td><td value="' + $('#auditCriteriaSizeField option:selected').val() + '">' + size + '</td><td value="' + days + '">' + days + '</td><td value="' + visit + '">' + visit + '</td><td><a class="text-hover text-danger">' + g_status + '</a></td><td><a data-click=DeleteCriteriaRecordFromGrid(this); class="text-hover text-danger">Delete</a></td></tr>')
 
     }
     function DeleteCriteriaRecordFromGrid(e) {

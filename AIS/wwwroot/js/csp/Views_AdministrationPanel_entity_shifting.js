@@ -53,7 +53,7 @@
 
                 $.each(data, function (i, v) {
 
-                    $('#entity_find_panel tbody').append('<tr><td>' + ++i + '</td><td>' + v.entitY_ID + '</td><td>' + v.entitY_CODE + '</td><td>' + v.entitY_NAME + '</td><td>' + v.typE_ID + '</td><td>' + v.audiT_BY + '</td><td>' + v.auditable + '</td><td>' + v.status + '</td><td><a data-onclick="event.preventDefault();updateAISEntity(' + v.entitY_ID + ');" href="#">Update Entity</a></td><td><a data-onclick="updateAISEntityMapping(' + v.entitY_ID + ');" href="#">Update Entity Mapping</a></td></tr>');
+                    $('#entity_find_panel tbody').append('<tr><td>' + ++i + '</td><td>' + v.entitY_ID + '</td><td>' + v.entitY_CODE + '</td><td>' + v.entitY_NAME + '</td><td>' + v.typE_ID + '</td><td>' + v.audiT_BY + '</td><td>' + v.auditable + '</td><td>' + v.status + '</td><td><a data-click="event.preventDefault();updateAISEntity(' + v.entitY_ID + ');" href="#">Update Entity</a></td><td><a data-click="updateAISEntityMapping(' + v.entitY_ID + ');" href="#">Update Entity Mapping</a></td></tr>');
                 });
 
 
@@ -81,7 +81,7 @@
 
                 $.each(data, function (i, v) {
 
-                    $('#entity_find_panel tbody').append('<tr><td>' + ++i + '</td><td>' + v.entitY_ID + '</td><td>' + v.entitY_CODE + '</td><td>' + v.entitY_NAME + '</td><td>' + v.typE_ID + '</td><td>' + v.audiT_BY + '</td><td>' + v.auditable + '</td><td>' + v.status + '</td><td><a data-onclick="event.preventDefault();updateAISEntity(' + v.entitY_ID + ');" href="#">Update Entity</a></td><td><a data-onclick="updateAISEntityMapping(' + v.entitY_ID + ');" href="#">Update Entity Mapping</a></td></tr>');
+                    $('#entity_find_panel tbody').append('<tr><td>' + ++i + '</td><td>' + v.entitY_ID + '</td><td>' + v.entitY_CODE + '</td><td>' + v.entitY_NAME + '</td><td>' + v.typE_ID + '</td><td>' + v.audiT_BY + '</td><td>' + v.auditable + '</td><td>' + v.status + '</td><td><a data-click="event.preventDefault();updateAISEntity(' + v.entitY_ID + ');" href="#">Update Entity</a></td><td><a data-click="updateAISEntityMapping(' + v.entitY_ID + ');" href="#">Update Entity Mapping</a></td></tr>');
                 });
 
             },
@@ -108,7 +108,7 @@
                 g_aisEntitiesRec = data;
                 $.each(data, function (i, v) {
 
-                    $('#ais_entity_find_panel tbody').append('<tr><td>' + ++i + '</td><td>' + v.entitY_ID + '</td><td>' + v.entitY_CODE + '</td><td>' + v.entitY_NAME + '</td><td>' + v.typE_ID + '</td><td>' + v.audiT_BY + '</td><td>' + v.auditable + '</td><td>' + v.status + '</td><td><a data-onclick="event.preventDefault();updateAISEntity(' + v.entitY_ID + ');" href="#">Update Entity</a></td><td><a data-onclick="updateAISEntityMapping(' + v.entitY_ID + ');" href="#">Update Entity Mapping</a></td></tr>');
+                    $('#ais_entity_find_panel tbody').append('<tr><td>' + ++i + '</td><td>' + v.entitY_ID + '</td><td>' + v.entitY_CODE + '</td><td>' + v.entitY_NAME + '</td><td>' + v.typE_ID + '</td><td>' + v.audiT_BY + '</td><td>' + v.auditable + '</td><td>' + v.status + '</td><td><a data-click="event.preventDefault();updateAISEntity(' + v.entitY_ID + ');" href="#">Update Entity</a></td><td><a data-click="updateAISEntityMapping(' + v.entitY_ID + ');" href="#">Update Entity Mapping</a></td></tr>');
                 });
 
 
@@ -134,7 +134,7 @@
                 g_aisEntitiesRec = data;
                 $.each(data, function (i, v) {
 
-                    $('#ais_entity_find_panel tbody').append('<tr><td>' + ++i + '</td><td>' + v.entitY_ID + '</td><td>' + v.entitY_CODE + '</td><td>' + v.entitY_NAME + '</td><td>' + v.typE_ID + '</td><td>' + v.audiT_BY + '</td><td>' + v.auditable + '</td><td>' + v.status + '</td><td><a data-onclick="event.preventDefault();updateAISEntity(' + v.entitY_ID + ');" href="#">Update Entity</a></td><td><a data-onclick="updateAISEntityMapping(' + v.entitY_ID + ');" href="#">Update Entity Mapping</a></td></tr>');
+                    $('#ais_entity_find_panel tbody').append('<tr><td>' + ++i + '</td><td>' + v.entitY_ID + '</td><td>' + v.entitY_CODE + '</td><td>' + v.entitY_NAME + '</td><td>' + v.typE_ID + '</td><td>' + v.audiT_BY + '</td><td>' + v.auditable + '</td><td>' + v.status + '</td><td><a data-click="event.preventDefault();updateAISEntity(' + v.entitY_ID + ');" href="#">Update Entity</a></td><td><a data-click="updateAISEntityMapping(' + v.entitY_ID + ');" href="#">Update Entity Mapping</a></td></tr>');
                 });
 
             },

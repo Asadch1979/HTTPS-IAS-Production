@@ -30,7 +30,7 @@
                     t_rb += parseInt(v.referreD_BACK);
                     t_s += parseInt(v.recommended);
                     t_p += parseInt(v.pending);
-                     $('#progressReport_panel tbody').append('<tr><td class="text-center"> ' + ++i + '</td><td class="text-center">' + v.ppno + '</td><td class="text-left" >' + v.name + '</td><td class="text-right">' + v.total + '</td><td class="text-right">' + v.referreD_BACK + '</td><td class="text-right">' + v.recommended + '</td><td class="text-right">' + v.pending + '</td>><td class="text-right">' + v.lasT_LOGIN_ON + '</td><td class="text-center"><a href="#" data-onclick="event.preventDefault();getComplianceProgressDetails(' + v.ppno + ');">Details</a></td></tr>');
+                     $('#progressReport_panel tbody').append('<tr><td class="text-center"> ' + ++i + '</td><td class="text-center">' + v.ppno + '</td><td class="text-left" >' + v.name + '</td><td class="text-right">' + v.total + '</td><td class="text-right">' + v.referreD_BACK + '</td><td class="text-right">' + v.recommended + '</td><td class="text-right">' + v.pending + '</td>><td class="text-right">' + v.lasT_LOGIN_ON + '</td><td class="text-center"><a href="#" data-click="event.preventDefault();getComplianceProgressDetails(' + v.ppno + ');">Details</a></td></tr>');
 
                     });
 

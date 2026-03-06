@@ -573,7 +573,7 @@ function getPageData() {
                         $('#checklistaction_' + v.cD_ID).val(1);
                         $('#checklistaction_' + v.cD_ID).attr('disabled', true);
                         $('#actionTd_'+v.cD_ID).empty();
-                        $('#actionTd_' + v.cD_ID).append('<a class="text-center text-danger" data-onclick= "ObservationViewerPanel(' + v.obS_ID + ')"> View Memo </a>');
+                        $('#actionTd_' + v.cD_ID).append('<a class="text-center text-danger" data-click= "ObservationViewerPanel(' + v.obS_ID + ')"> View Memo </a>');
 
                     }
                     else if (v.status == 'N') {

@@ -28,7 +28,7 @@
             success: function (data) {
                 console.log(data);
                 $.each(data, function (index, child) {
-                    $('#manageObsPanel tbody').append('<tr id="div_' + child.id + '"><td><p class="fw-normal mb-1">' + child.entitY_NAME + '</p></td><td><p class="fw-normal mb-1">' + child.audiT_PERIOD + '</p></td><td><p class="fw-normal mb-1">' + child.parA_NO + '</p></td><td><p class="fw-normal mb-1">' + child.gisT_OF_PARAS + '</p></td><td><p class="fw-normal mb-1">' + child.auditoR_REMARKS + '</p></td><td class="text-center"><a class="text-center text-danger" style="cursor:pointer;" data-onclick="event.preventDefault();processdetails(' + child.id + ');">Action</a></td></tr>')
+                    $('#manageObsPanel tbody').append('<tr id="div_' + child.id + '"><td><p class="fw-normal mb-1">' + child.entitY_NAME + '</p></td><td><p class="fw-normal mb-1">' + child.audiT_PERIOD + '</p></td><td><p class="fw-normal mb-1">' + child.parA_NO + '</p></td><td><p class="fw-normal mb-1">' + child.gisT_OF_PARAS + '</p></td><td><p class="fw-normal mb-1">' + child.auditoR_REMARKS + '</p></td><td class="text-center"><a class="text-center text-danger" style="cursor:pointer;" data-click="event.preventDefault();processdetails(' + child.id + ');">Action</a></td></tr>')
                 });
 
             },

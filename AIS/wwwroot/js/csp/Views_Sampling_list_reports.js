@@ -49,7 +49,7 @@
             <td>${reportingPeriod}</td>
             <td class="text-center">${exceptionCount}</td>
             <td class="text-center">
-                <button class="btn btn-danger btn-sm" data-onclick="viewSample(${item.reporT_ID}, ${item.loaN_STATUS}, '${item.reporT_INDICATOR}', '${item.reporT_TITLE.replace(/'/g, "\\'")}', '${item.discription.replace(/'/g, "\\'")}')">
+                <button class="btn btn-danger btn-sm" data-click="viewSample(${item.reporT_ID}, ${item.loaN_STATUS}, '${item.reporT_INDICATOR}', '${item.reporT_TITLE.replace(/'/g, "\\'")}', '${item.discription.replace(/'/g, "\\'")}')">
                     View
                 </button>
             </td>

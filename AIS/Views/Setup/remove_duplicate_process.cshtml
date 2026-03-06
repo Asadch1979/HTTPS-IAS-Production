@@ -28,7 +28,7 @@
 
 <div class="row col-md-12">
     <label class="form-label font-weight-bold">Please select the Main process in which you want to merge into</label>
-    <select id="checklistSelectField" data-onchange="removeSelectedProcFromGrid();" class="form-select form-control">
+    <select id="checklistSelectField" data-change="removeSelectedProcFromGrid();" class="form-select form-control">
         <option value="0" id="0" selected>--Select Process--</option>
         @{
             if (ViewData["ProcessList"] != null)
@@ -79,7 +79,7 @@
     </table>
 </div>
 <div class="row col-md-12 mt-3">
-    <button data-onclick="mergeDuplicate();" class="btn btn-danger col-md-3 offset-md-9">Merge Duplicates</button>
+    <button data-click="mergeDuplicate();" class="btn btn-danger col-md-3 offset-md-9">Merge Duplicates</button>
 </div>
 
 
@@ -122,7 +122,7 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                <button data-onclick="updateProcess();" type="button" data-bs-dismiss="modal" class="btn btn-success">Save Changes</button>
+                <button data-click="updateProcess();" type="button" data-bs-dismiss="modal" class="btn btn-success">Save Changes</button>
 
             </div>
         </div>
@@ -189,7 +189,7 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                <button data-onclick="updateSubProcess();" type="button" data-bs-dismiss="modal" class="btn btn-success">Save Changes</button>
+                <button data-click="updateSubProcess();" type="button" data-bs-dismiss="modal" class="btn btn-success">Save Changes</button>
 
             </div>
         </div>
@@ -406,7 +406,7 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                <button data-onclick="updateProcessDetail();" type="button" data-bs-dismiss="modal" class="btn btn-success">Submit Changes</button>
+                <button data-click="updateProcessDetail();" type="button" data-bs-dismiss="modal" class="btn btn-success">Submit Changes</button>
 
             </div>
         </div>

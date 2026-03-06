@@ -74,7 +74,7 @@
                         r1 += parseInt(item.r1);
                         r2 += parseInt(item.r2);
                         r3 += parseInt(item.r3);
-                        $('#entitywise_panel_mainGrid tbody').append("<tr><td>" + sr + "</td><td>" + item.heading + "</td><td>" + item.annex + "</td><td class=\"text-right\">" + item.neW_TOTAL + "</td><td class=\"text-right\">" + item.olD_TOTAL + "</td><td class=\"text-right\">" + item.total + "</td><td class=\"text-right\" style=\"background-color: #ff968f; \">" + item.r1 + "</td><td class=\"text-right\" style=\"background-color: #f9e10a6b; \">" + item.r2 + "</td><td class=\"text-right\" style=\"background-color:#82f386;\">" + item.r3 + "</td><td class=\"actionsCol\"><a href=\"#\" data-onclick=\"getParaViewerDetails(" + item.id + ");\">View Detail</a></td><td class=\"actionsCol\"><a href=\"#\" data-onclick=\"getParaSummaryDetails(" + item.id + ");\">View Summary</a></td></tr>");
+                        $('#entitywise_panel_mainGrid tbody').append("<tr><td>" + sr + "</td><td>" + item.heading + "</td><td>" + item.annex + "</td><td class=\"text-right\">" + item.neW_TOTAL + "</td><td class=\"text-right\">" + item.olD_TOTAL + "</td><td class=\"text-right\">" + item.total + "</td><td class=\"text-right\" style=\"background-color: #ff968f; \">" + item.r1 + "</td><td class=\"text-right\" style=\"background-color: #f9e10a6b; \">" + item.r2 + "</td><td class=\"text-right\" style=\"background-color:#82f386;\">" + item.r3 + "</td><td class=\"actionsCol\"><a href=\"#\" data-click=\"getParaViewerDetails(" + item.id + ");\">View Detail</a></td><td class=\"actionsCol\"><a href=\"#\" data-click=\"getParaSummaryDetails(" + item.id + ");\">View Summary</a></td></tr>");
                         sr++;
                     });
 
@@ -124,7 +124,7 @@
                 var sr = 1;
 
                 $.each(data, function (index, item) {
-                    $('#entitywise_panel tbody').append("<tr><td>" + sr + "</td><td>" + item.name + "</td><td>" + item.audiT_PERIOD + "</td> <td class=\"text-right\">" + item.parA_NO + "</td><td><a href=\"#\" data-onclick=\"getParaText(" + item.id + ", '" + item.parA_CATEGORY + "');\">View Para Text</a></td></tr>");
+                    $('#entitywise_panel tbody').append("<tr><td>" + sr + "</td><td>" + item.name + "</td><td>" + item.audiT_PERIOD + "</td> <td class=\"text-right\">" + item.parA_NO + "</td><td><a href=\"#\" data-click=\"getParaText(" + item.id + ", '" + item.parA_CATEGORY + "');\">View Para Text</a></td></tr>");
                     sr++;
                 });
                 initializeDataTable('entitywise_panel');

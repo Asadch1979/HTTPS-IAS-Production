@@ -16,7 +16,7 @@
             <h3 style=" display:block;color: #be0e43">Control Violations</h3>   
         </div>
         <div class="col-md-2">
-            <button data-onclick="newControlViolationSetup();" style="float:right;"class="btn btn-danger w-100">Add New</button>
+            <button data-click="newControlViolationSetup();" style="float:right;"class="btn btn-danger w-100">Add New</button>
         </div>
     
     <br>
@@ -56,7 +56,7 @@
                                         }
                                     </td>
                                     <td>
-                                        <button type="button" class="btn btn-link text-danger btn-sm btn-rounded" data-onclick="setupControlViolation('@item.V_NAME','@item.MAX_NUMBER','@item.STATUS','@item.ID');">
+                                        <button type="button" class="btn btn-link text-danger btn-sm btn-rounded" data-click="setupControlViolation('@item.V_NAME','@item.MAX_NUMBER','@item.STATUS','@item.ID');">
                                             Edit
                                         </button>
                                     </td>
@@ -108,7 +108,7 @@
                 </form>
             </div>
             <div class="modal-footer">
-                <button data-onclick="publishControlViolationChanges();" type="button" class="btn btn-danger">Save changes</button>
+                <button data-click="publishControlViolationChanges();" type="button" class="btn btn-danger">Save changes</button>
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
             </div>
         </div>

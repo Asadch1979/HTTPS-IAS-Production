@@ -64,8 +64,7 @@ namespace AIS.Middleware
                 BuildDirective("font-src", fontSources, "data:"),
                 BuildDirective("img-src", imageSources, "data:", "blob:"),
                 BuildDirective("connect-src", connectSources),
-                BuildDirective("frame-src", frameSources),
-                $"report-uri {_reportUri}"
+                BuildDirective("frame-src", frameSources)
             };
 
             _reportOnlyPolicy = string.Join("; ", directives.Where(d => !string.IsNullOrWhiteSpace(d))) + ";";
@@ -94,12 +93,33 @@ namespace AIS.Middleware
                 }
 
                 var headerName = _reportOnly ? ReportOnlyHeader : EnforcedHeader;
-                var policy = _reportOnly ? _reportOnlyPolicy : _enforcedPolicy;
+                var basePolicy = _reportOnly ? _reportOnlyPolicy : _enforcedPolicy;
+                var reportUri = BuildReportUri(context);
+                var policy = string.Concat(basePolicy, " report-uri ", reportUri, ";");
                 context.Response.Headers[headerName] = policy;
                 return Task.CompletedTask;
             });
 
             await _next(context);
+        }
+
+
+        private string BuildReportUri(HttpContext context)
+        {
+            if (string.IsNullOrWhiteSpace(_reportUri))
+            {
+                return "/api/security/csp-report";
+            }
+
+            var configured = _reportUri.Trim();
+            if (configured.StartsWith("http://", StringComparison.OrdinalIgnoreCase) || configured.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+            {
+                return configured;
+            }
+
+            var relativePath = configured.StartsWith("/") ? configured : "/" + configured;
+            var pathBase = context?.Request?.PathBase.Value ?? string.Empty;
+            return string.IsNullOrEmpty(pathBase) ? relativePath : pathBase + relativePath;
         }
 
         private static bool IsHtmlResponse(string contentType)

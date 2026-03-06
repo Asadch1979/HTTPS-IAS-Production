@@ -13,7 +13,7 @@
         <div class="col-md-2 row">
             <label class="text-bold"><b>Violations</b></label>
         </div>
-        <select id="riskGroupSelectBox" data-onchange="getSubProcess();" class="form-select form-control" aria-label="Default select example">
+        <select id="riskGroupSelectBox" data-change="getSubProcess();" class="form-select form-control" aria-label="Default select example">
             <option value="0" id="0" selected="selected">--Select Voilation Category--</option>
             @{
                 if (ViewData["ProcessList"] != null)
@@ -30,7 +30,7 @@
         <div class="col-md-2 row">
             <label class="text-bold"><b>Sub Process</b></label>
         </div>
-        <select id="riskSubGroupSelectBox" data-onchange="getProcessDetail();" class="form-select form-control" aria-label="Default select example">
+        <select id="riskSubGroupSelectBox" data-change="getProcessDetail();" class="form-select form-control" aria-label="Default select example">
             <option value="0">--Select Sub Process--</option>           
         </select>
     </div>
@@ -43,7 +43,7 @@
         </select>
     </div>
     <div class="col-md-12 mt-3">
-        <button data-onclick="getEntityObservation();" class="btn btn-primary">Search Para</button>
+        <button data-click="getEntityObservation();" class="btn btn-primary">Search Para</button>
     </div>
 
     <div class="mt-3 col-md-12">

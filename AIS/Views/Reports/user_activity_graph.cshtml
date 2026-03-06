@@ -20,11 +20,11 @@
             <h3 style="color: #be0e43">Audit Period</h3>
         </div>
         <div class="col-md-6">
-            <button data-onclick="setupNewAuditPeriod();" class="btn btn-danger" style="float:right;">Add New Period</button>
+            <button data-click="setupNewAuditPeriod();" class="btn btn-danger" style="float:right;">Add New Period</button>
         </div>
     </div>
     <h5 class="mt-3">Select Department</h5>
-    <select id="deptSelectionBox" data-onchange="ShowDepartmentAuditPeriods();" class="form-select form-control" aria-label="Default select example">
+    <select id="deptSelectionBox" data-change="ShowDepartmentAuditPeriods();" class="form-select form-control" aria-label="Default select example">
         <option value="0" selected>Select Your Department</option>
         @{
             if (ViewData["AuditDepartments"] != null)
@@ -103,7 +103,7 @@
                 </form>
             </div>
             <div class="modal-footer">
-                <button data-onclick="publishNewAuditPeriodChanges();" type="button" class="btn btn-danger">Save changes</button>
+                <button data-click="publishNewAuditPeriodChanges();" type="button" class="btn btn-danger">Save changes</button>
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
             </div>
         </div>

@@ -7,7 +7,7 @@
 <div class="row w-100">
     <div class="col-md-8">
         <h3 style="color: #be0e43">Create Audit Plan</h3>
-       <select id="deptSelectionBox" data-onchange="ShowDepartmentAuditPeriods();" class="form-select form-control">
+       <select id="deptSelectionBox" data-change="ShowDepartmentAuditPeriods();" class="form-select form-control">
            @{
                 if (ViewData["AuditDepartments"] != null)
                 {
@@ -26,7 +26,7 @@
             <div class="row fieldAuditFields mt-3 d-none">
                 <div class="col-md-6">
                     <h5>Select Audit Cluster</h5>
-                    <select id="auditZoneSelectionBox" data-onchange="ShowSelectedZonesBranches();" class="form-select form-control" aria-label="Default select example">
+                    <select id="auditZoneSelectionBox" data-change="ShowSelectedZonesBranches();" class="form-select form-control" aria-label="Default select example">
                         <option value="0" id="0" selected>--Select Audit Cluster--</option>
                         @{
                             if (ViewData["AuditZonesList"] != null)
@@ -42,7 +42,7 @@
                 </div>
                 <div class="col-md-6">
                     <h5>Select Audit Branch</h5>
-                    <select id="branchSelectionBox" data-onchange="ShowBranchInfoBox();" class="form-select form-control" aria-label="Default select example">
+                    <select id="branchSelectionBox" data-change="ShowBranchInfoBox();" class="form-select form-control" aria-label="Default select example">
                         <option value="0" id="0">--Select Audit Branch--</option>
                     </select>
                 </div>
@@ -50,7 +50,7 @@
             <div class="row nonFieldAuditFields mt-3">
                 <div class="col-md-6">
                     <h5>Select Audit Division</h5>
-                    <select id="divSelectionBox" data-onchange="ShowSelectedDivisionDepartments();" class="form-select form-control" aria-label="Default select example">
+                    <select id="divSelectionBox" data-change="ShowSelectedDivisionDepartments();" class="form-select form-control" aria-label="Default select example">
                         <option value="0" id="0" selected>--Select Audit Division--</option>
                         @{
                             if (ViewData["DivisionsList"] != null)
@@ -66,7 +66,7 @@
                 </div>
                 <div class="col-md-6">
                     <h5>Select Audit Department</h5>
-                    <select id="divDeptSelectionBox" data-onchange="getSubEntities();" class="form-select form-control" aria-label="Default select example">
+                    <select id="divDeptSelectionBox" data-change="getSubEntities();" class="form-select form-control" aria-label="Default select example">
                         <option value="0" id="0">--Select Audit Department--</option>
                     </select>
                 </div>
@@ -169,7 +169,7 @@
 <div class="row col-md-12 w-100 mt-3">
     <button style="width:150px;" class="btn btn-lg btn-danger">Cancel</button>
     <button style="width:150px; margin-left:50px; margin-right:50px;" class="btn btn-lg btn-danger">Reset</button>
-    <button data-onclick="previewAuditPlan();" style="width: 150px;" class="btn btn-lg btn-danger">Preview</button>
+    <button data-click="previewAuditPlan();" style="width: 150px;" class="btn btn-lg btn-danger">Preview</button>
 
 </div>
 
@@ -289,7 +289,7 @@
                 </form>
             </div>
             <div class="modal-footer">
-                <button data-onclick="publishNewAuditPlanChanges();" type="button" class="btn btn-danger">Save changes</button>
+                <button data-click="publishNewAuditPlanChanges();" type="button" class="btn btn-danger">Save changes</button>
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
             </div>
         </div>

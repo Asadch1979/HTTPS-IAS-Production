@@ -12,7 +12,7 @@
 
 <div class="row col-md-12 mt-3">
     <label class="col-form-label"><b>Audit Entity</b></label>
-    <select id="entitySelectField" data-onchange="getEntityObservation()" class="form-control form-select">
+    <select id="entitySelectField" data-change="getEntityObservation()" class="form-control form-select">
         <option value="0" id="0">--Select Audit Entity--</option>
         @{
             if (ViewData["EntitiesList"] != null)
@@ -130,7 +130,7 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                <button data-onclick="finalUpdateCCQHandler();" id="finalCommentsButtonSave" type="button" class="btn btn-danger">Submit</button>
+                <button data-click="finalUpdateCCQHandler();" id="finalCommentsButtonSave" type="button" class="btn btn-danger">Submit</button>
             </div>
         </div>
     </div>

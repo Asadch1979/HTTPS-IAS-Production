@@ -36,7 +36,7 @@
     </div>
     <div class="row col-md-8">
         <div class="col-md-9 pl-0">
-            <select id="auditCriteriaEntityField" data-onchange="enitityChangeEvent();" class="form-select form-control">
+            <select id="auditCriteriaEntityField" data-change="enitityChangeEvent();" class="form-select form-control">
                 <option value="0" id="0" selected>--Select Entity--</option>
                 @{
                 if (ViewData["AuditEntities"] != null)
@@ -50,7 +50,7 @@
             </select>
         </div>
         <div class="col-md-3 pr-0">
-            <button data-onclick="addAuditEntitiesModal();" class="btn btn-danger float-right">Add New Entity</button>
+            <button data-click="addAuditEntitiesModal();" class="btn btn-danger float-right">Add New Entity</button>
         </div>
     </div>
 </div>
@@ -138,7 +138,7 @@
     </div>
 </div>
 <div class="row col-md-12 mt-3">
-    <button data-onclick="addRecordToauditCriteriaListBox();" class="col-md-2 btn btn-danger">Save</button>
+    <button data-click="addRecordToauditCriteriaListBox();" class="col-md-2 btn btn-danger">Save</button>
 </div>
 
 <div class="row w-100">
@@ -161,7 +161,7 @@
     </table>
 </div>
 <div class="row col-md-12 mt-3">
-    <button data-onclick="submitAuditCriteria();" class="col-md-2 btn btn-success">Submit</button>
+    <button data-click="submitAuditCriteria();" class="col-md-2 btn btn-success">Submit</button>
 </div>
 
 
@@ -204,7 +204,7 @@
                 </form>
             </div>
             <div class="modal-footer">
-                <button data-onclick="publishAuditeeEntity();" type="button" class="btn btn-danger">Save changes</button>
+                <button data-click="publishAuditeeEntity();" type="button" class="btn btn-danger">Save changes</button>
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
             </div>
         </div>

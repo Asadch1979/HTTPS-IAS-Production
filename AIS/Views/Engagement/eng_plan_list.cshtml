@@ -46,8 +46,8 @@
                             <td class="col-md-auto">@oeDate</td>
                             <td class="col-md-auto">@sDate</td>
                             <td class="col-md-auto">@eDate</td>
-                            <td class="col-md-auto"><a data-onclick="referredBackEngagementPlan(@item.ENG_ID);" href="#" class="text-danger text-hover">Reject</a></td>
-                            <td class="col-md-auto"><a data-onclick="approveEngagementPlan(@item.ENG_ID);" href="#" class="text-success text-hover ml-5">Approve</a></td>
+                            <td class="col-md-auto"><a data-click="referredBackEngagementPlan(@item.ENG_ID);" href="#" class="text-danger text-hover">Reject</a></td>
+                            <td class="col-md-auto"><a data-click="approveEngagementPlan(@item.ENG_ID);" href="#" class="text-success text-hover ml-5">Approve</a></td>
                             
                         </tr>
 
@@ -78,7 +78,7 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                <button data-onclick="finalReferredBackEngagementPlan();" type="button" class="btn btn-danger">Submit</button>
+                <button data-click="finalReferredBackEngagementPlan();" type="button" class="btn btn-danger">Submit</button>
             </div>
         </div>
     </div>

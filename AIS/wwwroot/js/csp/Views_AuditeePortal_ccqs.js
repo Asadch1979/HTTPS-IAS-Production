@@ -34,7 +34,7 @@
                     g_response = data;
                     var sr = 1;
                     $.each(data, function (i, v) {
-                        $('#ccqs_panel tbody').append('  <tr id="' + v.id + '"><td align="justify"> ' + sr + '</td> <td align="left">' + v.questions + '</td> <td align="left">' + v.controL_VIOLATION + '</td> <td align="left">' + v.risk + '</td> <td align="left">' + v.status + '</td><td align="justify"><a data-onclick="event.preventDefault();updateCCQBinding(' + v.id + ', \'\',' + v.controL_VIOLATION_ID + ' , ' + v.risK_ID + ', \'' + v.status + '\');" href="#">Edit</a></td> </tr>');
+                        $('#ccqs_panel tbody').append('  <tr id="' + v.id + '"><td align="justify"> ' + sr + '</td> <td align="left">' + v.questions + '</td> <td align="left">' + v.controL_VIOLATION + '</td> <td align="left">' + v.risk + '</td> <td align="left">' + v.status + '</td><td align="justify"><a data-click="event.preventDefault();updateCCQBinding(' + v.id + ', \'\',' + v.controL_VIOLATION_ID + ' , ' + v.risK_ID + ', \'' + v.status + '\');" href="#">Edit</a></td> </tr>');
                         sr++;
                     });
 
@@ -51,7 +51,7 @@
         $($('#ccqs_panel tbody tr#' + g_id).find('td').eq(2)).html($('#CCQcontrolViolation_selectarea option:selected').text());
         $($('#ccqs_panel tbody tr#' + g_id).find('td').eq(3)).html($('#CCQrisk_selectarea option:selected').text());
         $($('#ccqs_panel tbody tr#' + g_id).find('td').eq(4)).html($('#CCQstatus_selectarea option:selected').text());
-        $($('#ccqs_panel tbody tr#' + g_id).find('td').eq(5)).html('<a data-onclick="event.preventDefault();updateCCQBinding(' + g_id + ', \'\',' + $('#CCQcontrolViolation_selectarea option:selected').text() + ' , ' + $('#CCQrisk_selectarea option:selected').text() + ', \'' + $('#CCQstatus_selectarea option:selected').text() + '\');" href="#">Edit</a>');
+        $($('#ccqs_panel tbody tr#' + g_id).find('td').eq(5)).html('<a data-click="event.preventDefault();updateCCQBinding(' + g_id + ', \'\',' + $('#CCQcontrolViolation_selectarea option:selected').text() + ' , ' + $('#CCQrisk_selectarea option:selected').text() + ', \'' + $('#CCQstatus_selectarea option:selected').text() + '\');" href="#">Edit</a>');
        
         $.each(g_response, function (i, e) {
             if (e.id == id) {

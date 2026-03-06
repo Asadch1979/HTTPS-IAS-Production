@@ -17,7 +17,7 @@
             <label><b>Entity:</b></label>
         </div>
         <div class="col-md-10">
-            <select id="entitySelectField" data-onchange="getReportDropdownContents();" class="form-control form-select">
+            <select id="entitySelectField" data-change="getReportDropdownContents();" class="form-control form-select">
                 <option value="0" id="0">--Select Audit Entity--</option>
                 @{
                     if (ViewData["EntitiesList"] != null)
@@ -37,7 +37,7 @@
             <label><b>Report:</b></label>
         </div>
         <div class="col-md-10">
-            <select id="entityReportSelectField" data-onchange="getLegacyPara();" class="form-control form-select">
+            <select id="entityReportSelectField" data-change="getLegacyPara();" class="form-control form-select">
             </select>
         </div>
     </div>
@@ -90,7 +90,7 @@
 
             <div class="mt-3 modal-footer">
                 
-                <button data-onclick="submitLegacyParaUpdates();" id="PublishParaText" type="button" class="btn btn-danger">Save Changes</button>                
+                <button data-click="submitLegacyParaUpdates();" id="PublishParaText" type="button" class="btn btn-danger">Save Changes</button>                
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
                 
             </div>

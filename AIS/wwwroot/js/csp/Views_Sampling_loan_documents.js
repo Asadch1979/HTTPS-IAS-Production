@@ -53,7 +53,7 @@
                 <td>${item.doC_NAME}</td>  
                 <td class="text-center">
                     ${item.imagE_ID ?
-                        `<a href="#" data-onclick="event.preventDefault();viewDocument('${item.imagE_ID}','${item.doC_NAME}');" class="btn btn-info btn-sm">View Document</a>` :
+                        `<a href="#" data-click="event.preventDefault();viewDocument('${item.imagE_ID}','${item.doC_NAME}');" class="btn btn-info btn-sm">View Document</a>` :
                         `<span class="text-muted">No Image</span>`}
                 </td>
             </tr>`;

@@ -96,7 +96,7 @@
 
                     i = i + 1;
 
-                    $('#engsListPanel').append('<tr><td>' + i + '</td><td>' + v.enG_ID + '</td><td>' + v.teaM_NAME + '</td><td>' + v.audiT_START_DATE + '</td><td>' + v.audiT_END_DATE + '</td><td>' + v.oP_START_DATE + '</td><td>' + v.oP_END_DATE + '</td><td>' + v.status + '</td><td class="text-center"><a class="text-primary text-center" data-onclick="event.preventDefault();getObservationsForStatusReversal(' + v.enG_ID + ');" href="#">Status Reversal</a></td><td><a href="#" data-onclick="getObservationsForAssignmentReversal(' + v.enG_ID + ');" class="text-danger text-center">Assignment Reversal</a></td><td class="text-center"><a class="text-primary text-center" data-onclick="getObservationsForReNumbering(' + v.enG_ID + ');" href="#">Change Observation Number</a></td></tr>');
+                    $('#engsListPanel').append('<tr><td>' + i + '</td><td>' + v.enG_ID + '</td><td>' + v.teaM_NAME + '</td><td>' + v.audiT_START_DATE + '</td><td>' + v.audiT_END_DATE + '</td><td>' + v.oP_START_DATE + '</td><td>' + v.oP_END_DATE + '</td><td>' + v.status + '</td><td class="text-center"><a class="text-primary text-center" data-click="event.preventDefault();getObservationsForStatusReversal(' + v.enG_ID + ');" href="#">Status Reversal</a></td><td><a href="#" data-click="getObservationsForAssignmentReversal(' + v.enG_ID + ');" class="text-danger text-center">Assignment Reversal</a></td><td class="text-center"><a class="text-primary text-center" data-click="getObservationsForReNumbering(' + v.enG_ID + ');" href="#">Change Observation Number</a></td></tr>');
                 })
 
             },
@@ -152,7 +152,7 @@
 
                     i = i + 1;
 
-                    $('#engObsListPanel_changeNo').append('<tr><td class="text-center">' + i + '</td><td>' + v.memO_NO + '</td><td>' + v.memO_DATE + '</td><td>' + v.assigneD_TO + '</td><td>' + v.status + '</td><td class="text-center"><input name="memonoradio" id="rev_checkbox_"+' + v.id + ' data-onclick="event.preventDefault();memoIdsToNumberChange(this,' + v.id + ');" type="radio" /></td></tr>');
+                    $('#engObsListPanel_changeNo').append('<tr><td class="text-center">' + i + '</td><td>' + v.memO_NO + '</td><td>' + v.memO_DATE + '</td><td>' + v.assigneD_TO + '</td><td>' + v.status + '</td><td class="text-center"><input name="memonoradio" id="rev_checkbox_"+' + v.id + ' data-click="event.preventDefault();memoIdsToNumberChange(this,' + v.id + ');" type="radio" /></td></tr>');
                 })
             },
             dataType: "json",
