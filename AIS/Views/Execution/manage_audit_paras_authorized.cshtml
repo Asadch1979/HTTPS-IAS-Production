@@ -201,7 +201,7 @@
                                 <label for="viewMemo_loancase">Responsible PP NO.</label>
                                 <div class="row col-md-12">
                                     <div class="d-flex justify-content-end mb-2">
-                                        <button type="button" data-click="openResponsibleGridModel();" class="rounded-circle btn btn-danger btn-sm" aria-label="Add responsible person">
+                                        <button type="button" data-onclick="openResponsibleGridModel();" class="rounded-circle btn btn-danger btn-sm" aria-label="Add responsible person">
                                             <i class="fa fa-plus text-white"></i>
                                         </button>
                                     </div>
@@ -233,8 +233,8 @@
 
             </div>
             <div class="modal-footer">
-                <button id="updateParaStatus" data-click="updateObservationStatus('R');" type="button" class="btn btn-danger">Reffered Back</button>
-                <button id="updateParaStatus" data-click="updateObservationStatus('A');" type="button" class="btn btn-success">Authorized</button>
+                <button id="updateParaStatus" data-onclick="updateObservationStatus('R');" type="button" class="btn btn-danger">Reffered Back</button>
+                <button id="updateParaStatus" data-onclick="updateObservationStatus('A');" type="button" class="btn btn-success">Authorized</button>
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
             </div>
         </div>
@@ -267,7 +267,7 @@
                         <label for="viewMemo_loancase">Responsible PP NO.</label>
                         <div class="row col-sm-12">
                             <div class="d-flex justify-content-end mb-2">
-                                <button type="button" data-click="openResponsiblePPs();" class="rounded-circle btn btn-danger btn-sm" aria-label="Add responsible person">
+                                <button type="button" data-onclick="openResponsiblePPs();" class="rounded-circle btn btn-danger btn-sm" aria-label="Add responsible person">
                                     <i class="fa fa-plus text-white"></i>
                                 </button>
                             </div>
@@ -324,7 +324,7 @@
                                 <input type="text" class="form-control digits-only" id="responsibleBrCodeEntryField" aria-describedby="brcode" placeholder="Branch Code (digits only)" inputmode="numeric" pattern="[0-9]*" autocomplete="off" oninput="this.value=this.value.replace(/[^0-9]/g,'');" onpaste="var t=(event.clipboardData||window.clipboardData).getData('text'); this.value=t.replace(/[^0-9]/g,''); event.preventDefault();" />
                             </div>
                             <div class="col-sm-2 d-flex align-items-end">
-                                <button data-click="respSectionUpdate.getLCDetails();" type="button" class="btn btn-danger w-100">Find</button>
+                                <button data-onclick="respSectionUpdate.getLCDetails();" type="button" class="btn btn-danger w-100">Find</button>
                             </div>
                         </div>
                     </div>
@@ -356,7 +356,7 @@
                                 <input id="responsibleAccountAmountEntryField" class="form-control digits-only" type="text" placeholder="Enter Account Amount" inputmode="numeric" pattern="[0-9]*" autocomplete="off" oninput="this.value=this.value.replace(/[^0-9]/g,'');" onpaste="var t=(event.clipboardData||window.clipboardData).getData('text'); this.value=t.replace(/[^0-9]/g,''); event.preventDefault();" />
                             </div>
                             <div class="col-md-2 d-flex align-items-end">
-                                <button type="button" data-click="respSectionUpdate.getMatchedPP();" class="col-md-2 btn btn-success w-100">Select</button>
+                                <button type="button" data-onclick="respSectionUpdate.getMatchedPP();" class="col-md-2 btn btn-success w-100">Select</button>
                             </div>
                         </div>
                     </div>
@@ -387,9 +387,9 @@
                 </form>
             </div>
             <div class="modal-footer">
-                <button id="addResponsibleButton" data-click="addResponsibilityToMainTable('A');" type="button" class="btn btn-danger">Add Responsibility</button>
-                <button id="updateResponsibleButton" data-click="addResponsibilityToMainTable('U');" type="button" class="btn btn-success d-none">Update Responsibility</button>
-                <button id="deleteResponsibleButton" data-click="addResponsibilityToMainTable('D');" type="button" class="btn btn-danger d-none">Delete Responsibility</button>
+                <button id="addResponsibleButton" data-onclick="addResponsibilityToMainTable('A');" type="button" class="btn btn-danger">Add Responsibility</button>
+                <button id="updateResponsibleButton" data-onclick="addResponsibilityToMainTable('U');" type="button" class="btn btn-success d-none">Update Responsibility</button>
+                <button id="deleteResponsibleButton" data-onclick="addResponsibilityToMainTable('D');" type="button" class="btn btn-danger d-none">Delete Responsibility</button>
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
             </div>
         </div>

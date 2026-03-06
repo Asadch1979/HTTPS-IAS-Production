@@ -35,7 +35,7 @@
             <label for="periodStartModalField"><b>Auditable Entity</b><span class="text-danger">*</span></label>
         </div>
         <div class=" col-md-5 mr-1">
-            <select id="entitySelectField" data-change="" class="form-control form-select">
+            <select id="entitySelectField" data-onchange="" class="form-control form-select">
                 <option value="0" id="0">--Select Auditable Entity--</option>
            
 
@@ -61,7 +61,7 @@
             <label for="periodEndModalField"><b>Audit Cluster</b><span class="text-danger">*</span></label>
         </div>
         <div style=" width:535px">
-            <select id="ZoneSelectField" data-change="" class="form-control form-select">
+            <select id="ZoneSelectField" data-onchange="" class="form-control form-select">
                 <option value="0" id="0">--Select Audit Cluster--</option>
 
                 @{
@@ -83,7 +83,7 @@
             <label for="periodStartModalField"><b>Branch Rating</b><span class="text-danger">*</span></label>
         </div>
         <div class=" col-md-5 mr-1">
-            <select id="RiskSelectField" data-change="" class="form-control form-select">
+            <select id="RiskSelectField" data-onchange="" class="form-control form-select">
                 <option value="0" id="0">--Select Branch Rating--</option>
 
                 @{
@@ -105,7 +105,7 @@
             <label for="periodEndModalField"><b>Branch Size</b><span class="text-danger">*</span></label>
         </div>
         <div style=" width:535px">
-            <select id="SizeSelectField" data-change="" class="form-control form-select">
+            <select id="SizeSelectField" data-onchange="" class="form-control form-select">
                 <option value="0" id="0">--Select Branch Size--</option>
                 @{
                     if (ViewData["FADEntitySize"] != null)
@@ -125,7 +125,7 @@
 
 
     <div class="row col-md-12 mt-1">
-        <button id="findButton" data-click="getauditplanreport();" class="btn btn-danger" style="margin-left:auto;">Search</button>
+        <button id="findButton" data-onclick="getauditplanreport();" class="btn btn-danger" style="margin-left:auto;">Search</button>
 
     </div>
 
@@ -185,6 +185,6 @@
     </div>
 </div>
 <div class="col-md-12 offset-md-12 mt-4">
-    <button class="btn btn-danger" style="float:right; margin-bottom:10px;" data-click="CreatePDFfromHTML();">Download/Print Report</button>
+    <button class="btn btn-danger" style="float:right; margin-bottom:10px;" data-onclick="CreatePDFfromHTML();">Download/Print Report</button>
 </div>
 <script src="~/js/csp/Views_Reports_FAD_Audit_Plan.js?v=1"></script>

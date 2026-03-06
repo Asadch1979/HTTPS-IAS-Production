@@ -25,7 +25,7 @@
         </div>
         <div class="col-md-10">
             <input id="entityNameField" disabled="disabled" class="form-control ml-1 d-none" type="text" />
-            <select id="entitySelectField" data-change="getEntityObservations()" class="form-control form-select">
+            <select id="entitySelectField" data-onchange="getEntityObservations()" class="form-control form-select">
                 <option value="0" id="0">--Select Audit Entity--</option>
                 @{
                     if (ViewData["EntitiesList"] != null)
@@ -60,7 +60,7 @@
     </table>
 
     <div class="row col-md-12 mt-3" id="preConcludingActionHandler">
-        <button data-click="submitPreConcluding();" class="col-md-3 btn btn-success" style="margin-left:10px;">Submit Pre Concluding</button>
+        <button data-onclick="submitPreConcluding();" class="col-md-3 btn btn-success" style="margin-left:10px;">Submit Pre Concluding</button>
     </div>
 </div>
 
@@ -99,7 +99,7 @@
                     </div>
                     <div class="form-group mb-3">
                         <label for="viewMemo_process_ObSent" class="font-weight-bold">Process</label>
-                        <select id="viewMemo_process_ObSent" data-change="getSubCheckListOfProcess();" class="form-select form-control">
+                        <select id="viewMemo_process_ObSent" data-onchange="getSubCheckListOfProcess();" class="form-select form-control">
                             <option selected="selected" value="0" id="0">--Select Process--</option>
                             @{
                                 if (ViewData["ProcessList"] != null)
@@ -117,7 +117,7 @@
                     </div>
                     <div class="form-group mb-3">
                         <label for="viewMemo_subprocess_ObSent" class="font-weight-bold">Sub Process</label>
-                        <select id="viewMemo_subprocess_ObSent" data-change="getCheckListDetailOfSubProcess();" class="form-select form-control">
+                        <select id="viewMemo_subprocess_ObSent" data-onchange="getCheckListDetailOfSubProcess();" class="form-select form-control">
                         </select>
                     </div>
                     <div class="form-group mb-3">
@@ -190,7 +190,7 @@
                         <label for="update_listofRespPersons" class="font-weight-bold">Responsible Personals</label>
                         <div class="col-md-12 pl-0 pr-0">
                             <div class="d-flex justify-content-end mb-2">
-                                <button type="button" data-click="openResponsiblePPs();" class="rounded-circle btn btn-danger btn-sm" aria-label="Add responsible person">
+                                <button type="button" data-onclick="openResponsiblePPs();" class="rounded-circle btn btn-danger btn-sm" aria-label="Add responsible person">
                                     <i class="fa fa-plus text-white"></i>
                                 </button>
                             </div>
@@ -250,8 +250,8 @@
                 </form>
             </div>
             <div class="modal-footer">
-                <button id="gist_recom_inc_pre_con" data-click="saveObservationGistandRecommendation(g_obsId);" type="button" class="btn btn-primary">Save Title & Recommendation</button>
-                <button id="update_audit_obs_button" data-click="updateObservationDetailsWithReference(g_obsId);" type="button" class="btn btn-danger">Update Para Details</button>
+                <button id="gist_recom_inc_pre_con" data-onclick="saveObservationGistandRecommendation(g_obsId);" type="button" class="btn btn-primary">Save Title & Recommendation</button>
+                <button id="update_audit_obs_button" data-onclick="updateObservationDetailsWithReference(g_obsId);" type="button" class="btn btn-danger">Update Para Details</button>
 
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
             </div>
@@ -281,7 +281,7 @@
                                     <input type="text" class="form-control digits-only" id="responsibleBrCodeEntryField" aria-describedby="brcode" placeholder="Branch Code (digits only)" inputmode="numeric" pattern="[0-9]*" autocomplete="off" oninput="this.value=this.value.replace(/[^0-9]/g,'');" onpaste="var t=(event.clipboardData||window.clipboardData).getData('text'); this.value=t.replace(/[^0-9]/g,''); event.preventDefault();" />
                                 </div>
                             <div class="col-sm-2 d-flex align-items-end">
-                                <button data-click="respSection.getLCDetails();" type="button" class="btn btn-danger w-100">Find</button>
+                                <button data-onclick="respSection.getLCDetails();" type="button" class="btn btn-danger w-100">Find</button>
                             </div>
                         </div>
                     </div>
@@ -315,7 +315,7 @@
                                 <input id="responsibleAccountAmountEntryField" class="form-control digits-only" type="text" placeholder="Enter Account Amount" inputmode="numeric" pattern="[0-9]*" autocomplete="off" oninput="this.value=this.value.replace(/[^0-9]/g,'');" onpaste="var t=(event.clipboardData||window.clipboardData).getData('text'); this.value=t.replace(/[^0-9]/g,''); event.preventDefault();" />
                             </div>
                             <div class="col-md-2 d-flex align-items-end">
-                                <button type="button" data-click="respSection.getMatchedPP();" class="col-md-2 btn btn-success w-100">Select</button>
+                                <button type="button" data-onclick="respSection.getMatchedPP();" class="col-md-2 btn btn-success w-100">Select</button>
                             </div>
                         </div>
                     </div>

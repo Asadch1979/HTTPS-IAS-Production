@@ -55,7 +55,7 @@
                         </div>
                       
                         <div class="col-md-2 mt-3">
-                           <button data-click="getPreAddedOM();" style="margin-top:16%;" class="btn w-100 btn-danger">Search OM</button>
+                           <button data-onclick="getPreAddedOM();" style="margin-top:16%;" class="btn w-100 btn-danger">Search OM</button>
                         </div>
                     </div>
                    
@@ -91,8 +91,8 @@
 
                     <div class="row col-md-12 mt-3">
                         <div class="col-md-12 mt-3 mb-4">
-                            <button data-click="gotoNextStage('collapseOne','collapseTwo');" style="float:right; margin-left:20px;" class="btn btn-success col-md-2">Next</button>
-                            <button id="saveOMAssignmentStage1" data-click="saveOMAssignment();" style="float:right; " class="btn btn-danger col-md-2">Save</button>
+                            <button data-onclick="gotoNextStage('collapseOne','collapseTwo');" style="float:right; margin-left:20px;" class="btn btn-success col-md-2">Next</button>
+                            <button id="saveOMAssignmentStage1" data-onclick="saveOMAssignment();" style="float:right; " class="btn btn-danger col-md-2">Save</button>
 
                         </div>
 
@@ -132,8 +132,8 @@
                 </div>
                 <div class="row col-md-12 mt-3">
                     <div class="col-md-12 mt-3 mb-4">
-                        <button data-click="gotoNextStage('collapseTwo','collapseThree');" style="float:right; margin-left:20px;" class="btn btn-success col-md-2">Next</button>
-                        <button id="saveOMAssignmentStage2" data-click="saveOMAssignment_Stage2();" style="float:right; " class="btn btn-danger col-md-2">Save</button>
+                        <button data-onclick="gotoNextStage('collapseTwo','collapseThree');" style="float:right; margin-left:20px;" class="btn btn-success col-md-2">Next</button>
+                        <button id="saveOMAssignmentStage2" data-onclick="saveOMAssignment_Stage2();" style="float:right; " class="btn btn-danger col-md-2">Save</button>
                     </div>
 
                 </div>
@@ -162,7 +162,7 @@
                     <label for="viewMemo_respPP" class="font-weight-bold">DAC Details</label>
                     <div class="col-md-12 pl-0 pr-0">
                         <div class="d-flex justify-content-end mb-2">
-                            <button type="button" data-click="openDACAssignments();" class="rounded-circle btn btn-danger btn-sm" aria-label="Add DAC">
+                            <button type="button" data-onclick="openDACAssignments();" class="rounded-circle btn btn-danger btn-sm" aria-label="Add DAC">
                                 <i class="fa fa-plus text-white"></i>
                             </button>
                         </div>
@@ -184,8 +184,8 @@
 
                 <div class="row col-md-12 mt-3">
                     <div class="col-md-12 mt-3 mb-4">
-                        <button data-click="gotoNextStage('collapseThree','collapseFour');" style="float:right; margin-left:20px;" class="btn btn-success col-md-2">Next</button>
-                        <button id="saveOMAssignmentStage3" data-click="saveOMAssignment_Stage3();" style="float:right; " class="btn btn-danger col-md-2">Save</button>
+                        <button data-onclick="gotoNextStage('collapseThree','collapseFour');" style="float:right; margin-left:20px;" class="btn btn-success col-md-2">Next</button>
+                        <button id="saveOMAssignmentStage3" data-onclick="saveOMAssignment_Stage3();" style="float:right; " class="btn btn-danger col-md-2">Save</button>
 
                     </div>
 
@@ -212,7 +212,7 @@
                     <label for="viewMemo_respPP" class="font-weight-bold">PAC Details</label>
                     <div class="col-md-12 pl-0 pr-0">
                         <div class="d-flex justify-content-end mb-2">
-                            <button type="button" data-click="openPACAssignments();" class="rounded-circle btn btn-danger btn-sm" aria-label="Add PAC">
+                            <button type="button" data-onclick="openPACAssignments();" class="rounded-circle btn btn-danger btn-sm" aria-label="Add PAC">
                                 <i class="fa fa-plus text-white"></i>
                             </button>
                         </div>
@@ -236,7 +236,7 @@
                 <div class="row col-md-12 mt-3">
                     <div class="col-md-12 mt-3 mb-4">
                         <div class="col-md-12 mt-3 mb-4">                            
-                            <button id="saveOMAssignmentStage4" data-click="saveOMAssignment_Stage4();" style="float:right; " class="btn btn-danger col-md-2">Save</button>
+                            <button id="saveOMAssignmentStage4" data-onclick="saveOMAssignment_Stage4();" style="float:right; " class="btn btn-danger col-md-2">Save</button>
 
                         </div>
                     </div>
@@ -287,7 +287,7 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                <button data-click="addDACAssignmentRecordtoGrid();" type="button" class="btn btn-danger">Add DAC Assignment</button>
+                <button data-onclick="addDACAssignmentRecordtoGrid();" type="button" class="btn btn-danger">Add DAC Assignment</button>
             </div>
         </div>
     </div>
@@ -349,7 +349,7 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                <button data-click="addPACAssignmentRecordtoGrid();" type="button" class="btn btn-danger">Add DAC Assignment</button>
+                <button data-onclick="addPACAssignmentRecordtoGrid();" type="button" class="btn btn-danger">Add DAC Assignment</button>
             </div>
         </div>
     </div>
@@ -363,7 +363,7 @@
         <div class="modal-content">
             <div class="modal-header bg-danger text-white">
                 <h5 class="modal-title">Warning</h5>
-                <button type="button" class="btn-close" data-click="backToHome();" aria-label="Close">
+                <button type="button" class="btn-close" data-onclick="backToHome();" aria-label="Close">
                     <span aria-hidden="true">&times;</span>
                 </button>
             </div>
@@ -382,8 +382,8 @@
                 </form>
             </div>
             <div class="modal-footer">
-                <button data-click="backToHome();" type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                <button data-click="crossCheckSecurityKey();" type="button" class="btn btn-danger">Submit</button>
+                <button data-onclick="backToHome();" type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button data-onclick="crossCheckSecurityKey();" type="button" class="btn btn-danger">Submit</button>
             </div>
         </div>
     </div>

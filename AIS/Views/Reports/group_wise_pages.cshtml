@@ -16,7 +16,7 @@
 
 <div id="groupSelectionPanel" class="row col-md-12 mt-3">
     <label>Group / Role</label>
-    <select id="groupSelectionBox" data-change="getGroupWisePages()" class="form-select form-control" aria-label="Default select example">
+    <select id="groupSelectionBox" data-onchange="getGroupWisePages()" class="form-select form-control" aria-label="Default select example">
         <option value="0" selected>--Select Group/Roles--</option>
         @{
             if (ViewData["GroupList"] != null)

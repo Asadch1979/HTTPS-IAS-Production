@@ -84,12 +84,12 @@
                                 <p class="fw-normal mb-1">@item.COMMENTS</p>
                             </td>
                             <td>
-                                <button type="button" class="action btn btn-link text-danger btn-sm btn-rounded" data-click="recommendPostChangesAuditCriterias('@item.ID', '@item.AUDITPERIODID', '@item.ENTITY_TYPEID', '@item.SIZE_ID', '@item.RISK_ID', '@item.FREQUENCY_ID', '@item.VISIT', '@item.NO_OF_DAYS','@item.ENTITY_ID','@item.ENTITY_NAME');">
+                                <button type="button" class="action btn btn-link text-danger btn-sm btn-rounded" data-onclick="recommendPostChangesAuditCriterias('@item.ID', '@item.AUDITPERIODID', '@item.ENTITY_TYPEID', '@item.SIZE_ID', '@item.RISK_ID', '@item.FREQUENCY_ID', '@item.VISIT', '@item.NO_OF_DAYS','@item.ENTITY_ID','@item.ENTITY_NAME');">
                                     Post Changes
                                 </button>
                             </td>
                             <td>
-                                <button type="button" class="action btn btn-link text-danger btn-sm btn-rounded" data-click="generatePlanAuditCriterias('@item.ID');">
+                                <button type="button" class="action btn btn-link text-danger btn-sm btn-rounded" data-onclick="generatePlanAuditCriterias('@item.ID');">
                                     Generate Plan
                                 </button>
                             </td>
@@ -138,7 +138,7 @@
                             <h5>Select Entity</h5>
                         </div>
                         <div class="row col-md-8">
-                            <select id="auditCriteriaEntityField" data-change="enitityChangeEvent();" class="form-select form-control">
+                            <select id="auditCriteriaEntityField" data-onchange="enitityChangeEvent();" class="form-select form-control">
                                 <option value="0" id="0" selected>--Select Entity--</option>
                                 @{
                                 if (ViewData["AuditEntities"] != null)
@@ -251,7 +251,7 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                <button data-click="recommendProcTransaction();" type="button" class="btn btn-success">Recommend Again</button>
+                <button data-onclick="recommendProcTransaction();" type="button" class="btn btn-success">Recommend Again</button>
 
             </div>
         </div>

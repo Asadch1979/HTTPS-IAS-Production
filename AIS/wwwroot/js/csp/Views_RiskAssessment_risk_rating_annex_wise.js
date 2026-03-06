@@ -104,7 +104,7 @@
 
                   
 
-                    $('#engsListPanel').append('<tr><td>' + ++i + '</td><td>' + v.enG_ID + '</td><td>' + v.teaM_NAME + '</td><td>' + v.audiT_START_DATE + '</td><td>' + v.audiT_END_DATE + '</td><td>' + v.oP_START_DATE + '</td><td>' + v.oP_END_DATE + '</td><td>' + v.status + '</td><td><a class="text-sucess text-center" data-click="event.preventDefault();generateTraditionalRisk(' + v.enG_ID + ');" href="#">Generate Traditional Risk</a></td><td><a href="#" data-click="viewTraditionalRisk(' + v.enG_ID + ');" class="text-sucess text-center">View Traditional Risk</a></td><td><a href="#" data-click="generateAnnexureRisk(' + v.enG_ID + ');" class="text-sucess text-center">Generate Annexure Risk</a></td><td><a href="#" data-click="viewAnnexureRisk(' + v.enG_ID + ');" class="text-sucess text-center">View Annexure Risk</a></td></tr>');
+                    $('#engsListPanel').append('<tr><td>' + ++i + '</td><td>' + v.enG_ID + '</td><td>' + v.teaM_NAME + '</td><td>' + v.audiT_START_DATE + '</td><td>' + v.audiT_END_DATE + '</td><td>' + v.oP_START_DATE + '</td><td>' + v.oP_END_DATE + '</td><td>' + v.status + '</td><td><a class="text-sucess text-center" data-onclick="event.preventDefault();generateTraditionalRisk(' + v.enG_ID + ');" href="#">Generate Traditional Risk</a></td><td><a href="#" data-onclick="viewTraditionalRisk(' + v.enG_ID + ');" class="text-sucess text-center">View Traditional Risk</a></td><td><a href="#" data-onclick="generateAnnexureRisk(' + v.enG_ID + ');" class="text-sucess text-center">Generate Annexure Risk</a></td><td><a href="#" data-onclick="viewAnnexureRisk(' + v.enG_ID + ');" class="text-sucess text-center">View Annexure Risk</a></td></tr>');
                 })
 
             },

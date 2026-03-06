@@ -14,13 +14,13 @@
 </div>
 
 <div class="row col-md-12 mt-3">
-    <button data-click="setupNewMenuPage();" class="btn btn-danger offset-md-10 col-md-2">Add New</button>
+    <button data-onclick="setupNewMenuPage();" class="btn btn-danger offset-md-10 col-md-2">Add New</button>
 </div>
 
 <div class="row col-md-12 mt-3">
  
      <h5>Menu </h5>
-        <select data-change="getSubMenus();" id="menuDropDownField" class="form-control">
+        <select data-onchange="getSubMenus();" id="menuDropDownField" class="form-control">
                             <option value="0">--Select Menu--</option>
                             @if (ViewData["MenuList"] != null)
                             {
@@ -42,7 +42,7 @@
 
 </div>
 <div class="row col-md-12 mt-3">
-    <button data-click="getMenuPages();"  class="btn btn-primary offset-md-10 col-md-2">Find</button>
+    <button data-onclick="getMenuPages();"  class="btn btn-primary offset-md-10 col-md-2">Find</button>
 </div>
 
 <div class="row col-md-12 mt-3">
@@ -80,7 +80,7 @@
                     
                     <div class="form-group">
                         <label>Menu</label>
-                        <select data-change="getSubMenusForModel();" id="page_menu_field" class="form-control">
+                        <select data-onchange="getSubMenusForModel();" id="page_menu_field" class="form-control">
                             <option value="0">--Select Menu--</option>
                             @if (ViewData["MenuList"] != null)
                             {
@@ -125,7 +125,7 @@
                 </form>
             </div>
             <div class="modal-footer">
-                <button type="button" data-click="publishUpdateMenuPageChanges();" class="btn btn-danger">Save Changes</button>
+                <button type="button" data-onclick="publishUpdateMenuPageChanges();" class="btn btn-danger">Save Changes</button>
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
             </div>
         </div>

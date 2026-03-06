@@ -34,7 +34,7 @@
                 <td>${index + 1}</td>
                 <td>${item.reporT_TITLE}</td>
                 <td class="text-center">${item.discription}</td>
-    <td class="text-center"><button class="btn btn-primary btn-sm" data-click="openUpdateModal(${item.reporT_ID}, '${item.reporT_TITLE}', '${item.discription}', '${item.reporT_INDICATOR}', ${item.loaN_STATUS})">Update</button></td>            </tr>`;
+    <td class="text-center"><button class="btn btn-primary btn-sm" data-onclick="openUpdateModal(${item.reporT_ID}, '${item.reporT_TITLE}', '${item.discription}', '${item.reporT_INDICATOR}', ${item.loaN_STATUS})">Update</button></td>            </tr>`;
             tableBody.append(row);
         });
         initializeDataTable("reportList");

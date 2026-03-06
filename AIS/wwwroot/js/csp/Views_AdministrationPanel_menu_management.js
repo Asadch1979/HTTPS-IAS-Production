@@ -21,7 +21,7 @@
                 g_menuArr = data;
                 $('#listOfMenuPages tbody').empty();
                 $.each(data, function (i, v) {
-                    $('#listOfMenuPages tbody').append('<tr><td>' + ++i + '</td><td>' + v.sM_NAME + '</td><td>' + v.p_NAME + '</td><td>' + v.p_PATH + '</td><td>' + v.p_ORDER + '</td><td>' + v.p_STATUS + '</td><td>' + v.p_HIDE_MENU + '</td><td><a href="#" data-click="event.preventDefault();updatePageAssignment(' + v.p_ID + ', ' + v.m_ID + ', ' + v.sM_ID + ');">Update</a></td></tr>');
+                    $('#listOfMenuPages tbody').append('<tr><td>' + ++i + '</td><td>' + v.sM_NAME + '</td><td>' + v.p_NAME + '</td><td>' + v.p_PATH + '</td><td>' + v.p_ORDER + '</td><td>' + v.p_STATUS + '</td><td>' + v.p_HIDE_MENU + '</td><td><a href="#" data-onclick="event.preventDefault();updatePageAssignment(' + v.p_ID + ', ' + v.m_ID + ', ' + v.sM_ID + ');">Update</a></td></tr>');
                    
                 });
 

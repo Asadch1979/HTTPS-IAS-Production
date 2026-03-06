@@ -10,7 +10,7 @@
     <div class="col-lg-6">
         <div class="mb-3">
             <label class="form-label fw-bold" for="dashboardRoleSelect">Select Role</label>
-            <select class="form-select" id="dashboardRoleSelect" data-change="loadDashboardLayout();">
+            <select class="form-select" id="dashboardRoleSelect" data-onchange="loadDashboardLayout();">
                 <option value="0">-- Select Role --</option>
                 @foreach (var role in roleList)
                     {
@@ -32,7 +32,7 @@
             <div class="row g-3 align-items-end mb-3">
                 <div class="col-lg-4">
                     <label class="form-label fw-bold" for="dashboardMenuDropDownField">Menu</label>
-                    <select class="form-select" id="dashboardMenuDropDownField" data-change="getDashboardSubMenus();">
+                    <select class="form-select" id="dashboardMenuDropDownField" data-onchange="getDashboardSubMenus();">
                         <option value="0">--Select Menu--</option>
                         @if (menuList != null)
                         {
@@ -50,7 +50,7 @@
                     </select>
                 </div>
                 <div class="col-lg-4">
-                    <button class="btn btn-outline-primary w-100" type="button" data-click="loadDashboardMenuPages();">Find</button>
+                    <button class="btn btn-outline-primary w-100" type="button" data-onclick="loadDashboardMenuPages();">Find</button>
                 </div>
             </div>
             <div class="row g-3 align-items-end">
@@ -63,7 +63,7 @@
                     <input class="form-control" id="dashboardOrderInput" type="number" min="1" placeholder="Order" />
                 </div>
                 <div class="col-lg-3">
-                    <button class="btn btn-primary w-100" type="button" data-click="addDashboardPage();">Add</button>
+                    <button class="btn btn-primary w-100" type="button" data-onclick="addDashboardPage();">Add</button>
                 </div>
             </div>
         </div>

@@ -109,7 +109,7 @@
             success: function (data) {
                 $.each(data, function (i, v) {
                     sr++;
-                    $('#auditeeEntitiesList tbody').append('<tr><td>' + sr + '</td><td>' + v.entitY_ID + '</td><td>' + v.name + '</td><td><a class="text-danger" data-click="event.preventDefault();updateAuditeeEntities(' + v.entitY_ID + ')">Update</a></td></tr>');
+                    $('#auditeeEntitiesList tbody').append('<tr><td>' + sr + '</td><td>' + v.entitY_ID + '</td><td>' + v.name + '</td><td><a class="text-danger" data-onclick="event.preventDefault();updateAuditeeEntities(' + v.entitY_ID + ')">Update</a></td></tr>');
 
                 });
               
@@ -133,7 +133,7 @@
             success: function (data) {
                 $.each(data, function (i, v) {
                     sr++;
-                    $('#auditeeEntitiesList_erp tbody').append('<tr><td>' + sr + '</td><td>' + v.entitY_ID + '</td><td>' + v.name + '</td><td><a class="text-danger" data-click="event.preventDefault();updateAuditeeEntities(' + v.entitY_ID + ')">Update</a></td></tr>');
+                    $('#auditeeEntitiesList_erp tbody').append('<tr><td>' + sr + '</td><td>' + v.entitY_ID + '</td><td>' + v.name + '</td><td><a class="text-danger" data-onclick="event.preventDefault();updateAuditeeEntities(' + v.entitY_ID + ')">Update</a></td></tr>');
 
                 });
 
@@ -157,7 +157,7 @@
             success: function (data) {
                 $.each(data, function (i, v) {
                     sr++;
-                    $('#auditeeEntitiesList_hr tbody').append('<tr><td>' + sr + '</td><td>' + v.entitY_ID + '</td><td>' + v.name + '</td><td><a class="text-danger" data-click="event.preventDefault();updateAuditeeEntities(' + v.entitY_ID + ')">Update</a></td></tr>');
+                    $('#auditeeEntitiesList_hr tbody').append('<tr><td>' + sr + '</td><td>' + v.entitY_ID + '</td><td>' + v.name + '</td><td><a class="text-danger" data-onclick="event.preventDefault();updateAuditeeEntities(' + v.entitY_ID + ')">Update</a></td></tr>');
 
                 });
 

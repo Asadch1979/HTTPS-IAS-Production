@@ -20,7 +20,7 @@
                 success: function (data) {
                   
                     $.each(data, function (i, v) {
-                        $('#zoneiwseperformance tbody').append(' <tr><td class="text-center">' + v.Checklist + '</td><td>' + v.Total_Paras + '</td><td>' + v.nature + '</td><td class="d-none entity_name_field">' + v.entitY_NAME + '</td><td class="d-none period_name_field">' + v.period + '</td><td>' + v.obS_RISK + '</td><td>' + v.obS_STATUS + '</td><td class="text-center"><a data-click="event.preventDefault();ObservationViewerPanel(' + v.obS_ID + ',' + v.obS_STATUS_ID + ', ' + v.obS_RISK_ID + ')" href="#" class="text-hover">View Memo</a></td></tr>');
+                        $('#zoneiwseperformance tbody').append(' <tr><td class="text-center">' + v.Checklist + '</td><td>' + v.Total_Paras + '</td><td>' + v.nature + '</td><td class="d-none entity_name_field">' + v.entitY_NAME + '</td><td class="d-none period_name_field">' + v.period + '</td><td>' + v.obS_RISK + '</td><td>' + v.obS_STATUS + '</td><td class="text-center"><a data-onclick="event.preventDefault();ObservationViewerPanel(' + v.obS_ID + ',' + v.obS_STATUS_ID + ', ' + v.obS_RISK_ID + ')" href="#" class="text-hover">View Memo</a></td></tr>');
                     });
                   
 

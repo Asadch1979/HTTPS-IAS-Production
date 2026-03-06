@@ -71,7 +71,7 @@
                                     <td align="center">@item.RISK</td>
                                     <td align="center">@item.FREQUENCY_DESCRIPTION</td>
                                     <td align="center">@item.NO_OF_DAYS</td>
-                                <td align="center"><small data-click="createAuditEngagement(@item.PLAN_ID,'@item.ENTITY_NAME','@item.BR_SIZE','@item.RISK','@item.FREQUENCY_DESCRIPTION','@item.NO_OF_DAYS', '@item.PERIOD_NAME','@item.AUDIT_PERIOD_ID','@item.CODE','@item.AUDITEDBY','@item.ENTITY_ID', '@item.ENTITY_TYPE_ID');" class="text-center text-danger text-hover">Create</small></td>
+                                <td align="center"><small data-onclick="createAuditEngagement(@item.PLAN_ID,'@item.ENTITY_NAME','@item.BR_SIZE','@item.RISK','@item.FREQUENCY_DESCRIPTION','@item.NO_OF_DAYS', '@item.PERIOD_NAME','@item.AUDIT_PERIOD_ID','@item.CODE','@item.AUDITEDBY','@item.ENTITY_ID', '@item.ENTITY_TYPE_ID');" class="text-center text-danger text-hover">Create</small></td>
                                 </tr>
                             sr = sr + 1;
                         }
@@ -90,10 +90,10 @@
         </div>
         <div class="row w-100 col-md-12 mt-3 d-none">
             <div class="col-md-6 mt-5">
-                <button data-click="window.location.href = '';" class="btn-primary">Submit</button>
+                <button data-onclick="window.location.href = '';" class="btn-primary">Submit</button>
             </div>
             <div class="col-md-6 mt-5">
-                <button data-click="window.location.href = '';" class="btn-primary">Refer Back</button>
+                <button data-onclick="window.location.href = '';" class="btn-primary">Refer Back</button>
             </div>
         </div>
     </div>

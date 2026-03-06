@@ -38,7 +38,7 @@
                 cache: false,
                 success: function (data) {
                     $.each(data, function (i, v) {
-                        $('#manageObsPanel tbody').append('<tr id="assignedObRow_' + v.id + '"><td>' + ++i + '</td><td>' + v.entitY_NAME + '</td><td>' + v.audiT_PERIOD + '</td><td>' + v.memO_NO + '</td><td>' + v.parA_RISK + '</td><td>' + v.gisT_OF_PARAS + '</td><td><a hre="#" class="text-danger text-center" style="cursor:pointer;" data-click="event.preventDefault();viewParaText(\'' + v.coM_ID + '\')"> View Para</a></td></tr>');
+                        $('#manageObsPanel tbody').append('<tr id="assignedObRow_' + v.id + '"><td>' + ++i + '</td><td>' + v.entitY_NAME + '</td><td>' + v.audiT_PERIOD + '</td><td>' + v.memO_NO + '</td><td>' + v.parA_RISK + '</td><td>' + v.gisT_OF_PARAS + '</td><td><a hre="#" class="text-danger text-center" style="cursor:pointer;" data-onclick="event.preventDefault();viewParaText(\'' + v.coM_ID + '\')"> View Para</a></td></tr>');
 
                     });
                     initializeDataTable('manageObsPanel');

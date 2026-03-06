@@ -22,7 +22,7 @@
                 g_obsList = data;
                 $.each(data, function (index, child) {
 
-                    $('#manageObsPanel tbody').append('<tr id="div_' + child.parA_REF + '"><td><p class="fw-normal mb-1">' + child.e_NAME + '</p></td><td><p class="fw-normal mb-1">' + child.audiT_YEAR + '</p></td><td><p class="fw-normal mb-1">' + child.parA_NO + '</p></td><td><p class="fw-normal mb-1">' + child.nature + '</p></td><td><p class="fw-normal mb-1">' + child.olD_GIST_OF_PARA + '</p></td><td><p class="fw-normal mb-1">' + child.gisT_OF_PARA + '</p></td><td class="text-center"><a class="text-center text-success" style="cursor:pointer;" data-click="event.preventDefault();parastatuschange(\'' + child.parA_REF + '\',\'' + child.parA_NO + '\');">Authorize</a></td></tr>')
+                    $('#manageObsPanel tbody').append('<tr id="div_' + child.parA_REF + '"><td><p class="fw-normal mb-1">' + child.e_NAME + '</p></td><td><p class="fw-normal mb-1">' + child.audiT_YEAR + '</p></td><td><p class="fw-normal mb-1">' + child.parA_NO + '</p></td><td><p class="fw-normal mb-1">' + child.nature + '</p></td><td><p class="fw-normal mb-1">' + child.olD_GIST_OF_PARA + '</p></td><td><p class="fw-normal mb-1">' + child.gisT_OF_PARA + '</p></td><td class="text-center"><a class="text-center text-success" style="cursor:pointer;" data-onclick="event.preventDefault();parastatuschange(\'' + child.parA_REF + '\',\'' + child.parA_NO + '\');">Authorize</a></td></tr>')
                 });
 
             },

@@ -84,10 +84,10 @@ function getPageData() {
 
                      if (v.status.toLowerCase() == "completed")
                      {
-                        $('#checklistDetailsPanel tbody').append('<tr id="obs_' + v.id + '"><td class="text-center">' + v.finaL_PARA_NO + '</td><td class="branchfield">' + v.heading + '</td><td>' + v.obS_RISK + '</td><td>' + v.obS_STATUS + '</td><td class="preconcludingStatusField">' + v.status + '</td><td><a href="#" data-click="viewObservationDetails(' + v.obS_ID + ', \''+v.status+'\');" class="text-hover text-success ml-5px"><small>View Details</small></a></td></tr>');
+                        $('#checklistDetailsPanel tbody').append('<tr id="obs_' + v.id + '"><td class="text-center">' + v.finaL_PARA_NO + '</td><td class="branchfield">' + v.heading + '</td><td>' + v.obS_RISK + '</td><td>' + v.obS_STATUS + '</td><td class="preconcludingStatusField">' + v.status + '</td><td><a href="#" data-onclick="viewObservationDetails(' + v.obS_ID + ', \''+v.status+'\');" class="text-hover text-success ml-5px"><small>View Details</small></a></td></tr>');
                      }
                      else{
-                        $('#checklistDetailsPanel tbody').append('<tr id="obs_' + v.id + '"><td class="text-center">' + v.finaL_PARA_NO + '</td><td class="branchfield">' + v.heading + '</td><td>' + v.obS_RISK + '</td><td>' + v.obS_STATUS + '</td><td class="preconcludingStatusField">' + v.status + '</td><td><a href="#" data-click="viewObservationDetails(' + v.obS_ID + ', \''+v.status+'\');" class="text-hover text-success ml-5px"><small>View Details</small></a></td></tr>');
+                        $('#checklistDetailsPanel tbody').append('<tr id="obs_' + v.id + '"><td class="text-center">' + v.finaL_PARA_NO + '</td><td class="branchfield">' + v.heading + '</td><td>' + v.obS_RISK + '</td><td>' + v.obS_STATUS + '</td><td class="preconcludingStatusField">' + v.status + '</td><td><a href="#" data-onclick="viewObservationDetails(' + v.obS_ID + ', \''+v.status+'\');" class="text-hover text-success ml-5px"><small>View Details</small></a></td></tr>');
                         flag++;
                      }
                      sr++;

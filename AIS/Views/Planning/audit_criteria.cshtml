@@ -55,7 +55,7 @@
     </div>
     <div class="col-md-8">
         <div class="col-md-12 pl-0 pr-0">
-            <select data-change="setSizeEnableForBranches();" id="auditCriteriaEntityField" class="form-select form-control">
+            <select data-onchange="setSizeEnableForBranches();" id="auditCriteriaEntityField" class="form-select form-control">
                 <option value="0" id="0" selected>--Select Entity--</option>
                 @{
                     if (ViewData["AuditEntities"] != null)
@@ -69,7 +69,7 @@
             </select>
         </div>
         <div class="col-md-3 pr-0 d-none">
-            <button data-click="addAuditEntitiesModal();" class="btn btn-danger float-right d-none">Add New Entity</button>
+            <button data-onclick="addAuditEntitiesModal();" class="btn btn-danger float-right d-none">Add New Entity</button>
         </div>
     </div>
 </div>
@@ -175,7 +175,7 @@
 </div>
 
 <div class="col-md-12 mt-3">
-    <button data-click="addRecordToauditCriteriaListBox();" class="col-md-2 btn btn-danger">Save</button>
+    <button data-onclick="addRecordToauditCriteriaListBox();" class="col-md-2 btn btn-danger">Save</button>
 </div>
 
 <div class="col-md-12">
@@ -219,8 +219,8 @@
                             <td class="entCountField" value="@item.ENTITIES_COUNT">@item.ENTITIES_COUNT</td>
                             
                                 <td>
-                                    <a data-click=CountCriteriaRecordFromGrid(this,@item.ID); class="text-primary">Entities Count</a>
-                                    <a data-click=DeleteCriteriaRecordFromGrid(this,@item.ID); class="text-danger pl-3">Delete</a>
+                                    <a data-onclick=CountCriteriaRecordFromGrid(this,@item.ID); class="text-primary">Entities Count</a>
+                                    <a data-onclick=DeleteCriteriaRecordFromGrid(this,@item.ID); class="text-danger pl-3">Delete</a>
                                 </td>
                            
                         </tr>
@@ -232,7 +232,7 @@
     </table>
 </div>
 <div class="col-md-12 mt-3">
-    <button data-click="FinalsubmitAuditCriteria();" class="col-md-2 btn btn-success">Submit</button>
+    <button data-onclick="FinalsubmitAuditCriteria();" class="col-md-2 btn btn-success">Submit</button>
 </div>
 
 
@@ -275,7 +275,7 @@
                 </form>
             </div>
             <div class="modal-footer">
-                <button data-click="publishAuditeeEntity();" type="button" class="btn btn-danger">Save changes</button>
+                <button data-onclick="publishAuditeeEntity();" type="button" class="btn btn-danger">Save changes</button>
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
             </div>
         </div>

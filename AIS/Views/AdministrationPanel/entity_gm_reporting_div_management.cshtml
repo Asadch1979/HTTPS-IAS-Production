@@ -14,7 +14,7 @@
         <h5>Relationship Type</h5>
     </div>
     <div class="col-md-4">
-        <select id="RelationshipField" data-change="getrelation();" class="form-control form-select">
+        <select id="RelationshipField" data-onchange="getrelation();" class="form-control form-select">
             <option id="0" value="0" selected="selected">--Select Relationship Type--</option>
             @{
                 if (ViewData["Userrelationship"] != null)
@@ -31,7 +31,7 @@
         <h5>Controlling/Reporting Office</h5>
     </div>
     <div class="col-md-4">
-        <select id="controlingsearch" data-change="getplacepost();" class="form-control form-select">
+        <select id="controlingsearch" data-onchange="getplacepost();" class="form-control form-select">
             <option id="0" value="0" selected="selected">--Select Controlling/Reporting Office--</option>
         </select>
     </div>
@@ -44,7 +44,7 @@
                 <th>Entity Name</th>
                 <th>COMPLICE UNIT</th>
                 <th>AUDIT ZONE</th>
-                <th class="text-center"> <input id="selectAllMainBox" data-click="selectAllCheckboxes();" type="checkbox" name="selectAll" /> </th>
+                <th class="text-center"> <input id="selectAllMainBox" data-onclick="selectAllCheckboxes();" type="checkbox" name="selectAll" /> </th>
             </tr>
         </thead>
         <tbody>
@@ -95,6 +95,6 @@
 </div>
 
 <div class="row col-md-12 mr-3">
-    <button data-click="updateComplianceOffice();" class="btn btn-danger offset-md-10 col-md-2">Update</button>
+    <button data-onclick="updateComplianceOffice();" class="btn btn-danger offset-md-10 col-md-2">Update</button>
 </div>
 <script src="~/js/csp/Views_AdministrationPanel_entity_gm_reporting_div_management.js?v=1"></script>

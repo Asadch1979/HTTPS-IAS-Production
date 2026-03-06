@@ -14,7 +14,7 @@
             <input class="form-control" id="searchTableRecord" type="text" data-allow-amp="true" data-allow-question="true" data-maxlen="150" placeholder="Search..">
         </div>
         <div class="col-md-2">
-            <button data-click="newGroupSetup();" class="btn btn-danger w-100">Add New</button>
+            <button data-onclick="newGroupSetup();" class="btn btn-danger w-100">Add New</button>
         </div>
     </div>
     <br>
@@ -51,7 +51,7 @@
                                 }
                             </td>
                             <td>
-                                <button type="button" class="btn btn-link text-danger btn-sm btn-rounded" data-click="setupGroup('@item.GROUP_NAME','@item.GROUP_DESCRIPTION','@item.ISACTIVE','@item.GROUP_ID');">
+                                <button type="button" class="btn btn-link text-danger btn-sm btn-rounded" data-onclick="setupGroup('@item.GROUP_NAME','@item.GROUP_DESCRIPTION','@item.ISACTIVE','@item.GROUP_ID');">
                                     Edit
                                 </button>
                             </td>
@@ -101,7 +101,7 @@
                 </form>
             </div>
             <div class="modal-footer">
-                <button data-click="publishGroupChanges();" type="button" class="btn btn-danger">Save changes</button>
+                <button data-onclick="publishGroupChanges();" type="button" class="btn btn-danger">Save changes</button>
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
             </div>
         </div>

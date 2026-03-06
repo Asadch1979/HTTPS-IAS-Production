@@ -13,7 +13,7 @@
             <input class="form-control" id="searchTableRecord" type="text" placeholder="Search..">
         </div>
         <div class="col-md-2">
-            <button data-click="newICSetup();" class="btn btn-danger w-100">Add New Inspection Unit</button>
+            <button data-onclick="newICSetup();" class="btn btn-danger w-100">Add New Inspection Unit</button>
         </div>
     </div>
     <br>
@@ -56,7 +56,7 @@
                                 }
                             </td>
                             <td class="IC_action">
-                                <button type="button" class="btn btn-link text-danger btn-sm btn-rounded" data-click="setupIC('@item.I_CODE','@item.UNIT_NAME','@item.DISCRIPTION','@item.STATUS','@item.I_ID');">
+                                <button type="button" class="btn btn-link text-danger btn-sm btn-rounded" data-onclick="setupIC('@item.I_CODE','@item.UNIT_NAME','@item.DISCRIPTION','@item.STATUS','@item.I_ID');">
                                     Edit
                                 </button>
                             </td>
@@ -110,7 +110,7 @@
                 </form>
             </div>
             <div class="modal-footer">
-                <button data-click="publishInspectionUnitChanges();" type="button" class="btn btn-danger">Save changes</button>
+                <button data-onclick="publishInspectionUnitChanges();" type="button" class="btn btn-danger">Save changes</button>
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
             </div>
         </div>

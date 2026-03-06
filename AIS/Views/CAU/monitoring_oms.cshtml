@@ -37,7 +37,7 @@
         <div>
             <h5>Checklist</h5>
         </div>
-        <select id="riskGroupSelectBox" data-change="div_risksubcategoryShowHide();" class="form-select form-control" aria-label="Default select example">
+        <select id="riskGroupSelectBox" data-onchange="div_risksubcategoryShowHide();" class="form-select form-control" aria-label="Default select example">
             <option value="0" id="0" selected="selected">--Select Voilation Category--</option>
             @{
                 if (ViewData["ProcessList"] != null)
@@ -52,12 +52,12 @@
     </div>
     <div id="div_risksubcategory" style="display:none;" class="col-md-12 mt-3">
         <h5>Subchecklist</h5>
-        <select id="riskSubGroupSelectBox" data-change="div_activityContainerShowHide();" class="form-select form-control" aria-label="Default select example">
+        <select id="riskSubGroupSelectBox" data-onchange="div_activityContainerShowHide();" class="form-select form-control" aria-label="Default select example">
         </select>
     </div>
     <div id="div_activityContainer" style="display:none;" class="col-md-12 mt-3">
         <h5>Checklist Details</h5>
-        <select id="riskActivitiesSelectBox" data-change="getAuditObservationTemplate();" class="form-select form-control" aria-label="Default select example">
+        <select id="riskActivitiesSelectBox" data-onchange="getAuditObservationTemplate();" class="form-select form-control" aria-label="Default select example">
         </select>
     </div>
     <div id="div_headingPanel" class="col-md-12 mt-3">
@@ -94,7 +94,7 @@
         </div>
 
         <div class="d-flex justify-content-end mb-2">
-            <button type="button" data-click="openResponsiblePPs();" class="rounded-circle btn btn-danger btn-sm" aria-label="Add responsible person">
+            <button type="button" data-onclick="openResponsiblePPs();" class="rounded-circle btn btn-danger btn-sm" aria-label="Add responsible person">
                 <i class="fa fa-plus text-white"></i>
             </button>
         </div>
@@ -139,7 +139,7 @@
             <label class="font-bold text-bold heading">Zones</label>
         </div>
         <div class="col-md-4 mt-3">
-            <select id="zoneSearchField" data-change="div_zoneBranchesShowHide();" class="form-select form-control" aria-label="Default select example">
+            <select id="zoneSearchField" data-onchange="div_zoneBranchesShowHide();" class="form-select form-control" aria-label="Default select example">
                 <option value="0" id="0" selected="selected">--Select Zone--</option>
                 @{
                     if (ViewData["ZonesList"] != null)
@@ -184,7 +184,7 @@
     </div>
 
     <div class="row col-md-12 mt-5">
-        <button id="submitCAUobBtn" data-click="submitObservationToAuditee();" style="margin-left:20px;" class="btn btn-primary">Save Observation</button>
+        <button id="submitCAUobBtn" data-onclick="submitObservationToAuditee();" style="margin-left:20px;" class="btn btn-primary">Save Observation</button>
     </div>
 </div>
 
@@ -214,7 +214,7 @@
                                 <input id="responsibleBrCodeEntryField" class="form-control digits-only" type="text" inputmode="numeric" pattern="[0-9]*" autocomplete="off" oninput="this.value=this.value.replace(/[^0-9]/g,'');" onpaste="var t=(event.clipboardData||window.clipboardData).getData('text'); this.value=t.replace(/[^0-9]/g,''); event.preventDefault();" />
                             </div>
                             <div class="col-sm-2 d-flex align-items-end">
-                                <button data-click="getLCDetails();" type="button" class="btn btn-danger w-100">Find</button>
+                                <button data-onclick="getLCDetails();" type="button" class="btn btn-danger w-100">Find</button>
                             </div>
                         </div>
                     </div>
@@ -248,7 +248,7 @@
                                 <input id="responsibleAccountAmountEntryField" class="form-control digits-only" type="text" inputmode="numeric" pattern="[0-9]*" autocomplete="off" oninput="this.value=this.value.replace(/[^0-9]/g,'');" onpaste="var t=(event.clipboardData||window.clipboardData).getData('text'); this.value=t.replace(/[^0-9]/g,''); event.preventDefault();" placeholder="Enter Account Amount" />
                             </div>
                             <div class="col-md-2 d-flex align-items-end">
-                                <button type="button" data-click="getMatchedPP();" class="col-md-2 btn btn-success w-100">Select</button>
+                                <button type="button" data-onclick="getMatchedPP();" class="col-md-2 btn btn-success w-100">Select</button>
                             </div>
                         </div>
                     </div>
@@ -259,7 +259,7 @@
                 </form>
             </div>
             <div class="modal-footer">
-                <button data-click="addResponsibilityToMainTable();" type="button" data-bs-dismiss="modal" class="btn btn-danger">Add Responsibility</button>
+                <button data-onclick="addResponsibilityToMainTable();" type="button" data-bs-dismiss="modal" class="btn btn-danger">Add Responsibility</button>
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
             </div>
         </div>

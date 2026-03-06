@@ -73,8 +73,8 @@
                         '<td>' + (child.gisT_OF_PARAS || '') + '</td>' +
                         '<td>' + (child.risk || '') + '</td>' +
                         '<td>' + (child.parA_STATUS || '') + '</td>' +
-                        '<td class="text-center"><a class="text-primary" style="cursor:pointer" data-click="paraText(\'' + child.coM_ID + '\')">View Para Text</a></td>' +
-                        '<td class="text-center"><a class="text-danger" style="cursor:pointer" data-click="openChange(\'' + child.coM_ID + '\',\'' + child.ind + '\')">Change Status</a></td>' +
+                        '<td class="text-center"><a class="text-primary" style="cursor:pointer" data-onclick="paraText(\'' + child.coM_ID + '\')">View Para Text</a></td>' +
+                        '<td class="text-center"><a class="text-danger" style="cursor:pointer" data-onclick="openChange(\'' + child.coM_ID + '\',\'' + child.ind + '\')">Change Status</a></td>' +
                         '</tr>';
                 });
                 $('#paraTable tbody').append(rows);

@@ -95,7 +95,7 @@
                     if (v.oP_END_DATE != null)
                         v.oP_END_DATE = v.oP_END_DATE.split(' ')[0];
 
-                    $('#engsListPanel tbody').append('<tr><td class="text-center">' + (i + 1) + '</td><td>' + v.enG_ID + '</td><td>' + v.teaM_NAME + '</td><td>' + v.audiT_START_DATE + '</td><td>' + v.audiT_END_DATE + '</td><td>' + v.oP_START_DATE + '</td><td>' + v.oP_END_DATE + '</td><td>' + v.status + '</td><td class="text-center"><a href="#" class="text-primary" data-click="loadObservationDetails(' + v.enG_ID + ');">View Details</a></td><td class="text-center"><a href="#" class="text-primary" data-click="viewReport(' + v.rpT_ID + ',' + v.enG_ID + ');">View Report</a></td></tr>');
+                    $('#engsListPanel tbody').append('<tr><td class="text-center">' + (i + 1) + '</td><td>' + v.enG_ID + '</td><td>' + v.teaM_NAME + '</td><td>' + v.audiT_START_DATE + '</td><td>' + v.audiT_END_DATE + '</td><td>' + v.oP_START_DATE + '</td><td>' + v.oP_END_DATE + '</td><td>' + v.status + '</td><td class="text-center"><a href="#" class="text-primary" data-onclick="loadObservationDetails(' + v.enG_ID + ');">View Details</a></td><td class="text-center"><a href="#" class="text-primary" data-onclick="viewReport(' + v.rpT_ID + ',' + v.enG_ID + ');">View Report</a></td></tr>');
                 });
                 initializeDataTable('engsListPanel');
             },
@@ -127,7 +127,7 @@
                         '<td>' + v.memO_DATE + '</td>' +
                         '<td>' + v.risk + '</td>' +
                         '<td>' + v.status + '</td>' +
-                        '<td class="text-center"><a href="#" class="text-primary" data-click="viewPara(' + v.id + ');">View Para</a></td>' +
+                        '<td class="text-center"><a href="#" class="text-primary" data-onclick="viewPara(' + v.id + ');">View Para</a></td>' +
                         '</tr>');
                  });
                 initializeDataTable('obsListPanel');

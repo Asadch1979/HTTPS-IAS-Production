@@ -196,8 +196,8 @@
                 + '<td><input class="form-control form-control-sm" type="number" min="1" value="' + (item.dashboardOrder || '') + '" data-page-id="' + item.pageId + '" /></td>'
                 + '<td>' + isActiveLabel + '</td>'
                 + '<td>'
-                + '<button class="btn btn-sm btn-outline-primary me-2" type="button" data-click="updateDashboardOrder(' + item.pageId + ');">Update Order</button>'
-                + '<button class="btn btn-sm btn-outline-secondary" type="button" data-click="toggleDashboardStatus(' + item.pageId + ', \'' + toggleStatus + '\');">' + toggleAction + '</button>'
+                + '<button class="btn btn-sm btn-outline-primary me-2" type="button" data-onclick="updateDashboardOrder(' + item.pageId + ');">Update Order</button>'
+                + '<button class="btn btn-sm btn-outline-secondary" type="button" data-onclick="toggleDashboardStatus(' + item.pageId + ', \'' + toggleStatus + '\');">' + toggleAction + '</button>'
                 + '</td>'
                 + '</tr>';
 

@@ -19,7 +19,7 @@
 
                 $.each(data, function (index, child) {
 
-                    $('#manageObsPanel tbody').append('<tr id="div_' + child.id + '"><td>' + ++index + '</td><td><p class="fw-normal mb-1">' + child.audiT_PERIOD + '</p></td><td><p class="fw-normal mb-1">' + child.parA_NO + '</p></td><td><p class="fw-normal mb-1">' + child.gisT_OF_PARAS + '</p></td><td class="text-center"><a href="#" data-click="event.preventDefault();viewParaDetails(' + child.neW_PARA_ID + ',' + child.olD_PARA_ID + ',\'' + child.coM_ID + '\',\'' + child.indicator + '\',\'' + child.parA_NO + '\' );" class="text-hover text-danger mr-5px"><small>Forward</small></a></td></tr>');
+                    $('#manageObsPanel tbody').append('<tr id="div_' + child.id + '"><td>' + ++index + '</td><td><p class="fw-normal mb-1">' + child.audiT_PERIOD + '</p></td><td><p class="fw-normal mb-1">' + child.parA_NO + '</p></td><td><p class="fw-normal mb-1">' + child.gisT_OF_PARAS + '</p></td><td class="text-center"><a href="#" data-onclick="event.preventDefault();viewParaDetails(' + child.neW_PARA_ID + ',' + child.olD_PARA_ID + ',\'' + child.coM_ID + '\',\'' + child.indicator + '\',\'' + child.parA_NO + '\' );" class="text-hover text-danger mr-5px"><small>Forward</small></a></td></tr>');
                 });
 
                 $('#manageObsPanel').DataTable({

@@ -1,138 +1,38 @@
 (function () {
-    function splitStatements(expression) {
-        var statements = [];
-        var current = '';
-        var inSingle = false;
-        var inDouble = false;
-
-        for (var i = 0; i < expression.length; i++) {
-            var ch = expression[i];
-            var prev = i > 0 ? expression[i - 1] : '';
-
-            if (ch === "'" && !inDouble && prev !== '\\') {
-                inSingle = !inSingle;
-            } else if (ch === '"' && !inSingle && prev !== '\\') {
-                inDouble = !inDouble;
-            }
-
-            if (ch === ';' && !inSingle && !inDouble) {
-                if (current.trim()) {
-                    statements.push(current.trim());
-                }
-                current = '';
-                continue;
-            }
-
-            current += ch;
-        }
-
-        if (current.trim()) {
-            statements.push(current.trim());
-        }
-
-        return statements;
-    }
-
-    function splitArgs(argsRaw) {
-        var args = [];
-        var current = '';
-        var inSingle = false;
-        var inDouble = false;
-
-        for (var i = 0; i < argsRaw.length; i++) {
-            var ch = argsRaw[i];
-            var prev = i > 0 ? argsRaw[i - 1] : '';
-
-            if (ch === "'" && !inDouble && prev !== '\\') {
-                inSingle = !inSingle;
-            } else if (ch === '"' && !inSingle && prev !== '\\') {
-                inDouble = !inDouble;
-            }
-
-            if (ch === ',' && !inSingle && !inDouble) {
-                args.push(current.trim());
-                current = '';
-                continue;
-            }
-
-            current += ch;
-        }
-
-        if (current.trim()) {
-            args.push(current.trim());
-        }
-
-        return args;
-    }
-
-    function parseArg(token, context, event) {
+    function parseArg(token) {
         var value = (token || '').trim();
         if (!value.length) return undefined;
-
-        if (value === 'this') return context;
-        if (value === 'event') return event;
-        if (value === 'null') return null;
-        if (value === 'undefined') return undefined;
-        if (value === 'true') return true;
-        if (value === 'false') return false;
-        if (/^-?\d+$/.test(value)) return parseInt(value, 10);
-
         if ((value.startsWith("'") && value.endsWith("'")) || (value.startsWith('"') && value.endsWith('"'))) {
             return value.slice(1, -1);
         }
-
+        if (/^-?\d+$/.test(value)) return parseInt(value, 10);
+        if (value === 'true') return true;
+        if (value === 'false') return false;
+        if (value === 'this') return '__THIS__';
         if (Object.prototype.hasOwnProperty.call(window, value)) return window[value];
         return value;
     }
 
-    function resolveFunction(functionPath) {
-        return functionPath.split('.').reduce(function (obj, key) {
+    function invokeExpression(expression, context) {
+        if (!expression) return;
+        var match = expression.trim().match(/^([\w$.]+)\s*\((.*)\)$/);
+        var fnName = expression.trim();
+        var args = [];
+        if (match) {
+            fnName = match[1];
+            var argsRaw = match[2].trim();
+            if (argsRaw.length) {
+                args = argsRaw.split(',').map(parseArg).map(function (arg) {
+                    return arg === '__THIS__' ? context : arg;
+                });
+            }
+        }
+
+        var fn = fnName.split('.').reduce(function (obj, key) {
             return obj && obj[key];
         }, window);
-    }
-
-    function invokeCall(statement, context, event) {
-        var match = statement.match(/^([\w$.]+)\s*\((.*)\)$/);
-        if (!match) {
-            var maybeFn = resolveFunction(statement);
-            if (typeof maybeFn === 'function') {
-                return maybeFn.call(window, event);
-            }
-            return;
-        }
-
-        var fn = resolveFunction(match[1]);
-        if (typeof fn !== 'function') {
-            return;
-        }
-
-        var argsRaw = (match[2] || '').trim();
-        var args = [];
-        if (argsRaw.length) {
-            args = splitArgs(argsRaw).map(function (arg) {
-                return parseArg(arg, context, event);
-            });
-        }
-
-        return fn.apply(window, args);
-    }
-
-    function invokeExpression(expression, context, event) {
-        if (!expression) return;
-        var statements = splitStatements(expression.trim());
-
-        for (var i = 0; i < statements.length; i++) {
-            var statement = statements[i];
-            if (statement === 'event.preventDefault()') {
-                event.preventDefault();
-                continue;
-            }
-            if (statement === 'event.stopPropagation()') {
-                event.stopPropagation();
-                continue;
-            }
-
-            invokeCall(statement, context, event);
+        if (typeof fn === 'function') {
+            fn.apply(window, args);
         }
     }
 
@@ -154,13 +54,13 @@
         var respAction = target.getAttribute('data-resp-action');
         if (respAction && typeof window.addResponsibilityToMainTable === 'function') return window.addResponsibilityToMainTable(respAction);
 
-        invokeExpression(target.getAttribute('data-click'), target, event);
+        invokeExpression(target.getAttribute('data-click'), target);
     });
 
     document.addEventListener('change', function (event) {
         var target = event.target.closest('[data-change]');
         if (!target) return;
-        invokeExpression(target.getAttribute('data-change'), target, event);
+        invokeExpression(target.getAttribute('data-change'), target);
     });
 
     document.addEventListener('input', function (event) {

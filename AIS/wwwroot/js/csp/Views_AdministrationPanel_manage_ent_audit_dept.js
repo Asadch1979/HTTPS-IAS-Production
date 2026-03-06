@@ -32,7 +32,7 @@
                 $('#manageEntityAuditDeptGrid tbody').empty();
                 $.each(data, function (i, v) {
 
-                    $('#manageEntityAuditDeptGrid tbody').append('<tr><td>' + ++i + '</td><td>' + v.enT_ID + '</td><td>' + v.d_ID + '</td><td>' + v.d_CODE + '</td><td>' + v.cbaS_CODE + '</td><td>' + v.d_NAME + '</td><td>' + v.auD_ID + '</td><td>' + v.auditor + '</td><td>' + v.status + '</td> <td><a href="#" data-click="event.preventDefault();UpdateManageEntityAuditDept(' + v.r_ID + ');" class="text-danger">Update</a></td></tr>');
+                    $('#manageEntityAuditDeptGrid tbody').append('<tr><td>' + ++i + '</td><td>' + v.enT_ID + '</td><td>' + v.d_ID + '</td><td>' + v.d_CODE + '</td><td>' + v.cbaS_CODE + '</td><td>' + v.d_NAME + '</td><td>' + v.auD_ID + '</td><td>' + v.auditor + '</td><td>' + v.status + '</td> <td><a href="#" data-onclick="event.preventDefault();UpdateManageEntityAuditDept(' + v.r_ID + ');" class="text-danger">Update</a></td></tr>');
 
                 });
             },

@@ -23,7 +23,7 @@
             cache: false,
             success: function (data) {
                 $.each(data, function (i, v) {
-                    $('#hr_desig_wise_role_grid').append('<tr><td>' + ++i + '</td><td>' + v.designatioN_CODE + '</td><td>' + v.description + '</td><td>' + v.rolE_ID + '</td><td>' + v.role + '</td><td>' + v.entitY_TYPE + '</td><td><a href="#" data-click="event.preventDefault();updateHRDesignationCode(' + v.id + ',' + v.designatioN_CODE + ',' + v.rolE_ID + ', \'' + v.entitY_TYPE + '\' );">Update</a></td></tr>');
+                    $('#hr_desig_wise_role_grid').append('<tr><td>' + ++i + '</td><td>' + v.designatioN_CODE + '</td><td>' + v.description + '</td><td>' + v.rolE_ID + '</td><td>' + v.role + '</td><td>' + v.entitY_TYPE + '</td><td><a href="#" data-onclick="event.preventDefault();updateHRDesignationCode(' + v.id + ',' + v.designatioN_CODE + ',' + v.rolE_ID + ', \'' + v.entitY_TYPE + '\' );">Update</a></td></tr>');
                 });
 
             },

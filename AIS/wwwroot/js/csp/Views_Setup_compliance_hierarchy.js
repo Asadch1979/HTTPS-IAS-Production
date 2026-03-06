@@ -17,7 +17,7 @@
             cache: false,
             success: function (data) {
                 $.each(data, function (i, v) {
-                    $('#listOfComplianceHierarchy tbody').append('<tr><td>' + ++i + '</td><td>' + v.compliancE_UNIT + '</td><td>' + v.approveR_NAME + ' ( ' + v.approveR_PPNO + ')</td><td>' + v.revieweR_NAME + ' ( ' + v.revieweR_PPNO + ')</td><td><a href="#" data-click="event.preventDefault();updateComplianceHierarchy(' + v.entitY_ID + ', ' + v.revieweR_PPNO + ', ' + v.approveR_PPNO + ', \'' + v.coM_KEY + '\', \'' + v.revieweR_NAME + '\', \'' + v.approveR_NAME + '\');">Update</a></td></tr>');
+                    $('#listOfComplianceHierarchy tbody').append('<tr><td>' + ++i + '</td><td>' + v.compliancE_UNIT + '</td><td>' + v.approveR_NAME + ' ( ' + v.approveR_PPNO + ')</td><td>' + v.revieweR_NAME + ' ( ' + v.revieweR_PPNO + ')</td><td><a href="#" data-onclick="event.preventDefault();updateComplianceHierarchy(' + v.entitY_ID + ', ' + v.revieweR_PPNO + ', ' + v.approveR_PPNO + ', \'' + v.coM_KEY + '\', \'' + v.revieweR_NAME + '\', \'' + v.approveR_NAME + '\');">Update</a></td></tr>');
 
                 });
 

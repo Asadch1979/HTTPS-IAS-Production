@@ -25,7 +25,7 @@
                          '<td>' + (child.gisT_OF_PARAS || '') + '</td>' +
                         '<td>' + (child.parA_STATUS || '') + '</td>' +
                         '<td>' + (child.neW_PARA_STATUS || '') + '</td>' +                        
-                        '<td class="text-center"><a class="text-success" style="cursor:pointer" data-click="openAction(\'' + child.coM_ID + '\',' + child.NEW_PARA_ID + ',' + child.OLD_PARA_ID + ',\'' + child.ind + '\',\'A\')">Approve</a> | <a class="text-danger" style="cursor:pointer" data-click="openAction(\'' + child.coM_ID + '\',' + child.NEW_PARA_ID + ',' + child.OLD_PARA_ID + ',\'' + child.ind + '\',\'R\')">Reject</a></td>' +                        '</tr>');
+                        '<td class="text-center"><a class="text-success" style="cursor:pointer" data-onclick="openAction(\'' + child.coM_ID + '\',' + child.NEW_PARA_ID + ',' + child.OLD_PARA_ID + ',\'' + child.ind + '\',\'A\')">Approve</a> | <a class="text-danger" style="cursor:pointer" data-onclick="openAction(\'' + child.coM_ID + '\',' + child.NEW_PARA_ID + ',' + child.OLD_PARA_ID + ',\'' + child.ind + '\',\'R\')">Reject</a></td>' +                        '</tr>');
                 });
             },
             dataType: 'json'

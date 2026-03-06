@@ -19,7 +19,7 @@
                 g_subMenuArr = data;
                 $('#listofSubMenus tbody').empty();
                 $.each(data, function (i, v) {
-                    $('#listofSubMenus tbody').append('<tr><td>' + ++i + '</td><td>' + v.suB_MENU_NAME + '</td><td>' + v.description + '</td><td>' + v.suB_MENU_ORDER + '</td><td>' + v.status + '</td><td><a href="#" data-click="event.preventDefault();updateSubMenuAssignment(' + v.menU_ID + ', ' + v.suB_MENU_ID + ');">Update</a></td></tr>');
+                    $('#listofSubMenus tbody').append('<tr><td>' + ++i + '</td><td>' + v.suB_MENU_NAME + '</td><td>' + v.description + '</td><td>' + v.suB_MENU_ORDER + '</td><td>' + v.status + '</td><td><a href="#" data-onclick="event.preventDefault();updateSubMenuAssignment(' + v.menU_ID + ', ' + v.suB_MENU_ID + ');">Update</a></td></tr>');
 
                 });
             },

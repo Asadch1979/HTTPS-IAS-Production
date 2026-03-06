@@ -140,7 +140,7 @@
                 $('#auditeeEntitiesList tbody').empty();
                 $.each(data, function (i, v) {
                     sr++;
-                    $('#auditeeEntitiesList tbody').append('<tr><td>' + sr + '</td><td>' + v.process + '</td><td>' + v.heading + '</td><td>' + v.risK_SEQUENCE + '</td><td>' + v.risK_WEIGHTAGE + '</td><td>' + v.comments + '</td><td style="cursor:pointer;"><a class="text-danger" data-click="event.preventDefault();openUpdateSubCheclist(' + v.s_ID + ')">Update</a></td></tr>');
+                    $('#auditeeEntitiesList tbody').append('<tr><td>' + sr + '</td><td>' + v.process + '</td><td>' + v.heading + '</td><td>' + v.risK_SEQUENCE + '</td><td>' + v.risK_WEIGHTAGE + '</td><td>' + v.comments + '</td><td style="cursor:pointer;"><a class="text-danger" data-onclick="event.preventDefault();openUpdateSubCheclist(' + v.s_ID + ')">Update</a></td></tr>');
 
                 });
             },

@@ -192,11 +192,11 @@
 
     function addDACAssignmentRecordtoGrid(){
         var row = $('#listofDACattached tbody tr').length == 0 ? 1 : $('#listofDACattached tbody tr').length+1;        
-        $('#listofDACattached tbody').append('<tr><td>' + row + '</td><td>' + $('#dacDates_box_stage3Model').val() + '</td><td>' + $('#template_box_stage3Model').val() + '</td><td>' + $('#reportFreq_box_stage3Model option:selected').val() + '</td><td class="text-center"><a href="#" data-click="event.preventDefault();deleteRespRow(this);">Delete</a></td></tr>');
+        $('#listofDACattached tbody').append('<tr><td>' + row + '</td><td>' + $('#dacDates_box_stage3Model').val() + '</td><td>' + $('#template_box_stage3Model').val() + '</td><td>' + $('#reportFreq_box_stage3Model option:selected').val() + '</td><td class="text-center"><a href="#" data-onclick="event.preventDefault();deleteRespRow(this);">Delete</a></td></tr>');
     }
     function addPACAssignmentRecordtoGrid() {
         var row = $('#listofPACattached tbody tr').length == 0 ? 1 : $('#listofPACattached tbody tr').length + 1;
-        $('#listofPACattached tbody').append('<tr><td>' + row + '</td><td>' + $('#dacDates_box_stage4Model').val() + '</td><td periodId="' + $('#printingDates_box_stage4Model').val() + '">' + $('#printingDates_box_stage4Model option:selected').text() + '</td><td>' + $('#template_box_stage4Model').val() + '</td><td>' + $('#reportFreq_box_stage4Model option:selected').val() + '</td><td class="text-center"><a href="#" data-click="event.preventDefault();deleteRespRow(this);">Delete</a></td></tr>');
+        $('#listofPACattached tbody').append('<tr><td>' + row + '</td><td>' + $('#dacDates_box_stage4Model').val() + '</td><td periodId="' + $('#printingDates_box_stage4Model').val() + '">' + $('#printingDates_box_stage4Model option:selected').text() + '</td><td>' + $('#template_box_stage4Model').val() + '</td><td>' + $('#reportFreq_box_stage4Model option:selected').val() + '</td><td class="text-center"><a href="#" data-onclick="event.preventDefault();deleteRespRow(this);">Delete</a></td></tr>');
     }
     function getPreAddedOM(){
         if ($('#omNumber_box').val() == "" && $('#inspectionYear_box').val() == "")

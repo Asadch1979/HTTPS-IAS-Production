@@ -23,7 +23,7 @@
             <label>Relationship Type</label>
         </div>
         <div class="col-md-10">
-            <select id="RelationshipField" data-change="getrelation();" class="form-control form-select">
+            <select id="RelationshipField" data-onchange="getrelation();" class="form-control form-select">
                 <option id="0" value="0" selected="selected">--Select Relationship Type--</option>
 
 
@@ -48,7 +48,7 @@
             <label>Controlling/Reporting Office</label>
         </div>
         <div class="col-md-4">
-            <select id="controlingsearch" data-change="getplacepost();" class="form-control form-select">
+            <select id="controlingsearch" data-onchange="getplacepost();" class="form-control form-select">
                 <option id="0" value="0" selected="selected">--Select Controlling/Reporting Office--</option>
             </select>
         </div>
@@ -58,7 +58,7 @@
             <label>Place of Posting</label>
         </div>
         <div class="col-md-4">
-            <select id="childposting" data-change="getEntityObservation()" class="form-control form-select">
+            <select id="childposting" data-onchange="getEntityObservation()" class="form-control form-select">
                 <option id="0" value="0" selected="selected">--Select Place of Posting--</option>
 
             </select>
@@ -82,7 +82,7 @@
                     @{
                         if ((dynamic)ViewData["LoggedInUserGroupId"] == 1)
                         {
-                            <th class="col-md-auto text-center"><input type="checkbox" id="selectAllChkBox" data-click="selectAllParasShift();" /></th>
+                            <th class="col-md-auto text-center"><input type="checkbox" id="selectAllChkBox" data-onclick="selectAllParasShift();" /></th>
                         }
                     }
                 </tr>
@@ -171,7 +171,7 @@
 
                         <div class="row col-sm-12">
                             <div class="d-flex justify-content-end mb-2">
-                                <button type="button" data-click="openResponsiblePPs();" class="rounded-circle btn btn-danger btn-sm" aria-label="Add responsible person">
+                                <button type="button" data-onclick="openResponsiblePPs();" class="rounded-circle btn btn-danger btn-sm" aria-label="Add responsible person">
                                     <i class="fa fa-plus text-white"></i>
                                 </button>
                             </div>
@@ -222,7 +222,7 @@
                 </form>
             </div>
             <div class="modal-footer">
-                <button id="updateParaStatus" data-click="updateObservationStatus();" type="button" class="btn btn-danger">Update</button>
+                <button id="updateParaStatus" data-onclick="updateObservationStatus();" type="button" class="btn btn-danger">Update</button>
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
             </div>
         </div>
@@ -259,7 +259,7 @@
                                 <input type="text" class="form-control digits-only" id="responsibleBrCodeEntryField" aria-describedby="brcode" placeholder="Branch Code (digits only)" inputmode="numeric" pattern="[0-9]*" autocomplete="off" oninput="this.value=this.value.replace(/[^0-9]/g,'');" onpaste="var t=(event.clipboardData||window.clipboardData).getData('text'); this.value=t.replace(/[^0-9]/g,''); event.preventDefault();" />
                             </div>
                             <div class="col-sm-2 d-flex align-items-end">
-                                <button data-click="respSectionUpdate.getLCDetails();" type="button" class="btn btn-danger w-100">Find</button>
+                                <button data-onclick="respSectionUpdate.getLCDetails();" type="button" class="btn btn-danger w-100">Find</button>
                             </div>
                         </div>
                     </div>
@@ -291,7 +291,7 @@
                                 <input id="responsibleAccountAmountEntryField" class="form-control digits-only" type="text" placeholder="Enter Account Amount" inputmode="numeric" pattern="[0-9]*" autocomplete="off" oninput="this.value=this.value.replace(/[^0-9]/g,'');" onpaste="var t=(event.clipboardData||window.clipboardData).getData('text'); this.value=t.replace(/[^0-9]/g,''); event.preventDefault();" />
                             </div>
                             <div class="col-md-2 d-flex align-items-end">
-                                <button type="button" data-click="respSectionUpdate.getMatchedPP();" class="col-md-2 btn btn-success w-100">Select</button>
+                                <button type="button" data-onclick="respSectionUpdate.getMatchedPP();" class="col-md-2 btn btn-success w-100">Select</button>
                             </div>
                         </div>
                     </div>
@@ -332,7 +332,7 @@
                 </form>
             </div>
             <div class="modal-footer">
-                <button id="addResponsibleButton" data-click="ProceedDeleteDuplicatePara();" type="button" class="btn btn-danger">Request Deletion</button>
+                <button id="addResponsibleButton" data-onclick="ProceedDeleteDuplicatePara();" type="button" class="btn btn-danger">Request Deletion</button>
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
             </div>
         </div>

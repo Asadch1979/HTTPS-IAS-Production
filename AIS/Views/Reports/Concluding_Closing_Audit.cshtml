@@ -17,7 +17,7 @@
     </div>
     <div class="col-md-10">
         <input id="entityNameField" disabled="disabled" class="form-control ml-1 d-none" type="text" />
-        <select id="entitySelectField" data-change="getaddress();" class="form-control form-select">
+        <select id="entitySelectField" data-onchange="getaddress();" class="form-control form-select">
             <option value="0" id="0">--Select Audit Entity--</option>
             @{
                 if (ViewData["EntitiesList"] != null)
@@ -133,11 +133,11 @@
     </div>
 </div>
 <div class="row col-md-12 mt-3 ml-5">
-    <button data-click="closeDraftAudit();" class="col-md-3 mr-5 btn btn-danger float-right d-none">Generate Risk Rating</button>
-    <button data-click="window.location.href='../Execution/auditee_position_outlook';" class="col-md-2 mr-5 d-none  btn btn-success float-right">Auditee position/Outlook</button>
+    <button data-onclick="closeDraftAudit();" class="col-md-3 mr-5 btn btn-danger float-right d-none">Generate Risk Rating</button>
+    <button data-onclick="window.location.href='../Execution/auditee_position_outlook';" class="col-md-2 mr-5 d-none  btn btn-success float-right">Auditee position/Outlook</button>
     
-    <button data-click="getreportstatus();" class="col-md-3 mr-5  btn btn-success float-right"> Auditee observations report</button>
-        <button data-click="closeDraftAudit();" class="col-md-3 btn btn-danger float-right"> Close Audit</button>
+    <button data-onclick="getreportstatus();" class="col-md-3 mr-5  btn btn-success float-right"> Auditee observations report</button>
+        <button data-onclick="closeDraftAudit();" class="col-md-3 btn btn-danger float-right"> Close Audit</button>
 
 </div>
 <script src="~/js/csp/Views_Reports_Concluding_Closing_Audit.js?v=1"></script>

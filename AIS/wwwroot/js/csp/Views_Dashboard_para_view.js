@@ -94,7 +94,7 @@
                 var sr = 1;
 
                 $.each(data, function (index, item) {
-                    $('#entitywise_panel tbody').append("<tr><td>" + sr + "</td><td>" + item.name + "</td><td>" + item.audiT_PERIOD + "</td> <td class=\"text-right\">" + item.parA_NO + "</td><td><a href=\"#\" data-click=\"getParaText('" + item.coM_ID + "');\">View Para Text</a></td></tr>");
+                    $('#entitywise_panel tbody').append("<tr><td>" + sr + "</td><td>" + item.name + "</td><td>" + item.audiT_PERIOD + "</td> <td class=\"text-right\">" + item.parA_NO + "</td><td><a href=\"#\" data-onclick=\"getParaText('" + item.coM_ID + "');\">View Para Text</a></td></tr>");
                     sr++;
                 });
               initializeDataTable('entitywise_panel');              

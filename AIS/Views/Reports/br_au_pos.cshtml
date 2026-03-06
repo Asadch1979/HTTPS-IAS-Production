@@ -21,7 +21,7 @@
 
     <div class="row col-md-6 mr-2 mt-3">
         <label>Select Audit Period</label>
-        <select id="A_period" data-change="ShowSelectedZonesBranches();" class="form-select form-control" aria-label="Default select example">
+        <select id="A_period" data-onchange="ShowSelectedZonesBranches();" class="form-select form-control" aria-label="Default select example">
             <option value="0" id="0" selected>--Select Audit Period--</option>
 
         </select>
@@ -32,7 +32,7 @@
 
     <div class="row col-md-6 mt-3">
         <label>Select Audit Cluster</label>
-        <select id="auditZoneSelectionBox" data-change="ShowSelectedZonesBranches();" class="form-select form-control" aria-label="Default select example">
+        <select id="auditZoneSelectionBox" data-onchange="ShowSelectedZonesBranches();" class="form-select form-control" aria-label="Default select example">
             <option value="0" id="0" selected>--Select Cluster--</option>
             @{
                 if (ViewData["AuditZonesList"] != null)

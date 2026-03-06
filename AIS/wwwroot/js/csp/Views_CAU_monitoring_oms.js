@@ -410,7 +410,7 @@
                         <td></td>
                         <td></td>
                         <td class="text-center">
-                            <a href="#" data-click="event.preventDefault(); deleteRespRow(this);">Delete</a>
+                            <a href="#" data-onclick="event.preventDefault(); deleteRespRow(this);">Delete</a>
                         </td>
                     </tr>
                 `);
@@ -437,7 +437,7 @@
                          <td>${acc_no}</td>
                         <td>${acc_amt}</td>
                         <td class="text-center">
-                            <a href="#" data-click="event.preventDefault(); deleteRespRow(this);">Delete</a>
+                            <a href="#" data-onclick="event.preventDefault(); deleteRespRow(this);">Delete</a>
                         </td>
                     </tr>
                 `);

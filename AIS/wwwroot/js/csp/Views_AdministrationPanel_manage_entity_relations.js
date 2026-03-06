@@ -20,7 +20,7 @@
                 g_entRecord = data;
                 $('#entityRelationsGrid tbody').empty();
                 $.each(data, function (i, v) {
-                    $('#entityRelationsGrid tbody').append('<tr><td>' + ++i + '</td><td>' + v.id + '</td><td>' + v.entitY_REALTION_ID + '</td><td>' + v.parenT_ENTITY_TYPEID + '</td><td>' + v.chilD_ENTITY_TYPEID + '</td><td>' + v.parenT_NAME + '</td><td>' + v.chilD_NAME + '</td><td>' + v.status + '</td><td><a href="#" data-click="event.preventDefault();UpdateEntityType(' + v.autid + ');" class="text-danger">Update</a></td></tr>');
+                    $('#entityRelationsGrid tbody').append('<tr><td>' + ++i + '</td><td>' + v.id + '</td><td>' + v.entitY_REALTION_ID + '</td><td>' + v.parenT_ENTITY_TYPEID + '</td><td>' + v.chilD_ENTITY_TYPEID + '</td><td>' + v.parenT_NAME + '</td><td>' + v.chilD_NAME + '</td><td>' + v.status + '</td><td><a href="#" data-onclick="event.preventDefault();UpdateEntityType(' + v.autid + ');" class="text-danger">Update</a></td></tr>');
                 });
             },
             dataType: "json",

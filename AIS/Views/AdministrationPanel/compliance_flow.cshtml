@@ -21,7 +21,7 @@
         <label>Entity Type</label>
     </div>
     <div class="col-md-9">
-        <select id="entityTypeSelectionField" data-change="entityTypeSelectionChangeEvent();" class="form-select form-control" aria-label="Default select example">
+        <select id="entityTypeSelectionField" data-onchange="entityTypeSelectionChangeEvent();" class="form-select form-control" aria-label="Default select example">
             <option value="0" selected>--Select Entity Type--</option>
             @{
                 if (ViewData["EntitiesList"] != null)
@@ -37,7 +37,7 @@
     </div>
 
     <div class="col-md-3">
-        <button data-click="addComplianceFlow();" class="btn btn-primary col-md-12">Add Compliance Flow</button>
+        <button data-onclick="addComplianceFlow();" class="btn btn-primary col-md-12">Add Compliance Flow</button>
     </div>
 </div>
 
@@ -173,7 +173,7 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                <button data-click="addComplianceWorkFlow();" type="button" data-bs-dismiss="modal" class="btn btn-success btn-footer">Add Compliance Flow</button>
+                <button data-onclick="addComplianceWorkFlow();" type="button" data-bs-dismiss="modal" class="btn btn-success btn-footer">Add Compliance Flow</button>
 
             </div>
         </div>

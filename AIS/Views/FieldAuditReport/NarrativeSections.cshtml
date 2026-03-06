@@ -443,14 +443,14 @@
                             @if (isParaFinalized)
                             {
                                 <button type="button" class="btn btn-outline-warning"
-                                        data-click="submitParaAction(@observation.ParaId, 'UPDATE_REQUIRED')">
+                                        data-onclick="submitParaAction(@observation.ParaId, 'UPDATE_REQUIRED')">
                                     Update Required
                                 </button>
                             }
                             else
                             {
                                 <button type="button" class="btn btn-primary"
-                                        data-click="submitParaAction(@observation.ParaId, 'FINALIZE')">
+                                        data-onclick="submitParaAction(@observation.ParaId, 'FINALIZE')">
                                     Save/Finalize Para
                                 </button>
                             }

@@ -15,7 +15,7 @@
     </div>
     <div class="col-md-10">
         <input id="entityNameField" disabled="disabled" class="form-control ml-1 d-none" type="text" />
-        <select id="entitySelectField" data-change="getEntityObservation()" class="form-control form-select">
+        <select id="entitySelectField" data-onchange="getEntityObservation()" class="form-control form-select">
             <option value="0" id="0">--Select Audit Entity--</option>
             @{
                 if (ViewData["OldParasEntities"] != null)
@@ -63,7 +63,7 @@
                             <td>@item.AUDITOR_REMARKS</td>
                             <td>Unsettled</td>
                             <td>
-                                <button type="button" data-click="window.location.href = './Reply_new?id=@item.ID&entity=@item.ENTITY_NAME&period=@item.AUDIT_PERIOD&para=@item.PARA_NO';" class="btn btn-link text-danger btn-sm btn-rounded">
+                                <button type="button" data-onclick="window.location.href = './Reply_new?id=@item.ID&entity=@item.ENTITY_NAME&period=@item.AUDIT_PERIOD&para=@item.PARA_NO';" class="btn btn-link text-danger btn-sm btn-rounded">
                                     Action
                                 </button>
                             </td>

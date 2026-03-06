@@ -43,7 +43,7 @@
                 cache: false,
                 success: function (data) {
                     $.each(data, function (i, v) {
-                        $('#manageObsPanel tbody').append('<tr id="assignedObRow_' + v.anneX_ID + '"><td>' + v.audiT_PERIOD + '</td><td class="text-right">' + v.parA_NO + '</td><td class="text-right">' + v.anneX_CODE + '</td><td>' + v.annexure + '</td><td>' + v.gisT_OF_PARAS + '</td><td><a hre="#" class="text-danger text-center" style="cursor:pointer;" data-click="event.preventDefault();viewParaText(\'' + v.parA_CATEGORY + '\', \'' + v.obS_ID + '\',\'' + v.reF_P + '\',\'' + v.anneX_ID + '\')"> View Para</a></td></tr>');
+                        $('#manageObsPanel tbody').append('<tr id="assignedObRow_' + v.anneX_ID + '"><td>' + v.audiT_PERIOD + '</td><td class="text-right">' + v.parA_NO + '</td><td class="text-right">' + v.anneX_CODE + '</td><td>' + v.annexure + '</td><td>' + v.gisT_OF_PARAS + '</td><td><a hre="#" class="text-danger text-center" style="cursor:pointer;" data-onclick="event.preventDefault();viewParaText(\'' + v.parA_CATEGORY + '\', \'' + v.obS_ID + '\',\'' + v.reF_P + '\',\'' + v.anneX_ID + '\')"> View Para</a></td></tr>');
 
                     });
                 },

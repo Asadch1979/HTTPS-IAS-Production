@@ -13,10 +13,10 @@
                 cache: false,
                 success: function (data) {
                     $.each(data, function (index, child) {
-                        $('#procItem_' + procId).append('<ul class="childLevel"><li id="procTrans_' + child.id + '"><span data-click="event.preventDefault();getProcessTransactions(' + child.id + ')"  class="caret">' + child.title + '</span></li></ul>');
+                        $('#procItem_' + procId).append('<ul class="childLevel"><li id="procTrans_' + child.id + '"><span data-onclick="event.preventDefault();getProcessTransactions(' + child.id + ')"  class="caret">' + child.title + '</span></li></ul>');
 
                     });
-                    $('#procItem_' + procId + ' >span').after('<ul class="childLevel"><li><span data-click="event.preventDefault();addNewSubProcess(' + procId + ')" class="newitemaddmenu text-success" >-- Add New Sub Process--</span></li></ul>')
+                    $('#procItem_' + procId + ' >span').after('<ul class="childLevel"><li><span data-onclick="event.preventDefault();addNewSubProcess(' + procId + ')" class="newitemaddmenu text-success" >-- Add New Sub Process--</span></li></ul>')
                     $('#procItem_' + procId + ' >span').addClass('caret-down');
 
                 },
@@ -42,10 +42,10 @@
 
                     console.log('tranc', data);
                     $.each(data, function (index, child) {
-                        $('#procTrans_' + procDetailId).append('<ul class="grandchildLevel"><li  class="listItems"><span id="transactionspan_' + child.id + '" data-click="event.preventDefault();showTransactionDetail(this);" class="icon">' + child.description + '</span></li></ul>');
+                        $('#procTrans_' + procDetailId).append('<ul class="grandchildLevel"><li  class="listItems"><span id="transactionspan_' + child.id + '" data-onclick="event.preventDefault();showTransactionDetail(this);" class="icon">' + child.description + '</span></li></ul>');
 
                     });
-                    $('#procTrans_' + procDetailId + ' >span').after('<ul class="grandchildLevel"><li><span data-click="event.preventDefault();addNewSubProcessTransaction(' + procDetailId + ');" class="newitemaddmenu text-success" >-- Add New Transaction--</span></li></ul>')
+                    $('#procTrans_' + procDetailId + ' >span').after('<ul class="grandchildLevel"><li><span data-onclick="event.preventDefault();addNewSubProcessTransaction(' + procDetailId + ');" class="newitemaddmenu text-success" >-- Add New Transaction--</span></li></ul>')
                     $('#procTrans_' + procDetailId + ' >span').addClass('caret-down');
 
                 },

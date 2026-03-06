@@ -17,7 +17,7 @@
                     
                     period.starT_DATE = period.starT_DATE.split('T')[0];
                     period.enD_DATE = period.enD_DATE.split('T')[0];
-                    $('#listOfAuditPeriods tbody').append('<tr id=teamcode_' + period.auditperiodid + '><td class="searchable"><p class="fw-normal mb-1">' + srNo + '</p></td><td class="searchable"><p class="fw-normal mb-1">' + period.description + ' </p></td><td class="searchable"><p class="empName fw-normal mb-1">' + period.starT_DATE + ' </p></td><td class="searchable"><p class="empName fw-normal mb-1">' + period.enD_DATE + ' </p></td><td class="searchable"><p class="empName fw-normal mb-1">' + period.status + ' </p></td><td><small data-click="event.preventDefault();updateAuditPeriod(' + period.auditperiodid + ',' + period.statuS_ID + ')" class="text-danger cursor-pointer">Update</small></td></tr>');
+                    $('#listOfAuditPeriods tbody').append('<tr id=teamcode_' + period.auditperiodid + '><td class="searchable"><p class="fw-normal mb-1">' + srNo + '</p></td><td class="searchable"><p class="fw-normal mb-1">' + period.description + ' </p></td><td class="searchable"><p class="empName fw-normal mb-1">' + period.starT_DATE + ' </p></td><td class="searchable"><p class="empName fw-normal mb-1">' + period.enD_DATE + ' </p></td><td class="searchable"><p class="empName fw-normal mb-1">' + period.status + ' </p></td><td><small data-onclick="event.preventDefault();updateAuditPeriod(' + period.auditperiodid + ',' + period.statuS_ID + ')" class="text-danger cursor-pointer">Update</small></td></tr>');
                     srNo++;
                 });
 
