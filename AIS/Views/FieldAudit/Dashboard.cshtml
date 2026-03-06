@@ -1,0 +1,87 @@
+@model AIS.Models.FieldAuditWorkflow.FieldAuditWorkflowViewModel
+@{
+    ViewData["Title"] = "Field Audit Dashboard";
+    Layout = "_Layout";
+    var visibleSteps = Model.VisibleSteps.ToList();
+    var currentStep = Model.CurrentStep;
+    var currentStepIndex = currentStep == null ? 0 : visibleSteps.FindIndex(s => s.StepCode == currentStep.StepCode) + 1;
+}
+
+<div class="card shadow-sm mb-3">
+    <div class="card-body">
+        <div class="row g-3 align-items-end">
+            <div class="col-lg-8">
+                <label class="form-label fw-semibold">Engagement</label>
+                <select id="faEngagementSelect" class="form-select">
+                    <option value="">-- Select Engagement --</option>
+                    @foreach (var e in Model.AvailableEngagements)
+                    {
+                        var selected = Model.SelectedEngagementId == e.ENG_PLAN_ID;
+                        <option value="@e.ENG_PLAN_ID" selected="@selected">@e.ENTITY_NAME (@e.AUDIT_START_DATE - @e.AUDIT_END_DATE)</option>
+                    }
+                </select>
+                <div class="form-text">Select an engagement to activate workflow steps.</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="planning-nav-wrap sticky-top bg-white py-2 mb-3">
+    <div class="card shadow-sm planning-nav-card mb-0">
+        <div class="card-body py-3">
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2">
+                <strong class="planning-step-counter">Step @(currentStepIndex > 0 ? currentStepIndex : 1) of @visibleSteps.Count</strong>
+                <span class="text-muted small">Field Audit workflow</span>
+            </div>
+            @if (!visibleSteps.Any())
+            {
+                <div class="alert alert-warning mt-2 mb-0">You do not currently have access to any Field Audit workflow stages.</div>
+            }
+            else
+            {
+                <div class="planning-stepper mt-2">
+                    @foreach (var step in visibleSteps)
+                    {
+                        var isActive = currentStep != null && step.StepCode == currentStep.StepCode;
+                        var stepCss = isActive ? "planning-step active" : "planning-step";
+                        var statusBadgeCss = step.IsSaved ? "bg-success" : "bg-secondary";
+                        <a class="@stepCss" href="@Url.Action("Dashboard", "FieldAudit", new { stepCode = step.StepCode, engId = Model.SelectedEngagementId })">
+                            <div class="step-title"><span class="step-no">@(step.StepNo).</span> @step.StepTitle</div>
+                            <span class="step-state ms-2 badge @statusBadgeCss">@step.StatusText</span>
+                        </a>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@if (!Model.HasEngagementSelected)
+{
+    <div class="alert alert-info">Please select an engagement to continue. Step content is disabled until ENG_ID is selected.</div>
+}
+else if (currentStep != null)
+{
+    <div class="card">
+        <div class="card-body">
+            @await Html.PartialAsync(currentStep.PartialViewName)
+        </div>
+    </div>
+}
+
+@section Scripts {
+    <script>
+        window.fieldAuditDashboard = {
+            engId: @(Model.SelectedEngagementId ?? 0),
+            stepCode: '@(Model.CurrentStepCode ?? string.Empty)'
+        };
+    </script>
+    <script src="~/js/csp/Views_FieldAudit_Dashboard.js?v=1"></script>
+}
+
+<style>
+.planning-stepper{display:grid;grid-template-columns:repeat(3,minmax(220px,1fr));gap:.4rem;overflow:auto}
+.planning-step{border:1px solid #ced4da;border-radius:.5rem;padding:.35rem .5rem;display:flex;align-items:center;justify-content:space-between;text-decoration:none;color:#212529;background:#fff}
+.planning-step.active{border-color:#0d6efd;box-shadow:0 0 0 2px rgba(13,110,253,.15)}
+.step-title{font-size:.88rem}.step-state{font-size:.68rem}
+</style>
