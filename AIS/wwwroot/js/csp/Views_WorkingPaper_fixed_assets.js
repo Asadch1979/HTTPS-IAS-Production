@@ -27,7 +27,7 @@
                 console.log(data);
                 $.each(data, function (i, v) {
 
-                    $('#manageObsPanel').append('<tr><td>' + ++i + '</td><td>' + v.asseT_NAME + '</td><td>' + v.physicaL_EXISTANCE + '</td><td>' + v.locatioN_AS_PER_FAR + '</td><td>' + v.difference + '</td><td>' + v.remarks + '</td><td><a href="#" data-onclick="event.preventDefault();updateVoucherChecking(' + v.V_ID + ');"></a></td></tr>');
+                    $('#manageObsPanel').append('<tr><td>' + ++i + '</td><td>' + v.asseT_NAME + '</td><td>' + v.physicaL_EXISTANCE + '</td><td>' + v.locatioN_AS_PER_FAR + '</td><td>' + v.difference + '</td><td>' + v.remarks + '</td><td><a href="#" data-click="event.preventDefault();updateVoucherChecking(' + v.V_ID + ');"></a></td></tr>');
 
                 })
 

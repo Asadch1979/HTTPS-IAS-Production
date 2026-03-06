@@ -27,7 +27,7 @@
                 console.log(data);
                 $.each(data,function(i,v){
 
-                    $('#manageObsPanel').append('<tr><td>' + ++i + '</td><td>' + v.lC_NUMBER + '</td><td>' + v.amount + '</td><td>' + v.disB_DATE + '</td><td>' + v.category + '</td><td>' + v.observation + '</td><td>' + v.parA_NO + '</td><td><a href="#" data-onclick="event.preventDefault();updateLoanCaseFile(' + v.lC_ID + ');"></a></td></tr>');
+                    $('#manageObsPanel').append('<tr><td>' + ++i + '</td><td>' + v.lC_NUMBER + '</td><td>' + v.amount + '</td><td>' + v.disB_DATE + '</td><td>' + v.category + '</td><td>' + v.observation + '</td><td>' + v.parA_NO + '</td><td><a href="#" data-click="event.preventDefault();updateLoanCaseFile(' + v.lC_ID + ');"></a></td></tr>');
 
                 })
 

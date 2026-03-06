@@ -93,9 +93,9 @@ function getPageData() {
                         var statusText = (v.obS_STATUS || '').toString();
                         var isPrintable = statusText.toLowerCase() === 'submitted to auditee';
                         var printCell = isPrintable
-                            ? '<button type="button" class="btn btn-sm btn-primary" data-onclick="printObservation(' + v.obS_ID + ')">Print</button>'
+                            ? '<button type="button" class="btn btn-sm btn-primary" data-click="printObservation(' + v.obS_ID + ')">Print</button>'
                             : '';
-                        $('#manageObsPanel tbody').append(' <tr id="' + v.obS_ID + '"><td class="text-center">' + v.memO_NO + '</td><td class="text-center">' + v.annexurE_CODE + '</td><td>' + v.heading + '</td><td>' + v.nO_OF_INSTANCES + '</td><td>' + v.obS_RISK + '</td><td>' + v.obS_STATUS + '</td><td><a data-onclick="ObservationUpdatePanel(' + v.obS_ID + ')" href="#" class="text-hover">Manage</a></td><td class="text-center action-col">' + printCell + '</td></tr>');
+                        $('#manageObsPanel tbody').append(' <tr id="' + v.obS_ID + '"><td class="text-center">' + v.memO_NO + '</td><td class="text-center">' + v.annexurE_CODE + '</td><td>' + v.heading + '</td><td>' + v.nO_OF_INSTANCES + '</td><td>' + v.obS_RISK + '</td><td>' + v.obS_STATUS + '</td><td><a data-click="ObservationUpdatePanel(' + v.obS_ID + ')" href="#" class="text-hover">Manage</a></td><td class="text-center action-col">' + printCell + '</td></tr>');
                     });
 
                     initializeDataTable('manageObsPanel');

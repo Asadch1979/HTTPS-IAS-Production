@@ -11,7 +11,7 @@
 
     <div class="row col-md-12">
         <label class="font-weight-bold">Audit Period</label>
-        <select id="auditPeriodSelectBox" class="form-control" data-onchange="getAuditParas();">
+        <select id="auditPeriodSelectBox" class="form-control" data-change="getAuditParas();">
             <option value="0" id="0" selected>--Select Audit Period--</option>
             @{
                 if (ViewData["AuditPeriodList"] != null)

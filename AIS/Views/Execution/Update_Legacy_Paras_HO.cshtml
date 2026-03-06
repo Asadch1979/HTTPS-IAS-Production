@@ -16,7 +16,7 @@
             <label><b>Entity:</b></label>
         </div>
         <div class="row col-md-10">
-            <select id="entitySelectField" data-onchange="getReportDropdownContents();" class="form-control form-select">
+            <select id="entitySelectField" data-change="getReportDropdownContents();" class="form-control form-select">
                 <option value="0" id="0">--Select Audit Entity--</option>
                 @{
                     if (ViewData["EntitiesList"] != null)
@@ -36,7 +36,7 @@
             <label><b>Report:</b></label>
         </div>
         <div class="row col-md-10">
-            <select id="entityReportSelectField" data-onchange="getLegacyPara();" class="form-control form-select">
+            <select id="entityReportSelectField" data-change="getLegacyPara();" class="form-control form-select">
 
             </select>
         </div>
@@ -70,7 +70,7 @@
                 <form>
                     <div class="form-group">
                         <label for="violation_selectBox" class="font-weight-bold">Violation</label>
-                        <select id="violation_selectBox" data-onchange="getViolationNature();"
+                        <select id="violation_selectBox" data-change="getViolationNature();"
                             class="form-select form-control" aria-label="">
                             <option value="0" id="0" selected="selected">--Select Voilation Category--</option>
                             @{
@@ -127,9 +127,9 @@
 
             <div class="mt-3 modal-footer">
 
-                <button data-onclick="submitLegacyParaUpdates();" id="PublishParaText" type="button"
+                <button data-click="submitLegacyParaUpdates();" id="PublishParaText" type="button"
                     class="btn btn-danger">Save All Changes</button>
-                <button data-onclick="submitLegacyParaUpdatesWithNoChanges();" id="PublishParaTextWithNoChanges"
+                <button data-click="submitLegacyParaUpdatesWithNoChanges();" id="PublishParaTextWithNoChanges"
                     type="button" class="btn btn-primary d-none">No change in Para Text</button>
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
 
@@ -171,7 +171,7 @@
 
             <div class="mt-3 modal-footer">
 
-                <button data-onclick="submitSettlementofLegacyPara();" id="PublishParaText" type="button"
+                <button data-click="submitSettlementofLegacyPara();" id="PublishParaText" type="button"
                     class="btn btn-danger">Submit</button>
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
 

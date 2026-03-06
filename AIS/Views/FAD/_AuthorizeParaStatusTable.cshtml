@@ -39,7 +39,7 @@
                     <td>@item.ChangedBy</td>
                     <td>@item.ChangedOn.ToString("dd-MMM-yyyy")</td>
                     <td>@item.MakerRemarks</td>
-                    <td class="text-center"><a href="#" class="text-success" data-onclick="event.preventDefault();authorizeRequest(@item.LogId);">Authorize</a> | <a href="#" class="text-danger" data-onclick="event.preventDefault();rejectRequest(@item.LogId);">Reject</a></td>
+                    <td class="text-center"><a href="#" class="text-success" data-click="event.preventDefault();authorizeRequest(@item.LogId);">Authorize</a> | <a href="#" class="text-danger" data-click="event.preventDefault();rejectRequest(@item.LogId);">Reject</a></td>
                 </tr>
             }
         }

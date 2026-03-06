@@ -17,7 +17,7 @@
             <label><b>Entity Type:</b></label>
         </div>
         <div class="col-md-5">
-            <select id="entityTypeSelectField" data-onchange="getEntity();" class="form-control form-select">
+            <select id="entityTypeSelectField" data-change="getEntity();" class="form-control form-select">
                 <option value="0" id="0">--Select Audit Entity--</option>
                 @{
                     if (ViewData["EntitiesTypeList"] != null)
@@ -129,7 +129,7 @@
         </div>
     </div>
     <div class="row col-md-12 mt-3">
-        <div class="offset-md-9 col-md-3"><button data-onclick="addLegacyParaToDB();" class="btn w-100 btn-danger">Add Legacy Para</button></div>
+        <div class="offset-md-9 col-md-3"><button data-click="addLegacyParaToDB();" class="btn w-100 btn-danger">Add Legacy Para</button></div>
     </div>
 
 </div>

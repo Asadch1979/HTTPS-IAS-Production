@@ -16,8 +16,8 @@
     <div class="col-md-12 row">
         <div class="col-md-12 text-center">
             
-            <button type="button" id="deleteUser" data-onclick="getNewUsersInAIS();" class="btn btn-danger col-md-4">Find New Users</button>
-            <button type="button" id="deleteUser" data-onclick="getOldUsersInAIS();" class="btn btn-danger offset-md-1 col-md-4">Find Old Users</button>
+            <button type="button" id="deleteUser" data-click="getNewUsersInAIS();" class="btn btn-danger col-md-4">Find New Users</button>
+            <button type="button" id="deleteUser" data-click="getOldUsersInAIS();" class="btn btn-danger offset-md-1 col-md-4">Find Old Users</button>
         </div>    
 
     </div>
@@ -38,7 +38,7 @@
                 <th class="col-md-2">Entity Name</th>
                 <th class="col-md-2">Entity Id</th>
                 <th class="col-md-2">Action</th>             
-                <th class="col-md-2"><input type="checkbox" id="selectAllChkBox" data-onclick="selectAllUserRows();" /></th>             
+                <th class="col-md-2"><input type="checkbox" id="selectAllChkBox" data-click="selectAllUserRows();" /></th>             
                 
 
             </tr>
@@ -47,7 +47,7 @@
         </tbody>
     </table>
     <div class="col-md-12 row">
-        <button id="updateButtonAtEnd" class="btn btn-primary d-none offset-md-9 col-md-3" data-onclick="updateAllSelectedUsers();">Update Selected Users</button>
+        <button id="updateButtonAtEnd" class="btn btn-primary d-none offset-md-9 col-md-3" data-click="updateAllSelectedUsers();">Update Selected Users</button>
     </div>
     
 </div>
@@ -90,7 +90,7 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                <button data-onclick="addProcessDetail();" type="button" data-bs-dismiss="modal" class="btn btn-success">Save Changes</button>
+                <button data-click="addProcessDetail();" type="button" data-bs-dismiss="modal" class="btn btn-success">Save Changes</button>
 
             </div>
         </div>

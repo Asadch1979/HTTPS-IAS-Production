@@ -59,7 +59,7 @@
         <h3 style="color: #be0e43 float:left">Team Formation</h3>
     </div>
         <div class="col-md-2 mt-3" style="float:right">
-        <button data-onclick="addNewTeam();" class="btn btn-danger mb-3"  style="float:right;" >Constitue New Team</button>
+        <button data-click="addNewTeam();" class="btn btn-danger mb-3"  style="float:right;" >Constitue New Team</button>
             
     </div>
     </div>
@@ -91,7 +91,7 @@
                     <td>
                         @if (team.STATUS == "Y")
                             {
-                            <small data-onclick="event.preventDefault();deleteTeam('@team.CODE');" class="text-danger deleteTeam">Inactive</small>
+                            <small data-click="event.preventDefault();deleteTeam('@team.CODE');" class="text-danger deleteTeam">Inactive</small>
                             }
                     </td>
                 </tr>
@@ -157,7 +157,7 @@
                 </form>
             </div>
             <div class="modal-footer">
-                <button data-onclick="publishNewTeamChanges();" type="button" class="btn btn-danger">Save changes</button>
+                <button data-click="publishNewTeamChanges();" type="button" class="btn btn-danger">Save changes</button>
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
             </div>
         </div>

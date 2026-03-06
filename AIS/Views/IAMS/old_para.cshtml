@@ -53,7 +53,7 @@
     </div>
     <div class="row col-md-12 mt-3">
         <div class="w-100">
-            <button data-onclick="getLegacyPara();" style="float:right; margin-right:15px;" class="btn btn-danger">Search Legacy Paras</button>
+            <button data-click="getLegacyPara();" style="float:right; margin-right:15px;" class="btn btn-danger">Search Legacy Paras</button>
         </div>
 
     </div>
@@ -99,7 +99,7 @@
                                 <p class="fw-normal mb-1">@item.ANNEXURE</p>
                                 </td>
                                 <td class="text-center">
-                                    <a class="text-center text-danger" style="cursor:pointer;" data-onclick="processdetails(@item.ID);">Add Para Text</a>
+                                    <a class="text-center text-danger" style="cursor:pointer;" data-click="processdetails(@item.ID);">Add Para Text</a>
                                 </td>
 
                             </tr>
@@ -130,7 +130,7 @@
 
                         <label class="font-weight-bold">Process</label>
 
-                        <select id="processbox" data-onchange="getProcessChilds();" class="form-select form-control">
+                        <select id="processbox" data-change="getProcessChilds();" class="form-select form-control">
                             <option value="0" id="0">--Enter Process--</option>
                             @{
                                 if (ViewData["ProcessList"] != null)
@@ -149,11 +149,11 @@
 
                         <label class="font-weight-bold">Sub-Process</label>
 
-                        <select id="sub_process" data-onchange="getchecklist();" class="form-select form-control">
+                        <select id="sub_process" data-change="getchecklist();" class="form-select form-control">
                             <option value="0" id="0">--Add Sub-Process--</option>
 
                         </select>
-                        <!--<button data-onclick="getProcessChilds();">function</button>-->
+                        <!--<button data-click="getProcessChilds();">function</button>-->
                     </div>
 
                     <div class="row mt-3 col-md-12">

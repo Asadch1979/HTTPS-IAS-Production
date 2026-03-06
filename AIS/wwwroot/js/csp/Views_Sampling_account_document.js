@@ -45,7 +45,7 @@
                 <td>${item.name}</td>
                 <td>${item.docRemarks}</td>
                 <td>
-                    <a href="javascript:void(0);" data-onclick="viewDocument('${item.docImage}')" class="btn btn-info btn-sm">View Document</a>
+                    <a href="javascript:void(0);" data-click="viewDocument('${item.docImage}')" class="btn btn-info btn-sm">View Document</a>
                 </td>
             </tr>`;
             tableBody.append(row);

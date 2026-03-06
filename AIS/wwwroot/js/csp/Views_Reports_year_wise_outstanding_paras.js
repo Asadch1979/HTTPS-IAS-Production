@@ -85,7 +85,7 @@
                     t_hparas += parseInt(v.r1);
                     t_mparas += parseInt(v.r2);
                     t_lparas += parseInt(v.r3);
-                    $('#observation_panel tbody').append('  <tr id="' + v.id + '"><td align="center"> ' + sr + '</td> <td align="left">' + v.audiT_PERIOD + '</td> <td align="right">' + v.totaL_PARAS + '</td> <td align="right">' + v.settleD_PARA + '</td> <td align="right">' + v.uN_SETTLED_PARA + '</td> <td align="right" style="background-color: #ff968f;">' + v.r1 + '</td> <td align="right" style="background-color:#f9e10a6b;">' + v.r2 + '</td> <td align="right" style="background-color:#82f386;">' + v.r3 + '</td><td align="center"><a href="#" data-onclick="getEntityWiseDetails('+v.audiT_PERIOD+');">Details</a></td></tr>');
+                    $('#observation_panel tbody').append('  <tr id="' + v.id + '"><td align="center"> ' + sr + '</td> <td align="left">' + v.audiT_PERIOD + '</td> <td align="right">' + v.totaL_PARAS + '</td> <td align="right">' + v.settleD_PARA + '</td> <td align="right">' + v.uN_SETTLED_PARA + '</td> <td align="right" style="background-color: #ff968f;">' + v.r1 + '</td> <td align="right" style="background-color:#f9e10a6b;">' + v.r2 + '</td> <td align="right" style="background-color:#82f386;">' + v.r3 + '</td><td align="center"><a href="#" data-click="getEntityWiseDetails('+v.audiT_PERIOD+');">Details</a></td></tr>');
                     sr++;
                 });
                 $('#observation_panel tbody').append('<tr><td></td><td align="right"><b>Total</b></td><td align="right">' + t_tparas + '</td><td align="right">' + t_sparas + '</td><td align="right">' + t_uparas + '</td><td align="right">' + t_hparas + '</td><td align="right">' + t_mparas + '</td><td align="right">' + t_lparas + '</td><td></td></tr>')
@@ -112,7 +112,7 @@
                 cache: false,
                 success: function (data) {
                     $.each(data, function (i, v) {
-                        $('#observation_detail_model tbody').append('<tr id="assignedObRow_' + v.id + '"><td>' + ++i + '</td><td>' + v.entitY_NAME + '</td><td>' + v.audiT_PERIOD + '</td><td>' + v.memO_NO + '</td><td>' + v.gisT_OF_PARAS + '</td><td><a hre="#" class="text-danger text-center" style="cursor:pointer;" data-onclick="event.preventDefault();viewParaText(\'' + v.coM_ID + '\')"> View Para</a></td></tr>');
+                        $('#observation_detail_model tbody').append('<tr id="assignedObRow_' + v.id + '"><td>' + ++i + '</td><td>' + v.entitY_NAME + '</td><td>' + v.audiT_PERIOD + '</td><td>' + v.memO_NO + '</td><td>' + v.gisT_OF_PARAS + '</td><td><a hre="#" class="text-danger text-center" style="cursor:pointer;" data-click="event.preventDefault();viewParaText(\'' + v.coM_ID + '\')"> View Para</a></td></tr>');
 
                     });
                     initializeDataTable('observation_detail_model');

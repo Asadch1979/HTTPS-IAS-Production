@@ -54,7 +54,7 @@
                     $.each(data, function (i, v) {
                         sr++;
                         var id = getVal(v, 'ENTITY_ID');
-                        $('#auditeeEntitiesList tbody').append('<tr><td>' + sr + '</td><td>' + id + '</td><td>' + getVal(v, 'CODE') + '</td><td>' + getVal(v, 'NAME') + '</td><td>' + getVal(v, 'ACTIVE') + '</td><td>' + getVal(v, 'AUDITBY_NAME') + '</td><td>' + getVal(v, 'AUDITABLE') + '</td><td>' + getVal(v, 'ADDRESS') + '</td><td>' + getVal(v, 'TELEPHONE') + '</td><td>' + getVal(v, 'EMAIL_ADDRESS') + '</td><td><a class="text-danger" data-onclick="event.preventDefault();updateAuditeeEntities(' + id + ')">Update</a></td></tr>');
+                        $('#auditeeEntitiesList tbody').append('<tr><td>' + sr + '</td><td>' + id + '</td><td>' + getVal(v, 'CODE') + '</td><td>' + getVal(v, 'NAME') + '</td><td>' + getVal(v, 'ACTIVE') + '</td><td>' + getVal(v, 'AUDITBY_NAME') + '</td><td>' + getVal(v, 'AUDITABLE') + '</td><td>' + getVal(v, 'ADDRESS') + '</td><td>' + getVal(v, 'TELEPHONE') + '</td><td>' + getVal(v, 'EMAIL_ADDRESS') + '</td><td><a class="text-danger" data-click="event.preventDefault();updateAuditeeEntities(' + id + ')">Update</a></td></tr>');
                     });
                 },
                 dataType: "json",

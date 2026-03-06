@@ -40,12 +40,12 @@
             <td class="text-center">${item.totaL_COUNT}</td>
             <td class="text-center">${item.samplE_COUNT}</td>
             <td class="text-center">
-                <button class="btn btn-danger btn-sm" data-onclick="viewSample(${item.samplE_ID}, ${item.loaN_STATUS}, '${item.samplE_INDICATOR}')">
+                <button class="btn btn-danger btn-sm" data-click="viewSample(${item.samplE_ID}, ${item.loaN_STATUS}, '${item.samplE_INDICATOR}')">
                     View
                 </button>
             </td>
               <td class="text-center">
-                <button class="btn btn-danger btn-sm" data-onclick="regenerateSample(${item.samplE_ID}, ${item.loaN_STATUS}, '${item.samplE_INDICATOR}')">
+                <button class="btn btn-danger btn-sm" data-click="regenerateSample(${item.samplE_ID}, ${item.loaN_STATUS}, '${item.samplE_INDICATOR}')">
                     Regenerate
                 </button>
             </td>

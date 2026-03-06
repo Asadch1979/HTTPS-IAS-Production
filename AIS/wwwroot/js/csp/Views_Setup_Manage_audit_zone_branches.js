@@ -202,11 +202,11 @@
         var selectedBr = $('#branchSelectionBox').val();
         $.each(selectedBr, function (i, br) {
             if (br !=0)
-            $('#ZoneBranchmap tbody').append('<tr><td value="' + $('#auditZoneSelectionBox1 option:selected').val() + '">' + AZN + '</td><td value="' + $('#auditZoneSelectionBox option:selected').val() + '">' + ZN + '</td><td value="' + $('#branchSelectionBox option:selected').val() + '">' + br + '</td><td><a data-onclick=DeleteAZMRecordFromGrid(this); class="text-hover text-danger">Delete</a></td></tr>')
+            $('#ZoneBranchmap tbody').append('<tr><td value="' + $('#auditZoneSelectionBox1 option:selected').val() + '">' + AZN + '</td><td value="' + $('#auditZoneSelectionBox option:selected').val() + '">' + ZN + '</td><td value="' + $('#branchSelectionBox option:selected').val() + '">' + br + '</td><td><a data-click=DeleteAZMRecordFromGrid(this); class="text-hover text-danger">Delete</a></td></tr>')
 
         });
 
-       // $('#ZoneBranchmap tbody').append('<tr><td value="' + $('#auditZoneSelectionBox1 option:selected').val() + '">' + AZN + '</td><td value="' + $('#auditZoneSelectionBox option:selected').val() + '">' + ZN + '</td><td value="' + $('#branchSelectionBox option:selected').val() + '">' + BN + '</td><td><a data-onclick=DeleteAZMRecordFromGrid(this); class="text-hover text-danger">Delete</a></td></tr>')
+       // $('#ZoneBranchmap tbody').append('<tr><td value="' + $('#auditZoneSelectionBox1 option:selected').val() + '">' + AZN + '</td><td value="' + $('#auditZoneSelectionBox option:selected').val() + '">' + ZN + '</td><td value="' + $('#branchSelectionBox option:selected').val() + '">' + BN + '</td><td><a data-click=DeleteAZMRecordFromGrid(this); class="text-hover text-danger">Delete</a></td></tr>')
 
     }
     function DeleteAZMRecordFromGrid(e) {

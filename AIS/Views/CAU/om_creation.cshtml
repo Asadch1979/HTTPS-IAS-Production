@@ -37,7 +37,7 @@
             In case of forwarding/submitting the observation to Credit Administration Unit, Do Not Select any Branch
         </p>
         <div class="d-flex justify-content-end mb-2">
-            <button type="button" data-onclick="openResponsiblePPs();" class="rounded-circle btn btn-danger btn-sm" aria-label="Add responsible person">
+            <button type="button" data-click="openResponsiblePPs();" class="rounded-circle btn btn-danger btn-sm" aria-label="Add responsible person">
                 <i class="fa fa-plus text-white"></i>
             </button>
         </div>
@@ -75,7 +75,7 @@
   
 
     <div class="row col-md-12 mt-5">
-        <button id="submitCAUobBtn" data-onclick="submitObservationToAuditee();" style="margin-left:20px;" class="btn btn-primary">Save Observation</button>
+        <button id="submitCAUobBtn" data-click="submitObservationToAuditee();" style="margin-left:20px;" class="btn btn-primary">Save Observation</button>
     </div>
 </div>
 
@@ -105,7 +105,7 @@
                                 <input id="responsibleBrCodeEntryField" class="form-control digits-only" type="text" inputmode="numeric" pattern="[0-9]*" autocomplete="off" oninput="this.value=this.value.replace(/[^0-9]/g,'');" onpaste="var t=(event.clipboardData||window.clipboardData).getData('text'); this.value=t.replace(/[^0-9]/g,''); event.preventDefault();" />
                             </div>
                             <div class="col-sm-2 d-flex align-items-end">
-                                <button data-onclick="getLCDetails();" type="button" class="btn btn-danger w-100">Find</button>
+                                <button data-click="getLCDetails();" type="button" class="btn btn-danger w-100">Find</button>
                             </div>
                         </div>
                     </div>
@@ -139,7 +139,7 @@
                                 <input id="responsibleAccountAmountEntryField" class="form-control digits-only" type="text" inputmode="numeric" pattern="[0-9]*" autocomplete="off" oninput="this.value=this.value.replace(/[^0-9]/g,'');" onpaste="var t=(event.clipboardData||window.clipboardData).getData('text'); this.value=t.replace(/[^0-9]/g,''); event.preventDefault();" placeholder="Enter Account Amount" />
                             </div>
                             <div class="col-md-2 d-flex align-items-end">
-                                <button type="button" data-onclick="getMatchedPP();" class="col-md-2 btn btn-success w-100">Select</button>
+                                <button type="button" data-click="getMatchedPP();" class="col-md-2 btn btn-success w-100">Select</button>
                             </div>
                         </div>
                     </div>
@@ -150,7 +150,7 @@
                 </form>
             </div>
             <div class="modal-footer">
-                <button data-onclick="addResponsibilityToMainTable();" type="button" data-bs-dismiss="modal" class="btn btn-danger">Add Responsibility</button>
+                <button data-click="addResponsibilityToMainTable();" type="button" data-bs-dismiss="modal" class="btn btn-danger">Add Responsibility</button>
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
             </div>
         </div>

@@ -145,14 +145,14 @@
         cols += '<td><input type="text" ' + dis_attr + ' class="form-control" name="account' + counter + '"  id="account' + counter + '" value="' + acc + '" /></td>';
         cols += '<td><input type="text" ' + dis_attr + ' class="form-control" name="accountAmount' + counter + '" id="accountAmount' + counter + '" value="' + acc_amount + '" /></td>';
         if (checkClass == "checked")
-            cols += '<td><input data-onclick="event.preventDefault();AddRecord(this);" disabled="disabled" type="button" class="ibtnAdded btn btn-md btn-success" value="Added"></td>';
+            cols += '<td><input data-click="event.preventDefault();AddRecord(this);" disabled="disabled" type="button" class="ibtnAdded btn btn-md btn-success" value="Added"></td>';
         else
-            cols += '<td><input data-onclick="event.preventDefault();AddRecord(this);" type="button" class="ibtnAdd btn btn-md btn-success" value="Add"></td>';
+            cols += '<td><input data-click="event.preventDefault();AddRecord(this);" type="button" class="ibtnAdd btn btn-md btn-success" value="Add"></td>';
 
         if (mode == "disabled")
-            cols += '<td><input data-onclick="event.preventDefault();DeleteRecordFromDB(this);" type="button" class="ibtnDel btn btn-md btn-danger " value="Delete"></td>';
+            cols += '<td><input data-click="event.preventDefault();DeleteRecordFromDB(this);" type="button" class="ibtnDel btn btn-md btn-danger " value="Delete"></td>';
         else
-            cols += '<td><input data-onclick="event.preventDefault();DeleteRecord(this);" type="button" class="ibtnDel btn btn-md btn-danger " value="Delete"></td>';
+            cols += '<td><input data-click="event.preventDefault();DeleteRecord(this);" type="button" class="ibtnDel btn btn-md btn-danger " value="Delete"></td>';
         newRow.append(cols);
         $('#listofRespPersons tbody').append(newRow);
     }
@@ -183,7 +183,7 @@
                 g_obsList = data;
                 $('#entityNameField').html(data.length > 0 ? data[0].name : '');
                 $.each(data, function (index, child) {
-                    $('#manageObsPanel tbody').append('<tr id="div_' + child.id + '"><td><p class="fw-normal mb-1">' + child.audiT_PERIOD + '</p></td><td><p class="fw-normal mb-1">' + child.parA_NO + '</p></td><td><p class="fw-normal mb-1">' + child.gisT_OF_PARAS + '</p></td><td><p  class="fw-normal mb-1">' + child.amounT_INVOLVED + '</p></td><td><p  class="fw-normal mb-1">' + child.voL_I_II + '</p></td><td class="text-center"><a href="#" data-onclick="event.preventDefault();updateParaDetails(\'' + child.reF_P + '\', \'' + child.parA_NO + '\', \'' + child.id + '\' );" class="text-hover text-danger mr-5px"><small>Update Observation</small></a></td></tr>')
+                    $('#manageObsPanel tbody').append('<tr id="div_' + child.id + '"><td><p class="fw-normal mb-1">' + child.audiT_PERIOD + '</p></td><td><p class="fw-normal mb-1">' + child.parA_NO + '</p></td><td><p class="fw-normal mb-1">' + child.gisT_OF_PARAS + '</p></td><td><p  class="fw-normal mb-1">' + child.amounT_INVOLVED + '</p></td><td><p  class="fw-normal mb-1">' + child.voL_I_II + '</p></td><td class="text-center"><a href="#" data-click="event.preventDefault();updateParaDetails(\'' + child.reF_P + '\', \'' + child.parA_NO + '\', \'' + child.id + '\' );" class="text-hover text-danger mr-5px"><small>Update Observation</small></a></td></tr>')
                 });
             },
 

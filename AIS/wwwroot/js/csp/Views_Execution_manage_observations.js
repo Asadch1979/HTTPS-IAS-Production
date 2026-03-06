@@ -260,7 +260,7 @@
                 success: function (data) {
                     $.each(data, function (i, v) {
                         $('#auditPeriodNameField').val(v.period);
-                        $('#manageObsPanel tbody').append(' <tr id="' + v.obS_ID + '"><td class="text-center">' + v.memO_NO + '</td><td>' + v.heading + '</td><td>' + v.violation + '</td><td>' + v.obS_RISK + '</td><td>' + v.obS_STATUS + '</td><td class="text-center"><a data-onclick="event.preventDefault();ObservationViewerPanel(' + v.obS_ID + ',' + v.obS_STATUS_ID + ', ' + v.obS_RISK_ID + ')" href="#" class="text-hover">View Memo</a></td><td class="text-center"><a data-onclick="ObservationUpdatePanel(' + v.obS_ID + ')" href="#" class="text-hover">Edit Memo</a></td></tr>');
+                        $('#manageObsPanel tbody').append(' <tr id="' + v.obS_ID + '"><td class="text-center">' + v.memO_NO + '</td><td>' + v.heading + '</td><td>' + v.violation + '</td><td>' + v.obS_RISK + '</td><td>' + v.obS_STATUS + '</td><td class="text-center"><a data-click="event.preventDefault();ObservationViewerPanel(' + v.obS_ID + ',' + v.obS_STATUS_ID + ', ' + v.obS_RISK_ID + ')" href="#" class="text-hover">View Memo</a></td><td class="text-center"><a data-click="ObservationUpdatePanel(' + v.obS_ID + ')" href="#" class="text-hover">Edit Memo</a></td></tr>');
                     });
                     setTimeout(function () {
                         if (g_obsId != 0) {

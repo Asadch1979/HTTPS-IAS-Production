@@ -50,7 +50,7 @@ function getPageData() {
                             mxTotal += v.maX_NUMBER;
                         if (v.weightage != "")
                             weightTotal += v.weightage;
-                        $('#annexureContainerGrid tbody').append('<tr><td>' + ++i + '</td><td>' + v.process + '</td><td>' + v.code + '</td><td>' + v.heading + '</td><td>' + v.functioN_OWNER + '</td><td>' + v.risk + '</td><td>' + v.maX_NUMBER + '</td><td>' + v.weightage + '</td><td>' + v.gravity + '</td><td>  <a class="text-danger" data-onclick="openUpdateAnnexure( '+v.id+', '+v.risK_ID+', '+v.risK_MODEL_ID+', '+v.procesS_ID +', '+ v.functioN_OWNER_ID +', '+ v.heading+', '+ v.code+'   'item.RISK_ID'', 'item.RISK_MODEL_ID', 'item.PROCESS_ID','item.FUNCTION_OWNER_ID', 'item.HEADING', 'item.CODE', 'item.MAX_NUMBER', 'item.WEIGHTAGE', 'item.GRAVITY' )">Update</a></td></tr>');
+                        $('#annexureContainerGrid tbody').append('<tr><td>' + ++i + '</td><td>' + v.process + '</td><td>' + v.code + '</td><td>' + v.heading + '</td><td>' + v.functioN_OWNER + '</td><td>' + v.risk + '</td><td>' + v.maX_NUMBER + '</td><td>' + v.weightage + '</td><td>' + v.gravity + '</td><td>  <a class="text-danger" data-click="openUpdateAnnexure( '+v.id+', '+v.risK_ID+', '+v.risK_MODEL_ID+', '+v.procesS_ID +', '+ v.functioN_OWNER_ID +', '+ v.heading+', '+ v.code+'   'item.RISK_ID'', 'item.RISK_MODEL_ID', 'item.PROCESS_ID','item.FUNCTION_OWNER_ID', 'item.HEADING', 'item.CODE', 'item.MAX_NUMBER', 'item.WEIGHTAGE', 'item.GRAVITY' )">Update</a></td></tr>');
                     })
 
                 },

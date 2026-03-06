@@ -34,7 +34,7 @@
         </div>
         <div class="col-md-10">
             <input id="entityNameField" disabled="disabled" class="form-control ml-1 d-none" type="text" />
-            <select id="entitySelectField" data-onchange="getEntityObservation()" class="form-control form-select">
+            <select id="entitySelectField" data-change="getEntityObservation()" class="form-control form-select">
                 <option value="0" id="0">--Select Audit Entity--</option>
                 @{
                     if (ViewData["EntitiesList"] != null)
@@ -106,7 +106,7 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                <button data-onclick="finalCommentsButtonSave();" id="finalCommentsButtonSave" type="button" class="btn btn-danger">Submit</button>
+                <button data-click="finalCommentsButtonSave();" id="finalCommentsButtonSave" type="button" class="btn btn-danger">Submit</button>
             </div>
         </div>
     </div>
@@ -131,7 +131,7 @@
                         <label for="update_listofRespPersons" class="font-weight-bold">Responsible Personals</label>
                         <div class="col-md-12 pl-0 pr-0">
                             <div class="d-flex justify-content-end mb-2">
-                                <button type="button" data-onclick="openResponsiblePPs();" class="rounded-circle btn btn-danger btn-sm" aria-label="Add responsible person">
+                                <button type="button" data-click="openResponsiblePPs();" class="rounded-circle btn btn-danger btn-sm" aria-label="Add responsible person">
                                     <i class="fa fa-plus text-white"></i>
                                 </button>
                             </div>
@@ -235,7 +235,7 @@
                                 <input type="text" class="form-control digits-only" id="responsibleBrCodeEntryField" aria-describedby="brcode" placeholder="Branch Code (digits only)" inputmode="numeric" pattern="[0-9]*" autocomplete="off" data-digits-only="true" />
                             </div>
                             <div class="col-sm-2 d-flex align-items-end">
-                                <button data-onclick="respSection.getLCDetails();" type="button" class="btn btn-danger w-100">Find</button>
+                                <button data-click="respSection.getLCDetails();" type="button" class="btn btn-danger w-100">Find</button>
                             </div>
                         </div>
                     </div>
@@ -269,7 +269,7 @@
                                 <input id="responsibleAccountAmountEntryField" class="form-control digits-only" type="text" placeholder="Enter Account Amount" inputmode="numeric" pattern="[0-9]*" autocomplete="off" data-digits-only="true" />
                             </div>
                             <div class="col-md-2 d-flex align-items-end">
-                                <button type="button" data-onclick="respSection.getMatchedPP();" class="col-md-2 btn btn-success w-100">Select</button>
+                                <button type="button" data-click="respSection.getMatchedPP();" class="col-md-2 btn btn-success w-100">Select</button>
                             </div>
                         </div>
                     </div>
