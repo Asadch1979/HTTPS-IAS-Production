@@ -545,11 +545,11 @@ namespace AIS.Controllers
                 CreateStep(1, "AUDIT_CRITERIA", "Audit Criteria", "~/Views/Planning/Partials/_AuditCriteriaStep.cshtml", "/Planning/audit_criteria"),
                 CreateStep(2, "CRITERIA_APPROVAL", "Criteria Approval", "~/Views/Planning/Partials/_AuditCriteriaApprovalStep.cshtml", "/Planning/audit_criteria_approval"),
                 CreateStep(3, "REFERRED_BACK_CRITERIA", "Referred Back Criteria", "~/Views/Planning/Partials/_ReferredBackAuditCriteriaStep.cshtml", "/Planning/refferedback_audit_criteria"),
-                CreateStep(4, "GENERATE_PLAN", "Generate Plan", "~/Views/Planning/Partials/_GeneratePlanStep.cshtml", "/Engagement/create_audit_plan"),
+                CreateStep(4, "GENERATE_PLAN", "Generate Plan", "~/Views/Planning/Partials/_GeneratePlanStep.cshtml", "/Planning/post_changes_criteria"),
                 CreateStep(5, "AUDIT_PLAN", "Audit Plan", "~/Views/Planning/Partials/_TentativeAuditPlanStep.cshtml", "/Planning/tentative_audit_plan"),
                 CreateStep(6, "AUDIT_TEAM", "Audit Team", "~/Views/Planning/Partials/_TeamMembersStep.cshtml", "/Planning/team_members"),
-                CreateStep(7, "CREATE_ENGAGEMENT", "Create Engagement", "~/Views/Planning/Partials/_CreateEngagementStep.cshtml", "/Engagement/engagement_plan"),
-                CreateStep(8, "ENGAGEMENT_APPROVAL", "Engagement Approval", "~/Views/Planning/Partials/_EngagementApprovalStep.cshtml", "/Engagement/eng_plan_approvals")
+                CreateStep(7, "REFERRED_BACK_ENGAGEMENT", "Referred Back Engagement", "~/Views/Planning/Partials/_ReferredBackEngagementStep.cshtml", "/Engagement/eng_plan_ref_list"),
+                CreateStep(8, "ENGAGEMENT_APPROVAL", "Engagement Approval", "~/Views/Planning/Partials/_EngagementApprovalStep.cshtml", "/Engagement/eng_plan_list")
                 };
             }
 
@@ -610,10 +610,19 @@ namespace AIS.Controllers
                         : dBConnection.GetAuditEmployees((int)loggedInUser.UserEntityID.GetValueOrDefault());
                     ViewData["AuditTeams"] = dBConnection.GetAuditTeams();
                     break;
-                case "CREATE_ENGAGEMENT":
-                    ViewData["AuditDepartments"] = dBConnection.GetDepartments(354);
-                    ViewData["DivisionsList"] = dBConnection.GetDivisions(false);
-                    ViewData["AuditZonesList"] = dBConnection.GetZones();
+                case "GENERATE_PLAN":
+                    ViewData["PostChangesAuditCriteriaList"] = dBConnection.GetPostChangesAuditCriterias();
+                    ViewData["AuditEntities"] = dBConnection.GetAuditEntities();
+                    ViewData["AuditPeriodList"] = dBConnection.GetAuditPeriods();
+                    ViewData["AuditFrequencies"] = dBConnection.GetAuditFrequencies();
+                    ViewData["BranchSizesList"] = dBConnection.GetBranchSizes();
+                    ViewData["RiskList"] = dBConnection.GetRisks();
+                    break;
+                case "REFERRED_BACK_ENGAGEMENT":
+                    ViewData["EngagementPlans"] = dBConnection.GetRefferedBackAuditEngagementPlans();
+                    break;
+                case "ENGAGEMENT_APPROVAL":
+                    ViewData["EngagementPlans"] = dBConnection.GetAuditEngagementPlans();
                     break;
                 default:
                     break;

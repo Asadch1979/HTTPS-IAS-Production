@@ -5,9 +5,8 @@
 @{
 }
 
-
 <div class="row w-100" style="margin-top:50px;">
-    <h3 style="color: #be0e43">Engagement Plan List</h3>
+    <h3 style="color: #be0e43">Reffered Back Engagement Plan List</h3>
 </div>
 <div class="row col-md-12 mt-3">
     <table id="observation_panel" class="table table-hover table-bordered table-hover mt-3 table-striped">
@@ -19,8 +18,8 @@
                 <th>Operation End Date</th>
                 <th>Start Date</th>
                 <th>End Date</th>
-                <th>Reject</th>
-                <th>Approve</th>
+                <th>Remarks</th>
+                <th>Action</th>
             </tr>
         </thead>
         <tbody>
@@ -44,9 +43,8 @@
                             <td class="col-md-auto">@oeDate</td>
                             <td class="col-md-auto">@sDate</td>
                             <td class="col-md-auto">@eDate</td>
-                            <td class="col-md-auto"><a data-onclick="referredBackEngagementPlan(@item.ENG_ID);" href="#" class="text-danger text-hover">Reject</a></td>
-                            <td class="col-md-auto"><a data-onclick="approveEngagementPlan(@item.ENG_ID);" href="#" class="text-success text-hover ml-5">Approve</a></td>
-                            
+                            <td class="col-md-auto">@item.COMMENTS</td>
+                            <td class="col-md-auto"><a href="#" class="text-danger text-hover js-recommend-again" data-eng-id="@item.ENG_ID" data-plan-id="@item.PLAN_ID" data-entity-id="@item.ENTITY_ID" data-start-date="@sDate" data-end-date="@eDate" data-op-start-date="@osDate" data-op-end-date="@oeDate" data-team-id="@item.TEAM_ID" data-audit-by-id="@item.AUDIT_BY_ID" data-comments="@item.COMMENTS">Recommend Again</a></td>
                         </tr>
 
                     }
@@ -67,19 +65,39 @@
             <div class="modal-body">
                 <form>
                     <div class="form-group">
-                        <label for="commentAreaInCommentsBox">Comments</label>
-                        <textarea class="form-control" rows="4" id="commentAreaInCommentsBox" placeholder="Enter Comments here.."></textarea>
-
-
+                        <label for="selectOPDateInputField">Operational Start Date</label>
+                        <input id="selectOPDateInputField" data-inputmask="'alias': 'date'" class="form-control" type="date" />
                     </div>
+                    <div class="form-group">
+                        <label for="selectOPEndDateInputField">Operational End Date</label>
+                        <input id="selectOPEndDateInputField" data-inputmask="'alias': 'date'" class="form-control" type="date" />
+                    </div>
+                    <div class="form-group">
+                        <label for="selectDateInputField">Start Date</label>
+                        <input id="selectDateInputField" data-inputmask="'alias': 'date'" class="form-control" type="date" data-allow-future="true" />
+                    </div>
+                    <div class="form-group">
+                        <label for="selectEndDateInputField">End Date</label>
+                        <input id="selectEndDateInputField" data-inputmask="'alias': 'date'" class="form-control" type="date" data-allow-future="true" />
+                    </div>
+
+                    <div class="form-group">
+                        <label for="teamSelectionBox">Audit Team</label>
+                        <select id="teamSelectionBox" class="form-select form-control" aria-label="Default select example">
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="commentsAreaEnteredBox">Comments</label>
+                        <textarea class="form-control" id="commentsAreaEnteredBox"></textarea>
+                    </div>
+
                 </form>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                <button data-onclick="finalReferredBackEngagementPlan();" type="button" class="btn btn-danger">Submit</button>
+                <button data-onclick="finalreRecommendEngagementPlan();" type="button" class="btn btn-danger">Submit</button>
             </div>
         </div>
     </div>
 </div>
-  
-<script src="~/js/csp/Views_Engagement_eng_plan_list.js?v=1"></script>
+<script src="~/js/csp/Views_Engagement_eng_plan_ref_list.js?v=1"></script>
