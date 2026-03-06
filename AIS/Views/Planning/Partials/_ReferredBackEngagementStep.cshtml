@@ -1,0 +1,103 @@
+@{
+    var page_id = ViewData["PageId"] as int? ?? 0;
+}
+
+@{
+}
+
+<div class="row w-100" style="margin-top:50px;">
+    <h3 style="color: #be0e43">Reffered Back Engagement Plan List</h3>
+</div>
+<div class="row col-md-12 mt-3">
+    <table id="observation_panel" class="table table-hover table-bordered table-hover mt-3 table-striped">
+        <thead style="background-color: #19875478 !important; ">
+            <tr>
+                <th>Entity Name</th>
+                <th>Team Name</th>
+                <th>Operation Start Date</th>
+                <th>Operation End Date</th>
+                <th>Start Date</th>
+                <th>End Date</th>
+                <th>Remarks</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            @{
+                if (ViewData["EngagementPlans"] != null)
+                {
+                    foreach (var item in (dynamic)(ViewData["EngagementPlans"]))
+                    {
+                        string sDate = @item.AUDIT_STARTDATE.ToString();
+                        sDate = sDate.Split(" ")[0];
+                        string eDate = @item.AUDIT_ENDDATE.ToString();
+                        eDate = eDate.Split(" ")[0];
+                        string osDate = @item.OP_STARTDATE.ToString();
+                        osDate = osDate.Split(" ")[0];
+                        string oeDate = @item.OP_ENDDATE.ToString();
+                        oeDate = oeDate.Split(" ")[0];
+                        <tr id="@item.ENG_ID">
+                            <td class="col-md-auto">@item.ENTITY_NAME</td>
+                            <td class="col-md-auto">@item.TEAM_NAME</td>
+                            <td class="col-md-auto">@osDate</td>
+                            <td class="col-md-auto">@oeDate</td>
+                            <td class="col-md-auto">@sDate</td>
+                            <td class="col-md-auto">@eDate</td>
+                            <td class="col-md-auto">@item.COMMENTS</td>
+                            <td class="col-md-auto"><a href="#" class="text-danger text-hover js-recommend-again" data-eng-id="@item.ENG_ID" data-plan-id="@item.PLAN_ID" data-entity-id="@item.ENTITY_ID" data-start-date="@sDate" data-end-date="@eDate" data-op-start-date="@osDate" data-op-end-date="@oeDate" data-team-id="@item.TEAM_ID" data-audit-by-id="@item.AUDIT_BY_ID" data-comments="@item.COMMENTS">Recommend Again</a></td>
+                        </tr>
+
+                    }
+                }
+            }
+        </tbody>
+    </table>
+</div>
+<div id="commentsBox" class="modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">Comments</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form>
+                    <div class="form-group">
+                        <label for="selectOPDateInputField">Operational Start Date</label>
+                        <input id="selectOPDateInputField" data-inputmask="'alias': 'date'" class="form-control" type="date" />
+                    </div>
+                    <div class="form-group">
+                        <label for="selectOPEndDateInputField">Operational End Date</label>
+                        <input id="selectOPEndDateInputField" data-inputmask="'alias': 'date'" class="form-control" type="date" />
+                    </div>
+                    <div class="form-group">
+                        <label for="selectDateInputField">Start Date</label>
+                        <input id="selectDateInputField" data-inputmask="'alias': 'date'" class="form-control" type="date" data-allow-future="true" />
+                    </div>
+                    <div class="form-group">
+                        <label for="selectEndDateInputField">End Date</label>
+                        <input id="selectEndDateInputField" data-inputmask="'alias': 'date'" class="form-control" type="date" data-allow-future="true" />
+                    </div>
+
+                    <div class="form-group">
+                        <label for="teamSelectionBox">Audit Team</label>
+                        <select id="teamSelectionBox" class="form-select form-control" aria-label="Default select example">
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="commentsAreaEnteredBox">Comments</label>
+                        <textarea class="form-control" id="commentsAreaEnteredBox"></textarea>
+                    </div>
+
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button data-onclick="finalreRecommendEngagementPlan();" type="button" class="btn btn-danger">Submit</button>
+            </div>
+        </div>
+    </div>
+</div>
+<script src="~/js/csp/Views_Engagement_eng_plan_ref_list.js?v=1"></script>

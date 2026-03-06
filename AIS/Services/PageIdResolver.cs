@@ -223,7 +223,25 @@ namespace AIS.Services
                     }
                 }
 
+            AddAlias(updated, "/Planning/Planning", "/Planning/audit_criteria");
+            AddAlias(updated, "/Planning/LoadPlanningStep", "/Planning/audit_criteria");
+
             return updated;
+            }
+
+        private static void AddAlias(IDictionary<string, PageIdEntry> map, string aliasPath, string sourcePath)
+            {
+            var alias = PageIdPathHelper.NormalizePath(aliasPath);
+            var source = PageIdPathHelper.NormalizePath(sourcePath);
+            if (map.ContainsKey(alias))
+                {
+                return;
+                }
+
+            if (map.TryGetValue(source, out var sourceEntry))
+                {
+                map[alias] = new PageIdEntry(sourceEntry.PageId, alias);
+                }
             }
 
         private static string GetColumnValue(DataRow row, IDictionary<string, string> columnMap, params string[] candidates)
