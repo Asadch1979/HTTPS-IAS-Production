@@ -21,7 +21,7 @@
 
             try {
                 const tokenElement = form.querySelector('input[name="__RequestVerificationToken"]');
-                const response = await fetch(form.action, {
+                const response = await fetchWithPageId(form.action, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
@@ -30,7 +30,21 @@
                     body: new URLSearchParams(new FormData(form)).toString()
                 });
 
-                const result = await response.json();
+                if (!response || !response.ok) {
+                    return;
+                }
+
+                const responseText = await response.text();
+                const result = tryParseJson(responseText);
+                if (!result || typeof result === 'string') {
+                    alert('Unexpected response format.');
+                    return;
+                }
+
+                if (result.ok === false) {
+                    return;
+                }
+
                 alert(result.message || 'Unable to finalize report.');
 
                 if (result.success === true) {

@@ -95,8 +95,17 @@ $(function(){
 
     function showAlert(message, type){
         clearTimeout(alertTimer);
-        $('#iidAlertHost').html('<div class="alert alert-' + (type || 'danger') + ' alert-dismissible fade show">' +
-            esc(message) + '<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>');
+        var safeMessage = (typeof sanitizeAlertMessageText === 'function')
+            ? sanitizeAlertMessageText(message)
+            : ((message || '').toString().trim());
+        var finalMessage = safeMessage || 'Unexpected error.';
+        var $alert = $('<div/>', {
+            'class': 'alert alert-' + (type || 'danger') + ' alert-dismissible fade show text-prewrap',
+            'role': 'alert'
+        });
+        $alert.text(finalMessage);
+        $alert.append('<button type="button" class="btn-close" data-bs-dismiss="alert"></button>');
+        $('#iidAlertHost').empty().append($alert);
         alertTimer = setTimeout(function(){ $('#iidAlertHost .alert').alert('close'); }, 4500);
     }
 

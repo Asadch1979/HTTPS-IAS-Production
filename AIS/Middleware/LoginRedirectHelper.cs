@@ -54,17 +54,37 @@ namespace AIS.Middleware
                 return false;
             }
 
-            var pathBase = request.PathBase.HasValue ? request.PathBase.Value : string.Empty;
             var path = request.Path.HasValue ? request.Path.Value : string.Empty;
-            var combinedPath = string.Concat(pathBase, path);
-
-            if (combinedPath.StartsWith("/apicalls", StringComparison.OrdinalIgnoreCase) ||
-                combinedPath.StartsWith("/api", StringComparison.OrdinalIgnoreCase))
+            if (HasApiPrefix(path))
             {
                 return true;
             }
 
-            return false;
+            var pathBase = request.PathBase.HasValue ? request.PathBase.Value : string.Empty;
+            var combinedPath = string.Concat(pathBase, path);
+            return HasApiPrefix(combinedPath);
+        }
+
+        private static bool HasApiPrefix(string rawPath)
+        {
+            if (string.IsNullOrWhiteSpace(rawPath))
+            {
+                return false;
+            }
+
+            var normalized = rawPath.Trim().Replace('\\', '/');
+            if (!normalized.StartsWith("/", StringComparison.Ordinal))
+            {
+                normalized = "/" + normalized.TrimStart('/');
+            }
+
+            while (normalized.Contains("//", StringComparison.Ordinal))
+            {
+                normalized = normalized.Replace("//", "/", StringComparison.Ordinal);
+            }
+
+            return normalized.StartsWith("/apicalls", StringComparison.OrdinalIgnoreCase) ||
+                   normalized.StartsWith("/api", StringComparison.OrdinalIgnoreCase);
         }
 
         public static bool IsAjaxRequest(HttpRequest request)

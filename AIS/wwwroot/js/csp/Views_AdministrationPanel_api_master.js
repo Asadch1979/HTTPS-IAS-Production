@@ -4,6 +4,28 @@
             loadApiMasterList();
         });
 
+        $(document).on('click', '.js-api-master-add', function (event) {
+            event.preventDefault();
+            openApiMasterModal(0);
+        });
+
+        $(document).on('click', '.js-api-master-save', function (event) {
+            event.preventDefault();
+            saveApiMaster();
+        });
+
+        $(document).on('click', '.js-api-master-edit', function (event) {
+            event.preventDefault();
+            var apiId = $(this).data('apiId');
+            openApiMasterModal(apiId);
+        });
+
+        $(document).on('click', '.js-api-master-disable', function (event) {
+            event.preventDefault();
+            var apiId = $(this).data('apiId');
+            disableApiMaster(apiId);
+        });
+
         function loadApiMasterList() {
             $.ajax({
                 url: g_asiBaseURL + "/Administration/ApiMaster/List",
@@ -44,8 +66,8 @@
                     + '<td>' + (item.httpMethod || '') + '</td>'
                     + '<td>' + statusLabel + '</td>'
                     + '<td>'
-                    + '<button class="btn btn-sm btn-outline-primary me-2" type="button" data-onclick="openApiMasterModal(' + apiId + ');">Edit</button>'
-                    + '<button class="btn btn-sm btn-outline-secondary" type="button" data-onclick="disableApiMaster(' + apiId + ');">Disable</button>'
+                    + '<button class="btn btn-sm btn-outline-primary me-2 js-api-master-edit" type="button" data-api-id="' + apiId + '">Edit</button>'
+                    + '<button class="btn btn-sm btn-outline-secondary js-api-master-disable" type="button" data-api-id="' + apiId + '">Disable</button>'
                     + '</td>'
                     + '</tr>';
 

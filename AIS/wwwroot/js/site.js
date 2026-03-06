@@ -244,30 +244,560 @@ function fetchWithPageId(url, options) {
     var request = buildPageIdAwareFetchRequest(url, options);
     return fetch(request.url, request.options)
         .then(function (response) {
-            return handleAjaxLikeResponse(response).then(function () {
+            return handleAjaxLikeResponse(response, request).then(function () {
                 return response;
             });
         })
         .catch(function (error) {
+            logClientAjaxIssue({
+                reason: 'network_error',
+                endpoint: request && request.url ? request.url : url,
+                method: request && request.options && request.options.method ? request.options.method : null,
+                status: 0
+            });
             showAjaxErrorAlert(0, null, 'Unable to reach the server. Please check your connection and retry.');
             throw error;
         });
 }
+
+function decodeHtmlEntities(value) {
+    if (!value || typeof value !== 'string') {
+        return '';
+    }
+
+    var textarea = document.createElement('textarea');
+    textarea.innerHTML = value;
+    return textarea.value;
+}
+
+function sanitizeAlertMessageText(value) {
+    var raw = value === null || value === undefined ? '' : String(value);
+    if (!raw) {
+        return '';
+    }
+
+    var normalized = raw.replace(/<br\s*\/?>/gi, '\n');
+    normalized = decodeHtmlEntities(normalized);
+    normalized = normalized.replace(/<[^>]+>/g, ' ');
+    normalized = normalized.replace(/[ \t]+\n/g, '\n').replace(/\n[ \t]+/g, '\n');
+    normalized = normalized.replace(/[ \t]{2,}/g, ' ');
+    normalized = normalized.replace(/\n{3,}/g, '\n\n');
+
+    return normalized.trim();
+}
+
+function containsDocumentHtmlMarkers(value) {
+    if (!value || typeof value !== 'string') {
+        return false;
+    }
+
+    var normalized = value.toLowerCase();
+    if (normalized.indexOf('<!doctype html') !== -1) {
+        return true;
+    }
+
+    return normalized.indexOf('<html') !== -1 && normalized.indexOf('<body') !== -1;
+}
+
+function isGenericFailureMessage(message) {
+    if (!message || typeof message !== 'string') {
+        return false;
+    }
+
+    var normalized = message.toLowerCase().trim();
+    return normalized === 'error' ||
+        normalized === 'error occurred' ||
+        normalized === 'an error occurred' ||
+        normalized === 'failed' ||
+        normalized === 'request failed';
+}
+
+function getDefaultStatusMessage(status) {
+    if (status === 401) {
+        return 'Session expired. Please sign in again.';
+    }
+
+    if (status === 403) {
+        return 'Access denied. Please contact support if this continues.';
+    }
+
+    if (status === 404) {
+        return 'Requested resource was not found.';
+    }
+
+    if (status === 408) {
+        return 'Request timed out. Please try again.';
+    }
+
+    if (status === 415) {
+        return 'Unsupported request format. Please refresh and try again.';
+    }
+
+    if (status === 429) {
+        return 'Too many requests. Please wait and try again.';
+    }
+
+    if (status >= 500) {
+        return 'Server error, please try again or contact support.';
+    }
+
+    if (status === 0) {
+        return 'Unable to reach the server. Please check your connection and retry.';
+    }
+
+    return '';
+}
+
+function buildClientAjaxContext(context) {
+    var source = context || {};
+    var payload = {
+        reason: source.reason || 'ajax',
+        endpoint: source.endpoint || '',
+        method: source.method || '',
+        status: typeof source.status === 'number' ? source.status : 0
+    };
+
+    if (source.errorRefId) {
+        payload.errorRefId = source.errorRefId;
+    }
+
+    if (source.contentType) {
+        payload.contentType = source.contentType;
+    }
+
+    if (source.sample) {
+        payload.sample = source.sample;
+    }
+
+    return payload;
+}
+
+function updateServerErrorWatchlist(payload) {
+    if (!payload || !payload.endpoint || payload.status < 500) {
+        return;
+    }
+
+    try {
+        if (!window.__iasServerErrorWatchlist) {
+            window.__iasServerErrorWatchlist = {};
+        }
+
+        var endpoint = payload.endpoint || '';
+        var method = (payload.method || 'GET').toUpperCase();
+        var key = method + ' ' + endpoint;
+        var current = window.__iasServerErrorWatchlist[key] || {
+            endpoint: endpoint,
+            method: method,
+            count: 0,
+            lastStatus: payload.status,
+            lastSeenUtc: ''
+        };
+
+        current.count += 1;
+        current.lastStatus = payload.status;
+        current.lastSeenUtc = new Date().toISOString();
+
+        if (payload.errorRefId) {
+            current.lastErrorRefId = payload.errorRefId;
+        }
+
+        window.__iasServerErrorWatchlist[key] = current;
+    } catch (watchError) {
+        // ignore watchlist persistence issues
+    }
+}
+
+function logClientAjaxIssue(context) {
+    try {
+        var payload = buildClientAjaxContext(context);
+        updateServerErrorWatchlist(payload);
+        console.error('Client AJAX issue:', payload);
+    } catch (error) {
+        console.error('Client AJAX issue');
+    }
+}
+
+function expectsJsonFromAjaxSettings(settings) {
+    if (!settings) {
+        return false;
+    }
+
+    var dataType = (settings.dataType || '').toString().toLowerCase();
+    return dataType.indexOf('json') !== -1;
+}
+
+function expectsJsonFromFetchOptions(options) {
+    if (!options || !options.headers) {
+        return false;
+    }
+
+    var headers = options.headers;
+    var acceptValue = '';
+
+    if (typeof headers.get === 'function') {
+        acceptValue = headers.get('Accept') || headers.get('accept') || '';
+    } else if (typeof headers === 'object') {
+        acceptValue = headers.Accept || headers.accept || '';
+    }
+
+    return String(acceptValue || '').toLowerCase().indexOf('json') !== -1;
+}
+
+function invokeAjaxCallbacks(callbacks, callbackContext, args) {
+    if (!callbacks) {
+        return;
+    }
+
+    if (Array.isArray(callbacks)) {
+        callbacks.forEach(function (callback) {
+            if (typeof callback === 'function') {
+                callback.apply(callbackContext, args);
+            }
+        });
+        return;
+    }
+
+    if (typeof callbacks === 'function') {
+        callbacks.apply(callbackContext, args);
+    }
+}
+
+function getAjaxResponseText(jqxhr) {
+    if (!jqxhr) {
+        return '';
+    }
+
+    if (typeof jqxhr.responseText === 'string') {
+        return jqxhr.responseText;
+    }
+
+    if (typeof jqxhr.responseJSON === 'string') {
+        return jqxhr.responseJSON;
+    }
+
+    return '';
+}
+
+function getNormalizedAjaxPayload(jqxhr, rawData, responseText) {
+    if (rawData && typeof rawData === 'object') {
+        return rawData;
+    }
+
+    if (jqxhr && jqxhr.responseJSON && typeof jqxhr.responseJSON === 'object') {
+        return jqxhr.responseJSON;
+    }
+
+    var candidateText = responseText || getAjaxResponseText(jqxhr);
+    if (!candidateText) {
+        return null;
+    }
+
+    var parsed = tryParseJson(candidateText);
+    if (parsed && typeof parsed === 'object') {
+        return parsed;
+    }
+
+    return null;
+}
+
+function handleCommonAjaxFailure(status, errorRefId, message, redirectToLogin) {
+    showAjaxErrorAlert(status, errorRefId, message);
+    if (redirectToLogin) {
+        window.location = g_asiBaseURL + "/Login/Index";
+    }
+}
+
+function shouldBlockAjaxSuccessPayload(jqxhr, settings, rawData) {
+    if (!jqxhr) {
+        return false;
+    }
+
+    var status = jqxhr.status || 0;
+    var errorRefId = getErrorReferenceIdFromXhr(jqxhr);
+    var endpoint = settings && settings.url ? settings.url : '';
+    var method = settings && settings.type ? settings.type : '';
+    var contentType = jqxhr.getResponseHeader('content-type') || '';
+    var responseText = getAjaxResponseText(jqxhr);
+    var expectsJson = expectsJsonFromAjaxSettings(settings);
+
+    if (status === 401) {
+        logClientAjaxIssue({
+            reason: 'jquery_success_401',
+            endpoint: endpoint,
+            method: method,
+            status: status,
+            errorRefId: errorRefId
+        });
+        jqxhr.__iasSafetyHandled = true;
+        handleCommonAjaxFailure(status, errorRefId, 'Session expired. Please sign in again.', true);
+        return true;
+    }
+
+    if (status === 403) {
+        logClientAjaxIssue({
+            reason: 'jquery_success_403',
+            endpoint: endpoint,
+            method: method,
+            status: status,
+            errorRefId: errorRefId
+        });
+        jqxhr.__iasSafetyHandled = true;
+        handleCommonAjaxFailure(status, errorRefId, 'Access denied. Please contact support if this continues.', false);
+        return true;
+    }
+
+    if (isHtmlResponse(contentType, responseText) && (containsDocumentHtmlMarkers(responseText) || expectsJson || status >= 400)) {
+        if (isProbablyLoginHtml(responseText)) {
+            logClientAjaxIssue({
+                reason: 'jquery_login_html',
+                endpoint: endpoint,
+                method: method,
+                status: 401,
+                errorRefId: errorRefId,
+                contentType: contentType,
+                sample: responseText.trim().slice(0, 200)
+            });
+            jqxhr.__iasSafetyHandled = true;
+            handleCommonAjaxFailure(401, errorRefId, 'Session expired. Please sign in again.', true);
+            return true;
+        }
+
+        logUnexpectedHtmlSnippet(responseText);
+        logClientAjaxIssue({
+            reason: 'jquery_unexpected_html_response',
+            endpoint: endpoint,
+            method: method,
+            status: status,
+            errorRefId: errorRefId,
+            contentType: contentType,
+            sample: responseText.trim().slice(0, 200)
+        });
+        jqxhr.__iasSafetyHandled = true;
+        handleCommonAjaxFailure(status, errorRefId, 'Unexpected HTML response. Please try again.', false);
+        return true;
+    }
+
+    if (expectsJson && responseText && !jqxhr.responseJSON) {
+        var parsedText = tryParseJson(responseText);
+        if (typeof parsedText === 'string') {
+            logClientAjaxIssue({
+                reason: 'jquery_unexpected_json_format',
+                endpoint: endpoint,
+                method: method,
+                status: status,
+                errorRefId: errorRefId,
+                contentType: contentType,
+                sample: responseText.trim().slice(0, 200)
+            });
+            jqxhr.__iasSafetyHandled = true;
+            handleCommonAjaxFailure(status, errorRefId, 'Unexpected response format.', false);
+            return true;
+        }
+    }
+
+    var payload = getNormalizedAjaxPayload(jqxhr, rawData, responseText);
+    if (payload && typeof payload === 'object' && payload.ok === false) {
+        var payloadMessage = extractApiMessage(payload, getDefaultStatusMessage(status) || 'Request failed.');
+        logClientAjaxIssue({
+            reason: 'jquery_business_failure',
+            endpoint: endpoint,
+            method: method,
+            status: status,
+            errorRefId: errorRefId
+        });
+        jqxhr.__iasSafetyHandled = true;
+        handleCommonAjaxFailure(status, errorRefId, payloadMessage, false);
+        return true;
+    }
+
+    return false;
+}
+
+function applyGlobalAjaxDefaults() {
+    if (!window.jQuery || !$.ajax || $.ajax.__iasWrapped) {
+        return;
+    }
+
+    var originalAjax = $.ajax;
+
+    $.ajax = function () {
+        var args = Array.prototype.slice.call(arguments);
+        if (!args.length) {
+            return originalAjax.apply(this, args);
+        }
+
+        var settingsIndex = typeof args[0] === 'string' ? 1 : 0;
+        var originalSettings = args[settingsIndex] || {};
+        var safeSettings = $.extend({}, originalSettings);
+        var originalSuccess = safeSettings.success;
+
+        safeSettings.success = function (data, textStatus, jqxhr) {
+            if (shouldBlockAjaxSuccessPayload(jqxhr, safeSettings, data)) {
+                return;
+            }
+
+            invokeAjaxCallbacks(originalSuccess, this, arguments);
+        };
+
+        args[settingsIndex] = safeSettings;
+        return originalAjax.apply(this, args);
+    };
+
+    $.ajax.__iasWrapped = true;
+}
+
+function isReportRoutePath(pathname) {
+    if (!pathname) {
+        return false;
+    }
+
+    var normalized = pathname.toLowerCase();
+    return normalized.indexOf('/reports/') !== -1 ||
+        normalized.indexOf('/fieldauditreport/') !== -1 ||
+        normalized.indexOf('/manreport/') !== -1 ||
+        normalized.indexOf('/fad/') !== -1;
+}
+
+function normalizeReportLayoutShell() {
+    if (!window.jQuery || !isReportRoutePath(window.location.pathname || '')) {
+        return;
+    }
+
+    var $main = $('.ias-main').first();
+    if (!$main.length) {
+        return;
+    }
+
+    $main.addClass('ias-report-page');
+
+    var createdToolbar = false;
+    var $toolbar = $main.find('.ias-report-toolbar, .report-toolbar').first();
+    if ($toolbar.length) {
+        $toolbar.addClass('ias-report-toolbar');
+    } else {
+        $toolbar = $('<div class="ias-report-toolbar"></div>');
+        $main.prepend($toolbar);
+        createdToolbar = true;
+    }
+
+    var $actionButtons = $main.find('button[style*="float:right"],a.btn[style*="float:right"],input[type="button"][style*="float:right"]')
+        .filter(function () {
+            return $(this).closest('.table, .modal, .dropdown-menu, .dataTables_wrapper, .ias-report-toolbar').length === 0;
+        });
+
+    $actionButtons.each(function () {
+        var $btn = $(this);
+        $btn.css('float', 'none');
+        $btn.addClass('ias-report-action');
+        $toolbar.append($btn);
+    });
+
+    if (createdToolbar && !$toolbar.children().length) {
+        $toolbar.remove();
+    }
+}
+
+function resolveSelect2DropdownParent($element) {
+    if (!$element || !$element.closest) {
+        return $(document.body);
+    }
+
+    var $modal = $element.closest('.modal.show');
+    if (!$modal.length) {
+        $modal = $element.closest('.modal');
+    }
+
+    if ($modal.length) {
+        return $modal;
+    }
+
+    var $content = $element.closest('.ias-main, .container-fluid, .container').first();
+    if ($content.length) {
+        return $content;
+    }
+
+    return $(document.body);
+}
+
+function applyGlobalSelect2Defaults() {
+    if (!window.jQuery || !$.fn || !$.fn.select2 || $.fn.select2.__iasSelect2Wrapped) {
+        return;
+    }
+
+    var originalSelect2 = $.fn.select2;
+
+    $.fn.select2 = function (options) {
+        if (typeof options === 'string') {
+            return originalSelect2.apply(this, arguments);
+        }
+
+        return this.each(function () {
+            var $element = $(this);
+            var safeOptions = $.extend(true, {}, options || {});
+
+            if (!safeOptions.dropdownParent) {
+                safeOptions.dropdownParent = resolveSelect2DropdownParent($element);
+            }
+
+            if (!safeOptions.width) {
+                safeOptions.width = '100%';
+            }
+
+            originalSelect2.call($element, safeOptions);
+        });
+    };
+
+    $.fn.select2.__iasSelect2Wrapped = true;
+}
+
+function applySafeHtmlInjectionGuard() {
+    if (!window.jQuery || !$.fn || !$.fn.html || $.fn.html.__iasSafeHtmlWrapped) {
+        return;
+    }
+
+    var originalHtml = $.fn.html;
+
+    $.fn.html = function (value) {
+        if (arguments.length === 1 && typeof value === 'string' && containsDocumentHtmlMarkers(value)) {
+            logUnexpectedHtmlSnippet(value);
+            logClientAjaxIssue({
+                reason: 'blocked_document_html_injection',
+                status: 200,
+                sample: value.trim().slice(0, 200)
+            });
+            showAjaxErrorAlert(200, null, 'Unexpected HTML response. Please try again.');
+            return this;
+        }
+
+        return originalHtml.apply(this, arguments);
+    };
+
+    $.fn.html.__iasSafeHtmlWrapped = true;
+}
+
+applyGlobalSelect2Defaults();
+applyGlobalAjaxDefaults();
+applySafeHtmlInjectionGuard();
 
 $(document).ready(function () {
     // Override default options for all modals
     $.fn.modal.Constructor.Default.backdrop = 'static';
     $.fn.modal.Constructor.Default.keyboard = false;
 
-
     $('body').append('<div id="alertMessagesPopup" class="modal" tabindex="-1" role="dialog"><div class="modal-dialog" role="document">  <div class="modal-content">    <div class="modal-header">      <h5 class="modal-title">Alert</h5>      <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>    </div>    <div class="modal-body">      <div id="content_alertMessagesPopup"></div>    </div>    <div class="modal-footer"><button type="button" class="btn btn-danger" data-bs-dismiss="modal">Close</button>    </div>  </div></div></div >');
+    $('#content_alertMessagesPopup').addClass('text-prewrap');
     $('#alertMessagesPopup').on('hidden.bs.modal', function (e) {
         closeFuncCalled();
     });
 
-    $('body').append('<div id="confirmAlertMessagesPopup" class="modal" tabindex="-1" role="dialog"><div class="modal-dialog" role="document">  <div class="modal-content">    <div class="modal-header">      <h5 class="modal-title">Confirmation Box</h5>      <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>    </div>    <div class="modal-body">      <div id="content_confirmAlertMessagesPopup"></div>    </div>    <div class="modal-footer"><button type="button" data-onclick="event.preventDefault();onConfirmationCallback();" class="btn btn-danger" data-bs-dismiss="modal">Yes</button><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">No</button>    </div>  </div></div></div >');
+    $('body').append('<div id="confirmAlertMessagesPopup" class="modal" tabindex="-1" role="dialog"><div class="modal-dialog" role="document">  <div class="modal-content">    <div class="modal-header">      <h5 class="modal-title">Confirmation Box</h5>      <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>    </div>    <div class="modal-body">      <div id="content_confirmAlertMessagesPopup"></div>    </div>    <div class="modal-footer"><button type="button" class="btn btn-danger js-confirm-alert-yes" data-bs-dismiss="modal">Yes</button><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">No</button>    </div>  </div></div></div >');
+    $('#content_confirmAlertMessagesPopup').addClass('text-prewrap');
     $('#confirmAlertMessagesPopup').on('hidden.bs.modal', function (e) {
         confirmAlertcloseFuncCalled();
+    });
+    $(document).on('click', '.js-confirm-alert-yes', function (event) {
+        event.preventDefault();
+        onConfirmationCallback();
     });
 
     $('.modal').on("hidden.bs.modal", function (e) { //fire on closing modal box
@@ -293,6 +823,7 @@ $(document).ready(function () {
     });
   
     var activeRequests = 0;
+    normalizeReportLayoutShell();
 
     $(document).ajaxStart(function () {
         if (activeRequests <1) {
@@ -309,7 +840,7 @@ $(document).ready(function () {
         }
     });
 
-    $(document).ajaxError(function (event, jqxhr) {
+    $(document).ajaxError(function (event, jqxhr, settings, thrownError) {
         activeRequests--;
         activeRequests = activeRequests < 0 ? 0 : activeRequests;
         if (activeRequests < 1) {
@@ -322,20 +853,43 @@ $(document).ready(function () {
 
         var status = jqxhr.status;
         var errorRefId = getErrorReferenceIdFromXhr(jqxhr);
+        var endpoint = settings && settings.url ? settings.url : '';
+        var method = settings && settings.type ? settings.type : '';
+
+        logClientAjaxIssue({
+            reason: 'jquery_ajax_error',
+            endpoint: endpoint,
+            method: method,
+            status: status,
+            errorRefId: errorRefId
+        });
+
+        if (status === 200 && expectsJsonFromAjaxSettings(settings) && jqxhr.responseText && !jqxhr.responseJSON) {
+            logClientAjaxIssue({
+                reason: 'jquery_parser_error',
+                endpoint: endpoint,
+                method: method,
+                status: status,
+                errorRefId: errorRefId,
+                sample: jqxhr.responseText.trim().slice(0, 200)
+            });
+            showAjaxErrorAlert(status, errorRefId, 'Unexpected response format.');
+            return;
+        }
 
         if (status === 401) {
-            showApiAlertFromXhr(jqxhr, status, errorRefId, 'Your session has expired. Please sign in again.');
+            showApiAlertFromXhr(jqxhr, status, errorRefId, 'Session expired. Please sign in again.');
             window.location = g_asiBaseURL + "/Login/Index";
             return;
         }
 
         if (status === 403) {
-            showApiAlertFromXhr(jqxhr, status, errorRefId, "You don't have access. Please contact support if this continues.");
+            showApiAlertFromXhr(jqxhr, status, errorRefId, "Access denied. Please contact support if this continues.");
             return;
         }
 
-        if (status === 400 || status === 415 || status === 500 || status === 503) {
-            showApiAlertFromXhr(jqxhr, status, errorRefId);
+        if (status >= 400) {
+            showApiAlertFromXhr(jqxhr, status, errorRefId, getDefaultStatusMessage(status));
         }
 
         if (jqxhr.responseJSON) {
@@ -350,23 +904,78 @@ $(document).ready(function () {
         }
     });
 
-    $(document).ajaxComplete(function (event, jqxhr) {
+    $(document).ajaxComplete(function (event, jqxhr, settings) {
         if (!jqxhr) {
+            return;
+        }
+
+        if (jqxhr.__iasSafetyHandled) {
+            return;
+        }
+
+        if (jqxhr.__iasSafetyHandled) {
             return;
         }
 
         var status = jqxhr.status;
         var contentType = jqxhr.getResponseHeader('content-type') || '';
         var responseText = jqxhr.responseText || '';
+        var errorRefId = getErrorReferenceIdFromXhr(jqxhr);
+        var endpoint = settings && settings.url ? settings.url : '';
+        var method = settings && settings.type ? settings.type : '';
+        var expectsJson = expectsJsonFromAjaxSettings(settings);
+
+        if (status === 401) {
+            showAjaxErrorAlert(status, errorRefId, 'Session expired. Please sign in again.');
+            window.location = g_asiBaseURL + "/Login/Index";
+            return;
+        }
+
+        if (status === 403) {
+            showAjaxErrorAlert(status, errorRefId, 'Access denied. Please contact support if this continues.');
+            return;
+        }
 
         if (status === 200 && isHtmlResponse(contentType, responseText)) {
             if (isProbablyLoginHtml(responseText)) {
-                showAjaxErrorAlert(401, getErrorReferenceIdFromXhr(jqxhr), 'Your session may have expired. Please sign in again.');
+                showAjaxErrorAlert(401, errorRefId, 'Session expired. Please sign in again.');
                 window.location = g_asiBaseURL + "/Login/Index";
                 return;
             }
             logUnexpectedHtmlSnippet(responseText);
-            showAjaxErrorAlert(status, getErrorReferenceIdFromXhr(jqxhr), 'Unexpected HTML response. Please try again.');
+            logClientAjaxIssue({
+                reason: 'unexpected_html_response',
+                endpoint: endpoint,
+                method: method,
+                status: status,
+                errorRefId: errorRefId,
+                contentType: contentType,
+                sample: responseText.trim().slice(0, 200)
+            });
+            showAjaxErrorAlert(status, errorRefId, 'Unexpected HTML response. Please try again.');
+            return;
+        }
+
+        if (status === 200 && expectsJson && responseText && !jqxhr.responseJSON) {
+            var parsed = tryParseJson(responseText);
+            if (typeof parsed === 'string') {
+                logClientAjaxIssue({
+                    reason: 'unexpected_json_format',
+                    endpoint: endpoint,
+                    method: method,
+                    status: status,
+                    errorRefId: errorRefId,
+                    contentType: contentType,
+                    sample: responseText.trim().slice(0, 200)
+                });
+                showAjaxErrorAlert(status, errorRefId, 'Unexpected response format.');
+                return;
+            }
+
+            if (parsed && typeof parsed === 'object' && parsed.ok === false) {
+                var parsedMessage = extractApiMessage(parsed, getDefaultStatusMessage(status) || 'Request failed.');
+                showAjaxErrorAlert(status, errorRefId, parsedMessage);
+            }
         }
     });
 });
@@ -374,8 +983,13 @@ $(document).ready(function () {
 
 
 function alert(message) {
+    var safeMessage = sanitizeAlertMessageText(message);
+    if (!safeMessage || isGenericFailureMessage(safeMessage)) {
+        safeMessage = 'Request failed. Please retry. If it continues, contact support.';
+    }
+
     $('#content_alertMessagesPopup').empty();
-    $('#content_alertMessagesPopup').text(message);
+    $('#content_alertMessagesPopup').text(safeMessage);
     $('#alertMessagesPopup').modal('show');
 }
 
@@ -442,6 +1056,10 @@ function extractApiMessage(payload, fallbackMessage) {
     }
 
     if (typeof payload === 'string') {
+        if (isHtmlResponse('', payload)) {
+            return (fallbackMessage || '').toString().trim();
+        }
+
         var parsedPayload = unwrapApiPayload(payload);
         if (parsedPayload !== payload) {
             return extractApiMessage(parsedPayload, fallbackMessage);
@@ -513,7 +1131,8 @@ function showApiAlert(payload, fallbackMessage) {
 }
 
 function showApiAlertFromXhr(jqxhr, status, errorRefId, fallbackMessage) {
-    var message = extractApiMessageFromXhr(jqxhr, fallbackMessage);
+    var fallback = fallbackMessage || getDefaultStatusMessage(status);
+    var message = extractApiMessageFromXhr(jqxhr, fallback);
     var alertMessage = buildAjaxErrorMessage(status, errorRefId, message);
     alert(alertMessage);
 }
@@ -525,15 +1144,31 @@ function showApiAlertFromResponse(response, status, errorRefId, fallbackMessage)
         return Promise.resolve();
     }
 
+    var contentType = response.headers ? (response.headers.get('content-type') || '') : '';
+    var fallback = fallbackMessage || getDefaultStatusMessage(status);
+    var expectsJson = isJsonContentType(contentType);
+
     return response.clone().json().then(function (json) {
-        var message = extractApiMessage(json, fallbackMessage);
+        var message = extractApiMessage(json, fallback);
         alert(buildAjaxErrorMessage(status, errorRefId, message));
     }).catch(function () {
+        if (expectsJson) {
+            logClientAjaxIssue({
+                reason: 'unexpected_json_format',
+                endpoint: response.url || '',
+                status: status,
+                errorRefId: errorRefId,
+                contentType: contentType
+            });
+            alert(buildAjaxErrorMessage(status, errorRefId, 'Unexpected response format.'));
+            return Promise.resolve();
+        }
+
         return response.clone().text().then(function (text) {
-            var message = extractApiMessage(text, fallbackMessage);
+            var message = extractApiMessage(text, fallback);
             alert(buildAjaxErrorMessage(status, errorRefId, message));
         }).catch(function () {
-            alert(buildAjaxErrorMessage(status, errorRefId, fallbackMessage));
+            alert(buildAjaxErrorMessage(status, errorRefId, fallback));
         });
     });
 }
@@ -555,8 +1190,14 @@ function getErrorReferenceIdFromHeaders(headers) {
 }
 
 function buildAjaxErrorMessage(status, errorRefId, fallbackMessage) {
-    var baseMessage = (fallbackMessage || '').toString().trim();
-    var message = baseMessage || ('Request failed (' + status + '). Please retry. If it continues, contact support.');
+    var normalizedStatus = typeof status === 'number' ? status : 0;
+    var baseMessage = sanitizeAlertMessageText((fallbackMessage || '').toString().trim());
+    if (isGenericFailureMessage(baseMessage)) {
+        baseMessage = '';
+    }
+
+    var defaultStatusMessage = getDefaultStatusMessage(normalizedStatus);
+    var message = baseMessage || defaultStatusMessage || ('Request failed (' + normalizedStatus + '). Please retry. If it continues, contact support.');
 
     if (errorRefId) {
         message += ' Reference: ' + errorRefId;
@@ -570,8 +1211,17 @@ function showAjaxErrorAlert(status, errorRefId, fallbackMessage) {
     alert(message);
 }
 
+function isJsonContentType(contentType) {
+    if (!contentType) {
+        return false;
+    }
+
+    var normalized = contentType.toLowerCase();
+    return normalized.indexOf('application/json') !== -1 || normalized.indexOf('+json') !== -1;
+}
+
 function isHtmlResponse(contentType, responseText) {
-    if (contentType && contentType.indexOf('text/html') !== -1) {
+    if (contentType && contentType.toLowerCase().indexOf('text/html') !== -1) {
         return true;
     }
 
@@ -603,55 +1253,96 @@ function logUnexpectedHtmlSnippet(responseText) {
     }
 }
 
-function handleAjaxLikeResponse(response) {
+function handleAjaxLikeResponse(response, requestContext) {
     if (!response) {
         return Promise.resolve();
     }
 
-    var status = response.status;
+    var status = response.status || 0;
     var errorRefId = getErrorReferenceIdFromHeaders(response.headers);
-    var contentType = response.headers ? response.headers.get('content-type') : '';
+    var contentType = response.headers ? (response.headers.get('content-type') || '') : '';
+    var endpoint = requestContext && requestContext.url ? requestContext.url : (response.url || '');
+    var method = requestContext && requestContext.options && requestContext.options.method ? requestContext.options.method : '';
 
     if (status === 401) {
-        return showApiAlertFromResponse(response, status, errorRefId, 'Your session has expired. Please sign in again.');
+        showAjaxErrorAlert(status, errorRefId, 'Session expired. Please sign in again.');
+        window.location = g_asiBaseURL + "/Login/Index";
+        return Promise.resolve();
     }
 
     if (status === 403) {
-        return showApiAlertFromResponse(response, status, errorRefId, "You don't have access. Please contact support if this continues.");
+        showAjaxErrorAlert(status, errorRefId, 'Access denied. Please contact support if this continues.');
+        return Promise.resolve();
     }
 
-    if (response.redirected) {
-        return showApiAlertFromResponse(response, 401, errorRefId, 'Your session may have expired. Please sign in again.');
-    }
-
-    if (status === 400 || status === 415 || status === 500 || status === 503) {
-        return showApiAlertFromResponse(response, status, errorRefId);
-    }
-
-    if (status === 200 && contentType && contentType.indexOf('text/html') !== -1) {
-        return response.clone().text().then(function (text) {
+    return response.clone().text().then(function (text) {
+        if (isHtmlResponse(contentType, text) && (containsDocumentHtmlMarkers(text) || isJsonContentType(contentType) || status >= 400)) {
             if (isProbablyLoginHtml(text)) {
-                return showApiAlertFromResponse(response, 401, errorRefId, 'Your session may have expired. Please sign in again.');
+                showAjaxErrorAlert(401, errorRefId, 'Session expired. Please sign in again.');
+                window.location = g_asiBaseURL + "/Login/Index";
+                return;
             }
+
             logUnexpectedHtmlSnippet(text);
-            return showApiAlertFromResponse(response, status, errorRefId, 'Unexpected HTML response. Please try again.');
-        }).catch(function () { });
-    }
+            logClientAjaxIssue({
+                reason: 'unexpected_html_response',
+                endpoint: endpoint,
+                method: method,
+                status: status,
+                errorRefId: errorRefId,
+                contentType: contentType,
+                sample: text.trim().slice(0, 200)
+            });
+            showAjaxErrorAlert(status, errorRefId, 'Unexpected HTML response. Please try again.');
+            return;
+        }
 
-    if (status === 200 && (!contentType || contentType.indexOf('application/json') === -1)) {
-        return response.clone().text().then(function (text) {
-            if (isHtmlResponse(contentType, text)) {
-                if (isProbablyLoginHtml(text)) {
-                    showApiAlertFromXhr({ responseText: text }, 401, errorRefId, 'Your session may have expired. Please sign in again.');
-                    return;
-                }
-                logUnexpectedHtmlSnippet(text);
-                showApiAlertFromXhr({ responseText: text }, status, errorRefId, 'Unexpected HTML response. Please try again.');
+        if ((isJsonContentType(contentType) || expectsJsonFromFetchOptions(requestContext && requestContext.options)) && text) {
+            var parsed = tryParseJson(text);
+            if (typeof parsed === 'string') {
+                logClientAjaxIssue({
+                    reason: 'unexpected_json_format',
+                    endpoint: endpoint,
+                    method: method,
+                    status: status,
+                    errorRefId: errorRefId,
+                    contentType: contentType,
+                    sample: text.trim().slice(0, 200)
+                });
+                showAjaxErrorAlert(status, errorRefId, 'Unexpected response format.');
+                return;
             }
-        }).catch(function () { });
-    }
 
-    return Promise.resolve();
+            if (parsed && typeof parsed === 'object' && parsed.ok === false) {
+                var payloadMessage = extractApiMessage(parsed, getDefaultStatusMessage(status) || 'Request failed.');
+                showAjaxErrorAlert(status, errorRefId, payloadMessage);
+                return;
+            }
+        }
+
+        if (response.redirected) {
+            showAjaxErrorAlert(401, errorRefId, 'Session expired. Please sign in again.');
+            window.location = g_asiBaseURL + "/Login/Index";
+            return;
+        }
+
+        if (!response.ok) {
+            logClientAjaxIssue({
+                reason: 'fetch_http_error',
+                endpoint: endpoint,
+                method: method,
+                status: status,
+                errorRefId: errorRefId,
+                contentType: contentType,
+                sample: (text || '').trim().slice(0, 200)
+            });
+            return showApiAlertFromResponse(response, status, errorRefId, getDefaultStatusMessage(status));
+        }
+    }).catch(function () {
+        if (!response.ok) {
+            return showApiAlertFromResponse(response, status, errorRefId, getDefaultStatusMessage(status));
+        }
+    });
 }
 function extractPlainText(clobContent) {
     // Implement your logic here to extract plain text from CLOB content
@@ -669,8 +1360,13 @@ function closeFuncCalled() {
 
 }
 function confirmAlert(message) {
+    var safeMessage = sanitizeAlertMessageText(message);
+    if (!safeMessage) {
+        safeMessage = 'Please confirm this action.';
+    }
+
     $('#content_confirmAlertMessagesPopup').empty();
-    $('#content_confirmAlertMessagesPopup').text(message);
+    $('#content_confirmAlertMessagesPopup').text(safeMessage);
     $('#confirmAlertMessagesPopup').modal('show');
 }
 function onconfirmAlertCallback(funcToCall) {

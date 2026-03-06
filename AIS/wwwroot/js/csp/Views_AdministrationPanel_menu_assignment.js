@@ -1,14 +1,35 @@
-    $(document).ready(function () {
-        $('.menu_page_selectAll').on('click', function () {
+    function handleAjaxError(jqXHR, textStatus) {
+        var status = jqXHR.status || 0;
+        if (status === 401) {
+            alert('Session expired');
+            return;
+        }
+        if (status === 403) {
+            alert('No permission');
+            return;
+        }
 
-            if ($('.menu_page_selectAll').is(':checked'))
-                $('.menu_page_tick').attr('checked', true);
-            else
-                $('.menu_page_tick').attr('checked', false);
+        var contentType = (jqXHR.getResponseHeader && jqXHR.getResponseHeader('content-type')) || '';
+        if (textStatus === 'parsererror' || contentType.indexOf('text/html') !== -1) {
+            alert('Unexpected response from server');
+            return;
+        }
 
-        });
+        alert('Request failed');
+    }
 
+    $(document).on('click', '.menu_page_selectAll', function () {
+        var isChecked = $(this).is(':checked');
+        $('.menu_page_tick').prop('checked', isChecked);
+    });
 
+    $(document).on('change', '#menuSelectionBox', function () {
+        showPagesBlock();
+    });
+
+    $(document).on('click', '.js-menu-assignment-save', function (e) {
+        e.preventDefault();
+        publishSaveChanges();
     });
     function showPagesBlock() {
 
@@ -17,7 +38,7 @@
 
         }
         else {
-            $('.menu_page_tick').attr('checked', false);
+            $('.menu_page_tick').prop('checked', false);
             $('.pagesBlock').addClass('d-none');
             $.ajax({
                 url: g_asiBaseURL + "/AdministrationPanel/menu_pages",
@@ -27,11 +48,19 @@
                 },
                 cache: false,
                 success: function (data) {
-                    $('.menu_page_tick').attr('checked', false);
+                    if (!Array.isArray(data)) {
+                        alert('Unexpected response from server');
+                        return;
+                    }
+
+                    $('.menu_page_tick').prop('checked', false);
                     $.each(data, function (index, page) {
-                        $('#pagemenuitem_' + page.id).attr('checked', true);
+                        $('#pagemenuitem_' + page.id).prop('checked', true);
                     });
                     $('.pagesBlock').removeClass('d-none');
+                },
+                error: function (jqXHR, textStatus) {
+                    handleAjaxError(jqXHR, textStatus);
                 },
                 dataType: "json",
             });
@@ -45,7 +74,7 @@
             pageIds.push($(v).attr('id').split('_')[1]);
         });
 
-        if (pageIds.length > 0) {
+        if (pageIds.length === 0) {
             alert('Please check atleast one page to proceed');
             return false;
         }
@@ -61,6 +90,9 @@
             success: function (data) {
                 alert("Menu Pages assignment Succesfully completed");
                 
+            },
+            error: function (jqXHR, textStatus) {
+                handleAjaxError(jqXHR, textStatus);
             },
             dataType: "json",
         });

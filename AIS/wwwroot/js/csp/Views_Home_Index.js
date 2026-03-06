@@ -163,7 +163,7 @@
 
         let res = null;
         try{
-            res = await fetch(apiUrl('/ApiCalls/get_all_public_holidays'), {
+            res = await fetchWithPageId(apiUrl('/ApiCalls/get_all_public_holidays'), {
                 method: 'POST',
                 headers: { 'Content-Type':'application/json' },
                 body: payload,
@@ -173,7 +173,7 @@
 
         if (!res || !res.ok){
             try{
-                res = await fetch(apiUrl('/ApiCalls/get_all_public_holidays'), {
+                res = await fetchWithPageId(apiUrl('/ApiCalls/get_all_public_holidays'), {
                     method: 'GET',
                     headers: { 'Content-Type':'application/json' },
                     credentials: 'same-origin'
@@ -183,7 +183,16 @@
 
         let data = [];
         try{
-            if (res && res.ok) data = await res.json();
+            if (res && res.ok) {
+                const raw = await res.text();
+                const parsed = tryParseJson(raw);
+
+                if (Array.isArray(parsed)) {
+                    data = parsed;
+                } else if (parsed && typeof parsed === 'object' && Array.isArray(parsed.data)) {
+                    data = parsed.data;
+                }
+            }
         }catch(e){ data = []; }
 
         setLoading(false);

@@ -150,6 +150,76 @@ html {
     background: linear-gradient(45deg, #b1e9b9, #96c3ef);
 }
 
+/* Select2 safety: prevent viewport-sized dropdowns and modal overflow */
+.select2-container {
+    max-width: 100% !important;
+}
+
+.select2-container--default .select2-selection--single,
+.select2-container--default .select2-selection--multiple {
+    min-height: 38px;
+}
+
+.select2-container .select2-selection__rendered {
+    max-width: 100%;
+}
+
+.select2-dropdown {
+    max-width: calc(100vw - 32px);
+    max-height: min(70vh, 420px);
+    overflow-x: hidden;
+    overflow-y: hidden;
+}
+
+.select2-results__options {
+    max-height: min(40vh, 320px) !important;
+    overflow-y: auto !important;
+}
+
+.select2-results {
+    max-height: min(50vh, 360px);
+    overflow-y: auto;
+}
+
+.select2-search--dropdown .select2-search__field {
+    width: 100% !important;
+    box-sizing: border-box;
+}
+
+.select2-container--open .select2-dropdown {
+    z-index: 2000;
+}
+
+.modal .select2-container--open .select2-dropdown {
+    z-index: 2060;
+}
+
+/* Keep footer outside report content and normalize report toolbars */
+.ias-content {
+    min-height: 100vh;
+}
+
+.ias-main.ias-report-page {
+    padding-bottom: 2rem;
+}
+
+.ias-report-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+.ias-report-toolbar:empty {
+    display: none;
+}
+
+.ias-report-toolbar .ias-report-action {
+    margin: 0 !important;
+}
+
 .box-shadow {
     box-shadow: 0 .25rem .75rem rgba(0, 0, 0, .05);
 }

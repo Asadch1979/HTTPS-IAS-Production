@@ -25,7 +25,13 @@
     }
 
     function showAlert(msg, type) {
-        $('#iidReadOnlyAlertHost').html('<div class="alert alert-' + (type || 'danger') + '">' + esc(msg || 'Unexpected error') + '</div>');
+        var safe = (typeof sanitizeAlertMessageText === 'function')
+            ? sanitizeAlertMessageText(msg)
+            : ((msg || 'Unexpected error').toString().trim());
+        var text = safe || 'Unexpected error';
+        var $alert = $('<div/>', { 'class': 'alert alert-' + (type || 'danger') + ' text-prewrap' });
+        $alert.text(text);
+        $('#iidReadOnlyAlertHost').empty().append($alert);
     }
 
     function bindRows(tableId, rows, columns) {

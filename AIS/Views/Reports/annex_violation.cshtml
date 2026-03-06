@@ -1,40 +1,43 @@
-﻿@{
-    var page_id = ViewData["PageId"] as int? ?? 0;
-}
-
 @{
-    ViewData["Title"] = "annex_violation";
+    var page_id = ViewData["PageId"] as int? ?? 0;
+    ViewData["Title"] = "Annex Violation";
     Layout = "_Layout";
 }
 
-<!DOCTYPE HTML>
-<html>
-<head>
-    
-    <style>
-        #backButton {
-            border-radius: 4px;
-            padding: 8px;
-            border: none;
-            font-size: 16px;
-            background-color: #2eacd1;
-            color: white;
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            cursor: pointer;
-        }
+<style>
+    .report-toolbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.75rem;
+        margin-bottom: 1rem;
+    }
 
-        .invisible {
-            display: none;
-        }
-    </style>
-</head>
-<body>
+    #backButton {
+        border-radius: 4px;
+        padding: 8px 12px;
+        border: none;
+        font-size: 14px;
+        background-color: #2eacd1;
+        color: white;
+        cursor: pointer;
+    }
+
+    #backButton.invisible {
+        display: none;
+    }
+</style>
+
+<div class="container-fluid px-0">
+    <div class="report-toolbar">
+        <h5 class="mb-0">Annex Violation</h5>
+        <button class="btn invisible" id="backButton" type="button">&lt; Back</button>
+    </div>
 
     <div id="chartContainer" style="height: 370px; width: 100%;"></div>
-    <button class="btn invisible" id="backButton">< Back</button>
+</div>
+
+@section Scripts {
     <script src="~/lib/canvasjs/jquery.canvasjs.min.js"></script>
-</body>
-</html>
-<script src="~/js/csp/Views_Reports_annex_violation.js?v=1"></script>
+    <script src="~/js/csp/Views_Reports_annex_violation.js?v=1"></script>
+}

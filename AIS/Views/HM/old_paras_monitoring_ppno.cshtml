@@ -15,10 +15,10 @@
     </div>
 
     <div class="col-md-9">
-        <input class="form-control" id="ppnoSearchField" type="text" placeholder="Enter P.P.Number" inputmode="decimal" pattern="[0-9.,]*" oninput="this.value = this.value.replace(/[^0-9.,]/g, '');">
+        <input class="form-control digits-only" id="ppnoSearchField" type="text" placeholder="Enter P.P.Number" inputmode="numeric" pattern="[0-9]*">
     </div>
     <div class="col-md-1">
-        <button id="findButton" data-onclick="getemployeename();" class="btn btn-danger w-100">Find</button>
+        <button id="findButton" class="btn btn-danger w-100 js-old-paras-find">Find</button>
     </div>
 </div>
 <div class="row col-md-12 mt-2">
