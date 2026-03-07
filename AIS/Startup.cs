@@ -81,6 +81,7 @@ namespace AIS
             services.AddScoped<IMenuPagesReader, MenuPagesReader>();
             services.AddScoped<TopMenus>();
             services.AddScoped<IPermissionService, PermissionService>();
+            services.AddSingleton<FieldAuditDashboardProgressStore>();
             services.AddSingleton<IPageIdResolver, PageIdResolver>();
             services.AddScoped<PageKeyPermissionGuard>();
             services.AddScoped<PageKeyPermissionFilter>();

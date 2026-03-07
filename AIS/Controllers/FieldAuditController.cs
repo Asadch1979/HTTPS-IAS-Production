@@ -18,6 +18,7 @@ namespace AIS.Controllers
         private readonly DBConnection _dbConnection;
         private readonly IPermissionService _permissionService;
         private readonly IPageIdResolver _pageIdResolver;
+        private readonly FieldAuditDashboardProgressStore _progressStore;
 
         public FieldAuditController(
             ILogger<FieldAuditController> logger,
@@ -25,7 +26,8 @@ namespace AIS.Controllers
             DBConnection dbConnection,
             TopMenus topMenus,
             IPermissionService permissionService,
-            IPageIdResolver pageIdResolver)
+            IPageIdResolver pageIdResolver,
+            FieldAuditDashboardProgressStore progressStore)
             {
             _logger = logger;
             _sessionHandler = sessionHandler;
@@ -33,6 +35,7 @@ namespace AIS.Controllers
             _topMenus = topMenus;
             _permissionService = permissionService;
             _pageIdResolver = pageIdResolver;
+            _progressStore = progressStore;
             }
 
         [HttpGet]
@@ -128,6 +131,71 @@ namespace AIS.Controllers
         public IActionResult _ManageObservationBranches(int engId)
             {
             return LoadStepPartial("MANAGE_OBSERVATION_BRANCHES", engId);
+            }
+
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public IActionResult MarkStepCompleted([FromForm] string stepCode, [FromForm] int engId)
+            {
+            if (!User.Identity.IsAuthenticated)
+                {
+                return Unauthorized();
+                }
+
+            if (!_sessionHandler.TryGetUser(out var user) || user == null)
+                {
+                return Unauthorized();
+                }
+
+            if (engId <= 0 || string.IsNullOrWhiteSpace(stepCode))
+                {
+                return BadRequest(new { success = false, message = "Invalid request." });
+                }
+
+            var model = BuildWorkflowViewModel(user, stepCode, engId);
+            var step = model.VisibleSteps.FirstOrDefault(item => string.Equals(item.StepCode, stepCode, StringComparison.OrdinalIgnoreCase));
+            if (step == null)
+                {
+                return Forbid();
+                }
+
+            _progressStore.MarkCompleted(engId, stepCode);
+            model = BuildWorkflowViewModel(user, stepCode, engId);
+            return Json(new
+                {
+                success = true,
+                stepCode,
+                statusText = model.VisibleSteps.FirstOrDefault(item => string.Equals(item.StepCode, stepCode, StringComparison.OrdinalIgnoreCase))?.StatusText ?? "Completed"
+                });
+            }
+
+        [HttpGet]
+        public IActionResult OpenAuditReport(int engId)
+            {
+            if (!User.Identity.IsAuthenticated)
+                {
+                return RedirectToAction("Index", "Login");
+                }
+
+            if (!_sessionHandler.TryGetUser(out var user) || user == null)
+                {
+                return RedirectToAction("Index", "Login");
+                }
+
+            if (engId <= 0)
+                {
+                return RedirectToAction(nameof(Dashboard));
+                }
+
+            var model = BuildWorkflowViewModel(user, "AUDIT_REPORT", engId);
+            if (!model.HasEngagementSelection)
+                {
+                return RedirectToAction(nameof(Dashboard));
+                }
+
+            _sessionHandler.SetActiveEngagementId(engId);
+            return RedirectToAction("ReportOverview", "FieldAuditReport");
             }
 
         [HttpPost]
@@ -232,6 +300,8 @@ namespace AIS.Controllers
                 case "MANAGE_OBSERVATION_BRANCHES":
                     var manageObservationBranchesModel = BuildManageObservationBranchesReplicaViewModel(engId);
                     return PartialView("~/Views/FieldAudit/_ManageObservationBranches.cshtml", manageObservationBranchesModel);
+                case "AUDIT_REPORT":
+                    return PartialView("~/Views/FieldAudit/_AuditReport.cshtml", new FieldAuditGridReplicaViewModel { EngagementId = engId });
                 default:
                     var stepModel = BuildStepContext(step.StepCode, engId);
                     return PartialView(step.PartialViewName, stepModel);
@@ -304,13 +374,25 @@ namespace AIS.Controllers
                 : (int?)null;
 
             var workflowSteps = BuildWorkflowSteps();
+            var selectedId = selectedEngagementId.GetValueOrDefault();
+            var completedSteps = selectedId > 0
+                ? _progressStore.GetCompletedStepCodes(selectedId)
+                : new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var joiningSubmitted = selectedId > 0 && IsJoinAlreadySubmitted(selectedId);
+
             foreach (var step in workflowSteps)
                 {
                 step.IsVisible = step.RequiredPermissionPageId > 0 && _permissionService.HasViewPermission(user, step.RequiredPermissionPageId);
-                step.IsEnabled = step.IsVisible && selectedEngagementId.GetValueOrDefault() > 0;
-                step.IsSaved = selectedEngagementId.GetValueOrDefault() > 0 && step.IsVisible;
-                step.IsCompleted = false;
-                step.StatusText = step.IsSaved ? "Saved" : "Pending";
+                step.IsEnabled = step.IsVisible && selectedId > 0;
+
+                var isPersistedComplete = selectedId > 0 && completedSteps.Contains(step.StepCode);
+                var isBusinessComplete = selectedId > 0
+                    && string.Equals(step.StepCode, "JOINING", StringComparison.OrdinalIgnoreCase)
+                    && joiningSubmitted;
+
+                step.IsCompleted = step.IsVisible && (isPersistedComplete || isBusinessComplete);
+                step.IsSaved = step.IsCompleted;
+                step.StatusText = step.IsCompleted ? "Completed" : "Pending";
                 }
 
             var firstVisibleStep = workflowSteps.FirstOrDefault(step => step.IsVisible);
@@ -338,8 +420,9 @@ namespace AIS.Controllers
                 CreateStep(3, "EXCEPTION_REPORT", "Exception Report", "~/Views/FieldAudit/_Exception.cshtml", "/sampling/list_reports"),
                 CreateStep(4, "WORKING_PAPER", "Working Paper", "~/Views/FieldAudit/_WPaper.cshtml", "/WorkingPaper/loan_case_file"),
                 CreateStep(5, "MEMO_CREATION", "Observation", "~/Views/FieldAudit/_Observation.cshtml", "/Execution/cau_observation"),
-                CreateStep(6, "EXIT_AUDIT", "Closing", "~/Views/FieldAudit/_Closing.cshtml", "/Execution/closing"),
-                CreateStep(7, "MANAGE_OBSERVATION_BRANCHES", "Manage Observation Branches", "~/Views/FieldAudit/_ManageObservationBranches.cshtml", "/Execution/manage_observations_branches")
+                CreateStep(6, "MANAGE_OBSERVATION_BRANCHES", "Manage Observation", "~/Views/FieldAudit/_ManageObservationBranches.cshtml", "/Execution/manage_observations_branches"),
+                CreateStep(7, "EXIT_AUDIT", "Closing", "~/Views/FieldAudit/_Closing.cshtml", "/Execution/closing"),
+                CreateStep(8, "AUDIT_REPORT", "Audit Report", "~/Views/FieldAudit/_AuditReport.cshtml", "/FieldAuditReport/ReportOverview")
                 };
             }
 
@@ -370,10 +453,12 @@ namespace AIS.Controllers
                     return BuildStep(engId, "/WorkingPaper/loan_case_file", "Working Paper", "Maintain loan case files and working papers for the selected engagement.");
                 case "MEMO_CREATION":
                     return BuildStep(engId, "/Execution/cau_observation", "Observation", "Create and manage observations inside dashboard (zone/branch forwarding removed in dashboard flow).");
-                case "EXIT_AUDIT":
-                    return BuildStep(engId, "/Execution/closing", "Exit Audit", "Execute closing and exit audit milestones for the selected engagement.");
                 case "MANAGE_OBSERVATION_BRANCHES":
-                    return BuildStep(engId, "/Execution/manage_observations_branches", "Manage Observation Branches", "Manage branch observations directly in the dashboard for the selected engagement.");
+                    return BuildStep(engId, "/Execution/manage_observations_branches", "Manage Observation", "Manage branch observations directly in the dashboard for the selected engagement.");
+                case "EXIT_AUDIT":
+                    return BuildStep(engId, "/Execution/closing", "Closing", "Execute closing milestones for the selected engagement.");
+                case "AUDIT_REPORT":
+                    return BuildStep(engId, "/FieldAudit/OpenAuditReport", "Audit Report", "Open the field audit report module for the selected engagement.");
                 default:
                     return BuildStep(engId, "/Engagement/task_list", "Field Audit", "Select a step from the workflow.");
                 }

@@ -1,0 +1,10 @@
+@model AIS.Models.FieldAuditWorkflow.FieldAuditGridReplicaViewModel
+
+<div id="fieldAuditAuditReportReplica" data-eng-id="@Model.EngagementId">
+    <div class="alert alert-info mb-3">
+        Continue to the Field Audit Report workflow for this engagement.
+    </div>
+    <a class="btn btn-primary" href="@Url.Action("OpenAuditReport", "FieldAudit", new { engId = Model.EngagementId })">
+        Open Audit Report
+    </a>
+</div>
