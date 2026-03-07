@@ -116,7 +116,7 @@ namespace AIS.Controllers
             }
 
         [HttpGet]
-        public IActionResult LoadNestedStepView(string viewCode, int engId, int? reportId = null, int? loanStatus = null, int? disbId = null, string acNo = null, string title = null, string desc = null)
+        public IActionResult LoadNestedStepView(string viewCode, int engId, int? reportId = null, int? loanStatus = null, int? disbId = null, int? sampleId = null, string acNo = null, string title = null, string desc = null, string sampleType = null)
             {
             if (!User.Identity.IsAuthenticated)
                 {
@@ -142,9 +142,11 @@ namespace AIS.Controllers
             ViewData["ReportId"] = reportId;
             ViewData["LoanStatus"] = loanStatus;
             ViewData["DisbId"] = disbId;
+            ViewData["SampleId"] = sampleId;
             ViewData["AccountNo"] = acNo;
             ViewData["ReportTitle"] = title;
             ViewData["ReportDescription"] = desc;
+            ViewData["SampleType"] = sampleType;
 
             switch ((viewCode ?? string.Empty).Trim().ToUpperInvariant())
                 {
@@ -168,6 +170,18 @@ namespace AIS.Controllers
                     return PartialView("~/Views/FieldAudit/Partials/_FixedAssetsReplica.cshtml", new FieldAuditGridReplicaViewModel { EngagementId = engId });
                 case "WP_CASH_COUNT":
                     return PartialView("~/Views/FieldAudit/Partials/_CashCountReplica.cshtml", new FieldAuditGridReplicaViewModel { EngagementId = engId });
+                case "SAMPLING_BIOMET":
+                    return PartialView("~/Views/FieldAudit/Partials/_SamplingBiomet.cshtml", new FieldAuditGridReplicaViewModel { EngagementId = engId });
+                case "SAMPLING_LOANS":
+                    return PartialView("~/Views/FieldAudit/Partials/_SamplingLoans.cshtml", new FieldAuditGridReplicaViewModel { EngagementId = engId });
+                case "SAMPLING_ACCOUNT_DOCUMENT":
+                    return PartialView("~/Views/FieldAudit/Partials/_SamplingAccountDocument.cshtml", new FieldAuditGridReplicaViewModel { EngagementId = engId });
+                case "SAMPLING_ACCOUNT_TRANSACTION":
+                    return PartialView("~/Views/FieldAudit/Partials/_SamplingAccountTransaction.cshtml", new FieldAuditGridReplicaViewModel { EngagementId = engId });
+                case "SAMPLING_LOAN_DOCUMENT":
+                    return PartialView("~/Views/FieldAudit/Partials/_SamplingLoanDocument.cshtml", new FieldAuditGridReplicaViewModel { EngagementId = engId });
+                case "SAMPLING_LOAN_TRANSACTION":
+                    return PartialView("~/Views/FieldAudit/Partials/_SamplingLoanTransaction.cshtml", new FieldAuditGridReplicaViewModel { EngagementId = engId });
                 default:
                     return NotFound();
                 }
