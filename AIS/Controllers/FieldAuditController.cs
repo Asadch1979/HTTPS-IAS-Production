@@ -106,6 +106,18 @@ namespace AIS.Controllers
             return LoadStepPartial("EXCEPTION_REPORT", engId);
             }
 
+        [HttpGet]
+        public IActionResult LoadWPaper(int engId)
+            {
+            return LoadStepPartial("WORKING_PAPER", engId);
+            }
+
+        [HttpGet]
+        public IActionResult LoadClosing(int engId)
+            {
+            return LoadStepPartial("EXIT_AUDIT", engId);
+            }
+
         [HttpPost]
         [IgnoreAntiforgeryToken]
         public IActionResult SubmitJoin([FromForm] AddJoiningPostModel model)
@@ -198,6 +210,10 @@ namespace AIS.Controllers
                     return PartialView("~/Views/FieldAudit/_Samples.cshtml", new FieldAuditGridReplicaViewModel { EngagementId = engId });
                 case "EXCEPTION_REPORT":
                     return PartialView("~/Views/FieldAudit/_Exception.cshtml", new FieldAuditGridReplicaViewModel { EngagementId = engId });
+                case "WORKING_PAPER":
+                    return PartialView("~/Views/FieldAudit/_WPaper.cshtml", new FieldAuditGridReplicaViewModel { EngagementId = engId });
+                case "EXIT_AUDIT":
+                    return PartialView("~/Views/FieldAudit/_Closing.cshtml", new FieldAuditGridReplicaViewModel { EngagementId = engId });
                 default:
                     var stepModel = BuildStepContext(step.StepCode, engId);
                     return PartialView(step.PartialViewName, stepModel);
@@ -276,10 +292,10 @@ namespace AIS.Controllers
                 CreateStep(1, "JOINING", "Joining", "~/Views/FieldAudit/_Join.cshtml", "/Engagement/Join"),
                 CreateStep(2, "SAMPLING", "Sampling", "~/Views/FieldAudit/_Samples.cshtml", "/sampling/list_samples"),
                 CreateStep(3, "EXCEPTION_REPORT", "Exception Report", "~/Views/FieldAudit/_Exception.cshtml", "/sampling/list_reports"),
-                CreateStep(4, "WORKING_PAPER", "Working Paper", "~/Views/FieldAudit/Partials/_WorkingPaperStep.cshtml", "/WorkingPaper/loan_case_file"),
+                CreateStep(4, "WORKING_PAPER", "Working Paper", "~/Views/FieldAudit/_WPaper.cshtml", "/WorkingPaper/loan_case_file"),
                 CreateStep(5, "MEMO_CREATION", "Memo Creation", "~/Views/FieldAudit/Partials/_MemoCreationStep.cshtml", "/Execution/cau_observation"),
                 CreateStep(6, "SUBMIT_TO_AUDITEE", "Submit to Auditee", "~/Views/FieldAudit/Partials/_SubmitToAuditeeStep.cshtml", "/Execution/manage_observations_branches"),
-                CreateStep(7, "EXIT_AUDIT", "Exit Audit", "~/Views/FieldAudit/Partials/_ExitAuditStep.cshtml", "/Execution/closing"),
+                CreateStep(7, "EXIT_AUDIT", "Closing", "~/Views/FieldAudit/_Closing.cshtml", "/Execution/closing"),
                 CreateStep(8, "DRAFT_REPORT", "Draft Report", "~/Views/FieldAudit/Partials/_DraftReportStep.cshtml", "/Execution/manage_observations_branches"),
                 CreateStep(9, "AUDIT_REPORT_COMPILATION", "Audit Report Compilation", "~/Views/FieldAudit/Partials/_AuditReportCompilationStep.cshtml", "/FieldAuditReport/ReportOverview")
                 };

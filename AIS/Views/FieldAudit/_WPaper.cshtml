@@ -1,0 +1,90 @@
+@model AIS.Models.FieldAuditWorkflow.FieldAuditGridReplicaViewModel
+
+<div class="row mt-1">
+    <div class="col-md-12 mt-2">
+        <h4 style="display:block;color:#be0e43">Working Paper for Loan Case File</h4>
+    </div>
+</div>
+
+<div id="fieldAuditWPaperReplica" data-eng-id="@Model.EngagementId">
+    <input type="hidden" id="fieldAuditWPaperEngId" value="@Model.EngagementId" />
+
+    <div class="row col-md-12 mt-3">
+        <div class="d-flex justify-content-end mb-2">
+            <button type="button" id="openLoanCaseFileBtn" class="rounded-circle btn btn-danger btn-sm" aria-label="Add loan case file">
+                <i class="fa fa-plus text-white"></i>
+            </button>
+        </div>
+
+        <table id="fieldAuditWPaperTable" class="table table-hover table-bordered mt-3 table-striped">
+            <thead style="background-color:#19875478 !important;">
+                <tr>
+                    <th class="col-md-auto">Sr. No</th>
+                    <th class="col-md-auto">LC No</th>
+                    <th class="col-md-auto">Outstanding Amount</th>
+                    <th class="col-md-auto">Date of Disbursement</th>
+                    <th class="col-md-auto">Category of LC (General/NPL/SAM)</th>
+                    <th class="col-md-auto">Discrepency/Observation</th>
+                    <th class="col-md-auto">Memo/Para No reference</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+
+    <div class="row col-md-12 mt-3">
+        <div class="col-md-12 d-flex justify-content-end">
+            <a id="voucherCheckingLink" class="btn btn-success" href="javascript:void(0);">Voucher Checking</a>
+        </div>
+    </div>
+</div>
+
+<div id="newLoanCaseFileDialog" class="modal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-xl modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">New Loan Case Record</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="loanCaseReplicaForm">
+                    <div class="form-group">
+                        <label for="loancasenumber_txtField">Loan Case Number</label>
+                        <input type="text" class="form-control" id="loancasenumber_txtField" />
+                    </div>
+                    <div class="form-group">
+                        <label for="osamount_txtField">Outstanding Amount</label>
+                        <input type="number" class="form-control" id="osamount_txtField" />
+                    </div>
+                    <div class="form-group">
+                        <label for="dateofdisb_txtField">Date of Disbursement</label>
+                        <input type="date" class="form-control" id="dateofdisb_txtField" />
+                    </div>
+                    <div class="form-group">
+                        <label for="lccategory_selectField">Loan Category</label>
+                        <select class="form-control" id="lccategory_selectField">
+                            <option value="">--Select Loan Category--</option>
+                            <option value="General">General</option>
+                            <option value="NPL">NPL</option>
+                            <option value="SAM">SAM</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="ob_txtField">Observation (if any)</label>
+                        <textarea class="form-control" id="ob_txtField"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="pno_txtField">Memo No (if any)</label>
+                        <input type="text" class="form-control" id="pno_txtField" />
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button id="addLoanCaseFileBtn" type="button" class="btn btn-danger">Add New</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="~/js/fieldAudit/wpaperReplica.js?v=1"></script>

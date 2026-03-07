@@ -1,0 +1,52 @@
+@model AIS.Models.FieldAuditWorkflow.FieldAuditGridReplicaViewModel
+
+<div id="fieldAuditClosingReplica" data-eng-id="@Model.EngagementId">
+    <input type="hidden" id="fieldAuditClosingEngId" value="@Model.EngagementId" />
+
+    <div class="row col-md-12 mt-3">
+        <h4 style="display:block;color:#be0e43">Close Audit of <span id="fieldAuditClosingEntityName"></span></h4>
+    </div>
+
+    <div class="row col-md-12 mt-3">
+        <div>
+            <h5 style="display:block;color:#be0e43">Auditor Wise Memo Status</h5>
+        </div>
+        <table id="fieldAuditAuditorWiseProgessTable" class="table table-bordered mb-0 mt-3 bg-white table-striped">
+            <thead style="background-color:#19875478 !important;">
+                <tr>
+                    <th class="col-md-auto">Auditor</th>
+                    <th class="col-md-auto">Team Lead</th>
+                    <th class="col-md-auto">Total Memos</th>
+                    <th class="col-md-auto">Observation Dropped</th>
+                    <th class="col-md-auto">Submitted to Auditee</th>
+                    <th class="col-md-auto">Responded by Auditee</th>
+                    <th class="col-md-auto">Resolved</th>
+                    <th class="col-md-auto">Add to Draft Report</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+
+    <div class="row col-md-12 mt-3">
+        <div class="row col-md-12 mt-3">
+            <h5 style="display:block;color:#be0e43">Joining and Closing Dates</h5>
+        </div>
+        <table id="fieldAuditJoiningAuditorDetailsTable" class="table table-bordered mb-0 mt-3 bg-white table-striped">
+            <thead style="background-color:#19875478 !important;">
+                <tr>
+                    <th class="col-md-3">P.P. Number</th>
+                    <th class="col-md-3">Name</th>
+                    <th class="col-md-3">Joining Date</th>
+                    <th class="col-md-3">Completion Date</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+        <div class="w-100">
+            <button id="fieldAuditCloseDraftAuditBtn" class="col-md-2 mt-3 mb-3 btn btn-danger float-right">Close Audit</button>
+        </div>
+    </div>
+</div>
+
+<script src="~/js/fieldAudit/closingReplica.js?v=1"></script>

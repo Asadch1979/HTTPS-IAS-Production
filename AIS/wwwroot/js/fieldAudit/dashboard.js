@@ -5,6 +5,7 @@
     var stepHost = byId('fieldAuditStepHost');
     var stepper = byId('wizardStepper');
     var stepCounter = byId('stepCounter');
+    var engagementAlert = byId('engagementRequiredAlert');
 
     if (!selector || !stepHost || !stepper) {
         return;
@@ -24,6 +25,14 @@
 
     function clearStepContent(message) {
         stepHost.innerHTML = '<div class="alert alert-info mb-0">' + message + '</div>';
+    }
+
+    function toggleEngagementAlert(isVisible) {
+        if (!engagementAlert) {
+            return;
+        }
+
+        engagementAlert.classList.toggle('d-none', !isVisible);
     }
 
     function setActiveStep(stepCode) {
@@ -50,22 +59,40 @@
         stepCounter.textContent = 'Step ' + resolved + ' of ' + total;
     }
 
+    function executeInlineScripts(container) {
+        container.querySelectorAll('script').forEach(function (script) {
+            var newScript = document.createElement('script');
+            Array.from(script.attributes).forEach(function (attr) {
+                newScript.setAttribute(attr.name, attr.value);
+            });
+
+            if (!newScript.src) {
+                newScript.textContent = script.textContent;
+            }
+
+            script.parentNode.replaceChild(newScript, script);
+        });
+    }
+
     function loadStepContent(stepCode, stepNo) {
         var engId = selectedEngagementId();
         if (!engId) {
+            toggleEngagementAlert(true);
             clearStepContent('Select an engagement from the dropdown above to load workflow content.');
             setCurrentStepCode('');
             return;
         }
 
+        toggleEngagementAlert(false);
         stepHost.innerHTML = '<div class="alert alert-secondary mb-0">Loading workflow content...</div>';
 
         var loadUrl = stepHost.getAttribute('data-load-url') || '/FieldAudit/LoadStep';
-        var requestUrl = loadUrl + '?stepCode=' + encodeURIComponent(stepCode) + '&engId=' + encodeURIComponent(engId);
+        var requestUrl = loadUrl + '?stepCode=' + encodeURIComponent(stepCode) + '&engId=' + encodeURIComponent(engId) + '&_=' + Date.now();
 
         fetch(requestUrl, {
             method: 'GET',
-            credentials: 'same-origin'
+            credentials: 'same-origin',
+            cache: 'no-store'
         })
             .then(function (response) {
                 if (!response.ok) {
@@ -75,6 +102,7 @@
             })
             .then(function (html) {
                 stepHost.innerHTML = html;
+                executeInlineScripts(stepHost);
                 stepHost.setAttribute('data-eng-id', engId);
                 setCurrentStepCode(stepCode);
                 setActiveStep(stepCode);
@@ -88,6 +116,7 @@
     selector.addEventListener('change', function () {
         var engId = selectedEngagementId();
         if (!engId) {
+            toggleEngagementAlert(true);
             clearStepContent('Select an engagement from the dropdown above to load workflow content.');
             stepper.querySelectorAll('.step-pill').forEach(function (anchor) {
                 anchor.classList.add('disabled');
@@ -95,6 +124,7 @@
             return;
         }
 
+        toggleEngagementAlert(false);
         stepper.querySelectorAll('.step-pill').forEach(function (anchor) {
             anchor.classList.remove('disabled');
         });
@@ -110,6 +140,7 @@
     stepper.querySelectorAll('.step-pill[data-step-code]').forEach(function (anchor) {
         anchor.addEventListener('click', function () {
             if (!selectedEngagementId()) {
+                toggleEngagementAlert(true);
                 clearStepContent('Please select an engagement before opening workflow steps.');
                 return;
             }
@@ -117,6 +148,8 @@
             loadStepContent(anchor.getAttribute('data-step-code'), anchor.getAttribute('data-step-no'));
         });
     });
+
+    toggleEngagementAlert(!selectedEngagementId());
 
     if (selectedEngagementId() && currentStepCode()) {
         var activeAnchor = stepper.querySelector('.step-pill[data-step-code="' + currentStepCode() + '"]');
