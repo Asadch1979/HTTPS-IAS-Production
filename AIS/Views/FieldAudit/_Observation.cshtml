@@ -1,0 +1,252 @@
+@model AIS.Models.FieldAuditWorkflow.FieldAuditObservationReplicaViewModel
+
+<style type="text/css">
+    label.heading {
+        font-weight: bold;
+    }
+
+    .action-col {
+        width: 1%;
+        white-space: nowrap;
+    }
+</style>
+
+<div id="fieldAuditObservationReplica" data-eng-id="@Model.EngagementId">
+    <div class="row col-md-12">
+        <div class="col-md-12 mt-3">
+            <center class="w-100"><h3>Observation</h3></center>
+            <div>
+                <h5>Annexure</h5>
+            </div>
+            <select id="updatedAnnexlist" class="form-select form-control">
+                <option selected="selected" value="0" id="0">--Select Annexure--</option>
+                @if (ViewData["AnnexList"] != null)
+                {
+                    foreach (var item in (dynamic)ViewData["AnnexList"])
+                    {
+                        <option id="@item.ID" value="@item.ID">@item.ANNEX</option>
+                    }
+                }
+            </select>
+        </div>
+
+        <div class="col-md-12 mt-3">
+            <label for="viewMemo_risk_display">Risk will be assigned on the basis of Selected Annexure</label>
+            <input id="viewMemo_risk_display" class="form-control" readonly />
+        </div>
+
+        <div class="col-md-12 mt-3">
+            <div>
+                <h5>Checklist</h5>
+            </div>
+            <select id="riskGroupSelectBox" data-onchange="div_risksubcategoryShowHide();" class="form-select form-control" aria-label="Default select example">
+                <option value="0" id="0" selected="selected">--Select Violation Category--</option>
+                @if (ViewData["ProcessList"] != null)
+                {
+                    foreach (var item in (dynamic)ViewData["ProcessList"])
+                    {
+                        <option id="@item.T_ID" value="@item.T_ID">@item.HEADING</option>
+                    }
+                }
+            </select>
+        </div>
+
+        <div id="div_risksubcategory" style="display:none;" class="col-md-12 mt-3">
+            <h5>Subchecklist</h5>
+            <select id="riskSubGroupSelectBox" data-onchange="div_activityContainerShowHide();" class="form-select form-control" aria-label="Default select example">
+            </select>
+        </div>
+
+        <div id="div_activityContainer" style="display:none;" class="col-md-12 mt-3">
+            <h5>Checklist Details</h5>
+            <select id="riskActivitiesSelectBox" data-onchange="getAuditObservationTemplate();" class="form-select form-control" aria-label="Default select example">
+            </select>
+        </div>
+
+        <div id="div_headingPanel" class="col-md-12 mt-3">
+            <h5>Heading/Title <small class="text-muted">(A-Z, 0-9, space, &amp;, ?, comma)</small></h5>
+            <input type="text" class="form-control alnum-only" id="viewMemo_heading" placeholder="Heading/Title (Alphabets, numbers, spaces, ampersand (&amp;), comma (,), and question mark (?) only)" data-allow-amp="true" data-allow-question="true" data-maxlen="500" maxlength="500" />
+        </div>
+
+        <div class="col-md-12 mt-3">
+            <div class="page-wrapper box-content">
+                <textarea id="template_box" class="content" name="example"></textarea>
+            </div>
+        </div>
+
+        <div class="row col-sm-12">
+            <div class="col-md-2 mt-3">
+                <label class="font-bold text-bold heading">Responsible PP NO.</label>
+            </div>
+
+            <div class="d-flex justify-content-end mb-2">
+                <button type="button" data-onclick="openResponsiblePPs();" class="rounded-circle btn btn-danger btn-sm" aria-label="Add responsible person">
+                    <i class="fa fa-plus text-white"></i>
+                </button>
+            </div>
+
+            <table id="listofRespPersons" class="table table-hover table-bordered table-hover mt-3 table-striped">
+                <thead style="background-color: rgb(181 229 117 / 93%) !important; ">
+                    <tr>
+                        <th class="col-md- auto font-weight-bold">Sr.No</th>
+                        <th class="col-md- auto font-weight-bold">P.P. No</th>
+                        <th class="col-md- auto font-weight-bold">Name</th>
+                        <th class="col-md- auto font-weight-bold">Loan Case</th>
+                        <th class="col-md- auto font-weight-bold">LC Amount</th>
+                        <th class="col-md- auto font-weight-bold">Account No.</th>
+                        <th class="col-md- auto font-weight-bold">ACC Amount</th>
+                        <th class="col-md- auto text-center font-weight-bold action-col">Update</th>
+                        <th class="col-md- auto text-center font-weight-bold action-col">Delete</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+
+        <div class="row col-md-12">
+            <div class="col-md-2 mt-3">
+                <label class="font-bold text-bold heading">Amount Involved</label>
+            </div>
+            <div class="col-md-4 mt-3">
+                <input id="amount_inv_field" type="number" class="form-control" value="@Model.DefaultAmountInvolved" />
+            </div>
+            <div class="col-md-2 mt-3">
+                <label class="font-bold text-bold heading">No. of Instances</label>
+            </div>
+            <div class="col-md-4 mt-3">
+                <input id="no_instances_field" type="number" class="form-control" value="@Model.DefaultNoOfInstances" />
+            </div>
+
+            <div class="col-md-2 mt-3">
+                <label class="font-bold text-bold heading">No. of Days to Reply</label>
+            </div>
+            <div class="col-md-4 mt-3">
+                <select id="viewMemo_replydays" class="form-control form-select">
+                    @for (var day = 1; day <= 7; day++)
+                    {
+                        if (day == Model.DefaultReplyDays)
+                        {
+                            <option value="@day" selected>@day</option>
+                        }
+                        else
+                        {
+                            <option value="@day">@day</option>
+                        }
+                    }
+                </select>
+            </div>
+
+            <div class="col-md-2 mt-3">
+                <label class="font-bold text-bold heading">Attachments</label>
+            </div>
+            <div class="col-md-4 mt-3">
+                <input class="form-control" type="file" multiple="multiple" style="padding-top:3px;" />
+            </div>
+        </div>
+
+        <div class="row col-md-12 mt-5">
+            <button id="submitCAUobBtn" data-onclick="submitObservationToAuditee();" style="margin-left:20px;" class="btn btn-primary">Save Observation</button>
+        </div>
+    </div>
+
+    <div id="ResponsiblePPModel" class="modal" tabindex="-1" role="dialog">
+        <div class="modal-dialog modal-lg" style="min-width:95% !important" role="document">
+            <div class="modal-content">
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title">Responsible Person</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form>
+                        <div class="form-group">
+                            <label class="form-control text-bold fw-bold text-center">Search Responsible By LC Number</label>
+
+                            <div class="row col-sm-12">
+                                <div class="col-sm-5">
+                                    <label for="viewMemo_memo">Loan Case No.</label>
+                                    <input type="text" class="form-control digits-only" id="responsibleLCNoEntryField" inputmode="numeric" pattern="[0-9]*" autocomplete="off" data-digits-only="true" />
+                                </div>
+                                <div class="col-sm-5">
+                                    <label for="responsibleBrCodeEntryField">Branch Code <small class="text-muted">(0-9 only)</small></label>
+                                    <input type="text" class="form-control digits-only" id="responsibleBrCodeEntryField" aria-describedby="brcode" placeholder="Branch Code (digits only)" inputmode="numeric" pattern="[0-9]*" autocomplete="off" data-digits-only="true" />
+                                </div>
+                                <div class="col-sm-2 d-flex align-items-end">
+                                    <button data-onclick="getLCDetails();" type="button" class="btn btn-danger w-100">Find</button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="form-group">
+
+                            <label class="form-control text-bold fw-bold text-center">Search Responsible By PP No.</label>
+
+                            <div id="findBYPPNOPanel" class="mt-2 row col-md-12">
+                                <div class="col-md-2">
+                                    <label for="responsiblePPNoEntryField" class="form-label">PPNO</label>
+                                    <input id="responsiblePPNoEntryField" class="form-control digits-only" type="text" placeholder="Enter PP. No." inputmode="numeric" pattern="[0-9]*" autocomplete="off" data-digits-only="true" />
+                                </div>
+                                <div class="col-md-2">
+                                    <label for="responsibleLoanNumberEntryField" class="form-label">Loan Case No</label>
+                                    <input id="responsibleLoanNumberEntryField" class="form-control digits-only" type="text" placeholder="Enter LC No." inputmode="numeric" pattern="[0-9]*" autocomplete="off" data-digits-only="true" />
+                                </div>
+                                <div class="col-md-2">
+                                    <label for="responsibleLoanAmountEntryField" class="form-label">Loan Amount</label>
+                                    <input id="responsibleLoanAmountEntryField" class="form-control digits-only" type="text" placeholder="Enter LC Amount" inputmode="numeric" pattern="[0-9]*" autocomplete="off" data-digits-only="true" />
+                                </div>
+                                <div class="col-md-2">
+                                    <label for="responsibleAccountNumberEntryField" class="form-label">Account No</label>
+                                    <input id="responsibleAccountNumberEntryField" class="form-control digits-only" type="text" placeholder="Enter Account Number" inputmode="numeric" pattern="[0-9]*" autocomplete="off" data-digits-only="true" />
+                                </div>
+                                <div class="col-md-2">
+                                    <label for="responsibleAccountAmountEntryField" class="form-label">Account Amount</label>
+                                    <input id="responsibleAccountAmountEntryField" class="form-control digits-only" type="text" placeholder="Enter Account Amount" inputmode="numeric" pattern="[0-9]*" autocomplete="off" data-digits-only="true" />
+                                </div>
+                                <div class="col-md-2 d-flex align-items-end">
+                                    <button type="button" data-onclick="getMatchedPP();" class="col-md-2 btn btn-success w-100">Select</button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-control text-bold fw-bold text-center">Selected Responsibles (Pending)</label>
+                            <div class="table-responsive mt-2">
+                                <table id="respPendingTable" class="table table-sm table-bordered">
+                                    <thead>
+                                        <tr>
+                                            <th>Role</th>
+                                            <th>PP No</th>
+                                            <th>Name</th>
+                                            <th>Loan Case</th>
+                                            <th>LC Amount</th>
+                                            <th>Account No</th>
+                                            <th>ACC Amount</th>
+                                            <th class="text-center">Remove</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button id="addResponsibleButton" data-onclick="addResponsibilityToMainTable('A');" type="button" class="btn btn-danger">Add Responsibility</button>
+                    <button id="updateResponsibleButton" data-onclick="addResponsibilityToMainTable('U');" type="button" class="btn btn-success d-none">Update Responsibility</button>
+                    <button id="deleteResponsibleButton" data-onclick="addResponsibilityToMainTable('D');" type="button" class="btn btn-danger d-none">Delete Responsibility</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script type="application/json" id="field-audit-observation-page-data">
+@Html.Raw(System.Text.Json.JsonSerializer.Serialize(new {
+    AnnexList = ViewData["AnnexList"],
+    EngagementId = Model.EngagementId,
+    Defaults = new {
+        AmountInvolved = Model.DefaultAmountInvolved,
+        NoOfInstances = Model.DefaultNoOfInstances,
+        ReplyDays = Model.DefaultReplyDays
+    }
+}))
+</script>
+<script src="~/js/fieldAudit/observationReplica.js?v=1"></script>

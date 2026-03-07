@@ -118,6 +118,12 @@ namespace AIS.Controllers
             return LoadStepPartial("EXIT_AUDIT", engId);
             }
 
+        [HttpGet]
+        public IActionResult LoadObservation(int engId)
+            {
+            return LoadStepPartial("MEMO_CREATION", engId);
+            }
+
         [HttpPost]
         [IgnoreAntiforgeryToken]
         public IActionResult SubmitJoin([FromForm] AddJoiningPostModel model)
@@ -212,6 +218,9 @@ namespace AIS.Controllers
                     return PartialView("~/Views/FieldAudit/_Exception.cshtml", new FieldAuditGridReplicaViewModel { EngagementId = engId });
                 case "WORKING_PAPER":
                     return PartialView("~/Views/FieldAudit/_WPaper.cshtml", new FieldAuditGridReplicaViewModel { EngagementId = engId });
+                case "MEMO_CREATION":
+                    var observationModel = BuildObservationReplicaViewModel(engId);
+                    return PartialView("~/Views/FieldAudit/_Observation.cshtml", observationModel);
                 case "EXIT_AUDIT":
                     return PartialView("~/Views/FieldAudit/_Closing.cshtml", new FieldAuditGridReplicaViewModel { EngagementId = engId });
                 default:
@@ -231,6 +240,20 @@ namespace AIS.Controllers
                 JoiningDetails = joiningDetails,
                 CompletionDate = hasCompletionDate ? joiningDetails.END_DATE.Value.Date : DateTime.UtcNow.Date,
                 IsSubmitted = IsJoinAlreadySubmitted(engId)
+                };
+            }
+
+        private FieldAuditObservationReplicaViewModel BuildObservationReplicaViewModel(int engId)
+            {
+            ViewData["AnnexList"] = _dbConnection.GetAnnexuresForChecklistDetail();
+            ViewData["ProcessList"] = _dbConnection.GetAuditChecklistCAD();
+
+            return new FieldAuditObservationReplicaViewModel
+                {
+                EngagementId = engId,
+                DefaultAmountInvolved = 0,
+                DefaultNoOfInstances = 1,
+                DefaultReplyDays = 3
                 };
             }
 
@@ -293,7 +316,7 @@ namespace AIS.Controllers
                 CreateStep(2, "SAMPLING", "Sampling", "~/Views/FieldAudit/_Samples.cshtml", "/sampling/list_samples"),
                 CreateStep(3, "EXCEPTION_REPORT", "Exception Report", "~/Views/FieldAudit/_Exception.cshtml", "/sampling/list_reports"),
                 CreateStep(4, "WORKING_PAPER", "Working Paper", "~/Views/FieldAudit/_WPaper.cshtml", "/WorkingPaper/loan_case_file"),
-                CreateStep(5, "MEMO_CREATION", "Memo Creation", "~/Views/FieldAudit/Partials/_MemoCreationStep.cshtml", "/Execution/cau_observation"),
+                CreateStep(5, "MEMO_CREATION", "Observation", "~/Views/FieldAudit/_Observation.cshtml", "/Execution/cau_observation"),
                 CreateStep(6, "SUBMIT_TO_AUDITEE", "Submit to Auditee", "~/Views/FieldAudit/Partials/_SubmitToAuditeeStep.cshtml", "/Execution/manage_observations_branches"),
                 CreateStep(7, "EXIT_AUDIT", "Closing", "~/Views/FieldAudit/_Closing.cshtml", "/Execution/closing"),
                 CreateStep(8, "DRAFT_REPORT", "Draft Report", "~/Views/FieldAudit/Partials/_DraftReportStep.cshtml", "/Execution/manage_observations_branches"),
@@ -327,7 +350,7 @@ namespace AIS.Controllers
                 case "WORKING_PAPER":
                     return BuildStep(engId, "/WorkingPaper/loan_case_file", "Working Paper", "Maintain loan case files and working papers for the selected engagement.");
                 case "MEMO_CREATION":
-                    return BuildStep(engId, "/Execution/cau_observation", "Memo Creation", "Create and manage memo observations (cross zone/branch forwarding removed in dashboard flow).");
+                    return BuildStep(engId, "/Execution/cau_observation", "Observation", "Create and manage observations inside dashboard (zone/branch forwarding removed in dashboard flow).");
                 case "SUBMIT_TO_AUDITEE":
                     return BuildStep(engId, "/Execution/manage_observations_branches", "Submit to Auditee", "Submit observations to auditee (add-to-draft flow intentionally excluded).");
                 case "EXIT_AUDIT":
