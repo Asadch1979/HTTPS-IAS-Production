@@ -1,0 +1,23 @@
+@model AIS.Models.FieldAuditWorkflow.FieldAuditGridReplicaViewModel
+@{
+    var title = ViewData["ReportTitle"] as string;
+    var desc = ViewData["ReportDescription"] as string;
+    var loanStatus = ViewData["LoanStatus"] as int?;
+}
+<div id="fieldAuditExceptionLoanReplica" data-eng-id="@Model.EngagementId" data-loan-status="@(loanStatus ?? 0)">
+    <div class="d-flex justify-content-between align-items-center mb-2 mt-2">
+        <h5 class="mb-0">@(string.IsNullOrWhiteSpace(title) ? "Loans Exception Report" : title)</h5>
+        <button type="button" class="btn btn-outline-secondary btn-sm" onclick="window.fieldAuditDashboard && window.fieldAuditDashboard.loadStepContent('EXCEPTION_REPORT', 3)">Back to Exception Report</button>
+    </div>
+    @if (!string.IsNullOrWhiteSpace(desc))
+    {
+        <p class="text-danger fw-semibold">@desc</p>
+    }
+    <div class="table-responsive">
+        <table id="fieldAuditExceptionLoanTable" class="table table-hover table-bordered table-striped">
+            <thead><tr><th>Sr No</th><th>Type</th><th>Scheme</th><th>Purpose</th><th>LC No</th><th>CNIC</th><th>Customer Name</th><th>Application Date</th><th>Disbursement Date</th><th>Disbursement Amount</th><th>Current Outstanding</th><th></th><th></th></tr></thead>
+            <tbody></tbody>
+        </table>
+    </div>
+</div>
+<script src="~/js/fieldAudit/exceptionLoanReplica.js?v=1"></script>

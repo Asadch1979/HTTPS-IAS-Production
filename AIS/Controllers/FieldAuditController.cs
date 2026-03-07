@@ -116,6 +116,64 @@ namespace AIS.Controllers
             }
 
         [HttpGet]
+        public IActionResult LoadNestedStepView(string viewCode, int engId, int? reportId = null, int? loanStatus = null, int? disbId = null, string acNo = null, string title = null, string desc = null)
+            {
+            if (!User.Identity.IsAuthenticated)
+                {
+                return Unauthorized();
+                }
+
+            if (!_sessionHandler.TryGetUser(out var user) || user == null)
+                {
+                return Unauthorized();
+                }
+
+            if (engId <= 0 || string.IsNullOrWhiteSpace(viewCode))
+                {
+                return BadRequest("A valid engagement is required.");
+                }
+
+            var model = BuildWorkflowViewModel(user, null, engId);
+            if (!model.HasEngagementSelection)
+                {
+                return BadRequest("A valid engagement is required.");
+                }
+
+            ViewData["ReportId"] = reportId;
+            ViewData["LoanStatus"] = loanStatus;
+            ViewData["DisbId"] = disbId;
+            ViewData["AccountNo"] = acNo;
+            ViewData["ReportTitle"] = title;
+            ViewData["ReportDescription"] = desc;
+
+            switch ((viewCode ?? string.Empty).Trim().ToUpperInvariant())
+                {
+                case "EXCEPTION_ACCOUNT":
+                    return PartialView("~/Views/FieldAudit/Partials/_ExceptionAccountReplica.cshtml", new FieldAuditGridReplicaViewModel { EngagementId = engId });
+                case "EXCEPTION_LOAN":
+                    return PartialView("~/Views/FieldAudit/Partials/_ExceptionLoanReplica.cshtml", new FieldAuditGridReplicaViewModel { EngagementId = engId });
+                case "ACCOUNT_DOCUMENT":
+                    return PartialView("~/Views/FieldAudit/Partials/_AccountDocumentReplica.cshtml", new FieldAuditGridReplicaViewModel { EngagementId = engId });
+                case "ACCOUNT_TRANSACTION":
+                    return PartialView("~/Views/FieldAudit/Partials/_AccountTransactionReplica.cshtml", new FieldAuditGridReplicaViewModel { EngagementId = engId });
+                case "LOAN_TRANSACTION":
+                    return PartialView("~/Views/FieldAudit/Partials/_LoanTransactionReplica.cshtml", new FieldAuditGridReplicaViewModel { EngagementId = engId });
+                case "LOAN_DOCUMENT":
+                    return PartialView("~/Views/FieldAudit/Partials/_LoanDocumentReplica.cshtml", new FieldAuditGridReplicaViewModel { EngagementId = engId });
+                case "WP_VOUCHER":
+                    return PartialView("~/Views/FieldAudit/Partials/_VoucherCheckingReplica.cshtml", new FieldAuditGridReplicaViewModel { EngagementId = engId });
+                case "WP_ACCOUNT_OPENING":
+                    return PartialView("~/Views/FieldAudit/Partials/_AccountOpeningReplica.cshtml", new FieldAuditGridReplicaViewModel { EngagementId = engId });
+                case "WP_FIXED_ASSETS":
+                    return PartialView("~/Views/FieldAudit/Partials/_FixedAssetsReplica.cshtml", new FieldAuditGridReplicaViewModel { EngagementId = engId });
+                case "WP_CASH_COUNT":
+                    return PartialView("~/Views/FieldAudit/Partials/_CashCountReplica.cshtml", new FieldAuditGridReplicaViewModel { EngagementId = engId });
+                default:
+                    return NotFound();
+                }
+            }
+
+        [HttpGet]
         public IActionResult LoadClosing(int engId)
             {
             return LoadStepPartial("EXIT_AUDIT", engId);
@@ -166,7 +224,7 @@ namespace AIS.Controllers
                 {
                 success = true,
                 stepCode,
-                statusText = model.VisibleSteps.FirstOrDefault(item => string.Equals(item.StepCode, stepCode, StringComparison.OrdinalIgnoreCase))?.StatusText ?? "Completed"
+                statusText = model.VisibleSteps.FirstOrDefault(item => string.Equals(item.StepCode, stepCode, StringComparison.OrdinalIgnoreCase))?.StatusText ?? "Saved"
                 });
             }
 
@@ -392,7 +450,7 @@ namespace AIS.Controllers
 
                 step.IsCompleted = step.IsVisible && (isPersistedComplete || isBusinessComplete);
                 step.IsSaved = step.IsCompleted;
-                step.StatusText = step.IsCompleted ? "Completed" : "Pending";
+                step.StatusText = step.IsCompleted ? "Saved" : "Pending";
                 }
 
             var firstVisibleStep = workflowSteps.FirstOrDefault(step => step.IsVisible);
