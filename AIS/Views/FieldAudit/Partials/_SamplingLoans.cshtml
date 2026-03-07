@@ -1,0 +1,19 @@
+@model AIS.Models.FieldAuditWorkflow.FieldAuditGridReplicaViewModel
+<div id="fieldAuditSamplingLoans" data-eng-id="@Model.EngagementId" data-sample-id="@(ViewData["SampleId"] ?? 0)" data-loan-status="@(ViewData["LoanStatus"] ?? 0)" data-sample-type="@(ViewData["SampleType"] ?? string.Empty)">
+    <div class="d-flex justify-content-between align-items-center mb-2 mt-2">
+        <h5 class="mb-0">Samples of Loans <span class="text-danger fw-bold" id="fieldAuditLoanSampleType"></span></h5>
+        <button type="button" class="btn btn-outline-secondary btn-sm" onclick="window.fieldAuditDashboard && window.fieldAuditDashboard.loadStepContent('SAMPLING', 2)">Back to Sampling</button>
+    </div>
+    <link rel="stylesheet" href="~/css/sampling.css" />
+    <div class="table-responsive">
+        <table id="fieldAuditLoanSampleList" class="table table-hover table-bordered table-striped">
+            <thead>
+                <tr>
+                    <th>Sr No</th><th>Type</th><th>Scheme</th><th>Purpose</th><th>LC No</th><th>CNIC</th><th>Customer Name</th><th>Application Date</th><th>Disbursement Date</th><th>Disbursement Amount</th><th>Current Outstanding</th><th></th><th></th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+</div>
+<script src="~/js/fieldAudit/samplingLoansReplica.js?v=1"></script>

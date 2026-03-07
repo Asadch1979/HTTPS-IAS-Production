@@ -49,9 +49,13 @@
                     var loanStatus = item.loaN_STATUS;
                     var sampleType = encodeURIComponent(item.samplE_TYPE || '');
                     if (indicator === 'A') {
-                        window.location.href = (window.g_asiBaseURL || '') + '/Sampling/biomet?engId=' + engId + '&sample_id=' + item.samplE_ID + '&loan_status=' + loanStatus + '&sample_type=' + sampleType;
+                        if (window.fieldAuditDashboard && typeof window.fieldAuditDashboard.loadNestedView === 'function') {
+                            window.fieldAuditDashboard.loadNestedView('SAMPLING_BIOMET', { sampleId: item.samplE_ID, loanStatus: loanStatus, sampleType: item.samplE_TYPE || '' });
+                        }
                     } else if (indicator === 'L') {
-                        window.location.href = (window.g_asiBaseURL || '') + '/Sampling/loans?engId=' + engId + '&sample_id=' + item.samplE_ID + '&loan_status=' + loanStatus + '&sample_type=' + sampleType;
+                        if (window.fieldAuditDashboard && typeof window.fieldAuditDashboard.loadNestedView === 'function') {
+                            window.fieldAuditDashboard.loadNestedView('SAMPLING_LOANS', { sampleId: item.samplE_ID, loanStatus: loanStatus, sampleType: item.samplE_TYPE || '' });
+                        }
                     }
                 });
             }
