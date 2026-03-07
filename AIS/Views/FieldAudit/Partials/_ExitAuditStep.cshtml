@@ -1,0 +1,6 @@
+@model AIS.Models.FieldAuditWorkflow.FieldAuditStepContextViewModel
+<div class="field-step">
+    <h5 class="text-success">Exit Audit</h5>
+    <p class="text-muted">Finalize closing and exit tasks for ENG_ID: <strong>@Model.EngagementId</strong>.</p>
+    <a class="btn btn-primary" href="/Execution/closing?engId=@Model.EngagementId">Open Exit Audit Workspace</a>
+</div>

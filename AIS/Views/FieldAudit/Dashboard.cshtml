@@ -1,0 +1,130 @@
+@model AIS.Models.FieldAuditWorkflow.FieldAuditWorkflowViewModel
+@{
+    ViewData["Title"] = "Field Audit Dashboard";
+    Layout = "_Layout";
+    var visibleSteps = Model.VisibleSteps.ToList();
+    var currentStep = Model.CurrentStep;
+    var currentStepIndex = currentStep == null ? 0 : visibleSteps.FindIndex(s => s.StepCode == currentStep.StepCode) + 1;
+}
+
+<div class="planning-nav-wrap sticky-top bg-white py-2 mb-3">
+    <div class="card shadow-sm planning-nav-card mb-0">
+        <div class="card-body py-3">
+            <div class="row g-2 align-items-end mb-3">
+                <div class="col-md-6 col-lg-5">
+                    <label for="engagementSelector" class="form-label fw-semibold mb-1">Engagement</label>
+                    <select id="engagementSelector" class="form-select" data-dashboard-base-url="@Url.Action("Dashboard", "FieldAudit")">
+                        <option value="">-- Select Engagement --</option>
+                        @foreach (var engagement in Model.AvailableEngagements)
+                        {
+                            @if (Model.SelectedEngagementId == engagement.EngagementId)
+                            {
+                                <option value="@engagement.EngagementId" selected>@engagement.Label</option>
+                            }
+                            else
+                            {
+                                <option value="@engagement.EngagementId">@engagement.Label</option>
+                            }
+                        }
+                    </select>
+                    <small class="text-muted">Engagement list uses the same task assignment source as the Engagement task list.</small>
+                </div>
+                <div class="col-md-6 col-lg-7 text-md-end">
+                    <strong class="planning-step-counter">Step @(currentStepIndex > 0 ? currentStepIndex : 1) of @visibleSteps.Count</strong>
+                    <div class="text-muted small">Click any step to navigate</div>
+                </div>
+            </div>
+
+            @if (!Model.HasEngagementSelection)
+            {
+                <div class="alert alert-warning mb-3">Please select an engagement to begin the Field Audit workflow.</div>
+            }
+
+            @if (!visibleSteps.Any())
+            {
+                <div class="alert alert-warning mt-2 mb-0">You do not currently have access to any Field Audit workflow stages.</div>
+            }
+            else
+            {
+                <div class="planning-stepper mt-2">
+                    @foreach (var step in visibleSteps)
+                    {
+                        var isActive = currentStep != null && step.StepCode == currentStep.StepCode;
+                        var stepCss = isActive ? "planning-step active" : "planning-step";
+                        if (step.IsCompleted)
+                        {
+                            stepCss += " completed";
+                        }
+                        if (!step.IsSaved)
+                        {
+                            stepCss += " not-saved";
+                        }
+                        if (!Model.HasEngagementSelection)
+                        {
+                            stepCss += " disabled";
+                        }
+                        var statusBadgeCss = step.IsSaved ? "bg-success" : "bg-secondary";
+                        var href = Model.HasEngagementSelection
+                            ? Url.Action("Dashboard", "FieldAudit", new { stepCode = step.StepCode, engId = Model.SelectedEngagementId })
+                            : "javascript:void(0);";
+
+                        <a class="@stepCss" href="@href">
+                            <div class="step-title"><span class="step-no">@(step.StepNo).</span> @(step.StepTitle)</div>
+                            <span class="step-state ms-2 badge @statusBadgeCss">@(step.StatusText)</span>
+                        </a>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body" id="fieldAuditStepHost" data-load-url="@Url.Action("LoadStep", "FieldAudit")" data-step-code="@Model.CurrentStepCode" data-eng-id="@Model.SelectedEngagementId">
+        @if (!Model.HasEngagementSelection)
+        {
+            <div class="alert alert-info mb-0">Select an engagement from the dropdown above to load workflow content.</div>
+        }
+        else if (currentStep != null)
+        {
+            @await Html.PartialAsync(currentStep.PartialViewName, Model.CurrentStepContext)
+        }
+    </div>
+</div>
+
+<script src="~/js/fieldAudit/dashboard.js"></script>
+
+<style>
+    .planning-nav-wrap { z-index: 1020; }
+    .planning-nav-card { border: 1px solid #ced4da; }
+    .planning-step-counter { font-size: 1rem; }
+    .planning-stepper {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(220px, 1fr));
+        gap: .4rem;
+        overflow: auto;
+    }
+    .planning-step {
+        border: 1px solid #ced4da;
+        border-radius: .5rem;
+        padding: .35rem .5rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        text-decoration: none;
+        color: #212529;
+        background: #fff;
+        text-align: left;
+        transition: border-color .15s ease, box-shadow .15s ease, background-color .15s ease;
+    }
+    .planning-step:hover { color: #212529; border-color: #b8bec5; background: #f8f9fa; }
+    .planning-step.active { border-color: #0d6efd; box-shadow: 0 0 0 2px rgba(13,110,253,.15); }
+    .planning-step.completed { background: #ecf9f0; border-color: #198754; }
+    .planning-step.not-saved { background: #fff5f5; border-color: #dc3545; }
+    .planning-step.disabled { pointer-events: none; opacity: .6; }
+    .step-no { font-weight: 700; }
+    .step-title { font-size: .88rem; padding-right: .5rem; }
+    .step-state { font-size: .68rem; vertical-align: middle; }
+    @@media (max-width: 991px) { .planning-stepper { grid-template-columns: repeat(2, minmax(220px, 1fr)); } }
+    @@media (max-width: 575px) { .planning-stepper { grid-template-columns: 1fr; } }
+</style>
