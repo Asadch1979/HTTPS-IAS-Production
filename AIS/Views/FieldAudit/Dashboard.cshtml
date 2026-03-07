@@ -55,17 +55,22 @@
                         {
                             stepCss += " completed";
                         }
+                        if (!step.IsSaved)
+                        {
+                            stepCss += " not-saved";
+                        }
                         if (!Model.HasEngagementSelection)
                         {
                             stepCss += " disabled";
                         }
+                        var statusBadgeCss = step.IsSaved ? "bg-success" : "bg-secondary";
                         var href = Model.HasEngagementSelection
                             ? Url.Action("Dashboard", "FieldAudit", new { stepCode = step.StepCode, engId = Model.SelectedEngagementId })
                             : "javascript:void(0);";
 
                         <a class="@stepCss" href="@href">
                             <div class="step-title"><span class="step-no">@(step.StepNo).</span> @(step.StepTitle)</div>
-                            <span class="step-state ms-2">@(step.StatusText)</span>
+                            <span class="step-state ms-2 badge @statusBadgeCss">@(step.StatusText)</span>
                         </a>
                     }
                 </div>
@@ -95,7 +100,7 @@
     .planning-step-counter { font-size: 1rem; }
     .planning-stepper {
         display: grid;
-        grid-template-columns: repeat(3, minmax(140px, 1fr));
+        grid-template-columns: repeat(3, minmax(220px, 1fr));
         gap: .4rem;
         overflow: auto;
     }
@@ -112,10 +117,14 @@
         text-align: left;
         transition: border-color .15s ease, box-shadow .15s ease, background-color .15s ease;
     }
+    .planning-step:hover { color: #212529; border-color: #b8bec5; background: #f8f9fa; }
     .planning-step.active { border-color: #0d6efd; box-shadow: 0 0 0 2px rgba(13,110,253,.15); }
     .planning-step.completed { background: #ecf9f0; border-color: #198754; }
+    .planning-step.not-saved { background: #fff5f5; border-color: #dc3545; }
     .planning-step.disabled { pointer-events: none; opacity: .6; }
     .step-no { font-weight: 700; }
     .step-title { font-size: .88rem; padding-right: .5rem; }
     .step-state { font-size: .68rem; vertical-align: middle; }
+    @@media (max-width: 991px) { .planning-stepper { grid-template-columns: repeat(2, minmax(220px, 1fr)); } }
+    @@media (max-width: 575px) { .planning-stepper { grid-template-columns: 1fr; } }
 </style>
