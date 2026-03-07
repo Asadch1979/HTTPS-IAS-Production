@@ -124,6 +124,12 @@ namespace AIS.Controllers
             return LoadStepPartial("MEMO_CREATION", engId);
             }
 
+        [HttpGet]
+        public IActionResult _ManageObservationBranches(int engId)
+            {
+            return LoadStepPartial("MANAGE_OBSERVATION_BRANCHES", engId);
+            }
+
         [HttpPost]
         [IgnoreAntiforgeryToken]
         public IActionResult SubmitJoin([FromForm] AddJoiningPostModel model)
@@ -223,6 +229,9 @@ namespace AIS.Controllers
                     return PartialView("~/Views/FieldAudit/_Observation.cshtml", observationModel);
                 case "EXIT_AUDIT":
                     return PartialView("~/Views/FieldAudit/_Closing.cshtml", new FieldAuditGridReplicaViewModel { EngagementId = engId });
+                case "MANAGE_OBSERVATION_BRANCHES":
+                    var manageObservationBranchesModel = BuildManageObservationBranchesReplicaViewModel(engId);
+                    return PartialView("~/Views/FieldAudit/_ManageObservationBranches.cshtml", manageObservationBranchesModel);
                 default:
                     var stepModel = BuildStepContext(step.StepCode, engId);
                     return PartialView(step.PartialViewName, stepModel);
@@ -254,6 +263,18 @@ namespace AIS.Controllers
                 DefaultAmountInvolved = 0,
                 DefaultNoOfInstances = 1,
                 DefaultReplyDays = 3
+                };
+            }
+
+        private FieldAuditGridReplicaViewModel BuildManageObservationBranchesReplicaViewModel(int engId)
+            {
+            ViewData["ProcessList"] = _dbConnection.GetAuditChecklistCAD();
+            ViewData["AnnexList"] = _dbConnection.GetAnnexuresForChecklistDetail();
+            ViewData["RiskList"] = _dbConnection.GetRisks();
+
+            return new FieldAuditGridReplicaViewModel
+                {
+                EngagementId = engId
                 };
             }
 
@@ -317,10 +338,8 @@ namespace AIS.Controllers
                 CreateStep(3, "EXCEPTION_REPORT", "Exception Report", "~/Views/FieldAudit/_Exception.cshtml", "/sampling/list_reports"),
                 CreateStep(4, "WORKING_PAPER", "Working Paper", "~/Views/FieldAudit/_WPaper.cshtml", "/WorkingPaper/loan_case_file"),
                 CreateStep(5, "MEMO_CREATION", "Observation", "~/Views/FieldAudit/_Observation.cshtml", "/Execution/cau_observation"),
-                CreateStep(6, "SUBMIT_TO_AUDITEE", "Submit to Auditee", "~/Views/FieldAudit/Partials/_SubmitToAuditeeStep.cshtml", "/Execution/manage_observations_branches"),
-                CreateStep(7, "EXIT_AUDIT", "Closing", "~/Views/FieldAudit/_Closing.cshtml", "/Execution/closing"),
-                CreateStep(8, "DRAFT_REPORT", "Draft Report", "~/Views/FieldAudit/Partials/_DraftReportStep.cshtml", "/Execution/manage_observations_branches"),
-                CreateStep(9, "AUDIT_REPORT_COMPILATION", "Audit Report Compilation", "~/Views/FieldAudit/Partials/_AuditReportCompilationStep.cshtml", "/FieldAuditReport/ReportOverview")
+                CreateStep(6, "EXIT_AUDIT", "Closing", "~/Views/FieldAudit/_Closing.cshtml", "/Execution/closing"),
+                CreateStep(7, "MANAGE_OBSERVATION_BRANCHES", "Manage Observation Branches", "~/Views/FieldAudit/_ManageObservationBranches.cshtml", "/Execution/manage_observations_branches")
                 };
             }
 
@@ -351,14 +370,10 @@ namespace AIS.Controllers
                     return BuildStep(engId, "/WorkingPaper/loan_case_file", "Working Paper", "Maintain loan case files and working papers for the selected engagement.");
                 case "MEMO_CREATION":
                     return BuildStep(engId, "/Execution/cau_observation", "Observation", "Create and manage observations inside dashboard (zone/branch forwarding removed in dashboard flow).");
-                case "SUBMIT_TO_AUDITEE":
-                    return BuildStep(engId, "/Execution/manage_observations_branches", "Submit to Auditee", "Submit observations to auditee (add-to-draft flow intentionally excluded).");
                 case "EXIT_AUDIT":
                     return BuildStep(engId, "/Execution/closing", "Exit Audit", "Execute closing and exit audit milestones for the selected engagement.");
-                case "DRAFT_REPORT":
-                    return BuildStep(engId, "/Execution/manage_observations_branches", "Draft Report", "Prepare draft report package (submit-to-auditee flow intentionally excluded).");
-                case "AUDIT_REPORT_COMPILATION":
-                    return BuildStep(engId, "/FieldAuditReport/ReportOverview", "Audit Report Compilation", "Compile the final field audit report overview and narrative sections.");
+                case "MANAGE_OBSERVATION_BRANCHES":
+                    return BuildStep(engId, "/Execution/manage_observations_branches", "Manage Observation Branches", "Manage branch observations directly in the dashboard for the selected engagement.");
                 default:
                     return BuildStep(engId, "/Engagement/task_list", "Field Audit", "Select a step from the workflow.");
                 }
