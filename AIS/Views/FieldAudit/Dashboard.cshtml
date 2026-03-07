@@ -64,11 +64,12 @@
                             stepCss += " disabled";
                         }
                         var statusBadgeCss = step.IsSaved ? "bg-success" : "bg-secondary";
-                        var href = Model.HasEngagementSelection
-                            ? Url.Action("Dashboard", "FieldAudit", new { stepCode = step.StepCode, engId = Model.SelectedEngagementId })
-                            : "javascript:void(0);";
 
-                        <a class="@stepCss" href="@href">
+                        <a class="@stepCss"
+                           href="javascript:void(0);"
+                           data-step-code="@step.StepCode"
+                           data-step-no="@step.StepNo"
+                           data-step-title="@step.StepTitle">
                             <div class="step-title"><span class="num">@(step.StepNo).</span> @(step.StepTitle)</div>
                             <span class="step-state ms-2 badge @statusBadgeCss">@(step.StatusText)</span>
                         </a>
@@ -80,19 +81,22 @@
 </div>
 
 <div class="card">
-    <div class="card-body" id="fieldAuditStepHost" data-load-url="@Url.Action("LoadStep", "FieldAudit")" data-step-code="@Model.CurrentStepCode" data-eng-id="@Model.SelectedEngagementId">
+    <div class="card-body" id="fieldAuditStepHost"
+         data-load-url="@Url.Action("LoadStep", "FieldAudit")"
+         data-step-code="@Model.CurrentStepCode"
+         data-eng-id="@Model.SelectedEngagementId">
         @if (!Model.HasEngagementSelection)
         {
             <div class="alert alert-info mb-0">Select an engagement from the dropdown above to load workflow content.</div>
         }
-        else if (currentStep != null)
+        else
         {
-            @await Html.PartialAsync(currentStep.PartialViewName, Model.CurrentStepContext)
+            <div class="alert alert-secondary mb-0">Loading workflow content...</div>
         }
     </div>
 </div>
 
-<script src="~/js/fieldAudit/dashboard.js"></script>
+<script src="~/js/fieldAudit/dashboard.js?v=2"></script>
 
 <style>
     .stepper-wrap { z-index: 1020; }

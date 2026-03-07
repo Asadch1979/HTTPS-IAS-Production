@@ -1,0 +1,78 @@
+@model AIS.Models.FieldAuditWorkflow.FieldAuditJoinReplicaViewModel
+@{
+    var join = Model.JoiningDetails ?? new AIS.Models.JoiningModel();
+    var startDate = join.START_DATE.HasValue ? join.START_DATE.Value.ToString("dd/MM/yyyy") : string.Empty;
+    var endDate = join.END_DATE.HasValue ? join.END_DATE.Value.ToString("dd/MM/yyyy") : string.Empty;
+    var completionIso = Model.CompletionDate.ToString("yyyy-MM-dd");
+}
+
+<div class="row mt-1">
+    <h4 style="display:block;color:#be0e43">Joining Report</h4>
+</div>
+
+<div id="fieldAuditJoinReplica"
+     data-eng-id="@Model.EngagementId"
+     data-completion-date="@completionIso"
+     data-is-submitted="@(Model.IsSubmitted ? "true" : "false")">
+    <div class="row col-md-12">
+        <div class="col-md-6">
+            <table class="table table-bordered mb-0 mt-3 bg-white table-hover table-striped">
+                <thead>
+                    <tr><td><h6>Audit Plan</h6></td></tr>
+                </thead>
+                <tbody>
+                    <tr><td>Audit Period</td><td>@join.AUDIT_PERIOD</td></tr>
+                    <tr><td width="150">Entity</td><td width="200">@join.ENTITY_NAME</td></tr>
+                    <tr><td>Entity Risk</td><td>@join.RISK</td></tr>
+                    <tr><td>Entity Size</td><td>@join.SIZE</td></tr>
+                    <tr><td>Start Date</td><td>@startDate</td></tr>
+                    <tr><td>End Date</td><td>@endDate</td></tr>
+                    <tr><td>Audit Conducted by</td><td>@join.TEAM_NAME</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="mt-3">
+        <table class="table table-bordered mb-0 mt-3 bg-white table-hover table-striped">
+            <thead>
+                <tr>
+                    <th class="font-weight-bold">Name</th>
+                    <th class="font-weight-bold">P.P. No</th>
+                    <th class="font-weight-bold">Joining Date</th>
+                    <th class="font-weight-bold">Completion Date</th>
+                    <th class="font-weight-bold">Is team Lead</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (join.TEAM_DETAILS != null)
+                {
+                    foreach (var member in join.TEAM_DETAILS)
+                    {
+                        <tr>
+                            <td>@member.EMP_NAME</td>
+                            <td>@member.PP_NO</td>
+                            <td>@DateTime.Now.ToString("dd/MM/yyyy")</td>
+                            <td>@endDate</td>
+                            <td>@member.IS_TEAM_LEAD</td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+    </div>
+
+    <div id="joinReplicaStatus" class="mt-3"></div>
+
+    <div class="row">
+        <div class="col-md-6 mt-4">
+            <button id="joinReplicaSubmitBtn" class="btn btn-primary" @(Model.IsSubmitted ? "disabled" : string.Empty)>Submit</button>
+            @if (Model.IsSubmitted)
+            {
+                <span class="ms-2 text-success">Joining already submitted for this engagement.</span>
+            }
+        </div>
+    </div>
+</div>
+
+<script src="~/js/fieldAudit/joinReplica.js?v=1"></script>

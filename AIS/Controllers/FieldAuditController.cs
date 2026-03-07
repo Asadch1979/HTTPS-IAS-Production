@@ -1,5 +1,6 @@
 using AIS.Models;
 using AIS.Models.FieldAuditWorkflow;
+using AIS.Models.Requests;
 using AIS.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
@@ -84,8 +85,143 @@ namespace AIS.Controllers
                 return Forbid();
                 }
 
-            var stepModel = BuildStepContext(step.StepCode, engId);
-            return PartialView(step.PartialViewName, stepModel);
+            return LoadStepPartial(step.StepCode, engId);
+            }
+
+        [HttpGet]
+        public IActionResult LoadJoin(int engId)
+            {
+            return LoadStepPartial("JOINING", engId);
+            }
+
+        [HttpGet]
+        public IActionResult LoadSamples(int engId)
+            {
+            return LoadStepPartial("SAMPLING", engId);
+            }
+
+        [HttpGet]
+        public IActionResult LoadException(int engId)
+            {
+            return LoadStepPartial("EXCEPTION_REPORT", engId);
+            }
+
+        [HttpPost]
+        [IgnoreAntiforgeryToken]
+        public IActionResult SubmitJoin([FromForm] AddJoiningPostModel model)
+            {
+            if (!User.Identity.IsAuthenticated)
+                {
+                return Unauthorized();
+                }
+
+            if (!_sessionHandler.TryGetUser(out var user) || user == null)
+                {
+                return Unauthorized();
+                }
+
+            if (model == null || !model.ENG_PLAN_ID.HasValue || model.ENG_PLAN_ID.Value <= 0)
+                {
+                return Json(new
+                    {
+                    status = false,
+                    message = "A valid engagement is required."
+                    });
+                }
+
+            var joiningDetails = _dbConnection.GetJoiningDetails(model.ENG_PLAN_ID.Value);
+            var selectedMember = joiningDetails?.TEAM_DETAILS?.FirstOrDefault();
+            if (selectedMember == null)
+                {
+                return Json(new
+                    {
+                    status = false,
+                    message = "Unable to resolve team member details for joining submission."
+                    });
+                }
+
+            var request = new AddJoiningModel
+                {
+                ID = model.ID ?? 0,
+                ENG_PLAN_ID = model.ENG_PLAN_ID.Value,
+                TEAM_MEM_PPNO = selectedMember.PP_NO,
+                JOINING_DATE = model.JOINING_DATE,
+                COMPLETION_DATE = model.COMPLETION_DATE
+                };
+
+            var responseMessage = _dbConnection.AddJoiningReport(request);
+            var isSubmitted = IsJoinAlreadySubmitted(model.ENG_PLAN_ID.Value);
+
+            return Json(new
+                {
+                status = true,
+                message = responseMessage,
+                isSubmitted
+                });
+            }
+
+        private IActionResult LoadStepPartial(string stepCode, int engId)
+            {
+            if (!User.Identity.IsAuthenticated)
+                {
+                return Unauthorized();
+                }
+
+            if (!_sessionHandler.TryGetUser(out var user) || user == null)
+                {
+                return Unauthorized();
+                }
+
+            if (engId <= 0)
+                {
+                return BadRequest("A valid engagement is required.");
+                }
+
+            var model = BuildWorkflowViewModel(user, stepCode, engId);
+            if (!model.HasEngagementSelection)
+                {
+                return BadRequest("A valid engagement is required.");
+                }
+
+            var step = model.VisibleSteps.FirstOrDefault(item => string.Equals(item.StepCode, stepCode, StringComparison.OrdinalIgnoreCase));
+            if (step == null)
+                {
+                return Forbid();
+                }
+
+            switch (step.StepCode)
+                {
+                case "JOINING":
+                    var joinModel = BuildJoinReplicaViewModel(engId);
+                    return PartialView("~/Views/FieldAudit/_Join.cshtml", joinModel);
+                case "SAMPLING":
+                    return PartialView("~/Views/FieldAudit/_Samples.cshtml", new FieldAuditGridReplicaViewModel { EngagementId = engId });
+                case "EXCEPTION_REPORT":
+                    return PartialView("~/Views/FieldAudit/_Exception.cshtml", new FieldAuditGridReplicaViewModel { EngagementId = engId });
+                default:
+                    var stepModel = BuildStepContext(step.StepCode, engId);
+                    return PartialView(step.PartialViewName, stepModel);
+                }
+            }
+
+        private FieldAuditJoinReplicaViewModel BuildJoinReplicaViewModel(int engId)
+            {
+            var joiningDetails = _dbConnection.GetJoiningDetails(engId) ?? new JoiningModel();
+            var hasCompletionDate = joiningDetails.END_DATE.HasValue;
+
+            return new FieldAuditJoinReplicaViewModel
+                {
+                EngagementId = engId,
+                JoiningDetails = joiningDetails,
+                CompletionDate = hasCompletionDate ? joiningDetails.END_DATE.Value.Date : DateTime.UtcNow.Date,
+                IsSubmitted = IsJoinAlreadySubmitted(engId)
+                };
+            }
+
+        private bool IsJoinAlreadySubmitted(int engId)
+            {
+            var details = _dbConnection.GetClosingDraftObservations(engId);
+            return details.Any(item => item.ENG_PLAN_ID == engId && !string.IsNullOrWhiteSpace(item.JOINING_DATE));
             }
 
         private FieldAuditWorkflowViewModel BuildWorkflowViewModel(SessionUser user, string requestedStepCode, int? engId)
@@ -137,9 +273,9 @@ namespace AIS.Controllers
             {
             return new List<FieldAuditWorkflowStepModel>
                 {
-                CreateStep(1, "JOINING", "Joining", "~/Views/FieldAudit/Partials/_JoiningStep.cshtml", "/Engagement/Join"),
-                CreateStep(2, "SAMPLING", "Sampling", "~/Views/FieldAudit/Partials/_SamplingStep.cshtml", "/sampling/list_samples"),
-                CreateStep(3, "EXCEPTION_REPORT", "Exception Report", "~/Views/FieldAudit/Partials/_ExceptionReportStep.cshtml", "/sampling/list_reports"),
+                CreateStep(1, "JOINING", "Joining", "~/Views/FieldAudit/_Join.cshtml", "/Engagement/Join"),
+                CreateStep(2, "SAMPLING", "Sampling", "~/Views/FieldAudit/_Samples.cshtml", "/sampling/list_samples"),
+                CreateStep(3, "EXCEPTION_REPORT", "Exception Report", "~/Views/FieldAudit/_Exception.cshtml", "/sampling/list_reports"),
                 CreateStep(4, "WORKING_PAPER", "Working Paper", "~/Views/FieldAudit/Partials/_WorkingPaperStep.cshtml", "/WorkingPaper/loan_case_file"),
                 CreateStep(5, "MEMO_CREATION", "Memo Creation", "~/Views/FieldAudit/Partials/_MemoCreationStep.cshtml", "/Execution/cau_observation"),
                 CreateStep(6, "SUBMIT_TO_AUDITEE", "Submit to Auditee", "~/Views/FieldAudit/Partials/_SubmitToAuditeeStep.cshtml", "/Execution/manage_observations_branches"),
