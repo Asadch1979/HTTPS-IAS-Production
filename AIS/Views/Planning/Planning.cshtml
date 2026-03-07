@@ -7,11 +7,13 @@
     var currentStepIndex = currentStep == null ? 0 : visibleSteps.FindIndex(s => s.StepCode == currentStep.StepCode) + 1;
 }
 
-<div class="planning-nav-wrap sticky-top bg-white py-2 mb-3">
-    <div class="card shadow-sm planning-nav-card mb-0">
+<link rel="stylesheet" href="~/css/classic-wizard-navigation.css" />
+
+<div class="classic-wizard-nav-wrap sticky-top bg-white py-2 mb-3">
+    <div class="card shadow-sm classic-wizard-card mb-0">
         <div class="card-body py-3">
-            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2">
-                <strong class="planning-step-counter">Step @(currentStepIndex > 0 ? currentStepIndex : 1) of @visibleSteps.Count</strong>
+            <div class="classic-wizard-nav-head d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2">
+                <strong class="classic-wizard-step-counter">Step @(currentStepIndex > 0 ? currentStepIndex : 1) of @visibleSteps.Count</strong>
                 <span class="text-muted small">Click any step to navigate</span>
             </div>
 
@@ -21,11 +23,11 @@
                 }
             else
                 {
-                <div class="planning-stepper mt-2">
+                <div class="classic-wizard-stepper classic-wizard-stepper--planning mt-2">
                     @foreach (var step in visibleSteps)
                         {
                         var isActive = currentStep != null && step.StepCode == currentStep.StepCode;
-                        var stepCss = isActive ? "planning-step active" : "planning-step";
+                        var stepCss = isActive ? "classic-wizard-step active" : "classic-wizard-step";
                         if (step.IsCompleted)
                             {
                             stepCss += " completed";
@@ -37,8 +39,8 @@
                         var statusBadgeCss = step.IsSaved ? "bg-success" : "bg-secondary";
 
                         <a class="@stepCss" href="@Url.Action("Planning", "Planning", new { stepCode = step.StepCode, contextId = Model.ContextId, contextSecondaryId = Model.ContextSecondaryId })">
-                            <div class="step-title"><span class="step-no">@(step.StepNo).</span> @(step.StepTitle)</div>
-                            <span class="step-state ms-2 badge @statusBadgeCss">@(step.StatusText)</span>
+                            <div class="classic-wizard-step-title"><span class="classic-wizard-step-no">@(step.StepNo).</span> @(step.StepTitle)</div>
+                            <span class="classic-wizard-step-state ms-2 badge @statusBadgeCss">@(step.StatusText)</span>
                         </a>
                         }
                 </div>
@@ -56,84 +58,4 @@
     </div>
     }
 
-<style>
-    .planning-nav-wrap {
-        z-index: 1020;
-    }
 
-    .planning-nav-card {
-        border: 1px solid #ced4da;
-    }
-
-    .planning-step-counter {
-        font-size: 1rem;
-    }
-
-    .planning-stepper {
-        display: grid;
-        grid-template-columns: repeat(4, minmax(220px, 1fr));
-        gap: .4rem;
-        overflow: auto;
-    }
-
-    .planning-step {
-        border: 1px solid #ced4da;
-        border-radius: .5rem;
-        padding: .35rem .5rem;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        text-decoration: none;
-        color: #212529;
-        background: #fff;
-        text-align: left;
-        transition: border-color .15s ease, box-shadow .15s ease, background-color .15s ease;
-    }
-
-    .planning-step:hover {
-        color: #212529;
-        border-color: #b8bec5;
-        background: #f8f9fa;
-    }
-
-    .planning-step.active {
-        border-color: #0d6efd;
-        box-shadow: 0 0 0 2px rgba(13,110,253,.15);
-    }
-
-    .planning-step.completed {
-        background: #ecf9f0;
-        border-color: #198754;
-    }
-
-    .planning-step.not-saved {
-        background: #fff5f5;
-        border-color: #dc3545;
-    }
-
-    .step-no {
-        font-weight: 700;
-    }
-
-    .step-title {
-        font-size: .88rem;
-        padding-right: .5rem;
-    }
-
-    .step-state {
-        font-size: .68rem;
-        vertical-align: middle;
-    }
-
-    <text>@media (max-width: 991px) {
-        .planning-stepper {
-            grid-template-columns: repeat(2, minmax(220px, 1fr));
-        }
-    }
-
-    @media (max-width: 575px) {
-        .planning-stepper {
-            grid-template-columns: 1fr;
-        }
-    }</text>
-</style>
