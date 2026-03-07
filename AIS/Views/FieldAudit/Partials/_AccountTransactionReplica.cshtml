@@ -1,0 +1,10 @@
+@model AIS.Models.FieldAuditWorkflow.FieldAuditGridReplicaViewModel
+@{ var acNo = ViewData["AccountNo"] as string; }
+<div id="fieldAuditAccountTransactionReplica" data-eng-id="@Model.EngagementId" data-ac-no="@acNo">
+    <div class="d-flex justify-content-between align-items-center mb-2 mt-2">
+        <h5 class="mb-0">Account Transactions</h5>
+        <button type="button" class="btn btn-outline-secondary btn-sm" onclick="window.fieldAuditDashboard && window.fieldAuditDashboard.loadNestedView('EXCEPTION_ACCOUNT',{ reportId: '@(ViewData["ReportId"] ?? 0)', loanStatus: '@(ViewData["LoanStatus"] ?? 0)' })">Back</button>
+    </div>
+    <table id="fieldAuditAccountTransactionTable" class="table table-hover table-bordered table-striped"><thead><tr><th>Sr. No</th><th>Code</th><th>Instrument</th><th>Description</th><th>T.Date</th><th>A.Date</th><th>DR</th><th>CR</th><th>Remarks</th></tr></thead><tbody></tbody></table>
+</div>
+<script src="~/js/fieldAudit/accountTransactionReplica.js?v=1"></script>

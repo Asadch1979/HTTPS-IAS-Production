@@ -1,0 +1,4 @@
+(function(){var h=document.getElementById('fieldAuditFixedAssetsReplica');if(!h)return;var engId=h.dataset.engId;
+fetch((window.g_asiBaseURL||'')+'/ApiCalls/Get_Working_Paper_Fixed_Assets',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded; charset=UTF-8'},body:'ENGID='+encodeURIComponent(engId),credentials:'same-origin'})
+.then(r=>r.json()).then(function(data){var b=document.querySelector('#fieldAuditFixedAssetsTable tbody');b.innerHTML='';(data||[]).forEach((v,i)=>b.insertAdjacentHTML('beforeend','<tr><td>'+(i+1)+'</td><td>'+(v.asseT_NAME||'')+'</td><td>'+(v.physicaL_EXISTANCE||'')+'</td><td>'+(v.locatioN_AS_PER_FAR||'')+'</td><td>'+(v.difference||'')+'</td><td>'+(v.remarks||'')+'</td></tr>'));if(typeof initializeDataTable==='function'){initializeDataTable('fieldAuditFixedAssetsTable');}});
+})();

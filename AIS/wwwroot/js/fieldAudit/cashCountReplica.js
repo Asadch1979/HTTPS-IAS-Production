@@ -1,0 +1,4 @@
+(function(){var h=document.getElementById('fieldAuditCashCountReplica');if(!h)return;var engId=h.dataset.engId;
+fetch((window.g_asiBaseURL||'')+'/ApiCalls/Get_Working_Paper_Cash_Counter',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded; charset=UTF-8'},body:'ENGID='+encodeURIComponent(engId),credentials:'same-origin'})
+.then(r=>r.json()).then(function(data){var b=document.querySelector('#fieldAuditCashCountTable tbody');b.innerHTML='';(data||[]).forEach((v,i)=>b.insertAdjacentHTML('beforeend','<tr><td>'+(i+1)+'</td><td>'+(v.denominatioN_VAULT||'')+'</td><td>'+(v.nO_CURRENCY_NOTES_VAULT||'')+'</td><td>'+(v.totaL_AMOUNT_VAULT||'')+'</td><td>'+(v.denominatioN_SAFE_REGISTER||'')+'</td><td>'+(v.nO_CURRENCY_NOTES_SAFE_REGISTER||'')+'</td><td>'+(v.totaL_AMOUNT_SAFE_REGISTER||'')+'</td><td>'+(v.difference||'')+'</td></tr>'));if(typeof initializeDataTable==='function'){initializeDataTable('fieldAuditCashCountTable');}});
+})();

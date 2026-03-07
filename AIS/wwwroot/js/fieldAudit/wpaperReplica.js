@@ -143,7 +143,9 @@
 
     if (voucherLink) {
         voucherLink.addEventListener('click', function () {
-            window.location.href = (window.g_asiBaseURL || '') + '/WorkingPaper/voucher_checking?engId=' + encodeURIComponent(engId);
+            if (window.fieldAuditDashboard && typeof window.fieldAuditDashboard.loadNestedView === 'function') {
+                window.fieldAuditDashboard.loadNestedView('WP_VOUCHER');
+            }
         });
     }
 

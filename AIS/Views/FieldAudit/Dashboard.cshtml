@@ -12,10 +12,14 @@
 <div class="stepper-wrap sticky-top bg-white py-2 mb-3">
     <div class="card shadow-sm planning-nav-card mb-0">
         <div class="card-body py-3">
-            <div class="row g-2 align-items-end mb-3">
-                <div class="col-md-6 col-lg-5">
-                    <label for="engagementSelector" class="form-label fw-semibold mb-1">Engagement</label>
-                    <select id="engagementSelector" class="form-select" data-dashboard-base-url="@Url.Action("Dashboard", "FieldAudit")">
+            <div class="row g-2 align-items-center mb-3">
+                <div class="col-lg-7">
+                    <div class="row g-2 align-items-center">
+                        <div class="col-sm-auto">
+                            <label for="engagementSelector" class="form-label fw-semibold mb-0">Engagement</label>
+                        </div>
+                        <div class="col-sm">
+                            <select id="engagementSelector" class="form-select" data-dashboard-base-url="@Url.Action("Dashboard", "FieldAudit")">
                         <option value="">-- Select Engagement --</option>
                         @foreach (var engagement in Model.AvailableEngagements)
                         {
@@ -28,10 +32,12 @@
                                 <option value="@engagement.EngagementId">@engagement.Label</option>
                             }
                         }
-                    </select>
+                            </select>
+                        </div>
+                    </div>
                     <small class="text-muted">Engagement list uses the same task assignment source as the Engagement task list.</small>
                 </div>
-                <div class="col-md-6 col-lg-7 text-md-end">
+                <div class="col-lg-5 text-lg-end">
                     <strong id="stepCounter">Step @(currentStepIndex > 0 ? currentStepIndex : 1) of @visibleSteps.Count</strong>
                     <span class="text-muted small">Click any step to navigate</span>
                 </div>
@@ -97,7 +103,7 @@
             }
         </div>
         <div class="field-audit-step-footer border-top mt-3 pt-3 d-flex justify-content-end">
-            <button type="button" id="fieldAuditMarkCompletedBtn" class="btn btn-outline-success">Mark as Completed</button>
+            <button type="button" id="fieldAuditMarkCompletedBtn" class="btn btn-outline-success">Mark as Saved</button>
         </div>
     </div>
 </div>

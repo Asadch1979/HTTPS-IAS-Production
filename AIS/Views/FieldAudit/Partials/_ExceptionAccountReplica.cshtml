@@ -1,0 +1,23 @@
+@model AIS.Models.FieldAuditWorkflow.FieldAuditGridReplicaViewModel
+@{
+    var title = ViewData["ReportTitle"] as string;
+    var desc = ViewData["ReportDescription"] as string;
+    var reportId = ViewData["ReportId"] as int?;
+}
+<div id="fieldAuditExceptionAccountReplica" data-eng-id="@Model.EngagementId" data-report-id="@(reportId ?? 0)">
+    <div class="d-flex justify-content-between align-items-center mb-2 mt-2">
+        <h5 class="mb-0">@(string.IsNullOrWhiteSpace(title) ? "Account Exception Report" : title)</h5>
+        <button type="button" class="btn btn-outline-secondary btn-sm" onclick="window.fieldAuditDashboard && window.fieldAuditDashboard.loadStepContent('EXCEPTION_REPORT', 3)">Back to Exception Report</button>
+    </div>
+    @if (!string.IsNullOrWhiteSpace(desc))
+    {
+        <p class="text-danger fw-semibold">@desc</p>
+    }
+    <div class="table-responsive">
+        <table id="fieldAuditExceptionAccountTable" class="table table-hover table-bordered table-striped">
+            <thead id="fieldAuditExceptionAccountHeader"></thead>
+            <tbody id="fieldAuditExceptionAccountBody"></tbody>
+        </table>
+    </div>
+</div>
+<script src="~/js/fieldAudit/exceptionAccountReplica.js?v=1"></script>

@@ -66,7 +66,7 @@
 
         var badge = anchor.querySelector('.step-state');
         if (badge) {
-            badge.textContent = statusText || (isCompleted ? 'Completed' : 'Pending');
+            badge.textContent = statusText || (isCompleted ? 'Saved' : 'Pending');
             badge.classList.toggle('bg-success', !!isCompleted);
             badge.classList.toggle('bg-secondary', !isCompleted);
         }
@@ -175,7 +175,7 @@
                         throw new Error('Failed to mark step completed.');
                     }
 
-                    setStepCompleted(stepCode, true, payload.statusText || 'Completed');
+                    setStepCompleted(stepCode, true, payload.statusText || 'Saved');
                 })
                 .catch(function () {
                     alert('Unable to mark this step as completed right now.');
@@ -209,6 +209,51 @@
             loadStepContent(anchor.getAttribute('data-step-code'), anchor.getAttribute('data-step-no'));
         });
     });
+
+
+    window.fieldAuditDashboard = {
+        loadStepContent: loadStepContent,
+        loadNestedView: function (viewCode, options) {
+            var engId = selectedEngagementId();
+            if (!engId) {
+                return;
+            }
+
+            options = options || {};
+            var loadUrl = (stepHost.getAttribute('data-load-url') || '/FieldAudit/LoadStep').replace('/LoadStep', '/LoadNestedStepView');
+            var query = new URLSearchParams();
+            query.append('viewCode', viewCode || '');
+            query.append('engId', engId);
+
+            Object.keys(options).forEach(function (key) {
+                var value = options[key];
+                if (value !== undefined && value !== null && value !== '') {
+                    query.append(key, value);
+                }
+            });
+
+            stepHost.innerHTML = '<div class="alert alert-secondary mb-0">Loading workflow content...</div>';
+            fetch(loadUrl + '?' + query.toString() + '&_=' + Date.now(), {
+                method: 'GET',
+                credentials: 'same-origin',
+                cache: 'no-store'
+            })
+                .then(function (response) {
+                    if (!response.ok) {
+                        throw new Error('Failed to load nested view.');
+                    }
+                    return response.text();
+                })
+                .then(function (html) {
+                    stepHost.innerHTML = html;
+                    executeInlineScripts(stepHost);
+                    stepHost.setAttribute('data-eng-id', engId);
+                })
+                .catch(function () {
+                    clearStepContent('Unable to load workflow content right now. Please try again.');
+                });
+        }
+    };
 
     toggleEngagementAlert(!selectedEngagementId());
 

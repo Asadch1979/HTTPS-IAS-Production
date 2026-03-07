@@ -54,9 +54,13 @@
                     var desc = encodeURIComponent(item.discription || '');
 
                     if (indicator === 'A') {
-                        window.location.href = (window.g_asiBaseURL || '') + '/Sampling/Account_exception?engId=' + engId + '&report_id=' + item.reporT_ID + '&loan_status=' + loanStatus + '&title=' + title + '&desc=' + desc;
+                        if (window.fieldAuditDashboard && typeof window.fieldAuditDashboard.loadNestedView === 'function') {
+                            window.fieldAuditDashboard.loadNestedView('EXCEPTION_ACCOUNT', { reportId: item.reporT_ID, loanStatus: loanStatus, title: item.reporT_TITLE || '', desc: item.discription || '' });
+                        }
                     } else if (indicator === 'L') {
-                        window.location.href = (window.g_asiBaseURL || '') + '/Sampling/loans_exception?engId=' + engId + '&reporT_ID=' + item.reporT_ID + '&loaN_STATUS=' + loanStatus + '&title=' + title + '&desc=' + desc;
+                        if (window.fieldAuditDashboard && typeof window.fieldAuditDashboard.loadNestedView === 'function') {
+                            window.fieldAuditDashboard.loadNestedView('EXCEPTION_LOAN', { reportId: item.reporT_ID, loanStatus: loanStatus, title: item.reporT_TITLE || '', desc: item.discription || '' });
+                        }
                     }
                 });
             }
