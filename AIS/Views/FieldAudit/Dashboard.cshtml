@@ -7,6 +7,8 @@
     var currentStepIndex = currentStep == null ? 0 : visibleSteps.FindIndex(s => s.StepCode == currentStep.StepCode) + 1;
 }
 
+<form id="fieldAuditCsrfForm" class="d-none">@Html.AntiForgeryToken()</form>
+
 <div class="stepper-wrap sticky-top bg-white py-2 mb-3">
     <div class="card shadow-sm planning-nav-card mb-0">
         <div class="card-body py-3">
@@ -60,7 +62,7 @@
                         {
                             stepCss += " disabled";
                         }
-                        var statusBadgeCss = step.IsSaved ? "bg-success" : "bg-secondary";
+                        var statusBadgeCss = step.IsCompleted ? "bg-success" : "bg-secondary";
 
                         <a class="@stepCss"
                            href="javascript:void(0);"
@@ -78,29 +80,36 @@
 </div>
 
 <div class="card">
-    <div class="card-body" id="fieldAuditStepHost"
-         data-load-url="@Url.Action("LoadStep", "FieldAudit")"
-         data-step-code="@Model.CurrentStepCode"
-         data-eng-id="@Model.SelectedEngagementId">
-        @if (!Model.HasEngagementSelection)
-        {
-            <div class="alert alert-info mb-0">Select an engagement from the dropdown above to load workflow content.</div>
-        }
-        else
-        {
-            <div class="alert alert-secondary mb-0">Loading workflow content...</div>
-        }
+    <div class="card-body"
+         data-mark-complete-url="@Url.Action("MarkStepCompleted", "FieldAudit")"
+         data-open-audit-report-url="@Url.Action("OpenAuditReport", "FieldAudit")">
+        <div id="fieldAuditStepHost"
+             data-load-url="@Url.Action("LoadStep", "FieldAudit")"
+             data-step-code="@Model.CurrentStepCode"
+             data-eng-id="@Model.SelectedEngagementId">
+            @if (!Model.HasEngagementSelection)
+            {
+                <div class="alert alert-info mb-0">Select an engagement from the dropdown above to load workflow content.</div>
+            }
+            else
+            {
+                <div class="alert alert-secondary mb-0">Loading workflow content...</div>
+            }
+        </div>
+        <div class="field-audit-step-footer border-top mt-3 pt-3 d-flex justify-content-end">
+            <button type="button" id="fieldAuditMarkCompletedBtn" class="btn btn-outline-success">Mark as Completed</button>
+        </div>
     </div>
 </div>
 
-<script src="~/js/fieldAudit/dashboard.js?v=3"></script>
+<script src="~/js/fieldAudit/dashboard.js?v=4"></script>
 
 <style>
     .stepper-wrap { z-index: 1020; }
     .planning-nav-card { border: 1px solid #ced4da; }
     .wizard-stepper {
         display: grid;
-        grid-template-columns: repeat(7, minmax(140px, 1fr));
+        grid-template-columns: repeat(8, minmax(150px, 1fr));
         gap: .4rem;
         overflow: auto;
     }

@@ -6,6 +6,7 @@
     var stepper = byId('wizardStepper');
     var stepCounter = byId('stepCounter');
     var engagementAlert = byId('engagementRequiredAlert');
+    var markCompletedBtn = byId('fieldAuditMarkCompletedBtn');
 
     if (!selector || !stepHost || !stepper) {
         return;
@@ -13,6 +14,15 @@
 
     function selectedEngagementId() {
         return selector.value || '';
+    }
+
+    function getActionUrl(name, fallback) {
+        var cardBody = stepHost.closest('.card-body');
+        if (!cardBody) {
+            return fallback;
+        }
+
+        return cardBody.getAttribute(name) || fallback;
     }
 
     function currentStepCode() {
@@ -43,6 +53,23 @@
                 anchor.classList.remove('active');
             }
         });
+    }
+
+    function setStepCompleted(stepCode, isCompleted, statusText) {
+        var anchor = stepper.querySelector('.step-pill[data-step-code="' + stepCode + '"]');
+        if (!anchor) {
+            return;
+        }
+
+        anchor.classList.toggle('completed', !!isCompleted);
+        anchor.classList.toggle('not-saved', !isCompleted);
+
+        var badge = anchor.querySelector('.step-state');
+        if (badge) {
+            badge.textContent = statusText || (isCompleted ? 'Completed' : 'Pending');
+            badge.classList.toggle('bg-success', !!isCompleted);
+            badge.classList.toggle('bg-secondary', !isCompleted);
+        }
     }
 
     function updateStepCounter(stepNo) {
@@ -113,6 +140,49 @@
             });
     }
 
+    if (markCompletedBtn) {
+        markCompletedBtn.addEventListener('click', function () {
+            var stepCode = currentStepCode();
+            var engId = selectedEngagementId();
+            if (!stepCode || !engId) {
+                return;
+            }
+
+            var tokenInput = document.querySelector('#fieldAuditCsrfForm input[name="__RequestVerificationToken"]');
+            var formData = new URLSearchParams();
+            formData.append('stepCode', stepCode);
+            formData.append('engId', engId);
+            if (tokenInput && tokenInput.value) {
+                formData.append('__RequestVerificationToken', tokenInput.value);
+            }
+
+            fetch(getActionUrl('data-mark-complete-url', '/FieldAudit/MarkStepCompleted'), {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'
+                },
+                body: formData.toString()
+            })
+                .then(function (response) {
+                    if (!response.ok) {
+                        throw new Error('Failed to mark step completed.');
+                    }
+                    return response.json();
+                })
+                .then(function (payload) {
+                    if (!payload || payload.success !== true) {
+                        throw new Error('Failed to mark step completed.');
+                    }
+
+                    setStepCompleted(stepCode, true, payload.statusText || 'Completed');
+                })
+                .catch(function () {
+                    alert('Unable to mark this step as completed right now.');
+                });
+        });
+    }
+
     selector.addEventListener('change', function () {
         var engId = selectedEngagementId();
         if (!engId) {
@@ -124,17 +194,8 @@
             return;
         }
 
-        toggleEngagementAlert(false);
-        stepper.querySelectorAll('.step-pill').forEach(function (anchor) {
-            anchor.classList.remove('disabled');
-        });
-
-        var firstStep = stepper.querySelector('.step-pill[data-step-code]');
-        if (!firstStep) {
-            return;
-        }
-
-        loadStepContent(firstStep.getAttribute('data-step-code'), firstStep.getAttribute('data-step-no'));
+        var dashboardBaseUrl = selector.getAttribute('data-dashboard-base-url') || '/FieldAudit/Dashboard';
+        window.location.href = dashboardBaseUrl + '?engId=' + encodeURIComponent(engId);
     });
 
     stepper.querySelectorAll('.step-pill[data-step-code]').forEach(function (anchor) {
