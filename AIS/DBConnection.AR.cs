@@ -2081,7 +2081,14 @@ namespace AIS.Controllers
 
 
                     chk.TEAM_MEM_PPNO = Convert.ToInt32(rdr["MEMBER_PPNO"]);
-                    chk.JOINING_DATE = Convert.ToDateTime(rdr["JOINING_DATE"].ToString()).ToString("dd/MM/yyyy");
+                    if (rdr["JOINING_DATE"] != DBNull.Value)
+                        {
+                        chk.JOINING_DATE = Convert.ToDateTime(rdr["JOINING_DATE"]).ToString("dd/MM/yyyy");
+                        }
+                    else
+                        {
+                        chk.JOINING_DATE = "";
+                        }
                     chk.COMPLETION_DATE = Convert.ToDateTime(rdr["COMPLETION_DATE"].ToString()).ToString("dd/MM/yyyy");
                     chk.ISTEAMLEAD = rdr["TEAMLEAD"].ToString();
                     chk.ENTITY_NAME = rdr["ENTITY_NAME"].ToString();

@@ -38,18 +38,21 @@ namespace AIS.Controllers
                 cmd.Parameters.Add("p_created_by_pp_no", OracleDbType.Int64).Value = DbValue(createdByPpNo);
 
                 var outViolationId = new OracleParameter("o_violation_id", OracleDbType.Int64)
-                {
+                    {
                     Direction = ParameterDirection.Output
-                };
+                    };
                 cmd.Parameters.Add(outViolationId);
 
                 GuardAgainstDynamicSql(cmd);
                 cmd.ExecuteNonQuery();
 
-                return outViolationId.Value == DBNull.Value || outViolationId.Value == null
-                    ? 0L
-                    : Convert.ToInt64(outViolationId.Value);
-            }
+                var value = outViolationId.Value;
+
+                if (value == null || value == DBNull.Value)
+                    return 0L;
+
+                return Convert.ToInt64(value.ToString());
+                }
         }
 
         private static object DbValue(object value)
