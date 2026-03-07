@@ -1,0 +1,7 @@
+@model AIS.Models.FieldAuditWorkflow.FieldAuditStepContextViewModel
+<div class="field-step">
+    <h5 class="text-success">Draft Report</h5>
+    <p class="text-muted">Prepare draft report details for ENG_ID: <strong>@Model.EngagementId</strong>.</p>
+    <div class="alert alert-info">Submit-to-auditee actions are intentionally excluded from this step design.</div>
+    <a class="btn btn-primary" href="/Execution/manage_observations_branches?engId=@Model.EngagementId">Open Draft Report Workspace</a>
+</div>
