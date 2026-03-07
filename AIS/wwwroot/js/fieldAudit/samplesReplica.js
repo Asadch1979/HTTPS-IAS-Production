@@ -4,8 +4,17 @@
         return;
     }
 
-    var engId = parseInt(host.getAttribute('data-eng-id') || '0', 10);
+    var hiddenEngId = host.querySelector('.field-audit-eng-id');
+    var engId = parseInt(host.getAttribute('data-eng-id') || (hiddenEngId ? hiddenEngId.value : '0') || '0', 10);
     var tableId = 'fieldAuditSamplesTable';
+
+    if (!engId || engId <= 0) {
+        var tableBody = document.querySelector('#' + tableId + ' tbody');
+        if (tableBody) {
+            tableBody.innerHTML = '<tr><td colspan="6" class="text-center">A valid engagement is required.</td></tr>';
+        }
+        return;
+    }
 
     function renderRows(data) {
         if (typeof destroyDatatable === 'function') {
