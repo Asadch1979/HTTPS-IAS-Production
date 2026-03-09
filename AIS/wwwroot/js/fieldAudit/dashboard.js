@@ -37,6 +37,23 @@
         stepHost.innerHTML = '<div class="alert alert-info mb-0">' + message + '</div>';
     }
 
+    function destroyStepDataTables(container) {
+        if (!container || !window.jQuery || !$.fn || !$.fn.DataTable) {
+            return;
+        }
+
+        container.querySelectorAll('table').forEach(function (table) {
+            if (!table || !table.id) {
+                return;
+            }
+
+            var selector = '#' + table.id;
+            if ($.fn.DataTable.isDataTable(selector)) {
+                $(selector).DataTable().clear().destroy(true);
+            }
+        });
+    }
+
     function toggleEngagementAlert(isVisible) {
         if (!engagementAlert) {
             return;
@@ -104,6 +121,7 @@
         }
 
         toggleEngagementAlert(false);
+        destroyStepDataTables(stepHost);
         stepHost.innerHTML = '<div class="alert alert-secondary mb-0">Loading workflow content...</div>';
 
         var loadUrl = stepHost.getAttribute('data-load-url') || '/FieldAudit/LoadStep';
@@ -225,6 +243,7 @@
                 }
             });
 
+            destroyStepDataTables(stepHost);
             stepHost.innerHTML = '<div class="alert alert-secondary mb-0">Loading workflow content...</div>';
             fetch(loadUrl + '?' + query.toString() + '&_=' + Date.now(), {
                 method: 'GET',
