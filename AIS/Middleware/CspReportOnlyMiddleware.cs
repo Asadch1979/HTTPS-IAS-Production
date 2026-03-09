@@ -47,10 +47,10 @@ namespace AIS.Middleware
 
             if (environment != null && environment.IsDevelopment())
             {
-                connectSources.Add("http://localhost:58804");
-                connectSources.Add("ws://localhost:58804");
-                connectSources.Add("wss://localhost:44331");
-            }
+                connectSources.Add("http://localhost:*");
+                connectSources.Add("ws://localhost:*");
+                connectSources.Add("wss://localhost:*");
+                }
 
             var directives = new List<string>
             {
