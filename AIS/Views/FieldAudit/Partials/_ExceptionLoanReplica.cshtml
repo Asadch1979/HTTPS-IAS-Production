@@ -7,7 +7,7 @@
 <div id="fieldAuditExceptionLoanReplica" data-eng-id="@Model.EngagementId" data-loan-status="@(loanStatus ?? 0)">
     <div class="d-flex justify-content-between align-items-center mb-2 mt-2">
         <h5 class="mb-0">@(string.IsNullOrWhiteSpace(title) ? "Loans Exception Report" : title)</h5>
-        <button type="button" class="btn btn-outline-secondary btn-sm" onclick="window.fieldAuditDashboard && window.fieldAuditDashboard.loadStepContent('EXCEPTION_REPORT', 3)">Back to Exception Report</button>
+        <button type="button" class="btn btn-outline-secondary btn-sm" data-fad-nav="step" data-step-code="EXCEPTION_REPORT" data-step-no="3">Back to Exception Report</button>
     </div>
     @if (!string.IsNullOrWhiteSpace(desc))
     {
@@ -21,3 +21,4 @@
     </div>
 </div>
 <script src="~/js/fieldAudit/exceptionLoanReplica.js?v=1"></script>
+

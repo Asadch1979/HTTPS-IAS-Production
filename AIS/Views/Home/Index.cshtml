@@ -430,60 +430,6 @@
 
     var quickLinksJson = JsonSerializer.Serialize(pageDtos2);
 }
-<script nonce="@nonce">
-(function(){
-    // Expose dataset + handler for layout menu clicks
-    window.IASHomePages = @Html.Raw(quickLinksJson);
-
-    window.IASHomeSetQuickLinks = function(menuId, menuName){
-        var grid = document.getElementById('iasQuickLinksGrid');
-        var scope = document.getElementById('iasQuickLinksScope');
-        if (!grid) return;
-
-        var all = Array.isArray(window.IASHomePages) ? window.IASHomePages : [];
-        var filtered = (menuId && menuId > 0) ? all.filter(function(p){ return p.menuId === menuId; }) : all;
-        if (menuId && menuId > 0 && filtered.length === 0 && all.length > 0){
-            filtered = all;
-            menuId = 0;
-        }
-
-        if (scope){
-            scope.textContent = (menuId && menuId > 0) ? (menuName || 'Selected') : 'All';
-        }
-
-        var tiles = filtered.slice(0, 8);
-        if (!tiles.length){
-            grid.innerHTML = '<div class="text-muted" style="font-size:12px;">No quick links available for this menu.</div>';
-            return;
-        }
-
-        var html = '';
-        tiles.forEach(function(p){
-            var name = (p.pageName || '').toString();
-            var path = (p.pagePath || '').toString();
-            if (!name || !path) return;
-
-            html += ''
-                + '<a class="ias-tile" href="/' + path.replace(/^\\/+/, '') + '" title="' + name.replace(/"/g,'&quot;') + '">'
-                +   '<div class="title">' + name + '</div>'
-                +   '<div class="meta">Open module</div>'
-                + '</a>';
-        });
-
-        grid.innerHTML = html;
-    };
-})();
-
-(function(){
-    // Auto-apply last selected menu (set by sidebar click)
-    try{
-        var id = parseInt(localStorage.getItem('ias.home.quicklinks.menuId') || '0', 10) || 0;
-        var name = (localStorage.getItem('ias.home.quicklinks.menuName') || '').toString();
-        if (id > 0 && window.IASHomeSetQuickLinks){
-            window.IASHomeSetQuickLinks(id, name);
-        }
-    }catch(e){}
-})();
-
-</script>
+<div id="iasHomeQuickLinksData" class="d-none" data-pages="@quickLinksJson"></div>
 <script src="~/js/csp/Views_Home_Index.js?v=1"></script>
+

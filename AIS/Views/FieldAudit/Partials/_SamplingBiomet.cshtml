@@ -2,7 +2,7 @@
 <div id="fieldAuditSamplingBiomet" data-eng-id="@Model.EngagementId" data-sample-id="@(ViewData["SampleId"] ?? 0)" data-loan-status="@(ViewData["LoanStatus"] ?? 0)" data-sample-type="@(ViewData["SampleType"] ?? string.Empty)">
     <div class="d-flex justify-content-between align-items-center mb-2 mt-2">
         <h5 class="mb-0">Biomet Samples</h5>
-        <button type="button" class="btn btn-outline-secondary btn-sm" onclick="window.fieldAuditDashboard && window.fieldAuditDashboard.loadStepContent('SAMPLING', 2)">Back to Sampling</button>
+        <button type="button" class="btn btn-outline-secondary btn-sm" data-fad-nav="step" data-step-code="SAMPLING" data-step-no="2">Back to Sampling</button>
     </div>
     <link rel="stylesheet" href="~/css/sampling.css" />
     <div class="table-responsive">
@@ -17,3 +17,4 @@
     </div>
 </div>
 <script src="~/js/fieldAudit/samplingBiometReplica.js?v=1"></script>
+

@@ -11,7 +11,7 @@
     }
 </style>
 
-<div id="fieldAuditObservationReplica" data-eng-id="@Model.EngagementId">
+<div id="fieldAuditObservationReplica" data-eng-id="@Model.EngagementId" data-annex-list='@System.Text.Json.JsonSerializer.Serialize(ViewData["AnnexList"])' data-default-amount="@Model.DefaultAmountInvolved" data-default-instances="@Model.DefaultNoOfInstances" data-default-reply-days="@Model.DefaultReplyDays">
     <div class="row col-md-12">
         <div class="col-md-12 mt-3">
             <center class="w-100"><h3>Observation</h3></center>
@@ -39,7 +39,7 @@
             <div>
                 <h5>Checklist</h5>
             </div>
-            <select id="riskGroupSelectBox" data-onchange="div_risksubcategoryShowHide();" class="form-select form-control" aria-label="Default select example">
+            <select id="riskGroupSelectBox" class="form-select form-control" aria-label="Default select example">
                 <option value="0" id="0" selected="selected">--Select Violation Category--</option>
                 @if (ViewData["ProcessList"] != null)
                 {
@@ -53,13 +53,13 @@
 
         <div id="div_risksubcategory" style="display:none;" class="col-md-12 mt-3">
             <h5>Subchecklist</h5>
-            <select id="riskSubGroupSelectBox" data-onchange="div_activityContainerShowHide();" class="form-select form-control" aria-label="Default select example">
+            <select id="riskSubGroupSelectBox" class="form-select form-control" aria-label="Default select example">
             </select>
         </div>
 
         <div id="div_activityContainer" style="display:none;" class="col-md-12 mt-3">
             <h5>Checklist Details</h5>
-            <select id="riskActivitiesSelectBox" data-onchange="getAuditObservationTemplate();" class="form-select form-control" aria-label="Default select example">
+            <select id="riskActivitiesSelectBox" class="form-select form-control" aria-label="Default select example">
             </select>
         </div>
 
@@ -80,7 +80,7 @@
             </div>
 
             <div class="d-flex justify-content-end mb-2">
-                <button type="button" data-onclick="openResponsiblePPs();" class="rounded-circle btn btn-danger btn-sm" aria-label="Add responsible person">
+                <button id="openResponsiblePPsButton" type="button" class="rounded-circle btn btn-danger btn-sm" aria-label="Add responsible person">
                     <i class="fa fa-plus text-white"></i>
                 </button>
             </div>
@@ -145,7 +145,7 @@
         </div>
 
         <div class="row col-md-12 mt-5">
-            <button id="submitCAUobBtn" data-onclick="submitObservationToAuditee();" style="margin-left:20px;" class="btn btn-primary">Save Observation</button>
+            <button id="submitCAUobBtn" style="margin-left:20px;" class="btn btn-primary">Save Observation</button>
         </div>
     </div>
 
@@ -171,7 +171,7 @@
                                     <input type="text" class="form-control digits-only" id="responsibleBrCodeEntryField" aria-describedby="brcode" placeholder="Branch Code (digits only)" inputmode="numeric" pattern="[0-9]*" autocomplete="off" data-digits-only="true" />
                                 </div>
                                 <div class="col-sm-2 d-flex align-items-end">
-                                    <button data-onclick="getLCDetails();" type="button" class="btn btn-danger w-100">Find</button>
+                                    <button id="getLCDetailsBtn" type="button" class="btn btn-danger w-100">Find</button>
                                 </div>
                             </div>
                         </div>
@@ -201,7 +201,7 @@
                                     <input id="responsibleAccountAmountEntryField" class="form-control digits-only" type="text" placeholder="Enter Account Amount" inputmode="numeric" pattern="[0-9]*" autocomplete="off" data-digits-only="true" />
                                 </div>
                                 <div class="col-md-2 d-flex align-items-end">
-                                    <button type="button" data-onclick="getMatchedPP();" class="col-md-2 btn btn-success w-100">Select</button>
+                                    <button id="getMatchedPPBtn" type="button" class="col-md-2 btn btn-success w-100">Select</button>
                                 </div>
                             </div>
                         </div>
@@ -228,9 +228,9 @@
                     </form>
                 </div>
                 <div class="modal-footer">
-                    <button id="addResponsibleButton" data-onclick="addResponsibilityToMainTable('A');" type="button" class="btn btn-danger">Add Responsibility</button>
-                    <button id="updateResponsibleButton" data-onclick="addResponsibilityToMainTable('U');" type="button" class="btn btn-success d-none">Update Responsibility</button>
-                    <button id="deleteResponsibleButton" data-onclick="addResponsibilityToMainTable('D');" type="button" class="btn btn-danger d-none">Delete Responsibility</button>
+                    <button id="addResponsibleButton" type="button" class="btn btn-danger">Add Responsibility</button>
+                    <button id="updateResponsibleButton" type="button" class="btn btn-success d-none">Update Responsibility</button>
+                    <button id="deleteResponsibleButton" type="button" class="btn btn-danger d-none">Delete Responsibility</button>
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
                 </div>
             </div>
@@ -238,15 +238,5 @@
     </div>
 </div>
 
-<script type="application/json" id="field-audit-observation-page-data">
-@Html.Raw(System.Text.Json.JsonSerializer.Serialize(new {
-    AnnexList = ViewData["AnnexList"],
-    EngagementId = Model.EngagementId,
-    Defaults = new {
-        AmountInvolved = Model.DefaultAmountInvolved,
-        NoOfInstances = Model.DefaultNoOfInstances,
-        ReplyDays = Model.DefaultReplyDays
-    }
-}))
-</script>
 <script src="~/js/fieldAudit/observationReplica.js?v=1"></script>
+

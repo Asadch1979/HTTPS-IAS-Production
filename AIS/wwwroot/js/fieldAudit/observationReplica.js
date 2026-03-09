@@ -6,24 +6,43 @@ window.addEventListener("unhandledrejection", function (e) {
 });
 
 (function () {
-    function getPageData() {
-        const el = document.getElementById("field-audit-observation-page-data");
-        if (!el) return {};
-        try {
-            return JSON.parse(el.textContent || "{}");
-        } catch (err) {
-            console.error("Failed to parse observation page data JSON:", err);
-            return {};
+    function getPageContext() {
+        const root = document.getElementById("fieldAuditObservationReplica");
+        if (!root) {
+            return {
+                engagementId: 0,
+                annexList: [],
+                defaults: {}
+            };
         }
-    }
 
+        let annexList = [];
+        try {
+            annexList = JSON.parse(root.getAttribute("data-annex-list") || "[]");
+            if (!Array.isArray(annexList)) {
+                annexList = [];
+            }
+        } catch (err) {
+            console.error("Failed to parse observation annex list data:", err);
+        }
+
+        return {
+            engagementId: parseInt(root.getAttribute("data-eng-id"), 10) || 0,
+            annexList: annexList,
+            defaults: {
+                AmountInvolved: root.getAttribute("data-default-amount"),
+                NoOfInstances: root.getAttribute("data-default-instances"),
+                ReplyDays: root.getAttribute("data-default-reply-days")
+            }
+        };
+    }
     var g_engId = 0;
     var g_respUser = [];
     var g_stagedResp = [];
     var g_selectedRespRow = null;
     var g_selectedRiskId = 0;
-    const pageData = getPageData();
-    var g_annexList = pageData.AnnexList || [];
+    const pageContext = getPageContext();
+    var g_annexList = pageContext.annexList || [];
 
     function normalizeRequiredInt(value) {
         var trimmed = $.trim(value);
@@ -44,7 +63,7 @@ window.addEventListener("unhandledrejection", function (e) {
     }
 
     function applyDefaultValues() {
-        var defaults = pageData.Defaults || {};
+        var defaults = pageContext.defaults || {};
         var amountDefault = defaults.AmountInvolved;
         var instancesDefault = defaults.NoOfInstances;
         var daysDefault = defaults.ReplyDays;
@@ -63,7 +82,7 @@ window.addEventListener("unhandledrejection", function (e) {
     }
 
     $(document).ready(function () {
-        g_engId = parseInt(pageData.EngagementId, 10) || 0;
+        g_engId = parseInt(pageContext.engagementId, 10) || 0;
 
         $('#template_box').richText({
             bold: true,
@@ -91,6 +110,28 @@ window.addEventListener("unhandledrejection", function (e) {
         $('#updatedAnnexlist').select2();
         $('#riskActivitiesSelectBox').select2();
         $('#updatedAnnexlist').on('change', updateRiskDisplay);
+        $('#riskGroupSelectBox').on('change', window.div_risksubcategoryShowHide);
+        $('#riskSubGroupSelectBox').on('change', window.div_activityContainerShowHide);
+        $('#riskActivitiesSelectBox').on('change', window.getAuditObservationTemplate);
+        $('#openResponsiblePPsButton').on('click', function (event) {
+            event.preventDefault();
+            window.openResponsiblePPs();
+        });
+        $('#submitCAUobBtn').on('click', function (event) {
+            event.preventDefault();
+            window.submitObservationToAuditee();
+        });
+        $('#getLCDetailsBtn').on('click', function (event) {
+            event.preventDefault();
+            window.getLCDetails();
+        });
+        $('#getMatchedPPBtn').on('click', function (event) {
+            event.preventDefault();
+            window.getMatchedPP();
+        });
+        $('#addResponsibleButton').on('click', function () { window.addResponsibilityToMainTable('A'); });
+        $('#updateResponsibleButton').on('click', function () { window.addResponsibilityToMainTable('U'); });
+        $('#deleteResponsibleButton').on('click', function () { window.addResponsibilityToMainTable('D'); });
 
         document.getElementById('amount_inv_field').addEventListener('input', function () {
             this.value = this.value.replace(/\D|^0(?=\d)/g, '');
@@ -542,10 +583,10 @@ window.addEventListener("unhandledrejection", function (e) {
                         <td>${item.accountNumber || ''}</td>
                         <td>${item.accAmount || ''}</td>
                         <td class="text-center">
-                            <a href="#" data-onclick="event.preventDefault(); updateRespRow(this);">Update</a>
+                            <a href="#" class="resp-update-link">Update</a>
                         </td>
                         <td class="text-center">
-                            <a href="#" class="text-danger" data-onclick="event.preventDefault(); deleteRespRow(this);">Delete</a>
+                            <a href="#" class="text-danger resp-delete-link">Delete</a>
                         </td>
                     </tr>
                 `);
@@ -558,9 +599,24 @@ window.addEventListener("unhandledrejection", function (e) {
         $('#ResponsiblePPModel').modal('hide');
     };
 
+    $(document).on('click', '#listofRespPersons .resp-update-link', function (event) {
+        event.preventDefault();
+        window.updateRespRow(this);
+    });
+
+    $(document).on('click', '#listofRespPersons .resp-delete-link', function (event) {
+        event.preventDefault();
+        window.deleteRespRow(this);
+    });
+
     $(document).on('click', '.respPendingRemove', function () {
         var key = $(this).data('key');
         g_stagedResp = g_stagedResp.filter(function (entry) { return entry.key !== key; });
         renderPendingGrid();
     });
 })();
+
+
+
+
+

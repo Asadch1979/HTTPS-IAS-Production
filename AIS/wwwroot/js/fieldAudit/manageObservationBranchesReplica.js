@@ -5,17 +5,26 @@ window.addEventListener("unhandledrejection", function (e) {
     console.error("Promise rejection:", e.reason);
 });
 
-function getPageData() {
-    const el = document.getElementById("page-data");
-    if (!el) return {};
+function getPageContext() {
+    const root = document.getElementById("fieldAuditManageObservationBranchesReplica");
+    if (!root) {
+        return {
+            annexList: []
+        };
+    }
+
     try {
-        return JSON.parse(el.textContent || "{}");
+        const parsed = JSON.parse(root.getAttribute("data-annex-list") || "[]");
+        return {
+            annexList: Array.isArray(parsed) ? parsed : []
+        };
     } catch (err) {
-        console.error("Failed to parse #page-data JSON:", err);
-        return {};
+        console.error("Failed to parse manage observation annex data:", err);
+        return {
+            annexList: []
+        };
     }
 }
-
     var g_obsId = 0;
     var g_entityID = 0;
     var g_newStatusId = 0;
@@ -24,8 +33,8 @@ function getPageData() {
     var g_currentStatus = 0;
     var g_obsList = [];
     var g_selectedRiskId = 0;
-    const pageData = getPageData();
-    var g_annexList = pageData.AnnexList || [];
+    const pageContext = getPageContext();
+    var g_annexList = pageContext.annexList || [];
     var g_processId = 0;
     var g_subProcessId = 0;
     var g_checklistId = 0;
@@ -53,6 +62,26 @@ function getPageData() {
             urls: false
         });
         $('#updateMemo_annex').on('change', updateRiskDisplay);
+        $('#updateMemo_process').on('change', getSubProcessList);
+        $('#updateMemo_subprocess').on('change', getSubProcessViolationList);
+        $('#finalCommentsButtonSave').on('click', finalCommentsButtonSave);
+        $('#manageOpenResponsiblePPsButton').on('click', openResponsiblePPs);
+        $('#dropButton_update').on('click', function () { dropObservation(g_obsId, 7, g_riskId); });
+        $('#submitAuditeeButton_update').on('click', function () { submitObservationToAuditee(g_obsId, 2, g_riskId); });
+        $('#addDraftButton_update').on('click', function () { updateObservationStatus(g_obsId, 5, g_riskId); });
+        $('#settleButton_update').on('click', function () { updateObservationStatus(g_obsId, 4, g_riskId); });
+        $('#updateMemoContent_submit').on('click', function () { finalUpdateMemoContent(g_obsId); });
+        $('#manageGetLCDetailsBtn').on('click', function () {
+            if (respSectionUpdate && typeof respSectionUpdate.getLCDetails === 'function') {
+                respSectionUpdate.getLCDetails();
+            }
+        });
+        $('#manageGetMatchedPPBtn').on('click', function () {
+            if (respSectionUpdate && typeof respSectionUpdate.getMatchedPP === 'function') {
+                respSectionUpdate.getMatchedPP();
+            }
+        });
+        $('#submitObservationToAuditeeAfterDSAIssuanceBtn').on('click', submitObservationToAuditeeAfterDSAIssuance);
         const engId = parseInt($('#engIdHidden').val() || 0);
         respSectionUpdate = initResponsibilitySection({
             tableSelector: '#update_listofRespPersons',
@@ -99,9 +128,9 @@ function getPageData() {
                     var statusText = (v.obS_STATUS || '').toString();
                     var isPrintable = statusText.toLowerCase() === 'submitted to auditee';
                     var printCell = isPrintable
-                        ? '<button type="button" class="btn btn-sm btn-primary" data-onclick="printObservation(' + v.obS_ID + ')">Print</button>'
+                        ? '<button type="button" class="btn btn-sm btn-primary manage-print-observation" data-obs-id="' + v.obS_ID + '">Print</button>'
                         : '';
-                    $('#manageObsPanel tbody').append(' <tr id="' + v.obS_ID + '"><td class="text-center">' + v.memO_NO + '</td><td class="text-center">' + v.annexurE_CODE + '</td><td>' + v.heading + '</td><td>' + v.nO_OF_INSTANCES + '</td><td>' + v.obS_RISK + '</td><td>' + v.obS_STATUS + '</td><td><a data-onclick="ObservationUpdatePanel(' + v.obS_ID + ')" href="#" class="text-hover">Manage</a></td><td class="text-center action-col">' + printCell + '</td></tr>');
+                    $('#manageObsPanel tbody').append(' <tr id="' + v.obS_ID + '"><td class="text-center">' + v.memO_NO + '</td><td class="text-center">' + v.annexurE_CODE + '</td><td>' + v.heading + '</td><td>' + v.nO_OF_INSTANCES + '</td><td>' + v.obS_RISK + '</td><td>' + v.obS_STATUS + '</td><td><a href="#" class="text-hover manage-open-observation" data-obs-id="' + v.obS_ID + '">Manage</a></td><td class="text-center action-col">' + printCell + '</td></tr>');
                 });
 
                 if ($.fn && $.fn.DataTable) {
@@ -147,6 +176,22 @@ function getPageData() {
             dataType: "json",
         });
     }
+
+    $(document).on('click', '#manageObsPanel .manage-open-observation', function (event) {
+        event.preventDefault();
+        var obsId = parseInt($(this).data('obs-id'), 10) || 0;
+        if (obsId > 0) {
+            ObservationUpdatePanel(obsId);
+        }
+    });
+
+    $(document).on('click', '#manageObsPanel .manage-print-observation', function (event) {
+        event.preventDefault();
+        var obsId = parseInt($(this).data('obs-id'), 10) || 0;
+        if (obsId > 0) {
+            printObservation(obsId);
+        }
+    });
 
     function printObservation(obsId) {
         if (!obsId || obsId <= 0) {
@@ -608,3 +653,9 @@ function getPageData() {
         const blob = new Blob(byteArrays, { type: contentType });
         return blob;
     }
+
+
+
+
+
+

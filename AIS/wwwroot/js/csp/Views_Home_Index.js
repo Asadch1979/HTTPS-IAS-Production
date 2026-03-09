@@ -1,7 +1,73 @@
 (function(){
     const baseUrl = (document.querySelector('meta[name="base-url"]')?.getAttribute('content') || '').replace(/\/$/,'');
     const apiUrl = (path) => `${baseUrl}${path}`;
+    const homeQuickLinksDataElement = document.getElementById('iasHomeQuickLinksData');
 
+    function parseHomePagesFromDom() {
+        if (!homeQuickLinksDataElement) {
+            return [];
+        }
+
+        const raw = homeQuickLinksDataElement.getAttribute('data-pages') || '[]';
+        try {
+            const parsed = JSON.parse(raw);
+            return Array.isArray(parsed) ? parsed : [];
+        } catch (error) {
+            console.error('Failed to parse Home quick links data.', error);
+            return [];
+        }
+    }
+
+    window.IASHomePages = parseHomePagesFromDom();
+    window.IASHomeSetQuickLinks = function(menuId, menuName){
+        const grid = document.getElementById('iasQuickLinksGrid');
+        const scope = document.getElementById('iasQuickLinksScope');
+        if (!grid) {
+            return;
+        }
+
+        const all = Array.isArray(window.IASHomePages) ? window.IASHomePages : [];
+        let filtered = (menuId && menuId > 0) ? all.filter(function(page){ return page.menuId === menuId; }) : all;
+        if (menuId && menuId > 0 && filtered.length === 0 && all.length > 0){
+            filtered = all;
+            menuId = 0;
+        }
+
+        if (scope){
+            scope.textContent = (menuId && menuId > 0) ? (menuName || 'Selected') : 'All';
+        }
+
+        const tiles = filtered.slice(0, 8);
+        if (!tiles.length){
+            grid.innerHTML = '<div class="text-muted" style="font-size:12px;">No quick links available for this menu.</div>';
+            return;
+        }
+
+        let html = '';
+        tiles.forEach(function(page){
+            const name = (page.pageName || '').toString();
+            const path = (page.pagePath || '').toString();
+            if (!name || !path) {
+                return;
+            }
+
+            html += ''
+                + '<a class="ias-tile" href="/' + path.replace(/^\\/+/, '') + '" title="' + name.replace(/"/g, '&quot;') + '">'
+                +   '<div class="title">' + name + '</div>'
+                +   '<div class="meta">Open module</div>'
+                + '</a>';
+        });
+
+        grid.innerHTML = html;
+    };
+
+    try {
+        const id = parseInt(localStorage.getItem('ias.home.quicklinks.menuId') || '0', 10) || 0;
+        const name = (localStorage.getItem('ias.home.quicklinks.menuName') || '').toString();
+        if (id > 0 && window.IASHomeSetQuickLinks) {
+            window.IASHomeSetQuickLinks(id, name);
+        }
+    } catch (error) {}
     const today = new Date();
     const todayPill = document.getElementById('iasTodayPill');
     if (todayPill){
@@ -222,3 +288,5 @@
     renderCalendar();
     fetchHolidays(today.getFullYear());
 })();
+
+
