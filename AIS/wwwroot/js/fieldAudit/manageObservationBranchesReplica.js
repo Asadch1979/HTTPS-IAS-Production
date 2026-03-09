@@ -71,6 +71,32 @@ function getPageData() {
     function reloadLocation() {
         getEntityObservation();
     }
+    function initializeManageObservationTable() {
+        if (!$.fn || !$.fn.DataTable) {
+            return initializeDataTable('manageObsPanel');
+        }
+
+        if ($.fn.DataTable.isDataTable('#manageObsPanel')) {
+            $('#manageObsPanel').DataTable().clear().destroy();
+        }
+
+        return $('#manageObsPanel').DataTable({
+            dom: 'rt<"bottom"ip><"clear">',
+            autoWidth: true,
+            ordering: false,
+            searching: false,
+            lengthChange: false,
+            lengthMenu: [
+                [10, 50, 100, -1],
+                [10, 50, 100, 'All']
+            ]
+        });
+    }
+
+    function renderNoDataRow() {
+        $('#manageObsPanel tbody').append('<tr class="manage-obs-empty"><td colspan="7" class="text-center">No observations found.</td></tr>');
+    }
+
     function getEntityObservation() {
         destroyDatatable('manageObsPanel');
         $('#manageObsPanel tbody').empty();
@@ -81,6 +107,8 @@ function getPageData() {
         }
 
         if (!selectedEngId) {
+            renderNoDataRow();
+            initializeManageObservationTable();
             return;
         }
 
@@ -92,35 +120,22 @@ function getPageData() {
             },
             cache: false,
             success: function (data) {
-                g_obsList = data;
-                $.each(data, function (i, v) {
-                    g_entityID = v.entitY_ID;
-                    $('#auditPeriodNameField').val(v.period);
-                    $('#manageObsPanel tbody').append(' <tr id="' + v.obS_ID + '"><td class="text-center">' + v.memO_NO + '</td><td class="text-center">' + v.annexurE_CODE + '</td><td>' + v.heading + '</td><td>' + v.nO_OF_INSTANCES + '</td><td>' + v.obS_RISK + '</td><td>' + v.obS_STATUS + '</td><td><a data-onclick="ObservationUpdatePanel(' + v.obS_ID + ')" href="#" class="text-hover">Manage</a></td></tr>');
-                });
-
-                if ($.fn && $.fn.DataTable) {
-                    if ($.fn.DataTable.isDataTable('#manageObsPanel')) {
-                        $('#manageObsPanel').DataTable().clear().destroy();
-                    }
-
-                    $('#manageObsPanel').DataTable({
-                        dom: 'rt<"bottom"ip><"clear">',
-                        autoWidth: true,
-                        ordering: false,
-                        searching: false,
-                        lengthChange: false,
-                        lengthMenu: [
-                            [10, 50, 100, -1],
-                            [10, 50, 100, 'All']
-                        ]
-                    });
-                } else {
-                    initializeDataTable('manageObsPanel');
+                g_obsList = data || [];
+                if (!g_obsList.length) {
+                    renderNoDataRow();
                 }
 
-                var tbl = $('#manageObsPanel').DataTable();
-                tbl.page(g_tablePage).draw('page');
+                $.each(g_obsList, function (i, v) {
+                    g_entityID = v.entitY_ID;
+                    $('#auditPeriodNameField').val(v.period);
+                    $('#manageObsPanel tbody').append('<tr id="' + v.obS_ID + '"><td class="text-center">' + v.memO_NO + '</td><td class="text-center">' + v.annexurE_CODE + '</td><td>' + v.heading + '</td><td>' + v.nO_OF_INSTANCES + '</td><td>' + v.obS_RISK + '</td><td>' + v.obS_STATUS + '</td><td class="text-center"><a data-onclick="ObservationUpdatePanel(' + v.obS_ID + ')" href="#" class="text-hover">Manage</a></td></tr>');
+                });
+
+                var tbl = initializeManageObservationTable();
+                if (tbl && typeof tbl.page === 'function') {
+                    tbl.page(g_tablePage).draw('page');
+                }
+
                 setTimeout(function () {
                     if ($('#manageObsPanel tbody tr#' + g_obsId).length > 0) {
                         var rowpos = $('#manageObsPanel tbody tr#' + g_obsId).position();
