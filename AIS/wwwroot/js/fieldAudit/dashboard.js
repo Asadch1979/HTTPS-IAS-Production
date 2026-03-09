@@ -55,7 +55,7 @@
         });
     }
 
-    function setStepCompleted(stepCode, isCompleted, statusText) {
+    function setStepCompleted(stepCode, isCompleted) {
         var anchor = stepper.querySelector('.step-pill[data-step-code="' + stepCode + '"]');
         if (!anchor) {
             return;
@@ -63,13 +63,6 @@
 
         anchor.classList.toggle('completed', !!isCompleted);
         anchor.classList.toggle('not-saved', !isCompleted);
-
-        var badge = anchor.querySelector('.step-state');
-        if (badge) {
-            badge.textContent = statusText || (isCompleted ? 'Saved' : 'Pending');
-            badge.classList.toggle('bg-success', !!isCompleted);
-            badge.classList.toggle('bg-secondary', !isCompleted);
-        }
     }
 
     function updateStepCounter(stepNo) {
@@ -175,7 +168,7 @@
                         throw new Error('Failed to mark step completed.');
                     }
 
-                    setStepCompleted(stepCode, true, payload.statusText || 'Saved');
+                    setStepCompleted(stepCode, true);
                 })
                 .catch(function () {
                     alert('Unable to mark this step as completed right now.');
