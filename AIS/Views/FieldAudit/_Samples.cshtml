@@ -1,39 +1,30 @@
 @model AIS.Models.FieldAuditWorkflow.FieldAuditGridReplicaViewModel
 <link rel="stylesheet" href="~/css/sampling.css" />
 
-
 <style>
     #fieldAuditSamplesReplica .dataTables_filter,
-    #fieldAuditSamplesReplica .dataTables_length {
+    #fieldAuditSamplesReplica .dataTables_length,
+    #fieldAuditSamplesReplica .dt-buttons {
         display: none !important;
     }
 </style>
 
 <div id="fieldAuditSamplesReplica" data-eng-id="@Model.EngagementId">
     <input type="hidden" value="@Model.EngagementId" class="field-audit-eng-id" />
-    <div class="container-fluid mt-2 px-0">
-        <div class="card card-sample shadow-sm">
-            <div class="card-header">
-                <h4 class="mb-0">List of Samples</h4>
-            </div>
-            <div class="card-body">
-                <div class="table-responsive">
-                    <table id="fieldAuditSamplesTable" class="table table-hover table-bordered table-striped">
-                        <thead>
-                            <tr>
-                                <th class="col-md-auto">Sr. No.</th>
-                                <th class="col-md-auto">Sample List</th>
-                                <th class="col-md-auto">Percentage</th>
-                                <th class="col-md-auto">Total Count</th>
-                                <th class="col-md-auto">Sample Count</th>
-                                <th class="col-md-auto text-center">View</th>
-                            </tr>
-                        </thead>
-                        <tbody></tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
+    <div class="table-responsive">
+        <table id="fieldAuditSamplesTable" class="table table-hover table-bordered table-striped">
+            <thead>
+                <tr>
+                    <th class="col-md-auto">Sr. No.</th>
+                    <th class="col-md-auto">Sample List</th>
+                    <th class="col-md-auto">Percentage</th>
+                    <th class="col-md-auto">Total Count</th>
+                    <th class="col-md-auto">Sample Count</th>
+                    <th class="col-md-auto text-center">View</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
     </div>
 </div>
-<script src="~/js/fieldAudit/samplesReplica.js?v=2"></script>
+<script src="~/js/fieldAudit/samplesReplica.js?v=3"></script>

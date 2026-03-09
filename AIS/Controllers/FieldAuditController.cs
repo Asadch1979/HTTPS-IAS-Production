@@ -43,6 +43,7 @@ namespace AIS.Controllers
             {
             ViewData["TopMenu"] = _topMenus.GetTopMenus();
             ViewData["TopMenuPages"] = _topMenus.GetTopMenusPages();
+            ViewData["HideTopHeader"] = true;
 
             if (!User.Identity.IsAuthenticated)
                 {
