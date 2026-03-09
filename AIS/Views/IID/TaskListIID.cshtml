@@ -1,37 +1,7 @@
 @{
     ViewData["Title"] = "IID Task List";
     Layout = "_Layout";
-    var iidNavSteps = new[]
-    {
-        new { StepNo = 1, StepTitle = "Task List", Url = Url.Action("TaskListIID", "IID"), IsActive = true },
-        new { StepNo = 2, StepTitle = "Investigation Plan", Url = Url.Action("InvestigationPlan", "IID"), IsActive = false },
-        new { StepNo = 3, StepTitle = "Plan Approval", Url = Url.Action("PlanApproval", "IID"), IsActive = false },
-        new { StepNo = 4, StepTitle = "Inquiry Report", Url = Url.Action("InquiryReport", "IID"), IsActive = false },
-        new { StepNo = 5, StepTitle = "Monitoring Dashboard", Url = Url.Action("MonitoringDashboard", "IID"), IsActive = false }
-    };
 }
-
-<link rel="stylesheet" href="~/css/workflow-nav-theme.css" asp-append-version="true" />
-
-<div class="planning-nav-wrap sticky-top bg-white py-2 mb-3">
-    <div class="card shadow-sm planning-nav-card mb-0">
-        <div class="card-body py-3">
-            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2">
-                <strong class="planning-step-counter">IID Navigation</strong>
-                <span class="text-muted small">Quick access across IID workflow pages</span>
-            </div>
-            <div class="planning-stepper mt-2" style="--step-count:@iidNavSteps.Length;">
-                @foreach (var step in iidNavSteps)
-                {
-                    var stepCss = step.IsActive ? "planning-step active" : "planning-step";
-                    <a class="@stepCss" href="@step.Url">
-                        <div class="step-title"><span class="step-no">@(step.StepNo).</span> @(step.StepTitle)</div>
-                    </a>
-                }
-            </div>
-        </div>
-    </div>
-</div>
 
 <div class="container-fluid mt-3">
     <h4 class="text-success">IID Task List</h4>
@@ -54,12 +24,6 @@
         </div>
     </div>
 </div>
-
-<style>
-    .planning-step-counter {
-        font-size: 1rem;
-    }
-</style>
 
 @section Scripts{
     <script src="~/js/csp/Views_IID_TaskListIID.js" asp-append-version="true"></script>
