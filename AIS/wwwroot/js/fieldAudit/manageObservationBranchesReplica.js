@@ -71,13 +71,33 @@ function getPageData() {
     function reloadLocation() {
         getEntityObservation();
     }
+    var MANAGE_OBS_COLUMNS = 7;
+
+    function getManageObsColumnCount() {
+        return $('#manageObsPanel thead th').length || MANAGE_OBS_COLUMNS;
+    }
+
+    function rebuildManageObservationTableBody() {
+        var $table = $('#manageObsPanel');
+        if (!$table.length) {
+            return;
+        }
+
+        if ($.fn && $.fn.DataTable && $.fn.DataTable.isDataTable('#manageObsPanel')) {
+            $table.DataTable().clear().destroy(true);
+        }
+
+        $table.find('tbody').remove();
+        $table.append('<tbody></tbody>');
+    }
+
     function initializeManageObservationTable() {
         if (!$.fn || !$.fn.DataTable) {
             return initializeDataTable('manageObsPanel');
         }
 
         if ($.fn.DataTable.isDataTable('#manageObsPanel')) {
-            $('#manageObsPanel').DataTable().clear().destroy();
+            $('#manageObsPanel').DataTable().clear().destroy(true);
         }
 
         return $('#manageObsPanel').DataTable({
@@ -86,6 +106,7 @@ function getPageData() {
             ordering: false,
             searching: false,
             lengthChange: false,
+            columns: new Array(getManageObsColumnCount()).fill({ orderable: false }),
             lengthMenu: [
                 [10, 50, 100, -1],
                 [10, 50, 100, 'All']
@@ -93,13 +114,23 @@ function getPageData() {
         });
     }
 
+    function renderMessageRow(message, cssClass) {
+        var columnCount = getManageObsColumnCount();
+        var rowCells = ['<td class="text-center">' + message + '</td>'];
+        for (var i = 1; i < columnCount; i++) {
+            rowCells.push('<td></td>');
+        }
+
+        $('#manageObsPanel tbody').append('<tr class="' + (cssClass || 'manage-obs-message') + '">' + rowCells.join('') + '</tr>');
+    }
+
     function renderNoDataRow() {
-        $('#manageObsPanel tbody').append('<tr class="manage-obs-empty"><td colspan="7" class="text-center">No observations found.</td></tr>');
+        renderMessageRow('No observations found.', 'manage-obs-empty');
     }
 
     function getEntityObservation() {
-        destroyDatatable('manageObsPanel');
-        $('#manageObsPanel tbody').empty();
+        rebuildManageObservationTableBody();
+        renderMessageRow('Please wait...', 'manage-obs-loading');
 
         var selectedEngId = parseInt($('#engIdHidden').val() || 0);
         if (respSectionUpdate) {
@@ -121,6 +152,7 @@ function getPageData() {
             cache: false,
             success: function (data) {
                 g_obsList = data || [];
+                $('#manageObsPanel tbody').empty();
                 if (!g_obsList.length) {
                     renderNoDataRow();
                 }
@@ -128,7 +160,7 @@ function getPageData() {
                 $.each(g_obsList, function (i, v) {
                     g_entityID = v.entitY_ID;
                     $('#auditPeriodNameField').val(v.period);
-                    $('#manageObsPanel tbody').append('<tr id="' + v.obS_ID + '"><td class="text-center">' + v.memO_NO + '</td><td class="text-center">' + v.annexurE_CODE + '</td><td>' + v.heading + '</td><td>' + v.nO_OF_INSTANCES + '</td><td>' + v.obS_RISK + '</td><td>' + v.obS_STATUS + '</td><td class="text-center"><a data-onclick="ObservationUpdatePanel(' + v.obS_ID + ')" href="#" class="text-hover">Manage</a></td></tr>');
+                    $('#manageObsPanel tbody').append('<tr id="' + v.obS_ID + '"><td class="text-center">' + v.memO_NO + '</td><td class="text-center">' + v.annexurE_CODE + '</td><td>' + v.heading + '</td><td>' + v.nO_OF_INSTANCES + '</td><td>' + v.obS_RISK + '</td><td>' + v.obS_STATUS + '</td><td class="text-center"><a data-onclick="ObservationUpdatePanel(' + v.obS_ID + ')" href="#" class="text-hover me-2">Manage</a><span class="text-muted">|</span><a data-onclick="printObservation(' + v.obS_ID + ')" href="#" class="text-hover ms-2">Print</a></td></tr>');
                 });
 
                 var tbl = initializeManageObservationTable();
@@ -144,6 +176,11 @@ function getPageData() {
                         $('html').scrollTop(g_scrollPos);
                     }
                 }, 200)
+            },
+            error: function () {
+                $('#manageObsPanel tbody').empty();
+                renderMessageRow('Unable to load observations right now.', 'manage-obs-error');
+                initializeManageObservationTable();
             },
             dataType: "json",
         });
