@@ -79,36 +79,72 @@
     .planning-step {
         border: 1px solid #ced4da;
         border-radius: .5rem;
-        padding: .35rem .5rem;
+        padding: .45rem .65rem;
         display: flex;
         align-items: center;
         justify-content: space-between;
         text-decoration: none;
         color: #212529;
-        background: #fff;
+        background: #f8f9fa;
         text-align: left;
-        transition: border-color .15s ease, box-shadow .15s ease, background-color .15s ease;
+        transition: border-color .15s ease, box-shadow .15s ease, background-color .15s ease, transform .15s ease;
     }
 
     .planning-step:hover {
         color: #212529;
-        border-color: #b8bec5;
-        background: #f8f9fa;
     }
 
     .planning-step.active {
-        border-color: #0d6efd;
-        box-shadow: 0 0 0 2px rgba(13,110,253,.15);
+        transform: translateY(-1px);
     }
 
     .planning-step.completed {
         background: #ecf9f0;
-        border-color: #198754;
+        border-color: #77c59a;
+        color: #125132;
+    }
+
+    .planning-step.completed:hover {
+        background: #dff3e8;
+        border-color: #57b684;
+    }
+
+    .planning-step.completed.active {
+        background: #198754;
+        border-color: #157347;
+        color: #ffffff;
+        box-shadow: 0 0 0 2px rgba(25, 135, 84, .22);
+        font-weight: 600;
     }
 
     .planning-step.not-saved {
-        background: #fff5f5;
-        border-color: #dc3545;
+        background: #fff2f3;
+        border-color: #efb7bd;
+        color: #7b1f29;
+    }
+
+    .planning-step.not-saved:hover {
+        background: #ffe4e7;
+        border-color: #e68e98;
+    }
+
+    .planning-step.not-saved.active {
+        background: #dc3545;
+        border-color: #b02a37;
+        color: #ffffff;
+        box-shadow: 0 0 0 2px rgba(220, 53, 69, .2);
+        font-weight: 600;
+    }
+
+    .planning-step:not(.completed):not(.not-saved) {
+        background: #f8f9fa;
+        border-color: #ced4da;
+    }
+
+    .planning-step:not(.completed):not(.not-saved).active {
+        border-color: #495057;
+        box-shadow: 0 0 0 2px rgba(73, 80, 87, .15);
+        font-weight: 600;
     }
 
     .step-no {

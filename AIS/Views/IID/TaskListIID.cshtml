@@ -4,12 +4,20 @@
 }
 
 <div class="container-fluid mt-3">
-    <h4 class="text-success">IID Task List</h4>
+    <div class="iid-nav-wrap sticky-top bg-white py-2 mb-3">
+        <div class="card shadow-sm planning-nav-card mb-0">
+            <div class="card-body py-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <h4 class="mb-0 text-success">IID Task List</h4>
+                <span class="text-muted small">Task overview and status tracking</span>
+            </div>
+        </div>
+    </div>
+
     <div class="card shadow-sm">
         <div class="card-body p-0">
             <div class="table-responsive">
                 <table id="iidTaskListTable" class="table table-hover table-bordered table-striped table-sm mb-0 w-100">
-                    <thead class="table-success">
+                    <thead class="iid-table-head">
                         <tr>
                             <th>Complaint No</th>
                             <th>Complainant Name</th>
@@ -24,6 +32,25 @@
         </div>
     </div>
 </div>
+
+<style>
+    .iid-nav-wrap {
+        z-index: 1020;
+    }
+
+    .planning-nav-card {
+        border: 1px solid #ced4da;
+    }
+
+    .iid-table-head {
+        background: #ecf9f0;
+        color: #125132;
+    }
+
+    .iid-table-head th {
+        border-color: #77c59a;
+    }
+</style>
 
 @section Scripts{
     <script src="~/js/csp/Views_IID_TaskListIID.js" asp-append-version="true"></script>
