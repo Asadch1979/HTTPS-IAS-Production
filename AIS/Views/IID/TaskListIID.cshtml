@@ -3,36 +3,6 @@
     Layout = "_Layout";
 }
 
-<link rel="stylesheet" href="~/css/compact-workflow-nav.css" asp-append-version="true" />
-
-<div class="compact-workflow-wrap sticky-top bg-white py-2 mb-3">
-    <div class="card shadow-sm compact-workflow-card mb-0">
-        <div class="card-body py-3">
-            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2">
-                <strong>IID Workflow</strong>
-                <span class="text-muted small">Compact navigation theme aligned with dashboard workflow styling</span>
-            </div>
-            <div class="compact-workflow-stepper mt-2">
-                <a class="compact-step-pill active" href="@Url.Action("TaskListIID", "IID")">
-                    <div class="compact-step-title"><span class="compact-step-num">1.</span> Task List</div>
-                </a>
-                <a class="compact-step-pill disabled" href="javascript:void(0);">
-                    <div class="compact-step-title"><span class="compact-step-num">2.</span> Investigation Plan</div>
-                </a>
-                <a class="compact-step-pill disabled" href="javascript:void(0);">
-                    <div class="compact-step-title"><span class="compact-step-num">3.</span> Plan Approval</div>
-                </a>
-                <a class="compact-step-pill disabled" href="javascript:void(0);">
-                    <div class="compact-step-title"><span class="compact-step-num">4.</span> Inquiry Report</div>
-                </a>
-                <a class="compact-step-pill" href="@Url.Action("MonitoringDashboard", "IID")">
-                    <div class="compact-step-title"><span class="compact-step-num">5.</span> Monitoring Dashboard</div>
-                </a>
-            </div>
-        </div>
-    </div>
-</div>
-
 <div class="container-fluid mt-3">
     <h4 class="text-success">IID Task List</h4>
     <div class="card shadow-sm">
