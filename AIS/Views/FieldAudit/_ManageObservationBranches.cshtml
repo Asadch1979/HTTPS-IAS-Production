@@ -1,4 +1,4 @@
-﻿@{
+@{
     var page_id = ViewData["PageId"] as int? ?? 0;
 }
 
@@ -32,12 +32,9 @@
 </style>
 
 <div class="row" id="fieldAuditManageObservationBranchesReplica" data-eng-id="@Model.EngagementId">
-    <div class="col-md-12 mt-3">
-        <h3 style=" display:block;color: #be0e43">Manage Audit Observations</h3>
-    </div>
     <input type="hidden" id="engIdHidden" value="@Model.EngagementId" />
-    
-    <div class="row col-md-12 mt-3">
+
+    <div class="row col-md-12">
         <table id="manageObsPanel" class="table table-hover table-bordered table-hover mt-3 table-striped">
             <thead style="background-color: #19875478 !important; ">
                 <tr>
@@ -48,7 +45,7 @@
                     <th class="col-md-auto">Risk Category</th>
                     <th class="col-md-auto">Status</th>                   
                     <th class="col-md-auto text-center">Action</th>
-                    <th class="col-md-auto text-center action-col">Print</th>
+                    
                 </tr>
             </thead>
             <tbody>

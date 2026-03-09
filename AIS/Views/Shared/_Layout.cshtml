@@ -380,6 +380,27 @@
             border: 1px solid rgba(56,189,248,.18);
         }
 
+
+        .ias-sidebar__footer{
+            margin-top: auto;
+            padding: 10px 0 0;
+            border-top: 1px solid rgba(255,255,255,.12);
+        }
+        .ias-logout-link{
+            display:flex;
+            align-items:center;
+            gap:10px;
+            padding: 10px;
+            border-radius: 10px;
+            text-decoration:none;
+            color: #ffd9d9;
+            font-size: 13px;
+            font-weight: 700;
+            transition: background .15s ease;
+        }
+        .ias-logout-link:hover{ background: rgba(255,255,255,.10); color:#fff; }
+        body.ias-sidebar-collapsed .ias-logout-link span:last-child{ display:none; }
+
         .ias-nav-bullet{
             width:8px;
             height:8px;
@@ -579,6 +600,13 @@
                             }
                         }
                     </div>
+                    <div class="ias-sidebar__footer">
+                        <a class="ias-logout-link" href="~/Login/Logout" title="Logout">
+                            <i class="fa-solid fa-right-from-bracket" aria-hidden="true"></i>
+                            <span>Logout</span>
+                        </a>
+                    </div>
+
                 </div>
             </aside>
         }

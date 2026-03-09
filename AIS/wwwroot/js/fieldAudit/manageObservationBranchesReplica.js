@@ -96,12 +96,7 @@ function getPageData() {
                 $.each(data, function (i, v) {
                     g_entityID = v.entitY_ID;
                     $('#auditPeriodNameField').val(v.period);
-                    var statusText = (v.obS_STATUS || '').toString();
-                    var isPrintable = statusText.toLowerCase() === 'submitted to auditee';
-                    var printCell = isPrintable
-                        ? '<button type="button" class="btn btn-sm btn-primary" data-onclick="printObservation(' + v.obS_ID + ')">Print</button>'
-                        : '';
-                    $('#manageObsPanel tbody').append(' <tr id="' + v.obS_ID + '"><td class="text-center">' + v.memO_NO + '</td><td class="text-center">' + v.annexurE_CODE + '</td><td>' + v.heading + '</td><td>' + v.nO_OF_INSTANCES + '</td><td>' + v.obS_RISK + '</td><td>' + v.obS_STATUS + '</td><td><a data-onclick="ObservationUpdatePanel(' + v.obS_ID + ')" href="#" class="text-hover">Manage</a></td><td class="text-center action-col">' + printCell + '</td></tr>');
+                    $('#manageObsPanel tbody').append(' <tr id="' + v.obS_ID + '"><td class="text-center">' + v.memO_NO + '</td><td class="text-center">' + v.annexurE_CODE + '</td><td>' + v.heading + '</td><td>' + v.nO_OF_INSTANCES + '</td><td>' + v.obS_RISK + '</td><td>' + v.obS_STATUS + '</td><td><a data-onclick="ObservationUpdatePanel(' + v.obS_ID + ')" href="#" class="text-hover">Manage</a></td></tr>');
                 });
 
                 if ($.fn && $.fn.DataTable) {
@@ -110,20 +105,11 @@ function getPageData() {
                     }
 
                     $('#manageObsPanel').DataTable({
-                        dom: '<"top"B>rt<"bottom"ip><"clear">',
+                        dom: 'rt<"bottom"ip><"clear">',
                         autoWidth: true,
                         ordering: false,
                         searching: false,
                         lengthChange: false,
-                        buttons: [
-                            getPdfExportButtonConfig(),
-                            getExcelExportButtonConfig('Export to Excel'),
-                            getCsvExportButtonConfig('Export to CSV'),
-                            {
-                                extend: 'copyHtml5',
-                                text: 'Copy to Clipboard'
-                            }
-                        ],
                         lengthMenu: [
                             [10, 50, 100, -1],
                             [10, 50, 100, 'All']
