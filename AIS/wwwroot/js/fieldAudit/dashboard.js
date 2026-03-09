@@ -151,6 +151,30 @@
             });
     }
 
+    function initStepperTheme() {
+        var stepData = Array.isArray(window.fieldAuditStepperData) ? window.fieldAuditStepperData : [];
+        if (!window.fieldAuditStepperTheme || !window.fieldAuditStepperTheme.render || !stepData.length) {
+            return;
+        }
+
+        window.fieldAuditStepperTheme.render({
+            containerId: 'wizardStepper',
+            steps: stepData,
+            currentStepCode: currentStepCode(),
+            disabled: !selectedEngagementId(),
+            linkMode: 'button',
+            onStepClick: function (anchor) {
+                if (!selectedEngagementId()) {
+                    toggleEngagementAlert(true);
+                    clearStepContent('Please select an engagement before opening workflow steps.');
+                    return;
+                }
+
+                loadStepContent(anchor.getAttribute('data-step-code'), anchor.getAttribute('data-step-no'));
+            }
+        });
+    }
+
     if (markCompletedBtn) {
         markCompletedBtn.addEventListener('click', function () {
             var stepCode = currentStepCode();
@@ -209,19 +233,6 @@
         window.location.href = dashboardBaseUrl + '?engId=' + encodeURIComponent(engId);
     });
 
-    stepper.querySelectorAll('.step-pill[data-step-code]').forEach(function (anchor) {
-        anchor.addEventListener('click', function () {
-            if (!selectedEngagementId()) {
-                toggleEngagementAlert(true);
-                clearStepContent('Please select an engagement before opening workflow steps.');
-                return;
-            }
-
-            loadStepContent(anchor.getAttribute('data-step-code'), anchor.getAttribute('data-step-no'));
-        });
-    });
-
-
     window.fieldAuditDashboard = {
         loadStepContent: loadStepContent,
         loadNestedView: function (viewCode, options) {
@@ -267,6 +278,7 @@
         }
     };
 
+    initStepperTheme();
     toggleEngagementAlert(!selectedEngagementId());
 
     if (selectedEngagementId() && currentStepCode()) {

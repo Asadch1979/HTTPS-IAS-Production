@@ -21,32 +21,41 @@
                 }
             else
                 {
-                <div class="planning-stepper mt-2">
-                    @foreach (var step in visibleSteps)
-                        {
-                        var isActive = currentStep != null && step.StepCode == currentStep.StepCode;
-                        var stepCss = isActive ? "planning-step active" : "planning-step";
-                        if (step.IsCompleted)
-                            {
-                            stepCss += " completed";
-                            }
-                        if (!step.IsSaved)
-                            {
-                            stepCss += " not-saved";
-                            }
-                        var statusBadgeCss = step.IsSaved ? "bg-success" : "bg-secondary";
-
-                        <a class="@stepCss" href="@Url.Action("Planning", "Planning", new { stepCode = step.StepCode, contextId = Model.ContextId, contextSecondaryId = Model.ContextSecondaryId })">
-                            <div class="step-title"><span class="step-no">@(step.StepNo).</span> @(step.StepTitle)</div>
-                            <span class="step-state ms-2 badge @statusBadgeCss">@(step.StatusText)</span>
-                        </a>
-                        }
-                </div>
+                <div id="planningStepper" class="mt-2"></div>
                 }
         </div>
     </div>
 </div>
 
+<link rel="stylesheet" href="~/css/fieldaudit-stepper-theme.css" />
+<script src="~/js/fieldAudit/stepper-theme.js"></script>
+<script>
+    window.planningStepperData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(visibleSteps.Select(step => new
+    {
+        stepCode = step.StepCode,
+        stepNo = step.StepNo,
+        stepTitle = step.StepTitle,
+        isCompleted = step.IsCompleted,
+        isSaved = step.IsSaved
+    })));
+    window.planningStepperCurrentStepCode = "@Model.CurrentStepCode";
+    window.planningStepperUrlTemplate = "@Html.Raw(Url.Action("Planning", "Planning", new { stepCode = "__STEP_CODE__", contextId = Model.ContextId, contextSecondaryId = Model.ContextSecondaryId }))";
+</script>
+<script>
+    (function () {
+        if (!window.fieldAuditStepperTheme || !window.fieldAuditStepperTheme.render) {
+            return;
+        }
+
+        window.fieldAuditStepperTheme.render({
+            containerId: 'planningStepper',
+            steps: window.planningStepperData || [],
+            currentStepCode: window.planningStepperCurrentStepCode || '',
+            linkMode: 'link',
+            urlTemplate: window.planningStepperUrlTemplate || '#'
+        });
+    })();
+</script>
 @if (currentStep != null)
     {
     <div class="card">
@@ -56,84 +65,4 @@
     </div>
     }
 
-<style>
-    .planning-nav-wrap {
-        z-index: 1020;
-    }
 
-    .planning-nav-card {
-        border: 1px solid #ced4da;
-    }
-
-    .planning-step-counter {
-        font-size: 1rem;
-    }
-
-    .planning-stepper {
-        display: grid;
-        grid-template-columns: repeat(4, minmax(220px, 1fr));
-        gap: .4rem;
-        overflow: auto;
-    }
-
-    .planning-step {
-        border: 1px solid #ced4da;
-        border-radius: .5rem;
-        padding: .35rem .5rem;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        text-decoration: none;
-        color: #212529;
-        background: #fff;
-        text-align: left;
-        transition: border-color .15s ease, box-shadow .15s ease, background-color .15s ease;
-    }
-
-    .planning-step:hover {
-        color: #212529;
-        border-color: #b8bec5;
-        background: #f8f9fa;
-    }
-
-    .planning-step.active {
-        border-color: #0d6efd;
-        box-shadow: 0 0 0 2px rgba(13,110,253,.15);
-    }
-
-    .planning-step.completed {
-        background: #ecf9f0;
-        border-color: #198754;
-    }
-
-    .planning-step.not-saved {
-        background: #fff5f5;
-        border-color: #dc3545;
-    }
-
-    .step-no {
-        font-weight: 700;
-    }
-
-    .step-title {
-        font-size: .88rem;
-        padding-right: .5rem;
-    }
-
-    .step-state {
-        font-size: .68rem;
-        vertical-align: middle;
-    }
-
-    <text>@@media (max-width: 991px) {
-        .planning-stepper {
-            grid-template-columns: repeat(2, minmax(220px, 1fr));
-        }
-    }
-
-    @@media (max-width: 575px) {
-        .planning-stepper {
-            grid-template-columns: 1fr;
-        }
-    }</text>
-</style>
