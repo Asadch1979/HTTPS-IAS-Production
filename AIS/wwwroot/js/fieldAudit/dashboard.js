@@ -12,6 +12,11 @@
         return;
     }
 
+    var themedStepper = window.fieldAuditStepperTheme
+        ? window.fieldAuditStepperTheme.init({ stepper: stepper, counter: stepCounter, currentStepNo: '1' })
+        : null;
+
+
     function selectedEngagementId() {
         return selector.value || '';
     }
@@ -63,6 +68,11 @@
     }
 
     function setActiveStep(stepCode) {
+        if (themedStepper) {
+            themedStepper.setActiveStep(stepCode);
+            return;
+        }
+
         stepper.querySelectorAll('.step-pill').forEach(function (anchor) {
             if ((anchor.getAttribute('data-step-code') || '') === (stepCode || '')) {
                 anchor.classList.add('active');
@@ -73,6 +83,11 @@
     }
 
     function setStepCompleted(stepCode, isCompleted) {
+        if (themedStepper) {
+            themedStepper.setStepCompleted(stepCode, isCompleted);
+            return;
+        }
+
         var anchor = stepper.querySelector('.step-pill[data-step-code="' + stepCode + '"]');
         if (!anchor) {
             return;
@@ -83,6 +98,11 @@
     }
 
     function updateStepCounter(stepNo) {
+        if (themedStepper) {
+            themedStepper.updateCounter(stepNo);
+            return;
+        }
+
         if (!stepCounter) {
             return;
         }
