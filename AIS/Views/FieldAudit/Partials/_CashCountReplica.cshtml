@@ -1,7 +1,6 @@
 @model AIS.Models.FieldAuditWorkflow.FieldAuditGridReplicaViewModel
 <div id="fieldAuditCashCountReplica" data-eng-id="@Model.EngagementId">
-    <div class="d-flex justify-content-between align-items-center mb-2 mt-2"><h5 class="mb-0">Working Paper - Cash Count</h5><button type="button" class="btn btn-outline-secondary btn-sm" data-fad-nav="nested" data-view-code="WP_FIXED_ASSETS">Back</button></div>
+    <div class="d-flex justify-content-between align-items-center mb-2 mt-2"><h5 class="mb-0">Working Paper - Cash Count</h5><button type="button" class="btn btn-outline-secondary btn-sm" onclick="window.fieldAuditDashboard && window.fieldAuditDashboard.loadNestedView('WP_FIXED_ASSETS')">Back</button></div>
     <table id="fieldAuditCashCountTable" class="table table-hover table-bordered table-striped"><thead><tr><th>Sr No</th><th>D Vault</th><th>No Vault</th><th>Total Vault</th><th>D Safe</th><th>No Safe</th><th>Total Safe</th><th>Diff</th></tr></thead><tbody></tbody></table>
 </div>
 <script src="~/js/fieldAudit/cashCountReplica.js?v=1"></script>
-

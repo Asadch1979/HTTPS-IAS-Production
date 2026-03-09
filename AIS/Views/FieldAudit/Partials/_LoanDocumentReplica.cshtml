@@ -1,8 +1,7 @@
 @model AIS.Models.FieldAuditWorkflow.FieldAuditGridReplicaViewModel
 @{ var disbId = ViewData["DisbId"] as int?; }
 <div id="fieldAuditLoanDocumentReplica" data-eng-id="@Model.EngagementId" data-disb-id="@(disbId ?? 0)">
-    <div class="d-flex justify-content-between align-items-center mb-2 mt-2"><h5 class="mb-0">Loan Documents</h5><button class="btn btn-outline-secondary btn-sm" type="button" data-fad-nav="nested" data-view-code="EXCEPTION_LOAN" data-report-id="@(ViewData["ReportId"] ?? 0)" data-loan-status="@(ViewData["LoanStatus"] ?? 0)">Back</button></div>
+    <div class="d-flex justify-content-between align-items-center mb-2 mt-2"><h5 class="mb-0">Loan Documents</h5><button class="btn btn-outline-secondary btn-sm" type="button" onclick="window.fieldAuditDashboard && window.fieldAuditDashboard.loadNestedView('EXCEPTION_LOAN',{ reportId: '@(ViewData["ReportId"] ?? 0)', loanStatus: '@(ViewData["LoanStatus"] ?? 0)' })">Back</button></div>
     <table id="fieldAuditLoanDocumentTable" class="table table-hover table-bordered table-striped"><thead><tr><th>Sr No</th><th>Branch</th><th>Case No</th><th>Customer</th><th>Document</th><th>View</th></tr></thead><tbody></tbody></table>
 </div>
 <script src="~/js/fieldAudit/loanDocumentReplica.js?v=1"></script>
-

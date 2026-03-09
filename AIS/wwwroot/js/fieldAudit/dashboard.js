@@ -86,22 +86,19 @@
         stepCounter.textContent = 'Step ' + resolved + ' of ' + total;
     }
 
-    function executeExternalScripts(container) {
-        container.querySelectorAll('script[src]').forEach(function (script) {
+    function executeInlineScripts(container) {
+        container.querySelectorAll('script').forEach(function (script) {
             var newScript = document.createElement('script');
             Array.from(script.attributes).forEach(function (attr) {
                 newScript.setAttribute(attr.name, attr.value);
             });
+
+            if (!newScript.src) {
+                newScript.textContent = script.textContent;
+            }
+
             script.parentNode.replaceChild(newScript, script);
         });
-    }
-
-    function readOptionalNavValue(element, attributeName) {
-        var value = element.getAttribute(attributeName);
-        if (value === null || value === undefined || value === '') {
-            return null;
-        }
-        return value;
     }
 
     function loadStepContent(stepCode, stepNo) {
@@ -132,52 +129,11 @@
             })
             .then(function (html) {
                 stepHost.innerHTML = html;
-                executeExternalScripts(stepHost);
+                executeInlineScripts(stepHost);
                 stepHost.setAttribute('data-eng-id', engId);
                 setCurrentStepCode(stepCode);
                 setActiveStep(stepCode);
                 updateStepCounter(stepNo);
-            })
-            .catch(function () {
-                clearStepContent('Unable to load workflow content right now. Please try again.');
-            });
-    }
-
-    function loadNestedView(viewCode, options) {
-        var engId = selectedEngagementId();
-        if (!engId) {
-            return;
-        }
-
-        options = options || {};
-        var loadUrl = (stepHost.getAttribute('data-load-url') || '/FieldAudit/LoadStep').replace('/LoadStep', '/LoadNestedStepView');
-        var query = new URLSearchParams();
-        query.append('viewCode', viewCode || '');
-        query.append('engId', engId);
-
-        Object.keys(options).forEach(function (key) {
-            var value = options[key];
-            if (value !== undefined && value !== null && value !== '') {
-                query.append(key, value);
-            }
-        });
-
-        stepHost.innerHTML = '<div class="alert alert-secondary mb-0">Loading workflow content...</div>';
-        fetch(loadUrl + '?' + query.toString() + '&_=' + Date.now(), {
-            method: 'GET',
-            credentials: 'same-origin',
-            cache: 'no-store'
-        })
-            .then(function (response) {
-                if (!response.ok) {
-                    throw new Error('Failed to load nested view.');
-                }
-                return response.text();
-            })
-            .then(function (html) {
-                stepHost.innerHTML = html;
-                executeExternalScripts(stepHost);
-                stepHost.setAttribute('data-eng-id', engId);
             })
             .catch(function () {
                 clearStepContent('Unable to load workflow content right now. Please try again.');
@@ -254,47 +210,49 @@
         });
     });
 
-    stepHost.addEventListener('click', function (event) {
-        var navTrigger = event.target.closest('.js-fad-nav, [data-fad-nav]');
-        if (!navTrigger || !stepHost.contains(navTrigger)) {
-            return;
-        }
-
-        event.preventDefault();
-
-        var navType = navTrigger.getAttribute('data-fad-nav');
-        if (navType === 'step') {
-            loadStepContent(navTrigger.getAttribute('data-step-code') || '', navTrigger.getAttribute('data-step-no') || '1');
-            return;
-        }
-
-        if (navType === 'nested') {
-            var options = {};
-            var optionMappings = [
-                ['reportId', 'data-report-id'],
-                ['loanStatus', 'data-loan-status'],
-                ['sampleId', 'data-sample-id'],
-                ['sampleType', 'data-sample-type'],
-                ['reportTitle', 'data-report-title'],
-                ['reportDescription', 'data-report-desc'],
-                ['disbId', 'data-disb-id'],
-                ['accountNo', 'data-ac-no']
-            ];
-
-            optionMappings.forEach(function (mapping) {
-                var value = readOptionalNavValue(navTrigger, mapping[1]);
-                if (value !== null) {
-                    options[mapping[0]] = value;
-                }
-            });
-
-            loadNestedView(navTrigger.getAttribute('data-view-code') || '', options);
-        }
-    });
 
     window.fieldAuditDashboard = {
         loadStepContent: loadStepContent,
-        loadNestedView: loadNestedView
+        loadNestedView: function (viewCode, options) {
+            var engId = selectedEngagementId();
+            if (!engId) {
+                return;
+            }
+
+            options = options || {};
+            var loadUrl = (stepHost.getAttribute('data-load-url') || '/FieldAudit/LoadStep').replace('/LoadStep', '/LoadNestedStepView');
+            var query = new URLSearchParams();
+            query.append('viewCode', viewCode || '');
+            query.append('engId', engId);
+
+            Object.keys(options).forEach(function (key) {
+                var value = options[key];
+                if (value !== undefined && value !== null && value !== '') {
+                    query.append(key, value);
+                }
+            });
+
+            stepHost.innerHTML = '<div class="alert alert-secondary mb-0">Loading workflow content...</div>';
+            fetch(loadUrl + '?' + query.toString() + '&_=' + Date.now(), {
+                method: 'GET',
+                credentials: 'same-origin',
+                cache: 'no-store'
+            })
+                .then(function (response) {
+                    if (!response.ok) {
+                        throw new Error('Failed to load nested view.');
+                    }
+                    return response.text();
+                })
+                .then(function (html) {
+                    stepHost.innerHTML = html;
+                    executeInlineScripts(stepHost);
+                    stepHost.setAttribute('data-eng-id', engId);
+                })
+                .catch(function () {
+                    clearStepContent('Unable to load workflow content right now. Please try again.');
+                });
+        }
     };
 
     toggleEngagementAlert(!selectedEngagementId());
