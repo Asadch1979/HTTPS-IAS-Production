@@ -356,7 +356,7 @@ namespace AIS.Controllers
             switch (step.StepCode)
                 {
                 case "JOINING":
-                    var joinModel = BuildJoinReplicaViewModel(engId);
+                    var joinModel = BuildJoinReplicaViewModel(user, engId);
                     return PartialView("~/Views/FieldAudit/_Join.cshtml", joinModel);
                 case "SAMPLING":
                     return PartialView("~/Views/FieldAudit/_Samples.cshtml", new FieldAuditGridReplicaViewModel { EngagementId = engId });
@@ -380,17 +380,49 @@ namespace AIS.Controllers
                 }
             }
 
-        private FieldAuditJoinReplicaViewModel BuildJoinReplicaViewModel(int engId)
+        private FieldAuditJoinReplicaViewModel BuildJoinReplicaViewModel(SessionUser user, int engId)
             {
             var joiningDetails = _dbConnection.GetJoiningDetails(engId) ?? new JoiningModel();
             var hasCompletionDate = joiningDetails.END_DATE.HasValue;
+            var teamDetails = joiningDetails.TEAM_DETAILS ?? new List<JoiningTeamModel>();
+
+            var userPPNo = 0;
+            if (!string.IsNullOrWhiteSpace(user?.PPNumber))
+                {
+                int.TryParse(user.PPNumber, out userPPNo);
+                }
+
+            var selectedMember = teamDetails.FirstOrDefault(member => member.PP_NO == userPPNo)
+                ?? teamDetails.FirstOrDefault(member => !string.IsNullOrWhiteSpace(member.EMP_NAME));
+
+            var memberName = selectedMember?.EMP_NAME;
+            if (string.IsNullOrWhiteSpace(memberName))
+                {
+                memberName = user?.Name;
+                }
+
+            if (string.IsNullOrWhiteSpace(memberName) && userPPNo > 0)
+                {
+                memberName = userPPNo.ToString();
+                }
+
+            if (string.IsNullOrWhiteSpace(memberName))
+                {
+                memberName = "User";
+                }
+
+            var isTeamLead = string.Equals(selectedMember?.IS_TEAM_LEAD?.Trim(), "Y", StringComparison.OrdinalIgnoreCase);
 
             return new FieldAuditJoinReplicaViewModel
                 {
                 EngagementId = engId,
                 JoiningDetails = joiningDetails,
                 CompletionDate = hasCompletionDate ? joiningDetails.END_DATE.Value.Date : DateTime.UtcNow.Date,
-                IsSubmitted = IsJoinAlreadySubmitted(engId)
+                IsSubmitted = IsJoinAlreadySubmitted(engId),
+                CurrentMemberName = memberName,
+                MemberRoleLabel = isTeamLead ? "Team Lead" : "Team Member",
+                EntityDisplayName = string.IsNullOrWhiteSpace(joiningDetails.ENTITY_NAME) ? "-" : joiningDetails.ENTITY_NAME,
+                SystemDateDisplay = DateTime.Now.ToString("dd-MM-yyyy")
                 };
             }
 

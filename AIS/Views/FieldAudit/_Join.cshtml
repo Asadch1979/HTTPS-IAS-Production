@@ -1,72 +1,110 @@
 @model AIS.Models.FieldAuditWorkflow.FieldAuditJoinReplicaViewModel
 @{
     var join = Model.JoiningDetails ?? new AIS.Models.JoiningModel();
-    var startDate = join.START_DATE.HasValue ? join.START_DATE.Value.ToString("dd/MM/yyyy") : string.Empty;
-    var endDate = join.END_DATE.HasValue ? join.END_DATE.Value.ToString("dd/MM/yyyy") : string.Empty;
+    var startDate = join.START_DATE.HasValue ? join.START_DATE.Value.ToString("dd/MM/yyyy") : "-";
+    var endDate = join.END_DATE.HasValue ? join.END_DATE.Value.ToString("dd/MM/yyyy") : "-";
     var completionIso = Model.CompletionDate.ToString("yyyy-MM-dd");
 }
 
-<div class="row mt-1">
-    <h4 style="display:block;color:#be0e43">Joining Report</h4>
-</div>
+<style>
+    #fieldAuditJoinReplica .join-card {
+        border: 1px solid #e9edf3;
+        border-radius: 12px;
+        background: #fff;
+        padding: 1rem 1.25rem;
+        box-shadow: 0 2px 8px rgba(17, 24, 39, 0.05);
+    }
+
+    #fieldAuditJoinReplica .join-title {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: #2d3748;
+        margin-bottom: 0.85rem;
+    }
+
+    #fieldAuditJoinReplica .summary-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: .75rem 1rem;
+    }
+
+    #fieldAuditJoinReplica .summary-item {
+        border: 1px solid #f1f5f9;
+        border-radius: 8px;
+        padding: .6rem .75rem;
+        background: #fcfdff;
+    }
+
+    #fieldAuditJoinReplica .summary-item--full {
+        grid-column: 1 / -1;
+    }
+
+    #fieldAuditJoinReplica .summary-label {
+        display: block;
+        font-size: .76rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: .02em;
+        color: #64748b;
+        margin-bottom: .2rem;
+    }
+
+    #fieldAuditJoinReplica .summary-value {
+        font-size: .95rem;
+        color: #1f2937;
+        font-weight: 500;
+    }
+
+    #fieldAuditJoinReplica .join-confirmation {
+        margin-top: .9rem;
+        padding: .75rem .9rem;
+        border-radius: 8px;
+        background: #fff6db;
+        border: 1px solid #fde68a;
+        color: #92400e;
+    }
+
+    #fieldAuditJoinReplica .join-actions {
+        margin-top: .9rem;
+    }
+
+    @@media (max-width: 767px) {
+        #fieldAuditJoinReplica .summary-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
 
 <div id="fieldAuditJoinReplica"
      data-eng-id="@Model.EngagementId"
      data-completion-date="@completionIso"
      data-is-submitted="@(Model.IsSubmitted ? "true" : "false")">
-    <div class="row col-md-12">
-        <div class="col-md-6">
-            <table class="table table-bordered mb-0 mt-3 bg-white table-hover table-striped">
-                <thead>
-                    <tr><td><h6>Audit Plan</h6></td></tr>
-                </thead>
-                <tbody>
-                    <tr><td>Audit Period</td><td>@join.AUDIT_PERIOD</td></tr>
-                    <tr><td width="150">Entity</td><td width="200">@join.ENTITY_NAME</td></tr>
-                    <tr><td>Entity Risk</td><td>@join.RISK</td></tr>
-                    <tr><td>Entity Size</td><td>@join.SIZE</td></tr>
-                    <tr><td>Start Date</td><td>@startDate</td></tr>
-                    <tr><td>End Date</td><td>@endDate</td></tr>
-                    <tr><td>Audit Conducted by</td><td>@join.TEAM_NAME</td></tr>
-                </tbody>
-            </table>
+    <div class="join-card mt-2">
+        <h4 class="join-title">Joining Report</h4>
+
+        <div class="summary-grid">
+            <div class="summary-item summary-item--full">
+                <span class="summary-label">Entity</span>
+                <span class="summary-value">@(string.IsNullOrWhiteSpace(join.ENTITY_NAME) ? "-" : join.ENTITY_NAME)</span>
+            </div>
+            <div class="summary-item">
+                <span class="summary-label">Start Date</span>
+                <span class="summary-value">@startDate</span>
+            </div>
+            <div class="summary-item">
+                <span class="summary-label">End Date</span>
+                <span class="summary-value">@endDate</span>
+            </div>
         </div>
-    </div>
 
-    <div class="mt-3">
-        <table class="table table-bordered mb-0 mt-3 bg-white table-hover table-striped">
-            <thead>
-                <tr>
-                    <th class="font-weight-bold">Name</th>
-                    <th class="font-weight-bold">P.P. No</th>
-                    <th class="font-weight-bold">Joining Date</th>
-                    <th class="font-weight-bold">Completion Date</th>
-                    <th class="font-weight-bold">Is team Lead</th>
-                </tr>
-            </thead>
-            <tbody>
-                @if (join.TEAM_DETAILS != null)
-                {
-                    foreach (var member in join.TEAM_DETAILS)
-                    {
-                        <tr>
-                            <td>@member.EMP_NAME</td>
-                            <td>@member.PP_NO</td>
-                            <td>@DateTime.Now.ToString("dd/MM/yyyy")</td>
-                            <td>@endDate</td>
-                            <td>@member.IS_TEAM_LEAD</td>
-                        </tr>
-                    }
-                }
-            </tbody>
-        </table>
-    </div>
+        <div class="join-confirmation">
+            Mr. @Model.CurrentMemberName would you like to submit joining as @Model.MemberRoleLabel in @Model.EntityDisplayName on Date @Model.SystemDateDisplay.
+        </div>
 
-    <div id="joinReplicaStatus" class="mt-3"></div>
+        <div id="joinReplicaStatus" class="mt-3"></div>
 
-    <div class="row">
-        <div class="col-md-6 mt-4">
-            <button id="joinReplicaSubmitBtn" class="btn btn-primary" @(Model.IsSubmitted ? "disabled" : string.Empty)>Submit</button>
+        <div class="join-actions">
+            <button id="joinReplicaSubmitBtn" class="btn btn-primary btn-sm" @(Model.IsSubmitted ? "disabled" : string.Empty)>Submit</button>
             @if (Model.IsSubmitted)
             {
                 <span class="ms-2 text-success">Joining already submitted for this engagement.</span>
