@@ -8,6 +8,7 @@
     var menus = (ViewData["TopMenu"] as IEnumerable<dynamic> ?? Enumerable.Empty<dynamic>()).ToList();
     var pages = (ViewData["TopMenuPages"] as IEnumerable<dynamic> ?? Enumerable.Empty<dynamic>()).ToList();
     var hideSidebar = ViewData["HideSidebar"] as bool? ?? false;
+    var hideTopHeader = ViewData["HideTopHeader"] as bool? ?? false;
 
     // Visible + valid pages only (exclude special "user info" row if it exists)
     var visiblePages = pages.Where(p =>
@@ -77,6 +78,7 @@
 
     <meta name="ias-page-id" content="@((int?)ViewData["PageId"] ?? 0)" />
     <meta name="ias-hide-sidebar" content="@(hideSidebar ? "true" : "false")" />
+    <meta name="ias-hide-top-header" content="@(hideTopHeader ? "true" : "false")" />
     <script src="~/js/csp/layoutPageContext.js" asp-append-version="true"></script>
 
     <title>@ViewData["Title"] - IAS</title>
@@ -584,53 +586,56 @@
         <!-- CONTENT -->
         <div class="ias-content">
 
-            <!-- TOPBAR (keep id navBarTopMenu for compatibility with existing JS) -->
-            <header class="ias-topbar">
-                <nav id="navBarTopMenu" class="navbar navbar-expand-lg px-3 h-100">
-                    @if (!hideSidebar)
-                    {
-                        <button class="ias-icon-btn d-lg-none me-2" type="button" id="iasSidebarToggleBtn" title="Menu">
-                            <i class="fa-solid fa-bars"></i>
-                        </button>
-                    }
+            @if (!hideTopHeader)
+            {
+                <!-- TOPBAR (keep id navBarTopMenu for compatibility with existing JS) -->
+                <header class="ias-topbar">
+                    <nav id="navBarTopMenu" class="navbar navbar-expand-lg px-3 h-100">
+                        @if (!hideSidebar)
+                        {
+                            <button class="ias-icon-btn d-lg-none me-2" type="button" id="iasSidebarToggleBtn" title="Menu">
+                                <i class="fa-solid fa-bars"></i>
+                            </button>
+                        }
 
-                    <a class="navbar-brand" href="~/Home/Index">
-                        <span class="ias-brand-logo"><img src="~/Images/ztbllogo.png" alt="ZTBL" /></span>
-                        <span>Internal Audit System</span>
-                    </a>
+                        <a class="navbar-brand" href="~/Home/Index">
+                            <span class="ias-brand-logo"><img src="~/Images/ztbllogo.png" alt="ZTBL" /></span>
+                            <span>Internal Audit System</span>
+                        </a>
 
-                    <div class="ms-auto d-flex align-items-center gap-2">
-                        <input class="ias-search d-none d-md-block" type="search" placeholder="Search (optional)" aria-label="Search" />
+                        <div class="ms-auto d-flex align-items-center gap-2">
+                            <input class="ias-search d-none d-md-block" type="search" placeholder="Search (optional)" aria-label="Search" />
 
-                        <div class="dropdown">
-                            <a class="nav-link d-flex align-items-center gap-2" href="#" id="navImg" role="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                                <span class="d-none d-md-inline">
-                                    <small class="text-muted">Welcome:</small>
-                                    <span id="avatarEmpName" class="text-start">
-                                        <small class="d-block">@userDisplay</small>
+                            <div class="dropdown">
+                                <a class="nav-link d-flex align-items-center gap-2" href="#" id="navImg" role="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                    <span class="d-none d-md-inline">
+                                        <small class="text-muted">Welcome:</small>
+                                        <span id="avatarEmpName" class="text-start">
+                                            <small class="d-block">@userDisplay</small>
 
-                                        @if (!string.IsNullOrWhiteSpace(userPosting))
-                                        {
-                                            <small class="text-muted d-block" style="line-height:1.1;">@userPosting</small>
-                                        }
+                                            @if (!string.IsNullOrWhiteSpace(userPosting))
+                                            {
+                                                <small class="text-muted d-block" style="line-height:1.1;">@userPosting</small>
+                                            }
 
-                                        @if (!string.IsNullOrWhiteSpace(userRole))
-                                        {
-                                            <small class="text-muted d-block" style="line-height:1.1;">@userRole</small>
-                                        }
+                                            @if (!string.IsNullOrWhiteSpace(userRole))
+                                            {
+                                                <small class="text-muted d-block" style="line-height:1.1;">@userRole</small>
+                                            }
+                                        </span>
+
                                     </span>
-
-                                </span>
-                                <span class="ias-icon-btn" aria-hidden="true"><i class="fa-regular fa-user"></i></span>
-                            </a>
-                            <div class="dropdown-menu dropdown-menu-end" aria-labelledby="navImg">
-                                <a class="dropdown-item" href="~/Home/Change_Password">Change Password</a>
-                                <a id="logout_action_url" class="dropdown-item" href="~/Login/Logout">Logout</a>
+                                    <span class="ias-icon-btn" aria-hidden="true"><i class="fa-regular fa-user"></i></span>
+                                </a>
+                                <div class="dropdown-menu dropdown-menu-end" aria-labelledby="navImg">
+                                    <a class="dropdown-item" href="~/Home/Change_Password">Change Password</a>
+                                    <a id="logout_action_url" class="dropdown-item" href="~/Login/Logout">Logout</a>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                </nav>
-            </header>
+                    </nav>
+                </header>
+            }
 
             <div class="ias-main">
                 @RenderBody()

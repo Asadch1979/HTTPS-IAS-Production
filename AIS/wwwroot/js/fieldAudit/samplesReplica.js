@@ -69,27 +69,16 @@
             }
 
             $('#' + tableId).DataTable({
-                dom: '<"top"B>rt<"bottom"ip><"clear">',
+                dom: '<"top">rt<"bottom"ip><"clear">',
                 autoWidth: true,
                 ordering: false,
                 searching: false,
                 lengthChange: false,
-                buttons: [
-                    getPdfExportButtonConfig(),
-                    getExcelExportButtonConfig('Export to Excel'),
-                    getCsvExportButtonConfig('Export to CSV'),
-                    {
-                        extend: 'copyHtml5',
-                        text: 'Copy to Clipboard'
-                    }
-                ],
                 lengthMenu: [
                     [10, 50, 100, -1],
                     [10, 50, 100, 'All']
                 ]
             });
-        } else if (typeof initializeDataTable === 'function') {
-            initializeDataTable(tableId);
         }
     }
 

@@ -68,8 +68,22 @@
             tableBody.appendChild(row);
         });
 
-        if (typeof initializeDataTable === 'function') {
-            initializeDataTable(tableId);
+        if (window.jQuery && $.fn && $.fn.DataTable) {
+            if ($.fn.DataTable.isDataTable('#' + tableId)) {
+                $('#' + tableId).DataTable().clear().destroy();
+            }
+
+            $('#' + tableId).DataTable({
+                dom: '<"top">rt<"bottom"ip><"clear">',
+                autoWidth: true,
+                ordering: false,
+                searching: false,
+                lengthChange: false,
+                lengthMenu: [
+                    [10, 50, 100, -1],
+                    [10, 50, 100, 'All']
+                ]
+            });
         }
     }
 
