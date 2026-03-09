@@ -209,29 +209,6 @@ window.addEventListener("unhandledrejection", function (e) {
         });
     };
 
-    window.getAuditObservationTemplate = function () {
-        if ($('#riskActivitiesSelectBox option:selected').val() == 0)
-            $('#template_box').val('').trigger('change');
-        else {
-            $('#template_box').val('').trigger('change');
-            $.ajax({
-                url: g_asiBaseURL + "/Execution/audit_observation_template",
-                type: "POST",
-                data: {
-                    'ACTIVITY_ID': $('#riskActivitiesSelectBox option:selected').val(),
-                },
-                cache: false,
-                success: function (data) {
-                    $.each(data, function (index, item) {
-                        $('#template_box').val(item.obS_TEMPLATE).trigger('change');
-                    });
-
-                },
-                dataType: "json",
-            });
-        }
-    };
-
     window.submitObservationToAuditee = function () {
         if (!g_engId || g_engId <= 0) {
             alert('A valid engagement is required. Please re-select engagement and try again.');
