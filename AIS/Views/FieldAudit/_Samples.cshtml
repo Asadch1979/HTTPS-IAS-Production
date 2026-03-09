@@ -1,6 +1,14 @@
 @model AIS.Models.FieldAuditWorkflow.FieldAuditGridReplicaViewModel
 <link rel="stylesheet" href="~/css/sampling.css" />
 
+
+<style>
+    #fieldAuditSamplesReplica .dataTables_filter,
+    #fieldAuditSamplesReplica .dataTables_length {
+        display: none !important;
+    }
+</style>
+
 <div id="fieldAuditSamplesReplica" data-eng-id="@Model.EngagementId">
     <input type="hidden" value="@Model.EngagementId" class="field-audit-eng-id" />
     <div class="container-fluid mt-2 px-0">
