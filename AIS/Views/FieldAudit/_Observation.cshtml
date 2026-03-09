@@ -13,11 +13,8 @@
 
 <div id="fieldAuditObservationReplica" data-eng-id="@Model.EngagementId">
     <div class="row col-md-12">
-        <div class="col-md-12 mt-3">
-            <center class="w-100"><h3>Observation</h3></center>
-            <div>
-                <h5>Annexure</h5>
-            </div>
+        <div class="col-md-12">
+            <label for="updatedAnnexlist" class="form-label">Annexure</label>
             <select id="updatedAnnexlist" class="form-select form-control">
                 <option selected="selected" value="0" id="0">--Select Annexure--</option>
                 @if (ViewData["AnnexList"] != null)
