@@ -104,7 +104,35 @@ function getPageData() {
                     $('#manageObsPanel tbody').append(' <tr id="' + v.obS_ID + '"><td class="text-center">' + v.memO_NO + '</td><td class="text-center">' + v.annexurE_CODE + '</td><td>' + v.heading + '</td><td>' + v.nO_OF_INSTANCES + '</td><td>' + v.obS_RISK + '</td><td>' + v.obS_STATUS + '</td><td><a data-onclick="ObservationUpdatePanel(' + v.obS_ID + ')" href="#" class="text-hover">Manage</a></td><td class="text-center action-col">' + printCell + '</td></tr>');
                 });
 
-                initializeDataTable('manageObsPanel');
+                if ($.fn && $.fn.DataTable) {
+                    if ($.fn.DataTable.isDataTable('#manageObsPanel')) {
+                        $('#manageObsPanel').DataTable().clear().destroy();
+                    }
+
+                    $('#manageObsPanel').DataTable({
+                        dom: '<"top"B>rt<"bottom"ip><"clear">',
+                        autoWidth: true,
+                        ordering: false,
+                        searching: false,
+                        lengthChange: false,
+                        buttons: [
+                            getPdfExportButtonConfig(),
+                            getExcelExportButtonConfig('Export to Excel'),
+                            getCsvExportButtonConfig('Export to CSV'),
+                            {
+                                extend: 'copyHtml5',
+                                text: 'Copy to Clipboard'
+                            }
+                        ],
+                        lengthMenu: [
+                            [10, 50, 100, -1],
+                            [10, 50, 100, 'All']
+                        ]
+                    });
+                } else {
+                    initializeDataTable('manageObsPanel');
+                }
+
                 var tbl = $('#manageObsPanel').DataTable();
                 tbl.page(g_tablePage).draw('page');
                 setTimeout(function () {

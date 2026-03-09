@@ -86,7 +86,7 @@
 </div>
 
 <div class="card">
-    <div class="card-body"
+    <div class="card-body field-audit-compact"
          data-mark-complete-url="@Url.Action("MarkStepCompleted", "FieldAudit")"
          data-open-audit-report-url="@Url.Action("OpenAuditReport", "FieldAudit")">
         <div id="fieldAuditStepHost"
@@ -144,4 +144,45 @@
     .snap-value { font-weight: 600; }
     .help-text { font-size: .8rem; color: #6c757d; }
     .validation-summary { font-size: .9rem; }
+
+    .field-audit-compact {
+        padding: .9rem;
+    }
+    .field-audit-compact #fieldAuditStepHost > *:first-child {
+        margin-top: 0 !important;
+    }
+    .field-audit-compact #fieldAuditStepHost h3:not(.modal-title),
+    .field-audit-compact #fieldAuditStepHost h4:not(.modal-title),
+    .field-audit-compact #fieldAuditStepHost h5:not(.modal-title),
+    .field-audit-compact #fieldAuditStepHost .card-header h4,
+    .field-audit-compact #fieldAuditStepHost .card-header h5 {
+        font-size: 1.05rem;
+        font-weight: 500;
+        margin-top: 0 !important;
+        margin-bottom: .45rem !important;
+        line-height: 1.3;
+    }
+    .field-audit-compact #fieldAuditStepHost .card,
+    .field-audit-compact #fieldAuditStepHost .card-sample {
+        box-shadow: none !important;
+    }
+    .field-audit-compact #fieldAuditStepHost .card-header {
+        padding: .55rem .8rem;
+    }
+    .field-audit-compact #fieldAuditStepHost .card-body {
+        padding: .75rem .8rem;
+    }
+    .field-audit-compact #fieldAuditStepHost .row.mt-3,
+    .field-audit-compact #fieldAuditStepHost .col-md-12.mt-3,
+    .field-audit-compact #fieldAuditStepHost .mt-3 {
+        margin-top: .7rem !important;
+    }
+    .field-audit-compact #fieldAuditStepHost .mb-3,
+    .field-audit-compact #fieldAuditStepHost .mb-2 {
+        margin-bottom: .6rem !important;
+    }
+    .field-audit-compact #fieldAuditStepHost .dataTables_filter,
+    .field-audit-compact #fieldAuditStepHost .dataTables_length {
+        display: none !important;
+    }
 </style>
