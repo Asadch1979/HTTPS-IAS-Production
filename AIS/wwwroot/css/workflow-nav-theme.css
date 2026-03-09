@@ -1,0 +1,122 @@
+.stepper-wrap,
+.planning-nav-wrap {
+    z-index: 1020;
+}
+
+.planning-nav-card {
+    border: 1px solid #ced4da;
+}
+
+.wizard-stepper,
+.planning-stepper {
+    display: grid;
+    grid-template-columns: repeat(var(--step-count, 4), minmax(140px, 1fr));
+    gap: .4rem;
+    overflow-x: auto;
+    overflow-y: hidden;
+}
+
+.step-pill,
+.planning-step {
+    border: 1px solid #ced4da;
+    background: #fff;
+    border-radius: .5rem;
+    padding: .42rem .58rem;
+    text-align: left;
+    text-decoration: none;
+    color: #212529;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    transition: border-color .15s ease, box-shadow .15s ease, background-color .15s ease, transform .15s ease;
+    white-space: nowrap;
+}
+
+.step-pill:hover,
+.planning-step:hover {
+    color: #212529;
+}
+
+.step-pill.active,
+.planning-step.active {
+    transform: translateY(-1px);
+}
+
+.step-pill.completed,
+.planning-step.completed {
+    background: #ecf9f0;
+    border-color: #77c59a;
+    color: #125132;
+}
+
+.step-pill.completed:hover,
+.planning-step.completed:hover {
+    background: #dff3e8;
+    border-color: #57b684;
+}
+
+.step-pill.completed.active,
+.planning-step.completed.active {
+    background: #198754;
+    border-color: #157347;
+    color: #ffffff;
+    box-shadow: 0 0 0 2px rgba(25, 135, 84, .22);
+    font-weight: 600;
+}
+
+.step-pill.not-saved,
+.planning-step.not-saved {
+    background: #fff2f3;
+    border-color: #efb7bd;
+    color: #7b1f29;
+}
+
+.step-pill.not-saved:hover,
+.planning-step.not-saved:hover {
+    background: #ffe4e7;
+    border-color: #e68e98;
+}
+
+.step-pill.not-saved.active,
+.planning-step.not-saved.active {
+    background: #dc3545;
+    border-color: #b02a37;
+    color: #ffffff;
+    box-shadow: 0 0 0 2px rgba(220, 53, 69, .2);
+    font-weight: 600;
+}
+
+.step-pill:not(.completed):not(.not-saved),
+.planning-step:not(.completed):not(.not-saved) {
+    background: #f8f9fa;
+    border-color: #ced4da;
+}
+
+.step-pill:not(.completed):not(.not-saved).active,
+.planning-step:not(.completed):not(.not-saved).active {
+    border-color: #495057;
+    box-shadow: 0 0 0 2px rgba(73, 80, 87, .15);
+    font-weight: 600;
+}
+
+.step-pill .num,
+.planning-step .step-no {
+    font-weight: 700;
+    margin-right: .35rem;
+}
+
+.step-title,
+.planning-step .step-title {
+    font-size: .84rem;
+    width: 100%;
+    line-height: 1.2;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+@media (max-width: 1200px) {
+    .wizard-stepper,
+    .planning-stepper {
+        grid-template-columns: repeat(var(--step-count, 4), minmax(130px, 1fr));
+    }
+}
