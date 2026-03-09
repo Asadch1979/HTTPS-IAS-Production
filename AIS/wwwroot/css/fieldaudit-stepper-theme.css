@@ -1,0 +1,96 @@
+.stepper-wrap,
+.planning-nav-wrap {
+    z-index: 1020;
+}
+
+.planning-nav-card {
+    border: 1px solid #ced4da;
+}
+
+.fa-stepper-track {
+    display: flex;
+    flex-wrap: nowrap;
+    gap: .4rem;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding-bottom: .1rem;
+    scrollbar-width: thin;
+}
+
+.fa-stepper-track .step-pill {
+    border: 1px solid #efb7bd;
+    background: #fff2f3;
+    border-radius: .5rem;
+    padding: .45rem .65rem;
+    text-align: left;
+    text-decoration: none;
+    color: #7b1f29;
+    display: flex;
+    align-items: flex-start;
+    justify-content: flex-start;
+    flex: 1 1 0;
+    min-width: 130px;
+    min-height: 2.6rem;
+    transition: border-color .15s ease, box-shadow .15s ease, background-color .15s ease, transform .15s ease;
+}
+
+.fa-stepper-track .step-pill:hover {
+    color: #7b1f29;
+    background: #ffe4e7;
+    border-color: #e68e98;
+}
+
+.fa-stepper-track .step-pill.active {
+    transform: translateY(-1px);
+    background: #198754;
+    border-color: #157347;
+    color: #ffffff;
+    box-shadow: 0 0 0 2px rgba(25, 135, 84, .22);
+    font-weight: 600;
+}
+
+.fa-stepper-track .step-pill.completed,
+.fa-stepper-track .step-pill.not-saved {
+    background: #fff2f3;
+    border-color: #efb7bd;
+    color: #7b1f29;
+}
+
+.fa-stepper-track .step-pill.completed:hover,
+.fa-stepper-track .step-pill.not-saved:hover {
+    background: #ffe4e7;
+    border-color: #e68e98;
+}
+
+.fa-stepper-track .step-pill.completed.active,
+.fa-stepper-track .step-pill.not-saved.active {
+    background: #198754;
+    border-color: #157347;
+    color: #ffffff;
+    box-shadow: 0 0 0 2px rgba(25, 135, 84, .22);
+    font-weight: 600;
+}
+
+.fa-stepper-track .step-pill.disabled {
+    pointer-events: none;
+    opacity: .6;
+}
+
+.fa-stepper-track .step-pill .num,
+.fa-stepper-track .step-pill .step-no {
+    font-weight: 700;
+    margin-right: .35rem;
+}
+
+.fa-stepper-track .step-title {
+    font-size: .88rem;
+    width: 100%;
+    line-height: 1.25;
+    white-space: normal;
+    word-break: break-word;
+}
+
+.fa-stepper-track .step-state,
+.fa-stepper-track [data-step-status] {
+    display: none !important;
+}
