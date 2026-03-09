@@ -3,12 +3,7 @@
 
     var selector = byId('engagementSelector');
     var stepHost = byId('fieldAuditStepHost');
-    var stepperApi = window.WorkflowStepperTheme ? window.WorkflowStepperTheme.init({
-        stepperSelector: '#wizardStepper',
-        counterSelector: '#stepCounter',
-        bindClicks: false
-    }) : null;
-    var stepper = stepperApi ? stepperApi.stepper : byId('wizardStepper');
+    var stepper = byId('wizardStepper');
     var stepCounter = byId('stepCounter');
     var engagementAlert = byId('engagementRequiredAlert');
     var markCompletedBtn = byId('fieldAuditMarkCompletedBtn');
@@ -68,12 +63,7 @@
     }
 
     function setActiveStep(stepCode) {
-        if (stepperApi) {
-            stepperApi.setActiveStep(stepCode);
-            return;
-        }
-
-        stepper.querySelectorAll('.workflow-step-pill').forEach(function (anchor) {
+        stepper.querySelectorAll('.step-pill').forEach(function (anchor) {
             if ((anchor.getAttribute('data-step-code') || '') === (stepCode || '')) {
                 anchor.classList.add('active');
             } else {
@@ -83,12 +73,7 @@
     }
 
     function setStepCompleted(stepCode, isCompleted) {
-        if (stepperApi) {
-            stepperApi.setStepCompleted(stepCode, isCompleted);
-            return;
-        }
-
-        var anchor = stepper.querySelector('.workflow-step-pill[data-step-code="' + stepCode + '"]');
+        var anchor = stepper.querySelector('.step-pill[data-step-code="' + stepCode + '"]');
         if (!anchor) {
             return;
         }
@@ -102,12 +87,7 @@
             return;
         }
 
-        if (stepperApi) {
-            stepperApi.updateCounter(stepNo);
-            return;
-        }
-
-        var total = stepper.querySelectorAll('.workflow-step-pill').length;
+        var total = stepper.querySelectorAll('.step-pill').length;
         var resolved = parseInt(stepNo || '1', 10);
         if (!resolved || resolved < 1) {
             resolved = 1;
@@ -219,7 +199,7 @@
         if (!engId) {
             toggleEngagementAlert(true);
             clearStepContent('Select an engagement from the dropdown above to load workflow content.');
-            (stepperApi ? stepperApi.getSteps() : Array.from(stepper.querySelectorAll('.workflow-step-pill'))).forEach(function (anchor) {
+            stepper.querySelectorAll('.step-pill').forEach(function (anchor) {
                 anchor.classList.add('disabled');
             });
             return;
@@ -229,7 +209,7 @@
         window.location.href = dashboardBaseUrl + '?engId=' + encodeURIComponent(engId);
     });
 
-    (stepperApi ? stepperApi.getSteps() : Array.from(stepper.querySelectorAll('.workflow-step-pill[data-step-code]'))).forEach(function (anchor) {
+    stepper.querySelectorAll('.step-pill[data-step-code]').forEach(function (anchor) {
         anchor.addEventListener('click', function () {
             if (!selectedEngagementId()) {
                 toggleEngagementAlert(true);
@@ -290,7 +270,7 @@
     toggleEngagementAlert(!selectedEngagementId());
 
     if (selectedEngagementId() && currentStepCode()) {
-        var activeAnchor = stepper.querySelector('.workflow-step-pill[data-step-code="' + currentStepCode() + '"]');
+        var activeAnchor = stepper.querySelector('.step-pill[data-step-code="' + currentStepCode() + '"]');
         if (activeAnchor) {
             loadStepContent(currentStepCode(), activeAnchor.getAttribute('data-step-no'));
         }
