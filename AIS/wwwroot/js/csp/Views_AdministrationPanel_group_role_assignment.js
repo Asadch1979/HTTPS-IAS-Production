@@ -1,95 +1,97 @@
-    $(document).ready(function () {
-
-        
-        $('.menu_page_selectAll').on('click', function () {
-
-            if ($('.menu_page_selectAll').is(':checked'))
-                $('.menu_page_tick').attr('checked', true);
-            else
-                $('.menu_page_tick').attr('checked', false);
-
-        });
+$(document).ready(function () {
+    $('.menu_page_selectAll').on('click', function () {
+        if ($('.menu_page_selectAll').is(':checked')) {
+            $('.menu_page_tick').attr('checked', true);
+        }
+        else {
+            $('.menu_page_tick').attr('checked', false);
+        }
     });
-    function showMenuBlock() {
-        if ($('#groupSelectionBox').val() == "") {
-            $('.menuBlock').addClass('d-none');
-            $('.pagesBlock').addClass('d-none');
-        }
-        else {
-            $('.menu_page_tick').attr('checked', false);
-            $('.menuBlock').removeClass('d-none');
-            showMenuPagesBlock();
-        }
-    }
-    function showMenuPagesBlock() {
 
-        if ($('#menuSelectionBox').val() == 0) {
-            $('.pagesBlock').addClass('d-none');
-        }
-        else {
-            $('.menu_page_tick').attr('checked', false);
-            $('.pagesBlock').removeClass('d-none');
-            $('#menuPagesArea').empty();
-            $.ajax({
-                url: g_asiBaseURL + "/AdministrationPanel/menu_pages",
-                type: "POST",
-                data: {
-                    'MENU_ID': $('#menuSelectionBox').val()
-                },
-                cache: false,
-                success: function (data) {
-                    $.each(data, function (index, page) {
-                        $('#menuPagesArea').append('<div class="col-md-4"><div class= "row col-md-12" ><div class="col-md-2"><input  id="pageId_' + page.id + '" class="menu_page_tick" type="checkbox" /></div><div class="col-md-10"><label class="font-weight-normal">' + page.page_Name + '</label></div></div></div>');
-                    });
-                    getAssignedMenuPages();
-                },
-                dataType: "json",
-            });
-        }
+    $('#groupSelectionBox').on('change', showMenuBlock);
+    $('#menuSelectionBox').on('change', showMenuPagesBlock);
+    $('#saveGroupItemAssignmentButton').on('click', AddGroupItemAssignment);
+});
 
+function showMenuBlock() {
+    if ($('#groupSelectionBox').val() == "") {
+        $('.menuBlock').addClass('d-none');
+        $('.pagesBlock').addClass('d-none');
     }
-    function getAssignedMenuPages() {
+    else {
+        $('.menu_page_tick').attr('checked', false);
+        $('.menuBlock').removeClass('d-none');
+        showMenuPagesBlock();
+    }
+}
+
+function showMenuPagesBlock() {
+    if ($('#menuSelectionBox').val() == 0) {
+        $('.pagesBlock').addClass('d-none');
+    }
+    else {
+        $('.menu_page_tick').attr('checked', false);
+        $('.pagesBlock').removeClass('d-none');
+        $('#menuPagesArea').empty();
         $.ajax({
-            url: g_asiBaseURL + "/AdministrationPanel/assigned_menu_pages",
+            url: g_asiBaseURL + "/AdministrationPanel/menu_pages",
             type: "POST",
             data: {
-                'MENU_ID': $('#menuSelectionBox option:selected').val(),
-                'GROUP_ID': $('#groupSelectionBox option:selected').val()
+                'MENU_ID': $('#menuSelectionBox').val()
             },
             cache: false,
             success: function (data) {
                 $.each(data, function (index, page) {
-                    $('#pageId_' + page.id).attr('checked', true);
+                    $('#menuPagesArea').append('<div class="col-md-4"><div class= "row col-md-12" ><div class="col-md-2"><input  id="pageId_' + page.id + '" class="menu_page_tick" type="checkbox" /></div><div class="col-md-10"><label class="font-weight-normal">' + page.page_Name + '</label></div></div></div>');
                 });
-            },
-            dataType: "json",
-        });
-
-    }
-
-    function AddGroupItemAssignment() {
-        var menuItemIds = [];
-        var unlinkMenuItemIds = [];
-        $.each($('.menu_page_tick'), function (index, mItem) {
-
-            if ($(mItem).is(':checked'))
-                menuItemIds.push($(mItem).attr('id').replace('pageId_', ''));
-            else
-                unlinkMenuItemIds.push($(mItem).attr('id').replace('pageId_', ''));
-        });
-        $.ajax({
-            url: g_asiBaseURL + "/AdministrationPanel/add_group_item_assignment",
-            type: "POST",
-            data: {
-                'GROUP_ID': $('#groupSelectionBox option:selected').val(),
-                'MENU_ID': $('#menuSelectionBox option:selected').val(),
-                'MENU_ITEM_IDs': menuItemIds,
-                'UNLINK_MENU_ITEM_IDs': unlinkMenuItemIds
-            },
-            cache: false,
-            success: function (data) {
-                alert('Mapping successfuly completed ');
+                getAssignedMenuPages();
             },
             dataType: "json",
         });
     }
+}
+
+function getAssignedMenuPages() {
+    $.ajax({
+        url: g_asiBaseURL + "/AdministrationPanel/assigned_menu_pages",
+        type: "POST",
+        data: {
+            'MENU_ID': $('#menuSelectionBox option:selected').val(),
+            'GROUP_ID': $('#groupSelectionBox option:selected').val()
+        },
+        cache: false,
+        success: function (data) {
+            $.each(data, function (index, page) {
+                $('#pageId_' + page.id).attr('checked', true);
+            });
+        },
+        dataType: "json",
+    });
+}
+
+function AddGroupItemAssignment() {
+    var menuItemIds = [];
+    var unlinkMenuItemIds = [];
+    $.each($('.menu_page_tick'), function (index, mItem) {
+
+        if ($(mItem).is(':checked'))
+            menuItemIds.push($(mItem).attr('id').replace('pageId_', ''));
+        else
+            unlinkMenuItemIds.push($(mItem).attr('id').replace('pageId_', ''));
+    });
+    $.ajax({
+        url: g_asiBaseURL + "/AdministrationPanel/add_group_item_assignment",
+        type: "POST",
+        data: {
+            'GROUP_ID': $('#groupSelectionBox option:selected').val(),
+            'MENU_ID': $('#menuSelectionBox option:selected').val(),
+            'MENU_ITEM_IDs': menuItemIds,
+            'UNLINK_MENU_ITEM_IDs': unlinkMenuItemIds
+        },
+        cache: false,
+        success: function (data) {
+            alert('Mapping successfuly completed ');
+        },
+        dataType: "json",
+    });
+}
