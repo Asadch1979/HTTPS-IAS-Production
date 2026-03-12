@@ -1403,6 +1403,7 @@ namespace AIS.Controllers
                     FatherName = HasColumn(rdr, "FATHER_NAME") ? GetStringValue(rdr, "FATHER_NAME") : GetStringValue(rdr, "POSTING_PLACE"),
                     Designation = GetStringValue(rdr, "DESIGNATION"),
                     RoleType = GetStringValue(rdr, "ROLE_TYPE"),
+                    StatementType = GetStringValue(rdr, "STATEMENT_TYPE"),
                     PpnoNumber = GetStringValue(rdr, "PPNO_NUMBER"),
                     Cnic = DigitsOnly(GetStringValue(rdr, "CNIC")),
                     PostingPlace = GetStringValue(rdr, "POSTING_PLACE"),
@@ -1571,12 +1572,14 @@ namespace AIS.Controllers
                     ComplaintId = GetLongValue(rdr, "COMPLAINT_ID"),
                     PersonName = GetStringValue(rdr, "PERSON_NAME"),
                     RoleType = GetStringValue(rdr, "ROLE_TYPE"),
+                    StatementType = GetStringValue(rdr, "STATEMENT_TYPE"),
                     PpnoNumber = GetStringValue(rdr, "PPNO_NUMBER"),
                     Cnic = DigitsOnly(GetStringValue(rdr, "CNIC")),
                     StatementDatetime = GetNullableDateValue(rdr, "STATEMENT_DATETIME"),
                     Place = GetStringValue(rdr, "PLACE"),
                     ModeType = GetStringValue(rdr, "MODE_TYPE"),
                     KeyPoints = GetStringValue(rdr, "KEY_POINTS"),
+                    UploadedStatement = GetStringValue(rdr, "UPLOADED_STATEMENT"),
                     Status = GetStringValue(rdr, "STATUS"),
                     CreatedBy = GetNullableLongValue(rdr, "CREATED_BY"),
                     CreatedOn = GetDateValue(rdr, "CREATED_ON"),
@@ -1604,6 +1607,8 @@ namespace AIS.Controllers
             cmd.Parameters.Add("P_PLACE", OracleDbType.Varchar2).Value = model.Place ?? string.Empty;
             cmd.Parameters.Add("P_MODE_TYPE", OracleDbType.Varchar2).Value = model.ModeType ?? string.Empty;
             cmd.Parameters.Add("P_KEY_POINTS", OracleDbType.Clob).Value = model.KeyPoints ?? string.Empty;
+            cmd.Parameters.Add("P_STATEMENT_TYPE", OracleDbType.Varchar2).Value = model.StatementType ?? string.Empty;
+            cmd.Parameters.Add("P_UPLOADED_STATEMENT", OracleDbType.Varchar2).Value = model.UploadedStatement ?? string.Empty;
             cmd.Parameters.Add("P_CREATED_BY", OracleDbType.Int64).Value = model.CreatedBy ?? (object)DBNull.Value;
             cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
             return ExecuteIidResult(cmd);
@@ -1625,6 +1630,8 @@ namespace AIS.Controllers
             cmd.Parameters.Add("P_PLACE", OracleDbType.Varchar2).Value = model.Place ?? string.Empty;
             cmd.Parameters.Add("P_MODE_TYPE", OracleDbType.Varchar2).Value = model.ModeType ?? string.Empty;
             cmd.Parameters.Add("P_KEY_POINTS", OracleDbType.Clob).Value = model.KeyPoints ?? string.Empty;
+            cmd.Parameters.Add("P_STATEMENT_TYPE", OracleDbType.Varchar2).Value = model.StatementType ?? string.Empty;
+            cmd.Parameters.Add("P_UPLOADED_STATEMENT", OracleDbType.Varchar2).Value = model.UploadedStatement ?? string.Empty;
             cmd.Parameters.Add("P_UPDATED_BY", OracleDbType.Int64).Value = model.UpdatedBy ?? (object)DBNull.Value;
             cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
             return ExecuteIidResult(cmd);
@@ -1813,8 +1820,10 @@ namespace AIS.Controllers
                 list.Add(new IidInqFindingsRecommRow
                     {
                     ComplaintId = GetLongValue(rdr, "COMPLAINT_ID"),
+                    AccusationId = GetLongValue(rdr, "ACCUSATION_ID"),
                     FindingText = GetStringValue(rdr, "FINDING_TEXT"),
                     RecommendationText = GetStringValue(rdr, "RECOM_TEXT"),
+                    Outcome = GetStringValue(rdr, "OUTCOME"),
                     Ppno = GetStringValue(rdr, "PPNO"),
                     UpdatedOn = GetNullableDateValue(rdr, "UPDATED_ON")
                     });
@@ -1886,6 +1895,7 @@ namespace AIS.Controllers
                     AccusationId = accusationId,
                     FindingText = string.Empty,
                     RecommendationText = string.Empty,
+                    Outcome = string.Empty,
                     Ppno = string.Empty,
                     UpdatedOn = null
                     };
@@ -1897,12 +1907,13 @@ namespace AIS.Controllers
                 AccusationId = GetLongValue(rdr, "ACCUSATION_ID"),
                 FindingText = GetStringValue(rdr, "FINDING_TEXT"),
                 RecommendationText = GetStringValue(rdr, "RECOM_TEXT"),
+                Outcome = GetStringValue(rdr, "OUTCOME"),
                 Ppno = GetStringValue(rdr, "PPNO"),
                 UpdatedOn = GetNullableDateValue(rdr, "UPDATED_ON")
                 };
             }
 
-        public IidInqProcResult SaveIidFindingsRecommByAccusation(long complaintId, long accusationId, string findingText, string recomText, string ppno)
+        public IidInqProcResult SaveIidFindingsRecommByAccusation(long complaintId, long accusationId, string findingText, string recomText, string outcome, string ppno)
             {
             using var con = this.DatabaseConnection();
             using var cmd = con.CreateCommand();
@@ -1913,6 +1924,7 @@ namespace AIS.Controllers
             cmd.Parameters.Add("p_accusation_id", OracleDbType.Int64).Value = accusationId;
             cmd.Parameters.Add("p_finding_text", OracleDbType.Clob).Value = findingText ?? string.Empty;
             cmd.Parameters.Add("p_recom_text", OracleDbType.Clob).Value = recomText ?? string.Empty;
+            cmd.Parameters.Add("p_outcome", OracleDbType.Varchar2).Value = outcome ?? string.Empty;
             cmd.Parameters.Add("p_ppno", OracleDbType.Varchar2).Value = ppno ?? string.Empty;
             cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
             return ExecuteIidResult(cmd);
@@ -1937,6 +1949,7 @@ namespace AIS.Controllers
                     AccusationId = GetLongValue(rdr, "ACCUSATION_ID"),
                     AccusationText = GetStringValue(rdr, "ACCUSATION_TEXT"),
                     IsSaved = GetStringValue(rdr, "IS_SAVED"),
+                    Outcome = GetStringValue(rdr, "OUTCOME"),
                     SavedOn = GetNullableDateValue(rdr, "SAVED_ON")
                     });
                 }

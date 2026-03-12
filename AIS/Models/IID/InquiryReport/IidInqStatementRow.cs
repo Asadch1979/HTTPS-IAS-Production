@@ -12,6 +12,8 @@ namespace AIS.Models.IID.InquiryReport
         [PlainText]
         public string RoleType { get; set; }
         [PlainText]
+        public string StatementType { get; set; }
+        [PlainText]
         public string PpnoNumber { get; set; }
         [PlainText]
         public string Cnic { get; set; }
@@ -22,6 +24,8 @@ namespace AIS.Models.IID.InquiryReport
         public string ModeType { get; set; }
         [PlainText]
         public string KeyPoints { get; set; }
+        [PlainText]
+        public string UploadedStatement { get; set; }
         [PlainText]
         public string Status { get; set; }
         public long? CreatedBy { get; set; }

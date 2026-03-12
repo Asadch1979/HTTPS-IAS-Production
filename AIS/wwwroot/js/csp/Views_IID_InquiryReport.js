@@ -44,7 +44,7 @@ $(function(){
         accusedEmployeeDraft: { ppnoNumber: '', personName: '', fatherName: '', cnic: '', designation: '', roleType: 'Main' },
         accusedManualDraft: { personName: '', fatherName: '', cnic: '', designation: '', roleType: 'Main' },
         records: [{ recId: 0, recordTitle: '', recordDetails: '', sortOrder: 1 }],
-        statementRegister: { pending: [], saved: [] },
+        statementRegister: { rows: [] },
         evidence: [],
         findingsRecomm: {
             selectedAccusationId: '',
@@ -53,6 +53,7 @@ $(function(){
             accusationOptions: [],
             statusRows: [],
             outcomes: {},
+            lockedOutcomes: {},
             savedFindingsMap: {}
         },
         violations: [{ violationId: 0, category: 'Internal', violationDetail: '', referenceText: '', recommendation: '', sortOrder: 1 }],
@@ -259,17 +260,42 @@ $(function(){
         return d.toLocaleString();
     }
 
+    function normalizeStatementType(value){
+        var t = String(value || '').trim().toUpperCase();
+        if(t === 'COMPLAINANT'){ return 'COMPLAINANT'; }
+        return 'ACCUSED';
+    }
+
+    function statementTypeLabel(value){
+        return normalizeStatementType(value) === 'COMPLAINANT' ? 'Complainant' : 'Accused';
+    }
+
     function buildFindingsAccusationList(baseRows){
         var map = {};
+        var detectedAdditionalChargeId = 0;
         (baseRows || []).forEach(function(row){
             var id = parseInt(row.accusationId || row.AccusationId || row.id || row.Id, 10);
             if(isNaN(id)){ return; }
-            map[id] = { accusationId: id, accusationText: row.accusationText || row.AccusationText || row.text || row.Text || ('Accusation #' + id) };
+            var text = row.accusationText || row.AccusationText || row.text || row.Text || ('Accusation #' + id);
+            map[id] = { accusationId: id, accusationText: text };
+            if(String(text || '').trim().toLowerCase() === additionalChargesText.toLowerCase()){
+                detectedAdditionalChargeId = id;
+            }
         });
-        map[additionalChargesId] = { accusationId: additionalChargesId, accusationText: additionalChargesText };
+
+        if(detectedAdditionalChargeId > 0){
+            additionalChargesId = detectedAdditionalChargeId;
+        }
+
+        if(additionalChargesId > 0 && !map[additionalChargesId]){
+            map[additionalChargesId] = { accusationId: additionalChargesId, accusationText: additionalChargesText };
+        }
+
         return Object.keys(map).map(function(key){ return map[key]; }).sort(function(a, b){
-            if(a.accusationId === additionalChargesId){ return 1; }
-            if(b.accusationId === additionalChargesId){ return -1; }
+            if(additionalChargesId > 0){
+                if(a.accusationId === additionalChargesId){ return 1; }
+                if(b.accusationId === additionalChargesId){ return -1; }
+            }
             return a.accusationId - b.accusationId;
         });
     }
@@ -298,7 +324,7 @@ $(function(){
             if(isNaN(id)){ return; }
             merged[id] = $.extend({}, merged[id] || { accusationId: id, accusationText: row.accusationText || ('Accusation #' + id) }, row);
         });
-        if(!merged[additionalChargesId]){
+        if(additionalChargesId > 0 && !merged[additionalChargesId]){
             merged[additionalChargesId] = { accusationId: additionalChargesId, accusationText: additionalChargesText, isSaved: false, savedOn: null };
         }
         state.findingsRecomm.statusRows = Object.keys(merged).map(function(key){ return merged[key]; }).sort(function(a, b){
@@ -329,7 +355,7 @@ $(function(){
             return '<tr>' +
                 '<td>' + esc(r.accusationText || '') + '</td>' +
                 '<td><span class="badge ' + (saved ? 'bg-success' : 'bg-warning text-dark') + '">' + (saved ? 'Saved' : 'Not Saved') + '</span></td>' +
-                '<td><label class="form-label mb-1">Outcome</label><select class="form-select outcome-select" data-accusation-id="' + esc(String(r.accusationId || '')) + '">' + outcomeOptionsHtml(selectedOutcome) + '</select></td>' +
+                '<td><label class="form-label mb-1">Outcome</label><select class="form-select outcome-select" disabled data-accusation-id="' + esc(String(r.accusationId || '')) + '">' + outcomeOptionsHtml(selectedOutcome) + '</select></td>' +
                 '<td>' + esc(formatSavedOn(r.savedOn || r.lastSavedOn)) + '</td>' +
                 '<td><button type="button" class="btn btn-outline-primary btn-sm" data-findings-view-edit="' + esc(String(r.accusationId || '')) + '">View/Edit</button></td>' +
                 '</tr>';
@@ -354,7 +380,9 @@ $(function(){
             applyFindingsEditorContent('', '');
         }
 
-        $('#findingsOutcomeSelect').val(state.findingsRecomm.outcomes[parsedId] || '');
+        var selectedOutcome = state.findingsRecomm.outcomes[parsedId] || '';
+        $('#findingsOutcomeSelect').val(selectedOutcome);
+        $('.outcome-select[data-accusation-id="' + parsedId + '"]').val(selectedOutcome);
         updateDsaVisibility();
         renderStepper();
         return $.Deferred().resolve().promise();
@@ -367,7 +395,9 @@ $(function(){
             rows.forEach(function(row){
                 var id = parseInt(row.accusationId, 10);
                 if(!isNaN(id)){
-                    state.findingsRecomm.outcomes[id] = row.outcome || row.Outcome || state.findingsRecomm.outcomes[id] || '';
+                    var rowOutcome = row.outcome || row.Outcome || state.findingsRecomm.outcomes[id] || "";
+                    state.findingsRecomm.outcomes[id] = rowOutcome;
+                    state.findingsRecomm.lockedOutcomes[id] = isStatusRowSaved(row);
                 }
             });
             syncFindingsStatusRows(rows);
@@ -493,37 +523,28 @@ $(function(){
             html += '<h5>Record Scrutinized</h5><table class="table table-sm"><thead><tr><th>Record Title</th><th>Details</th><th></th></tr></thead><tbody>'+rowsR+'</tbody></table><button type="button" class="btn btn-outline-primary btn-sm" data-add-row="records">Add Row</button>';
         }
         if(step === 5){
-            var pendingRows = state.statementRegister.pending.map(function(r, i){
+            var statementRows = (state.statementRegister.rows || []).map(function(r, i){
+                var fileCell = r.uploadedStatement
+                    ? ('<a href="' + esc((window.g_asiBaseURL || '') + '/Uploads/' + r.uploadedStatement) + '" target="_blank" rel="noopener">View</a>')
+                    : '<span class="text-muted">N/A</span>';
                 return '<tr>' +
+                    '<td><span class="badge bg-info-subtle text-dark">' + esc(statementTypeLabel(r.statementType)) + '</span></td>' +
                     '<td>' + esc(r.ppnoNumber || 'N/A') + '</td>' +
                     '<td>' + esc(r.personName || '') + '</td>' +
                     '<td>' + esc(r.fatherName || '') + '</td>' +
                     '<td>' + esc(r.cnic || '') + '</td>' +
-                    '<td><input type="datetime-local" class="form-control" data-step5-field="'+ i +'" data-step5-key="statementDatetime" value="' + esc(r.statementDatetime || '') + '"></td>' +
+                    '<td><input type="datetime-local" class="form-control" data-step5-field="'+ i +'" data-step5-key="statementDatetime" value="' + esc((r.statementDatetime || '').slice(0, 16)) + '"></td>' +
                     '<td><input type="text" class="form-control" data-step5-field="'+ i +'" data-step5-key="place" value="' + esc(r.place || '') + '"></td>' +
-                    '<td><button type="button" class="btn btn-primary btn-sm" data-step5-save-row="'+ i +'">Save</button></td>' +
-                '</tr>';
-            }).join('');
-
-            var savedRows = state.statementRegister.saved.map(function(r){
-                return '<tr>' +
-                    '<td>' + esc(r.ppnoNumber || 'N/A') + '</td>' +
-                    '<td>' + esc(r.personName || '') + '</td>' +
-                    '<td>' + esc(r.fatherName || '') + '</td>' +
-                    '<td>' + esc(r.cnic || '') + '</td>' +
-                    '<td>' + esc(r.statementDatetimeDisplay || r.statementDatetime || '') + '</td>' +
-                    '<td>' + esc(r.place || '') + '</td>' +
+                    '<td><input type="text" class="form-control" data-step5-field="'+ i +'" data-step5-key="uploadedStatement" placeholder="Saved file name" value="' + esc(r.uploadedStatement || '') + '"></td>' +
+                    '<td>' + fileCell + '</td>' +
+                    '<td><button type="button" class="btn btn-primary btn-sm" data-step5-save-row="'+ i +'">' + (parseInt(r.statementId || 0, 10) > 0 ? 'Update' : 'Save') + '</button></td>' +
                 '</tr>';
             }).join('');
 
             html += '<h5>Statement Register</h5>' +
                 '<div class="card border mb-3"><div class="card-body">' +
-                    '<h6 class="mb-3">Pending Statements</h6>' +
-                    '<div class="table-responsive"><table class="table table-sm align-middle"><thead><tr><th>PPNO</th><th>Name</th><th>Father Name</th><th>CNIC</th><th>Date/Time</th><th>Place of Statement</th><th>Action</th></tr></thead><tbody>' + (pendingRows || '<tr><td colspan="7" class="text-muted">No pending statements.</td></tr>') + '</tbody></table></div>' +
-                '</div></div>' +
-                '<div class="card border"><div class="card-body">' +
-                    '<h6 class="mb-3">Saved Statements</h6>' +
-                    '<div class="table-responsive"><table class="table table-sm"><thead><tr><th>PPNO</th><th>Name</th><th>Father Name</th><th>CNIC</th><th>Date/Time</th><th>Place</th></tr></thead><tbody>' + (savedRows || '<tr><td colspan="6" class="text-muted">No saved statements.</td></tr>') + '</tbody></table></div>' +
+                    '<h6 class="mb-3">Statement of Complainant & Accused</h6>' +
+                    '<div class="table-responsive"><table class="table table-sm align-middle"><thead><tr><th>Type</th><th>PPNO</th><th>Name</th><th>Father Name</th><th>CNIC</th><th>Date/Time</th><th>Place of Statement</th><th>Uploaded Statement</th><th>File</th><th>Action</th></tr></thead><tbody>' + (statementRows || '<tr><td colspan="10" class="text-muted">No statement rows available.</td></tr>') + '</tbody></table></div>' +
                 '</div></div>';
         }
         if(step === 6){
@@ -554,7 +575,7 @@ $(function(){
                     '<div class="card-body">' +
                         '<label class="form-label fw-semibold">Recommendations <span class="text-danger">*</span></label>' +
                         '<textarea id="recommendationTextHtml" class="form-control" rows="12">' + esc(state.findingsRecomm.recommendationText || '') + '</textarea>' +
-                        '<div class="mt-3"><label class="form-label fw-semibold">Complaint Outcome <span class="text-danger">*</span></label><select id="findingsOutcomeSelect" class="form-select" data-findings-outcome><option value="">Select Outcome</option><option value="Established">Established</option><option value="Not Established">Not Established</option><option value="Sub-judice">Sub-judice</option><option value="Withdrawn Closed">Withdrawn Closed</option><option value="Transfer Closed">Transfer Closed</option></select></div>' +
+                        '<div class="mt-3"><label class="form-label fw-semibold">Complaint Outcome <span class="text-danger">*</span></label><select id="findingsOutcomeSelect" class="form-select" data-findings-outcome><option value="">Select Outcome</option><option value="Established">Established</option><option value="Not Established">Not Established</option><option value="Sub-judice">Sub-judice</option><option value="Withdrawn Closed">Withdrawn Closed</option><option value="Transfer Closed">Transfer Closed</option></select><div class="form-text">Only this (upper) outcome is editable. Grid outcome mirrors this value.</div></div>' +
                         '<div class="mt-3"><button type="button" class="btn btn-primary" data-save-findings-recomm>Save Findings & Recommendations</button></div>' +
                     '</div>' +
                 '</div>' +
@@ -643,10 +664,10 @@ $(function(){
         }).on('input change', function(){
             var rowIndex = parseInt($(this).data('step5-field'), 10);
             var fieldKey = String($(this).data('step5-key') || '');
-            if(isNaN(rowIndex) || !fieldKey || !state.statementRegister.pending[rowIndex]){ return; }
+            if(isNaN(rowIndex) || !fieldKey || !state.statementRegister.rows[rowIndex]){ return; }
             var val = $(this).val();
             if(fieldKey === 'cnic'){ val = digitsOnly(val).substring(0, 13); $(this).val(val); }
-            state.statementRegister.pending[rowIndex][fieldKey] = val;
+            state.statementRegister.rows[rowIndex][fieldKey] = val;
             markDirty(5);
             renderStepper();
         });
@@ -658,7 +679,7 @@ $(function(){
         if(step === 2 && !state.accusations.some(function(x){ return has(x.accusationText); })) errs.push('At least one accusation is required.');
         if(step === 3 && !state.accusedEmployeeRows.length && !state.accusedManualRows.length) errs.push('At least one accused row is required.');
         if(step === 4 && !state.records.some(function(x){ return has(x.recordTitle) || has(x.recordDetails); })) errs.push('At least one record scrutinized row is required.');
-        if(step === 5 && !state.statementRegister.saved.length) errs.push('At least one saved statement is required.');
+        if(step === 5 && !(state.statementRegister.rows || []).some(function(x){ return parseInt(x.statementId || 0, 10) > 0; })) errs.push('At least one saved statement is required.');
         if(step === 6 && !state.evidence.length) errs.push('At least one evidence file is mandatory.');
         if(step === 7){
             if(window.tinymce && window.tinymce.get('findingTextHtml')){ state.findingsRecomm.findingText = window.tinymce.get('findingTextHtml').getContent(); }
@@ -681,10 +702,10 @@ $(function(){
         if(step === 3 && !state.accusedEmployeeRows.length && !state.accusedManualRows.length) missingFields.push('At least one accused row is required');
         if(step === 4 && !state.records.some(function(x){ return has(x.recordTitle) || has(x.recordDetails); })) missingFields.push('At least one record scrutinized row is required');
         if(step === 5){
-            if(!state.statementRegister.saved.length){
+            if(!(state.statementRegister.rows || []).some(function(x){ return parseInt(x.statementId || 0, 10) > 0; })){
                 missingFields.push('At least one saved statement is required');
             } else {
-                state.statementRegister.pending.forEach(function(row){
+                (state.statementRegister.rows || []).forEach(function(row){
                     if(!has(row.place)){
                         missingFields.push('Place of Statement (' + (row.ppnoNumber || row.personName || 'Unknown') + ')');
                     }
@@ -818,11 +839,36 @@ $(function(){
             statementDatetime: '',
             statementDatetimeDisplay: '',
             place: '',
+            statementType: 'ACCUSED',
+            uploadedStatement: '',
             statementId: 0
         };
     }
 
+    function buildComplainantStatementRow(savedRows){
+        var complainantRow = (savedRows || []).find(function(item){
+            return normalizeStatementType(item.statementType || item.StatementType || item.statementTYPE || item.rolE_TYPE) === 'COMPLAINANT';
+        });
+        return {
+            accusedId: 0,
+            ppnoNumber: '',
+            personName: state.complainantName || state.snapshot.complainantName || 'Complainant',
+            fatherName: '',
+            roleType: 'Complainant',
+            cnic: state.complainantCnic || state.snapshot.cnic || '',
+            statementDatetime: complainantRow ? (complainantRow.statementDatetime || complainantRow.stmtDatetime || complainantRow.datE_TIME || '') : '',
+            statementDatetimeDisplay: complainantRow ? (complainantRow.statementDatetimeDisplay || complainantRow.statementDatetime || complainantRow.stmtDatetime || complainantRow.datE_TIME || '') : '',
+            place: complainantRow ? (complainantRow.place || complainantRow.statementPlace || complainantRow.stmT_PLACE || '') : '',
+            statementType: 'COMPLAINANT',
+            uploadedStatement: complainantRow ? (complainantRow.uploadedStatement || complainantRow.UploadedStatement || '') : '',
+            statementId: complainantRow ? (parseInt(complainantRow.statementId || complainantRow.statemenT_ID || complainantRow.id || 0, 10) || 0) : 0
+        };
+    }
+
     function getStatementRowKey(row){
+        var statementType = normalizeStatementType(row && row.statementType);
+        if(statementType === 'COMPLAINANT'){ return 'TYPE|COMPLAINANT'; }
+
         var ppno = digitsOnly(row && row.ppnoNumber).trim();
         if(ppno){ return 'PPNO|' + ppno; }
 
@@ -850,26 +896,25 @@ $(function(){
                 statementDatetime: item.statementDatetime || item.stmtDatetime || item.datE_TIME || '',
                 statementDatetimeDisplay: item.statementDatetimeDisplay || item.statementDatetime || item.stmtDatetime || item.datE_TIME || '',
                 place: item.place || item.statementPlace || item.stmT_PLACE || '',
+                statementType: normalizeStatementType(item.statementType || item.StatementType || item.statementTYPE || item.rolE_TYPE),
+                uploadedStatement: item.uploadedStatement || item.UploadedStatement || '',
                 statementId: parseInt(item.statementId || item.statemenT_ID || item.id || 0, 10) || 0
             };
             savedMap[getStatementRowKey(normalized)] = normalized;
         });
 
-        var pending = [];
-        var saved = [];
+        var rows = [];
+        rows.push(buildComplainantStatementRow(savedRows));
+
         (accusedRows || []).forEach(function(accused){
             var baseRow = normalizeStatementRegisterRow(accused);
+            baseRow.statementType = 'ACCUSED';
             var key = getStatementRowKey(baseRow);
             var savedRow = savedMap[key];
-            if(savedRow){
-                saved.push($.extend({}, baseRow, savedRow));
-            } else {
-                pending.push(baseRow);
-            }
+            rows.push(savedRow ? $.extend({}, baseRow, savedRow) : baseRow);
         });
 
-        state.statementRegister.pending = pending;
-        state.statementRegister.saved = saved;
+        state.statementRegister.rows = rows;
     }
 
     function normalizeStatementDatetime(value){
@@ -897,33 +942,26 @@ $(function(){
     }
 
     function saveStatementRow(index){
-        var row = state.statementRegister.pending[index];
-        if(!row){ return $.Deferred().reject({ message: 'Invalid pending statement row.' }).promise(); }
+        var row = state.statementRegister.rows[index];
+        if(!row){ return $.Deferred().reject({ message: 'Invalid statement row.' }).promise(); }
 
         row.cnic = digitsOnly(row.cnic).substring(0, 13);
         row.ppnoNumber = digitsOnly(row.ppnoNumber);
         row.statementDatetime = normalizeStatementDatetime(row.statementDatetime);
+        row.statementType = normalizeStatementType(row.statementType);
 
         var errors = [];
         if(!row.statementDatetime){ errors.push('A valid Date/Time is required.'); }
         if(!row.place || !row.place.trim()){ errors.push('Place of statement is required.'); }
         if(errors.length){ return $.Deferred().reject({ message: errors.join(' ') }).promise(); }
 
-        var matchedStatementId = parseInt(row.statementId || 0, 10) || 0;
-        if(matchedStatementId <= 0){
-            var pendingKey = getStatementRowKey(row);
-            var existing = (state.statementRegister.saved || []).find(function(savedRow){
-                return getStatementRowKey(savedRow) === pendingKey;
-            });
-            matchedStatementId = parseInt(existing && existing.statementId || 0, 10) || 0;
-        }
-
         var payload = {
-            statementId: matchedStatementId,
+            statementId: parseInt(row.statementId || 0, 10) || 0,
             complaintId: complaintId,
             accusedId: parseInt(row.accusedId || 0, 10) || 0,
             personName: row.personName || '',
-            roleType: row.roleType || 'Main',
+            roleType: row.roleType || (row.statementType === 'COMPLAINANT' ? 'Complainant' : 'Main'),
+            statementType: row.statementType,
             ppnoNumber: row.ppnoNumber || '',
             cnic: row.cnic || '',
             statementDatetime: row.statementDatetime,
@@ -931,6 +969,7 @@ $(function(){
             placeOfStatement: row.place,
             modeType: '',
             keyPoints: '',
+            uploadedStatement: row.uploadedStatement || '',
             status: 'A',
             createdBy: userId,
             updatedBy: userId
@@ -939,7 +978,7 @@ $(function(){
         return window.iidUpdateInqStatement(payload).then(function(resp){
             ensureApiSuccess(resp, 'Failed to save statement register row.');
             return loadStepData(5).then(function(){
-                state.savedSteps[5] = state.statementRegister.saved.length > 0;
+                state.savedSteps[5] = (state.statementRegister.rows || []).some(function(x){ return parseInt(x.statementId || 0, 10) > 0; });
                 state.dirtySteps[5] = false;
                 renderCurrent(true);
                 return { message: getResponseMessage(resp) || 'Statement saved successfully.' };
@@ -1006,7 +1045,7 @@ $(function(){
             cfg.hydrate(resp);
             state.dirtySteps[step] = false;
             if(step === 5){
-                state.savedSteps[step] = state.statementRegister.saved.length > 0;
+                state.savedSteps[step] = (state.statementRegister.rows || []).some(function(x){ return parseInt(x.statementId || 0, 10) > 0; });
                 return;
             }
             if(cfg.section === 'findingsRecomm'){
@@ -1047,12 +1086,16 @@ $(function(){
             var findingHtml = (window.tinymce && window.tinymce.get('findingTextHtml') ? window.tinymce.get('findingTextHtml').getContent() : state.findingsRecomm.findingText) || '';
             var recommendationHtml = (window.tinymce && window.tinymce.get('recommendationTextHtml') ? window.tinymce.get('recommendationTextHtml').getContent() : state.findingsRecomm.recommendationText) || '';
             var outcome = state.findingsRecomm.outcomes[selectedAccusationId] || '';
+            if(isNaN(selectedAccusationId) || selectedAccusationId <= 0){
+                return $.Deferred().reject({ message: 'Please save Additional Charge first before saving findings/recommendation.' }).promise();
+            }
             state.findingsRecomm.findingText = findingHtml;
             state.findingsRecomm.recommendationText = recommendationHtml;
 
             return window.iidSaveIidFindingsRecommByAccusation({ complaintId: complaintId, accusationId: selectedAccusationId, findingsText: findingHtml, recomText: recommendationHtml, outcome: outcome }).then(function(resp){
                 ensureApiSuccess(resp, 'Findings & recommendations save failed.');
                 state.findingsRecomm.savedFindingsMap[selectedAccusationId] = { findingsText: findingHtml, recommendationText: recommendationHtml, outcome: outcome };
+                state.findingsRecomm.lockedOutcomes[selectedAccusationId] = true;
                 upsertFindingsStatusRow({ accusationId: selectedAccusationId, accusationText: (state.findingsRecomm.accusationOptions || []).filter(function(x){ return parseInt(x.accusationId, 10) === selectedAccusationId; }).map(function(x){ return x.accusationText; })[0] || '', isSaved: true, outcome: outcome, savedOn: (resp && resp.savedOn) || (resp && resp.data && resp.data.savedOn) || new Date().toISOString() });
                 return loadFindingsStatusGrid().then(function(){
                     state.savedSteps[7] = (state.findingsRecomm.statusRows || []).some(isStatusRowSaved);
@@ -1323,15 +1366,7 @@ $(function(){
     $(document).on('change', '.outcome-select', function(){
         var accusationId = parseInt($(this).data('accusation-id'), 10);
         if(isNaN(accusationId)){ return; }
-        state.findingsRecomm.outcomes[accusationId] = $(this).val() || '';
-        var row = (state.findingsRecomm.statusRows || []).find(function(x){ return parseInt(x.accusationId, 10) === accusationId; });
-        if(row){ row.outcome = state.findingsRecomm.outcomes[accusationId]; }
-        if(String(state.findingsRecomm.selectedAccusationId || '') === String(accusationId)){
-            $('#findingsOutcomeSelect').val(state.findingsRecomm.outcomes[accusationId] || '');
-        }
-        markDirty(7);
-        updateDsaVisibility();
-        renderStepper();
+        $(this).val(state.findingsRecomm.outcomes[accusationId] || '');
     });
 
     $(document).on('change', '[data-findings-outcome]', function(){
@@ -1340,6 +1375,7 @@ $(function(){
         state.findingsRecomm.outcomes[accusationId] = $(this).val() || '';
         var row = (state.findingsRecomm.statusRows || []).find(function(x){ return parseInt(x.accusationId, 10) === accusationId; });
         if(row){ row.outcome = state.findingsRecomm.outcomes[accusationId]; }
+        $('.outcome-select[data-accusation-id="' + accusationId + '"]').val(state.findingsRecomm.outcomes[accusationId] || '');
         renderFindingsStatusGrid();
         markDirty(7);
         updateDsaVisibility();

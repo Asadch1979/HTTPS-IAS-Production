@@ -186,33 +186,32 @@
         };
     }
 
-    function generatePdf(complaintId) {
-        var $btn = $('#btnGenerateInquiryPdf');
-        if ($btn.prop('disabled') || !complaintId || !lastPayload) { return; }
+    function requestPdf(complaintId, regenerate) {
+        if (!complaintId) { return; }
+        var endpoint = regenerate ? '/IID/RegenerateInquiryReportPdf' : '/IID/GenerateInquiryReportPdf';
+        $.ajax({
+            url: (window.g_asiBaseURL || '') + endpoint,
+            method: 'POST',
+            contentType: 'application/json; charset=utf-8',
+            dataType: 'json',
+            data: JSON.stringify({ complaintId: complaintId })
+        }).done(function (resp) {
+            if (!resp || resp.ok === false) {
+                showAlert((resp && resp.message) || 'Failed to generate inquiry report PDF.');
+                return;
+            }
+            showAlert(resp.message || 'PDF generated successfully.', 'success');
+            if (resp.viewUrl) {
+                window.open((window.g_asiBaseURL || '') + resp.viewUrl, '_blank');
+            }
+        }).fail(function () {
+            showAlert('Failed to generate inquiry report PDF.');
+        });
+    }
 
-        var originalBtnText = $btn.text();
-        var originalTitle = document.title;
-        $btn.prop('disabled', true).text('Preparing...');
-
-        var titleParts = fillPrintTemplate(lastPayload);
-        var fileName = [
-            'InquiryReport',
-            cleanFilePart(titleParts.complaintNo, complaintId),
-            cleanFilePart(titleParts.branchName, 'Branch'),
-            cleanFilePart(formatDateTitlePart(titleParts.reportDate), new Date().toISOString().slice(0, 10))
-        ].join('_');
-
-        document.title = fileName;
-        document.body.classList.add('printing-inquiry-report');
-
-        setTimeout(function () {
-            window.print();
-            setTimeout(function () {
-                document.body.classList.remove('printing-inquiry-report');
-                document.title = originalTitle;
-                $btn.prop('disabled', false).text(originalBtnText);
-            }, 300);
-        }, 100);
+    function viewExistingPdf(complaintId) {
+        if (!complaintId) { return; }
+        window.open((window.g_asiBaseURL || '') + '/IID/ViewInquiryReportPdf?complaintId=' + encodeURIComponent(complaintId), '_blank');
     }
 
     function loadReadOnlyData(complaintId) {
@@ -262,6 +261,8 @@
             loadReadOnlyData(complaintId);
         }
 
-        $('#btnGenerateInquiryPdf').on('click', function () { generatePdf(complaintId); });
+        $('#btnGenerateInquiryPdf').on('click', function () { requestPdf(complaintId, false); });
+        $('#btnRegenerateInquiryPdf').on('click', function () { requestPdf(complaintId, true); });
+        $('#btnViewInquiryPdf').on('click', function () { viewExistingPdf(complaintId); });
     });
 }(window));
