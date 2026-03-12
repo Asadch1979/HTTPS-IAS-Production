@@ -542,24 +542,6 @@ namespace AIS.Controllers
             return Ok(dBConnection.GetAuditEmployees(dept_code));
             }
         [HttpPost]
-
-        [HttpGet]
-        public IActionResult GetExecutionDashboardEngagements()
-            {
-            var unauthorized = EnsureAuthenticatedSession();
-            if (unauthorized != null)
-                {
-                return unauthorized;
-                }
-
-            var rows = dBConnection.GetExecutionDashboardEngagements();
-            return Json(rows.Select(item => new
-                {
-                engId = item.EngId,
-                displayText = item.DisplayText
-                }));
-            }
-
         public List<AuditPlanEngagementModel> getauditplanengagement(int b_id)
             {
             return dBConnection.GetAuditPlanEngagement(b_id);

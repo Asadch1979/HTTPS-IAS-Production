@@ -4,7 +4,6 @@ using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.Extensions.Logging;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
 using AIS.Services;
 
 namespace AIS.Controllers
@@ -1107,87 +1106,6 @@ namespace AIS.Controllers
                 }
             }
 
-
-        public IActionResult Dashboard()
-            {
-            ViewData["TopMenu"] = tm.GetTopMenus();
-            ViewData["TopMenuPages"] = tm.GetTopMenusPages();
-
-            if (!User.Identity.IsAuthenticated)
-                {
-                return RedirectToAction("Index", "Login");
-                }
-
-            if (!this.UserHasPagePermissionForCurrentAction(sessionHandler)) //MIGRATION_PERMISSION_CHECK (Controller)
-                {
-                return RedirectToAction("Index", "PageNotFound");
-                }
-
-            var model = new ExecutionDashboardViewModel
-                {
-                Steps = BuildExecutionDashboardSteps()
-                };
-
-            return View(model);
-            }
-
-        [HttpGet]
-        public IActionResult LoadExecutionDashboardStep(string step, int engId, bool isReadOnly = false)
-            {
-            if (!User.Identity.IsAuthenticated)
-                {
-                return Unauthorized();
-                }
-
-            if (!this.UserHasPagePermissionForCurrentAction(sessionHandler)) //MIGRATION_PERMISSION_CHECK (Controller)
-                {
-                return Forbid();
-                }
-
-            if (engId <= 0)
-                {
-                return BadRequest("Engagement is required.");
-                }
-
-            ViewData["ExecutionDashboardEngId"] = engId;
-            ViewData["ExecutionDashboardReadOnly"] = isReadOnly;
-            ViewData["AnnexList"] = dBConnection.GetAnnexuresForChecklistDetail();
-            ViewData["ProcessList"] = dBConnection.GetAuditChecklist();
-            ViewData["EntitiesList"] = dBConnection.GetObservationEntitiesForPreConcluding();
-            ViewData["RiskList"] = dBConnection.GetRisks();
-            ViewData["Voilation_Cat"] = dBConnection.GetAuditVoilationcats();
-
-            switch ((step ?? string.Empty).Trim().ToUpperInvariant())
-                {
-                case "DRAFT_REPORT":
-                    return PartialView("~/Views/Execution/Partials/_DraftReportPartial.cshtml");
-                case "QUALITY_REVIEW":
-                    return PartialView("~/Views/Execution/Partials/_QualityReviewPartial.cshtml");
-                case "ISSUE_REPORT":
-                    ViewData["EntitiesList"] = dBConnection.GetAuditConcludingEntities();
-                    return PartialView("~/Views/Execution/Partials/_IssueReportPartial.cshtml");
-                case "CHECKING_DRAFT_REPORT":
-                    ViewData["ExecutionDashboardReadOnly"] = true;
-                    return PartialView("~/Views/Execution/Partials/_CheckingDraftReportPartial.cshtml");
-                case "CHECKING_QUALITY_REVIEW":
-                    ViewData["ExecutionDashboardReadOnly"] = true;
-                    return PartialView("~/Views/Execution/Partials/_CheckingQualityReviewPartial.cshtml");
-                default:
-                    return BadRequest("Invalid workflow step.");
-                }
-            }
-
-        private List<ExecutionDashboardStepViewModel> BuildExecutionDashboardSteps()
-            {
-            return new List<ExecutionDashboardStepViewModel>
-                {
-                new ExecutionDashboardStepViewModel { StepNo = 1, StepCode = "DRAFT_REPORT", StepTitle = "Draft Report", IsReadOnly = false },
-                new ExecutionDashboardStepViewModel { StepNo = 2, StepCode = "QUALITY_REVIEW", StepTitle = "Quality Review", IsReadOnly = false },
-                new ExecutionDashboardStepViewModel { StepNo = 3, StepCode = "ISSUE_REPORT", StepTitle = "Issue Report", IsReadOnly = false },
-                new ExecutionDashboardStepViewModel { StepNo = 4, StepCode = "CHECKING_DRAFT_REPORT", StepTitle = "Checking of Draft Report", IsReadOnly = true },
-                new ExecutionDashboardStepViewModel { StepNo = 5, StepCode = "CHECKING_QUALITY_REVIEW", StepTitle = "Checking of Quality Review", IsReadOnly = true }
-                };
-            }
         [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
         public IActionResult Error()
             {
