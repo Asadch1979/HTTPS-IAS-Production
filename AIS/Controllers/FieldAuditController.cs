@@ -39,7 +39,7 @@ namespace AIS.Controllers
             }
 
         [HttpGet]
-        public IActionResult Dashboard(string stepCode = null, int? engId = null)
+        public IActionResult AR_Dashboard(string stepCode = null, int? engId = null)
             {
             ViewData["TopMenu"] = _topMenus.GetTopMenus();
             ViewData["TopMenuPages"] = _topMenus.GetTopMenusPages();
@@ -326,13 +326,13 @@ namespace AIS.Controllers
 
             if (engId <= 0)
                 {
-                return RedirectToAction(nameof(Dashboard));
+                return RedirectToAction(nameof(AR_Dashboard));
                 }
 
             var model = BuildWorkflowViewModel(user, "AUDIT_REPORT", engId);
             if (!model.HasEngagementSelection)
                 {
-                return RedirectToAction(nameof(Dashboard));
+                return RedirectToAction(nameof(AR_Dashboard));
                 }
 
             _sessionHandler.SetActiveEngagementId(engId);

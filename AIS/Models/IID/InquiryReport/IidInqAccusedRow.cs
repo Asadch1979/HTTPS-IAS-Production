@@ -15,6 +15,9 @@ namespace AIS.Models.IID.InquiryReport
         public string Designation { get; set; }
         [PlainText]
         public string RoleType { get; set; }
+
+        [PlainText]
+        public string StatementType { get; set; }
         [PlainText]
         public string PpnoNumber { get; set; }
         [PlainText]
