@@ -56,7 +56,75 @@ namespace AIS.Controllers
                 }
 
             var model = BuildWorkflowViewModel(user, stepCode, engId);
-            return View("~/Views/FieldAudit/Dashboard.cshtml", model);
+            return View("~/Views/FieldAudit/AR_Dashboard.cshtml", model);
+            }
+
+        [HttpGet]
+        public IActionResult BO_Dashboard()
+            {
+            ViewData["TopMenu"] = _topMenus.GetTopMenus();
+            ViewData["TopMenuPages"] = _topMenus.GetTopMenusPages();
+            ViewData["HideTopHeader"] = true;
+
+            if (!User.Identity.IsAuthenticated)
+                {
+                return RedirectToAction("Index", "Login");
+                }
+
+            if (!_sessionHandler.TryGetUser(out var user) || user == null)
+                {
+                return RedirectToAction("Index", "Login");
+                }
+
+            return View("~/Views/FieldAudit/BO_Dashboard.cshtml");
+            }
+
+        [HttpGet]
+        public IActionResult LoadBackOfficeStep(string stepCode, int engId, bool isReadOnly = false)
+            {
+            if (!User.Identity.IsAuthenticated)
+                {
+                return Unauthorized();
+                }
+
+            if (!_sessionHandler.TryGetUser(out var user) || user == null)
+                {
+                return Unauthorized();
+                }
+
+            if (engId <= 0)
+                {
+                return BadRequest("A valid engagement is required.");
+                }
+
+            ViewData["AnnexList"] = _dbConnection.GetAnnexuresForChecklistDetail();
+            ViewData["ReadOnlyMode"] = isReadOnly;
+
+            var viewModel = new FieldAuditGridReplicaViewModel
+                {
+                EngagementId = engId,
+                IsReadOnly = isReadOnly
+                };
+
+            switch ((stepCode ?? string.Empty).Trim().ToUpperInvariant())
+                {
+                case "DRAFT_REPORT":
+                    return PartialView("~/Views/FieldAudit/BO_Partials/_DraftReportPartial.cshtml", viewModel);
+                case "QUALITY_REVIEW":
+                    return PartialView("~/Views/FieldAudit/BO_Partials/_QualityReviewPartial.cshtml", viewModel);
+                case "ISSUE_REPORT":
+                    return PartialView("~/Views/FieldAudit/BO_Partials/_IssueReportPartial.cshtml", viewModel);
+                case "CHECKING_DRAFT_REPORT":
+                    viewModel.IsReadOnly = true;
+                    ViewData["ReadOnlyMode"] = true;
+                    return PartialView("~/Views/FieldAudit/BO_Partials/_CheckingDraftReportPartial.cshtml", viewModel);
+                case "CHECKING_QUALITY_REVIEW":
+                    viewModel.IsReadOnly = true;
+                    ViewData["ReadOnlyMode"] = true;
+                    return PartialView("~/Views/FieldAudit/BO_Partials/_CheckingQualityReviewPartial.cshtml", viewModel);
+                default:
+                    return NotFound();
+                }
             }
 
         [HttpGet]
@@ -152,37 +220,37 @@ namespace AIS.Controllers
             switch ((viewCode ?? string.Empty).Trim().ToUpperInvariant())
                 {
                 case "EXCEPTION_ACCOUNT":
-                    return PartialView("~/Views/FieldAudit/Partials/_ExceptionAccountReplica.cshtml", new FieldAuditGridReplicaViewModel { EngagementId = engId });
+                    return PartialView("~/Views/FieldAudit/AR_Partials/_ExceptionAccountReplica.cshtml", new FieldAuditGridReplicaViewModel { EngagementId = engId });
                 case "EXCEPTION_LOAN":
-                    return PartialView("~/Views/FieldAudit/Partials/_ExceptionLoanReplica.cshtml", new FieldAuditGridReplicaViewModel { EngagementId = engId });
+                    return PartialView("~/Views/FieldAudit/AR_Partials/_ExceptionLoanReplica.cshtml", new FieldAuditGridReplicaViewModel { EngagementId = engId });
                 case "ACCOUNT_DOCUMENT":
-                    return PartialView("~/Views/FieldAudit/Partials/_AccountDocumentReplica.cshtml", new FieldAuditGridReplicaViewModel { EngagementId = engId });
+                    return PartialView("~/Views/FieldAudit/AR_Partials/_AccountDocumentReplica.cshtml", new FieldAuditGridReplicaViewModel { EngagementId = engId });
                 case "ACCOUNT_TRANSACTION":
-                    return PartialView("~/Views/FieldAudit/Partials/_AccountTransactionReplica.cshtml", new FieldAuditGridReplicaViewModel { EngagementId = engId });
+                    return PartialView("~/Views/FieldAudit/AR_Partials/_AccountTransactionReplica.cshtml", new FieldAuditGridReplicaViewModel { EngagementId = engId });
                 case "LOAN_TRANSACTION":
-                    return PartialView("~/Views/FieldAudit/Partials/_LoanTransactionReplica.cshtml", new FieldAuditGridReplicaViewModel { EngagementId = engId });
+                    return PartialView("~/Views/FieldAudit/AR_Partials/_LoanTransactionReplica.cshtml", new FieldAuditGridReplicaViewModel { EngagementId = engId });
                 case "LOAN_DOCUMENT":
-                    return PartialView("~/Views/FieldAudit/Partials/_LoanDocumentReplica.cshtml", new FieldAuditGridReplicaViewModel { EngagementId = engId });
+                    return PartialView("~/Views/FieldAudit/AR_Partials/_LoanDocumentReplica.cshtml", new FieldAuditGridReplicaViewModel { EngagementId = engId });
                 case "WP_VOUCHER":
-                    return PartialView("~/Views/FieldAudit/Partials/_VoucherCheckingReplica.cshtml", new FieldAuditGridReplicaViewModel { EngagementId = engId });
+                    return PartialView("~/Views/FieldAudit/AR_Partials/_VoucherCheckingReplica.cshtml", new FieldAuditGridReplicaViewModel { EngagementId = engId });
                 case "WP_ACCOUNT_OPENING":
-                    return PartialView("~/Views/FieldAudit/Partials/_AccountOpeningReplica.cshtml", new FieldAuditGridReplicaViewModel { EngagementId = engId });
+                    return PartialView("~/Views/FieldAudit/AR_Partials/_AccountOpeningReplica.cshtml", new FieldAuditGridReplicaViewModel { EngagementId = engId });
                 case "WP_FIXED_ASSETS":
-                    return PartialView("~/Views/FieldAudit/Partials/_FixedAssetsReplica.cshtml", new FieldAuditGridReplicaViewModel { EngagementId = engId });
+                    return PartialView("~/Views/FieldAudit/AR_Partials/_FixedAssetsReplica.cshtml", new FieldAuditGridReplicaViewModel { EngagementId = engId });
                 case "WP_CASH_COUNT":
-                    return PartialView("~/Views/FieldAudit/Partials/_CashCountReplica.cshtml", new FieldAuditGridReplicaViewModel { EngagementId = engId });
+                    return PartialView("~/Views/FieldAudit/AR_Partials/_CashCountReplica.cshtml", new FieldAuditGridReplicaViewModel { EngagementId = engId });
                 case "SAMPLING_BIOMET":
-                    return PartialView("~/Views/FieldAudit/Partials/_SamplingBiomet.cshtml", new FieldAuditGridReplicaViewModel { EngagementId = engId });
+                    return PartialView("~/Views/FieldAudit/AR_Partials/_SamplingBiomet.cshtml", new FieldAuditGridReplicaViewModel { EngagementId = engId });
                 case "SAMPLING_LOANS":
-                    return PartialView("~/Views/FieldAudit/Partials/_SamplingLoans.cshtml", new FieldAuditGridReplicaViewModel { EngagementId = engId });
+                    return PartialView("~/Views/FieldAudit/AR_Partials/_SamplingLoans.cshtml", new FieldAuditGridReplicaViewModel { EngagementId = engId });
                 case "SAMPLING_ACCOUNT_DOCUMENT":
-                    return PartialView("~/Views/FieldAudit/Partials/_SamplingAccountDocument.cshtml", new FieldAuditGridReplicaViewModel { EngagementId = engId });
+                    return PartialView("~/Views/FieldAudit/AR_Partials/_SamplingAccountDocument.cshtml", new FieldAuditGridReplicaViewModel { EngagementId = engId });
                 case "SAMPLING_ACCOUNT_TRANSACTION":
-                    return PartialView("~/Views/FieldAudit/Partials/_SamplingAccountTransaction.cshtml", new FieldAuditGridReplicaViewModel { EngagementId = engId });
+                    return PartialView("~/Views/FieldAudit/AR_Partials/_SamplingAccountTransaction.cshtml", new FieldAuditGridReplicaViewModel { EngagementId = engId });
                 case "SAMPLING_LOAN_DOCUMENT":
-                    return PartialView("~/Views/FieldAudit/Partials/_SamplingLoanDocument.cshtml", new FieldAuditGridReplicaViewModel { EngagementId = engId });
+                    return PartialView("~/Views/FieldAudit/AR_Partials/_SamplingLoanDocument.cshtml", new FieldAuditGridReplicaViewModel { EngagementId = engId });
                 case "SAMPLING_LOAN_TRANSACTION":
-                    return PartialView("~/Views/FieldAudit/Partials/_SamplingLoanTransaction.cshtml", new FieldAuditGridReplicaViewModel { EngagementId = engId });
+                    return PartialView("~/Views/FieldAudit/AR_Partials/_SamplingLoanTransaction.cshtml", new FieldAuditGridReplicaViewModel { EngagementId = engId });
                 default:
                     return NotFound();
                 }

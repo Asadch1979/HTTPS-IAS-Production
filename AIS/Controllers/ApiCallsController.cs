@@ -6098,6 +6098,28 @@ namespace AIS.Controllers
             return DateTime.TryParseExact(value ?? string.Empty, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out date);
             }
 
+
+        [HttpGet]
+        [HttpPost]
+        public IActionResult GetBackOfficeDashboardEngagements()
+            {
+            var list = dBConnection.GetBackOfficeDashboardEngagements()
+                .Where(item => item.ENG_PLAN_ID > 0)
+                .GroupBy(item => item.ENG_PLAN_ID)
+                .Select(group => group.First())
+                .OrderBy(item => item.ENTITY_NAME)
+                .Select(item => new
+                    {
+                    engagementId = item.ENG_PLAN_ID,
+                    entityName = item.ENTITY_NAME,
+                    stageName = item.ENG_STATUS,
+                    label = $"{item.ENTITY_NAME} ({item.ENG_PLAN_ID})"
+                    })
+                .ToList();
+
+            return Json(list);
+            }
+
         [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
         public IActionResult Error()
             {
@@ -6127,5 +6149,7 @@ namespace AIS.Controllers
         {
         public long? RequestId { get; set; }
         public string Reason { get; set; }
+
+
         }
     }

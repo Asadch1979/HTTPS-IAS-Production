@@ -264,6 +264,64 @@ namespace AIS.Controllers
             return tasklist;
             }
 
+        public List<TaskListModel> GetBackOfficeDashboardEngagements()
+            {
+            var sessionHandler = CreateSessionHandler();
+            var con = this.DatabaseConnection();
+            List<TaskListModel> tasklist = new List<TaskListModel>();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
+                || string.IsNullOrWhiteSpace(loggedInUser.PPNumber)
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return new List<TaskListModel>();
+                }
+
+            using (OracleCommand cmd = con.CreateCommand())
+                {
+                cmd.CommandText = "pkg_ar.P_GetTaskList";
+                cmd.CommandType = CommandType.StoredProcedure;
+                cmd.Parameters.Clear();
+                cmd.Parameters.Add("ENT_ID", OracleDbType.Int32).Value = loggedInUser.UserEntityID;
+                cmd.Parameters.Add("P_NO", OracleDbType.Int32).Value = loggedInUser.PPNumber;
+                cmd.Parameters.Add("R_ID", OracleDbType.Int32).Value = loggedInUser.UserRoleID;
+                cmd.Parameters.Add("T_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+                OracleDataReader rdr = cmd.ExecuteReader();
+                while (rdr.Read())
+                    {
+                    TaskListModel tlist = new TaskListModel();
+                    tlist.ID = Convert.ToInt32(rdr["ID"]);
+                    tlist.ENG_PLAN_ID = Convert.ToInt32(rdr["ENG_PLAN_ID"]);
+                    tlist.TEAM_ID = Convert.ToInt32(rdr["TEAM_ID"]);
+                    tlist.SEQUENCE_NO = Convert.ToInt32(rdr["SEQUENCE_NO"]);
+                    tlist.TEAMMEMBER_PPNO = Convert.ToInt32(rdr["TEAMMEMBER_PPNO"]);
+                    tlist.ENTITY_ID = Convert.ToInt32(rdr["ENTITY_ID"]);
+                    tlist.ENTITY_TYPE = Convert.ToInt32(rdr["ENTITY_TYPE"]);
+                    tlist.REPORTING = rdr["P_NAME"].ToString();
+                    tlist.ENTITY_TYPE_DESC = rdr["ENTITY_TYPE_DESC"].ToString();
+                    tlist.ENTITY_CODE = Convert.ToInt32(rdr["ENTITY_CODE"]);
+                    tlist.ENTITY_NAME = rdr["ENTITY_NAME"].ToString();
+                    tlist.TEAM_NAME = rdr["T_NAME"].ToString();
+                    tlist.WORKING_PAPER = rdr["WORKING_PAPER"].ToString();
+                    tlist.PRE_INFO = rdr["pre_info"].ToString();
+                    tlist.EMP_NAME = loggedInUser.Name.ToString();
+                    tlist.AUDIT_START_DATE = Convert.ToDateTime(rdr["AUDIT_START_DATE"]).ToString("dd/MM/yyyy");
+                    tlist.AUDIT_END_DATE = Convert.ToDateTime(rdr["AUDIT_END_DATE"]).ToString("dd/MM/yyyy");
+                    tlist.STATUS_ID = Convert.ToInt32(rdr["STATUS_ID"]);
+                    tlist.ENG_STATUS = rdr["ENG_STATUS"].ToString();
+                    tlist.ENG_NEXT_STATUS = rdr["ENG_NEXT_STATUS"].ToString();
+                    tlist.ISACTIVE = rdr["ISACTIVE"].ToString();
+                    tlist.AUDIT_YEAR = rdr["AUDIT_YEAR"].ToString();
+                    tlist.ISCLOSE = rdr["CLOSING"].ToString();
+                    tasklist.Add(tlist);
+                    }
+                }
+
+            con.Dispose();
+            return tasklist;
+            }
+
         public JoiningModel GetJoiningDetails(int engId = 0)
             {
             var sessionHandler = CreateSessionHandler();
