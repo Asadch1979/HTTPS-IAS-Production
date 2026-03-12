@@ -1,0 +1,54 @@
+@model AIS.Models.ExecutionDashboardViewModel
+@{
+    ViewData["Title"] = "Execution Dashboard";
+    Layout = "_Layout";
+}
+
+<div class="stepper-wrap sticky-top bg-white py-2 mb-3">
+    <div class="card shadow-sm planning-nav-card mb-0">
+        <div class="card-body py-3">
+            <div class="row g-2 align-items-center mb-3">
+                <div class="col-lg-7">
+                    <div class="row g-2 align-items-center">
+                        <div class="col-sm-auto">
+                            <label for="executionDashboardEngagementSelector" class="form-label fw-semibold mb-0">Engagement</label>
+                        </div>
+                        <div class="col-sm">
+                            <select id="executionDashboardEngagementSelector" class="form-select" data-engagement-url="@Url.Action("GetExecutionDashboardEngagements", "ApiCalls")">
+                                <option value="">-- Select Engagement --</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-5 text-lg-end">
+                    <strong id="executionStepCounter">Step 1 of @Model.Steps.Count</strong>
+                    <span class="text-muted small">Click any step to navigate</span>
+                </div>
+            </div>
+
+            <div id="executionEngagementRequiredAlert" class="alert alert-warning mb-3">Please select an engagement to begin the Execution workflow.</div>
+            <div id="executionWizardStepper" class="mt-2"></div>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body field-audit-compact">
+        <div id="executionStepHost" data-load-url="@Url.Action("LoadBODashboardStep", "FieldAudit")">
+            <div class="alert alert-info mb-0">Select an engagement from the dropdown above to load workflow content.</div>
+        </div>
+    </div>
+</div>
+
+<script>
+    window.executionDashboardSteps = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Steps.Select(step => new
+    {
+        stepCode = step.StepCode,
+        stepNo = step.StepNo,
+        stepTitle = step.StepTitle,
+        isReadOnly = step.IsReadOnly
+    })));
+</script>
+<script src="~/js/fieldAudit/stepper-theme.js"></script>
+<script src="~/js/fieldAudit/bo-dashboard.js?v=1"></script>
+<link rel="stylesheet" href="~/css/fieldaudit-stepper-theme.css" />
