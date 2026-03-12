@@ -1,0 +1,405 @@
+﻿@{
+    var page_id = ViewData["PageId"] as int? ?? 0;
+}
+
+<style type="text/css">
+    .evidence-link {
+        display: flex;
+        align-items: center;
+        margin-bottom: 10px;
+    }
+
+    .evidence-icon {
+        margin-right: 10px;
+    }
+    .action-col {
+        width: 1%;
+        white-space: nowrap;
+    }
+</style>
+
+
+<div class="row">
+    <input type="hidden" id="entitySelectField" value="0" />
+    <input type="hidden" id="engIdHidden" value="0" />
+    <div class="row col-md-12 mt-3">
+        <h3 style=" display:block;color: #be0e43">Report Summary</h3>
+        <table id="reportSummaryTable" class="table table-bordered mb-0 mt-3 bg-white table-striped">
+            <thead style="background-color: #19875478 !important;">
+                <tr>
+                    <th>Total Observations</th>
+                    <th>High Risk</th>
+                    <th>Medium Risk</th>
+                    <th>Low Risk</th>
+                    <th>Resolved</th>
+                    <th>Add to Draft</th>
+                </tr>
+            </thead>
+            <tr>
+                <td id="totalObsLabel" class="text-center"></td>
+                <td id="highObsLabel" class="text-center"></td>
+                <td id="mediumObsLabel" class="text-center"></td>
+                <td id="lowObsLabel" class="text-center"></td>
+                <td id="resolvedObsLabel" class="text-center"></td>
+                <td id="addToDraftLabel" class="text-center"></td>
+            </tr>
+        </table>
+    </div>
+
+    <div class="row col-md-12 mt-3" style="font-size:small">
+        <h3 style=" display:block;color: #be0e43">Audit Observations</h3>
+        <table id="manageObsPanel" class="table table-hover table-bordered table-hover mt-3 table-striped">
+            <thead style="background-color: #19875478 !important; " class="text-sm-left !important;">
+                <tr>
+                    <th class="col-md-auto">Memo No.</th>
+                    <th class="col-md-auto">Draft Para No.</th>
+                    <th class="col-md-auto">Final Para No.</th>
+                    <th class="col-md-auto branchfield">Title of Para</th>
+                    <th class="col-md-auto">Risk Category</th>
+                    <th class="col-md-auto">Status</th>
+                    <th class="col-md-auto">Action</th>
+                </tr>
+            </thead>
+            <tbody>
+            </tbody>
+        </table>
+
+    </div>
+    <div class="row col-md-12 mt-3">
+        <button data-onclick="submitPreConcluding();" class="col-md-3 btn btn-success" style="margin-left:10px;">Submit Pre Concluding</button>
+    </div>
+</div>
+
+
+<div id="commentsBox" class="modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">Auditor Comments</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form>
+                    <div class="form-group">
+                        <label for="commentAreaInCommentsBox">Final Para No</label>
+                        <input class="form-control" id="finalNoInCommentsBox" placeholder="Final Para No" />
+                    </div>
+                    <div class="form-group">
+                        <label for="commentAreaInCommentsBox">Comments</label>
+                        <textarea class="form-control" rows="4" id="commentAreaInCommentsBox" placeholder="Enter Comments here.."></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button data-onclick="finalCommentsButtonSave();" id="finalCommentsButtonSave" type="button" class="btn btn-danger">Submit</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="viewMemoDetailsModel" class="modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-xl" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">Observation</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form>
+                    <div class="form-group mb-3">
+                        <label for="viewMemo_annex_ObSent" class="font-weight-bold">Annexure</label>
+                        <select id="viewMemo_annex_ObSent" class="form-select form-control">
+                            <option selected="selected" value="0" id="0">--Select Annexure--</option>
+                            @{
+                                if (ViewData["AnnexList"] != null)
+                                {
+                                    foreach (var item in (dynamic)(ViewData["AnnexList"]))
+                                    {
+                                        <option id="@item.ID" value="@item.ID">@item.ANNEX</option>
+                                    }
+
+                                }
+                            }
+
+                        </select>
+                    </div>
+                    <div class="form-group mb-3">
+                        <label for="viewMemo_risk_display">Risk will be assigned on the basis of Selected Annexure</label>
+                        <input id="viewMemo_risk_display" class="form-control" readonly />
+                    </div>
+                    <div class="form-group mb-3">
+                        <label for="viewMemo_process_ObSent" class="font-weight-bold">Process</label>
+                        <select id="viewMemo_process_ObSent" data-onchange="getSubCheckListOfProcess();" class="form-select form-control">
+                            <option selected="selected" value="0" id="0">--Select Process--</option>
+                            @{
+                                if (ViewData["ProcessList"] != null)
+                                {
+                                    foreach (var item in (dynamic)(ViewData["ProcessList"]))
+                                    {
+                                        <option id="@item.T_ID" value="@item.T_ID">@item.HEADING</option>
+                                    }
+
+                                }
+                            }
+
+                        </select>
+                    </div>
+                    <div class="form-group mb-3">
+                        <label for="viewMemo_subprocess_ObSent" class="font-weight-bold">Sub Process</label>
+                        <select id="viewMemo_subprocess_ObSent" data-onchange="getCheckListDetailOfSubProcess();" class="form-select form-control">
+                        </select>
+                    </div>
+                    <div class="form-group mb-3">
+                        <label for="viewMemo_checklist_ObSent" class="font-weight-bold">Checklist Details</label>
+                        <select id="viewMemo_checklist_ObSent" class="form-select form-control">
+                        </select>
+                    </div>
+
+                    <div class="form-group mb-3">
+                        <label for="viewMemo_heading_ObSent" class="font-weight-bold">Gist of Para <small class="text-muted">(A-Z, 0-9, space, &amp;, ?)</small></label>
+                        <input id="viewMemo_heading_ObSent" type="text" class="form-control alnum-only" placeholder="Gist of Para (Alphabets, numbers, spaces, ampersand (&amp;), comma (,), and question mark (?) only)" data-allow-space="true" data-allow-amp="true" data-maxlen="500" maxlength="500" title="Enter only Alphabets (A-Z), numbers (0-9), spaces, ampersand (&amp;), comma (,), and question mark (?)" />
+                        <small class="form-text text-muted">Enter only Alphabets (A-Z), numbers (0-9), spaces, ampersand (&amp;), comma (,), and question mark (?).</small>
+                        <div class="invalid-feedback">Enter only Alphabets (A-Z), numbers (0-9), spaces, ampersand (&amp;), comma (,), and question mark (?).</div>
+                    </div>
+                    <div class="form-group mb-3">
+                        <label for="viewMemo_memo_ObSent" class="font-weight-bold">Para Text</label>
+                        <input id="viewMemo_memo_ObSent" type="text" class="form-control" />
+                    </div>
+                    <div id="referenceSection" class="mt-3 p-3 border border-danger mb-3">
+                        <h6>References</h6>
+                        <ul id="refList" class="list-group mb-3"></ul>
+                        <div id="searchSection" style="display:none;"></div>
+                        <table class="table" id="resultTbl" style="display:none;">
+                            <thead>
+                                <tr>
+                                    <th>TITLE</th>
+                                    <th>Circular Date</th>
+                                    <th>INSTRUCTIONS DETAILS</th>
+                                    <th>KEYWORDS</th>
+                                    <th>View Circular</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                    <div class="form-group">
+                        <label for="viewMemo_amount_ObSent">Amount Involved <small class="text-danger fw-bold">(Non Decimal Numbers only) </small></label>
+                        <input id="viewMemo_amount_ObSent" type="text" class="form-control" />
+                    </div>
+                    <div class="form-group">
+                        <label for="viewMemo_memo_ObSent" class="font-weight-bold">No. of Instances</label>
+                        <input id="viewMemo_inst_ObSent" type="text" class="form-control" />
+                    </div>
+                    <div class="form-group">
+                        <label for="update_listofRespPersons" class="font-weight-bold">Responsible Personals</label>
+                        <div class="col-md-12 pl-0 pr-0">
+                            <div class="d-flex justify-content-end mb-2">
+                                <button type="button" data-onclick="openResponsiblePPs();" class="rounded-circle btn btn-danger btn-sm" aria-label="Add responsible person">
+                                    <i class="fa fa-plus text-white"></i>
+                                </button>
+                            </div>
+                            <table id="update_listofRespPersons" class="table table-hover table-bordered table-hover mt-3 table-striped">
+                                <thead style="background-color: #19875478 !important; ">
+                                    <tr>
+                                        <th class="col-md-auto font-weight-bold">Sr.No</th>
+                                        <th class="col-md-auto font-weight-bold">P.P. No</th>
+                                        <th class="col-md-auto font-weight-bold">Name</th>
+                                        <th class="col-md-auto font-weight-bold">Loan Case</th>
+                                        <th class="col-md-auto font-weight-bold">LC Amount</th>
+                                        <th class="col-md-auto font-weight-bold">Account No.</th>
+                                        <th class="col-md-auto font-weight-bold">ACC Amount</th>
+                                        <th class="col-md-auto font-weight-bold">Remarks</th>
+                                        <th class="col-md-auto text-center font-weight-bold action-col">Update</th>
+                                        <th class="col-md-auto text-center font-weight-bold action-col">Delete</th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="viewMemo_response_ObSent" class="font-weight-bold">Auditee Response</label>
+                        <div id="viewMemo_response_ObSent" disabled="disabled" style="height: auto; overflow-y: auto;" class="form-control"></div>
+                    </div>
+                    <div id="evidenceViewer" class="input-field">
+                        <label class="font-weight-bold">Evidences</label>
+                        <div class="row col-md-12 mt-3 mb-3">
+                            <div id="complianceCycleEvidences">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="viewMemo_aud_reply_ObSent" class="font-weight-bold">Auditor Reply</label>
+                        <div id="viewMemo_aud_reply_ObSent" disabled="disabled" style="height: auto; overflow-y: auto;" class="form-control"></div>
+                    </div>
+
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button id="dsa_audit_obs_button" data-onclick="dsaObservationDetails(g_obsId);" type="button" class="btn btn-warning">Create DSA</button>
+                <button id="update_audit_obs_button" data-onclick="updateObservationDetails(g_obsId);" type="button" class="btn btn-primary">Update Para Details</button>
+                <button id="un_settle_audit_obs_button" data-onclick="updateObservationStatus(g_obsId,8);" type="button" data-bs-dismiss="modal" class="btn btn-danger">Add to Final Report</button>
+                <button id="settle_audit_obs_button" data-onclick="updateObservationStatus(g_obsId, 9);" type="button" data-bs-dismiss="modal" class="btn btn-success">Settle</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="ResponsiblePPModel" class="modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-lg" style="min-width:95% !important" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title">Responsible Person</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form>
+                    <div class="form-group">
+
+                        <label class="form-control text-bold fw-bold text-center">Search Responsible By LC Number</label>
+
+                        <div class="row col-sm-12">
+                            <div class="col-sm-5">
+                                <label for="viewMemo_memo">Loan Case No.</label>
+                                <input type="text" class="form-control digits-only" id="responsibleLCNoEntryField" inputmode="numeric" pattern="[0-9]*" autocomplete="off" data-digits-only="true" />
+                            </div>
+                            <div class="col-sm-5">
+                                <label for="responsibleBrCodeEntryField">Branch Code <small class="text-muted">(0-9 only)</small></label>
+                                <input type="text" class="form-control digits-only" id="responsibleBrCodeEntryField" aria-describedby="brcode" placeholder="Branch Code (digits only)" inputmode="numeric" pattern="[0-9]*" autocomplete="off" data-digits-only="true" />
+                            </div>
+                            <div class="col-sm-2 d-flex align-items-end">
+                                <button data-onclick="respSection.getLCDetails();" type="button" class="btn btn-danger w-100">Find</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <div id="matchedPPNoPanels" style="padding:20px;">
+                        </div>
+                    </div>
+                    <div class="form-group">
+
+                        <label class="form-control text-bold fw-bold text-center">Search Responsible By PP No.</label>
+
+                                                <div id="findBYPPNOPanel" class="mt-2 row col-md-12">
+                            <div class="col-md-2">
+                                <label for="responsiblePPNoEntryField" class="form-label">PPNO</label>
+                                <input id="responsiblePPNoEntryField" class="form-control digits-only" type="text" placeholder="Enter PP. No." inputmode="numeric" pattern="[0-9]*" autocomplete="off" data-digits-only="true" />
+                            </div>
+                            <div class="col-md-2">
+                                <label for="responsibleLoanNumberEntryField" class="form-label">Loan Case No</label>
+                                <input id="responsibleLoanNumberEntryField" class="form-control digits-only" type="text" placeholder="Enter LC No." inputmode="numeric" pattern="[0-9]*" autocomplete="off" data-digits-only="true" />
+                            </div>
+                            <div class="col-md-2">
+                                <label for="responsibleLoanAmountEntryField" class="form-label">Loan Amount</label>
+                                <input id="responsibleLoanAmountEntryField" class="form-control digits-only" type="text" placeholder="Enter LC Amount" inputmode="numeric" pattern="[0-9]*" autocomplete="off" data-digits-only="true" />
+                            </div>
+                            <div class="col-md-2">
+                                <label for="responsibleAccountNumberEntryField" class="form-label">Account No</label>
+                                <input id="responsibleAccountNumberEntryField" class="form-control digits-only" type="text" placeholder="Enter Account Number" inputmode="numeric" pattern="[0-9]*" autocomplete="off" data-digits-only="true" />
+                            </div>
+                            <div class="col-md-2">
+                                <label for="responsibleAccountAmountEntryField" class="form-label">Account Amount</label>
+                                <input id="responsibleAccountAmountEntryField" class="form-control digits-only" type="text" placeholder="Enter Account Amount" inputmode="numeric" pattern="[0-9]*" autocomplete="off" data-digits-only="true" />
+                            </div>
+                            <div class="col-md-2 d-flex align-items-end">
+                                <button type="button" data-onclick="respSection.getMatchedPP();" class="col-md-2 btn btn-success w-100">Select</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <div id="matchedPPNoPanelsBYPP" style="padding:20px;">
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button id="addResponsibleButton" type="button" class="btn btn-danger">Add Responsibility</button>
+                <button id="updateResponsibleButton" type="button" class="btn btn-success d-none">Update Responsibility</button>
+                <button id="deleteResponsibleButton" type="button" class="btn btn-danger d-none">Delete Responsibility</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="DSAModel" class="modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-xl" style="width:95% !important;" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title">Creation of DSA</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form>
+
+                    <div class="form-group">
+                        <label for="viewMemo_memo">DSA Heading</label>
+
+                        <textarea id="dsaHeading" readonly="readonly" class="form-control">
+
+                          </textarea>
+
+                    </div>
+                    <div class="form-group">
+                        <label for="viewMemo_memo">DSA Content</label>
+                        <div id="dsaContent" disabled="disabled" style="height: auto; overflow-y: auto;" class="form-control"></div>
+                    </div>
+
+                    <div class="form-group">
+                        <center style="padding-top:10px; height:40px;" class="bg-danger text-light"><h6>Assigment of DSA to responsibles </h6></center>
+                        <div class="w-100">
+                            <table id="dsaResponsibles" class="table table-hover table-bordered table-hover mt-3 table-striped">
+                                <thead style="background-color: #19875478 !important; ">
+                                    <tr>
+                                        <th class="col-md- auto font-weight-bold">Sr.No</th>
+                                        <th class="col-md- auto font-weight-bold">P.P. No</th>
+                                        <th class="col-md- auto font-weight-bold">Name</th>
+                                        <th class="col-md- auto font-weight-bold">Loan Case</th>
+                                        <th class="col-md- auto font-weight-bold">LC Amount</th>
+                                        <th class="col-md- auto font-weight-bold">Account No.</th>
+                                        <th class="col-md- auto font-weight-bold">ACC Amount</th>
+                                        <th class="col-md- auto font-weight-bold">DSA Issue to</th>
+
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button data-onclick="submitObservationToAuditeeAfterDSAIssuance();" type="button" class="btn btn-danger">Issue DSA to selected Responsibles</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+<script type="application/json" id="page-data">
+@Html.Raw(System.Text.Json.JsonSerializer.Serialize(new {
+    AnnexList = ViewData["AnnexList"]
+}))
+</script>
+<script src="~/js/csp/Views_Execution_draft_audit_report_branch.js?v=1"></script>
+<script src="~/js/responsibilitySection.js"></script>
+
+<script>
+    window.executionDashboardStepInit = function (engId) {
+        var value = parseInt(engId || 0);
+        $('#entitySelectField').val(value);
+        $('#engIdHidden').val(value);
+        if (typeof getEntityObservation === 'function') {
+            getEntityObservation();
+        }
+        if (true) {
+            $('input, select, textarea, button').prop('disabled', true);
+            $('[data-onclick]').removeAttr('data-onclick');
+            $('#viewMemoDetailsModel .btn-close, #commentsBox .btn-close, #ResponsiblePPModel .btn-close, #DSAModel .btn-close').prop('disabled', false);
+        }
+    };
+</script>
