@@ -25,6 +25,14 @@
         });
 
         updateSelectAllState();
+
+        $('#approveAuditCriteriaButton').on('click', function () {
+            approveAuditCriterias();
+        });
+
+        $('#referBackAuditCriteriaButton').on('click', function () {
+            referredBackAuditCriterias();
+        });
     });
 
     function reloadLocation() {
