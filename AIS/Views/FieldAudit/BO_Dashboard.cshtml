@@ -1,0 +1,56 @@
+@{
+    ViewData["Title"] = "Back Office Dashboard";
+    Layout = "_Layout";
+}
+
+<div class="stepper-wrap sticky-top bg-white py-2 mb-3">
+    <div class="card shadow-sm planning-nav-card mb-0">
+        <div class="card-body py-3">
+            <div class="row g-2 align-items-center mb-3">
+                <div class="col-lg-7">
+                    <div class="row g-2 align-items-center">
+                        <div class="col-sm-auto">
+                            <label for="boEngagementSelector" class="form-label fw-semibold mb-0">Engagement</label>
+                        </div>
+                        <div class="col-sm">
+                            <select id="boEngagementSelector" class="form-select"
+                                    data-api-url="@Url.Action("GetBackOfficeDashboardEngagements", "ApiCalls")">
+                                <option value="">-- Select Engagement --</option>
+                            </select>
+                        </div>
+                    </div>
+                    <small class="text-muted">Back Office engagements are loaded from dedicated dashboard API.</small>
+                </div>
+                <div class="col-lg-5 text-lg-end">
+                    <strong id="boStepCounter">Step 1 of 5</strong>
+                    <span class="text-muted small">Click any tab to navigate</span>
+                </div>
+            </div>
+
+            <div id="boEngagementRequiredAlert" class="alert alert-warning mb-3">Please select an engagement to begin the Back Office workflow.</div>
+            <div id="boWizardStepper"></div>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body field-audit-compact">
+        <div id="boStepHost"
+             data-load-url="@Url.Action("LoadBackOfficeStep", "FieldAudit")">
+            <div class="alert alert-info mb-0">Select an engagement from the dropdown above to load Back Office workflow content.</div>
+        </div>
+    </div>
+</div>
+
+<link rel="stylesheet" href="~/css/fieldaudit-stepper-theme.css" />
+<script src="~/js/fieldAudit/stepper-theme.js"></script>
+<script>
+    window.fieldAuditBoStepperData = [
+        { stepCode: 'DRAFT_REPORT', stepNo: 1, stepTitle: 'Draft Report', isCompleted: false, isSaved: false },
+        { stepCode: 'QUALITY_REVIEW', stepNo: 2, stepTitle: 'Quality Review', isCompleted: false, isSaved: false },
+        { stepCode: 'ISSUE_REPORT', stepNo: 3, stepTitle: 'Issue Report', isCompleted: false, isSaved: false },
+        { stepCode: 'CHECKING_DRAFT_REPORT', stepNo: 4, stepTitle: 'Checking of Draft Report', isCompleted: false, isSaved: false },
+        { stepCode: 'CHECKING_QUALITY_REVIEW', stepNo: 5, stepTitle: 'Checking of Quality Review', isCompleted: false, isSaved: false }
+    ];
+</script>
+<script src="~/js/fieldaudit-bo-dashboard.js?v=1"></script>
