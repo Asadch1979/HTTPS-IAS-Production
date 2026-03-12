@@ -1,0 +1,89 @@
+@model AIS.Models.FieldAuditWorkflow.FieldAuditWorkflowViewModel
+@{
+    ViewData["Title"] = "Management Audit Dashboard";
+    Layout = "_Layout";
+    var visibleSteps = Model.VisibleSteps.ToList();
+    var currentStep = Model.CurrentStep;
+    var currentStepIndex = currentStep == null ? 0 : visibleSteps.FindIndex(s => s.StepCode == currentStep.StepCode) + 1;
+}
+
+<div class="stepper-wrap sticky-top bg-white py-2 mb-3">
+    <div class="card shadow-sm planning-nav-card mb-0">
+        <div class="card-body py-3">
+            <div class="row g-2 align-items-center mb-3">
+                <div class="col-lg-7">
+                    <div class="row g-2 align-items-center">
+                        <div class="col-sm-auto">
+                            <label for="maEngagementSelector" class="form-label fw-semibold mb-0">Engagement</label>
+                        </div>
+                        <div class="col-sm">
+                            <select id="maEngagementSelector" class="form-select" data-dashboard-base-url="@Url.Action("MA_Dashboard", "ManagementAudit")">
+                                <option value="">-- Select Engagement --</option>
+                                @foreach (var engagement in Model.AvailableEngagements)
+                                {
+                                    if (Model.SelectedEngagementId == engagement.EngagementId)
+                                    {
+                                        <option value="@engagement.EngagementId" selected>@engagement.Label</option>
+                                    }
+                                    else
+                                    {
+                                        <option value="@engagement.EngagementId">@engagement.Label</option>
+                                    }
+                                }
+                            </select>
+                        </div>
+                    </div>
+                    <small class="text-muted">Engagement list uses the same task assignment source as the Engagement task list.</small>
+                </div>
+                <div class="col-lg-5 text-lg-end">
+                    <strong id="maStepCounter">Step @(currentStepIndex > 0 ? currentStepIndex : 1) of @visibleSteps.Count</strong>
+                    <span class="text-muted small">Click any step to navigate</span>
+                </div>
+            </div>
+
+            <div id="maEngagementRequiredAlert" class="alert alert-warning mb-3 @(Model.HasEngagementSelection ? "d-none" : string.Empty)">Please select an engagement to begin the Management Audit workflow.</div>
+
+            @if (!visibleSteps.Any())
+            {
+                <div class="alert alert-warning mt-2 mb-0">You do not currently have access to any Management Audit workflow stages.</div>
+            }
+            else
+            {
+                <div id="maWizardStepper" class="mt-2"></div>
+            }
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body field-audit-compact">
+        <div id="maStepHost"
+             data-load-url="@Url.Action("LoadStep", "ManagementAudit")"
+             data-management-report-url="@Url.Action("OpenManagementReport", "ManagementAudit")"
+             data-step-code="@Model.CurrentStepCode"
+             data-eng-id="@Model.SelectedEngagementId">
+            @if (!Model.HasEngagementSelection)
+            {
+                <div class="alert alert-info mb-0">Select an engagement from the dropdown above to load workflow content.</div>
+            }
+            else
+            {
+                <div class="alert alert-secondary mb-0">Loading workflow content...</div>
+            }
+        </div>
+    </div>
+</div>
+
+<link rel="stylesheet" href="~/css/fieldaudit-stepper-theme.css" />
+<script src="~/js/fieldAudit/stepper-theme.js"></script>
+<script>
+    window.managementAuditStepperData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(visibleSteps.Select(step => new
+    {
+        stepCode = step.StepCode,
+        stepNo = step.StepNo,
+        stepTitle = step.StepTitle,
+        isCompleted = step.IsCompleted,
+        isSaved = step.IsSaved
+    })));
+</script>
+<script src="~/js/managementAudit/dashboard.js?v=1"></script>
