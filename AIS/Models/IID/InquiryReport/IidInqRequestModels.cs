@@ -35,6 +35,7 @@ namespace AIS.Models.IID.InquiryReport
         public long AccusationId { get; set; }
         public string FindingText { get; set; }
         public string RecomText { get; set; }
+        public string Outcome { get; set; }
         }
 
     public class IidAccusationForFindingsRow
@@ -48,6 +49,7 @@ namespace AIS.Models.IID.InquiryReport
         public long AccusationId { get; set; }
         public string AccusationText { get; set; }
         public string IsSaved { get; set; }
+        public string Outcome { get; set; }
         public DateTime? SavedOn { get; set; }
         }
     }

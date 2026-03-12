@@ -5,6 +5,9 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.Extensions.Logging;
+using iText.Kernel.Pdf;
+using iText.Layout;
+using iText.Layout.Element;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -323,6 +326,136 @@ namespace AIS.Controllers
                 }
 
             return uniqueFileName;
+            }
+
+
+        [HttpPost]
+        public IActionResult GenerateInquiryReportPdf([FromBody] AIS.Models.IID.InquiryReport.IidInqComplaintRequest request)
+            {
+            return BuildInquiryReportPdf(request?.ComplaintId ?? 0, false);
+            }
+
+        [HttpPost]
+        public IActionResult RegenerateInquiryReportPdf([FromBody] AIS.Models.IID.InquiryReport.IidInqComplaintRequest request)
+            {
+            return BuildInquiryReportPdf(request?.ComplaintId ?? 0, true);
+            }
+
+        [HttpGet]
+        public IActionResult ViewInquiryReportPdf(long complaintId)
+            {
+            if (complaintId <= 0)
+                {
+                return BadRequest("ComplaintId is required.");
+                }
+
+            var latest = dBConnection.GetLatestInquiryReportByComplaintId((int)complaintId);
+            var fileName = latest?.UploadedReport;
+            if (string.IsNullOrWhiteSpace(fileName))
+                {
+                return NotFound("No inquiry report PDF generated yet.");
+                }
+
+            var fullPath = Path.Combine(hostingEnvironment.WebRootPath, "Uploads", fileName);
+            if (!System.IO.File.Exists(fullPath))
+                {
+                return NotFound("Stored inquiry report file was not found on disk.");
+                }
+
+            return PhysicalFile(fullPath, "application/pdf", enableRangeProcessing: true);
+            }
+
+        private IActionResult BuildInquiryReportPdf(long complaintId, bool regenerate)
+            {
+            try
+                {
+                if (complaintId <= 0)
+                    {
+                    return Json(new { ok = false, message = "ComplaintId is required." });
+                    }
+
+                var complaint = dBConnection.GetComplaint((int)complaintId);
+                if (complaint == null)
+                    {
+                    return Json(new { ok = false, message = "Complaint not found." });
+                    }
+
+                var accusations = dBConnection.GetIidInqAccusationsByComplaintId(complaintId) ?? new List<AIS.Models.IID.InquiryReport.IidInqAccusationRow>();
+                var accused = dBConnection.GetIidInqAccusedListByComplaintId(complaintId) ?? new List<AIS.Models.IID.InquiryReport.IidInqAccusedRow>();
+                var statements = dBConnection.GetIidInqStatementsByComplaintId(complaintId) ?? new List<AIS.Models.IID.InquiryReport.IidInqStatementRow>();
+                var evidence = dBConnection.GetIidInqEvidenceFilesByComplaintId(complaintId) ?? new List<AIS.Models.IID.InquiryReport.IidInqEvidenceFileRow>();
+                var violations = dBConnection.GetIidInqViolationsByComplaintId(complaintId) ?? new List<AIS.Models.IID.InquiryReport.IidInqViolationRow>();
+                var findingsRows = dBConnection.GetIidInqFindingsRecommByComplaintId(complaintId) ?? new List<AIS.Models.IID.InquiryReport.IidInqFindingsRecommRow>();
+                var dsa = dBConnection.GetIidInqDsaByComplaintId(complaintId) ?? new List<AIS.Models.IID.InquiryReport.IidInqDsaRow>();
+                var additionalCharges = accusations.Where(x => (x.AccusationText ?? string.Empty).Trim().Equals("Additional Charges", StringComparison.OrdinalIgnoreCase)).ToList();
+                var finalOutcome = findingsRows.Select(x => x.Outcome).FirstOrDefault(x => !string.IsNullOrWhiteSpace(x)) ?? string.Empty;
+
+                var uploadsPath = Path.Combine(hostingEnvironment.WebRootPath, "Uploads");
+                Directory.CreateDirectory(uploadsPath);
+                var complaintRef = string.IsNullOrWhiteSpace(complaint.ComplaintNo) ? complaintId.ToString() : complaint.ComplaintNo;
+                var fileName = $"IID_InquiryReport_{complaintRef}_{complaintId}_{DateTime.Now:yyyyMMddHHmmss}.pdf";
+                var fullPath = Path.Combine(uploadsPath, fileName);
+
+                using (var writer = new PdfWriter(fullPath))
+                using (var pdf = new PdfDocument(writer))
+                using (var doc = new Document(pdf))
+                    {
+                    doc.Add(new Paragraph("Inquiry Report").SetBold().SetFontSize(16));
+                    doc.Add(new Paragraph($"Complaint No: {complaint.ComplaintNo}"));
+                    doc.Add(new Paragraph($"Complaint ID: {complaintId}"));
+                    doc.Add(new Paragraph($"Complainant: {complaint.ComplainantName}"));
+                    doc.Add(new Paragraph($"Accused / Respondents: {string.Join(", ", accused.Select(x => x.PersonName).Where(x => !string.IsNullOrWhiteSpace(x)))}"));
+                    doc.Add(new Paragraph(" "));
+
+                    doc.Add(new Paragraph("Complaint Snapshot").SetBold());
+                    doc.Add(new Paragraph($"Nature: {complaint.Nature}\nSource: {complaint.ReceivedFrom}\nBranch: {complaint.AssignedUnit}\nStatus: {complaint.Status}"));
+
+                    doc.Add(new Paragraph("Statement Register").SetBold());
+                    doc.Add(new Paragraph(string.Join("\n", statements.Select((x, i) => $"{i + 1}. {x.PersonName} | {x.StatementType} | {x.StatementDatetime} | {x.Place} | {x.UploadedStatement}"))));
+
+                    doc.Add(new Paragraph("Evidence").SetBold());
+                    doc.Add(new Paragraph(string.Join("\n", evidence.Select((x, i) => $"{i + 1}. {x.FileName} ({x.EvidenceType})"))));
+
+                    doc.Add(new Paragraph("Violations").SetBold());
+                    doc.Add(new Paragraph(string.Join("\n", violations.Select((x, i) => $"{i + 1}. {x.Category}: {x.ViolationDetail} | {x.ReferenceText}"))));
+
+                    doc.Add(new Paragraph("Findings & Recommendations").SetBold());
+                    doc.Add(new Paragraph(string.Join("\n", findingsRows.Select((x, i) => $"{i + 1}. AccusationId {x.AccusationId}: Outcome={x.Outcome}\nFindings: {x.FindingText}\nRecommendations: {x.RecommendationText}"))));
+
+                    doc.Add(new Paragraph("Additional Charges").SetBold());
+                    doc.Add(new Paragraph(additionalCharges.Count == 0 ? "N/A" : string.Join("\n", additionalCharges.Select((x, i) => $"{i + 1}. {x.AccusationText}"))));
+
+                    doc.Add(new Paragraph("Final Outcome").SetBold());
+                    doc.Add(new Paragraph(string.IsNullOrWhiteSpace(finalOutcome) ? "N/A" : finalOutcome));
+
+                    doc.Add(new Paragraph("DSA / Final Recommendations").SetBold());
+                    doc.Add(new Paragraph(string.Join("\n", dsa.Select((x, i) => $"{i + 1}. {x.PersonName} ({x.DsaStatus})"))));
+                    }
+
+                dBConnection.AddInquiryReport(new InquiryReportModel
+                    {
+                    ComplaintId = (int)complaintId,
+                    NameComplainant = complaint.ComplainantName,
+                    NameAccused = string.Join(", ", accused.Select(x => x.PersonName).Where(x => !string.IsNullOrWhiteSpace(x))),
+                    Findings = findingsRows.FirstOrDefault()?.FindingText ?? string.Empty,
+                    Recommendation = findingsRows.FirstOrDefault()?.RecommendationText ?? string.Empty,
+                    UploadedReport = fileName,
+                    UploadedEvidence = string.Join(";", evidence.Select(x => x.FileName).Where(x => !string.IsNullOrWhiteSpace(x))),
+                    UploadedDsa = string.Join(";", dsa.Select(x => x.PersonName).Where(x => !string.IsNullOrWhiteSpace(x)))
+                    });
+
+                return Json(new
+                    {
+                    ok = true,
+                    message = regenerate ? "Inquiry report PDF regenerated successfully." : "Inquiry report PDF generated successfully.",
+                    fileName,
+                    viewUrl = Url.Action("ViewInquiryReportPdf", "IID", new { complaintId })
+                    });
+                }
+            catch (Exception ex)
+                {
+                return Json(new { ok = false, message = ex.Message });
+                }
             }
 
         private static FFRPart1Model MapFfrPart1(DataTable dt)

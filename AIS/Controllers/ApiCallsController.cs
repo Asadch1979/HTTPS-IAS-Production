@@ -5641,6 +5641,7 @@ namespace AIS.Controllers
                     accusationId = model?.AccusationId ?? (request?.AccusationId ?? 0),
                     findingText = model?.FindingText ?? string.Empty,
                     recomText = model?.RecommendationText ?? string.Empty,
+                    outcome = model?.Outcome ?? string.Empty,
                     ppno = model?.Ppno ?? string.Empty,
                     savedOn = model?.UpdatedOn
                     });
@@ -5656,17 +5657,25 @@ namespace AIS.Controllers
             {
             try
                 {
+                var accusationId = request?.AccusationId ?? 0;
+                if (accusationId <= 0)
+                    {
+                    return Json(new { ok = false, message = "Please save Additional Charge first before saving findings/recommendation." });
+                    }
+
                 var ppno = sessionHandler?.GetUser()?.PPNumber ?? string.Empty;
                 var rows = dBConnection.SaveIidFindingsRecommByAccusation(
                     request?.ComplaintId ?? 0,
-                    request?.AccusationId ?? 0,
+                    accusationId,
                     request?.FindingText,
                     request?.RecomText,
+                    request?.Outcome,
                     ppno);
                 return Json(new
                     {
                     ok = rows?.Ok ?? false,
-                    message = string.IsNullOrWhiteSpace(rows?.Message) ? "Findings and recommendation saved." : rows.Message
+                    message = string.IsNullOrWhiteSpace(rows?.Message) ? "Findings and recommendation saved." : rows.Message,
+                    savedOn = DateTime.Now
                     });
                 }
             catch (Exception ex)

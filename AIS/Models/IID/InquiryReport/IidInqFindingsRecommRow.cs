@@ -9,6 +9,7 @@ namespace AIS.Models.IID.InquiryReport
         public string FindingText { get; set; }
         public string RecommendationText { get; set; }
         public string Ppno { get; set; }
+        public string Outcome { get; set; }
         public bool Ok { get; set; }
         public string Message { get; set; }
         public DateTime? UpdatedOn { get; set; }
