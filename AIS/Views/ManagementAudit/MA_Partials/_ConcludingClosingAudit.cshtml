@@ -1,0 +1,140 @@
+@model AIS.Models.FieldAuditWorkflow.FieldAuditGridReplicaViewModel
+
+<input type="hidden" class="ma-engagement-id" value="@Model.EngagementId" />
+
+<div class="row col-md-12 mt-3">
+    <h4 style="display: block; color: #be0e43">Finalize Audit Report</h4>
+</div>
+
+<div class="row col-md-12 mt-3">
+    <div class="col-md-2">
+        <label><b>Entity:</b></label>
+    </div>
+    <div class="col-md-10">
+        <input id="entityNameField" disabled="disabled" class="form-control ml-1 d-none" type="text" />
+        <select id="entitySelectField" data-onchange="getaddress();" class="form-control form-select">
+            <option value="0" id="0">--Select Audit Entity--</option>
+            @{
+                if (ViewData["EntitiesList"] != null)
+                {
+                    foreach (var item in (dynamic)(ViewData["EntitiesList"]))
+                    {
+                        <option value="@item.ENG_ID" ent_type_id="@item.TYPE_ID">@item.ENTITY_NAME</option>
+                    }
+                }
+            }
+
+        </select>
+    </div>
+</div>
+<div class="row col-md-12 mt-3">
+    <h5 style="display: block; color: #be0e43">Auditee Information</h5>
+</div>
+<div class="row col-md-12">
+
+    <table id="reportheading1" class="table table-bordered mb-0 mt-3 bg-white table-striped">
+        <thead>
+            <tr>
+                <th style="background-color: #19875478 !important;" class="col-md-1">Controling Office</th>
+                <th id="conoffice" Class="col-md-5"></th>
+            </tr>
+            <tr>
+                <th style="background-color: #19875478 !important;" class="col-md-1">Entity Name</th>
+                <th id="EntN" Class="col-md-5"></th>
+            </tr>
+            <tr>
+                <th style="background-color: #19875478 !important;" class="col-md-aut-1">Address</th>
+                <th id="ADD" Class="col-md-5"></th>
+            </tr>
+        </thead>
+        <tbody>
+        </tbody>
+    </table>
+</div>
+<div class="row col-md-12">
+    <table id="reportheading2" class="table table-bordered mb-0  bg-white table-striped">
+
+        <tr>
+
+            <th style="background-color: #19875478 !important;" class="col-md-1">Audit S-Date</th>
+            <th id="a_s_d" Class="col-md-2"></th>
+            <th style="background-color: #19875478 !important;" class="col-md-1">Audit E-Date</th>
+            <th id="a_e_d" Class="col-md-2"></th>
+        </tr>
+
+        <tr>
+            <th style="background-color: #19875478 !important;" class="col-md-1">Operational S-Date</t>
+            <th id="o_s_d" Class="col-md-2"></th>
+            <th style="background-color: #19875478 !important;" class="col-md-1">Operational E-Date</th>
+            <th id="o_e_d" Class="col-md-2"></th>
+        </tr>
+
+
+        <tr>
+            <th class="col-md-auto"></th>
+            <th style="background-color: #19875478 !important;" class="col-md-auto">High</th>
+            <th style="background-color: #19875478 !important;" class="col-md-auto">Medium</th>
+            <th style="background-color: #19875478 !important;" class="col-md-auto">Low</th>
+        </tr>
+        <tr>
+            <th style="background-color: #19875478 !important;" class="col-md-auto">Total Memos</th>
+            <th id="highTotalMemos" class="col-md-auto bg-transparent text-center"></th>
+            <th id="mediumTotalMemos" class="col-md-auto bg-transparent text-center"></th>
+            <th id="lowTotalMemos" class="col-md-auto bg-transparent text-center"></th>
+        </tr>
+        <tr>
+            <th style="background-color: #19875478 !important;" class="col-md-auto">Settled</th>
+            <th id="highTotalSettledMemos" class="col-md-auto bg-transparent text-center"></th>
+            <th id="mediumTotalSettledMemos" class="col-md-auto bg-transparent text-center"></th>
+            <th id="lowTotalSettledMemos" class="col-md-auto bg-transparent text-center"></th>
+        </tr>
+        <tr>
+            <th style="background-color: #19875478 !important;" class="col-md-auto">Add to Final Report</th>
+            <th id="highTotalOpenMemos" class="col-md-auto bg-transparent text-center"></th>
+            <th id="mediumTotalOpenMemos" class="col-md-auto bg-transparent text-center"></th>
+            <th id="lowTotalOpenMemos" class="col-md-auto bg-transparent text-center"></th>
+        </tr>
+
+    </table>
+
+</div>
+<div class="row col-md-12">
+    <table id="joiningAuditorDetailsTable" class="table table-bordered mb-0  bg-white table-striped">
+        <thead>
+            <tr>
+                <th style="background-color: #19875478 !important; " colspan="4" class="col-md-auto text-center">Joining Details</th>
+            </tr>
+            <tr>
+                <th style="background-color: #19875478 !important; " class="col-md-auto">P.P. Number</th>
+                <th style="background-color: #19875478 !important; " class="col-md-auto">Name</th>
+                <th style="background-color: #19875478 !important; " class="col-md-auto">Team Lead</th>
+                <th style="background-color: #19875478 !important; " class="col-md-auto">Joining Date</th>
+                <th style="background-color: #19875478 !important; " class="col-md-auto">Completion Date </th>
+            </tr>
+        </thead>
+        <tbody>
+        </tbody>
+    </table>
+</div>
+
+
+<div class="row col-md-12 mt-3">
+    <button id="closeAuditReportButtonHandler" data-onclick="closeDraftAudit();" class="col-md-3 btn btn-danger offset-md-5 d-none"> Finalize Audit</button>
+</div>
+<script src="~/js/csp/Views_Execution_Concluding_Closing_Audit.js?v=1"></script>
+<script>
+    function reloadLocationToUrl() {
+        showApiAlert({ status: true, message: 'Issue report action completed in dashboard workflow.' });
+    }
+
+    (function () {
+        var selectedEngId = '@Model.EngagementId';
+        if (!selectedEngId) return;
+        var selector = document.getElementById('entitySelectField');
+        if (!selector) return;
+        selector.value = selectedEngId;
+        if (typeof getaddress === 'function') {
+            getaddress();
+        }
+    })();
+</script>

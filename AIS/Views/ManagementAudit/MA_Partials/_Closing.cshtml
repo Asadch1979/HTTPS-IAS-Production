@@ -1,0 +1,61 @@
+@model AIS.Models.FieldAuditWorkflow.FieldAuditGridReplicaViewModel
+
+<input type="hidden" class="ma-engagement-id" value="@Model.EngagementId" />
+
+<div class="row col-md-12 mt-3">
+    <h4 style="display: block; color: #be0e43">Close Audit of <span id="entityNameField"></span></h4>
+</div>
+
+
+
+<div class="row col-md-12 mt-3">
+    <div>
+        <h5 style="display: block; color: #be0e43">Auditor Wise Memo Status</h5>
+    </div>
+    <table id="auditorWiseProgessTable" class="table table-bordered mb-0 mt-3 bg-white table-striped">
+        <thead style="background-color: #19875478 !important; ">
+            <tr>
+                <th class="col-md-auto">Auditor</th>
+                <th class="col-md-auto">Team Lead</th>
+                <th class="col-md-auto">Total Memos</th>
+                <th class="col-md-auto">Observation Dropped</th>
+                <th class="col-md-auto">Submitted to Auditee</th>
+                <th class="col-md-auto">Responded by Auditee</th>
+                <th class="col-md-auto">Resolved</th>
+                <th class="col-md-auto">Add to Draft Report</th>
+            </tr>
+        </thead>
+        <tbody>
+        </tbody>
+    </table>
+</div>
+
+<div class="row col-md-12 mt-3">
+    <div class="row col-md-12 mt-3">
+        <h5 style="display: block; color: #be0e43">Joining and Closing Dates</h5>
+    </div>
+   <table id="joiningAuditorDetailsTable" class="table table-bordered mb-0 mt-3 bg-white table-striped">
+            <thead style="background-color: #19875478 !important; ">
+                <tr>
+                    <th class="col-md-3">P.P. Number</th>
+                    <th class="col-md-3">Name</th>
+                    <th class="col-md-3">Joining Date</th>
+                    <th class="col-md-3">Completion Date </th>
+                </tr>
+            </thead>
+            <tbody>
+            </tbody>
+        </table>
+        <div class="w-100">
+            <button data-onclick="closeDraftAudit();" class="col-md-2 mt-3 mb-3 btn btn-danger float-right"> Close Audit</button>
+        </div>
+</div>
+
+
+
+<script src="~/js/csp/Views_Execution_closing.js?v=1"></script>
+<script>
+    function reloadLocationToUrl() {
+        showApiAlert({ status: true, message: 'Closing action completed in dashboard workflow.' });
+    }
+</script>

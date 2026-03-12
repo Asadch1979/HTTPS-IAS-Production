@@ -1,0 +1,224 @@
+@model AIS.Models.FieldAuditWorkflow.FieldAuditGridReplicaViewModel
+
+<input type="hidden" class="ma-engagement-id" value="@Model.EngagementId" />
+
+<style type="text/css">
+    .evidence-link {
+        display: flex;
+        align-items: center;
+        margin-bottom: 10px;
+    }
+
+    .evidence-icon {
+        margin-right: 10px;
+    }
+</style>
+
+
+
+
+<div class="row">
+    <div class="row col-md-12 mt-3">
+        <div class="col-md-2">
+            <label><b>Entity:</b></label>
+        </div>
+        <div class="col-md-10">
+            <input id="entityNameField" disabled="disabled" class="form-control ml-1 d-none" type="text" />
+            <select id="entitySelectField" data-onchange="getEntityObservation()" class="form-control form-select">
+                <option value="0" id="0">--Select Audit Entity--</option>
+                @{
+                    if (ViewData["EntitiesList"] != null)
+                    {
+                        foreach (var item in (dynamic)(ViewData["EntitiesList"]))
+                        {
+                            <option value="@item.ENG_ID" id="@item.ENG_ID">@item.NAME</option>
+                        }
+                    }
+                }
+
+            </select>
+        </div>
+    </div>
+    <div class="row col-md-12 mt-3">
+        <h3 style=" display:block;color: #be0e43">Report Summary</h3>
+        <table id="reportSummaryTable" class="table table-bordered mb-0 mt-3 bg-white table-striped">
+            <thead style="background-color: #19875478 !important;">
+                <tr>
+                    <th>Total Observations</th>
+                    <th>High Risk</th>
+                    <th>Medium Risk</th>
+                    <th>Low Risk</th>
+                    <th>Resolved</th>
+                    <th>Add to Draft</th>
+                </tr>
+            </thead>
+            <tr>
+                <td id="totalObsLabel" class="text-center"></td>
+                <td id="highObsLabel" class="text-center"></td>
+                <td id="mediumObsLabel" class="text-center"></td>
+                <td id="lowObsLabel" class="text-center"></td>
+                <td id="resolvedObsLabel" class="text-center"></td>
+                <td id="addToDraftLabel" class="text-center"></td>
+            </tr>
+        </table>
+    </div>
+
+    <div class="row col-md-12 mt-3">
+        <h3 style=" display:block;color: #be0e43">Audit Observations</h3>
+        <table id="manageObsPanel" class="table table-hover table-bordered table-hover mt-3 table-striped">
+            <thead style="background-color: #19875478 !important; ">
+                <tr>
+                    <th class="col-md-auto">Memo No.</th>
+                    <th class="col-md-auto">Draft Para No.</th>
+                    <th class="col-md-auto">Final Para No.</th>
+
+                    <th class="col-md-auto branchfield">Title of Para</th>
+
+                    <th class="col-md-auto">Risk Category</th>
+                    <th class="col-md-auto">Status</th>
+                    <th class="col-md-auto">Action</th>
+                </tr>
+
+            </thead>
+            <tbody>
+            </tbody>
+        </table>
+    </div>
+
+</div>
+
+<div id="commentsBox" class="modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">Auditor Comments</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form>
+                    <div class="form-group">
+                        <label for="commentAreaInCommentsBox">Final Para No</label>
+                        <input class="form-control" id="finalNoInCommentsBox" placeholder="Final Para No" />
+                    </div>
+                    <div class="form-group">
+                        <label for="commentAreaInCommentsBox">Comments</label>
+                        <textarea class="form-control" rows="4" id="commentAreaInCommentsBox" placeholder="Enter Comments here.."></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button data-onclick="finalCommentsButtonSave();" id="finalCommentsButtonSave" type="button" class="btn btn-danger">Submit</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+<div id="viewMemoDetailsModel" class="modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-xl" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">Observation</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form>
+
+                    <div class="form-group">
+                        <label for="viewMemo_process_ObSent" class="font-weight-bold">Violation</label>
+                        <select id="viewMemo_process_ObSent" data-onchange="getViolationNatureOfProcess();" class="form-select form-control">
+                            <option value="0" id="0" selected="selected">--Select Voilation Category--</option>
+                            @{
+                                if (ViewData["Voilation_Cat"] != null)
+                                {
+                                    foreach (var item in (dynamic)(ViewData["Voilation_Cat"]))
+                                    {
+                                        <option id="@item.ID" value="@item.ID">@item.V_NAME</option>
+                                    }
+                                }
+                            }
+
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="viewMemo_subprocess_ObSent" class="font-weight-bold">Sub Process</label>
+                        <select id="viewMemo_subprocess_ObSent" class="form-select form-control">
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="viewMemo_risk">Risk</label>
+                        <select id="viewMemo_risk_ObSent" class="form-select form-control" aria-label="Default select example">
+                            <option value="0" id="0" selected>--Select Risk Category--</option>
+                            @{
+                                if (ViewData["RiskList"] != null)
+                                {
+
+                                    foreach (var risk in (dynamic)(ViewData["RiskList"]))
+                                    {
+                                        <option id="@risk.R_ID" value="@risk.R_ID">@risk.DESCRIPTION</option>
+                                    }
+
+                                }
+                            }
+                        </select>
+
+
+                    </div>
+                    <div class="form-group">
+                        <label for="viewMemo_heading_ObSent" class="font-weight-bold">Gist of Para <small class="text-muted">(A-Z, 0-9, space, &amp;, ?)</small></label>
+                        <input id="viewMemo_heading_ObSent" type="text" class="form-control alnum-only" placeholder="Gist of Para (Alphabets, numbers, spaces, ampersand (&amp;), comma (,), and question mark (?) only)" data-allow-space="true" data-allow-amp="true" data-maxlen="500" maxlength="500" title="Enter only Alphabets (A-Z), numbers (0-9), spaces, ampersand (&amp;), comma (,), and question mark (?)" />
+                        <small class="form-text text-muted">Enter only Alphabets (A-Z), numbers (0-9), spaces, ampersand (&amp;), comma (,), and question mark (?).</small>
+                        <div class="invalid-feedback">Enter only Alphabets (A-Z), numbers (0-9), spaces, ampersand (&amp;), comma (,), and question mark (?).</div>
+                    </div>
+                    <div class="form-group">
+                        <label for="viewMemo_memo_ObSent" class="font-weight-bold">Para Text</label>
+                        <input id="viewMemo_memo_ObSent" type="text" class="form-control" />
+                    </div>
+
+
+                    <div class="form-group">
+                        <label for="viewMemo_response_ObSent" class="font-weight-bold">Auditee Response</label>
+                        <div id="viewMemo_response_ObSent" disabled="disabled" style="height: auto; overflow-y: auto;" class="form-control"></div>
+                    </div>
+                    <div id="evidenceViewer" class="input-field">
+                        <label class="font-weight-bold">Evidences</label>
+                        <div class="row col-md-12 mt-3 mb-3">
+                            <div id="complianceCycleEvidences">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="viewMemo_aud_reply_ObSent" class="font-weight-bold">Auditor Reply</label>
+                        <div id="viewMemo_aud_reply_ObSent" disabled="disabled" style="height: auto; overflow-y: auto;" class="form-control"></div>
+                    </div>
+
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button id="update_audit_obs_button" data-onclick="updateObservationDetails(g_obsId);" type="button" class="btn btn-primary">Update Para Details</button>
+                <button id="un_settle_audit_obs_button" data-onclick="updateObservationStatus(g_obsId,8);" type="button" data-bs-dismiss="modal" class="btn btn-danger">Add to Final Report</button>
+                <button id="settle_audit_obs_button" data-onclick="updateObservationStatus(g_obsId, 9);" type="button" data-bs-dismiss="modal" class="btn btn-success">Settle</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="~/js/csp/Views_Execution_draft_audit_report.js?v=1"></script>
+<script>
+    (function () {
+        var selectedEngId = '@Model.EngagementId';
+        if (!selectedEngId) return;
+        var selector = document.getElementById('entitySelectField');
+        if (!selector) return;
+        selector.value = selectedEngId;
+        if (typeof getEntityObservation === 'function') {
+            getEntityObservation();
+        } else if (typeof getEntityObservations === 'function') {
+            getEntityObservations();
+        }
+    })();
+</script>
