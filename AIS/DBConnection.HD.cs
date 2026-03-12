@@ -619,6 +619,23 @@ namespace AIS.Controllers
             return list;
             }
 
+
+        public List<ExecutionDashboardEngagementOptionModel> GetExecutionDashboardEngagements()
+            {
+            var records = GetObservationEntitiesForPreConcluding();
+            return records
+                .Where(item => item.ENG_ID > 0)
+                .GroupBy(item => item.ENG_ID)
+                .Select(group => group.First())
+                .OrderBy(item => item.NAME)
+                .Select(item => new ExecutionDashboardEngagementOptionModel
+                    {
+                    EngId = item.ENG_ID,
+                    DisplayText = item.NAME
+                    })
+                .ToList();
+            }
+
         public List<SettledPostCompliancesModel> GetSettledPostCompliancesForMonitoring(string MONTH_NAME, string YEAR)
             {
             var sessionHandler = CreateSessionHandler();
