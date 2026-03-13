@@ -92,16 +92,12 @@ namespace AIS.Controllers
                 case "JOIN":
                     return PartialView("~/Views/ManagementAudit/MA_Partials/_Join.cshtml", partialModel);
                 case "CLOSING":
-                    return PartialView("~/Views/ManagementAudit/MA_Partials/_Closing.cshtml", partialModel);
-                case "DRAFT_REPORT":
-                    ViewData["RiskList"] = _dbConnection.GetRisks();
-                    ViewData["ProcessList"] = _dbConnection.GetRiskProcessDefinition();
                     ViewData["Voilation_Cat"] = _dbConnection.GetAuditVoilationcats();
-                    ViewData["EntitiesList"] = _dbConnection.GetObservationEntities();
-                    return PartialView("~/Views/ManagementAudit/MA_Partials/_DraftAuditReport.cshtml", partialModel);
+                    ViewData["RiskList"] = _dbConnection.GetRisks();
+                    ViewData["OtherEntityList"] = _dbConnection.GetAuditEntitiesForOtherEntitySelection();
+                    return PartialView("~/Views/ManagementAudit/MA_Partials/_Closing.cshtml", partialModel);
                 case "MANAGE_OBSERVATIONS":
                     ViewData["RiskList"] = _dbConnection.GetRisks();
-                    ViewData["EntitiesList"] = _dbConnection.GetObservationEntitiesForManageObservations();
                     ViewData["ManageObservations"] = string.Empty;
                     return PartialView("~/Views/ManagementAudit/MA_Partials/_ManageObservations.cshtml", partialModel);
                 case "QUALITY_REVIEW_HO":
@@ -189,12 +185,11 @@ namespace AIS.Controllers
             return new List<FieldAuditWorkflowStepModel>
             {
                 CreateStep(1, "JOIN", "Join", "~/Views/ManagementAudit/MA_Partials/_Join.cshtml", "/Engagement/Join"),
-                CreateStep(2, "CLOSING", "Closing", "~/Views/ManagementAudit/MA_Partials/_Closing.cshtml", "/Execution/closing"),
-                CreateStep(3, "DRAFT_REPORT", "Draft Report", "~/Views/ManagementAudit/MA_Partials/_DraftAuditReport.cshtml", "/Execution/draft_audit_report"),
-                CreateStep(4, "MANAGE_OBSERVATIONS", "Manage Observations", "~/Views/ManagementAudit/MA_Partials/_ManageObservations.cshtml", "/Execution/manage_observations"),
-                CreateStep(5, "QUALITY_REVIEW_HO", "Quality Review HO", "~/Views/ManagementAudit/MA_Partials/_PreConcludingAuditHO.cshtml", "/Execution/pre_concluding_audit_ho"),
-                CreateStep(6, "ISSUE_REPORT", "Issue Report", "~/Views/ManagementAudit/MA_Partials/_ConcludingClosingAudit.cshtml", "/Execution/Concluding_Closing_Audit"),
-                CreateStep(7, "MANAGEMENT_REPORT", "Management Report", string.Empty, "/MANReport/Home")
+                CreateStep(2, "CLOSING", "Closing", "~/Views/ManagementAudit/MA_Partials/_Closing.cshtml", "/Execution/Audit_Execution"),
+                CreateStep(3, "MANAGE_OBSERVATIONS", "Manage Observation", "~/Views/ManagementAudit/MA_Partials/_ManageObservations.cshtml", "/Execution/manage_observations"),
+                CreateStep(4, "QUALITY_REVIEW_HO", "Quality Review HO", "~/Views/ManagementAudit/MA_Partials/_PreConcludingAuditHO.cshtml", "/Execution/pre_concluding_audit_ho"),
+                CreateStep(5, "ISSUE_REPORT", "Issue Report", "~/Views/ManagementAudit/MA_Partials/_ConcludingClosingAudit.cshtml", "/Execution/Concluding_Closing_Audit"),
+                CreateStep(6, "MANAGEMENT_REPORT", "Write Report", string.Empty, "/MANReport/Home")
             };
         }
 
