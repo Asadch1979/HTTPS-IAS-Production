@@ -188,30 +188,14 @@
 
     function requestPdf(complaintId, regenerate) {
         if (!complaintId) { return; }
-        var endpoint = regenerate ? '/IID/RegenerateInquiryReportPdf' : '/IID/GenerateInquiryReportPdf';
-        $.ajax({
-            url: (window.g_asiBaseURL || '') + endpoint,
-            method: 'POST',
-            contentType: 'application/json; charset=utf-8',
-            dataType: 'json',
-            data: JSON.stringify({ complaintId: complaintId })
-        }).done(function (resp) {
-            if (!resp || resp.ok === false) {
-                showAlert((resp && resp.message) || 'Failed to generate inquiry report PDF.');
-                return;
-            }
-            showAlert(resp.message || 'PDF generated successfully.', 'success');
-            if (resp.viewUrl) {
-                window.open((window.g_asiBaseURL || '') + resp.viewUrl, '_blank');
-            }
-        }).fail(function () {
-            showAlert('Failed to generate inquiry report PDF.');
-        });
+        var endpoint = regenerate ? '/IidInquiryReportPdf/RegeneratePdf' : '/IidInquiryReportPdf/GeneratePdf';
+        var url = (window.g_asiBaseURL || '') + endpoint + '?complaintId=' + encodeURIComponent(complaintId);
+        window.open(url, '_blank');
     }
 
     function viewExistingPdf(complaintId) {
         if (!complaintId) { return; }
-        window.open((window.g_asiBaseURL || '') + '/IID/ViewInquiryReportPdf?complaintId=' + encodeURIComponent(complaintId), '_blank');
+        window.open((window.g_asiBaseURL || '') + '/IidInquiryReportPdf/ViewPdf?complaintId=' + encodeURIComponent(complaintId), '_blank');
     }
 
     function loadReadOnlyData(complaintId) {
