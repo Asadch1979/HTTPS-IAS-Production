@@ -234,7 +234,7 @@ namespace AIS.Controllers
                 }
 
             var builder = new StringBuilder(value.Trim());
-            foreach (var invalidChar in Path.GetInvalidFileNameChars())
+            foreach (var invalidChar in "<>:\"/\\|?*\0")
                 {
                 builder.Replace(invalidChar, '_');
                 }
