@@ -10,8 +10,12 @@
 <div class="planning-nav-wrap sticky-top bg-white py-2 mb-3">
     <div class="card shadow-sm planning-nav-card mb-0">
         <div class="card-body py-3">
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+                <a class="navbar-brand fw-bold text-decoration-none" href="@Url.Action("Index", "Home")">IAS</a>
+                <a class="btn btn-outline-primary btn-sm" href="@Url.Action("Index", "Home")">Home</a>
+            </div>
             <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2">
-                <strong class="planning-step-counter">Step @(currentStepIndex > 0 ? currentStepIndex : 1) of @visibleSteps.Count</strong>
+                <strong class="planning-step-counter" id="planningStepCounter">Step @(currentStepIndex > 0 ? currentStepIndex : 1) of @visibleSteps.Count</strong>
                 <span class="text-muted small">Click any step to navigate</span>
             </div>
 
@@ -27,6 +31,23 @@
     </div>
 </div>
 
+<div class="card">
+    <div class="card-body" id="planningStepHost"
+         data-load-url="@Url.Action("LoadPlanningStep", "Planning")"
+         data-step-code="@Model.CurrentStepCode"
+         data-context-id="@Model.ContextId"
+         data-context-secondary-id="@Model.ContextSecondaryId">
+        @if (currentStep != null)
+        {
+            <div class="alert alert-secondary mb-0">Loading workflow content...</div>
+        }
+        else
+        {
+            <div class="alert alert-info mb-0">Select a workflow step to load planning content.</div>
+        }
+    </div>
+</div>
+
 <link rel="stylesheet" href="~/css/fieldaudit-stepper-theme.css" />
 <script src="~/js/fieldAudit/stepper-theme.js"></script>
 <script>
@@ -38,31 +59,5 @@
         isCompleted = step.IsCompleted,
         isSaved = step.IsSaved
     })));
-    window.planningStepperCurrentStepCode = "@Model.CurrentStepCode";
-    window.planningStepperUrlTemplate = "@Html.Raw(Url.Action("Planning", "Planning", new { stepCode = "__STEP_CODE__", contextId = Model.ContextId, contextSecondaryId = Model.ContextSecondaryId }))";
 </script>
-<script>
-    (function () {
-        if (!window.fieldAuditStepperTheme || !window.fieldAuditStepperTheme.render) {
-            return;
-        }
-
-        window.fieldAuditStepperTheme.render({
-            containerId: 'planningStepper',
-            steps: window.planningStepperData || [],
-            currentStepCode: window.planningStepperCurrentStepCode || '',
-            linkMode: 'link',
-            urlTemplate: window.planningStepperUrlTemplate || '#'
-        });
-    })();
-</script>
-@if (currentStep != null)
-    {
-    <div class="card">
-        <div class="card-body">
-            @await Html.PartialAsync(currentStep.PartialViewName)
-        </div>
-    </div>
-    }
-
-
+<script src="~/js/planning/dashboard.js?v=1"></script>

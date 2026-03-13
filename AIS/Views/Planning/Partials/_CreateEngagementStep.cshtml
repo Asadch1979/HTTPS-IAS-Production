@@ -2,6 +2,19 @@
 }
 
 
+<input type="hidden" id="planningPlanId" value="@(ViewData["PlanId"] ?? string.Empty)" />
+<input type="hidden" id="planningPeriodId" value="@(ViewData["PeriodId"] ?? string.Empty)" />
+<input type="hidden" id="planningEntityType" value="@(ViewData["EntityType"] ?? string.Empty)" />
+<input type="hidden" id="planningZoneId" value="@(ViewData["ZoneId"] ?? string.Empty)" />
+<input type="hidden" id="planningEntityId" value="@(ViewData["EntityId"] ?? string.Empty)" />
+<input type="hidden" id="planningEntityName" value="@(ViewData["EntityName"] ?? string.Empty)" />
+<input type="hidden" id="planningCode" value="@(ViewData["Code"] ?? string.Empty)" />
+<input type="hidden" id="planningPeriodName" value="@(ViewData["PeriodName"] ?? string.Empty)" />
+<input type="hidden" id="planningRisk" value="@(ViewData["Risk"] ?? string.Empty)" />
+<input type="hidden" id="planningSize" value="@(ViewData["Size"] ?? string.Empty)" />
+<input type="hidden" id="planningFrequency" value="@(ViewData["Frequency"] ?? string.Empty)" />
+<input type="hidden" id="planningDays" value="@(ViewData["Days"] ?? string.Empty)" />
+
 <div class="row w-100">
     <div class="col-md-8">
         <h3 style="color: #be0e43">Create Engagement Plan</h3>
@@ -297,4 +310,4 @@
 </div>
 
 
-<script src="~/js/csp/Views_Engagement_engagement_plan.js?v=1"></script>
+<script src="~/js/csp/Views_Planning_tentative_engagement_plan.js?v=1"></script>

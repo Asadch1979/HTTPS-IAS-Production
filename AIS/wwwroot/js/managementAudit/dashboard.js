@@ -158,8 +158,13 @@
             return;
         }
 
-        var dashboardBaseUrl = selector.getAttribute('data-dashboard-base-url') || '/ManagementAudit/MA_Dashboard';
-        window.location.href = dashboardBaseUrl + '?engId=' + encodeURIComponent(engId);
+        stepHost.setAttribute('data-eng-id', engId);
+        var firstAnchor = stepper.querySelector('.step-pill');
+        var targetStepCode = (firstAnchor && firstAnchor.getAttribute('data-step-code')) || currentStepCode();
+        var targetStepNo = (firstAnchor && firstAnchor.getAttribute('data-step-no')) || '1';
+        if (targetStepCode) {
+            loadStepContent(targetStepCode, targetStepNo);
+        }
     });
 
     initStepperTheme();

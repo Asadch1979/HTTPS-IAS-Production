@@ -36,22 +36,29 @@
 
 
 
+    function readPlanningContextValue(url, name, hiddenId) {
+        var hidden = document.getElementById(hiddenId);
+        if (hidden && hidden.value) {
+            return hidden.value;
+        }
+        return url.searchParams.get(name);
+    }
+
     $(document).ready(function () {
-         var url_string = window.location;
-         var url = new URL(url_string);
-         var periodName = url.searchParams.get("period");
-         var risk = url.searchParams.get("risk");
-         var size = url.searchParams.get("size");
-         var entityName = url.searchParams.get("name");
+         var url = new URL(window.location.href);
+         var periodName = readPlanningContextValue(url, "period", "planningPeriodName");
+         var risk = readPlanningContextValue(url, "risk", "planningRisk");
+         var size = readPlanningContextValue(url, "size", "planningSize");
+         var entityName = readPlanningContextValue(url, "name", "planningEntityName");
          g_entityName = entityName;
-         var freq = url.searchParams.get("freq");
-         var days = url.searchParams.get("days");
-         g_planId = url.searchParams.get("planId");
-         g_code = url.searchParams.get("code");
-         g_periodId = url.searchParams.get("periodId");
-         g_entityType = url.searchParams.get("entityType");
-         g_zoneId = url.searchParams.get("zoneId");
-         g_entityId = url.searchParams.get("entityId");
+         var freq = readPlanningContextValue(url, "freq", "planningFrequency");
+         var days = readPlanningContextValue(url, "days", "planningDays");
+         g_planId = readPlanningContextValue(url, "planId", "planningPlanId");
+         g_code = readPlanningContextValue(url, "code", "planningCode");
+         g_periodId = readPlanningContextValue(url, "periodId", "planningPeriodId");
+         g_entityType = readPlanningContextValue(url, "entityType", "planningEntityType");
+         g_zoneId = readPlanningContextValue(url, "zoneId", "planningZoneId");
+         g_entityId = readPlanningContextValue(url, "entityId", "planningEntityId");
 
         // Public holidays will be fetched on demand when calculating end date
 
@@ -272,7 +279,9 @@
         });
     }
     function redirectToLocation() {
-        window.location.href = g_asiBaseURL + "/Planning/tentative_audit_plan";
+        if (window.planningDashboard && typeof window.planningDashboard.loadStep === 'function') {
+            window.planningDashboard.loadStep('AUDIT_PLAN', '5');
+        }
     }
 
     function previewSelectedTeaM() {

@@ -508,6 +508,45 @@ namespace AIS.Controllers
             return PartialView(step.PartialViewName);
             }
 
+
+        [HttpGet]
+        public IActionResult LoadPlanningNestedView(string viewCode, int? planId = null, string name = null, string size = null, string risk = null, string freq = null, string days = null, string period = null, int? periodId = null, string code = null, int? zoneId = null, int? entityId = null, int? entityType = null)
+            {
+            if (!User.Identity.IsAuthenticated)
+                {
+                return Unauthorized();
+                }
+
+            if (!sessionHandler.TryGetUser(out var user) || user == null)
+                {
+                return Unauthorized();
+                }
+
+            switch ((viewCode ?? string.Empty).Trim().ToUpperInvariant())
+                {
+                case "TENTATIVE_ENGAGEMENT_PLAN":
+                    ViewData["AuditDepartments"] = dBConnection.GetDepartments(354);
+                    ViewData["DivisionsList"] = dBConnection.GetDivisions(false);
+                    ViewData["AuditZonesList"] = dBConnection.GetZones();
+                    ViewData["AuditTeamsList"] = dBConnection.GetAuditTeams();
+                    ViewData["PlanId"] = planId;
+                    ViewData["EntityName"] = name;
+                    ViewData["Size"] = size;
+                    ViewData["Risk"] = risk;
+                    ViewData["Frequency"] = freq;
+                    ViewData["Days"] = days;
+                    ViewData["PeriodName"] = period;
+                    ViewData["PeriodId"] = periodId;
+                    ViewData["Code"] = code;
+                    ViewData["ZoneId"] = zoneId;
+                    ViewData["EntityId"] = entityId;
+                    ViewData["EntityType"] = entityType;
+                    return PartialView("~/Views/Planning/Partials/_CreateEngagementStep.cshtml");
+                default:
+                    return NotFound();
+                }
+            }
+
         private PlanningWorkflowViewModel BuildPlanningWorkflowViewModel(SessionUser user, string requestedStepCode, int? contextId, int? contextSecondaryId)
             {
             var workflowSteps = BuildPlanningWorkflowSteps();

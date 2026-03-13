@@ -1,8 +1,12 @@
     var g_engId = 0;
     $('#document').ready(function () {
-        var url_string = window.location;
-        var url = new URL(url_string);
-        g_engId= url.searchParams.get("engId");
+        var hiddenEngagement = document.getElementById('maClosingEngagementId');
+        if (hiddenEngagement && hiddenEngagement.value) {
+            g_engId = hiddenEngagement.value;
+        } else {
+            var url = new URL(window.location.href);
+            g_engId = url.searchParams.get("engId");
+        }
         $('#template_box').richText({
             imageUpload: false,
             fileUpload: false,

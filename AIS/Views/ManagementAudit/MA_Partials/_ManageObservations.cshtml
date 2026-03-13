@@ -16,39 +16,12 @@
 
 
 <div class="row">
-    <div class="col-md-12 mt-3">
-        <h3 style=" display:block;color: #be0e43">Manage Audit Observations</h3>
-    </div>
-    <div class="row col-md-12 mt-3">
-        <div class="col-md-2">
-            <label><b>Entity:</b></label>
-        </div>
-        <div class="col-md-10">
-            <input id="entityNameField" disabled="disabled" class="form-control ml-1 d-none" type="text" />
-            <select id="entitySelectField" data-onchange="getEntityObservation()" class="form-control form-select">
-                <option value="0" id="0">--Select Audit Entity--</option>
-                @{
-                    if (ViewData["EntitiesList"] != null)
-                    {
-                        foreach (var item in (dynamic)(ViewData["EntitiesList"]))
-                        {
-                            <option value="@item.ENG_ID" id="@item.ENG_ID">@item.NAME</option>
-                        }
-                    }
-                }
-
-            </select>
-        </div>
-    </div>
-    <div class="row col-md-12 mt-3">
-        <div class="col-md-2">
-            <label><b>Audit Period:</b></label>
-        </div>
-        <div class="col-md-10 ">
-            <input id="auditPeriodNameField" disabled="disabled" class="form-control ml-1" type="text" />
-        </div>
-    </div>
-    <div class="row col-md-12 mt-3">
+    <input id="entityNameField" disabled="disabled" class="form-control ml-1 d-none" type="text" />
+    <input id="auditPeriodNameField" disabled="disabled" class="form-control ml-1 d-none" type="text" />
+    <select id="entitySelectField" data-onchange="getEntityObservation()" class="form-control form-select d-none">
+        <option value="@Model.EngagementId" selected>@Model.EngagementId</option>
+    </select>
+    <div class="row col-md-12 mt-1">
         <table id="manageObsPanel" class="table table-hover table-bordered table-hover mt-3 table-striped">
             <thead style="background-color: #19875478 !important; ">
                 <tr>

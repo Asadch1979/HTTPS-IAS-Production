@@ -229,8 +229,14 @@
             return;
         }
 
-        var dashboardBaseUrl = selector.getAttribute('data-dashboard-base-url') || '/FieldAudit/Dashboard';
-        window.location.href = dashboardBaseUrl + '?engId=' + encodeURIComponent(engId);
+        var dashboardBaseUrl = selector.getAttribute('data-dashboard-base-url') || '/FieldAudit/AR_Dashboard';
+        stepHost.setAttribute('data-eng-id', engId);
+        var firstAnchor = stepper.querySelector('.step-pill');
+        var targetStepCode = (firstAnchor && firstAnchor.getAttribute('data-step-code')) || currentStepCode();
+        var targetStepNo = (firstAnchor && firstAnchor.getAttribute('data-step-no')) || '1';
+        if (targetStepCode) {
+            loadStepContent(targetStepCode, targetStepNo);
+        }
     });
 
     window.fieldAuditDashboard = {
