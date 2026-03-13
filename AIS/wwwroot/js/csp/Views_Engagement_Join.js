@@ -1,9 +1,13 @@
     var g_joinRes = null;
 
     $(document).ready(function () {
-        var url_string = window.location;
-        var url = new URL(url_string);
-        var eng_id = url.searchParams.get("engId");
+        var hiddenEngagement = document.querySelector('.ma-engagement-id');
+        var eng_id = hiddenEngagement && hiddenEngagement.value ? hiddenEngagement.value : null;
+        if (!eng_id) {
+            var url_string = window.location;
+            var url = new URL(url_string);
+            eng_id = url.searchParams.get("engId");
+        }
 
         $.ajax({
             url: g_asiBaseURL + "/Engagement/get_joining_details",

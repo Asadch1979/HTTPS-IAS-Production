@@ -185,7 +185,7 @@ namespace AIS.Controllers
             return new List<FieldAuditWorkflowStepModel>
             {
                 CreateStep(1, "JOIN", "Join", "~/Views/ManagementAudit/MA_Partials/_Join.cshtml", "/Engagement/Join"),
-                CreateStep(2, "CLOSING", "Closing", "~/Views/ManagementAudit/MA_Partials/_Closing.cshtml", "/Execution/Audit_Execution"),
+                CreateStep(2, "CLOSING", "Create Observation", "~/Views/ManagementAudit/MA_Partials/_Closing.cshtml", "/Execution/Audit_Execution"),
                 CreateStep(3, "MANAGE_OBSERVATIONS", "Manage Observation", "~/Views/ManagementAudit/MA_Partials/_ManageObservations.cshtml", "/Execution/manage_observations"),
                 CreateStep(4, "QUALITY_REVIEW_HO", "Quality Review HO", "~/Views/ManagementAudit/MA_Partials/_PreConcludingAuditHO.cshtml", "/Execution/pre_concluding_audit_ho"),
                 CreateStep(5, "ISSUE_REPORT", "Issue Report", "~/Views/ManagementAudit/MA_Partials/_ConcludingClosingAudit.cshtml", "/Execution/Concluding_Closing_Audit"),
