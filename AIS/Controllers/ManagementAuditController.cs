@@ -94,7 +94,7 @@ namespace AIS.Controllers
                 case "CLOSING":
                     ViewData["Voilation_Cat"] = _dbConnection.GetAuditVoilationcats();
                     ViewData["RiskList"] = _dbConnection.GetRisks();
-                    ViewData["OtherEntityList"] = _dbConnection.GetObservationEntities();
+                    ViewData["OtherEntityList"] = _dbConnection.GetAuditEntitiesForOtherEntitySelection();
                     return PartialView("~/Views/ManagementAudit/MA_Partials/_Closing.cshtml", partialModel);
                 case "MANAGE_OBSERVATIONS":
                     ViewData["RiskList"] = _dbConnection.GetRisks();

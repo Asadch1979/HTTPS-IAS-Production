@@ -35,6 +35,13 @@
         engagementAlert.classList.toggle('d-none', !isVisible);
     }
 
+
+    function setStepPillsDisabled(isDisabled) {
+        stepper.querySelectorAll('.step-pill').forEach(function (anchor) {
+            anchor.classList.toggle('disabled', !!isDisabled);
+        });
+    }
+
     function setActiveStep(stepCode) {
         stepper.querySelectorAll('.step-pill').forEach(function (anchor) {
             if ((anchor.getAttribute('data-step-code') || '') === (stepCode || '')) {
@@ -113,6 +120,7 @@
             .then(function (html) {
                 stepHost.innerHTML = html;
                 executeInlineScripts(stepHost);
+                setStepPillsDisabled(false);
                 stepHost.setAttribute('data-eng-id', engId);
                 setCurrentStepCode(stepCode);
                 setActiveStep(stepCode);
@@ -152,12 +160,11 @@
         if (!engId) {
             toggleEngagementAlert(true);
             clearStepContent('Select an engagement from the dropdown above to load workflow content.');
-            stepper.querySelectorAll('.step-pill').forEach(function (anchor) {
-                anchor.classList.add('disabled');
-            });
+            setStepPillsDisabled(true);
             return;
         }
 
+        setStepPillsDisabled(false);
         stepHost.setAttribute('data-eng-id', engId);
         var firstAnchor = stepper.querySelector('.step-pill');
         var targetStepCode = (firstAnchor && firstAnchor.getAttribute('data-step-code')) || currentStepCode();
