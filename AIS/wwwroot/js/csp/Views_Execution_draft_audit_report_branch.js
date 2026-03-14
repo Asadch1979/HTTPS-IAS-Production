@@ -6,12 +6,12 @@ window.addEventListener("unhandledrejection", function (e) {
 });
 
 function getPageData() {
-    const el = document.getElementById("page-data");
-    if (!el) return {};
+    const input = document.getElementById("page-data-json");
+    if (!input || !input.value) return {};
     try {
-        return JSON.parse(el.textContent || "{}");
+        return JSON.parse(input.value || "{}");
     } catch (err) {
-        console.error("Failed to parse #page-data JSON:", err);
+        console.error("Failed to parse #page-data-json JSON:", err);
         return {};
     }
 }
@@ -27,7 +27,7 @@ function getPageData() {
     var g_selectedRiskId = 0;
     var g_statusId = 0;
     var respSection = null;
-    const pageData = getPageData();
+    var pageData = getPageData();
     var g_annexList = pageData.AnnexList || [];
     $(document).ready(function () {
         console.log("Loaded draft_audit_report_branch JS", { g_obsId, g_entityID });

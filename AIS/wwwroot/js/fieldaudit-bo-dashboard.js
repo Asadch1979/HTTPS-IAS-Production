@@ -14,9 +14,36 @@
 
     var activeStepCode = 'DRAFT_REPORT';
     var lockedEngagementId = '';
-    var qualityReviewStepCode = 'QUALITY_REVIEW';
-    var checkingQualityReviewStepCode = 'CHECKING_QUALITY_REVIEW';
-    var preConcludingScriptUrl = '/js/csp/Views_Execution_pre_concluding_audit.js?v=1';
+    var scriptLoadCache = {};
+    var steps = [
+        { stepCode: 'DRAFT_REPORT', stepNo: 1, stepTitle: 'Draft Report', isCompleted: false, isSaved: false },
+        { stepCode: 'QUALITY_REVIEW', stepNo: 2, stepTitle: 'Quality Review', isCompleted: false, isSaved: false },
+        { stepCode: 'ISSUE_REPORT', stepNo: 3, stepTitle: 'Issue Report', isCompleted: false, isSaved: false },
+        { stepCode: 'CHECKING_DRAFT_REPORT', stepNo: 4, stepTitle: 'Checking of Draft Report', isCompleted: false, isSaved: false },
+        { stepCode: 'CHECKING_QUALITY_REVIEW', stepNo: 5, stepTitle: 'Checking of Quality Review', isCompleted: false, isSaved: false }
+    ];
+
+    var scriptDependenciesByStep = {
+        DRAFT_REPORT: [
+            '/js/responsibilitySection.js',
+            '/js/csp/Views_Execution_draft_audit_report_branch.js?v=1'
+        ],
+        CHECKING_DRAFT_REPORT: [
+            '/js/responsibilitySection.js',
+            '/js/csp/Views_Execution_draft_audit_report_branch.js?v=1'
+        ],
+        QUALITY_REVIEW: [
+            '/js/responsibilitySection.js',
+            '/js/csp/Views_Execution_pre_concluding_audit.js?v=1'
+        ],
+        CHECKING_QUALITY_REVIEW: [
+            '/js/responsibilitySection.js',
+            '/js/csp/Views_Execution_pre_concluding_audit.js?v=1'
+        ],
+        ISSUE_REPORT: [
+            '/js/csp/Views_Execution_Concluding_Closing_Audit.js?v=1'
+        ]
+    };
 
     function selectedEngagementId() {
         return lockedEngagementId || selector.value || '';
@@ -30,127 +57,136 @@
     }
 
     function showAlert(show) {
-        if (!requiredAlert) {
-            return;
+        if (requiredAlert) {
+            requiredAlert.classList.toggle('d-none', !show);
         }
-        requiredAlert.classList.toggle('d-none', !show);
     }
 
     function updateCounter(stepNo) {
-        if (!stepCounter) {
-            return;
+        if (stepCounter) {
+            stepCounter.textContent = 'Step ' + stepNo + ' of 5';
         }
-
-        stepCounter.textContent = 'Step ' + stepNo + ' of 5';
     }
 
-    function executeInlineScripts(container) {
-        var scripts = Array.prototype.slice.call(container.querySelectorAll('script'));
-
-        return scripts.reduce(function (chain, script) {
-            return chain.then(function () {
-                return new Promise(function (resolve) {
-                    var newScript = document.createElement('script');
-                    Array.from(script.attributes).forEach(function (attr) {
-                        newScript.setAttribute(attr.name, attr.value);
-                    });
-
-                    if (newScript.src) {
-                        newScript.onload = resolve;
-                        newScript.onerror = resolve;
-                    } else {
-                        newScript.textContent = script.textContent;
-                    }
-
-                    script.parentNode.replaceChild(newScript, script);
-
-                    if (!newScript.src) {
-                        resolve();
-                    }
-                });
-            });
-        }, Promise.resolve());
+    function clearContent(message) {
+        stepHost.innerHTML = '<div class="alert alert-info mb-0">' + message + '</div>';
     }
 
     function ensureScriptLoaded(scriptUrl) {
+        if (scriptLoadCache[scriptUrl]) {
+            return scriptLoadCache[scriptUrl];
+        }
+
         var scripts = Array.prototype.slice.call(document.getElementsByTagName('script'));
         var existing = scripts.find(function (script) {
             return (script.getAttribute('src') || '').indexOf(scriptUrl) !== -1;
         });
 
         if (existing) {
-            return Promise.resolve();
+            scriptLoadCache[scriptUrl] = Promise.resolve();
+            return scriptLoadCache[scriptUrl];
         }
 
-        return new Promise(function (resolve) {
+        scriptLoadCache[scriptUrl] = new Promise(function (resolve, reject) {
             var script = document.createElement('script');
             script.src = scriptUrl;
             script.async = false;
-            script.onload = function () {
-                script.setAttribute('data-loaded', 'true');
-                resolve();
-            };
-            script.onerror = resolve;
+            script.onload = resolve;
+            script.onerror = function () { reject(new Error('Failed to load script: ' + scriptUrl)); };
             document.body.appendChild(script);
+        });
+
+        return scriptLoadCache[scriptUrl];
+    }
+
+    function ensureStepDependencies(stepCode) {
+        var dependencies = scriptDependenciesByStep[stepCode] || [];
+        return dependencies.reduce(function (chain, scriptUrl) {
+            return chain.then(function () {
+                return ensureScriptLoaded(scriptUrl);
+            });
+        }, Promise.resolve());
+    }
+
+    function applyReadOnlyMode(readOnly) {
+        if (!readOnly) {
+            return;
+        }
+
+        stepHost.querySelectorAll('input, select, textarea, button').forEach(function (el) {
+            if (!el.classList.contains('btn-close')) {
+                el.disabled = true;
+            }
+        });
+
+        stepHost.querySelectorAll('[data-onclick]').forEach(function (el) {
+            el.removeAttribute('data-onclick');
         });
     }
 
-    function initializeBoQualityReview(engId, readOnly) {
-        if (!engId) {
-            return Promise.resolve();
+    function assignEngagementToPartial(engId) {
+        var entitySelect = byId('entitySelectField');
+        if (entitySelect) {
+            if (!entitySelect.querySelector('option[value="' + engId + '"]')) {
+                var option = document.createElement('option');
+                option.value = engId;
+                option.textContent = engId;
+                entitySelect.appendChild(option);
+            }
+            entitySelect.value = String(engId);
+            entitySelect.setAttribute('disabled', 'disabled');
         }
 
+        var hidden = byId('engIdHidden');
+        if (hidden) {
+            hidden.value = String(engId);
+        }
+    }
+
+    function initializeDraftStep(engId, readOnly) {
+        assignEngagementToPartial(engId);
+        if (typeof window.getEntityObservation === 'function') {
+            window.getEntityObservation();
+        }
+        applyReadOnlyMode(readOnly);
+    }
+
+    function initializeQualityReviewStep(engId, readOnly) {
+        assignEngagementToPartial(engId);
+        if (typeof window.getEntityObservations === 'function') {
+            window.getEntityObservations();
+        }
+        applyReadOnlyMode(readOnly);
+    }
+
+    function initializeIssueReportStep(engId, readOnly) {
+        assignEngagementToPartial(engId);
+        if (typeof window.getaddress === 'function') {
+            window.getaddress();
+        }
+        applyReadOnlyMode(readOnly);
+    }
+
+    function initializeStep(stepCode, engId, readOnly) {
         window.fieldAuditBoContext = {
             engId: engId,
             readOnly: !!readOnly
         };
 
-        return ensureScriptLoaded(preConcludingScriptUrl)
-            .then(function () {
-                return new Promise(function (resolve) {
-                    var attempts = 20;
+        if (stepCode === 'DRAFT_REPORT' || stepCode === 'CHECKING_DRAFT_REPORT') {
+            initializeDraftStep(engId, readOnly);
+            return;
+        }
 
-                    function run() {
-                        var selector = byId('entitySelectField');
-                        var hidden = byId('engIdHidden');
+        if (stepCode === 'QUALITY_REVIEW' || stepCode === 'CHECKING_QUALITY_REVIEW') {
+            initializeQualityReviewStep(engId, readOnly);
+            return;
+        }
 
-                        if (selector) {
-                            if (!selector.querySelector('option[value="' + engId + '"]')) {
-                                var option = document.createElement('option');
-                                option.value = engId;
-                                option.textContent = engId;
-                                selector.appendChild(option);
-                            }
-                            selector.value = String(engId);
-                            selector.setAttribute('disabled', 'disabled');
-                        }
-
-                        if (hidden) {
-                            hidden.value = String(engId);
-                        }
-
-                        if (typeof window.getEntityObservations === 'function') {
-                            window.getEntityObservations();
-                            resolve();
-                            return;
-                        }
-
-                        attempts -= 1;
-                        if (attempts <= 0) {
-                            resolve();
-                            return;
-                        }
-
-                        setTimeout(run, 120);
-                    }
-
-                    run();
-                });
-            });
-    }
-
-    function clearContent(message) {
-        stepHost.innerHTML = '<div class="alert alert-info mb-0">' + message + '</div>';
+        if (stepCode === 'ISSUE_REPORT') {
+            initializeIssueReportStep(engId, readOnly);
+            return;
+        }
     }
 
     function loadStep(stepCode, stepNo) {
@@ -168,11 +204,14 @@
         var loadUrl = stepHost.getAttribute('data-load-url') || '/FieldAudit/LoadBackOfficeStep';
         var url = loadUrl + '?stepCode=' + encodeURIComponent(stepCode) + '&engId=' + encodeURIComponent(engId) + '&isReadOnly=' + (readOnly ? 'true' : 'false') + '&_=' + Date.now();
 
-        return fetch(url, {
-            method: 'GET',
-            credentials: 'same-origin',
-            cache: 'no-store'
-        })
+        return ensureStepDependencies(stepCode)
+            .then(function () {
+                return fetch(url, {
+                    method: 'GET',
+                    credentials: 'same-origin',
+                    cache: 'no-store'
+                });
+            })
             .then(function (response) {
                 if (!response.ok) {
                     throw new Error('Failed to load Back Office step.');
@@ -181,16 +220,7 @@
             })
             .then(function (html) {
                 stepHost.innerHTML = html;
-                return executeInlineScripts(stepHost);
-            })
-            .then(function () {
-                if (stepCode !== qualityReviewStepCode && stepCode !== checkingQualityReviewStepCode) {
-                    return Promise.resolve();
-                }
-
-                return initializeBoQualityReview(String(engId), readOnly);
-            })
-            .then(function () {
+                initializeStep(stepCode, String(engId), readOnly);
                 activeStepCode = stepCode;
                 updateCounter(stepNo || 1);
                 stepper.querySelectorAll('.step-pill').forEach(function (anchor) {
@@ -203,7 +233,6 @@
     }
 
     function initStepper() {
-        var steps = Array.isArray(window.fieldAuditBoStepperData) ? window.fieldAuditBoStepperData : [];
         if (!steps.length || !window.fieldAuditStepperTheme || !window.fieldAuditStepperTheme.render) {
             return;
         }
