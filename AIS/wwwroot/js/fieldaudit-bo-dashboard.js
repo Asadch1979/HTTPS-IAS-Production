@@ -2,6 +2,7 @@
     function byId(id) { return document.getElementById(id); }
 
     var selector = byId('boEngagementSelector');
+    var changeEngagementButton = byId('boChangeEngagementButton');
     var stepper = byId('boWizardStepper');
     var stepHost = byId('boStepHost');
     var stepCounter = byId('boStepCounter');
@@ -12,9 +13,17 @@
     }
 
     var activeStepCode = 'DRAFT_REPORT';
+    var lockedEngagementId = '';
 
     function selectedEngagementId() {
-        return selector.value || '';
+        return lockedEngagementId || selector.value || '';
+    }
+
+    function setEngagementLocked(locked) {
+        selector.disabled = locked;
+        if (changeEngagementButton) {
+            changeEngagementButton.classList.toggle('d-none', !locked);
+        }
     }
 
     function showAlert(show) {
@@ -33,16 +42,31 @@
     }
 
     function executeInlineScripts(container) {
-        container.querySelectorAll('script').forEach(function (script) {
-            var newScript = document.createElement('script');
-            Array.from(script.attributes).forEach(function (attr) {
-                newScript.setAttribute(attr.name, attr.value);
+        var scripts = Array.prototype.slice.call(container.querySelectorAll('script'));
+
+        return scripts.reduce(function (chain, script) {
+            return chain.then(function () {
+                return new Promise(function (resolve) {
+                    var newScript = document.createElement('script');
+                    Array.from(script.attributes).forEach(function (attr) {
+                        newScript.setAttribute(attr.name, attr.value);
+                    });
+
+                    if (newScript.src) {
+                        newScript.onload = resolve;
+                        newScript.onerror = resolve;
+                    } else {
+                        newScript.textContent = script.textContent;
+                    }
+
+                    script.parentNode.replaceChild(newScript, script);
+
+                    if (!newScript.src) {
+                        resolve();
+                    }
+                });
             });
-            if (!newScript.src) {
-                newScript.textContent = script.textContent;
-            }
-            script.parentNode.replaceChild(newScript, script);
-        });
+        }, Promise.resolve());
     }
 
     function clearContent(message) {
@@ -54,7 +78,7 @@
         if (!engId) {
             showAlert(true);
             clearContent('Please select an engagement before opening workflow tabs.');
-            return;
+            return Promise.resolve();
         }
 
         showAlert(false);
@@ -64,7 +88,7 @@
         var loadUrl = stepHost.getAttribute('data-load-url') || '/FieldAudit/LoadBackOfficeStep';
         var url = loadUrl + '?stepCode=' + encodeURIComponent(stepCode) + '&engId=' + encodeURIComponent(engId) + '&isReadOnly=' + (readOnly ? 'true' : 'false') + '&_=' + Date.now();
 
-        fetch(url, {
+        return fetch(url, {
             method: 'GET',
             credentials: 'same-origin',
             cache: 'no-store'
@@ -77,7 +101,9 @@
             })
             .then(function (html) {
                 stepHost.innerHTML = html;
-                executeInlineScripts(stepHost);
+                return executeInlineScripts(stepHost);
+            })
+            .then(function () {
                 activeStepCode = stepCode;
                 updateCounter(stepNo || 1);
                 stepper.querySelectorAll('.step-pill').forEach(function (anchor) {
@@ -131,20 +157,38 @@
     }
 
     selector.addEventListener('change', function () {
-        var hasSelection = !!selectedEngagementId();
+        var hasSelection = !!selector.value;
         showAlert(!hasSelection);
         stepper.querySelectorAll('.step-pill').forEach(function (anchor) {
             anchor.classList.toggle('disabled', !hasSelection);
         });
 
         if (!hasSelection) {
+            lockedEngagementId = '';
+            setEngagementLocked(false);
             clearContent('Select an engagement from the dropdown above to load Back Office workflow content.');
             return;
         }
 
+        lockedEngagementId = selector.value;
+        setEngagementLocked(true);
+
         var active = stepper.querySelector('.step-pill.active') || stepper.querySelector('.step-pill[data-step-code="DRAFT_REPORT"]');
         loadStep(active ? active.getAttribute('data-step-code') : 'DRAFT_REPORT', active ? active.getAttribute('data-step-no') : 1);
     });
+
+    if (changeEngagementButton) {
+        changeEngagementButton.addEventListener('click', function () {
+            lockedEngagementId = '';
+            selector.value = '';
+            setEngagementLocked(false);
+            showAlert(true);
+            stepper.querySelectorAll('.step-pill').forEach(function (anchor) {
+                anchor.classList.add('disabled');
+            });
+            clearContent('Select an engagement from the dropdown above to load Back Office workflow content.');
+        });
+    }
 
     window.fieldAuditBoDashboard = {
         loadStepContent: loadStep
@@ -152,5 +196,6 @@
 
     initStepper();
     loadEngagements();
+    setEngagementLocked(false);
     showAlert(true);
 })();
