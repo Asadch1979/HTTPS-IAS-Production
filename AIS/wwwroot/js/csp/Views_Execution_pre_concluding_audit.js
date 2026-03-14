@@ -58,14 +58,18 @@ function getPageData() {
 
      });
 
-     function getEntityObservations() {
+     function getEntityObservations(selectedEngId) {
           var flag = 0;
-         if($('#entitySelectField').val()==0){
+         var engId = selectedEngId || $('#entitySelectField').val();
+         if(engId==0){
               $('#checklistDetailsPanel tbody').empty();
              $('#preConcludingActionHandler').addClass("d-none");
               return;
          }
-         g_engId = $('#entitySelectField').val();
+         g_engId = engId;
+         if (selectedEngId) {
+             $('#entitySelectField').val(g_engId);
+         }
          $('#engIdHidden').val(g_engId);
          if (respSection) {
              respSection.updateContext({ engId: parseInt(g_engId || 0) });
