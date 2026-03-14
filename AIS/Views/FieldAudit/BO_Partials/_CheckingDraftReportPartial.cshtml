@@ -404,21 +404,37 @@
 <script>
 (function(){
   var engId=@Model.EngagementId;
-  window.fieldAuditBoContext = { engId: engId, readOnly: @Model.IsReadOnly.ToString().ToLowerInvariant() };
-  (function initBoPartial(){
+  var readOnly=@Model.IsReadOnly.ToString().ToLowerInvariant();
+  window.fieldAuditBoContext = { engId: engId, readOnly: readOnly };
+
+  function runInit() {
     var sel=document.getElementById('entitySelectField');
-    if(sel){ sel.value=String(engId); }
+    if(sel){
+      sel.value=String(engId);
+      sel.setAttribute('disabled','disabled');
+    }
     var hidden=document.getElementById('engIdHidden');
     if(hidden){ hidden.value=String(engId); }
-    if (typeof getEntityObservation === 'function') { getEntityObservation(); }
-    if (typeof getEntityObservations === 'function') { getEntityObservations(); }
-    if (typeof getaddress === 'function') { getaddress(); }
-    if (@Model.IsReadOnly.ToString().ToLowerInvariant()) {
-      document.querySelectorAll('input, select, textarea, button').forEach(function(el){
-        if (!el.classList.contains('btn-close')) { el.disabled = true; }
-      });
-      document.querySelectorAll('[data-onclick]').forEach(function(el){ el.removeAttribute('data-onclick'); });
+
+    if (typeof getEntityObservation === 'function') {
+      getEntityObservation();
+      return true;
     }
-  })();
+    return false;
+  }
+
+  (function waitForStartupFlow(attempts){
+    if (runInit() || attempts <= 0) {
+      if (readOnly) {
+        document.querySelectorAll('input, select, textarea, button').forEach(function(el){
+          if (!el.classList.contains('btn-close')) { el.disabled = true; }
+        });
+        document.querySelectorAll('[data-onclick]').forEach(function(el){ el.removeAttribute('data-onclick'); });
+      }
+      return;
+    }
+
+    setTimeout(function(){ waitForStartupFlow(attempts - 1); }, 120);
+  })(20);
 })();
 </script>
