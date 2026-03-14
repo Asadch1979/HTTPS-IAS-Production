@@ -97,8 +97,30 @@ namespace AIS.Controllers
                 return BadRequest("A valid engagement is required.");
                 }
 
-            ViewData["AnnexList"] = _dbConnection.GetAnnexuresForChecklistDetail();
+            var normalizedStepCode = (stepCode ?? string.Empty).Trim().ToUpperInvariant();
+
             ViewData["ReadOnlyMode"] = isReadOnly;
+
+            switch (normalizedStepCode)
+                {
+                case "DRAFT_REPORT":
+                case "CHECKING_DRAFT_REPORT":
+                    ViewData["EntitiesList"] = _dbConnection.GetObservationEntities();
+                    ViewData["AnnexList"] = _dbConnection.GetAnnexuresForChecklistDetail();
+                    ViewData["ProcessList"] = _dbConnection.GetAuditChecklist();
+                    ViewData["RiskList"] = _dbConnection.GetRisks();
+                    break;
+                case "QUALITY_REVIEW":
+                case "CHECKING_QUALITY_REVIEW":
+                    ViewData["EntitiesList"] = _dbConnection.GetObservationEntitiesForPreConcluding();
+                    ViewData["AnnexList"] = _dbConnection.GetAnnexuresForChecklistDetail();
+                    ViewData["ProcessList"] = _dbConnection.GetAuditChecklist();
+                    ViewData["RiskList"] = _dbConnection.GetRisks();
+                    break;
+                case "ISSUE_REPORT":
+                    ViewData["EntitiesList"] = _dbConnection.GetAuditConcludingEntities();
+                    break;
+                }
 
             var viewModel = new FieldAuditGridReplicaViewModel
                 {
@@ -106,7 +128,7 @@ namespace AIS.Controllers
                 IsReadOnly = isReadOnly
                 };
 
-            switch ((stepCode ?? string.Empty).Trim().ToUpperInvariant())
+            switch (normalizedStepCode)
                 {
                 case "DRAFT_REPORT":
                     return PartialView("~/Views/FieldAudit/BO_Partials/_DraftReportPartial.cshtml", viewModel);
