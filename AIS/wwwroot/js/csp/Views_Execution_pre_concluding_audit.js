@@ -25,6 +25,7 @@ function getPageData() {
     var g_procDetailId = 0;
     var g_selectedRiskId = 0;
     var respSection = null;
+    var g_boBootstrapEngId = null;
     const pageData = getPageData();
     var g_annexList = pageData.AnnexList || [];
 
@@ -105,6 +106,39 @@ function getPageData() {
              dataType: "json",
          });
      }
+
+     function bootstrapBoPreConcludingIfNeeded() {
+         var context = window.fieldAuditBoContext || null;
+         if (!context || !context.engId) {
+             return;
+         }
+
+         var boEngId = String(context.engId);
+         if (g_boBootstrapEngId === boEngId) {
+             return;
+         }
+
+         var selector = $('#entitySelectField');
+         if (!selector.length) {
+             return;
+         }
+
+         if (selector.find('option[value="' + boEngId + '"]').length === 0) {
+             selector.append($('<option>', {
+                 value: boEngId,
+                 text: boEngId
+             }));
+         }
+
+         selector.val(boEngId);
+         selector.prop('disabled', true);
+         $('#engIdHidden').val(boEngId);
+         g_boBootstrapEngId = boEngId;
+         getEntityObservations();
+     }
+
+     $(bootstrapBoPreConcludingIfNeeded);
+     setTimeout(bootstrapBoPreConcludingIfNeeded, 0);
 
      function reloadLocation() {
          getEntityObservations();
