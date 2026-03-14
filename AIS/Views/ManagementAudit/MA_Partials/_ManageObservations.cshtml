@@ -1,7 +1,5 @@
 @model AIS.Models.FieldAuditWorkflow.FieldAuditGridReplicaViewModel
 
-<input type="hidden" class="ma-engagement-id" value="@Model.EngagementId" />
-
 <style type="text/css">
     .evidence-link {
         display: flex;
@@ -14,34 +12,26 @@
     }
 </style>
 
+<table id="manageObsPanel" class="table table-hover table-bordered table-hover table-striped">
+    <thead style="background-color: #19875478 !important; ">
+        <tr>
+            <th class="col-md-auto">Memo No.</th>
+            <th class="col-md-auto">Title</th>
+            <th class="col-md-auto">Violation</th>
+            <th class="col-md-auto">Risk Category</th>
+            <th class="col-md-auto">Status</th>
+            <th class="col-md-auto text-center">Action</th>
+            <th class="col-md-auto text-center">Action</th>
+        </tr>
+    </thead>
+    <tbody>
+    </tbody>
+</table>
 
-<div class="row">
-    <input id="entityNameField" disabled="disabled" class="form-control ml-1 d-none" type="text" />
-    <input id="auditPeriodNameField" disabled="disabled" class="form-control ml-1 d-none" type="text" />
-    <select id="entitySelectField" data-onchange="getEntityObservation()" class="form-control form-select d-none">
-        <option value="@Model.EngagementId" selected>@Model.EngagementId</option>
-    </select>
-    <div class="row col-md-12 mt-1">
-        <table id="manageObsPanel" class="table table-hover table-bordered table-hover mt-3 table-striped">
-            <thead style="background-color: #19875478 !important; ">
-                <tr>
-                    <th class="col-md-auto">Memo No.</th>
-                    <th class="col-md-auto">Title</th>                    
-                    <th class="col-md-auto">Violation</th>                    
-                    <th class="col-md-auto">Risk Category</th>
-                    <th class="col-md-auto">Status</th>                   
-                    <th class="col-md-auto text-center">Action</th>
-                    <th class="col-md-auto text-center">Action</th>
-                </tr>
-            </thead>
-            <tbody>
-             
-            </tbody>
-
-        </table>
-    </div>
-
-</div>
+<input type="hidden" class="ma-engagement-id" value="@Model.EngagementId" />
+<input id="entityNameField" disabled="disabled" class="form-control ml-1 d-none" type="text" />
+<input id="auditPeriodNameField" disabled="disabled" class="form-control ml-1 d-none" type="text" />
+<input id="entitySelectField" class="d-none" type="hidden" value="@Model.EngagementId" />
 <div id="commentsBox" class="modal" tabindex="-1" role="dialog">
     <div class="modal-dialog" role="document">
         <div class="modal-content">
@@ -108,7 +98,7 @@
                         <label for="viewMemo_memo" class="font-weight-bold">Memo</label>
                         <div id="viewMemo_memo" disabled="disabled" style="height: auto; overflow-y: auto;" class="form-control"></div>
                     </div>
-                   
+
                     <div class="form-group">
                         <label for="viewMemo_response" class="font-weight-bold">Auditee Response</label>
                         <div id="viewMemo_response" disabled="disabled" style="height: auto; overflow-y: auto;" class="form-control"></div>
@@ -125,7 +115,7 @@
             <div class="modal-footer">
                 <button id="dropButton_memoReply" data-onclick="dropObservation(g_obsId,7,g_riskId);" type="button" data-bs-dismiss="modal" class="btn btn-danger d-none">Drop Observation</button>
                 <button id="submitAuditeeButton_memoReply" data-onclick="submitObservationToAuditee(g_obsId, 2, g_riskId);" type="button" data-bs-dismiss="modal" class="btn btn-danger d-none">Submit to Auditee</button>
-               
+
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
             </div>
         </div>
@@ -141,7 +131,7 @@
             </div>
             <div class="modal-body">
                 <form>
-                   
+
                     <div class="form-group">
                         <label for="updateMemo_heading" class="font-weight-bold">Title / Heading <small class="text-muted">(A-Z, 0-9, space, &amp;, ?)</small></label>
                         <input type="text" id="updateMemo_heading" class="form-control alnum-only" placeholder="Title / Heading (Alphabets, numbers, spaces, ampersand (&amp;), comma (,), and question mark (?) only)" data-allow-space="true" data-allow-amp="true" maxlength="200" title="Enter only Alphabets (A-Z), numbers (0-9), spaces, ampersand (&amp;), comma (,), and question mark (?)" />
@@ -190,9 +180,12 @@
     (function () {
         var selectedEngId = '@Model.EngagementId';
         if (!selectedEngId) return;
+
         var selector = document.getElementById('entitySelectField');
-        if (!selector) return;
-        selector.value = selectedEngId;
+        if (selector) {
+            selector.value = selectedEngId;
+        }
+
         if (typeof getEntityObservation === 'function') {
             getEntityObservation();
         } else if (typeof getEntityObservations === 'function') {

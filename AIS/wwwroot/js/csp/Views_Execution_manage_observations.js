@@ -2,8 +2,17 @@
     var g_newStatusId = 0;
     var g_riskId = 0;
     var g_currentStatus = 0;
+    function getSelectedEngagementId() {
+        var entityField = document.getElementById('entitySelectField');
+        if (entityField && entityField.value) {
+            return entityField.value;
+        }
+
+        var hiddenEngagement = document.querySelector('.ma-engagement-id');
+        return hiddenEngagement && hiddenEngagement.value ? hiddenEngagement.value : 0;
+    }
+
     $(document).ready(function () {
-        $('#entitySelectField').select2();
         var entName = $('#manageObsPanel tbody .entity_name_field:first').text();
         $('#entityNameField').val(entName);
         var periodName = $('#manageObsPanel tbody .period_name_field:first').text();
@@ -249,12 +258,13 @@
 
     function getEntityObservation() {
         $('#manageObsPanel tbody').empty();
-        if ($('#entitySelectField option:selected').val() != 0) {            
+        var selectedEngagementId = getSelectedEngagementId();
+        if (selectedEngagementId && parseInt(selectedEngagementId, 10) !== 0) {
             $.ajax({
                 url: g_asiBaseURL + "/ApiCalls/get_observations",
                 type: "POST",
                 data: {
-                    'ENG_ID': $('#entitySelectField option:selected').val()
+                    'ENG_ID': selectedEngagementId
                 },
                 cache: false,
                 success: function (data) {
