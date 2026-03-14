@@ -15,9 +15,6 @@
     var activeStepCode = 'DRAFT_REPORT';
     var lockedEngagementId = '';
     var scriptLoadCache = {};
-    var apiCallsByStep = {};
-    var apiTrackerInstalled = false;
-
     var steps = [
         { stepCode: 'DRAFT_REPORT', stepNo: 1, stepTitle: 'Draft Report', isCompleted: false, isSaved: false },
         { stepCode: 'QUALITY_REVIEW', stepNo: 2, stepTitle: 'Quality Review', isCompleted: false, isSaved: false },
@@ -73,59 +70,6 @@
 
     function clearContent(message) {
         stepHost.innerHTML = '<div class="alert alert-info mb-0">' + message + '</div>';
-    }
-
-    function normalizeApiPath(url) {
-        if (!url) {
-            return '';
-        }
-
-        var candidate = String(url);
-        var protocolIndex = candidate.indexOf('://');
-        if (protocolIndex !== -1) {
-            var pathIndex = candidate.indexOf('/', protocolIndex + 3);
-            candidate = pathIndex !== -1 ? candidate.substring(pathIndex) : '/';
-        }
-
-        return candidate.split('?')[0].toLowerCase();
-    }
-
-    function installApiTracker() {
-        if (apiTrackerInstalled || !window.jQuery) {
-            return;
-        }
-
-        apiTrackerInstalled = true;
-        window.jQuery(document).ajaxSend(function (_, __, settings) {
-            if (!activeStepCode || !settings || !settings.url) {
-                return;
-            }
-
-            if (!apiCallsByStep[activeStepCode]) {
-                apiCallsByStep[activeStepCode] = [];
-            }
-
-            apiCallsByStep[activeStepCode].push(normalizeApiPath(settings.url));
-        });
-    }
-
-    function verifyStepApiCoverage(stepCode, requiredApis) {
-        if (!requiredApis || !requiredApis.length) {
-            return;
-        }
-
-        var observed = (apiCallsByStep[stepCode] || []).slice();
-        var missing = requiredApis.filter(function (apiName) {
-            return observed.indexOf(normalizeApiPath('/ApiCalls/' + apiName)) === -1;
-        });
-
-        if (missing.length) {
-            console.error('Back Office step initializer did not reach required API(s).', {
-                stepCode: stepCode,
-                missingApis: missing,
-                observedApis: observed
-            });
-        }
     }
 
     function ensureScriptLoaded(scriptUrl) {
@@ -199,64 +143,60 @@
         }
     }
 
-    function initializeDraftStep(engId) {
+    function initializeDraftStep(engId, readOnly) {
         assignEngagementToPartial(engId);
-        if (typeof window.fieldAuditBoLoadDraftReport !== 'function') {
-            throw new Error('fieldAuditBoLoadDraftReport is required for DRAFT_REPORT/CHECKING_DRAFT_REPORT.');
+        if (typeof window.fieldAuditBoLoadDraftReport === 'function') {
+            window.fieldAuditBoLoadDraftReport(engId, readOnly);
+        } else if (typeof window.getEntityObservation === 'function') {
+            window.getEntityObservation();
         }
-
-        window.fieldAuditBoLoadDraftReport(engId);
+        applyReadOnlyMode(readOnly);
     }
 
     function initializeQualityReviewStep(engId, readOnly) {
         assignEngagementToPartial(engId);
-        if (typeof window.fieldAuditBoLoadPreConcluding !== 'function') {
-            throw new Error('fieldAuditBoLoadPreConcluding is required for QUALITY_REVIEW/CHECKING_QUALITY_REVIEW.');
+        if (typeof window.fieldAuditBoLoadPreConcluding === 'function') {
+            window.fieldAuditBoLoadPreConcluding(engId, readOnly);
+        } else if (typeof window.getEntityObservations === 'function') {
+            window.getEntityObservations();
         }
-
-        window.fieldAuditBoLoadPreConcluding(engId, readOnly);
+        applyReadOnlyMode(readOnly);
     }
 
-    function initializeIssueReportStep(engId) {
+    function initializeIssueReportStep(engId, readOnly) {
         assignEngagementToPartial(engId);
-        if (typeof window.fieldAuditBoLoadIssueReport !== 'function') {
-            throw new Error('fieldAuditBoLoadIssueReport is required for ISSUE_REPORT.');
+        if (typeof window.fieldAuditBoLoadIssueReport === 'function') {
+            window.fieldAuditBoLoadIssueReport(engId, readOnly);
+        } else if (typeof window.getaddress === 'function') {
+            window.getaddress();
         }
-
-        window.fieldAuditBoLoadIssueReport(engId);
-    }
-
-    function withReadOnlyWrapper(initializer) {
-        return function (engId, readOnly) {
-            initializer(engId, readOnly);
-            applyReadOnlyMode(readOnly);
-        };
+        applyReadOnlyMode(readOnly);
     }
 
     var stepSourceMap = {
         DRAFT_REPORT: {
             readOnly: false,
-            initialize: withReadOnlyWrapper(initializeDraftStep),
+            initialize: initializeDraftStep,
             requiredApis: ['get_finalized_observations_draft_branch', 'draft_report_summary']
         },
         QUALITY_REVIEW: {
             readOnly: false,
-            initialize: withReadOnlyWrapper(initializeQualityReviewStep),
+            initialize: initializeQualityReviewStep,
             requiredApis: ['get_obs_for_pre_concluding']
         },
         ISSUE_REPORT: {
             readOnly: false,
-            initialize: withReadOnlyWrapper(initializeIssueReportStep),
+            initialize: initializeIssueReportStep,
             requiredApis: ['get_address', 'GetTeamDetails']
         },
         CHECKING_DRAFT_REPORT: {
             readOnly: true,
-            initialize: withReadOnlyWrapper(initializeDraftStep),
+            initialize: initializeDraftStep,
             requiredApis: ['get_finalized_observations_draft_branch', 'draft_report_summary']
         },
         CHECKING_QUALITY_REVIEW: {
             readOnly: true,
-            initialize: withReadOnlyWrapper(initializeQualityReviewStep),
+            initialize: initializeQualityReviewStep,
             requiredApis: ['get_obs_for_pre_concluding']
         }
     };
@@ -268,16 +208,9 @@
         };
 
         var stepConfig = stepSourceMap[stepCode];
-        if (!stepConfig || typeof stepConfig.initialize !== 'function') {
-            throw new Error('No Back Office initializer configured for step: ' + stepCode);
+        if (stepConfig && typeof stepConfig.initialize === 'function') {
+            stepConfig.initialize(engId, readOnly);
         }
-
-        apiCallsByStep[stepCode] = [];
-        stepConfig.initialize(engId, readOnly);
-
-        window.setTimeout(function () {
-            verifyStepApiCoverage(stepCode, stepConfig.requiredApis);
-        }, 1500);
     }
 
     function loadStep(stepCode, stepNo) {
@@ -298,7 +231,6 @@
 
         return ensureStepDependencies(stepCode)
             .then(function () {
-                installApiTracker();
                 return fetch(url, {
                     method: 'GET',
                     credentials: 'same-origin',
@@ -313,8 +245,8 @@
             })
             .then(function (html) {
                 stepHost.innerHTML = html;
-                activeStepCode = stepCode;
                 initializeStep(stepCode, String(engId), readOnly);
+                activeStepCode = stepCode;
                 updateCounter(stepNo || 1);
                 stepper.querySelectorAll('.step-pill').forEach(function (anchor) {
                     anchor.classList.toggle('active', (anchor.getAttribute('data-step-code') || '') === stepCode);
