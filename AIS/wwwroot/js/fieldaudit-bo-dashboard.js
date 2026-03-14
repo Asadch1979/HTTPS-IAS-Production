@@ -145,31 +145,33 @@
 
     function initializeDraftStep(engId, readOnly) {
         assignEngagementToPartial(engId);
-        if (typeof window.fieldAuditBoLoadDraftReport === 'function') {
-            window.fieldAuditBoLoadDraftReport(engId, readOnly);
-        } else if (typeof window.getEntityObservation === 'function') {
-            window.getEntityObservation();
+        if (typeof window.fieldAuditBoLoadDraftReport !== 'function') {
+            throw new Error('Missing BO initializer: fieldAuditBoLoadDraftReport');
         }
+
+        window.fieldAuditBoLoadDraftReport(engId, readOnly);
         applyReadOnlyMode(readOnly);
     }
 
     function initializeQualityReviewStep(engId, readOnly) {
         assignEngagementToPartial(engId);
-        if (typeof window.fieldAuditBoLoadPreConcluding === 'function') {
-            window.fieldAuditBoLoadPreConcluding(engId, readOnly);
-        } else if (typeof window.getEntityObservations === 'function') {
-            window.getEntityObservations();
+        if (typeof window.fieldAuditBoLoadPreConcluding !== 'function') {
+            throw new Error('Missing BO initializer: fieldAuditBoLoadPreConcluding');
         }
+
+        // Critical BO flow: _QualityReviewPartial load -> explicit pre-concluding bootstrap
+        // -> getEntityObservations() -> POST /ApiCalls/get_obs_for_pre_concluding.
+        window.fieldAuditBoLoadPreConcluding(engId, readOnly);
         applyReadOnlyMode(readOnly);
     }
 
     function initializeIssueReportStep(engId, readOnly) {
         assignEngagementToPartial(engId);
-        if (typeof window.fieldAuditBoLoadIssueReport === 'function') {
-            window.fieldAuditBoLoadIssueReport(engId, readOnly);
-        } else if (typeof window.getaddress === 'function') {
-            window.getaddress();
+        if (typeof window.fieldAuditBoLoadIssueReport !== 'function') {
+            throw new Error('Missing BO initializer: fieldAuditBoLoadIssueReport');
         }
+
+        window.fieldAuditBoLoadIssueReport(engId, readOnly);
         applyReadOnlyMode(readOnly);
     }
 
@@ -252,7 +254,8 @@
                     anchor.classList.toggle('active', (anchor.getAttribute('data-step-code') || '') === stepCode);
                 });
             })
-            .catch(function () {
+            .catch(function (error) {
+                console.error('Back Office step load/initialize failed:', error);
                 clearContent('Unable to load workflow content right now. Please try again.');
             });
     }
