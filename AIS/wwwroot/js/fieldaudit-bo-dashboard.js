@@ -14,6 +14,8 @@
 
     var activeStepCode = 'DRAFT_REPORT';
     var lockedEngagementId = '';
+    var qualityReviewStepCode = 'QUALITY_REVIEW';
+    var preConcludingScriptUrl = '/js/csp/Views_Execution_pre_concluding_audit.js?v=1';
 
     function selectedEngagementId() {
         return lockedEngagementId || selector.value || '';
@@ -69,6 +71,83 @@
         }, Promise.resolve());
     }
 
+    function ensureScriptLoaded(scriptUrl) {
+        var scripts = Array.prototype.slice.call(document.getElementsByTagName('script'));
+        var existing = scripts.find(function (script) {
+            return (script.getAttribute('src') || '').indexOf(scriptUrl) !== -1;
+        });
+
+        if (existing) {
+            return Promise.resolve();
+        }
+
+        return new Promise(function (resolve) {
+            var script = document.createElement('script');
+            script.src = scriptUrl;
+            script.async = false;
+            script.onload = function () {
+                script.setAttribute('data-loaded', 'true');
+                resolve();
+            };
+            script.onerror = resolve;
+            document.body.appendChild(script);
+        });
+    }
+
+    function initializeBoQualityReview(engId) {
+        if (!engId) {
+            return Promise.resolve();
+        }
+
+        window.fieldAuditBoContext = {
+            engId: engId,
+            readOnly: false
+        };
+
+        return ensureScriptLoaded(preConcludingScriptUrl)
+            .then(function () {
+                return new Promise(function (resolve) {
+                    var attempts = 20;
+
+                    function run() {
+                        var selector = byId('entitySelectField');
+                        var hidden = byId('engIdHidden');
+
+                        if (selector) {
+                            if (!selector.querySelector('option[value="' + engId + '"]')) {
+                                var option = document.createElement('option');
+                                option.value = engId;
+                                option.textContent = engId;
+                                selector.appendChild(option);
+                            }
+                            selector.value = String(engId);
+                            selector.setAttribute('disabled', 'disabled');
+                        }
+
+                        if (hidden) {
+                            hidden.value = String(engId);
+                        }
+
+                        if (typeof window.getEntityObservations === 'function') {
+                            window.getEntityObservations();
+                            resolve();
+                            return;
+                        }
+
+                        attempts -= 1;
+                        if (attempts <= 0) {
+                            resolve();
+                            return;
+                        }
+
+                        setTimeout(run, 120);
+                    }
+
+                    run();
+                });
+            });
+    }
+
     function clearContent(message) {
         stepHost.innerHTML = '<div class="alert alert-info mb-0">' + message + '</div>';
     }
@@ -102,6 +181,13 @@
             .then(function (html) {
                 stepHost.innerHTML = html;
                 return executeInlineScripts(stepHost);
+            })
+            .then(function () {
+                if (stepCode !== qualityReviewStepCode) {
+                    return Promise.resolve();
+                }
+
+                return initializeBoQualityReview(String(engId));
             })
             .then(function () {
                 activeStepCode = stepCode;
