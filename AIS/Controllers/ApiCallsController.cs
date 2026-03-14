@@ -6113,16 +6113,15 @@ namespace AIS.Controllers
         public IActionResult GetBackOfficeDashboardEngagements()
             {
             var list = dBConnection.GetBackOfficeDashboardEngagements()
-                .Where(item => item.ENG_PLAN_ID > 0)
-                .GroupBy(item => item.ENG_PLAN_ID)
+                .Where(item => item.ENG_ID > 0)
+                .GroupBy(item => item.ENG_ID)
                 .Select(group => group.First())
                 .OrderBy(item => item.ENTITY_NAME)
                 .Select(item => new
                     {
-                    engagementId = item.ENG_PLAN_ID,
+                    engagementId = item.ENG_ID,
                     entityName = item.ENTITY_NAME,
-                    stageName = item.ENG_STATUS,
-                    label = $"{item.ENTITY_NAME} ({item.ENG_PLAN_ID})"
+                    label = $"{item.ENTITY_NAME} ({item.ENG_ID})"
                     })
                 .ToList();
 

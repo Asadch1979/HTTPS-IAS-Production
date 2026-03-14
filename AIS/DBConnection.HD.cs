@@ -1,5 +1,6 @@
 using AIS.Models;
 using AIS.Models.AIS.Models;
+using iText.Layout.Element;
 using Microsoft.AspNetCore.Mvc;
 using Oracle.ManagedDataAccess.Client;
 using System;
@@ -2690,6 +2691,43 @@ namespace AIS.Controllers
                 }
             con.Dispose();
             return resp;
+            }
+        public List<AuditConcludingEntitiesModel> GetBackOfficeDashboardEngagements()
+            {
+            var sessionHandler = CreateSessionHandler();
+            var con = this.DatabaseConnection();
+            List<AuditConcludingEntitiesModel> EngList = new List<AuditConcludingEntitiesModel>();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
+                || string.IsNullOrWhiteSpace(loggedInUser.PPNumber)
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return new List<AuditConcludingEntitiesModel>();
+                }
+
+            using (OracleCommand cmd = con.CreateCommand())
+                {
+                cmd.CommandText = "pkg_hd.P_get_BackOfficeDashboardEngagements";
+                cmd.CommandType = CommandType.StoredProcedure;
+                cmd.Parameters.Clear();
+                cmd.Parameters.Add("ENT_ID", OracleDbType.Int32).Value = loggedInUser.UserEntityID;
+                cmd.Parameters.Add("P_NO", OracleDbType.Int32).Value = loggedInUser.PPNumber;
+                cmd.Parameters.Add("R_ID", OracleDbType.Int32).Value = loggedInUser.UserRoleID;
+                cmd.Parameters.Add("T_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+                OracleDataReader rdr = cmd.ExecuteReader();
+                while (rdr.Read())
+                    {
+                    AuditConcludingEntitiesModel chk = new AuditConcludingEntitiesModel();
+                    chk.ENTITY_NAME = rdr["ENTITY_NAME"].ToString();
+                    chk.ENG_ID = Convert.ToInt32(rdr["ENG_ID"].ToString());
+                    chk.TYPE_ID = Convert.ToInt32(rdr["TYPE_ID"].ToString());
+                    EngList.Add(chk);
+                    }
+                }
+
+            con.Dispose();
+            return EngList;
             }
 
         public bool AddOldParas(OldParasModel jm)
