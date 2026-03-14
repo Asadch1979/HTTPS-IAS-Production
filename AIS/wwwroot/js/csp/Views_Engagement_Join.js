@@ -4,6 +4,12 @@
         var hiddenEngagement = document.querySelector('.ma-engagement-id');
         var eng_id = hiddenEngagement && hiddenEngagement.value ? hiddenEngagement.value : null;
         if (!eng_id) {
+            var stepHost = document.getElementById('maStepHost');
+            if (stepHost) {
+                eng_id = stepHost.getAttribute('data-eng-id');
+            }
+        }
+        if (!eng_id) {
             var url_string = window.location;
             var url = new URL(url_string);
             eng_id = url.searchParams.get("engId");

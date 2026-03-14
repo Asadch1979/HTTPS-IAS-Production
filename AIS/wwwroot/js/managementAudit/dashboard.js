@@ -2,10 +2,12 @@
     function byId(id) { return document.getElementById(id); }
 
     var selector = byId('maEngagementSelector');
+    var changeEngagementBtn = byId('maChangeEngagementBtn');
     var stepHost = byId('maStepHost');
     var stepper = byId('maWizardStepper');
     var stepCounter = byId('maStepCounter');
     var engagementAlert = byId('maEngagementRequiredAlert');
+    var lockedEngagementId = (stepHost && stepHost.getAttribute('data-eng-id')) || '';
 
     if (!selector || !stepHost || !stepper) {
         return;
@@ -13,6 +15,10 @@
 
     function selectedEngagementId() {
         return selector.value || '';
+    }
+
+    function currentEngagementId() {
+        return lockedEngagementId || selectedEngagementId();
     }
 
     function currentStepCode() {
@@ -35,6 +41,12 @@
         engagementAlert.classList.toggle('d-none', !isVisible);
     }
 
+    function setEngagementLocked(isLocked) {
+        selector.disabled = !!isLocked;
+        if (changeEngagementBtn) {
+            changeEngagementBtn.classList.toggle('d-none', !isLocked);
+        }
+    }
 
     function setStepPillsDisabled(isDisabled) {
         stepper.querySelectorAll('.step-pill').forEach(function (anchor) {
@@ -87,7 +99,7 @@
     }
 
     function loadStepContent(stepCode, stepNo) {
-        var engId = selectedEngagementId();
+        var engId = currentEngagementId();
         if (!engId) {
             toggleEngagementAlert(true);
             clearStepContent('Select an engagement from the dropdown above to load workflow content.');
@@ -141,10 +153,10 @@
             containerId: 'maWizardStepper',
             steps: stepData,
             currentStepCode: currentStepCode(),
-            disabled: !selectedEngagementId(),
+            disabled: !currentEngagementId(),
             linkMode: 'button',
             onStepClick: function (anchor) {
-                if (!selectedEngagementId()) {
+                if (!currentEngagementId()) {
                     toggleEngagementAlert(true);
                     clearStepContent('Please select an engagement before opening workflow steps.');
                     return;
@@ -158,14 +170,20 @@
     selector.addEventListener('change', function () {
         var engId = selectedEngagementId();
         if (!engId) {
+            lockedEngagementId = '';
+            stepHost.setAttribute('data-eng-id', '');
+            setEngagementLocked(false);
             toggleEngagementAlert(true);
             clearStepContent('Select an engagement from the dropdown above to load workflow content.');
             setStepPillsDisabled(true);
             return;
         }
 
-        setStepPillsDisabled(false);
+        lockedEngagementId = engId;
         stepHost.setAttribute('data-eng-id', engId);
+        setEngagementLocked(true);
+        setStepPillsDisabled(false);
+
         var firstAnchor = stepper.querySelector('.step-pill');
         var targetStepCode = (firstAnchor && firstAnchor.getAttribute('data-step-code')) || currentStepCode();
         var targetStepNo = (firstAnchor && firstAnchor.getAttribute('data-step-no')) || '1';
@@ -174,10 +192,20 @@
         }
     });
 
-    initStepperTheme();
-    toggleEngagementAlert(!selectedEngagementId());
+    if (changeEngagementBtn) {
+        changeEngagementBtn.addEventListener('click', function () {
+            lockedEngagementId = '';
+            stepHost.setAttribute('data-eng-id', '');
+            setEngagementLocked(false);
+            toggleEngagementAlert(false);
+        });
+    }
 
-    if (selectedEngagementId() && currentStepCode()) {
+    initStepperTheme();
+    toggleEngagementAlert(!currentEngagementId());
+    setEngagementLocked(!!lockedEngagementId);
+
+    if (currentEngagementId() && currentStepCode()) {
         var activeAnchor = stepper.querySelector('.step-pill[data-step-code="' + currentStepCode() + '"]');
         if (activeAnchor) {
             loadStepContent(currentStepCode(), activeAnchor.getAttribute('data-step-no'));
