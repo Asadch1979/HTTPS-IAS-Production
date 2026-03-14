@@ -145,7 +145,9 @@
 
     function initializeDraftStep(engId, readOnly) {
         assignEngagementToPartial(engId);
-        if (typeof window.getEntityObservation === 'function') {
+        if (typeof window.fieldAuditBoLoadDraftReport === 'function') {
+            window.fieldAuditBoLoadDraftReport(engId, readOnly);
+        } else if (typeof window.getEntityObservation === 'function') {
             window.getEntityObservation();
         }
         applyReadOnlyMode(readOnly);
@@ -153,7 +155,9 @@
 
     function initializeQualityReviewStep(engId, readOnly) {
         assignEngagementToPartial(engId);
-        if (typeof window.getEntityObservations === 'function') {
+        if (typeof window.fieldAuditBoLoadPreConcluding === 'function') {
+            window.fieldAuditBoLoadPreConcluding(engId, readOnly);
+        } else if (typeof window.getEntityObservations === 'function') {
             window.getEntityObservations();
         }
         applyReadOnlyMode(readOnly);
@@ -161,11 +165,41 @@
 
     function initializeIssueReportStep(engId, readOnly) {
         assignEngagementToPartial(engId);
-        if (typeof window.getaddress === 'function') {
+        if (typeof window.fieldAuditBoLoadIssueReport === 'function') {
+            window.fieldAuditBoLoadIssueReport(engId, readOnly);
+        } else if (typeof window.getaddress === 'function') {
             window.getaddress();
         }
         applyReadOnlyMode(readOnly);
     }
+
+    var stepSourceMap = {
+        DRAFT_REPORT: {
+            readOnly: false,
+            initialize: initializeDraftStep,
+            requiredApis: ['get_finalized_observations_draft_branch', 'draft_report_summary']
+        },
+        QUALITY_REVIEW: {
+            readOnly: false,
+            initialize: initializeQualityReviewStep,
+            requiredApis: ['get_obs_for_pre_concluding']
+        },
+        ISSUE_REPORT: {
+            readOnly: false,
+            initialize: initializeIssueReportStep,
+            requiredApis: ['get_address', 'GetTeamDetails']
+        },
+        CHECKING_DRAFT_REPORT: {
+            readOnly: true,
+            initialize: initializeDraftStep,
+            requiredApis: ['get_finalized_observations_draft_branch', 'draft_report_summary']
+        },
+        CHECKING_QUALITY_REVIEW: {
+            readOnly: true,
+            initialize: initializeQualityReviewStep,
+            requiredApis: ['get_obs_for_pre_concluding']
+        }
+    };
 
     function initializeStep(stepCode, engId, readOnly) {
         window.fieldAuditBoContext = {
@@ -173,19 +207,9 @@
             readOnly: !!readOnly
         };
 
-        if (stepCode === 'DRAFT_REPORT' || stepCode === 'CHECKING_DRAFT_REPORT') {
-            initializeDraftStep(engId, readOnly);
-            return;
-        }
-
-        if (stepCode === 'QUALITY_REVIEW' || stepCode === 'CHECKING_QUALITY_REVIEW') {
-            initializeQualityReviewStep(engId, readOnly);
-            return;
-        }
-
-        if (stepCode === 'ISSUE_REPORT') {
-            initializeIssueReportStep(engId, readOnly);
-            return;
+        var stepConfig = stepSourceMap[stepCode];
+        if (stepConfig && typeof stepConfig.initialize === 'function') {
+            stepConfig.initialize(engId, readOnly);
         }
     }
 
@@ -200,7 +224,8 @@
         showAlert(false);
         stepHost.innerHTML = '<div class="alert alert-secondary mb-0">Loading workflow content...</div>';
 
-        var readOnly = stepCode === 'CHECKING_DRAFT_REPORT' || stepCode === 'CHECKING_QUALITY_REVIEW';
+        var stepConfig = stepSourceMap[stepCode] || null;
+        var readOnly = !!(stepConfig && stepConfig.readOnly);
         var loadUrl = stepHost.getAttribute('data-load-url') || '/FieldAudit/LoadBackOfficeStep';
         var url = loadUrl + '?stepCode=' + encodeURIComponent(stepCode) + '&engId=' + encodeURIComponent(engId) + '&isReadOnly=' + (readOnly ? 'true' : 'false') + '&_=' + Date.now();
 
