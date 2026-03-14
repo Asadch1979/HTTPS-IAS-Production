@@ -45,44 +45,6 @@
         ]
     };
 
-    var stepApiMapping = {
-        DRAFT_REPORT: {
-            sourcePath: '/Execution/draft_audit_report_branch',
-            requiredApis: ['/ApiCalls/get_finalized_observations_draft_branch', '/ApiCalls/draft_report_summary'],
-            invoke: function (engId, readOnly) {
-                initializeDraftStep(engId, readOnly);
-            }
-        },
-        QUALITY_REVIEW: {
-            sourcePath: '/Execution/pre_concluding_audit',
-            requiredApis: ['/ApiCalls/get_obs_for_pre_concluding'],
-            invoke: function (engId, readOnly) {
-                initializeQualityReviewStep(engId, readOnly);
-            }
-        },
-        ISSUE_REPORT: {
-            sourcePath: '/Execution/Concluding_Closing_Audit',
-            requiredApis: ['/ApiCalls/get_address', '/ApiCalls/GetTeamDetails'],
-            invoke: function (engId, readOnly) {
-                initializeIssueReportStep(engId, readOnly);
-            }
-        },
-        CHECKING_DRAFT_REPORT: {
-            sourcePath: '/Execution/draft_audit_report_branch (read-only)',
-            requiredApis: ['/ApiCalls/get_finalized_observations_draft_branch', '/ApiCalls/draft_report_summary'],
-            invoke: function (engId, readOnly) {
-                initializeDraftStep(engId, readOnly);
-            }
-        },
-        CHECKING_QUALITY_REVIEW: {
-            sourcePath: '/Execution/pre_concluding_audit (read-only)',
-            requiredApis: ['/ApiCalls/get_obs_for_pre_concluding'],
-            invoke: function (engId, readOnly) {
-                initializeQualityReviewStep(engId, readOnly);
-            }
-        }
-    };
-
     function selectedEngagementId() {
         return lockedEngagementId || selector.value || '';
     }
@@ -191,23 +153,10 @@
 
     function initializeQualityReviewStep(engId, readOnly) {
         assignEngagementToPartial(engId);
-        triggerQualityReviewLoad(engId);
-        applyReadOnlyMode(readOnly);
-    }
-
-    function triggerQualityReviewLoad(engId) {
-        assignEngagementToPartial(engId);
-
         if (typeof window.getEntityObservations === 'function') {
             window.getEntityObservations();
-            return;
         }
-
-        setTimeout(function () {
-            if (typeof window.getEntityObservations === 'function') {
-                window.getEntityObservations();
-            }
-        }, 0);
+        applyReadOnlyMode(readOnly);
     }
 
     function initializeIssueReportStep(engId, readOnly) {
@@ -224,10 +173,19 @@
             readOnly: !!readOnly
         };
 
-        var stepConfig = stepApiMapping[stepCode];
-        if (stepConfig && typeof stepConfig.invoke === 'function') {
-            console.debug('BO step API mapping', stepCode, stepConfig.sourcePath, stepConfig.requiredApis);
-            stepConfig.invoke(engId, readOnly);
+        if (stepCode === 'DRAFT_REPORT' || stepCode === 'CHECKING_DRAFT_REPORT') {
+            initializeDraftStep(engId, readOnly);
+            return;
+        }
+
+        if (stepCode === 'QUALITY_REVIEW' || stepCode === 'CHECKING_QUALITY_REVIEW') {
+            initializeQualityReviewStep(engId, readOnly);
+            return;
+        }
+
+        if (stepCode === 'ISSUE_REPORT') {
+            initializeIssueReportStep(engId, readOnly);
+            return;
         }
     }
 
@@ -349,8 +307,7 @@
     }
 
     window.fieldAuditBoDashboard = {
-        loadStepContent: loadStep,
-        triggerQualityReviewLoad: triggerQualityReviewLoad
+        loadStepContent: loadStep
     };
 
     initStepper();
