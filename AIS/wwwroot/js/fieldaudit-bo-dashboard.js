@@ -15,6 +15,7 @@
     var activeStepCode = 'DRAFT_REPORT';
     var lockedEngagementId = '';
     var qualityReviewStepCode = 'QUALITY_REVIEW';
+    var checkingQualityReviewStepCode = 'CHECKING_QUALITY_REVIEW';
     var preConcludingScriptUrl = '/js/csp/Views_Execution_pre_concluding_audit.js?v=1';
 
     function selectedEngagementId() {
@@ -94,14 +95,14 @@
         });
     }
 
-    function initializeBoQualityReview(engId) {
+    function initializeBoQualityReview(engId, readOnly) {
         if (!engId) {
             return Promise.resolve();
         }
 
         window.fieldAuditBoContext = {
             engId: engId,
-            readOnly: false
+            readOnly: !!readOnly
         };
 
         return ensureScriptLoaded(preConcludingScriptUrl)
@@ -183,11 +184,11 @@
                 return executeInlineScripts(stepHost);
             })
             .then(function () {
-                if (stepCode !== qualityReviewStepCode) {
+                if (stepCode !== qualityReviewStepCode && stepCode !== checkingQualityReviewStepCode) {
                     return Promise.resolve();
                 }
 
-                return initializeBoQualityReview(String(engId));
+                return initializeBoQualityReview(String(engId), readOnly);
             })
             .then(function () {
                 activeStepCode = stepCode;

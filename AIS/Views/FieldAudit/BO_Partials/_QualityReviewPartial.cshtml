@@ -326,43 +326,4 @@
     AnnexList = ViewData["AnnexList"]
 }))
 </script>
-<script src="~/js/csp/Views_Execution_pre_concluding_audit.js?v=1"></script>
 <script src="~/js/responsibilitySection.js"></script>
-
-<script>
-(function(){
-  var engId=@Model.EngagementId;
-  var readOnly=@Model.IsReadOnly.ToString().ToLowerInvariant();
-  window.fieldAuditBoContext = { engId: engId, readOnly: readOnly };
-
-  function runInit() {
-    var sel=document.getElementById('entitySelectField');
-    if(sel){
-      sel.value=String(engId);
-      sel.setAttribute('disabled','disabled');
-    }
-    var hidden=document.getElementById('engIdHidden');
-    if(hidden){ hidden.value=String(engId); }
-
-    if (typeof getEntityObservations === 'function') {
-      getEntityObservations();
-      return true;
-    }
-    return false;
-  }
-
-  (function waitForStartupFlow(attempts){
-    if (runInit() || attempts <= 0) {
-      if (readOnly) {
-        document.querySelectorAll('input, select, textarea, button').forEach(function(el){
-          if (!el.classList.contains('btn-close')) { el.disabled = true; }
-        });
-        document.querySelectorAll('[data-onclick]').forEach(function(el){ el.removeAttribute('data-onclick'); });
-      }
-      return;
-    }
-
-    setTimeout(function(){ waitForStartupFlow(attempts - 1); }, 120);
-  })(20);
-})();
-</script>
