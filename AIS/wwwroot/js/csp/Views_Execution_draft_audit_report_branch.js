@@ -64,6 +64,32 @@ function getPageData() {
         getEntityObservation();
     }
 
+    function fieldAuditBoLoadDraftReport(engId) {
+        if (!engId) {
+            return;
+        }
+
+        var boEngId = String(engId);
+        var selector = $('#entitySelectField');
+        if (!selector.length) {
+            return;
+        }
+
+        if (selector.find('option[value="' + boEngId + '"]').length === 0) {
+            selector.append($('<option>', {
+                value: boEngId,
+                text: boEngId
+            }));
+        }
+
+        selector.val(boEngId);
+        selector.prop('disabled', true);
+        $('#engIdHidden').val(boEngId);
+        getEntityObservation();
+    }
+
+    window.fieldAuditBoLoadDraftReport = fieldAuditBoLoadDraftReport;
+
     function getEntityObservation() {
 
         $('#entitySelectField').attr('disabled', 'disabled');

@@ -107,17 +107,12 @@ function getPageData() {
          });
      }
 
-     function bootstrapBoPreConcludingIfNeeded() {
-         var context = window.fieldAuditBoContext || null;
-         if (!context || !context.engId) {
+     function fieldAuditBoLoadPreConcluding(engId, readOnly) {
+         if (!engId) {
              return;
          }
 
-         var boEngId = String(context.engId);
-         if (g_boBootstrapEngId === boEngId) {
-             return;
-         }
-
+         var boEngId = String(engId);
          var selector = $('#entitySelectField');
          if (!selector.length) {
              return;
@@ -134,11 +129,15 @@ function getPageData() {
          selector.prop('disabled', true);
          $('#engIdHidden').val(boEngId);
          g_boBootstrapEngId = boEngId;
+
+         if (readOnly) {
+             $('#preConcludingActionHandler').addClass('d-none');
+         }
+
          getEntityObservations();
      }
 
-     $(bootstrapBoPreConcludingIfNeeded);
-     setTimeout(bootstrapBoPreConcludingIfNeeded, 0);
+     window.fieldAuditBoLoadPreConcluding = fieldAuditBoLoadPreConcluding;
 
      function reloadLocation() {
          getEntityObservations();

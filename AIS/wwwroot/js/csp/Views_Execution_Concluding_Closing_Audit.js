@@ -96,6 +96,32 @@
             window.location.reload();
         }
 
+        function fieldAuditBoLoadIssueReport(engId) {
+            if (!engId) {
+                return;
+            }
+
+            var boEngId = String(engId);
+            var selector = $('#entitySelectField');
+            if (!selector.length) {
+                return;
+            }
+
+            if (selector.find('option[value="' + boEngId + '"]').length === 0) {
+                selector.append($('<option>', {
+                    value: boEngId,
+                    text: boEngId
+                }));
+            }
+
+            selector.val(boEngId);
+            selector.prop('disabled', true);
+            $('#engIdHidden').val(boEngId);
+            getaddress();
+        }
+
+        window.fieldAuditBoLoadIssueReport = fieldAuditBoLoadIssueReport;
+
       function closeDraftAudit() {
 
            $.ajax({
