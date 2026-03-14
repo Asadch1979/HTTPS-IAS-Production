@@ -13,13 +13,10 @@
                             <label for="boEngagementSelector" class="form-label fw-semibold mb-0">Engagement</label>
                         </div>
                         <div class="col-sm">
-                            <div class="input-group">
-                                <select id="boEngagementSelector" class="form-select"
-                                        data-api-url="@Url.Action("GetBackOfficeDashboardEngagements", "ApiCalls")">
-                                    <option value="">-- Select Engagement --</option>
-                                </select>
-                                <button id="boChangeEngagementButton" type="button" class="btn btn-outline-secondary d-none">Change Engagement</button>
-                            </div>
+                            <select id="boEngagementSelector" class="form-select"
+                                    data-api-url="@Url.Action("GetBackOfficeDashboardEngagements", "ApiCalls")">
+                                <option value="">-- Select Engagement --</option>
+                            </select>
                         </div>
                     </div>
                     <small class="text-muted">Back Office engagements are loaded from dedicated dashboard API.</small>

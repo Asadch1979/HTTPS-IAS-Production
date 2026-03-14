@@ -29,19 +29,10 @@
 <div class="row">
     <div class="row col-md-12 mt-3 d-none">
         <input id="entityNameField" disabled="disabled" class="form-control ml-1 d-none" type="text" />
-        <select id="entitySelectField" data-onchange="getEntityObservation()" class="form-control form-select">
-            <option value="0">--Select Audit Entity--</option>
-            @{
-                if (ViewData["EntitiesList"] != null)
-                {
-                    foreach (var item in (dynamic)(ViewData["EntitiesList"]))
-                    {
-                        <option value="@item.ENG_ID" id="@item.ENG_ID">@item.NAME</option>
-                    }
-                }
-            }
+        <select id="entitySelectField" class="form-control form-select">
+            <option value="@Model.EngagementId" selected>@Model.EngagementId</option>
         </select>
-        <input type="hidden" id="engIdHidden" value="0" />
+        <input type="hidden" id="engIdHidden" value="@Model.EngagementId" />
     </div>
     <div class="row col-md-12 mt-3">
         <h3 style=" display:block;color: #be0e43">Report Summary</h3>
@@ -410,47 +401,22 @@
 
 <script>
 (function(){
-  var engId = @Model.EngagementId;
-  var isReadOnly = @Model.IsReadOnly.ToString().ToLowerInvariant();
-  window.fieldAuditBoContext = { engId: engId, readOnly: isReadOnly };
-
-  function setEngagement() {
-    var sel = document.getElementById('entitySelectField');
-    if (sel) {
-      sel.value = String(engId);
-    }
-    var hidden = document.getElementById('engIdHidden');
-    if (hidden) {
-      hidden.value = String(engId);
-    }
-  }
-
-  function disableReadOnlyActions() {
-    if (!isReadOnly) {
-      return;
-    }
-
-    document.querySelectorAll('input, select, textarea, button').forEach(function (el) {
-      if (!el.classList.contains('btn-close')) {
-        el.disabled = true;
-      }
-    });
-
-    document.querySelectorAll('[data-onclick]').forEach(function (el) {
-      el.removeAttribute('data-onclick');
-    });
-  }
-
-  function initStepFlow() {
-    setEngagement();
+  var engId=@Model.EngagementId;
+  window.fieldAuditBoContext = { engId: engId, readOnly: @Model.IsReadOnly.ToString().ToLowerInvariant() };
+  (function initBoPartial(){
+    var sel=document.getElementById('entitySelectField');
+    if(sel){ sel.value=String(engId); }
+    var hidden=document.getElementById('engIdHidden');
+    if(hidden){ hidden.value=String(engId); }
     if (typeof getEntityObservation === 'function') { getEntityObservation(); }
-    disableReadOnlyActions();
-  }
-
-  if (window.jQuery) {
-    window.jQuery(initStepFlow);
-  } else {
-    document.addEventListener('DOMContentLoaded', initStepFlow);
-  }
+    if (typeof getEntityObservations === 'function') { getEntityObservations(); }
+    if (typeof getaddress === 'function') { getaddress(); }
+    if (@Model.IsReadOnly.ToString().ToLowerInvariant()) {
+      document.querySelectorAll('input, select, textarea, button').forEach(function(el){
+        if (!el.classList.contains('btn-close')) { el.disabled = true; }
+      });
+      document.querySelectorAll('[data-onclick]').forEach(function(el){ el.removeAttribute('data-onclick'); });
+    }
+  })();
 })();
 </script>

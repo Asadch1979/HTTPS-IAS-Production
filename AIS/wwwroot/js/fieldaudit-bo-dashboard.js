@@ -2,7 +2,6 @@
     function byId(id) { return document.getElementById(id); }
 
     var selector = byId('boEngagementSelector');
-    var changeEngagementButton = byId('boChangeEngagementButton');
     var stepper = byId('boWizardStepper');
     var stepHost = byId('boStepHost');
     var stepCounter = byId('boStepCounter');
@@ -13,7 +12,6 @@
     }
 
     var activeStepCode = 'DRAFT_REPORT';
-    var lockedEngagementId = '';
 
     function selectedEngagementId() {
         return selector.value || '';
@@ -51,21 +49,8 @@
         stepHost.innerHTML = '<div class="alert alert-info mb-0">' + message + '</div>';
     }
 
-    function setEngagementLockedState(isLocked) {
-        selector.disabled = !!isLocked;
-        if (changeEngagementButton) {
-            changeEngagementButton.classList.toggle('d-none', !isLocked);
-        }
-    }
-
-    function syncStepperAvailability(hasSelection) {
-        stepper.querySelectorAll('.step-pill').forEach(function (anchor) {
-            anchor.classList.toggle('disabled', !hasSelection);
-        });
-    }
-
     function loadStep(stepCode, stepNo) {
-        var engId = lockedEngagementId || selectedEngagementId();
+        var engId = selectedEngagementId();
         if (!engId) {
             showAlert(true);
             clearContent('Please select an engagement before opening workflow tabs.');
@@ -102,30 +87,6 @@
             .catch(function () {
                 clearContent('Unable to load workflow content right now. Please try again.');
             });
-    }
-
-    function lockAndLoadCurrentStep() {
-        lockedEngagementId = selectedEngagementId();
-        var hasSelection = !!lockedEngagementId;
-        showAlert(!hasSelection);
-        syncStepperAvailability(hasSelection);
-
-        if (!hasSelection) {
-            setEngagementLockedState(false);
-            clearContent('Select an engagement from the dropdown above to load Back Office workflow content.');
-            return;
-        }
-
-        setEngagementLockedState(true);
-        var active = stepper.querySelector('.step-pill.active') || stepper.querySelector('.step-pill[data-step-code="DRAFT_REPORT"]');
-        loadStep(active ? active.getAttribute('data-step-code') : 'DRAFT_REPORT', active ? active.getAttribute('data-step-no') : 1);
-    }
-
-    function unlockEngagementSelection() {
-        lockedEngagementId = '';
-        setEngagementLockedState(false);
-        showAlert(false);
-        syncStepperAvailability(true);
     }
 
     function initStepper() {
@@ -170,28 +131,26 @@
     }
 
     selector.addEventListener('change', function () {
-        if (selector.disabled) {
+        var hasSelection = !!selectedEngagementId();
+        showAlert(!hasSelection);
+        stepper.querySelectorAll('.step-pill').forEach(function (anchor) {
+            anchor.classList.toggle('disabled', !hasSelection);
+        });
+
+        if (!hasSelection) {
+            clearContent('Select an engagement from the dropdown above to load Back Office workflow content.');
             return;
         }
-        lockAndLoadCurrentStep();
+
+        var active = stepper.querySelector('.step-pill.active') || stepper.querySelector('.step-pill[data-step-code="DRAFT_REPORT"]');
+        loadStep(active ? active.getAttribute('data-step-code') : 'DRAFT_REPORT', active ? active.getAttribute('data-step-no') : 1);
     });
 
-    if (changeEngagementButton) {
-        changeEngagementButton.addEventListener('click', function () {
-            unlockEngagementSelection();
-            selector.focus();
-        });
-    }
-
     window.fieldAuditBoDashboard = {
-        loadStepContent: loadStep,
-        unlockEngagementSelection: unlockEngagementSelection,
-        getLockedEngagementId: function () { return lockedEngagementId; }
+        loadStepContent: loadStep
     };
 
     initStepper();
     loadEngagements();
-    setEngagementLockedState(false);
     showAlert(true);
-    syncStepperAvailability(false);
 })();
