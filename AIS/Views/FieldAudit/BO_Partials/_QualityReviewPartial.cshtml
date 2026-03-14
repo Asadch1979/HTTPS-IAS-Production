@@ -345,16 +345,10 @@
     if(hidden){ hidden.value=String(engId); }
 
     if (typeof getEntityObservations === 'function') {
-      getEntityObservations(String(engId));
+      getEntityObservations();
       return true;
     }
     return false;
-  }
-
-  if (document.readyState === 'complete' || document.readyState === 'interactive') {
-    runInit();
-  } else {
-    document.addEventListener('DOMContentLoaded', runInit, { once: true });
   }
 
   (function waitForStartupFlow(attempts){
