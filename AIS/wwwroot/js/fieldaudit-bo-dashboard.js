@@ -114,7 +114,8 @@
         }
 
         stepHost.querySelectorAll('input, select, textarea, button').forEach(function (el) {
-            if (!el.classList.contains('btn-close')) {
+            var isPreConcludingAction = (el.getAttribute('data-onclick') || '').indexOf('submitPreConcluding') !== -1;
+            if (!el.classList.contains('btn-close') && !isPreConcludingAction) {
                 el.disabled = true;
             }
         });

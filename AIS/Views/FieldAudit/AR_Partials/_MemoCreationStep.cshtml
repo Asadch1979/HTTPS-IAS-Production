@@ -1,7 +1,6 @@
 @model AIS.Models.FieldAuditWorkflow.FieldAuditStepContextViewModel
 <div class="field-step">
     <h5 class="text-success">Memo Creation</h5>
-    <p class="text-muted">Create observations for ENG_ID: <strong>@Model.EngagementId</strong>.</p>
-    <div class="alert alert-info">Forward-to-zone/branch actions are intentionally excluded from this dashboard step.</div>
+    <p class="text-muted">Create observations.</p>
     <a class="btn btn-primary" href="/Execution/cau_observation?engId=@Model.EngagementId">Open Memo Creation Workspace</a>
 </div>
