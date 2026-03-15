@@ -98,6 +98,8 @@ namespace AIS.Controllers
                 }
 
             ViewData["AnnexList"] = _dbConnection.GetAnnexuresForChecklistDetail();
+            ViewData["ProcessList"] = _dbConnection.GetAuditChecklist();
+            ViewData["RiskList"] = _dbConnection.GetRisks();
             ViewData["ReadOnlyMode"] = isReadOnly;
 
             var viewModel = new FieldAuditGridReplicaViewModel
