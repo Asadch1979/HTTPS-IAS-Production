@@ -1,7 +1,6 @@
 @model AIS.Models.FieldAuditWorkflow.FieldAuditStepContextViewModel
 <div class="field-step">
     <h5 class="text-success">Submit to Auditee</h5>
-    <p class="text-muted">Submit observations to auditee for ENG_ID: <strong>@Model.EngagementId</strong>.</p>
-    <div class="alert alert-info">Add-to-draft actions are intentionally excluded from this step design.</div>
+    <p class="text-muted">Submit observations to auditee.</p>
     <a class="btn btn-primary" href="/Execution/manage_observations_branches?engId=@Model.EngagementId">Open Submit to Auditee Workspace</a>
 </div>
