@@ -59,6 +59,14 @@ function getPageData() {
 
      });
 
+     function showBoApiDebugAlert(apiName, engId) {
+         if (!window.fieldAuditBoContext || !window.fieldAuditBoContext.engId) {
+             return;
+         }
+
+         alert('engId = ' + engId + ' & Apicall is ' + apiName);
+     }
+
      function getEntityObservations() {
           var flag = 0;
          if($('#entitySelectField').val()==0){
@@ -68,6 +76,7 @@ function getPageData() {
          }
          g_engId = $('#entitySelectField').val();
          $('#engIdHidden').val(g_engId);
+         showBoApiDebugAlert('get_obs_for_pre_concluding', g_engId);
          if (respSection) {
              respSection.updateContext({ engId: parseInt(g_engId || 0) });
          }
