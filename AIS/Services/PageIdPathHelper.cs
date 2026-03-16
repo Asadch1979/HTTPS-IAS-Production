@@ -18,7 +18,8 @@ namespace AIS.Services
             "/Login/DoLogin",
             "/Login/Index",
             "/Login/Index_Dev",
-            "/Login/Maintenance"
+            "/Login/Maintenance",
+            "/IidInquiryReportPdf/GeneratePdf"
             };
 
         public static bool IsExempt(HttpRequest request)
