@@ -180,7 +180,7 @@ namespace AIS.Controllers
             using var cmd = con.CreateCommand();
             cmd.BindByName = true;
             cmd.CommandType = CommandType.StoredProcedure;
-            cmd.CommandText = "PKG_INQ.GET_COMPLAINTS_DROPDOWN";
+            cmd.CommandText = "PKG_INQ.GET_COMPLAINTS_DD";
             cmd.Parameters.Add("p_page_id", OracleDbType.Int32).Value = 5;
             cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
 

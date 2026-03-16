@@ -18,6 +18,7 @@ namespace AIS.Services
             "/Login/DoLogin",
             "/Login/Index",
             "/Login/Index_Dev",
+            "/Login/KillSessions",
             "/Login/Maintenance",
             "/IidInquiryReportPdf/GeneratePdf"
             };
