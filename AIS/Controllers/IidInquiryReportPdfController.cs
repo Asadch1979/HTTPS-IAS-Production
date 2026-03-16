@@ -71,18 +71,9 @@ namespace AIS.Controllers
                 PopulatePdfGeneratorIdentity(pdfData);
 
                 var html = _pdfBuilder.BuildHtml(pdfData);
-                _logger.LogInformation("IID PDF HTML built. htmlNull={HtmlNull}, htmlLength={HtmlLength}, hasHtmlTag={HasHtmlTag}",
-                    html == null,
-                    html?.Length ?? 0,
-                    !string.IsNullOrWhiteSpace(html) && html.IndexOf("<html", StringComparison.OrdinalIgnoreCase) >= 0);
                 if (string.IsNullOrWhiteSpace(html))
                     {
                     return StatusCode(500, "IID PDF content could not be prepared.");
-                    }
-
-                if (html.IndexOf("<html", StringComparison.OrdinalIgnoreCase) < 0)
-                    {
-                    _logger.LogWarning("IID PDF HTML does not appear to be a full HTML document for complaintId={ComplaintId}.", complaintId);
                     }
 
                 var pdfBytes = await RenderPdfWithTimeoutAsync(html, TimeSpan.FromSeconds(60), BuildWatermarkTexts(pdfData));
@@ -206,7 +197,7 @@ namespace AIS.Controllers
             return karachiTime.ToString("dd-MMM-yyyy HH:mm", CultureInfo.InvariantCulture);
             }
 
-        private async Task<byte[]> RenderPdfWithTimeoutAsync(string html, TimeSpan timeout, PdfWatermarkText watermarkTexts)
+        private static async Task<byte[]> RenderPdfWithTimeoutAsync(string html, TimeSpan timeout, PdfWatermarkText watermarkTexts)
             {
             var renderTask = Task.Run(() => RenderPdf(html, watermarkTexts));
             var completedTask = await Task.WhenAny(renderTask, Task.Delay(timeout));
@@ -218,45 +209,15 @@ namespace AIS.Controllers
             return await renderTask;
             }
 
-        private byte[] RenderPdf(string html, PdfWatermarkText watermarkTexts)
+        private static byte[] RenderPdf(string html, PdfWatermarkText watermarkTexts)
             {
             using var output = new MemoryStream();
-            if (output == null)
-                {
-                throw new InvalidOperationException("IID inquiry PDF output stream is null before conversion.");
-                }
-
             using (var writer = new PdfWriter(output))
                 {
-                if (writer == null)
-                    {
-                    throw new InvalidOperationException("IID inquiry PdfWriter is null before conversion.");
-                    }
-
                 using var pdf = new PdfDocument(writer);
-                if (pdf == null)
-                    {
-                    throw new InvalidOperationException("IID inquiry PdfDocument is null before conversion.");
-                    }
-
                 pdf.SetDefaultPageSize(PageSize.A4);
                 pdf.AddEventHandler(PdfDocumentEvent.END_PAGE, new PageWatermarkEventHandler(watermarkTexts));
                 var converterProperties = new ConverterProperties();
-                if (converterProperties == null)
-                    {
-                    throw new InvalidOperationException("IID inquiry ConverterProperties is null before conversion.");
-                    }
-
-                if (string.IsNullOrWhiteSpace(html))
-                    {
-                    throw new InvalidOperationException("IID inquiry PDF HTML is null or empty before conversion.");
-                    }
-
-                _logger.LogInformation("IID PDF Render start. htmlLength={HtmlLength}, pdfNull={PdfNull}, converterNull={ConverterNull}",
-                    html?.Length ?? 0,
-                    pdf == null,
-                    converterProperties == null);
-
                 using Document document = HtmlConverter.ConvertToDocument(html, pdf, converterProperties);
                 }
 
