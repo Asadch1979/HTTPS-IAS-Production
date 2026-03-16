@@ -52,27 +52,31 @@ namespace AIS.Controllers
             var stopwatch = Stopwatch.StartNew();
             try
                 {
+                _logger.LogInformation("IID Inquiry PDF requested for complaintId={ComplaintId}", complaintId);
+
                 var precheck = EnsureReadyForPdf(complaintId);
                 if (precheck != null)
                     {
                     return precheck;
                     }
 
-                var data = _dbConnection.GetIidInquiryReportPdfData(complaintId);
-                if (data == null)
+                _logger.LogInformation("Calling GetIidInquiryReportPdfData for complaintId={ComplaintId}", complaintId);
+                var dBConnection = _dbConnection;
+                var pdfData = dBConnection.GetIidInquiryReportPdfData(complaintId);
+                if (pdfData == null)
                     {
                     return BadRequest("Unable to load IID report data for PDF generation.");
                     }
 
-                PopulatePdfGeneratorIdentity(data);
+                PopulatePdfGeneratorIdentity(pdfData);
 
-                var html = _pdfBuilder.BuildHtml(data);
+                var html = _pdfBuilder.BuildHtml(pdfData);
                 if (string.IsNullOrWhiteSpace(html))
                     {
                     return StatusCode(500, "IID PDF content could not be prepared.");
                     }
 
-                var pdfBytes = await RenderPdfWithTimeoutAsync(html, TimeSpan.FromSeconds(60), BuildWatermarkTexts(data));
+                var pdfBytes = await RenderPdfWithTimeoutAsync(html, TimeSpan.FromSeconds(60), BuildWatermarkTexts(pdfData));
                 if (pdfBytes == null)
                     {
                     return StatusCode(504, "PDF generation timed out. Please try again.");
@@ -80,7 +84,7 @@ namespace AIS.Controllers
 
                 stopwatch.Stop();
                 _logger.LogInformation("IID PDF generated for complaint {ComplaintId} in {ElapsedMs} ms.", complaintId, stopwatch.ElapsedMilliseconds);
-                return File(pdfBytes, "application/pdf", BuildFilename(data));
+                return File(pdfBytes, "application/pdf", BuildFilename(pdfData));
                 }
             catch (Exception ex)
                 {
