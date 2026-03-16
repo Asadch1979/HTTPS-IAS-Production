@@ -1,5 +1,6 @@
 using AIS.Models.IID;
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Net;
@@ -21,34 +22,36 @@ namespace AIS.Services
             sb.AppendLine("<html><head><meta charset=\"utf-8\" />");
             sb.AppendLine("<style>");
             sb.AppendLine("@page { size:A4 portrait; margin:18mm; }");
-            sb.AppendLine("body{ font-family: Arial, Helvetica, sans-serif; font-size:12px; color:#111; }");
-            sb.AppendLine("h1,h2,h3{ margin:0 0 8px; }");
-            sb.AppendLine(".page-break{ page-break-before:always; }");
-            sb.AppendLine(".section-title{ font-size:14px; font-weight:700; margin:12px 0 6px; padding:6px 10px; border-left:4px solid #111; background:#f6f8fa; }");
-            sb.AppendLine(".meta-grid{ width:100%; border-collapse:collapse; margin:8px 0; }");
-            sb.AppendLine(".meta-grid td,.meta-grid th{ border:1px solid #111; padding:6px; vertical-align:top; }");
-            sb.AppendLine(".label{ width:30%; font-weight:700; background:#fafafa; }");
-            sb.AppendLine(".narrative{ margin:6px 0 10px; line-height:1.55; text-align:justify; }");
-            sb.AppendLine(".para-box{ border:1px solid #d0d7de; border-radius:8px; padding:10px 12px; margin:8px 0; }");
-            sb.AppendLine(".muted{ color:#666; }");
+            sb.AppendLine("body { font-family: 'Times New Roman', Times, serif; font-size: 12pt; color: #111; line-height: 1.5; }");
+            sb.AppendLine(".page-break { page-break-before: always; }");
+            sb.AppendLine(".cover { min-height: 245mm; display: flex; flex-direction: column; justify-content: center; text-align: center; }");
+            sb.AppendLine(".cover-bank { font-size: 18pt; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6mm; }");
+            sb.AppendLine(".cover-dept { font-size: 14pt; font-weight: 700; text-transform: uppercase; margin-bottom: 12mm; }");
+            sb.AppendLine(".cover-title { font-size: 24pt; font-weight: 700; letter-spacing: 1px; margin-bottom: 12mm; }");
+            sb.AppendLine(".cover-ref { font-size: 12pt; margin: 2mm 0; }");
+            sb.AppendLine(".cover-conducted { margin-top: 18mm; }");
+            sb.AppendLine(".cover-subtle { margin-top: auto; font-size: 10pt; color: #444; }");
+            sb.AppendLine(".annex-heading { text-align: center; font-size: 16pt; font-weight: 700; margin: 0 0 8mm; }");
+            sb.AppendLine(".annex-subheading { text-align: center; font-size: 12pt; font-weight: 700; margin: 0 0 8mm; text-transform: uppercase; }");
+            sb.AppendLine(".section { margin: 0 0 7mm; }");
+            sb.AppendLine(".section-label { font-weight: 700; margin-bottom: 2mm; }");
+            sb.AppendLine(".section-body { margin-left: 4mm; text-align: justify; }");
+            sb.AppendLine(".section-body ul, .section-body ol { margin: 2mm 0 0 5mm; padding-left: 4mm; }");
+            sb.AppendLine(".separator { margin-top: 3mm; margin-left: 4mm; color: #444; }");
+            sb.AppendLine(".signature-grid { margin-top: 16mm; width: 100%; border-collapse: collapse; }");
+            sb.AppendLine(".signature-grid td { width: 50%; text-align: center; vertical-align: bottom; padding-top: 12mm; }");
+            sb.AppendLine(".signature-line { display: inline-block; min-width: 60mm; border-top: 1px solid #222; padding-top: 2mm; font-weight: 700; }");
+            sb.AppendLine(".annex-three-title { text-align: center; font-size: 16pt; font-weight: 700; margin: 0 0 6mm; }");
+            sb.AppendLine(".annex-three-table { width: 100%; border-collapse: collapse; table-layout: fixed; }");
+            sb.AppendLine(".annex-three-table th, .annex-three-table td { border: 1px solid #333; padding: 6px 7px; vertical-align: top; font-size: 10.5pt; }");
+            sb.AppendLine(".annex-three-table th { text-align: left; background: #f5f5f5; }");
+            sb.AppendLine(".col-sr { width: 6%; } .col-category { width: 16%; } .col-violation { width: 30%; } .col-reference { width: 24%; } .col-recommendation { width: 24%; }");
+            sb.AppendLine(".muted { color: #666; }");
             sb.AppendLine("</style></head><body>");
 
             AppendCover(sb, data);
-            AppendComplaintSnapshot(sb, data);
-            AppendComplainantDetails(sb, data);
-            AppendAccusedDetails(sb, data);
-            AppendGist(sb, data);
-            AppendProceedings(sb, data);
-            AppendStatements(sb, data, true);
-            AppendStatements(sb, data, false);
-            AppendRecords(sb, data);
-            AppendEvidence(sb, data);
-            AppendViolations(sb, data);
-            AppendFindingsRecommendations(sb, data);
-            AppendAdditionalCharges(sb, data);
-            AppendDsa(sb, data);
-            AppendFinalConclusion(sb, data);
-            AppendSignature(sb, data);
+            AppendAnnexTwo(sb, data);
+            AppendAnnexThree(sb, data);
 
             sb.AppendLine("</body></html>");
             return sb.ToString();
@@ -56,198 +59,212 @@ namespace AIS.Services
 
         private static void AppendCover(StringBuilder sb, IidInquiryReportPdfData data)
             {
-            sb.AppendLine("<section>");
-            sb.AppendLine("<h1 style='text-align:center;font-size:20px;'>IID Inquiry Report</h1>");
-            sb.AppendLine("<p style='text-align:center;font-size:13px;'>Internal Audit Division - ZTBL</p>");
-            sb.AppendLine("<table class='meta-grid'>");
-            AppendMetaRow(sb, "Complaint No", data.Header?.ComplaintNo);
-            AppendMetaRow(sb, "Inquiry Status", data.Header?.InquiryStatus);
-            AppendMetaRow(sb, "Generated On", data.Header?.GeneratedOn.ToString("dd-MMM-yyyy HH:mm", CultureInfo.InvariantCulture));
-            sb.AppendLine("</table>");
-            sb.AppendLine("<p style='text-align:center;font-weight:700;margin-top:20px;'>Confidential - Internal Use Only</p>");
+            sb.AppendLine("<section class='cover'>");
+            sb.AppendFormat(CultureInfo.InvariantCulture, "<div class='cover-bank'>{0}</div>", Encode(GetValue(data.Header?.BankName, "Zarai Taraqiati Bank Limited")));
+            sb.AppendFormat(CultureInfo.InvariantCulture, "<div class='cover-dept'>{0}</div>", Encode(GetValue(data.Header?.DepartmentName, "Internal Audit Division")));
+            sb.AppendLine("<div class='cover-title'>INQUIRY REPORT</div>");
+            sb.AppendFormat(CultureInfo.InvariantCulture, "<div class='cover-ref'><strong>Inquiry / Complaint Reference:</strong> {0}</div>", Encode(GetValue(data.Header?.ComplaintNo, data.ComplaintSnapshot?.ComplaintNo)));
+            sb.AppendFormat(CultureInfo.InvariantCulture, "<div class='cover-ref'><strong>Branch / Context:</strong> {0}</div>", Encode(JoinNotEmpty(" | ", data.ComplaintSnapshot?.Region, data.ComplaintSnapshot?.Branch, data.ComplaintSnapshot?.LocationType)));
+            sb.AppendLine("<div class='cover-conducted'>");
+            sb.AppendLine("<div><strong>Conducted by</strong></div>");
+            sb.AppendFormat(CultureInfo.InvariantCulture, "<div>{0}</div>", Encode(GetValue(data.Header?.GeneratedByName, "Inquiry Team")));
+            sb.AppendFormat(CultureInfo.InvariantCulture, "<div>PP No: {0}</div>", Encode(GetValue(data.Header?.GeneratedByPPNo, "N/A")));
+            sb.AppendLine("</div>");
+            sb.AppendFormat(CultureInfo.InvariantCulture, "<div class='cover-subtle'>Generated on: {0} &nbsp;&nbsp; | &nbsp;&nbsp; Confidential (Internal Use)</div>", Encode(FormatDate(data.Header?.GeneratedOn)));
             sb.AppendLine("</section>");
             }
 
-        private static void AppendComplaintSnapshot(StringBuilder sb, IidInquiryReportPdfData data)
+        private static void AppendAnnexTwo(StringBuilder sb, IidInquiryReportPdfData data)
             {
-            sb.AppendLine("<section class='page-break'><div class='section-title'>1. Complaint Snapshot</div><table class='meta-grid'>");
-            AppendMetaRow(sb, "Complaint No", data.ComplaintSnapshot?.ComplaintNo);
-            AppendMetaRow(sb, "Nature / Category", $"{data.ComplaintSnapshot?.Nature} / {data.ComplaintSnapshot?.Category}");
-            AppendMetaRow(sb, "Submitted On", data.ComplaintSnapshot?.SubmittedOn);
-            AppendMetaRow(sb, "Region / Branch", $"{data.ComplaintSnapshot?.Region} / {data.ComplaintSnapshot?.Branch}");
-            AppendMetaRow(sb, "Action Required", data.ComplaintSnapshot?.ActionRequired);
-            AppendMetaRow(sb, "Complaint Background", data.ComplaintSnapshot?.Contents);
-            sb.AppendLine("</table></section>");
-            }
+            sb.AppendLine("<section class='page-break'>");
+            sb.AppendLine("<div class='annex-heading'>Annex-II</div>");
+            sb.AppendLine("<div class='annex-subheading'>Detailed Inquiry Narrative</div>");
 
-        private static void AppendComplainantDetails(StringBuilder sb, IidInquiryReportPdfData data)
-            {
-            sb.AppendLine("<section><div class='section-title'>2. Complainant Details</div><table class='meta-grid'>");
-            AppendMetaRow(sb, "Name", data.ComplaintSnapshot?.ComplainantName);
-            AppendMetaRow(sb, "CNIC", data.ComplaintSnapshot?.Cnic);
-            AppendMetaRow(sb, "Cell No", data.ComplaintSnapshot?.CellularNumber);
-            AppendMetaRow(sb, "Gender", data.ComplaintSnapshot?.Gender);
-            AppendMetaRow(sb, "Address", data.ComplaintSnapshot?.MailingAddress);
-            AppendMetaRow(sb, "Received From", data.ComplaintSnapshot?.ReceivedFrom);
-            sb.AppendLine("</table></section>");
-            }
-
-        private static void AppendAccusedDetails(StringBuilder sb, IidInquiryReportPdfData data)
-            {
-            sb.AppendLine("<section><div class='section-title'>3. Accused Details</div>");
-            if (!data.AccusedList.Any()) { sb.AppendLine("<p class='muted'>No accused detail available.</p></section>"); return; }
-            foreach (var row in data.AccusedList)
+            AppendSection(sb, "1. Complaint Details / Incident Reported", new[]
                 {
-                sb.AppendLine("<div class='para-box'>");
-                sb.AppendFormat(CultureInfo.InvariantCulture, "<div><strong>{0}</strong> ({1})</div>", Encode(row.PersonName), Encode(row.Designation));
-                sb.AppendFormat(CultureInfo.InvariantCulture, "<div>PP No: {0} | CNIC: {1}</div>", Encode(row.PpnoNumber), Encode(row.Cnic));
-                sb.AppendFormat(CultureInfo.InvariantCulture, "<div>Role: {0} | Posting: {1}</div>", Encode(row.RoleType), Encode(row.PostingPlace));
-                sb.AppendLine("</div>");
-                }
-            sb.AppendLine("</section>");
-            }
+                $"Complaint No: {GetValue(data.ComplaintSnapshot?.ComplaintNo)}",
+                $"Nature / Category: {JoinNotEmpty(" / ", data.ComplaintSnapshot?.Nature, data.ComplaintSnapshot?.Category)}",
+                $"Submitted On: {GetValue(data.ComplaintSnapshot?.SubmittedOn)}",
+                $"Action Required: {GetValue(data.ComplaintSnapshot?.ActionRequired)}",
+                $"Incident Narrative: {GetValue(data.ComplaintSnapshot?.Contents)}"
+                });
 
-        private static void AppendGist(StringBuilder sb, IidInquiryReportPdfData data)
-            {
-            sb.AppendLine("<section><div class='section-title'>4. Gist / Complaint Background</div>");
-            sb.AppendFormat(CultureInfo.InvariantCulture, "<div class='narrative'>{0}</div>", ToParagraphs(data.FinalConclusion?.Gist ?? data.ComplaintSnapshot?.Contents));
-            sb.AppendLine("</section>");
-            }
-
-        private static void AppendProceedings(StringBuilder sb, IidInquiryReportPdfData data)
-            {
-            sb.AppendLine("<section><div class='section-title'>5. Proceedings of Inquiry</div>");
-            sb.AppendFormat(CultureInfo.InvariantCulture, "<div class='narrative'>{0}</div>", ToParagraphs(data.FinalConclusion?.Proceedings));
-            sb.AppendLine("</section>");
-            }
-
-        private static void AppendStatements(StringBuilder sb, IidInquiryReportPdfData data, bool complainant)
-            {
-            var rows = data.Statements.Where(x => IsComplainantRole(x.RoleType) == complainant).ToList();
-            sb.AppendFormat("<section><div class='section-title'>{0}</div>", complainant ? "6. Statement of Complainant" : "7. Statements of Accused / Others");
-            if (!rows.Any()) { sb.AppendLine("<p class='muted'>No statement available.</p></section>"); return; }
-            foreach (var row in rows)
+            AppendSection(sb, "2. Complainant Details", new[]
                 {
-                sb.AppendLine("<div class='para-box'>");
-                sb.AppendFormat(CultureInfo.InvariantCulture, "<div><strong>{0}</strong> ({1})</div>", Encode(row.PersonName), Encode(row.RoleType));
-                sb.AppendFormat(CultureInfo.InvariantCulture, "<div>Date/Time: {0} | Place: {1}</div>", FormatDate(row.StatementDatetime), Encode(row.Place));
-                sb.AppendFormat(CultureInfo.InvariantCulture, "<div>Statement Mode: {0} | Attachment: {1}</div>", Encode(row.ModeType), Encode(row.UploadedStatement));
-                sb.AppendFormat(CultureInfo.InvariantCulture, "<div class='narrative'>{0}</div>", ToParagraphs(row.KeyPoints));
-                sb.AppendLine("</div>");
-                }
-            sb.AppendLine("</section>");
-            }
+                $"Name: {GetValue(data.ComplaintSnapshot?.ComplainantName)}",
+                $"CNIC: {GetValue(data.ComplaintSnapshot?.Cnic)}",
+                $"Cell Number: {GetValue(data.ComplaintSnapshot?.CellularNumber)}",
+                $"Gender: {GetValue(data.ComplaintSnapshot?.Gender)}",
+                $"Address: {GetValue(data.ComplaintSnapshot?.MailingAddress)}"
+                });
 
-        private static void AppendRecords(StringBuilder sb, IidInquiryReportPdfData data)
-            {
-            sb.AppendLine("<section><div class='section-title'>8. Record Scrutinized</div>");
-            if (!data.RecordsScrutinized.Any()) { sb.AppendLine("<p class='muted'>No records added.</p></section>"); return; }
-            foreach (var row in data.RecordsScrutinized)
+            AppendSection(sb, "3. Reference Details and Originating Process Center", new[]
                 {
-                sb.AppendFormat(CultureInfo.InvariantCulture, "<div class='para-box'><div><strong>{0}</strong></div><div class='narrative'>{1}</div></div>", Encode(row.RecordTitle), ToParagraphs(row.RecordDetails));
-                }
+                $"Received From: {GetValue(data.ComplaintSnapshot?.ReceivedFrom)}",
+                $"Region / Branch: {JoinNotEmpty(" / ", data.ComplaintSnapshot?.Region, data.ComplaintSnapshot?.Branch)}",
+                $"Location Type: {GetValue(data.ComplaintSnapshot?.LocationType)}",
+                $"Referenced Documents: {JoinNotEmpty(", ", data.ComplaintSnapshot?.UploadedComplaint, data.ComplaintSnapshot?.UploadedFFR, data.ComplaintSnapshot?.UploadedEvidence)}"
+                });
+
+            AppendSection(sb, "4. Details of Accusations", ToNumberedItems(data.Accusations.OrderBy(a => a.SortOrder).Select(a => a.AccusationText)));
+
+            var accused = data.AccusedList.Where(a => !IsComplainantRole(a.RoleType)).ToList();
+            var mainAccused = accused.FirstOrDefault() ?? data.AccusedList.FirstOrDefault();
+            AppendSection(sb, "5. Main Alleged Accused Details", mainAccused == null
+                ? new[] { "No main alleged accused details available." }
+                : new[]
+                    {
+                    $"Name: {GetValue(mainAccused.PersonName)}",
+                    $"Designation: {GetValue(mainAccused.Designation)}",
+                    $"Role: {GetValue(mainAccused.RoleType)}",
+                    $"PP No: {GetValue(mainAccused.PpnoNumber)}",
+                    $"CNIC: {GetValue(mainAccused.Cnic)}",
+                    $"Posting Place: {GetValue(mainAccused.PostingPlace)}"
+                    });
+
+            AppendSection(sb, "6. Alleged Co-accused Details", ToNumberedItems(accused.Skip(mainAccused == null ? 0 : 1).Select(x =>
+                $"{GetValue(x.PersonName)} ({GetValue(x.Designation)}), PP No: {GetValue(x.PpnoNumber)}, Role: {GetValue(x.RoleType)}, Posting: {GetValue(x.PostingPlace)}")));
+
+            AppendSection(sb, "7. Inquiry Proceedings", new[] { GetValue(data.FinalConclusion?.Proceedings) });
+            AppendSection(sb, "8. Details of Record Scrutinized", ToNumberedItems(data.RecordsScrutinized.OrderBy(r => r.SortOrder).Select(r =>
+                $"{GetValue(r.RecordTitle)}: {GetValue(r.RecordDetails)}")));
+
+            var complainantStatements = data.Statements.Where(x => IsComplainantRole(x.RoleType)).ToList();
+            var accusedStatements = data.Statements.Where(x => !IsComplainantRole(x.RoleType)).ToList();
+
+            AppendSection(sb, "9. Time and place of Recording Statement of Complainant", ToNumberedItems(complainantStatements.Select(s =>
+                $"{GetValue(s.PersonName)} - Date/Time: {FormatDate(s.StatementDatetime)}, Place: {GetValue(s.Place)}, Mode: {GetValue(s.ModeType)}")));
+
+            AppendSection(sb, "10. Time and place of Recording Statement of Accused", ToNumberedItems(accusedStatements.Select(s =>
+                $"{GetValue(s.PersonName)} - Date/Time: {FormatDate(s.StatementDatetime)}, Place: {GetValue(s.Place)}, Mode: {GetValue(s.ModeType)}")));
+
+            AppendSection(sb, "11. Critical Points highlighted in statement of complainant", ToNumberedItems(complainantStatements.Select(s =>
+                $"{GetValue(s.PersonName)}: {GetValue(s.KeyPoints)}")));
+
+            AppendSection(sb, "12. Critical Points highlighted in statement of accused", ToNumberedItems(accusedStatements.Select(s =>
+                $"{GetValue(s.PersonName)}: {GetValue(s.KeyPoints)}")));
+
+            AppendSection(sb, "13. Details of material evidence", ToNumberedItems(data.EvidenceFiles
+                .Where(e => !ContainsIgnoreCase(e.EvidenceType, "circumstantial"))
+                .Select(e => $"{GetValue(e.EvidenceType)} - {GetValue(e.Description)} (File: {GetValue(e.FileName)}, Uploaded: {FormatDate(e.UploadedOn)})")));
+
+            AppendSection(sb, "14. Details of circumstantial evidence", ToNumberedItems(data.EvidenceFiles
+                .Where(e => ContainsIgnoreCase(e.EvidenceType, "circumstantial"))
+                .Select(e => $"{GetValue(e.EvidenceType)} - {GetValue(e.Description)} (File: {GetValue(e.FileName)}, Uploaded: {FormatDate(e.UploadedOn)})")));
+
+            AppendSection(sb, "15. Details of findings with implications / violated policy references", BuildFindingsWithReferences(data));
+            AppendSection(sb, "16. Details of clear recommendations", BuildRecommendations(data));
+            AppendSection(sb, "17. Whether reported in latest audit report", new[] { "Not specifically available in source records." });
+            AppendSection(sb, "18. Root cause of incident", new[] { GetValue(data.FinalConclusion?.Findings, data.FinalConclusion?.Gist) });
+
+            AppendSection(sb, "19. Name with PP.No. of accused against whom DSAs framed", ToNumberedItems(data.DsaFiles.OrderBy(d => d.SortOrder).Select(d =>
+                $"{GetValue(d.PersonName)} ({GetValue(d.Designation)}), PP No: {GetValue(d.PpnoNumber)}, Status: {GetValue(d.DsaStatus)}, Remarks: {GetValue(d.Remarks)}")));
+
+            AppendSection(sb, "20. Summary of violations statement", ToNumberedItems(data.Violations.OrderBy(v => v.SortOrder).Select(v =>
+                $"{GetValue(v.Category)}: {GetValue(v.ViolationDetail)} | Reference: {GetValue(v.ReferenceText)}")));
+
+            sb.AppendLine("<table class='signature-grid'><tr><td><span class='signature-line'>Team Member</span></td><td><span class='signature-line'>Team Leader / Head</span></td></tr></table>");
             sb.AppendLine("</section>");
             }
 
-        private static void AppendEvidence(StringBuilder sb, IidInquiryReportPdfData data)
+        private static void AppendAnnexThree(StringBuilder sb, IidInquiryReportPdfData data)
             {
-            sb.AppendLine("<section><div class='section-title'>9. Evidence Reviewed</div>");
-            if (!data.EvidenceFiles.Any()) { sb.AppendLine("<p class='muted'>No evidence file uploaded.</p></section>"); return; }
-            sb.AppendLine("<table class='meta-grid'><tr><th>Type</th><th>Description</th><th>File</th><th>Uploaded On</th></tr>");
-            foreach (var row in data.EvidenceFiles)
+            sb.AppendLine("<section class='page-break'>");
+            sb.AppendLine("<div class='annex-three-title'>Annex-III</div>");
+            sb.AppendLine("<div class='annex-subheading'>Violation Summary</div>");
+
+            if (!data.Violations.Any())
                 {
-                sb.AppendFormat(CultureInfo.InvariantCulture, "<tr><td>{0}</td><td>{1}</td><td>{2}</td><td>{3}</td></tr>", Encode(row.EvidenceType), Encode(row.Description), Encode(row.FileName), FormatDate(row.UploadedOn));
-                }
-            sb.AppendLine("</table></section>");
-            }
-
-        private static void AppendViolations(StringBuilder sb, IidInquiryReportPdfData data)
-            {
-            sb.AppendLine("<section><div class='section-title'>10. Violations / Rules / Policy References</div>");
-            if (!data.Violations.Any()) { sb.AppendLine("<p class='muted'>No violation recorded.</p></section>"); return; }
-            foreach (var row in data.Violations)
-                {
-                sb.AppendLine("<div class='para-box'>");
-                sb.AppendFormat(CultureInfo.InvariantCulture, "<div><strong>Category:</strong> {0}</div>", Encode(row.Category));
-                sb.AppendFormat(CultureInfo.InvariantCulture, "<div class='narrative'><strong>Violation:</strong> {0}</div>", ToParagraphs(row.ViolationDetail));
-                sb.AppendFormat(CultureInfo.InvariantCulture, "<div><strong>Reference:</strong> {0}</div>", Encode(row.ReferenceText));
-                sb.AppendLine("</div>");
-                }
-            sb.AppendLine("</section>");
-            }
-
-        private static void AppendFindingsRecommendations(StringBuilder sb, IidInquiryReportPdfData data)
-            {
-            sb.AppendLine("<section><div class='section-title'>11. Findings & Recommendations (Allegation-wise)</div>");
-            var rows = data.FindingsRecommendations.Where(x => x.AccusationId != 0).ToList();
-            if (!rows.Any()) { sb.AppendLine("<p class='muted'>No findings/recommendation available.</p></section>"); return; }
-            foreach (var row in rows)
-                {
-                sb.AppendLine("<div class='para-box'>");
-                sb.AppendFormat(CultureInfo.InvariantCulture, "<div><strong>Allegation:</strong> {0}</div>", Encode(row.AccusationText));
-                sb.AppendFormat(CultureInfo.InvariantCulture, "<div class='narrative'><strong>Finding:</strong> {0}</div>", ToParagraphs(row.FindingText));
-                sb.AppendFormat(CultureInfo.InvariantCulture, "<div class='narrative'><strong>Recommendation:</strong> {0}</div>", ToParagraphs(row.RecommendationText));
-                sb.AppendFormat(CultureInfo.InvariantCulture, "<div><strong>Master Outcome:</strong> {0}</div>", Encode(row.Outcome));
-                sb.AppendLine("</div>");
-                }
-            sb.AppendLine("</section>");
-            }
-
-        private static void AppendAdditionalCharges(StringBuilder sb, IidInquiryReportPdfData data)
-            {
-            sb.AppendLine("<section><div class='section-title'>12. Additional Charges</div>");
-            var row = data.FindingsRecommendations.FirstOrDefault(x => x.AccusationId == 0)
-                ?? data.FindingsRecommendations.FirstOrDefault(x => (x.AccusationText ?? string.Empty).Trim().Equals("Additional Charges", StringComparison.OrdinalIgnoreCase));
-            if (row == null) { sb.AppendLine("<p class='muted'>No additional charge found.</p></section>"); return; }
-            sb.AppendFormat(CultureInfo.InvariantCulture, "<div class='para-box'><div class='narrative'><strong>Finding:</strong> {0}</div><div class='narrative'><strong>Recommendation:</strong> {1}</div><div><strong>Outcome:</strong> {2}</div></div>", ToParagraphs(row.FindingText), ToParagraphs(row.RecommendationText), Encode(row.Outcome));
-            sb.AppendLine("</section>");
-            }
-
-        private static void AppendDsa(StringBuilder sb, IidInquiryReportPdfData data)
-            {
-            sb.AppendLine("<section><div class='section-title'>13. DSA Section</div>");
-            if (!data.DsaFiles.Any()) { sb.AppendLine("<p class='muted'>No DSA record.</p></section>"); return; }
-            sb.AppendLine("<table class='meta-grid'><tr><th>Name</th><th>Designation</th><th>PP No</th><th>Status</th><th>Remarks</th></tr>");
-            foreach (var row in data.DsaFiles)
-                {
-                sb.AppendFormat(CultureInfo.InvariantCulture, "<tr><td>{0}</td><td>{1}</td><td>{2}</td><td>{3}</td><td>{4}</td></tr>", Encode(row.PersonName), Encode(row.Designation), Encode(row.PpnoNumber), Encode(row.DsaStatus), Encode(row.Remarks));
-                }
-            sb.AppendLine("</table></section>");
-            }
-
-        private static void AppendFinalConclusion(StringBuilder sb, IidInquiryReportPdfData data)
-            {
-            sb.AppendLine("<section><div class='section-title'>14. Final Outcome / Conclusion</div>");
-            sb.AppendFormat(CultureInfo.InvariantCulture, "<div class='narrative'><strong>Findings Summary:</strong> {0}</div>", ToParagraphs(data.FinalConclusion?.Findings));
-            sb.AppendFormat(CultureInfo.InvariantCulture, "<div class='narrative'><strong>Recommendation Summary:</strong> {0}</div>", ToParagraphs(data.FinalConclusion?.Recommendation));
-            sb.AppendFormat(CultureInfo.InvariantCulture, "<div><strong>Final Outcome:</strong> {0}</div>", Encode(data.FinalConclusion?.FinalOutcome));
-            sb.AppendLine("</section>");
-            }
-
-        private static void AppendSignature(StringBuilder sb, IidInquiryReportPdfData data)
-            {
-            sb.AppendLine("<section><div class='section-title'>15. Signature / Generation Info</div>");
-            sb.AppendFormat(CultureInfo.InvariantCulture, "<div>Generated By: {0}</div>", Encode(data.Header?.GeneratedByName));
-            sb.AppendFormat(CultureInfo.InvariantCulture, "<div>PP No: {0}</div>", Encode(data.Header?.GeneratedByPPNo));
-            sb.AppendFormat(CultureInfo.InvariantCulture, "<div>Generated On: {0}</div>", Encode(data.Header?.GeneratedOn.ToString("dd-MMM-yyyy HH:mm", CultureInfo.InvariantCulture)));
-            sb.AppendLine("</section>");
-            }
-
-        private static void AppendMetaRow(StringBuilder sb, string label, string value)
-            {
-            sb.AppendFormat(CultureInfo.InvariantCulture, "<tr><td class='label'>{0}</td><td>{1}</td></tr>", Encode(label), ToParagraphs(value));
-            }
-
-        private static string Encode(string value) => WebUtility.HtmlEncode(value ?? string.Empty);
-
-        private static string ToParagraphs(string value)
-            {
-            if (string.IsNullOrWhiteSpace(value))
-                {
-                return "N/A";
+                sb.AppendLine("<p class='muted'>No violations recorded for Annex-III.</p></section>");
+                return;
                 }
 
-            return Encode(value).Replace("\r\n", "\n").Replace("\n", "<br/>");
+            sb.AppendLine("<table class='annex-three-table'>");
+            sb.AppendLine("<thead><tr><th class='col-sr'>#</th><th class='col-category'>Category</th><th class='col-violation'>Violation Detail</th><th class='col-reference'>Policy / Reference</th><th class='col-recommendation'>Recommendation</th></tr></thead><tbody>");
+            var idx = 1;
+            foreach (var row in data.Violations.OrderBy(v => v.SortOrder))
+                {
+                sb.AppendFormat(
+                    CultureInfo.InvariantCulture,
+                    "<tr><td>{0}</td><td>{1}</td><td>{2}</td><td>{3}</td><td>{4}</td></tr>",
+                    idx++,
+                    Encode(GetValue(row.Category)),
+                    ToParagraphs(row.ViolationDetail),
+                    ToParagraphs(row.ReferenceText),
+                    ToParagraphs(row.Recommendation));
+                }
+
+            sb.AppendLine("</tbody></table>");
+            sb.AppendLine("</section>");
+            }
+
+        private static void AppendSection(StringBuilder sb, string title, IEnumerable<string> lines)
+            {
+            var items = lines?.Where(x => !string.IsNullOrWhiteSpace(x)).ToList() ?? new List<string>();
+            if (!items.Any())
+                {
+                items.Add("N/A");
+                }
+
+            sb.AppendLine("<div class='section'>");
+            sb.AppendFormat(CultureInfo.InvariantCulture, "<div class='section-label'>{0}</div>", Encode(title));
+            sb.AppendLine("<div class='section-body'>");
+            if (items.Count == 1)
+                {
+                sb.AppendFormat(CultureInfo.InvariantCulture, "<div>{0}</div>", ToParagraphs(items[0]));
+                }
+            else
+                {
+                sb.AppendLine("<ol>");
+                foreach (var item in items)
+                    {
+                    sb.AppendFormat(CultureInfo.InvariantCulture, "<li>{0}</li>", ToParagraphs(item));
+                    }
+
+                sb.AppendLine("</ol>");
+                }
+
+            sb.AppendLine("</div>");
+            sb.AppendLine("<div class='separator'>________________</div>");
+            sb.AppendLine("</div>");
+            }
+
+        private static IEnumerable<string> ToNumberedItems(IEnumerable<string> values)
+            {
+            var items = values?.Where(x => !string.IsNullOrWhiteSpace(x)).Select(GetValue).ToList() ?? new List<string>();
+            return items.Any() ? items : new[] { "N/A" };
+            }
+
+        private static IEnumerable<string> BuildFindingsWithReferences(IidInquiryReportPdfData data)
+            {
+            var items = new List<string>();
+            foreach (var finding in data.FindingsRecommendations.Where(f => f.AccusationId != 0 || !string.IsNullOrWhiteSpace(f.AccusationText)))
+                {
+                items.Add($"Accusation: {GetValue(finding.AccusationText)}. Finding: {GetValue(finding.FindingText)}. Outcome: {GetValue(finding.Outcome)}.");
+                }
+
+            foreach (var v in data.Violations)
+                {
+                items.Add($"Violation Category: {GetValue(v.Category)}. Policy / Rule Reference: {GetValue(v.ReferenceText)}.");
+                }
+
+            return items.Any() ? items : new[] { "N/A" };
+            }
+
+        private static IEnumerable<string> BuildRecommendations(IidInquiryReportPdfData data)
+            {
+            var items = new List<string>();
+            items.AddRange(data.FindingsRecommendations.Where(f => !string.IsNullOrWhiteSpace(f.RecommendationText)).Select(f =>
+                $"Against accusation '{GetValue(f.AccusationText)}': {GetValue(f.RecommendationText)}"));
+            items.AddRange(data.Violations.Where(v => !string.IsNullOrWhiteSpace(v.Recommendation)).Select(v =>
+                $"{GetValue(v.Category)}: {GetValue(v.Recommendation)}"));
+
+            if (!string.IsNullOrWhiteSpace(data.FinalConclusion?.Recommendation))
+                {
+                items.Add($"Overall Recommendation: {GetValue(data.FinalConclusion.Recommendation)}");
+                }
+
+            return items.Any() ? items : new[] { "N/A" };
             }
 
         private static bool IsComplainantRole(string roleType)
@@ -256,9 +273,37 @@ namespace AIS.Services
             return value.Contains("complain");
             }
 
+        private static bool ContainsIgnoreCase(string value, string contains)
+            {
+            return (value ?? string.Empty).IndexOf(contains ?? string.Empty, StringComparison.OrdinalIgnoreCase) >= 0;
+            }
+
+        private static string JoinNotEmpty(string separator, params string[] values)
+            {
+            var normalized = values.Where(v => !string.IsNullOrWhiteSpace(v)).Select(v => v.Trim()).ToList();
+            return normalized.Any() ? string.Join(separator, normalized) : "N/A";
+            }
+
+        private static string GetValue(string value, string fallback = "N/A")
+            {
+            return string.IsNullOrWhiteSpace(value) ? fallback : value.Trim();
+            }
+
+        private static string Encode(string value) => WebUtility.HtmlEncode(value ?? string.Empty);
+
+        private static string ToParagraphs(string value)
+            {
+            return Encode(GetValue(value)).Replace("\r\n", "\n").Replace("\n", "<br/>");
+            }
+
         private static string FormatDate(DateTime? value)
             {
             return value.HasValue ? value.Value.ToString("dd-MMM-yyyy HH:mm", CultureInfo.InvariantCulture) : "N/A";
+            }
+
+        private static string FormatDate(DateTime value)
+            {
+            return value.ToString("dd-MMM-yyyy HH:mm", CultureInfo.InvariantCulture);
             }
         }
     }
