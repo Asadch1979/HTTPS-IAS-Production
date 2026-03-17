@@ -25,27 +25,28 @@ namespace AIS.Services
             sb.AppendLine("<style>");
             sb.AppendLine("@page { size:A4 portrait; margin:18mm; }");
             sb.AppendLine("body{ font-family:'Times New Roman', Times, serif; font-size:12px; color:#111; line-height:1.45; }");
-            sb.AppendLine(".page-break{ page-break-before:always; }");
+            sb.AppendLine(".page-break-marker{ page-break-before:always; height:0; margin:0; padding:0; }");
             sb.AppendLine(".cover{ min-height:245mm; display:flex; flex-direction:column; justify-content:center; text-align:center; }");
             sb.AppendLine(".cover-bank{ font-size:20px; font-weight:700; letter-spacing:.4px; text-transform:uppercase; }");
-            sb.AppendLine(".cover-dept{ font-size:15px; margin-top:10px; font-weight:600; text-transform:uppercase; }");
-            sb.AppendLine(".cover-title{ font-size:30px; margin-top:44px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; }");
-            sb.AppendLine(".cover-ref{ margin-top:30px; font-size:13px; }");
-            sb.AppendLine(".cover-conducted{ margin-top:36px; font-size:13px; line-height:1.8; }");
+            sb.AppendLine(".cover-dept{ font-size:15px; padding-top:10px; font-weight:600; text-transform:uppercase; }");
+            sb.AppendLine(".cover-title{ font-size:30px; padding-top:44px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; }");
+            sb.AppendLine(".cover-ref{ padding-top:30px; font-size:13px; }");
+            sb.AppendLine(".cover-conducted{ padding-top:36px; font-size:13px; line-height:1.8; }");
             sb.AppendLine(".cover-meta{ margin-top:auto; font-size:10px; color:#555; }");
-            sb.AppendLine(".annex-title{ text-align:center; font-weight:700; font-size:18px; margin:0 0 3px; }");
-            sb.AppendLine(".annex-subtitle{ text-align:center; font-size:12px; margin:0 0 20px; }");
-            sb.AppendLine(".annex-section{ margin:0 0 12px; }");
-            sb.AppendLine(".annex-label{ font-size:12.5px; font-weight:700; margin-bottom:6px; }");
-            sb.AppendLine(".annex-body{ margin-left:14px; text-align:justify; }");
-            sb.AppendLine(".annex-body p{ margin:0 0 6px; }");
-            sb.AppendLine(".annex-body ul, .annex-body ol{ margin:0; padding-left:18px; }");
-            sb.AppendLine(".annex-body li{ margin:0 0 4px; }");
-            sb.AppendLine(".section-separator{ margin-top:8px; color:#666; letter-spacing:1px; }");
-            sb.AppendLine(".signature-wrap{ margin-top:26px; display:flex; gap:24px; justify-content:space-between; }");
+            sb.AppendLine(".annex-page{ padding-top:2px; }");
+            sb.AppendLine(".annex-title{ text-align:center; font-weight:700; font-size:18px; padding-bottom:3px; }");
+            sb.AppendLine(".annex-subtitle{ text-align:center; font-size:12px; padding-bottom:20px; }");
+            sb.AppendLine(".annex-section{ padding-bottom:12px; }");
+            sb.AppendLine(".annex-label{ font-size:12.5px; font-weight:700; padding-bottom:6px; }");
+            sb.AppendLine(".annex-body{ padding-left:14px; text-align:justify; }");
+            sb.AppendLine(".annex-paragraph{ padding-bottom:6px; }");
+            sb.AppendLine(".annex-body ul, .annex-body ol{ padding-left:18px; }");
+            sb.AppendLine(".annex-body li{ padding-bottom:4px; }");
+            sb.AppendLine(".section-separator{ padding-top:8px; color:#666; letter-spacing:1px; }");
+            sb.AppendLine(".signature-wrap{ padding-top:26px; display:flex; gap:24px; justify-content:space-between; }");
             sb.AppendLine(".signature-block{ width:47%; text-align:center; }");
-            sb.AppendLine(".signature-line{ border-top:1px solid #111; margin-top:42px; padding-top:4px; font-weight:700; }");
-            sb.AppendLine(".violation-table{ width:100%; border-collapse:collapse; table-layout:fixed; margin-top:10px; }");
+            sb.AppendLine(".signature-line{ border-top:1px solid #111; padding-top:46px; font-weight:700; }");
+            sb.AppendLine(".violation-table{ width:100%; border-collapse:collapse; table-layout:fixed; }");
             sb.AppendLine(".violation-table th,.violation-table td{ border:1px solid #666; padding:7px; vertical-align:top; word-wrap:break-word; }");
             sb.AppendLine(".violation-table th{ background:#f2f2f2; text-align:left; }");
             sb.AppendLine(".muted{ color:#666; }");
@@ -82,7 +83,8 @@ namespace AIS.Services
 
         private static void AppendAnnexTwo(StringBuilder sb, IidInquiryReportPdfData data)
             {
-            sb.AppendLine("<section class='page-break'>");
+            sb.AppendLine("<div class='page-break-marker'></div>");
+            sb.AppendLine("<section class='annex-page'>");
             sb.AppendLine("<div class='annex-title'>Annex-II</div>");
             sb.AppendLine("<div class='annex-subtitle'>Inquiry Narrative and Proceedings</div>");
 
@@ -181,13 +183,14 @@ namespace AIS.Services
 
         private static void AppendAnnexThree(StringBuilder sb, IidInquiryReportPdfData data)
             {
-            sb.AppendLine("<section class='page-break'>");
+            sb.AppendLine("<div class='page-break-marker'></div>");
+            sb.AppendLine("<section class='annex-page'>");
             sb.AppendLine("<div class='annex-title'>Annex-III</div>");
             sb.AppendLine("<div class='annex-subtitle'>Violation Summary and Recommendations</div>");
 
             if (!data.Violations.Any())
                 {
-                sb.AppendLine("<p class='muted'>No violation records available.</p>");
+                sb.AppendLine("<div class='muted'>No violation records available.</div>");
                 sb.AppendLine("</section>");
                 return;
                 }
@@ -231,10 +234,10 @@ namespace AIS.Services
             var items = values.Where(x => !string.IsNullOrWhiteSpace(x)).ToList();
             if (!items.Any())
                 {
-                return "<p>N/A</p>";
+                return "<div class='annex-paragraph'>N/A</div>";
                 }
 
-            return string.Join(string.Empty, items.Select(x => $"<p>{ToParagraphs(x)}</p>"));
+            return string.Join(string.Empty, items.Select(x => $"<div class='annex-paragraph'>{ToParagraphs(x)}</div>"));
             }
 
         private static string BuildOrderedList(IEnumerable<string> values)
@@ -242,7 +245,7 @@ namespace AIS.Services
             var items = values.Where(x => !string.IsNullOrWhiteSpace(x)).ToList();
             if (!items.Any())
                 {
-                return "<p>N/A</p>";
+                return "<div class='annex-paragraph'>N/A</div>";
                 }
 
             var sb = new StringBuilder("<ol>");
