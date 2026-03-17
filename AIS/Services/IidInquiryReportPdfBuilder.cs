@@ -25,7 +25,7 @@ namespace AIS.Services
             sb.AppendLine("<style>");
             sb.AppendLine("@page { size:A4 portrait; margin:18mm; }");
             sb.AppendLine("body{ font-family:'Times New Roman', Times, serif; font-size:12px; color:#111; line-height:1.45; }");
-            sb.AppendLine(".page-break-marker{ page-break-before:always; height:0; margin:0; padding:0; }");
+            sb.AppendLine(".page-break{ page-break-before:always; break-before:page; margin:0; padding:0; height:0; border:0; }");
             sb.AppendLine(".cover{ min-height:245mm; display:flex; flex-direction:column; justify-content:center; text-align:center; }");
             sb.AppendLine(".cover-bank{ font-size:20px; font-weight:700; letter-spacing:.4px; text-transform:uppercase; }");
             sb.AppendLine(".cover-dept{ font-size:15px; padding-top:10px; font-weight:600; text-transform:uppercase; }");
@@ -83,7 +83,7 @@ namespace AIS.Services
 
         private static void AppendAnnexTwo(StringBuilder sb, IidInquiryReportPdfData data)
             {
-            sb.AppendLine("<div class='page-break-marker'></div>");
+            sb.AppendLine("<div class='page-break'></div>");
             sb.AppendLine("<section class='annex-page'>");
             sb.AppendLine("<div class='annex-title'>Annex-II</div>");
             sb.AppendLine("<div class='annex-subtitle'>Inquiry Narrative and Proceedings</div>");
@@ -183,7 +183,7 @@ namespace AIS.Services
 
         private static void AppendAnnexThree(StringBuilder sb, IidInquiryReportPdfData data)
             {
-            sb.AppendLine("<div class='page-break-marker'></div>");
+            sb.AppendLine("<div class='page-break'></div>");
             sb.AppendLine("<section class='annex-page'>");
             sb.AppendLine("<div class='annex-title'>Annex-III</div>");
             sb.AppendLine("<div class='annex-subtitle'>Violation Summary and Recommendations</div>");
