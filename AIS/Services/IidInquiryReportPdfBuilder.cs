@@ -25,15 +25,15 @@ namespace AIS.Services
             sb.AppendLine("<style>");
             sb.AppendLine("@page { size:A4 portrait; margin:18mm; }");
             sb.AppendLine("body{ font-family:'Times New Roman', Times, serif; font-size:12px; color:#111; line-height:1.45; }");
-            sb.AppendLine(".page-break{ page-break-before:always; break-before:page; margin:0; padding:0; height:0; border:0; }");
-            sb.AppendLine(".cover{ min-height:245mm; display:flex; flex-direction:column; justify-content:center; text-align:center; }");
+            sb.AppendLine(".cover{ text-align:center; padding-top:62mm; padding-bottom:36mm; page-break-after:always; break-after:page; }");
             sb.AppendLine(".cover-bank{ font-size:20px; font-weight:700; letter-spacing:.4px; text-transform:uppercase; }");
             sb.AppendLine(".cover-dept{ font-size:15px; padding-top:10px; font-weight:600; text-transform:uppercase; }");
             sb.AppendLine(".cover-title{ font-size:30px; padding-top:44px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; }");
             sb.AppendLine(".cover-ref{ padding-top:30px; font-size:13px; }");
             sb.AppendLine(".cover-conducted{ padding-top:36px; font-size:13px; line-height:1.8; }");
-            sb.AppendLine(".cover-meta{ margin-top:auto; font-size:10px; color:#555; }");
+            sb.AppendLine(".cover-meta{ padding-top:42mm; font-size:10px; color:#555; }");
             sb.AppendLine(".annex-page{ padding-top:2px; }");
+            sb.AppendLine(".annex-page.page-break-after{ page-break-after:always; break-after:page; }");
             sb.AppendLine(".annex-title{ text-align:center; font-weight:700; font-size:18px; padding-bottom:3px; }");
             sb.AppendLine(".annex-subtitle{ text-align:center; font-size:12px; padding-bottom:20px; }");
             sb.AppendLine(".annex-section{ padding-bottom:12px; }");
@@ -43,8 +43,8 @@ namespace AIS.Services
             sb.AppendLine(".annex-body ul, .annex-body ol{ padding-left:18px; }");
             sb.AppendLine(".annex-body li{ padding-bottom:4px; }");
             sb.AppendLine(".section-separator{ padding-top:8px; color:#666; letter-spacing:1px; }");
-            sb.AppendLine(".signature-wrap{ padding-top:26px; display:flex; gap:24px; justify-content:space-between; }");
-            sb.AppendLine(".signature-block{ width:47%; text-align:center; }");
+            sb.AppendLine(".signature-wrap{ width:100%; padding-top:26px; border-collapse:collapse; }");
+            sb.AppendLine(".signature-wrap td{ width:50%; text-align:center; vertical-align:top; padding:0 12px; }");
             sb.AppendLine(".signature-line{ border-top:1px solid #111; padding-top:46px; font-weight:700; }");
             sb.AppendLine(".violation-table{ width:100%; border-collapse:collapse; table-layout:fixed; }");
             sb.AppendLine(".violation-table th,.violation-table td{ border:1px solid #666; padding:7px; vertical-align:top; word-wrap:break-word; }");
@@ -83,8 +83,7 @@ namespace AIS.Services
 
         private static void AppendAnnexTwo(StringBuilder sb, IidInquiryReportPdfData data)
             {
-            sb.AppendLine("<div class='page-break'></div>");
-            sb.AppendLine("<section class='annex-page'>");
+            sb.AppendLine("<section class='annex-page page-break-after'>");
             sb.AppendLine("<div class='annex-title'>Annex-II</div>");
             sb.AppendLine("<div class='annex-subtitle'>Inquiry Narrative and Proceedings</div>");
 
@@ -183,7 +182,6 @@ namespace AIS.Services
 
         private static void AppendAnnexThree(StringBuilder sb, IidInquiryReportPdfData data)
             {
-            sb.AppendLine("<div class='page-break'></div>");
             sb.AppendLine("<section class='annex-page'>");
             sb.AppendLine("<div class='annex-title'>Annex-III</div>");
             sb.AppendLine("<div class='annex-subtitle'>Violation Summary and Recommendations</div>");
@@ -223,10 +221,10 @@ namespace AIS.Services
 
         private static void AppendSignatureBlock(StringBuilder sb)
             {
-            sb.AppendLine("<div class='signature-wrap'>");
-            sb.AppendLine("<div class='signature-block'><div class='signature-line'>Team Member</div></div>");
-            sb.AppendLine("<div class='signature-block'><div class='signature-line'>Team Leader / Head</div></div>");
-            sb.AppendLine("</div>");
+            sb.AppendLine("<table class='signature-wrap'><tr>");
+            sb.AppendLine("<td><div class='signature-line'>Team Member</div></td>");
+            sb.AppendLine("<td><div class='signature-line'>Team Leader / Head</div></td>");
+            sb.AppendLine("</tr></table>");
             }
 
         private static string BuildParagraphs(params string[] values)
