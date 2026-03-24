@@ -1817,10 +1817,16 @@ namespace AIS.Controllers
             using var rdr = cmd.ExecuteReader();
             while (rdr.Read())
                 {
+                var accusationIdValue = GetLongValue(rdr, "ACCUSATION_ID");
+                if (accusationIdValue <= 0)
+                    {
+                    continue;
+                    }
+
                 list.Add(new IidInqFindingsRecommRow
                     {
                     ComplaintId = GetLongValue(rdr, "COMPLAINT_ID"),
-                    AccusationId = GetLongValue(rdr, "ACCUSATION_ID"),
+                    AccusationId = accusationIdValue,
                     FindingText = GetStringValue(rdr, "FINDING_TEXT"),
                     RecommendationText = GetStringValue(rdr, "RECOM_TEXT"),
                     Outcome = GetStringValue(rdr, "OUTCOME"),
@@ -1854,9 +1860,15 @@ namespace AIS.Controllers
             using var rdr = cmd.ExecuteReader();
             while (rdr.Read())
                 {
+                var accusationIdValue = GetLongValue(rdr, "ACCUSATION_ID");
+                if (accusationIdValue <= 0)
+                    {
+                    continue;
+                    }
+
                 list.Add(new IidAccusationForFindingsRow
                     {
-                    AccusationId = GetLongValue(rdr, "ACCUSATION_ID"),
+                    AccusationId = accusationIdValue,
                     AccusationText = GetStringValue(rdr, "ACCUSATION_TEXT")
                     });
                 }
@@ -1932,24 +1944,19 @@ namespace AIS.Controllers
             using var rdr = cmd.ExecuteReader();
             while (rdr.Read())
                 {
+                var accusationIdValue = GetLongValue(rdr, "ACCUSATION_ID");
+                if (accusationIdValue <= 0)
+                    {
+                    continue;
+                    }
+
                 list.Add(new IidFindingsRecommStatusRow
                     {
-                    AccusationId = GetLongValue(rdr, "ACCUSATION_ID"),
+                    AccusationId = accusationIdValue,
                     AccusationText = GetStringValue(rdr, "ACCUSATION_TEXT"),
                     IsSaved = GetStringValue(rdr, "IS_SAVED"),
                     Outcome = GetStringValue(rdr, "OUTCOME"),
                     SavedOn = GetNullableDateValue(rdr, "SAVED_ON")
-                    });
-                }
-
-            if (list.Count == 0 || !list.Exists(x => x.AccusationId == 0))
-                {
-                list.Insert(0, new IidFindingsRecommStatusRow
-                    {
-                    AccusationId = 0,
-                    AccusationText = "Additional Charges",
-                    IsSaved = "N",
-                    SavedOn = null
                     });
                 }
 

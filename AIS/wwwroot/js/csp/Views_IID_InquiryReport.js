@@ -20,8 +20,6 @@ $(function(){
     var userId = 0;
     var alertTimer = null;
     var accusedRoleOptions = ['Main', 'Co', 'Witness'];
-    var additionalChargesId = 0;
-    var additionalChargesText = 'Additional Charges';
     var steps = [
         { id: 1, code: 'SNAPSHOT', title: 'Snapshot' },
         { id: 2, code: 'ACCUSATIONS', title: 'Accusations' },
@@ -267,7 +265,7 @@ $(function(){
     }
 
     function accusationIdValue(value){
-        return value === 0 || value === '0' ? '0' : String(value || '');
+        return value === null || typeof value === 'undefined' ? '' : String(value);
     }
 
     function statementTypeLabel(value){
@@ -276,28 +274,14 @@ $(function(){
 
     function buildFindingsAccusationList(baseRows){
         var map = {};
-        var detectedAdditionalChargeId = additionalChargesId;
         (baseRows || []).forEach(function(row){
             var id = parseInt(row.accusationId || row.AccusationId || row.id || row.Id, 10);
-            if(isNaN(id)){ return; }
+            if(isNaN(id) || id <= 0){ return; }
             var text = row.accusationText || row.AccusationText || row.text || row.Text || ('Accusation #' + id);
             map[id] = { accusationId: id, accusationText: text };
-            if(String(text || '').trim().toLowerCase() === additionalChargesText.toLowerCase()){
-                detectedAdditionalChargeId = id;
-            }
         });
 
-        if(!isNaN(detectedAdditionalChargeId)){
-            additionalChargesId = detectedAdditionalChargeId;
-        }
-
-        if(!Object.prototype.hasOwnProperty.call(map, additionalChargesId)){
-            map[additionalChargesId] = { accusationId: additionalChargesId, accusationText: additionalChargesText };
-        }
-
         return Object.keys(map).map(function(key){ return map[key]; }).sort(function(a, b){
-            if(a.accusationId === additionalChargesId){ return 1; }
-            if(b.accusationId === additionalChargesId){ return -1; }
             return a.accusationId - b.accusationId;
         });
     }
@@ -318,20 +302,15 @@ $(function(){
         var merged = {};
         (state.findingsRecomm.accusationOptions || []).forEach(function(opt){
             var id = parseInt(opt.accusationId, 10);
-            if(isNaN(id)){ return; }
+            if(isNaN(id) || id <= 0){ return; }
             merged[id] = { accusationId: id, accusationText: opt.accusationText || ('Accusation #' + id), isSaved: false, savedOn: null };
         });
         (statusRows || []).forEach(function(row){
             var id = parseInt(row.accusationId, 10);
-            if(isNaN(id)){ return; }
+            if(isNaN(id) || id <= 0){ return; }
             merged[id] = $.extend({}, merged[id] || { accusationId: id, accusationText: row.accusationText || ('Accusation #' + id) }, row);
         });
-        if(!Object.prototype.hasOwnProperty.call(merged, additionalChargesId)){
-            merged[additionalChargesId] = { accusationId: additionalChargesId, accusationText: additionalChargesText, isSaved: false, savedOn: null };
-        }
         state.findingsRecomm.statusRows = Object.keys(merged).map(function(key){ return merged[key]; }).sort(function(a, b){
-            if(a.accusationId === additionalChargesId){ return 1; }
-            if(b.accusationId === additionalChargesId){ return -1; }
             return a.accusationId - b.accusationId;
         });
     }
@@ -369,7 +348,7 @@ $(function(){
 
     function loadFindingsForSelection(selectedAccusationId, forceRefresh){
         var parsedId = parseInt(selectedAccusationId, 10);
-        if(isNaN(parsedId)){
+        if(isNaN(parsedId) || parsedId <= 0){
             applyFindingsEditorContent('', '');
             $('#findingsOutcomeSelect').val('');
             return $.Deferred().resolve().promise();
@@ -411,7 +390,7 @@ $(function(){
             var rows = extractData(resp);
             rows.forEach(function(row){
                 var id = parseInt(row.accusationId, 10);
-                if(!isNaN(id)){
+                if(!isNaN(id) && id > 0){
                     var rowOutcome = row.outcome || row.Outcome || state.findingsRecomm.outcomes[id] || "";
                     state.findingsRecomm.outcomes[id] = rowOutcome;
                     state.findingsRecomm.lockedOutcomes[id] = isStatusRowSaved(row);
@@ -451,7 +430,7 @@ $(function(){
             state.findingsRecomm.savedFindingsMap = {};
             extractData(findingsResponse).forEach(function(row){
                 var id = parseInt(row.accusationId, 10);
-                if(isNaN(id)){ return; }
+                if(isNaN(id) || id <= 0){ return; }
                 state.findingsRecomm.savedFindingsMap[id] = {
                     findingsText: row.findingsText || row.findingText || '',
                     recommendationText: row.recommendationText || row.recomText || '',
@@ -1103,8 +1082,8 @@ $(function(){
             var findingHtml = (window.tinymce && window.tinymce.get('findingTextHtml') ? window.tinymce.get('findingTextHtml').getContent() : state.findingsRecomm.findingText) || '';
             var recommendationHtml = (window.tinymce && window.tinymce.get('recommendationTextHtml') ? window.tinymce.get('recommendationTextHtml').getContent() : state.findingsRecomm.recommendationText) || '';
             var outcome = state.findingsRecomm.outcomes[selectedAccusationId] || '';
-            if(isNaN(selectedAccusationId)){
-                return $.Deferred().reject({ message: 'Please select an accusation before saving findings/recommendation.' }).promise();
+            if(isNaN(selectedAccusationId) || selectedAccusationId <= 0){
+                return $.Deferred().reject({ message: 'Please select an accusation saved in Section 2 before saving findings/recommendation.' }).promise();
             }
             state.findingsRecomm.findingText = findingHtml;
             state.findingsRecomm.recommendationText = recommendationHtml;
