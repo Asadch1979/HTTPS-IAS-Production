@@ -143,9 +143,27 @@
                                 <button type="button" class="btn btn-primary" id="searchBtn">Search</button>
                             </div>
                             <div id="manualInputs" style="display:none;">
-                                <input id="manualName" class="form-control mb-2" placeholder="Manual/Policy Name" />
-                                <input id="chapterSection" class="form-control mb-2" placeholder="Chapter No + Section" />
-                                <button type="button" class="btn btn-primary" id="addManualBtn">Add</button>
+                                <select id="manualMaster" class="form-select mb-2">
+                                    <option value="">Select manual</option>
+                                </select>
+                                <select id="manualSection" class="form-select mb-2" disabled>
+                                    <option value="">Select section</option>
+                                </select>
+                                <select id="manualChapter" class="form-select mb-2" disabled>
+                                    <option value="">Select chapter</option>
+                                </select>
+                                <div id="manualIndexGridWrapper" style="display:none;">
+                                    <table id="manualIndexTbl" class="table table-sm table-bordered mt-2">
+                                        <thead>
+                                            <tr>
+                                                <th>Action</th>
+                                                <th>Sub Section</th>
+                                                <th>Heading</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody></tbody>
+                                    </table>
+                                </div>
                             </div>
                         </div>
                         <table class="table" id="resultTbl" style="display:none;">
