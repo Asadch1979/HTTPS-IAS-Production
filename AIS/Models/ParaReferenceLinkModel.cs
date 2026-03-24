@@ -19,6 +19,8 @@ namespace AIS.Models
         public string ReferenceTitle { get; set; }
         public int? CreditManualId { get; set; }
         public int? OpManualId { get; set; }
+        public int? ManualId { get; set; }
+        public int? ManualIndexId { get; set; }
         [PlainText]
         public string ManualType { get; set; }
         [PlainText]

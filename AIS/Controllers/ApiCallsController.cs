@@ -6008,6 +6008,62 @@ namespace AIS.Controllers
             }
 
         [HttpGet]
+        public IActionResult GetManualMaster()
+            {
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
+                || string.IsNullOrWhiteSpace(loggedInUser.PPNumber)
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return Json(Array.Empty<ManualMasterItemModel>());
+                }
+            return Json(dBConnection.GetManualMaster());
+            }
+
+        [HttpGet]
+        public IActionResult GetManualSections(long manualId)
+            {
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
+                || string.IsNullOrWhiteSpace(loggedInUser.PPNumber)
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return Json(Array.Empty<ManualSectionItemModel>());
+                }
+            return Json(dBConnection.GetManualSections(manualId));
+            }
+
+        [HttpGet]
+        public IActionResult GetManualChapters(long manualId, string sectionName)
+            {
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
+                || string.IsNullOrWhiteSpace(loggedInUser.PPNumber)
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return Json(Array.Empty<ManualChapterItemModel>());
+                }
+            return Json(dBConnection.GetManualChapters(manualId, sectionName));
+            }
+
+        [HttpGet]
+        public IActionResult GetManualIndexByChapter(long manualId, string sectionName, string chapterNo)
+            {
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
+                || string.IsNullOrWhiteSpace(loggedInUser.PPNumber)
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return Json(Array.Empty<ManualIndexItemModel>());
+                }
+            return Json(dBConnection.GetManualIndexByChapter(manualId, sectionName, chapterNo));
+            }
+
+        [HttpGet]
         public JsonResult GetEntityTaskSummary()
             {
             var loggedInUser = sessionHandler.GetUser();

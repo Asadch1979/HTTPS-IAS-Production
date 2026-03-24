@@ -519,6 +519,140 @@ namespace AIS.Controllers
             return list;
             }
 
+        public List<ManualMasterItemModel> GetManualMaster()
+            {
+            var list = new List<ManualMasterItemModel>();
+            using (var con = DatabaseConnection())
+                {
+                using (var cmd = con.CreateCommand())
+                    {
+                    cmd.CommandText = @"
+SELECT MANUAL_ID, MANUAL_NAME, VOLUME_NAME
+FROM T_MANUAL_MASTER
+ORDER BY MANUAL_NAME, VOLUME_NAME";
+                    cmd.CommandType = CommandType.Text;
+
+                    using (var rdr = cmd.ExecuteReader())
+                        {
+                        while (rdr.Read())
+                            {
+                            var manualName = rdr["MANUAL_NAME"]?.ToString();
+                            var volumeName = rdr["VOLUME_NAME"]?.ToString();
+                            var display = string.Join(" ", new[] { manualName, volumeName }.Where(v => !string.IsNullOrWhiteSpace(v)));
+                            list.Add(new ManualMasterItemModel
+                                {
+                                ManualId = rdr["MANUAL_ID"] == DBNull.Value ? 0 : Convert.ToInt64(rdr["MANUAL_ID"]),
+                                ManualName = manualName,
+                                VolumeName = volumeName,
+                                DisplayLabel = display
+                                });
+                            }
+                        }
+                    }
+                }
+            return list;
+            }
+
+        public List<ManualSectionItemModel> GetManualSections(long manualId)
+            {
+            var list = new List<ManualSectionItemModel>();
+            using (var con = DatabaseConnection())
+                {
+                using (var cmd = con.CreateCommand())
+                    {
+                    cmd.CommandText = @"
+SELECT DISTINCT SECTION
+FROM T_MANUAL_INDEX
+WHERE MANUAL_ID = :p_manual_id
+  AND SECTION IS NOT NULL
+ORDER BY SECTION";
+                    cmd.CommandType = CommandType.Text;
+                    cmd.Parameters.Add("p_manual_id", OracleDbType.Int64).Value = manualId;
+
+                    using (var rdr = cmd.ExecuteReader())
+                        {
+                        while (rdr.Read())
+                            {
+                            list.Add(new ManualSectionItemModel
+                                {
+                                SectionName = rdr["SECTION"]?.ToString()
+                                });
+                            }
+                        }
+                    }
+                }
+            return list;
+            }
+
+        public List<ManualChapterItemModel> GetManualChapters(long manualId, string sectionName)
+            {
+            var list = new List<ManualChapterItemModel>();
+            using (var con = DatabaseConnection())
+                {
+                using (var cmd = con.CreateCommand())
+                    {
+                    cmd.CommandText = @"
+SELECT DISTINCT CHAPTER_NO
+FROM T_MANUAL_INDEX
+WHERE MANUAL_ID = :p_manual_id
+  AND SECTION = :p_section
+  AND CHAPTER_NO IS NOT NULL
+ORDER BY CHAPTER_NO";
+                    cmd.CommandType = CommandType.Text;
+                    cmd.Parameters.Add("p_manual_id", OracleDbType.Int64).Value = manualId;
+                    cmd.Parameters.Add("p_section", OracleDbType.Varchar2).Value = sectionName;
+
+                    using (var rdr = cmd.ExecuteReader())
+                        {
+                        while (rdr.Read())
+                            {
+                            list.Add(new ManualChapterItemModel
+                                {
+                                ChapterNo = rdr["CHAPTER_NO"]?.ToString()
+                                });
+                            }
+                        }
+                    }
+                }
+            return list;
+            }
+
+        public List<ManualIndexItemModel> GetManualIndexByChapter(long manualId, string sectionName, string chapterNo)
+            {
+            var list = new List<ManualIndexItemModel>();
+            using (var con = DatabaseConnection())
+                {
+                using (var cmd = con.CreateCommand())
+                    {
+                    cmd.CommandText = @"
+SELECT INDEX_ID, SUB_SECTION_NO, HEADING
+FROM T_MANUAL_INDEX
+WHERE MANUAL_ID = :p_manual_id
+  AND SECTION = :p_section
+  AND CHAPTER_NO = :p_chapter
+ORDER BY SUB_SECTION_NO, INDEX_ID";
+                    cmd.CommandType = CommandType.Text;
+                    cmd.Parameters.Add("p_manual_id", OracleDbType.Int64).Value = manualId;
+                    cmd.Parameters.Add("p_section", OracleDbType.Varchar2).Value = sectionName;
+                    cmd.Parameters.Add("p_chapter", OracleDbType.Varchar2).Value = chapterNo;
+
+                    using (var rdr = cmd.ExecuteReader())
+                        {
+                        while (rdr.Read())
+                            {
+                            list.Add(new ManualIndexItemModel
+                                {
+                                IndexId = rdr["INDEX_ID"] == DBNull.Value ? 0 : Convert.ToInt64(rdr["INDEX_ID"]),
+                                SubSectionNo = rdr["SUB_SECTION_NO"]?.ToString(),
+                                Heading = rdr["HEADING"]?.ToString()
+                                });
+                            }
+                        }
+                    }
+                }
+            return list;
+            }
+
         public List<EntityTaskSummaryModel> GetEntityTaskSummary()
             {
             var sessionHandler = CreateSessionHandler();
@@ -587,6 +721,31 @@ namespace AIS.Controllers
                     }
                 }
 
+            var manualLinks = links.Where(l =>
+                string.Equals(l.ManualType, "Manual", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(l.ManualType, "Policy", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(l.LinkType, "Manual", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(l.LinkType, "Policy", StringComparison.OrdinalIgnoreCase));
+
+            foreach (var lnk in manualLinks)
+                {
+                if (!model.ReferenceDetails.Any(d => d.LinkId == lnk.LinkId))
+                    {
+                    model.ReferenceDetails.Add(new AuditChecklistAnnexureCircularModel
+                        {
+                        LinkId = lnk.LinkId,
+                        ID = lnk.ManualIndexId.GetValueOrDefault(lnk.ReferenceId),
+                        DivisionEntId = lnk.EntityId,
+                        ReferenceType = !string.IsNullOrWhiteSpace(lnk.ManualType) ? lnk.ManualType : lnk.LinkType,
+                        InstructionsTitle = lnk.ReferenceTitle,
+                        InstructionsDate = lnk.InstructionsDate,
+                        Division = lnk.Chapter,
+                        ManualId = lnk.ManualId ?? lnk.OpManualId ?? lnk.CreditManualId,
+                        ManualIndexId = lnk.ManualIndexId.GetValueOrDefault(lnk.ReferenceId)
+                        });
+                    }
+                }
+
             return model;
             }
 
@@ -617,6 +776,10 @@ namespace AIS.Controllers
                                 ReferenceTitle = rdr["REFERENCE_TITLE"].ToString(),
                                 CreditManualId = rdr["CREDIT_MANUAL_ID"] == DBNull.Value ? (int?)null : Convert.ToInt32(rdr["CREDIT_MANUAL_ID"]),
                                 OpManualId = rdr["OP_MANUAL_ID"] == DBNull.Value ? (int?)null : Convert.ToInt32(rdr["OP_MANUAL_ID"]),
+                                ManualId = rdr["OP_MANUAL_ID"] == DBNull.Value
+                                    ? (rdr["CREDIT_MANUAL_ID"] == DBNull.Value ? (int?)null : Convert.ToInt32(rdr["CREDIT_MANUAL_ID"]))
+                                    : Convert.ToInt32(rdr["OP_MANUAL_ID"]),
+                                ManualIndexId = rdr["REFERENCE_ID"] == DBNull.Value ? (int?)null : Convert.ToInt32(rdr["REFERENCE_ID"]),
                                 ManualType = rdr["MANUAL_TYPE"].ToString(),
                                 Chapter = rdr["CHAPTER"].ToString(),
                                 InstructionsDate = rdr["INSTRUCTIONSDATE"] == DBNull.Value ? (DateTime?)null : Convert.ToDateTime(rdr["INSTRUCTIONSDATE"]),

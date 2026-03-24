@@ -26,6 +26,16 @@ namespace AIS.Models
         [PlainText]
         public string InstructionsTitle { get; set; }
         public DateTime? InstructionsDate { get; set; }
+        public int? ManualId { get; set; }
+        public int? ManualIndexId { get; set; }
+        [PlainText]
+        public string SectionName { get; set; }
+        [PlainText]
+        public string ChapterNo { get; set; }
+        [PlainText]
+        public string SubSectionNo { get; set; }
+        [PlainText]
+        public string Heading { get; set; }
         [PlainText]
         public string DocType { get; set; }
         }
