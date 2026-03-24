@@ -266,13 +266,17 @@ $(function(){
         return 'ACCUSED';
     }
 
+    function accusationIdValue(value){
+        return value === 0 || value === '0' ? '0' : String(value || '');
+    }
+
     function statementTypeLabel(value){
         return normalizeStatementType(value) === 'COMPLAINANT' ? 'Complainant' : 'Accused';
     }
 
     function buildFindingsAccusationList(baseRows){
         var map = {};
-        var detectedAdditionalChargeId = 0;
+        var detectedAdditionalChargeId = additionalChargesId;
         (baseRows || []).forEach(function(row){
             var id = parseInt(row.accusationId || row.AccusationId || row.id || row.Id, 10);
             if(isNaN(id)){ return; }
@@ -283,19 +287,17 @@ $(function(){
             }
         });
 
-        if(detectedAdditionalChargeId > 0){
+        if(!isNaN(detectedAdditionalChargeId)){
             additionalChargesId = detectedAdditionalChargeId;
         }
 
-        if(additionalChargesId > 0 && !map[additionalChargesId]){
+        if(!Object.prototype.hasOwnProperty.call(map, additionalChargesId)){
             map[additionalChargesId] = { accusationId: additionalChargesId, accusationText: additionalChargesText };
         }
 
         return Object.keys(map).map(function(key){ return map[key]; }).sort(function(a, b){
-            if(additionalChargesId > 0){
-                if(a.accusationId === additionalChargesId){ return 1; }
-                if(b.accusationId === additionalChargesId){ return -1; }
-            }
+            if(a.accusationId === additionalChargesId){ return 1; }
+            if(b.accusationId === additionalChargesId){ return -1; }
             return a.accusationId - b.accusationId;
         });
     }
@@ -324,7 +326,7 @@ $(function(){
             if(isNaN(id)){ return; }
             merged[id] = $.extend({}, merged[id] || { accusationId: id, accusationText: row.accusationText || ('Accusation #' + id) }, row);
         });
-        if(additionalChargesId > 0 && !merged[additionalChargesId]){
+        if(!Object.prototype.hasOwnProperty.call(merged, additionalChargesId)){
             merged[additionalChargesId] = { accusationId: additionalChargesId, accusationText: additionalChargesText, isSaved: false, savedOn: null };
         }
         state.findingsRecomm.statusRows = Object.keys(merged).map(function(key){ return merged[key]; }).sort(function(a, b){
@@ -351,20 +353,21 @@ $(function(){
         var body = rows.map(function(r){
             var saved = isStatusRowSaved(r);
             var id = parseInt(r.accusationId, 10);
+            var accusationId = accusationIdValue(r.accusationId);
             var selectedOutcome = state.findingsRecomm.outcomes[id] || '';
             return '<tr>' +
                 '<td>' + esc(r.accusationText || '') + '</td>' +
                 '<td><span class="badge ' + (saved ? 'bg-success' : 'bg-warning text-dark') + '">' + (saved ? 'Saved' : 'Not Saved') + '</span></td>' +
-                '<td><label class="form-label mb-1">Outcome</label><select class="form-select outcome-select" disabled data-accusation-id="' + esc(String(r.accusationId || '')) + '">' + outcomeOptionsHtml(selectedOutcome) + '</select></td>' +
+                '<td><label class="form-label mb-1">Outcome</label><select class="form-select outcome-select" disabled data-accusation-id="' + esc(accusationId) + '">' + outcomeOptionsHtml(selectedOutcome) + '</select></td>' +
                 '<td>' + esc(formatSavedOn(r.savedOn || r.lastSavedOn)) + '</td>' +
-                '<td><button type="button" class="btn btn-outline-primary btn-sm" data-findings-view-edit="' + esc(String(r.accusationId || '')) + '">View/Edit</button></td>' +
+                '<td><button type="button" class="btn btn-outline-primary btn-sm" data-findings-view-edit="' + esc(accusationId) + '">View/Edit</button></td>' +
                 '</tr>';
         }).join('');
 
         $('#findingsStatusGridBody').html(body || '<tr><td colspan="5" class="text-muted">No accusations available.</td></tr>');
     }
 
-    function loadFindingsForSelection(selectedAccusationId){
+    function loadFindingsForSelection(selectedAccusationId, forceRefresh){
         var parsedId = parseInt(selectedAccusationId, 10);
         if(isNaN(parsedId)){
             applyFindingsEditorContent('', '');
@@ -372,20 +375,34 @@ $(function(){
             return $.Deferred().resolve().promise();
         }
 
+        var applySelection = function(savedData){
+            var normalized = {
+                findingsText: savedData && typeof savedData.findingsText !== 'undefined' ? savedData.findingsText : (savedData && typeof savedData.findingText !== 'undefined' ? savedData.findingText : ''),
+                recommendationText: savedData && typeof savedData.recommendationText !== 'undefined' ? savedData.recommendationText : (savedData && typeof savedData.recomText !== 'undefined' ? savedData.recomText : ''),
+                outcome: savedData ? (savedData.outcome || savedData.Outcome || '') : ''
+            };
+
+            state.findingsRecomm.savedFindingsMap[parsedId] = normalized;
+            state.findingsRecomm.outcomes[parsedId] = normalized.outcome || state.findingsRecomm.outcomes[parsedId] || '';
+            applyFindingsEditorContent(normalized.findingsText || '', normalized.recommendationText || '');
+
+            var selectedOutcome = state.findingsRecomm.outcomes[parsedId] || '';
+            $('#findingsOutcomeSelect').val(selectedOutcome);
+            $('.outcome-select[data-accusation-id="' + accusationIdValue(parsedId) + '"]').val(selectedOutcome);
+            updateDsaVisibility();
+            renderStepper();
+        };
+
         var savedData = (state.findingsRecomm.savedFindingsMap || {})[parsedId] || null;
-        if(savedData){
-            state.findingsRecomm.outcomes[parsedId] = savedData.outcome || state.findingsRecomm.outcomes[parsedId] || '';
-            applyFindingsEditorContent(savedData.findingsText || '', savedData.recommendationText || '');
-        } else {
-            applyFindingsEditorContent('', '');
+        if(savedData && !forceRefresh){
+            applySelection(savedData);
+            return $.Deferred().resolve().promise();
         }
 
-        var selectedOutcome = state.findingsRecomm.outcomes[parsedId] || '';
-        $('#findingsOutcomeSelect').val(selectedOutcome);
-        $('.outcome-select[data-accusation-id="' + parsedId + '"]').val(selectedOutcome);
-        updateDsaVisibility();
-        renderStepper();
-        return $.Deferred().resolve().promise();
+        return window.iidGetIidFindingsRecommByAccusation({ complaintId: complaintId, accusationId: parsedId }).then(function(resp){
+            ensureApiSuccess(resp, 'Failed to load findings for selected accusation.');
+            applySelection(resp || {});
+        });
     }
 
     function loadFindingsStatusGrid(){
@@ -445,7 +462,7 @@ $(function(){
                 }
             });
 
-            var selectedId = String(state.findingsRecomm.selectedAccusationId || '');
+            var selectedId = accusationIdValue(state.findingsRecomm.selectedAccusationId);
             var exists = (state.findingsRecomm.accusationOptions || []).some(function(opt){ return String(opt.accusationId) === selectedId; });
             if(!selectedId || !exists){
                 state.findingsRecomm.selectedAccusationId = '';
@@ -554,7 +571,7 @@ $(function(){
         if(step === 7){
             var accusationOptions = (state.findingsRecomm.accusationOptions || []).map(function(opt){
                 var id = String(opt.accusationId);
-                var selected = String(state.findingsRecomm.selectedAccusationId || '') === id ? ' selected' : '';
+                var selected = accusationIdValue(state.findingsRecomm.selectedAccusationId) === id ? ' selected' : '';
                 return '<option value="' + esc(id) + '"' + selected + '>' + esc(opt.accusationText || '') + '</option>';
             }).join('');
 
@@ -1086,13 +1103,13 @@ $(function(){
             var findingHtml = (window.tinymce && window.tinymce.get('findingTextHtml') ? window.tinymce.get('findingTextHtml').getContent() : state.findingsRecomm.findingText) || '';
             var recommendationHtml = (window.tinymce && window.tinymce.get('recommendationTextHtml') ? window.tinymce.get('recommendationTextHtml').getContent() : state.findingsRecomm.recommendationText) || '';
             var outcome = state.findingsRecomm.outcomes[selectedAccusationId] || '';
-            if(isNaN(selectedAccusationId) || selectedAccusationId <= 0){
-                return $.Deferred().reject({ message: 'Please save Additional Charge first before saving findings/recommendation.' }).promise();
+            if(isNaN(selectedAccusationId)){
+                return $.Deferred().reject({ message: 'Please select an accusation before saving findings/recommendation.' }).promise();
             }
             state.findingsRecomm.findingText = findingHtml;
             state.findingsRecomm.recommendationText = recommendationHtml;
 
-            return window.iidSaveIidFindingsRecommByAccusation({ complaintId: complaintId, accusationId: selectedAccusationId, findingsText: findingHtml, recomText: recommendationHtml, outcome: outcome }).then(function(resp){
+            return window.iidSaveIidFindingsRecommByAccusation({ complaintId: complaintId, accusationId: selectedAccusationId, findingText: findingHtml, recomText: recommendationHtml, outcome: outcome }).then(function(resp){
                 ensureApiSuccess(resp, 'Findings & recommendations save failed.');
                 state.findingsRecomm.savedFindingsMap[selectedAccusationId] = { findingsText: findingHtml, recommendationText: recommendationHtml, outcome: outcome };
                 state.findingsRecomm.lockedOutcomes[selectedAccusationId] = true;
@@ -1346,10 +1363,10 @@ $(function(){
     });
 
     $(document).on('click', '[data-findings-view-edit]', function(){
-        var accusationId = String($(this).data('findings-view-edit') || '');
+        var accusationId = accusationIdValue($(this).data('findings-view-edit'));
         state.findingsRecomm.selectedAccusationId = accusationId;
         $('#findingsAccusationSelect').val(accusationId);
-        loadFindingsForSelection(accusationId).fail(function(err){
+        loadFindingsForSelection(accusationId, true).fail(function(err){
             showAlert((err && err.message) || 'Failed to load findings for selected accusation.', 'danger');
         });
     });

@@ -5605,7 +5605,11 @@ namespace AIS.Controllers
             {
             try
                 {
-                var rows = dBConnection.SaveIidInqFindingsRecomm(model?.ComplaintId ?? 0, model?.FindingText, model?.RecommendationText);
+                var rows = dBConnection.SaveIidInqFindingsRecomm(
+                    model?.ComplaintId ?? 0,
+                    model?.AccusationId ?? 0,
+                    model?.FindingText,
+                    model?.RecommendationText);
                 return Json(BuildIidSaveResponse(rows, "Findings and recommendations saved."));
                 }
             catch (Exception ex)
@@ -5658,9 +5662,9 @@ namespace AIS.Controllers
             try
                 {
                 var accusationId = request?.AccusationId ?? 0;
-                if (accusationId <= 0)
+                if (accusationId < 0)
                     {
-                    return Json(new { ok = false, message = "Please save Additional Charge first before saving findings/recommendation." });
+                    return Json(new { ok = false, message = "Please select a valid accusation before saving findings/recommendation." });
                     }
 
                 var ppno = sessionHandler?.GetUser()?.PPNumber ?? string.Empty;
@@ -5669,7 +5673,6 @@ namespace AIS.Controllers
                     accusationId,
                     request?.FindingText,
                     request?.RecomText,
-                    request?.Outcome,
                     ppno);
                 return Json(new
                     {

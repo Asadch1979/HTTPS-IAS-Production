@@ -1832,23 +1832,12 @@ namespace AIS.Controllers
             return list;
             }
 
-        public IidInqProcResult SaveIidInqFindingsRecomm(long complaintId, string findingText, string recommendationText)
+        public IidInqProcResult SaveIidInqFindingsRecomm(long complaintId, long accusationId, string findingText, string recommendationText)
             {
             var sessionHandler = CreateSessionHandler();
             var loggedInUser = sessionHandler.GetUser();
             var ppno = loggedInUser?.PPNumber ?? string.Empty;
-
-            using var con = this.DatabaseConnection();
-            using var cmd = con.CreateCommand();
-            cmd.CommandText = "PKG_INQ.SAVE_INQ_FINDINGS_RECOMM";
-            cmd.CommandType = CommandType.StoredProcedure;
-            cmd.BindByName = true;
-            cmd.Parameters.Add("p_complaint_id", OracleDbType.Int64).Value = complaintId;
-            cmd.Parameters.Add("p_finding_text", OracleDbType.Clob).Value = findingText ?? string.Empty;
-            cmd.Parameters.Add("p_recom_text", OracleDbType.Clob).Value = recommendationText ?? string.Empty;
-            cmd.Parameters.Add("p_ppno", OracleDbType.Varchar2).Value = ppno;
-            cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
-            return ExecuteIidResult(cmd);
+            return SaveIidFindingsRecommByAccusation(complaintId, accusationId, findingText, recommendationText, ppno);
             }
 
         public List<IidAccusationForFindingsRow> GetIidAccusationsForFindings(long complaintId)
@@ -1913,7 +1902,7 @@ namespace AIS.Controllers
                 };
             }
 
-        public IidInqProcResult SaveIidFindingsRecommByAccusation(long complaintId, long accusationId, string findingText, string recomText, string outcome, string ppno)
+        public IidInqProcResult SaveIidFindingsRecommByAccusation(long complaintId, long accusationId, string findingText, string recomText, string ppno)
             {
             using var con = this.DatabaseConnection();
             using var cmd = con.CreateCommand();
@@ -1924,7 +1913,6 @@ namespace AIS.Controllers
             cmd.Parameters.Add("p_accusation_id", OracleDbType.Int64).Value = accusationId;
             cmd.Parameters.Add("p_finding_text", OracleDbType.Clob).Value = findingText ?? string.Empty;
             cmd.Parameters.Add("p_recom_text", OracleDbType.Clob).Value = recomText ?? string.Empty;
-            cmd.Parameters.Add("p_outcome", OracleDbType.Varchar2).Value = outcome ?? string.Empty;
             cmd.Parameters.Add("p_ppno", OracleDbType.Varchar2).Value = ppno ?? string.Empty;
             cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
             return ExecuteIidResult(cmd);
