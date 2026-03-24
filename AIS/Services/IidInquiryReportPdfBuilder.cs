@@ -1,16 +1,19 @@
 using AIS.Models.IID;
+using Ganss.Xss;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Net;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace AIS.Services
     {
     public class IidInquiryReportPdfBuilder
         {
         private const string AnnexSeparator = "________________";
+        private static readonly Regex HtmlTagPattern = new Regex(@"<\s*/?\s*[a-zA-Z][^>]*>|&lt;\s*/?\s*[a-zA-Z][^&]*&gt;", RegexOptions.Compiled);
 
         public string BuildHtml(IidInquiryReportPdfData data)
             {
@@ -40,12 +43,16 @@ namespace AIS.Services
             sb.AppendLine(".annex-label{ font-size:12.5px; font-weight:700; padding-bottom:6px; }");
             sb.AppendLine(".annex-body{ padding-left:14px; text-align:justify; }");
             sb.AppendLine(".annex-paragraph{ padding-bottom:6px; }");
+            sb.AppendLine(".annex-body p{ margin:0 0 6px; }");
             sb.AppendLine(".annex-body ul, .annex-body ol{ padding-left:18px; }");
             sb.AppendLine(".annex-body li{ padding-bottom:4px; }");
             sb.AppendLine(".section-separator{ padding-top:8px; color:#666; letter-spacing:1px; }");
             sb.AppendLine(".signature-wrap{ width:100%; padding-top:26px; border-collapse:collapse; }");
             sb.AppendLine(".signature-wrap td{ width:50%; text-align:center; vertical-align:top; padding:0 12px; }");
-            sb.AppendLine(".signature-line{ border-top:1px solid #111; padding-top:46px; font-weight:700; }");
+            sb.AppendLine(".signature-slot{ padding-top:42px; }");
+            sb.AppendLine(".signature-line{ border-top:1px solid #111; padding-top:10px; min-height:56px; }");
+            sb.AppendLine(".signature-name{ font-weight:700; }");
+            sb.AppendLine(".signature-role{ padding-top:4px; font-size:11px; color:#444; }");
             sb.AppendLine(".violation-table{ width:100%; border-collapse:collapse; table-layout:fixed; }");
             sb.AppendLine(".violation-table th,.violation-table td{ border:1px solid #666; padding:7px; vertical-align:top; word-wrap:break-word; }");
             sb.AppendLine(".violation-table th{ background:#f2f2f2; text-align:left; }");
@@ -69,13 +76,12 @@ namespace AIS.Services
             sb.AppendFormat(CultureInfo.InvariantCulture, "<div class='cover-bank'>{0}</div>", EncodeOrDefault(header.BankName, "Zarai Taraqiati Bank Limited")).AppendLine();
             sb.AppendFormat(CultureInfo.InvariantCulture, "<div class='cover-dept'>{0}</div>", EncodeOrDefault(header.DepartmentName, "Internal Audit Department")).AppendLine();
             sb.AppendLine("<div class='cover-title'>Inquiry Report</div>");
-            sb.AppendFormat(CultureInfo.InvariantCulture, "<div class='cover-ref'><div><strong>Inquiry / Complaint Reference:</strong> {0}</div><div><strong>Branch / Region Context:</strong> {1}</div></div>",
+            sb.AppendFormat(CultureInfo.InvariantCulture, "<div class='cover-ref'><div><strong>Inquiry / Complaint Reference:</strong> {0}</div><div><strong>Branch / Region Context:</strong> {1}</div><div><strong>Inquiry Status:</strong> {2}</div></div>",
                 EncodeOrDefault(header.ComplaintNo ?? snapshot.ComplaintNo),
-                EncodeOrDefault(JoinNonEmpty(" / ", snapshot.Branch, snapshot.Region), "N/A")).AppendLine();
-            sb.AppendFormat(CultureInfo.InvariantCulture, "<div class='cover-conducted'><div><strong>Conducted by</strong></div><div>{0}</div><div>PP No: {1}</div><div>Inquiry Status: {2}</div></div>",
-                EncodeOrDefault(header.GeneratedByName, "Inquiry Team"),
-                EncodeOrDefault(header.GeneratedByPPNo),
+                EncodeOrDefault(JoinNonEmpty(" / ", snapshot.Branch, snapshot.Region), "N/A"),
                 EncodeOrDefault(header.InquiryStatus)).AppendLine();
+            sb.AppendFormat(CultureInfo.InvariantCulture, "<div class='cover-conducted'><div><strong>Conducted by</strong></div><div>{0}</div></div>",
+                EncodeOrDefault(header.InspectionUnit, "Inspection Unit")).AppendLine();
             sb.AppendFormat(CultureInfo.InvariantCulture, "<div class='cover-meta'>Generated on {0} &nbsp;|&nbsp; Confidential - Internal Use Only</div>",
                 Encode(FormatDate(header.GeneratedOn))).AppendLine();
             sb.AppendLine("</section>");
@@ -176,7 +182,7 @@ namespace AIS.Services
             AppendAnnexSection(sb, "20. Summary of violations statement",
                 BuildParagraphs(data.FinalConclusion?.Findings, data.FinalConclusion?.Recommendation, data.FinalConclusion?.FinalOutcome));
 
-            AppendSignatureBlock(sb);
+            AppendSignatureBlock(sb, data);
             sb.AppendLine("</section>");
             }
 
@@ -219,13 +225,49 @@ namespace AIS.Services
             sb.AppendLine("</div>");
             }
 
-        private static void AppendSignatureBlock(StringBuilder sb)
+        private static void AppendSignatureBlock(StringBuilder sb, IidInquiryReportPdfData data)
             {
+            var header = data?.Header ?? new IidInquiryHeaderModel();
             sb.AppendLine("<table class='signature-wrap'><tr>");
-            sb.AppendLine("<td><div class='signature-line'>Team Member</div></td>");
-            sb.AppendLine("<td><div class='signature-line'>Team Leader / Head</div></td>");
+            sb.AppendFormat(CultureInfo.InvariantCulture, "<td>{0}</td>", BuildSignatureCell(header.TeamMembers, "Team Member", true)).AppendLine();
+            sb.AppendFormat(CultureInfo.InvariantCulture, "<td>{0}</td>", BuildSignatureCell(header.TeamLead, "Team Lead", false)).AppendLine();
             sb.AppendLine("</tr></table>");
             }
+
+        private static string BuildSignatureCell(string names, string roleLabel, bool splitOnComma)
+        {
+            return string.Format(
+                CultureInfo.InvariantCulture,
+                "<div class='signature-slot'><div class='signature-line'><div class='signature-name'>{0}</div><div class='signature-role'>{1}</div></div></div>",
+                FormatSignatureNames(names, splitOnComma),
+                Encode(roleLabel));
+        }
+
+        private static string FormatSignatureNames(string value, bool splitOnComma)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+                {
+                return "&nbsp;";
+                }
+
+            var separators = splitOnComma
+                ? new[] { "\r\n", "\n", ";", "," }
+                : new[] { "\r\n", "\n", ";" };
+
+            var parts = value
+                .Split(separators, StringSplitOptions.RemoveEmptyEntries)
+                .Select(x => x.Trim())
+                .Where(x => !string.IsNullOrWhiteSpace(x))
+                .Select(Encode)
+                .ToList();
+
+            if (!parts.Any())
+                {
+                return Encode(value.Trim());
+                }
+
+            return string.Join("<br/>", parts);
+        }
 
         private static string BuildParagraphs(params string[] values)
             {
@@ -360,8 +402,38 @@ namespace AIS.Services
                 return "N/A";
                 }
 
-            return Encode(value).Replace("\r\n", "\n").Replace("\n", "<br/>");
+            var normalized = value.Replace("\r\n", "\n").Trim();
+            if (ContainsHtmlMarkup(normalized))
+                {
+                var sanitized = CreateNarrativeSanitizer().Sanitize(WebUtility.HtmlDecode(normalized));
+                return string.IsNullOrWhiteSpace(sanitized) ? "N/A" : sanitized;
+                }
+
+            return Encode(normalized).Replace("\n", "<br/>");
             }
+
+        private static bool ContainsHtmlMarkup(string value)
+        {
+            return !string.IsNullOrWhiteSpace(value) && HtmlTagPattern.IsMatch(value);
+        }
+
+        private static HtmlSanitizer CreateNarrativeSanitizer()
+        {
+            var sanitizer = new HtmlSanitizer();
+            sanitizer.AllowedTags.Clear();
+            sanitizer.AllowedTags.UnionWith(new[]
+            {
+                "b", "blockquote", "br", "code", "div", "em", "i", "li", "ol", "p", "pre",
+                "span", "strong", "sub", "sup", "table", "tbody", "td", "tfoot", "th",
+                "thead", "tr", "u", "ul"
+            });
+            sanitizer.AllowedAttributes.Clear();
+            sanitizer.AllowedAttributes.UnionWith(new[] { "colspan", "rowspan", "class" });
+            sanitizer.AllowedSchemes.Clear();
+            sanitizer.AllowedCssProperties.Clear();
+            sanitizer.AllowedClasses.Clear();
+            return sanitizer;
+        }
 
         private static string FormatDate(DateTime? value)
             {

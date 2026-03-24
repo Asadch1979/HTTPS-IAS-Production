@@ -26,8 +26,21 @@ namespace AIS.Controllers
             var findingsRows = GetIidInqFindingsRecommByComplaintId(complaintId) ?? new List<Models.IID.InquiryReport.IidInqFindingsRecommRow>();
             var dsaRows = GetIidInqDsaByComplaintId(complaintId) ?? new List<Models.IID.InquiryReport.IidInqDsaRow>();
             var inquiryNarrative = GetLatestInquiryReportByComplaintId((int)complaintId);
+            var planDetails = GetIidPlanDetails((int)complaintId);
 
             var accusationLookup = accusations.ToDictionary(x => x.AccusationId, x => x.AccusationText ?? string.Empty);
+
+            string GetPlanValue(string key)
+                {
+                if (planDetails == null || string.IsNullOrWhiteSpace(key))
+                    {
+                    return string.Empty;
+                    }
+
+                return planDetails.TryGetValue(key, out var value)
+                    ? value?.ToString() ?? string.Empty
+                    : string.Empty;
+                }
 
             return new IidInquiryReportPdfData
                 {
@@ -38,7 +51,10 @@ namespace AIS.Controllers
                     DepartmentName = "Internal Audit Division",
                     ReportTitle = "IID Inquiry Report",
                     ComplaintNo = complaint.ComplaintNo,
-                    InquiryStatus = complaint.Status
+                    InquiryStatus = complaint.Status,
+                    InspectionUnit = complaint.AssignedUnit,
+                    TeamLead = GetPlanValue("teamLead"),
+                    TeamMembers = GetPlanValue("teamMembers")
                     },
                 ComplaintSnapshot = new IidComplaintSnapshotModel
                     {

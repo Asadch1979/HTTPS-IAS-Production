@@ -26,6 +26,9 @@ namespace AIS.Models.IID
         public string ReportTitle { get; set; }
         public string ComplaintNo { get; set; }
         public string InquiryStatus { get; set; }
+        public string InspectionUnit { get; set; }
+        public string TeamLead { get; set; }
+        public string TeamMembers { get; set; }
         public string GeneratedByName { get; set; }
         public string GeneratedByPPNo { get; set; }
         public DateTime GeneratedOn { get; set; }
