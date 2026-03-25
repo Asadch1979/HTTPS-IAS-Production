@@ -138,6 +138,20 @@
         }
     }
 
+    function initializeMemoCreationReferencePicker(stepCode) {
+        if (stepCode !== 'MEMO_CREATION' || typeof window.initObservationReference !== 'function') {
+            return;
+        }
+
+        var referenceSection = stepHost.querySelector('#observationReferenceSection');
+        if (!referenceSection) {
+            return;
+        }
+
+        console.log('[fieldAudit.dashboard] Reinitializing Step 5 observation reference picker after partial load.');
+        window.initObservationReference(referenceSection);
+    }
+
     function loadStepContent(stepCode, stepNo) {
         var engId = selectedEngagementId();
         if (!engId) {
@@ -170,6 +184,7 @@
                 stepHost.setAttribute('data-eng-id', engId);
                 return executeInlineScripts(stepHost).then(function () {
                     runStepInitializer(stepCode);
+                    initializeMemoCreationReferencePicker(stepCode);
                     setCurrentStepCode(stepCode);
                     setActiveStep(stepCode);
                     updateStepCounter(stepNo);

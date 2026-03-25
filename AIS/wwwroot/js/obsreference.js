@@ -23,12 +23,44 @@
     }
 
     function initObservationReference(containerSelector, options) {
-        var $container = $(containerSelector || '#observationReferenceSection');
-        if (!$container.length || $container.data('obs-reference-initialized')) {
+        var $container = $(containerSelector || '#observationReferenceSection').first();
+        if (!$container.length) {
             return;
         }
 
         options = options || {};
+        var logPrefix = '[obsreference]';
+        function log(message, data) {
+            if (!window.console || typeof window.console.log !== 'function') {
+                return;
+            }
+
+            if (typeof data === 'undefined') {
+                window.console.log(logPrefix + ' ' + message);
+                return;
+            }
+
+            window.console.log(logPrefix + ' ' + message, data);
+        }
+
+        function warn(message, data) {
+            if (!window.console || typeof window.console.warn !== 'function') {
+                return;
+            }
+
+            if (typeof data === 'undefined') {
+                window.console.warn(logPrefix + ' ' + message);
+                return;
+            }
+
+            window.console.warn(logPrefix + ' ' + message, data);
+        }
+
+        if ($container.data('obs-reference-initialized')) {
+            log('Step 5 reference picker already initialized for container.', containerSelector || '#observationReferenceSection');
+            return;
+        }
+
         var state = { selected: null };
         var apiBase = options.apiBaseUrl || (window.g_asiBaseURL ? window.g_asiBaseURL + '/ApiCalls' : '/ApiCalls');
 
@@ -39,6 +71,23 @@
         var $manual = $container.find('#obsReferenceManual');
         var $section = $container.find('#obsReferenceSectionSelect');
         var $chapter = $container.find('#obsReferenceChapter');
+        var $manualGrid = $container.find('#obsReferenceManualGrid');
+
+        var missingControls = [];
+        if (!$type.length) missingControls.push('Reference Type');
+        if (!$manual.length) missingControls.push('Manual');
+        if (!$section.length) missingControls.push('Section');
+        if (!$chapter.length) missingControls.push('Chapter');
+        if (!$manualGrid.length) missingControls.push('Grid');
+
+        if (missingControls.length) {
+            warn('Step 5 markup is missing reference controls.', missingControls);
+        }
+
+        log('Initializing Step 5 reference picker.', {
+            containerId: $container.attr('id') || null,
+            referenceType: ($type.val() || '').toUpperCase()
+        });
 
         function setHidden(refId) {
             $hiddenRef.val(refId || '');
@@ -84,22 +133,49 @@
             $container.find('#obsReferenceManualGrid tbody').empty();
         }
 
-        function switchMode() {
+        function resetManualControls() {
+            if ($manual.length) {
+                $manual.empty().append('<option value="">--Select Manual--</option>');
+            }
+            if ($section.length) {
+                $section.empty().append('<option value="">--Select Section--</option>');
+            }
+            if ($chapter.length) {
+                $chapter.empty().append('<option value="">--Select Chapter--</option>');
+            }
+            if ($manualGrid.length) {
+                $manualGrid.find('tbody').empty();
+            }
+        }
+
+        function switchMode(triggerSource) {
             var typeVal = ($type.val() || '').toUpperCase();
+            log('toggle mode fired.', { trigger: triggerSource || 'unknown', referenceType: typeVal });
             $container.find('.obs-ref-mode').addClass('d-none');
             if (typeVal === 'CIRCULAR') {
                 $container.find('#obsReferenceCircularMode').removeClass('d-none');
+                log('Circular mode displayed.');
             } else if (typeVal === 'MANUAL' || typeVal === 'POLICY') {
                 $container.find('#obsReferenceManualMode').removeClass('d-none');
+                log('Manual/Policy mode displayed.');
+                loadManualMaster(triggerSource || 'type-change');
+            } else {
+                resetManualControls();
+                log('Reference picker reset because no mode is selected.');
             }
             clearResults();
         }
 
         function loadCircular() {
+            log('GetReferenceMasterDetail firing.', {
+                searchText: $search.val() || '',
+                sourceType: 'CIRCULAR'
+            });
             $.get(apiBase + '/GetReferenceMasterDetail', {
                 searchText: $search.val() || '',
                 sourceType: 'CIRCULAR'
             }).done(function (rows) {
+                log('GetReferenceMasterDetail completed.', { rowCount: (rows || []).length });
                 var $tbody = $container.find('#obsReferenceCircularResults tbody');
                 $tbody.empty();
                 (rows || []).forEach(function (row) {
@@ -114,51 +190,118 @@
                         + '</tr>');
                     $tbody.find('button[data-refid="' + n.refId + '"]').data('row', n);
                 });
+            }).fail(function (xhr, status, error) {
+                warn('GetReferenceMasterDetail failed.', status || error || xhr.statusText);
             });
         }
 
-        function loadManualMaster() {
-            $manual.empty().append('<option value="">--Select Manual--</option>');
+        function loadManualMaster(triggerSource) {
+            resetManualControls();
+            log('GetManualMaster firing.', {
+                trigger: triggerSource || 'unknown',
+                referenceType: ($type.val() || '').toUpperCase()
+            });
             $.get(apiBase + '/GetObservationManualMaster').done(function (rows) {
+                log('GetManualMaster completed.', { rowCount: (rows || []).length });
                 (rows || []).forEach(function (item) {
                     $manual.append('<option value="' + (item.manualId || item.MANUAL_ID || 0) + '">' + $('<div/>').text(item.displayLabel || item.DISPLAY_NAME || '').html() + '</option>');
                 });
+            }).fail(function (xhr, status, error) {
+                warn('GetManualMaster failed.', status || error || xhr.statusText);
             });
         }
 
         function loadSections() {
-            $section.empty().append('<option value="">--Select Section--</option>');
-            $chapter.empty().append('<option value="">--Select Chapter--</option>');
-            if (!$manual.val()) return;
+            if ($section.length) {
+                $section.empty().append('<option value="">--Select Section--</option>');
+            }
+            if ($chapter.length) {
+                $chapter.empty().append('<option value="">--Select Chapter--</option>');
+            }
+            if ($manualGrid.length) {
+                $manualGrid.find('tbody').empty();
+            }
+            if (!$manual.val()) {
+                log('GetManualSections skipped because no manual is selected.');
+                return;
+            }
+
+            log('GetManualSections firing.', { manualId: $manual.val() });
             $.get(apiBase + '/GetObservationManualSections', { manualId: $manual.val() }).done(function (rows) {
+                log('GetManualSections completed.', { rowCount: (rows || []).length, manualId: $manual.val() });
                 (rows || []).forEach(function (item) {
                     var sectionText = item.sectionText || item.SECTION_TEXT || item.sectionName || '';
                     $section.append('<option value="' + $('<div/>').text(sectionText).html() + '">' + $('<div/>').text(sectionText).html() + '</option>');
                 });
+            }).fail(function (xhr, status, error) {
+                warn('GetManualSections failed.', status || error || xhr.statusText);
             });
         }
 
         function loadChapters() {
-            $chapter.empty().append('<option value="">--Select Chapter--</option>');
-            if (!$manual.val() || !$section.val()) return;
+            if ($chapter.length) {
+                $chapter.empty().append('<option value="">--Select Chapter--</option>');
+            }
+            if ($manualGrid.length) {
+                $manualGrid.find('tbody').empty();
+            }
+            if (!$manual.val() || !$section.val()) {
+                log('GetManualChapters skipped because manual or section is missing.', {
+                    manualId: $manual.val() || '',
+                    sectionText: $section.val() || ''
+                });
+                return;
+            }
+
+            log('GetManualChapters firing.', {
+                manualId: $manual.val(),
+                sectionText: $section.val()
+            });
             $.get(apiBase + '/GetObservationManualChapters', { manualId: $manual.val(), sectionText: $section.val() }).done(function (rows) {
+                log('GetManualChapters completed.', {
+                    rowCount: (rows || []).length,
+                    manualId: $manual.val(),
+                    sectionText: $section.val()
+                });
                 (rows || []).forEach(function (item) {
                     var chapterNo = item.chapterNo || item.CHAPTER_NO || '';
                     $chapter.append('<option value="' + $('<div/>').text(chapterNo).html() + '">' + $('<div/>').text(chapterNo).html() + '</option>');
                 });
+            }).fail(function (xhr, status, error) {
+                warn('GetManualChapters failed.', status || error || xhr.statusText);
             });
         }
 
         function loadManualGrid() {
             var $tbody = $container.find('#obsReferenceManualGrid tbody');
             $tbody.empty();
-            if (!$manual.val() || !$section.val() || !$chapter.val()) return;
+            if (!$manual.val() || !$section.val() || !$chapter.val()) {
+                log('GetManualReferenceGrid skipped because manual, section, or chapter is missing.', {
+                    manualId: $manual.val() || '',
+                    sectionText: $section.val() || '',
+                    chapterNo: $chapter.val() || ''
+                });
+                return;
+            }
+
+            log('GetManualReferenceGrid firing.', {
+                manualId: $manual.val(),
+                sectionText: $section.val(),
+                chapterNo: $chapter.val(),
+                sourceType: ($type.val() || '').toUpperCase()
+            });
             $.get(apiBase + '/GetObservationManualReferenceGrid', {
                 manualId: $manual.val(),
                 sectionText: $section.val(),
                 chapterNo: $chapter.val(),
                 sourceType: ($type.val() || '').toUpperCase()
             }).done(function (rows) {
+                log('GetManualReferenceGrid completed.', {
+                    rowCount: (rows || []).length,
+                    manualId: $manual.val(),
+                    sectionText: $section.val(),
+                    chapterNo: $chapter.val()
+                });
                 (rows || []).forEach(function (row) {
                     var n = normalize(row);
                     n.manualName = $manual.find(':selected').text();
@@ -169,6 +312,8 @@
                         + '</tr>');
                     $tbody.find('button[data-refid="' + n.refId + '"]').data('row', n);
                 });
+            }).fail(function (xhr, status, error) {
+                warn('GetManualReferenceGrid failed.', status || error || xhr.statusText);
             });
         }
 
@@ -177,24 +322,34 @@
                 renderSelected();
                 return;
             }
+            log('Loading existing reference by REF_ID.', { refId: refId });
             $.get(apiBase + '/GetReferenceDetailByRefId', { refId: refId }).done(function (item) {
                 if (item) {
+                    log('Existing reference loaded.', { refId: refId });
                     selectReference(item);
                 }
+            }).fail(function (xhr, status, error) {
+                warn('GetReferenceDetailByRefId failed.', status || error || xhr.statusText);
             });
         }
 
-        $container.on('click', '.obs-ref-select', function () {
+        $container.off('.obsReference');
+
+        $container.on('click.obsReference', '.obs-ref-select', function () {
             var row = $(this).data('row');
+            log('Reference selected from grid.', { refId: row && row.refId ? row.refId : 0 });
             selectReference(row);
         });
 
-        $container.on('click', '#obsReferenceSearchBtn', loadCircular);
-        $container.on('change', '#obsReferenceType', switchMode);
-        $container.on('change', '#obsReferenceManual', loadSections);
-        $container.on('change', '#obsReferenceSectionSelect', loadChapters);
-        $container.on('change', '#obsReferenceChapter', loadManualGrid);
-        $container.on('click', '#obsReferenceClear', function () {
+        $container.on('click.obsReference', '#obsReferenceSearchBtn', loadCircular);
+        $container.on('change.obsReference', '#obsReferenceType', function () {
+            switchMode('change');
+        });
+        $container.on('change.obsReference', '#obsReferenceManual', loadSections);
+        $container.on('change.obsReference', '#obsReferenceSectionSelect', loadChapters);
+        $container.on('change.obsReference', '#obsReferenceChapter', loadManualGrid);
+        $container.on('click.obsReference', '#obsReferenceClear', function () {
+            log('Selected reference cleared.');
             state.selected = null;
             renderSelected();
         });
@@ -202,8 +357,7 @@
         $container.data('obs-reference-initialized', true);
         $container.data('obs-reference-state', state);
 
-        loadManualMaster();
-        switchMode();
+        switchMode('initial-load');
         loadExistingByRefId($hiddenRef.val() || options.initialRefId);
         renderSelected();
     }

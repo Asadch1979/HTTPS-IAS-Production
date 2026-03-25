@@ -39,6 +39,24 @@ window.addEventListener("unhandledrejection", function (e) {
         return g_engId;
     }
 
+    function initStep5ObservationReference() {
+        var root = document.getElementById('fieldAuditObservationReplica');
+        var referenceSection = root ? root.querySelector('#observationReferenceSection') : document.getElementById('observationReferenceSection');
+
+        if (!referenceSection) {
+            console.warn('[observationReplica] Step 5 reference section not found.');
+            return;
+        }
+
+        if (typeof window.initObservationReference !== 'function') {
+            console.warn('[observationReplica] initObservationReference is not available.');
+            return;
+        }
+
+        console.log('[observationReplica] Initializing Step 5 observation reference picker after partial load.');
+        window.initObservationReference(referenceSection);
+    }
+
     function resetObservationSection() {
         if ($.fn.select2 && $('#updatedAnnexlist').data('select2')) {
             $('#updatedAnnexlist').val('0').trigger('change');
@@ -62,9 +80,7 @@ window.addEventListener("unhandledrejection", function (e) {
         clearPending();
         applyDefaultValues();
 
-        if (typeof window.initObservationReference === 'function') {
-            window.initObservationReference('#observationReferenceSection');
-        }
+        initStep5ObservationReference();
     }
 
     function normalizeRequiredInt(value) {
@@ -106,7 +122,12 @@ window.addEventListener("unhandledrejection", function (e) {
 
     function initObservationReplica() {
         var root = document.getElementById('fieldAuditObservationReplica');
-        if (!root || root.getAttribute('data-initialized') === '1') {
+        if (!root) {
+            return;
+        }
+
+        if (root.getAttribute('data-initialized') === '1') {
+            initStep5ObservationReference();
             return;
         }
 
@@ -159,10 +180,7 @@ window.addEventListener("unhandledrejection", function (e) {
         }
 
         applyDefaultValues();
-
-        if (typeof window.initObservationReference === 'function') {
-            window.initObservationReference('#observationReferenceSection');
-        }
+        initStep5ObservationReference();
     }
 
     function buildRespKey(ppNo, role, loanCase, accountNumber) {

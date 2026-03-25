@@ -141,7 +141,7 @@
             </div>
         </div>
 
-        <div id="observationReferenceSection" class="row col-md-12 mt-3 border rounded p-3">
+        <div id="observationReferenceSection" class="row col-md-12 mt-3 border rounded p-3" data-reference-step="5">
             <input type="hidden" id="observationReferenceId" value="" />
             <div class="col-md-12 mb-2">
                 <h5>Reference (Observation Save)</h5>
@@ -176,16 +176,26 @@
             <div id="obsReferenceManualMode" class="obs-ref-mode d-none col-md-12 mt-3">
                 <div class="row g-2">
                     <div class="col-md-4">
-                        <select id="obsReferenceManual" class="form-select"><option value="">--Select Manual--</option></select>
+                        <label for="obsReferenceManual" class="form-label">Manual / Policy</label>
+                        <select id="obsReferenceManual" class="form-select">
+                            <option value="">--Select Manual--</option>
+                        </select>
                     </div>
                     <div class="col-md-4">
-                        <select id="obsReferenceSectionSelect" class="form-select"><option value="">--Select Section--</option></select>
+                        <label for="obsReferenceSectionSelect" class="form-label">Section</label>
+                        <select id="obsReferenceSectionSelect" class="form-select">
+                            <option value="">--Select Section--</option>
+                        </select>
                     </div>
                     <div class="col-md-4">
-                        <select id="obsReferenceChapter" class="form-select"><option value="">--Select Chapter--</option></select>
+                        <label for="obsReferenceChapter" class="form-label">Chapter</label>
+                        <select id="obsReferenceChapter" class="form-select">
+                            <option value="">--Select Chapter--</option>
+                        </select>
                     </div>
                 </div>
                 <div class="table-responsive mt-2">
+                    <div class="fw-semibold mb-2">Reference Grid</div>
                     <table id="obsReferenceManualGrid" class="table table-sm table-bordered">
                         <thead>
                             <tr><th>SUB_SECTION_NO</th><th>HEADING</th><th>Select</th></tr>
@@ -302,5 +312,5 @@
     }
 }))
 </script>
-<script src="~/js/obsreference.js?v=1"></script>
-<script src="~/js/fieldAudit/observationReplica.js?v=1"></script>
+<script src="~/js/obsreference.js?v=2"></script>
+<script src="~/js/fieldAudit/observationReplica.js?v=2"></script>
