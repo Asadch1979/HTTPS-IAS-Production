@@ -42,11 +42,16 @@ else
                 <div class="modal-body">
                     <input type="hidden" id="apiMasterId" value="0" />
                     <div class="row g-3">
-                        <div class="col-md-6">
+                        <div class="col-md-4">
                             <label class="form-label fw-bold" for="apiNameInput">API Name</label>
                             <input class="form-control" id="apiNameInput" type="text" />
                         </div>
-                        <div class="col-md-6">
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold" for="controllerNameInput">Controller Name</label>
+                            <input class="form-control" id="controllerNameInput" type="text" />
+                            <div class="invalid-feedback" id="controllerNameValidation">Controller Name is required.</div>
+                        </div>
+                        <div class="col-md-4">
                             <label class="form-label fw-bold" for="apiPathInput">Path</label>
                             <input class="form-control" id="apiPathInput" type="text" placeholder="/api/example" />
                         </div>
@@ -78,4 +83,4 @@ else
 
     
     }
-<script src="~/js/csp/Views_AdministrationPanel_api_master.js?v=1"></script>
+<script src="~/js/csp/Views_AdministrationPanel_api_master.js?v=2"></script>

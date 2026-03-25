@@ -4,6 +4,45 @@
             loadApiMasterList();
         });
 
+        $(document).on('input change', '#controllerNameInput', function () {
+            clearApiMasterFieldValidation($(this), $('#controllerNameValidation'));
+        });
+
+        function normalizeApiMasterItem(item) {
+            item = item || {};
+            return {
+                ApiId: item.ApiId || item.apiId || 0,
+                ApiName: item.ApiName || item.apiName || '',
+                ControllerName: item.ControllerName || item.controllerName || '',
+                ApiPath: item.ApiPath || item.apiPath || '',
+                HttpMethod: item.HttpMethod || item.httpMethod || 'POST',
+                IsActive: item.IsActive || item.isActive || 'Y'
+            };
+        }
+
+        function clearApiMasterFieldValidation($input, $message) {
+            $input.removeClass('is-invalid');
+            if ($message && $message.length) {
+                $message.text('Controller Name is required.');
+            }
+        }
+
+        function validateApiMasterForm() {
+            var $controllerNameInput = $('#controllerNameInput');
+            var $controllerNameValidation = $('#controllerNameValidation');
+            var controllerName = $.trim($controllerNameInput.val());
+
+            clearApiMasterFieldValidation($controllerNameInput, $controllerNameValidation);
+
+            if (!controllerName) {
+                $controllerNameInput.addClass('is-invalid');
+                $controllerNameValidation.text('Controller Name is required.');
+                return false;
+            }
+
+            return true;
+        }
+
         $(document).on('click', '.js-api-master-add', function (event) {
             event.preventDefault();
             openApiMasterModal(0);
@@ -37,7 +76,9 @@
                         return;
                     }
 
-                    apiMasterData = response.data || [];
+                    apiMasterData = $.map(response.data || [], function (entry) {
+                        return normalizeApiMasterItem(entry);
+                    });
                     renderApiMasterTable();
                 },
                 error: function () {
@@ -56,14 +97,14 @@
             }
 
             $.each(apiMasterData, function (i, item) {
-                var isActiveRaw = item.isActive || '';
+                var isActiveRaw = item.IsActive || '';
                 var statusLabel = isActiveRaw.toUpperCase() === 'N' ? 'Disabled' : 'Enabled';
-                var apiId = item.apiId;
+                var apiId = item.ApiId;
 
                 var row = '<tr>'
-                    + '<td>' + (item.apiName || '') + '</td>'
-                    + '<td>' + (item.apiPath || '') + '</td>'
-                    + '<td>' + (item.httpMethod || '') + '</td>'
+                    + '<td>' + (item.ApiName || '') + '</td>'
+                    + '<td>' + (item.ApiPath || '') + '</td>'
+                    + '<td>' + (item.HttpMethod || '') + '</td>'
                     + '<td>' + statusLabel + '</td>'
                     + '<td>'
                     + '<button class="btn btn-sm btn-outline-primary me-2 js-api-master-edit" type="button" data-api-id="' + apiId + '">Edit</button>'
@@ -78,27 +119,34 @@
         function openApiMasterModal(apiId) {
             var modal = new bootstrap.Modal(document.getElementById('apiMasterModal'));
             var item = apiMasterData.find(function (entry) {
-                return entry.apiId == apiId;
+                return entry.ApiId == apiId;
             });
 
             $('#apiMasterId').val(apiId || 0);
-            $('#apiNameInput').val(item ? item.apiName : '');
-            $('#apiPathInput').val(item ? item.apiPath : '');
-            $('#apiMethodInput').val(item ? item.httpMethod : 'POST');
-            $('#apiIsActiveInput').val(item ? (item.isActive || 'Y') : 'Y');
+            $('#apiNameInput').val(item ? item.ApiName : '');
+            $('#controllerNameInput').val(item ? item.ControllerName : '');
+            $('#apiPathInput').val(item ? item.ApiPath : '');
+            $('#apiMethodInput').val(item ? item.HttpMethod : 'POST');
+            $('#apiIsActiveInput').val(item ? (item.IsActive || 'Y') : 'Y');
+            clearApiMasterFieldValidation($('#controllerNameInput'), $('#controllerNameValidation'));
 
             modal.show();
         }
 
         function saveApiMaster() {
+            if (!validateApiMasterForm()) {
+                return;
+            }
+
             var apiId = parseInt($('#apiMasterId').val() || 0);
             var payload = {
-                apiId: apiId,
-                apiName: $('#apiNameInput').val(),
-                apiPath: $('#apiPathInput').val(),
-                httpMethod: $('#apiMethodInput').val(),
-                isActive: $('#apiIsActiveInput').val(),
-                actionInd: apiId > 0 ? 'U' : 'A'
+                ApiId: apiId,
+                ApiName: $.trim($('#apiNameInput').val()),
+                ControllerName: $.trim($('#controllerNameInput').val()),
+                ApiPath: $.trim($('#apiPathInput').val()),
+                HttpMethod: $('#apiMethodInput').val(),
+                IsActive: $('#apiIsActiveInput').val(),
+                ActionInd: apiId > 0 ? 'U' : 'A'
             };
 
             $.ajax({
@@ -124,7 +172,7 @@
 
         function disableApiMaster(apiId) {
             var item = apiMasterData.find(function (entry) {
-                return entry.apiId == apiId;
+                return entry.ApiId == apiId;
             });
 
             if (!item) {
@@ -132,12 +180,13 @@
             }
 
             var payload = {
-                apiId: apiId,
-                apiName: item.apiName,
-                apiPath: item.apiPath,
-                httpMethod: item.httpMethod,
-                isActive: 'N',
-                actionInd: 'D'
+                ApiId: apiId,
+                ApiName: item.ApiName,
+                ControllerName: item.ControllerName || '',
+                ApiPath: item.ApiPath,
+                HttpMethod: item.HttpMethod,
+                IsActive: 'N',
+                ActionInd: 'D'
             };
 
             $.ajax({
