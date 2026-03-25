@@ -2275,4 +2275,194 @@ ORDER BY SUB_SECTION_NO, INDEX_ID";
             return paraTexts; // ? Return correct variable
             }
         }
+
+
+        public List<ReferenceMasterDetailItemModel> GetReferenceMasterDetail(string searchText, string sourceType, long? refId)
+            {
+            var list = new List<ReferenceMasterDetailItemModel>();
+            using (var con = DatabaseConnection())
+                {
+                using (var cmd = con.CreateCommand())
+                    {
+                    cmd.CommandText = "PKG_FAD.P_GET_REFERENCE_MASTER_DETAIL";
+                    cmd.CommandType = CommandType.StoredProcedure;
+                    cmd.Parameters.Add("p_search_text", OracleDbType.Varchar2).Value = string.IsNullOrWhiteSpace(searchText) ? (object)DBNull.Value : searchText.Trim();
+                    cmd.Parameters.Add("p_reference_source_type", OracleDbType.Varchar2).Value = string.IsNullOrWhiteSpace(sourceType) ? (object)DBNull.Value : sourceType.Trim();
+                    cmd.Parameters.Add("p_ref_id", OracleDbType.Int64).Value = refId.HasValue ? (object)refId.Value : DBNull.Value;
+                    cmd.Parameters.Add("o_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+
+                    using (var rdr = cmd.ExecuteReader())
+                        {
+                        while (rdr.Read())
+                            {
+                            list.Add(new ReferenceMasterDetailItemModel
+                                {
+                                RefId = rdr["REF_ID"] == DBNull.Value ? 0 : Convert.ToInt64(rdr["REF_ID"]),
+                                ReferenceSourceType = rdr["REFERENCE_SOURCE_TYPE"]?.ToString(),
+                                SourcePkId = rdr["SOURCE_PK_ID"] == DBNull.Value ? (long?)null : Convert.ToInt64(rdr["SOURCE_PK_ID"]),
+                                ManualId = rdr["MANUAL_ID"] == DBNull.Value ? (long?)null : Convert.ToInt64(rdr["MANUAL_ID"]),
+                                ReferenceType = rdr["REFERENCE_TYPE"]?.ToString(),
+                                Division = rdr["DIVISION"]?.ToString(),
+                                InstructionDate = rdr["INSTRUCTION_DATE"] == DBNull.Value ? (DateTime?)null : Convert.ToDateTime(rdr["INSTRUCTION_DATE"]),
+                                SectionText = rdr["SECTION_TEXT"]?.ToString(),
+                                ChapterNo = rdr["CHAPTER_NO"]?.ToString(),
+                                SubSectionNo = rdr["SUB_SECTION_NO"]?.ToString(),
+                                TitleOrHeading = rdr["TITLE_OR_HEADING"]?.ToString(),
+                                DisplayText = rdr["DISPLAY_TEXT"]?.ToString()
+                                });
+                            }
+                        }
+                    }
+                }
+            return list;
+            }
+
+        public List<ManualMasterItemModel> GetObservationManualMaster()
+            {
+            var list = new List<ManualMasterItemModel>();
+            using (var con = DatabaseConnection())
+                {
+                using (var cmd = con.CreateCommand())
+                    {
+                    cmd.CommandText = "PKG_FAD.P_GET_MANUAL_MASTER";
+                    cmd.CommandType = CommandType.StoredProcedure;
+                    cmd.Parameters.Add("o_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+                    using (var rdr = cmd.ExecuteReader())
+                        {
+                        while (rdr.Read())
+                            {
+                            list.Add(new ManualMasterItemModel
+                                {
+                                ManualId = rdr["MANUAL_ID"] == DBNull.Value ? 0 : Convert.ToInt64(rdr["MANUAL_ID"]),
+                                ManualName = rdr["MANUAL_NAME"]?.ToString(),
+                                VolumeName = rdr["VOLUME_NAME"]?.ToString(),
+                                DisplayLabel = rdr["DISPLAY_NAME"]?.ToString()
+                                });
+                            }
+                        }
+                    }
+                }
+            return list;
+            }
+
+        public List<ManualSectionItemModel> GetObservationManualSections(long manualId)
+            {
+            var list = new List<ManualSectionItemModel>();
+            using (var con = DatabaseConnection())
+                {
+                using (var cmd = con.CreateCommand())
+                    {
+                    cmd.CommandText = "PKG_FAD.P_GET_MANUAL_SECTIONS";
+                    cmd.CommandType = CommandType.StoredProcedure;
+                    cmd.Parameters.Add("p_manual_id", OracleDbType.Int64).Value = manualId;
+                    cmd.Parameters.Add("o_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+                    using (var rdr = cmd.ExecuteReader())
+                        {
+                        while (rdr.Read())
+                            {
+                            var sectionText = rdr["SECTION_TEXT"]?.ToString();
+                            list.Add(new ManualSectionItemModel { SectionName = sectionText, SectionText = sectionText });
+                            }
+                        }
+                    }
+                }
+            return list;
+            }
+
+        public List<ManualChapterItemModel> GetObservationManualChapters(long manualId, string sectionText)
+            {
+            var list = new List<ManualChapterItemModel>();
+            using (var con = DatabaseConnection())
+                {
+                using (var cmd = con.CreateCommand())
+                    {
+                    cmd.CommandText = "PKG_FAD.P_GET_MANUAL_CHAPTERS";
+                    cmd.CommandType = CommandType.StoredProcedure;
+                    cmd.Parameters.Add("p_manual_id", OracleDbType.Int64).Value = manualId;
+                    cmd.Parameters.Add("p_section_text", OracleDbType.Varchar2).Value = string.IsNullOrWhiteSpace(sectionText) ? (object)DBNull.Value : sectionText.Trim();
+                    cmd.Parameters.Add("o_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+                    using (var rdr = cmd.ExecuteReader())
+                        {
+                        while (rdr.Read())
+                            {
+                            list.Add(new ManualChapterItemModel { ChapterNo = rdr["CHAPTER_NO"]?.ToString() });
+                            }
+                        }
+                    }
+                }
+            return list;
+            }
+
+        public List<ManualIndexItemModel> GetObservationManualReferenceGrid(long manualId, string sectionText, string chapterNo)
+            {
+            var list = new List<ManualIndexItemModel>();
+            using (var con = DatabaseConnection())
+                {
+                using (var cmd = con.CreateCommand())
+                    {
+                    cmd.CommandText = "PKG_FAD.P_GET_MANUAL_REFERENCE_GRID";
+                    cmd.CommandType = CommandType.StoredProcedure;
+                    cmd.Parameters.Add("p_manual_id", OracleDbType.Int64).Value = manualId;
+                    cmd.Parameters.Add("p_section_text", OracleDbType.Varchar2).Value = string.IsNullOrWhiteSpace(sectionText) ? (object)DBNull.Value : sectionText.Trim();
+                    cmd.Parameters.Add("p_chapter_no", OracleDbType.Varchar2).Value = string.IsNullOrWhiteSpace(chapterNo) ? (object)DBNull.Value : chapterNo.Trim();
+                    cmd.Parameters.Add("o_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+                    using (var rdr = cmd.ExecuteReader())
+                        {
+                        while (rdr.Read())
+                            {
+                            list.Add(new ManualIndexItemModel
+                                {
+                                RefId = rdr["REF_ID"] == DBNull.Value ? 0 : Convert.ToInt64(rdr["REF_ID"]),
+                                ReferenceSourceType = rdr["REFERENCE_SOURCE_TYPE"]?.ToString(),
+                                SourcePkId = rdr["SOURCE_PK_ID"] == DBNull.Value ? (long?)null : Convert.ToInt64(rdr["SOURCE_PK_ID"]),
+                                ManualId = rdr["MANUAL_ID"] == DBNull.Value ? (long?)null : Convert.ToInt64(rdr["MANUAL_ID"]),
+                                SectionText = rdr["SECTION_TEXT"]?.ToString(),
+                                ChapterNo = rdr["CHAPTER_NO"]?.ToString(),
+                                SubSectionNo = rdr["SUB_SECTION_NO"]?.ToString(),
+                                Heading = rdr["TITLE_OR_HEADING"]?.ToString(),
+                                DisplayText = rdr["DISPLAY_TEXT"]?.ToString()
+                                });
+                            }
+                        }
+                    }
+                }
+            return list;
+            }
+
+        public ReferenceMasterDetailItemModel GetReferenceDetailByRefId(long refId)
+            {
+            using (var con = DatabaseConnection())
+                {
+                using (var cmd = con.CreateCommand())
+                    {
+                    cmd.CommandText = "PKG_FAD.P_GET_REFERENCE_DETAIL_BY_ID";
+                    cmd.CommandType = CommandType.StoredProcedure;
+                    cmd.Parameters.Add("p_ref_id", OracleDbType.Int64).Value = refId;
+                    cmd.Parameters.Add("o_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+                    using (var rdr = cmd.ExecuteReader())
+                        {
+                        if (!rdr.Read())
+                            {
+                            return null;
+                            }
+
+                        return new ReferenceMasterDetailItemModel
+                            {
+                            RefId = rdr["REF_ID"] == DBNull.Value ? 0 : Convert.ToInt64(rdr["REF_ID"]),
+                            ReferenceSourceType = rdr["REFERENCE_SOURCE_TYPE"]?.ToString(),
+                            SourcePkId = rdr["SOURCE_PK_ID"] == DBNull.Value ? (long?)null : Convert.ToInt64(rdr["SOURCE_PK_ID"]),
+                            ManualId = rdr["MANUAL_ID"] == DBNull.Value ? (long?)null : Convert.ToInt64(rdr["MANUAL_ID"]),
+                            ReferenceType = rdr["REFERENCE_TYPE"]?.ToString(),
+                            Division = rdr["DIVISION"]?.ToString(),
+                            InstructionDate = rdr["INSTRUCTION_DATE"] == DBNull.Value ? (DateTime?)null : Convert.ToDateTime(rdr["INSTRUCTION_DATE"]),
+                            SectionText = rdr["SECTION_TEXT"]?.ToString(),
+                            ChapterNo = rdr["CHAPTER_NO"]?.ToString(),
+                            SubSectionNo = rdr["SUB_SECTION_NO"]?.ToString(),
+                            TitleOrHeading = rdr["TITLE_OR_HEADING"]?.ToString(),
+                            DisplayText = rdr["DISPLAY_TEXT"]?.ToString()
+                            };
+                        }
+                    }
+                }
+            }
     }

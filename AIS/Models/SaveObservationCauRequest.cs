@@ -14,6 +14,7 @@ namespace AIS.Models
             public int? CHECKLIST_ID { get; set; }
             public string ANNEXURE_ID { get; set; }
             public bool? IS_FINAL { get; set; }
+            public long? REFERENCE_ID { get; set; }
             }
         }
 

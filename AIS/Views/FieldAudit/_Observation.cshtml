@@ -141,6 +141,62 @@
             </div>
         </div>
 
+        <div id="observationReferenceSection" class="row col-md-12 mt-3 border rounded p-3">
+            <input type="hidden" id="observationReferenceId" value="" />
+            <div class="col-md-12 mb-2">
+                <h5>Reference (Observation Save)</h5>
+            </div>
+            <div class="col-md-4">
+                <label for="obsReferenceType" class="form-label">Reference Type</label>
+                <select id="obsReferenceType" class="form-select">
+                    <option value="">--Select Type--</option>
+                    <option value="CIRCULAR">Circular</option>
+                    <option value="MANUAL">Manual</option>
+                    <option value="POLICY">Policy</option>
+                </select>
+            </div>
+            <div id="obsReferenceCircularMode" class="obs-ref-mode d-none col-md-12 mt-3">
+                <div class="row g-2">
+                    <div class="col-md-8">
+                        <input id="obsReferenceSearchText" type="text" class="form-control" placeholder="Search circular reference" />
+                    </div>
+                    <div class="col-md-4">
+                        <button id="obsReferenceSearchBtn" type="button" class="btn btn-primary w-100">Search</button>
+                    </div>
+                </div>
+                <div class="table-responsive mt-2">
+                    <table id="obsReferenceCircularResults" class="table table-sm table-bordered">
+                        <thead>
+                            <tr><th>REF_ID</th><th>Title</th><th>Date</th><th>Source</th><th>Select</th></tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+            <div id="obsReferenceManualMode" class="obs-ref-mode d-none col-md-12 mt-3">
+                <div class="row g-2">
+                    <div class="col-md-4">
+                        <select id="obsReferenceManual" class="form-select"><option value="">--Select Manual--</option></select>
+                    </div>
+                    <div class="col-md-4">
+                        <select id="obsReferenceSectionSelect" class="form-select"><option value="">--Select Section--</option></select>
+                    </div>
+                    <div class="col-md-4">
+                        <select id="obsReferenceChapter" class="form-select"><option value="">--Select Chapter--</option></select>
+                    </div>
+                </div>
+                <div class="table-responsive mt-2">
+                    <table id="obsReferenceManualGrid" class="table table-sm table-bordered">
+                        <thead>
+                            <tr><th>SUB_SECTION_NO</th><th>HEADING</th><th>Select</th></tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="col-md-12 mt-2" id="obsReferenceSelected"></div>
+        </div>
+
         <div class="row col-md-12 mt-5">
             <button id="submitCAUobBtn" data-onclick="submitObservationToAuditee();" style="margin-left:20px;" class="btn btn-primary">Save Observation</button>
         </div>
@@ -246,4 +302,5 @@
     }
 }))
 </script>
+<script src="~/js/obsreference.js?v=1"></script>
 <script src="~/js/fieldAudit/observationReplica.js?v=1"></script>

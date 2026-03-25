@@ -13,6 +13,7 @@ namespace AIS.Models
         public int? V_CAT_NATURE_ID { get; set; }
         public int? OTHER_ENTITY_ID { get; set; }
         public bool? IS_FINAL { get; set; }
+        public long? REFERENCE_ID { get; set; }
         }
 
     }

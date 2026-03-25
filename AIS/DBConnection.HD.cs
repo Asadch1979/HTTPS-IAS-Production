@@ -2204,6 +2204,7 @@ namespace AIS.Controllers
                     resp.NO_OF_INSTANCES = rdr["no_of_instances"].ToString();
                     resp.DSA_ISSUED = rdr["DSA"].ToString();
                     resp.ENG_ID = Convert.ToInt32(rdr["engplanid"]);
+                    resp.REFERENCE_ID = rdr["REFERENCE_ID"] == DBNull.Value ? (long?)null : Convert.ToInt64(rdr["REFERENCE_ID"]);
                     resp.RESPONSIBLE_PPNO = this.GetObservationResponsiblePPNOs(OBS_ID, resp.ENG_ID);
 
                     }
@@ -2298,6 +2299,7 @@ namespace AIS.Controllers
                     resp.AMOUNT_INVOLVED = rdr["amount_involved"].ToString();
                     resp.NO_OF_INSTANCES = rdr["no_of_instances"].ToString();
                     resp.ENG_ID = Convert.ToInt32(rdr["engplanid"]);
+                    resp.REFERENCE_ID = rdr["REFERENCE_ID"] == DBNull.Value ? (long?)null : Convert.ToInt64(rdr["REFERENCE_ID"]);
                     resp.RESPONSIBLE_PPNO = this.GetObservationResponsiblePPNOs(OBS_ID, resp.ENG_ID);
 
                     }
@@ -2348,6 +2350,7 @@ namespace AIS.Controllers
                     resp.AMOUNT_INVOLVED = rdr["amount_involved"].ToString();
                     resp.NO_OF_INSTANCES = rdr["no_of_instances"].ToString();
                     resp.ENG_ID = Convert.ToInt32(rdr["engplanid"]);
+                    resp.REFERENCE_ID = rdr["REFERENCE_ID"] == DBNull.Value ? (long?)null : Convert.ToInt64(rdr["REFERENCE_ID"]);
                     resp.RESPONSIBLE_PPNO = this.GetObservationResponsiblePPNOs(OBS_ID, resp.ENG_ID);
 
                     }
