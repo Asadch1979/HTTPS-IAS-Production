@@ -198,11 +198,20 @@ namespace AIS.Controllers
             cmd.Parameters.Add("P_API_ID", OracleDbType.Int32).Value = apiId;
             cmd.Parameters.Add("P_API_PATH", OracleDbType.Varchar2).Value = apiPath;
             cmd.Parameters.Add("P_HTTP_METHOD", OracleDbType.Varchar2).Value = httpMethod;
-            cmd.Parameters.Add("O_EXISTS", OracleDbType.Int32)
-                .Direction = ParameterDirection.Output;
+            cmd.Parameters.Add("O_EXISTS", OracleDbType.Int32).Direction = ParameterDirection.Output;
 
             cmd.ExecuteNonQuery();
-            var count = Convert.ToInt32(cmd.Parameters["O_EXISTS"].Value);
+
+            var value = cmd.Parameters["O_EXISTS"].Value;
+            int count = 0;
+
+            if (value != null && value != DBNull.Value)
+                {
+                if (value is Oracle.ManagedDataAccess.Types.OracleDecimal oracleDecimal)
+                    count = oracleDecimal.ToInt32();
+                else
+                    count = Convert.ToInt32(value);
+                }
             return count > 0;
             }
 
