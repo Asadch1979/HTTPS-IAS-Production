@@ -244,23 +244,41 @@ namespace AIS.Controllers
             cmd.BindByName = true;
             cmd.Parameters.Clear();
 
-            cmd.Parameters.Add("P_API_ID", OracleDbType.Int32).Value = model.ApiId;
-            cmd.Parameters.Add("P_API_NAME", OracleDbType.Varchar2).Value = model.ApiName;
-            cmd.Parameters.Add("P_API_PATH", OracleDbType.Varchar2).Value = model.ApiPath;
-            cmd.Parameters.Add("P_HTTP_METHOD", OracleDbType.Varchar2).Value = model.HttpMethod;
-            cmd.Parameters.Add("P_IS_ACTIVE", OracleDbType.Varchar2, 1).Value = model.IsActive;
+            cmd.Parameters.Add("P_API_ID", OracleDbType.Int32).Value =
+                model.ApiId == 0 ? DBNull.Value : model.ApiId;
+
+            cmd.Parameters.Add("P_API_NAME", OracleDbType.Varchar2).Value =
+                string.IsNullOrWhiteSpace(model.ApiName) ? DBNull.Value : model.ApiName;
+
+            cmd.Parameters.Add("P_CONTROLLER_NAME", OracleDbType.Varchar2).Value =
+                string.IsNullOrWhiteSpace(model.ControllerName) ? DBNull.Value : model.ControllerName;
+
+            cmd.Parameters.Add("P_API_ROUTE", OracleDbType.Varchar2).Value =
+                string.IsNullOrWhiteSpace(model.ApiPath) ? DBNull.Value : model.ApiPath;
+
+            cmd.Parameters.Add("P_HTTP_METHOD", OracleDbType.Varchar2).Value =
+                string.IsNullOrWhiteSpace(model.HttpMethod) ? DBNull.Value : model.HttpMethod;
+
+            cmd.Parameters.Add("P_STATUS", OracleDbType.Varchar2, 1).Value =
+                string.IsNullOrWhiteSpace(model.IsActive) ? "Y" : model.IsActive;
+
             cmd.Parameters.Add("P_ACTION_IND", OracleDbType.Varchar2, 1).Value = actionInd;
 
-            cmd.Parameters.Add("O_MESSAGE", OracleDbType.Varchar2, 4000)
-                .Direction = ParameterDirection.Output;
+            cmd.Parameters.Add("O_MESSAGE", OracleDbType.Varchar2, 4000).Direction =
+                ParameterDirection.Output;
+
+            if (con.State != ConnectionState.Open)
+                con.Open();
 
             cmd.ExecuteNonQuery();
 
             var msg = cmd.Parameters["O_MESSAGE"].Value?.ToString();
-            if (!string.IsNullOrWhiteSpace(msg) && msg.StartsWith("Error", StringComparison.OrdinalIgnoreCase))
+            if (!string.IsNullOrWhiteSpace(msg) &&
+                msg.StartsWith("Error", StringComparison.OrdinalIgnoreCase))
+                {
                 throw new ApplicationException(msg);
+                }
             }
-
         private static int ReadInt(IDataRecord reader, string column, int defaultValue = 0)
             {
             var ordinal = GetOrdinal(reader, column);

@@ -9,6 +9,10 @@ namespace AIS.Models
         public string ApiPath { get; set; }
         public string HttpMethod { get; set; }
         public string IsActive { get; set; }
+
+        [Required]
+        public string ControllerName { get; set; }
+
         }
 
 
