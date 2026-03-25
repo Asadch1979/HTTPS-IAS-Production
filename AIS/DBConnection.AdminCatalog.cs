@@ -176,10 +176,41 @@ namespace AIS.Controllers
                     {
                     ApiId = ReadInt(reader, "API_ID"),
                     ApiName = ReadString(reader, "VIEW_NAME", "API_NAME", "ACTION_NAME"),
+                    ControllerName = ReadString(reader, "CONTROLLER_NAME"),
                     ApiPath = ReadString(reader, "API_PATH"),
                     HttpMethod = ReadString(reader, "HTTP_METHOD"),
-                    IsActive = ReadString(reader, "IS_ACTIVE")
+                    IsActive = ReadString(reader, "IS_ACTIVE"),
+                    PageId = ReadInt(reader, "PAGE_ID")
                     });
+                }
+
+            return list;
+            }
+
+        public List<string> GetApiMasterControllerNames()
+            {
+            var list = new List<string>();
+
+            using var con = DatabaseConnection();
+            using var cmd = con.CreateCommand();
+
+            cmd.CommandText = "PKG_AD.P_GET_ALL_CONTROLLER";
+            cmd.CommandType = CommandType.StoredProcedure;
+            cmd.BindByName = true;
+            cmd.Parameters.Clear();
+
+            cmd.Parameters.Add("o_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+
+            using var reader = cmd.ExecuteReader();
+
+            while (reader.Read())
+                {
+                var controllerName = ReadString(reader, "CONTROLLER_NAME", "CONTROLLER", "NAME");
+                if (!string.IsNullOrWhiteSpace(controllerName) &&
+                    !list.Exists(item => string.Equals(item, controllerName, StringComparison.OrdinalIgnoreCase)))
+                    {
+                    list.Add(controllerName);
+                    }
                 }
 
             return list;
@@ -267,6 +298,9 @@ namespace AIS.Controllers
 
             cmd.Parameters.Add("P_HTTP_METHOD", OracleDbType.Varchar2).Value =
                 string.IsNullOrWhiteSpace(model.HttpMethod) ? DBNull.Value : model.HttpMethod;
+
+            cmd.Parameters.Add("P_PAGE_ID", OracleDbType.Int32).Value =
+                model.PageId <= 0 ? DBNull.Value : model.PageId;
 
             cmd.Parameters.Add("P_STATUS", OracleDbType.Varchar2, 1).Value =
                 string.IsNullOrWhiteSpace(model.IsActive) ? "Y" : model.IsActive;

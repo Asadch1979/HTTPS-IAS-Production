@@ -6,12 +6,11 @@ namespace AIS.Models
         {
         public int ApiId { get; set; }
         public string ApiName { get; set; }
+        public string ControllerName { get; set; }
         public string ApiPath { get; set; }
         public string HttpMethod { get; set; }
         public string IsActive { get; set; }
-
-        [Required]
-        public string ControllerName { get; set; }
+        public int PageId { get; set; }
 
         }
 
@@ -27,10 +26,16 @@ namespace AIS.Models
         public string ApiPath { get; set; }
 
         [Required]
+        public string ControllerName { get; set; }
+
+        [Required]
         public string HttpMethod { get; set; }
 
         [Required]
         public string IsActive { get; set; }
+
+        [Range(1, int.MaxValue, ErrorMessage = "Page is required.")]
+        public int PageId { get; set; }
 
         [Required]
         public string ActionInd { get; set; }

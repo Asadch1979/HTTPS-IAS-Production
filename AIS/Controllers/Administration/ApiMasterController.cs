@@ -46,6 +46,28 @@ namespace AIS.Controllers
             return Json(new { success = true, data = results });
             }
 
+        [HttpGet("ControllerOptions")]
+        public IActionResult ControllerOptions()
+            {
+            if (!User.Identity.IsAuthenticated)
+                {
+                return Unauthorized(new { success = false, message = "User session is not authenticated." });
+                }
+
+            if (!this.UserHasPagePermissionForCurrentAction(_sessionHandler))
+                {
+                return StatusCode(403, new { success = false, message = "You don't have access." });
+                }
+
+            if (!_sessionHandler.IsSuperUser())
+                {
+                return StatusCode(403, new { success = false, message = "Only Super Admins can access API Master." });
+                }
+
+            var options = _dbConnection.GetApiMasterControllerNames() ?? new List<string>();
+            return Json(new { success = true, data = options });
+            }
+
         [HttpPost("Save")]
         public IActionResult Save([FromBody] ApiMasterSaveRequest request)
             {
@@ -82,9 +104,13 @@ namespace AIS.Controllers
 
             if (action != "D")
                 {
-                if (string.IsNullOrWhiteSpace(request.ApiName) || string.IsNullOrWhiteSpace(request.ApiPath) || string.IsNullOrWhiteSpace(request.HttpMethod))
+                if (string.IsNullOrWhiteSpace(request.ApiName) ||
+                    string.IsNullOrWhiteSpace(request.ControllerName) ||
+                    string.IsNullOrWhiteSpace(request.ApiPath) ||
+                    string.IsNullOrWhiteSpace(request.HttpMethod) ||
+                    request.PageId <= 0)
                     {
-                    return BadRequest(new { success = false, message = "API name, path, and method are required." });
+                    return BadRequest(new { success = false, message = "API name, controller name, path, method, and page are required." });
                     }
 
                 var normalizedPath = NormalizeApiPath(request.ApiPath);
@@ -107,8 +133,10 @@ namespace AIS.Controllers
                         _dbConnection.InsertApiMaster(new ApiMasterModel
                             {
                             ApiName = request.ApiName?.Trim(),
+                            ControllerName = request.ControllerName?.Trim(),
                             ApiPath = request.ApiPath?.Trim(),
                             HttpMethod = request.HttpMethod?.Trim().ToUpperInvariant(),
+                            PageId = request.PageId,
                             IsActive = NormalizeIsActive(request.IsActive)
                             });
                         break;
@@ -117,8 +145,10 @@ namespace AIS.Controllers
                             {
                             ApiId = request.ApiId,
                             ApiName = request.ApiName?.Trim(),
+                            ControllerName = request.ControllerName?.Trim(),
                             ApiPath = request.ApiPath?.Trim(),
                             HttpMethod = request.HttpMethod?.Trim().ToUpperInvariant(),
+                            PageId = request.PageId,
                             IsActive = NormalizeIsActive(request.IsActive)
                             });
                         break;

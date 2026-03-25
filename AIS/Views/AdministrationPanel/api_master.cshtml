@@ -2,6 +2,7 @@
     ViewData["Title"] = "API Master";
     Layout = ViewData.ContainsKey("Layout") ? ViewData["Layout"] as string : "_Layout";
     var isAdvanced = (ViewData["IsAdvancedUser"] as bool?) ?? false;
+    var menuList = ViewData["MenuList"];
 }
 
 @if (!isAdvanced)
@@ -48,7 +49,9 @@ else
                         </div>
                         <div class="col-md-4">
                             <label class="form-label fw-bold" for="controllerNameInput">Controller Name</label>
-                            <input class="form-control" id="controllerNameInput" type="text" />
+                            <select class="form-select" id="controllerNameInput">
+                                <option value="">-- Select Controller --</option>
+                            </select>
                             <div class="invalid-feedback" id="controllerNameValidation">Controller Name is required.</div>
                         </div>
                         <div class="col-md-4">
@@ -71,6 +74,32 @@ else
                                 <option value="N">Disabled</option>
                             </select>
                         </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold" for="apiMenuInput">Menu</label>
+                            <select class="form-select" id="apiMenuInput">
+                                <option value="0">-- Select Menu --</option>
+                                @if (menuList != null)
+                                {
+                                    foreach (var item in (dynamic)menuList)
+                                    {
+                                        <option value="@item.Menu_Id">@item.Menu_Name</option>
+                                    }
+                                }
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold" for="apiSubMenuInput">Sub Menu</label>
+                            <select class="form-select" id="apiSubMenuInput">
+                                <option value="0">-- Select Sub Menu --</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold" for="apiPageIdInput">Page id</label>
+                            <select class="form-select" id="apiPageIdInput">
+                                <option value="">-- Select Page --</option>
+                            </select>
+                            <div class="invalid-feedback" id="apiPageValidation">Page is required.</div>
+                        </div>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -83,4 +112,4 @@ else
 
     
     }
-<script src="~/js/csp/Views_AdministrationPanel_api_master.js?v=2"></script>
+<script src="~/js/csp/Views_AdministrationPanel_api_master.js?v=3"></script>
