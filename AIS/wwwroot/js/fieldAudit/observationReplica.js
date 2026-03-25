@@ -97,6 +97,10 @@ window.addEventListener("unhandledrejection", function (e) {
         });
 
         applyDefaultValues();
+
+        if (typeof window.initObservationReference === 'function') {
+            window.initObservationReference('#observationReferenceSection');
+        }
     });
 
     function buildRespKey(ppNo, role, loanCase, accountNumber) {
@@ -267,12 +271,20 @@ window.addEventListener("unhandledrejection", function (e) {
         });
 
         var g_memoObj = [];
+        var selectedReference = typeof window.getSelectedObservationReference === 'function'
+            ? window.getSelectedObservationReference('#observationReferenceSection')
+            : null;
+        var selectedReferenceId = selectedReference && selectedReference.refId
+            ? parseInt(selectedReference.refId, 10)
+            : normalizeNullableInt($('#observationReferenceId').val());
+
         var memo = {
             'MEMO': $('.richText-editor').html(),
             'ID': 'obs_0',
             'HEADING': $('#viewMemo_heading').val(),
             'RISK': g_selectedRiskId,
             'ANNEXURE_ID': $('#updatedAnnexlist').val(),
+            'REFERENCE_ID': selectedReferenceId,
             'AMOUNT_INVOLVED': $('#amount_inv_field').val(),
             'NO_OF_INSTANCES': $('#no_instances_field').val(),
             'DAYS': $('#viewMemo_replydays option:selected').val(),
@@ -290,7 +302,8 @@ window.addEventListener("unhandledrejection", function (e) {
             'BRANCH_ID': 0,
             'SUB_CHECKLISTID': $('#riskSubGroupSelectBox').val(),
             'CHECKLIST_ID': $('#riskActivitiesSelectBox').val(),
-            'ANNEXURE_ID': $('#updatedAnnexlist').val()
+            'ANNEXURE_ID': $('#updatedAnnexlist').val(),
+            'REFERENCE_ID': selectedReferenceId
         };
 
         $.ajax({

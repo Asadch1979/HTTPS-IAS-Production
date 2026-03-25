@@ -25,6 +25,7 @@ namespace AIS.Models
         public string AMOUNT_INVOLVED { get; set; }
         [PlainText]
         public string NO_OF_INSTANCES { get; set; }
+        public long? REFERENCE_ID { get; set; }
         public List<ObservationResponsiblePPNOModel> RESPONSIBLE_PPNO { get; set; }
         }
     }

@@ -614,6 +614,7 @@ namespace AIS.Controllers
                 cmd.Parameters.Add("R_ID", OracleDbType.Int32).Value = loggedInUser.UserRoleID;
 
                 cmd.Parameters.Add("ANNEX_ID", OracleDbType.Int32).Value = annexureId;
+                cmd.Parameters.Add("REFERENCE_ID", OracleDbType.Int64).Value = ob.REFERENCE_ID.HasValue ? (object)ob.REFERENCE_ID.Value : DBNull.Value;
 
                 cmd.Parameters.Add("T_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
 
@@ -724,6 +725,7 @@ namespace AIS.Controllers
                 cmd.Parameters.Add("P_NO", OracleDbType.Int32).Value = loggedInUser.PPNumber;
                 cmd.Parameters.Add("R_ID", OracleDbType.Int32).Value = loggedInUser.UserRoleID;
                 cmd.Parameters.Add("ANNEX_ID", OracleDbType.Int32).Value = ob.ANNEXURE_ID == "" ? 0 : Convert.ToInt32(ob.ANNEXURE_ID);
+                cmd.Parameters.Add("REFERENCE_ID", OracleDbType.Int64).Value = ob.REFERENCE_ID.HasValue ? (object)ob.REFERENCE_ID.Value : DBNull.Value;
                 cmd.Parameters.Add("T_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
                 OracleDataReader rdr = cmd.ExecuteReader();
                 while (rdr.Read())

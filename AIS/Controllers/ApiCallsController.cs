@@ -1391,6 +1391,7 @@ namespace AIS.Controllers
                     OTHER_ENTITY_ID = request.OTHER_ENTITY_ID,
                     RESPONSIBLE_PPNO = responsiblePpno,
                     AMOUNT_INVOLVED = amountInvolved,
+                    REFERENCE_ID = m.REFERENCE_ID ?? request.REFERENCE_ID,
                     STATUS = 1
                     };
 
@@ -1463,6 +1464,7 @@ namespace AIS.Controllers
                     AMOUNT_INVOLVED = m.AMOUNT_INVOLVED,
                     NO_OF_INSTANCES = m.NO_OF_INSTANCES,
                     RESPONSIBLE_PPNO = m.RESPONSIBLE_PPNO,
+                    REFERENCE_ID = m.REFERENCE_ID ?? request.REFERENCE_ID,
                     STATUS = 1
                     };
 
@@ -6062,6 +6064,97 @@ namespace AIS.Controllers
                 }
             return Json(dBConnection.GetManualIndexByChapter(manualId, sectionName, chapterNo));
             }
+
+        [HttpGet]
+        public IActionResult GetReferenceMasterDetail(string searchText, string sourceType, long? refId)
+            {
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
+                || string.IsNullOrWhiteSpace(loggedInUser.PPNumber)
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return Json(Array.Empty<ReferenceMasterDetailItemModel>());
+                }
+
+            return Json(dBConnection.GetReferenceMasterDetail(searchText, sourceType, refId));
+            }
+
+        [HttpGet]
+        public IActionResult GetObservationManualMaster()
+            {
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
+                || string.IsNullOrWhiteSpace(loggedInUser.PPNumber)
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return Json(Array.Empty<ManualMasterItemModel>());
+                }
+
+            return Json(dBConnection.GetObservationManualMaster());
+            }
+
+        [HttpGet]
+        public IActionResult GetObservationManualSections(long manualId)
+            {
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
+                || string.IsNullOrWhiteSpace(loggedInUser.PPNumber)
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return Json(Array.Empty<ManualSectionItemModel>());
+                }
+
+            return Json(dBConnection.GetObservationManualSections(manualId));
+            }
+
+        [HttpGet]
+        public IActionResult GetObservationManualChapters(long manualId, string sectionText)
+            {
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
+                || string.IsNullOrWhiteSpace(loggedInUser.PPNumber)
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return Json(Array.Empty<ManualChapterItemModel>());
+                }
+
+            return Json(dBConnection.GetObservationManualChapters(manualId, sectionText));
+            }
+
+        [HttpGet]
+        public IActionResult GetObservationManualReferenceGrid(long manualId, string sectionText, string chapterNo, string sourceType = null)
+            {
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
+                || string.IsNullOrWhiteSpace(loggedInUser.PPNumber)
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return Json(Array.Empty<ManualIndexItemModel>());
+                }
+
+            return Json(dBConnection.GetObservationManualReferenceGrid(manualId, sectionText, chapterNo));
+            }
+
+        [HttpGet]
+        public IActionResult GetReferenceDetailByRefId(long refId)
+            {
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
+                || string.IsNullOrWhiteSpace(loggedInUser.PPNumber)
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return Json(null);
+                }
+
+            return Json(dBConnection.GetReferenceDetailByRefId(refId));
+            }
+
 
         [HttpGet]
         public JsonResult GetEntityTaskSummary()
