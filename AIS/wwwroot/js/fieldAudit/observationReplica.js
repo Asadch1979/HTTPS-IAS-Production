@@ -25,6 +25,48 @@ window.addEventListener("unhandledrejection", function (e) {
     const pageData = getPageData();
     var g_annexList = pageData.AnnexList || [];
 
+    function resolveCurrentEngagementId() {
+        var localValue = $('#fieldAuditObservationReplica').attr('data-eng-id');
+        var hostValue = $('#fieldAuditStepHost').attr('data-eng-id');
+        var rawValue = localValue || hostValue || pageData.EngagementId || 0;
+        var parsed = parseInt(rawValue, 10);
+        return Number.isNaN(parsed) ? 0 : parsed;
+    }
+
+    function syncEngagementId() {
+        g_engId = resolveCurrentEngagementId();
+        $('#fieldAuditObservationReplica').attr('data-eng-id', g_engId || '');
+        return g_engId;
+    }
+
+    function resetObservationSection() {
+        if ($.fn.select2 && $('#updatedAnnexlist').data('select2')) {
+            $('#updatedAnnexlist').val('0').trigger('change');
+        } else {
+            $('#updatedAnnexlist').val('0');
+        }
+
+        $('#viewMemo_risk_display').val('').css('color', '');
+        $('#riskGroupSelectBox').val('0');
+        $('#riskSubGroupSelectBox').empty();
+        $('#riskActivitiesSelectBox').empty();
+        $('#div_risksubcategory').hide();
+        $('#div_activityContainer').hide();
+        $('#viewMemo_heading').val('');
+        $('#template_box').val('');
+        $('.richText-editor').html('');
+        $('#listofRespPersons tbody').empty();
+        $('#amount_inv_field').val('');
+        $('#no_instances_field').val('');
+        $('#observationReferenceId').val('');
+        clearPending();
+        applyDefaultValues();
+
+        if (typeof window.initObservationReference === 'function') {
+            window.initObservationReference('#observationReferenceSection');
+        }
+    }
+
     function normalizeRequiredInt(value) {
         var trimmed = $.trim(value);
         if (!trimmed) {
@@ -62,46 +104,66 @@ window.addEventListener("unhandledrejection", function (e) {
         }
     }
 
-    $(document).ready(function () {
-        g_engId = parseInt(pageData.EngagementId, 10) || 0;
+    function initObservationReplica() {
+        var root = document.getElementById('fieldAuditObservationReplica');
+        if (!root || root.getAttribute('data-initialized') === '1') {
+            return;
+        }
 
-        $('#template_box').richText({
-            bold: true,
-            italic: true,
-            underline: true,
-            leftAlign: true,
-            centerAlign: true,
-            rightAlign: true,
-            justify: true,
-            ol: true,
-            ul: true,
-            heading: true,
-            fonts: true,
-            fontColor: true,
-            fontSize: true,
-            table: true,
-            removeStyles: true,
-            code: true,
-            imageUpload: false,
-            fileUpload: false,
-            videoEmbed: false,
-            urls: false
-        });
+        root.setAttribute('data-initialized', '1');
+        syncEngagementId();
 
-        $('#updatedAnnexlist').select2();
-        $('#riskActivitiesSelectBox').select2();
-        $('#updatedAnnexlist').on('change', updateRiskDisplay);
+        if (!root.querySelector('.richText-editor')) {
+            $('#template_box').richText({
+                bold: true,
+                italic: true,
+                underline: true,
+                leftAlign: true,
+                centerAlign: true,
+                rightAlign: true,
+                justify: true,
+                ol: true,
+                ul: true,
+                heading: true,
+                fonts: true,
+                fontColor: true,
+                fontSize: true,
+                table: true,
+                removeStyles: true,
+                code: true,
+                imageUpload: false,
+                fileUpload: false,
+                videoEmbed: false,
+                urls: false
+            });
+        }
 
-        document.getElementById('amount_inv_field').addEventListener('input', function () {
-            this.value = this.value.replace(/\D|^0(?=\d)/g, '');
-        });
+        if ($.fn.select2) {
+            if ($('#updatedAnnexlist').data('select2')) {
+                $('#updatedAnnexlist').select2('destroy');
+            }
+            if ($('#riskActivitiesSelectBox').data('select2')) {
+                $('#riskActivitiesSelectBox').select2('destroy');
+            }
+            $('#updatedAnnexlist').select2();
+            $('#riskActivitiesSelectBox').select2();
+        }
+
+        $('#updatedAnnexlist').off('change.observationReplica').on('change.observationReplica', updateRiskDisplay);
+
+        var amountField = document.getElementById('amount_inv_field');
+        if (amountField) {
+            amountField.addEventListener('input', function () {
+                this.value = this.value.replace(/\D|^0(?=\d)/g, '');
+            });
+        }
 
         applyDefaultValues();
 
         if (typeof window.initObservationReference === 'function') {
             window.initObservationReference('#observationReferenceSection');
         }
-    });
+    }
 
     function buildRespKey(ppNo, role, loanCase, accountNumber) {
         return `${ppNo || ''}|${role || ''}|${loanCase || ''}|${accountNumber || ''}`;
@@ -214,6 +276,7 @@ window.addEventListener("unhandledrejection", function (e) {
     };
 
     window.submitObservationToAuditee = function () {
+        syncEngagementId();
         if (!g_engId || g_engId <= 0) {
             alert('A valid engagement is required. Please re-select engagement and try again.');
             return;
@@ -316,7 +379,7 @@ window.addEventListener("unhandledrejection", function (e) {
                 $('#submitCAUobBtn').attr('disabled', false);
                 showApiAlert(data);
                 onAlertCallback(function () {
-                    window.location.reload();
+                    resetObservationSection();
                 });
             },
             dataType: "json",
@@ -548,9 +611,18 @@ window.addEventListener("unhandledrejection", function (e) {
         $('#ResponsiblePPModel').modal('hide');
     };
 
-    $(document).on('click', '.respPendingRemove', function () {
+    $(document).off('click.observationReplica', '.respPendingRemove').on('click.observationReplica', '.respPendingRemove', function () {
         var key = $(this).data('key');
         g_stagedResp = g_stagedResp.filter(function (entry) { return entry.key !== key; });
         renderPendingGrid();
     });
+
+    window.fieldAuditStepInitializers = window.fieldAuditStepInitializers || {};
+    window.fieldAuditStepInitializers.MEMO_CREATION = initObservationReplica;
+
+    if (document.readyState !== 'loading') {
+        initObservationReplica();
+    } else {
+        $(initObservationReplica);
+    }
 })();

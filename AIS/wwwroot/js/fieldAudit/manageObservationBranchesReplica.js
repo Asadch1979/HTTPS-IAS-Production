@@ -24,7 +24,7 @@ function getPageData() {
     var g_currentStatus = 0;
     var g_obsList = [];
     var g_selectedRiskId = 0;
-    const pageData = getPageData();
+    var pageData = getPageData();
     var g_annexList = pageData.AnnexList || [];
     var g_processId = 0;
     var g_subProcessId = 0;
@@ -33,27 +33,53 @@ function getPageData() {
     var g_dsa = "";
     var g_tablePage = 0;
     var g_scrollPos = 0;
+
+    function resolveCurrentEngagementId() {
+        var hiddenValue = $('#engIdHidden').val();
+        var localValue = $('#fieldAuditManageObservationBranchesReplica').attr('data-eng-id');
+        var hostValue = $('#fieldAuditStepHost').attr('data-eng-id');
+        var rawValue = hiddenValue || localValue || hostValue || pageData.EngagementId || 0;
+        var parsed = parseInt(rawValue, 10);
+        return Number.isNaN(parsed) ? 0 : parsed;
+    }
+
+    function syncEngagementContext() {
+        var engId = resolveCurrentEngagementId();
+        $('#engIdHidden').val(engId || '');
+        $('#fieldAuditManageObservationBranchesReplica').attr('data-eng-id', engId || '');
+        return engId;
+    }
+
     function preserveTablePosition() {
         g_scrollPos = $('html').scrollTop();
         if ($.fn.DataTable.isDataTable('#manageObsPanel')) {
             g_tablePage = $('#manageObsPanel').DataTable().page();
         }
     }
-    $(document).ready(function () {
+    function initManageObservationBranches() {
+        var root = document.getElementById('fieldAuditManageObservationBranchesReplica');
+        if (!root || root.getAttribute('data-initialized') === '1') {
+            return;
+        }
+
+        root.setAttribute('data-initialized', '1');
         console.log("Loaded manage_observations_branches JS", { g_obsId, g_entityID });
         var entName = $('#manageObsPanel tbody .entity_name_field:first').text();
         $('#entityNameField').val(entName);
         var periodName = $('#manageObsPanel tbody .period_name_field:first').text();
         $('#auditPeriodNameField').val(periodName);
 
-        $('#updateMemoContent').richText({
-            imageUpload: false,
-            fileUpload: false,
-            videoEmbed: false,
-            urls: false
-        });
-        $('#updateMemo_annex').on('change', updateRiskDisplay);
-        const engId = parseInt($('#engIdHidden').val() || 0);
+        if (!document.querySelector('#updateMemoModel .richText-editor')) {
+            $('#updateMemoContent').richText({
+                imageUpload: false,
+                fileUpload: false,
+                videoEmbed: false,
+                urls: false
+            });
+        }
+
+        $('#updateMemo_annex').off('change.manageObservationBranches').on('change.manageObservationBranches', updateRiskDisplay);
+        var engId = syncEngagementContext();
         respSectionUpdate = initResponsibilitySection({
             tableSelector: '#update_listofRespPersons',
             changesTableSelector: '#c_update_listofRespPersons',
@@ -67,7 +93,7 @@ function getPageData() {
         });
 
         getEntityObservation();
-    });
+    }
     function reloadLocation() {
         getEntityObservation();
     }
@@ -132,7 +158,7 @@ function getPageData() {
         rebuildManageObservationTableBody();
         renderMessageRow('Please wait...', 'manage-obs-loading');
 
-        var selectedEngId = parseInt($('#engIdHidden').val() || 0);
+        var selectedEngId = syncEngagementContext();
         if (respSectionUpdate) {
             respSectionUpdate.updateContext({ engId: selectedEngId });
         }
@@ -192,7 +218,7 @@ function getPageData() {
             return;
         }
 
-        var engId = $('#engIdHidden').val();
+        var engId = syncEngagementContext();
         if (!engId || engId <= 0) {
             alert('Engagement id is required.');
             return;
@@ -348,7 +374,7 @@ function getPageData() {
                 }
 
                 initReferenceSection(obs_id, false, '#updateMemoModel #referenceSection');
-                var engId = parseInt($('#engIdHidden').val() || 0);
+                var engId = syncEngagementContext();
                 respSectionUpdate.updateContext({ newParaId: obs_id, engId: engId });
                 showActionButtons();
             },
@@ -509,7 +535,7 @@ function getPageData() {
                 data: {
                     'OBS_ID': g_obsId,
                     'ENTITY_ID': g_entityID,
-                    'ENG_ID': $('#engIdHidden').val(),
+                    'ENG_ID': syncEngagementContext(),
                     "RespDSAModel":dsaArr
                 },
                 cache: false,
@@ -645,4 +671,13 @@ function getPageData() {
 
         const blob = new Blob(byteArrays, { type: contentType });
         return blob;
+    }
+
+    window.fieldAuditStepInitializers = window.fieldAuditStepInitializers || {};
+    window.fieldAuditStepInitializers.MANAGE_OBSERVATION_BRANCHES = initManageObservationBranches;
+
+    if (document.readyState !== 'loading') {
+        initManageObservationBranches();
+    } else {
+        $(initManageObservationBranches);
     }

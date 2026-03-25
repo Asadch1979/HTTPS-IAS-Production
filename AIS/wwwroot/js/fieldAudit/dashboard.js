@@ -104,18 +104,38 @@
     }
 
     function executeInlineScripts(container) {
-        container.querySelectorAll('script').forEach(function (script) {
-            var newScript = document.createElement('script');
-            Array.from(script.attributes).forEach(function (attr) {
-                newScript.setAttribute(attr.name, attr.value);
+        var scripts = Array.prototype.slice.call(container.querySelectorAll('script'));
+        return scripts.reduce(function (chain, script) {
+            return chain.then(function () {
+                return new Promise(function (resolve, reject) {
+                    var newScript = document.createElement('script');
+                    Array.from(script.attributes).forEach(function (attr) {
+                        newScript.setAttribute(attr.name, attr.value);
+                    });
+
+                    if (newScript.src) {
+                        newScript.async = false;
+                        newScript.onload = function () { resolve(); };
+                        newScript.onerror = function () { reject(new Error('Failed to load script: ' + newScript.src)); };
+                    } else {
+                        newScript.textContent = script.textContent;
+                    }
+
+                    script.parentNode.replaceChild(newScript, script);
+                    if (!newScript.src) {
+                        resolve();
+                    }
+                });
             });
+        }, Promise.resolve());
+    }
 
-            if (!newScript.src) {
-                newScript.textContent = script.textContent;
-            }
-
-            script.parentNode.replaceChild(newScript, script);
-        });
+    function runStepInitializer(stepCode) {
+        var initializers = window.fieldAuditStepInitializers || {};
+        var initializer = initializers[stepCode];
+        if (typeof initializer === 'function') {
+            initializer();
+        }
     }
 
     function loadStepContent(stepCode, stepNo) {
@@ -147,11 +167,13 @@
             })
             .then(function (html) {
                 stepHost.innerHTML = html;
-                executeInlineScripts(stepHost);
                 stepHost.setAttribute('data-eng-id', engId);
-                setCurrentStepCode(stepCode);
-                setActiveStep(stepCode);
-                updateStepCounter(stepNo);
+                return executeInlineScripts(stepHost).then(function () {
+                    runStepInitializer(stepCode);
+                    setCurrentStepCode(stepCode);
+                    setActiveStep(stepCode);
+                    updateStepCounter(stepNo);
+                });
             })
             .catch(function () {
                 clearStepContent('Unable to load workflow content right now. Please try again.');
@@ -281,8 +303,8 @@
                 })
                 .then(function (html) {
                     stepHost.innerHTML = html;
-                    executeInlineScripts(stepHost);
                     stepHost.setAttribute('data-eng-id', engId);
+                    return executeInlineScripts(stepHost);
                 })
                 .catch(function () {
                     clearStepContent('Unable to load workflow content right now. Please try again.');
