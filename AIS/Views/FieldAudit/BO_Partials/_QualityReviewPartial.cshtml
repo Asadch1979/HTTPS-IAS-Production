@@ -127,59 +127,7 @@
                         <label for="viewMemo_memo_ObSent" class="font-weight-bold">Para Text</label>
                         <input id="viewMemo_memo_ObSent" type="text" class="form-control" />
                     </div>
-                    <div id="referenceSection" class="mt-3 p-3 border border-danger" style="margin-bottom:10px;">
-                        <h6>References</h6>
-                        <ul id="refList" class="list-group mb-3"></ul>
-                        <button type="button" class="btn btn-success mb-3" id="saveBtn">Save</button>
-                        <div id="searchSection">
-                            <select id="refType" class="form-select mb-2">
-                                <option value="0" selected>Please select reference</option>
-                                <option value="Manual">Manual</option>
-                                <option value="Policy">Policy</option>
-                                <option value="Circular">Circular</option>
-                            </select>
-                            <div id="searchInputs" style="display:none;">
-                                <input id="keyword" class="form-control mb-2" placeholder="keyword" />
-                                <button type="button" class="btn btn-primary" id="searchBtn">Search</button>
-                            </div>
-                            <div id="manualInputs" style="display:none;">
-                                <select id="manualMaster" class="form-select mb-2">
-                                    <option value="">Select manual</option>
-                                </select>
-                                <select id="manualSection" class="form-select mb-2" disabled>
-                                    <option value="">Select section</option>
-                                </select>
-                                <select id="manualChapter" class="form-select mb-2" disabled>
-                                    <option value="">Select chapter</option>
-                                </select>
-                                <div id="manualIndexGridWrapper" style="display:none;">
-                                    <table id="manualIndexTbl" class="table table-sm table-bordered mt-2">
-                                        <thead>
-                                            <tr>
-                                                <th>Action</th>
-                                                <th>Sub Section</th>
-                                                <th>Heading</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody></tbody>
-                                    </table>
-                                </div>
-                            </div>
-                        </div>
-                        <table class="table" id="resultTbl" style="display:none;">
-                            <thead>
-                                <tr>
-                                    <th>TITLE</th>
-                                    <th>Circular Date</th>
-                                    <th>INSTRUCTIONS DETAILS</th>
-                                    <th>KEYWORDS</th>
-                                    <th>View Circular</th>
-                                    <th>Action</th>
-                                </tr>
-                            </thead>
-                            <tbody></tbody>
-                        </table>
-                    </div>
+                    @await Html.PartialAsync("~/Views/FieldAudit/BO_Partials/_ObservationReferenceSection.cshtml")
                     <div class="form-group">
                         <label for="viewMemo_amount_ObSent">Amount Involved <small class="text-danger fw-bold">(Non Decimal Numbers only) </small></label>
                         <input id="viewMemo_amount_ObSent" type="text" class="form-control" />

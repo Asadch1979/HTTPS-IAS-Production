@@ -71,6 +71,7 @@
         }
 
         var isEditMode = !!options.editMode;
+        var isReadOnly = !!options.readOnly;
         var allowClear = options.allowClear !== false;
         var currentReferenceLabel = options.currentReferenceLabel || 'Current Saved Reference';
         var selectedReferenceLabel = options.selectedReferenceLabel || 'Selected Reference';
@@ -81,7 +82,7 @@
         var state = {
             selected: null,
             current: null,
-            isEditing: !isEditMode
+            isEditing: isReadOnly ? false : !isEditMode
         };
 
         var $hiddenRef = $container.find('#observationReferenceId');
@@ -160,6 +161,12 @@
                 return;
             }
 
+            if (isReadOnly) {
+                $selected.empty();
+                setHidden(state.current && state.current.refId ? state.current.refId : '');
+                return;
+            }
+
             if (isEditMode && !state.isEditing) {
                 $selected.empty();
                 setHidden(state.current && state.current.refId ? state.current.refId : '');
@@ -185,7 +192,19 @@
         }
 
         function renderActionButtons() {
-            if (!isEditMode) {
+            if (!isEditMode || isReadOnly) {
+                if ($changeBtn.length) {
+                    $changeBtn.addClass('d-none');
+                }
+
+                if ($cancelEditBtn.length) {
+                    $cancelEditBtn.addClass('d-none');
+                }
+
+                if ($saveUpdateBtn.length) {
+                    $saveUpdateBtn.addClass('d-none');
+                }
+
                 return;
             }
 
@@ -208,7 +227,16 @@
         }
 
         function syncEditorVisibility() {
-            if ($editorWrapper.length && isEditMode) {
+            if (!$editorWrapper.length) {
+                return;
+            }
+
+            if (isReadOnly) {
+                $editorWrapper.addClass('d-none');
+                return;
+            }
+
+            if (isEditMode) {
                 $editorWrapper.toggleClass('d-none', !state.isEditing);
             }
         }
@@ -229,6 +257,10 @@
         }
 
         function beginEdit() {
+            if (isReadOnly) {
+                return;
+            }
+
             state.isEditing = true;
             if (state.current && state.current.refId) {
                 state.selected = normalize(state.current);
@@ -237,6 +269,10 @@
         }
 
         function cancelEdit() {
+            if (isReadOnly) {
+                return;
+            }
+
             if (state.current && state.current.refId) {
                 state.selected = normalize(state.current);
                 state.isEditing = false;
@@ -248,6 +284,10 @@
         }
 
         function commitSelected() {
+            if (isReadOnly) {
+                return state.current || null;
+            }
+
             if (!state.selected || !state.selected.refId) {
                 return null;
             }
@@ -496,7 +536,7 @@
             if (!refId) {
                 state.current = null;
                 state.selected = null;
-                state.isEditing = isEditMode;
+                state.isEditing = isReadOnly ? false : isEditMode;
                 renderState();
                 return;
             }
@@ -515,7 +555,7 @@
                 } else {
                     state.current = null;
                     state.selected = null;
-                    state.isEditing = isEditMode;
+                    state.isEditing = isReadOnly ? false : isEditMode;
                     renderState();
                 }
             }).fail(function (xhr, status, error) {

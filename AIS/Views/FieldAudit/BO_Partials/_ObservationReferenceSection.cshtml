@@ -1,0 +1,97 @@
+<div id="boObservationReferenceSection" class="mt-3 p-3 border border-danger mb-3">
+    <input type="hidden" id="observationReferenceId" value="" />
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <div>
+            <h6 class="mb-1">Reference</h6>
+            <div class="small text-muted mt-1">Current saved reference is shown first. Change it only if a correction is needed.</div>
+        </div>
+        <div class="d-flex gap-2">
+            <button type="button" id="obsReferenceChangeBtn" class="btn btn-sm btn-outline-primary d-none">Change Reference</button>
+            <button type="button" id="obsReferenceCancelEditBtn" class="btn btn-sm btn-outline-secondary d-none">Cancel</button>
+        </div>
+    </div>
+
+    <div id="obsReferenceCurrentDisplay" class="mt-3"></div>
+
+    <div id="obsReferenceEditorWrapper" class="mt-3 d-none">
+        <div class="row g-3">
+            <div class="col-md-4">
+                <label for="obsReferenceType" class="form-label">Reference Type</label>
+                <select id="obsReferenceType" class="form-select">
+                    <option value="">--Select Reference Type--</option>
+                    <option value="CIRCULAR">Circular</option>
+                    <option value="MANUAL">Manual</option>
+                    <option value="POLICY">Policy</option>
+                </select>
+            </div>
+        </div>
+
+        <div id="obsReferenceCircularMode" class="obs-ref-mode d-none mt-3">
+            <div class="row g-2 align-items-end">
+                <div class="col-md-8">
+                    <label for="obsReferenceSearchText" class="form-label">Keyword</label>
+                    <input type="text" id="obsReferenceSearchText" class="form-control" placeholder="Search circular reference" />
+                </div>
+                <div class="col-md-4">
+                    <button type="button" id="obsReferenceSearchBtn" class="btn btn-primary w-100">Search</button>
+                </div>
+            </div>
+
+            <div class="table-responsive mt-3">
+                <table id="obsReferenceCircularResults" class="table table-sm table-bordered">
+                    <thead>
+                        <tr>
+                            <th>REF ID</th>
+                            <th>Title</th>
+                            <th>Date</th>
+                            <th>Type</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div id="obsReferenceManualMode" class="obs-ref-mode d-none mt-3">
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <label for="obsReferenceManual" class="form-label">Manual</label>
+                    <select id="obsReferenceManual" class="form-select">
+                        <option value="">--Select Manual--</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label for="obsReferenceSectionSelect" class="form-label">Section</label>
+                    <select id="obsReferenceSectionSelect" class="form-select">
+                        <option value="">--Select Section--</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label for="obsReferenceChapter" class="form-label">Chapter</label>
+                    <select id="obsReferenceChapter" class="form-select">
+                        <option value="">--Select Chapter--</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="table-responsive mt-3">
+                <table id="obsReferenceManualGrid" class="table table-sm table-bordered">
+                    <thead>
+                        <tr>
+                            <th>Sub Section</th>
+                            <th>Heading</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="mt-3">
+            <label class="form-label mb-1">Selected Reference</label>
+            <div id="obsReferenceSelected"></div>
+        </div>
+    </div>
+</div>
