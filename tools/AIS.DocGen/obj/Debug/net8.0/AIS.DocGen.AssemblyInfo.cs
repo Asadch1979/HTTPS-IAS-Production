@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("AIS.DocGen")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+ecf74fde8949c2c42ce470046c884c2c127642af")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+df8fcb996547dbfe98f7e01de842ca91109e70dc")]
 [assembly: System.Reflection.AssemblyProductAttribute("AIS.DocGen")]
 [assembly: System.Reflection.AssemblyTitleAttribute("AIS.DocGen")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

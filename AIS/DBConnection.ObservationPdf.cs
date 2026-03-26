@@ -38,6 +38,7 @@ namespace AIS.Controllers
                 result.Title = GetString(reader, "TITLE");
                 result.Risk = GetString(reader, "RISK");
                 result.ParaText = GetString(reader, "PARA_TEXT");
+                result.ReferenceId = GetNullableLong(reader, "REFERENCE_ID");
                 result.TeamLead = GetString(reader, "TEAM_LEAD");
                 break;
                 }
@@ -84,6 +85,21 @@ namespace AIS.Controllers
                 }
 
             return results;
+            }
+
+        private static long? GetNullableLong(IDataRecord reader, string columnName)
+            {
+            for (var i = 0; i < reader.FieldCount; i++)
+                {
+                if (!string.Equals(reader.GetName(i), columnName, StringComparison.OrdinalIgnoreCase))
+                    {
+                    continue;
+                    }
+
+                return reader.IsDBNull(i) ? (long?)null : Convert.ToInt64(reader.GetValue(i));
+                }
+
+            return null;
             }
         }
     }

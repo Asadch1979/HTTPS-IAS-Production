@@ -94,6 +94,11 @@
                         <label for="viewMemo_memo">Memo</label>
                         <div id="viewMemo_memo" disabled="disabled" style="height: auto; overflow-y: auto;" class="form-control"></div>
                     </div>
+                    <div id="auditeeObservationReferenceSection" class="form-group mt-3 p-3 border rounded">
+                        <input type="hidden" id="observationReferenceId" value="" />
+                        <label class="font-weight-bold d-block mb-2">Reference</label>
+                        <div id="obsReferenceCurrentDisplay"></div>
+                    </div>
                     <div class="form-group">
                         <label for="viewMemo_respPP_ObSent" class="font-weight-bold">Responsible Personals</label>
                         <div class="col-md-12 pl-0 pr-0">
@@ -223,6 +228,6 @@
 </div>
 
 @section Scripts {
-    <script src="~/js/csp/Views_AuditeePortal_observation_assigned.js?v=1"></script>
+    <script src="~/js/csp/Views_AuditeePortal_observation_assigned.js?v=2"></script>
     <script src="~/js/responsibilitySection.js"></script>
 }

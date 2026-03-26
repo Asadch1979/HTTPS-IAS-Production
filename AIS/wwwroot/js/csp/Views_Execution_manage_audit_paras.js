@@ -28,6 +28,42 @@ function getPageData() {
     var g_annexList = pageData.AnnexList || [];
         var g_selectedRiskId = 0;
 
+        function resetManageAuditParasReference() {
+            var $section = $('#manageAuditParasReferenceSection');
+            if (!$section.length || typeof window.initObservationReference !== 'function') {
+                return;
+            }
+
+            $section.find('#observationReferenceId').val('');
+            window.initObservationReference('#manageAuditParasReferenceSection', {
+                readOnly: true,
+                forceReload: true,
+                currentReferenceLabel: 'Saved Reference',
+                emptyCurrentText: 'No reference selected yet.',
+                initialRefId: null
+            });
+        }
+
+        function initManageAuditParasReference(detail) {
+            var $section = $('#manageAuditParasReferenceSection');
+            if (!$section.length || typeof window.initObservationReference !== 'function') {
+                return;
+            }
+
+            var rawValue = detail && (detail.referenceId || detail.REFERENCE_ID || detail.referencE_ID || detail.reference_ID);
+            var parsed = parseInt(rawValue, 10);
+            var referenceId = Number.isNaN(parsed) ? null : parsed;
+
+            $section.find('#observationReferenceId').val(referenceId || '');
+            window.initObservationReference('#manageAuditParasReferenceSection', {
+                readOnly: true,
+                forceReload: true,
+                currentReferenceLabel: 'Saved Reference',
+                emptyCurrentText: 'No reference selected yet.',
+                initialRefId: referenceId
+            });
+        }
+
         $(document).ready(function () {
             console.log("Loaded manage_audit_paras JS", { annexCount: g_annexList.length });
             $('#entitySelectField').select2();
@@ -56,6 +92,8 @@ function getPageData() {
                 indicator: 'O',
                 directSaveMode: false
             });
+            $('#viewMemoModel').on('hidden.bs.modal', resetManageAuditParasReference);
+            resetManageAuditParasReference();
 
         });
         function getrelation(parentEntityId = 0, userEntityId = 0) {
@@ -187,9 +225,7 @@ function getPageData() {
                     if (respSectionUpdate) {
                         respSectionUpdate.updateContext({ comId: g_com_id, newParaId: g_np_id, oldParaId: g_op_id, indicator: 'O' });
                     }
-                    if (window.ReferenceSection) {
-                        ReferenceSection.init({ comId: g_com_id });
-                    }
+                    initManageAuditParasReference(v);
                 },
                 dataType: "json"
             });

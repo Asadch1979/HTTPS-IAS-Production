@@ -32,5 +32,6 @@ namespace AIS.Models
         public string NO_INSTANCES { get; set; }
         [PlainText]
         public string INDICATOR { get; set; }
+        public long? REFERENCE_ID { get; set; }
     }
 }

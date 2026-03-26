@@ -4,6 +4,7 @@ using Oracle.ManagedDataAccess.Client;
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace AIS.Controllers
@@ -157,6 +158,7 @@ namespace AIS.Controllers
             var con = this.DatabaseConnection();
             string ob_text = "";
             string ob_resp = "";
+            long? referenceId = null;
 
             List<object> list = new List<object>();
 
@@ -174,7 +176,25 @@ namespace AIS.Controllers
                 while (rdr.Read())
                     {
                     ob_text = rdr["TEXT"].ToString();
+                    if (referenceId == null)
+                        {
+                        try
+                            {
+                            if (rdr["REFERENCE_ID"] != DBNull.Value)
+                                {
+                                referenceId = Convert.ToInt64(rdr["REFERENCE_ID"]);
+                                }
+                            }
+                        catch
+                            {
+                            referenceId = null;
+                            }
+                        }
 
+                    }
+                if (referenceId == null)
+                    {
+                    referenceId = this.GetManagedObservationTextForBranches(OBS_ID).FirstOrDefault()?.ReferenceId;
                     }
                 list.Add(ob_text);
                 if (RESP_ID > 0)
@@ -219,6 +239,7 @@ namespace AIS.Controllers
                     list.Add("");
                     list.Add(new List<object>());
                     }
+                list.Add(referenceId);
                 }
             con.Dispose();
             return list;

@@ -99,14 +99,17 @@
         var $chapter = $container.find('#obsReferenceChapter');
         var $manualGrid = $container.find('#obsReferenceManualGrid');
 
+        var supportsEditorControls = $type.length && $manual.length && $section.length && $chapter.length && $manualGrid.length;
         var missingControls = [];
-        if (!$type.length) missingControls.push('Reference Type');
-        if (!$manual.length) missingControls.push('Manual');
-        if (!$section.length) missingControls.push('Section');
-        if (!$chapter.length) missingControls.push('Chapter');
-        if (!$manualGrid.length) missingControls.push('Grid');
+        if (!supportsEditorControls) {
+            if (!$type.length) missingControls.push('Reference Type');
+            if (!$manual.length) missingControls.push('Manual');
+            if (!$section.length) missingControls.push('Section');
+            if (!$chapter.length) missingControls.push('Chapter');
+            if (!$manualGrid.length) missingControls.push('Grid');
+        }
 
-        if (missingControls.length) {
+        if (missingControls.length && !isReadOnly) {
             warn('Observation reference markup is missing controls.', missingControls);
         }
 
@@ -139,10 +142,13 @@
             }
 
             if (!state.current || !state.current.refId) {
+                var emptySubText = isReadOnly
+                    ? 'No saved reference is available for this observation.'
+                    : 'Choose a reference and save it for this observation.';
                 $currentDisplay.html(
                     '<div class="alert alert-secondary py-2 px-3 mb-0">'
                     + '<div><strong>' + $('<div/>').text(emptyCurrentText).html() + '</strong></div>'
-                    + '<div class="small text-muted">Choose a reference and save it for this observation.</div>'
+                    + '<div class="small text-muted">' + $('<div/>').text(emptySubText).html() + '</div>'
                     + '</div>'
                 );
                 return;
@@ -325,9 +331,9 @@
             if (typeVal === 'CIRCULAR') {
                 $container.find('#obsReferenceCircularMode').removeClass('d-none');
                 log('Circular mode displayed.');
-            } else if (typeVal === 'MANUAL' || typeVal === 'POLICY') {
+            } else if (typeVal === 'MANUAL') {
                 $container.find('#obsReferenceManualMode').removeClass('d-none');
-                log('Manual/Policy mode displayed.');
+                log('Manual mode displayed.');
                 loadManualMaster(triggerSource || 'type-change');
             } else {
                 resetManualControls();
@@ -611,7 +617,9 @@
         $container.data('obs-reference-state', state);
         $container.data('obs-reference-api', api);
 
-        switchMode('initial-load');
+        if (supportsEditorControls) {
+            switchMode('initial-load');
+        }
         loadExistingByRefId($hiddenRef.val() || options.initialRefId);
         renderState();
     }
@@ -704,7 +712,7 @@
 
         function isLegacyManualReference(item) {
             var type = (item.referenceType || item.manualType || item.linkType || '').toUpperCase();
-            return type === 'MANUAL' || type === 'POLICY';
+            return type === 'MANUAL';
         }
 
         function getLegacyRefKey(item) {
@@ -738,7 +746,7 @@
                 });
                 var type = (link.manualType || link.linkType || '').toUpperCase();
 
-                if (!hasExistingDetail && (type === 'MANUAL' || type === 'POLICY')) {
+                if (!hasExistingDetail && type === 'MANUAL') {
                     details.push({
                         id: link.manualIndexId || link.referenceId,
                         linkId: link.linkId,
@@ -884,7 +892,7 @@
                 searchInputs.show();
                 resultTbl.show();
                 manualInputs.hide();
-            } else if (type === 'Manual' || type === 'Policy') {
+            } else if (type === 'Manual') {
                 searchInputs.hide();
                 resultTbl.hide();
                 manualInputs.show();
@@ -1054,7 +1062,7 @@
                     paraId: comId,
                     instructionsDate: item.instructionsDate ? new Date(item.instructionsDate).toISOString() : null,
                     referenceTitle: isManual ? buildLegacyManualDisplay(item) : item.instructionsTitle,
-                    creditManualId: type === 'Policy' ? manualId : null,
+                    creditManualId: null,
                     opManualId: type === 'Manual' ? manualId : null,
                     manualType: type,
                     chapter: item.chapterNo || item.division,

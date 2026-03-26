@@ -9,6 +9,38 @@
     var g_allowedFormats = ["pdf", "jpg", "jpeg", "png", "doc", "docx", "jpg", "csv", "xls", "xlsx"]; // allowed file formats
     var g_allowLimit = '12'; // Maximum file size in MB
 
+    function resetAuditeeObservationReference() {
+        var $section = $('#auditeeObservationReferenceSection');
+        if (!$section.length || typeof window.initObservationReference !== 'function') {
+            return;
+        }
+
+        $section.find('#observationReferenceId').val('');
+        window.initObservationReference('#auditeeObservationReferenceSection', {
+            readOnly: true,
+            forceReload: true,
+            currentReferenceLabel: 'Saved Reference',
+            emptyCurrentText: 'No reference attached with this observation.',
+            initialRefId: null
+        });
+    }
+
+    function initAuditeeObservationReference(referenceId) {
+        var $section = $('#auditeeObservationReferenceSection');
+        if (!$section.length || typeof window.initObservationReference !== 'function') {
+            return;
+        }
+
+        $section.find('#observationReferenceId').val(referenceId || '');
+        window.initObservationReference('#auditeeObservationReferenceSection', {
+            readOnly: true,
+            forceReload: true,
+            currentReferenceLabel: 'Saved Reference',
+            emptyCurrentText: 'No reference attached with this observation.',
+            initialRefId: referenceId || null
+        });
+    }
+
     $(document).ready(function () {
 
         $('#viewMemo_reply').richText({
@@ -94,6 +126,9 @@
                 alert("Error uploading files. Please try again."); // Use custom alert
             }
         }
+
+        $('#viewMemoModel').on('hidden.bs.modal', resetAuditeeObservationReference);
+        resetAuditeeObservationReference();
     });
 
     function getFileExtension(file) {
@@ -264,6 +299,7 @@
                 $('#viewMemo_memo').html(data[0]);
                 $('#viewMemo_memoNumber').val(memo_number);
                 $('#viewMemo_memoGist').val(gist);
+                initAuditeeObservationReference(data.length > 3 ? data[3] : null);
                 if (canReply == 2) {
 
                     $('#replyButton_memoReply').removeClass('d-none');

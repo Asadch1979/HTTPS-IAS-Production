@@ -271,6 +271,18 @@ namespace AIS.Controllers
             viewMemoModel para = null;
             using (var con = this.DatabaseConnection())
                 {
+                bool HasColumn(IDataRecord reader, string columnName)
+                    {
+                    for (var i = 0; i < reader.FieldCount; i++)
+                        {
+                        if (string.Equals(reader.GetName(i), columnName, StringComparison.OrdinalIgnoreCase))
+                            {
+                            return true;
+                            }
+                        }
+
+                    return false;
+                    }
 
                 var loggedInUser = sessionHandler.GetUser();
                 if (loggedInUser == null
@@ -309,7 +321,10 @@ namespace AIS.Controllers
                                 PARA_TEXT = rdr["PARA_TEXT"]?.ToString(),
                                 AMOUNT_INV = rdr["AMOUNT_INV"]?.ToString(),
                                 NO_INSTANCES = rdr["NO_INSTANCES"]?.ToString(),
-                                INDICATOR = rdr["INDICATOR"]?.ToString()
+                                INDICATOR = rdr["INDICATOR"]?.ToString(),
+                                REFERENCE_ID = HasColumn(rdr, "REFERENCE_ID") && rdr["REFERENCE_ID"] != DBNull.Value
+                                    ? Convert.ToInt64(rdr["REFERENCE_ID"])
+                                    : (long?)null
                                 };
                             }
                         }

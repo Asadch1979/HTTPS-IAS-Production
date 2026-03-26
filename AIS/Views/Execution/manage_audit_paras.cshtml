@@ -155,6 +155,11 @@
                         <label for="paraTextViewer" class="font-weight-bold">Para Text</label>
                         <textarea class="form-control" id="paraTextViewer"></textarea>
                     </div>
+                    <div id="manageAuditParasReferenceSection" class="form-group mt-3 p-3 border rounded">
+                        <input type="hidden" id="observationReferenceId" value="" />
+                        <label class="font-weight-bold d-block mb-2">Reference</label>
+                        <div id="obsReferenceCurrentDisplay"></div>
+                    </div>
                     <div class="form-group">
                         <label for="auditPara_AmountInv" class="font-weight-bold">Amount Involved <span class="text-muted small">Please enter only numbers</span></label>
                         <input id="auditPara_AmountInv" class="form-control" type="text" inputmode="decimal" pattern="[0-9.,]*" oninput="this.value = this.value.replace(/[^0-9.,]/g, '');" />
@@ -233,7 +238,7 @@
 }))
 </script>
 @section Scripts {
-    <script src="~/js/csp/Views_Execution_manage_audit_paras.js?v=1"></script>
+    <script src="~/js/csp/Views_Execution_manage_audit_paras.js?v=2"></script>
     <script src="~/js/responsibilitySectionUpdate.js"></script>
 }
 

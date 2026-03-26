@@ -2,6 +2,7 @@ using AIS.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace AIS.Controllers
@@ -65,6 +66,18 @@ namespace AIS.Controllers
                     return BadRequest("Observation data is not available for the selected record.");
                     }
 
+                if (!data.ReferenceId.HasValue)
+                    {
+                    var observation = _dbConnection.GetManagedObservationsForBranches(engId, obsId).FirstOrDefault();
+                    data.ReferenceId = observation?.ReferenceId;
+                    }
+
+                if (data.ReferenceId.HasValue && data.ReferenceId.Value > 0)
+                    {
+                    var referenceDetail = _dbConnection.GetReferenceDetailByRefId(data.ReferenceId.Value);
+                    data.ReferenceText = FormatReferenceText(referenceDetail);
+                    }
+
                 data.Responsibilities = _dbConnection.GetObservationPrintResponsibilities(obsId, engId);
 
                 return View("~/Views/Observation/ObservationPrint.cshtml", data);
@@ -84,6 +97,40 @@ namespace AIS.Controllers
                 }
 
             return _dbConnection.GetManagedObservationsForBranches(engId, obsId).Any();
+            }
+
+        private static string FormatReferenceText(ReferenceMasterDetailItemModel detail)
+            {
+            if (detail == null)
+                {
+                return string.Empty;
+                }
+
+            if (string.Equals(detail.ReferenceSourceType, "MANUAL_INDEX", StringComparison.OrdinalIgnoreCase))
+                {
+                var parts = new List<string>
+                    {
+                    detail.ReferenceType,
+                    detail.SectionText,
+                    detail.ChapterNo,
+                    detail.SubSectionNo,
+                    detail.TitleOrHeading
+                    };
+
+                return string.Join(" / ", parts.Where(part => !string.IsNullOrWhiteSpace(part)));
+                }
+
+            var text = !string.IsNullOrWhiteSpace(detail.DisplayText)
+                ? detail.DisplayText
+                : detail.TitleOrHeading;
+
+            if (detail.InstructionDate.HasValue)
+                {
+                var dateText = detail.InstructionDate.Value.ToString("yyyy-MM-dd");
+                return string.IsNullOrWhiteSpace(text) ? dateText : text + " (" + dateText + ")";
+                }
+
+            return text ?? string.Empty;
             }
 
         }

@@ -143,6 +143,10 @@
     <div class="section"><span class="label">Title:</span> @Model?.Title</div>
     <div class="section"><span class="label">Annexure:</span> @Model?.Annexure</div>
     <div class="section"><span class="label">Risk:</span> @Model?.Risk</div>
+    @if (!string.IsNullOrWhiteSpace(Model?.ReferenceText))
+    {
+        <div class="section"><span class="label">Reference:</span> @Model.ReferenceText</div>
+    }
 
     <div class="section">
         <div class="para-box">

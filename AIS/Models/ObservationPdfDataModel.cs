@@ -13,6 +13,8 @@ namespace AIS.Models
         public string Title { get; set; }
         public string Risk { get; set; }
         public string ParaText { get; set; }
+        public long? ReferenceId { get; set; }
+        public string ReferenceText { get; set; }
         public string TeamLead { get; set; }
         public List<ObservationPdfResponsibilityModel> Responsibilities { get; set; } = new List<ObservationPdfResponsibilityModel>();
         }
