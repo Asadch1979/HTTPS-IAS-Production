@@ -29,6 +29,7 @@
         }
 
         options = options || {};
+
         var logPrefix = '[obsreference]';
         function log(message, data) {
             if (!window.console || typeof window.console.log !== 'function') {
@@ -57,17 +58,40 @@
         }
 
         if ($container.data('obs-reference-initialized')) {
-            log('Step 5 reference picker already initialized for container.', containerSelector || '#observationReferenceSection');
-            return;
+            if (!options.forceReload) {
+                log('Observation reference picker already initialized for container.', containerSelector || '#observationReferenceSection');
+                return;
+            }
+
+            log('Reinitializing observation reference picker.', containerSelector || '#observationReferenceSection');
+            $container.off('.obsReference');
+            $container.removeData('obs-reference-initialized');
+            $container.removeData('obs-reference-state');
+            $container.removeData('obs-reference-api');
         }
 
-        var state = { selected: null };
+        var isEditMode = !!options.editMode;
+        var allowClear = options.allowClear !== false;
+        var currentReferenceLabel = options.currentReferenceLabel || 'Current Saved Reference';
+        var selectedReferenceLabel = options.selectedReferenceLabel || 'Selected Reference';
+        var emptyCurrentText = options.emptyCurrentText || 'No reference selected yet.';
         var apiBase = options.apiBaseUrl || (window.g_asiBaseURL ? window.g_asiBaseURL + '/ApiCalls' : '/ApiCalls');
+
+        var state = {
+            selected: null,
+            current: null,
+            isEditing: !isEditMode
+        };
 
         var $hiddenRef = $container.find('#observationReferenceId');
         var $type = $container.find('#obsReferenceType');
         var $search = $container.find('#obsReferenceSearchText');
         var $selected = $container.find('#obsReferenceSelected');
+        var $currentDisplay = $container.find('#obsReferenceCurrentDisplay');
+        var $changeBtn = $container.find('#obsReferenceChangeBtn');
+        var $cancelEditBtn = $container.find('#obsReferenceCancelEditBtn');
+        var $saveUpdateBtn = $container.find('#obsReferenceSaveUpdateBtn');
+        var $editorWrapper = $container.find('#obsReferenceEditorWrapper');
         var $manual = $container.find('#obsReferenceManual');
         var $section = $container.find('#obsReferenceSectionSelect');
         var $chapter = $container.find('#obsReferenceChapter');
@@ -81,13 +105,8 @@
         if (!$manualGrid.length) missingControls.push('Grid');
 
         if (missingControls.length) {
-            warn('Step 5 markup is missing reference controls.', missingControls);
+            warn('Observation reference markup is missing controls.', missingControls);
         }
-
-        log('Initializing Step 5 reference picker.', {
-            containerId: $container.attr('id') || null,
-            referenceType: ($type.val() || '').toUpperCase()
-        });
 
         function setHidden(refId) {
             $hiddenRef.val(refId || '');
@@ -97,35 +116,141 @@
             if (!selected) {
                 return '';
             }
+
             if (selected.referenceSourceType && selected.referenceSourceType.toUpperCase() === 'MANUAL_INDEX') {
                 return [selected.manualName, selected.sectionText, selected.chapterNo, selected.subSectionNo, selected.titleOrHeading]
                     .filter(Boolean)
                     .join(' / ');
             }
+
             var dt = selected.instructionDate ? (' (' + selected.instructionDate.toString().substring(0, 10) + ')') : '';
             return (selected.displayText || selected.titleOrHeading || ('Reference #' + selected.refId)) + dt;
         }
 
+        function renderCurrentDisplay() {
+            if (!$currentDisplay.length) {
+                return;
+            }
+
+            if (!state.current || !state.current.refId) {
+                $currentDisplay.html(
+                    '<div class="alert alert-secondary py-2 px-3 mb-0">'
+                    + '<div><strong>' + $('<div/>').text(emptyCurrentText).html() + '</strong></div>'
+                    + '<div class="small text-muted">Choose a reference and save it for this observation.</div>'
+                    + '</div>'
+                );
+                return;
+            }
+
+            $currentDisplay.html(
+                '<div class="alert alert-info py-2 px-3 mb-0">'
+                + '<div><strong>' + $('<div/>').text(currentReferenceLabel + ':').html() + '</strong> ' + $('<div/>').text(formatDisplay(state.current)).html() + '</div>'
+                + '<div class="small text-muted">REF_ID: ' + state.current.refId + '</div>'
+                + '</div>'
+            );
+        }
+
         function renderSelected() {
+            if (!$selected.length) {
+                return;
+            }
+
+            if (isEditMode && !state.isEditing) {
+                $selected.empty();
+                setHidden(state.current && state.current.refId ? state.current.refId : '');
+                return;
+            }
+
             if (!state.selected || !state.selected.refId) {
                 $selected.html('<span class="text-muted">No reference selected.</span>');
-                setHidden('');
+                setHidden(state.current && state.current.refId ? state.current.refId : '');
                 return;
             }
 
             setHidden(state.selected.refId);
             $selected.html(
                 '<div class="alert alert-success py-2 px-3 mb-0">'
-                + '<div><strong>Selected Reference:</strong> ' + $('<div/>').text(formatDisplay(state.selected)).html() + '</div>'
+                + '<div><strong>' + $('<div/>').text(selectedReferenceLabel + ':').html() + '</strong> ' + $('<div/>').text(formatDisplay(state.selected)).html() + '</div>'
                 + '<div class="small text-muted">REF_ID: ' + state.selected.refId + '</div>'
-                + '<button type="button" class="btn btn-sm btn-outline-danger mt-2" id="obsReferenceClear">Clear</button>'
+                + (allowClear
+                    ? '<button type="button" class="btn btn-sm btn-outline-danger mt-2" id="obsReferenceClear">Clear</button>'
+                    : '')
                 + '</div>'
             );
         }
 
-        function selectReference(item) {
-            state.selected = normalize(item);
+        function renderActionButtons() {
+            if (!isEditMode) {
+                return;
+            }
+
+            var hasCurrent = !!(state.current && state.current.refId);
+            var hasSelected = !!(state.selected && state.selected.refId);
+            var selectionChanged = !hasCurrent || !state.current || !state.selected || state.current.refId !== state.selected.refId;
+
+            if ($changeBtn.length) {
+                $changeBtn.toggleClass('d-none', state.isEditing || !hasCurrent);
+            }
+
+            if ($cancelEditBtn.length) {
+                $cancelEditBtn.toggleClass('d-none', !state.isEditing || !hasCurrent);
+            }
+
+            if ($saveUpdateBtn.length) {
+                $saveUpdateBtn.toggleClass('d-none', !state.isEditing);
+                $saveUpdateBtn.prop('disabled', !hasSelected || !selectionChanged);
+            }
+        }
+
+        function syncEditorVisibility() {
+            if ($editorWrapper.length && isEditMode) {
+                $editorWrapper.toggleClass('d-none', !state.isEditing);
+            }
+        }
+
+        function renderState() {
+            renderCurrentDisplay();
+            syncEditorVisibility();
             renderSelected();
+            renderActionButtons();
+        }
+
+        function selectReference(item, markAsCurrent) {
+            state.selected = normalize(item);
+            if (markAsCurrent) {
+                state.current = normalize(item);
+            }
+            renderState();
+        }
+
+        function beginEdit() {
+            state.isEditing = true;
+            if (state.current && state.current.refId) {
+                state.selected = normalize(state.current);
+            }
+            renderState();
+        }
+
+        function cancelEdit() {
+            if (state.current && state.current.refId) {
+                state.selected = normalize(state.current);
+                state.isEditing = false;
+            } else {
+                state.selected = null;
+                state.isEditing = true;
+            }
+            renderState();
+        }
+
+        function commitSelected() {
+            if (!state.selected || !state.selected.refId) {
+                return null;
+            }
+
+            state.current = normalize(state.selected);
+            state.isEditing = false;
+            renderState();
+            return state.current;
         }
 
         function clearResults() {
@@ -319,14 +444,24 @@
 
         function loadExistingByRefId(refId) {
             if (!refId) {
-                renderSelected();
+                state.current = null;
+                state.selected = null;
+                state.isEditing = isEditMode;
+                renderState();
                 return;
             }
+
             log('Loading existing reference by REF_ID.', { refId: refId });
             $.get(apiBase + '/GetReferenceDetailByRefId', { refId: refId }).done(function (item) {
                 if (item) {
                     log('Existing reference loaded.', { refId: refId });
-                    selectReference(item);
+                    state.isEditing = false;
+                    selectReference(item, true);
+                } else {
+                    state.current = null;
+                    state.selected = null;
+                    state.isEditing = isEditMode;
+                    renderState();
                 }
             }).fail(function (xhr, status, error) {
                 warn('GetReferenceDetailByRefId failed.', status || error || xhr.statusText);
@@ -338,7 +473,7 @@
         $container.on('click.obsReference', '.obs-ref-select', function () {
             var row = $(this).data('row');
             log('Reference selected from grid.', { refId: row && row.refId ? row.refId : 0 });
-            selectReference(row);
+            selectReference(row, false);
         });
 
         $container.on('click.obsReference', '#obsReferenceSearchBtn', loadCircular);
@@ -348,26 +483,71 @@
         $container.on('change.obsReference', '#obsReferenceManual', loadSections);
         $container.on('change.obsReference', '#obsReferenceSectionSelect', loadChapters);
         $container.on('change.obsReference', '#obsReferenceChapter', loadManualGrid);
+        $container.on('click.obsReference', '#obsReferenceChangeBtn', beginEdit);
+        $container.on('click.obsReference', '#obsReferenceCancelEditBtn', cancelEdit);
         $container.on('click.obsReference', '#obsReferenceClear', function () {
             log('Selected reference cleared.');
             state.selected = null;
-            renderSelected();
+            renderState();
         });
+
+        var api = {
+            beginEdit: beginEdit,
+            cancelEdit: cancelEdit,
+            commitSelected: commitSelected,
+            getSelected: function () { return state.selected || null; },
+            getCurrent: function () { return state.current || null; },
+            setCurrentByRefId: loadExistingByRefId
+        };
 
         $container.data('obs-reference-initialized', true);
         $container.data('obs-reference-state', state);
+        $container.data('obs-reference-api', api);
 
         switchMode('initial-load');
         loadExistingByRefId($hiddenRef.val() || options.initialRefId);
-        renderSelected();
+        renderState();
+    }
+
+    function getObservationReferenceApi(containerSelector) {
+        var $container = $(containerSelector || '#observationReferenceSection');
+        return $container.data('obs-reference-api') || null;
     }
 
     function getSelectedObservationReference(containerSelector) {
+        var api = getObservationReferenceApi(containerSelector);
+        if (api && typeof api.getSelected === 'function') {
+            return api.getSelected();
+        }
+
         var $container = $(containerSelector || '#observationReferenceSection');
         var state = $container.data('obs-reference-state') || {};
         return state.selected || null;
     }
 
+    function getCurrentObservationReference(containerSelector) {
+        var api = getObservationReferenceApi(containerSelector);
+        if (api && typeof api.getCurrent === 'function') {
+            return api.getCurrent();
+        }
+
+        var $container = $(containerSelector || '#observationReferenceSection');
+        var state = $container.data('obs-reference-state') || {};
+        return state.current || null;
+    }
+
+    function commitObservationReferenceSelection(containerSelector) {
+        var api = getObservationReferenceApi(containerSelector);
+        if (api && typeof api.commitSelected === 'function') {
+            return api.commitSelected();
+        }
+
+        return null;
+    }
+
     window.initObservationReference = initObservationReference;
+    window.getObservationReferenceApi = getObservationReferenceApi;
     window.getSelectedObservationReference = getSelectedObservationReference;
+    window.getCurrentObservationReference = getCurrentObservationReference;
+    window.commitObservationReferenceSelection = commitObservationReferenceSelection;
 })(window, window.jQuery);

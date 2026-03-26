@@ -65,6 +65,7 @@ namespace AIS.Models
         public string TYPE_INDICATOR { get; set; }
         [RichTextSanitize]
         public string DSA { get; set; }
+        public long? ReferenceId { get; set; }
         public List<ObservationResponsiblePPNOModel> RESPONSIBLE_PPs { get; set; }
         public List<AuditeeResponseEvidenceModel> ATTACHED_EVIDENCES { get; set; }
         }

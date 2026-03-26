@@ -1413,6 +1413,18 @@ namespace AIS.Controllers
                 }
 
             List<ManageObservations> list = new List<ManageObservations>();
+            bool HasColumn(IDataRecord reader, string columnName)
+                {
+                for (var i = 0; i < reader.FieldCount; i++)
+                    {
+                    if (string.Equals(reader.GetName(i), columnName, StringComparison.OrdinalIgnoreCase))
+                        {
+                        return true;
+                        }
+                    }
+
+                return false;
+                }
             if (loggedInUser.UserEntityID == 112242 || loggedInUser.UserEntityID == 112248)
                 {
 
@@ -1443,6 +1455,9 @@ namespace AIS.Controllers
                         chk.OBS_TEXT = rdr["OBS_TEXT"].ToString();
                         chk.OBS_REPLY = this.GetLatestAuditeeResponse(OBS_ID);
                         chk.ENG_ID = Convert.ToInt32(rdr["engplanid"]);
+                        chk.ReferenceId = HasColumn(rdr, "REFERENCE_ID") && rdr["REFERENCE_ID"] != DBNull.Value
+                            ? Convert.ToInt64(rdr["REFERENCE_ID"])
+                            : (long?)null;
                         chk.RESPONSIBLE_PPs = this.GetObservationResponsiblePPNOs(OBS_ID, chk.ENG_ID);
                         chk.ATTACHED_EVIDENCES = this.GetRespondedObservationEvidences(OBS_ID);
                         list.Add(chk);
@@ -1480,6 +1495,9 @@ namespace AIS.Controllers
                         chk.Checklist_Details_Id = rdr["Check_List_Detail_Id"].ToString();
                         chk.OBS_TEXT = rdr["OBS_TEXT"].ToString();
                         chk.OBS_REPLY = this.GetLatestAuditeeResponse(OBS_ID);
+                        chk.ReferenceId = HasColumn(rdr, "REFERENCE_ID") && rdr["REFERENCE_ID"] != DBNull.Value
+                            ? Convert.ToInt64(rdr["REFERENCE_ID"])
+                            : (long?)null;
                         chk.RESPONSIBLE_PPs = this.GetObservationResponsiblePPNOs(OBS_ID, chk.ENG_ID);
                         list.Add(chk);
                         }
@@ -1998,7 +2016,7 @@ namespace AIS.Controllers
             return resp;
             }
 
-        public string UpdateAuditObservationText(int OBS_ID, string OBS_TEXT, int PROCESS_ID = 0, int SUBPROCESS_ID = 0, int CHECKLIST_ID = 0, string OBS_TITLE = "", int RISK_ID = 0, int ANNEXURE_ID = 0)
+        public string UpdateAuditObservationText(int OBS_ID, string OBS_TEXT, int PROCESS_ID = 0, int SUBPROCESS_ID = 0, int CHECKLIST_ID = 0, string OBS_TITLE = "", int RISK_ID = 0, int ANNEXURE_ID = 0, long? REFERENCE_ID = null)
             {
             string resp = "";
             var sessionHandler = CreateSessionHandler();
@@ -2024,6 +2042,7 @@ namespace AIS.Controllers
                 cmd.Parameters.Add("CHECKLISTID", OracleDbType.Int32).Value = CHECKLIST_ID;
                 cmd.Parameters.Add("RiskID", OracleDbType.Int32).Value = RISK_ID;
                 cmd.Parameters.Add("AnnexureID", OracleDbType.Int32).Value = ANNEXURE_ID;
+                cmd.Parameters.Add("P_REFERENCE_ID", OracleDbType.Int64).Value = REFERENCE_ID.HasValue ? (object)REFERENCE_ID.Value : DBNull.Value;
                 cmd.Parameters.Add("ENT_ID", OracleDbType.Int32).Value = loggedInUser.UserEntityID;
                 cmd.Parameters.Add("P_NO", OracleDbType.Int32).Value = loggedInUser.PPNumber;
                 cmd.Parameters.Add("R_ID", OracleDbType.Int32).Value = loggedInUser.UserRoleID;
