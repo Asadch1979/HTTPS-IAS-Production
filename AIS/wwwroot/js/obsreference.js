@@ -16,7 +16,7 @@
             sectionText: item.sectionText || item.SECTION_TEXT || item.SectionText || '',
             chapterNo: item.chapterNo || item.CHAPTER_NO || item.ChapterNo || '',
             subSectionNo: item.subSectionNo || item.SUB_SECTION_NO || item.SubSectionNo || '',
-            titleOrHeading: item.titleOrHeading || item.TITLE_OR_HEADING || item.TitleOrHeading || '',
+            titleOrHeading: item.titleOrHeading || item.TITLE_OR_HEADING || item.TitleOrHeading || item.heading || item.HEADING || item.Heading || '',
             instructionDate: item.instructionDate || item.INSTRUCTION_DATE || item.InstructionDate || null,
             displayText: item.displayText || item.DISPLAY_TEXT || item.DisplayText || ''
         };
