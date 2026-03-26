@@ -76,6 +76,7 @@
         var selectedReferenceLabel = options.selectedReferenceLabel || 'Selected Reference';
         var emptyCurrentText = options.emptyCurrentText || 'No reference selected yet.';
         var apiBase = options.apiBaseUrl || (window.g_asiBaseURL ? window.g_asiBaseURL + '/ApiCalls' : '/ApiCalls');
+        var instanceToken = 'obsref-' + Date.now() + '-' + Math.random().toString(36).slice(2);
 
         var state = {
             selected: null,
@@ -106,6 +107,10 @@
 
         if (missingControls.length) {
             warn('Observation reference markup is missing controls.', missingControls);
+        }
+
+        function isActiveInstance() {
+            return $container.data('obs-reference-instance-token') === instanceToken;
         }
 
         function setHidden(refId) {
@@ -300,6 +305,11 @@
                 searchText: $search.val() || '',
                 sourceType: 'CIRCULAR'
             }).done(function (rows) {
+                if (!isActiveInstance()) {
+                    log('Ignoring stale circular reference response.');
+                    return;
+                }
+
                 log('GetReferenceMasterDetail completed.', { rowCount: (rows || []).length });
                 var $tbody = $container.find('#obsReferenceCircularResults tbody');
                 $tbody.empty();
@@ -316,6 +326,10 @@
                     $tbody.find('button[data-refid="' + n.refId + '"]').data('row', n);
                 });
             }).fail(function (xhr, status, error) {
+                if (!isActiveInstance()) {
+                    return;
+                }
+
                 warn('GetReferenceMasterDetail failed.', status || error || xhr.statusText);
             });
         }
@@ -327,11 +341,20 @@
                 referenceType: ($type.val() || '').toUpperCase()
             });
             $.get(apiBase + '/GetObservationManualMaster').done(function (rows) {
+                if (!isActiveInstance()) {
+                    log('Ignoring stale manual master response.');
+                    return;
+                }
+
                 log('GetManualMaster completed.', { rowCount: (rows || []).length });
                 (rows || []).forEach(function (item) {
                     $manual.append('<option value="' + (item.manualId || item.MANUAL_ID || 0) + '">' + $('<div/>').text(item.displayLabel || item.DISPLAY_NAME || '').html() + '</option>');
                 });
             }).fail(function (xhr, status, error) {
+                if (!isActiveInstance()) {
+                    return;
+                }
+
                 warn('GetManualMaster failed.', status || error || xhr.statusText);
             });
         }
@@ -353,12 +376,21 @@
 
             log('GetManualSections firing.', { manualId: $manual.val() });
             $.get(apiBase + '/GetObservationManualSections', { manualId: $manual.val() }).done(function (rows) {
+                if (!isActiveInstance()) {
+                    log('Ignoring stale section response.');
+                    return;
+                }
+
                 log('GetManualSections completed.', { rowCount: (rows || []).length, manualId: $manual.val() });
                 (rows || []).forEach(function (item) {
                     var sectionText = item.sectionText || item.SECTION_TEXT || item.sectionName || '';
                     $section.append('<option value="' + $('<div/>').text(sectionText).html() + '">' + $('<div/>').text(sectionText).html() + '</option>');
                 });
             }).fail(function (xhr, status, error) {
+                if (!isActiveInstance()) {
+                    return;
+                }
+
                 warn('GetManualSections failed.', status || error || xhr.statusText);
             });
         }
@@ -383,6 +415,11 @@
                 sectionText: $section.val()
             });
             $.get(apiBase + '/GetObservationManualChapters', { manualId: $manual.val(), sectionText: $section.val() }).done(function (rows) {
+                if (!isActiveInstance()) {
+                    log('Ignoring stale chapter response.');
+                    return;
+                }
+
                 log('GetManualChapters completed.', {
                     rowCount: (rows || []).length,
                     manualId: $manual.val(),
@@ -393,6 +430,10 @@
                     $chapter.append('<option value="' + $('<div/>').text(chapterNo).html() + '">' + $('<div/>').text(chapterNo).html() + '</option>');
                 });
             }).fail(function (xhr, status, error) {
+                if (!isActiveInstance()) {
+                    return;
+                }
+
                 warn('GetManualChapters failed.', status || error || xhr.statusText);
             });
         }
@@ -421,6 +462,11 @@
                 chapterNo: $chapter.val(),
                 sourceType: ($type.val() || '').toUpperCase()
             }).done(function (rows) {
+                if (!isActiveInstance()) {
+                    log('Ignoring stale manual grid response.');
+                    return;
+                }
+
                 log('GetManualReferenceGrid completed.', {
                     rowCount: (rows || []).length,
                     manualId: $manual.val(),
@@ -438,6 +484,10 @@
                     $tbody.find('button[data-refid="' + n.refId + '"]').data('row', n);
                 });
             }).fail(function (xhr, status, error) {
+                if (!isActiveInstance()) {
+                    return;
+                }
+
                 warn('GetManualReferenceGrid failed.', status || error || xhr.statusText);
             });
         }
@@ -453,6 +503,11 @@
 
             log('Loading existing reference by REF_ID.', { refId: refId });
             $.get(apiBase + '/GetReferenceDetailByRefId', { refId: refId }).done(function (item) {
+                if (!isActiveInstance()) {
+                    log('Ignoring stale existing reference response.', { refId: refId });
+                    return;
+                }
+
                 if (item) {
                     log('Existing reference loaded.', { refId: refId });
                     state.isEditing = false;
@@ -464,6 +519,10 @@
                     renderState();
                 }
             }).fail(function (xhr, status, error) {
+                if (!isActiveInstance()) {
+                    return;
+                }
+
                 warn('GetReferenceDetailByRefId failed.', status || error || xhr.statusText);
             });
         }
@@ -501,6 +560,7 @@
         };
 
         $container.data('obs-reference-initialized', true);
+        $container.data('obs-reference-instance-token', instanceToken);
         $container.data('obs-reference-state', state);
         $container.data('obs-reference-api', api);
 

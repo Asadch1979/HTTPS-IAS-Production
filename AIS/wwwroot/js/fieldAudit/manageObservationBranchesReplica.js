@@ -129,6 +129,24 @@ function getPageData() {
         });
     }
 
+    function resetStep6ObservationReference() {
+        var $section = $('#updateObservationReferenceSection');
+        if (!$section.length) {
+            return;
+        }
+
+        $section.find('#observationReferenceId').val('');
+
+        if (typeof window.initObservationReference === 'function') {
+            window.initObservationReference('#updateObservationReferenceSection', {
+                editMode: true,
+                allowClear: false,
+                forceReload: true,
+                initialRefId: null
+            });
+        }
+    }
+
     function initManageObservationBranches() {
         var root = document.getElementById('fieldAuditManageObservationBranchesReplica');
         if (!root || root.getAttribute('data-initialized') === '1') {
@@ -153,6 +171,7 @@ function getPageData() {
 
         $('#updateMemo_annex').off('change.manageObservationBranches').on('change.manageObservationBranches', updateRiskDisplay);
         $('#obsReferenceSaveUpdateBtn').off('click.manageObservationBranches').on('click.manageObservationBranches', saveObservationReferenceUpdate);
+        $('#updateMemoModel').off('hidden.bs.modal.manageObservationBranchesReference').on('hidden.bs.modal.manageObservationBranchesReference', resetStep6ObservationReference);
         var engId = syncEngagementContext();
         respSectionUpdate = initResponsibilitySection({
             tableSelector: '#update_listofRespPersons',
@@ -385,6 +404,7 @@ function getPageData() {
     }
     function ObservationUpdatePanel(obs_id) {
         g_obsId = obs_id;
+        resetStep6ObservationReference();
         $.each(g_obsList, function (i, v) {
             if (v.obS_ID == obs_id) {
                 g_currentStatus = v.obS_STATUS_ID;
