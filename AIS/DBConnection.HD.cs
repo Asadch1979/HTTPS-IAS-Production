@@ -1524,7 +1524,7 @@ namespace AIS.Controllers
             return resp;
             }
 
-        public string UpdateAuditParaForFinalization(int OBS_ID, string ANNEX_ID, string PROCESS_ID, int SUB_PROCESS_ID, int PROCESS_DETAIL_ID, int RISK_ID, int FINAL_PARA_NO, string GIST_OF_PARA, string TEXT_PARA, string AMOUNT_INV, string NO_INST)
+        public string UpdateAuditParaForFinalization(int OBS_ID, string ANNEX_ID, string PROCESS_ID, int SUB_PROCESS_ID, int PROCESS_DETAIL_ID, int RISK_ID, int FINAL_PARA_NO, string GIST_OF_PARA, string TEXT_PARA, string AMOUNT_INV, string NO_INST, long? REFERENCE_ID = null)
             {
             string resp = "";
             var sessionHandler = CreateSessionHandler();
@@ -1554,6 +1554,7 @@ namespace AIS.Controllers
                 cmd.Parameters.Add("TEXT_OF_PARA", OracleDbType.Clob).Value = TEXT_PARA;
                 cmd.Parameters.Add("AMOUNT_INV", OracleDbType.Int32).Value = AMOUNT_INV;
                 cmd.Parameters.Add("NO_INST", OracleDbType.Int32).Value = NO_INST;
+                cmd.Parameters.Add("P_REFERENCE_ID", OracleDbType.Int64).Value = REFERENCE_ID.HasValue ? (object)REFERENCE_ID.Value : DBNull.Value;
                 cmd.Parameters.Add("P_NO", OracleDbType.Int32).Value = loggedInUser.PPNumber;
                 cmd.Parameters.Add("ENT_ID", OracleDbType.Int32).Value = loggedInUser.UserEntityID;
                 cmd.Parameters.Add("R_ID", OracleDbType.Int32).Value = loggedInUser.UserRoleID;

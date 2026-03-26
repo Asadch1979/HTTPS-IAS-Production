@@ -564,6 +564,13 @@
                 }
 
                 warn('GetReferenceDetailByRefId failed.', status || error || xhr.statusText);
+                state.current = normalize({
+                    refId: refId,
+                    titleOrHeading: 'Saved reference #' + refId
+                });
+                state.selected = normalize(state.current);
+                state.isEditing = false;
+                renderState();
             });
         }
 
@@ -645,9 +652,454 @@
         return null;
     }
 
+    function initLegacyReferenceSection(comId, readOnly, containerSelector) {
+        var $legacyContainer = containerSelector ? $(containerSelector) : $('#referenceSection');
+        if (!$legacyContainer.length) {
+            return null;
+        }
+
+        var searchSection = $legacyContainer.find('#searchSection');
+        var saveBtn = $legacyContainer.find('#saveBtn');
+        var resultTbl = $legacyContainer.find('#resultTbl');
+        var refList = $legacyContainer.find('#refList');
+        var refType = $legacyContainer.find('#refType');
+        var keywordInput = $legacyContainer.find('#keyword');
+        var searchBtn = $legacyContainer.find('#searchBtn');
+        var searchInputs = $legacyContainer.find('#searchInputs');
+
+        var manualInputs = $legacyContainer.find('#manualInputs');
+        var manualMaster = $legacyContainer.find('#manualMaster');
+        var manualSection = $legacyContainer.find('#manualSection');
+        var manualChapter = $legacyContainer.find('#manualChapter');
+        var manualIndexGridWrapper = $legacyContainer.find('#manualIndexGridWrapper');
+        var manualIndexTbl = $legacyContainer.find('#manualIndexTbl');
+
+        var refDetails = [];
+        var refLinks = [];
+
+        if (readOnly) {
+            searchSection.hide();
+            saveBtn.hide();
+        } else {
+            searchSection.show();
+            saveBtn.show();
+        }
+
+        resultTbl.find('tbody').empty();
+        refList.empty();
+        clearLegacyManualGrid();
+
+        function formatLegacyDate(dateStr) {
+            if (!dateStr) {
+                return '';
+            }
+
+            var parts = dateStr.split('T')[0].split('-');
+            if (parts.length !== 3) {
+                return '';
+            }
+
+            return parts[2] + '/' + parts[1] + '/' + parts[0];
+        }
+
+        function isLegacyManualReference(item) {
+            var type = (item.referenceType || item.manualType || item.linkType || '').toUpperCase();
+            return type === 'MANUAL' || type === 'POLICY';
+        }
+
+        function getLegacyRefKey(item) {
+            if (item.linkId) {
+                return 'link-' + item.linkId;
+            }
+
+            if (isLegacyManualReference(item)) {
+                var manualId = item.manualId || item.opManualId || item.creditManualId || 0;
+                var manualIndexId = item.manualIndexId || item.id || 0;
+                return 'manual-' + manualId + '-' + manualIndexId;
+            }
+
+            return 'ref-' + (item.id || 0);
+        }
+
+        function existsInLegacySelection(item) {
+            var key = getLegacyRefKey(item);
+            return refDetails.some(function (entry) {
+                return getLegacyRefKey(entry) === key;
+            });
+        }
+
+        function normalizeLegacyLoadedReferences(data) {
+            var details = data.referenceDetails || [];
+            var links = data.referenceLinks || [];
+
+            $.each(links, function (_, link) {
+                var hasExistingDetail = details.some(function (detail) {
+                    return detail.linkId && detail.linkId === link.linkId;
+                });
+                var type = (link.manualType || link.linkType || '').toUpperCase();
+
+                if (!hasExistingDetail && (type === 'MANUAL' || type === 'POLICY')) {
+                    details.push({
+                        id: link.manualIndexId || link.referenceId,
+                        linkId: link.linkId,
+                        divisionEntId: link.entityId,
+                        referenceType: link.manualType || link.linkType,
+                        instructionsTitle: link.referenceTitle,
+                        instructionsDate: link.instructionsDate,
+                        division: link.chapter,
+                        manualId: link.manualId || link.opManualId || link.creditManualId,
+                        manualIndexId: link.manualIndexId || link.referenceId,
+                        chapterNo: link.chapterNo,
+                        sectionName: link.sectionName,
+                        subSectionNo: link.subSectionNo,
+                        heading: link.heading
+                    });
+                }
+            });
+
+            return details;
+        }
+
+        function buildLegacyManualDisplay(item) {
+            if (item.instructionsTitle) {
+                return item.instructionsTitle;
+            }
+
+            var parts = [];
+            if (item.manualName) parts.push(item.manualName);
+            if (item.sectionName) parts.push(item.sectionName);
+            if (item.chapterNo) parts.push(item.chapterNo);
+            if (item.subSectionNo) parts.push(item.subSectionNo);
+            if (item.heading) parts.push(item.heading);
+            return parts.join(' / ');
+        }
+
+        function clearLegacyManualGrid() {
+            manualIndexTbl.find('tbody').empty();
+            manualIndexGridWrapper.hide();
+        }
+
+        function resetLegacySectionsAndBelow() {
+            manualSection.val('');
+            manualSection.prop('disabled', true);
+            manualChapter.val('');
+            manualChapter.prop('disabled', true);
+            clearLegacyManualGrid();
+        }
+
+        function resetLegacyChaptersAndGrid() {
+            manualChapter.val('');
+            manualChapter.prop('disabled', true);
+            clearLegacyManualGrid();
+        }
+
+        function loadLegacyManualMaster() {
+            manualMaster.empty().append('<option value="">Select manual</option>');
+            resetLegacySectionsAndBelow();
+
+            $.get(g_asiBaseURL + '/ApiCalls/GetManualMaster', function (rows) {
+                $.each(rows || [], function (_, item) {
+                    var label = item.displayLabel || [item.manualName, item.volumeName].filter(Boolean).join(' ');
+                    manualMaster.append('<option value="' + item.manualId + '">' + label + '</option>');
+                });
+            });
+        }
+
+        function loadLegacyManualSections(manualId) {
+            manualSection.empty().append('<option value="">Select section</option>');
+            resetLegacyChaptersAndGrid();
+
+            if (!manualId) {
+                manualSection.prop('disabled', true);
+                return;
+            }
+
+            $.get(g_asiBaseURL + '/ApiCalls/GetManualSections', { manualId: manualId }, function (rows) {
+                $.each(rows || [], function (_, item) {
+                    manualSection.append('<option value="' + item.sectionName + '">' + item.sectionName + '</option>');
+                });
+                manualSection.prop('disabled', false);
+            });
+        }
+
+        function loadLegacyManualChapters(manualId, sectionName) {
+            manualChapter.empty().append('<option value="">Select chapter</option>');
+            clearLegacyManualGrid();
+
+            if (!manualId || !sectionName) {
+                manualChapter.prop('disabled', true);
+                return;
+            }
+
+            $.get(g_asiBaseURL + '/ApiCalls/GetManualChapters', { manualId: manualId, sectionName: sectionName }, function (rows) {
+                $.each(rows || [], function (_, item) {
+                    manualChapter.append('<option value="' + item.chapterNo + '">' + item.chapterNo + '</option>');
+                });
+                manualChapter.prop('disabled', false);
+            });
+        }
+
+        function loadLegacyManualIndexGrid(manualId, sectionName, chapterNo) {
+            clearLegacyManualGrid();
+
+            if (!manualId || !sectionName || !chapterNo) {
+                return;
+            }
+
+            $.get(g_asiBaseURL + '/ApiCalls/GetManualIndexByChapter', {
+                manualId: manualId,
+                sectionName: sectionName,
+                chapterNo: chapterNo
+            }, function (rows) {
+                var body = manualIndexTbl.find('tbody');
+                body.empty();
+
+                $.each(rows || [], function (_, item) {
+                    var payload = {
+                        manualId: parseInt(manualId, 10),
+                        manualIndexId: item.indexId,
+                        manualName: manualMaster.find('option:selected').text(),
+                        sectionName: sectionName,
+                        chapterNo: chapterNo,
+                        subSectionNo: item.subSectionNo,
+                        heading: item.heading,
+                        referenceType: refType.val()
+                    };
+
+                    body.append('<tr>'
+                        + (readOnly ? '' : '<td><button type="button" class="btn btn-sm btn-primary attach-manual" data-item="' + encodeURIComponent(JSON.stringify(payload)) + '">Add</button></td>')
+                        + '<td>' + (item.subSectionNo || '') + '</td>'
+                        + '<td>' + (item.heading || '') + '</td>'
+                        + '</tr>');
+                });
+
+                manualIndexGridWrapper.show();
+            });
+        }
+
+        function toggleLegacyInputMode() {
+            var type = refType.val();
+
+            if (type === 'Circular') {
+                searchInputs.show();
+                resultTbl.show();
+                manualInputs.hide();
+            } else if (type === 'Manual' || type === 'Policy') {
+                searchInputs.hide();
+                resultTbl.hide();
+                manualInputs.show();
+                loadLegacyManualMaster();
+            } else {
+                searchInputs.hide();
+                resultTbl.hide();
+                manualInputs.hide();
+            }
+        }
+
+        function renderLegacyRefs() {
+            refList.empty();
+            $.each(refDetails, function (index, item) {
+                var dateTxt = formatLegacyDate(item.instructionsDate);
+                var refKey = getLegacyRefKey(item);
+                var divisionTxt = item.division || item.chapterNo || '';
+
+                refList.append('<li class="list-group-item">'
+                    + '<div><strong>Reference No ' + (index + 1) + '</strong></div>'
+                    + '<div>' + (buildLegacyManualDisplay(item) || '') + '</div>'
+                    + '<div>Issuance Date: ' + dateTxt + '</div>'
+                    + '<div>Reference Type: ' + (item.referenceType || '') + '</div>'
+                    + '<div>Division Code: ' + divisionTxt + '</div>'
+                    + (readOnly ? '' : ' <button type="button" class="btn btn-danger btn-sm float-end remove-ref" data-key="' + refKey + '">Delete</button>')
+                    + '</li>');
+            });
+        }
+
+        $.get(g_asiBaseURL + '/ApiCalls/GetParaReferenceData', { comId: comId }, function (data) {
+            refDetails = normalizeLegacyLoadedReferences(data);
+            refLinks = data.referenceLinks || [];
+            renderLegacyRefs();
+        });
+
+        searchBtn.off('click.obsLegacyReference').on('click.obsLegacyReference', function () {
+            $.post(g_asiBaseURL + '/ApiCalls/SearchReferences', { referenceType: refType.val(), keyword: keywordInput.val() }, function (rows) {
+                var body = resultTbl.find('tbody');
+                body.empty();
+
+                $.each(rows || [], function (_, item) {
+                    var dateTxt = formatLegacyDate(item.instructionsDate);
+                    body.append('<tr>'
+                        + '<td>' + (item.title || '') + '</td>'
+                        + '<td>' + dateTxt + '</td>'
+                        + '<td>' + (item.instructionsdetails || '') + '</td>'
+                        + '<td>' + (item.keywords || '') + '</td>'
+                        + '<td><button type="button" class="view btn btn-sm btn-secondary" data-url="' + (item.referenceurl || '') + '">View</button></td>'
+                        + (readOnly ? '' : '<td><button type="button" class="attach btn btn-sm btn-primary" data-id="' + item.id + '">Attach</button></td>')
+                        + '</tr>');
+                });
+            });
+        });
+
+        refType.off('change.obsLegacyReference').on('change.obsLegacyReference', toggleLegacyInputMode);
+        manualMaster.off('change.obsLegacyReference').on('change.obsLegacyReference', function () {
+            loadLegacyManualSections($(this).val());
+        });
+        manualSection.off('change.obsLegacyReference').on('change.obsLegacyReference', function () {
+            loadLegacyManualChapters(manualMaster.val(), $(this).val());
+        });
+        manualChapter.off('change.obsLegacyReference').on('change.obsLegacyReference', function () {
+            loadLegacyManualIndexGrid(manualMaster.val(), manualSection.val(), $(this).val());
+        });
+
+        $legacyContainer.off('click.obsLegacyReference', '.attach').on('click.obsLegacyReference', '.attach', function (event) {
+            event.preventDefault();
+            if (readOnly) {
+                return;
+            }
+
+            var refId = parseInt($(this).data('id'), 10);
+            $.get(g_asiBaseURL + '/ApiCalls/GetReferenceDetail', { refId: refId }, function (detail) {
+                if (!detail) {
+                    return;
+                }
+
+                detail.linkId = null;
+                if (!existsInLegacySelection(detail)) {
+                    refDetails.push(detail);
+                    renderLegacyRefs();
+                }
+            });
+        });
+
+        $legacyContainer.off('click.obsLegacyReference', '.attach-manual').on('click.obsLegacyReference', '.attach-manual', function () {
+            if (readOnly) {
+                return;
+            }
+
+            var raw = decodeURIComponent($(this).data('item'));
+            var item = JSON.parse(raw);
+            var manualItem = {
+                id: item.manualIndexId,
+                linkId: null,
+                divisionEntId: 0,
+                referenceType: item.referenceType,
+                instructionsTitle: [item.manualName, item.sectionName, item.chapterNo, item.subSectionNo, item.heading].filter(Boolean).join(' / '),
+                instructionsDate: null,
+                division: item.chapterNo,
+                manualId: item.manualId,
+                manualIndexId: item.manualIndexId,
+                sectionName: item.sectionName,
+                chapterNo: item.chapterNo,
+                subSectionNo: item.subSectionNo,
+                heading: item.heading
+            };
+
+            if (!existsInLegacySelection(manualItem)) {
+                refDetails.push(manualItem);
+                renderLegacyRefs();
+            }
+        });
+
+        $legacyContainer.off('click.obsLegacyReference', '.remove-ref').on('click.obsLegacyReference', '.remove-ref', function () {
+            if (readOnly) {
+                return;
+            }
+
+            var refKey = $(this).data('key');
+            refDetails = $.grep(refDetails, function (item) {
+                return getLegacyRefKey(item) !== refKey;
+            });
+            renderLegacyRefs();
+        });
+
+        $legacyContainer.off('click.obsLegacyReference', '.view').on('click.obsLegacyReference', '.view', function () {
+            var url = $(this).data('url');
+            if (url) {
+                window.open(url, '_blank');
+            }
+        });
+
+        saveBtn.off('click.obsLegacyReference').on('click.obsLegacyReference', function () {
+            if (readOnly) {
+                return;
+            }
+
+            var payload = { comId: comId, references: [] };
+
+            $.each(refDetails, function (_, item) {
+                var existingLink = item.linkId ? item.linkId : null;
+                if (existingLink === null) {
+                    var found = refLinks.find(function (link) {
+                        var left = link.linkId || ('new-' + (link.referenceId || 0) + '-' + (link.manualId || link.opManualId || link.creditManualId || 0));
+                        var right = item.linkId || ('new-' + (item.id || item.manualIndexId || 0) + '-' + (item.manualId || item.opManualId || item.creditManualId || 0));
+                        return left === right;
+                    });
+                    if (found) {
+                        existingLink = found.linkId;
+                    }
+                }
+
+                var isManual = isLegacyManualReference(item);
+                var type = item.referenceType || item.manualType || item.linkType || '';
+                var manualId = item.manualId || item.opManualId || item.creditManualId || null;
+                var manualIndexId = item.manualIndexId || (isManual ? item.id : null);
+
+                payload.references.push({
+                    linkId: existingLink,
+                    referenceId: isManual ? (manualIndexId || 0) : (item.id > 0 ? item.id : 0),
+                    manualId: manualId,
+                    manualIndexId: manualIndexId,
+                    entityId: item.divisionEntId || 0,
+                    oldParaId: 0,
+                    newParaId: 0,
+                    paraId: comId,
+                    instructionsDate: item.instructionsDate ? new Date(item.instructionsDate).toISOString() : null,
+                    referenceTitle: isManual ? buildLegacyManualDisplay(item) : item.instructionsTitle,
+                    creditManualId: type === 'Policy' ? manualId : null,
+                    opManualId: type === 'Manual' ? manualId : null,
+                    manualType: type,
+                    chapter: item.chapterNo || item.division,
+                    matchedText: null,
+                    linkType: type
+                });
+            });
+
+            $.ajax({
+                url: g_asiBaseURL + '/ApiCalls/SaveParaReferences',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify(payload),
+                success: function (message) {
+                    alert(message);
+                    $legacyContainer.trigger('referenceSectionSaved');
+                    initLegacyReferenceSection(comId, readOnly, containerSelector);
+                }
+            });
+        });
+
+        toggleLegacyInputMode();
+
+        var legacyApi = {
+            getReferences: function () { return refDetails.slice(); },
+            reload: function () { return initLegacyReferenceSection(comId, readOnly, containerSelector); }
+        };
+
+        $legacyContainer.data('obs-legacy-reference-api', legacyApi);
+        return legacyApi;
+    }
+
     window.initObservationReference = initObservationReference;
     window.getObservationReferenceApi = getObservationReferenceApi;
     window.getSelectedObservationReference = getSelectedObservationReference;
     window.getCurrentObservationReference = getCurrentObservationReference;
     window.commitObservationReferenceSelection = commitObservationReferenceSelection;
+    window.initReferenceSection = initLegacyReferenceSection;
+    window.ReferenceSection = window.ReferenceSection || {};
+    window.ReferenceSection.init = function (options) {
+        options = options || {};
+        return initLegacyReferenceSection(
+            options.comId || options.COM_ID || 0,
+            !!options.readOnly,
+            options.containerSelector
+        );
+    };
 })(window, window.jQuery);

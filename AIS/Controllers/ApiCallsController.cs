@@ -2598,10 +2598,10 @@ namespace AIS.Controllers
             return "{\"Status\":true,\"Message\":\"" + response + "\"}";
             }
         [HttpPost]
-        public string update_audit_para_for_finalization(int OBS_ID, string ANNEX_ID, string PROCESS_ID, int SUB_PROCESS_ID, int PROCESS_DETAIL_ID, int RISK_ID, int FINAL_PARA_NO, string GIST_OF_PARA, string TEXT_PARA, string AMOUNT_INV, string NO_INST)
+        public string update_audit_para_for_finalization(int OBS_ID, string ANNEX_ID, string PROCESS_ID, int SUB_PROCESS_ID, int PROCESS_DETAIL_ID, int RISK_ID, int FINAL_PARA_NO, string GIST_OF_PARA, string TEXT_PARA, string AMOUNT_INV, string NO_INST, long? REFERENCE_ID = null)
             {
             string response = "";
-            response = dBConnection.UpdateAuditParaForFinalization(OBS_ID, ANNEX_ID, PROCESS_ID, SUB_PROCESS_ID, PROCESS_DETAIL_ID, RISK_ID, FINAL_PARA_NO, GIST_OF_PARA, TEXT_PARA, AMOUNT_INV, NO_INST);
+            response = dBConnection.UpdateAuditParaForFinalization(OBS_ID, ANNEX_ID, PROCESS_ID, SUB_PROCESS_ID, PROCESS_DETAIL_ID, RISK_ID, FINAL_PARA_NO, GIST_OF_PARA, TEXT_PARA, AMOUNT_INV, NO_INST, REFERENCE_ID);
             return "{\"Status\":true,\"Message\":\"" + response + "\"}";
             }
 

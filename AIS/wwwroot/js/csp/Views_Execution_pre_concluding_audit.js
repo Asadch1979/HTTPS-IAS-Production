@@ -34,6 +34,24 @@ function getPageData() {
         return '#viewMemoDetailsModel #boObservationReferenceSection';
     }
 
+    function setPreConMemoContent(html) {
+        var content = html || '';
+        $('#viewMemo_memo_ObSent').val(content).trigger('change');
+        var $editor = $('#viewMemoDetailsModel .richText-editor').first();
+        if ($editor.length) {
+            $editor.html(content);
+        }
+    }
+
+    function getPreConMemoContent() {
+        var $editor = $('#viewMemoDetailsModel .richText-editor').first();
+        if ($editor.length) {
+            return $editor.html();
+        }
+
+        return $('#viewMemo_memo_ObSent').val();
+    }
+
     function getPreConObservationReferenceId(detail) {
         if (!detail) {
             return null;
@@ -113,27 +131,39 @@ function getPageData() {
         }
     }
 
-    function syncPreConObservationReference(obsId) {
-        if (g_boPreConReadOnlyMode || typeof window.initObservationReference !== 'function') {
-            return $.Deferred().resolve().promise();
+    function savePreConObservationReferenceUpdate(obsId) {
+        if (g_boPreConReadOnlyMode) {
+            return;
+        }
+
+        var targetObsId = obsId || g_obsId;
+        if (!targetObsId) {
+            alert('Observation is not selected.');
+            return;
         }
 
         return $.ajax({
-            url: g_asiBaseURL + "/ApiCalls/update_observation_text",
+            url: g_asiBaseURL + "/ApiCalls/update_audit_para_for_finalization",
             type: "POST",
             data: {
-                'OBS_ID': obsId,
-                'OBS_TEXT': $('#viewMemo_memo_ObSent').val(),
-                'PROCESS_ID': $('#viewMemo_process_ObSent').val() || g_procId,
-                'SUBPROCESS_ID': $('#viewMemo_subprocess_ObSent').val() || g_subProcId,
-                'CHECKLIST_ID': $('#viewMemo_checklist_ObSent').val() || g_procDetailId,
-                'OBS_TITLE': $('#viewMemo_heading_ObSent').val(),
+                'OBS_ID': targetObsId,
+                'ANNEX_ID': $('#viewMemo_annex_ObSent').val(),
+                'PROCESS_ID': $('#viewMemo_process_ObSent').val(),
+                'SUB_PROCESS_ID': $('#viewMemo_subprocess_ObSent').val() || 0,
+                'PROCESS_DETAIL_ID': $('#viewMemo_checklist_ObSent').val() || 0,
                 'RISK_ID': g_selectedRiskId,
-                'ANNEXURE_ID': $('#viewMemo_annex_ObSent').val() || 0,
+                'FINAL_PARA_NO': $('#viewMemo_paraNo_ObSent').val() || 0,
+                'GIST_OF_PARA': $('#viewMemo_heading_ObSent').val(),
+                'TEXT_PARA': getPreConMemoContent(),
+                'AMOUNT_INV': $('#viewMemo_amount_ObSent').val() || 0,
+                'NO_INST': $('#viewMemo_inst_ObSent').val() || 0,
                 'REFERENCE_ID': getPreConSelectedReferenceId()
             },
             cache: false,
             dataType: "json"
+        }).done(function (data) {
+            commitPreConObservationReference();
+            showApiAlert(data);
         });
     }
 
@@ -152,6 +182,9 @@ function getPageData() {
 
         $('#viewMemo_annex_ObSent').off('change.preCon').on('change.preCon', updateRiskDisplay);
         $('#viewMemoDetailsModel').off('hidden.bs.modal.boPreConReference').on('hidden.bs.modal.boPreConReference', resetPreConObservationReference);
+        $('#obsReferenceSaveUpdateBtn').off('click.boPreConReference').on('click.boPreConReference', function () {
+            savePreConObservationReferenceUpdate(g_obsId);
+        });
 
         respSection = initResponsibilitySection({
             tableSelector: '#update_listofRespPersons',
@@ -280,7 +313,7 @@ function getPageData() {
           }
 
            $('#viewMemo_heading_ObSent').val('');
-           $('#viewMemo_memo_ObSent').val('').trigger('change');
+           setPreConMemoContent('');
            $('#viewMemo_response_ObSent').html('');
            $('#viewMemo_aud_reply_ObSent').html('');
             $('#viewMemo_head_reply_ObSent').html('');
@@ -305,7 +338,7 @@ function getPageData() {
               cache: false,
               success: function (data) {
            $('#viewMemo_heading_ObSent').val(data.heading);
-           $('#viewMemo_memo_ObSent').val(data.observatioN_TEXT).trigger('change');
+           setPreConMemoContent(data.observatioN_TEXT);
            $('#viewMemo_response_ObSent').html(data.auditeE_REPLY);
            ViewAuditeeAttachedEvidences();
            $('#viewMemo_aud_reply_ObSent').html(data.auditoR_RECOM);
@@ -552,22 +585,17 @@ function getPageData() {
                   'RISK_ID': g_selectedRiskId,
                   'FINAL_PARA_NO': $('#viewMemo_paraNo_ObSent').val(),
                   'GIST_OF_PARA': $('#viewMemo_heading_ObSent').val(),
-                  'TEXT_PARA': $('#viewMemo_memo_ObSent').val(),
+                  'TEXT_PARA': getPreConMemoContent(),
                   'AMOUNT_INV': $('#viewMemo_amount_ObSent').val(),
-                  'NO_INST': $('#viewMemo_inst_ObSent').val()
+                  'NO_INST': $('#viewMemo_inst_ObSent').val(),
+                  'REFERENCE_ID': getPreConSelectedReferenceId()
 
               },
               cache: false,
               success: function (data) {
-                  syncPreConObservationReference(obsId)
-                      .done(function () {
-                          commitPreConObservationReference();
-                          showApiAlert(data);
-                          onAlertCallback(reloadModel);
-                      })
-                      .fail(function () {
-                          alert('Para details were updated, but the reference could not be saved. Please try again.');
-                      });
+                  commitPreConObservationReference();
+                  showApiAlert(data);
+                  onAlertCallback(reloadModel);
               },
               dataType: "json",
           });
