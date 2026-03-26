@@ -26,23 +26,23 @@
     var scriptDependenciesByStep = {
         DRAFT_REPORT: [
             '/js/responsibilitySection.js',
-            '/js/obsreference.js?v=3',
-            '/js/csp/Views_Execution_draft_audit_report_branch.js?v=1'
+            '/js/obsreference.js?v=4',
+            '/js/csp/Views_Execution_draft_audit_report_branch.js?v=2'
         ],
         CHECKING_DRAFT_REPORT: [
             '/js/responsibilitySection.js',
-            '/js/obsreference.js?v=3',
-            '/js/csp/Views_Execution_draft_audit_report_branch.js?v=1'
+            '/js/obsreference.js?v=4',
+            '/js/csp/Views_Execution_draft_audit_report_branch.js?v=2'
         ],
         QUALITY_REVIEW: [
             '/js/responsibilitySection.js',
-            '/js/obsreference.js?v=3',
-            '/js/csp/Views_Execution_pre_concluding_audit.js?v=1'
+            '/js/obsreference.js?v=4',
+            '/js/csp/Views_Execution_pre_concluding_audit.js?v=2'
         ],
         CHECKING_QUALITY_REVIEW: [
             '/js/responsibilitySection.js',
-            '/js/obsreference.js?v=3',
-            '/js/csp/Views_Execution_pre_concluding_audit.js?v=1'
+            '/js/obsreference.js?v=4',
+            '/js/csp/Views_Execution_pre_concluding_audit.js?v=2'
         ],
         ISSUE_REPORT: [
             '/js/csp/Views_Execution_Concluding_Closing_Audit.js?v=1'
