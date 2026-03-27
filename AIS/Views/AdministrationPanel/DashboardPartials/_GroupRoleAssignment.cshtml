@@ -1,0 +1,70 @@
+@{ Layout = null; }
+
+<div class="row col-md-12 mt-3">
+    <h3 style=" display:block;color: #be0e43">Group Management</h3>
+</div>
+
+
+<div class="col-md-12 mt-3" ">
+
+    <div class="row col-md-12">
+        <div class="col-md-2 mt-2">
+            <label class="font-weight-normal">Group/Role</label>
+        </div>
+        <div class="col-md-10 mt-2">
+            <select id="groupSelectionBox" data-onchange="showMenuBlock();" class="form-select form-control" aria-label="Default select example">
+                <option value="" selected>--Select Group/Roles--</option>
+                @{
+                    if (ViewData["GroupList"] != null)
+                    {
+                        foreach (var item in (dynamic)(ViewData["GroupList"]))
+                        {
+                            <option value="@item.GROUP_CODE" id="@item.GROUP_CODE">@item.GROUP_NAME</option>
+                        }
+                    }
+                }
+            </select>
+        </div>
+    </div>
+    <div class="row col-md-12 menuBlock d-none">
+        <div class="col-md-2 mt-2">
+            <label class="font-weight-normal">Menu</label>
+        </div>
+        <div class="col-md-10 mt-2">
+            <select id="menuSelectionBox" data-onchange="showMenuPagesBlock();" class="form-select form-control" aria-label="Default select example">
+                <option value="0" selected>--Select Group/Roles--</option>
+            @{
+                if (ViewData["MenuList"] != null)
+                {
+                    foreach (var item in (dynamic)(ViewData["MenuList"]))
+                    {
+                        <option value="@item.Menu_Id" id="@item.Menu_Id">@item.Menu_Name</option>
+                    }
+                }
+            }
+            </select>
+        </div>
+    </div>
+    <div class="row col-md-12 pagesBlock d-none">
+        <div class="col-md-2 mt-2">
+            <label class="font-weight-normal">Pages</label>
+        </div>
+        <div class="col-md-10 mt-2">
+            <div class="row col-md-12">
+                <div style="margin-left:auto;">
+                    <input class="menu_page_selectAll" type="checkbox" /> <label class="font-weight-normal ml-2">Select All</label>
+                </div>
+            </div>
+            <div id="menuPagesArea" class="row col-md-12">
+            </div>
+        </div>
+    </div>
+    <div class="row col-md-12 mt-4">
+        <div style="margin-left:auto;">
+            <button class="btn btn-secondary">Cancel</button>
+            <button data-onclick="AddGroupItemAssignment();" class="btn btn-danger ml-2">Save Changes</button>
+        </div>
+    </div>
+
+</div>
+<script src="/js/csp/Views_AdministrationPanel_group_role_assignment.js?v=1"></script>

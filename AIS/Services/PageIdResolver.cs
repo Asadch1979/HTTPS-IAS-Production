@@ -211,7 +211,10 @@ namespace AIS.Services
                 ["/FieldAuditReport/StaffSnapshot"] = 970105,
                 ["/FieldAuditReport/FinalizeReport"] = 970106,
                 ["/MANReport/Home"] = 970101,
-                ["/MANReport/GeneratePdf"] = 970101
+                ["/MANReport/GeneratePdf"] = 970101,
+                ["/AdministrationPanel/User_Dashboard"] = 970201,
+                ["/AdministrationPanel/Entity_Dashboard"] = 970202,
+                ["/Setup/Checklist_Dashboard"] = 970203
                 };
 
             foreach (var entry in fieldAuditPages)

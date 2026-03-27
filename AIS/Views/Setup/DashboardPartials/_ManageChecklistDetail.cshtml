@@ -1,0 +1,453 @@
+@{ Layout = null; }
+
+<style type="text/css">
+    .container {
+        max-width: 100%;
+    }
+
+    .card-header {
+        background-color: transparent !important;
+        font-size: 20px;
+        height: 100px;
+    }
+
+    .icon-card {
+        margin: 10px;
+    }
+</style>
+
+<div class="row text-center mt-3">
+    <div class="col-md-6 text-left">
+        <h3 style=" display:block;color: #be0e43">Audit Checklist Detail </h3>
+    </div>
+    <div class="col-md-6 text-right" style="padding-right:45px;">
+        <button data-onclick="addNewCheckListDetail(0);" class="btn btn-danger">Add New Checklist</button>
+    </div>    
+</div>
+<div class="row mt-3 col-md-12">
+    <label><b>Audit Checklist</b></label>
+    <select id="checklistSelectField" data-onchange="getAuditSubChecklist();" class="form-select form-control">
+        <option value="0" id="0" selected>--Select Checklist Type--</option>
+        @{
+            if (ViewData["ChecklistTypes"] != null)
+            {
+                foreach (var item in (dynamic)(ViewData["ChecklistTypes"]))
+                {
+                    <option value="@item.T_ID" id="@item.T_ID">@item.HEADING</option>
+
+                }
+            }
+        }
+
+    </select>
+</div>
+<div class="row mt-3 col-md-12">
+    <label><b>Audit Sub Checklist</b></label>
+    <select id="subchecklistSelectField" data-onchange="ShowSubChecklist();" class="form-select form-control">
+        <option value="0">--Select Sub-Checklist--</option>
+       
+
+    </select>
+</div>
+<div class="row col-md-12 mt-3">
+    <table id="auditeeEntitiesList" class="table table-bordered table mb-0 mt-3 bg-white table-hover table-striped">
+        <thead>
+            <tr style="background-color: #19875478 !important; ">
+                <th class="col-md-auto">Sr No.</th>
+                <th class="col-md-auto">Checklist Detail</th>
+                <th class="col-md-auto">Action</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+</div>
+
+
+<div id="addEntityModal" class="modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-xl" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">Add Checklist Detail</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="row col-md-12">
+                    <div class="row col-md-12 mt-3">
+                        <div class="row col-md-4">
+                            <label>Checklist</label>
+                        </div>
+                        <div class="row col-md-8">
+                            <select data-onclick="getSubChecklistForNewEntry();" id="newChecklist" class="form-select form-control">
+                                <option value="0" id="0" selected>--Select Checklist--</option>
+                                @{
+                                    if (ViewData["ChecklistTypes"] != null)
+                                    {
+                                        foreach (var item in (dynamic)(ViewData["ChecklistTypes"]))
+                                        {
+                                            <option value="@item.T_ID" id="@item.T_ID">@item.HEADING</option>
+
+                                        }
+                                    }
+                                }
+
+                            </select>
+                        </div>
+                    </div>
+                    <div class="row col-md-12 mt-3">
+                        <div class="row col-md-4">
+                            <label>Sub-Checklist</label>
+                        </div>
+                        <div class="row col-md-8">
+                            <select id="newSubChecklist" class="form-select form-control">
+                                <option value="0" id="0" selected>--Select Sub-Checklist--</option>
+
+                            </select>
+                        </div>
+                    </div>
+                    <div class="row col-md-12 mt-3">
+                        <div class="row col-md-4">
+                            <label>Violation</label>
+                        </div>
+                        <div class="row col-md-8">
+                            <select id="newViolationlist" class="form-select form-control">
+                                <option selected="selected" value="0" id="0">--Select Control Violation--</option>
+                                @{
+                                    if (ViewData["ViolationsList"] != null)
+                                    {
+
+                                        foreach (var item in (dynamic)(ViewData["ViolationsList"]))
+                                        {
+                                            <option max-number="@item.MAX_NUMBER" id="@item.ID" value="@item.ID">@item.V_NAME</option>
+                                        }
+
+                                    }
+                                }
+
+                            </select>
+                        </div>
+                    </div>
+                    <div class="row col-md-12 mt-3">
+                        <div class="row col-md-4">
+                            <label>Process Owner</label>
+                        </div>
+                        <div class="row col-md-8">
+                            <select id="newProcOwnerlist" class="form-select form-control">
+                                <option selected="selected" value="0" id="0">--Select Process Owner--</option>
+                                @{
+                                    if (ViewData["ProcOwnerList"] != null)
+                                    {
+
+                                        foreach (var item in (dynamic)(ViewData["ProcOwnerList"]))
+                                        {
+                                            <option id="@item.ENTITY_ID" value="@item.ENTITY_ID">@item.NAME</option>
+                                        }
+
+                                    }
+                                }
+
+                            </select>
+                        </div>
+                    </div>
+                    <div class="row col-md-12 mt-3">
+                        <div class="row col-md-4">
+                            <label>Role Responsible</label>
+                        </div>
+                        <div class="row col-md-8">
+                            <select id="newRoleResplist" class="form-select form-control">
+                                <option selected="selected" value="0" id="0">--Select Role Responsible--</option>
+                                @{
+                                    if (ViewData["RoleRespList"] != null)
+                                    {
+
+                                        foreach (var item in (dynamic)(ViewData["RoleRespList"]))
+                                        {
+                                            <option id="@item.DESIGNATIONCODE" value="@item.DESIGNATIONCODE">@item.DESCRIPTION</option>
+                                        }
+
+                                    }
+                                }
+
+                            </select>
+                        </div>
+                    </div>
+                    <div class="row col-md-12 mt-3">
+                        <div class="row col-md-4">
+                            <label>Risk</label>
+                        </div>
+                        <div class="row col-md-8">
+                            <select id="newRisklist" class="form-select form-control">
+                                <option selected="selected" value="0" id="0">--Select Risk--</option>
+                                @{
+                                    if (ViewData["RiskList"] != null)
+                                    {
+
+                                        foreach (var item in (dynamic)(ViewData["RiskList"]))
+                                        {
+                                            <option id="@item.R_ID" value="@item.R_ID">@item.DESCRIPTION</option>
+                                        }
+
+                                    }
+                                }
+
+                            </select>
+                        </div>
+                    </div>
+                    <div class="row col-md-12 mt-3">
+                        <div class="row col-md-4">
+                            <label>Annexure</label>
+                        </div>
+                        <div class="row col-md-8">
+                            <select id="newAnnexlist" class="form-select form-control">
+                                <option selected="selected" value="0" id="0">--Select Annexure--</option>
+                                @{
+                                    if (ViewData["AnnexList"] != null)
+                                    {
+
+                                        foreach (var item in (dynamic)(ViewData["AnnexList"]))
+                                        {
+                                            <option id="@item.ID" value="@item.ID">@item.ANNEX</option>
+                                        }
+
+                                    }
+                                }
+
+                            </select>
+                        </div>
+                    </div>
+                    <div class="row col-md-12 mt-3">
+                        <div class="row col-md-4">
+                            <label>Heading</label>
+                        </div>
+                        <div class="row col-md-8">
+                            <textarea id="newProcDetailHeading" class="form-control"></textarea>
+                        </div>
+                    </div>
+                  
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button data-onclick="addProcessDetail();" type="button" data-bs-dismiss="modal" class="btn btn-success">Save Changes</button>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="updateEntityModal" class="modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-xl" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">Update Checklist Detail</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="row col-md-12">
+                    <div class="col-md-6">
+                        <form>
+                            <h6 class="text-center"><b>Existing Details</b></h6>
+                            <div class="form-group">
+                                    <label>Process</label>
+                                    <input disabled="disabled" class="form-control" style="font-weight:normal !important" id="oldProcessLabel" />
+                            </div>
+                            <div class="form-group">
+                                    <label>Sub Process</label>
+                                <input disabled="disabled" class="form-control" style="font-weight:normal !important" id="oldSubProcessLabel" />
+                            </div>
+                            <div class="form-group">
+                                <label>Process Detail</label>
+                                <textarea disabled="disabled" class="form-control" style="font-weight:normal !important" id="oldProcessDetailLabel"></textarea>
+                            </div>
+                            <div class="form-group">
+                                  <label>Violation</label>
+                                <input disabled="disabled" class="form-control" style="font-weight:normal !important" id="oldViolationLabel" />
+                                
+                            </div>
+                            <div class="form-group">
+                                 <label>Process Owner</label>
+                                <input disabled="disabled" class="form-control" style="font-weight:normal !important" id="oldProcessOwnerLabel" />
+                                    
+                            </div>
+                            <div class="form-group">
+                                <label>Role Responsible</label>
+
+                                <input disabled="disabled" class="form-control" style="font-weight:normal !important" id="oldRoleRespLabel" />
+                                   
+                            </div>
+                            <div class="form-group">
+                                 <label>Risk</label>
+                                <input disabled="disabled" class="form-control" style="font-weight:normal !important" id="oldRiskLabel" />
+                                
+                            </div>
+                            <div class="form-group">
+                                <label>Annexure</label>
+                                <input disabled="disabled" class="form-control" style="font-weight:normal !important" id="oldAnnexureLabel" />
+
+                            </div>                           
+                        </form>
+                    </div>
+                    <div class="col-md-6">
+                        <form>
+                            <h6 class="text-center"><b>Proposed Changes</b></h6>
+                            <div class="form-group">
+                              
+                                    <label>Process</label>
+                               
+                                    <select disabled="disabled" id="updatedChecklist" class="form-select form-control">
+                                        <option value="0" id="0" selected>--Select Checklist--</option>
+                                        @{
+                                            if (ViewData["ChecklistTypes"] != null)
+                                            {
+                                                foreach (var item in (dynamic)(ViewData["ChecklistTypes"]))
+                                                {
+                                                    <option value="@item.T_ID" id="@item.T_ID">@item.HEADING</option>
+
+                                                }
+                                            }
+                                        }
+
+                                    </select>
+                              
+                            </div>
+                            <div class="form-group">
+                               
+                                    <label>Sub Process</label>
+                               
+                                    <select id="updatedSubChecklist" class="form-select form-control">
+                                        <option value="0" id="0" selected>--Select Sub-Checklist--</option>
+
+                                    </select>
+                                
+                            </div>
+                            <div class="form-group">
+
+                                <label>Process Detail</label>
+
+                                <textarea id="updatedProcDetailHeading" class="form-control"></textarea>
+
+                            </div>
+                            <div class="form-group">
+                              
+                                    <label>Violation</label>
+                              
+                                    <select id="updatedViolationlist" class="form-select form-control">
+                                        <option selected="selected" value="0" id="0">--Select Control Violation--</option>
+                                        @{
+                                            if (ViewData["ViolationsList"] != null)
+                                            {
+
+                                                foreach (var item in (dynamic)(ViewData["ViolationsList"]))
+                                                {
+                                                    <option max-number="@item.MAX_NUMBER" id="@item.ID" value="@item.ID">@item.V_NAME</option>
+                                                }
+
+                                            }
+                                        }
+
+                                    </select>
+                               
+                            </div>
+                            <div class="form-group">
+                              
+                                    <label>Process Owner</label>
+                              
+                                    <select id="updatedProcOwnerlist" class="form-select form-control">
+                                        <option selected="selected" value="0" id="0">--Select Control Violation--</option>
+                                        @{
+                                            if (ViewData["ProcOwnerList"] != null)
+                                            {
+
+                                                foreach (var item in (dynamic)(ViewData["ProcOwnerList"]))
+                                                {
+                                                    <option id="@item.ENTITY_ID" value="@item.ENTITY_ID">@item.NAME</option>
+                                                }
+
+                                            }
+                                        }
+
+                                    </select>
+                              
+                            </div>
+                            <div class="form-group">
+                               
+                                    <label>Role Responsible</label>
+                              
+                                    <select id="updatedRoleResplist" class="form-select form-control">
+                                        <option selected="selected" value="0" id="0">--Select Control Violation--</option>
+                                        @{
+                                            if (ViewData["RoleRespList"] != null)
+                                            {
+
+                                                foreach (var item in (dynamic)(ViewData["RoleRespList"]))
+                                                {
+                                                    <option id="@item.DESIGNATIONCODE" value="@item.DESIGNATIONCODE">@item.DESCRIPTION</option>
+                                                }
+
+                                            }
+                                        }
+
+                                    </select>
+                             
+                            </div>
+                            <div class="form-group">
+                              
+                                    <label>Risk</label>
+                              
+                                    <select id="updatedRisklist" class="form-select form-control">
+                                        <option selected="selected" value="0" id="0">--Select Control Violation--</option>
+                                        @{
+                                            if (ViewData["RiskList"] != null)
+                                            {
+
+                                                foreach (var item in (dynamic)(ViewData["RiskList"]))
+                                                {
+                                                    <option id="@item.R_ID" value="@item.R_ID">@item.DESCRIPTION</option>
+                                                }
+
+                                            }
+                                        }
+
+                                    </select>
+                              
+                            </div>
+                            <div class="form-group">
+                              
+                                    <label>Annexure</label>
+                                
+                                    <select id="updatedAnnexlist" class="form-select form-control">
+                                        <option selected="selected" value="0" id="0">--Select Annexure--</option>
+                                        @{
+                                            if (ViewData["AnnexList"] != null)
+                                            {
+
+                                                foreach (var item in (dynamic)(ViewData["AnnexList"]))
+                                                {
+                                                    <option id="@item.ID" value="@item.ID">@item.ANNEX</option>
+                                                }
+
+                                            }
+                                        }
+
+                                    </select>
+                               
+                            </div>
+                           
+                        </form>
+                      
+                    </div>
+                </div>
+                
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button data-onclick="updateSubProcess();" type="button" data-bs-dismiss="modal" class="btn btn-success">Submit Changes</button>
+
+            </div>
+        </div>
+    </div>
+</div>
+<script src="~/js/csp/Views_Setup_manage_checklist_detail.js?v=1"></script>

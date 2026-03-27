@@ -46,6 +46,11 @@ namespace AIS.Controllers
                 return RedirectToAction("Index", "Login");
                 }
 
+            if (!HasPageAccess(user, "/Setup/Checklist_Dashboard"))
+                {
+                return RedirectToAction("Index", "PageNotFound");
+                }
+
             var model = BuildChecklistDashboardViewModel(user, stepKey);
             if (!model.VisibleSteps.Any())
                 {
@@ -70,6 +75,11 @@ namespace AIS.Controllers
 
             if (!TryGetRequestedStep(BuildChecklistDashboardViewModel(user, stepKey), stepKey, out var step, out var errorResult))
                 {
+                if (errorResult is ForbidResult)
+                    {
+                    return CreateStepAccessDeniedResult();
+                    }
+
                 return errorResult;
                 }
 
@@ -738,12 +748,12 @@ namespace AIS.Controllers
             {
             var steps = new List<WorkflowDashboardStepModel>
                 {
-                CreateDashboardStep(1, "MANAGE_CHECKLIST", "Manage Checklist", "/Setup/manage_Checklist", "~/Views/Setup/manage_checklist.cshtml"),
-                CreateDashboardStep(2, "MANAGE_SUB_CHECKLIST", "Manage Sub Checklist", "/Setup/manage_sub_Checklist", "~/Views/Setup/manage_sub_checklist.cshtml"),
-                CreateDashboardStep(3, "MANAGE_CHECKLIST_DETAIL", "Manage Checklist Detail", "/Setup/manage_checklist_detail", "~/Views/Setup/manage_checklist_detail.cshtml"),
-                CreateDashboardStep(4, "REVIEW_AUDIT_CHECKLIST", "Review Audit Checklist", "/AdministrationPanel/review_audit_checklist", "~/Views/AdministrationPanel/review_audit_checklist.cshtml"),
-                CreateDashboardStep(5, "SUB_PROCESS_AUTHORIZE", "Sub Process Authorize", "/Setup/sub_process_authorize", "~/Views/Setup/sub_process_authorize.cshtml"),
-                CreateDashboardStep(6, "PROCESS_DETAIL_AUTHORIZE", "Process Detail Authorize", "/Setup/process_detail_authorize", "~/Views/Setup/process_detail_authorize.cshtml")
+                CreateDashboardStep(1, "MANAGE_CHECKLIST", "Manage Checklist", "/Setup/manage_Checklist", "~/Views/Setup/DashboardPartials/_ManageChecklist.cshtml"),
+                CreateDashboardStep(2, "MANAGE_SUB_CHECKLIST", "Manage Sub Checklist", "/Setup/manage_sub_Checklist", "~/Views/Setup/DashboardPartials/_ManageSubChecklist.cshtml"),
+                CreateDashboardStep(3, "MANAGE_CHECKLIST_DETAIL", "Manage Checklist Detail", "/Setup/manage_checklist_detail", "~/Views/Setup/DashboardPartials/_ManageChecklistDetail.cshtml"),
+                CreateDashboardStep(4, "REVIEW_AUDIT_CHECKLIST", "Review Audit Checklist", "/AdministrationPanel/review_audit_checklist", "~/Views/AdministrationPanel/DashboardPartials/_ReviewAuditChecklist.cshtml"),
+                CreateDashboardStep(5, "SUB_PROCESS_AUTHORIZE", "Sub Process Authorize", "/Setup/sub_process_authorize", "~/Views/Setup/DashboardPartials/_SubProcessAuthorize.cshtml"),
+                CreateDashboardStep(6, "PROCESS_DETAIL_AUTHORIZE", "Process Detail Authorize", "/Setup/process_detail_authorize", "~/Views/Setup/DashboardPartials/_ProcessDetailAuthorize.cshtml")
                 };
 
             foreach (var step in steps)
@@ -818,6 +828,18 @@ namespace AIS.Controllers
                 }
 
             return true;
+            }
+
+        private bool HasPageAccess(SessionUser user, string pagePath)
+            {
+            var pageId = _pageIdResolver?.ResolvePageId(pagePath) ?? 0;
+            return pageId > 0 && _permissionService.HasViewPermission(user, pageId);
+            }
+
+        private PartialViewResult CreateStepAccessDeniedResult()
+            {
+            Response.StatusCode = 403;
+            return PartialView("~/Views/Shared/_DashboardStepAccessDenied.cshtml");
             }
 
         private void PopulateChecklistDashboardStepViewData(string stepKey, int pageId)

@@ -1,0 +1,59 @@
+@{ Layout = null; }
+
+<div class="col-md-12" style="margin-top:20px;">
+    <h5>Menu Assignment</h5>
+    <div class="row col-md-12">
+        <div class="col-md-2 mt-2">
+            <label class="font-weight-normal">Menu</label>
+        </div>
+        <div class="col-md-10 mt-2">
+            <select id="menuSelectionBox" class="form-select form-control" aria-label="Default select example">
+                <option value="0" selected>--Select Menu--</option>
+                @{
+                    if (ViewData["MenuList"] != null)
+                    {
+                        foreach (var item in (dynamic)(ViewData["MenuList"]))
+                        {
+                            <option value="@item.Menu_Id" id="@item.Menu_Id">@item.Menu_Name</option>
+                        }
+                    }
+                }
+            </select>
+        </div>
+    </div>
+    <div class="row col-md-12 pagesBlock d-none">
+        <div class="col-md-2 mt-2">
+            <label class="font-weight-normal">Pages</label>
+        </div>
+        <div class="col-md-10 mt-2">
+            <div class="row col-md-12">
+                <div style="margin-left:auto;">
+                    <input class="menu_page_selectAll" type="checkbox" /> <label class="font-weight-normal ml-2">Select All</label>
+                </div>
+            </div>
+            <div id="menuPagesArea" class="row col-md-12">
+                @{
+                    if (ViewData["MenuPagesList"] != null)
+                    {
+
+                        foreach (var item in (dynamic)(ViewData["MenuPagesList"]))
+                        {
+
+                            <div class="col-md-6">
+                                <input id="pagemenuitem_@item.Id" class="menu_page_tick" type="checkbox" /> <label class="font-weight-normal ml-2">@item.Page_Name</label>
+                            </div>
+                        }
+                    }
+                }
+            </div>
+        </div>
+    </div>
+    <div class="row col-md-12 mt-4">
+        <div style="margin-left:auto;">
+            <button class="btn btn-secondary">Cancel</button>
+            <button id="btnSaveMenuAssignment" class="btn btn-danger ml-2 js-menu-assignment-save">Save Changes</button>
+        </div>
+    </div>
+
+</div>
+<script src="~/js/csp/Views_AdministrationPanel_menu_assignment.js?v=1"></script>

@@ -1,0 +1,125 @@
+@{ Layout = null; }
+
+<div class="row mt-3">
+    <h2 style="color: #be0e43">Menu Page Management</h2>
+</div>
+
+<div class="row col-md-12 mt-3">
+    <button data-onclick="setupNewMenuPage();" class="btn btn-danger offset-md-10 col-md-2">Add New</button>
+</div>
+
+<div class="row col-md-12 mt-3">
+ 
+     <h5>Menu </h5>
+        <select data-onchange="getSubMenus();" id="menuDropDownField" class="form-control">
+                            <option value="0">--Select Menu--</option>
+                            @if (ViewData["MenuList"] != null)
+                            {
+                                foreach (var item in (dynamic)(ViewData["MenuList"]))
+                                {
+                                    <option value="@item.Menu_Id">@item.Menu_Name</option>
+                                }
+                            }
+                        </select>
+
+</div>
+
+<div class="row col-md-12 mt-3">
+
+    <h5>Sub Menu </h5>
+    <select id="subMenuDropDownField" class="form-control">
+        <option value="0">--All--</option>       
+    </select>
+
+</div>
+<div class="row col-md-12 mt-3">
+    <button data-onclick="getMenuPages();"  class="btn btn-primary offset-md-10 col-md-2">Find</button>
+</div>
+
+<div class="row col-md-12 mt-3">
+    <table id="listOfMenuPages" class="table table-hover table-bordered table-hover mt-3 table-striped">
+        <thead style="background-color: #19875478 !important;">
+            <tr>
+                <th class="col-md-1">Sr No.</th>
+                <th class="col-md-1">Sub Menu</th>
+                <th class="col-md-1">Page Name</th>
+                <th class="col-md-2">Page Path</th>
+                <th class="col-md-1">Page Order</th>
+                <th class="col-md-1">Page Status</th>
+                <th class="col-md-1">Hide Menu</th>
+                <th class="col-md-1">Action</th>
+            </tr>
+        </thead>
+        <tbody>
+        </tbody>
+    </table>
+</div>
+
+
+
+<div id="menuPageDetailModel" class="modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-dialog-scrollable modal-xl" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Menu Page Detail</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form>
+                    
+                    <div class="form-group">
+                        <label>Menu</label>
+                        <select data-onchange="getSubMenusForModel();" id="page_menu_field" class="form-control">
+                            <option value="0">--Select Menu--</option>
+                            @if (ViewData["MenuList"] != null)
+                            {
+                                foreach (var item in (dynamic)(ViewData["MenuList"]))
+                                {
+                                    <option value="@item.Menu_Id">@item.Menu_Name</option>
+                                }
+                            }
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Sub Menu</label>
+                        <select id="page_menu_sub_field" class="form-control">
+                            <option value="0">--All--</option>
+                         
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Page Name</label>
+                        <input class="form-control alnum-only" id="page_name_field" data-allow-amp="true" data-allow-question="true" data-maxlen="150" />
+                    </div>
+                    <div class="form-group">
+                        <label>Page Path</label>
+                        <input class="form-control" id="page_path_field" data-validate="plain-text" />
+                    </div>
+                      <div class="form-group">
+                        <label>Page Order</label>
+                        <input class="form-control alnum-only" id="page_order_field" data-allow-amp="false" data-allow-question="false" data-maxlen="5" />
+                    </div>
+                    <div class="form-group">
+                        <label>Page Status</label>
+                        <input class="form-control alnum-only" id="page_status_field" data-allow-amp="false" data-allow-question="false" data-maxlen="10" />
+                    </div>
+                      <div class="form-group">
+                        <label>Hide Menu</label>
+                        <select class="form-control" id="page_hide_menu_field">
+                            <option value="0">Visible</option>
+                            <option value="1">Hide</option>
+                        </select>
+                    </div>
+                  
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" data-onclick="publishUpdateMenuPageChanges();" class="btn btn-danger">Save Changes</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+<script src="~/js/csp/Views_AdministrationPanel_pages_management.js?v=1"></script>

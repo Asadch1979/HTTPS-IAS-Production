@@ -1,0 +1,205 @@
+@{ Layout = null; }
+
+<style type="text/css">
+
+    .listItems:hover {
+        color: blue;
+        text-decoration: underline;
+    }
+
+    .action:hover {
+        font-size: 110%;
+        cursor: pointer;
+        font-weight: 600;
+    }
+</style>
+
+
+
+<div class="col-md-12" style="margin-top:20px;">
+    <h3 style=" display:block;color: #be0e43">List of Checklist Details to Authorize </h3>
+    <div class="row">
+        <div class="col-md-12">
+            <input class="form-control" id="searchTableRecord" type="text" placeholder="Search..">
+        </div>
+    </div>
+    <br>
+    <table id="listOfProcTransactions" class="table table-hover table-bordered table-hover mt-3 table-striped">
+            <thead style="background-color: #19875478 !important; ">
+            <tr>
+                <th width="100">Process</th>
+                <th width="100">Sub Process</th>
+                <th width="100">Checklist Detail</th>              
+                <th width="100">Status</th>
+                <th width="100">Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            @{
+                if (ViewData["TransactionsList"] != null)
+                {
+                    foreach (var item in (dynamic)(ViewData["TransactionsList"]))
+                    {
+
+                        <tr id="div_@item.ID">
+                            <td>
+                                <p class="fw-normal mb-1">@item.PROCESS_NAME</p>
+                            </td>
+                            <td>
+                                <p class="fw-normal mb-1">@item.SUB_PROCESS_NAME</p>
+                            </td>
+                            <td>
+                                <p class="fw-normal mb-1">@item.DESCRIPTION</p>
+                            </td>   
+                          
+                            <td>
+                                <p class="fw-normal mb-1">@item.PROCESS_STATUS</p>
+                            </td>
+                            <td>
+                                <button type="button" class="btn text-danger btn-sm btn-rounded" data-onclick="recommendReferProcTransaction('@item.ID');">
+                                    Details
+                                </button>
+                            </td>
+                        </tr>
+                    }
+                }}
+        </tbody>
+    </table>
+</div>
+
+
+<div id="recommendReferProcTransactionModal" class="modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-xl" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">Transaction Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="row col-md-12">
+                    <div class="col-md-6">
+                        <form>
+                            <h6 class="text-center"><b>Existing Details</b></h6>
+                            <div class="form-group">
+                                <label>Process</label>
+                                <input disabled="disabled" class="form-control" style="font-weight:normal !important" id="oldProcessLabel" />
+                            </div>
+                            <div class="form-group">
+                                <label>Sub Process</label>
+                                <input disabled="disabled" class="form-control" style="font-weight:normal !important" id="oldSubProcessLabel" />
+                            </div>
+                            <div class="form-group">
+                                <label>Process Detail</label>
+                                <textarea disabled="disabled" class="form-control" style="font-weight:normal !important" id="oldProcessDetailLabel"></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label>Violation</label>
+                                <input disabled="disabled" class="form-control" style="font-weight:normal !important" id="oldViolationLabel" />
+
+                            </div>
+                            <div class="form-group">
+                                <label>Process Owner</label>
+                                <input disabled="disabled" class="form-control" style="font-weight:normal !important" id="oldProcessOwnerLabel" />
+
+                            </div>
+                            <div class="form-group">
+                                <label>Role Responsible</label>
+
+                                <input disabled="disabled" class="form-control" style="font-weight:normal !important" id="oldRoleRespLabel" />
+
+                            </div>
+                            <div class="form-group">
+                                <label>Risk</label>
+                                <input disabled="disabled" class="form-control" style="font-weight:normal !important" id="oldRiskLabel" />
+
+                            </div>
+                            <div class="form-group">
+                                <label>Annexure</label>
+                                <input disabled="disabled" class="form-control" style="font-weight:normal !important" id="oldAnnexureLabel" />
+
+                            </div>
+
+                        </form>
+                    </div>
+                    <div class="col-md-6">
+                        <form>
+                            <h6 class="text-center"><b>Proposed Changes</b></h6>
+                            <div class="form-group">
+                                <label for="viewerMainProcNameModalField">Process</label>
+                                <input type="text" disabled class="form-control" id="viewerMainProcNameModalField" />
+
+                            </div>
+                            <div class="form-group">
+                                <label for="viewerNameModalField">Sub Process</label>
+                                <input type="text" disabled class="form-control" id="viewerNameModalField" />
+
+                            </div>
+                            <div class="form-group">
+                                <label for="viewerDescModalField">Process Detail</label>
+                                <textarea class="form-control" disabled id="viewerDescModalField"></textarea>
+
+                            </div>
+                            <div class="form-group">
+                                <label for="viewerViolationNameModalField">Violation</label>
+                                <input class="form-control" disabled id="viewerViolationNameModalField" />
+
+                            </div>
+                            <div class="form-group">
+                                <label for="viewerControlModalField">Process Owner</label>
+                                <input type="text" disabled class="form-control" id="viewerControlModalField" />
+                            </div>
+                            <div class="form-group">
+                                <label for="viewerDivModalField">Role Responsible</label>
+                                <input type="text" disabled class="form-control" id="viewerDivModalField" />
+                            </div>
+                            <div class="form-group">
+                                <label for="viewerRiskModalField">Risk</label>
+                                <input type="text" disabled class="form-control" id="viewerRiskModalField" />
+                            </div>
+                            <div class="form-group">
+                                <label for="viewerRiskModalField">Annexure</label>
+                                <input type="text" disabled class="form-control" id="viewerAnnexModalField" />
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button data-onclick="refferedBackProcTransaction();" type="button" class="btn btn-danger">Refer Back</button>
+                <button data-onclick="recommendProcTransaction();" type="button" class="btn btn-success">Authorize</button>
+
+            </div>
+        </div>
+    </div>
+</div>
+<div id="commentsBox" class="modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">Comments</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form>
+                    <div class="form-group">
+                        <label for="commentAreaInCommentsBox">Comments</label>
+                        <textarea class="form-control" rows="4" id="commentAreaInCommentsBox" placeholder="Enter Comments here.."></textarea>
+
+
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button id="finalCommentsButtonSave" type="button" class="btn btn-danger">Submit</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="~/js/csp/Views_Setup_process_detail_authorize.js?v=1"></script>

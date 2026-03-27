@@ -1,0 +1,98 @@
+@{ Layout = null; }
+
+<div class="container">
+    <div class="row mt-3">
+        <div class="col-md-4">
+            <label>Entity Type</label>
+            <select id="entTypeField" class="form-select" data-onchange="loadEntities()">
+                <option id="0" value="0" selected>--Select Entity--</option>
+                @{
+                    if (ViewData["AuditEntitiesType"] != null)
+                    {
+                        foreach (var item in (dynamic)(ViewData["AuditEntitiesType"]))
+                        {
+                            <option value="@item.AUTID" id="@item.AUTID">@item.ENTITYTYPEDESC</option>
+                        }
+                    }
+                }
+            </select>
+        </div>
+    </div>
+    <div class="row col-md-12 mt-3">
+        <table id="entitiesGrid" class="table table-bordered table-hover table-striped">
+            <thead>
+                <tr style="background-color:#19875478;">
+                    <th>ENTITY ID</th>
+                    <th>CODE</th>
+                    <th>NAME</th>
+                    <th>Active</th>
+                    <th>AUDIT Zone</th>
+                    <th>AUDITABLE</th>
+                    <th>ADDRESS</th>
+                    <th>TELEPHONE</th>
+                    <th>EMAIL ADDRESS</th>
+                    <th>RISK</th>
+                    <th>SIZE</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+</div>
+<div id="updateEntityModal" class="modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">Update Entity</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group"><label>ID</label><input id="modalEntityId" type="text" class="form-control" readonly /></div>
+                <div class="form-group"><label>Code</label><input id="modalCode" type="text" class="form-control" /></div>
+                <div class="form-group"><label>Name</label><input id="modalName" type="text" class="form-control" /></div>
+                <div class="form-group"><label>Active</label><input id="modalActive" type="text" class="form-control" /></div>
+                <div class="form-group"><label>Audit</label><input id="modalAuditBy" type="text" class="form-control" /></div>
+                <div class="form-group"><label>Auditable</label><input id="modalAuditable" type="text" class="form-control" /></div>
+                <div class="form-group"><label>Address</label><input id="modalAddress" type="text" class="form-control" /></div>
+                <div class="form-group"><label>Telephone</label><input id="modalTelephone" type="text" class="form-control" /></div>
+                <div class="form-group"><label>Email</label><input id="modalEmail" type="text" class="form-control" /></div>
+                <div class="form-group">
+                    <label>Risk</label>
+                    <select id="modalRisk" class="form-select">
+                        <option value="0">--Select Risk--</option>
+                        @{
+                            if (ViewData["RiskList"] != null)
+                            {
+                                foreach (var r in (dynamic)ViewData["RiskList"])
+                                {
+                                    <option value="@r.R_ID">@r.DESCRIPTION</option>
+                                }
+                            }
+                        }
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Size</label>
+                    <select id="modalSize" class="form-select">
+                        <option value="0">--Select Size--</option>
+                        @{
+                            if (ViewData["BranchSizesList"] != null)
+                            {
+                                foreach (var s in (dynamic)ViewData["BranchSizesList"])
+                                {
+                                    <option value="@s.BR_SIZE_ID">@s.DESCRIPTION</option>
+                                }
+                            }
+                        }
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-success" data-onclick="saveEntity();" data-bs-dismiss="modal">Save</button>
+            </div>
+        </div>
+    </div>
+</div>
+<script src="~/js/csp/Views_AdministrationPanel_update_auditee_entities.js?v=1"></script>

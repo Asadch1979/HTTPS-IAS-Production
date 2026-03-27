@@ -1,0 +1,590 @@
+@{ Layout = null; }
+
+<div class="row col-md-12">
+    <h3 style=" display:block;color: #be0e43">Entity Addition</h3>
+</div>
+
+<div class="col-md-12 row mt-3">
+    <h3 class="text-center" style="display:block;color:chocolate ;">AIS Entities</h3>
+
+    <div class="row col-md-12 mt-3">
+        <div class="col-md-6">
+            <div class="col-md-12 row">
+                <div class="col-md-3">
+                    <label>Entity Name</label>
+                </div>
+                <div class="col-md-7">
+                    <input class="form-control" id="entityNameTextBar" type="text" />
+                </div>
+                <div class="col-md-2">
+                    <button data-onclick="getEntityDetailsByName();" class="btn btn-danger w-100"> Find</button>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="col-md-12 row">
+                <div class="col-md-3">
+                    <label>Entity Code</label>
+                </div>
+                <div class="col-md-7">
+                    <input id="entityCodeTextBar" class="form-control" type="text" />
+                </div>
+                <div class="col-md-2">
+                    <button data-onclick="getEntityDetailsByCode();" class="btn btn-danger w-100"> Find</button>
+                </div>
+            </div>
+        </div>
+        <div class="mt-3 col-md-12">
+            <table id="entity_find_panel" class="table table-hover table-bordered table-hover mt-3 table-striped">
+                <thead style="background-color: #19875478 !important;">
+                    <tr>
+                        <th class="col-md-auto">Sr. No.</th>
+                        <th class="col-md-auto">Entity ID</th>
+                        <th class="col-md-auto">Entity Code</th>
+                        <th class="col-md-auto">Entity Name </th>
+                        <th class="col-md-auto">Entity Type ID</th>
+                        <th class="col-md-auto">Audit By</th>
+                        <th class="col-md-auto">Auditable</th>
+                        <th class="col-md-auto">Status</th>
+                        <th class="col-md-auto"></th>
+                        <th class="col-md-auto"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                </tbody>
+            </table>
+            <button data-onclick="clearHREntitiesPanel();" class="btn btn-sm btn-success offset-md-11 col-md-1 mt-1"> Clear Table</button>
+        </div>
+    </div>
+</div>
+
+<div class="row col-md-12 mt-3">
+    <div class="col-md-12 row">
+        <div class="col-md-2">
+            <label>Old/From AIS Entity ID</label>
+        </div>
+        <div class="col-md-4">
+            <input class="form-control" id="inputFromEntityId" type="text" placeholder="Enter Old/From AIS Entity" />
+        </div>
+        <div class="col-md-4">
+            <input class="form-control" id="inputToEntityId" type="text" placeholder="Enter New/To AIS Entity" />
+        </div>
+        <div class="col-md-2">
+            <button data-onclick="getFromEntityDetail();" class="btn btn-danger">Summary Details</button>
+        </div>
+
+    </div>
+
+</div>
+
+<div id="summaryPanel" class="row col-md-12 mt-3">
+    <div class="mt-3 col-md-12">
+        <table id="summary_table" class="table table-hover table-bordered table-hover mt-3 table-striped">
+            <thead style="background-color: #19875478 !important;">
+                <tr>
+                    <th class="col-md-auto"></th>
+                    <th class="col-md-auto">Old/From AIS Entity</th>
+                    <th class="col-md-auto">New/To AIS Entity</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Entity Name</td>
+                    <td id="entityNameFrom"> </td>
+                    <td id="entityNameTo"> </td>
+
+                </tr>
+                <tr>
+                    <td>Entity Size</td>
+                    <td id="entitySizeFrom"> </td>
+                    <td id="entitySizeTo"> </td>
+
+                </tr>
+                <tr>
+                    <td>Entity Risk</td>
+                    <td id="entityRiskFrom"> </td>
+                    <td id="entityRiskTo"> </td>
+
+                </tr>
+                <tr>
+                    <td>Engagement ID</td>
+                    <td id="engIDFrom"> </td>
+                    <td id="engIDTo"> </td>
+
+                </tr>
+                <tr>
+                    <td>Engagement Start Date</td>
+                    <td id="engStartFrom"> </td>
+                    <td id="engStartTo"> </td>
+
+                </tr>
+                <tr>
+                    <td>Engagement End Date</td>
+                    <td id="engEndFrom"> </td>
+                    <td id="engEndTo"> </td>
+
+                </tr>
+                <tr>
+                    <td>Total Para</td>
+                    <td id="totParaFrom"> </td>
+                    <td id="totParaTo"> </td>
+
+                </tr>
+                <tr>
+                    <td>Legacy Para</td>
+                    <td id="totLegFrom"> </td>
+                    <td id="totLegTo"> </td>
+
+                </tr>
+                <tr>
+                    <td>Legacy Para Open</td>
+                    <td id="totLegOpenFrom"> </td>
+                    <td id="totLegOpenTo"> </td>
+
+                </tr>
+                <tr>
+                    <td>Legacy Para Close</td>
+                    <td id="totLegCloseFrom"> </td>
+                    <td id="totLegCloseTo"> </td>
+
+                </tr>
+                <tr>
+                    <td>AIS Para</td>
+                    <td id="totAISFrom"> </td>
+                    <td id="totAISTo"> </td>
+
+                </tr>
+                <tr>
+                    <td>AIS Para Open</td>
+                    <td id="totAISOpenFrom"> </td>
+                    <td id="totAISOpenTo"> </td>
+
+                </tr>
+                <tr>
+                    <td>AIS Para Close</td>
+                    <td id="totAISCloseFrom"> </td>
+                    <td id="totAISCloseTo"> </td>
+
+                </tr>
+                <tr>
+                    <td>Compliance Submitted</td>
+                    <td id="compFrom"> </td>
+                    <td id="compTo"> </td>
+
+                </tr>
+            </tbody>
+        </table>
+
+    </div>
+</div>
+
+<div class="row col-md-12 mt-3">
+    <button class="col-md-3 offset-md-4 btn btn-danger" data-onclick="proceedToEntityShifting();">Proceed to Shift Entity</button>
+    <button class="col-md-4 offset-md-1 btn btn-danger" data-onclick="proceedConvToIslamic();">Convert Conventional Branch to Islamic</button> 
+
+</div>
+
+
+
+<div id="buttonsPanel" class="row col-md-12 mt-3 d-none">
+    <center class="w-100 row col-md-12">
+        <div class="col-md-2">
+            <button class="btn btn-primary col-md-12">Update Plan</button>
+        </div>
+        <div class="col-md-2">
+            <button class="btn btn-success col-md-12">Update Engagement</button>
+        </div>
+        <div class="col-md-2">
+            <button class="btn btn-danger col-md-12">Move Legacy Para</button>
+        </div>
+        <div class="col-md-2">
+            <button class="btn btn-warning col-md-12">Move AIS Para</button>
+        </div>
+        <div class="col-md-2">
+            <button class="btn btn-info col-md-12">Move Compliance</button>
+        </div>
+    </center>
+</div>
+
+
+
+<div id="updateEntityModal" class="modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-xl" style="min-width:90%" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">Update AIS Entity</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form>
+                    <div class="row col-md-12 mt-3">
+                        <div class="row col-md-4">
+                            <label>Entity Type</label>
+                        </div>
+                        <div class="row col-md-8">
+                            <select id="entTypeField" class="form-select form-control">
+                                <option value="0" id="0" selected>--Select Entity--</option>
+                                @{
+                                    if (ViewData["AuditEntitiesType"] != null)
+                                    {
+                                        foreach (var item in (dynamic)(ViewData["AuditEntitiesType"]))
+                                        {
+                                            <option value="@item.AUTID">@item.ENTITYTYPEDESC</option>
+                                        }
+                                    }
+                                }
+                            </select>
+                        </div>
+                    </div>
+                    <div class="row col-md-12 mt-3">
+                        <div class="row col-md-4">
+                            <label>Entity Code</label>
+                        </div>
+                        <div class="row col-md-8">
+                            <input id="entCodeField" class="form-control" type="text" />
+                        </div>
+                    </div>
+                    <div class="row col-md-12 mt-3">
+                        <div class="row col-md-4">
+                            <label>Entity Name</label>
+                        </div>
+                        <div class="row col-md-8">
+                            <input id="entNameField" class="form-control" type="text" />
+                        </div>
+                    </div>
+                    <div class="row col-md-12 mt-3">
+                        <div class="row col-md-4">
+                            <label>Entity Description</label>
+                        </div>
+                        <div class="row col-md-8">
+                            <textarea class="form-control" id="entDescField"> </textarea>
+                        </div>
+                    </div>
+
+                    <div class="row col-md-12 mt-3">
+                        <div class="row col-md-4">
+                            <label>Is Active</label>
+                        </div>
+                        <div class="row col-md-8">
+                            <select id="entActiveField" class="form-control">
+                                <option value="Y">Yes</option>
+                                <option value="N">No</option>
+                            </select>
+
+                        </div>
+                    </div>
+
+                    <div class="row col-md-12 mt-3">
+                        <div class="row col-md-4">
+                            <label>Auditable</label>
+                        </div>
+                        <div class="row col-md-8">
+                            <select id="entAuditableField" class="form-control">
+                                <option value="Y">Yes</option>
+                                <option value="N">No</option>
+                            </select>
+
+                        </div>
+                    </div>
+
+                    <div class="row col-md-12 mt-3">
+                        <div class="row col-md-4">
+                            <label>Audit By</label>
+                        </div>
+                        <div class="row col-md-8">
+                            <select id="entAuditbyField" class="form-control">
+                                <option value="0" id="0" selected>--Select Entity--</option>
+                                @{
+                                    if (ViewData["Audit_By"] != null)
+                                    {
+                                        foreach (var item in (dynamic)(ViewData["Audit_By"]))
+                                        {
+                                            <option value="@item.AUTID">@item.ENTITYTYPEDESC</option>
+                                        }
+                                    }
+                                }
+
+                            </select>
+
+                        </div>
+                    </div>
+
+
+
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button data-onclick="saveUpdateChangesInAISEntity();" type="button" data-bs-dismiss="modal" class="btn btn-success">Save Changes</button>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<div id="addEntityModal" class="modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-xl" style="min-width:90%" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">Update AIS Entity</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form>
+                    <div class="row col-md-12 mt-3">
+                        <div class="row col-md-4">
+                            <label>Entity Type</label>
+                        </div>
+                        <div class="row col-md-8">
+                            <select id="addentTypeField" class="form-select form-control">
+                                <option value="0" id="0" selected>--Select Entity--</option>
+                                @{
+                                    if (ViewData["AuditEntitiesType"] != null)
+                                    {
+                                        foreach (var item in (dynamic)(ViewData["AuditEntitiesType"]))
+                                        {
+                                            <option value="@item.AUTID">@item.ENTITYTYPEDESC</option>
+                                        }
+                                    }
+                                }
+                            </select>
+                        </div>
+                    </div>
+                    <div class="row col-md-12 mt-3">
+                        <div class="row col-md-4">
+                            <label>Entity Code</label>
+                        </div>
+                        <div class="row col-md-8">
+                            <input id="addentCodeField" class="form-control" type="text" />
+                        </div>
+                    </div>
+                    <div class="row col-md-12 mt-3">
+                        <div class="row col-md-4">
+                            <label>Entity Name</label>
+                        </div>
+                        <div class="row col-md-8">
+                            <input id="addentNameField" class="form-control" type="text" />
+                        </div>
+                    </div>
+                    <div class="row col-md-12 mt-3">
+                        <div class="row col-md-4">
+                            <label>Entity Description</label>
+                        </div>
+                        <div class="row col-md-8">
+                            <textarea class="form-control" id="addentDescField"> </textarea>
+                        </div>
+                    </div>
+
+                    <div class="row col-md-12 mt-3">
+                        <div class="row col-md-4">
+                            <label>Is Active</label>
+                        </div>
+                        <div class="row col-md-8">
+                            <select id="addentActiveField" class="form-control">
+                                <option value="Y">Yes</option>
+                                <option value="N">No</option>
+                            </select>
+
+                        </div>
+                    </div>
+
+                    <div class="row col-md-12 mt-3">
+                        <div class="row col-md-4">
+                            <label>Auditable</label>
+                        </div>
+                        <div class="row col-md-8">
+                            <select id="addentAuditableField" class="form-control">
+                                <option value="Y">Yes</option>
+                                <option value="N">No</option>
+                            </select>
+
+                        </div>
+                    </div>
+
+                    <div class="row col-md-12 mt-3">
+                        <div class="row col-md-4">
+                            <label>Audit By</label>
+                        </div>
+                        <div class="row col-md-8">
+                            <select id="addentAuditbyField" class="form-control">
+                                <option value="0" id="0" selected>--Select Entity--</option>
+                                @{
+                                    if (ViewData["Audit_By"] != null)
+                                    {
+                                        foreach (var item in (dynamic)(ViewData["Audit_By"]))
+                                        {
+                                            <option value="@item.AUTID">@item.ENTITYTYPEDESC</option>
+                                        }
+                                    }
+                                }
+
+                            </select>
+
+                        </div>
+                    </div>
+
+
+
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button data-onclick="saveAddInAISEntity();" type="button" data-bs-dismiss="modal" class="btn btn-success">Save Changes</button>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<div id="updateMappingEntityModal" class="modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-xl" style="min-width:90%" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">Update AIS Entity</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form>
+                    <div class="row col-md-12 mt-3">
+                        <div class="row col-md-12">
+                            <label class="text-center">Existing Entity Mapping</label>
+                        </div>
+                        <div class="row col-md-12 mt-2">
+                            <table id="entity_mapping_panel" class="table table-hover table-bordered table-hover mt-3 table-striped">
+                                <thead style="background-color: #19875478 !important;">
+                                    <tr>
+
+                                        <th class="col-md-auto">Parent ID</th>
+                                        <th class="col-md-auto">Parent Type ID</th>
+                                        <th class="col-md-auto ">Parent Code</th>
+                                        <th class="col-md-auto">Parent Name</th>
+                                        <th class="col-md-auto">Child ID</th>
+                                        <th class="col-md-auto">Child Type ID</th>
+                                        <th class="col-md-auto">Child Code</th>
+                                        <th class="col-md-auto">Child Name </th>
+                                        <th class="col-md-auto"> Audit By</th>
+                                        <th class="col-md-auto">Relationship ID</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                </tbody>
+                            </table>
+
+                        </div>
+                    </div>
+
+                    <div class="row col-md-12 mt-3">
+                        <div class="row col-md-4">
+                            <label>Parent Entity Type</label>
+                        </div>
+                        <div class="row col-md-8">
+                            <select data-onchange="getOnChageList();" id="mapentTypeField" class="form-select form-control">
+                                <option value="0" id="0" selected>--Select Entity--</option>
+                                @{
+                                    if (ViewData["AuditEntitiesType"] != null)
+                                    {
+                                        foreach (var item in (dynamic)(ViewData["AuditEntitiesType"]))
+                                        {
+                                            <option value="@item.AUTID">@item.ENTITYTYPEDESC</option>
+                                        }
+                                    }
+                                }
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="row col-md-12 mt-3">
+                        <div class="row col-md-4">
+                            <label>Parent Entity</label>
+                        </div>
+                        <div class="row col-md-8">
+                            <select id="mapentParentField" class="form-control">
+                                <option value="0">--Select Parent Entity--</option>
+                            </select>
+
+                        </div>
+                    </div>
+
+
+                    <div class="row col-md-12 mt-3">
+                        <div class="row col-md-4">
+                            <label>RelationShip</label>
+                        </div>
+                        <div class="row col-md-8">
+                            <select id="mapentRelationshipField" class="form-select form-control">
+                                <option value="0" id="0" selected>--Select Entity--</option>
+                                @{
+                                    if (ViewData["RelationshipList"] != null)
+                                    {
+                                        foreach (var item in (dynamic)(ViewData["RelationshipList"]))
+                                        {
+                                            <option value="@item.ENTITY_REALTION_ID">@item.FIELD_NAME</option>
+                                        }
+                                    }
+                                }
+                            </select>
+                        </div>
+                    </div>
+
+
+
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button data-onclick="saveInsertAISEntityMapping();" type="button" data-bs-dismiss="modal" class="btn btn-danger">Add Mapping</button>
+                <button data-onclick="saveUpdateAISEntityMapping();" type="button" data-bs-dismiss="modal" class="btn btn-success">Update Mapping</button>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<div id="proceedToEntityShift" class="modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-xl" style="min-width:90%" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">Entity Shifting</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form>
+                    <div class="form-group">
+                        <label>Circular Reference No</label>
+                        <input id="circularRefNoField" type="text" class="form-control" />
+                    </div>
+
+                    <div class="form-group">
+                        <label>Circular Reference Date</label>
+                        <input id="circularRefDateField" type="date" class="form-control" />
+                    </div>
+
+                    <div class="form-group">
+                        <label>Circular Reference Attachment</label>
+                        <input id="circularRefField" type="file" class="form-control" />
+                    </div>
+
+
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button data-onclick="saveInsertAISEntityShifting();" type="button" data-bs-dismiss="modal" class="btn btn-danger">Submit</button>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="~/js/csp/Views_AdministrationPanel_entity_shifting.js?v=1"></script>

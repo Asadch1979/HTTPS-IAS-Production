@@ -50,6 +50,11 @@ namespace AIS.Controllers
                 return RedirectToAction("Index", "Login");
                 }
 
+            if (!HasPageAccess(user, "/AdministrationPanel/User_Dashboard"))
+                {
+                return RedirectToAction("Index", "PageNotFound");
+                }
+
             var model = BuildUserDashboardViewModel(user, stepKey);
             if (!model.VisibleSteps.Any())
                 {
@@ -74,6 +79,11 @@ namespace AIS.Controllers
 
             if (!TryGetRequestedStep(BuildUserDashboardViewModel(user, stepKey), stepKey, out var step, out var errorResult))
                 {
+                if (errorResult is ForbidResult)
+                    {
+                    return CreateStepAccessDeniedResult();
+                    }
+
                 return errorResult;
                 }
 
@@ -94,6 +104,11 @@ namespace AIS.Controllers
             if (!sessionHandler.TryGetUser(out var user) || user == null)
                 {
                 return RedirectToAction("Index", "Login");
+                }
+
+            if (!HasPageAccess(user, "/AdministrationPanel/Entity_Dashboard"))
+                {
+                return RedirectToAction("Index", "PageNotFound");
                 }
 
             var model = BuildEntityDashboardViewModel(user, stepKey);
@@ -120,6 +135,11 @@ namespace AIS.Controllers
 
             if (!TryGetRequestedStep(BuildEntityDashboardViewModel(user, stepKey), stepKey, out var step, out var errorResult))
                 {
+                if (errorResult is ForbidResult)
+                    {
+                    return CreateStepAccessDeniedResult();
+                    }
+
                 return errorResult;
                 }
 
@@ -1355,12 +1375,12 @@ namespace AIS.Controllers
             {
             return new List<WorkflowDashboardStepModel>
                 {
-                CreateDashboardStep(1, "PAGES_MANAGEMENT", "Pages Management", "/AdministrationPanel/pages_management", "~/Views/AdministrationPanel/pages_management.cshtml"),
-                CreateDashboardStep(2, "MENU_ASSIGNMENT", "Menu Assignment", "/AdministrationPanel/menu_assignment", "~/Views/AdministrationPanel/menu_assignment.cshtml"),
-                CreateDashboardStep(3, "SUB_MENU_MANAGEMENT", "Sub Menu Management", "/AdministrationPanel/sub_menu_management", "~/Views/AdministrationPanel/sub_menu_management.cshtml"),
-                CreateDashboardStep(4, "GROUP_ROLE_ASSIGNMENT", "Group Role Assignment", "/AdministrationPanel/group_role_assignment", "~/Views/AdministrationPanel/group_role_assignment.cshtml"),
-                CreateDashboardStep(5, "MANAGE_USER", "Manage User", "/AdministrationPanel/manage_user", "~/Views/AdministrationPanel/manage_user.cshtml"),
-                CreateDashboardStep(6, "MANAGE_USER_RIGHTS", "Manage User Rights", "/AdministrationPanel/manage_user_rights", "~/Views/AdministrationPanel/manage_user_rights.cshtml")
+                CreateDashboardStep(1, "PAGES_MANAGEMENT", "Pages Management", "/AdministrationPanel/pages_management", "~/Views/AdministrationPanel/DashboardPartials/_PagesManagement.cshtml"),
+                CreateDashboardStep(2, "MENU_ASSIGNMENT", "Menu Assignment", "/AdministrationPanel/menu_assignment", "~/Views/AdministrationPanel/DashboardPartials/_MenuAssignment.cshtml"),
+                CreateDashboardStep(3, "SUB_MENU_MANAGEMENT", "Sub Menu Management", "/AdministrationPanel/sub_menu_management", "~/Views/AdministrationPanel/DashboardPartials/_SubMenuManagement.cshtml"),
+                CreateDashboardStep(4, "GROUP_ROLE_ASSIGNMENT", "Group Role Assignment", "/AdministrationPanel/group_role_assignment", "~/Views/AdministrationPanel/DashboardPartials/_GroupRoleAssignment.cshtml"),
+                CreateDashboardStep(5, "MANAGE_USER", "Manage User", "/AdministrationPanel/manage_user", "~/Views/AdministrationPanel/DashboardPartials/_ManageUser.cshtml"),
+                CreateDashboardStep(6, "MANAGE_USER_RIGHTS", "Manage User Rights", "/AdministrationPanel/manage_user_rights", "~/Views/AdministrationPanel/DashboardPartials/_ManageUserRights.cshtml")
                 };
             }
 
@@ -1368,12 +1388,12 @@ namespace AIS.Controllers
             {
             return new List<WorkflowDashboardStepModel>
                 {
-                CreateDashboardStep(1, "ENTITY_ADDITION", "Entity Addition", "/AdministrationPanel/entity_addition", "~/Views/AdministrationPanel/entity_addition.cshtml"),
-                CreateDashboardStep(2, "ENTITY_RELATIONSHIP", "Entity Relationship", "/AdministrationPanel/entity_relationship", "~/Views/AdministrationPanel/entity_relationship.cshtml"),
-                CreateDashboardStep(3, "ENTITY_SHIFTING", "Entity Shifting", "/AdministrationPanel/entity_shifting", "~/Views/AdministrationPanel/entity_shifting.cshtml"),
-                CreateDashboardStep(4, "SETUP_AUDITEE_ENTITIES", "Setup Auditee Entities", "/AdministrationPanel/setup_auditee_entities", "~/Views/AdministrationPanel/setup_auditee_entities.cshtml"),
-                CreateDashboardStep(5, "UPDATE_AUDITEE_ENTITIES", "Update Auditee Entities", "/AdministrationPanel/update_auditee_entities", "~/Views/AdministrationPanel/update_auditee_entities.cshtml"),
-                CreateDashboardStep(6, "AUTHORIZE_AUDITEE_ENTITIES_UPDATE", "Authorize Auditee Entities Update", "/AdministrationPanel/authorize_auditee_entities_update", "~/Views/AdministrationPanel/authorize_auditee_entities_update.cshtml")
+                CreateDashboardStep(1, "ENTITY_ADDITION", "Entity Addition", "/AdministrationPanel/entity_addition", "~/Views/AdministrationPanel/DashboardPartials/_EntityAddition.cshtml"),
+                CreateDashboardStep(2, "ENTITY_RELATIONSHIP", "Entity Relationship", "/AdministrationPanel/entity_relationship", "~/Views/AdministrationPanel/DashboardPartials/_EntityRelationship.cshtml"),
+                CreateDashboardStep(3, "ENTITY_SHIFTING", "Entity Shifting", "/AdministrationPanel/entity_shifting", "~/Views/AdministrationPanel/DashboardPartials/_EntityShifting.cshtml"),
+                CreateDashboardStep(4, "SETUP_AUDITEE_ENTITIES", "Setup Auditee Entities", "/AdministrationPanel/setup_auditee_entities", "~/Views/AdministrationPanel/DashboardPartials/_SetupAuditeeEntities.cshtml"),
+                CreateDashboardStep(5, "UPDATE_AUDITEE_ENTITIES", "Update Auditee Entities", "/AdministrationPanel/update_auditee_entities", "~/Views/AdministrationPanel/DashboardPartials/_UpdateAuditeeEntities.cshtml"),
+                CreateDashboardStep(6, "AUTHORIZE_AUDITEE_ENTITIES_UPDATE", "Authorize Auditee Entities Update", "/AdministrationPanel/authorize_auditee_entities_update", "~/Views/AdministrationPanel/DashboardPartials/_AuthorizeAuditeeEntitiesUpdate.cshtml")
                 };
             }
 
@@ -1393,6 +1413,18 @@ namespace AIS.Controllers
         private int ResolveWorkflowPageId(string legacyPath)
             {
             return _pageIdResolver?.ResolvePageId(legacyPath) ?? 0;
+            }
+
+        private bool HasPageAccess(SessionUser user, string pagePath)
+            {
+            var pageId = ResolveWorkflowPageId(pagePath);
+            return pageId > 0 && _permissionService.HasViewPermission(user, pageId);
+            }
+
+        private PartialViewResult CreateStepAccessDeniedResult()
+            {
+            Response.StatusCode = 403;
+            return PartialView("~/Views/Shared/_DashboardStepAccessDenied.cshtml");
             }
 
         private void PopulateAdministrationDashboardStepViewData(string stepKey, int pageId)

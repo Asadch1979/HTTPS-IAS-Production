@@ -1,0 +1,101 @@
+@{ Layout = null; }
+
+<div class="row mt-3">
+    <h2 style="color: #be0e43">Sub Menu Management</h2>
+</div>
+
+<div class="row col-md-12 mt-3">
+    <button data-onclick="setupNewMenuPage();" class="btn btn-danger offset-md-10 col-md-2">Add New</button>
+</div>
+
+<div class="row col-md-12 mt-3">
+
+    <h5>Menu </h5>
+    <select data-onchange="getSubMenus();" id="menuDropDownField" class="form-control">
+        <option value="0">--Select Menu--</option>
+        @if (ViewData["MenuList"] != null)
+        {
+            foreach (var item in (dynamic)(ViewData["MenuList"]))
+            {
+                <option value="@item.Menu_Id">@item.Menu_Name</option>
+            }
+        }
+    </select>
+
+</div>
+
+
+
+<div class="row col-md-12 mt-3">
+    <table id="listofSubMenus" class="table table-hover table-bordered table-hover mt-3 table-striped">
+        <thead style="background-color: #19875478 !important;">
+            <tr>
+                <th class="col-md-auto">Sr No.</th>
+                <th class="col-md-auto">Name</th>
+                <th class="col-md-auto">Description</th>
+                <th class="col-md-auto">Order</th>
+                <th class="col-md-auto">Status</th>
+                <th class="col-md-auto">Action</th>
+            </tr>
+        </thead>
+        <tbody>
+        </tbody>
+    </table>
+</div>
+
+
+
+<div id="subMenuDetailModel" class="modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-dialog-scrollable modal-xl" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Menu Page Detail</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form>
+
+                    <div class="form-group">
+                        <label>Menu</label>
+                        <select data-onchange="getSubMenusForModel();" id="sub_menu_modal_menu_dd" class="form-control">
+                            <option value="0">--Select Menu--</option>
+                            @if (ViewData["MenuList"] != null)
+                            {
+                                foreach (var item in (dynamic)(ViewData["MenuList"]))
+                                {
+                                    <option value="@item.Menu_Id">@item.Menu_Name</option>
+                                }
+                            }
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Sub Menu Name</label>
+                        <input class="form-control" id="sub_menu_modal_submenu_tb" />
+                    </div>
+                    <div class="form-group">
+                        <label>Description</label>
+                        <textarea class="form-control" id="sub_menu_modal_submenu_desc_tb"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>Order</label>
+                        <input class="form-control" id="sub_menu_modal_submenu_order_tb" />
+                    </div>
+                    <div class="form-group">
+                        <label>Status</label>
+                        <input class="form-control" id="sub_menu_modal_submenu_status_tb" />
+                    </div>
+                  
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" data-onclick="publishUpdateSubMenuChanges();" class="btn btn-danger">Save Changes</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="~/js/csp/Views_AdministrationPanel_sub_menu_management.js?v=1"></script>
