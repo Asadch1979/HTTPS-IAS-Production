@@ -1,6 +1,6 @@
     function createAuditEngagement(planId, name, size, risk, freq, days, auditperiod, periodId, code, zoneId, entity_id, ent_type_id) {
-        if (window.planningDashboard && typeof window.planningDashboard.loadNestedView === 'function') {
-            window.planningDashboard.loadNestedView('TENTATIVE_ENGAGEMENT_PLAN', {
+        if (window.planningDashboard && typeof window.planningDashboard.loadSubChildStep === 'function') {
+            window.planningDashboard.loadSubChildStep('AUDIT_PLAN', 'ENGAGEMENT_PLAN', 'CREATE', {
                 planId: planId,
                 name: name,
                 size: size,

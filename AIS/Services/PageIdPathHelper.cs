@@ -23,7 +23,11 @@ namespace AIS.Services
             "/IidInquiryReportPdf/GeneratePdf",
             "/AdministrationPanel/LoadUserDashboardStep",
             "/AdministrationPanel/LoadEntityDashboardStep",
-            "/Setup/LoadChecklistDashboardStep"
+            "/Setup/LoadChecklistDashboardStep",
+            "/Planning/LoadPlanningStep",
+            "/Planning/LoadPlanningChildStep",
+            "/Planning/LoadPlanningSubChildStep",
+            "/Planning/LoadPlanningNestedView"
             };
 
         public static bool IsExempt(HttpRequest request)

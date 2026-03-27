@@ -75,16 +75,33 @@
         fetch(loadUrl + '?' + query.toString() + '&_=' + Date.now(), {
             method: 'GET',
             credentials: 'same-origin',
-            cache: 'no-store'
+            cache: 'no-store',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
         })
             .then(function (response) {
+                if (response.status === 403) {
+                    return response.text().then(function (html) {
+                        return {
+                            status: 403,
+                            html: html
+                        };
+                    });
+                }
+
                 if (!response.ok) {
                     throw new Error('Failed to load planning step content.');
                 }
-                return response.text();
+                return response.text().then(function (html) {
+                    return {
+                        status: response.status,
+                        html: html
+                    };
+                });
             })
-            .then(function (html) {
-                stepHost.innerHTML = html;
+            .then(function (payload) {
+                stepHost.innerHTML = payload.html;
                 executeInlineScripts(stepHost);
                 setCurrentStepCode(stepCode);
                 setActiveStep(stepCode);
@@ -110,10 +127,11 @@
 
 
 
-    function loadNestedView(viewCode, options) {
-        var loadUrl = '/Planning/LoadPlanningNestedView';
+    function loadChildStep(stepKey, childKey, options) {
+        var loadUrl = '/Planning/LoadPlanningChildStep';
         var query = new URLSearchParams();
-        query.append('viewCode', viewCode || '');
+        query.append('stepKey', stepKey || '');
+        query.append('childKey', childKey || '');
         Object.keys(options || {}).forEach(function (key) {
             var value = options[key];
             if (value !== undefined && value !== null && value !== '') {
@@ -125,19 +143,92 @@
         fetch(loadUrl + '?' + query.toString() + '&_=' + Date.now(), {
             method: 'GET',
             credentials: 'same-origin',
-            cache: 'no-store'
+            cache: 'no-store',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
         })
             .then(function (response) {
-                if (!response.ok) {
-                    throw new Error('Failed to load nested planning view.');
+                if (response.status === 403) {
+                    return response.text().then(function (html) {
+                        return {
+                            status: 403,
+                            html: html
+                        };
+                    });
                 }
-                return response.text();
+
+                if (!response.ok) {
+                    throw new Error('Failed to load planning child view.');
+                }
+                return response.text().then(function (html) {
+                    return {
+                        status: response.status,
+                        html: html
+                    };
+                });
             })
-            .then(function (html) {
-                stepHost.innerHTML = html;
+            .then(function (payload) {
+                stepHost.innerHTML = payload.html;
                 executeInlineScripts(stepHost);
-                setCurrentStepCode('AUDIT_PLAN');
-                setActiveStep('AUDIT_PLAN');
+                setCurrentStepCode(stepKey);
+                setActiveStep(stepKey);
+                updateStepCounter('5');
+            })
+            .catch(function () {
+                stepHost.innerHTML = '<div class="alert alert-danger mb-0">Unable to load planning workflow content right now. Please try again.</div>';
+            });
+    }
+
+    function loadSubChildStep(stepKey, childKey, actionKey, options) {
+        var loadUrl = '/Planning/LoadPlanningSubChildStep';
+        var query = new URLSearchParams();
+        query.append('stepKey', stepKey || '');
+        query.append('childKey', childKey || '');
+        query.append('actionKey', actionKey || '');
+
+        Object.keys(options || {}).forEach(function (key) {
+            var value = options[key];
+            if (value !== undefined && value !== null && value !== '') {
+                query.append(key, value);
+            }
+        });
+
+        stepHost.innerHTML = '<div class="alert alert-secondary mb-0">Loading workflow content...</div>';
+        fetch(loadUrl + '?' + query.toString() + '&_=' + Date.now(), {
+            method: 'GET',
+            credentials: 'same-origin',
+            cache: 'no-store',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+            .then(function (response) {
+                if (response.status === 403) {
+                    return response.text().then(function (html) {
+                        return {
+                            status: 403,
+                            html: html
+                        };
+                    });
+                }
+
+                if (!response.ok) {
+                    throw new Error('Failed to load planning sub-child view.');
+                }
+
+                return response.text().then(function (html) {
+                    return {
+                        status: response.status,
+                        html: html
+                    };
+                });
+            })
+            .then(function (payload) {
+                stepHost.innerHTML = payload.html;
+                executeInlineScripts(stepHost);
+                setCurrentStepCode(stepKey);
+                setActiveStep(stepKey);
                 updateStepCounter('5');
             })
             .catch(function () {
@@ -147,7 +238,16 @@
 
     window.planningDashboard = {
         loadStep: loadStep,
-        loadNestedView: loadNestedView
+        loadChildStep: loadChildStep,
+        loadSubChildStep: loadSubChildStep,
+        loadNestedView: function (viewCode, options) {
+            if ((viewCode || '').toUpperCase() === 'TENTATIVE_ENGAGEMENT_PLAN') {
+                loadSubChildStep('AUDIT_PLAN', 'ENGAGEMENT_PLAN', 'CREATE', options);
+                return;
+            }
+
+            loadChildStep('AUDIT_PLAN', viewCode, options);
+        }
     };
 
     if (currentStepCode()) {

@@ -214,7 +214,8 @@ namespace AIS.Services
                 ["/MANReport/GeneratePdf"] = 970101,
                 ["/AdministrationPanel/User_Dashboard"] = 970201,
                 ["/AdministrationPanel/Entity_Dashboard"] = 970202,
-                ["/Setup/Checklist_Dashboard"] = 970203
+                ["/Setup/Checklist_Dashboard"] = 970203,
+                ["/Planning/Planning"] = 970204
                 };
 
             foreach (var entry in fieldAuditPages)
@@ -225,9 +226,6 @@ namespace AIS.Services
                     updated[normalized] = new PageIdEntry(entry.Value, normalized);
                     }
                 }
-
-            AddAlias(updated, "/Planning/Planning", "/Planning/audit_criteria");
-            AddAlias(updated, "/Planning/LoadPlanningStep", "/Planning/audit_criteria");
 
             return updated;
             }
