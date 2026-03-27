@@ -1,6 +1,7 @@
 using System;
 using AIS.Models;
 using AIS.Models.Requests;
+using AIS.Models.WorkflowDashboard;
 using AIS.Security.PasswordPolicy;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
@@ -20,9 +21,10 @@ namespace AIS.Controllers
         private readonly TopMenus tm;
         private readonly SessionHandler sessionHandler;
         private readonly IPermissionService _permissionService;
+        private readonly IPageIdResolver _pageIdResolver;
         private readonly DBConnection dBConnection;
         private readonly PasswordPolicyValidator _passwordPolicyValidator;
-        public AdministrationPanelController(ILogger<AdministrationPanelController> logger, SessionHandler _sessionHandler, DBConnection _dbCon, TopMenus _tpMenu, IPermissionService permissionService, PasswordPolicyValidator passwordPolicyValidator)
+        public AdministrationPanelController(ILogger<AdministrationPanelController> logger, SessionHandler _sessionHandler, DBConnection _dbCon, TopMenus _tpMenu, IPermissionService permissionService, PasswordPolicyValidator passwordPolicyValidator, IPageIdResolver pageIdResolver)
             {
             _logger = logger;
             sessionHandler = _sessionHandler;
@@ -30,6 +32,99 @@ namespace AIS.Controllers
             tm = _tpMenu;
             _permissionService = permissionService;
             _passwordPolicyValidator = passwordPolicyValidator;
+            _pageIdResolver = pageIdResolver;
+            }
+
+        [HttpGet]
+        public IActionResult User_Dashboard(string stepKey = null)
+            {
+            PopulateDashboardChrome();
+
+            if (!User.Identity.IsAuthenticated)
+                {
+                return RedirectToAction("Index", "Login");
+                }
+
+            if (!sessionHandler.TryGetUser(out var user) || user == null)
+                {
+                return RedirectToAction("Index", "Login");
+                }
+
+            var model = BuildUserDashboardViewModel(user, stepKey);
+            if (!model.VisibleSteps.Any())
+                {
+                return RedirectToAction("Index", "PageNotFound");
+                }
+
+            return View("~/Views/AdministrationPanel/User_Dashboard.cshtml", model);
+            }
+
+        [HttpGet]
+        public IActionResult LoadUserDashboardStep(string stepKey)
+            {
+            if (!User.Identity.IsAuthenticated)
+                {
+                return Unauthorized();
+                }
+
+            if (!sessionHandler.TryGetUser(out var user) || user == null)
+                {
+                return Unauthorized();
+                }
+
+            if (!TryGetRequestedStep(BuildUserDashboardViewModel(user, stepKey), stepKey, out var step, out var errorResult))
+                {
+                return errorResult;
+                }
+
+            PopulateAdministrationDashboardStepViewData(step.StepKey, step.RequiredPermissionPageId);
+            return PartialView(step.PartialViewName);
+            }
+
+        [HttpGet]
+        public IActionResult Entity_Dashboard(string stepKey = null)
+            {
+            PopulateDashboardChrome();
+
+            if (!User.Identity.IsAuthenticated)
+                {
+                return RedirectToAction("Index", "Login");
+                }
+
+            if (!sessionHandler.TryGetUser(out var user) || user == null)
+                {
+                return RedirectToAction("Index", "Login");
+                }
+
+            var model = BuildEntityDashboardViewModel(user, stepKey);
+            if (!model.VisibleSteps.Any())
+                {
+                return RedirectToAction("Index", "PageNotFound");
+                }
+
+            return View("~/Views/AdministrationPanel/Entity_Dashboard.cshtml", model);
+            }
+
+        [HttpGet]
+        public IActionResult LoadEntityDashboardStep(string stepKey)
+            {
+            if (!User.Identity.IsAuthenticated)
+                {
+                return Unauthorized();
+                }
+
+            if (!sessionHandler.TryGetUser(out var user) || user == null)
+                {
+                return Unauthorized();
+                }
+
+            if (!TryGetRequestedStep(BuildEntityDashboardViewModel(user, stepKey), stepKey, out var step, out var errorResult))
+                {
+                return errorResult;
+                }
+
+            PopulateAdministrationDashboardStepViewData(step.StepKey, step.RequiredPermissionPageId);
+            return PartialView(step.PartialViewName);
             }
 
         public IActionResult MasterAdminControlPanel()
@@ -1172,6 +1267,189 @@ namespace AIS.Controllers
 
             _logger.LogWarning("Failed to parse system log datetime value: {Value}", value);
             return null;
+            }
+
+        private void PopulateDashboardChrome()
+            {
+            ViewData["TopMenu"] = tm.GetTopMenus();
+            ViewData["TopMenuPages"] = tm.GetTopMenusPages();
+            ViewData["HideTopHeader"] = true;
+            }
+
+        private WorkflowDashboardViewModel BuildUserDashboardViewModel(SessionUser user, string requestedStepKey)
+            {
+            var steps = BuildUserDashboardSteps();
+            return BuildDashboardViewModel(user, "USER_ACCESS_ADMIN", "User & Access Administration Workspace", requestedStepKey, steps);
+            }
+
+        private WorkflowDashboardViewModel BuildEntityDashboardViewModel(SessionUser user, string requestedStepKey)
+            {
+            var steps = BuildEntityDashboardSteps();
+            return BuildDashboardViewModel(user, "ENTITY_GOVERNANCE", "Entity Governance Workspace", requestedStepKey, steps);
+            }
+
+        private WorkflowDashboardViewModel BuildDashboardViewModel(SessionUser user, string dashboardKey, string dashboardTitle, string requestedStepKey, List<WorkflowDashboardStepModel> steps)
+            {
+            foreach (var step in steps)
+                {
+                step.IsVisible = step.RequiredPermissionPageId > 0 && _permissionService.HasViewPermission(user, step.RequiredPermissionPageId);
+                step.IsEnabled = step.IsVisible;
+                step.IsCompleted = false;
+                step.IsSaved = true;
+                step.StatusText = "Available";
+                }
+
+            var firstVisibleStep = steps.FirstOrDefault(step => step.IsVisible);
+            var currentStep = steps.FirstOrDefault(step => step.IsVisible && string.Equals(step.StepKey, requestedStepKey, StringComparison.OrdinalIgnoreCase))
+                ?? firstVisibleStep;
+
+            return new WorkflowDashboardViewModel
+                {
+                DashboardKey = dashboardKey,
+                DashboardTitle = dashboardTitle,
+                CurrentStepKey = currentStep?.StepKey,
+                Steps = steps
+                };
+            }
+
+        private bool TryGetRequestedStep(WorkflowDashboardViewModel model, string requestedStepKey, out WorkflowDashboardStepModel step, out IActionResult errorResult)
+            {
+            step = null;
+            errorResult = null;
+
+            if (model == null)
+                {
+                errorResult = BadRequest("Dashboard model could not be resolved.");
+                return false;
+                }
+
+            if (string.IsNullOrWhiteSpace(requestedStepKey))
+                {
+                step = model.CurrentStep;
+                if (step == null)
+                    {
+                    errorResult = Forbid();
+                    return false;
+                    }
+
+                return true;
+                }
+
+            step = model.Steps.FirstOrDefault(item => string.Equals(item.StepKey, requestedStepKey, StringComparison.OrdinalIgnoreCase));
+            if (step == null)
+                {
+                errorResult = BadRequest("Invalid workflow step.");
+                return false;
+                }
+
+            if (!step.IsVisible)
+                {
+                errorResult = Forbid();
+                return false;
+                }
+
+            return true;
+            }
+
+        private List<WorkflowDashboardStepModel> BuildUserDashboardSteps()
+            {
+            return new List<WorkflowDashboardStepModel>
+                {
+                CreateDashboardStep(1, "PAGES_MANAGEMENT", "Pages Management", "/AdministrationPanel/pages_management", "~/Views/AdministrationPanel/pages_management.cshtml"),
+                CreateDashboardStep(2, "MENU_ASSIGNMENT", "Menu Assignment", "/AdministrationPanel/menu_assignment", "~/Views/AdministrationPanel/menu_assignment.cshtml"),
+                CreateDashboardStep(3, "SUB_MENU_MANAGEMENT", "Sub Menu Management", "/AdministrationPanel/sub_menu_management", "~/Views/AdministrationPanel/sub_menu_management.cshtml"),
+                CreateDashboardStep(4, "GROUP_ROLE_ASSIGNMENT", "Group Role Assignment", "/AdministrationPanel/group_role_assignment", "~/Views/AdministrationPanel/group_role_assignment.cshtml"),
+                CreateDashboardStep(5, "MANAGE_USER", "Manage User", "/AdministrationPanel/manage_user", "~/Views/AdministrationPanel/manage_user.cshtml"),
+                CreateDashboardStep(6, "MANAGE_USER_RIGHTS", "Manage User Rights", "/AdministrationPanel/manage_user_rights", "~/Views/AdministrationPanel/manage_user_rights.cshtml")
+                };
+            }
+
+        private List<WorkflowDashboardStepModel> BuildEntityDashboardSteps()
+            {
+            return new List<WorkflowDashboardStepModel>
+                {
+                CreateDashboardStep(1, "ENTITY_ADDITION", "Entity Addition", "/AdministrationPanel/entity_addition", "~/Views/AdministrationPanel/entity_addition.cshtml"),
+                CreateDashboardStep(2, "ENTITY_RELATIONSHIP", "Entity Relationship", "/AdministrationPanel/entity_relationship", "~/Views/AdministrationPanel/entity_relationship.cshtml"),
+                CreateDashboardStep(3, "ENTITY_SHIFTING", "Entity Shifting", "/AdministrationPanel/entity_shifting", "~/Views/AdministrationPanel/entity_shifting.cshtml"),
+                CreateDashboardStep(4, "SETUP_AUDITEE_ENTITIES", "Setup Auditee Entities", "/AdministrationPanel/setup_auditee_entities", "~/Views/AdministrationPanel/setup_auditee_entities.cshtml"),
+                CreateDashboardStep(5, "UPDATE_AUDITEE_ENTITIES", "Update Auditee Entities", "/AdministrationPanel/update_auditee_entities", "~/Views/AdministrationPanel/update_auditee_entities.cshtml"),
+                CreateDashboardStep(6, "AUTHORIZE_AUDITEE_ENTITIES_UPDATE", "Authorize Auditee Entities Update", "/AdministrationPanel/authorize_auditee_entities_update", "~/Views/AdministrationPanel/authorize_auditee_entities_update.cshtml")
+                };
+            }
+
+        private WorkflowDashboardStepModel CreateDashboardStep(int stepNo, string stepKey, string stepTitle, string legacyPath, string partialViewName)
+            {
+            return new WorkflowDashboardStepModel
+                {
+                StepNo = stepNo,
+                StepKey = stepKey,
+                StepTitle = stepTitle,
+                LegacyPath = legacyPath,
+                PartialViewName = partialViewName,
+                RequiredPermissionPageId = ResolveWorkflowPageId(legacyPath)
+                };
+            }
+
+        private int ResolveWorkflowPageId(string legacyPath)
+            {
+            return _pageIdResolver?.ResolvePageId(legacyPath) ?? 0;
+            }
+
+        private void PopulateAdministrationDashboardStepViewData(string stepKey, int pageId)
+            {
+            ViewData["Layout"] = null;
+            ViewData["PageId"] = pageId;
+            ViewData["HideTopHeader"] = true;
+
+            switch ((stepKey ?? string.Empty).Trim().ToUpperInvariant())
+                {
+                case "PAGES_MANAGEMENT":
+                    ViewData["MenuList"] = dBConnection.GetAllMenusForAdminPanel();
+                    break;
+                case "MENU_ASSIGNMENT":
+                    ViewData["MenuList"] = dBConnection.GetAllTopMenus();
+                    ViewData["MenuPagesList"] = dBConnection.GetAllMenuPages();
+                    break;
+                case "SUB_MENU_MANAGEMENT":
+                    ViewData["MenuList"] = dBConnection.GetAllMenusForAdminPanel();
+                    break;
+                case "GROUP_ROLE_ASSIGNMENT":
+                    ViewData["GroupList"] = dBConnection.GetGroups();
+                    ViewData["MenuList"] = dBConnection.GetAllTopMenus();
+                    break;
+                case "MANAGE_USER":
+                    ViewData["GroupList"] = dBConnection.GetGroups();
+                    ViewData["Userrelationship"] = dBConnection.Getrealtionshiptype(pageId);
+                    break;
+                case "MANAGE_USER_RIGHTS":
+                    break;
+                case "ENTITY_ADDITION":
+                    ViewData["AuditEntitiesType"] = pageId > 0 ? dBConnection.GetAuditEntityTypes(pageId) : new List<AuditEntitiesModel>();
+                    ViewData["RelationshipList"] = dBConnection.Getrealtionshiptype(pageId);
+                    ViewData["Audit_By"] = dBConnection.GetAuditBy();
+                    break;
+                case "ENTITY_RELATIONSHIP":
+                    ViewData["Userrelationship"] = dBConnection.Getrealtionshiptype(pageId);
+                    break;
+                case "ENTITY_SHIFTING":
+                    ViewData["AuditEntitiesType"] = pageId > 0 ? dBConnection.GetAuditEntityTypes(pageId) : new List<AuditEntitiesModel>();
+                    ViewData["RelationshipList"] = dBConnection.Getrealtionshiptype(pageId);
+                    ViewData["Audit_By"] = dBConnection.GetAuditBy();
+                    break;
+                case "SETUP_AUDITEE_ENTITIES":
+                    ViewData["AuditEntitiesType"] = pageId > 0 ? dBConnection.GetAuditEntityTypes(pageId) : new List<AuditEntitiesModel>();
+                    ViewData["Userrelationship"] = dBConnection.Getrealtionshiptype(pageId);
+                    break;
+                case "UPDATE_AUDITEE_ENTITIES":
+                    ViewData["AuditEntitiesType"] = pageId > 0 ? dBConnection.GetAuditEntityTypes(pageId) : new List<AuditEntitiesModel>();
+                    ViewData["BranchSizesList"] = dBConnection.GetBranchSizes();
+                    ViewData["RiskList"] = dBConnection.GetRisks();
+                    break;
+                case "AUTHORIZE_AUDITEE_ENTITIES_UPDATE":
+                    break;
+                default:
+                    break;
+                }
             }
 
         [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]

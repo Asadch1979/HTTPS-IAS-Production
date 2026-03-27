@@ -20,7 +20,13 @@ namespace AIS.Services
             "/Login/Index_Dev",
             "/Login/KillSessions",
             "/Login/Maintenance",
-            "/IidInquiryReportPdf/GeneratePdf"
+            "/IidInquiryReportPdf/GeneratePdf",
+            "/AdministrationPanel/User_Dashboard",
+            "/AdministrationPanel/LoadUserDashboardStep",
+            "/AdministrationPanel/Entity_Dashboard",
+            "/AdministrationPanel/LoadEntityDashboardStep",
+            "/Setup/Checklist_Dashboard",
+            "/Setup/LoadChecklistDashboardStep"
             };
 
         public static bool IsExempt(HttpRequest request)

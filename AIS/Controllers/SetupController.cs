@@ -1,9 +1,12 @@
 using AIS.Models;
+using AIS.Models.WorkflowDashboard;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.Extensions.Logging;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using AIS.Services;
 
 
@@ -16,14 +19,62 @@ namespace AIS.Controllers
         private readonly TopMenus tm;
         private readonly SessionHandler sessionHandler;
         private readonly IPermissionService _permissionService;
+        private readonly IPageIdResolver _pageIdResolver;
         private readonly DBConnection dBConnection;
-        public SetupController(ILogger<SetupController> logger, SessionHandler _sessionHandler, DBConnection _dbCon, TopMenus _tpMenu, IPermissionService permissionService)
+        public SetupController(ILogger<SetupController> logger, SessionHandler _sessionHandler, DBConnection _dbCon, TopMenus _tpMenu, IPermissionService permissionService, IPageIdResolver pageIdResolver)
             {
             _logger = logger;
             sessionHandler = _sessionHandler;
             dBConnection = _dbCon;
             tm = _tpMenu;
             _permissionService = permissionService;
+            _pageIdResolver = pageIdResolver;
+            }
+
+        [HttpGet]
+        public IActionResult Checklist_Dashboard(string stepKey = null)
+            {
+            PopulateDashboardChrome();
+
+            if (!User.Identity.IsAuthenticated)
+                {
+                return RedirectToAction("Index", "Login");
+                }
+
+            if (!sessionHandler.TryGetUser(out var user) || user == null)
+                {
+                return RedirectToAction("Index", "Login");
+                }
+
+            var model = BuildChecklistDashboardViewModel(user, stepKey);
+            if (!model.VisibleSteps.Any())
+                {
+                return RedirectToAction("Index", "PageNotFound");
+                }
+
+            return View("~/Views/Setup/Checklist_Dashboard.cshtml", model);
+            }
+
+        [HttpGet]
+        public IActionResult LoadChecklistDashboardStep(string stepKey)
+            {
+            if (!User.Identity.IsAuthenticated)
+                {
+                return Unauthorized();
+                }
+
+            if (!sessionHandler.TryGetUser(out var user) || user == null)
+                {
+                return Unauthorized();
+                }
+
+            if (!TryGetRequestedStep(BuildChecklistDashboardViewModel(user, stepKey), stepKey, out var step, out var errorResult))
+                {
+                return errorResult;
+                }
+
+            PopulateChecklistDashboardStepViewData(step.StepKey, step.RequiredPermissionPageId);
+            return PartialView(step.PartialViewName);
             }
         public IActionResult branches()
             {
@@ -674,6 +725,133 @@ namespace AIS.Controllers
             {
             return "{\"Status\":true,\"Message\":\"" + dBConnection.RefferedBackProcessTransactionByAuthorizer(T_ID, COMMENTS) + "\"}";
 
+            }
+
+        private void PopulateDashboardChrome()
+            {
+            ViewData["TopMenu"] = tm.GetTopMenus();
+            ViewData["TopMenuPages"] = tm.GetTopMenusPages();
+            ViewData["HideTopHeader"] = true;
+            }
+
+        private WorkflowDashboardViewModel BuildChecklistDashboardViewModel(SessionUser user, string requestedStepKey)
+            {
+            var steps = new List<WorkflowDashboardStepModel>
+                {
+                CreateDashboardStep(1, "MANAGE_CHECKLIST", "Manage Checklist", "/Setup/manage_Checklist", "~/Views/Setup/manage_checklist.cshtml"),
+                CreateDashboardStep(2, "MANAGE_SUB_CHECKLIST", "Manage Sub Checklist", "/Setup/manage_sub_Checklist", "~/Views/Setup/manage_sub_checklist.cshtml"),
+                CreateDashboardStep(3, "MANAGE_CHECKLIST_DETAIL", "Manage Checklist Detail", "/Setup/manage_checklist_detail", "~/Views/Setup/manage_checklist_detail.cshtml"),
+                CreateDashboardStep(4, "REVIEW_AUDIT_CHECKLIST", "Review Audit Checklist", "/AdministrationPanel/review_audit_checklist", "~/Views/AdministrationPanel/review_audit_checklist.cshtml"),
+                CreateDashboardStep(5, "SUB_PROCESS_AUTHORIZE", "Sub Process Authorize", "/Setup/sub_process_authorize", "~/Views/Setup/sub_process_authorize.cshtml"),
+                CreateDashboardStep(6, "PROCESS_DETAIL_AUTHORIZE", "Process Detail Authorize", "/Setup/process_detail_authorize", "~/Views/Setup/process_detail_authorize.cshtml")
+                };
+
+            foreach (var step in steps)
+                {
+                step.IsVisible = step.RequiredPermissionPageId > 0 && _permissionService.HasViewPermission(user, step.RequiredPermissionPageId);
+                step.IsEnabled = step.IsVisible;
+                step.IsCompleted = false;
+                step.IsSaved = true;
+                step.StatusText = "Available";
+                }
+
+            var firstVisibleStep = steps.FirstOrDefault(step => step.IsVisible);
+            var currentStep = steps.FirstOrDefault(step => step.IsVisible && string.Equals(step.StepKey, requestedStepKey, StringComparison.OrdinalIgnoreCase))
+                ?? firstVisibleStep;
+
+            return new WorkflowDashboardViewModel
+                {
+                DashboardKey = "CHECKLIST_LIFECYCLE",
+                DashboardTitle = "Checklist Lifecycle Workspace",
+                CurrentStepKey = currentStep?.StepKey,
+                Steps = steps
+                };
+            }
+
+        private WorkflowDashboardStepModel CreateDashboardStep(int stepNo, string stepKey, string stepTitle, string legacyPath, string partialViewName)
+            {
+            return new WorkflowDashboardStepModel
+                {
+                StepNo = stepNo,
+                StepKey = stepKey,
+                StepTitle = stepTitle,
+                LegacyPath = legacyPath,
+                PartialViewName = partialViewName,
+                RequiredPermissionPageId = _pageIdResolver?.ResolvePageId(legacyPath) ?? 0
+                };
+            }
+
+        private bool TryGetRequestedStep(WorkflowDashboardViewModel model, string requestedStepKey, out WorkflowDashboardStepModel step, out IActionResult errorResult)
+            {
+            step = null;
+            errorResult = null;
+
+            if (model == null)
+                {
+                errorResult = BadRequest("Dashboard model could not be resolved.");
+                return false;
+                }
+
+            if (string.IsNullOrWhiteSpace(requestedStepKey))
+                {
+                step = model.CurrentStep;
+                if (step == null)
+                    {
+                    errorResult = Forbid();
+                    return false;
+                    }
+
+                return true;
+                }
+
+            step = model.Steps.FirstOrDefault(item => string.Equals(item.StepKey, requestedStepKey, StringComparison.OrdinalIgnoreCase));
+            if (step == null)
+                {
+                errorResult = BadRequest("Invalid workflow step.");
+                return false;
+                }
+
+            if (!step.IsVisible)
+                {
+                errorResult = Forbid();
+                return false;
+                }
+
+            return true;
+            }
+
+        private void PopulateChecklistDashboardStepViewData(string stepKey, int pageId)
+            {
+            ViewData["Layout"] = null;
+            ViewData["PageId"] = pageId;
+            ViewData["HideTopHeader"] = true;
+
+            switch ((stepKey ?? string.Empty).Trim().ToUpperInvariant())
+                {
+                case "MANAGE_CHECKLIST":
+                case "MANAGE_SUB_CHECKLIST":
+                    ViewData["ChecklistTypes"] = dBConnection.GetAuditChecklist();
+                    break;
+                case "MANAGE_CHECKLIST_DETAIL":
+                    ViewData["ChecklistTypes"] = dBConnection.GetAuditChecklist();
+                    ViewData["ViolationsList"] = dBConnection.GetViolationsForChecklistDetail();
+                    ViewData["ProcOwnerList"] = dBConnection.GetProcOwnerForChecklistDetail();
+                    ViewData["RoleRespList"] = dBConnection.GetRoleResponsibleForChecklistDetail();
+                    ViewData["AnnexList"] = dBConnection.GetAnnexuresForChecklistDetail();
+                    ViewData["RiskList"] = dBConnection.GetRisks();
+                    break;
+                case "REVIEW_AUDIT_CHECKLIST":
+                    ViewData["TransactionsList"] = dBConnection.GetUpdatedChecklistDetailsForReviewAndAuthorize(4);
+                    break;
+                case "SUB_PROCESS_AUTHORIZE":
+                    ViewData["TransactionsList"] = dBConnection.GetUpdatedSubChecklistForReviewAndAuthorize(4);
+                    break;
+                case "PROCESS_DETAIL_AUTHORIZE":
+                    ViewData["TransactionsList"] = dBConnection.GetUpdatedChecklistDetailsForReviewAndAuthorize(3);
+                    break;
+                default:
+                    break;
+                }
             }
         [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
         public IActionResult Error()
