@@ -119,7 +119,7 @@ namespace AIS.Controllers
 
             if (!_permissionService.HasViewPermission(user, backOfficePageId))
                 {
-                return Forbid();
+                return CreateStepAccessDeniedResult();
                 }
 
             PopulateReplicaViewData(backOfficePageId);
@@ -179,10 +179,15 @@ namespace AIS.Controllers
                 return BadRequest("A valid engagement is required.");
                 }
 
-            var step = model.VisibleSteps.FirstOrDefault(item => string.Equals(item.StepCode, stepCode, StringComparison.OrdinalIgnoreCase));
+            var step = model.Steps.FirstOrDefault(item => string.Equals(item.StepCode, stepCode, StringComparison.OrdinalIgnoreCase));
             if (step == null)
                 {
-                return Forbid();
+                return NotFound();
+                }
+
+            if (!step.IsVisible)
+                {
+                return CreateStepAccessDeniedResult();
                 }
 
             if (!step.IsEnabled)
@@ -279,7 +284,7 @@ namespace AIS.Controllers
 
             if (!_permissionService.HasViewPermission(user, nestedPageId))
                 {
-                return Forbid();
+                return CreateStepAccessDeniedResult();
                 }
 
             PopulateReplicaViewData(nestedPageId);
@@ -491,10 +496,15 @@ namespace AIS.Controllers
                 return BadRequest("A valid engagement is required.");
                 }
 
-            var step = model.VisibleSteps.FirstOrDefault(item => string.Equals(item.StepCode, stepCode, StringComparison.OrdinalIgnoreCase));
+            var step = model.Steps.FirstOrDefault(item => string.Equals(item.StepCode, stepCode, StringComparison.OrdinalIgnoreCase));
             if (step == null)
                 {
-                return Forbid();
+                return NotFound();
+                }
+
+            if (!step.IsVisible)
+                {
+                return CreateStepAccessDeniedResult();
                 }
 
             if (!step.IsEnabled)
@@ -568,6 +578,12 @@ namespace AIS.Controllers
                 }
 
             return true;
+            }
+
+        private PartialViewResult CreateStepAccessDeniedResult()
+            {
+            Response.StatusCode = 403;
+            return PartialView("~/Views/Shared/_DashboardStepAccessDenied.cshtml");
             }
 
         private bool TryGetNestedReplicaPermissionContext(string viewCode, out string permissionPath, out int permissionPageId, out IActionResult errorResult)

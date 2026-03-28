@@ -121,16 +121,33 @@
         fetch(requestUrl, {
             method: 'GET',
             credentials: 'same-origin',
-            cache: 'no-store'
+            cache: 'no-store',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
         })
             .then(function (response) {
+                if (response.status === 403) {
+                    return response.text().then(function (html) {
+                        return {
+                            status: 403,
+                            html: html
+                        };
+                    });
+                }
+
                 if (!response.ok) {
                     throw new Error('Failed to load step content.');
                 }
-                return response.text();
+                return response.text().then(function (html) {
+                    return {
+                        status: response.status,
+                        html: html
+                    };
+                });
             })
-            .then(function (html) {
-                stepHost.innerHTML = html;
+            .then(function (payload) {
+                stepHost.innerHTML = payload.html;
                 executeInlineScripts(stepHost);
                 setStepPillsDisabled(false);
                 stepHost.setAttribute('data-eng-id', engId);

@@ -150,14 +150,28 @@
             }
         })
             .then(function (response) {
+                if (response.status === 403) {
+                    return response.text().then(function (html) {
+                        return {
+                            status: 403,
+                            html: html
+                        };
+                    });
+                }
+
                 if (!response.ok) {
                     throw new Error('Failed to load workflow content.');
                 }
 
-                return response.text();
+                return response.text().then(function (html) {
+                    return {
+                        status: response.status,
+                        html: html
+                    };
+                });
             })
-            .then(function (html) {
-                stepHost.innerHTML = html;
+            .then(function (payload) {
+                stepHost.innerHTML = payload.html;
                 return executeInlineScripts(stepHost).then(function () {
                     setCurrentStepKey(stepKey);
                     setActiveStep(stepKey);

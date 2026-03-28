@@ -241,17 +241,43 @@
                 return fetch(url, {
                     method: 'GET',
                     credentials: 'same-origin',
-                    cache: 'no-store'
+                    cache: 'no-store',
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
                 });
             })
             .then(function (response) {
+                if (response.status === 403) {
+                    return response.text().then(function (html) {
+                        return {
+                            status: 403,
+                            html: html
+                        };
+                    });
+                }
+
                 if (!response.ok) {
                     throw new Error('Failed to load Back Office step.');
                 }
-                return response.text();
+                return response.text().then(function (html) {
+                    return {
+                        status: response.status,
+                        html: html
+                    };
+                });
             })
-            .then(function (html) {
-                stepHost.innerHTML = html;
+            .then(function (payload) {
+                stepHost.innerHTML = payload.html;
+                if (payload.status === 403) {
+                    activeStepCode = stepCode;
+                    updateCounter(stepNo || 1);
+                    stepper.querySelectorAll('.step-pill').forEach(function (anchor) {
+                        anchor.classList.toggle('active', (anchor.getAttribute('data-step-code') || '') === stepCode);
+                    });
+                    return;
+                }
+
                 initializeStep(stepCode, String(engId), readOnly);
                 activeStepCode = stepCode;
                 updateCounter(stepNo || 1);

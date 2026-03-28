@@ -79,10 +79,15 @@ namespace AIS.Controllers
                 return BadRequest("A valid engagement is required.");
             }
 
-            var step = model.VisibleSteps.FirstOrDefault(item => string.Equals(item.StepCode, model.CurrentStepCode, StringComparison.OrdinalIgnoreCase));
+            var step = model.Steps.FirstOrDefault(item => string.Equals(item.StepCode, stepCode, StringComparison.OrdinalIgnoreCase));
             if (step == null)
             {
-                return Forbid();
+                return NotFound();
+            }
+
+            if (!step.IsVisible)
+            {
+                return CreateStepAccessDeniedResult();
             }
 
             PopulateReplicaViewData(step.RequiredPermissionPageId);
@@ -212,6 +217,12 @@ namespace AIS.Controllers
             ViewData["Layout"] = null;
             ViewData["HideTopHeader"] = true;
             ViewData["PageId"] = pageId;
+        }
+
+        private PartialViewResult CreateStepAccessDeniedResult()
+        {
+            Response.StatusCode = 403;
+            return PartialView("~/Views/Shared/_DashboardStepAccessDenied.cshtml");
         }
     }
 }

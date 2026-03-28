@@ -306,18 +306,35 @@
         fetch(requestUrl, {
             method: 'GET',
             credentials: 'same-origin',
-            cache: 'no-store'
+            cache: 'no-store',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
         })
             .then(function (response) {
+                if (response.status === 403) {
+                    return response.text().then(function (html) {
+                        return {
+                            status: 403,
+                            html: html
+                        };
+                    });
+                }
+
                 if (!response.ok) {
                     return response.text().then(function (message) {
                         throw new Error(message || 'Failed to load step content.');
                     });
                 }
-                return response.text();
+                return response.text().then(function (html) {
+                    return {
+                        status: response.status,
+                        html: html
+                    };
+                });
             })
-            .then(function (html) {
-                stepHost.innerHTML = html;
+            .then(function (payload) {
+                stepHost.innerHTML = payload.html;
                 stepHost.setAttribute('data-eng-id', engId);
                 return executeInlineScripts(stepHost).then(function () {
                     runStepInitializer(stepCode);
@@ -514,16 +531,33 @@
             fetch(loadUrl + '?' + query.toString() + '&_=' + Date.now(), {
                 method: 'GET',
                 credentials: 'same-origin',
-                cache: 'no-store'
+                cache: 'no-store',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
             })
                 .then(function (response) {
+                    if (response.status === 403) {
+                        return response.text().then(function (html) {
+                            return {
+                                status: 403,
+                                html: html
+                            };
+                        });
+                    }
+
                     if (!response.ok) {
                         throw new Error('Failed to load nested view.');
                     }
-                    return response.text();
+                    return response.text().then(function (html) {
+                        return {
+                            status: response.status,
+                            html: html
+                        };
+                    });
                 })
-                .then(function (html) {
-                    stepHost.innerHTML = html;
+                .then(function (payload) {
+                    stepHost.innerHTML = payload.html;
                     stepHost.setAttribute('data-eng-id', engId);
                     return executeInlineScripts(stepHost);
                 })
