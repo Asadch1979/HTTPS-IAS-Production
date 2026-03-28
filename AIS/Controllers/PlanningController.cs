@@ -464,6 +464,7 @@ namespace AIS.Controllers
             {
             ViewData["TopMenu"] = tm.GetTopMenus();
             ViewData["TopMenuPages"] = tm.GetTopMenusPages();
+            ViewData["HideTopHeader"] = true;
 
             if (!User.Identity.IsAuthenticated)
                 {
@@ -475,12 +476,12 @@ namespace AIS.Controllers
                 return RedirectToAction("Index", "Login");
                 }
 
-            var model = BuildPlanningWorkflowViewModel(user, stepCode, contextId, contextSecondaryId);
-            if (!model.VisibleSteps.Any())
+            if (!HasPageAccess(user, "/Planning/Planning"))
                 {
-                return View(model);
+                return RedirectToAction("Index", "PageNotFound");
                 }
 
+            var model = BuildPlanningWorkflowViewModel(user, stepCode, contextId, contextSecondaryId);
             return View(model);
             }
 
@@ -498,19 +499,29 @@ namespace AIS.Controllers
                 }
 
             var model = BuildPlanningWorkflowViewModel(user, stepCode, contextId, contextSecondaryId);
-            var step = model.VisibleSteps.FirstOrDefault(item => string.Equals(item.StepCode, model.CurrentStepCode, StringComparison.OrdinalIgnoreCase));
-            if (step == null)
+            if (!TryGetRequestedPlanningStep(model, stepCode, out var step, out var errorResult))
                 {
-                return Forbid();
+                if (errorResult is ForbidResult)
+                    {
+                    return CreateStepAccessDeniedResult();
+                    }
+
+                return errorResult;
                 }
 
-            PopulatePlanningStepViewData(step.StepCode);
+            ViewData["PageId"] = step.RequiredPermissionPageId;
+            PopulatePlanningStepViewData(step.StepCode, user);
             return PartialView(step.PartialViewName);
             }
 
+        [HttpGet]
+        public IActionResult LoadPlanningChildStep(string stepKey, string childKey, int? planId = null, string name = null, string size = null, string risk = null, string freq = null, string days = null, string period = null, int? periodId = null, string code = null, int? zoneId = null, int? entityId = null, int? entityType = null)
+            {
+            return LoadPlanningSubChildStep(stepKey, childKey, "CREATE", planId, name, size, risk, freq, days, period, periodId, code, zoneId, entityId, entityType);
+            }
 
         [HttpGet]
-        public IActionResult LoadPlanningNestedView(string viewCode, int? planId = null, string name = null, string size = null, string risk = null, string freq = null, string days = null, string period = null, int? periodId = null, string code = null, int? zoneId = null, int? entityId = null, int? entityType = null)
+        public IActionResult LoadPlanningSubChildStep(string stepKey, string childKey, string actionKey, int? planId = null, string name = null, string size = null, string risk = null, string freq = null, string days = null, string period = null, int? periodId = null, string code = null, int? zoneId = null, int? entityId = null, int? entityType = null)
             {
             if (!User.Identity.IsAuthenticated)
                 {
@@ -522,26 +533,43 @@ namespace AIS.Controllers
                 return Unauthorized();
                 }
 
+            var workflowModel = BuildPlanningWorkflowViewModel(user, stepKey, null, null);
+            if (!TryGetRequestedPlanningStep(workflowModel, stepKey, out _, out var stepErrorResult))
+                {
+                if (stepErrorResult is ForbidResult)
+                    {
+                    return CreateStepAccessDeniedResult();
+                    }
+
+                return stepErrorResult;
+                }
+
+            if (!TryResolvePlanningSubChild(stepKey, childKey, actionKey, out var subChildViewPath, out var permissionPath, out var permissionPageId, out var errorResult))
+                {
+                if (errorResult is ForbidResult)
+                    {
+                    return CreateStepAccessDeniedResult();
+                    }
+
+                return errorResult;
+                }
+
+            if (permissionPageId <= 0 || !_permissionService.HasViewPermission(user, permissionPageId))
+                {
+                return CreateStepAccessDeniedResult();
+                }
+
+            PopulatePlanningSubChildViewData(stepKey, childKey, actionKey, permissionPageId, planId, name, size, risk, freq, days, period, periodId, code, zoneId, entityId, entityType);
+            return PartialView(subChildViewPath);
+            }
+
+        [HttpGet]
+        public IActionResult LoadPlanningNestedView(string viewCode, int? planId = null, string name = null, string size = null, string risk = null, string freq = null, string days = null, string period = null, int? periodId = null, string code = null, int? zoneId = null, int? entityId = null, int? entityType = null)
+            {
             switch ((viewCode ?? string.Empty).Trim().ToUpperInvariant())
                 {
                 case "TENTATIVE_ENGAGEMENT_PLAN":
-                    ViewData["AuditDepartments"] = dBConnection.GetDepartments(354);
-                    ViewData["DivisionsList"] = dBConnection.GetDivisions(false);
-                    ViewData["AuditZonesList"] = dBConnection.GetZones();
-                    ViewData["AuditTeamsList"] = dBConnection.GetAuditTeams();
-                    ViewData["PlanId"] = planId;
-                    ViewData["EntityName"] = name;
-                    ViewData["Size"] = size;
-                    ViewData["Risk"] = risk;
-                    ViewData["Frequency"] = freq;
-                    ViewData["Days"] = days;
-                    ViewData["PeriodName"] = period;
-                    ViewData["PeriodId"] = periodId;
-                    ViewData["Code"] = code;
-                    ViewData["ZoneId"] = zoneId;
-                    ViewData["EntityId"] = entityId;
-                    ViewData["EntityType"] = entityType;
-                    return PartialView("~/Views/Planning/Partials/_CreateEngagementStep.cshtml");
+                    return LoadPlanningSubChildStep("AUDIT_PLAN", "ENGAGEMENT_PLAN", "CREATE", planId, name, size, risk, freq, days, period, periodId, code, zoneId, entityId, entityType);
                 default:
                     return NotFound();
                 }
@@ -562,11 +590,6 @@ namespace AIS.Controllers
             var firstVisibleStep = workflowSteps.FirstOrDefault(step => step.IsVisible);
             var selectedStep = workflowSteps.FirstOrDefault(step => step.IsVisible && string.Equals(step.StepCode, requestedStepCode, StringComparison.OrdinalIgnoreCase))
                 ?? firstVisibleStep;
-
-            if (selectedStep != null)
-                {
-                PopulatePlanningStepViewData(selectedStep.StepCode);
-                }
 
             return new PlanningWorkflowViewModel
                 {
@@ -600,17 +623,21 @@ namespace AIS.Controllers
                 StepNo = stepNo,
                 StepCode = stepCode,
                 StepTitle = title,
+                MappedPath = mappedPath,
                 PartialViewName = partialViewName,
                 RequiredPermissionPageId = pageId
                 };
             }
 
-        private void PopulatePlanningStepViewData(string stepCode)
+        private void PopulatePlanningStepViewData(string stepCode, SessionUser user = null)
             {
             if (string.IsNullOrWhiteSpace(stepCode))
                 {
                 return;
                 }
+
+            ViewData["Layout"] = null;
+            ViewData["HideTopHeader"] = true;
 
             switch (stepCode)
                 {
@@ -666,6 +693,132 @@ namespace AIS.Controllers
                 default:
                     break;
                 }
+            }
+
+        private bool TryGetRequestedPlanningStep(PlanningWorkflowViewModel model, string requestedStepCode, out PlanningWorkflowStepModel step, out IActionResult errorResult)
+            {
+            step = null;
+            errorResult = null;
+
+            if (model == null)
+                {
+                errorResult = BadRequest("Planning workflow model could not be resolved.");
+                return false;
+                }
+
+            if (string.IsNullOrWhiteSpace(requestedStepCode))
+                {
+                step = model.CurrentStep;
+                if (step == null)
+                    {
+                    errorResult = Forbid();
+                    return false;
+                    }
+
+                return true;
+                }
+
+            step = model.Steps.FirstOrDefault(item => string.Equals(item.StepCode, requestedStepCode, StringComparison.OrdinalIgnoreCase));
+            if (step == null)
+                {
+                errorResult = BadRequest("Invalid planning step.");
+                return false;
+                }
+
+            if (!step.IsVisible)
+                {
+                errorResult = Forbid();
+                return false;
+                }
+
+            return true;
+            }
+
+        private bool TryResolvePlanningSubChild(string stepKey, string childKey, string actionKey, out string partialViewPath, out string permissionPath, out int permissionPageId, out IActionResult errorResult)
+            {
+            partialViewPath = null;
+            permissionPath = null;
+            permissionPageId = 0;
+            errorResult = null;
+
+            var normalizedStepKey = (stepKey ?? string.Empty).Trim().ToUpperInvariant();
+            var normalizedChildKey = (childKey ?? string.Empty).Trim().ToUpperInvariant();
+            var normalizedActionKey = (actionKey ?? string.Empty).Trim().ToUpperInvariant();
+
+            if (normalizedStepKey == "AUDIT_PLAN" &&
+                normalizedChildKey == "ENGAGEMENT_PLAN" &&
+                normalizedActionKey == "CREATE")
+                {
+                permissionPath = "/Planning/tentative_engagement_plan";
+                _pageIdResolver.TryResolvePageId(permissionPath, out permissionPageId);
+                partialViewPath = "~/Views/Planning/Partials/_TentativeEngagementPlanReplica.cshtml";
+                return true;
+                }
+
+            errorResult = BadRequest("Invalid planning child action.");
+            return false;
+            }
+
+        private void PopulatePlanningSubChildViewData(string stepKey, string childKey, string actionKey, int permissionPageId, int? planId, string name, string size, string risk, string freq, string days, string period, int? periodId, string code, int? zoneId, int? entityId, int? entityType)
+            {
+            ViewData["Layout"] = null;
+            ViewData["HideTopHeader"] = true;
+            ViewData["PageId"] = permissionPageId;
+
+            var normalizedStepKey = (stepKey ?? string.Empty).Trim().ToUpperInvariant();
+            var normalizedChildKey = (childKey ?? string.Empty).Trim().ToUpperInvariant();
+            var normalizedActionKey = (actionKey ?? string.Empty).Trim().ToUpperInvariant();
+
+            if (normalizedStepKey == "AUDIT_PLAN" &&
+                normalizedChildKey == "ENGAGEMENT_PLAN" &&
+                normalizedActionKey == "CREATE")
+                {
+                ViewData["AuditDepartments"] = dBConnection.GetDepartments(354);
+                ViewData["DivisionsList"] = dBConnection.GetDivisions(false);
+                ViewData["AuditZonesList"] = dBConnection.GetZones();
+                ViewData["AuditTeamsList"] = dBConnection.GetAuditTeams();
+                ViewData["PlanningPlanId"] = planId;
+                ViewData["PlanningEntityName"] = name;
+                ViewData["PlanningSize"] = size;
+                ViewData["PlanningRisk"] = risk;
+                ViewData["PlanningFrequency"] = freq;
+                ViewData["PlanningDays"] = days;
+                ViewData["PlanningPeriodName"] = period;
+                ViewData["PlanningPeriodId"] = periodId;
+                ViewData["PlanningCode"] = code;
+                ViewData["PlanningZoneId"] = zoneId;
+                ViewData["PlanningEntityId"] = entityId;
+                ViewData["PlanningEntityType"] = entityType;
+                ViewData["PlanId"] = planId;
+                ViewData["EntityName"] = name;
+                ViewData["Size"] = size;
+                ViewData["Risk"] = risk;
+                ViewData["Frequency"] = freq;
+                ViewData["Days"] = days;
+                ViewData["PeriodName"] = period;
+                ViewData["PeriodId"] = periodId;
+                ViewData["Code"] = code;
+                ViewData["ZoneId"] = zoneId;
+                ViewData["EntityId"] = entityId;
+                ViewData["EntityType"] = entityType;
+                }
+            }
+
+        private bool HasPageAccess(SessionUser user, string path)
+            {
+            if (user == null || string.IsNullOrWhiteSpace(path))
+                {
+                return false;
+                }
+
+            _pageIdResolver.TryResolvePageId(path, out var pageId);
+            return pageId > 0 && _permissionService.HasViewPermission(user, pageId);
+            }
+
+        private PartialViewResult CreateStepAccessDeniedResult()
+            {
+            Response.StatusCode = 403;
+            return PartialView("~/Views/Shared/_DashboardStepAccessDenied.cshtml");
             }
 
 [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
