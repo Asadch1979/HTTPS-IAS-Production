@@ -190,6 +190,19 @@ function getPageData() {
     function reloadLocation() {
         getEntityObservation();
     }
+
+    function reloadCurrentStepLocally() {
+        $('#DSAModel').modal('hide');
+        $('#commentsBox').modal('hide');
+        $('#updateMemoModel').modal('hide');
+
+        if (window.fieldAuditDashboard && typeof window.fieldAuditDashboard.reloadCurrentStepContent === 'function') {
+            window.fieldAuditDashboard.reloadCurrentStepContent();
+            return;
+        }
+
+        reloadLocation();
+    }
     var MANAGE_OBS_COLUMNS = 7;
 
     function getManageObsColumnCount() {
@@ -522,10 +535,10 @@ function getPageData() {
             success: function (data) {
                 if (data.Status == true) {
                     showApiAlert(data);
-                    onAlertCallback(reloadLocation);
+                    reloadCurrentStepLocally();
                 } else {
                     alert("Failed!! please try again");
-                    onAlertCallback(reloadLocation);
+                    reloadCurrentStepLocally();
                 }
                 $('#commentsBox').modal('hide');
                 $('#updateMemoModel').modal('hide');
@@ -566,7 +579,7 @@ function getPageData() {
             cache: false,
             success: function (data) {
                 showApiAlert(data);
-                onAlertCallback(reloadLocation);
+                reloadCurrentStepLocally();
             },
             dataType: "json",
         });
@@ -642,7 +655,7 @@ function getPageData() {
                 cache: false,
                 success: function (data) {
                     showApiAlert(data);
-                   onAlertCallback(finalSubmissionParasToAuditee);
+                    finalSubmissionParasToAuditee();
                     $('#DSAModel').modal('hide');
                     $('#updateMemoModel').modal('hide');
                     $('#submitAuditeeButton_update').removeAttr('disabled');
@@ -665,7 +678,7 @@ function getPageData() {
                 cache: false,
                 success: function (data) {
                     showApiAlert(data);
-                    onAlertCallback(reloadLocation);
+                    reloadCurrentStepLocally();
                     $('#DSAModel').modal('hide');
                     $('#updateMemoModel').modal('hide');
                     $('#submitAuditeeButton_update').removeAttr('disabled');
@@ -697,7 +710,7 @@ function getPageData() {
                     window.commitObservationReferenceSelection('#updateObservationReferenceSection');
                 }
                 showApiAlert(data);
-                onAlertCallback(reloadLocation);
+                reloadCurrentStepLocally();
             },
             dataType: "json",
         });

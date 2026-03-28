@@ -85,6 +85,7 @@ namespace AIS.Controllers
                 return Forbid();
             }
 
+            PopulateReplicaViewData(step.RequiredPermissionPageId);
             var partialModel = new FieldAuditGridReplicaViewModel { EngagementId = engId };
 
             switch (step.StepCode)
@@ -204,6 +205,13 @@ namespace AIS.Controllers
                 PartialViewName = partialViewName,
                 RequiredPermissionPageId = pageId
             };
+        }
+
+        private void PopulateReplicaViewData(int pageId)
+        {
+            ViewData["Layout"] = null;
+            ViewData["HideTopHeader"] = true;
+            ViewData["PageId"] = pageId;
         }
     }
 }

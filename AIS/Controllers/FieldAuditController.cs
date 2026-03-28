@@ -97,6 +97,17 @@ namespace AIS.Controllers
                 return BadRequest("A valid engagement is required.");
                 }
 
+            if (!TryGetBackOfficePermissionContext(stepCode, out _, out var backOfficePageId, out var backOfficeErrorResult))
+                {
+                return backOfficeErrorResult;
+                }
+
+            if (!_permissionService.HasViewPermission(user, backOfficePageId))
+                {
+                return Forbid();
+                }
+
+            PopulateReplicaViewData(backOfficePageId);
             ViewData["AnnexList"] = _dbConnection.GetAnnexuresForChecklistDetail();
             ViewData["ProcessList"] = _dbConnection.GetAuditChecklist();
             ViewData["RiskList"] = _dbConnection.GetRisks();
@@ -210,6 +221,17 @@ namespace AIS.Controllers
                 return BadRequest("A valid engagement is required.");
                 }
 
+            if (!TryGetNestedReplicaPermissionContext(viewCode, out _, out var nestedPageId, out var nestedErrorResult))
+                {
+                return nestedErrorResult;
+                }
+
+            if (!_permissionService.HasViewPermission(user, nestedPageId))
+                {
+                return Forbid();
+                }
+
+            PopulateReplicaViewData(nestedPageId);
             ViewData["ReportId"] = reportId;
             ViewData["LoanStatus"] = loanStatus;
             ViewData["DisbId"] = disbId;
@@ -424,6 +446,7 @@ namespace AIS.Controllers
                 return Forbid();
                 }
 
+            PopulateReplicaViewData(step.RequiredPermissionPageId);
             switch (step.StepCode)
                 {
                 case "JOINING":
@@ -449,6 +472,108 @@ namespace AIS.Controllers
                     var stepModel = BuildStepContext(step.StepCode, engId);
                     return PartialView(step.PartialViewName, stepModel);
                 }
+            }
+
+        private void PopulateReplicaViewData(int pageId)
+            {
+            ViewData["Layout"] = null;
+            ViewData["HideTopHeader"] = true;
+            ViewData["PageId"] = pageId;
+            }
+
+        private bool TryGetBackOfficePermissionContext(string stepCode, out string permissionPath, out int permissionPageId, out IActionResult errorResult)
+            {
+            permissionPath = null;
+            permissionPageId = 0;
+            errorResult = null;
+
+            switch ((stepCode ?? string.Empty).Trim().ToUpperInvariant())
+                {
+                case "DRAFT_REPORT":
+                case "CHECKING_DRAFT_REPORT":
+                    permissionPath = "/Execution/manage_draft_report_paras_branch";
+                    break;
+                case "QUALITY_REVIEW":
+                case "CHECKING_QUALITY_REVIEW":
+                    permissionPath = "/Execution/pre_concluding_audit";
+                    break;
+                case "ISSUE_REPORT":
+                    permissionPath = "/Execution/Concluding_Closing_Audit";
+                    break;
+                default:
+                    errorResult = BadRequest("Invalid Back Office workflow step.");
+                    return false;
+                }
+
+            if (!_pageIdResolver.TryResolvePageId(permissionPath, out permissionPageId) || permissionPageId <= 0)
+                {
+                errorResult = Forbid();
+                return false;
+                }
+
+            return true;
+            }
+
+        private bool TryGetNestedReplicaPermissionContext(string viewCode, out string permissionPath, out int permissionPageId, out IActionResult errorResult)
+            {
+            permissionPath = null;
+            permissionPageId = 0;
+            errorResult = null;
+
+            switch ((viewCode ?? string.Empty).Trim().ToUpperInvariant())
+                {
+                case "EXCEPTION_ACCOUNT":
+                    permissionPath = "/Sampling/Account_exception";
+                    break;
+                case "EXCEPTION_LOAN":
+                    permissionPath = "/Sampling/loans_Exception";
+                    break;
+                case "ACCOUNT_DOCUMENT":
+                case "SAMPLING_ACCOUNT_DOCUMENT":
+                    permissionPath = "/Sampling/account_document";
+                    break;
+                case "ACCOUNT_TRANSACTION":
+                case "SAMPLING_ACCOUNT_TRANSACTION":
+                    permissionPath = "/Sampling/account_transaction";
+                    break;
+                case "LOAN_DOCUMENT":
+                case "SAMPLING_LOAN_DOCUMENT":
+                    permissionPath = "/Sampling/loan_documents";
+                    break;
+                case "LOAN_TRANSACTION":
+                case "SAMPLING_LOAN_TRANSACTION":
+                    permissionPath = "/Sampling/loan_transactions";
+                    break;
+                case "WP_VOUCHER":
+                    permissionPath = "/WorkingPaper/voucher_checking";
+                    break;
+                case "WP_ACCOUNT_OPENING":
+                    permissionPath = "/WorkingPaper/account_opening";
+                    break;
+                case "WP_FIXED_ASSETS":
+                    permissionPath = "/WorkingPaper/fixed_assets";
+                    break;
+                case "WP_CASH_COUNT":
+                    permissionPath = "/WorkingPaper/cash_count";
+                    break;
+                case "SAMPLING_BIOMET":
+                    permissionPath = "/Sampling/biomet";
+                    break;
+                case "SAMPLING_LOANS":
+                    permissionPath = "/Sampling/loans";
+                    break;
+                default:
+                    errorResult = BadRequest("Invalid workflow replica view.");
+                    return false;
+                }
+
+            if (!_pageIdResolver.TryResolvePageId(permissionPath, out permissionPageId) || permissionPageId <= 0)
+                {
+                errorResult = Forbid();
+                return false;
+                }
+
+            return true;
             }
 
         private FieldAuditJoinReplicaViewModel BuildJoinReplicaViewModel(SessionUser user, int engId)

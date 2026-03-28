@@ -7,13 +7,15 @@
     var stepCounter = byId('stepCounter');
     var engagementAlert = byId('engagementRequiredAlert');
     var markCompletedBtn = byId('fieldAuditMarkCompletedBtn');
+    var changeEngagementButton = byId('changeEngagementButton');
+    var lockedEngagementId = '';
 
     if (!selector || !stepHost || !stepper) {
         return;
     }
 
     function selectedEngagementId() {
-        return selector.value || '';
+        return lockedEngagementId || selector.value || '';
     }
 
     function getActionUrl(name, fallback) {
@@ -60,6 +62,15 @@
         }
 
         engagementAlert.classList.toggle('d-none', !isVisible);
+    }
+
+    function setEngagementLocked(isLocked) {
+        selector.disabled = !!isLocked;
+        if (!changeEngagementButton) {
+            return;
+        }
+
+        changeEngagementButton.classList.toggle('d-none', !isLocked);
     }
 
 
@@ -195,6 +206,17 @@
             });
     }
 
+    function reloadCurrentStepContent() {
+        var activeAnchor = stepper.querySelector('.step-pill.active');
+        var stepCode = currentStepCode() || (activeAnchor && activeAnchor.getAttribute('data-step-code')) || '';
+        var stepNo = (activeAnchor && activeAnchor.getAttribute('data-step-no')) || '1';
+        if (!stepCode || !selectedEngagementId()) {
+            return;
+        }
+
+        loadStepContent(stepCode, stepNo);
+    }
+
     function initStepperTheme() {
         var stepData = Array.isArray(window.fieldAuditStepperData) ? window.fieldAuditStepperData : [];
         if (!window.fieldAuditStepperTheme || !window.fieldAuditStepperTheme.render || !stepData.length) {
@@ -265,12 +287,16 @@
     selector.addEventListener('change', function () {
         var engId = selectedEngagementId();
         if (!engId) {
+            lockedEngagementId = '';
             toggleEngagementAlert(true);
             clearStepContent('Select an engagement from the dropdown above to load workflow content.');
             setStepPillsDisabled(true);
+            setEngagementLocked(false);
             return;
         }
 
+        lockedEngagementId = selector.value || engId;
+        setEngagementLocked(true);
         setStepPillsDisabled(false);
         var dashboardBaseUrl = selector.getAttribute('data-dashboard-base-url') || '/FieldAudit/AR_Dashboard';
         stepHost.setAttribute('data-eng-id', engId);
@@ -282,8 +308,21 @@
         }
     });
 
+    if (changeEngagementButton) {
+        changeEngagementButton.addEventListener('click', function () {
+            lockedEngagementId = '';
+            selector.value = '';
+            setEngagementLocked(false);
+            setStepPillsDisabled(true);
+            toggleEngagementAlert(true);
+            clearStepContent('Select an engagement from the dropdown above to load workflow content.');
+            setCurrentStepCode('');
+        });
+    }
+
     window.fieldAuditDashboard = {
         loadStepContent: loadStepContent,
+        reloadCurrentStepContent: reloadCurrentStepContent,
         loadNestedView: function (viewCode, options) {
             var engId = selectedEngagementId();
             if (!engId) {
@@ -328,6 +367,14 @@
     };
 
     initStepperTheme();
+    if (selector.value) {
+        lockedEngagementId = selector.value;
+        setEngagementLocked(true);
+        setStepPillsDisabled(false);
+    } else {
+        setEngagementLocked(false);
+        setStepPillsDisabled(true);
+    }
     toggleEngagementAlert(!selectedEngagementId());
 
     if (selectedEngagementId() && currentStepCode()) {

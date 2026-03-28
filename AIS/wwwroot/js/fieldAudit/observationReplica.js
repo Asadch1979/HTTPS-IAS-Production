@@ -396,9 +396,11 @@ window.addEventListener("unhandledrejection", function (e) {
             success: function (data) {
                 $('#submitCAUobBtn').attr('disabled', false);
                 showApiAlert(data);
-                onAlertCallback(function () {
-                    resetObservationSection();
-                });
+                if (window.fieldAuditDashboard && typeof window.fieldAuditDashboard.reloadCurrentStepContent === 'function') {
+                    window.fieldAuditDashboard.reloadCurrentStepContent();
+                    return;
+                }
+                resetObservationSection();
             },
             dataType: "json",
         });
