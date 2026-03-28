@@ -721,6 +721,9 @@ namespace AIS.Controllers
                     {
                     EngagementId = item.ENG_PLAN_ID,
                     EntityName = item.ENTITY_NAME,
+                    EngStatus = item.ENG_STATUS,
+                    StartDate = item.AUDIT_START_DATE,
+                    EndDate = item.AUDIT_END_DATE,
                     StageName = item.ENG_STATUS,
                     StatusId = item.STATUS_ID,
                     IsClose = item.ISCLOSE
