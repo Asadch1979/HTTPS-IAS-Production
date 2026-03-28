@@ -5468,6 +5468,71 @@ namespace AIS.Controllers
             }
 
         [HttpPost]
+        public IActionResult GetIidInqProceedings([FromBody] AIS.Models.IID.InquiryReport.IidInqComplaintRequest request)
+            {
+            try
+                {
+                var data = dBConnection.GetIidInqProceedingsByComplaintId(request?.ComplaintId ?? 0);
+                return Json(new { ok = true, data });
+                }
+            catch (Exception ex)
+                {
+                return Json(new { ok = false, message = ex.Message });
+                }
+            }
+
+        [HttpPost]
+        public IActionResult AddIidInqProceeding([FromBody] AIS.Models.IID.InquiryReport.IidInqProceedingRow model)
+            {
+            try
+                {
+                var rows = dBConnection.AddIidInqProceeding(model);
+                return Json(BuildIidSaveResponse(rows, "Inquiry proceeding row saved."));
+                }
+            catch (Exception ex)
+                {
+                return Json(new { ok = false, message = ex.Message });
+                }
+            }
+
+        [HttpPost]
+        public IActionResult UpdateIidInqProceeding([FromBody] AIS.Models.IID.InquiryReport.IidInqProceedingRow model)
+            {
+            try
+                {
+                if (model == null)
+                    {
+                    return Json(new { ok = false, message = "Inquiry proceeding payload is required." });
+                    }
+
+                var isUpdate = model.ProceedingId > 0;
+                var rows = isUpdate
+                    ? dBConnection.UpdateIidInqProceeding(model)
+                    : dBConnection.AddIidInqProceeding(model);
+
+                return Json(BuildIidSaveResponse(rows, isUpdate ? "Inquiry proceeding row updated." : "Inquiry proceeding row saved."));
+                }
+            catch (Exception ex)
+                {
+                return Json(new { ok = false, message = ex.Message });
+                }
+            }
+
+        [HttpPost]
+        public IActionResult DeleteIidInqProceeding([FromBody] AIS.Models.IID.InquiryReport.IidInqDeleteRequest request)
+            {
+            try
+                {
+                var rows = dBConnection.DeleteIidInqProceeding(request?.Id ?? 0, request?.UserId ?? 0);
+                return Json(BuildIidSaveResponse(rows, "Inquiry proceeding row deleted."));
+                }
+            catch (Exception ex)
+                {
+                return Json(new { ok = false, message = ex.Message });
+                }
+            }
+
+        [HttpPost]
         public IActionResult GetIidInqStatements([FromBody] AIS.Models.IID.InquiryReport.IidInqComplaintRequest request)
             {
             try
@@ -5539,6 +5604,46 @@ namespace AIS.Controllers
                 {
                 var data = dBConnection.GetIidInqEvidenceFilesByComplaintId(request?.ComplaintId ?? 0);
                 return Json(new { ok = true, data });
+                }
+            catch (Exception ex)
+                {
+                return Json(new { ok = false, message = ex.Message });
+                }
+            }
+
+        [HttpPost]
+        public IActionResult GetIidInqEvidenceStep([FromBody] AIS.Models.IID.InquiryReport.IidInqComplaintRequest request)
+            {
+            try
+                {
+                var data = dBConnection.GetIidInqEvidenceStepByComplaintId(request?.ComplaintId ?? 0);
+                return Json(new
+                    {
+                    ok = true,
+                    complaintId = data?.ComplaintId ?? 0,
+                    materialEvidenceDetail = data?.MaterialEvidenceDetail ?? string.Empty,
+                    circumstantialEvidenceDetail = data?.CircumstantialEvidenceDetail ?? string.Empty,
+                    evidenceFiles = data?.EvidenceFiles ?? new List<AIS.Models.IID.InquiryReport.IidInqEvidenceFileRow>()
+                    });
+                }
+            catch (Exception ex)
+                {
+                return Json(new { ok = false, message = ex.Message });
+                }
+            }
+
+        [HttpPost]
+        public IActionResult SaveIidInqEvidenceStep([FromBody] AIS.Models.IID.InquiryReport.IidInqEvidenceStepModel model)
+            {
+            try
+                {
+                if (model == null || model.ComplaintId <= 0)
+                    {
+                    return Json(new { ok = false, message = "ComplaintId is required for evidence details." });
+                    }
+
+                var rows = dBConnection.SaveIidInqEvidenceStep(model);
+                return Json(BuildIidSaveResponse(rows, "Evidence details saved."));
                 }
             catch (Exception ex)
                 {
@@ -5832,7 +5937,9 @@ namespace AIS.Controllers
                     accusations = dBConnection.GetIidInqAccusationsByComplaintId(complaintId),
                     accused = dBConnection.GetIidInqAccusedListByComplaintId(complaintId),
                     recordsScrutinized = dBConnection.GetIidInqRecordsByComplaintId(complaintId),
+                    inquiryProceedings = dBConnection.GetIidInqProceedingsByComplaintId(complaintId),
                     statementsRegister = dBConnection.GetIidInqStatementsByComplaintId(complaintId),
+                    evidenceStep = dBConnection.GetIidInqEvidenceStepByComplaintId(complaintId),
                     evidenceFiles = dBConnection.GetIidInqEvidenceFilesByComplaintId(complaintId),
                     findingsRecommendations = dBConnection.GetIidInqFindingsRecommByComplaintId(complaintId),
                     violations = dBConnection.GetIidInqViolationsByComplaintId(complaintId),
@@ -5890,6 +5997,8 @@ namespace AIS.Controllers
                     }
 
                 var findings = dBConnection.GetIidInqFindingsRecommByComplaintId(complaintId).FirstOrDefault();
+                var evidenceStep = dBConnection.GetIidInqEvidenceStepByComplaintId(complaintId);
+                var proceedings = dBConnection.GetIidInqProceedingsByComplaintId(complaintId);
 
                 var payload = new
                     {
@@ -5906,13 +6015,23 @@ namespace AIS.Controllers
                     accusations = dBConnection.GetIidInqAccusationsByComplaintId(complaintId),
                     accused = dBConnection.GetIidInqAccusedListByComplaintId(complaintId),
                     recordsScrutinized = dBConnection.GetIidInqRecordsByComplaintId(complaintId),
+                    inquiryProceedings = proceedings,
                     statementRegister = dBConnection.GetIidInqStatementsByComplaintId(complaintId),
-                    evidenceFiles = dBConnection.GetIidInqEvidenceFilesByComplaintId(complaintId),
+                    evidenceFiles = evidenceStep?.EvidenceFiles ?? dBConnection.GetIidInqEvidenceFilesByComplaintId(complaintId),
+                    evidenceStep = evidenceStep,
                     violations = dBConnection.GetIidInqViolationsByComplaintId(complaintId),
                     dsa = dBConnection.GetIidInqDsaByComplaintId(complaintId),
                     finalApprovals = new object[0],
                     inquiryReport = new
                         {
+                        proceedings = string.Join(Environment.NewLine, (proceedings ?? new List<AIS.Models.IID.InquiryReport.IidInqProceedingRow>()).Select(x => string.Join(" | ", new[]
+                            {
+                            x.NoticeReference,
+                            x.VisitDate?.ToString("yyyy-MM-dd"),
+                            x.PlaceVisited,
+                            x.ParticipantsDetail,
+                            x.MissingParticipantsReason
+                            }.Where(v => !string.IsNullOrWhiteSpace(v))))),
                         findings = findings?.FindingText,
                         recommendation = findings?.RecommendationText
                         }

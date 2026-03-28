@@ -76,17 +76,21 @@
         bindRows('#tblAccused', toList(payload, ['accusedList', 'accused']), [['name', 'personName', 'employeeName', 'accusedName'], ['designation', 'employeeDesignation'], ['ppNo', 'ppno', 'ppnoNumber']]);
         bindRows('#tblAccusations', toList(payload, ['accusations', 'accusedAccusations']), [['accusation', 'accusationText', 'title', 'details']]);
         bindRows('#tblRecords', toList(payload, ['recordsScrutinized', 'records']), [['recordTitle', 'title'], ['details', 'recordDetails', 'recordDetail']]);
-        bindRows('#tblStatements', toList(payload, ['statementRegister', 'statements']), [['name', 'personName'], ['role', 'roleType', 'designation'], ['statementDate', 'statementDatetime', 'date'], ['mode', 'modeType', 'recordingMode']]);
+        bindRows('#tblProceedings', toList(payload, ['inquiryProceedings', 'proceedings']), [['noticeReference'], ['visitDate'], ['placeVisited'], ['participantsDetail'], ['missingParticipantsReason']]);
+        bindRows('#tblStatements', toList(payload, ['statementRegister', 'statements']), [['name', 'personName'], ['role', 'roleType', 'designation'], ['statementDate', 'statementDatetime', 'date'], ['mode', 'modeType', 'recordingMode'], ['criticalPointsHighlighted', 'CriticalPointsHighlighted']]);
         bindRows('#tblEvidence', toList(payload, ['evidenceFiles', 'evidence']), [['fileName', 'name'], ['fileType', 'fileExt', 'evidenceType', 'type'], ['uploadedOn', 'date']]);
         bindRows('#tblViolations', toList(payload, ['violationsList', 'violations']), [['category'], ['detail', 'violationDetail', 'details'], ['reference', 'referenceText'], ['recommendation']]);
         bindRows('#tblDsa', toList(payload, ['dsaList', 'dsa']), [['person', 'personName', 'name'], ['designation'], ['ppNo', 'ppno', 'ppnoNumber'], ['status', 'dsaStatus']]);
         bindRows('#tblApprovals', toList(payload, ['finalApprovals', 'approvals', 'comments']), [['stage'], ['approvedBy', 'by'], ['comments', 'comment'], ['approvedOn', 'date']]);
 
         var report = pick(payload, ['inquiryReport', 'report'], payload);
+        var evidenceStep = pick(payload, ['evidenceStep'], {}) || {};
         setNarrative('#txtGist', pick(report, ['gist', 'Gist', 'findingText', 'FindingText']));
         setNarrative('#txtProceedings', pick(report, ['proceedings', 'Proceedings']));
         setNarrative('#txtFindings', pick(report, ['findings', 'Findings', 'findingText', 'FindingText']));
         setNarrative('#txtRecommendation', pick(report, ['recommendation', 'Recommendation', 'recommendationText', 'RecommendationText']));
+        setNarrative('#txtMaterialEvidenceDetail', pick(evidenceStep, ['materialEvidenceDetail', 'MaterialEvidenceDetail']));
+        setNarrative('#txtCircumstantialEvidenceDetail', pick(evidenceStep, ['circumstantialEvidenceDetail', 'CircumstantialEvidenceDetail']));
     }
 
     function formatDateTitlePart(value) {
@@ -116,9 +120,11 @@
         var report = pick(payload, ['inquiryReport', 'report'], payload) || {};
         var accused = toList(payload, ['accusedList', 'accused']);
         var accusations = toList(payload, ['accusations', 'accusedAccusations']);
+        var proceedings = toList(payload, ['inquiryProceedings', 'proceedings']);
         var records = toList(payload, ['recordsScrutinized', 'records']);
         var statements = toList(payload, ['statementRegister', 'statements']);
         var evidence = toList(payload, ['evidenceFiles', 'evidence']);
+        var evidenceStep = pick(payload, ['evidenceStep'], {}) || {};
         var violations = toList(payload, ['violationsList', 'violations']);
         var dsa = toList(payload, ['dsaList', 'dsa']);
 
@@ -152,7 +158,15 @@
 
         $('#ptMainAccused').text(formatRowsParagraph(mainAccused.length ? mainAccused : accused, accusedLine));
         $('#ptCoAccused').text(formatRowsParagraph(coAccused, accusedLine));
-        $('#ptProceedings').text(pick(report, ['proceedings', 'Proceedings'], 'N/A'));
+        $('#ptProceedings').text(proceedings.length ? formatRowsParagraph(proceedings, function (row) {
+            return [
+                pick(row, ['noticeReference', 'NoticeReference'], ''),
+                pick(row, ['visitDate', 'VisitDate'], ''),
+                pick(row, ['placeVisited', 'PlaceVisited'], ''),
+                pick(row, ['participantsDetail', 'ParticipantsDetail'], ''),
+                pick(row, ['missingParticipantsReason', 'MissingParticipantsReason'], '')
+            ].filter(Boolean).join(' | ');
+        }) : pick(report, ['proceedings', 'Proceedings'], 'N/A'));
         $('#ptRecordsPara').text(formatRowsParagraph(records, function (row) {
             return [pick(row, ['recordTitle', 'title'], ''), pick(row, ['details', 'recordDetails', 'recordDetail'], '')].filter(Boolean).join(' - ');
         }));
@@ -169,7 +183,14 @@
         }
         $('#ptStatementsComplainant').text(formatRowsParagraph(complainantSt, statementLine));
         $('#ptStatementsAccused').text(formatRowsParagraph(accusedSt, statementLine));
-        $('#ptEvidencePara').text(formatRowsParagraph(evidence, function (row) { return pick(row, ['fileName', 'name'], 'N/A'); }));
+        $('#ptCriticalPointsComplainant').text(formatRowsParagraph(complainantSt, function (row) {
+            return [pick(row, ['name', 'personName'], ''), pick(row, ['criticalPointsHighlighted', 'CriticalPointsHighlighted'], '')].filter(Boolean).join(' - ');
+        }));
+        $('#ptCriticalPointsAccused').text(formatRowsParagraph(accusedSt, function (row) {
+            return [pick(row, ['name', 'personName'], ''), pick(row, ['criticalPointsHighlighted', 'CriticalPointsHighlighted'], '')].filter(Boolean).join(' - ');
+        }));
+        $('#ptEvidencePara').text(pick(evidenceStep, ['materialEvidenceDetail', 'MaterialEvidenceDetail'], '') || formatRowsParagraph(evidence, function (row) { return pick(row, ['fileName', 'name'], 'N/A'); }));
+        $('#ptCircumstantialEvidencePara').text(pick(evidenceStep, ['circumstantialEvidenceDetail', 'CircumstantialEvidenceDetail'], '') || 'N/A');
         $('#ptFindingsPara').text(pick(report, ['findings', 'Findings', 'findingText', 'FindingText'], 'N/A'));
         $('#ptRecommendationsPara').text(pick(report, ['recommendation', 'Recommendation', 'recommendationText', 'RecommendationText'], 'N/A'));
         $('#ptDsaPara').text(formatRowsParagraph(dsa, function (row) {

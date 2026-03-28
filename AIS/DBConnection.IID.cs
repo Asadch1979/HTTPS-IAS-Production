@@ -1552,6 +1552,96 @@ namespace AIS.Controllers
             return ExecuteIidResult(cmd);
             }
 
+        public List<IidInqProceedingRow> GetIidInqProceedingsByComplaintId(long complaintId)
+            {
+            using var con = this.DatabaseConnection();
+            using var cmd = con.CreateCommand();
+            cmd.CommandText = "PKG_INQ.P_GET_INQ_PROCEEDINGS";
+            cmd.CommandType = CommandType.StoredProcedure;
+            cmd.BindByName = true;
+            cmd.Parameters.Add("P_COMPLAINT_ID", OracleDbType.Int64).Value = complaintId;
+            cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+
+            var list = new List<IidInqProceedingRow>();
+            using var rdr = cmd.ExecuteReader();
+            while (rdr.Read())
+                {
+                list.Add(new IidInqProceedingRow
+                    {
+                    // Asad DB wiring: align row id / sort order output with the new child table or proc cursor.
+                    ProceedingId = HasColumn(rdr, "PROCEEDING_ID") ? GetLongValue(rdr, "PROCEEDING_ID") : GetLongValue(rdr, "ROW_ID"),
+                    ComplaintId = GetLongValue(rdr, "COMPLAINT_ID"),
+                    NoticeReference = GetStringValue(rdr, "NOTICE_REFERENCE"),
+                    VisitDate = GetNullableDateValue(rdr, "VISIT_DATE"),
+                    PlaceVisited = GetStringValue(rdr, "PLACE_VISITED"),
+                    ParticipantsDetail = GetStringValue(rdr, "PARTICIPANTS_DETAIL"),
+                    MissingParticipantsReason = GetStringValue(rdr, "MISSING_PARTICIPANTS_REASON"),
+                    SortOrder = HasColumn(rdr, "SORT_ORDER") ? GetIntValue(rdr, "SORT_ORDER") : (HasColumn(rdr, "SR_NO") ? GetIntValue(rdr, "SR_NO") : 0),
+                    Status = HasColumn(rdr, "STATUS") ? GetStringValue(rdr, "STATUS") : "A",
+                    CreatedBy = HasColumn(rdr, "CREATED_BY") ? GetNullableLongValue(rdr, "CREATED_BY") : null,
+                    CreatedOn = HasColumn(rdr, "CREATED_ON") ? GetDateValue(rdr, "CREATED_ON") : default,
+                    UpdatedBy = HasColumn(rdr, "UPDATED_BY") ? GetNullableLongValue(rdr, "UPDATED_BY") : null,
+                    UpdatedOn = HasColumn(rdr, "UPDATED_ON") ? GetNullableDateValue(rdr, "UPDATED_ON") : null
+                    });
+                }
+
+            return list;
+            }
+
+        public IidInqProcResult AddIidInqProceeding(IidInqProceedingRow model)
+            {
+            using var con = this.DatabaseConnection();
+            using var cmd = con.CreateCommand();
+            cmd.CommandText = "PKG_INQ.P_ADD_INQ_PROCEEDING";
+            cmd.CommandType = CommandType.StoredProcedure;
+            cmd.BindByName = true;
+            cmd.Parameters.Add("P_COMPLAINT_ID", OracleDbType.Int64).Value = model.ComplaintId;
+            cmd.Parameters.Add("P_NOTICE_REFERENCE", OracleDbType.Varchar2).Value = model.NoticeReference ?? string.Empty;
+            cmd.Parameters.Add("P_VISIT_DATE", OracleDbType.Date).Value = model.VisitDate ?? (object)DBNull.Value;
+            cmd.Parameters.Add("P_PLACE_VISITED", OracleDbType.Clob).Value = model.PlaceVisited ?? string.Empty;
+            cmd.Parameters.Add("P_PARTICIPANTS_DETAIL", OracleDbType.Clob).Value = model.ParticipantsDetail ?? string.Empty;
+            cmd.Parameters.Add("P_MISSING_PARTICIPANTS_REASON", OracleDbType.Clob).Value = model.MissingParticipantsReason ?? string.Empty;
+            cmd.Parameters.Add("P_SORT_ORDER", OracleDbType.Int32).Value = model.SortOrder;
+            cmd.Parameters.Add("P_STATUS", OracleDbType.Varchar2).Value = model.Status ?? "A";
+            cmd.Parameters.Add("P_CREATED_BY", OracleDbType.Int64).Value = model.CreatedBy ?? (object)DBNull.Value;
+            // Asad DB wiring: child table columns should map to NOTICE_REFERENCE, VISIT_DATE, PLACE_VISITED,
+            // PARTICIPANTS_DETAIL, MISSING_PARTICIPANTS_REASON and SR_NO / ROW_ID.
+            cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+            return ExecuteIidResult(cmd);
+            }
+
+        public IidInqProcResult UpdateIidInqProceeding(IidInqProceedingRow model)
+            {
+            using var con = this.DatabaseConnection();
+            using var cmd = con.CreateCommand();
+            cmd.CommandText = "PKG_INQ.P_UPDATE_INQ_PROCEEDING";
+            cmd.CommandType = CommandType.StoredProcedure;
+            cmd.BindByName = true;
+            cmd.Parameters.Add("P_PROCEEDING_ID", OracleDbType.Int64).Value = model.ProceedingId;
+            cmd.Parameters.Add("P_NOTICE_REFERENCE", OracleDbType.Varchar2).Value = model.NoticeReference ?? string.Empty;
+            cmd.Parameters.Add("P_VISIT_DATE", OracleDbType.Date).Value = model.VisitDate ?? (object)DBNull.Value;
+            cmd.Parameters.Add("P_PLACE_VISITED", OracleDbType.Clob).Value = model.PlaceVisited ?? string.Empty;
+            cmd.Parameters.Add("P_PARTICIPANTS_DETAIL", OracleDbType.Clob).Value = model.ParticipantsDetail ?? string.Empty;
+            cmd.Parameters.Add("P_MISSING_PARTICIPANTS_REASON", OracleDbType.Clob).Value = model.MissingParticipantsReason ?? string.Empty;
+            cmd.Parameters.Add("P_SORT_ORDER", OracleDbType.Int32).Value = model.SortOrder;
+            cmd.Parameters.Add("P_UPDATED_BY", OracleDbType.Int64).Value = model.UpdatedBy ?? (object)DBNull.Value;
+            cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+            return ExecuteIidResult(cmd);
+            }
+
+        public IidInqProcResult DeleteIidInqProceeding(long proceedingId, long userId)
+            {
+            using var con = this.DatabaseConnection();
+            using var cmd = con.CreateCommand();
+            cmd.CommandText = "PKG_INQ.P_DELETE_INQ_PROCEEDING";
+            cmd.CommandType = CommandType.StoredProcedure;
+            cmd.BindByName = true;
+            cmd.Parameters.Add("P_PROCEEDING_ID", OracleDbType.Int64).Value = proceedingId;
+            cmd.Parameters.Add("P_UPDATED_BY", OracleDbType.Int64).Value = userId;
+            cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+            return ExecuteIidResult(cmd);
+            }
+
         public List<IidInqStatementRow> GetIidInqStatementsByComplaintId(long complaintId)
             {
             using var con = this.DatabaseConnection();
@@ -1579,6 +1669,7 @@ namespace AIS.Controllers
                     Place = GetStringValue(rdr, "PLACE"),
                     ModeType = GetStringValue(rdr, "MODE_TYPE"),
                     KeyPoints = GetStringValue(rdr, "KEY_POINTS"),
+                    CriticalPointsHighlighted = HasColumn(rdr, "CRITICAL_POINTS_HIGHLIGHTED") ? GetStringValue(rdr, "CRITICAL_POINTS_HIGHLIGHTED") : string.Empty,
                     UploadedStatement = GetStringValue(rdr, "UPLOADED_STATEMENT"),
                     Status = GetStringValue(rdr, "STATUS"),
                     CreatedBy = GetNullableLongValue(rdr, "CREATED_BY"),
@@ -1607,9 +1698,11 @@ namespace AIS.Controllers
             cmd.Parameters.Add("P_PLACE", OracleDbType.Varchar2).Value = model.Place ?? string.Empty;
             cmd.Parameters.Add("P_MODE_TYPE", OracleDbType.Varchar2).Value = model.ModeType ?? string.Empty;
             cmd.Parameters.Add("P_KEY_POINTS", OracleDbType.Clob).Value = model.KeyPoints ?? string.Empty;
+            cmd.Parameters.Add("P_CRITICAL_POINTS_HIGHLIGHTED", OracleDbType.Clob).Value = model.CriticalPointsHighlighted ?? string.Empty;
             cmd.Parameters.Add("P_STATEMENT_TYPE", OracleDbType.Varchar2).Value = model.StatementType ?? string.Empty;
             cmd.Parameters.Add("P_UPLOADED_STATEMENT", OracleDbType.Varchar2).Value = model.UploadedStatement ?? string.Empty;
             cmd.Parameters.Add("P_CREATED_BY", OracleDbType.Int64).Value = model.CreatedBy ?? (object)DBNull.Value;
+            // Asad DB wiring: extend PKG_INQ.P_ADD_INQ_STATEMENT with P_CRITICAL_POINTS_HIGHLIGHTED.
             cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
             return ExecuteIidResult(cmd);
             }
@@ -1630,9 +1723,11 @@ namespace AIS.Controllers
             cmd.Parameters.Add("P_PLACE", OracleDbType.Varchar2).Value = model.Place ?? string.Empty;
             cmd.Parameters.Add("P_MODE_TYPE", OracleDbType.Varchar2).Value = model.ModeType ?? string.Empty;
             cmd.Parameters.Add("P_KEY_POINTS", OracleDbType.Clob).Value = model.KeyPoints ?? string.Empty;
+            cmd.Parameters.Add("P_CRITICAL_POINTS_HIGHLIGHTED", OracleDbType.Clob).Value = model.CriticalPointsHighlighted ?? string.Empty;
             cmd.Parameters.Add("P_STATEMENT_TYPE", OracleDbType.Varchar2).Value = model.StatementType ?? string.Empty;
             cmd.Parameters.Add("P_UPLOADED_STATEMENT", OracleDbType.Varchar2).Value = model.UploadedStatement ?? string.Empty;
             cmd.Parameters.Add("P_UPDATED_BY", OracleDbType.Int64).Value = model.UpdatedBy ?? (object)DBNull.Value;
+            // Asad DB wiring: extend PKG_INQ.P_UPDATE_INQ_STATEMENT with P_CRITICAL_POINTS_HIGHLIGHTED.
             cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
             return ExecuteIidResult(cmd);
             }
@@ -1961,6 +2056,47 @@ namespace AIS.Controllers
                 }
 
             return list;
+            }
+
+        public IidInqEvidenceStepModel GetIidInqEvidenceStepByComplaintId(long complaintId)
+            {
+            using var con = this.DatabaseConnection();
+            using var cmd = con.CreateCommand();
+            cmd.CommandText = "PKG_INQ.P_GET_INQ_EVIDENCE_STEP";
+            cmd.CommandType = CommandType.StoredProcedure;
+            cmd.BindByName = true;
+            cmd.Parameters.Add("P_COMPLAINT_ID", OracleDbType.Int64).Value = complaintId;
+            cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+
+            var model = new IidInqEvidenceStepModel
+                {
+                ComplaintId = complaintId
+                };
+
+            using var rdr = cmd.ExecuteReader();
+            if (rdr.Read())
+                {
+                model.MaterialEvidenceDetail = HasColumn(rdr, "MATERIAL_EVIDENCE_DETAIL") ? GetStringValue(rdr, "MATERIAL_EVIDENCE_DETAIL") : string.Empty;
+                model.CircumstantialEvidenceDetail = HasColumn(rdr, "CIRCUMSTANTIAL_EVIDENCE_DETAIL") ? GetStringValue(rdr, "CIRCUMSTANTIAL_EVIDENCE_DETAIL") : string.Empty;
+                }
+
+            model.EvidenceFiles = GetIidInqEvidenceFilesByComplaintId(complaintId);
+            return model;
+            }
+
+        public IidInqProcResult SaveIidInqEvidenceStep(IidInqEvidenceStepModel model)
+            {
+            using var con = this.DatabaseConnection();
+            using var cmd = con.CreateCommand();
+            cmd.CommandText = "PKG_INQ.P_SAVE_INQ_EVIDENCE_STEP";
+            cmd.CommandType = CommandType.StoredProcedure;
+            cmd.BindByName = true;
+            cmd.Parameters.Add("P_COMPLAINT_ID", OracleDbType.Int64).Value = model.ComplaintId;
+            cmd.Parameters.Add("P_MATERIAL_EVIDENCE_DETAIL", OracleDbType.Clob).Value = model.MaterialEvidenceDetail ?? string.Empty;
+            cmd.Parameters.Add("P_CIRCUMSTANTIAL_EVIDENCE_DETAIL", OracleDbType.Clob).Value = model.CircumstantialEvidenceDetail ?? string.Empty;
+            // Asad DB wiring: persist MATERIAL_EVIDENCE_DETAIL and CIRCUMSTANTIAL_EVIDENCE_DETAIL in the evidence-step proc.
+            cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+            return ExecuteIidResult(cmd);
             }
 
         public List<IidInqDsaRow> GetIidInqDsaByComplaintId(long complaintId)

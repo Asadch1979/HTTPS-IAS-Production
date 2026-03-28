@@ -19,9 +19,11 @@ namespace AIS.Controllers
 
             var accusations = GetIidInqAccusationsByComplaintId(complaintId) ?? new List<Models.IID.InquiryReport.IidInqAccusationRow>();
             var accused = GetIidInqAccusedListByComplaintId(complaintId) ?? new List<Models.IID.InquiryReport.IidInqAccusedRow>();
+            var proceedings = GetIidInqProceedingsByComplaintId(complaintId) ?? new List<Models.IID.InquiryReport.IidInqProceedingRow>();
             var statements = GetIidInqStatementsByComplaintId(complaintId) ?? new List<Models.IID.InquiryReport.IidInqStatementRow>();
             var records = GetIidInqRecordsByComplaintId(complaintId) ?? new List<Models.IID.InquiryReport.IidInqRecordRow>();
             var evidence = GetIidInqEvidenceFilesByComplaintId(complaintId) ?? new List<Models.IID.InquiryReport.IidInqEvidenceFileRow>();
+            var evidenceStep = GetIidInqEvidenceStepByComplaintId(complaintId) ?? new Models.IID.InquiryReport.IidInqEvidenceStepModel { ComplaintId = complaintId };
             var violations = GetIidInqViolationsByComplaintId(complaintId) ?? new List<Models.IID.InquiryReport.IidInqViolationRow>();
             var findingsRows = GetIidInqFindingsRecommByComplaintId(complaintId) ?? new List<Models.IID.InquiryReport.IidInqFindingsRecommRow>();
             var dsaRows = GetIidInqDsaByComplaintId(complaintId) ?? new List<Models.IID.InquiryReport.IidInqDsaRow>();
@@ -86,6 +88,19 @@ namespace AIS.Controllers
                         SortOrder = x.SortOrder
                         })
                     .ToList(),
+                InquiryProceedings = proceedings
+                    .OrderBy(x => x.SortOrder)
+                    .ThenBy(x => x.VisitDate)
+                    .Select(x => new IidInquiryProceedingRowModel
+                        {
+                        NoticeReference = x.NoticeReference,
+                        VisitDate = x.VisitDate,
+                        PlaceVisited = x.PlaceVisited,
+                        ParticipantsDetail = x.ParticipantsDetail,
+                        MissingParticipantsReason = x.MissingParticipantsReason,
+                        SortOrder = x.SortOrder
+                        })
+                    .ToList(),
                 AccusedList = accused
                     .OrderBy(x => x.SortOrder)
                     .Select(x => new IidAccusedRowModel
@@ -112,6 +127,7 @@ namespace AIS.Controllers
                         Place = x.Place,
                         ModeType = x.ModeType,
                         KeyPoints = x.KeyPoints,
+                        CriticalPointsHighlighted = x.CriticalPointsHighlighted,
                         UploadedStatement = x.UploadedStatement
                         })
                     .ToList(),
@@ -135,6 +151,11 @@ namespace AIS.Controllers
                         UploadedOn = x.UploadedOn
                         })
                     .ToList(),
+                EvidenceSummary = new IidEvidenceSummaryModel
+                    {
+                    MaterialEvidenceDetail = evidenceStep.MaterialEvidenceDetail,
+                    CircumstantialEvidenceDetail = evidenceStep.CircumstantialEvidenceDetail
+                    },
                 Violations = violations
                     .OrderBy(x => x.SortOrder)
                     .Select(x => new IidViolationRowModel

@@ -10,9 +10,11 @@ namespace AIS.Models.IID
         public IidComplaintSnapshotModel ComplaintSnapshot { get; set; } = new IidComplaintSnapshotModel();
         public List<IidAccusedRowModel> AccusedList { get; set; } = new List<IidAccusedRowModel>();
         public List<IidAccusationRowModel> Accusations { get; set; } = new List<IidAccusationRowModel>();
+        public List<IidInquiryProceedingRowModel> InquiryProceedings { get; set; } = new List<IidInquiryProceedingRowModel>();
         public List<IidStatementRowModel> Statements { get; set; } = new List<IidStatementRowModel>();
         public List<IidRecordScrutinizedRowModel> RecordsScrutinized { get; set; } = new List<IidRecordScrutinizedRowModel>();
         public List<IidEvidenceFileRowModel> EvidenceFiles { get; set; } = new List<IidEvidenceFileRowModel>();
+        public IidEvidenceSummaryModel EvidenceSummary { get; set; } = new IidEvidenceSummaryModel();
         public List<IidViolationRowModel> Violations { get; set; } = new List<IidViolationRowModel>();
         public List<IidFindingRecommendationRowModel> FindingsRecommendations { get; set; } = new List<IidFindingRecommendationRowModel>();
         public List<IidDsaRowModel> DsaFiles { get; set; } = new List<IidDsaRowModel>();
@@ -63,6 +65,16 @@ namespace AIS.Models.IID
         public int SortOrder { get; set; }
         }
 
+    public class IidInquiryProceedingRowModel
+        {
+        public string NoticeReference { get; set; }
+        public DateTime? VisitDate { get; set; }
+        public string PlaceVisited { get; set; }
+        public string ParticipantsDetail { get; set; }
+        public string MissingParticipantsReason { get; set; }
+        public int SortOrder { get; set; }
+        }
+
     public class IidAccusedRowModel
         {
         public string PersonName { get; set; }
@@ -85,6 +97,7 @@ namespace AIS.Models.IID
         public string Place { get; set; }
         public string ModeType { get; set; }
         public string KeyPoints { get; set; }
+        public string CriticalPointsHighlighted { get; set; }
         public string UploadedStatement { get; set; }
         }
 
@@ -102,6 +115,12 @@ namespace AIS.Models.IID
         public string FileName { get; set; }
         public string FilePath { get; set; }
         public DateTime? UploadedOn { get; set; }
+        }
+
+    public class IidEvidenceSummaryModel
+        {
+        public string MaterialEvidenceDetail { get; set; }
+        public string CircumstantialEvidenceDetail { get; set; }
         }
 
     public class IidViolationRowModel

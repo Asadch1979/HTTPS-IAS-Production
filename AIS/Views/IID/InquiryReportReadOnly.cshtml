@@ -67,15 +67,32 @@
     </div>
 
     <div class="card shadow-sm mb-3">
+        <div class="card-header bg-light"><strong>Inquiry Proceedings</strong></div>
+        <div class="card-body table-responsive">
+            <table class="table table-sm table-bordered" id="tblProceedings"><thead><tr><th>Notice Reference</th><th>Visit Date</th><th>Place Visited</th><th>Participants</th><th>Missing Participants / Reasons</th></tr></thead><tbody></tbody></table>
+        </div>
+    </div>
+
+    <div class="card shadow-sm mb-3">
         <div class="card-header bg-light"><strong>Statement Register</strong></div>
         <div class="card-body table-responsive">
-            <table class="table table-sm table-bordered" id="tblStatements"><thead><tr><th>Name</th><th>Role</th><th>Date</th><th>Mode</th></tr></thead><tbody></tbody></table>
+            <table class="table table-sm table-bordered" id="tblStatements"><thead><tr><th>Name</th><th>Role</th><th>Date</th><th>Mode</th><th>Critical Points highlighted in statement</th></tr></thead><tbody></tbody></table>
         </div>
     </div>
 
     <div class="card shadow-sm mb-3">
         <div class="card-header bg-light"><strong>Evidence Files</strong></div>
         <div class="card-body table-responsive">
+            <div class="row g-3 mb-3">
+                <div class="col-md-6">
+                    <div class="text-muted small">Detail of Material evidences</div>
+                    <div id="txtMaterialEvidenceDetail" class="border rounded p-2 bg-light"></div>
+                </div>
+                <div class="col-md-6">
+                    <div class="text-muted small">Details of circumstantial evidences</div>
+                    <div id="txtCircumstantialEvidenceDetail" class="border rounded p-2 bg-light"></div>
+                </div>
+            </div>
             <table class="table table-sm table-bordered" id="tblEvidence"><thead><tr><th>File</th><th>Type</th><th>Uploaded On</th></tr></thead><tbody></tbody></table>
         </div>
     </div>

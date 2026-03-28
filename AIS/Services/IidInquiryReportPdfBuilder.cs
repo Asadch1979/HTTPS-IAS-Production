@@ -95,6 +95,7 @@ namespace AIS.Services
 
             var snapshot = data.ComplaintSnapshot ?? new IidComplaintSnapshotModel();
             var accusations = data.Accusations.OrderBy(x => x.SortOrder).ThenBy(x => x.AccusationId).ToList();
+            var proceedings = data.InquiryProceedings.OrderBy(x => x.SortOrder).ThenBy(x => x.VisitDate).ToList();
             var mainAccused = data.AccusedList.Where(x => !IsCoAccused(x.RoleType)).ToList();
             var coAccused = data.AccusedList.Where(x => IsCoAccused(x.RoleType)).ToList();
             var complainantStatements = data.Statements.Where(x => IsComplainantRole(x.RoleType)).OrderBy(x => x.StatementDatetime).ToList();
@@ -136,7 +137,9 @@ namespace AIS.Services
                 BuildNarrativeList(coAccused.Select(BuildAccusedNarrative)));
 
             AppendAnnexSection(sb, "7. Inquiry Proceedings",
-                BuildParagraphs(data.FinalConclusion?.Proceedings));
+                proceedings.Any()
+                    ? BuildNarrativeList(proceedings.Select(BuildProceedingNarrative))
+                    : BuildParagraphs(data.FinalConclusion?.Proceedings));
 
             AppendAnnexSection(sb, "8. Details of Record Scrutinized",
                 BuildNarrativeList(data.RecordsScrutinized
@@ -150,16 +153,20 @@ namespace AIS.Services
                 BuildNarrativeList(accusedStatements.Select(BuildStatementTimeline)));
 
             AppendAnnexSection(sb, "11. Critical Points highlighted in statement of complainant",
-                BuildNarrativeList(complainantStatements.Select(x => JoinNonEmpty(" - ", x.PersonName, x.KeyPoints))));
+                BuildNarrativeList(complainantStatements.Select(x => JoinNonEmpty(" - ", x.PersonName, x.CriticalPointsHighlighted ?? x.KeyPoints))));
 
             AppendAnnexSection(sb, "12. Critical Points highlighted in statement of accused",
-                BuildNarrativeList(accusedStatements.Select(x => JoinNonEmpty(" - ", x.PersonName, x.KeyPoints))));
+                BuildNarrativeList(accusedStatements.Select(x => JoinNonEmpty(" - ", x.PersonName, x.CriticalPointsHighlighted ?? x.KeyPoints))));
 
             AppendAnnexSection(sb, "13. Details of material evidence",
-                BuildNarrativeList(materialEvidence.Select(BuildEvidenceNarrative)));
+                !string.IsNullOrWhiteSpace(data.EvidenceSummary?.MaterialEvidenceDetail)
+                    ? BuildParagraphs(data.EvidenceSummary.MaterialEvidenceDetail)
+                    : BuildNarrativeList(materialEvidence.Select(BuildEvidenceNarrative)));
 
             AppendAnnexSection(sb, "14. Details of circumstantial evidence",
-                BuildNarrativeList(circumstantialEvidence.Select(BuildEvidenceNarrative)));
+                !string.IsNullOrWhiteSpace(data.EvidenceSummary?.CircumstantialEvidenceDetail)
+                    ? BuildParagraphs(data.EvidenceSummary.CircumstantialEvidenceDetail)
+                    : BuildNarrativeList(circumstantialEvidence.Select(BuildEvidenceNarrative)));
 
             AppendAnnexSection(sb, "15. Details of findings with implications / violated policy references",
                 BuildNarrativeList(frRows.Select(x => JoinNonEmpty(" ",
@@ -318,6 +325,21 @@ namespace AIS.Services
                 BuildPair("PP No", row.PpnoNumber),
                 BuildPair("CNIC", row.Cnic),
                 BuildPair("Posting Place", row.PostingPlace));
+            }
+
+        private static string BuildProceedingNarrative(IidInquiryProceedingRowModel row)
+            {
+            if (row == null)
+                {
+                return null;
+                }
+
+            return JoinNonEmpty("; ",
+                BuildPair("Notice Reference", row.NoticeReference),
+                BuildPair("Visit Date", FormatDate(row.VisitDate)),
+                BuildPair("Place Visited", row.PlaceVisited),
+                BuildPair("Participants", row.ParticipantsDetail),
+                BuildPair("Missing Participants / Reasons", row.MissingParticipantsReason));
             }
 
         private static string BuildStatementTimeline(IidStatementRowModel row)

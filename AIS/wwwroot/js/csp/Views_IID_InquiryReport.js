@@ -27,9 +27,10 @@ $(function(){
         { id: 4, code: 'RECORDS', title: 'Record Scrutinized' },
         { id: 5, code: 'STATEMENTS', title: 'Statement Register' },
         { id: 6, code: 'EVIDENCE', title: 'Evidence' },
-        { id: 7, code: 'FINDINGS_RECOMM', title: 'Findings & Recommendations' },
-        { id: 8, code: 'VIOLATIONS', title: 'Violations' },
-        { id: 9, code: 'DSA', title: 'DSA / Finalize' }
+        { id: 7, code: 'PROCEEDINGS', title: 'Inquiry Proceedings' },
+        { id: 8, code: 'FINDINGS_RECOMM', title: 'Findings & Recommendations' },
+        { id: 9, code: 'VIOLATIONS', title: 'Violations' },
+        { id: 10, code: 'DSA', title: 'DSA / Finalize' }
     ];
 
     var state = {
@@ -42,8 +43,9 @@ $(function(){
         accusedEmployeeDraft: { ppnoNumber: '', personName: '', fatherName: '', cnic: '', designation: '', roleType: 'Main' },
         accusedManualDraft: { personName: '', fatherName: '', cnic: '', designation: '', roleType: 'Main' },
         records: [{ recId: 0, recordTitle: '', recordDetails: '', sortOrder: 1 }],
+        proceedings: [{ proceedingId: 0, noticeReference: '', visitDate: '', placeVisited: '', participantsDetail: '', missingParticipantsReason: '', sortOrder: 1 }],
         statementRegister: { rows: [] },
-        evidence: [],
+        evidence: { files: [], materialEvidenceDetail: '', circumstantialEvidenceDetail: '' },
         findingsRecomm: {
             selectedAccusationId: '',
             findingText: '',
@@ -56,8 +58,8 @@ $(function(){
         },
         violations: [{ violationId: 0, category: 'Internal', violationDetail: '', referenceText: '', recommendation: '', sortOrder: 1 }],
         dsa: [{ dsaId: 0, personName: '', designation: '', ppnoNumber: '', cnic: '', dsaStatus: '', remarks: '', sortOrder: 1 }],
-        deleteQueue: { accusations: [], accused: [], records: [], violations: [], dsa: [] },
-        savedSteps: { 1: true, 2: false, 3: false, 4: false, 5: false, 6: false, 7: false, 8: false, 9: false },
+        deleteQueue: { accusations: [], accused: [], records: [], proceedings: [], violations: [], dsa: [] },
+        savedSteps: { 1: true, 2: false, 3: false, 4: false, 5: false, 6: false, 7: false, 8: false, 9: false, 10: false },
         isDsaVisible: true,
         dirtySteps: {}
     };
@@ -120,7 +122,7 @@ $(function(){
     }
 
     function getVisibleSteps(){
-        return steps.filter(function(s){ return s.id !== 9 || state.isDsaVisible; });
+        return steps.filter(function(s){ return s.id !== 10 || state.isDsaVisible; });
     }
 
     function getStepPosition(stepId){
@@ -165,11 +167,36 @@ $(function(){
         return '<input ' + (type ? 'type="' + type + '"' : '') + ' class="form-control" data-bind="' + bind + '" value="' + esc(value) + '">';
     }
 
+    function rowTextarea(bind, value, rows){
+        return '<textarea class="form-control" rows="' + (rows || 2) + '" data-bind="' + bind + '">' + esc(value) + '</textarea>';
+    }
+
+    function formatDateInputValue(value){
+        if(!value){ return ''; }
+        var raw = String(value).trim();
+        if(!raw){ return ''; }
+        if(/^\d{4}-\d{2}-\d{2}$/.test(raw)){ return raw; }
+        if(/^\d{4}-\d{2}-\d{2}T/.test(raw)){ return raw.slice(0, 10); }
+        var parsed = new Date(raw);
+        if(isNaN(parsed.getTime())){ return ''; }
+        return parsed.toISOString().slice(0, 10);
+    }
+
+    function normalizeDateOnly(value){
+        var raw = formatDateInputValue(value);
+        return raw || '';
+    }
+
+    function hasProceedingContent(row){
+        row = row || {};
+        return !!((row.noticeReference || row.visitDate || row.placeVisited || row.participantsDetail || row.missingParticipantsReason || '').toString().trim());
+    }
+
     function sectionActions(step){
         var prevStep = getPreviousVisibleStep(step);
         var nextStep = getNextVisibleStep(step);
         var saveBtn = step === 5 ? '' : '<button type="button" class="btn btn-primary" data-save>Mark Completed</button>';
-        var finalSubmitBtn = step === 7 ? '<button type="button" class="btn btn-danger" id="finalSubmitBtn">Final Submit</button>' : '';
+        var finalSubmitBtn = step === 8 ? '<button type="button" class="btn btn-danger" id="finalSubmitBtn">Final Submit</button>' : '';
         return '<div class="d-flex justify-content-between mt-4"><button type="button" class="btn btn-outline-secondary" data-prev ' + (!prevStep?'disabled':'') + '>Previous</button><div class="d-flex gap-2">' + saveBtn + '<button type="button" class="btn btn-success" data-next>' + (!nextStep?'Review':'Next') + '</button>' + finalSubmitBtn + '</div></div>';
     }
 
@@ -187,7 +214,7 @@ $(function(){
     }
 
     function initTinyMceEditors(){
-        if(currentStep !== 7 || !window.tinymce){ return; }
+        if(currentStep !== 8 || !window.tinymce){ return; }
         ['findingTextHtml','recommendationTextHtml'].forEach(function(editorId){
             if(window.tinymce.get(editorId)){ return; }
             window.tinymce.init({
@@ -397,7 +424,7 @@ $(function(){
                 }
             });
             syncFindingsStatusRows(rows);
-            state.savedSteps[7] = state.findingsRecomm.statusRows.some(isStatusRowSaved);
+            state.savedSteps[8] = state.findingsRecomm.statusRows.some(isStatusRowSaved);
             renderFindingsStatusGrid();
             updateDsaVisibility();
         });
@@ -412,9 +439,9 @@ $(function(){
         var shouldShowDsa = hasEstablishedOutcome();
         state.isDsaVisible = shouldShowDsa;
         if(!shouldShowDsa){
-            state.savedSteps[9] = true;
-            state.dirtySteps[9] = false;
-            if(currentStep === 9){ currentStep = 7; }
+            state.savedSteps[10] = true;
+            state.dirtySteps[10] = false;
+            if(currentStep === 10){ currentStep = 8; }
         }
         renderStepper();
     }
@@ -531,6 +558,7 @@ $(function(){
                     '<td>' + esc(r.cnic || '') + '</td>' +
                     '<td><input type="datetime-local" class="form-control" data-step5-field="'+ i +'" data-step5-key="statementDatetime" value="' + esc((r.statementDatetime || '').slice(0, 16)) + '"></td>' +
                     '<td><input type="text" class="form-control" data-step5-field="'+ i +'" data-step5-key="place" value="' + esc(r.place || '') + '"></td>' +
+                    '<td><textarea class="form-control" rows="2" data-step5-field="'+ i +'" data-step5-key="criticalPointsHighlighted">' + esc(r.criticalPointsHighlighted || '') + '</textarea></td>' +
                     '<td><input type="text" class="form-control" data-step5-field="'+ i +'" data-step5-key="uploadedStatement" placeholder="Saved file name" value="' + esc(r.uploadedStatement || '') + '"></td>' +
                     '<td>' + fileCell + '</td>' +
                     '<td><button type="button" class="btn btn-primary btn-sm" data-step5-save-row="'+ i +'">' + (parseInt(r.statementId || 0, 10) > 0 ? 'Update' : 'Save') + '</button></td>' +
@@ -540,14 +568,40 @@ $(function(){
             html += '<h5>Statement Register</h5>' +
                 '<div class="card border mb-3"><div class="card-body">' +
                     '<h6 class="mb-3">Statement of Complainant & Accused</h6>' +
-                    '<div class="table-responsive"><table class="table table-sm align-middle"><thead><tr><th>Type</th><th>PPNO</th><th>Name</th><th>Father Name</th><th>CNIC</th><th>Date/Time</th><th>Place of Statement</th><th>Uploaded Statement</th><th>File</th><th>Action</th></tr></thead><tbody>' + (statementRows || '<tr><td colspan="10" class="text-muted">No statement rows available.</td></tr>') + '</tbody></table></div>' +
+                    '<div class="table-responsive"><table class="table table-sm align-middle"><thead><tr><th>Type</th><th>PPNO</th><th>Name</th><th>Father Name</th><th>CNIC</th><th>Date/Time</th><th>Place of Statement</th><th>Critical Points highlighted in statement</th><th>Uploaded Statement</th><th>File</th><th>Action</th></tr></thead><tbody>' + (statementRows || '<tr><td colspan="11" class="text-muted">No statement rows available.</td></tr>') + '</tbody></table></div>' +
                 '</div></div>';
         }
         if(step === 6){
-            var rowsE = state.evidence.map(function(r){ return '<tr><td>'+esc(r.fileName)+'</td><td>'+esc(r.evidenceType || 'N/A')+'</td><td>'+esc(r.uploadedOn || 'N/A')+'</td><td><button type="button" class="btn btn-outline-danger btn-sm" data-delete-evidence="'+ r.evidenceId +'">Remove</button></td></tr>'; }).join('');
-            html += '<h5>Evidence</h5><div class="mb-3"><label class="form-label">Upload evidence files</label><input id="uploadedEvidence" type="file" class="form-control" multiple></div><table class="table table-sm"><thead><tr><th>File</th><th>Type</th><th>Uploaded On</th><th></th></tr></thead><tbody>' + (rowsE || '<tr><td colspan="4" class="text-muted">No evidence uploaded.</td></tr>') + '</tbody></table>';
+            var rowsE = (state.evidence.files || []).map(function(r){ return '<tr><td>'+esc(r.fileName)+'</td><td>'+esc(r.evidenceType || 'N/A')+'</td><td>'+esc(r.uploadedOn || 'N/A')+'</td><td><button type="button" class="btn btn-outline-danger btn-sm" data-delete-evidence="'+ r.evidenceId +'">Remove</button></td></tr>'; }).join('');
+            html += '<h5>Evidence</h5>' +
+                '<div class="card border-0 bg-light mb-3"><div class="card-body">' +
+                    '<div class="row g-3">' +
+                        '<div class="col-md-6"><label class="form-label fw-semibold">Detail of Material evidences</label><textarea class="form-control" rows="5" data-step6-key="materialEvidenceDetail">' + esc(state.evidence.materialEvidenceDetail || '') + '</textarea></div>' +
+                        '<div class="col-md-6"><label class="form-label fw-semibold">Details of circumstantial evidences</label><textarea class="form-control" rows="5" data-step6-key="circumstantialEvidenceDetail">' + esc(state.evidence.circumstantialEvidenceDetail || '') + '</textarea></div>' +
+                    '</div>' +
+                '</div></div>' +
+                '<div class="mb-3"><label class="form-label">Upload evidence files</label><input id="uploadedEvidence" type="file" class="form-control" multiple></div>' +
+                '<table class="table table-sm"><thead><tr><th>File</th><th>Type</th><th>Uploaded On</th><th></th></tr></thead><tbody>' + (rowsE || '<tr><td colspan="4" class="text-muted">No evidence uploaded.</td></tr>') + '</tbody></table>';
         }
         if(step === 7){
+            var proceedingRows = state.proceedings.map(function(r, i){
+                return '<tr data-row-id="' + (r.proceedingId || 0) + '">' +
+                    '<td>' + rowInput('proceedings['+i+'].noticeReference', r.noticeReference || '') + '</td>' +
+                    '<td>' + rowInput('proceedings['+i+'].visitDate', formatDateInputValue(r.visitDate || ''), 'date') + '</td>' +
+                    '<td>' + rowTextarea('proceedings['+i+'].placeVisited', r.placeVisited || '', 2) + '</td>' +
+                    '<td>' + rowTextarea('proceedings['+i+'].participantsDetail', r.participantsDetail || '', 2) + '</td>' +
+                    '<td>' + rowTextarea('proceedings['+i+'].missingParticipantsReason', r.missingParticipantsReason || '', 2) + '</td>' +
+                    '<td><button type="button" class="btn btn-outline-danger btn-sm" data-remove-row="proceedings" data-index="'+ i +'">Remove</button></td>' +
+                '</tr>';
+            }).join('');
+
+            html += '<h5>Inquiry Proceedings</h5>' +
+                '<div class="card border mb-3"><div class="card-body">' +
+                    '<div class="table-responsive"><table class="table table-sm align-middle"><thead><tr><th>Reference of Notices issued for inquiry schedule</th><th>Date of visit to place of incident</th><th>Places visited</th><th>Detail of participants</th><th>Detail of missing participants with reasons</th><th></th></tr></thead><tbody>' + proceedingRows + '</tbody></table></div>' +
+                    '<button type="button" class="btn btn-outline-primary btn-sm" data-add-row="proceedings">Add More</button>' +
+                '</div></div>';
+        }
+        if(step === 8){
             var accusationOptions = (state.findingsRecomm.accusationOptions || []).map(function(opt){
                 var id = String(opt.accusationId);
                 var selected = accusationIdValue(state.findingsRecomm.selectedAccusationId) === id ? ' selected' : '';
@@ -590,11 +644,11 @@ $(function(){
                     '</div>' +
                 '</div>';
         }
-        if(step === 8){
+        if(step === 9){
             var rowsV = state.violations.map(function(r,i){ return '<tr data-row-id="' + (r.violationId || 0) + '"><td>'+rowInput('violations['+i+'].category',r.category)+'</td><td>'+rowInput('violations['+i+'].violationDetail',r.violationDetail)+'</td><td>'+rowInput('violations['+i+'].referenceText',r.referenceText)+'</td><td>'+rowInput('violations['+i+'].recommendation',r.recommendation)+'</td><td><button type="button" class="btn btn-outline-danger btn-sm" data-remove-row="violations" data-index="'+i+'">Remove</button></td></tr>'; }).join('');
             html += '<h5>Violations (Annex-III)</h5><table class="table table-sm"><thead><tr><th>Category</th><th>Detail</th><th>Reference</th><th>Recommendation</th><th></th></tr></thead><tbody>'+rowsV+'</tbody></table><button type="button" class="btn btn-outline-primary btn-sm" data-add-row="violations">Add Row</button>';
         }
-        if(step === 9){
+        if(step === 10){
             var rowsD = state.dsa.map(function(r,i){ return '<tr data-row-id="' + (r.dsaId || 0) + '"><td>'+rowInput('dsa['+i+'].personName',r.personName)+'</td><td>'+rowInput('dsa['+i+'].designation',r.designation)+'</td><td>'+rowInput('dsa['+i+'].ppnoNumber',r.ppnoNumber)+'</td><td>'+rowInput('dsa['+i+'].cnic',r.cnic)+'</td><td>'+rowInput('dsa['+i+'].dsaStatus',r.dsaStatus)+'</td><td><button type="button" class="btn btn-outline-danger btn-sm" data-remove-row="dsa" data-index="'+i+'">Remove</button></td></tr>'; }).join('');
             html += '<h5>DSA</h5><table class="table table-sm"><thead><tr><th>Person</th><th>Designation</th><th>PPNO</th><th>CNIC</th><th>Status</th><th></th></tr></thead><tbody>'+rowsD+'</tbody></table><button type="button" class="btn btn-outline-primary btn-sm" data-add-row="dsa">Add Row</button>';
         }
@@ -603,7 +657,7 @@ $(function(){
         h.html(html);
         if(isLocked){ h.find('input,textarea,select,button').prop('disabled', true); }
         initTinyMceEditors();
-        if(step === 7){ renderFindingsStatusGrid(); }
+        if(step === 8){ renderFindingsStatusGrid(); }
     }
 
     function bindStepInputs(){
@@ -612,7 +666,15 @@ $(function(){
             var key = $(this).data('bind');
             var m = key.match(/^(\w+)\[(\d+)\]\.(\w+)$/);
             if(!m){ return; }
-            state[m[1]][parseInt(m[2],10)][m[3]] = $(this).val();
+            var sectionName = m[1];
+            var rowIndex = parseInt(m[2],10);
+            var fieldName = m[3];
+            var value = $(this).val();
+            if(sectionName === 'proceedings' && fieldName === 'visitDate'){
+                value = normalizeDateOnly(value);
+                $(this).val(value);
+            }
+            state[sectionName][rowIndex][fieldName] = value;
             markDirty(currentStep);
             renderStepper();
         });
@@ -667,6 +729,14 @@ $(function(){
             markDirty(5);
             renderStepper();
         });
+
+        host.find('[data-step6-key]').off('input change').on('input change', function(){
+            var fieldKey = String($(this).data('step6-key') || '');
+            if(!fieldKey){ return; }
+            state.evidence[fieldKey] = $(this).val();
+            markDirty(6);
+            renderStepper();
+        });
     }
 
     function validateStep(step){
@@ -676,8 +746,20 @@ $(function(){
         if(step === 3 && !state.accusedEmployeeRows.length && !state.accusedManualRows.length) errs.push('At least one accused row is required.');
         if(step === 4 && !state.records.some(function(x){ return has(x.recordTitle) || has(x.recordDetails); })) errs.push('At least one record scrutinized row is required.');
         if(step === 5 && !(state.statementRegister.rows || []).some(function(x){ return parseInt(x.statementId || 0, 10) > 0; })) errs.push('At least one saved statement is required.');
-        if(step === 6 && !state.evidence.length) errs.push('At least one evidence file is mandatory.');
+        if(step === 6 && !(state.evidence.files || []).length) errs.push('At least one evidence file is mandatory.');
         if(step === 7){
+            var proceedingRows = (state.proceedings || []).filter(hasProceedingContent);
+            if(!proceedingRows.length){
+                errs.push('At least one inquiry proceeding row is required.');
+            } else {
+                proceedingRows.forEach(function(row, idx){
+                    if(!has(row.noticeReference) || !has(row.visitDate) || !has(row.placeVisited) || !has(row.participantsDetail) || !has(row.missingParticipantsReason)){
+                        errs.push('All inquiry proceeding fields are required for row ' + (idx + 1) + '.');
+                    }
+                });
+            }
+        }
+        if(step === 8){
             if(window.tinymce && window.tinymce.get('findingTextHtml')){ state.findingsRecomm.findingText = window.tinymce.get('findingTextHtml').getContent(); }
             if(window.tinymce && window.tinymce.get('recommendationTextHtml')){ state.findingsRecomm.recommendationText = window.tinymce.get('recommendationTextHtml').getContent(); }
             if(state.findingsRecomm.selectedAccusationId === '' || state.findingsRecomm.selectedAccusationId === null || typeof state.findingsRecomm.selectedAccusationId === 'undefined') errs.push('Accusation selection is required.');
@@ -686,8 +768,8 @@ $(function(){
             var selectedOutcome = state.findingsRecomm.outcomes[parseInt(state.findingsRecomm.selectedAccusationId, 10)] || '';
             if(!has(selectedOutcome)) errs.push('Outcome is required for selected accusation.');
         }
-        if(step === 8 && !state.violations.some(function(x){ return has(x.category) && has(x.violationDetail) && has(x.referenceText) && has(x.recommendation); })) errs.push('At least one complete violation row is required.');
-        if(step === 9 && state.isDsaVisible && !state.dsa.some(function(x){ return has(x.personName) || has(x.dsaStatus); })) errs.push('At least one DSA row is required.');
+        if(step === 9 && !state.violations.some(function(x){ return has(x.category) && has(x.violationDetail) && has(x.referenceText) && has(x.recommendation); })) errs.push('At least one complete violation row is required.');
+        if(step === 10 && state.isDsaVisible && !state.dsa.some(function(x){ return has(x.personName) || has(x.dsaStatus); })) errs.push('At least one DSA row is required.');
         return errs;
     }
 
@@ -708,8 +790,22 @@ $(function(){
                 });
             }
         }
-        if(step === 6 && !state.evidence.length) missingFields.push('Upload Evidence File');
+        if(step === 6 && !(state.evidence.files || []).length) missingFields.push('Upload Evidence File');
         if(step === 7){
+            var proceedingRows = (state.proceedings || []).filter(hasProceedingContent);
+            if(!proceedingRows.length){
+                missingFields.push('At least one inquiry proceedings row is required');
+            } else {
+                proceedingRows.forEach(function(row, idx){
+                    if(!has(row.noticeReference)){ missingFields.push('Notice Reference (Proceedings row ' + (idx + 1) + ')'); }
+                    if(!has(row.visitDate)){ missingFields.push('Visit Date (Proceedings row ' + (idx + 1) + ')'); }
+                    if(!has(row.placeVisited)){ missingFields.push('Place Visited (Proceedings row ' + (idx + 1) + ')'); }
+                    if(!has(row.participantsDetail)){ missingFields.push('Participants Detail (Proceedings row ' + (idx + 1) + ')'); }
+                    if(!has(row.missingParticipantsReason)){ missingFields.push('Missing Participants / Reasons (Proceedings row ' + (idx + 1) + ')'); }
+                });
+            }
+        }
+        if(step === 8){
             (state.findingsRecomm.statusRows || []).forEach(function(row){
                 var id = parseInt(row.accusationId, 10);
                 if(isNaN(id)){ return; }
@@ -718,8 +814,8 @@ $(function(){
                 }
             });
         }
-        if(step === 8 && !state.violations.some(function(x){ return has(x.category) && has(x.violationDetail) && has(x.referenceText) && has(x.recommendation); })) missingFields.push('At least one complete violation row is required');
-        if(step === 9 && state.isDsaVisible && !state.dsa.some(function(x){ return has(x.personName) || has(x.dsaStatus); })) missingFields.push('At least one DSA row is required');
+        if(step === 9 && !state.violations.some(function(x){ return has(x.category) && has(x.violationDetail) && has(x.referenceText) && has(x.recommendation); })) missingFields.push('At least one complete violation row is required');
+        if(step === 10 && state.isDsaVisible && !state.dsa.some(function(x){ return has(x.personName) || has(x.dsaStatus); })) missingFields.push('At least one DSA row is required');
         return { ok: missingFields.length === 0, missingFields: missingFields };
     }
 
@@ -733,6 +829,7 @@ $(function(){
         if(state[section].length){ return; }
         if(section === 'accusations') state.accusations.push({ accusationId: 0, accusationText: '', sortOrder: 1 });
         if(section === 'records') state.records.push({ recId: 0, recordTitle: '', recordDetails: '', sortOrder: 1 });
+        if(section === 'proceedings') state.proceedings.push({ proceedingId: 0, noticeReference: '', visitDate: '', placeVisited: '', participantsDetail: '', missingParticipantsReason: '', sortOrder: 1 });
         if(section === 'violations') state.violations.push({ violationId: 0, category: 'Internal', violationDetail: '', referenceText: '', recommendation: '', sortOrder: 1 });
         if(section === 'dsa') state.dsa.push({ dsaId: 0, personName: '', designation: '', ppnoNumber: '', cnic: '', dsaStatus: '', remarks: '', sortOrder: 1 });
     }
@@ -836,6 +933,7 @@ $(function(){
             statementDatetimeDisplay: '',
             place: '',
             statementType: 'ACCUSED',
+            criticalPointsHighlighted: '',
             uploadedStatement: '',
             statementId: 0
         };
@@ -856,6 +954,7 @@ $(function(){
             statementDatetimeDisplay: complainantRow ? (complainantRow.statementDatetimeDisplay || complainantRow.statementDatetime || complainantRow.stmtDatetime || complainantRow.datE_TIME || '') : '',
             place: complainantRow ? (complainantRow.place || complainantRow.statementPlace || complainantRow.stmT_PLACE || '') : '',
             statementType: 'COMPLAINANT',
+            criticalPointsHighlighted: complainantRow ? (complainantRow.criticalPointsHighlighted || complainantRow.CriticalPointsHighlighted || '') : '',
             uploadedStatement: complainantRow ? (complainantRow.uploadedStatement || complainantRow.UploadedStatement || '') : '',
             statementId: complainantRow ? (parseInt(complainantRow.statementId || complainantRow.statemenT_ID || complainantRow.id || 0, 10) || 0) : 0
         };
@@ -893,6 +992,7 @@ $(function(){
                 statementDatetimeDisplay: item.statementDatetimeDisplay || item.statementDatetime || item.stmtDatetime || item.datE_TIME || '',
                 place: item.place || item.statementPlace || item.stmT_PLACE || '',
                 statementType: normalizeStatementType(item.statementType || item.StatementType || item.statementTYPE || item.rolE_TYPE),
+                criticalPointsHighlighted: item.criticalPointsHighlighted || item.CriticalPointsHighlighted || '',
                 uploadedStatement: item.uploadedStatement || item.UploadedStatement || '',
                 statementId: parseInt(item.statementId || item.statemenT_ID || item.id || 0, 10) || 0
             };
@@ -965,6 +1065,7 @@ $(function(){
             placeOfStatement: row.place,
             modeType: '',
             keyPoints: '',
+            criticalPointsHighlighted: row.criticalPointsHighlighted || '',
             uploadedStatement: row.uploadedStatement || '',
             status: 'A',
             createdBy: userId,
@@ -1015,7 +1116,7 @@ $(function(){
     }
 
     function loadStepData(step){
-        if(step < 2 || step > 9){ return $.Deferred().resolve().promise(); }
+        if(step < 2 || step > 10){ return $.Deferred().resolve().promise(); }
         var cfg = {
             2: { loadFn: window.iidGetInqAccusations, hydrate: function(resp){ state.accusations = extractData(resp).map(function(x){ return { accusationId: x.accusationId, accusationText: x.accusationText, sortOrder: x.sortOrder || 1 }; }); ensureOneRow('accusations'); }, section: 'accusations' },
             3: { loadFn: window.iidGetInqAccusedList, hydrate: function(resp){ splitAccusedRows(extractData(resp)); clearAccusedDraft('employee'); clearAccusedDraft('manual'); }, section: 'accusedRows' },
@@ -1030,10 +1131,30 @@ $(function(){
                 }, hydrate: function(resp){
                     mergeStatementRegister(resp.accusedRows || [], resp.savedRows || []);
                 }, section: 'statementRegister' },
-            6: { loadFn: window.iidGetInqEvidenceFiles, hydrate: function(resp){ state.evidence = extractData(resp); }, section: 'evidence' },
-            7: { loadFn: loadFindingsModule, hydrate: function(){}, section: 'findingsRecomm' },
-            8: { loadFn: window.iidGetInqViolations, hydrate: function(resp){ state.violations = extractData(resp); ensureOneRow('violations'); }, section: 'violations' },
-            9: { loadFn: window.iidGetInqDsa, hydrate: function(resp){ state.dsa = extractData(resp); ensureOneRow('dsa'); }, section: 'dsa' }
+            6: { loadFn: window.iidGetInqEvidenceStep, hydrate: function(resp){
+                    state.evidence = {
+                        files: extractData(resp.evidenceFiles || resp),
+                        materialEvidenceDetail: resp.materialEvidenceDetail || '',
+                        circumstantialEvidenceDetail: resp.circumstantialEvidenceDetail || ''
+                    };
+                }, section: 'evidence' },
+            7: { loadFn: window.iidGetInqProceedings, hydrate: function(resp){
+                    state.proceedings = extractData(resp).map(function(x){
+                        return {
+                            proceedingId: x.proceedingId || x.rowId || 0,
+                            noticeReference: x.noticeReference || '',
+                            visitDate: formatDateInputValue(x.visitDate || ''),
+                            placeVisited: x.placeVisited || '',
+                            participantsDetail: x.participantsDetail || '',
+                            missingParticipantsReason: x.missingParticipantsReason || '',
+                            sortOrder: x.sortOrder || 1
+                        };
+                    });
+                    ensureOneRow('proceedings');
+                }, section: 'proceedings' },
+            8: { loadFn: loadFindingsModule, hydrate: function(){}, section: 'findingsRecomm' },
+            9: { loadFn: window.iidGetInqViolations, hydrate: function(resp){ state.violations = extractData(resp); ensureOneRow('violations'); }, section: 'violations' },
+            10: { loadFn: window.iidGetInqDsa, hydrate: function(resp){ state.dsa = extractData(resp); ensureOneRow('dsa'); }, section: 'dsa' }
         }[step];
 
         return cfg.loadFn(complaintId).then(function(resp){
@@ -1044,11 +1165,15 @@ $(function(){
                 state.savedSteps[step] = (state.statementRegister.rows || []).some(function(x){ return parseInt(x.statementId || 0, 10) > 0; });
                 return;
             }
+            if(step === 6){
+                state.savedSteps[step] = !!((state.evidence.files || []).length || (state.evidence.materialEvidenceDetail || '').trim() || (state.evidence.circumstantialEvidenceDetail || '').trim());
+                return;
+            }
             if(cfg.section === 'findingsRecomm'){
                 state.savedSteps[step] = (state.findingsRecomm.statusRows || []).some(isStatusRowSaved);
                 return;
             }
-            var list = cfg.section === 'evidence' ? state.evidence : (cfg.section === 'accusedRows' ? state.accusedEmployeeRows.concat(state.accusedManualRows) : state[cfg.section]);
+            var list = cfg.section === 'accusedRows' ? state.accusedEmployeeRows.concat(state.accusedManualRows) : state[cfg.section];
             state.savedSteps[step] = (list || []).some(function(x){ return Object.keys(x || {}).some(function(k){ return k.toLowerCase().indexOf('id') >= 0 && Number(x[k] || 0) > 0; }); });
         });
     }
@@ -1075,9 +1200,60 @@ $(function(){
             return $.Deferred().resolve({ message: 'Use section-level save buttons for Statement Register.' }).promise();
         }
         if(step === 6){
-            return window.iidGetInqEvidenceFiles(complaintId).then(function(resp){ ensureApiSuccess(resp, 'Failed to load evidence list.'); state.evidence = extractData(resp); return { message: 'Evidence list refreshed from database.' }; });
+            return window.iidSaveInqEvidenceStep({
+                complaintId: complaintId,
+                materialEvidenceDetail: state.evidence.materialEvidenceDetail || '',
+                circumstantialEvidenceDetail: state.evidence.circumstantialEvidenceDetail || ''
+            }).then(function(resp){
+                ensureApiSuccess(resp, 'Failed to save evidence details.');
+                return loadStepData(6).then(function(){
+                    state.dirtySteps[6] = false;
+                    return { message: getResponseMessage(resp) || 'Evidence details saved successfully.' };
+                });
+            });
         }
         if(step === 7){
+            return saveCollection({
+                section: 'proceedings',
+                rows: state.proceedings.filter(hasProceedingContent),
+                idKey: 'proceedingId',
+                addFn: window.iidAddInqProceeding,
+                updateFn: window.iidUpdateInqProceeding,
+                deleteFn: window.iidDeleteInqProceeding,
+                loadFn: window.iidGetInqProceedings,
+                map: function(row, idx){
+                    return {
+                        proceedingId: row.proceedingId || 0,
+                        complaintId: complaintId,
+                        noticeReference: row.noticeReference || '',
+                        visitDate: normalizeDateOnly(row.visitDate),
+                        placeVisited: row.placeVisited || '',
+                        participantsDetail: row.participantsDetail || '',
+                        missingParticipantsReason: row.missingParticipantsReason || '',
+                        sortOrder: idx + 1,
+                        status: 'A',
+                        createdBy: userId,
+                        updatedBy: userId
+                    };
+                },
+                hydrate: function(resp){
+                    state.proceedings = extractData(resp).map(function(x){
+                        return {
+                            proceedingId: x.proceedingId || x.rowId || 0,
+                            noticeReference: x.noticeReference || '',
+                            visitDate: formatDateInputValue(x.visitDate || ''),
+                            placeVisited: x.placeVisited || '',
+                            participantsDetail: x.participantsDetail || '',
+                            missingParticipantsReason: x.missingParticipantsReason || '',
+                            sortOrder: x.sortOrder || 1
+                        };
+                    });
+                    ensureOneRow('proceedings');
+                },
+                successMessage: 'Inquiry proceedings saved successfully.'
+            });
+        }
+        if(step === 8){
             var selectedAccusationId = parseInt(state.findingsRecomm.selectedAccusationId, 10);
             var findingHtml = (window.tinymce && window.tinymce.get('findingTextHtml') ? window.tinymce.get('findingTextHtml').getContent() : state.findingsRecomm.findingText) || '';
             var recommendationHtml = (window.tinymce && window.tinymce.get('recommendationTextHtml') ? window.tinymce.get('recommendationTextHtml').getContent() : state.findingsRecomm.recommendationText) || '';
@@ -1094,16 +1270,16 @@ $(function(){
                 state.findingsRecomm.lockedOutcomes[selectedAccusationId] = true;
                 upsertFindingsStatusRow({ accusationId: selectedAccusationId, accusationText: (state.findingsRecomm.accusationOptions || []).filter(function(x){ return parseInt(x.accusationId, 10) === selectedAccusationId; }).map(function(x){ return x.accusationText; })[0] || '', isSaved: true, outcome: outcome, savedOn: (resp && resp.savedOn) || (resp && resp.data && resp.data.savedOn) || new Date().toISOString() });
                 return loadFindingsStatusGrid().then(function(){
-                    state.savedSteps[7] = (state.findingsRecomm.statusRows || []).some(isStatusRowSaved);
-                    state.dirtySteps[7] = false;
+                    state.savedSteps[8] = (state.findingsRecomm.statusRows || []).some(isStatusRowSaved);
+                    state.dirtySteps[8] = false;
                     return { message: getResponseMessage(resp) || 'Findings & recommendations saved successfully.' };
                 });
             });
         }
-        if(step === 8){
+        if(step === 9){
             return saveCollection({ section: 'violations', rows: state.violations.filter(function(x){ return x.violationDetail && x.referenceText && x.recommendation; }), idKey: 'violationId', addFn: window.iidAddInqViolation, updateFn: window.iidUpdateInqViolation, deleteFn: window.iidDeleteInqViolation, loadFn: window.iidGetInqViolations, map: function(row, idx){ return $.extend({}, row, { complaintId: complaintId, sortOrder: idx + 1, status: 'A', createdBy: userId, updatedBy: userId }); }, hydrate: function(resp){ state.violations = extractData(resp); ensureOneRow('violations'); }, successMessage: 'Violations saved successfully.' });
         }
-        if(step === 9){
+        if(step === 10){
             return saveCollection({ section: 'dsa', rows: state.dsa.filter(function(x){ return x.personName || x.dsaStatus; }), idKey: 'dsaId', addFn: window.iidAddInqDsa, updateFn: window.iidUpdateInqDsa, deleteFn: window.iidDeleteInqDsa, loadFn: window.iidGetInqDsa, map: function(row, idx){ return $.extend({}, row, { complaintId: complaintId, sortOrder: idx + 1, status: 'A', createdBy: userId, updatedBy: userId }); }, hydrate: function(resp){ state.dsa = extractData(resp); ensureOneRow('dsa'); }, successMessage: 'DSA saved successfully.' });
         }
         return $.Deferred().resolve({ message: 'Saved.' }).promise();
@@ -1132,9 +1308,9 @@ $(function(){
 
     function markSectionCompleted(step){
         var errs = validateStep(step);
-        if(step === 7){
-            var step7Completion = validateStepForFinalSubmit(7);
-            errs = errs.concat(step7Completion.missingFields);
+        if(step === 8){
+            var step8Completion = validateStepForFinalSubmit(8);
+            errs = errs.concat(step8Completion.missingFields);
         }
         showValidation(step, errs);
         if(errs.length){ return $.Deferred().reject({ message: 'Please complete required fields before marking this section completed.' }).promise(); }
@@ -1199,9 +1375,9 @@ $(function(){
     $(document).on('click', '[data-prev]', function(){ var prevStep = getPreviousVisibleStep(currentStep); if(prevStep){ navigateToStep(prevStep); } });
     $(document).on('click', '[data-next]', function(){ var e = validateStep(currentStep); showValidation(currentStep, e); if(!e.length){ var nextStep = getNextVisibleStep(currentStep); if(nextStep){ navigateToStep(nextStep); } } });
     $(document).on('click', '[data-save]', function(){
-        var action = currentStep === 7 ? markSectionCompleted(currentStep) : saveStep(currentStep);
+        var action = currentStep === 8 ? markSectionCompleted(currentStep) : saveStep(currentStep);
         action.done(function(result){
-            if(currentStep !== 7){
+            if(currentStep !== 8){
                 state.savedSteps[currentStep] = true;
                 state.dirtySteps[currentStep] = false;
             }
@@ -1268,6 +1444,7 @@ $(function(){
         var s = $(this).data('add-row');
         if(s==='accusations') state.accusations.push({ accusationId: 0, accusationText: '', sortOrder: state.accusations.length + 1 });
         if(s==='records') state.records.push({ recId: 0, recordTitle: '', recordDetails: '', sortOrder: state.records.length + 1 });
+        if(s==='proceedings') state.proceedings.push({ proceedingId: 0, noticeReference: '', visitDate: '', placeVisited: '', participantsDetail: '', missingParticipantsReason: '', sortOrder: state.proceedings.length + 1 });
         if(s==='violations') state.violations.push({ violationId: 0, category: 'Internal', violationDetail: '', referenceText: '', recommendation: '', sortOrder: state.violations.length + 1 });
         if(s==='dsa') state.dsa.push({ dsaId: 0, personName: '', designation: '', ppnoNumber: '', cnic: '', dsaStatus: '', remarks: '', sortOrder: state.dsa.length + 1 });
         markDirty(currentStep);
@@ -1280,7 +1457,7 @@ $(function(){
         var row = state[section][idx];
 
         if(row){
-            var idKeyMap = { accusations: 'accusationId', records: 'recId', violations: 'violationId', dsa: 'dsaId' };
+            var idKeyMap = { accusations: 'accusationId', records: 'recId', proceedings: 'proceedingId', violations: 'violationId', dsa: 'dsaId' };
             var idKey = idKeyMap[section];
             if(idKey && row[idKey] && row[idKey] > 0){ state.deleteQueue[section].push(row[idKey]); }
         }
@@ -1307,9 +1484,13 @@ $(function(){
             });
         });
         chain.then(function(msg){
-            return window.iidGetInqEvidenceFiles(complaintId).then(function(resp){
+            return window.iidGetInqEvidenceStep(complaintId).then(function(resp){
                 ensureApiSuccess(resp, 'Failed to refresh evidence list.');
-                state.evidence = extractData(resp);
+                state.evidence = {
+                    files: extractData(resp.evidenceFiles || resp),
+                    materialEvidenceDetail: resp.materialEvidenceDetail || state.evidence.materialEvidenceDetail || '',
+                    circumstantialEvidenceDetail: resp.circumstantialEvidenceDetail || state.evidence.circumstantialEvidenceDetail || ''
+                };
                 state.savedSteps[6] = true;
                 state.dirtySteps[6] = false;
                 showAlert(msg || 'Uploaded successfully', 'success');
@@ -1324,9 +1505,13 @@ $(function(){
         window.iidDeleteInqEvidenceFile(evidenceId, userId || 0).then(function(resp){
             ensureApiSuccess(resp, 'Failed to delete evidence file.');
             var msg = getResponseMessage(resp) || 'Evidence removed successfully.';
-            return window.iidGetInqEvidenceFiles(complaintId).then(function(loadResp){
+            return window.iidGetInqEvidenceStep(complaintId).then(function(loadResp){
                 ensureApiSuccess(loadResp, 'Failed to refresh evidence list.');
-                state.evidence = extractData(loadResp);
+                state.evidence = {
+                    files: extractData(loadResp.evidenceFiles || loadResp),
+                    materialEvidenceDetail: loadResp.materialEvidenceDetail || state.evidence.materialEvidenceDetail || '',
+                    circumstantialEvidenceDetail: loadResp.circumstantialEvidenceDetail || state.evidence.circumstantialEvidenceDetail || ''
+                };
                 showAlert(msg, 'success');
                 renderCurrent(true);
             });
@@ -1379,7 +1564,7 @@ $(function(){
     });
 
     $(document).on('click', '#finalSubmitBtn', function(){
-        var mandatorySteps = [2,3,4,5,6,7,8].concat(state.isDsaVisible ? [9] : []);
+        var mandatorySteps = [2,3,4,5,6,7,8,9].concat(state.isDsaVisible ? [10] : []);
         var sectionValidators = mandatorySteps.map(function(stepId){
             var stepInfo = steps.filter(function(s){ return s.id === stepId; })[0] || { title: 'Step ' + stepId };
             return {
@@ -1409,6 +1594,6 @@ $(function(){
     if(!complaintId){ showAlert('Complaint ID is missing. Open this page from Task List.', 'danger'); return; }
 
     loadComplaint().done(function(){
-        loadStepData(7).always(function(){ renderCurrent(); });
+        loadStepData(8).always(function(){ renderCurrent(); });
     }).fail(function(){ showAlert('Failed to load inquiry wizard data.', 'danger'); renderCurrent(true); });
 });

@@ -25,6 +25,8 @@ namespace AIS.Models.IID.InquiryReport
         [PlainText]
         public string KeyPoints { get; set; }
         [PlainText]
+        public string CriticalPointsHighlighted { get; set; }
+        [PlainText]
         public string UploadedStatement { get; set; }
         [PlainText]
         public string Status { get; set; }

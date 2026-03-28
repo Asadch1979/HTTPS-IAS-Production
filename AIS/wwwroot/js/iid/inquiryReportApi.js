@@ -34,6 +34,11 @@
     window.iidUpdateInqRecord = function (payload) { return iidPostJson('/ApiCalls/UpdateIidInqRecord', payload); };
     window.iidDeleteInqRecord = function (id, userId) { return iidPostJson('/ApiCalls/DeleteIidInqRecord', { id: id, userId: userId }); };
 
+    window.iidGetInqProceedings = function (complaintId) { return iidPostJson('/ApiCalls/GetIidInqProceedings', { complaintId: complaintId }); };
+    window.iidAddInqProceeding = function (payload) { return iidPostJson('/ApiCalls/AddIidInqProceeding', payload); };
+    window.iidUpdateInqProceeding = function (payload) { return iidPostJson('/ApiCalls/UpdateIidInqProceeding', payload); };
+    window.iidDeleteInqProceeding = function (id, userId) { return iidPostJson('/ApiCalls/DeleteIidInqProceeding', { id: id, userId: userId }); };
+
     window.iidGetInqStatements = function (complaintId) { return iidPostJson('/ApiCalls/GetIidInqStatements', { complaintId: complaintId }); };
     window.iidAddInqStatement = function (payload) { return iidPostJson('/ApiCalls/AddIidInqStatement', payload); };
     window.iidUpdateInqStatement = function (payload) { return iidPostJson('/ApiCalls/UpdateIidInqStatement', payload); };
@@ -41,6 +46,8 @@
     window.iidGetEmployeeByPpno = function (ppno) { return iidPostJson('/ApiCalls/get_employee_name_from_pp', { PP_NO: parseInt(ppno, 10) || 0 }); };
     window.iidGetIidEmployeeInfo = function (ppNo) { return iidPostJson('/ApiCalls/GetIidEmployeeInfo', { ppNo: parseInt(ppNo, 10) || 0 }); };
 
+    window.iidGetInqEvidenceStep = function (complaintId) { return iidPostJson('/ApiCalls/GetIidInqEvidenceStep', { complaintId: complaintId }); };
+    window.iidSaveInqEvidenceStep = function (payload) { return iidPostJson('/ApiCalls/SaveIidInqEvidenceStep', payload); };
     window.iidGetInqEvidenceFiles = function (complaintId) { return iidPostJson('/ApiCalls/GetIidInqEvidenceFiles', { complaintId: complaintId }); };
     window.iidAddInqEvidenceFile = function (formData) { return iidPost('/ApiCalls/AddIidInqEvidenceFile', formData, true); };
     window.iidDeleteInqEvidenceFile = function (id, userId) { return iidPostJson('/ApiCalls/DeleteIidInqEvidenceFile', { id: id, userId: userId }); };
