@@ -511,11 +511,13 @@ function getPageData() {
         $('#submitAuditeeButton_update').addClass('d-none');
         $('#addDraftButton_update').addClass('d-none');
         $('#settleButton_update').addClass('d-none');
+        if (isClosingReleased()) {
+            return;
+        }
+
         if (g_currentStatus == 1) {
-            if (!isClosingReleased()) {
-                $('#dropButton_update').removeClass('d-none');
-                $('#submitAuditeeButton_update').removeClass('d-none');
-            }
+            $('#dropButton_update').removeClass('d-none');
+            $('#submitAuditeeButton_update').removeClass('d-none');
         } else if (g_currentStatus == 3) {
             $('#addDraftButton_update').removeClass('d-none');
             if (g_riskId == 3) {
