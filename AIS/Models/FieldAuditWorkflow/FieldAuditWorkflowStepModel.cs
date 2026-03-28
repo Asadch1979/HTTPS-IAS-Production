@@ -11,6 +11,7 @@ namespace AIS.Models.FieldAuditWorkflow
         public bool IsCompleted { get; set; }
         public bool IsSaved { get; set; }
         public string StatusText { get; set; }
+        public string DisabledMessage { get; set; }
         public int RequiredPermissionPageId { get; set; }
         }
     }

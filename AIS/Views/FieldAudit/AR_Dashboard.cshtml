@@ -29,11 +29,16 @@
                         {
                             @if (Model.SelectedEngagementId == engagement.EngagementId)
                             {
-                                <option value="@engagement.EngagementId" selected>@engagement.Label</option>
+                                <option value="@engagement.EngagementId"
+                                        data-status-id="@engagement.StatusId"
+                                        data-is-close="@engagement.IsClose"
+                                        selected>@engagement.Label</option>
                             }
                             else
                             {
-                                <option value="@engagement.EngagementId">@engagement.Label</option>
+                                <option value="@engagement.EngagementId"
+                                        data-status-id="@engagement.StatusId"
+                                        data-is-close="@engagement.IsClose">@engagement.Label</option>
                             }
                         }
                             </select>
@@ -68,8 +73,10 @@
     <div class="card-body field-audit-compact"
          data-mark-complete-url="@Url.Action("MarkStepCompleted", "FieldAudit")"
          data-open-audit-report-url="@Url.Action("OpenAuditReport", "FieldAudit")">
+        <div id="fieldAuditStepMessage" class="alert d-none"></div>
         <div id="fieldAuditStepHost"
              data-load-url="@Url.Action("LoadStep", "FieldAudit")"
+             data-engagement-state-url="@Url.Action("GetDashboardEngagementState", "FieldAudit")"
              data-step-code="@Model.CurrentStepCode"
              data-eng-id="@Model.SelectedEngagementId">
             @if (!Model.HasEngagementSelection)
@@ -95,11 +102,13 @@
         stepCode = step.StepCode,
         stepNo = step.StepNo,
         stepTitle = step.StepTitle,
+        isEnabled = step.IsEnabled,
+        disabledMessage = step.DisabledMessage,
         isCompleted = step.IsCompleted,
         isSaved = step.IsSaved
     })));
 </script>
-<script src="~/js/fieldAudit/dashboard.js?v=7"></script>
+<script src="~/js/fieldAudit/dashboard.js?v=8"></script>
 
 <style>
     .snap-label { color: #6c757d; }

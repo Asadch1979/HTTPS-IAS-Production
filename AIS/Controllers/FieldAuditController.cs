@@ -12,6 +12,21 @@ namespace AIS.Controllers
     {
     public class FieldAuditController : Controller
         {
+        private static readonly HashSet<string> PostJoiningSteps = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+            {
+            "MEMO_CREATION",
+            "MANAGE_OBSERVATION_BRANCHES",
+            "EXIT_AUDIT",
+            "AUDIT_REPORT"
+            };
+
+        private static readonly HashSet<string> ClosingPerformedDisabledSteps = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+            {
+            "JOINING",
+            "MEMO_CREATION",
+            "EXIT_AUDIT"
+            };
+
         private readonly ILogger<FieldAuditController> _logger;
         private readonly TopMenus _topMenus;
         private readonly SessionHandler _sessionHandler;
@@ -164,13 +179,49 @@ namespace AIS.Controllers
                 return BadRequest("A valid engagement is required.");
                 }
 
-            var step = model.VisibleSteps.FirstOrDefault(item => string.Equals(item.StepCode, model.CurrentStepCode, StringComparison.OrdinalIgnoreCase));
+            var step = model.VisibleSteps.FirstOrDefault(item => string.Equals(item.StepCode, stepCode, StringComparison.OrdinalIgnoreCase));
             if (step == null)
                 {
                 return Forbid();
                 }
 
+            if (!step.IsEnabled)
+                {
+                return BadRequest(step.DisabledMessage ?? "This step is not available right now.");
+                }
+
             return LoadStepPartial(step.StepCode, engId);
+            }
+
+        [HttpGet]
+        public IActionResult GetDashboardEngagementState(int engId)
+            {
+            if (!User.Identity.IsAuthenticated)
+                {
+                return Unauthorized();
+                }
+
+            if (!_sessionHandler.TryGetUser(out _))
+                {
+                return Unauthorized();
+                }
+
+            if (engId <= 0)
+                {
+                return BadRequest("A valid engagement is required.");
+                }
+
+            var engagementState = GetEngagementOption(engId);
+            if (engagementState == null)
+                {
+                return NotFound();
+                }
+
+            return Json(new
+                {
+                statusId = engagementState.StatusId,
+                isClose = engagementState.IsClose ?? string.Empty
+                });
             }
 
         [HttpGet]
@@ -446,6 +497,11 @@ namespace AIS.Controllers
                 return Forbid();
                 }
 
+            if (!step.IsEnabled)
+                {
+                return BadRequest(step.DisabledMessage ?? "This step is not available right now.");
+                }
+
             PopulateReplicaViewData(step.RequiredPermissionPageId);
             switch (step.StepCode)
                 {
@@ -665,7 +721,9 @@ namespace AIS.Controllers
                     {
                     EngagementId = item.ENG_PLAN_ID,
                     EntityName = item.ENTITY_NAME,
-                    StageName = item.ENG_STATUS
+                    StageName = item.ENG_STATUS,
+                    StatusId = item.STATUS_ID,
+                    IsClose = item.ISCLOSE
                     })
                 .ToList();
 
@@ -675,6 +733,7 @@ namespace AIS.Controllers
 
             var workflowSteps = BuildWorkflowSteps();
             var selectedId = selectedEngagementId.GetValueOrDefault();
+            var selectedEngagement = engagementOptions.FirstOrDefault(item => item.EngagementId == selectedId);
             var completedSteps = selectedId > 0
                 ? _progressStore.GetCompletedStepCodes(selectedId)
                 : new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -684,6 +743,14 @@ namespace AIS.Controllers
                 {
                 step.IsVisible = step.RequiredPermissionPageId > 0 && _permissionService.HasViewPermission(user, step.RequiredPermissionPageId);
                 step.IsEnabled = step.IsVisible && selectedId > 0;
+                step.DisabledMessage = step.IsEnabled
+                    ? null
+                    : "Please select an engagement first.";
+
+                if (step.IsEnabled && selectedEngagement != null)
+                    {
+                    ApplyWorkflowAvailability(step, selectedEngagement.StatusId, selectedEngagement.IsClose);
+                    }
 
                 var isPersistedComplete = selectedId > 0 && completedSteps.Contains(step.StepCode);
                 var isBusinessComplete = selectedId > 0
@@ -696,8 +763,11 @@ namespace AIS.Controllers
                 }
 
             var firstVisibleStep = workflowSteps.FirstOrDefault(step => step.IsVisible);
-            var currentStep = workflowSteps.FirstOrDefault(step => step.IsVisible && string.Equals(step.StepCode, requestedStepCode, StringComparison.OrdinalIgnoreCase))
-                ?? firstVisibleStep;
+            var requestedStep = workflowSteps.FirstOrDefault(step => step.IsVisible && string.Equals(step.StepCode, requestedStepCode, StringComparison.OrdinalIgnoreCase));
+            var firstEnabledStep = workflowSteps.FirstOrDefault(step => step.IsVisible && step.IsEnabled);
+            var currentStep = requestedStep != null && requestedStep.IsEnabled
+                ? requestedStep
+                : firstEnabledStep ?? requestedStep ?? firstVisibleStep;
 
             return new FieldAuditWorkflowViewModel
                 {
@@ -709,6 +779,57 @@ namespace AIS.Controllers
                     ? BuildStepContext(currentStep.StepCode, selectedEngagementId.Value)
                     : null
                 };
+            }
+
+        private FieldAuditEngagementOptionModel GetEngagementOption(int engId)
+            {
+            if (engId <= 0)
+                {
+                return null;
+                }
+
+            return _dbConnection.GetTaskList()
+                .Where(item => item.ENG_PLAN_ID == engId)
+                .GroupBy(item => item.ENG_PLAN_ID)
+                .Select(group => group.First())
+                .Select(item => new FieldAuditEngagementOptionModel
+                    {
+                    EngagementId = item.ENG_PLAN_ID,
+                    EntityName = item.ENTITY_NAME,
+                    StageName = item.ENG_STATUS,
+                    StatusId = item.STATUS_ID,
+                    IsClose = item.ISCLOSE
+                    })
+                .FirstOrDefault();
+            }
+
+        private static void ApplyWorkflowAvailability(FieldAuditWorkflowStepModel step, int statusId, string isClose)
+            {
+            if (step == null || !step.IsEnabled)
+                {
+                return;
+                }
+
+            if (statusId <= 1 && PostJoiningSteps.Contains(step.StepCode))
+                {
+                step.IsEnabled = false;
+                step.DisabledMessage = "Submit joining first.";
+                return;
+                }
+
+            if (statusId == 5 && ClosingPerformedDisabledSteps.Contains(step.StepCode))
+                {
+                step.IsEnabled = false;
+                step.DisabledMessage = "This step is disabled after closing is performed.";
+                return;
+                }
+
+            if (string.Equals(step.StepCode, "EXIT_AUDIT", StringComparison.OrdinalIgnoreCase)
+                && !string.Equals((isClose ?? string.Empty).Trim(), "Z", StringComparison.OrdinalIgnoreCase))
+                {
+                step.IsEnabled = false;
+                step.DisabledMessage = "Closing is not available yet.";
+                }
             }
 
         private List<FieldAuditWorkflowStepModel> BuildWorkflowSteps()

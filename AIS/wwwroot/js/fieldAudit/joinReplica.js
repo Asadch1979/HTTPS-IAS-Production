@@ -53,6 +53,9 @@
                     showInlineMessage(data.message || 'Joining submitted successfully.', true);
                     if (data.isSubmitted) {
                         disableSubmit();
+                        if (window.fieldAuditDashboard && typeof window.fieldAuditDashboard.refreshEngagementState === 'function') {
+                            window.fieldAuditDashboard.refreshEngagementState();
+                        }
                     }
                     return;
                 }

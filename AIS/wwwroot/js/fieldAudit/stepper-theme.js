@@ -20,7 +20,7 @@
         if (!step.isSaved) {
             classes.push('not-saved');
         }
-        if (disabled) {
+        if (disabled || step.isEnabled === false) {
             classes.push('disabled');
         }
 
@@ -53,6 +53,8 @@
                 '<a class="' + classes + '" href="' + href + '" ' +
                 'data-step-code="' + (step.stepCode || '') + '" ' +
                 'data-step-no="' + (step.stepNo || '') + '" ' +
+                'data-step-enabled="' + (step.isEnabled === false ? 'false' : 'true') + '" ' +
+                'data-disabled-message="' + (step.disabledMessage || '') + '" ' +
                 'data-step-title="' + (step.stepTitle || '') + '">' +
                 '<div class="step-title"><span class="num">' + (step.stepNo || '') + '.</span> ' + (step.stepTitle || '') + '</div>' +
                 '</a>';
@@ -65,10 +67,6 @@
             container.querySelectorAll('.step-pill[data-step-code]').forEach(function (anchor) {
                 anchor.addEventListener('click', function (event) {
                     event.preventDefault();
-                    if (anchor.classList.contains('disabled')) {
-                        return;
-                    }
-
                     onStepClick(anchor, event);
                 });
             });

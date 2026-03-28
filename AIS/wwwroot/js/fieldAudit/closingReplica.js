@@ -89,6 +89,19 @@
                 if (window.showApiAlert) {
                     showApiAlert(data);
                 }
+
+                var payload = null;
+                try {
+                    payload = JSON.parse(data);
+                } catch (error) {
+                    payload = null;
+                }
+
+                if (payload && (payload.Status === true || payload.status === true)
+                    && window.fieldAuditDashboard
+                    && typeof window.fieldAuditDashboard.refreshEngagementState === 'function') {
+                    window.fieldAuditDashboard.refreshEngagementState();
+                }
             });
     }
 
