@@ -50,6 +50,16 @@ function getPageData() {
         return engId;
     }
 
+    function isClosingReleased() {
+        var selector = document.getElementById('engagementSelector');
+        if (!selector || selector.selectedIndex < 0) {
+            return false;
+        }
+
+        var selectedOption = selector.options[selector.selectedIndex];
+        return ((selectedOption && selectedOption.getAttribute('data-is-close')) || '').toUpperCase() === 'Z';
+    }
+
     function preserveTablePosition() {
         g_scrollPos = $('html').scrollTop();
         if ($.fn.DataTable.isDataTable('#manageObsPanel')) {
@@ -502,8 +512,10 @@ function getPageData() {
         $('#addDraftButton_update').addClass('d-none');
         $('#settleButton_update').addClass('d-none');
         if (g_currentStatus == 1) {
-            $('#dropButton_update').removeClass('d-none');
-            $('#submitAuditeeButton_update').removeClass('d-none');
+            if (!isClosingReleased()) {
+                $('#dropButton_update').removeClass('d-none');
+                $('#submitAuditeeButton_update').removeClass('d-none');
+            }
         } else if (g_currentStatus == 3) {
             $('#addDraftButton_update').removeClass('d-none');
             if (g_riskId == 3) {
