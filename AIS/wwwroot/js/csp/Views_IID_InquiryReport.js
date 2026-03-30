@@ -19,7 +19,6 @@ $(function(){
     var isLocked = false;
     var userId = 0;
     var alertTimer = null;
-    var activePickerInput = null;
     var accusedRoleOptions = ['Main', 'Co', 'Witness'];
     var steps = [
         { id: 1, code: 'SNAPSHOT', title: 'Snapshot' },
@@ -181,30 +180,7 @@ $(function(){
         $('#snapshotStrip').html(badges.map(function(b){ return '<div class="col-md-2 col-6"><div class="snap-label">' + esc(b[0]) + '</div><div class="snap-value">' + esc(b[1]) + '</div></div>'; }).join(''));
     }
 
-    function buildAttributeHtml(attrs){
-        return Object.keys(attrs || {}).map(function(key){
-            var value = attrs[key];
-            if(value === null || typeof value === 'undefined'){ return ''; }
-            return key + '="' + esc(value) + '"';
-        }).filter(Boolean).join(' ');
-    }
-
-    function pickerTitle(type){
-        return type === 'datetime-local' ? 'Select Date & Time' : 'Select Date';
-    }
-
-    function pickerInput(value, type, attrs){
-        var attrHtml = buildAttributeHtml(attrs);
-        return '<div class="input-group iid-picker-input-group">' +
-            '<input type="' + esc(type) + '" class="form-control" value="' + esc(value) + '" ' + attrHtml + ' data-picker-source="true">' +
-            '<button type="button" class="btn btn-outline-secondary" data-open-picker data-picker-type="' + esc(type) + '" data-picker-title="' + esc(pickerTitle(type)) + '">Select</button>' +
-            '</div>';
-    }
-
     function rowInput(bind, value, type){
-        if(type === 'date' || type === 'datetime-local'){
-            return pickerInput(value, type, { 'data-bind': bind });
-        }
         return '<input ' + (type ? 'type="' + type + '"' : '') + ' class="form-control" data-bind="' + bind + '" value="' + esc(value) + '">';
     }
 
@@ -595,7 +571,7 @@ $(function(){
                     '<td>' + esc(r.personName || '') + '</td>' +
                     '<td>' + esc(r.fatherName || '') + '</td>' +
                     '<td>' + esc(r.cnic || '') + '</td>' +
-                    '<td>' + pickerInput((r.statementDatetime || '').slice(0, 16), 'datetime-local', { 'data-step5-field': i, 'data-step5-key': 'statementDatetime' }) + '</td>' +
+                    '<td><input type="date" class="form-control" data-step5-field="'+ i +'" data-step5-key="statementDatetime" value="' + esc(formatDateInputValue(r.statementDatetime || '')) + '"></td>' +
                     '<td><input type="text" class="form-control" data-step5-field="'+ i +'" data-step5-key="place" value="' + esc(r.place || '') + '"></td>' +
                     '<td><input type="text" class="form-control" data-step5-field="'+ i +'" data-step5-key="modeType" value="' + esc(r.modeType || '') + '"></td>' +
                     '<td><textarea class="form-control" rows="2" data-step5-field="'+ i +'" data-step5-key="keyPoints">' + esc(r.keyPoints || '') + '</textarea></td>' +
@@ -611,7 +587,7 @@ $(function(){
             html += '<h5>Statement Register</h5>' +
                 '<div class="card border mb-3"><div class="card-body">' +
                     '<h6 class="mb-3">Statement of Complainant & Accused</h6>' +
-                    '<div class="table-responsive"><table class="table table-sm align-middle"><thead><tr><th>Type</th><th>PPNO</th><th>Name</th><th>Father Name</th><th>CNIC</th><th>Date/Time</th><th>Place of Statement</th><th>Mode Type</th><th>Key Points</th><th>Uploaded Statement</th><th>File</th><th>Action</th></tr></thead><tbody>' + (statementRows || '<tr><td colspan="12" class="text-muted">No statement rows available.</td></tr>') + '</tbody></table></div>' +
+                    '<div class="table-responsive"><table class="table table-sm align-middle"><thead><tr><th>Type</th><th>PPNO</th><th>Name</th><th>Father Name</th><th>CNIC</th><th>Date</th><th>Place of Statement</th><th>Mode Type</th><th>Key Points</th><th>Uploaded Statement</th><th>File</th><th>Action</th></tr></thead><tbody>' + (statementRows || '<tr><td colspan="12" class="text-muted">No statement rows available.</td></tr>') + '</tbody></table></div>' +
                 '</div></div>';
         }
         if(step === 6){
@@ -1078,6 +1054,10 @@ $(function(){
         var raw = String(value || '').trim();
         if(!raw){ return ''; }
 
+        if(/^\d{4}-\d{2}-\d{2}$/.test(raw)){
+            return raw;
+        }
+
         if(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(raw)){
             return raw + ':00';
         }
@@ -1110,7 +1090,7 @@ $(function(){
         row.roleType = row.roleType || (isComplainantStatementRole(row.roleType) ? 'Complainant' : 'Main');
 
         var errors = [];
-        if(!row.statementDatetime){ errors.push('A valid Date/Time is required.'); }
+        if(!row.statementDatetime){ errors.push('A valid Date is required.'); }
         if(!row.place || !row.place.trim()){ errors.push('Place of statement is required.'); }
         if(errors.length){ return $.Deferred().reject({ message: errors.join(' ') }).promise(); }
 
@@ -1557,46 +1537,12 @@ $(function(){
             }
 
             renderCurrent(true);
-            showAlert((getResponseMessage(resp) || 'Statement file uploaded.') + ' Complete Date/Time and Place, then click Save.', 'success');
+            showAlert((getResponseMessage(resp) || 'Statement file uploaded.') + ' Complete Date and Place, then click Save.', 'success');
         }).fail(function(err){
             showAlert((err && err.message) || 'Statement file upload failed.', 'danger');
         }).always(function(){
             input.value = '';
         });
-    });
-
-    $(document).on('click', '[data-open-picker]', function(){
-        var $input = $(this).closest('.iid-picker-input-group').find('input[data-picker-source="true"]').first();
-        if(!$input.length){ return; }
-
-        activePickerInput = $input;
-        var pickerType = String($(this).data('picker-type') || $input.attr('type') || 'datetime-local');
-        var pickerModal = $('#iidDateTimePickerModal');
-        var pickerModalInput = $('#iidDateTimePickerModalValue');
-        var title = String($(this).data('picker-title') || pickerTitle(pickerType));
-
-        $('#iidDateTimePickerModalLabel').text(title);
-        pickerModalInput.attr('type', pickerType).val($input.val() || '');
-
-        if(window.bootstrap && window.bootstrap.Modal){
-            window.bootstrap.Modal.getOrCreateInstance(pickerModal[0]).show();
-        }
-    });
-
-    $(document).on('click', '#iidDateTimePickerModalClear', function(){
-        $('#iidDateTimePickerModalValue').val('');
-    });
-
-    $(document).on('click', '#iidDateTimePickerModalSave', function(){
-        if(!activePickerInput || !activePickerInput.length){ return; }
-
-        var pickerModal = $('#iidDateTimePickerModal');
-        var selectedValue = $('#iidDateTimePickerModalValue').val() || '';
-        activePickerInput.val(selectedValue).trigger('input').trigger('change');
-
-        if(window.bootstrap && window.bootstrap.Modal){
-            window.bootstrap.Modal.getOrCreateInstance(pickerModal[0]).hide();
-        }
     });
 
     $(document).on('click', '[data-step7-save-row]', function(){
