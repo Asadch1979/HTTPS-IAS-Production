@@ -342,11 +342,6 @@ $(function(){
 
     function syncFindingsStatusRows(statusRows){
         var merged = {};
-        (state.findingsRecomm.accusationOptions || []).forEach(function(opt){
-            var id = parseInt(opt.accusationId, 10);
-            if(isNaN(id) || id <= 0){ return; }
-            merged[id] = { accusationId: id, accusationText: opt.accusationText || ('Accusation #' + id), isSaved: false, savedOn: null };
-        });
         (statusRows || []).forEach(function(row){
             var id = parseInt(row.accusationId, 10);
             if(isNaN(id) || id <= 0){ return; }
@@ -429,7 +424,7 @@ $(function(){
     function loadFindingsStatusGrid(){
         return window.iidGetIidFindingsRecommStatus(complaintId).then(function(resp){
             ensureApiSuccess(resp, 'Failed to load findings status grid.');
-            var rows = extractData(resp);
+            var rows = extractData(resp).filter(isStatusRowSaved);
             rows.forEach(function(row){
                 var id = parseInt(row.accusationId, 10);
                 if(!isNaN(id) && id > 0){
