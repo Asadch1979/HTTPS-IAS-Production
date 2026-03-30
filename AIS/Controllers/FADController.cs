@@ -137,6 +137,46 @@ namespace AIS.Controllers
                 }
             }
 
+        public IActionResult Quality_Assurance_checking()
+            {
+            ViewData["TopMenu"] = tm.GetTopMenus();
+            ViewData["TopMenuPages"] = tm.GetTopMenusPages();
+            ViewData["EntitiesList"] = dBConnection.GetObservationEntitiesForPreConcluding();
+            ViewData["AnnexList"] = dBConnection.GetAnnexuresForChecklistDetail();
+            ViewData["ProcessList"] = dBConnection.GetAuditChecklist();
+            ViewData["RiskList"] = dBConnection.GetRisks();
+
+            if (!User.Identity.IsAuthenticated)
+                return RedirectToAction("Index", "Login");
+            else
+                {
+                if (!this.UserHasPagePermissionForCurrentAction(sessionHandler)) //MIGRATION_PERMISSION_CHECK (Controller)
+                    return RedirectToAction("Index", "PageNotFound");
+                else
+                    return View("~/Views/FAD/Quality_Assurance_checking.cshtml");
+                }
+            }
+
+        public IActionResult Draft_report_Checking()
+            {
+            ViewData["TopMenu"] = tm.GetTopMenus();
+            ViewData["TopMenuPages"] = tm.GetTopMenusPages();
+            ViewData["AnnexList"] = dBConnection.GetAnnexuresForChecklistDetail();
+            ViewData["ProcessList"] = dBConnection.GetAuditChecklist();
+            ViewData["EntitiesList"] = dBConnection.GetObservationEntities();
+            ViewData["RiskList"] = dBConnection.GetRisks();
+
+            if (!User.Identity.IsAuthenticated)
+                return RedirectToAction("Index", "Login");
+            else
+                {
+                if (!this.UserHasPagePermissionForCurrentAction(sessionHandler)) //MIGRATION_PERMISSION_CHECK (Controller)
+                    return RedirectToAction("Index", "PageNotFound");
+                else
+                    return View("~/Views/FAD/Draft_report_Checking.cshtml");
+                }
+            }
+
         public IActionResult ChangeParaStatus()
             {
             ViewData["TopMenu"] = tm.GetTopMenus();
