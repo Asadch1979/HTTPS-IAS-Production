@@ -248,7 +248,7 @@ $(function(){
                         } else {
                             state.findingsRecomm.recommendationText = editor.getContent();
                         }
-                        markDirty(7);
+                        markDirty(8);
                         renderStepper();
                     });
                 }
@@ -1638,7 +1638,7 @@ $(function(){
 
     $(document).on('change', '[data-findings-accusation-select]', function(){
         state.findingsRecomm.selectedAccusationId = $(this).val();
-        markDirty(7);
+        markDirty(8);
         loadFindingsForSelection(state.findingsRecomm.selectedAccusationId).fail(function(err){
             showAlert((err && err.message) || 'Failed to load findings for selected accusation.', 'danger');
         });
@@ -1654,7 +1654,7 @@ $(function(){
     });
 
     $(document).on('click', '[data-save-findings-recomm]', function(){
-        saveStep(7).done(function(result){
+        saveStep(8).done(function(result){
             showAlert((result && result.message) || 'Saved successfully.', 'success');
             renderCurrent(true);
         }).fail(function(err){
@@ -1676,7 +1676,7 @@ $(function(){
         if(row){ row.outcome = state.findingsRecomm.outcomes[accusationId]; }
         $('.outcome-select[data-accusation-id="' + accusationId + '"]').val(state.findingsRecomm.outcomes[accusationId] || '');
         renderFindingsStatusGrid();
-        markDirty(7);
+        markDirty(8);
         updateDsaVisibility();
         renderStepper();
     });
