@@ -51,6 +51,13 @@ namespace AIS.Services
             sb.AppendLine(".record-table{ width:100%; border-collapse:collapse; table-layout:fixed; margin:0 0 2px; }");
             sb.AppendLine(".record-table td{ border:1px solid #666; padding:7px; vertical-align:top; word-wrap:break-word; overflow-wrap:anywhere; }");
             sb.AppendLine(".record-label{ width:29%; font-weight:700; background:#f2f2f2; }");
+            sb.AppendLine(".compact-record{ margin:0 0 8px; }");
+            sb.AppendLine(".compact-line{ margin:0 0 4px; }");
+            sb.AppendLine(".compact-separator{ color:#666; letter-spacing:1px; margin:6px 0 8px; }");
+            sb.AppendLine(".summary-block{ margin:0 0 10px; }");
+            sb.AppendLine(".summary-heading{ font-weight:700; text-decoration:underline; margin:0 0 3px; }");
+            sb.AppendLine(".summary-text{ margin:0 0 6px; }");
+            sb.AppendLine(".summary-separator{ color:#666; letter-spacing:1px; margin:4px 0 0; }");
             sb.AppendLine(".section-separator{ padding-top:8px; color:#666; letter-spacing:1px; }");
             sb.AppendLine(".signature-wrap{ width:100%; padding-top:26px; border-collapse:collapse; }");
             sb.AppendLine(".signature-wrap td{ width:50%; text-align:center; vertical-align:top; padding:0 12px; }");
@@ -99,7 +106,11 @@ namespace AIS.Services
             sb.AppendLine("<div class='annex-subtitle'>Inquiry Narrative and Proceedings</div>");
 
             var snapshot = data.ComplaintSnapshot ?? new IidComplaintSnapshotModel();
-            var accusations = data.Accusations.OrderBy(x => x.SortOrder).ThenBy(x => x.AccusationId).ToList();
+            var accusations = data.Accusations
+                .Where(x => IsVisibleAccusationText(x.AccusationText))
+                .OrderBy(x => x.SortOrder)
+                .ThenBy(x => x.AccusationId)
+                .ToList();
             var proceedings = data.InquiryProceedings.OrderBy(x => x.SortOrder).ThenBy(x => x.VisitDate).ToList();
             var mainAccused = data.AccusedList.Where(x => !IsCoAccused(x.RoleType)).ToList();
             var coAccused = data.AccusedList.Where(x => IsCoAccused(x.RoleType)).ToList();
@@ -107,7 +118,9 @@ namespace AIS.Services
             var accusedStatements = data.Statements.Where(x => !IsComplainantRole(x.RoleType)).OrderBy(x => x.StatementDatetime).ToList();
             var materialEvidence = data.EvidenceFiles.Where(x => (x.EvidenceType ?? string.Empty).ToLowerInvariant().Contains("material")).ToList();
             var circumstantialEvidence = data.EvidenceFiles.Where(x => !(x.EvidenceType ?? string.Empty).ToLowerInvariant().Contains("material")).ToList();
-            var frRows = data.FindingsRecommendations.Where(x => x.AccusationId != 0).ToList();
+            var frRows = data.FindingsRecommendations
+                .Where(x => x.AccusationId != 0 && IsVisibleAccusationText(x.AccusationText))
+                .ToList();
 
             AppendAnnexSection(sb, "1. Complaint Details / Incident Reported",
                 BuildParagraphs(
@@ -136,48 +149,56 @@ namespace AIS.Services
                 BuildOrderedList(accusations.Select(x => x.AccusationText)));
 
             AppendAnnexSection(sb, "5. Main Alleged Accused Details",
-                BuildRecordTables(mainAccused, BuildAccusedFields));
+                BuildRecordTables(mainAccused, BuildAccusedFields, true));
 
             AppendAnnexSection(sb, "6. Alleged Co-accused Details",
-                BuildRecordTables(coAccused, BuildAccusedFields));
+                BuildRecordTables(coAccused, BuildAccusedFields, true));
 
             AppendAnnexSection(sb, "7. Inquiry Proceedings",
                 proceedings.Any()
-                    ? BuildRecordTables(proceedings, BuildProceedingFields)
+                    ? BuildCompactFieldBlocks(proceedings, BuildProceedingFields)
                     : BuildParagraphs(data.FinalConclusion?.Proceedings));
 
             AppendAnnexSection(sb, "8. Details of Record Scrutinized",
-                BuildRecordTables(
+                BuildCompactFieldBlocks(
                     data.RecordsScrutinized.OrderBy(x => x.SortOrder),
                     BuildRecordScrutinizedFields));
 
             AppendAnnexSection(sb, "9. Time and place of Recording Statement of Complainant",
-                BuildRecordTables(complainantStatements, BuildStatementTimelineFields));
+                BuildCompactFieldBlocks(complainantStatements, BuildStatementTimelineFields));
 
             AppendAnnexSection(sb, "10. Time and place of Recording Statement of Accused",
-                BuildRecordTables(accusedStatements, BuildStatementTimelineFields));
+                BuildCompactFieldBlocks(accusedStatements, BuildStatementTimelineFields));
 
-            AppendAnnexSection(sb, "11. Key points recorded in statement of complainant",
-                BuildRecordTables(complainantStatements, BuildStatementKeyPointFields));
+            var complainantKeyPointsHtml = BuildKeyPointsBlocks(complainantStatements.Select(x => x.KeyPoints));
+            if (!string.IsNullOrWhiteSpace(complainantKeyPointsHtml))
+                {
+                AppendAnnexSection(sb, "11. Key points recorded in statement of complainant",
+                    complainantKeyPointsHtml);
+                }
 
-            AppendAnnexSection(sb, "12. Key points recorded in statement of accused",
-                BuildRecordTables(accusedStatements, BuildStatementKeyPointFields));
+            var accusedKeyPointsHtml = BuildKeyPointsBlocks(accusedStatements.Select(x => x.KeyPoints));
+            if (!string.IsNullOrWhiteSpace(accusedKeyPointsHtml))
+                {
+                AppendAnnexSection(sb, "12. Key points recorded in statement of accused",
+                    accusedKeyPointsHtml);
+                }
 
             AppendAnnexSection(sb, "13. Details of material evidence",
                 !string.IsNullOrWhiteSpace(data.EvidenceSummary?.MaterialEvidenceDetail)
                     ? BuildParagraphs(data.EvidenceSummary.MaterialEvidenceDetail)
-                    : BuildRecordTables(materialEvidence, BuildEvidenceFields));
+                    : BuildCompactFieldBlocks(materialEvidence, BuildEvidenceFields));
 
             AppendAnnexSection(sb, "14. Details of circumstantial evidence",
                 !string.IsNullOrWhiteSpace(data.EvidenceSummary?.CircumstantialEvidenceDetail)
                     ? BuildParagraphs(data.EvidenceSummary.CircumstantialEvidenceDetail)
-                    : BuildRecordTables(circumstantialEvidence, BuildEvidenceFields));
+                    : BuildCompactFieldBlocks(circumstantialEvidence, BuildEvidenceFields));
 
             AppendAnnexSection(sb, "15. Details of findings with implications / violated policy references",
-                BuildRecordTables(frRows, x => BuildFindingFields(data, x)));
+                BuildCompactFieldBlocks(frRows, x => BuildFindingFields(data, x)));
 
             AppendAnnexSection(sb, "16. Details of clear recommendations",
-                BuildRecordTables(frRows, BuildRecommendationFields));
+                BuildCompactFieldBlocks(frRows, BuildRecommendationFields));
 
             AppendAnnexSection(sb, "17. Whether reported in latest audit report",
                 BuildParagraphs("No explicit audit report reference was provided in the available IID inquiry dataset."));
@@ -186,10 +207,10 @@ namespace AIS.Services
                 BuildParagraphs(data.FinalConclusion?.Gist));
 
             AppendAnnexSection(sb, "19. Name with PP.No. of accused against whom DSAs framed",
-                BuildRecordTables(data.DsaFiles.OrderBy(x => x.SortOrder), BuildDsaFields));
+                BuildRecordTables(data.DsaFiles.OrderBy(x => x.SortOrder), BuildDsaFields, true));
 
             AppendAnnexSection(sb, "20. Summary of violations statement",
-                BuildParagraphs(data.FinalConclusion?.Findings, data.FinalConclusion?.Recommendation, data.FinalConclusion?.FinalOutcome));
+                BuildViolationSummaryBlocks(frRows));
 
             AppendSignatureBlock(sb, data);
             sb.AppendLine("</section>");
@@ -318,15 +339,14 @@ namespace AIS.Services
             return BuildOrderedList(values);
             }
 
-        private static string BuildRecordTables<T>(IEnumerable<T> rows, Func<T, IEnumerable<KeyValuePair<string, string>>> buildFields)
+        private static string BuildRecordTables<T>(IEnumerable<T> rows, Func<T, IEnumerable<KeyValuePair<string, string>>> buildFields, bool showNumbersWhenMultiple)
             {
             if (rows == null || buildFields == null)
                 {
                 return "<div class='annex-paragraph'>N/A</div>";
                 }
 
-            var blocks = new List<string>();
-            var index = 1;
+            var fieldSets = new List<List<KeyValuePair<string, string>>>();
             foreach (var row in rows)
                 {
                 if (row == null)
@@ -340,18 +360,72 @@ namespace AIS.Services
                     continue;
                     }
 
-                blocks.Add(BuildRecordTable(index++, fieldList));
+                fieldSets.Add(fieldList);
                 }
+
+            if (!fieldSets.Any())
+                {
+                return "<div class='annex-paragraph'>N/A</div>";
+                }
+
+            var showNumbers = showNumbersWhenMultiple && fieldSets.Count > 1;
+            var blocks = fieldSets
+                .Select((fields, index) => BuildRecordTable(index + 1, fields, showNumbers))
+                .ToList();
 
             return blocks.Any()
                 ? string.Join(string.Empty, blocks)
                 : "<div class='annex-paragraph'>N/A</div>";
             }
 
-        private static string BuildRecordTable(int index, IEnumerable<KeyValuePair<string, string>> fields)
+        private static string BuildCompactFieldBlocks<T>(IEnumerable<T> rows, Func<T, IEnumerable<KeyValuePair<string, string>>> buildFields)
+            {
+            if (rows == null || buildFields == null)
+                {
+                return "<div class='annex-paragraph'>N/A</div>";
+                }
+
+            var blocks = new List<string>();
+            foreach (var row in rows)
+                {
+                if (row == null)
+                    {
+                    continue;
+                    }
+
+                var fields = (buildFields(row) ?? Enumerable.Empty<KeyValuePair<string, string>>())
+                    .Where(x => !string.IsNullOrWhiteSpace(NormalizeNarrativeValue(x.Value)))
+                    .ToList();
+
+                if (!fields.Any())
+                    {
+                    continue;
+                    }
+
+                blocks.Add(BuildCompactFieldBlock(fields));
+                }
+
+            if (!blocks.Any())
+                {
+                return "<div class='annex-paragraph'>N/A</div>";
+                }
+
+            if (blocks.Count == 1)
+                {
+                return blocks[0];
+                }
+
+            return string.Join("<div class='compact-separator'>___________</div>", blocks);
+            }
+
+        private static string BuildRecordTable(int index, IEnumerable<KeyValuePair<string, string>> fields, bool showNumber)
             {
             var sb = new StringBuilder();
-            sb.AppendFormat(CultureInfo.InvariantCulture, "<div class='record-block'><div class='record-number'>{0}.</div>", index);
+            sb.Append("<div class='record-block'>");
+            if (showNumber)
+                {
+                sb.AppendFormat(CultureInfo.InvariantCulture, "<div class='record-number'>{0}.</div>", index);
+                }
             sb.AppendLine("<table class='record-table'><colgroup><col style='width:29%'/><col style='width:71%'/></colgroup><tbody>");
             foreach (var field in fields)
                 {
@@ -364,6 +438,69 @@ namespace AIS.Services
 
             sb.AppendLine("</tbody></table></div>");
             return sb.ToString();
+            }
+
+        private static string BuildCompactFieldBlock(IEnumerable<KeyValuePair<string, string>> fields)
+            {
+            var lines = fields
+                .Where(x => !string.IsNullOrWhiteSpace(NormalizeNarrativeValue(x.Value)))
+                .Select(x => string.Format(
+                    CultureInfo.InvariantCulture,
+                    "<div class='compact-line'><strong>{0}:</strong> {1}</div>",
+                    EncodeOrDefault(x.Key, "N/A"),
+                    ToParagraphs(x.Value)))
+                .ToList();
+
+            return lines.Any()
+                ? $"<div class='compact-record'>{string.Join(string.Empty, lines)}</div>"
+                : null;
+            }
+
+        private static string BuildKeyPointsBlocks(IEnumerable<string> values)
+            {
+            var items = (values ?? Enumerable.Empty<string>())
+                .Select(NormalizeNarrativeValue)
+                .Where(x => !string.IsNullOrWhiteSpace(x) && !string.Equals(x, "N/A", StringComparison.OrdinalIgnoreCase))
+                .ToList();
+
+            if (!items.Any())
+                {
+                return null;
+                }
+
+            if (items.Count == 1)
+                {
+                return $"<div class='annex-paragraph'>{ToParagraphs(items[0])}</div>";
+                }
+
+            return string.Join(
+                "<div class='compact-separator'>___________</div>",
+                items.Select(x => $"<div class='annex-paragraph'>{ToParagraphs(x)}</div>"));
+            }
+
+        private static string BuildViolationSummaryBlocks(IEnumerable<IidFindingRecommendationRowModel> rows)
+            {
+            var items = (rows ?? Enumerable.Empty<IidFindingRecommendationRowModel>())
+                .Where(x => x != null && IsVisibleAccusationText(x.AccusationText))
+                .ToList();
+
+            if (!items.Any())
+                {
+                return "<div class='annex-paragraph'>N/A</div>";
+                }
+
+            var blocks = new List<string>();
+            foreach (var row in items)
+                {
+                blocks.Add(string.Format(
+                    CultureInfo.InvariantCulture,
+                    "<div class='summary-block'><div class='summary-heading'>Allegation:</div><div class='summary-text'>{0}</div><div class='summary-heading'>Finding:</div><div class='summary-text'>{1}</div><div class='summary-heading'>Outcome:</div><div class='summary-text'>{2}</div><div class='summary-separator'>___________</div></div>",
+                    ToParagraphs(row.AccusationText),
+                    ToParagraphs(row.FindingText),
+                    ToParagraphs(row.Outcome)));
+                }
+
+            return string.Join(string.Empty, blocks);
             }
 
         private static IEnumerable<KeyValuePair<string, string>> BuildAccusedFields(IidAccusedRowModel row)
@@ -416,28 +553,9 @@ namespace AIS.Services
 
             yield return BuildField("Name", row.PersonName);
             yield return BuildField("Role", row.RoleType);
-            yield return BuildField("PP No", row.PpnoNumber);
-            yield return BuildField("CNIC", row.Cnic);
             yield return BuildField("Date / Time", row.StatementDatetime.HasValue ? FormatDate(row.StatementDatetime) : null);
             yield return BuildField("Place", row.Place);
             yield return BuildField("Mode", row.ModeType);
-            yield return BuildField("Uploaded Statement", row.UploadedStatement);
-            }
-
-        private static IEnumerable<KeyValuePair<string, string>> BuildStatementKeyPointFields(IidStatementRowModel row)
-            {
-            if (row == null)
-                {
-                yield break;
-                }
-
-            yield return BuildField("Name", row.PersonName);
-            yield return BuildField("Role", row.RoleType);
-            yield return BuildField("PP No", row.PpnoNumber);
-            yield return BuildField("CNIC", row.Cnic);
-            yield return BuildField("Date / Time", row.StatementDatetime.HasValue ? FormatDate(row.StatementDatetime) : null);
-            yield return BuildField("Key Points", row.KeyPoints);
-            yield return BuildField("Uploaded Statement", row.UploadedStatement);
             }
 
         private static IEnumerable<KeyValuePair<string, string>> BuildEvidenceFields(IidEvidenceFileRowModel row)
@@ -514,6 +632,17 @@ namespace AIS.Services
             {
             var value = (roleType ?? string.Empty).Trim().ToLowerInvariant();
             return value.Contains("co") && value.Contains("accused");
+            }
+
+        private static bool IsVisibleAccusationText(string value)
+            {
+            var normalized = NormalizeNarrativeValue(value);
+            if (string.IsNullOrWhiteSpace(normalized))
+                {
+                return false;
+                }
+
+            return !string.Equals(normalized.Trim(), "Additional Charges", StringComparison.OrdinalIgnoreCase);
             }
 
         private static string BuildPair(string label, string value)
