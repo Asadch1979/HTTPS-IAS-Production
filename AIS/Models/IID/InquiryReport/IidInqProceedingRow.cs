@@ -19,6 +19,7 @@ namespace AIS.Models.IID.InquiryReport
         public int SortOrder { get; set; }
         [PlainText]
         public string Status { get; set; }
+        public long? UserId { get; set; }
         public long? CreatedBy { get; set; }
         public DateTime CreatedOn { get; set; }
         public long? UpdatedBy { get; set; }

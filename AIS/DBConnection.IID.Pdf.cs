@@ -120,14 +120,12 @@ namespace AIS.Controllers
                         {
                         PersonName = x.PersonName,
                         RoleType = x.RoleType,
-                        StatementType = x.StatementType,
                         PpnoNumber = x.PpnoNumber,
                         Cnic = x.Cnic,
                         StatementDatetime = x.StatementDatetime,
                         Place = x.Place,
                         ModeType = x.ModeType,
                         KeyPoints = x.KeyPoints,
-                        CriticalPointsHighlighted = x.CriticalPointsHighlighted,
                         UploadedStatement = x.UploadedStatement
                         })
                     .ToList(),

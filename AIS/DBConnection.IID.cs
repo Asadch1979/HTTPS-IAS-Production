@@ -1588,13 +1588,15 @@ namespace AIS.Controllers
             return list;
             }
 
-        public IidInqProcResult AddIidInqProceeding(IidInqProceedingRow model)
+        public IidInqProcResult SaveIidInqProceeding(IidInqProceedingRow model)
             {
             using var con = this.DatabaseConnection();
             using var cmd = con.CreateCommand();
-            cmd.CommandText = "PKG_INQ.P_ADD_INQ_PROCEEDING";
+            var userId = model?.UserId ?? model?.UpdatedBy ?? model?.CreatedBy;
+            cmd.CommandText = "PKG_INQ.P_SAVE_INQ_PROCEEDING";
             cmd.CommandType = CommandType.StoredProcedure;
             cmd.BindByName = true;
+            cmd.Parameters.Add("P_PROCEEDING_ID", OracleDbType.Int64).Value = model?.ProceedingId > 0 ? model.ProceedingId : 0;
             cmd.Parameters.Add("P_COMPLAINT_ID", OracleDbType.Int64).Value = model.ComplaintId;
             cmd.Parameters.Add("P_NOTICE_REFERENCE", OracleDbType.Varchar2).Value = model.NoticeReference ?? string.Empty;
             cmd.Parameters.Add("P_VISIT_DATE", OracleDbType.Date).Value = model.VisitDate ?? (object)DBNull.Value;
@@ -1603,30 +1605,19 @@ namespace AIS.Controllers
             cmd.Parameters.Add("P_MISSING_PARTICIPANTS_REASON", OracleDbType.Clob).Value = model.MissingParticipantsReason ?? string.Empty;
             cmd.Parameters.Add("P_SORT_ORDER", OracleDbType.Int32).Value = model.SortOrder;
             cmd.Parameters.Add("P_STATUS", OracleDbType.Varchar2).Value = model.Status ?? "A";
-            cmd.Parameters.Add("P_CREATED_BY", OracleDbType.Int64).Value = model.CreatedBy ?? (object)DBNull.Value;
-            // Asad DB wiring: child table columns should map to NOTICE_REFERENCE, VISIT_DATE, PLACE_VISITED,
-            // PARTICIPANTS_DETAIL, MISSING_PARTICIPANTS_REASON and SR_NO / ROW_ID.
+            cmd.Parameters.Add("P_USER_ID", OracleDbType.Int64).Value = userId ?? (object)DBNull.Value;
             cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
             return ExecuteIidResult(cmd);
             }
 
+        public IidInqProcResult AddIidInqProceeding(IidInqProceedingRow model)
+            {
+            return SaveIidInqProceeding(model);
+            }
+
         public IidInqProcResult UpdateIidInqProceeding(IidInqProceedingRow model)
             {
-            using var con = this.DatabaseConnection();
-            using var cmd = con.CreateCommand();
-            cmd.CommandText = "PKG_INQ.P_UPDATE_INQ_PROCEEDING";
-            cmd.CommandType = CommandType.StoredProcedure;
-            cmd.BindByName = true;
-            cmd.Parameters.Add("P_PROCEEDING_ID", OracleDbType.Int64).Value = model.ProceedingId;
-            cmd.Parameters.Add("P_NOTICE_REFERENCE", OracleDbType.Varchar2).Value = model.NoticeReference ?? string.Empty;
-            cmd.Parameters.Add("P_VISIT_DATE", OracleDbType.Date).Value = model.VisitDate ?? (object)DBNull.Value;
-            cmd.Parameters.Add("P_PLACE_VISITED", OracleDbType.Clob).Value = model.PlaceVisited ?? string.Empty;
-            cmd.Parameters.Add("P_PARTICIPANTS_DETAIL", OracleDbType.Clob).Value = model.ParticipantsDetail ?? string.Empty;
-            cmd.Parameters.Add("P_MISSING_PARTICIPANTS_REASON", OracleDbType.Clob).Value = model.MissingParticipantsReason ?? string.Empty;
-            cmd.Parameters.Add("P_SORT_ORDER", OracleDbType.Int32).Value = model.SortOrder;
-            cmd.Parameters.Add("P_UPDATED_BY", OracleDbType.Int64).Value = model.UpdatedBy ?? (object)DBNull.Value;
-            cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
-            return ExecuteIidResult(cmd);
+            return SaveIidInqProceeding(model);
             }
 
         public IidInqProcResult DeleteIidInqProceeding(long proceedingId, long userId)
@@ -1662,14 +1653,12 @@ namespace AIS.Controllers
                     ComplaintId = GetLongValue(rdr, "COMPLAINT_ID"),
                     PersonName = GetStringValue(rdr, "PERSON_NAME"),
                     RoleType = GetStringValue(rdr, "ROLE_TYPE"),
-                    StatementType = GetStringValue(rdr, "STATEMENT_TYPE"),
                     PpnoNumber = GetStringValue(rdr, "PPNO_NUMBER"),
                     Cnic = DigitsOnly(GetStringValue(rdr, "CNIC")),
                     StatementDatetime = GetNullableDateValue(rdr, "STATEMENT_DATETIME"),
                     Place = GetStringValue(rdr, "PLACE"),
                     ModeType = GetStringValue(rdr, "MODE_TYPE"),
                     KeyPoints = GetStringValue(rdr, "KEY_POINTS"),
-                    CriticalPointsHighlighted = HasColumn(rdr, "CRITICAL_POINTS_HIGHLIGHTED") ? GetStringValue(rdr, "CRITICAL_POINTS_HIGHLIGHTED") : string.Empty,
                     UploadedStatement = GetStringValue(rdr, "UPLOADED_STATEMENT"),
                     Status = GetStringValue(rdr, "STATUS"),
                     CreatedBy = GetNullableLongValue(rdr, "CREATED_BY"),
@@ -1682,10 +1671,11 @@ namespace AIS.Controllers
             return list;
             }
 
-        public IidInqProcResult AddIidInqStatement(IidInqStatementRow model)
+        public IidInqProcResult SaveIidInqStatement(IidInqStatementRow model)
             {
             using var con = this.DatabaseConnection();
             using var cmd = con.CreateCommand();
+            var userId = model?.UserId ?? model?.UpdatedBy ?? model?.CreatedBy;
             cmd.CommandText = "PKG_INQ.P_ADD_INQ_STATEMENT";
             cmd.CommandType = CommandType.StoredProcedure;
             cmd.BindByName = true;
@@ -1698,38 +1688,20 @@ namespace AIS.Controllers
             cmd.Parameters.Add("P_PLACE", OracleDbType.Varchar2).Value = model.Place ?? string.Empty;
             cmd.Parameters.Add("P_MODE_TYPE", OracleDbType.Varchar2).Value = model.ModeType ?? string.Empty;
             cmd.Parameters.Add("P_KEY_POINTS", OracleDbType.Clob).Value = model.KeyPoints ?? string.Empty;
-            cmd.Parameters.Add("P_CRITICAL_POINTS_HIGHLIGHTED", OracleDbType.Clob).Value = model.CriticalPointsHighlighted ?? string.Empty;
-            cmd.Parameters.Add("P_STATEMENT_TYPE", OracleDbType.Varchar2).Value = model.StatementType ?? string.Empty;
-            cmd.Parameters.Add("P_UPLOADED_STATEMENT", OracleDbType.Varchar2).Value = model.UploadedStatement ?? string.Empty;
-            cmd.Parameters.Add("P_CREATED_BY", OracleDbType.Int64).Value = model.CreatedBy ?? (object)DBNull.Value;
-            // Asad DB wiring: extend PKG_INQ.P_ADD_INQ_STATEMENT with P_CRITICAL_POINTS_HIGHLIGHTED.
+            cmd.Parameters.Add("P_UPLOADED_STATEMENT", OracleDbType.Clob).Value = model.UploadedStatement ?? string.Empty;
+            cmd.Parameters.Add("P_USER_ID", OracleDbType.Int64).Value = userId ?? (object)DBNull.Value;
             cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
             return ExecuteIidResult(cmd);
             }
 
+        public IidInqProcResult AddIidInqStatement(IidInqStatementRow model)
+            {
+            return SaveIidInqStatement(model);
+            }
+
         public IidInqProcResult UpdateIidInqStatement(IidInqStatementRow model)
             {
-            using var con = this.DatabaseConnection();
-            using var cmd = con.CreateCommand();
-            cmd.CommandText = "PKG_INQ.P_UPDATE_INQ_STATEMENT";
-            cmd.CommandType = CommandType.StoredProcedure;
-            cmd.BindByName = true;
-            cmd.Parameters.Add("P_STATEMENT_ID", OracleDbType.Int64).Value = model.StatementId;
-            cmd.Parameters.Add("P_PERSON_NAME", OracleDbType.Varchar2).Value = model.PersonName ?? string.Empty;
-            cmd.Parameters.Add("P_ROLE_TYPE", OracleDbType.Varchar2).Value = model.RoleType ?? string.Empty;
-            cmd.Parameters.Add("P_PPNO_NUMBER", OracleDbType.Varchar2).Value = model.PpnoNumber ?? string.Empty;
-            cmd.Parameters.Add("P_CNIC", OracleDbType.Varchar2).Value = DigitsOnly(model.Cnic);
-            cmd.Parameters.Add("P_STATEMENT_DATETIME", OracleDbType.Date).Value = model.StatementDatetime ?? (object)DBNull.Value;
-            cmd.Parameters.Add("P_PLACE", OracleDbType.Varchar2).Value = model.Place ?? string.Empty;
-            cmd.Parameters.Add("P_MODE_TYPE", OracleDbType.Varchar2).Value = model.ModeType ?? string.Empty;
-            cmd.Parameters.Add("P_KEY_POINTS", OracleDbType.Clob).Value = model.KeyPoints ?? string.Empty;
-            cmd.Parameters.Add("P_CRITICAL_POINTS_HIGHLIGHTED", OracleDbType.Clob).Value = model.CriticalPointsHighlighted ?? string.Empty;
-            cmd.Parameters.Add("P_STATEMENT_TYPE", OracleDbType.Varchar2).Value = model.StatementType ?? string.Empty;
-            cmd.Parameters.Add("P_UPLOADED_STATEMENT", OracleDbType.Varchar2).Value = model.UploadedStatement ?? string.Empty;
-            cmd.Parameters.Add("P_UPDATED_BY", OracleDbType.Int64).Value = model.UpdatedBy ?? (object)DBNull.Value;
-            // Asad DB wiring: extend PKG_INQ.P_UPDATE_INQ_STATEMENT with P_CRITICAL_POINTS_HIGHLIGHTED.
-            cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
-            return ExecuteIidResult(cmd);
+            return SaveIidInqStatement(model);
             }
 
         public IidInqProcResult DeleteIidInqStatement(long statementId, long userId)

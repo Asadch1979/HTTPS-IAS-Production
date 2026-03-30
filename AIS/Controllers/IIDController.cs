@@ -411,7 +411,7 @@ namespace AIS.Controllers
                     doc.Add(new Paragraph($"Nature: {complaint.Nature}\nSource: {complaint.ReceivedFrom}\nBranch: {complaint.AssignedUnit}\nStatus: {complaint.Status}"));
 
                     doc.Add(new Paragraph("Statement Register").SetBold());
-                    doc.Add(new Paragraph(string.Join("\n", statements.Select((x, i) => $"{i + 1}. {x.PersonName} | {x.StatementType} | {x.StatementDatetime} | {x.Place} | {x.UploadedStatement}"))));
+                    doc.Add(new Paragraph(string.Join("\n", statements.Select((x, i) => $"{i + 1}. {x.PersonName} | {x.RoleType} | {x.StatementDatetime} | {x.Place} | {x.UploadedStatement}"))));
 
                     doc.Add(new Paragraph("Evidence").SetBold());
                     doc.Add(new Paragraph(string.Join("\n", evidence.Select((x, i) => $"{i + 1}. {x.FileName} ({x.EvidenceType})"))));

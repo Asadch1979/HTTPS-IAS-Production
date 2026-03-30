@@ -77,7 +77,7 @@
         bindRows('#tblAccusations', toList(payload, ['accusations', 'accusedAccusations']), [['accusation', 'accusationText', 'title', 'details']]);
         bindRows('#tblRecords', toList(payload, ['recordsScrutinized', 'records']), [['recordTitle', 'title'], ['details', 'recordDetails', 'recordDetail']]);
         bindRows('#tblProceedings', toList(payload, ['inquiryProceedings', 'proceedings']), [['noticeReference'], ['visitDate'], ['placeVisited'], ['participantsDetail'], ['missingParticipantsReason']]);
-        bindRows('#tblStatements', toList(payload, ['statementRegister', 'statements']), [['name', 'personName'], ['role', 'roleType', 'designation'], ['statementDate', 'statementDatetime', 'date'], ['mode', 'modeType', 'recordingMode'], ['criticalPointsHighlighted', 'CriticalPointsHighlighted']]);
+        bindRows('#tblStatements', toList(payload, ['statementRegister', 'statements']), [['name', 'personName'], ['role', 'roleType', 'designation'], ['statementDate', 'statementDatetime', 'date'], ['mode', 'modeType', 'recordingMode'], ['keyPoints', 'KeyPoints']]);
         bindRows('#tblEvidence', toList(payload, ['evidenceFiles', 'evidence']), [['fileName', 'name'], ['fileType', 'fileExt', 'evidenceType', 'type'], ['uploadedOn', 'date']]);
         bindRows('#tblViolations', toList(payload, ['violationsList', 'violations']), [['category'], ['detail', 'violationDetail', 'details'], ['reference', 'referenceText'], ['recommendation']]);
         bindRows('#tblDsa', toList(payload, ['dsaList', 'dsa']), [['person', 'personName', 'name'], ['designation'], ['ppNo', 'ppno', 'ppnoNumber'], ['status', 'dsaStatus']]);
@@ -184,10 +184,10 @@
         $('#ptStatementsComplainant').text(formatRowsParagraph(complainantSt, statementLine));
         $('#ptStatementsAccused').text(formatRowsParagraph(accusedSt, statementLine));
         $('#ptCriticalPointsComplainant').text(formatRowsParagraph(complainantSt, function (row) {
-            return [pick(row, ['name', 'personName'], ''), pick(row, ['criticalPointsHighlighted', 'CriticalPointsHighlighted'], '')].filter(Boolean).join(' - ');
+            return [pick(row, ['name', 'personName'], ''), pick(row, ['keyPoints', 'KeyPoints'], '')].filter(Boolean).join(' - ');
         }));
         $('#ptCriticalPointsAccused').text(formatRowsParagraph(accusedSt, function (row) {
-            return [pick(row, ['name', 'personName'], ''), pick(row, ['criticalPointsHighlighted', 'CriticalPointsHighlighted'], '')].filter(Boolean).join(' - ');
+            return [pick(row, ['name', 'personName'], ''), pick(row, ['keyPoints', 'KeyPoints'], '')].filter(Boolean).join(' - ');
         }));
         $('#ptEvidencePara').text(pick(evidenceStep, ['materialEvidenceDetail', 'MaterialEvidenceDetail'], '') || formatRowsParagraph(evidence, function (row) { return pick(row, ['fileName', 'name'], 'N/A'); }));
         $('#ptCircumstantialEvidencePara').text(pick(evidenceStep, ['circumstantialEvidenceDetail', 'CircumstantialEvidenceDetail'], '') || 'N/A');

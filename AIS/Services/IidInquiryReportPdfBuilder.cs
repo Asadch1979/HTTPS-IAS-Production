@@ -152,11 +152,11 @@ namespace AIS.Services
             AppendAnnexSection(sb, "10. Time and place of Recording Statement of Accused",
                 BuildNarrativeList(accusedStatements.Select(BuildStatementTimeline)));
 
-            AppendAnnexSection(sb, "11. Critical Points highlighted in statement of complainant",
-                BuildNarrativeList(complainantStatements.Select(x => JoinNonEmpty(" - ", x.PersonName, x.CriticalPointsHighlighted ?? x.KeyPoints))));
+            AppendAnnexSection(sb, "11. Key points recorded in statement of complainant",
+                BuildNarrativeList(complainantStatements.Select(x => JoinNonEmpty(" - ", x.PersonName, x.KeyPoints))));
 
-            AppendAnnexSection(sb, "12. Critical Points highlighted in statement of accused",
-                BuildNarrativeList(accusedStatements.Select(x => JoinNonEmpty(" - ", x.PersonName, x.CriticalPointsHighlighted ?? x.KeyPoints))));
+            AppendAnnexSection(sb, "12. Key points recorded in statement of accused",
+                BuildNarrativeList(accusedStatements.Select(x => JoinNonEmpty(" - ", x.PersonName, x.KeyPoints))));
 
             AppendAnnexSection(sb, "13. Details of material evidence",
                 !string.IsNullOrWhiteSpace(data.EvidenceSummary?.MaterialEvidenceDetail)

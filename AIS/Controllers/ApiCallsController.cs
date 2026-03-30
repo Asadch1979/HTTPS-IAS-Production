@@ -5486,7 +5486,7 @@ namespace AIS.Controllers
             {
             try
                 {
-                var rows = dBConnection.AddIidInqProceeding(model);
+                var rows = dBConnection.SaveIidInqProceeding(model);
                 return Json(BuildIidSaveResponse(rows, "Inquiry proceeding row saved."));
                 }
             catch (Exception ex)
@@ -5505,12 +5505,8 @@ namespace AIS.Controllers
                     return Json(new { ok = false, message = "Inquiry proceeding payload is required." });
                     }
 
-                var isUpdate = model.ProceedingId > 0;
-                var rows = isUpdate
-                    ? dBConnection.UpdateIidInqProceeding(model)
-                    : dBConnection.AddIidInqProceeding(model);
-
-                return Json(BuildIidSaveResponse(rows, isUpdate ? "Inquiry proceeding row updated." : "Inquiry proceeding row saved."));
+                var rows = dBConnection.SaveIidInqProceeding(model);
+                return Json(BuildIidSaveResponse(rows, "Inquiry proceeding row saved."));
                 }
             catch (Exception ex)
                 {
@@ -5551,7 +5547,7 @@ namespace AIS.Controllers
             {
             try
                 {
-                var rows = dBConnection.AddIidInqStatement(model);
+                var rows = dBConnection.SaveIidInqStatement(model);
                 return Json(BuildIidSaveResponse(rows, "Statement row saved."));
                 }
             catch (Exception ex)
@@ -5570,12 +5566,8 @@ namespace AIS.Controllers
                     return Json(new { ok = false, message = "Statement payload is required." });
                     }
 
-                var isUpdate = model.StatementId > 0;
-                var rows = isUpdate
-                    ? dBConnection.UpdateIidInqStatement(model)
-                    : dBConnection.AddIidInqStatement(model);
-
-                return Json(BuildIidSaveResponse(rows, isUpdate ? "Statement row updated." : "Statement row saved."));
+                var rows = dBConnection.SaveIidInqStatement(model);
+                return Json(BuildIidSaveResponse(rows, "Statement row saved."));
                 }
             catch (Exception ex)
                 {

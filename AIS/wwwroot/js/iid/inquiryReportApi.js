@@ -37,11 +37,13 @@
     window.iidGetInqProceedings = function (complaintId) { return iidPostJson('/ApiCalls/GetIidInqProceedings', { complaintId: complaintId }); };
     window.iidAddInqProceeding = function (payload) { return iidPostJson('/ApiCalls/AddIidInqProceeding', payload); };
     window.iidUpdateInqProceeding = function (payload) { return iidPostJson('/ApiCalls/UpdateIidInqProceeding', payload); };
+    window.iidSaveInqProceeding = function (payload) { return iidPostJson('/ApiCalls/UpdateIidInqProceeding', payload); };
     window.iidDeleteInqProceeding = function (id, userId) { return iidPostJson('/ApiCalls/DeleteIidInqProceeding', { id: id, userId: userId }); };
 
     window.iidGetInqStatements = function (complaintId) { return iidPostJson('/ApiCalls/GetIidInqStatements', { complaintId: complaintId }); };
     window.iidAddInqStatement = function (payload) { return iidPostJson('/ApiCalls/AddIidInqStatement', payload); };
     window.iidUpdateInqStatement = function (payload) { return iidPostJson('/ApiCalls/UpdateIidInqStatement', payload); };
+    window.iidSaveInqStatement = function (payload) { return iidPostJson('/ApiCalls/AddIidInqStatement', payload); };
     window.iidDeleteInqStatement = function (id, userId) { return iidPostJson('/ApiCalls/DeleteIidInqStatement', { id: id, userId: userId }); };
     window.iidGetEmployeeByPpno = function (ppno) { return iidPostJson('/ApiCalls/get_employee_name_from_pp', { PP_NO: parseInt(ppno, 10) || 0 }); };
     window.iidGetIidEmployeeInfo = function (ppNo) { return iidPostJson('/ApiCalls/GetIidEmployeeInfo', { ppNo: parseInt(ppNo, 10) || 0 }); };

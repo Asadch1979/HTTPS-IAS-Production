@@ -90,14 +90,12 @@ namespace AIS.Models.IID
         {
         public string PersonName { get; set; }
         public string RoleType { get; set; }
-        public string StatementType { get; set; }
         public string PpnoNumber { get; set; }
         public string Cnic { get; set; }
         public DateTime? StatementDatetime { get; set; }
         public string Place { get; set; }
         public string ModeType { get; set; }
         public string KeyPoints { get; set; }
-        public string CriticalPointsHighlighted { get; set; }
         public string UploadedStatement { get; set; }
         }
 
