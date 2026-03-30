@@ -1,6 +1,6 @@
     $(function(){
         var complaintId = '@complaintId';
-        var pageId = 3;
+        var pageId = 348;
         var todayDate = new Date();
         todayDate.setHours(0, 0, 0, 0);
         var minInquiryDate = new Date(todayDate);

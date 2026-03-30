@@ -1,7 +1,7 @@
     $(function(){
         var complaintId = parseInt('@complaintId' || '0', 10) || 0;
         var planId = '@planId';
-        var pageId = 4;
+        var pageId = 349;
 
         function showIidAlert(title, message){
             $('#iidAlertTitle').text(title || 'Message');

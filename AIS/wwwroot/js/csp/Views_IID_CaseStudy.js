@@ -1,6 +1,6 @@
     $(function(){
         var complaintId = '@complaintId';
-        var pageId = 7;
+        var pageId = 342;
 
         function showIidAlert(message, type){
             type = type || 'danger';

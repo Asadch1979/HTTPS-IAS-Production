@@ -2,7 +2,7 @@
         var complaintId = '@complaintId';
         var currentAssessmentId = '@assessmentId';
         var assignedUnitId = 0;
-        var pageId = 2;
+        var pageId = 345;
 
         function showIidAlert(title, message){
             $('#iidAlertTitle').text(title || 'Message');

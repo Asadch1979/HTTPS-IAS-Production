@@ -1,7 +1,7 @@
     $(function(){
         var complaintId = '@complaintId';
         var referredBackStatus = 'REFERRED_BACK';
-        var pageId = 1;
+        var pageId = 346;
 
         function showIidAlert(title, message){
             $('#iidAlertTitle').text(title || 'Message');

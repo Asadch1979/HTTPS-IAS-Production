@@ -1,7 +1,7 @@
     $(function(){
         var complaintId = '@complaintId';
         var reportId = '@reportId';
-        var pageId = 8;
+        var pageId = 344;
 
         function showIidAlert(message, type){
             type = type || 'danger';
