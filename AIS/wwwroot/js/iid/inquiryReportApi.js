@@ -44,6 +44,7 @@
     window.iidAddInqStatement = function (payload) { return iidPostJson('/ApiCalls/AddIidInqStatement', payload); };
     window.iidUpdateInqStatement = function (payload) { return iidPostJson('/ApiCalls/UpdateIidInqStatement', payload); };
     window.iidSaveInqStatement = function (payload) { return iidPostJson('/ApiCalls/AddIidInqStatement', payload); };
+    window.iidUploadInqStatementFile = function (formData) { return iidPost('/ApiCalls/UploadIidInqStatementFile', formData, true); };
     window.iidDeleteInqStatement = function (id, userId) { return iidPostJson('/ApiCalls/DeleteIidInqStatement', { id: id, userId: userId }); };
     window.iidGetEmployeeByPpno = function (ppno) { return iidPostJson('/ApiCalls/get_employee_name_from_pp', { PP_NO: parseInt(ppno, 10) || 0 }); };
     window.iidGetIidEmployeeInfo = function (ppNo) { return iidPostJson('/ApiCalls/GetIidEmployeeInfo', { ppNo: parseInt(ppNo, 10) || 0 }); };

@@ -1282,6 +1282,12 @@ namespace AIS.Controllers
             return result;
             }
 
+        private static void AddIidIoCursor(OracleCommand cmd)
+            {
+            // InquiryReport flow procedures use io_cursor OUT t_cursor consistently.
+            cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+            }
+
         public List<IidInqAccusationRow> GetIidInqAccusationsByComplaintId(long complaintId)
             {
             using var con = this.DatabaseConnection();
@@ -1290,7 +1296,7 @@ namespace AIS.Controllers
             cmd.CommandType = CommandType.StoredProcedure;
             cmd.BindByName = true;
             cmd.Parameters.Add("P_COMPLAINT_ID", OracleDbType.Int64).Value = complaintId;
-            cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+            AddIidIoCursor(cmd);
 
             var list = new List<IidInqAccusationRow>();
             using var rdr = cmd.ExecuteReader();
@@ -1324,7 +1330,7 @@ namespace AIS.Controllers
             cmd.Parameters.Add("P_ACCUSATION_TEXT", OracleDbType.Clob).Value = model.AccusationText ?? string.Empty;
             cmd.Parameters.Add("P_SORT_ORDER", OracleDbType.Int32).Value = model.SortOrder;
             cmd.Parameters.Add("P_CREATED_BY", OracleDbType.Int64).Value = model.CreatedBy ?? (object)DBNull.Value;
-            cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+            AddIidIoCursor(cmd);
             return ExecuteIidResult(cmd);
             }
 
@@ -1339,7 +1345,7 @@ namespace AIS.Controllers
             cmd.Parameters.Add("P_ACCUSATION_TEXT", OracleDbType.Clob).Value = model.AccusationText ?? string.Empty;
             cmd.Parameters.Add("P_SORT_ORDER", OracleDbType.Int32).Value = model.SortOrder;
             cmd.Parameters.Add("P_UPDATED_BY", OracleDbType.Int64).Value = model.UpdatedBy ?? (object)DBNull.Value;
-            cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+            AddIidIoCursor(cmd);
             return ExecuteIidResult(cmd);
             }
 
@@ -1352,7 +1358,7 @@ namespace AIS.Controllers
             cmd.BindByName = true;
             cmd.Parameters.Add("P_ACCUSATION_ID", OracleDbType.Int64).Value = accusationId;
             cmd.Parameters.Add("P_UPDATED_BY", OracleDbType.Int64).Value = userId;
-            cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+            AddIidIoCursor(cmd);
             return ExecuteIidResult(cmd);
             }
 
@@ -1364,7 +1370,7 @@ namespace AIS.Controllers
             cmd.CommandType = CommandType.StoredProcedure;
             cmd.BindByName = true;
             cmd.Parameters.Add("P_PP_NO", OracleDbType.Int64).Value = ppNo;
-            cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+            AddIidIoCursor(cmd);
 
             using var rdr = cmd.ExecuteReader();
             if (!rdr.Read())
@@ -1389,7 +1395,7 @@ namespace AIS.Controllers
             cmd.CommandType = CommandType.StoredProcedure;
             cmd.BindByName = true;
             cmd.Parameters.Add("P_COMPLAINT_ID", OracleDbType.Int64).Value = complaintId;
-            cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+            AddIidIoCursor(cmd);
 
             var list = new List<IidInqAccusedRow>();
             using var rdr = cmd.ExecuteReader();
@@ -1437,7 +1443,7 @@ namespace AIS.Controllers
             cmd.Parameters.Add("P_REMARKS", OracleDbType.Varchar2).Value = model.Remarks ?? string.Empty;
             cmd.Parameters.Add("P_SORT_ORDER", OracleDbType.Int32).Value = model.SortOrder;
             cmd.Parameters.Add("P_CREATED_BY", OracleDbType.Int64).Value = model.CreatedBy ?? (object)DBNull.Value;
-            cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+            AddIidIoCursor(cmd);
             return ExecuteIidResult(cmd);
             }
 
@@ -1458,7 +1464,7 @@ namespace AIS.Controllers
             cmd.Parameters.Add("P_REMARKS", OracleDbType.Varchar2).Value = model.Remarks ?? string.Empty;
             cmd.Parameters.Add("P_SORT_ORDER", OracleDbType.Int32).Value = model.SortOrder;
             cmd.Parameters.Add("P_UPDATED_BY", OracleDbType.Int64).Value = model.UpdatedBy ?? (object)DBNull.Value;
-            cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+            AddIidIoCursor(cmd);
             return ExecuteIidResult(cmd);
             }
 
@@ -1471,7 +1477,7 @@ namespace AIS.Controllers
             cmd.BindByName = true;
             cmd.Parameters.Add("P_ACCUSED_ROW_ID", OracleDbType.Int64).Value = accusedRowId;
             cmd.Parameters.Add("P_UPDATED_BY", OracleDbType.Int64).Value = userId;
-            cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+            AddIidIoCursor(cmd);
             return ExecuteIidResult(cmd);
             }
 
@@ -1483,7 +1489,7 @@ namespace AIS.Controllers
             cmd.CommandType = CommandType.StoredProcedure;
             cmd.BindByName = true;
             cmd.Parameters.Add("P_COMPLAINT_ID", OracleDbType.Int64).Value = complaintId;
-            cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+            AddIidIoCursor(cmd);
 
             var list = new List<IidInqRecordRow>();
             using var rdr = cmd.ExecuteReader();
@@ -1519,7 +1525,7 @@ namespace AIS.Controllers
             cmd.Parameters.Add("P_RECORD_DETAILS", OracleDbType.Varchar2).Value = model.RecordDetails ?? string.Empty;
             cmd.Parameters.Add("P_SORT_ORDER", OracleDbType.Int32).Value = model.SortOrder;
             cmd.Parameters.Add("P_CREATED_BY", OracleDbType.Int64).Value = model.CreatedBy ?? (object)DBNull.Value;
-            cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+            AddIidIoCursor(cmd);
             return ExecuteIidResult(cmd);
             }
 
@@ -1535,7 +1541,7 @@ namespace AIS.Controllers
             cmd.Parameters.Add("P_RECORD_DETAILS", OracleDbType.Varchar2).Value = model.RecordDetails ?? string.Empty;
             cmd.Parameters.Add("P_SORT_ORDER", OracleDbType.Int32).Value = model.SortOrder;
             cmd.Parameters.Add("P_UPDATED_BY", OracleDbType.Int64).Value = model.UpdatedBy ?? (object)DBNull.Value;
-            cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+            AddIidIoCursor(cmd);
             return ExecuteIidResult(cmd);
             }
 
@@ -1548,7 +1554,7 @@ namespace AIS.Controllers
             cmd.BindByName = true;
             cmd.Parameters.Add("P_REC_ID", OracleDbType.Int64).Value = recId;
             cmd.Parameters.Add("P_UPDATED_BY", OracleDbType.Int64).Value = userId;
-            cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+            AddIidIoCursor(cmd);
             return ExecuteIidResult(cmd);
             }
 
@@ -1560,7 +1566,7 @@ namespace AIS.Controllers
             cmd.CommandType = CommandType.StoredProcedure;
             cmd.BindByName = true;
             cmd.Parameters.Add("P_COMPLAINT_ID", OracleDbType.Int64).Value = complaintId;
-            cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+            AddIidIoCursor(cmd);
 
             var list = new List<IidInqProceedingRow>();
             using var rdr = cmd.ExecuteReader();
@@ -1606,7 +1612,7 @@ namespace AIS.Controllers
             cmd.Parameters.Add("P_SORT_ORDER", OracleDbType.Int32).Value = model.SortOrder;
             cmd.Parameters.Add("P_STATUS", OracleDbType.Varchar2).Value = model.Status ?? "A";
             cmd.Parameters.Add("P_USER_ID", OracleDbType.Int64).Value = userId ?? (object)DBNull.Value;
-            cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+            AddIidIoCursor(cmd);
             return ExecuteIidResult(cmd);
             }
 
@@ -1629,7 +1635,7 @@ namespace AIS.Controllers
             cmd.BindByName = true;
             cmd.Parameters.Add("P_PROCEEDING_ID", OracleDbType.Int64).Value = proceedingId;
             cmd.Parameters.Add("P_UPDATED_BY", OracleDbType.Int64).Value = userId;
-            cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+            AddIidIoCursor(cmd);
             return ExecuteIidResult(cmd);
             }
 
@@ -1641,7 +1647,7 @@ namespace AIS.Controllers
             cmd.CommandType = CommandType.StoredProcedure;
             cmd.BindByName = true;
             cmd.Parameters.Add("P_COMPLAINT_ID", OracleDbType.Int64).Value = complaintId;
-            cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+            AddIidIoCursor(cmd);
 
             var list = new List<IidInqStatementRow>();
             using var rdr = cmd.ExecuteReader();
@@ -1690,7 +1696,7 @@ namespace AIS.Controllers
             cmd.Parameters.Add("P_KEY_POINTS", OracleDbType.Clob).Value = model.KeyPoints ?? string.Empty;
             cmd.Parameters.Add("P_UPLOADED_STATEMENT", OracleDbType.Clob).Value = model.UploadedStatement ?? string.Empty;
             cmd.Parameters.Add("P_USER_ID", OracleDbType.Int64).Value = userId ?? (object)DBNull.Value;
-            cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+            AddIidIoCursor(cmd);
             return ExecuteIidResult(cmd);
             }
 
@@ -1713,7 +1719,7 @@ namespace AIS.Controllers
             cmd.BindByName = true;
             cmd.Parameters.Add("P_STATEMENT_ID", OracleDbType.Int64).Value = statementId;
             cmd.Parameters.Add("P_UPDATED_BY", OracleDbType.Int64).Value = userId;
-            cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+            AddIidIoCursor(cmd);
             return ExecuteIidResult(cmd);
             }
 
@@ -1725,7 +1731,7 @@ namespace AIS.Controllers
             cmd.CommandType = CommandType.StoredProcedure;
             cmd.BindByName = true;
             cmd.Parameters.Add("P_COMPLAINT_ID", OracleDbType.Int64).Value = complaintId;
-            cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+            AddIidIoCursor(cmd);
 
             var list = new List<IidInqEvidenceFileRow>();
             using var rdr = cmd.ExecuteReader();
@@ -1767,7 +1773,7 @@ namespace AIS.Controllers
             cmd.Parameters.Add("P_FILE_EXT", OracleDbType.Varchar2).Value = model.FileExt ?? string.Empty;
             cmd.Parameters.Add("P_FILE_SIZE_KB", OracleDbType.Int32).Value = model.FileSizeKb ?? (object)DBNull.Value;
             cmd.Parameters.Add("P_UPLOADED_BY", OracleDbType.Int64).Value = model.UploadedBy ?? (object)DBNull.Value;
-            cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+            AddIidIoCursor(cmd);
             return ExecuteIidResult(cmd);
             }
 
@@ -1780,7 +1786,7 @@ namespace AIS.Controllers
             cmd.BindByName = true;
             cmd.Parameters.Add("P_EVIDENCE_ID", OracleDbType.Int64).Value = evidenceId;
             cmd.Parameters.Add("P_UPDATED_BY", OracleDbType.Int64).Value = userId;
-            cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+            AddIidIoCursor(cmd);
             return ExecuteIidResult(cmd);
             }
 
@@ -1792,7 +1798,7 @@ namespace AIS.Controllers
             cmd.CommandType = CommandType.StoredProcedure;
             cmd.BindByName = true;
             cmd.Parameters.Add("P_COMPLAINT_ID", OracleDbType.Int64).Value = complaintId;
-            cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+            AddIidIoCursor(cmd);
 
             var list = new List<IidInqViolationRow>();
             using var rdr = cmd.ExecuteReader();
@@ -1832,7 +1838,7 @@ namespace AIS.Controllers
             cmd.Parameters.Add("P_RECOMMENDATION", OracleDbType.Clob).Value = model.Recommendation ?? string.Empty;
             cmd.Parameters.Add("P_SORT_ORDER", OracleDbType.Int32).Value = model.SortOrder;
             cmd.Parameters.Add("P_CREATED_BY", OracleDbType.Int64).Value = model.CreatedBy ?? (object)DBNull.Value;
-            cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+            AddIidIoCursor(cmd);
             return ExecuteIidResult(cmd);
             }
 
@@ -1850,7 +1856,7 @@ namespace AIS.Controllers
             cmd.Parameters.Add("P_RECOMMENDATION", OracleDbType.Clob).Value = model.Recommendation ?? string.Empty;
             cmd.Parameters.Add("P_SORT_ORDER", OracleDbType.Int32).Value = model.SortOrder;
             cmd.Parameters.Add("P_UPDATED_BY", OracleDbType.Int64).Value = model.UpdatedBy ?? (object)DBNull.Value;
-            cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+            AddIidIoCursor(cmd);
             return ExecuteIidResult(cmd);
             }
 
@@ -1863,7 +1869,7 @@ namespace AIS.Controllers
             cmd.BindByName = true;
             cmd.Parameters.Add("P_VIOLATION_ID", OracleDbType.Int64).Value = violationId;
             cmd.Parameters.Add("P_UPDATED_BY", OracleDbType.Int64).Value = userId;
-            cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+            AddIidIoCursor(cmd);
             return ExecuteIidResult(cmd);
             }
 
@@ -1878,7 +1884,7 @@ namespace AIS.Controllers
             cmd.BindByName = true;
             cmd.Parameters.Add("p_complaint_id", OracleDbType.Int64).Value = complaintId;
             cmd.Parameters.Add("p_accusation_id", OracleDbType.Int64).Value = accusationId;
-            cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+            AddIidIoCursor(cmd);
 
             var list = new List<IidInqFindingsRecommRow>();
             using var rdr = cmd.ExecuteReader();
@@ -1921,7 +1927,7 @@ namespace AIS.Controllers
             cmd.CommandType = CommandType.StoredProcedure;
             cmd.BindByName = true;
             cmd.Parameters.Add("p_complaint_id", OracleDbType.Int64).Value = complaintId;
-            cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+            AddIidIoCursor(cmd);
 
             var list = new List<IidAccusationForFindingsRow>();
             using var rdr = cmd.ExecuteReader();
@@ -1952,7 +1958,7 @@ namespace AIS.Controllers
             cmd.BindByName = true;
             cmd.Parameters.Add("p_complaint_id", OracleDbType.Int64).Value = complaintId;
             cmd.Parameters.Add("p_accusation_id", OracleDbType.Int64).Value = accusationId;
-            cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+            AddIidIoCursor(cmd);
 
             using var rdr = cmd.ExecuteReader();
             if (!rdr.Read())
@@ -1993,7 +1999,7 @@ namespace AIS.Controllers
             cmd.Parameters.Add("p_finding_text", OracleDbType.Clob).Value = findingText ?? string.Empty;
             cmd.Parameters.Add("p_recom_text", OracleDbType.Clob).Value = recomText ?? string.Empty;
             cmd.Parameters.Add("p_ppno", OracleDbType.Varchar2).Value = ppno ?? string.Empty;
-            cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+            AddIidIoCursor(cmd);
             return ExecuteIidResult(cmd);
             }
 
@@ -2005,7 +2011,7 @@ namespace AIS.Controllers
             cmd.CommandType = CommandType.StoredProcedure;
             cmd.BindByName = true;
             cmd.Parameters.Add("p_complaint_id", OracleDbType.Int64).Value = complaintId;
-            cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+            AddIidIoCursor(cmd);
 
             var list = new List<IidFindingsRecommStatusRow>();
             using var rdr = cmd.ExecuteReader();
@@ -2038,7 +2044,7 @@ namespace AIS.Controllers
             cmd.CommandType = CommandType.StoredProcedure;
             cmd.BindByName = true;
             cmd.Parameters.Add("P_COMPLAINT_ID", OracleDbType.Int64).Value = complaintId;
-            cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+            AddIidIoCursor(cmd);
 
             var model = new IidInqEvidenceStepModel
                 {
@@ -2067,7 +2073,7 @@ namespace AIS.Controllers
             cmd.Parameters.Add("P_MATERIAL_EVIDENCE_DETAIL", OracleDbType.Clob).Value = model.MaterialEvidenceDetail ?? string.Empty;
             cmd.Parameters.Add("P_CIRCUMSTANTIAL_EVIDENCE_DETAIL", OracleDbType.Clob).Value = model.CircumstantialEvidenceDetail ?? string.Empty;
             // Asad DB wiring: persist MATERIAL_EVIDENCE_DETAIL and CIRCUMSTANTIAL_EVIDENCE_DETAIL in the evidence-step proc.
-            cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+            AddIidIoCursor(cmd);
             return ExecuteIidResult(cmd);
             }
 
@@ -2079,7 +2085,7 @@ namespace AIS.Controllers
             cmd.CommandType = CommandType.StoredProcedure;
             cmd.BindByName = true;
             cmd.Parameters.Add("P_COMPLAINT_ID", OracleDbType.Int64).Value = complaintId;
-            cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+            AddIidIoCursor(cmd);
 
             var list = new List<IidInqDsaRow>();
             using var rdr = cmd.ExecuteReader();
@@ -2123,7 +2129,7 @@ namespace AIS.Controllers
             cmd.Parameters.Add("P_REMARKS", OracleDbType.Varchar2).Value = model.Remarks ?? string.Empty;
             cmd.Parameters.Add("P_SORT_ORDER", OracleDbType.Int32).Value = model.SortOrder;
             cmd.Parameters.Add("P_CREATED_BY", OracleDbType.Int64).Value = model.CreatedBy ?? (object)DBNull.Value;
-            cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+            AddIidIoCursor(cmd);
             return ExecuteIidResult(cmd);
             }
 
@@ -2143,7 +2149,7 @@ namespace AIS.Controllers
             cmd.Parameters.Add("P_REMARKS", OracleDbType.Varchar2).Value = model.Remarks ?? string.Empty;
             cmd.Parameters.Add("P_SORT_ORDER", OracleDbType.Int32).Value = model.SortOrder;
             cmd.Parameters.Add("P_UPDATED_BY", OracleDbType.Int64).Value = model.UpdatedBy ?? (object)DBNull.Value;
-            cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+            AddIidIoCursor(cmd);
             return ExecuteIidResult(cmd);
             }
 
@@ -2156,7 +2162,7 @@ namespace AIS.Controllers
             cmd.BindByName = true;
             cmd.Parameters.Add("P_DSA_ID", OracleDbType.Int64).Value = dsaId;
             cmd.Parameters.Add("P_UPDATED_BY", OracleDbType.Int64).Value = userId;
-            cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+            AddIidIoCursor(cmd);
             return ExecuteIidResult(cmd);
             }
 

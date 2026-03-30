@@ -31,6 +31,26 @@
 <div id="iidComplaintHiddenCache" class="d-none" style="display:none;"></div>
 <div id="iidAntiForgeryWrap" class="d-none">@Html.AntiForgeryToken()</div>
 
+<div class="modal fade" id="iidDateTimePickerModal" tabindex="-1" aria-labelledby="iidDateTimePickerModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="iidDateTimePickerModalLabel">Select Date / Time</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <label for="iidDateTimePickerModalValue" class="form-label">Selected value</label>
+                <input id="iidDateTimePickerModalValue" type="datetime-local" class="form-control">
+                <div class="form-text">Choose the value in the popup, then click Save to place it in the field.</div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" id="iidDateTimePickerModalClear">Clear</button>
+                <button type="button" class="btn btn-primary" id="iidDateTimePickerModalSave">Save</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <div class="stepper-wrap sticky-top bg-white py-2 mb-3">
     <div class="d-flex justify-content-between align-items-center mb-2">
         <strong id="stepCounter">Step 1 of 10</strong>
@@ -38,6 +58,8 @@
     </div>
     <div id="wizardStepper" class="wizard-stepper"></div>
 </div>
+
+<div id="iidDirtyStepHost" class="mb-3"></div>
 
 <div class="wizard-section card mb-3" data-step="1"></div>
 <div class="wizard-section card mb-3 d-none" data-step="2"></div>
@@ -69,5 +91,6 @@
 .snap-value{font-weight:600}
 .help-text{font-size:.8rem;color:#6c757d}
 .validation-summary{font-size:.9rem}
+.iid-picker-input-group .btn{min-width:72px}
 </style>
 }

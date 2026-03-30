@@ -5576,6 +5576,37 @@ namespace AIS.Controllers
             }
 
         [HttpPost]
+        public IActionResult UploadIidInqStatementFile()
+            {
+            try
+                {
+                if (!Request.HasFormContentType)
+                    {
+                    return Json(new { ok = false, message = "Form data is required." });
+                    }
+
+                var statementFile = Request.Form.Files.GetFile("file");
+                if (statementFile == null || statementFile.Length == 0)
+                    {
+                    return Json(new { ok = false, message = "Statement file is required." });
+                    }
+
+                var savedFile = SaveUploadFile(statementFile);
+                return Json(new
+                    {
+                    ok = true,
+                    message = "Statement file uploaded.",
+                    fileName = savedFile,
+                    originalFileName = statementFile.FileName
+                    });
+                }
+            catch (Exception ex)
+                {
+                return Json(new { ok = false, message = ex.Message });
+                }
+            }
+
+        [HttpPost]
         public IActionResult DeleteIidInqStatement([FromBody] AIS.Models.IID.InquiryReport.IidInqDeleteRequest request)
             {
             try

@@ -19,6 +19,7 @@ $(function(){
     var isLocked = false;
     var userId = 0;
     var alertTimer = null;
+    var activePickerInput = null;
     var accusedRoleOptions = ['Main', 'Co', 'Witness'];
     var steps = [
         { id: 1, code: 'SNAPSHOT', title: 'Snapshot' },
@@ -111,7 +112,13 @@ $(function(){
     }
 
     function markDirty(step){
-        if(step > 1){ state.dirtySteps[step] = true; state.savedSteps[step] = false; }
+        if(step > 1){
+            state.dirtySteps[step] = true;
+            state.savedSteps[step] = false;
+            if(step === currentStep){
+                renderDirtyStepAlert();
+            }
+        }
     }
 
     function hasUnsavedStep(step){ return !!state.dirtySteps[step]; }
@@ -153,6 +160,17 @@ $(function(){
             var saved = isStepSaved(s.id);
             return '<button type="button" class="step-pill ' + (s.id===currentStep?'active':'') + ' ' + (saved?'completed':'not-saved') + '" data-step-jump="' + s.id + '"><span class="num">' + s.id + '</span>' + esc(s.title) + '<span class="step-state ms-2 badge ' + (saved?'bg-success':'bg-secondary') + '">' + (saved?'Saved':'Not Saved') + '</span></button>';
         }).join(''));
+        renderDirtyStepAlert();
+    }
+
+    function renderDirtyStepAlert(){
+        var host = $('#iidDirtyStepHost');
+        if(!host.length){ return; }
+        if(hasUnsavedStep(currentStep)){
+            host.html('<div class="alert alert-warning mb-0" role="alert">You have unsaved changes. Save before moving.</div>');
+            return;
+        }
+        host.empty();
     }
 
     function renderSnapshotStrip(){
@@ -163,7 +181,30 @@ $(function(){
         $('#snapshotStrip').html(badges.map(function(b){ return '<div class="col-md-2 col-6"><div class="snap-label">' + esc(b[0]) + '</div><div class="snap-value">' + esc(b[1]) + '</div></div>'; }).join(''));
     }
 
+    function buildAttributeHtml(attrs){
+        return Object.keys(attrs || {}).map(function(key){
+            var value = attrs[key];
+            if(value === null || typeof value === 'undefined'){ return ''; }
+            return key + '="' + esc(value) + '"';
+        }).filter(Boolean).join(' ');
+    }
+
+    function pickerTitle(type){
+        return type === 'datetime-local' ? 'Select Date & Time' : 'Select Date';
+    }
+
+    function pickerInput(value, type, attrs){
+        var attrHtml = buildAttributeHtml(attrs);
+        return '<div class="input-group iid-picker-input-group">' +
+            '<input type="' + esc(type) + '" class="form-control" value="' + esc(value) + '" ' + attrHtml + ' data-picker-source="true">' +
+            '<button type="button" class="btn btn-outline-secondary" data-open-picker data-picker-type="' + esc(type) + '" data-picker-title="' + esc(pickerTitle(type)) + '">Select</button>' +
+            '</div>';
+    }
+
     function rowInput(bind, value, type){
+        if(type === 'date' || type === 'datetime-local'){
+            return pickerInput(value, type, { 'data-bind': bind });
+        }
         return '<input ' + (type ? 'type="' + type + '"' : '') + ' class="form-control" data-bind="' + bind + '" value="' + esc(value) + '">';
     }
 
@@ -554,11 +595,14 @@ $(function(){
                     '<td>' + esc(r.personName || '') + '</td>' +
                     '<td>' + esc(r.fatherName || '') + '</td>' +
                     '<td>' + esc(r.cnic || '') + '</td>' +
-                    '<td><input type="datetime-local" class="form-control" data-step5-field="'+ i +'" data-step5-key="statementDatetime" value="' + esc((r.statementDatetime || '').slice(0, 16)) + '"></td>' +
+                    '<td>' + pickerInput((r.statementDatetime || '').slice(0, 16), 'datetime-local', { 'data-step5-field': i, 'data-step5-key': 'statementDatetime' }) + '</td>' +
                     '<td><input type="text" class="form-control" data-step5-field="'+ i +'" data-step5-key="place" value="' + esc(r.place || '') + '"></td>' +
                     '<td><input type="text" class="form-control" data-step5-field="'+ i +'" data-step5-key="modeType" value="' + esc(r.modeType || '') + '"></td>' +
                     '<td><textarea class="form-control" rows="2" data-step5-field="'+ i +'" data-step5-key="keyPoints">' + esc(r.keyPoints || '') + '</textarea></td>' +
-                    '<td><input type="text" class="form-control" data-step5-field="'+ i +'" data-step5-key="uploadedStatement" placeholder="Saved file name" value="' + esc(r.uploadedStatement || '') + '"></td>' +
+                    '<td><div class="input-group">' +
+                        '<input type="text" class="form-control" readonly placeholder="No file uploaded" value="' + esc(r.uploadedStatement || '') + '">' +
+                        '<button type="button" class="btn btn-outline-primary" data-step5-upload-row="'+ i +'">Upload</button>' +
+                    '</div><input type="file" class="d-none" data-step5-upload-input="'+ i +'"></td>' +
                     '<td>' + fileCell + '</td>' +
                     '<td><button type="button" class="btn btn-primary btn-sm" data-step5-save-row="'+ i +'">' + (parseInt(r.statementId || 0, 10) > 0 ? 'Update' : 'Save') + '</button></td>' +
                 '</tr>';
@@ -1339,7 +1383,7 @@ $(function(){
 
     function navigateToStep(nextStep){
         if(hasUnsavedStep(currentStep)){
-            showAlert('You have unsaved changes. Save before moving.', 'warning');
+            renderDirtyStepAlert();
             return;
         }
         currentStep = nextStep;
@@ -1478,6 +1522,81 @@ $(function(){
         }).fail(function(err){
             showAlert((err && err.message) || 'Failed to save statement.', 'danger');
         });
+    });
+
+    $(document).on('click', '[data-step5-upload-row]', function(){
+        var rowIndex = parseInt($(this).data('step5-upload-row'), 10);
+        $('[data-step5-upload-input="' + rowIndex + '"]').trigger('click');
+    });
+
+    $(document).on('change', '[data-step5-upload-input]', function(){
+        var rowIndex = parseInt($(this).data('step5-upload-input'), 10);
+        var row = state.statementRegister.rows[rowIndex];
+        var file = this.files && this.files[0] ? this.files[0] : null;
+        var input = this;
+
+        if(!row || !file){
+            input.value = '';
+            return;
+        }
+
+        var fd = new FormData();
+        fd.append('__RequestVerificationToken', token());
+        fd.append('file', file);
+        fd.append('complaintId', complaintId);
+
+        window.iidUploadInqStatementFile(fd).then(function(resp){
+            ensureApiSuccess(resp, 'Statement file upload failed.');
+            row.uploadedStatement = resp.fileName || (resp.data && resp.data.fileName) || '';
+            markDirty(5);
+
+            if(row.statementDatetime && row.place && row.place.trim()){
+                return saveStatementRow(rowIndex).then(function(saveResp){
+                    showAlert((saveResp && saveResp.message) || 'Statement file uploaded and saved successfully.', 'success');
+                });
+            }
+
+            renderCurrent(true);
+            showAlert((getResponseMessage(resp) || 'Statement file uploaded.') + ' Complete Date/Time and Place, then click Save.', 'success');
+        }).fail(function(err){
+            showAlert((err && err.message) || 'Statement file upload failed.', 'danger');
+        }).always(function(){
+            input.value = '';
+        });
+    });
+
+    $(document).on('click', '[data-open-picker]', function(){
+        var $input = $(this).closest('.iid-picker-input-group').find('input[data-picker-source="true"]').first();
+        if(!$input.length){ return; }
+
+        activePickerInput = $input;
+        var pickerType = String($(this).data('picker-type') || $input.attr('type') || 'datetime-local');
+        var pickerModal = $('#iidDateTimePickerModal');
+        var pickerModalInput = $('#iidDateTimePickerModalValue');
+        var title = String($(this).data('picker-title') || pickerTitle(pickerType));
+
+        $('#iidDateTimePickerModalLabel').text(title);
+        pickerModalInput.attr('type', pickerType).val($input.val() || '');
+
+        if(window.bootstrap && window.bootstrap.Modal){
+            window.bootstrap.Modal.getOrCreateInstance(pickerModal[0]).show();
+        }
+    });
+
+    $(document).on('click', '#iidDateTimePickerModalClear', function(){
+        $('#iidDateTimePickerModalValue').val('');
+    });
+
+    $(document).on('click', '#iidDateTimePickerModalSave', function(){
+        if(!activePickerInput || !activePickerInput.length){ return; }
+
+        var pickerModal = $('#iidDateTimePickerModal');
+        var selectedValue = $('#iidDateTimePickerModalValue').val() || '';
+        activePickerInput.val(selectedValue).trigger('input').trigger('change');
+
+        if(window.bootstrap && window.bootstrap.Modal){
+            window.bootstrap.Modal.getOrCreateInstance(pickerModal[0]).hide();
+        }
     });
 
     $(document).on('click', '[data-step7-save-row]', function(){
