@@ -49,6 +49,7 @@ namespace AIS.Controllers
         private readonly IConfiguration _configuration;
         private readonly SecurityTokenService _tokenService;
         private readonly PasswordPolicyValidator _passwordPolicyValidator;
+        private readonly IStaticAssetVersionTokenProvider _staticAssetVersionTokenProvider;
         private static readonly Regex AlphaNumericWithSpacesRegex = new Regex("^[A-Za-z0-9 &]+$", RegexOptions.Compiled);
 
         public ApiCallsController(
@@ -60,7 +61,8 @@ namespace AIS.Controllers
             IHttpContextAccessor httpContextAccessor,
             IConfiguration configuration,
             SecurityTokenService tokenService,
-            PasswordPolicyValidator passwordPolicyValidator)
+            PasswordPolicyValidator passwordPolicyValidator,
+            IStaticAssetVersionTokenProvider staticAssetVersionTokenProvider)
             {
             _logger = logger;
             sessionHandler = _sessionHandler;
@@ -71,6 +73,7 @@ namespace AIS.Controllers
             _configuration = configuration;
             _tokenService = tokenService;
             _passwordPolicyValidator = passwordPolicyValidator;
+            _staticAssetVersionTokenProvider = staticAssetVersionTokenProvider;
             }
 
         public override void OnActionExecuting(ActionExecutingContext context)
@@ -6325,13 +6328,17 @@ namespace AIS.Controllers
         [HttpPost]
         public string AddVersionHistory([FromBody] VersionHistoryModel model)
             {
-            return dBConnection.AddVersionHistory(model);
+            var result = dBConnection.AddVersionHistory(model);
+            _staticAssetVersionTokenProvider.Invalidate();
+            return result;
             }
 
         [HttpPost]
         public string UpdateVersionHistory([FromBody] VersionHistoryModel model)
             {
-            return dBConnection.UpdateVersionHistory(model);
+            var result = dBConnection.UpdateVersionHistory(model);
+            _staticAssetVersionTokenProvider.Invalidate();
+            return result;
             }
 
         [HttpGet]

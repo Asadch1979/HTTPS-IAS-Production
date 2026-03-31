@@ -2,13 +2,29 @@
 @{
     ViewBag.Title = "IAS Version History";
     Layout = "~/Views/Shared/_Layout.cshtml";
-    // You can add custom CSS here or in your site's CSS file
+    var currentVersion = (Model ?? new List<VersionHistoryModel>())
+        .OrderByDescending(v => string.Equals(v?.IsActive, "Y", StringComparison.OrdinalIgnoreCase))
+        .ThenByDescending(v => v?.UpdatedOn ?? v?.CreatedOn ?? v?.ReleaseDate ?? DateTime.MinValue)
+        .ThenByDescending(v => v?.VersionId ?? 0)
+        .FirstOrDefault();
 }
 
 <!-- Modern Version History Timeline -->
 <div class="container py-5" id="versionHistoryApp">
     <div class="row justify-content-center">
         <div class="col-lg-8">
+            <div class="alert alert-info border-0 shadow-sm rounded-4 mb-4">
+                <div class="fw-semibold mb-1">
+                    Local asset refresh is tied to the current IAS version.
+                </div>
+                <div class="small">
+                    When an authorized admin marks a version as current or changes its version number, IAS automatically changes local CSS/JS/image URLs on the next page load so users receive fresh files without manual hard refresh.
+                </div>
+                <div class="small mt-2">
+                    Current asset token:
+                    <span class="badge bg-primary-subtle text-primary-emphasis border">@(!string.IsNullOrWhiteSpace(currentVersion?.VersionNo) ? currentVersion.VersionNo : "Not set")</span>
+                </div>
+            </div>
             <div class="d-flex align-items-center mb-4">
                 <h2 class="fw-bold flex-grow-1">
                     <i class="fa-solid fa-code-branch me-2 text-primary"></i>

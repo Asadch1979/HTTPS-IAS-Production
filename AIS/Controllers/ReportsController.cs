@@ -560,7 +560,7 @@ namespace AIS.Controllers
                     return RedirectToAction("Index", "PageNotFound");
                     }
                 else
-                    return View();
+                    return View("~/Views/Reports/significant_observations_management_audit.cshtml");
                 }
             }
         public IActionResult riskwise_observations()
@@ -900,7 +900,7 @@ namespace AIS.Controllers
                     return RedirectToAction("Index", "PageNotFound");
                     }
                 else
-                    return View();
+                    return View("~/Views/Reports/audit_plan_report.cshtml");
                 }
             }
         public IActionResult exec_stats()
@@ -1057,7 +1057,7 @@ namespace AIS.Controllers
                     return RedirectToAction("Index", "PageNotFound");
                     }
                 else
-                    return View();
+                    return View("~/Views/Reports/FAD_Legacy_User_Wise_Performance - Copy.cshtml");
                 }
             }
         public IActionResult FAD_HO_User_Legacy_Para_Performance()
@@ -1499,7 +1499,7 @@ namespace AIS.Controllers
                     return RedirectToAction("Index", "PageNotFound");
                     }
                 else
-                    return View();
+                    return View("~/Views/Reports/master_cdms_trns.cshtml");
                 }
 
             }
