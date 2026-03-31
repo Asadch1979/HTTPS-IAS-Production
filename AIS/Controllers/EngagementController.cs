@@ -40,7 +40,7 @@ namespace AIS.Controllers
                     return RedirectToAction("Index", "PageNotFound");
                     }
                 else
-                    return View();
+                    return View("~/Views/Planning/audit_criteria.cshtml");
                 }
             }
         public IActionResult task_list()

@@ -43,6 +43,11 @@ namespace AIS.Services
 
                 foreach (var menuPage in menuPages)
                     {
+                    if (menuPage == null || menuPage.PageId <= 0)
+                        {
+                        continue;
+                        }
+
                     var normalizedPath = PageIdPathHelper.NormalizePath(menuPage.Page_Path);
                     if (string.IsNullOrWhiteSpace(normalizedPath))
                         {

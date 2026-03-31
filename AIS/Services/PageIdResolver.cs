@@ -292,7 +292,9 @@ namespace AIS.Services
                 ["/AdministrationPanel/User_Dashboard"] = 970201,
                 ["/AdministrationPanel/Entity_Dashboard"] = 970202,
                 ["/Setup/Checklist_Dashboard"] = 970203,
-                ["/Planning/Planning"] = 970204
+                ["/Planning/Planning"] = 970204,
+                ["/FAD/Draft_report_Checking"] = 417,
+                ["/FAD/Quality_Assurance_checking"] = 418
                 };
 
             foreach (var entry in fieldAuditPages)
