@@ -218,6 +218,7 @@ namespace AIS.Controllers
             ViewData["TopMenuPages"] = tm.GetTopMenusPages();
             if (!User.Identity.IsAuthenticated)
                 return RedirectToAction("Index", "Login");
+            ViewData["ComplaintId"] = dBConnection.GetComplaintIdByPlanId(planId) ?? 0;
             ViewData["PlanId"] = planId;
             return View("../IID/PlanApproval");
             }

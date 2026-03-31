@@ -2,8 +2,8 @@
 @{
     ViewData["Title"] = "Plan Approval";
     Layout = "_Layout";
-    var complaintId = ViewData["ComplaintId"];
-    var planId = ViewData["PlanId"];
+    var complaintId = ViewData["ComplaintId"] is int cid ? cid : 0;
+    var planId = ViewData["PlanId"] is int pid ? pid : 0;
 }
 
 <div class="container-fluid mt-3">
@@ -38,6 +38,7 @@
         </div>
         <div class="card-body">
             <form id="approvalForm">
+                @Html.AntiForgeryToken()
                 <input type="hidden" name="PlanId" value="@planId" />
 
                 <div class="mb-2">

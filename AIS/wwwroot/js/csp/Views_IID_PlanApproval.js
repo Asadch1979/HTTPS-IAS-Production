@@ -1,7 +1,12 @@
     $(function(){
-        var complaintId = parseInt('@complaintId' || '0', 10) || 0;
-        var planId = '@planId';
+        var complaintId = parseInt('@complaintId', 10) || 0;
+        var planId = parseInt('@planId', 10) || 0;
         var pageId = 349;
+
+        function parsePositiveInt(value){
+            var parsed = parseInt(value, 10);
+            return Number.isFinite(parsed) && parsed > 0 ? parsed : 0;
+        }
 
         function showIidAlert(title, message){
             $('#iidAlertTitle').text(title || 'Message');
@@ -61,12 +66,13 @@
                 renderSubmittedPlanGrid(planRow);
 
                 if(!planRow){
+                    planId = 0;
                     $('#approvalForm [name="PlanId"]').val('');
                     return;
                 }
 
-                planId = planRow.planId || '';
-                $('#approvalForm [name="PlanId"]').val(planId);
+                planId = parsePositiveInt(planRow.planId);
+                $('#approvalForm [name="PlanId"]').val(planId > 0 ? String(planId) : '');
                 $('#assessmentText').text(planRow.ASSESSMENT || planRow.assessment || $('#assessmentText').text());
                 $('#assessmentRecommendation').text(planRow.RECOMMENDATION || planRow.recommendation || $('#assessmentRecommendation').text());
                 $('#assessmentUnit').text(planRow.ASSIGNED_UNIT_ID || planRow.assignedUnitId || $('#assessmentUnit').text());
@@ -107,25 +113,45 @@
         $('#approvalForm').on('submit', function(e){
             e.preventDefault();
 
-            // simple required check
+            var $form = $(this);
             var ok = true;
-            $('#approvalForm').find('[required]').each(function(){
+            $form.find('[required]').each(function(){
                 if (!$(this).val() || !$(this).val().toString().trim()) { ok = false; $(this).focus(); return false; }
             });
-            if (!ok) { alert('Please fill all mandatory fields.'); return; }
-
-            var data = $(this).serialize();
+            if (!ok) { showIidAlert('Required', 'Please fill all mandatory fields.'); return; }
 
             var selectedComplaintId = $('#selectedComplaintId').val();
             if(!selectedComplaintId || selectedComplaintId === '0'){
                 showIidAlert('Required', 'Please select a complaint.');
                 return;
             }
-            $.post(g_asiBaseURL + '/ApiCalls/AddPlanApproval', data, function(){
-                alert('Action recorded');
-            }).fail(function(){
-                alert('Error saving approval');
-            });
+
+            var currentPlanId = parsePositiveInt($form.find('[name="PlanId"]').val()) || planId;
+            if(!currentPlanId){
+                showIidAlert('Required', 'Valid Plan ID is required before approval can be submitted.');
+                return;
+            }
+
+            var payload = {
+                PlanId: currentPlanId,
+                IsApproved: ($form.find('[name="IsApproved"]').val() || '').trim(),
+                EditedPlan: $form.find('[name="EditedPlan"]').val() || '',
+                FurtherActions: $form.find('[name="FurtherActions"]').val() || ''
+            };
+
+            $.post(g_asiBaseURL + '/ApiCalls/AddPlanApproval', payload)
+                .done(function(resp){
+                    if(resp && resp.ok){
+                        showIidAlert('Success', 'Action recorded. Approval ID: ' + resp.id);
+                        loadPlanApprovalByComplaintId(parsePositiveInt(selectedComplaintId));
+                        return;
+                    }
+
+                    showIidAlert('Failed', (resp && resp.message) ? resp.message : 'Error saving approval.');
+                })
+                .fail(function(xhr){
+                    showIidAlert('Failed', (xhr && xhr.responseJSON && xhr.responseJSON.message) ? xhr.responseJSON.message : 'Error saving approval.');
+                });
         });
 
         loadComplaintDropdown(pageId)
@@ -157,6 +183,7 @@
                 if(complaintId > 0){
                     $dd.val(String(complaintId));
                     $('#selectedComplaintId').val(String(complaintId));
+                    loadPlanApprovalByComplaintId(complaintId);
                 }
             })
             .fail(function(){

@@ -21,6 +21,7 @@ using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Oracle.ManagedDataAccess.Client;
+using Oracle.ManagedDataAccess.Types;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -79,6 +80,33 @@ namespace AIS.Controllers
         public override void OnActionExecuting(ActionExecutingContext context)
             {
             base.OnActionExecuting(context);
+            }
+
+        private static int? SafeOracleNullableInt(object value)
+            {
+            if (value == null || value == DBNull.Value)
+                {
+                return null;
+                }
+
+            if (value is OracleDecimal oracleDecimal)
+                {
+                return oracleDecimal.IsNull ? (int?)null : oracleDecimal.ToInt32();
+                }
+
+            try
+                {
+                return Convert.ToInt32(value);
+                }
+            catch
+                {
+                return int.TryParse(value.ToString(), out var parsed) ? parsed : (int?)null;
+                }
+            }
+
+        private static int SafeOracleInt(object value, int defaultValue = 0)
+            {
+            return SafeOracleNullableInt(value) ?? defaultValue;
             }
 
         private IActionResult EnsureAuthenticatedSession()
@@ -4887,7 +4915,7 @@ namespace AIS.Controllers
             }
 
         [HttpPost]
-        public IActionResult AddPlanApproval(AIS.Models.IID.PlanApprovalModel model)
+        public IActionResult AddPlanApproval([FromForm] AIS.Models.IID.PlanApprovalModel model)
             {
             try
                 {
@@ -5084,7 +5112,7 @@ namespace AIS.Controllers
                     }
 
                 var row = dt.Rows[0];
-                var planId = dt.Columns.Contains("PLAN_ID") && row["PLAN_ID"] != DBNull.Value ? Convert.ToInt32(row["PLAN_ID"]) : 0;
+                var planId = dt.Columns.Contains("PLAN_ID") ? SafeOracleInt(row["PLAN_ID"]) : 0;
                 var planDetails = dt.Columns.Contains("PLAN_DETAILS") ? row["PLAN_DETAILS"]?.ToString() : string.Empty;
                 var complaintNo = dt.Columns.Contains("COMPLAINT_NO") ? row["COMPLAINT_NO"]?.ToString() : string.Empty;
                 var complainantName = dt.Columns.Contains("COMPLAINANT_NAME") ? row["COMPLAINANT_NAME"]?.ToString() : string.Empty;
@@ -5200,13 +5228,13 @@ namespace AIS.Controllers
             var dt = unitId > 0 ? dBConnection.GetIidTaskList(unitId) : new DataTable();
             var rows = dt.AsEnumerable().Select(row => new AIS.Models.IID.TaskListRowModel
                 {
-                ComplaintId = row["COMPLAINT_ID"] == DBNull.Value ? 0 : Convert.ToInt32(row["COMPLAINT_ID"]),
+                ComplaintId = SafeOracleInt(row["COMPLAINT_ID"]),
                 ComplaintNo = row["COMPLAINT_NO"]?.ToString(),
                 ComplainantName = row["COMPLAINANT_NAME"]?.ToString(),
                 AssignedOn = row["ASSIGNED_ON"]?.ToString(),
                 Status = row["STATUS"]?.ToString(),
-                AssignedUnitId = row["ASSIGNED_UNIT_ID"] == DBNull.Value ? 0 : Convert.ToInt32(row["ASSIGNED_UNIT_ID"]),
-                PlanId = row["PLAN_ID"] == DBNull.Value ? (int?)null : Convert.ToInt32(row["PLAN_ID"])
+                AssignedUnitId = SafeOracleInt(row["ASSIGNED_UNIT_ID"]),
+                PlanId = SafeOracleNullableInt(row["PLAN_ID"])
                 }).ToList();
 
             return Ok(rows);

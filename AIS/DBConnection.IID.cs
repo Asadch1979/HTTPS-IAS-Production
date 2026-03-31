@@ -13,6 +13,60 @@ namespace AIS.Controllers
     {
     public partial class DBConnection
         {
+        private static int? SafeOracleNullableIntValue(object value)
+            {
+            if (value == null || value == DBNull.Value)
+                {
+                return null;
+                }
+
+            if (value is OracleDecimal oracleDecimal)
+                {
+                return oracleDecimal.IsNull ? (int?)null : oracleDecimal.ToInt32();
+                }
+
+            try
+                {
+                return Convert.ToInt32(value);
+                }
+            catch
+                {
+                return int.TryParse(value.ToString(), out var parsed) ? parsed : (int?)null;
+                }
+            }
+
+        private static int SafeOracleIntValue(object value, int defaultValue = 0)
+            {
+            return SafeOracleNullableIntValue(value) ?? defaultValue;
+            }
+
+        private static long? SafeOracleNullableLongValue(object value)
+            {
+            if (value == null || value == DBNull.Value)
+                {
+                return null;
+                }
+
+            if (value is OracleDecimal oracleDecimal)
+                {
+                return oracleDecimal.IsNull ? (long?)null : oracleDecimal.ToInt64();
+                }
+
+            try
+                {
+                return Convert.ToInt64(value);
+                }
+            catch
+                {
+                return long.TryParse(value.ToString(), out var parsed) ? parsed : (long?)null;
+                }
+            }
+
+        private static int? ParseSessionPpNumber(string ppNumber)
+            {
+            return int.TryParse(ppNumber, out var parsed) ? parsed : (int?)null;
+            }
+
         public int SubmitComplaint(ComplaintModel model)
             {
             var sessionHandler = CreateSessionHandler();
@@ -44,6 +98,11 @@ namespace AIS.Controllers
                 {
                 return (0, string.Empty);
                 }
+            var submittedByPpNo = ParseSessionPpNumber(loggedInUser.PPNumber);
+            if (!submittedByPpNo.HasValue)
+                {
+                return (0, string.Empty);
+                }
             using var con = this.DatabaseConnection();
 
             using (OracleCommand cmd = con.CreateCommand())
@@ -52,11 +111,11 @@ namespace AIS.Controllers
                 cmd.CommandType = CommandType.StoredProcedure;
                 cmd.BindByName = true;
                 cmd.Parameters.Add("P_INTAKE_CHANNEL", OracleDbType.Varchar2).Value = intakeChannel ?? string.Empty;
-                cmd.Parameters.Add("P_SUBMITTED_BY_PP_NO", OracleDbType.Int32).Value = loggedInUser.PPNumber;
-                cmd.Parameters.Add("P_COMPLAINT_ID", OracleDbType.Int32).Direction = ParameterDirection.Output;
+                cmd.Parameters.Add("P_SUBMITTED_BY_PP_NO", OracleDbType.Decimal).Value = submittedByPpNo.Value;
+                cmd.Parameters.Add("P_COMPLAINT_ID", OracleDbType.Decimal).Direction = ParameterDirection.Output;
                 cmd.Parameters.Add("P_COMPLAINT_NO", OracleDbType.Varchar2, 50).Direction = ParameterDirection.Output;
                 cmd.ExecuteNonQuery();
-                var id = Convert.ToInt32(cmd.Parameters["P_COMPLAINT_ID"].Value.ToString());
+                var id = SafeOracleIntValue(cmd.Parameters["P_COMPLAINT_ID"].Value);
                 var complaintNo = cmd.Parameters["P_COMPLAINT_NO"].Value?.ToString() ?? string.Empty;
                 return (id, complaintNo);
                 }
@@ -400,7 +459,7 @@ namespace AIS.Controllers
                         {
                         complaints.Add(new ComplaintRowDto
                             {
-                            ComplaintId = rdr["COMPLAINT_ID"] != DBNull.Value ? Convert.ToInt64(rdr["COMPLAINT_ID"]) : 0,
+                            ComplaintId = SafeOracleNullableLongValue(rdr["COMPLAINT_ID"]) ?? 0,
                             ComplaintNo = rdr["COMPLAINT_NO"]?.ToString() ?? string.Empty,
                             ComplainantName = rdr["COMPLAINANT_NAME"]?.ToString() ?? string.Empty,
                             Nature = rdr["NATURE"]?.ToString() ?? string.Empty,
@@ -432,7 +491,7 @@ namespace AIS.Controllers
                         {
                         list.Add(new InitialAssessmentModel
                             {
-                            ComplaintId = rdr["COMPLAINT_ID"] == DBNull.Value ? 0 : Convert.ToInt32(rdr["COMPLAINT_ID"]),
+                            ComplaintId = SafeReadInt(rdr, "COMPLAINT_ID"),
                             Nature = rdr["NATURE"].ToString(),
                             SubmittedOn = rdr["SUBMITTED_ON"].ToString()
                             });
@@ -463,7 +522,7 @@ namespace AIS.Controllers
                         {
                         list.Add(new ComplaintDropdownItemModel
                             {
-                            ComplaintId = rdr["COMPLAINT_ID"] == DBNull.Value ? 0 : Convert.ToInt32(rdr["COMPLAINT_ID"]),
+                            ComplaintId = SafeReadInt(rdr, "COMPLAINT_ID"),
                             Nature = rdr["NATURE"]?.ToString(),
                             Status = rdr["STATUS"]?.ToString()
                             });
@@ -588,6 +647,11 @@ namespace AIS.Controllers
                 {
                 return 0;
                 }
+            var receivedByPpNo = ParseSessionPpNumber(loggedInUser.PPNumber);
+            if (!receivedByPpNo.HasValue)
+                {
+                return 0;
+                }
             using var con = this.DatabaseConnection();
            
             using (OracleCommand cmd = con.CreateCommand())
@@ -597,13 +661,13 @@ namespace AIS.Controllers
                 cmd.CommandType = CommandType.StoredProcedure;
                 cmd.BindByName = true;
                 cmd.Parameters.Add("p_complaint_id", OracleDbType.Int32).Value = model.ComplaintId ?? (object)DBNull.Value;
-                cmd.Parameters.Add("p_received_by", OracleDbType.Int32).Value = loggedInUser.PPNumber;
+                cmd.Parameters.Add("p_received_by", OracleDbType.Decimal).Value = receivedByPpNo.Value;
                 cmd.Parameters.Add("p_assessment", OracleDbType.Clob).Value = model.Assessment ?? string.Empty;
                 cmd.Parameters.Add("p_recommendation", OracleDbType.Varchar2).Value = model.Recommendation ?? string.Empty;
                 cmd.Parameters.Add("p_assigned_unit_id", OracleDbType.Int32).Value = model.AssignedUnitId;
-                cmd.Parameters.Add("o_assessment_id", OracleDbType.Int32).Direction = ParameterDirection.Output;
+                cmd.Parameters.Add("o_assessment_id", OracleDbType.Decimal).Direction = ParameterDirection.Output;
                 cmd.ExecuteNonQuery();
-                var id = Convert.ToInt32(cmd.Parameters["o_assessment_id"].Value.ToString());
+                var id = SafeOracleIntValue(cmd.Parameters["o_assessment_id"].Value);
                 return id;
                 }
             }
@@ -619,6 +683,11 @@ namespace AIS.Controllers
                 {
                 return 0;
                 }
+            var reviewedByPpNo = ParseSessionPpNumber(loggedInUser.PPNumber);
+            if (!reviewedByPpNo.HasValue)
+                {
+                return 0;
+                }
             using var con = this.DatabaseConnection();
            
             using (OracleCommand cmd = con.CreateCommand())
@@ -629,7 +698,7 @@ namespace AIS.Controllers
                 cmd.BindByName = true;
                 cmd.Parameters.Add("p_complaint_id", OracleDbType.Int32).Value = model.ComplaintId ?? (object)DBNull.Value;
                 cmd.Parameters.Add("p_assessment_id", OracleDbType.Int32).Value = model.AssessmentId ?? (object)DBNull.Value;
-                cmd.Parameters.Add("p_reviewed_by", OracleDbType.Int32).Value = loggedInUser.PPNumber;
+                cmd.Parameters.Add("p_reviewed_by", OracleDbType.Decimal).Value = reviewedByPpNo.Value;
                 cmd.Parameters.Add("p_directions", OracleDbType.Clob).Value = model.Directions ?? string.Empty;
                 cmd.Parameters.Add("p_assigned_to_unit", OracleDbType.Int32).Value = model.AssignedToUnit == 0 ? (object)DBNull.Value : (object)model.AssignedToUnit;
                 cmd.Parameters.Add("p_team_lead", OracleDbType.Int32).Value = model.TeamLeadId ?? (object)DBNull.Value;
@@ -638,9 +707,9 @@ namespace AIS.Controllers
                 cmd.Parameters.Add("p_due_date", OracleDbType.Varchar2).Value = model.DueDate ?? string.Empty;
                 cmd.Parameters.Add("p_referred_back_comments", OracleDbType.Clob).Value = model.ReferredBackComments ?? string.Empty;
                 cmd.Parameters.Add("p_action", OracleDbType.Varchar2).Value = model.Action ?? string.Empty;
-                cmd.Parameters.Add("o_review_id", OracleDbType.Int32).Direction = ParameterDirection.Output;
+                cmd.Parameters.Add("o_review_id", OracleDbType.Decimal).Direction = ParameterDirection.Output;
                 cmd.ExecuteNonQuery();
-                var id = Convert.ToInt32(cmd.Parameters["o_review_id"].Value.ToString());
+                var id = SafeOracleIntValue(cmd.Parameters["o_review_id"].Value);
                 return id;
                 }
             }
@@ -656,6 +725,11 @@ namespace AIS.Controllers
                 {
                 return 0;
                 }
+            var submittedByPpNo = ParseSessionPpNumber(loggedInUser.PPNumber);
+            if (!submittedByPpNo.HasValue)
+                {
+                return 0;
+                }
             using var con = this.DatabaseConnection();
            
             using (OracleCommand cmd = con.CreateCommand())
@@ -668,7 +742,7 @@ namespace AIS.Controllers
 
                 cmd.Parameters.Add("p_complaint_id", OracleDbType.Int32).Value = model.ComplaintId;
                 cmd.Parameters.Add("p_plan_details", OracleDbType.Clob).Value = model.PlanDetails ?? string.Empty;
-                cmd.Parameters.Add("p_submitted_by", OracleDbType.Int32).Value = model.SubmittedBy;
+                cmd.Parameters.Add("p_submitted_by", OracleDbType.Decimal).Value = submittedByPpNo.Value;
                 cmd.Parameters.Add("p_status", OracleDbType.Varchar2).Value = model.Status ?? string.Empty;
 
                 // New params (must match PL/SQL signature EXACTLY)
@@ -690,9 +764,9 @@ namespace AIS.Controllers
                 // If ACTIVITIES_TEXT exists in table/proc
                 cmd.Parameters.Add("p_activities_text", OracleDbType.Varchar2).Value = model.ActivitiesText ?? string.Empty;
 
-                cmd.Parameters.Add("o_plan_id", OracleDbType.Int32).Direction = ParameterDirection.Output;
+                cmd.Parameters.Add("o_plan_id", OracleDbType.Decimal).Direction = ParameterDirection.Output;
                 cmd.ExecuteNonQuery();
-                var id = Convert.ToInt32(cmd.Parameters["o_plan_id"].Value.ToString());
+                var id = SafeOracleIntValue(cmd.Parameters["o_plan_id"].Value);
                 return id;
                 }
             }
@@ -733,9 +807,9 @@ namespace AIS.Controllers
                 cmd.Parameters.Add("p_mail_cc", OracleDbType.Varchar2).Value = mailCc ?? string.Empty;
                 cmd.Parameters.Add("p_subject", OracleDbType.Varchar2).Value = subject ?? string.Empty;
                 cmd.Parameters.Add("p_body", OracleDbType.Clob).Value = body ?? string.Empty;
-                cmd.Parameters.Add("o_email_id", OracleDbType.Int32).Direction = ParameterDirection.Output;
+                cmd.Parameters.Add("o_email_id", OracleDbType.Decimal).Direction = ParameterDirection.Output;
                 cmd.ExecuteNonQuery();
-                return Convert.ToInt32(cmd.Parameters["o_email_id"].Value.ToString());
+                return SafeOracleIntValue(cmd.Parameters["o_email_id"].Value);
                 }
             }
 
@@ -816,13 +890,13 @@ namespace AIS.Controllers
             cmd.CommandType = CommandType.StoredProcedure;
             cmd.BindByName = true;
 
-            cmd.Parameters.Add("P_PLAN_ID", OracleDbType.Int32).Value = planId.Value;
-            cmd.Parameters.Add("O_COMPLAINT_ID", OracleDbType.Int32).Direction = ParameterDirection.Output;
+            cmd.Parameters.Add("P_PLAN_ID", OracleDbType.Decimal).Value = planId.Value;
+            cmd.Parameters.Add("O_COMPLAINT_ID", OracleDbType.Decimal).Direction = ParameterDirection.Output;
 
             cmd.ExecuteNonQuery();
 
             var v = cmd.Parameters["O_COMPLAINT_ID"].Value;
-            return (v == null || v == DBNull.Value) ? (int?)null : Convert.ToInt32(v);
+            return SafeOracleNullableIntValue(v);
             }
 
         public int? GetComplaintIdByReportId(int? reportId)
@@ -835,13 +909,13 @@ namespace AIS.Controllers
             cmd.CommandType = CommandType.StoredProcedure;
             cmd.BindByName = true;
 
-            cmd.Parameters.Add("P_REPORT_ID", OracleDbType.Int32).Value = reportId.Value;
-            cmd.Parameters.Add("O_COMPLAINT_ID", OracleDbType.Int32).Direction = ParameterDirection.Output;
+            cmd.Parameters.Add("P_REPORT_ID", OracleDbType.Decimal).Value = reportId.Value;
+            cmd.Parameters.Add("O_COMPLAINT_ID", OracleDbType.Decimal).Direction = ParameterDirection.Output;
 
             cmd.ExecuteNonQuery();
 
             var v = cmd.Parameters["O_COMPLAINT_ID"].Value;
-            return (v == null || v == DBNull.Value) ? (int?)null : Convert.ToInt32(v);
+            return SafeOracleNullableIntValue(v);
             }
 
         public IDictionary<string, object> GetIidPlanDetails(int complaintId)
@@ -873,17 +947,17 @@ namespace AIS.Controllers
                         {
                         model = new Dictionary<string, object>
                             {
-                            ["planId"] = HasColumn(rdr, "PLAN_ID") && rdr["PLAN_ID"] != DBNull.Value ? Convert.ToInt32(rdr["PLAN_ID"]) : 0,
-                            ["complaintId"] = HasColumn(rdr, "COMPLAINT_ID") && rdr["COMPLAINT_ID"] != DBNull.Value ? Convert.ToInt32(rdr["COMPLAINT_ID"]) : complaintId,
+                            ["planId"] = SafeReadInt(rdr, "PLAN_ID"),
+                            ["complaintId"] = SafeReadNullableInt(rdr, "COMPLAINT_ID") ?? complaintId,
                             ["planDetails"] = HasColumn(rdr, "PLAN_DETAILS") ? rdr["PLAN_DETAILS"]?.ToString() ?? string.Empty : string.Empty,
-                            ["submittedBy"] = HasColumn(rdr, "SUBMITTED_BY") && rdr["SUBMITTED_BY"] != DBNull.Value ? Convert.ToInt32(rdr["SUBMITTED_BY"]) : 0,
+                            ["submittedBy"] = SafeReadInt(rdr, "SUBMITTED_BY"),
                             ["submittedOn"] = HasColumn(rdr, "SUBMITTED_ON") ? FormatDate(rdr["SUBMITTED_ON"]) : string.Empty,
                             ["status"] = HasColumn(rdr, "STATUS") ? rdr["STATUS"]?.ToString() ?? string.Empty : string.Empty,
                             ["planTitle"] = HasColumn(rdr, "PLAN_TITLE") ? rdr["PLAN_TITLE"]?.ToString() ?? string.Empty : string.Empty,
                             ["investigationRisk"] = HasColumn(rdr, "INVESTIGATION_RISK") ? rdr["INVESTIGATION_RISK"]?.ToString() ?? string.Empty : string.Empty,
                             ["investigationSize"] = HasColumn(rdr, "INVESTIGATION_SIZE") ? rdr["INVESTIGATION_SIZE"]?.ToString() ?? string.Empty : string.Empty,
-                            ["noOfDays"] = HasColumn(rdr, "NO_OF_DAYS") && rdr["NO_OF_DAYS"] != DBNull.Value ? Convert.ToInt32(rdr["NO_OF_DAYS"]) : (int?)null,
-                            ["travellingDays"] = HasColumn(rdr, "TRAVELLING_DAYS") && rdr["TRAVELLING_DAYS"] != DBNull.Value ? Convert.ToInt32(rdr["TRAVELLING_DAYS"]) : (int?)null,
+                            ["noOfDays"] = SafeReadNullableInt(rdr, "NO_OF_DAYS"),
+                            ["travellingDays"] = SafeReadNullableInt(rdr, "TRAVELLING_DAYS"),
                             ["startDate"] = HasColumn(rdr, "START_DATE") ? FormatDate(rdr["START_DATE"]) : string.Empty,
                             ["teamLead"] = HasColumn(rdr, "TEAM_LEAD") ? rdr["TEAM_LEAD"]?.ToString() ?? string.Empty : string.Empty,
                             ["teamMembers"] = HasColumn(rdr, "TEAM_MEMBERS") ? rdr["TEAM_MEMBERS"]?.ToString() ?? string.Empty : string.Empty,
@@ -963,6 +1037,11 @@ namespace AIS.Controllers
                 {
                 return 0;
                 }
+            var approvedByPpNo = ParseSessionPpNumber(loggedInUser.PPNumber);
+            if (!approvedByPpNo.HasValue)
+                {
+                return 0;
+                }
             using var con = this.DatabaseConnection();
            
             using (OracleCommand cmd = con.CreateCommand())
@@ -971,14 +1050,14 @@ namespace AIS.Controllers
                 LogIidSaveDebug("PKG_INQ.ADD_PLAN_APPROVAL", $"PlanId={model?.PlanId}, IsApproved={model?.IsApproved}, EditedPlanLength={(model?.EditedPlan ?? string.Empty).Length}");
                 cmd.CommandType = CommandType.StoredProcedure;
                 cmd.BindByName = true;
-                cmd.Parameters.Add("p_plan_id", OracleDbType.Int32).Value = model.PlanId ?? (object)DBNull.Value;
-                cmd.Parameters.Add("p_approved_by", OracleDbType.Int32).Value = loggedInUser.PPNumber;
+                cmd.Parameters.Add("p_plan_id", OracleDbType.Decimal).Value = model.PlanId ?? (object)DBNull.Value;
+                cmd.Parameters.Add("p_approved_by", OracleDbType.Decimal).Value = approvedByPpNo.Value;
                 cmd.Parameters.Add("p_is_approved", OracleDbType.Varchar2).Value = model.IsApproved ?? string.Empty;
                 cmd.Parameters.Add("p_edited_plan", OracleDbType.Clob).Value = model.EditedPlan ?? string.Empty;
                 cmd.Parameters.Add("p_further_actions", OracleDbType.Clob).Value = model.FurtherActions ?? string.Empty;
-                cmd.Parameters.Add("o_approval_id", OracleDbType.Int32).Direction = ParameterDirection.Output;
+                cmd.Parameters.Add("o_approval_id", OracleDbType.Decimal).Direction = ParameterDirection.Output;
                 cmd.ExecuteNonQuery();
-                var id = Convert.ToInt32(cmd.Parameters["o_approval_id"].Value.ToString());
+                var id = SafeOracleIntValue(cmd.Parameters["o_approval_id"].Value);
                 return id;
                 }
             }
@@ -991,6 +1070,11 @@ namespace AIS.Controllers
                 || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
                 || string.IsNullOrWhiteSpace(loggedInUser.PPNumber)
                 || loggedInUser.UserRoleID <= 0)
+                {
+                return 0;
+                }
+            var submittedByPpNo = ParseSessionPpNumber(loggedInUser.PPNumber);
+            if (!submittedByPpNo.HasValue)
                 {
                 return 0;
                 }
@@ -1014,10 +1098,10 @@ namespace AIS.Controllers
                 cmd.Parameters.Add("p_uploaded_evidence", OracleDbType.Varchar2).Value = model.UploadedEvidence ?? string.Empty;
                 cmd.Parameters.Add("p_uploaded_dsa", OracleDbType.Varchar2).Value = model.UploadedDsa ?? string.Empty;
                 cmd.Parameters.Add("p_submitted_on", OracleDbType.Date).Value = submittedOn;
-                cmd.Parameters.Add("p_submitted_by", OracleDbType.Int32).Value = loggedInUser.PPNumber;
-                cmd.Parameters.Add("o_report_id", OracleDbType.Int32).Direction = ParameterDirection.Output;
+                cmd.Parameters.Add("p_submitted_by", OracleDbType.Decimal).Value = submittedByPpNo.Value;
+                cmd.Parameters.Add("o_report_id", OracleDbType.Decimal).Direction = ParameterDirection.Output;
                 cmd.ExecuteNonQuery();
-                var id = Convert.ToInt32(cmd.Parameters["o_report_id"].Value.ToString());
+                var id = SafeOracleIntValue(cmd.Parameters["o_report_id"].Value);
                 return id;
                 }
             }
@@ -1030,6 +1114,11 @@ namespace AIS.Controllers
                 || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
                 || string.IsNullOrWhiteSpace(loggedInUser.PPNumber)
                 || loggedInUser.UserRoleID <= 0)
+                {
+                return 0;
+                }
+            var analyzedByPpNo = ParseSessionPpNumber(loggedInUser.PPNumber);
+            if (!analyzedByPpNo.HasValue)
                 {
                 return 0;
                 }
@@ -1049,10 +1138,10 @@ namespace AIS.Controllers
                 cmd.Parameters.Add("p_comments", OracleDbType.Clob).Value = model.Comments ?? string.Empty;
                 cmd.Parameters.Add("p_decision", OracleDbType.Varchar2).Value = model.Decision ?? string.Empty;
                 cmd.Parameters.Add("p_refer_back_comments", OracleDbType.Clob).Value = model.ReferBackComments ?? string.Empty;
-                cmd.Parameters.Add("p_analyzed_by", OracleDbType.Int32).Value = loggedInUser.PPNumber;
-                cmd.Parameters.Add("o_analysis_id", OracleDbType.Int32).Direction = ParameterDirection.Output;
+                cmd.Parameters.Add("p_analyzed_by", OracleDbType.Decimal).Value = analyzedByPpNo.Value;
+                cmd.Parameters.Add("o_analysis_id", OracleDbType.Decimal).Direction = ParameterDirection.Output;
                 cmd.ExecuteNonQuery();
-                var id = Convert.ToInt32(cmd.Parameters["o_analysis_id"].Value.ToString());
+                var id = SafeOracleIntValue(cmd.Parameters["o_analysis_id"].Value);
                 return id;
                 }
             }
@@ -1068,6 +1157,11 @@ namespace AIS.Controllers
                 {
                 return 0;
                 }
+            var approvedByPpNo = ParseSessionPpNumber(loggedInUser.PPNumber);
+            if (!approvedByPpNo.HasValue)
+                {
+                return 0;
+                }
             using var con = this.DatabaseConnection();
            
             using (OracleCommand cmd = con.CreateCommand())
@@ -1079,10 +1173,10 @@ namespace AIS.Controllers
                 cmd.Parameters.Add("p_report_id", OracleDbType.Int32).Value = model.ReportId ?? (object)DBNull.Value;
                 cmd.Parameters.Add("p_comments", OracleDbType.Clob).Value = model.Comments ?? string.Empty;
                 cmd.Parameters.Add("p_approved", OracleDbType.Varchar2).Value = model.Decision ?? string.Empty;
-                cmd.Parameters.Add("p_approved_by", OracleDbType.Int32).Value = loggedInUser.PPNumber;
-                cmd.Parameters.Add("o_final_approval_id", OracleDbType.Int32).Direction = ParameterDirection.Output;
+                cmd.Parameters.Add("p_approved_by", OracleDbType.Decimal).Value = approvedByPpNo.Value;
+                cmd.Parameters.Add("o_final_approval_id", OracleDbType.Decimal).Direction = ParameterDirection.Output;
                 cmd.ExecuteNonQuery();
-                var id = Convert.ToInt32(cmd.Parameters["o_final_approval_id"].Value.ToString());
+                var id = SafeOracleIntValue(cmd.Parameters["o_final_approval_id"].Value);
                 return id;
                 }
             }
@@ -1152,7 +1246,7 @@ namespace AIS.Controllers
                 cmd.Parameters.Add("p_reg_compliance_failure", OracleDbType.Clob).Value = model.RegulatoryComplianceFailure ?? string.Empty;
                 cmd.Parameters.Add("o_case_id", OracleDbType.Int32).Direction = ParameterDirection.Output;
                 cmd.ExecuteNonQuery();
-                var id = Convert.ToInt32(cmd.Parameters["o_case_id"].Value.ToString());
+                var id = SafeOracleIntValue(cmd.Parameters["o_case_id"].Value);
                 return id;
                 }
             }
