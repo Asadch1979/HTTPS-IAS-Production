@@ -1,9 +1,17 @@
 @{
     ViewData["Title"] = "Inquiry Reports";
-    Layout = "_Layout";
+    var dashboardMode = ViewData["DashboardMode"] as bool? == true;
+    Layout = dashboardMode ? null : "_Layout";
 }
-<h4>Inquiry Reports</h4>
-@await Html.PartialAsync("_ComplaintSelector")
+<div id="iidReportsRoot"
+     data-iid-page="reports"
+     data-dashboard-mode="@(dashboardMode ? "true" : "false")"
+     data-complaint-id="@((int?)ViewData["ComplaintId"] ?? 0)">
+@if (!dashboardMode)
+{
+    <h4>Inquiry Reports</h4>
+    @await Html.PartialAsync("_ComplaintSelector")
+}
 <form id="filterForm" class="row g-2">
     <div class="col">
         <input class="form-control" type="date" placeholder="Date From" name="DateFrom" />
@@ -79,7 +87,15 @@
     </thead>
     <tbody></tbody>
 </table>
+ </div>
+@if (dashboardMode)
+{
+    <script src="~/js/csp/Views_IID_Reports.js" asp-append-version="true"></script>
+}
+else
+{
 @section Scripts{
-    <script src="~/js/csp/Views_IID_Reports.js?v=1"></script>
+    <script src="~/js/csp/Views_IID_Reports.js" asp-append-version="true"></script>
 
+}
 }

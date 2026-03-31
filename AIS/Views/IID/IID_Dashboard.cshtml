@@ -1,0 +1,74 @@
+@model AIS.Models.IID.IidDashboardViewModel
+@using System.Text.Json
+@{
+    ViewData["Title"] = Model?.Title ?? "IID Case Dashboard";
+    Layout = "_Layout";
+    var stepsJson = JsonSerializer.Serialize(Model?.Steps ?? new System.Collections.Generic.List<AIS.Models.IID.IidDashboardItemModel>());
+    var utilitiesJson = JsonSerializer.Serialize(Model?.Utilities ?? new System.Collections.Generic.List<AIS.Models.IID.IidDashboardItemModel>());
+}
+
+<link rel="stylesheet" href="~/css/fieldaudit-stepper-theme.css" asp-append-version="true" />
+
+<div id="iidDashboardRoot"
+     class="container-fluid mt-3"
+     data-load-panel-url="@Url.Action("LoadDashboardPanel", "IID")"
+     data-current-item-key="@Model?.CurrentItemKey"
+     data-selected-complaint-id="@Model?.SelectedComplaintId">
+
+    <div class="card planning-nav-card shadow-sm mb-3">
+        <div class="card-body">
+            <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-3">
+                <div>
+                    <h4 class="mb-1">IID Case Dashboard</h4>
+                    <div class="text-muted small">Complaint-level processing dashboard for the full IID case workflow.</div>
+                </div>
+                <div id="iidDashboardUtilityNav" class="d-flex flex-wrap gap-2"></div>
+            </div>
+
+            <div id="iidDashboardSelectorWrap">
+                @await Html.PartialAsync("_ComplaintSelector")
+            </div>
+
+            <div class="stepper-wrap pt-2">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <strong id="iidDashboardStepCounter">Step 1 of @(Model?.Steps?.Count ?? 0)</strong>
+                    <span class="text-muted small">Workflow steps only</span>
+                </div>
+                <div id="iidDashboardStepper"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="iidDashboardMessageHost" class="alert alert-warning d-none"></div>
+
+    <div class="card shadow-sm">
+        <div class="card-body"
+             id="iidDashboardContentHost"
+             data-current-item-key="@Model?.CurrentItemKey">
+            <div class="alert alert-secondary mb-0">Loading dashboard content...</div>
+        </div>
+    </div>
+</div>
+
+<script>
+    window.iidDashboardSteps = @Html.Raw(stepsJson);
+    window.iidDashboardUtilities = @Html.Raw(utilitiesJson);
+</script>
+<script src="~/js/fieldAudit/stepper-theme.js" asp-append-version="true"></script>
+<script src="~/js/iid/dashboard.js" asp-append-version="true"></script>
+
+<style>
+    #iidDashboardUtilityNav .iid-utility-btn {
+        min-width: 150px;
+    }
+
+    #iidDashboardUtilityNav .iid-utility-btn.active {
+        background-color: #198754;
+        border-color: #198754;
+        color: #fff;
+    }
+
+    #iidDashboardSelectorWrap .row.mb-3 {
+        margin-bottom: 0 !important;
+    }
+</style>

@@ -1,13 +1,21 @@
 @model AIS.Models.IID.InvestigationPlanModel
 @{
     ViewData["Title"] = "Investigation Plan";
-    Layout = "_Layout";
+    var dashboardMode = ViewData["DashboardMode"] as bool? == true;
+    Layout = dashboardMode ? null : "_Layout";
     var complaintId = ViewData["ComplaintId"];
 }
 
-<div class="container-fluid mt-3">
-    <h4>Investigation Plan</h4>
-    @await Html.PartialAsync("_ComplaintSelector")
+<div class="container-fluid mt-3"
+     id="iidInvestigationPlanRoot"
+     data-iid-page="investigation-plan"
+     data-dashboard-mode="@(dashboardMode ? "true" : "false")"
+     data-complaint-id="@complaintId">
+    @if (!dashboardMode)
+    {
+        <h4>Investigation Plan</h4>
+        @await Html.PartialAsync("_ComplaintSelector")
+    }
 
     <div id="iidComplaintDetailsRoot"></div>
 
@@ -133,8 +141,16 @@
   </div>
 </div>
 
+@if (dashboardMode)
+{
+    <script src="~/js/csp/Views_IID_InvestigationPlan.js" asp-append-version="true"></script>
+    <script src="~/js/iid/complaintDetails.js" asp-append-version="true"></script>
+}
+else
+{
 @section Scripts{
-    <script src="~/js/csp/Views_IID_InvestigationPlan.js?v=1"></script>
-<script src="~/js/iid/complaintDetails.js"></script>
+    <script src="~/js/csp/Views_IID_InvestigationPlan.js" asp-append-version="true"></script>
+<script src="~/js/iid/complaintDetails.js" asp-append-version="true"></script>
 
+}
 }

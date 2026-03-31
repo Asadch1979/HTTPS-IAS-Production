@@ -1,7 +1,8 @@
 @model List<AIS.Models.IID.ComplaintRowDto>
 @{
     ViewData["Title"] = "Monitoring Dashboard";
-    Layout = "_Layout";
+    var dashboardMode = ViewData["DashboardMode"] as bool? == true;
+    Layout = dashboardMode ? null : "_Layout";
 }
 
 <div class="container-fluid mt-3">
@@ -39,7 +40,14 @@
                                 <td>
                                     @if (row.ComplaintId > 0)
                                     {
-                                        <a class="btn btn-sm btn-outline-primary" href="@Url.Action("InquiryReportReadOnly", "IID", new { complaintId = row.ComplaintId })">View</a>
+                                        if (dashboardMode)
+                                        {
+                                            <a class="btn btn-sm btn-outline-primary" href="@Url.Action("IID_Dashboard", "IID", new { utilityCode = "READ_ONLY_REPORT", complaintId = row.ComplaintId })">View</a>
+                                        }
+                                        else
+                                        {
+                                            <a class="btn btn-sm btn-outline-primary" href="@Url.Action("InquiryReportReadOnly", "IID", new { complaintId = row.ComplaintId })">View</a>
+                                        }
                                     }
                                     else
                                     {
@@ -55,6 +63,13 @@
     </div>
 </div>
 
+@if (dashboardMode)
+{
+<script src="~/js/iid/monitoringDashboard.js" asp-append-version="true"></script>
+}
+else
+{
 @section Scripts{
-<script src="~/js/iid/monitoringDashboard.js"></script>
+<script src="~/js/iid/monitoringDashboard.js" asp-append-version="true"></script>
+}
 }

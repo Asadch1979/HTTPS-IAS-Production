@@ -1,6 +1,8 @@
     $(function(){
-        var complaintId = parseInt('@complaintId', 10) || 0;
-        var planId = parseInt('@planId', 10) || 0;
+        var pageRoot = document.getElementById('iidPlanApprovalRoot');
+        var complaintId = pageRoot ? (parseInt(pageRoot.getAttribute('data-complaint-id') || '0', 10) || 0) : 0;
+        var planId = pageRoot ? (parseInt(pageRoot.getAttribute('data-plan-id') || '0', 10) || 0) : 0;
+        var dashboardMode = !!(pageRoot && pageRoot.getAttribute('data-dashboard-mode') === 'true');
         var pageId = 349;
 
         function parsePositiveInt(value){
@@ -154,6 +156,14 @@
                 });
         });
 
+        if (dashboardMode) {
+            if (complaintId > 0) {
+                $('#selectedComplaintId').val(String(complaintId));
+                loadPlanApprovalByComplaintId(complaintId);
+            }
+            return;
+        }
+
         loadComplaintDropdown(pageId)
             .done(function(resp){
                 if(resp && resp.ok === false){
@@ -168,7 +178,7 @@
                     $dd.append('<option value="' + x.complaintId + '">' + x.displayText + '</option>');
                 });
 
-                $dd.off('change').on('change', function(){
+                $dd.off('change.iidPlanApproval').on('change.iidPlanApproval', function(){
                     var id = $(this).val();
                     $('#selectedComplaintId').val(id);
                     if(!id || id === '0'){

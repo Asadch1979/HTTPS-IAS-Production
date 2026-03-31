@@ -1,3 +1,4 @@
+using AIS.Models;
 using AIS.Models.IID;
 using AIS.Services;
 using Microsoft.AspNetCore.Hosting;
@@ -23,13 +24,25 @@ namespace AIS.Controllers
         private readonly SessionHandler sessionHandler;
         private readonly DBConnection dBConnection;
         private readonly IWebHostEnvironment hostingEnvironment;
-        public IIDController(ILogger<IIDController> logger, SessionHandler _sessionHandler, DBConnection _dbCon, TopMenus _tpMenu, IWebHostEnvironment _hostingEnvironment)
+        private readonly IPermissionService _permissionService;
+        private readonly IPageIdResolver _pageIdResolver;
+
+        public IIDController(
+            ILogger<IIDController> logger,
+            SessionHandler _sessionHandler,
+            DBConnection _dbCon,
+            TopMenus _tpMenu,
+            IWebHostEnvironment _hostingEnvironment,
+            IPermissionService permissionService,
+            IPageIdResolver pageIdResolver)
             {
             _logger = logger;
             sessionHandler = _sessionHandler;
             dBConnection = _dbCon;
             tm = _tpMenu;
             hostingEnvironment = _hostingEnvironment;
+            _permissionService = permissionService;
+            _pageIdResolver = pageIdResolver;
             }
 
         public override void OnActionExecuting(ActionExecutingContext context)
@@ -49,6 +62,115 @@ namespace AIS.Controllers
                 return RedirectToAction("Index", "Login");
             ViewData["RegionList"] = dBConnection.GetRBHList(0);
             return View("../IID/SubmitComplaint");
+            }
+
+        [HttpGet]
+        public IActionResult IID_Dashboard(string stepCode = null, string utilityCode = null, int? complaintId = null)
+            {
+            ViewData["TopMenu"] = tm.GetTopMenus();
+            ViewData["TopMenuPages"] = tm.GetTopMenusPages();
+            ViewData["HideTopHeader"] = true;
+
+            if (!User.Identity.IsAuthenticated)
+                {
+                return RedirectToAction("Index", "Login");
+                }
+
+            if (!sessionHandler.TryGetUser(out var user) || user == null)
+                {
+                return RedirectToAction("Index", "Login");
+                }
+
+            var model = BuildIidDashboardViewModel(user, stepCode, utilityCode, complaintId ?? 0);
+            return View("../IID/IID_Dashboard", model);
+            }
+
+        [HttpGet]
+        public IActionResult LoadDashboardPanel(string panelKey, int complaintId = 0)
+            {
+            if (!User.Identity.IsAuthenticated)
+                {
+                return Unauthorized();
+                }
+
+            if (!sessionHandler.TryGetUser(out var user) || user == null)
+                {
+                return Unauthorized();
+                }
+
+            var model = BuildIidDashboardViewModel(user, panelKey, panelKey, complaintId);
+            var panel = model.Steps.Concat(model.Utilities)
+                .FirstOrDefault(item => string.Equals(item.ItemKey, panelKey, StringComparison.OrdinalIgnoreCase));
+
+            if (panel == null)
+                {
+                return NotFound();
+                }
+
+            if (!panel.IsVisible)
+                {
+                return CreateDashboardAccessDeniedResult();
+                }
+
+            if (panel.RequiresComplaintSelection && complaintId <= 0)
+                {
+                return Content("<div class=\"alert alert-info mb-0\">Select a complaint from the dashboard selector to open this work area.</div>", "text/html");
+                }
+
+            ViewData["DashboardMode"] = true;
+            ViewData["ComplaintId"] = complaintId;
+
+            switch ((panel.ItemKey ?? string.Empty).Trim().ToUpperInvariant())
+                {
+                case "COMPLAINT":
+                    ViewData["RegionList"] = dBConnection.GetRBHList(0);
+                    return PartialView("../IID/SubmitComplaint", new ComplaintModel());
+
+                case "INITIAL_ASSESSMENT":
+                    return PartialView("../IID/InitialAssessment", new InitialAssessmentModel { ComplaintId = complaintId });
+
+                case "HEAD_REVIEW":
+                    return PartialView("../IID/HeadReview", new HeadReviewModel
+                        {
+                        ComplaintId = complaintId
+                        });
+
+                case "INVESTIGATION_PLAN":
+                    return PartialView("../IID/InvestigationPlan", new InvestigationPlanModel { ComplaintId = complaintId });
+
+                case "PLAN_APPROVAL":
+                    ViewData["PlanId"] = ResolvePlanIdByComplaintId(complaintId);
+                    return PartialView("../IID/PlanApproval", new PlanApprovalModel());
+
+                case "INQUIRY_REPORT":
+                    return PartialView("../IID/InquiryReport", new InquiryReportModel());
+
+                case "ANALYSIS":
+                    ViewData["ReportId"] = ResolveReportIdByComplaintId(complaintId);
+                    return PartialView("../IID/Analysis", new AnalysisModel());
+
+                case "CASE_STUDY":
+                    return PartialView("../IID/CaseStudy", new CaseStudyModel { ComplaintId = complaintId });
+
+                case "FINAL_APPROVAL":
+                    ViewData["ReportId"] = ResolveReportIdByComplaintId(complaintId);
+                    return PartialView("../IID/FinalApproval", new FinalApprovalModel());
+
+                case "TASK_LIST":
+                    return PartialView("../IID/TaskListIID");
+
+                case "MONITORING_DASHBOARD":
+                    return PartialView("../IID/MonitoringDashboard", dBConnection.GetComplaintsByUser());
+
+                case "READ_ONLY_REPORT":
+                    return PartialView("../IID/InquiryReportReadOnly");
+
+                case "REPORTS":
+                    return PartialView("../IID/Reports");
+
+                default:
+                    return NotFound();
+                }
             }
 
         [HttpGet]
@@ -241,6 +363,7 @@ namespace AIS.Controllers
             ViewData["TopMenuPages"] = tm.GetTopMenusPages();
             if (!User.Identity.IsAuthenticated)
                 return RedirectToAction("Index", "Login");
+            ViewData["ComplaintId"] = dBConnection.GetComplaintIdByReportId(reportId) ?? 0;
             ViewData["ReportId"] = reportId;
             return View("../IID/Analysis");
             }
@@ -252,6 +375,7 @@ namespace AIS.Controllers
             ViewData["TopMenuPages"] = tm.GetTopMenusPages();
             if (!User.Identity.IsAuthenticated)
                 return RedirectToAction("Index", "Login");
+            ViewData["ComplaintId"] = dBConnection.GetComplaintIdByReportId(reportId) ?? 0;
             ViewData["ReportId"] = reportId;
             return View("../IID/FinalApproval");
             }
@@ -307,6 +431,116 @@ namespace AIS.Controllers
                 return RedirectToAction("Index", "Login");
             ViewData["ComplaintId"] = complaintId;
             return View("../IID/InquiryReportReadOnly");
+            }
+
+        private IidDashboardViewModel BuildIidDashboardViewModel(SessionUser user, string requestedStepCode, string requestedUtilityCode, int complaintId)
+            {
+            var items = new List<IidDashboardItemModel>
+                {
+                CreateDashboardItem(1, "COMPLAINT", "Complaint", "/IID/SubmitComplaint", requiresComplaintSelection: false, reloadOnComplaintChange: false, isStep: true),
+                CreateDashboardItem(2, "INITIAL_ASSESSMENT", "Initial Assessment", "/IID/InitialAssessment", requiresComplaintSelection: true, reloadOnComplaintChange: true, isStep: true),
+                CreateDashboardItem(3, "HEAD_REVIEW", "Head Review", "/IID/HeadReview", requiresComplaintSelection: true, reloadOnComplaintChange: true, isStep: true),
+                CreateDashboardItem(4, "INVESTIGATION_PLAN", "Investigation Plan", "/IID/InvestigationPlan", requiresComplaintSelection: true, reloadOnComplaintChange: true, isStep: true),
+                CreateDashboardItem(5, "PLAN_APPROVAL", "Plan Approval", "/IID/PlanApproval", requiresComplaintSelection: true, reloadOnComplaintChange: true, isStep: true),
+                CreateDashboardItem(6, "INQUIRY_REPORT", "Inquiry Report", "/IID/InquiryReport", requiresComplaintSelection: true, reloadOnComplaintChange: true, isStep: true),
+                CreateDashboardItem(7, "ANALYSIS", "Analysis", "/IID/Analysis", requiresComplaintSelection: true, reloadOnComplaintChange: true, isStep: true),
+                CreateDashboardItem(8, "CASE_STUDY", "Case Study", "/IID/CaseStudy", requiresComplaintSelection: true, reloadOnComplaintChange: true, isStep: true),
+                CreateDashboardItem(9, "FINAL_APPROVAL", "Final Approval", "/IID/FinalApproval", requiresComplaintSelection: true, reloadOnComplaintChange: true, isStep: true),
+                CreateDashboardItem(0, "TASK_LIST", "Task List", "/IID/TaskListIID", requiresComplaintSelection: false, reloadOnComplaintChange: false, isStep: false),
+                CreateDashboardItem(0, "MONITORING_DASHBOARD", "Monitoring Dashboard", "/IID/MonitoringDashboard", requiresComplaintSelection: false, reloadOnComplaintChange: false, isStep: false),
+                CreateDashboardItem(0, "READ_ONLY_REPORT", "Read Only Report", "/IID/InquiryReportReadOnly", requiresComplaintSelection: true, reloadOnComplaintChange: true, isStep: false),
+                CreateDashboardItem(0, "REPORTS", "Reports", "/IID/Reports", requiresComplaintSelection: false, reloadOnComplaintChange: false, isStep: false)
+                };
+
+            foreach (var item in items)
+                {
+                item.RequiredPermissionPageId = ResolveDashboardPageId(item.SourcePath);
+                item.IsVisible = item.RequiredPermissionPageId > 0 && _permissionService.HasViewPermission(user, item.RequiredPermissionPageId);
+                item.IsEnabled = !item.RequiresComplaintSelection || complaintId > 0;
+                item.DisabledMessage = item.IsEnabled
+                    ? string.Empty
+                    : "Select a complaint first to open this work area.";
+                }
+
+            var steps = items.Where(item => item.IsStep && item.IsVisible).OrderBy(item => item.SequenceNo).ToList();
+            var utilities = items.Where(item => !item.IsStep && item.IsVisible).ToList();
+
+            var requestedUtility = utilities.FirstOrDefault(item => string.Equals(item.ItemKey, requestedUtilityCode, StringComparison.OrdinalIgnoreCase));
+            var requestedStep = steps.FirstOrDefault(item => string.Equals(item.ItemKey, requestedStepCode, StringComparison.OrdinalIgnoreCase));
+            var currentItemKey = requestedUtility?.ItemKey
+                ?? requestedStep?.ItemKey
+                ?? steps.FirstOrDefault()?.ItemKey
+                ?? utilities.FirstOrDefault()?.ItemKey
+                ?? "COMPLAINT";
+
+            return new IidDashboardViewModel
+                {
+                CurrentItemKey = currentItemKey,
+                SelectedComplaintId = complaintId,
+                Steps = steps,
+                Utilities = utilities
+                };
+            }
+
+        private IidDashboardItemModel CreateDashboardItem(
+            int sequenceNo,
+            string itemKey,
+            string title,
+            string sourcePath,
+            bool requiresComplaintSelection,
+            bool reloadOnComplaintChange,
+            bool isStep)
+            {
+            return new IidDashboardItemModel
+                {
+                SequenceNo = sequenceNo,
+                ItemKey = itemKey,
+                Title = title,
+                SourcePath = sourcePath,
+                RequiresComplaintSelection = requiresComplaintSelection,
+                ReloadOnComplaintChange = reloadOnComplaintChange,
+                IsStep = isStep
+                };
+            }
+
+        private int ResolveDashboardPageId(string pagePath)
+            {
+            return _pageIdResolver?.ResolvePageId(pagePath) ?? 0;
+            }
+
+        private int ResolvePlanIdByComplaintId(int complaintId)
+            {
+            if (complaintId <= 0)
+                {
+                return 0;
+                }
+
+            var planDetails = dBConnection.GetIidPlanDetails(complaintId);
+            if (planDetails != null &&
+                planDetails.TryGetValue("planId", out var rawPlanId) &&
+                int.TryParse(rawPlanId?.ToString(), out var planId) &&
+                planId > 0)
+                {
+                return planId;
+                }
+
+            return 0;
+            }
+
+        private int ResolveReportIdByComplaintId(int complaintId)
+            {
+            if (complaintId <= 0)
+                {
+                return 0;
+                }
+
+            return dBConnection.GetLatestInquiryReportByComplaintId(complaintId)?.ReportId ?? 0;
+            }
+
+        private IActionResult CreateDashboardAccessDeniedResult()
+            {
+            Response.StatusCode = 403;
+            return PartialView("~/Views/Shared/_DashboardStepAccessDenied.cshtml");
             }
 
         private string SaveUploadFile(IFormFile file)

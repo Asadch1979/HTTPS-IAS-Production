@@ -1,9 +1,14 @@
 @model AIS.Models.IID.ComplaintModel
 @{
     ViewData["Title"] = "Submit Complaint";
-    Layout = "_Layout";
+    var dashboardMode = ViewData["DashboardMode"] as bool? == true;
+    Layout = dashboardMode ? null : "_Layout";
 }
-<h4>Submit Complaint</h4>
+@if (!dashboardMode)
+{
+    <h4>Submit Complaint</h4>
+}
+<div id="iidSubmitComplaintRoot" data-iid-page="submit-complaint" data-dashboard-mode="@(dashboardMode ? "true" : "false")">
 <form id="complaintForm" asp-action="SubmitComplaint" asp-controller="IID" method="post" enctype="multipart/form-data">
     @Html.AntiForgeryToken()
     <div class="row g-3">
@@ -190,8 +195,16 @@
     </div>
   </div>
 </div>
+</div>
 
+@if (dashboardMode)
+{
+    <script src="~/js/csp/Views_IID_SubmitComplaint.js" asp-append-version="true"></script>
+}
+else
+{
 @section Scripts{
-    <script src="~/js/csp/Views_IID_SubmitComplaint.js?v=1"></script>
+    <script src="~/js/csp/Views_IID_SubmitComplaint.js" asp-append-version="true"></script>
 
+}
 }

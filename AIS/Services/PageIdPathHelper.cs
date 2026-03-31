@@ -27,7 +27,8 @@ namespace AIS.Services
             "/Planning/LoadPlanningStep",
             "/Planning/LoadPlanningChildStep",
             "/Planning/LoadPlanningSubChildStep",
-            "/Planning/LoadPlanningNestedView"
+            "/Planning/LoadPlanningNestedView",
+            "/IID/IID_Dashboard"
             };
 
         public static bool IsExempt(HttpRequest request)

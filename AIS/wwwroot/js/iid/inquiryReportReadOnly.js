@@ -251,16 +251,19 @@
 
     $(function () {
         var complaintId = Number($('#iidReadOnlyRoot').data('complaint-id')) || 0;
+        var dashboardMode = ($('#iidReadOnlyRoot').data('dashboard-mode') || '').toString().toLowerCase() === 'true';
 
-        loadComplaintDropdown(complaintId).fail(function () {
-            showAlert('Failed to load inquiry dropdown.');
-        });
+        if (!dashboardMode) {
+            loadComplaintDropdown(complaintId).fail(function () {
+                showAlert('Failed to load inquiry dropdown.');
+            });
 
-        $('#ddlInquiryComplaint').on('change', function () {
-            var selectedId = Number($(this).val()) || 0;
-            if (!selectedId) { return; }
-            window.location.href = (window.g_asiBaseURL || '') + '/IID/InquiryReportReadOnly?complaintId=' + encodeURIComponent(selectedId);
-        });
+            $('#ddlInquiryComplaint').on('change', function () {
+                var selectedId = Number($(this).val()) || 0;
+                if (!selectedId) { return; }
+                window.location.href = (window.g_asiBaseURL || '') + '/IID/InquiryReportReadOnly?complaintId=' + encodeURIComponent(selectedId);
+            });
+        }
 
         if (complaintId) {
             loadReadOnlyData(complaintId);

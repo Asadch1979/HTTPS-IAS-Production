@@ -1,12 +1,21 @@
 @model AIS.Models.IID.AnalysisModel
 @{
     ViewData["Title"] = "Analysis";
-    Layout = "_Layout";
+    var dashboardMode = ViewData["DashboardMode"] as bool? == true;
+    Layout = dashboardMode ? null : "_Layout";
     var complaintId = ViewData["ComplaintId"];
     var reportId = ViewData["ReportId"];
 }
-<h4>Analysis</h4>
-@await Html.PartialAsync("_ComplaintSelector")
+<div id="iidAnalysisRoot"
+     data-iid-page="analysis"
+     data-dashboard-mode="@(dashboardMode ? "true" : "false")"
+     data-complaint-id="@complaintId"
+     data-report-id="@reportId">
+@if (!dashboardMode)
+{
+    <h4>Analysis</h4>
+    @await Html.PartialAsync("_ComplaintSelector")
+}
 <div class="mb-3" id="reportFiles">
     <h6>Report Downloads</h6>
     <div id="reportLinks" class="small text-muted">Loading...</div>
@@ -47,7 +56,15 @@
     </div>
     <button type="submit" class="btn btn-primary">Submit Analysis</button>
 </form>
+ </div>
+@if (dashboardMode)
+{
+    <script src="~/js/csp/Views_IID_Analysis.js" asp-append-version="true"></script>
+}
+else
+{
 @section Scripts{
-    <script src="~/js/csp/Views_IID_Analysis.js?v=1"></script>
+    <script src="~/js/csp/Views_IID_Analysis.js" asp-append-version="true"></script>
 
+}
 }

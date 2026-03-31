@@ -1,4 +1,7 @@
     $(function(){
+        var pageRoot = document.getElementById('iidReportsRoot');
+        var complaintId = pageRoot ? (parseInt(pageRoot.getAttribute('data-complaint-id') || '0', 10) || 0) : 0;
+        var dashboardMode = !!(pageRoot && pageRoot.getAttribute('data-dashboard-mode') === 'true');
         var pageId = 350;
         function showIidAlert(message, type){
             type = type || 'danger';
@@ -152,6 +155,14 @@
             });
         });
 
+        if (dashboardMode) {
+            if (complaintId > 0) {
+                $('#selectedComplaintId').val(String(complaintId));
+            }
+            hideIidLoader();
+            return;
+        }
+
         loadComplaintDropdown(pageId)
             .done(function(resp){
                 if(resp && resp.ok === false){
@@ -166,7 +177,7 @@
                     $dd.append('<option value="' + x.complaintId + '">' + x.displayText + '</option>');
                 });
 
-                $dd.off('change').on('change', function(){
+                $dd.off('change.iidReports').on('change.iidReports', function(){
                     var id = $(this).val();
                     $('#selectedComplaintId').val(id);
                     if(!id || id === '0'){
@@ -174,6 +185,11 @@
                     }
                     loadReports();
                 });
+
+                if (complaintId > 0) {
+                    $dd.val(String(complaintId));
+                    $('#selectedComplaintId').val(String(complaintId));
+                }
             })
             .fail(function(){
                 showIidAlert('Failed to load complaints dropdown.', 'danger');
@@ -182,3 +198,6 @@
                 hideIidLoader();
             });
     });
+        function loadReports(){
+            $('#filterForm').trigger('submit');
+        }

@@ -1,6 +1,8 @@
     $(function(){
-        var complaintId = '@complaintId';
-        var reportId = '@reportId';
+        var pageRoot = document.getElementById('iidAnalysisRoot');
+        var complaintId = pageRoot ? (parseInt(pageRoot.getAttribute('data-complaint-id') || '0', 10) || 0) : 0;
+        var reportId = pageRoot ? (parseInt(pageRoot.getAttribute('data-report-id') || '0', 10) || 0) : 0;
+        var dashboardMode = !!(pageRoot && pageRoot.getAttribute('data-dashboard-mode') === 'true');
         var pageId = 343;
 
         function showIidAlert(message, type){
@@ -168,6 +170,14 @@
             });
         });
 
+        if (dashboardMode) {
+            if (complaintId > 0) {
+                $('#selectedComplaintId').val(String(complaintId));
+                loadPageDataByComplaintId(complaintId);
+            }
+            return;
+        }
+
         loadComplaintDropdown(pageId)
             .done(function(resp){
                 if(resp && resp.ok === false){
@@ -182,17 +192,17 @@
                     $dd.append('<option value="' + x.complaintId + '">' + x.displayText + '</option>');
                 });
 
-                $dd.off('change').on('change', function(){
+                $dd.off('change.iidAnalysis').on('change.iidAnalysis', function(){
                     var id = $(this).val();
                     $('#selectedComplaintId').val(id);
                     if(!id || id === '0'){
                         return;
                     }
-                    loadPageDataByComplaintId(parseInt(id));
+                    loadPageDataByComplaintId(parseInt(id, 10));
                 });
 
-                if(complaintId){
-                    $dd.val(complaintId).trigger('change');
+                if(complaintId > 0){
+                    $dd.val(String(complaintId)).trigger('change');
                 }
             })
             .fail(function(){

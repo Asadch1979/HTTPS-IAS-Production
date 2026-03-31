@@ -1,7 +1,8 @@
 @model AIS.Models.IID.InquiryReportModel
 @{
     ViewData["Title"] = "Inquiry Report";
-    Layout = "_Layout";
+    var dashboardMode = ViewData["DashboardMode"] as bool? == true;
+    Layout = dashboardMode ? null : "_Layout";
     var complaintId = ViewData["ComplaintId"];
 }
 
@@ -52,12 +53,22 @@
 <div class="wizard-section card mb-3 d-none" data-step="9"></div>
 <div class="wizard-section card mb-3 d-none" data-step="10"></div>
 
+@if (dashboardMode)
+{
+    <script src="~/js/csp/Views_IID_InquiryReport.js" asp-append-version="true"></script>
+    <script src="~/js/iid/inquiryReportApi.js" asp-append-version="true"></script>
+    <script src="~/js/iid/complaintDetails.js" asp-append-version="true"></script>
+    <script src="~/lib/tinymce/tinymce.min.js" asp-append-version="true"></script>
+}
+else
+{
 @section Scripts {
-    <script src="~/js/csp/Views_IID_InquiryReport.js?v=1"></script>
-<script src="~/js/iid/inquiryReportApi.js"></script>
-<script src="~/js/iid/complaintDetails.js"></script>
-<script src="~/lib/tinymce/tinymce.min.js"></script>
-
+    <script src="~/js/csp/Views_IID_InquiryReport.js" asp-append-version="true"></script>
+<script src="~/js/iid/inquiryReportApi.js" asp-append-version="true"></script>
+<script src="~/js/iid/complaintDetails.js" asp-append-version="true"></script>
+<script src="~/lib/tinymce/tinymce.min.js" asp-append-version="true"></script>
+}
+}
 
 <style>
 .wizard-stepper{display:grid;grid-template-columns:repeat(10,minmax(140px,1fr));gap:.4rem;overflow:auto}
@@ -72,4 +83,3 @@
 .help-text{font-size:.8rem;color:#6c757d}
 .validation-summary{font-size:.9rem}
 </style>
-}

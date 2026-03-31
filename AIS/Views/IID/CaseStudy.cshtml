@@ -1,11 +1,19 @@
 @model AIS.Models.IID.CaseStudyModel
 @{
     ViewData["Title"] = "Case Study";
-    Layout = "_Layout";
+    var dashboardMode = ViewData["DashboardMode"] as bool? == true;
+    Layout = dashboardMode ? null : "_Layout";
     var complaintId = ViewData["ComplaintId"];
 }
-<h4>Case Study</h4>
-@await Html.PartialAsync("_ComplaintSelector")
+<div id="iidCaseStudyRoot"
+     data-iid-page="case-study"
+     data-dashboard-mode="@(dashboardMode ? "true" : "false")"
+     data-complaint-id="@complaintId">
+@if (!dashboardMode)
+{
+    <h4>Case Study</h4>
+    @await Html.PartialAsync("_ComplaintSelector")
+}
 <form id="caseForm" asp-action="CaseStudy" asp-controller="IID" method="post">
     @Html.AntiForgeryToken()
     <input type="hidden" asp-for="ComplaintId" value="@complaintId" />
@@ -67,7 +75,15 @@
     </div>
     <button type="submit" class="btn btn-primary">Submit</button>
 </form>
+ </div>
+@if (dashboardMode)
+{
+    <script src="~/js/csp/Views_IID_CaseStudy.js" asp-append-version="true"></script>
+}
+else
+{
 @section Scripts{
-    <script src="~/js/csp/Views_IID_CaseStudy.js?v=1"></script>
+    <script src="~/js/csp/Views_IID_CaseStudy.js" asp-append-version="true"></script>
 
+}
 }

@@ -1,6 +1,8 @@
     $(function(){
-        var complaintId = '@complaintId';
-        var currentAssessmentId = '@assessmentId';
+        var pageRoot = document.getElementById('iidHeadReviewRoot');
+        var complaintId = pageRoot ? (parseInt(pageRoot.getAttribute('data-complaint-id') || '0', 10) || 0) : 0;
+        var currentAssessmentId = pageRoot ? (parseInt(pageRoot.getAttribute('data-assessment-id') || '0', 10) || 0) : 0;
+        var dashboardMode = !!(pageRoot && pageRoot.getAttribute('data-dashboard-mode') === 'true');
         var assignedUnitId = 0;
         var pageId = 345;
 
@@ -83,7 +85,7 @@
                 return;
             }
 
-            var assessmentIdValue = $('#AssessmentId').val() || currentAssessmentId || '@assessmentId';
+            var assessmentIdValue = $('#AssessmentId').val() || currentAssessmentId || 0;
             $('#AssessmentId').val(assessmentIdValue);
 
             var data = $(this).serialize();
@@ -112,6 +114,16 @@
                 $('#AssignedToUnit').val(String(assignedUnitId)).trigger('change');
             }
         });
+
+        if (dashboardMode) {
+            if (complaintId > 0) {
+                $('#selectedComplaintId').val(String(complaintId));
+                loadPageDataByComplaintId(complaintId);
+            }
+            updateAssignedOn();
+            return;
+        }
+
         loadComplaintDropdown(pageId)
             .done(function(resp){
                 if(resp && resp.ok === false){
@@ -126,18 +138,18 @@
                     $dd.append('<option value="' + x.complaintId + '">' + x.displayText + '</option>');
                 });
 
-                $dd.off('change').on('change', function(){
+                $dd.off('change.iidHeadReview').on('change.iidHeadReview', function(){
                     var id = $(this).val();
                     $('#selectedComplaintId').val(id);
                     if(!id || id === '0'){
                         $('#iidComplaintDetailsRoot').html('');
                         return;
                     }
-                    loadPageDataByComplaintId(parseInt(id));
+                    loadPageDataByComplaintId(parseInt(id, 10));
                 });
 
-                if(complaintId){
-                    $dd.val(complaintId).trigger('change');
+                if(complaintId > 0){
+                    $dd.val(String(complaintId)).trigger('change');
                 }
             })
             .fail(function(){

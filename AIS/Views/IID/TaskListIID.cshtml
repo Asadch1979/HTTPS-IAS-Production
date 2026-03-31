@@ -1,14 +1,20 @@
 @{
     ViewData["Title"] = "IID Task List";
-    Layout = "_Layout";
+    var dashboardMode = ViewData["DashboardMode"] as bool? == true;
+    Layout = dashboardMode ? null : "_Layout";
 }
 
 <div class="container-fluid mt-3">
-    <h4 class="text-success">IID Task List</h4>
+    @if (!dashboardMode)
+    {
+        <h4 class="text-success">IID Task List</h4>
+    }
     <div class="card shadow-sm">
         <div class="card-body p-0">
             <div class="table-responsive">
-                <table id="iidTaskListTable" class="table table-hover table-bordered table-striped table-sm mb-0 w-100">
+                <table id="iidTaskListTable"
+                       data-dashboard-base-url="@(dashboardMode ? Url.Action("IID_Dashboard", "IID") : string.Empty)"
+                       class="table table-hover table-bordered table-striped table-sm mb-0 w-100">
                     <thead class="table-success">
                         <tr>
                             <th>Complaint No</th>
@@ -25,7 +31,14 @@
     </div>
 </div>
 
+@if (dashboardMode)
+{
+    <script src="~/js/csp/Views_IID_TaskListIID.js" asp-append-version="true"></script>
+}
+else
+{
 @section Scripts{
     <script src="~/js/csp/Views_IID_TaskListIID.js" asp-append-version="true"></script>
 
+}
 }
