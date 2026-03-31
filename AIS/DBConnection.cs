@@ -358,27 +358,37 @@ namespace AIS.Controllers
                     }
 
                 bool isSession = false;
+                var isAuthenticated = false;
                 using (OracleCommand cmd = con.CreateCommand())
                     {
-                    string _sql = "pkg_lg.p_get_user";
                     cmd.CommandType = CommandType.StoredProcedure;
                     cmd.Parameters.Clear();
                     cmd.Parameters.Add("PPNumber", OracleDbType.Int32).Value = login.PPNumber;
                     cmd.Parameters.Add("enc_pass", OracleDbType.Varchar2).Value = enc_pass;
                     cmd.Parameters.Add("T_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
-                    cmd.CommandText = _sql;
+                    cmd.CommandText = "pkg_lg.p_get_user";
                     using (OracleDataReader rdr = cmd.ExecuteReader())
                         {
-                        while (rdr.Read())
+                        if (rdr.Read())
                             {
-                            cmd.CommandText = "pkg_lg.Session_Kill";
-                            cmd.CommandType = CommandType.StoredProcedure;
-                            cmd.Parameters.Clear();
-                            cmd.Parameters.Add("PPNumber", OracleDbType.Int32).Value = login.PPNumber;
-                            cmd.ExecuteReader();
-                            isSession = true;
+                            isAuthenticated = true;
                             }
                         }
+                    }
+
+                if (!isAuthenticated)
+                    {
+                    return false;
+                    }
+
+                using (OracleCommand killCmd = con.CreateCommand())
+                    {
+                    killCmd.CommandText = "pkg_lg.Session_Kill";
+                    killCmd.CommandType = CommandType.StoredProcedure;
+                    killCmd.Parameters.Clear();
+                    killCmd.Parameters.Add("PPNumber", OracleDbType.Int32).Value = login.PPNumber;
+                    killCmd.ExecuteNonQuery();
+                    isSession = true;
                     }
 
                 return isSession;
