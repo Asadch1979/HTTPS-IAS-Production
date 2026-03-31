@@ -6,6 +6,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using ExcelDataReader;
+using Microsoft.VisualBasic.FileIO;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Hosting;
@@ -24,8 +25,11 @@ namespace AIS.Services
             {
             _environment = environment ?? throw new ArgumentNullException(nameof(environment));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-            var filePath = ResolvePageMappingPath(environment);
-            _pathLookup = AddFieldAuditReportMappings(LoadPageIndex(filePath));
+            var activeMappingPath = ResolveActivePageMappingPath(environment);
+            var archiveMappingPath = ResolveArchivePageMappingPath(environment);
+            var activeMappings = LoadPageIndex(activeMappingPath);
+            var archiveMappings = LoadPageIndexFromCsv(archiveMappingPath);
+            _pathLookup = AddFieldAuditReportMappings(MergePageIndexes(activeMappings, archiveMappings));
             }
 
         public int ResolvePageId(HttpContext httpContext)
@@ -124,7 +128,7 @@ namespace AIS.Services
             return false;
             }
 
-        private static string ResolvePageMappingPath(IWebHostEnvironment environment)
+        private static string ResolveActivePageMappingPath(IWebHostEnvironment environment)
             {
             var webRoot = environment.WebRootPath;
             if (string.IsNullOrWhiteSpace(webRoot))
@@ -133,6 +137,17 @@ namespace AIS.Services
                 }
 
             return Path.Combine(webRoot, "Images", "Page ID.xlsx");
+            }
+
+        private static string ResolveArchivePageMappingPath(IWebHostEnvironment environment)
+            {
+            var webRoot = environment.WebRootPath;
+            if (string.IsNullOrWhiteSpace(webRoot))
+                {
+                webRoot = Path.Combine(environment.ContentRootPath ?? string.Empty, "wwwroot");
+                }
+
+            return Path.Combine(webRoot, "Images", "Page ID - Archive.csv");
             }
 
         private IReadOnlyDictionary<string, PageIdEntry> LoadPageIndex(string filePath)
@@ -199,6 +214,68 @@ namespace AIS.Services
             return pathLookup;
             }
 
+        private IReadOnlyDictionary<string, PageIdEntry> LoadPageIndexFromCsv(string filePath)
+            {
+            if (string.IsNullOrWhiteSpace(filePath) || !File.Exists(filePath))
+                {
+                return new Dictionary<string, PageIdEntry>(StringComparer.OrdinalIgnoreCase);
+                }
+
+            var entries = new Dictionary<string, PageIdEntry>(StringComparer.OrdinalIgnoreCase);
+
+            using var parser = new TextFieldParser(filePath);
+            parser.SetDelimiters(",");
+            parser.HasFieldsEnclosedInQuotes = true;
+
+            if (parser.EndOfData)
+                {
+                return entries;
+                }
+
+            var headers = parser.ReadFields() ?? Array.Empty<string>();
+            var columnMap = headers
+                .Select((header, index) => new { header, index })
+                .ToDictionary(item => item.header, item => item.index, StringComparer.OrdinalIgnoreCase);
+
+            while (!parser.EndOfData)
+                {
+                var fields = parser.ReadFields() ?? Array.Empty<string>();
+                var pageIdRaw = GetColumnValue(fields, columnMap, "PAGE_ID", "Page Id", "PageId", "ID");
+                if (!int.TryParse(pageIdRaw, NumberStyles.Integer, CultureInfo.InvariantCulture, out var pageId) || pageId <= 0)
+                    {
+                    continue;
+                    }
+
+                var pagePath = PageIdPathHelper.NormalizePath(GetColumnValue(fields, columnMap, "PAGE_PATH", "Page Path", "PagePath"));
+                if (string.IsNullOrWhiteSpace(pagePath))
+                    {
+                    continue;
+                    }
+
+                if (!entries.TryAdd(pagePath, new PageIdEntry(pageId, pagePath)))
+                    {
+                    _logger.LogWarning("Duplicate PAGE_PATH mapping detected in archive CSV for {Path}. Using PAGE_ID {PageId}.", pagePath, pageId);
+                    }
+                }
+
+            return entries;
+            }
+
+        private static IReadOnlyDictionary<string, PageIdEntry> MergePageIndexes(IReadOnlyDictionary<string, PageIdEntry> activeMappings, IReadOnlyDictionary<string, PageIdEntry> archiveMappings)
+            {
+            var merged = new Dictionary<string, PageIdEntry>(activeMappings, StringComparer.OrdinalIgnoreCase);
+
+            foreach (var entry in archiveMappings)
+                {
+                if (!merged.ContainsKey(entry.Key))
+                    {
+                    merged[entry.Key] = entry.Value;
+                    }
+                }
+
+            return merged;
+            }
+
         private static IReadOnlyDictionary<string, PageIdEntry> AddFieldAuditReportMappings(IReadOnlyDictionary<string, PageIdEntry> existing)
             {
             var updated = new Dictionary<string, PageIdEntry>(existing, StringComparer.OrdinalIgnoreCase);
@@ -252,6 +329,23 @@ namespace AIS.Services
                 if (columnMap.TryGetValue(candidate, out var columnName))
                     {
                     var value = row[columnName]?.ToString();
+                    if (!string.IsNullOrWhiteSpace(value))
+                        {
+                        return value.Trim();
+                        }
+                    }
+                }
+
+            return string.Empty;
+            }
+
+        private static string GetColumnValue(IReadOnlyList<string> fields, IDictionary<string, int> columnMap, params string[] candidates)
+            {
+            foreach (var candidate in candidates)
+                {
+                if (columnMap.TryGetValue(candidate, out var index) && index >= 0 && index < fields.Count)
+                    {
+                    var value = fields[index];
                     if (!string.IsNullOrWhiteSpace(value))
                         {
                         return value.Trim();

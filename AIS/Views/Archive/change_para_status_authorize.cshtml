@@ -1,0 +1,70 @@
+@{
+    var page_id = ViewData["PageId"] as int? ?? 0;
+}
+
+@{
+    ViewData["Title"] = "Authorize Para Status Change";
+    Layout = "_Layout";
+}
+
+<div class="row">
+    <div class="col-md-12 mt-3">
+        <h3 style="display:block;color:#be0e43">Authorize Para Status Change Request</h3>
+    </div>
+    <div class="row col-md-12 mt-3">
+        <table id="manageObsPanel" class="table table-hover table-bordered table-striped">
+            <thead style="background-color:#19875478;">
+                <tr>
+                    <th class="col-md-auto">Para No.</th>
+                    <th class="col-md-auto">Audit Year</th>
+                    <th class="col-md-auto">Para Title</th>
+                    <th class="col-md-auto">Current Status</th>
+                    <th class="col-md-auto">Requested Status</th>
+                    <th class="col-md-auto">Action</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+</div>
+<div id="process_detail" class="modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog  modal-xl" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">Authorization</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="mt-3 modal-body">
+                <form>
+                    <div class="mt-3 col-md-12">
+                        <label class="font-weight-bold">Remarks</label>
+                    </div>
+                    <div class="mt-2 col-md-12">
+                        <textarea class="form-control" id="RemarkField"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="mt-3 modal-footer">
+                <button id="Publishchange" type="button" class="btn btn-danger" data-onclick="submitAction();">Save changes</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+<div id="paraTextDisplayModel" class="modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-xl" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">Para Text</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="mt-3 modal-body">
+                <div id="paraTextModelPanel"></div>
+            </div>
+            <div class="mt-3 modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+<script src="~/js/Archive/Views_PostCompliance_change_para_status_authorize.js?v=1"></script>

@@ -42,27 +42,6 @@ namespace AIS.Controllers
                     return View();
                 }
             }
-        public IActionResult obs_management(int engId = 0)
-            {
-            ViewData["TopMenu"] = tm.GetTopMenus();
-            ViewData["TopMenuPages"] = tm.GetTopMenusPages();
-            ViewData["RiskList"] = dBConnection.GetRisks();
-            ViewData["EntitiesList"] = dBConnection.GetEntitiesDropDownForManageObservations();
-
-            if (!User.Identity.IsAuthenticated)
-                {
-                return RedirectToAction("Index", "Login");
-                }
-            else
-                {
-                if (!this.UserHasPagePermissionForCurrentAction(sessionHandler)) //MIGRATION_PERMISSION_CHECK (Controller)
-                    {
-                    return RedirectToAction("Index", "PageNotFound");
-                    }
-                else
-                    return View();
-                }
-            }
         [HttpGet]
         public IActionResult create_dsa(int obsId = 0)
             {
@@ -113,63 +92,11 @@ namespace AIS.Controllers
                     return View();
                 }
             }
-        public IActionResult Settled_Para()
-            {
-            ViewData["TopMenu"] = tm.GetTopMenus();
-            ViewData["TopMenuPages"] = tm.GetTopMenusPages();
-            ViewData["EntitiesList"] = dBConnection.GetLegacyParasEntities();
-
-            if (!User.Identity.IsAuthenticated)
-                return RedirectToAction("Index", "Login");
-            else
-                {
-                if (!this.UserHasPagePermissionForCurrentAction(sessionHandler)) //MIGRATION_PERMISSION_CHECK (Controller)
-                    {
-                    return RedirectToAction("Index", "PageNotFound");
-                    }
-                else
-                    return View();
-                }
-            }
         public IActionResult search_checklistdetails()
             {
             ViewData["TopMenu"] = tm.GetTopMenus();
             ViewData["TopMenuPages"] = tm.GetTopMenusPages();
             ViewData["EntitiesList"] = dBConnection.SearchChecklistDetails();
-
-            if (!User.Identity.IsAuthenticated)
-                return RedirectToAction("Index", "Login");
-            else
-                {
-                if (!this.UserHasPagePermissionForCurrentAction(sessionHandler)) //MIGRATION_PERMISSION_CHECK (Controller)
-                    {
-                    return RedirectToAction("Index", "PageNotFound");
-                    }
-                else
-                    return View();
-                }
-            }
-        public IActionResult Authorize_Change_Settle_Para_Status()
-            {
-            ViewData["TopMenu"] = tm.GetTopMenus();
-            ViewData["TopMenuPages"] = tm.GetTopMenusPages();
-
-            if (!User.Identity.IsAuthenticated)
-                return RedirectToAction("Index", "Login");
-            else
-                {
-                if (!this.UserHasPagePermissionForCurrentAction(sessionHandler)) //MIGRATION_PERMISSION_CHECK (Controller)
-                    {
-                    return RedirectToAction("Index", "PageNotFound");
-                    }
-                else
-                    return View();
-                }
-            }
-        public IActionResult Authorize_Update_Legacy_Para_Gist_Para()
-            {
-            ViewData["TopMenu"] = tm.GetTopMenus();
-            ViewData["TopMenuPages"] = tm.GetTopMenusPages();
 
             if (!User.Identity.IsAuthenticated)
                 return RedirectToAction("Index", "Login");
@@ -282,47 +209,6 @@ namespace AIS.Controllers
                     return View();
                 }
             }
-        public IActionResult staff_pos_info()
-            {
-            ViewData["TopMenu"] = tm.GetTopMenus();
-            ViewData["TopMenuPages"] = tm.GetTopMenusPages();
-            ViewData["staffpos"] = dBConnection.GetStaffPosition();
-
-            if (!User.Identity.IsAuthenticated)
-                {
-                return RedirectToAction("Index", "Login");
-                }
-            else
-                {
-                if (!this.UserHasPagePermissionForCurrentAction(sessionHandler)) //MIGRATION_PERMISSION_CHECK (Controller)
-                    {
-                    return RedirectToAction("Index", "PageNotFound");
-                    }
-                else
-                    return View();
-                }
-            }
-        public IActionResult loan_case_document()
-            {
-            ViewData["TopMenu"] = tm.GetTopMenus();
-            ViewData["TopMenuPages"] = tm.GetTopMenusPages();
-            ViewData["AuditDepartments"] = dBConnection.GetDepartments(354);
-            ViewData["DivisionsList"] = dBConnection.GetDivisions(false);
-            ViewData["AuditZonesList"] = dBConnection.GetZones();
-            if (!User.Identity.IsAuthenticated)
-                {
-                return RedirectToAction("Index", "Login");
-                }
-            else
-                {
-                if (!this.UserHasPagePermissionForCurrentAction(sessionHandler)) //MIGRATION_PERMISSION_CHECK (Controller)
-                    {
-                    return RedirectToAction("Index", "PageNotFound");
-                    }
-                else
-                    return View();
-                }
-            }
         public IActionResult cau_observation()
             {
             ViewData["TopMenu"] = tm.GetTopMenus();
@@ -377,26 +263,6 @@ namespace AIS.Controllers
             ViewData["TopMenuPages"] = tm.GetTopMenusPages();
             ViewData["RiskList"] = dBConnection.GetRisks();
             ViewData["AnnexList"] = dBConnection.GetAnnexuresForChecklistDetail();
-
-            if (!User.Identity.IsAuthenticated)
-                {
-                return RedirectToAction("Index", "Login");
-                }
-            else
-                {
-                if (!this.UserHasPagePermissionForCurrentAction(sessionHandler)) //MIGRATION_PERMISSION_CHECK (Controller)
-                    {
-                    return RedirectToAction("Index", "PageNotFound");
-                    }
-                else
-                    return View();
-                }
-            }
-        public IActionResult auth_del_dup_para()
-            {
-            ViewData["TopMenu"] = tm.GetTopMenus();
-            ViewData["TopMenuPages"] = tm.GetTopMenusPages();
-            ViewData["DupParasEntList"] = dBConnection.GetDuplicateParasAuthorizationEntityList();
 
             if (!User.Identity.IsAuthenticated)
                 {
@@ -669,168 +535,6 @@ namespace AIS.Controllers
                     return View();
                 }
             }
-        public IActionResult audit_execution()
-            {
-            ViewData["TopMenu"] = tm.GetTopMenus();
-            ViewData["TopMenuPages"] = tm.GetTopMenusPages();
-            ViewData["DivisionList"] = dBConnection.GetDivisions(false);
-            ViewData["ProcessList"] = dBConnection.GetRiskProcessDefinition();
-            ViewData["Voilation_Cat"] = dBConnection.GetAuditVoilationcats();
-            ViewData["OtherEntityList"] = dBConnection.GetAuditEntitiesForOtherEntitySelection();
-            ViewData["RiskList"] = dBConnection.GetRisks();
-            if (!User.Identity.IsAuthenticated)
-                {
-                return RedirectToAction("Index", "Login");
-                }
-            else
-                {
-                if (!this.UserHasPagePermissionForCurrentAction(sessionHandler)) //MIGRATION_PERMISSION_CHECK (Controller)
-                    {
-                    return RedirectToAction("Index", "PageNotFound");
-                    }
-                else
-                    return View();
-                }
-            }
-        public IActionResult pre_audit_info()
-            {
-            ViewData["TopMenu"] = tm.GetTopMenus();
-            ViewData["TopMenuPages"] = tm.GetTopMenusPages();
-
-            if (!User.Identity.IsAuthenticated)
-                {
-                return RedirectToAction("Index", "Login");
-                }
-            else
-                {
-                if (!this.UserHasPagePermissionForCurrentAction(sessionHandler)) //MIGRATION_PERMISSION_CHECK (Controller)
-                    {
-                    return RedirectToAction("Index", "PageNotFound");
-                    }
-                else
-                    return View();
-                }
-            }
-        public IActionResult pre_audit_info_detail()
-            {
-            ViewData["TopMenu"] = tm.GetTopMenus();
-            ViewData["TopMenuPages"] = tm.GetTopMenusPages();
-            ViewData["DivisionList"] = dBConnection.GetDivisions(false);
-            ViewData["ProcessList"] = dBConnection.GetRiskProcessDefinition();
-            ViewData["Voilation_Cat"] = dBConnection.GetAuditVoilationcats();
-            ViewData["RiskList"] = dBConnection.GetRisks();
-            if (!User.Identity.IsAuthenticated)
-                {
-                return RedirectToAction("Index", "Login");
-                }
-            else
-                {
-                if (!this.UserHasPagePermissionForCurrentAction(sessionHandler)) //MIGRATION_PERMISSION_CHECK (Controller)
-                    {
-                    return RedirectToAction("Index", "PageNotFound");
-                    }
-                else
-                    return View();
-                }
-            }
-        public IActionResult loan_case_details()
-            {
-            ViewData["TopMenu"] = tm.GetTopMenus();
-            ViewData["TopMenuPages"] = tm.GetTopMenusPages();
-
-            if (!User.Identity.IsAuthenticated)
-                {
-                return RedirectToAction("Index", "Login");
-                }
-            else
-                {
-                if (!this.UserHasPagePermissionForCurrentAction(sessionHandler)) //MIGRATION_PERMISSION_CHECK (Controller)
-                    {
-                    return RedirectToAction("Index", "PageNotFound");
-                    }
-                else
-                    return View();
-                }
-            }
-        public IActionResult branch_deposit_info()
-            {
-            ViewData["TopMenu"] = tm.GetTopMenus();
-            ViewData["TopMenuPages"] = tm.GetTopMenusPages();
-            if (!User.Identity.IsAuthenticated)
-                {
-                return RedirectToAction("Index", "Login");
-                }
-            else
-                {
-                if (!this.UserHasPagePermissionForCurrentAction(sessionHandler)) //MIGRATION_PERMISSION_CHECK (Controller)
-                    {
-                    return RedirectToAction("Index", "PageNotFound");
-                    }
-                else
-                    return View();
-                }
-            }
-        public IActionResult deposit_account()
-            {
-            ViewData["TopMenu"] = tm.GetTopMenus();
-            ViewData["TopMenuPages"] = tm.GetTopMenusPages();
-            ViewData["Depositcat"] = dBConnection.GetDepositCat();
-            if (!User.Identity.IsAuthenticated)
-                {
-                return RedirectToAction("Index", "Login");
-                }
-            else
-                {
-                if (!this.UserHasPagePermissionForCurrentAction(sessionHandler)) //MIGRATION_PERMISSION_CHECK (Controller)
-                    {
-                    return RedirectToAction("Index", "PageNotFound");
-                    }
-                else
-                    return View();
-                }
-            }
-        [HttpPost]
-        public IActionResult loan_scheme(int engId)
-            {
-            ViewData["TopMenu"] = tm.GetTopMenus();
-            ViewData["TopMenuPages"] = tm.GetTopMenusPages();
-            ViewData["GetLoanScheme"] = dBConnection.GetLoansScheme(engId);
-
-            if (!User.Identity.IsAuthenticated)
-                {
-                return RedirectToAction("Index", "Login");
-                }
-            else
-                {
-                if (!this.UserHasPagePermissionForCurrentAction(sessionHandler)) //MIGRATION_PERMISSION_CHECK (Controller)
-                    {
-                    return RedirectToAction("Index", "PageNotFound");
-                    }
-                else
-                    return View();
-                }
-            }
-        [HttpPost]
-        public IActionResult loan_scheme_yearly(int engId)
-            {
-            ViewData["TopMenu"] = tm.GetTopMenus();
-            ViewData["TopMenuPages"] = tm.GetTopMenusPages();
-            ViewData["GetLoanScheme"] = dBConnection.GetLoansSchemeYearly(engId);
-
-            if (!User.Identity.IsAuthenticated)
-                {
-                return RedirectToAction("Index", "Login");
-                }
-            else
-                {
-                if (!this.UserHasPagePermissionForCurrentAction(sessionHandler)) //MIGRATION_PERMISSION_CHECK (Controller)
-                    {
-                    return RedirectToAction("Index", "PageNotFound");
-                    }
-                else
-                    return View();
-                }
-            }
         public IActionResult Concluding_Closing_Audit()
             {
             ViewData["TopMenu"] = tm.GetTopMenus();
@@ -851,129 +555,6 @@ namespace AIS.Controllers
                     return View();
                 }
             }
-        public IActionResult Add_Legacy_Para()
-            {
-            ViewData["TopMenu"] = tm.GetTopMenus();
-            ViewData["TopMenuPages"] = tm.GetTopMenusPages();
-            ViewData["EntitiesTypeList"] = dBConnection.GetAuditeeEntitiesType();
-            ViewData["AuditYearList"] = dBConnection.GetAuditYearForAddLegacyPara();
-            ViewData["AuditNatureList"] = dBConnection.GetAuditNatureForAddLegacyPara();
-            if (!User.Identity.IsAuthenticated)
-                {
-                return RedirectToAction("Index", "Login");
-                }
-            else
-                {
-                if (!this.UserHasPagePermissionForCurrentAction(sessionHandler)) //MIGRATION_PERMISSION_CHECK (Controller)
-                    {
-                    return RedirectToAction("Index", "PageNotFound");
-                    }
-                else
-                    return View();
-                }
-            }
-        public IActionResult Authorize_Adding_Legacy_Para()
-            {
-            ViewData["TopMenu"] = tm.GetTopMenus();
-            ViewData["TopMenuPages"] = tm.GetTopMenusPages();
-            if (!User.Identity.IsAuthenticated)
-                {
-                return RedirectToAction("Index", "Login");
-                }
-            else
-                {
-                if (!this.UserHasPagePermissionForCurrentAction(sessionHandler)) //MIGRATION_PERMISSION_CHECK (Controller)
-                    {
-                    return RedirectToAction("Index", "PageNotFound");
-                    }
-                else
-                    return View();
-                }
-            }
-        public IActionResult Update_Gist_Para_No()
-            {
-            ViewData["TopMenu"] = tm.GetTopMenus();
-            ViewData["TopMenuPages"] = tm.GetTopMenusPages();
-            ViewData["EntitiesList"] = dBConnection.GetLegacyParasEntities();
-            if (!User.Identity.IsAuthenticated)
-                {
-                return RedirectToAction("Index", "Login");
-                }
-            else
-                {
-                if (!this.UserHasPagePermissionForCurrentAction(sessionHandler)) //MIGRATION_PERMISSION_CHECK (Controller)
-                    {
-                    return RedirectToAction("Index", "PageNotFound");
-                    }
-                else
-                    return View();
-                }
-            }
-        public IActionResult Update_Legacy_Paras()
-            {
-            ViewData["TopMenu"] = tm.GetTopMenus();
-            ViewData["TopMenuPages"] = tm.GetTopMenusPages();
-            ViewData["EntitiesList"] = dBConnection.GetLegacyParasEntities();
-            ViewData["ProcessList"] = dBConnection.GetAuditChecklistCAD();
-            ViewData["Voilation_Cat"] = dBConnection.GetAuditVoilationcats();
-            ViewData["RiskList"] = dBConnection.GetRisks();
-            if (!User.Identity.IsAuthenticated)
-                {
-                return RedirectToAction("Index", "Login");
-                }
-            else
-                {
-                if (!this.UserHasPagePermissionForCurrentAction(sessionHandler)) //MIGRATION_PERMISSION_CHECK (Controller)
-                    {
-                    return RedirectToAction("Index", "PageNotFound");
-                    }
-                else
-                    return View();
-                }
-            }
-        public IActionResult Update_Legacy_Paras_HO()
-            {
-            ViewData["TopMenu"] = tm.GetTopMenus();
-            ViewData["TopMenuPages"] = tm.GetTopMenusPages();
-            ViewData["EntitiesList"] = dBConnection.GetLegacyParasEntitiesHO();
-            ViewData["Voilation_Cat"] = dBConnection.GetAuditVoilationcats();
-            ViewData["RiskList"] = dBConnection.GetRisks();
-            if (!User.Identity.IsAuthenticated)
-                {
-                return RedirectToAction("Index", "Login");
-                }
-            else
-                {
-                if (!this.UserHasPagePermissionForCurrentAction(sessionHandler)) //MIGRATION_PERMISSION_CHECK (Controller)
-                    {
-                    return RedirectToAction("Index", "PageNotFound");
-                    }
-                else
-                    return View();
-                }
-            }
-        public IActionResult Update_Legacy_Paras_FAD()
-            {
-            ViewData["TopMenu"] = tm.GetTopMenus();
-            ViewData["TopMenuPages"] = tm.GetTopMenusPages();
-            ViewData["EntitiesList"] = dBConnection.GetLegacyParasEntitiesFAD();
-            ViewData["ProcessList"] = dBConnection.GetAuditChecklistCAD();
-            ViewData["RiskList"] = dBConnection.GetRisks();
-            if (!User.Identity.IsAuthenticated)
-                {
-                return RedirectToAction("Index", "Login");
-                }
-            else
-                {
-                if (!this.UserHasPagePermissionForCurrentAction(sessionHandler)) //MIGRATION_PERMISSION_CHECK (Controller)
-                    {
-                    return RedirectToAction("Index", "PageNotFound");
-                    }
-                else
-                    return View();
-                }
-            }
-
         public IActionResult pre_concluding_audit()
             {
             ViewData["TopMenu"] = tm.GetTopMenus();
@@ -1019,48 +600,6 @@ namespace AIS.Controllers
                 }
             }
 
-        public IActionResult deposit_account_details()
-            {
-            ViewData["TopMenu"] = tm.GetTopMenus();
-            ViewData["TopMenuPages"] = tm.GetTopMenusPages();
-
-            if (!User.Identity.IsAuthenticated)
-                {
-                return RedirectToAction("Index", "Login");
-                }
-            else
-                {
-                if (!this.UserHasPagePermissionForCurrentAction(sessionHandler)) //MIGRATION_PERMISSION_CHECK (Controller)
-                    {
-                    return RedirectToAction("Index", "PageNotFound");
-                    }
-                else
-                    return View();
-                }
-            }
-
-        public IActionResult disb_info()
-            {
-            ViewData["TopMenu"] = tm.GetTopMenus();
-            ViewData["TopMenuPages"] = tm.GetTopMenusPages();
-            ViewData["DivisionList"] = dBConnection.GetDivisions(false);
-            ViewData["ProcessList"] = dBConnection.GetRiskProcessDefinition();
-            ViewData["Voilation_Cat"] = dBConnection.GetAuditVoilationcats();
-            ViewData["RiskList"] = dBConnection.GetRisks();
-            if (!User.Identity.IsAuthenticated)
-                {
-                return RedirectToAction("Index", "Login");
-                }
-            else
-                {
-                if (!this.UserHasPagePermissionForCurrentAction(sessionHandler)) //MIGRATION_PERMISSION_CHECK (Controller)
-                    {
-                    return RedirectToAction("Index", "PageNotFound");
-                    }
-                else
-                    return View();
-                }
-            }
         public IActionResult draft_audit_report()
             {
             ViewData["TopMenu"] = tm.GetTopMenus();

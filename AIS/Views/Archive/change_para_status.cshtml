@@ -1,0 +1,132 @@
+@{
+    var page_id = ViewData["PageId"] as int? ?? 0;
+}
+
+@{
+    ViewData["Title"] = "Change Para Status";
+    Layout = "_Layout";
+}
+
+
+<div class="row">
+    <div class="col-md-12 mt-3">
+        <h3 style="display:block;color:#be0e43">Change Para Status</h3>
+    </div>
+    <div class="row col-md-12 mt-3">
+        <div class="col-md-2">
+            <label>Relationship Type</label>
+        </div>
+        <div class="col-md-10">
+            <select id="RelationshipField" data-onchange="getrelation();" class="form-control form-select">
+                <option id="0" value="0" selected="selected">--Select Relationship Type--</option>
+                @{
+                    if (ViewData["Userrelationship"] != null)
+                    {
+                        foreach (var item in (dynamic)(ViewData["Userrelationship"]))
+                        {
+                            <option value="@item.ENTITY_REALTION_ID" id="@item.ENTITY_REALTION_ID">@item.FIELD_NAME</option>
+                        }
+                    }
+                }
+            </select>
+        </div>
+    </div>
+
+    <div class="row col-md-12 mt-3">
+        <div class="col-md-2">
+            <label>Controlling/Reporting Office</label>
+        </div>
+        <div class="col-md-4">
+            <select id="controlingsearch" data-onchange="getplacepost();" class="form-control form-select">
+                <option id="0" value="0" selected="selected">--Select Controlling/Reporting Office--</option>
+            </select>
+        </div>
+        <div class="col-md-2">
+            <label>Place of Posting</label>
+        </div>
+        <div class="col-md-4">
+            <select id="childposting" data-onchange="getParas();" class="form-control form-select">
+                <option id="0" value="0" selected="selected">--Select Place of Posting--</option>
+            </select>
+        </div>
+    </div>
+    <div class="row col-md-12 mt-3">
+        <table id="paraTable" class="table table-hover table-bordered table-striped">
+            <thead style="background-color:#19875478;">
+                <tr>
+                    <th class="col-md-auto">Audit Year</th>
+                    <th class="col-md-auto">Para No.</th>
+                    <th class="col-md-auto">Heading</th>
+                    <th class="col-md-auto">Risk</th>
+                    <th class="col-md-auto">Para Status</th>
+                    <th class="col-md-auto">View Para Text</th>
+                    <th class="col-md-auto">Action</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Modal for Change Status -->
+<div id="process_detail" class="modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-xl" role="document" style="min-width:90%;">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">Change Para Status</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="mt-3 modal-body">
+                <form>
+                    <div class="mt-2 col-md-12">
+                        <label class="font-weight-bold">Action</label>
+                    </div>
+                    <div class="mt-2 col-md-12">
+                        <select id="actionSelect" class="form-control form-select">
+                            <option value="S">Status Change</option>
+                            <option value="D">Delete Duplicate</option>
+                        </select>
+                    </div>
+                    <div class="mt-2 col-md-12">
+                        <label class="font-weight-bold">New Status</label>
+                    </div>
+                    <div class="mt-2 col-md-12">
+                        <select id="statusSelect" class="form-control form-select">
+                            <option value="9">Settled</option>
+                            <option value="8">Un-Settled</option>
+                        </select>
+                    </div>
+                    <div class="mt-3 col-md-12">
+                        <label class="font-weight-bold">Remarks</label>
+                    </div>
+                    <div class="mt-2 col-md-12">
+                        <textarea class="form-control" id="Reason"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="mt-3 modal-footer">
+                <button id="Publishchange" type="button" class="btn btn-danger" data-onclick="Publishchange();">Save changes</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal for Para Text -->
+<div id="paraTextDisplayModel" class="modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-xl" role="document" style="min-width:90%;">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">Para Text</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="mt-3 modal-body">
+                <div id="paraTextModelPanel"></div>
+            </div>
+            <div class="mt-3 modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+<script src="~/js/Archive/Views_PostCompliance_change_para_status.js?v=1"></script>

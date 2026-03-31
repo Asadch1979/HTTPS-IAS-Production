@@ -1,0 +1,84 @@
+@{
+    ViewData["Title"] = "Audit Template";
+    Layout = "_Layout";
+}
+<script type="text/javascript" src="~/lib/rich-text-editor/jquery.richtext.js"></script>
+
+
+<div class="col-md-12 mt-3">
+        <center class="w-100"><h3>Audit Template</h3></center>
+        <div>
+            <h5>Process/Risk</h5>
+        </div>
+        <select id="riskGroupSelectBox" data-onchange="div_risksubcategoryShowHide();" class="form-select form-control" aria-label="Default select example">
+            <option value="0" id="0" selected="selected">--Select Process/Risk Group--</option>
+            @{
+                if (ViewData["RISK_GROUPS"] != null)
+                {
+                    foreach (var item in (dynamic)(ViewData["RISK_GROUPS"]))
+                    {
+                        <option value="@item.GR_ID" id="@item.GR_ID">@item.DESCRIPTION</option>
+                    }
+                }
+            }
+        </select>
+    </div>
+    <div id="div_risksubcategory" style="display:none;" class="col-md-12 mt-3">
+        <h5>Activity</h5>
+        <select id="riskSubGroupSelectBox" data-onchange="div_activityContainerShowHide();" class="form-select form-control" aria-label="Default select example">
+        </select>
+    </div>
+    <div id="div_activityContainer" style="display:none;" class="col-md-12 mt-3">
+        <h5>Observation</h5>
+        <select id="riskActivitiesSelectBox" data-onchange="getAuditObservationTemplate();" class="form-select form-control" aria-label="Default select example">
+        </select>
+    </div>
+    <div class="col-md-12 mt-3">
+        <div class="page-wrapper box-content">
+            <textarea id="template_box" class="content" name="example"></textarea>
+        </div>
+    </div>
+    <div class="row col-md-12 mt-3">
+
+        <div class="row col-md-12 mt-3">
+            <div class="col-md-3 mt-3">
+                <label><b>Responsible P.P. No.</b></label>
+            </div>
+            <div class="col-md-4 mt-3">
+                <input type="number" />
+            </div>
+        </div>
+        <div class="row col-md-12 mt-3">
+            <div class="col-md-3">
+                <label class="form-control form-select"><b>No. of Days to Reply</b></label>
+            </div>
+            <div class="col-md-3">
+                <select class="form-control form-select">
+                    <option value="1">1</option>
+                    <option value="2">2</option>
+                    <option value="3">3</option>
+                    <option value="4">4</option>
+                    <option value="5">5</option>
+                    <option value="6">6</option>
+                    <option value="7">7</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label><b>Attachments</b></label>
+            </div>
+            <div class="col-md-4">
+                <input class="form-control" type="file" multiple="multiple" style="padding-top:3px;" />
+            </div>
+        </div>
+        
+            
+        <div class="row col-md-12 mt-5">
+            <div class="col-md-6">
+                <button class="btn btn-primary" style="float:right;">Save</button>
+            </div>
+            <div class="col-md-6">
+                <button class="btn btn-primary" style="float:left;">Submit for Review</button>
+            </div>
+        </div>
+    </div>
+<script src="~/js/Archive/Views_AdministrationPanel_audit_template.js?v=1"></script>

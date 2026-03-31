@@ -1,0 +1,35 @@
+@{
+    var page_id = ViewData["PageId"] as int? ?? 0;
+}
+
+@{
+    ViewData["Title"] = "Reporting Office Wise Observations";
+    Layout = "_Layout";
+}
+
+
+<div class="row col-md-12">
+    <h3 style="color: #be0e43;">Controlling Office Wise Observation Overview</h3>
+</div>
+
+<div class="row col-md-12">
+    <div class="mt-3 col-md-12">
+        <table id="entitywise_panel" class="table table-hover table-bordered table-hover mt-3 table-striped">
+            <thead style="background-color: #19875478 !important; ">
+                <tr>
+                    <th class="col-md-auto text-light">Sr. No.</th>
+                    <th class="col-md-auto text-light">Reporting Office</th>
+                    <th class="col-md-auto text-center text-light">Current</th>
+                    <th class="col-md-auto text-center text-light">Legacy</th>
+                    <th class="col-md-auto text-center text-light">Total</th>
+                    <th class="col-md-auto text-center text-light">High</th>
+                    <th class="col-md-auto text-center text-light">Medium</th>
+                    <th class="col-md-auto text-center text-light">Low</th>
+                </tr>
+            </thead>
+            <tbody>
+            </tbody>
+        </table>
+    </div>
+</div>
+<script src="~/js/Archive/Views_Dashboard_reporting_wise_obs.js?v=1"></script>

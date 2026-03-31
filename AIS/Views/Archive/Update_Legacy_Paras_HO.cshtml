@@ -1,0 +1,183 @@
+@{
+    var page_id = ViewData["PageId"] as int? ?? 0;
+}
+
+@{
+    ViewData["Title"] = "Update_Legacy_Paras";
+    Layout = "_Layout";
+}
+
+<div class="row col-md-12 mt-3">
+    <h3 style=" display:block;color: #be0e43">Update Legacy Paras</h3>
+</div>
+<div class="row col-md-12">
+    <div class="row col-md-12 mt-3">
+        <div class="row col-md-2">
+            <label><b>Entity:</b></label>
+        </div>
+        <div class="row col-md-10">
+            <select id="entitySelectField" data-onchange="getReportDropdownContents();" class="form-control form-select">
+                <option value="0" id="0">--Select Audit Entity--</option>
+                @{
+                    if (ViewData["EntitiesList"] != null)
+                    {
+                        foreach (var item in (dynamic)(ViewData["EntitiesList"]))
+                        {
+                            <option value="@item.ID" id="@item.ID">@item.ENTITY_NAME</option>
+                        }
+                    }
+                }
+
+            </select>
+        </div>
+    </div>
+    <div id="dropdownReportPanel" class="row col-md-12 mt-3 d-none">
+        <div class="row col-md-2">
+            <label><b>Report:</b></label>
+        </div>
+        <div class="row col-md-10">
+            <select id="entityReportSelectField" data-onchange="getLegacyPara();" class="form-control form-select">
+
+            </select>
+        </div>
+    </div>
+</div>
+<div class="row col-md-12 mt-3">
+    <table id="manageObsPanel" class="table responsive table-hover table-bordered table-hover mt-3 table-striped">
+        <thead style="background-color: #19875478 !important; ">
+            <tr>
+                <th class="col-md-auto">Sr No.</th>
+                <th class="col-md-auto">Audit Year</th>
+                <th class="col-md-auto">Para No.</th>
+                <th class="col-md-auto">Observation Gist</th>
+                <th class="col-md-auto">Para Status</th>
+                <th class="col-md-auto">Update Text</th>
+                <th class="col-md-auto">Update Status</th>
+                <th class="col-md-auto">Delete Duplicate Para</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+</div>
+<div id="process_detail" class="modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog  modal-xl" role="document" style="max-width:1450px !important;">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">Update Legacy Para</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="mt-3 modal-body">
+                <form>
+                    <div class="form-group">
+                        <label for="violation_selectBox" class="font-weight-bold">Violation</label>
+                        <select id="violation_selectBox" data-onchange="getViolationNature();"
+                            class="form-select form-control" aria-label="">
+                            <option value="0" id="0" selected="selected">--Select Voilation Category--</option>
+                            @{
+                                if (ViewData["Voilation_Cat"] != null)
+                                {
+                                    foreach (var item in (dynamic)(ViewData["Voilation_Cat"]))
+                                    {
+                                        <option id="@item.ID" value="@item.ID">@item.V_NAME</option>
+                                    }
+                                }
+                            }
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <h5>Nature/Area</h5>
+                        <select id="nature_selectBox" class="form-select form-control"
+                            aria-label="Default select example">
+
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+
+                        <label class="font-weight-bold">Risk Category </label>
+                        <select id="risk_selectBox" class="form-select form-control"
+                            aria-label="Default select example">
+                            <option value="0" id="0" selected>--Select Risk Category--</option>
+                            @{
+                                if (ViewData["RiskList"] != null)
+                                {
+
+                                    foreach (var risk in (dynamic)(ViewData["RiskList"]))
+                                    {
+                                        <option id="@risk.R_ID" value="@risk.R_ID">@risk.DESCRIPTION</option>
+                                    }
+
+                                }
+                            }
+                        </select>
+                    </div>
+
+                    <div class="row mt-3 col-md-12">
+                        <label class="font-weight-bold">Para Text</label>
+
+                    </div>
+                    <div class="form-group">
+                        <textarea class="form-control" id="text_selectBox"></textarea>
+                    </div>
+
+                </form>
+
+
+            </div>
+
+            <div class="mt-3 modal-footer">
+
+                <button data-onclick="submitLegacyParaUpdates();" id="PublishParaText" type="button"
+                    class="btn btn-danger">Save All Changes</button>
+                <button data-onclick="submitLegacyParaUpdatesWithNoChanges();" id="PublishParaTextWithNoChanges"
+                    type="button" class="btn btn-primary d-none">No change in Para Text</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+
+            </div>
+
+        </div>
+    </div>
+</div>
+<div id="settleRemarksModel" class="modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog  modal-xl" role="document" style="max-width:1450px !important;">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">Settlement Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="mt-3 modal-body">
+                <form>
+
+                    <div class="mt-2 col-md-12">
+                        <select id="settleUnSettleDropdown" class="form-control form-select">
+                            <option value="6">Settled</option>
+                            <option value="8">Un-Settled</option>
+                        </select>
+                    </div>
+
+                    <div class="mt-3 col-md-12">
+                        <label class="font-weight-bold">Please provide reference letter number through which complaince
+                            is received and on what date</label>
+
+                    </div>
+                    <div class="mt-2 col-md-12">
+                        <textarea class="form-control" id="Reason_settlement"></textarea>
+
+                    </div>
+
+
+                </form>
+            </div>
+
+            <div class="mt-3 modal-footer">
+
+                <button data-onclick="submitSettlementofLegacyPara();" id="PublishParaText" type="button"
+                    class="btn btn-danger">Submit</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+
+            </div>
+
+        </div>
+    </div>
+</div>
+<script src="~/js/Archive/Views_Execution_Update_Legacy_Paras_HO.js?v=1"></script>

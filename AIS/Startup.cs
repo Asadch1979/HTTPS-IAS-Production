@@ -75,6 +75,7 @@ namespace AIS
             services.AddScoped<SessionHandler>();
             services.AddScoped<IDBConnection, DBConnection>();
             services.AddScoped<DBConnection>();
+            services.AddScoped<DBConnectionArchive>();
             services.AddScoped<FieldAuditReportPdfBuilder>();
             services.AddScoped<IidInquiryReportPdfBuilder>();
             services.AddScoped<ManagementAuditReportPdfBuilder>();

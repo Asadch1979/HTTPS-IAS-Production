@@ -576,26 +576,6 @@ namespace AIS.Controllers
                     return View();
                 }
             }
-        public IActionResult control_violation()
-            {
-            ViewData["TopMenu"] = tm.GetTopMenus();
-            ViewData["TopMenuPages"] = tm.GetTopMenusPages();
-            ViewData["ControlViolationList"] = dBConnection.GetControlViolations();
-            if (!User.Identity.IsAuthenticated)
-                {
-                return RedirectToAction("Index", "Login");
-                }
-            else
-                {
-                if (!this.UserHasPagePermissionForCurrentAction(sessionHandler)) //MIGRATION_PERMISSION_CHECK (Controller)
-                    {
-                    return RedirectToAction("Index", "PageNotFound");
-                    }
-                else
-                    return View();
-                }
-            }
-
         public IActionResult annexure_assignment_para()
             {
             ViewData["TopMenu"] = tm.GetTopMenus();

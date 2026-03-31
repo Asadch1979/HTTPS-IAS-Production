@@ -599,26 +599,6 @@ namespace AIS.Controllers
                     return View();
                 }
             }
-        [HttpPost]
-        public IActionResult glhead_summary(int engId)
-            {
-            ViewData["TopMenu"] = tm.GetTopMenus();
-            ViewData["TopMenuPages"] = tm.GetTopMenusPages();
-            ViewData["GlHeadDetails"] = dBConnection.GetGlheadDetails(engId);
-            if (!User.Identity.IsAuthenticated)
-                {
-                return RedirectToAction("Index", "Login");
-                }
-            else
-                {
-                if (!this.UserHasPagePermissionForCurrentAction(sessionHandler)) //MIGRATION_PERMISSION_CHECK (Controller)
-                    {
-                    return RedirectToAction("Index", "PageNotFound");
-                    }
-                else
-                    return View();
-                }
-            }
         public IActionResult glhead_details()
             {
             ViewData["TopMenu"] = tm.GetTopMenus();
@@ -643,24 +623,6 @@ namespace AIS.Controllers
             ViewData["TopMenuPages"] = tm.GetTopMenusPages();
             ViewData["AuditDepartmentList"] = dBConnection.GetAuditDepartmentsZones();
             ViewData["AuditPeriodList"] = dBConnection.GetAuditPeriods();
-            if (!User.Identity.IsAuthenticated)
-                {
-                return RedirectToAction("Index", "Login");
-                }
-            else
-                {
-                if (!this.UserHasPagePermissionForCurrentAction(sessionHandler)) //MIGRATION_PERMISSION_CHECK (Controller)
-                    {
-                    return RedirectToAction("Index", "PageNotFound");
-                    }
-                else
-                    return View();
-                }
-            }
-        public IActionResult income_expenditure()
-            {
-            ViewData["TopMenu"] = tm.GetTopMenus();
-            ViewData["TopMenuPages"] = tm.GetTopMenusPages();
             if (!User.Identity.IsAuthenticated)
                 {
                 return RedirectToAction("Index", "Login");

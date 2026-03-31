@@ -43,6 +43,7 @@ namespace AIS.Controllers
 
         private readonly SessionHandler sessionHandler;
         private readonly DBConnection dBConnection;
+        private readonly DBConnectionArchive archiveDbConnection;
         private readonly IWebHostEnvironment _hostingEnvironment;
         private readonly IHttpContextAccessor _httpContextAccessor;
         private readonly IConfiguration _configuration;
@@ -54,6 +55,7 @@ namespace AIS.Controllers
             ILogger<ApiCallsController> logger,
             SessionHandler _sessionHandler,
             DBConnection _dbCon,
+            DBConnectionArchive archiveDbCon,
             IWebHostEnvironment hostingEnvironment,
             IHttpContextAccessor httpContextAccessor,
             IConfiguration configuration,
@@ -63,6 +65,7 @@ namespace AIS.Controllers
             _logger = logger;
             sessionHandler = _sessionHandler;
             dBConnection = _dbCon;
+            archiveDbConnection = archiveDbCon;
             _hostingEnvironment = hostingEnvironment;
             _httpContextAccessor = httpContextAccessor;
             _configuration = configuration;
@@ -1727,12 +1730,12 @@ namespace AIS.Controllers
         [HttpPost]
         public List<DepositAccountModel> GetDepositAccountSubdetails(string b_name)
             {
-            return dBConnection.GetDepositAccountSubdetails(b_name);
+            return archiveDbConnection.GetDepositAccountSubdetails(b_name);
             }
         [HttpPost]
         public List<DepositAccountCatDetailsModel> GetDepositAccountcatdetails(int catid)
             {
-            return dBConnection.GetDepositAccountcatdetails(catid);
+            return archiveDbConnection.GetDepositAccountcatdetails(catid);
             }
 
         [HttpPost]
@@ -1744,7 +1747,7 @@ namespace AIS.Controllers
         [HttpPost]
         public List<GlHeadDetailsModel> GetIncomeExpenceDetails(int b_id, int ENG_ID)
             {
-            return dBConnection.GetIncomeExpenceDetails(b_id, ENG_ID);
+            return archiveDbConnection.GetIncomeExpenceDetails(b_id, ENG_ID);
             }
         [HttpPost]
         public int GetAuditEntitiesCount(int CRITERIA_ID)
@@ -1972,7 +1975,7 @@ namespace AIS.Controllers
         [HttpPost]
         public List<OldParasModelCAD> get_old_para_management()
             {
-            return dBConnection.GetOldParasManagement();
+            return archiveDbConnection.GetOldParasManagement();
             }
 
         [HttpGet]
@@ -1985,7 +1988,7 @@ namespace AIS.Controllers
         [HttpPost]
         public List<ParaStatusChangeModel> get_paras_for_status_change(int ENTITY_ID = 0)
             {
-            return dBConnection.GetParasForStatusChange(ENTITY_ID);
+            return archiveDbConnection.GetParasForStatusChange(ENTITY_ID);
             }
         [HttpGet]
         [HttpPost]
@@ -2003,7 +2006,7 @@ namespace AIS.Controllers
         [HttpPost]
         public List<OldParasModel> get_current_paras_for_status_change_request_authorize()
             {
-            return dBConnection.GetCurrentParasForStatusChangeRequestAuthorize();
+            return archiveDbConnection.GetCurrentParasForStatusChangeRequestAuthorize();
             }
         [HttpGet]
         [HttpPost]
@@ -2036,7 +2039,7 @@ namespace AIS.Controllers
         public string add_legacy_para_cad_reply(int ID, int V_CAT_ID, int V_CAT_NATURE_ID, int RISK_ID, string REPLY)
             {
             string response = "";
-            response = dBConnection.AddOldParasCADReply(ID, V_CAT_ID, V_CAT_NATURE_ID, RISK_ID, REPLY);
+            response = archiveDbConnection.AddOldParasCADReply(ID, V_CAT_ID, V_CAT_NATURE_ID, RISK_ID, REPLY);
             return "{\"Status\":true,\"Message\":\"" + response + "\"}";
 
             }
@@ -2046,7 +2049,7 @@ namespace AIS.Controllers
             string response = "";
             foreach (OldParaComplianceModel opc in COMPLIANCE_LIST)
                 {
-                response += dBConnection.AddOldParasCADCompliance(opc) + "\n";
+                response += archiveDbConnection.AddOldParasCADCompliance(opc) + "\n";
                 }
 
             return "{\"Status\":true,\"Message\":\"" + response + "\"}";
@@ -2056,7 +2059,7 @@ namespace AIS.Controllers
         [HttpPost]
         public ActiveInactiveChart get_pie_chart_data()
             {
-            return dBConnection.GetActiveInactiveChartData();
+            return archiveDbConnection.GetActiveInactiveChartData();
             }
 
         [HttpPost]
@@ -2214,7 +2217,7 @@ namespace AIS.Controllers
         [HttpPost]
         public List<AuditeeOldParasModel> get_assigned_observation_old_paras(int ENTITY_ID = 0)
             {
-            return dBConnection.GetAuditeeOldParas(ENTITY_ID);
+            return archiveDbConnection.GetAuditeeOldParas(ENTITY_ID);
 
             }
 
@@ -2523,7 +2526,7 @@ namespace AIS.Controllers
         public string Add_New_Para_Change_status_Request(string REFID, int NEW_STATUS, string REMARKS)
             {
             string response = "";
-            response = dBConnection.AddChangeStatusRequestForCurrentPara(REFID, NEW_STATUS, REMARKS);
+            response = archiveDbConnection.AddChangeStatusRequestForCurrentPara(REFID, NEW_STATUS, REMARKS);
             return "{\"Status\":true,\"Message\":\"" + response + "\"}";
             }
 
@@ -2532,7 +2535,7 @@ namespace AIS.Controllers
         public string Add_Para_Change_status_Request(string COM_ID, int NEW_STATUS, string REMARKS, string IND, string Action_IND)
             {
             string response = "";
-            response = dBConnection.AddChangeStatusRequestForPara(COM_ID, NEW_STATUS, REMARKS, IND, Action_IND);
+            response = archiveDbConnection.AddChangeStatusRequestForPara(COM_ID, NEW_STATUS, REMARKS, IND, Action_IND);
             return "{\"Status\":true,\"Message\":\"" + response + "\"}";
             }
 
@@ -2546,35 +2549,35 @@ namespace AIS.Controllers
         public string Add_Authorization_Old_Para_Change_status(string REFID, string OBS_ID, string IND, string Action_IND)
             {
             string response = "";
-            response = dBConnection.AddAuthorizeChangeStatusRequestForSettledPara(REFID, OBS_ID, IND, Action_IND);
+            response = archiveDbConnection.AddAuthorizeChangeStatusRequestForSettledPara(REFID, OBS_ID, IND, Action_IND);
             return "{\"Status\":true,\"Message\":\"" + response + "\"}";
             }
         [HttpGet]
         [HttpPost]
         public List<OldParasAuthorizeModel> get_legacy_settled_paras_autorize()
             {
-            return dBConnection.GetOldSettledParasForResponseAuthorize();
+            return archiveDbConnection.GetOldSettledParasForResponseAuthorize();
             }
 
         [HttpGet]
         [HttpPost]
         public List<GetOldParasBranchComplianceModel> get_old_para_br_compliance_text_update()
             {
-            return dBConnection.GetOldParasBranchComplianceTextupdate();
+            return archiveDbConnection.GetOldParasBranchComplianceTextupdate();
             }
 
         [HttpGet]
         [HttpPost]
         public List<ParaStatusChangeModel> get_paras_for_status_change_authorize()
             {
-            return dBConnection.GetParasForStatusChangeToAuthorize();
+            return archiveDbConnection.GetParasForStatusChangeToAuthorize();
             }
 
         [HttpPost]
         public string authorize_para_change_status(string COM_ID, int NEW_PARA_ID, int OLD_PARA_ID, string REMARKS, string IND, string Action_IND)
             {
             string response = "";
-            response = dBConnection.AuthorizeChangeStatusRequestForPara(COM_ID, NEW_PARA_ID, OLD_PARA_ID, REMARKS, IND, Action_IND);
+            response = archiveDbConnection.AuthorizeChangeStatusRequestForPara(COM_ID, NEW_PARA_ID, OLD_PARA_ID, REMARKS, IND, Action_IND);
             return "{\"Status\":true,\"Message\":\"" + response + "\"}";
             }
 
@@ -2741,13 +2744,13 @@ namespace AIS.Controllers
         [HttpPost]
         public List<AuditEntitiesModel> get_auditee_entities_by_entity_type_id(int ENTITY_TYPE_ID)
             {
-            return dBConnection.GetAuditEntitiesByTypeId(ENTITY_TYPE_ID);
+            return archiveDbConnection.GetAuditEntitiesByTypeId(ENTITY_TYPE_ID);
             }
 
         [HttpPost]
         public string add_new_legacy_para(AddNewLegacyParaModel LEGACY_PARA)
             {
-            return "{\"Status\":true,\"Message\":\"" + dBConnection.AddNewLegacyPara(LEGACY_PARA) + "\"}";
+            return "{\"Status\":true,\"Message\":\"" + archiveDbConnection.AddNewLegacyPara(LEGACY_PARA) + "\"}";
             }
 
         [HttpPost]
@@ -2759,7 +2762,7 @@ namespace AIS.Controllers
         [HttpPost]
         public List<AddNewLegacyParaModel> get_add_legacy_paras_autorize()
             {
-            return dBConnection.GetAddedLegacyParaForAuthorize();
+            return archiveDbConnection.GetAddedLegacyParaForAuthorize();
             }
 
         //
@@ -2767,24 +2770,24 @@ namespace AIS.Controllers
         [HttpPost]
         public List<AddNewLegacyParaModel> get_update_gist_paraNo_legacy_paras_autorize()
             {
-            return dBConnection.GetUpdatedGistParaOfLegacyParaForAuthorize();
+            return archiveDbConnection.GetUpdatedGistParaOfLegacyParaForAuthorize();
             }
 
         [HttpPost]
         public string Authorize_Legacy_Para_addition(string PARA_REF)
             {
-            return "{\"Status\":true,\"Message\":\"" + dBConnection.AuthorizeLegacyParaAddition(PARA_REF) + "\"}";
+            return "{\"Status\":true,\"Message\":\"" + archiveDbConnection.AuthorizeLegacyParaAddition(PARA_REF) + "\"}";
             }
         [HttpPost]
         public string Authorize_Legacy_Para_Gist_ParaNo(string PARA_REF, string GIST_OF_PARA, string PARA_NO)
             {
-            return "{\"Status\":true,\"Message\":\"" + dBConnection.AuthorizeLegacyParaGistParaNoUpdate(PARA_REF, GIST_OF_PARA, PARA_NO) + "\"}";
+            return "{\"Status\":true,\"Message\":\"" + archiveDbConnection.AuthorizeLegacyParaGistParaNoUpdate(PARA_REF, GIST_OF_PARA, PARA_NO) + "\"}";
             }
 
         [HttpPost]
         public string Delete_Legacy_Para_addition_request(string PARA_REF)
             {
-            return "{\"Status\":true,\"Message\":\"" + dBConnection.DeleteLegacyParaAdditionRequest(PARA_REF) + "\"}";
+            return "{\"Status\":true,\"Message\":\"" + archiveDbConnection.DeleteLegacyParaAdditionRequest(PARA_REF) + "\"}";
             }
 
         [HttpGet]
@@ -2827,13 +2830,13 @@ namespace AIS.Controllers
         [HttpPost]
         public List<FunctionalResponsibilitiesWiseParasModel> get_functional_responsibility_wise_paras_for_dashboard(int FUNCTIONAL_ENTITY_ID = 0)
             {
-            return dBConnection.GetFunctionalResponsibilityWiseParaForDashboard(FUNCTIONAL_ENTITY_ID);
+            return archiveDbConnection.GetFunctionalResponsibilityWiseParaForDashboard(FUNCTIONAL_ENTITY_ID);
             }
         [HttpGet]
         [HttpPost]
         public List<FADNewOldParaPerformanceModel> get_functional_responsibility_wise_paras_for_dashboard_ho(int PROCESS_ID = 0, int SUB_PROCESS_ID = 0, int PROCESS_DETAIL_ID = 0, int FUNCTIONAL_ENTITY_ID = 0, int DEPT_ID = 0)
             {
-            return dBConnection.GetHOFunctionalResponsibilityWiseParaForDashboard(PROCESS_ID, SUB_PROCESS_ID, PROCESS_DETAIL_ID, FUNCTIONAL_ENTITY_ID, DEPT_ID);
+            return archiveDbConnection.GetHOFunctionalResponsibilityWiseParaForDashboard(PROCESS_ID, SUB_PROCESS_ID, PROCESS_DETAIL_ID, FUNCTIONAL_ENTITY_ID, DEPT_ID);
             }
         [HttpGet]
         [HttpPost]
@@ -2845,7 +2848,7 @@ namespace AIS.Controllers
         [HttpPost]
         public List<NoEntitiesRiskBasePlan> get_risk_base_plan_for_dashboard()
             {
-            return dBConnection.GetEntitiesRiskBasePlanForDashboard();
+            return archiveDbConnection.GetEntitiesRiskBasePlanForDashboard();
             }
         [HttpGet]
         [HttpPost]
@@ -3059,14 +3062,14 @@ namespace AIS.Controllers
         [HttpPost]
         public List<RiskProcessDefinition> get_violation_area_for_functional_responsibility_wise_paras_ho(int FUNCTIONAL_ENTITY_ID = 0)
             {
-            return dBConnection.GetHOViolationListForDashboard(FUNCTIONAL_ENTITY_ID);
+            return archiveDbConnection.GetHOViolationListForDashboard(FUNCTIONAL_ENTITY_ID);
 
             }
         [HttpGet]
         [HttpPost]
         public List<RiskProcessDefinition> get_sub_violation_area_for_functional_responsibility_wise_paras_ho(int FUNCTIONAL_ENTITY_ID = 0, int PROCESS_ID = 0)
             {
-            return dBConnection.GetHOSubViolationListForDashboard(FUNCTIONAL_ENTITY_ID, PROCESS_ID);
+            return archiveDbConnection.GetHOSubViolationListForDashboard(FUNCTIONAL_ENTITY_ID, PROCESS_ID);
 
             }
         [HttpGet]
@@ -3184,7 +3187,7 @@ namespace AIS.Controllers
         [HttpPost]
         public List<EntityWiseObservationModel> get_reporting_wise_observations()
             {
-            return dBConnection.GetReportingOfficeWiseObservations();
+            return archiveDbConnection.GetReportingOfficeWiseObservations();
 
             }
 
@@ -3214,7 +3217,7 @@ namespace AIS.Controllers
         [HttpPost]
         public List<FunctionalAnnexureWiseObservationModel> get_functional_observations(int ANNEX_ID, int ENTITY_ID)
             {
-            return dBConnection.GetFunctionalObservations(ANNEX_ID, ENTITY_ID);
+            return archiveDbConnection.GetFunctionalObservations(ANNEX_ID, ENTITY_ID);
 
             }
         [HttpGet]
@@ -4123,7 +4126,7 @@ namespace AIS.Controllers
         [HttpPost]
         public List<DuplicateDeleteManageParaModel> get_duplicate_paras_for_authorize()
             {
-            return dBConnection.GetDuplicateParasForAuthorization();
+            return archiveDbConnection.GetDuplicateParasForAuthorization();
             }
         [HttpPost]
         public string request_delete_duplicate_para(int NEW_PARA_ID = 0, int OLD_PARA_ID = 0, string INDICATOR = "", string REMARKS = "")
@@ -4133,12 +4136,12 @@ namespace AIS.Controllers
         [HttpPost]
         public string reject_delete_duplicate_para(int D_ID = 0)
             {
-            return "{\"Status\":true,\"Message\":\"" + dBConnection.RejectDeleteDuplicatePara(D_ID) + "\"}";
+            return "{\"Status\":true,\"Message\":\"" + archiveDbConnection.RejectDeleteDuplicatePara(D_ID) + "\"}";
             }
         [HttpPost]
         public string authorize_delete_duplicate_para(int D_ID = 0)
             {
-            return "{\"Status\":true,\"Message\":\"" + dBConnection.AuthDeleteDuplicatePara(D_ID) + "\"}";
+            return "{\"Status\":true,\"Message\":\"" + archiveDbConnection.AuthDeleteDuplicatePara(D_ID) + "\"}";
             }
         [HttpGet]
         [HttpPost]

@@ -1,0 +1,74 @@
+@{
+    var page_id = ViewData["PageId"] as int? ?? 0;
+}
+
+@{
+    ViewData["Title"] = "Expenditure/Income";
+    Layout = "_Layout";
+}
+
+<style type="text/css">
+    .container {
+        max-width: 100%;
+    }
+
+    .card-header {
+        background-color: transparent !important;
+        font-size: 20px;
+        height: 100px;
+    }
+
+    .icon-card {
+        margin: 10px;
+    }
+</style>
+
+
+<div class="row col-md-12 mt-3">
+    <h4 style="display: block; color: #be0e43">Branch Wise Income And Expenditure Information</h4>
+</div>
+
+<!--<div class="row col-md-12 mt-1">
+
+    <div class="row col-md-6 mt-1">
+        <label><b>Branch ID</b></label>
+        <input id="b_i" class="form-control ml-1" type="number" />
+    </div>
+</div>
+<div class="row col-md-12 mt-3">
+    <button data-onclick="get_gl_details();" class="btn btn-primary">Find</button>
+</div>
+-->
+<div class="row col-md-12">
+    <input class="form-control" id="searchTableRecord" type="text" placeholder="Search..">
+</div>
+
+<div class="row col-md-12 mt-3">
+    <table id="b_d_T" class="col-md-12 table table-hover table-bordered mb-0 mt-3 bg-white table-striped">
+        <thead style="background-color: #19875478 !important; ">
+            <tr>
+              
+              
+                <th class="col-md-auto">Branch</th>
+                <th class="col-md-auto">GL Head Name</th>
+                <th class="col-md-auto">GL Sub-Code</th>
+              
+
+                <th class="col-md-auto">Credit</th>
+                <th class="col-md-auto">Debit</th>
+
+
+
+            </tr>
+        </thead>
+        <tbody style="font-size:medium">
+        </tbody>
+    </table>
+
+    <div class="row col-md-12 mt-3">
+
+        <button data-onclick="history.back()" class="btn btn-primary" style="color:white">Return</button>
+
+    </div>
+</div>
+<script src="~/js/Archive/Views_Reports_income_expenditure.js?v=1"></script>

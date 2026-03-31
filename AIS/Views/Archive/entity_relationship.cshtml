@@ -1,0 +1,118 @@
+@{
+    var page_id = ViewData["PageId"] as int? ?? 0;
+}
+
+@{
+    ViewData["Title"] = "Status Reversal of Audit Entities";
+    Layout = "_Layout";
+
+}
+
+
+
+<div class="col-md-12" style="margin-top:20px;">
+    <h3 style=" display:block;color: #be0e43">Status Reversal of Audit Entities</h3>
+
+    <div class="row col-md-12 mt-1">
+        <div class="col-md-2">
+            <label>Relationship Type</label>
+        </div>
+        <div class="col-md-10">
+            <select id="RelationshipField" data-onchange="getrelation();" class="form-control form-select">
+                <option id="0" value="0" selected="selected">--Select Relationship Type--</option>
+
+
+                @{
+                    if (ViewData["Userrelationship"] != null)
+                    {
+                        foreach (var item in (dynamic)(ViewData["Userrelationship"]))
+                        {
+                            <option value="@item.ENTITY_REALTION_ID" id="@item.ENTITY_REALTION_ID">@item.FIELD_NAME</option>
+                        }
+                    }
+                }
+
+
+
+            </select>
+        </div>
+    </div>
+
+    <div class="row col-md-12 mt-1">
+        <div class="col-md-2">
+            <label>Controlling/Reporting Office</label>
+        </div>
+        <div class="col-md-4">
+            <select id="controlingsearch" data-onchange="getplacepost();" class="form-control form-select">
+                <option id="0" value="0" selected="selected">--Select Controlling/Reporting Office--</option>
+            </select>
+        </div>
+
+
+        <div class="col-md-2">
+            <label>Place of Posting</label>
+        </div>
+        <div class="col-md-4">
+            <select id="childposting" class="form-control form-select">
+                <option id="0" value="0" selected="selected">--Select Place of Posting--</option>
+
+            </select>
+        </div>
+    </div>
+
+
+    <div class="row col-md-12">
+        <div class="col-md-2 mt-2">
+            <label class="font-weight-normal">Audit Period</label>
+        </div>
+        <div class="col-md-10 mt-2">
+            <select id="menuSelectionBox" data-onchange="showPagesBlock();" class="form-select form-control" aria-label="Default select example">
+                <option value="0" selected>--Select Audit Period--</option>
+                @{
+                    if (ViewData["PeriodList"] != null)
+                    {
+                        foreach (var item in (dynamic)(ViewData["PeriodList"]))
+                        {
+                            <option value="@item.Menu_Id" id="@item.Menu_Id">@item.Menu_Name</option>
+                        }
+                    }
+                }
+            </select>
+        </div>
+    </div>
+    <div class="row col-md-12 pagesBlock d-none">
+        <div class="col-md-2 mt-2">
+            <label class="font-weight-normal">Pages</label>
+        </div>
+        <div class="col-md-10 mt-2">
+            <div class="row col-md-12">
+                <div style="margin-left:auto;">
+                    <input class="menu_page_selectAll" type="checkbox" /> <label class="font-weight-normal ml-2">Select All</label>
+                </div>
+            </div>
+            <div id="menuPagesArea" class="row col-md-12">
+                @{
+                    if (ViewData["MenuPagesList"] != null)
+                    {
+
+                        foreach (var item in (dynamic)(ViewData["MenuPagesList"]))
+                        {
+
+                            <div class="col-md-6">
+                                <input id="pagemenuitem_@item.Id" class="menu_page_tick" type="checkbox" /> <label class="font-weight-normal ml-2">@item.Page_Name</label>
+                            </div>
+                        }
+                    }
+                }
+            </div>
+        </div>
+    </div>
+    <div class="row col-md-12 mt-4">
+        <div style="margin-left:auto;">
+            <button class="btn btn-secondary">Cancel</button>
+            <button data-onclick="publishSaveChanges();" class="btn btn-danger ml-2">Save Changes</button>
+        </div>
+    </div>
+
+</div>
+<script src="~/js/Archive/Views_AdministrationPanel_entity_relationship.js?v=1"></script>

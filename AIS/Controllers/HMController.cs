@@ -32,25 +32,6 @@ namespace AIS.Controllers
             tm = _tpMenu;
             _permissionService = permissionService;
             }
-        public IActionResult dashboard()
-            {
-            ViewData["TopMenu"] = tm.GetTopMenus();
-            ViewData["TopMenuPages"] = tm.GetTopMenusPages();
-            ViewData["ActiveInactive"] = dBConnection.GetActiveInactiveChartData();
-            if (!User.Identity.IsAuthenticated)
-                {
-                return RedirectToAction("Index", "Login");
-                }
-            else
-                {
-                if (!this.UserHasPagePermissionForCurrentAction(sessionHandler)) //MIGRATION_PERMISSION_CHECK (Controller)
-                    {
-                    return RedirectToAction("Index", "PageNotFound");
-                    }
-                else
-                    return View();
-                }
-            }
         public IActionResult old_paras_monitoring()
             {
             ViewData["TopMenu"] = tm.GetTopMenus();
