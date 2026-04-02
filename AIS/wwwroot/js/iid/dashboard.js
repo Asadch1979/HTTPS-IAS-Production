@@ -16,11 +16,15 @@
     var counter = byId('iidDashboardStepCounter');
     var messageHost = byId('iidDashboardMessageHost');
     var loadPanelUrl = root.getAttribute('data-load-panel-url') || '/IID/LoadDashboardPanel';
+    var dashboardPageId = parseInt(root.getAttribute('data-dashboard-page-id') || '0', 10) || 0;
     var steps = Array.isArray(window.iidDashboardSteps) ? window.iidDashboardSteps : [];
     var utilities = Array.isArray(window.iidDashboardUtilities) ? window.iidDashboardUtilities : [];
     var allItems = steps.concat(utilities);
+    var complaintDropdownPageId = parseInt(root.getAttribute('data-complaint-dropdown-page-id') || '0', 10) || 0;
     var currentItemKey = root.getAttribute('data-current-item-key') || '';
     var selectedComplaintId = parseInt(root.getAttribute('data-selected-complaint-id') || '0', 10) || 0;
+    var selectorLoadPromise = null;
+    var selectorOptionsLoaded = false;
 
     function normalizeKey(value) {
         return (value || '').toString().trim().toUpperCase();
@@ -45,13 +49,13 @@
         return item ? (item.title || item.Title || '') : '';
     }
 
-    function itemPageId(item) {
-        var raw = item ? (item.requiredPermissionPageId || item.RequiredPermissionPageId || 0) : 0;
+    function itemSequence(item) {
+        var raw = item ? (item.sequenceNo || item.SequenceNo || 0) : 0;
         return parseInt(raw || '0', 10) || 0;
     }
 
-    function itemSequence(item) {
-        var raw = item ? (item.sequenceNo || item.SequenceNo || 0) : 0;
+    function itemPageId(item) {
+        var raw = item ? (item.requiredPermissionPageId || item.RequiredPermissionPageId || 0) : 0;
         return parseInt(raw || '0', 10) || 0;
     }
 
@@ -65,6 +69,31 @@
 
     function itemIsStep(item) {
         return !!(item && (item.isStep || item.IsStep));
+    }
+
+    function resolveComplaintDropdownPageId() {
+        if (complaintDropdownPageId > 0) {
+            return complaintDropdownPageId;
+        }
+
+        if (dashboardPageId > 0) {
+            return dashboardPageId;
+        }
+
+        var preferredItem = findItem('COMPLAINT') ||
+            allItems.find(function (item) {
+                return itemRequiresComplaint(item) && itemPageId(item) > 0;
+            }) ||
+            allItems.find(function (item) {
+                return itemPageId(item) > 0;
+            });
+
+        complaintDropdownPageId = itemPageId(preferredItem);
+        if (complaintDropdownPageId > 0) {
+            root.setAttribute('data-complaint-dropdown-page-id', String(complaintDropdownPageId));
+        }
+
+        return complaintDropdownPageId;
     }
 
     function setSelectedComplaintId(value) {
@@ -210,22 +239,31 @@
         return '<option value="' + complaintIdValue + '">' + text + '</option>';
     }
 
-    function populateComplaintSelector(panel) {
+    function populateComplaintSelector() {
         if (!selector) {
             return Promise.resolve(selectedComplaintId);
         }
 
-        var pageId = itemPageId(panel);
-        if (!pageId) {
+        if (selectorOptionsLoaded) {
+            return Promise.resolve(selectedComplaintId);
+        }
+
+        if (selectorLoadPromise) {
+            return selectorLoadPromise;
+        }
+
+        var dropdownPageId = resolveComplaintDropdownPageId();
+        if (!dropdownPageId) {
             selector.innerHTML = '<option value="">-- Select Complaint --</option>';
             selector.disabled = true;
             setSelectedComplaintId(0);
+            showMessage('Complaint list is unavailable because no IID page mapping was resolved.', 'warning');
             return Promise.resolve(0);
         }
 
-        selector.disabled = false;
+        selector.disabled = true;
 
-        return fetch((window.g_asiBaseURL || '') + '/ApiCalls/GetComplaintsDropdown', {
+        selectorLoadPromise = fetch((window.g_asiBaseURL || '') + '/ApiCalls/GetComplaintsDropdown', {
             method: 'POST',
             credentials: 'same-origin',
             cache: 'no-store',
@@ -233,7 +271,7 @@
                 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
                 'X-Requested-With': 'XMLHttpRequest'
             },
-            body: 'pageId=' + encodeURIComponent(pageId)
+            body: 'pageId=' + encodeURIComponent(dropdownPageId)
         })
             .then(function (response) {
                 if (!response.ok) {
@@ -256,19 +294,25 @@
                 selector.innerHTML = '<option value="">-- Select Complaint --</option>' +
                     options.map(buildDropdownOption).join('');
 
+                selector.disabled = false;
                 selector.value = resolvedComplaintId > 0 ? String(resolvedComplaintId) : '';
                 setSelectedComplaintId(selector.value);
                 refreshStepperAvailability();
+                selectorOptionsLoaded = true;
                 return selectedComplaintId;
             })
             .catch(function (error) {
                 selector.innerHTML = '<option value="">-- Select Complaint --</option>';
                 selector.disabled = false;
-                setSelectedComplaintId(0);
                 refreshStepperAvailability();
                 showMessage((error && error.message) || 'Failed to load complaints dropdown.', 'warning');
-                return 0;
+                return selectedComplaintId;
+            })
+            .finally(function () {
+                selectorLoadPromise = null;
             });
+
+        return selectorLoadPromise;
     }
 
     function renderEmptyState(message) {
@@ -285,7 +329,7 @@
             return;
         }
 
-        populateComplaintSelector(panel).then(function () {
+        populateComplaintSelector().then(function () {
             if (itemRequiresComplaint(panel) && !selectedComplaintId) {
                 setActiveItem(itemKey(panel));
                 updateUrl(panel);
@@ -384,7 +428,7 @@
             refreshStepperAvailability();
 
             var currentPanel = findItem(currentItemKey);
-            if (currentPanel && itemReloadOnComplaintChange(currentPanel)) {
+            if (currentPanel && (itemRequiresComplaint(currentPanel) || itemReloadOnComplaintChange(currentPanel))) {
                 loadPanel(currentItemKey);
             } else {
                 updateUrl(currentPanel);

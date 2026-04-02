@@ -91,6 +91,7 @@ namespace AIS.Controllers
                 return RedirectToAction("Index", "Login");
                 }
 
+            ViewData["BackOfficeVisibleStepCodes"] = BuildVisibleBackOfficeStepCodes(user);
             return View("~/Views/FieldAudit/BO_Dashboard.cshtml");
             }
 
@@ -553,22 +554,11 @@ namespace AIS.Controllers
             permissionPageId = 0;
             errorResult = null;
 
-            switch ((stepCode ?? string.Empty).Trim().ToUpperInvariant())
+            permissionPath = ResolveBackOfficePermissionPath(stepCode);
+            if (string.IsNullOrWhiteSpace(permissionPath))
                 {
-                case "DRAFT_REPORT":
-                case "CHECKING_DRAFT_REPORT":
-                    permissionPath = "/Execution/manage_draft_report_paras_branch";
-                    break;
-                case "QUALITY_REVIEW":
-                case "CHECKING_QUALITY_REVIEW":
-                    permissionPath = "/Execution/pre_concluding_audit";
-                    break;
-                case "ISSUE_REPORT":
-                    permissionPath = "/Execution/Concluding_Closing_Audit";
-                    break;
-                default:
-                    errorResult = BadRequest("Invalid Back Office workflow step.");
-                    return false;
+                errorResult = BadRequest("Invalid Back Office workflow step.");
+                return false;
                 }
 
             if (!_pageIdResolver.TryResolvePageId(permissionPath, out permissionPageId) || permissionPageId <= 0)
@@ -578,6 +568,44 @@ namespace AIS.Controllers
                 }
 
             return true;
+            }
+
+        private List<string> BuildVisibleBackOfficeStepCodes(SessionUser user)
+            {
+            var stepCodes = new[]
+                {
+                "DRAFT_REPORT",
+                "QUALITY_REVIEW",
+                "ISSUE_REPORT",
+                "CHECKING_DRAFT_REPORT",
+                "CHECKING_QUALITY_REVIEW"
+                };
+
+            return stepCodes
+                .Where(stepCode =>
+                    TryGetBackOfficePermissionContext(stepCode, out _, out var pageId, out _)
+                    && pageId > 0
+                    && _permissionService.HasViewPermission(user, pageId))
+                .ToList();
+            }
+
+        private static string ResolveBackOfficePermissionPath(string stepCode)
+            {
+            switch ((stepCode ?? string.Empty).Trim().ToUpperInvariant())
+                {
+                case "DRAFT_REPORT":
+                    return "/Execution/manage_draft_report_paras_branch";
+                case "QUALITY_REVIEW":
+                    return "/Execution/pre_concluding_audit";
+                case "ISSUE_REPORT":
+                    return "/Execution/Concluding_Closing_Audit";
+                case "CHECKING_DRAFT_REPORT":
+                    return "/FAD/Draft_report_Checking";
+                case "CHECKING_QUALITY_REVIEW":
+                    return "/FAD/Quality_Assurance_checking";
+                default:
+                    return null;
+                }
             }
 
         private PartialViewResult CreateStepAccessDeniedResult()

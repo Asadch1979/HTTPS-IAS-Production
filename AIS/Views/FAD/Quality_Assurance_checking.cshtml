@@ -372,11 +372,12 @@
 </div>
 <script type="application/json" id="page-data">
 @Html.Raw(System.Text.Json.JsonSerializer.Serialize(new {
-    AnnexList = ViewData["AnnexList"]
+    AnnexList = ViewData["AnnexList"],
+    RiskList = ViewData["RiskList"]
 }))
 </script>
 @section Scripts {
-    <script src="~/js/csp/Views_Execution_pre_concluding_audit.js?v=2"></script>
+    <script src="~/js/csp/Views_Execution_pre_concluding_audit.js?v=3"></script>
     <script src="~/js/responsibilitySection.js"></script>
     <script src="~/js/csp/Views_FAD_Quality_Assurance_checking.js?v=1"></script>
 }

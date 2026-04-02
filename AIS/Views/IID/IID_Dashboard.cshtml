@@ -12,6 +12,8 @@
 <div id="iidDashboardRoot"
      class="container-fluid mt-3"
      data-load-panel-url="@Url.Action("LoadDashboardPanel", "IID")"
+     data-dashboard-page-id="@Model?.DashboardPageId"
+     data-complaint-dropdown-page-id="@Model?.ComplaintDropdownPageId"
      data-current-item-key="@Model?.CurrentItemKey"
      data-selected-complaint-id="@Model?.SelectedComplaintId">
 

@@ -21,6 +21,47 @@
         return lockedEngagementId || selector.value || '';
     }
 
+    function getAppBaseUrl() {
+        var base = (window.g_asiBaseURL || '').toString().trim();
+        if (!base) {
+            var meta = document.querySelector('meta[name="base-url"]');
+            base = meta ? (meta.getAttribute('content') || '') : '';
+        }
+
+        if (!base || base === '/') {
+            return '';
+        }
+
+        if (base.charAt(0) !== '/') {
+            base = '/' + base;
+        }
+
+        return base.replace(/\/+$/, '');
+    }
+
+    function resolveAppUrl(url) {
+        var value = (url || '').toString().trim();
+        var base = getAppBaseUrl();
+
+        if (!value) {
+            return base || '';
+        }
+
+        if (/^https?:\/\//i.test(value)) {
+            return value;
+        }
+
+        if (value.charAt(0) === '/') {
+            if (base && value !== base && value.indexOf(base + '/') !== 0) {
+                return base + value;
+            }
+
+            return value;
+        }
+
+        return (base ? base + '/' : '/') + value.replace(/^\/+/, '');
+    }
+
     function getActionUrl(name, fallback) {
         var cardBody = stepHost.closest('.card-body');
         if (!cardBody) {
@@ -300,7 +341,7 @@
         destroyStepDataTables(stepHost);
         stepHost.innerHTML = '<div class="alert alert-secondary mb-0">Loading workflow content...</div>';
 
-        var loadUrl = stepHost.getAttribute('data-load-url') || '/FieldAudit/LoadStep';
+        var loadUrl = resolveAppUrl(stepHost.getAttribute('data-load-url') || 'FieldAudit/LoadStep');
         var requestUrl = loadUrl + '?stepCode=' + encodeURIComponent(stepCode) + '&engId=' + encodeURIComponent(engId) + '&_=' + Date.now();
 
         fetch(requestUrl, {
@@ -408,7 +449,7 @@
                 formData.append('__RequestVerificationToken', tokenInput.value);
             }
 
-            fetch(getActionUrl('data-mark-complete-url', '/FieldAudit/MarkStepCompleted'), {
+            fetch(resolveAppUrl(getActionUrl('data-mark-complete-url', 'FieldAudit/MarkStepCompleted')), {
                 method: 'POST',
                 credentials: 'same-origin',
                 headers: {
@@ -480,7 +521,7 @@
             return Promise.resolve(null);
         }
 
-        var stateUrl = stepHost.getAttribute('data-engagement-state-url') || '/FieldAudit/GetDashboardEngagementState';
+        var stateUrl = resolveAppUrl(stepHost.getAttribute('data-engagement-state-url') || 'FieldAudit/GetDashboardEngagementState');
         return fetch(stateUrl + '?engId=' + encodeURIComponent(engId) + '&_=' + Date.now(), {
             method: 'GET',
             credentials: 'same-origin',
@@ -514,7 +555,7 @@
             }
 
             options = options || {};
-            var loadUrl = (stepHost.getAttribute('data-load-url') || '/FieldAudit/LoadStep').replace('/LoadStep', '/LoadNestedStepView');
+            var loadUrl = resolveAppUrl(stepHost.getAttribute('data-load-url') || 'FieldAudit/LoadStep').replace('/LoadStep', '/LoadNestedStepView');
             var query = new URLSearchParams();
             query.append('viewCode', viewCode || '');
             query.append('engId', engId);

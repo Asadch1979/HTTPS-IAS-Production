@@ -374,7 +374,8 @@
 
 @{
     var pageDataJson = System.Text.Json.JsonSerializer.Serialize(new {
-        AnnexList = ViewData["AnnexList"]
+        AnnexList = ViewData["AnnexList"],
+        RiskList = ViewData["RiskList"]
     });
 }
 <input type="hidden" id="page-data-json" value="@pageDataJson" />

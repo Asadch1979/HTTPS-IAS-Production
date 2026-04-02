@@ -7,11 +7,15 @@ window.addEventListener("unhandledrejection", function (e) {
 
 function getPageData() {
     const input = document.getElementById("page-data-json");
-    if (!input || !input.value) return {};
+    const script = document.getElementById("page-data");
+    const rawValue = input && input.value
+        ? input.value
+        : (script ? (script.textContent || "") : "");
+    if (!rawValue) return {};
     try {
-        return JSON.parse(input.value || "{}");
+        return JSON.parse(rawValue || "{}");
     } catch (err) {
-        console.error("Failed to parse #page-data-json JSON:", err);
+        console.error("Failed to parse execution page data JSON:", err);
         return {};
     }
 }
@@ -29,11 +33,84 @@ function getPageData() {
     var respSection = null;
     var pageData = {};
     var g_annexList = [];
+    var g_riskList = [];
     var g_boDraftReadOnlyMode = false;
 
     function refreshDraftPageData() {
         pageData = getPageData();
         g_annexList = pageData.AnnexList || [];
+        g_riskList = pageData.RiskList || [];
+    }
+
+    function parseDraftNumber(value) {
+        var parsed = parseInt(value, 10);
+        return Number.isNaN(parsed) ? 0 : parsed;
+    }
+
+    function getDraftFieldValue(item, keys) {
+        if (!item) {
+            return '';
+        }
+
+        for (var i = 0; i < keys.length; i += 1) {
+            var key = keys[i];
+            if (item[key] !== undefined && item[key] !== null && item[key] !== '') {
+                return item[key];
+            }
+        }
+
+        return '';
+    }
+
+    function getDraftRiskMetaByAnnexId(annexId) {
+        var targetAnnexId = parseDraftNumber(annexId);
+        var match = null;
+
+        $.each(g_annexList, function (i, annex) {
+            if (parseDraftNumber(getDraftFieldValue(annex, ['ID', 'id'])) === targetAnnexId) {
+                match = {
+                    riskId: parseDraftNumber(getDraftFieldValue(annex, ['RISK_ID', 'riskId', 'riskid', 'risK_ID'])),
+                    riskName: getDraftFieldValue(annex, ['RISK', 'risk', 'DESCRIPTION', 'description'])
+                };
+                return false;
+            }
+        });
+
+        return match;
+    }
+
+    function getDraftRiskMetaByRiskId(riskId) {
+        var targetRiskId = parseDraftNumber(riskId);
+        var match = null;
+
+        $.each(g_riskList, function (i, risk) {
+            if (parseDraftNumber(getDraftFieldValue(risk, ['R_ID', 'r_ID', 'id', 'ID'])) === targetRiskId) {
+                match = {
+                    riskId: targetRiskId,
+                    riskName: getDraftFieldValue(risk, ['DESCRIPTION', 'description', 'RISK', 'risk'])
+                };
+                return false;
+            }
+        });
+
+        return match;
+    }
+
+    function applyDraftRiskDisplay(riskName) {
+        var displayValue = (riskName || '').toString();
+        $('#viewMemo_risk_display').val(displayValue);
+
+        var color = '';
+        var normalizedRisk = displayValue.trim().toLowerCase();
+        if (normalizedRisk === 'high') {
+            color = 'red';
+        } else if (normalizedRisk === 'medium') {
+            color = 'gold';
+        } else if (normalizedRisk === 'low') {
+            color = 'green';
+        }
+
+        $('#viewMemo_risk_display').css('color', color);
     }
 
     function getDraftReferenceContainerSelector() {
@@ -483,8 +560,8 @@ function getPageData() {
          ViewAuditeeAttachedEvidences();
          $('#viewMemo_aud_reply_ObSent').html(data.auditoR_RECOM);
          $('#viewMemo_annex_ObSent').val(data.annexurE_ID);
-         g_selectedRiskId = data.riskmodeL_ID;
-         updateRiskDisplay();
+         g_selectedRiskId = parseDraftNumber(data.riskmodeL_ID || data.RISKMODEL_ID);
+         updateRiskDisplay(g_selectedRiskId);
          $('#viewMemo_process_ObSent').val(data.procesS_ID);
          $('#viewMemo_amount_ObSent').val(data.amounT_INVOLVED);
          $('#viewMemo_inst_ObSent').val(data.nO_OF_INSTANCES);
@@ -559,27 +636,20 @@ function getPageData() {
         }
 
     }
-    function updateRiskDisplay() {
+    function updateRiskDisplay(riskIdOverride) {
         var annexId = $('#viewMemo_annex_ObSent').val();
-        var riskName = '';
-        g_selectedRiskId = 0;
-        $.each(g_annexList, function (i, v) {
-            var id = v.ID || v.id;
-            if (id == annexId) {
-                riskName = v.RISK || v.risk;
-                g_selectedRiskId = v.RISK_ID || v.risK_ID;
-            }
-        });
-        $('#viewMemo_risk_display').val(riskName);
-        var color = '';
-        if (riskName.toLowerCase() === 'high') {
-            color = 'red';
-        } else if (riskName.toLowerCase() === 'medium') {
-            color = 'gold';
-        } else if (riskName.toLowerCase() === 'low') {
-            color = 'green';
+        var riskMeta = getDraftRiskMetaByAnnexId(annexId);
+        var fallbackRiskId = parseDraftNumber(riskIdOverride);
+
+        if (!riskMeta && fallbackRiskId > 0) {
+            riskMeta = getDraftRiskMetaByRiskId(fallbackRiskId) || {
+                riskId: fallbackRiskId,
+                riskName: ''
+            };
         }
-        $('#viewMemo_risk_display').css('color', color);
+
+        g_selectedRiskId = riskMeta ? parseDraftNumber(riskMeta.riskId) : fallbackRiskId;
+        applyDraftRiskDisplay(riskMeta ? riskMeta.riskName : '');
     }
     function ViewAuditeeAttachedEvidences() {
         $.ajax({

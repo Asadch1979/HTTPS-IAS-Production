@@ -22,27 +22,87 @@
         { stepCode: 'CHECKING_DRAFT_REPORT', stepNo: 4, stepTitle: 'Checking of Draft Report', isCompleted: false, isSaved: false },
         { stepCode: 'CHECKING_QUALITY_REVIEW', stepNo: 5, stepTitle: 'Checking of Quality Review', isCompleted: false, isSaved: false }
     ];
+    var visibleStepCodes = Array.isArray(window.backOfficeVisibleStepCodes) ? window.backOfficeVisibleStepCodes : null;
+
+    if (visibleStepCodes) {
+        steps = steps
+            .filter(function (step) {
+                return visibleStepCodes.indexOf(step.stepCode) >= 0;
+            })
+            .map(function (step, index) {
+                return {
+                    stepCode: step.stepCode,
+                    stepNo: index + 1,
+                    stepTitle: step.stepTitle,
+                    isCompleted: !!step.isCompleted,
+                    isSaved: !!step.isSaved
+                };
+            });
+    }
+
+    activeStepCode = steps.length ? steps[0].stepCode : '';
+
+    function getAppBaseUrl() {
+        var base = (window.g_asiBaseURL || '').toString().trim();
+        if (!base) {
+            var meta = document.querySelector('meta[name="base-url"]');
+            base = meta ? (meta.getAttribute('content') || '') : '';
+        }
+
+        if (!base || base === '/') {
+            return '';
+        }
+
+        if (base.charAt(0) !== '/') {
+            base = '/' + base;
+        }
+
+        return base.replace(/\/+$/, '');
+    }
+
+    function resolveAppUrl(url) {
+        var value = (url || '').toString().trim();
+        var base = getAppBaseUrl();
+
+        if (!value) {
+            return base || '';
+        }
+
+        if (/^https?:\/\//i.test(value)) {
+            return value;
+        }
+
+        if (value.charAt(0) === '/') {
+            if (base && value !== base && value.indexOf(base + '/') !== 0) {
+                return base + value;
+            }
+
+            return value;
+        }
+
+        return (base ? base + '/' : '/') + value.replace(/^\/+/, '');
+    }
 
     var scriptDependenciesByStep = {
         DRAFT_REPORT: [
             '/js/responsibilitySection.js',
             '/js/obsreference.js?v=4',
-            '/js/csp/Views_Execution_draft_audit_report_branch.js?v=2'
+            '/js/csp/Views_Execution_draft_audit_report_branch.js?v=3'
         ],
         CHECKING_DRAFT_REPORT: [
             '/js/responsibilitySection.js',
             '/js/obsreference.js?v=4',
-            '/js/csp/Views_Execution_draft_audit_report_branch.js?v=2'
+            '/js/csp/Views_Execution_draft_audit_report_branch.js?v=3'
         ],
         QUALITY_REVIEW: [
             '/js/responsibilitySection.js',
             '/js/obsreference.js?v=4',
-            '/js/csp/Views_Execution_pre_concluding_audit.js?v=2'
+            '/js/csp/Views_Execution_pre_concluding_audit.js?v=3'
         ],
         CHECKING_QUALITY_REVIEW: [
             '/js/responsibilitySection.js',
             '/js/obsreference.js?v=4',
-            '/js/csp/Views_Execution_pre_concluding_audit.js?v=2'
+            '/js/csp/Views_Execution_pre_concluding_audit.js?v=3'
         ],
         ISSUE_REPORT: [
             '/js/csp/Views_Execution_Concluding_Closing_Audit.js?v=1'
@@ -68,7 +128,12 @@
 
     function updateCounter(stepNo) {
         if (stepCounter) {
-            stepCounter.textContent = 'Step ' + stepNo + ' of 5';
+            if (!steps.length) {
+                stepCounter.textContent = 'No steps available';
+                return;
+            }
+
+            stepCounter.textContent = 'Step ' + stepNo + ' of ' + steps.length;
         }
     }
 
@@ -77,30 +142,31 @@
     }
 
     function ensureScriptLoaded(scriptUrl) {
-        if (scriptLoadCache[scriptUrl]) {
-            return scriptLoadCache[scriptUrl];
+        var resolvedUrl = resolveAppUrl(scriptUrl);
+        if (scriptLoadCache[resolvedUrl]) {
+            return scriptLoadCache[resolvedUrl];
         }
 
         var scripts = Array.prototype.slice.call(document.getElementsByTagName('script'));
         var existing = scripts.find(function (script) {
-            return (script.getAttribute('src') || '').indexOf(scriptUrl) !== -1;
+            return (script.getAttribute('src') || '').indexOf(resolvedUrl) !== -1;
         });
 
         if (existing) {
-            scriptLoadCache[scriptUrl] = Promise.resolve();
-            return scriptLoadCache[scriptUrl];
+            scriptLoadCache[resolvedUrl] = Promise.resolve();
+            return scriptLoadCache[resolvedUrl];
         }
 
-        scriptLoadCache[scriptUrl] = new Promise(function (resolve, reject) {
+        scriptLoadCache[resolvedUrl] = new Promise(function (resolve, reject) {
             var script = document.createElement('script');
-            script.src = scriptUrl;
+            script.src = resolvedUrl;
             script.async = false;
             script.onload = resolve;
-            script.onerror = function () { reject(new Error('Failed to load script: ' + scriptUrl)); };
+            script.onerror = function () { reject(new Error('Failed to load script: ' + resolvedUrl)); };
             document.body.appendChild(script);
         });
 
-        return scriptLoadCache[scriptUrl];
+        return scriptLoadCache[resolvedUrl];
     }
 
     function ensureStepDependencies(stepCode) {
@@ -221,6 +287,12 @@
     }
 
     function loadStep(stepCode, stepNo) {
+        if (!steps.length) {
+            clearContent('You do not currently have access to any Back Office workflow steps.');
+            updateCounter(0);
+            return Promise.resolve();
+        }
+
         var engId = selectedEngagementId();
         if (!engId) {
             showAlert(true);
@@ -233,7 +305,7 @@
 
         var stepConfig = stepSourceMap[stepCode] || null;
         var readOnly = !!(stepConfig && stepConfig.readOnly);
-        var loadUrl = stepHost.getAttribute('data-load-url') || '/FieldAudit/LoadBackOfficeStep';
+        var loadUrl = resolveAppUrl(stepHost.getAttribute('data-load-url') || 'FieldAudit/LoadBackOfficeStep');
         var url = loadUrl + '?stepCode=' + encodeURIComponent(stepCode) + '&engId=' + encodeURIComponent(engId) + '&isReadOnly=' + (readOnly ? 'true' : 'false') + '&_=' + Date.now();
 
         return ensureStepDependencies(stepCode)
@@ -309,7 +381,7 @@
     }
 
     function loadEngagements() {
-        var apiUrl = selector.getAttribute('data-api-url') || '/ApiCalls/GetBackOfficeDashboardEngagements';
+        var apiUrl = resolveAppUrl(selector.getAttribute('data-api-url') || 'ApiCalls/GetBackOfficeDashboardEngagements');
         fetch(apiUrl, { credentials: 'same-origin', cache: 'no-store' })
             .then(function (response) {
                 if (!response.ok) {
@@ -345,11 +417,19 @@
             return;
         }
 
+        if (!steps.length) {
+            clearContent('You do not currently have access to any Back Office workflow steps.');
+            updateCounter(0);
+            return;
+        }
+
         lockedEngagementId = selector.value;
         setEngagementLocked(true);
 
-        var active = stepper.querySelector('.step-pill.active') || stepper.querySelector('.step-pill[data-step-code="DRAFT_REPORT"]');
-        loadStep(active ? active.getAttribute('data-step-code') : 'DRAFT_REPORT', active ? active.getAttribute('data-step-no') : 1);
+        var active = stepper.querySelector('.step-pill.active')
+            || stepper.querySelector('.step-pill[data-step-code="' + activeStepCode + '"]')
+            || stepper.querySelector('.step-pill[data-step-code="' + steps[0].stepCode + '"]');
+        loadStep(active ? active.getAttribute('data-step-code') : steps[0].stepCode, active ? active.getAttribute('data-step-no') : steps[0].stepNo);
     });
 
     if (changeEngagementButton) {
@@ -373,4 +453,8 @@
     loadEngagements();
     setEngagementLocked(false);
     showAlert(true);
+    if (!steps.length) {
+        clearContent('You do not currently have access to any Back Office workflow steps.');
+        updateCounter(0);
+    }
 })();

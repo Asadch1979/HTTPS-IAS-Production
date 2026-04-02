@@ -19,6 +19,7 @@ namespace AIS.Controllers
     {
     public class IIDController : Controller
         {
+        private const string IidDashboardPath = "/IID/IID_Dashboard";
         private readonly ILogger<IIDController> _logger;
         private readonly TopMenus tm;
         private readonly SessionHandler sessionHandler;
@@ -82,6 +83,7 @@ namespace AIS.Controllers
                 }
 
             var model = BuildIidDashboardViewModel(user, stepCode, utilityCode, complaintId ?? 0);
+            ViewData["PageId"] = model.DashboardPageId;
             return View("../IID/IID_Dashboard", model);
             }
 
@@ -117,8 +119,12 @@ namespace AIS.Controllers
                 return Content("<div class=\"alert alert-info mb-0\">Select a complaint from the dashboard selector to open this work area.</div>", "text/html");
                 }
 
+            var dashboardPageId = model.DashboardPageId;
+            var panelPageId = panel.RequiredPermissionPageId > 0 ? panel.RequiredPermissionPageId : dashboardPageId;
             ViewData["DashboardMode"] = true;
             ViewData["ComplaintId"] = complaintId;
+            ViewData["PageId"] = panelPageId;
+            ViewData["DashboardPageId"] = model.ComplaintDropdownPageId;
 
             switch ((panel.ItemKey ?? string.Empty).Trim().ToUpperInvariant())
                 {
@@ -435,6 +441,7 @@ namespace AIS.Controllers
 
         private IidDashboardViewModel BuildIidDashboardViewModel(SessionUser user, string requestedStepCode, string requestedUtilityCode, int complaintId)
             {
+            var dashboardPageId = ResolveDashboardPageId(IidDashboardPath);
             var items = new List<IidDashboardItemModel>
                 {
                 CreateDashboardItem(1, "COMPLAINT", "Complaint", "/IID/SubmitComplaint", requiresComplaintSelection: false, reloadOnComplaintChange: false, isStep: true),
@@ -472,9 +479,12 @@ namespace AIS.Controllers
                 ?? steps.FirstOrDefault()?.ItemKey
                 ?? utilities.FirstOrDefault()?.ItemKey
                 ?? "COMPLAINT";
+            var complaintDropdownPageId = ResolveComplaintDropdownPageId(dashboardPageId, items);
 
             return new IidDashboardViewModel
                 {
+                DashboardPageId = dashboardPageId,
+                ComplaintDropdownPageId = complaintDropdownPageId,
                 CurrentItemKey = currentItemKey,
                 SelectedComplaintId = complaintId,
                 Steps = steps,
@@ -505,7 +515,47 @@ namespace AIS.Controllers
 
         private int ResolveDashboardPageId(string pagePath)
             {
-            return _pageIdResolver?.ResolvePageId(pagePath) ?? 0;
+            if (_pageIdResolver == null || string.IsNullOrWhiteSpace(pagePath))
+                {
+                return 0;
+                }
+
+            if (_pageIdResolver.TryResolvePageId(pagePath, out var pageId) && pageId > 0)
+                {
+                return pageId;
+                }
+
+            return _pageIdResolver.ResolvePageId(pagePath);
+            }
+
+        private static int ResolveComplaintDropdownPageId(int dashboardPageId, IEnumerable<IidDashboardItemModel> items)
+            {
+            if (dashboardPageId > 0)
+                {
+                return dashboardPageId;
+                }
+
+            if (items == null)
+                {
+                return 0;
+                }
+
+            var preferredItem = items.FirstOrDefault(item =>
+                    item != null &&
+                    item.IsVisible &&
+                    item.RequiredPermissionPageId > 0 &&
+                    string.Equals(item.ItemKey, "COMPLAINT", StringComparison.OrdinalIgnoreCase))
+                ?? items.FirstOrDefault(item =>
+                    item != null &&
+                    item.IsVisible &&
+                    item.RequiredPermissionPageId > 0 &&
+                    item.RequiresComplaintSelection)
+                ?? items.FirstOrDefault(item =>
+                    item != null &&
+                    item.IsVisible &&
+                    item.RequiredPermissionPageId > 0);
+
+            return preferredItem?.RequiredPermissionPageId ?? 0;
             }
 
         private int ResolvePlanIdByComplaintId(int complaintId)
