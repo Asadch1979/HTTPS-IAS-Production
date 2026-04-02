@@ -190,24 +190,7 @@
                         <label for="viewMemo_memo_ObSent" class="font-weight-bold">Para Text</label>
                         <input id="viewMemo_memo_ObSent" type="text" class="form-control" />
                     </div>
-                    <div id="referenceSection" class="mt-3 p-3 border border-danger mb-3">
-                        <h6>References</h6>
-                        <ul id="refList" class="list-group mb-3"></ul>
-                        <div id="searchSection" style="display:none;"></div>
-                        <table class="table" id="resultTbl" style="display:none;">
-                            <thead>
-                                <tr>
-                                    <th>TITLE</th>
-                                    <th>Circular Date</th>
-                                    <th>INSTRUCTIONS DETAILS</th>
-                                    <th>KEYWORDS</th>
-                                    <th>View Circular</th>
-                                    <th>Action</th>
-                                </tr>
-                            </thead>
-                            <tbody></tbody>
-                        </table>
-                    </div>
+                    @await Html.PartialAsync("~/Views/FieldAudit/BO_Partials/_ObservationReferenceSection.cshtml")
                     <div class="form-group">
                         <label for="viewMemo_amount_ObSent">Amount Involved <small class="text-danger fw-bold">(Non Decimal Numbers only) </small></label>
                         <input id="viewMemo_amount_ObSent" type="text" class="form-control" />
@@ -404,12 +387,13 @@
         </div>
     </div>
 </div>
-<script type="application/json" id="page-data">
-@Html.Raw(System.Text.Json.JsonSerializer.Serialize(new {
-    AnnexList = ViewData["AnnexList"],
-    RiskList = ViewData["RiskList"]
-}))
-</script>
+@{
+    var pageDataJson = System.Text.Json.JsonSerializer.Serialize(new {
+        AnnexList = ViewData["AnnexList"],
+        RiskList = ViewData["RiskList"]
+    });
+}
+<input type="hidden" id="page-data-json" value="@pageDataJson" />
 @section Scripts {
     <script src="~/js/csp/Views_Execution_draft_audit_report_branch.js?v=3"></script>
     <script src="~/js/responsibilitySection.js"></script>

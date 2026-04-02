@@ -12,10 +12,10 @@
         <div class="card-body py-3">
             <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
                 <div>
-                    <a class="navbar-brand fw-bold text-decoration-none mb-1 d-inline-block" href="/Home/Index">IAS</a>
+                    <a class="navbar-brand fw-bold text-decoration-none mb-1 d-inline-block" href="@Url.Action("Index", "Home")">IAS</a>
                     <h4 class="mb-0">Checklist Lifecycle Workspace</h4>
                 </div>
-                <a class="btn btn-outline-primary btn-sm" href="/Home/Index">Home</a>
+                <a class="btn btn-outline-primary btn-sm" href="@Url.Action("Index", "Home")">Home</a>
             </div>
             <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2">
                 <strong id="checklistDashboardStepCounter">Step @(currentStepIndex > 0 ? currentStepIndex : 1) of @visibleSteps.Count</strong>
@@ -51,7 +51,7 @@
         legacyPath = step.LegacyPath
     })));
 </script>
-<script src="~/js/setup-checklist-dashboard.js?v=2"></script>
+<script src="~/js/setup-checklist-dashboard.js?v=3"></script>
 
 <style>
     .workflow-dashboard-compact {

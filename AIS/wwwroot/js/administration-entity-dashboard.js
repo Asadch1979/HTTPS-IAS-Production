@@ -46,13 +46,58 @@
         return stepHost.getAttribute('data-step-key') || '';
     }
 
+    function getAppBaseUrl() {
+        var base = (window.g_asiBaseURL || '').toString().trim();
+        if (!base) {
+            var meta = document.querySelector('meta[name="base-url"]');
+            base = meta ? (meta.getAttribute('content') || '') : '';
+        }
+
+        if (!base || base === '/') {
+            return '';
+        }
+
+        if (base.charAt(0) !== '/') {
+            base = '/' + base;
+        }
+
+        return base.replace(/\/+$/, '');
+    }
+
+    function resolveAppUrl(url) {
+        var value = (url || '').toString().trim();
+        var base = getAppBaseUrl();
+
+        if (!value) {
+            return base || '';
+        }
+
+        if (/^https?:\/\//i.test(value)) {
+            return value;
+        }
+
+        if (value.indexOf('~/') === 0) {
+            value = value.substring(1);
+        }
+
+        if (value.charAt(0) === '/') {
+            if (base && value !== base && value.indexOf(base + '/') !== 0) {
+                return base + value;
+            }
+
+            return value;
+        }
+
+        return (base ? base + '/' : '/') + value.replace(/^\/+/, '');
+    }
+
     function setCurrentStepKey(stepKey) {
         stepHost.setAttribute('data-step-key', stepKey || '');
         storeStepKey(stepKey);
     }
 
     function updateBrowserState(stepKey) {
-        var baseUrl = stepHost.getAttribute('data-base-url') || '/AdministrationPanel/Entity_Dashboard';
+        var baseUrl = resolveAppUrl(stepHost.getAttribute('data-base-url') || '/AdministrationPanel/Entity_Dashboard');
         var targetUrl = baseUrl + '?stepKey=' + encodeURIComponent(stepKey || '');
         if (window.history && typeof window.history.replaceState === 'function') {
             window.history.replaceState(null, document.title, targetUrl);
@@ -102,11 +147,17 @@
             return chain.then(function () {
                 return new Promise(function (resolve, reject) {
                     var newScript = document.createElement('script');
+                    var sourceUrl = script.getAttribute('src');
                     Array.from(script.attributes).forEach(function (attr) {
+                        if (attr.name === 'src') {
+                            return;
+                        }
+
                         newScript.setAttribute(attr.name, attr.value);
                     });
 
-                    if (newScript.src) {
+                    if (sourceUrl) {
+                        newScript.src = resolveAppUrl(sourceUrl);
                         newScript.async = false;
                         newScript.onload = function () { resolve(); };
                         newScript.onerror = function () { reject(new Error('Failed to load script: ' + newScript.src)); };
@@ -137,7 +188,7 @@
         destroyStepDataTables(stepHost);
         stepHost.innerHTML = '<div class="alert alert-secondary mb-0">Loading workflow content...</div>';
 
-        var loadUrl = stepHost.getAttribute('data-load-url') || '/AdministrationPanel/LoadEntityDashboardStep';
+        var loadUrl = resolveAppUrl(stepHost.getAttribute('data-load-url') || '/AdministrationPanel/LoadEntityDashboardStep');
         var query = new URLSearchParams();
         query.append('stepKey', stepKey);
 
