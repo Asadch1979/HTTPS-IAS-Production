@@ -516,7 +516,6 @@ namespace AIS.Services
             yield return BuildField("Role", row.RoleType);
             yield return BuildField("PP No", row.PpnoNumber);
             yield return BuildField("CNIC", row.Cnic);
-            yield return BuildField("Posting Place", row.PostingPlace);
             }
 
         private static IEnumerable<KeyValuePair<string, string>> BuildProceedingFields(IidInquiryProceedingRowModel row)

@@ -83,7 +83,6 @@ namespace AIS.Models.IID
         public string RoleType { get; set; }
         public string PpnoNumber { get; set; }
         public string Cnic { get; set; }
-        public string PostingPlace { get; set; }
         }
 
     public class IidStatementRowModel

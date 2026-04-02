@@ -110,8 +110,7 @@ namespace AIS.Controllers
                         Designation = x.Designation,
                         RoleType = x.RoleType,
                         PpnoNumber = x.PpnoNumber,
-                        Cnic = x.Cnic,
-                        PostingPlace = x.PostingPlace
+                        Cnic = x.Cnic
                         })
                     .ToList(),
                 Statements = statements

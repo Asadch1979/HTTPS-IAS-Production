@@ -1038,7 +1038,16 @@ $(function(){
             var baseRow = normalizeStatementRegisterRow(accused);
             var key = getStatementRowKey(baseRow);
             var savedRow = savedMap[key];
-            rows.push(savedRow ? $.extend({}, baseRow, savedRow) : baseRow);
+            if(savedRow){
+                var mergedRow = $.extend({}, baseRow, savedRow);
+                if(!String(savedRow.fatherName || '').trim()){
+                    mergedRow.fatherName = baseRow.fatherName || '';
+                }
+                rows.push(mergedRow);
+                return;
+            }
+
+            rows.push(baseRow);
         });
 
         state.statementRegister.rows = rows;
