@@ -1554,7 +1554,7 @@ namespace AIS.Controllers
             cmd.Parameters.Add("P_ROLE_TYPE", OracleDbType.Varchar2).Value = model.RoleType ?? string.Empty;
             cmd.Parameters.Add("P_PPNO_NUMBER", OracleDbType.Varchar2).Value = model.PpnoNumber ?? string.Empty;
             cmd.Parameters.Add("P_CNIC", OracleDbType.Varchar2).Value = DigitsOnly(model.Cnic);
-            cmd.Parameters.Add("P_POSTING_PLACE", OracleDbType.Varchar2).Value = string.IsNullOrWhiteSpace(model.FatherName) ? model.PostingPlace ?? string.Empty : model.FatherName;
+            cmd.Parameters.Add("P_FATHER_NAME", OracleDbType.Varchar2).Value = string.IsNullOrWhiteSpace(model.FatherName) ? model.PostingPlace ?? string.Empty : model.FatherName;
             cmd.Parameters.Add("P_REMARKS", OracleDbType.Varchar2).Value = model.Remarks ?? string.Empty;
             cmd.Parameters.Add("P_SORT_ORDER", OracleDbType.Int32).Value = model.SortOrder;
             cmd.Parameters.Add("P_UPDATED_BY", OracleDbType.Int64).Value = model.UpdatedBy ?? (object)DBNull.Value;
