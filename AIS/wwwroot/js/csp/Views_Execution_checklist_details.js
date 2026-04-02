@@ -28,6 +28,34 @@ function getPageData() {
     var g_selectedRiskId = 0;
     const pageData = getPageData();
     var g_annexList = pageData.AnnexList || [];
+
+    function getChecklistObservationReferenceId() {
+        var selectedReference = typeof window.getSelectedObservationReference === 'function'
+            ? window.getSelectedObservationReference('#observationReferenceSection')
+            : null;
+        var rawValue = selectedReference && selectedReference.refId
+            ? selectedReference.refId
+            : $('#observationReferenceSection #observationReferenceId').val();
+        var parsed = parseInt(rawValue, 10);
+        return Number.isNaN(parsed) ? null : parsed;
+    }
+
+    function initChecklistObservationReference(referenceId) {
+        if (typeof window.initObservationReference !== 'function') {
+            return;
+        }
+
+        $('#observationReferenceSection #observationReferenceId').val(referenceId || '');
+        window.initObservationReference('#observationReferenceSection', {
+            forceReload: true,
+            initialRefId: referenceId || null
+        });
+    }
+
+    function resetChecklistObservationReference() {
+        initChecklistObservationReference(null);
+    }
+
     $(document).ready(function () {
         var url_string = window.location;
         var url = new URL(url_string);
@@ -37,6 +65,8 @@ function getPageData() {
         console.log("Loaded checklist_details JS", { S_ID, g_engId });
         $('#updatedAnnexlist').select2({ dropdownParent: $('#viewMemoModel') });
         $('#updatedAnnexlist').on('change', updateRiskDisplay);
+        $('#viewMemoModel').on('hidden.bs.modal', resetChecklistObservationReference);
+        resetChecklistObservationReference();
 
 
         $(document).on('change', '.checklistaction', function () {
@@ -170,6 +200,7 @@ function getPageData() {
             $('#viewMemo_loancase').val('');
             $('#listofRespPersons tbody').empty();
             $('#viewMemo_attachments').val('');
+            resetChecklistObservationReference();
         }
     }
 
@@ -253,10 +284,12 @@ function getPageData() {
                 'ACC_AMOUNT': normalizeRequiredInt($(v).find('td').eq(6).html())
             });
         });
+        var selectedReferenceId = getChecklistObservationReferenceId();
         var memo = {
             'HEADING': $('#viewMemo_heading').val(),
             'RISK': g_selectedRiskId,
             'ANNEXURE_ID': $('#updatedAnnexlist').val(),
+            'REFERENCE_ID': selectedReferenceId,
             'MEMO': $('.richText-editor').html(),
             'ID': g_observationId,
             'DAYS': $('#viewMemo_replydays option:selected').val(),
@@ -280,6 +313,7 @@ function getPageData() {
                 g_memoObj[i].NO_OF_INSTANCES = memo.NO_OF_INSTANCES;
                 g_memoObj[i].AMOUNT_INVOLVED = memo.AMOUNT_INVOLVED;
                 g_memoObj[i].DAYS = memo.DAYS;
+                g_memoObj[i].REFERENCE_ID = memo.REFERENCE_ID;
                 g_memoObj[i].ATTACHMENTS = memo.ATTACHMENTS;
                 g_memoObj[i].RESPONSIBLE_PPNO = memo.RESPONSIBLE_PPNO;
                 g_memoObj[i].RESP_TABLE_ROWS = memo.RESP_TABLE_ROWS;
@@ -293,7 +327,8 @@ function getPageData() {
         var payload = {
             'LIST_OBS': [memo],
             'ENG_ID': g_engId,
-            'S_ID': S_ID
+            'S_ID': S_ID,
+            'REFERENCE_ID': selectedReferenceId
         };
         $.ajax({
             url: g_asiBaseURL + "/ApiCalls/save_observations",
@@ -323,6 +358,7 @@ function getPageData() {
             'LOANCASE': '',
             'NO_OF_INSTANCES': '0',
             'AMOUNT_INVOLVED': '0',
+            'REFERENCE_ID': null,
             'ATTACHMENTS': '',
             'RESPONSIBLE_PPNO': [],
             'RESP_TABLE_ROWS': [],
@@ -344,6 +380,7 @@ function getPageData() {
             $('#viewMemo_noinstances').val(tempobj.NO_OF_INSTANCES);
             $('#viewMemo_amountInv').val(tempobj.AMOUNT_INVOLVED);
             $('#viewMemo_attachments').val(tempobj.ATTACHMENTS);
+            initChecklistObservationReference(tempobj.REFERENCE_ID);
             if (tempobj.RESPONSIBLE_PPNO.length > 0) {
                 $.each(tempobj.RESPONSIBLE_PPNO, function (j, pp) {
                     var srNo = $('#listofRespPersons tbody tr').length;

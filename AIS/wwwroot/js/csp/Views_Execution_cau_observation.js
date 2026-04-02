@@ -41,6 +41,29 @@ function getPageData() {
         var number = parseInt(trimmed, 10);
         return Number.isNaN(number) ? null : number;
     }
+
+    function initCauObservationReference() {
+        if (typeof window.initObservationReference !== 'function') {
+            return;
+        }
+
+        window.initObservationReference('#observationReferenceSection', {
+            forceReload: true,
+            initialRefId: null
+        });
+    }
+
+    function getCauObservationReferenceId() {
+        var selectedReference = typeof window.getSelectedObservationReference === 'function'
+            ? window.getSelectedObservationReference('#observationReferenceSection')
+            : null;
+        var rawValue = selectedReference && selectedReference.refId
+            ? selectedReference.refId
+            : $('#observationReferenceSection #observationReferenceId').val();
+        var parsed = parseInt(rawValue, 10);
+        return Number.isNaN(parsed) ? null : parsed;
+    }
+
     $(document).ready(function () {
         var url_string = window.location;
         var url = new URL(url_string);
@@ -72,6 +95,7 @@ function getPageData() {
         $('#updatedAnnexlist').select2();
         $('#riskActivitiesSelectBox').select2();
         $('#updatedAnnexlist').on('change', updateRiskDisplay);
+        initCauObservationReference();
 
          document.getElementById('amount_inv_field').addEventListener('input', function (e) {
         this.value = this.value.replace(/\D|^0(?=\d)/g, ''); // Removes decimals and leading zeros
@@ -287,6 +311,7 @@ function getPageData() {
                 'ACC_AMOUNT': normalizeRequiredInt($(v).find('td').eq(6).html())
             });
         });
+        var selectedReferenceId = getCauObservationReferenceId();
         var g_memoObj = [];
         var memo = {
             'MEMO': $('.richText-editor').html(),
@@ -294,6 +319,7 @@ function getPageData() {
             'HEADING': $('#viewMemo_heading').val(),
             'RISK': g_selectedRiskId,
             'ANNEXURE_ID': $('#updatedAnnexlist').val(),
+            'REFERENCE_ID': selectedReferenceId,
             'AMOUNT_INVOLVED': $('#amount_inv_field').val(),
             'NO_OF_INSTANCES': $('#no_instances_field').val(),
             'DAYS': $('#viewMemo_replydays option:selected').val(),
@@ -309,7 +335,8 @@ function getPageData() {
             'BRANCH_ID': $('#brSearchField').val(),
             'SUB_CHECKLISTID': $('#riskSubGroupSelectBox').val(),
             'CHECKLIST_ID': $('#riskActivitiesSelectBox').val(),
-            'ANNEXURE_ID': $('#updatedAnnexlist').val()
+            'ANNEXURE_ID': $('#updatedAnnexlist').val(),
+            'REFERENCE_ID': selectedReferenceId
 
         };
         $.ajax({

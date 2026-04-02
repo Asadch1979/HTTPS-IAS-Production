@@ -144,6 +144,72 @@
                         <label for="viewMemo_attachments">Attachments</label>
                         <input id="viewMemo_attachments" class="form-control" type="file" multiple="multiple" style="padding-top:3px;" />
                     </div>
+                    <div id="observationReferenceSection" class="form-group mt-3 p-3 border rounded" data-reference-step="5">
+                        <input type="hidden" id="observationReferenceId" value="" />
+                        <div class="mb-2">
+                            <h5 class="mb-0">Reference (Observation Save)</h5>
+                        </div>
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <label for="obsReferenceType" class="form-label">Reference Type</label>
+                                <select id="obsReferenceType" class="form-select">
+                                    <option value="">--Select Type--</option>
+                                    <option value="CIRCULAR">Circular</option>
+                                    <option value="MANUAL">Manual</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div id="obsReferenceCircularMode" class="obs-ref-mode d-none mt-3">
+                            <div class="row g-2">
+                                <div class="col-md-8">
+                                    <input id="obsReferenceSearchText" type="text" class="form-control" placeholder="Search circular reference" />
+                                </div>
+                                <div class="col-md-4">
+                                    <button id="obsReferenceSearchBtn" type="button" class="btn btn-primary w-100">Search</button>
+                                </div>
+                            </div>
+                            <div class="table-responsive mt-2">
+                                <table id="obsReferenceCircularResults" class="table table-sm table-bordered">
+                                    <thead>
+                                        <tr><th>REF_ID</th><th>Title</th><th>Date</th><th>Source</th><th>Select</th></tr>
+                                    </thead>
+                                    <tbody></tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <div id="obsReferenceManualMode" class="obs-ref-mode d-none mt-3">
+                            <div class="row g-2">
+                                <div class="col-md-4">
+                                    <label for="obsReferenceManual" class="form-label">Manual</label>
+                                    <select id="obsReferenceManual" class="form-select">
+                                        <option value="">--Select Manual--</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label for="obsReferenceSectionSelect" class="form-label">Section</label>
+                                    <select id="obsReferenceSectionSelect" class="form-select">
+                                        <option value="">--Select Section--</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label for="obsReferenceChapter" class="form-label">Chapter</label>
+                                    <select id="obsReferenceChapter" class="form-select">
+                                        <option value="">--Select Chapter--</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="table-responsive mt-2">
+                                <div class="fw-semibold mb-2">Reference Grid</div>
+                                <table id="obsReferenceManualGrid" class="table table-sm table-bordered">
+                                    <thead>
+                                        <tr><th>SUB_SECTION_NO</th><th>HEADING</th><th>Select</th></tr>
+                                    </thead>
+                                    <tbody></tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <div class="mt-2" id="obsReferenceSelected"></div>
+                    </div>
 
                 </form>
             </div>
@@ -332,4 +398,5 @@
     AnnexList = ViewData["AnnexList"]
 }))
 </script>
+<script src="~/js/obsreference.js?v=3"></script>
 <script src="~/js/csp/Views_Execution_checklist_details.js?v=1"></script>

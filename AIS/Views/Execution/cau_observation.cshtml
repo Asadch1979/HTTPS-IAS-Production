@@ -160,7 +160,7 @@
             <label class="font-bold text-bold heading">No. of Days to Reply</label>
         </div>
         <div class="col-md-4 mt-3">
-            <select class="form-control form-select">
+            <select id="viewMemo_replydays" class="form-control form-select">
                 <option value="1">1</option>
                 <option value="2">2</option>
                 <option value="3">3</option>
@@ -176,6 +176,71 @@
         <div class="col-md-4 mt-3">
             <input class="form-control" type="file" multiple="multiple" style="padding-top:3px;" />
         </div>
+    </div>
+
+    <div id="observationReferenceSection" class="row col-md-12 mt-3 border rounded p-3" data-reference-step="5">
+        <input type="hidden" id="observationReferenceId" value="" />
+        <div class="col-md-12 mb-2">
+            <h5>Reference (Observation Save)</h5>
+        </div>
+        <div class="col-md-4">
+            <label for="obsReferenceType" class="form-label">Reference Type</label>
+            <select id="obsReferenceType" class="form-select">
+                <option value="">--Select Type--</option>
+                <option value="CIRCULAR">Circular</option>
+                <option value="MANUAL">Manual</option>
+            </select>
+        </div>
+        <div id="obsReferenceCircularMode" class="obs-ref-mode d-none col-md-12 mt-3">
+            <div class="row g-2">
+                <div class="col-md-8">
+                    <input id="obsReferenceSearchText" type="text" class="form-control" placeholder="Search circular reference" />
+                </div>
+                <div class="col-md-4">
+                    <button id="obsReferenceSearchBtn" type="button" class="btn btn-primary w-100">Search</button>
+                </div>
+            </div>
+            <div class="table-responsive mt-2">
+                <table id="obsReferenceCircularResults" class="table table-sm table-bordered">
+                    <thead>
+                        <tr><th>REF_ID</th><th>Title</th><th>Date</th><th>Source</th><th>Select</th></tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+        <div id="obsReferenceManualMode" class="obs-ref-mode d-none col-md-12 mt-3">
+            <div class="row g-2">
+                <div class="col-md-4">
+                    <label for="obsReferenceManual" class="form-label">Manual</label>
+                    <select id="obsReferenceManual" class="form-select">
+                        <option value="">--Select Manual--</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label for="obsReferenceSectionSelect" class="form-label">Section</label>
+                    <select id="obsReferenceSectionSelect" class="form-select">
+                        <option value="">--Select Section--</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label for="obsReferenceChapter" class="form-label">Chapter</label>
+                    <select id="obsReferenceChapter" class="form-select">
+                        <option value="">--Select Chapter--</option>
+                    </select>
+                </div>
+            </div>
+            <div class="table-responsive mt-2">
+                <div class="fw-semibold mb-2">Reference Grid</div>
+                <table id="obsReferenceManualGrid" class="table table-sm table-bordered">
+                    <thead>
+                        <tr><th>SUB_SECTION_NO</th><th>HEADING</th><th>Select</th></tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+        <div class="col-md-12 mt-2" id="obsReferenceSelected"></div>
     </div>
 
     <div class="row col-md-12 mt-5">
@@ -277,4 +342,5 @@
     AnnexList = ViewData["AnnexList"]
 }))
 </script>
+<script src="~/js/obsreference.js?v=3"></script>
 <script src="~/js/csp/Views_Execution_cau_observation.js?v=1"></script>
