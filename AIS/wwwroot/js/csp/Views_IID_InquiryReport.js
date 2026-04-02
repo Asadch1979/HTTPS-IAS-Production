@@ -871,7 +871,7 @@ $(function(){
             var row = {
                 accusedRowId: x.accusedRowId || 0,
                 personName: x.personName || '',
-                fatherName: x.fatherName || x.postingPlace || '',
+                fatherName: x.fatherName || '',
                 designation: x.designation || '',
                 roleType: accusedRoleOptions.indexOf(x.roleType) >= 0 ? x.roleType : 'Main',
                 ppnoNumber: digitsOnly(x.ppnoNumber || ''),
@@ -913,7 +913,6 @@ $(function(){
             roleType: draft.roleType,
             ppnoNumber: draft.ppnoNumber,
             cnic: draft.cnic,
-            postingPlace: draft.fatherName,
             remarks: '',
             sortOrder: (state.accusedEmployeeRows.length + state.accusedManualRows.length) + 1,
             status: 'A',

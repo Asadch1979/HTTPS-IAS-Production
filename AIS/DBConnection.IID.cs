@@ -1500,13 +1500,12 @@ namespace AIS.Controllers
                     AccusedRowId = GetLongValue(rdr, "ACCUSED_ROW_ID"),
                     ComplaintId = GetLongValue(rdr, "COMPLAINT_ID"),
                     PersonName = GetStringValue(rdr, "PERSON_NAME"),
-                    FatherName = HasColumn(rdr, "FATHER_NAME") ? GetStringValue(rdr, "FATHER_NAME") : GetStringValue(rdr, "POSTING_PLACE"),
+                    FatherName = GetStringValue(rdr, "FATHER_NAME"),
                     Designation = GetStringValue(rdr, "DESIGNATION"),
                     RoleType = GetStringValue(rdr, "ROLE_TYPE"),
                     StatementType = GetStringValue(rdr, "STATEMENT_TYPE"),
                     PpnoNumber = GetStringValue(rdr, "PPNO_NUMBER"),
                     Cnic = DigitsOnly(GetStringValue(rdr, "CNIC")),
-                    PostingPlace = GetStringValue(rdr, "POSTING_PLACE"),
                     Remarks = GetStringValue(rdr, "REMARKS"),
                     SortOrder = GetIntValue(rdr, "SORT_ORDER"),
                     Status = GetStringValue(rdr, "STATUS"),
@@ -1533,7 +1532,7 @@ namespace AIS.Controllers
             cmd.Parameters.Add("P_ROLE_TYPE", OracleDbType.Varchar2).Value = model.RoleType ?? string.Empty;
             cmd.Parameters.Add("P_PPNO_NUMBER", OracleDbType.Varchar2).Value = model.PpnoNumber ?? string.Empty;
             cmd.Parameters.Add("P_CNIC", OracleDbType.Varchar2).Value = DigitsOnly(model.Cnic);
-            cmd.Parameters.Add("P_POSTING_PLACE", OracleDbType.Varchar2).Value = string.IsNullOrWhiteSpace(model.FatherName) ? model.PostingPlace ?? string.Empty : model.FatherName;
+            cmd.Parameters.Add("P_FATHER_NAME", OracleDbType.Varchar2).Value = model.FatherName ?? string.Empty;
             cmd.Parameters.Add("P_REMARKS", OracleDbType.Varchar2).Value = model.Remarks ?? string.Empty;
             cmd.Parameters.Add("P_SORT_ORDER", OracleDbType.Int32).Value = model.SortOrder;
             cmd.Parameters.Add("P_CREATED_BY", OracleDbType.Int64).Value = model.CreatedBy ?? (object)DBNull.Value;

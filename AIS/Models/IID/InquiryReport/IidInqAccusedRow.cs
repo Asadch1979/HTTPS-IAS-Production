@@ -22,8 +22,7 @@ namespace AIS.Models.IID.InquiryReport
         public string PpnoNumber { get; set; }
         [PlainText]
         public string Cnic { get; set; }
-        [PlainText]
-        public string PostingPlace { get; set; }
+
         [PlainText]
         public string Remarks { get; set; }
         public int SortOrder { get; set; }
