@@ -5,6 +5,7 @@
     var visibleSteps = Model.VisibleSteps.ToList();
     var currentStep = Model.CurrentStep;
     var currentStepIndex = currentStep == null ? 0 : visibleSteps.FindIndex(s => s.StepCode == currentStep.StepCode) + 1;
+    var homeUrl = Url.Content("~/Home/Index");
 }
 
 <form id="fieldAuditCsrfForm" class="d-none">@Html.AntiForgeryToken()</form>
@@ -13,8 +14,8 @@
     <div class="card shadow-sm planning-nav-card mb-0">
         <div class="card-body py-3">
             <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
-                <a class="navbar-brand fw-bold text-decoration-none" href="@Url.Action("Index", "Home")">IAS : Work Flow of Field Auditors</a>
-                <a class="btn btn-outline-primary btn-sm" href="@Url.Action("Index", "Home")">Home</a>
+                <a class="navbar-brand fw-bold text-decoration-none" href="@homeUrl">IAS : Work Flow of Field Auditors</a>
+                <a class="btn btn-outline-primary btn-sm" href="@homeUrl">Home</a>
             </div>
             <div class="row g-2 align-items-center mb-3">
                 <div class="col-lg-7">

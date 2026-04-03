@@ -594,7 +594,7 @@ namespace AIS.Controllers
             switch ((stepCode ?? string.Empty).Trim().ToUpperInvariant())
                 {
                 case "DRAFT_REPORT":
-                    return "/Execution/manage_draft_report_paras_branch";
+                    return "/Execution/draft_audit_report_branch";
                 case "QUALITY_REVIEW":
                     return "/Execution/pre_concluding_audit";
                 case "ISSUE_REPORT":
