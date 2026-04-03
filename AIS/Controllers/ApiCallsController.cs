@@ -5624,6 +5624,12 @@ namespace AIS.Controllers
             {
             try
                 {
+                var unauthorized = EnsureAuthenticatedSession();
+                if (unauthorized != null)
+                    {
+                    return unauthorized;
+                    }
+
                 if (!Request.HasFormContentType)
                     {
                     return Json(new { ok = false, message = "Form data is required." });
@@ -5724,6 +5730,12 @@ namespace AIS.Controllers
             {
             try
                 {
+                var unauthorized = EnsureAuthenticatedSession();
+                if (unauthorized != null)
+                    {
+                    return unauthorized;
+                    }
+
                 if (Request.HasFormContentType)
                     {
                     var evidenceFile = Request.Form.Files.GetFile("file");
@@ -5751,6 +5763,12 @@ namespace AIS.Controllers
             {
             try
                 {
+                var unauthorized = EnsureAuthenticatedSession();
+                if (unauthorized != null)
+                    {
+                    return unauthorized;
+                    }
+
                 var rows = dBConnection.DeleteIidInqEvidenceFile(request?.Id ?? 0, request?.UserId ?? 0);
                 return Json(BuildIidSaveResponse(rows, "Evidence file deleted."));
                 }

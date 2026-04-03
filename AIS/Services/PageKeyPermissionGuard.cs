@@ -286,6 +286,14 @@ namespace AIS.Services
                 return true;
                 }
 
+            if (HttpMethods.IsPost(method) &&
+                (path.Equals("/ApiCalls/UploadIidInqStatementFile", StringComparison.OrdinalIgnoreCase) ||
+                 path.Equals("/ApiCalls/AddIidInqEvidenceFile", StringComparison.OrdinalIgnoreCase) ||
+                 path.Equals("/ApiCalls/DeleteIidInqEvidenceFile", StringComparison.OrdinalIgnoreCase)))
+                {
+                return true;
+                }
+
             return false;
             }
 
