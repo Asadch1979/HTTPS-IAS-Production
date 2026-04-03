@@ -139,6 +139,16 @@ namespace AIS.Controllers
             return uniqueFileName;
             }
 
+        private string BuildUploadsFileUrl(string fileName)
+            {
+            if (string.IsNullOrWhiteSpace(fileName))
+                {
+                return string.Empty;
+                }
+
+            return Url.Content("~/Uploads/" + Uri.EscapeDataString(fileName.Trim())) ?? string.Empty;
+            }
+
         private IActionResult EnsureSbpAccess()
             {
             if (!sessionHandler.HasSbpAccess())
@@ -5631,6 +5641,7 @@ namespace AIS.Controllers
                     ok = true,
                     message = "Statement file uploaded.",
                     fileName = savedFile,
+                    fileUrl = BuildUploadsFileUrl(savedFile),
                     originalFileName = statementFile.FileName
                     });
                 }

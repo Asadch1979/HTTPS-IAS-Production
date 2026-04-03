@@ -66,6 +66,17 @@ $(function(){
 
     function token(){ return $('#iidAntiForgeryWrap input[name="__RequestVerificationToken"]').val(); }
     function esc(v){ return $('<div/>').text(v || '').html(); }
+    function buildUploadUrl(value){
+        var fileValue = String(value || '').trim();
+        if(!fileValue || fileValue.toUpperCase() === 'N/A'){ return ''; }
+        if(typeof window.iidResolveFileUrl === 'function'){
+            return window.iidResolveFileUrl(fileValue, (window.g_asiBaseURL || '') + '/Uploads');
+        }
+        if(/^(https?:)?\/\//i.test(fileValue) || fileValue.charAt(0) === '/'){
+            return fileValue;
+        }
+        return (window.g_asiBaseURL || '').replace(/\/$/, '') + '/Uploads/' + encodeURIComponent(fileValue);
+    }
     function extractData(resp){
         var payload = resp;
         if(payload && !Array.isArray(payload)){
@@ -557,8 +568,9 @@ $(function(){
         }
         if(step === 5){
             var statementRows = (state.statementRegister.rows || []).map(function(r, i){
-                var fileCell = r.uploadedStatement
-                    ? ('<a href="' + esc((window.g_asiBaseURL || '') + '/Uploads/' + r.uploadedStatement) + '" target="_blank" rel="noopener">View</a>')
+                var statementFileUrl = buildUploadUrl(r.uploadedStatement || r.uploadedStatementUrl || '');
+                var fileCell = statementFileUrl
+                    ? ('<a href="' + esc(statementFileUrl) + '" target="_blank" rel="noopener">View</a>')
                     : '<span class="text-muted">N/A</span>';
                 return '<tr>' +
                     '<td><span class="badge bg-info-subtle text-dark">' + esc(statementRoleLabel(r)) + '</span></td>' +
@@ -586,7 +598,13 @@ $(function(){
                 '</div></div>';
         }
         if(step === 6){
-            var rowsE = (state.evidence.files || []).map(function(r){ return '<tr><td>'+esc(r.fileName)+'</td><td>'+esc(r.evidenceType || 'N/A')+'</td><td>'+esc(r.uploadedOn || 'N/A')+'</td><td><button type="button" class="btn btn-outline-danger btn-sm" data-delete-evidence="'+ r.evidenceId +'">Remove</button></td></tr>'; }).join('');
+            var rowsE = (state.evidence.files || []).map(function(r){
+                var evidenceFileUrl = buildUploadUrl(r.filePath || r.fileName || '');
+                var evidenceFileCell = evidenceFileUrl
+                    ? '<a href="' + esc(evidenceFileUrl) + '" target="_blank" rel="noopener">View</a>'
+                    : '<span class="text-muted">N/A</span>';
+                return '<tr><td>'+esc(r.fileName)+'</td><td>'+esc(r.evidenceType || 'N/A')+'</td><td>'+esc(r.uploadedOn || 'N/A')+'</td><td>'+evidenceFileCell+'</td><td><button type="button" class="btn btn-outline-danger btn-sm" data-delete-evidence="'+ r.evidenceId +'">Remove</button></td></tr>';
+            }).join('');
             html += '<h5>Evidence</h5>' +
                 '<div class="card border-0 bg-light mb-3"><div class="card-body">' +
                     '<div class="row g-3">' +
@@ -595,7 +613,7 @@ $(function(){
                     '</div>' +
                 '</div></div>' +
                 '<div class="mb-3"><label class="form-label">Upload evidence files</label><input id="uploadedEvidence" type="file" class="form-control" multiple></div>' +
-                '<table class="table table-sm"><thead><tr><th>File</th><th>Type</th><th>Uploaded On</th><th></th></tr></thead><tbody>' + (rowsE || '<tr><td colspan="4" class="text-muted">No evidence uploaded.</td></tr>') + '</tbody></table>';
+                '<table class="table table-sm"><thead><tr><th>File</th><th>Type</th><th>Uploaded On</th><th>View</th><th></th></tr></thead><tbody>' + (rowsE || '<tr><td colspan="5" class="text-muted">No evidence uploaded.</td></tr>') + '</tbody></table>';
         }
         if(step === 7){
             var proceedingRows = state.proceedings.map(function(r, i){
@@ -1531,6 +1549,7 @@ $(function(){
         window.iidUploadInqStatementFile(fd).then(function(resp){
             ensureApiSuccess(resp, 'Statement file upload failed.');
             row.uploadedStatement = resp.fileName || (resp.data && resp.data.fileName) || '';
+            row.uploadedStatementUrl = resp.fileUrl || (resp.data && resp.data.fileUrl) || buildUploadUrl(row.uploadedStatement);
             markDirty(5);
 
             if(row.statementDatetime && row.place && row.place.trim()){
