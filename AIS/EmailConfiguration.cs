@@ -1,13 +1,17 @@
 ﻿using AIS;
 using AIS.Controllers;
 using AIS.Models;
+using AIS.Models.Notifications;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 using System.Net;
 using System.Net.Mail;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
 
 public class EmailConfiguration
     {
@@ -47,19 +51,6 @@ public class EmailConfiguration
         return new MailAddress(sanitizedAddress);
         }
 
-    private void AddSafeRecipient(MailAddressCollection collection, string address, string paramName)
-        {
-        if (collection == null)
-            {
-            throw new ArgumentNullException(nameof(collection));
-            }
-
-        if (!string.IsNullOrWhiteSpace(address))
-            {
-            collection.Add(CreateSafeMailAddress(address, paramName));
-            }
-        }
-
     private static void LogInfo(string message)
         {
         Console.WriteLine($"[EmailConfiguration] {message}");
@@ -72,116 +63,262 @@ public class EmailConfiguration
 
     public bool ConfigEmail(string to = "", string cc = "", string subj = "", string body = "")
         {
-        try
+        var result = Send(new EmailMessageRequest
             {
-            EmailCredentailsModel em = emailCredentails.GetEmailCredentails();
-            if (!em.IsConfigured)
-                {
-                LogEmailNotConfigured("ConfigEmail", to, cc, subj);
-                return false;
-                }
+            ToRecipients = new[] { to },
+            CcRecipients = new[] { cc },
+            Subject = subj,
+            Body = body,
+            IsBodyHtml = false
+            });
 
-            if (string.IsNullOrEmpty(to))
-                throw new ArgumentException("Recipient email address is required.");
-
-            var subject = SanitizeHeaderValue(subj, nameof(subj));
-            var bodyLength = string.IsNullOrWhiteSpace(body) ? 0 : body.Length;
-
-            LogInfo($"Preparing email send. From={em.EMAIL}; To={to}; Cc={cc}; Subject={subject}; BodyLength={bodyLength}; Host={em.Host}; Port={em.Port}");
-
-            MailMessage mail = new MailMessage
-                {
-                From = CreateSafeMailAddress(em.EMAIL, nameof(em.EMAIL)),
-                Subject = subject,
-                Body = body
-                };
-
-            // Add recipients
-            AddSafeRecipient(mail.To, to, nameof(to));
-            AddSafeRecipient(mail.CC, cc, nameof(cc));
-
-            SmtpClient SmtpServer = new SmtpClient(em.Host)
-                {
-                Port = em.Port,
-                Credentials = new NetworkCredential(em.EMAIL, em.PASSWORD),
-                EnableSsl = true // If the server requires SSL
-                };
-
-            // Send the email
-            SmtpServer.Send(mail);
-            LogInfo($"Email sent successfully. To={to}; Cc={cc}; Subject={subject}");
-            return true;
-            }
-        catch (SmtpException ex)
-            {
-            // Log SmtpException details for debugging
-            LogError("SMTP error while sending email.", ex);
-            return false;
-            }
-        catch (Exception ex)
-            {
-            // Log general exceptions
-            LogError("General error while sending email.", ex);
-            return false;
-            }
+        return result.IsSuccess;
         }
 
-
     public async Task<bool> ConfigEmailAsync(string to = "", string cc = "", string subj = "", string body = "")
+        {
+        var result = await SendAsync(new EmailMessageRequest
+            {
+            ToRecipients = new[] { to },
+            CcRecipients = new[] { cc },
+            Subject = subj,
+            Body = body,
+            IsBodyHtml = false
+            });
+
+        return result.IsSuccess;
+        }
+
+    public EmailSendResult Send(EmailMessageRequest request)
         {
         try
             {
             EmailCredentailsModel em = emailCredentails.GetEmailCredentails();
+            var preparedRequest = PrepareRequest(request);
             if (!em.IsConfigured)
                 {
-                LogEmailNotConfigured("ConfigEmailAsync", to, cc, subj);
-                return false;
+                LogEmailNotConfigured("Send", preparedRequest, string.Empty);
+                return new EmailSendResult
+                    {
+                    IsSuccess = false,
+                    ToRecipients = preparedRequest.ToRecipients,
+                    CcRecipients = preparedRequest.CcRecipients,
+                    ErrorMessage = "Email is disabled because credentials are not configured."
+                    };
                 }
 
-            if (string.IsNullOrEmpty(to))
-                throw new ArgumentException("Recipient email address is required.");
-
-            var subject = SanitizeHeaderValue(subj, nameof(subj));
-            var bodyLength = string.IsNullOrWhiteSpace(body) ? 0 : body.Length;
-
-            LogInfo($"Preparing async email send. From={em.EMAIL}; To={to}; Cc={cc}; Subject={subject}; BodyLength={bodyLength}; Host={em.Host}; Port={em.Port}");
-
-            using (var mail = new MailMessage
+            if (preparedRequest.ToRecipients.Count == 0)
                 {
-                From = CreateSafeMailAddress(em.EMAIL, nameof(em.EMAIL)),
-                Subject = subject,
-                Body = body
-                })
-                {
-                AddSafeRecipient(mail.To, to, nameof(to));
-                AddSafeRecipient(mail.CC, cc, nameof(cc));
-
-                using (var smtp = new SmtpClient(em.Host)
+                return new EmailSendResult
                     {
-                    Port = em.Port,
-                    Credentials = new NetworkCredential(em.EMAIL, em.PASSWORD),
-                    EnableSsl = true
-                    })
-                    {
-                    await smtp.SendMailAsync(mail);
-                    }
+                    IsSuccess = false,
+                    ToRecipients = preparedRequest.ToRecipients,
+                    CcRecipients = preparedRequest.CcRecipients,
+                    ErrorMessage = "No valid recipient email addresses were supplied."
+                    };
                 }
-            LogInfo($"Async email sent successfully. To={to}; Cc={cc}; Subject={subject}");
-            return true;
+
+            LogInfo($"Preparing email send. From={em.EMAIL}; To={string.Join(";", preparedRequest.ToRecipients)}; Cc={string.Join(";", preparedRequest.CcRecipients)}; Subject={preparedRequest.Subject}; BodyLength={preparedRequest.Body.Length}; Host={em.Host}; Port={em.Port}; Html={preparedRequest.IsBodyHtml}; Attachments={preparedRequest.Attachments.Count}");
+
+            using (var mail = CreateMailMessage(em, preparedRequest))
+            using (var smtp = CreateSmtpClient(em))
+                {
+                smtp.Send(mail);
+                }
+
+            return new EmailSendResult
+                {
+                IsSuccess = true,
+                ToRecipients = preparedRequest.ToRecipients,
+                CcRecipients = preparedRequest.CcRecipients
+                };
+            }
+        catch (SmtpException ex)
+            {
+            LogError("SMTP error while sending email.", ex);
+            return new EmailSendResult { IsSuccess = false, ErrorMessage = ex.Message };
+            }
+        catch (Exception ex)
+            {
+            LogError("General error while sending email.", ex);
+            return new EmailSendResult { IsSuccess = false, ErrorMessage = ex.Message };
+            }
+        }
+
+    public async Task<EmailSendResult> SendAsync(EmailMessageRequest request)
+        {
+        try
+            {
+            EmailCredentailsModel em = emailCredentails.GetEmailCredentails();
+            var preparedRequest = PrepareRequest(request);
+            if (!em.IsConfigured)
+                {
+                LogEmailNotConfigured("SendAsync", preparedRequest, string.Empty);
+                return new EmailSendResult
+                    {
+                    IsSuccess = false,
+                    ToRecipients = preparedRequest.ToRecipients,
+                    CcRecipients = preparedRequest.CcRecipients,
+                    ErrorMessage = "Email is disabled because credentials are not configured."
+                    };
+                }
+
+            if (preparedRequest.ToRecipients.Count == 0)
+                {
+                return new EmailSendResult
+                    {
+                    IsSuccess = false,
+                    ToRecipients = preparedRequest.ToRecipients,
+                    CcRecipients = preparedRequest.CcRecipients,
+                    ErrorMessage = "No valid recipient email addresses were supplied."
+                    };
+                }
+
+            LogInfo($"Preparing async email send. From={em.EMAIL}; To={string.Join(";", preparedRequest.ToRecipients)}; Cc={string.Join(";", preparedRequest.CcRecipients)}; Subject={preparedRequest.Subject}; BodyLength={preparedRequest.Body.Length}; Host={em.Host}; Port={em.Port}; Html={preparedRequest.IsBodyHtml}; Attachments={preparedRequest.Attachments.Count}");
+
+            using (var mail = CreateMailMessage(em, preparedRequest))
+            using (var smtp = CreateSmtpClient(em))
+                {
+                await smtp.SendMailAsync(mail);
+                }
+
+            return new EmailSendResult
+                {
+                IsSuccess = true,
+                ToRecipients = preparedRequest.ToRecipients,
+                CcRecipients = preparedRequest.CcRecipients
+                };
             }
         catch (SmtpException ex)
             {
             LogError("SMTP error while sending async email.", ex);
-            return false;
+            return new EmailSendResult { IsSuccess = false, ErrorMessage = ex.Message };
             }
         catch (Exception ex)
             {
             LogError("General error while sending async email.", ex);
-            return false;
+            return new EmailSendResult { IsSuccess = false, ErrorMessage = ex.Message };
             }
         }
 
-    private void LogEmailNotConfigured(string actionName, string to, string cc, string subject)
+    private PreparedEmailRequest PrepareRequest(EmailMessageRequest request)
+        {
+        request ??= new EmailMessageRequest();
+
+        var subject = SanitizeHeaderValue(request.Subject, nameof(request.Subject));
+        var body = request.Body ?? string.Empty;
+        var toRecipients = NormalizeRecipients(request.ToRecipients);
+        var ccRecipients = NormalizeRecipients(request.CcRecipients)
+            .Where(address => !toRecipients.Contains(address, StringComparer.OrdinalIgnoreCase))
+            .ToList();
+        var attachments = (request.Attachments ?? Array.Empty<NotificationEmailAttachmentData>())
+            .Where(attachment => attachment != null
+                && !string.IsNullOrWhiteSpace(attachment.FileName)
+                && attachment.ContentBytes != null
+                && attachment.ContentBytes.Length > 0)
+            .Select(attachment => new NotificationEmailAttachmentData
+                {
+                FileName = attachment.FileName.Trim(),
+                ContentBytes = attachment.ContentBytes,
+                ContentType = string.IsNullOrWhiteSpace(attachment.ContentType) ? "application/octet-stream" : attachment.ContentType.Trim()
+                })
+            .ToList();
+
+        return new PreparedEmailRequest
+            {
+            ToRecipients = toRecipients,
+            CcRecipients = ccRecipients,
+            Subject = subject,
+            Body = body,
+            IsBodyHtml = request.IsBodyHtml,
+            Attachments = attachments
+            };
+        }
+
+    private List<string> NormalizeRecipients(IEnumerable<string> recipients)
+        {
+        var normalized = new List<string>();
+        if (recipients == null)
+            {
+            return normalized;
+            }
+
+        foreach (var entry in recipients)
+            {
+            if (string.IsNullOrWhiteSpace(entry))
+                {
+                continue;
+                }
+
+            var tokens = entry.Split(new[] { ';', ',' }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            foreach (var token in tokens)
+                {
+                var sanitized = SanitizeHeaderValue(token, nameof(recipients));
+                if (string.IsNullOrWhiteSpace(sanitized))
+                    {
+                    continue;
+                    }
+
+                if (!normalized.Contains(sanitized, StringComparer.OrdinalIgnoreCase))
+                    {
+                    normalized.Add(sanitized);
+                    }
+                }
+            }
+
+        return normalized;
+        }
+
+    private MailMessage CreateMailMessage(EmailCredentailsModel credentials, PreparedEmailRequest request)
+        {
+        var mail = new MailMessage
+            {
+            From = CreateSafeMailAddress(credentials.EMAIL, nameof(credentials.EMAIL)),
+            Subject = request.Subject,
+            Body = request.Body,
+            IsBodyHtml = request.IsBodyHtml
+            };
+
+        AddRecipients(mail.To, request.ToRecipients, nameof(request.ToRecipients));
+        AddRecipients(mail.CC, request.CcRecipients, nameof(request.CcRecipients));
+        foreach (var attachment in request.Attachments)
+            {
+            var stream = new MemoryStream(attachment.ContentBytes, writable: false);
+            mail.Attachments.Add(new Attachment(stream, attachment.FileName, attachment.ContentType));
+            }
+
+        return mail;
+        }
+
+    private void AddRecipients(MailAddressCollection collection, IEnumerable<string> addresses, string paramName)
+        {
+        if (collection == null)
+            {
+            throw new ArgumentNullException(nameof(collection));
+            }
+
+        foreach (var address in addresses ?? Enumerable.Empty<string>())
+            {
+            if (string.IsNullOrWhiteSpace(address))
+                {
+                continue;
+                }
+
+            collection.Add(CreateSafeMailAddress(address, paramName));
+            }
+        }
+
+    private static SmtpClient CreateSmtpClient(EmailCredentailsModel credentials)
+        {
+        return new SmtpClient(credentials.Host)
+            {
+            Port = credentials.Port,
+            Credentials = new NetworkCredential(credentials.EMAIL, credentials.PASSWORD),
+            EnableSsl = true
+            };
+        }
+
+    private void LogEmailNotConfigured(string actionName, PreparedEmailRequest request, string fallbackSubject)
         {
         if (Interlocked.Exchange(ref _emailNotConfiguredLogged, 1) == 1)
             {
@@ -203,7 +340,8 @@ public class EmailConfiguration
             }
 
         var userPpno = sessionHandler != null && sessionHandler.TryGetUser(out var sessionUser) ? sessionUser.PPNumber : null;
-        var message = $"Email send skipped because email is disabled. To={to}; Cc={cc}; Subject={subject}.";
+        var subject = request == null ? fallbackSubject : request.Subject;
+        var message = $"Email send skipped because email is disabled. To={string.Join(";", request?.ToRecipients ?? new List<string>())}; Cc={string.Join(";", request?.CcRecipients ?? new List<string>())}; Subject={subject}.";
         try
             {
             db.LogWarning("Email", nameof(EmailConfiguration), actionName, message, "Email is disabled because credentials are not configured.", pageId, engId, userPpno);
@@ -212,5 +350,15 @@ public class EmailConfiguration
             {
             LogError("Failed to log email-not-configured warning.", ex);
             }
+        }
+
+    private sealed class PreparedEmailRequest
+        {
+        public List<string> ToRecipients { get; set; } = new List<string>();
+        public List<string> CcRecipients { get; set; } = new List<string>();
+        public string Subject { get; set; } = string.Empty;
+        public string Body { get; set; } = string.Empty;
+        public bool IsBodyHtml { get; set; }
+        public List<NotificationEmailAttachmentData> Attachments { get; set; } = new List<NotificationEmailAttachmentData>();
         }
     }

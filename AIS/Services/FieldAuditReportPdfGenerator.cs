@@ -1,175 +1,88 @@
-using AIS.Models.FieldAuditReport;
-using AIS.Services;
+﻿using AIS.Models.FieldAuditReport;
+using AIS.Controllers;
 using iText.Html2pdf;
+using iText.Kernel.Colors;
 using iText.Kernel.Events;
+using iText.Kernel.Font;
 using iText.Kernel.Geom;
 using iText.Kernel.Pdf;
-using iText.Kernel.Font;
 using iText.Kernel.Pdf.Canvas;
-using iText.Kernel.Colors;
 using iText.Kernel.Pdf.Extgstate;
 using iText.Layout;
 using iText.Layout.Properties;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Globalization;
-using System.Diagnostics;
 using System.IO;
-using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace AIS.Controllers
+namespace AIS.Services
     {
-    [Route("FieldAuditReport")]
-    public class FieldAuditReportPdfController : BaseController
+    public class FieldAuditReportPdfGenerator
         {
-        private readonly ILogger<FieldAuditReportPdfController> _logger;
+        private readonly ILogger<FieldAuditReportPdfGenerator> _logger;
         private readonly SessionHandler _sessionHandler;
         private readonly DBConnection _dbConnection;
-        private readonly TopMenus _topMenus;
-        private readonly IPermissionService _permissionService;
         private readonly FieldAuditReportPdfBuilder _pdfBuilder;
-        private readonly FieldAuditReportPdfGenerator _pdfGenerator;
 
-        public FieldAuditReportPdfController(
-            ILogger<FieldAuditReportPdfController> logger,
+        public FieldAuditReportPdfGenerator(
+            ILogger<FieldAuditReportPdfGenerator> logger,
             SessionHandler sessionHandler,
             DBConnection dbConnection,
-            TopMenus topMenus,
-            IPermissionService permissionService,
-            FieldAuditReportPdfBuilder pdfBuilder,
-            FieldAuditReportPdfGenerator pdfGenerator)
-            : base(sessionHandler)
+            FieldAuditReportPdfBuilder pdfBuilder)
             {
             _logger = logger;
             _sessionHandler = sessionHandler;
             _dbConnection = dbConnection;
-            _topMenus = topMenus;
-            _permissionService = permissionService;
             _pdfBuilder = pdfBuilder;
-            _pdfGenerator = pdfGenerator;
             }
 
-        [HttpGet("GeneratePdf")]
-        public async Task<IActionResult> GeneratePdf(int? engId, int? reportVersion = null)
+        public async Task<FieldAuditGeneratedPdfDocument> GenerateAsync(int engId, int? reportVersion = null)
             {
-            var resolvedEngId = 0;
-            var totalStopwatch = Stopwatch.StartNew();
             try
                 {
-                var precheck = EnsureReadyForPdf(engId, out resolvedEngId);
-                if (precheck != null)
+                _logger.LogInformation("Generating field audit report PDF for ENG_ID {EngId} reportVersion {ReportVersion}.", engId, reportVersion);
+                var data = _dbConnection.GetFieldAuditReportPdfData(engId, reportVersion);
+                if (data == null)
                     {
-                    return precheck;
+                    return FieldAuditGeneratedPdfDocument.Fail(500, "Unable to generate PDF at this time.");
                     }
 
-                var document = await _pdfGenerator.GenerateAsync(resolvedEngId, reportVersion);
-                if (!document.IsSuccess)
+                PopulatePdfGeneratorIdentity(data);
+
+                var html = _pdfBuilder.BuildHtml(data);
+                var htmlLength = html?.Length ?? 0;
+                if (htmlLength == 0)
                     {
-                    return StatusCode(document.FailureStatusCode == 0 ? 500 : document.FailureStatusCode, document.ErrorMessage);
+                    return FieldAuditGeneratedPdfDocument.Fail(500, "PDF content could not be prepared for this report.");
                     }
 
-                totalStopwatch.Stop();
-                _logger.LogInformation("Field audit PDF request completed in {ElapsedMs} ms for ENG_ID {EngId}.", totalStopwatch.ElapsedMilliseconds, resolvedEngId);
-                return File(document.ContentBytes, document.ContentType, document.FileName);
+                var watermarkTexts = BuildWatermarkTexts(data, engId);
+                var pdfBytes = await RenderPdfWithTimeoutAsync(html, TimeSpan.FromSeconds(60), watermarkTexts);
+                if (pdfBytes == null)
+                    {
+                    _logger.LogWarning("Field audit PDF generation timed out for ENG_ID {EngId}.", engId);
+                    return FieldAuditGeneratedPdfDocument.Fail(504, "PDF generation timed out. Please try again.");
+                    }
+
+                if (pdfBytes.Length == 0)
+                    {
+                    return FieldAuditGeneratedPdfDocument.Fail(500, "Generated PDF is empty. Please try again.");
+                    }
+
+                return new FieldAuditGeneratedPdfDocument
+                    {
+                    ContentBytes = pdfBytes,
+                    FileName = BuildFilename(data),
+                    ContentType = "application/pdf"
+                    };
                 }
             catch (Exception ex)
                 {
-                _logger.LogError(ex, "Failed to generate field audit report PDF for ENG_ID {EngId}.", resolvedEngId);
-                return StatusCode(500, "An error occurred while generating the PDF. Please try again later.");
+                _logger.LogError(ex, "Failed to generate field audit report PDF for ENG_ID {EngId}.", engId);
+                return FieldAuditGeneratedPdfDocument.Fail(500, "An error occurred while generating the PDF. Please try again later.");
                 }
-            }
-
-        [HttpGet("Engagements")]
-        public IActionResult Engagements()
-            {
-            var (user, redirectResult) = GetUserOrRedirect();
-            if (redirectResult != null)
-                {
-                return redirectResult;
-                }
-
-            var allowedRoles = new[] { 1, 2, 15, 16 };
-            if (!allowedRoles.Contains(user.UserRoleID))
-                {
-                return StatusCode(403, "User is not authorized to access PDF engagements.");
-                }
-
-            ViewData["TopMenu"] = _topMenus.GetTopMenus();
-            ViewData["TopMenuPages"] = _topMenus.GetTopMenusPages();
-
-            if (!int.TryParse(user.PPNumber, out var ppNo))
-                {
-                return BadRequest("Invalid user session for PDF engagements.");
-                }
-
-            var rows = _dbConnection.GetAllowedPdfEngagementDetails(ppNo, user.UserRoleID, user.UserEntityID ?? 0);
-            return View("~/Views/FieldAuditReport/Engagements.cshtml", rows);
-            }
-
-        private IActionResult EnsureAuthorized()
-            {
-            if (!_sessionHandler.TryGetUser(out _))
-                {
-                return StatusCode(401, "Session expired. Please sign in again.");
-                }
-
-            _topMenus.GetTopMenus();
-            _ = _permissionService;
-            if (!User.Identity.IsAuthenticated)
-                {
-                return StatusCode(401, "User session is not authenticated.");
-                }
-
-            if (!this.UserHasPagePermissionForCurrentAction(_sessionHandler))
-                {
-                return StatusCode(403, "User is not authorized to access field audit reports.");
-                }
-
-            return null;
-            }
-
-        private IActionResult EnsureReadyForPdf(int? requestedEngagementId, out int engId)
-            {
-            engId = 0;
-
-            var authorizationResult = EnsureAuthorized();
-            if (authorizationResult != null)
-                {
-                return authorizationResult;
-                }
-
-            if (!requestedEngagementId.HasValue || requestedEngagementId.Value <= 0)
-                {
-                return BadRequest("engId is required.");
-                }
-
-            engId = requestedEngagementId.Value;
-
-            if (!IsEngagementAuthorized(engId))
-                {
-                return BadRequest("You are not authorized to generate a report for the selected engagement.");
-                }
-
-            var overview = _dbConnection.GetFieldAuditReportOverview(engId);
-            if (overview == null)
-                {
-                return BadRequest("Report data is not available for the selected engagement.");
-                }
-
-            if (!_dbConnection.IsFieldAuditReportFinal(engId))
-                {
-                return BadRequest("Report must be finalized before PDF generation.");
-                }
-
-            return null;
-            }
-
-        private bool IsEngagementAuthorized(int engId)
-            {
-            return _dbConnection.IsEngagementAllowedForPdf(engId);
             }
 
         private static byte[] RenderPdf(string html, PdfWatermarkText watermarkTexts)
@@ -177,16 +90,13 @@ namespace AIS.Controllers
             using (var output = new MemoryStream())
                 {
                 using (var writer = new PdfWriter(output))
+                using (var pdf = new PdfDocument(writer))
                     {
-                    using (var pdf = new PdfDocument(writer))
+                    pdf.SetDefaultPageSize(PageSize.A4);
+                    pdf.AddEventHandler(PdfDocumentEvent.END_PAGE, new PageWatermarkEventHandler(watermarkTexts));
+                    var converterProperties = new ConverterProperties();
+                    using (Document document = HtmlConverter.ConvertToDocument(html, pdf, converterProperties))
                         {
-                        pdf.SetDefaultPageSize(PageSize.A4);
-                        pdf.AddEventHandler(PdfDocumentEvent.END_PAGE, new PageWatermarkEventHandler(watermarkTexts));
-                        var converterProperties = new ConverterProperties();
-                        using (Document document = HtmlConverter.ConvertToDocument(html, pdf, converterProperties))
-                            {
-                            //document.Close();
-                            }
                         }
                     }
 
@@ -327,4 +237,26 @@ namespace AIS.Controllers
                 }
             }
         }
+
+    public class FieldAuditGeneratedPdfDocument
+        {
+        public byte[] ContentBytes { get; set; } = Array.Empty<byte>();
+        public string FileName { get; set; } = string.Empty;
+        public string ContentType { get; set; } = "application/pdf";
+        public int FailureStatusCode { get; set; }
+        public string ErrorMessage { get; set; } = string.Empty;
+        public bool IsSuccess => ContentBytes != null && ContentBytes.Length > 0;
+
+        public static FieldAuditGeneratedPdfDocument Fail(int failureStatusCode, string errorMessage)
+            {
+            return new FieldAuditGeneratedPdfDocument
+                {
+                FailureStatusCode = failureStatusCode,
+                ErrorMessage = errorMessage ?? string.Empty
+                };
+            }
+        }
     }
+
+
+

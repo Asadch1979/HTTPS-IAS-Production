@@ -1,10 +1,13 @@
 using AIS.Models.FieldAuditReport;
+using AIS.Models.Notifications;
 using AIS.Services;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace AIS.Controllers
     {
@@ -15,19 +18,25 @@ namespace AIS.Controllers
         private readonly DBConnection _dbConnection;
         private readonly TopMenus _topMenus;
         private readonly IPermissionService _permissionService;
+        private readonly IConfiguration _configuration;
+        private readonly FieldAuditReportPdfGenerator _pdfGenerator;
 
         public FieldAuditReportController(
             ILogger<FieldAuditReportController> logger,
             SessionHandler sessionHandler,
             DBConnection dbConnection,
             TopMenus topMenus,
-            IPermissionService permissionService)
+            IPermissionService permissionService,
+            IConfiguration configuration,
+            FieldAuditReportPdfGenerator pdfGenerator)
             {
             _logger = logger;
             _sessionHandler = sessionHandler;
             _dbConnection = dbConnection;
             _topMenus = topMenus;
             _permissionService = permissionService;
+            _configuration = configuration;
+            _pdfGenerator = pdfGenerator;
             }
 
         public IActionResult ReportOverview()
@@ -688,7 +697,7 @@ namespace AIS.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public IActionResult FinalizeReport(FinalizeReportViewModel model)
+        public async Task<IActionResult> FinalizeReport(FinalizeReportViewModel model)
             {
             try
                 {
@@ -709,6 +718,28 @@ namespace AIS.Controllers
                     }
 
                 var result = _dbConnection.FinalizeFieldAuditReport(engId);
+                if (result.IsFinalized)
+                    {
+                    var notificationData = _dbConnection.GetFinalReportIssuedNotificationData(engId);
+                    NotificationEmailAttachmentData attachment = null;
+                    var pdfDocument = await _pdfGenerator.GenerateAsync(engId);
+                    if (pdfDocument.IsSuccess)
+                        {
+                        attachment = new NotificationEmailAttachmentData
+                            {
+                            FileName = pdfDocument.FileName,
+                            ContentBytes = pdfDocument.ContentBytes,
+                            ContentType = pdfDocument.ContentType
+                            };
+                        }
+                    else
+                        {
+                        _logger.LogWarning("Final report PDF attachment could not be prepared for ENG_ID {EngId}. Status={StatusCode}; Error={ErrorMessage}", engId, pdfDocument.FailureStatusCode, pdfDocument.ErrorMessage);
+                        }
+
+                    await EmailNotification.SendFinalReportIssuedAsync(_configuration, notificationData, attachment, HttpContext?.RequestServices);
+                    }
+
                 return Json(new { success = result.IsFinalized, message = result.Message ?? string.Empty });
                 }
             catch (Exception ex)

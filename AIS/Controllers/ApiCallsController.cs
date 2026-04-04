@@ -475,7 +475,7 @@ namespace AIS.Controllers
             }
 
         [HttpPost]
-        public IActionResult AddEngagementPlan([FromForm] AuditEngagementPlanModel eng)
+        public async Task<IActionResult> AddEngagementPlan([FromForm] AuditEngagementPlanModel eng)
             {
             var unauthorized = EnsureAuthenticatedSession();
             if (unauthorized != null)
@@ -483,7 +483,14 @@ namespace AIS.Controllers
                 return unauthorized;
                 }
 
-            return Ok(dBConnection.AddAuditEngagementPlan(eng));
+            var result = dBConnection.AddAuditEngagementPlan(eng);
+            if (string.Equals(result?.IS_SUCCESS, "Yes", StringComparison.OrdinalIgnoreCase))
+                {
+                var notificationData = dBConnection.GetAuditTaskAssignedNotificationData(result);
+                await EmailNotification.SendAuditTaskAssignedAsync(_configuration, notificationData, HttpContext?.RequestServices);
+                }
+
+            return Ok(result);
             }
 
         [HttpPost]
@@ -1558,11 +1565,17 @@ namespace AIS.Controllers
 
             }
         [HttpPost]
-        public string submit_observation_to_auditee(int OBS_ID)
+        public async Task<string> submit_observation_to_auditee(int OBS_ID)
             {
             string response = "";
             response = dBConnection.SubmitAuditObservationToAuditee(OBS_ID);
-            return "{\"Status\":true,\"Message\":\"" + response + "\"}";
+            if (dBConnection.IsObservationSubmittedToAuditee(OBS_ID))
+                {
+                var notificationData = dBConnection.GetObservationSubmittedNotificationData(OBS_ID);
+                await EmailNotification.SendObservationSubmittedToAuditeeAsync(_configuration, notificationData, HttpContext?.RequestServices);
+                }
+
+            return System.Text.Json.JsonSerializer.Serialize(new { Status = true, Message = response ?? string.Empty });
 
             }
         [HttpGet]
@@ -4877,7 +4890,7 @@ namespace AIS.Controllers
 
         [HttpPost]
       //  [Consumes("application/x-www-form-urlencoded")]
-        public IActionResult AddHeadReview([FromForm] HeadReviewModel model)
+        public async Task<IActionResult> AddHeadReview([FromForm] HeadReviewModel model)
             {
             try
                 {
@@ -4898,6 +4911,14 @@ namespace AIS.Controllers
                     return Json(new { ok = false, message = "Assigned unit is required." });
                     }
                 var id = dBConnection.AddHeadReview(model);
+                if (id > 0
+                    && string.Equals(model.Action, "APPROVE", StringComparison.OrdinalIgnoreCase)
+                    && model.AssignedToUnit > 0)
+                    {
+                    var notificationData = dBConnection.GetInquiryAssignedNotificationData(model);
+                    await EmailNotification.SendInquiryAssignedToUnitAsync(_configuration, notificationData, HttpContext?.RequestServices);
+                    }
+
                 return Json(new { ok = id > 0, id });
                 }
             catch (Exception ex)
