@@ -398,12 +398,13 @@ namespace AIS.Controllers
             }
 
         [HttpGet, HttpPost]
-        public IActionResult Reports()
+        public IActionResult Reports(int? complaintId = null)
             {
             ViewData["TopMenu"] = tm.GetTopMenus();
             ViewData["TopMenuPages"] = tm.GetTopMenusPages();
             if (!User.Identity.IsAuthenticated)
                 return RedirectToAction("Index", "Login");
+            ViewData["ComplaintId"] = complaintId ?? 0;
             return View("../IID/Reports");
             }
 
@@ -452,11 +453,11 @@ namespace AIS.Controllers
                 CreateDashboardItem(6, "INQUIRY_REPORT", "Inquiry Report", "/IID/InquiryReport", requiresComplaintSelection: true, reloadOnComplaintChange: true, isStep: true),
                 CreateDashboardItem(7, "ANALYSIS", "Analysis", "/IID/Analysis", requiresComplaintSelection: true, reloadOnComplaintChange: true, isStep: true),
                 CreateDashboardItem(8, "CASE_STUDY", "Case Study", "/IID/CaseStudy", requiresComplaintSelection: true, reloadOnComplaintChange: true, isStep: true),
-                CreateDashboardItem(9, "FINAL_APPROVAL", "Final Approval", "/IID/FinalApproval", requiresComplaintSelection: true, reloadOnComplaintChange: true, isStep: true),
+                CreateDashboardItem(9, "FINAL_APPROVAL", "Finalize Report", "/IID/FinalApproval", requiresComplaintSelection: true, reloadOnComplaintChange: true, isStep: true),
                 CreateDashboardItem(0, "TASK_LIST", "Task List", "/IID/TaskListIID", requiresComplaintSelection: false, reloadOnComplaintChange: false, isStep: false),
                 CreateDashboardItem(0, "MONITORING_DASHBOARD", "Monitoring Dashboard", "/IID/MonitoringDashboard", requiresComplaintSelection: false, reloadOnComplaintChange: false, isStep: false),
                 CreateDashboardItem(0, "READ_ONLY_REPORT", "Read Only Report", "/IID/InquiryReportReadOnly", requiresComplaintSelection: true, reloadOnComplaintChange: true, isStep: false),
-                CreateDashboardItem(0, "REPORTS", "Reports", "/IID/Reports", requiresComplaintSelection: false, reloadOnComplaintChange: false, isStep: false)
+                CreateDashboardItem(0, "REPORTS", "Exception Reports", "/IID/Reports", requiresComplaintSelection: false, reloadOnComplaintChange: false, isStep: false)
                 };
 
             foreach (var item in items)

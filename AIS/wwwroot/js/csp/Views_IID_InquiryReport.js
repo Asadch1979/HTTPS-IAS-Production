@@ -1,5 +1,7 @@
 $(function(){
     console.log('Views_IID_InquiryReport.js loaded.');
+    var pageRoot = document.getElementById('iidReportWorkspaceRoot');
+    if(!pageRoot){ return; }
 
     function getComplaintId(){
         var queryComplaintId = parseInt(new URLSearchParams(window.location.search).get('complaintId'), 10);
@@ -15,6 +17,14 @@ $(function(){
     }
 
     var complaintId = getComplaintId();
+    var reportId = pageRoot ? (parseInt(pageRoot.getAttribute('data-report-id') || '0', 10) || 0) : 0;
+    var reportMode = pageRoot ? String(pageRoot.getAttribute('data-report-mode') || 'edit').toLowerCase() : 'edit';
+    var isReadOnlyMode = reportMode === 'analysis' || reportMode === 'final';
+    var allowFinalAction = reportMode === 'edit' || reportMode === 'final';
+    var finalActionLabel = reportMode === 'final' ? 'Finalize Report' : 'Submit for Analysis';
+    var finalActionSuccessMessage = reportMode === 'final'
+        ? 'Inquiry report finalized successfully.'
+        : 'Inquiry report submitted for analysis successfully.';
     var currentStep = 1;
     var isLocked = false;
     var userId = 0;
@@ -30,7 +40,7 @@ $(function(){
         { id: 7, code: 'PROCEEDINGS', title: 'Inquiry Proceedings' },
         { id: 8, code: 'FINDINGS_RECOMM', title: 'Findings & Recommendations' },
         { id: 9, code: 'VIOLATIONS', title: 'Violations' },
-        { id: 10, code: 'DSA', title: 'DSA / Finalize' }
+        { id: 10, code: 'DSA', title: reportMode === 'final' ? 'DSA / Finalize Report' : (reportMode === 'analysis' ? 'DSA / Review' : 'DSA / Submit') }
     ];
 
     var state = {
@@ -63,6 +73,42 @@ $(function(){
         isDsaVisible: true,
         dirtySteps: {}
     };
+
+    function shouldLockByStatus(status){
+        var normalized = String(status || '').trim().toUpperCase();
+        return normalized === 'QC_CLEARED' || normalized === 'REPORT_SUBMITTED' || normalized === 'CLOSED';
+    }
+
+    function statusBadgeText(status){
+        var normalized = String(status || '').trim().toUpperCase();
+        if(!normalized){
+            if(reportMode === 'analysis'){ return 'Analysis Review'; }
+            if(reportMode === 'final'){ return 'Pending Finalization'; }
+            return 'Draft';
+        }
+
+        if(normalized === 'QC_CLEARED'){ return 'Ready for Analysis'; }
+        if(normalized === 'REPORT_SUBMITTED'){ return 'Submitted'; }
+        if(normalized === 'CLOSED'){ return 'Finalized'; }
+
+        return normalized.replace(/_/g, ' ');
+    }
+
+    function applyStatusBadge(status){
+        var badge = $('#reportStatusBadge');
+        var normalized = String(status || '').trim().toUpperCase();
+        badge.removeClass('bg-secondary bg-success bg-warning text-dark');
+
+        if(normalized === 'CLOSED' || normalized === 'REPORT_SUBMITTED'){
+            badge.addClass('bg-success');
+        } else if(normalized === 'QC_CLEARED'){
+            badge.addClass('bg-warning text-dark');
+        } else {
+            badge.addClass('bg-secondary');
+        }
+
+        badge.text(statusBadgeText(status));
+    }
 
     function token(){ return $('#iidAntiForgeryWrap input[name="__RequestVerificationToken"]').val(); }
     function esc(v){ return $('<div/>').text(v || '').html(); }
@@ -162,6 +208,11 @@ $(function(){
         return visible[idx - 1].id;
     }
 
+    function getLastVisibleStepId(){
+        var visible = getVisibleSteps();
+        return visible.length ? visible[visible.length - 1].id : 10;
+    }
+
     function renderStepper(){
         var pos = getStepPosition(currentStep);
         var stepNumber = pos.index >= 0 ? (pos.index + 1) : 1;
@@ -176,6 +227,10 @@ $(function(){
     function renderDirtyStepAlert(){
         var host = $('#iidDirtyStepHost');
         if(!host.length){ return; }
+        if(isReadOnlyMode){
+            host.html('<div class="alert alert-light border mb-0 readonly-note" role="alert">This report is available in read-only mode.</div>');
+            return;
+        }
         if(hasUnsavedStep(currentStep)){
             host.html('<div class="alert alert-warning mb-0" role="alert">You have unsaved changes. Save before moving.</div>');
             return;
@@ -223,8 +278,17 @@ $(function(){
     function sectionActions(step){
         var prevStep = getPreviousVisibleStep(step);
         var nextStep = getNextVisibleStep(step);
+        var isLastVisibleStep = step === getLastVisibleStepId();
+        if(isReadOnlyMode){
+            var finalBtn = (isLastVisibleStep && reportMode === 'final')
+                ? '<button type="button" class="btn btn-danger" id="finalActionBtn" data-final-action="finalize">Finalize Report</button>'
+                : '';
+            return '<div class="d-flex justify-content-between mt-4"><button type="button" class="btn btn-outline-secondary" data-prev ' + (!prevStep?'disabled':'') + '>Previous</button><div class="d-flex gap-2"><button type="button" class="btn btn-success" data-next ' + (!nextStep?'disabled':'') + '>' + (!nextStep?'Review':'Next') + '</button>' + finalBtn + '</div></div>';
+        }
         var saveBtn = (step === 5 || step === 7) ? '' : '<button type="button" class="btn btn-primary" data-save>Mark Completed</button>';
-        var finalSubmitBtn = step === 8 ? '<button type="button" class="btn btn-danger" id="finalSubmitBtn">Final Submit</button>' : '';
+        var finalSubmitBtn = (isLastVisibleStep && allowFinalAction)
+            ? '<button type="button" class="btn btn-danger" id="finalActionBtn" data-final-action="submit">' + finalActionLabel + '</button>'
+            : '';
         return '<div class="d-flex justify-content-between mt-4"><button type="button" class="btn btn-outline-secondary" data-prev ' + (!prevStep?'disabled':'') + '>Previous</button><div class="d-flex gap-2">' + saveBtn + '<button type="button" class="btn btn-success" data-next>' + (!nextStep?'Review':'Next') + '</button>' + finalSubmitBtn + '</div></div>';
     }
 
@@ -250,9 +314,12 @@ $(function(){
                 menubar: false,
                 height: 320,
                 plugins: 'lists link table code',
-                toolbar: 'undo redo | blocks | bold italic underline | bullist numlist | alignleft aligncenter alignright | link table | code',
+                toolbar: isReadOnlyMode ? false : 'undo redo | blocks | bold italic underline | bullist numlist | alignleft aligncenter alignright | link table | code',
                 license_key: 'gpl',
+                readonly: isReadOnlyMode ? 1 : 0,
+                statusbar: !isReadOnlyMode,
                 setup: function(editor){
+                    if(isReadOnlyMode){ return; }
                     editor.on('change keyup', function(){
                         if(editor.id === 'findingTextHtml'){
                             state.findingsRecomm.findingText = editor.getContent();
@@ -307,7 +374,7 @@ $(function(){
     }
 
     function formatSavedOn(value){
-        if(!value){ return '—'; }
+        if(!value){ return '-'; }
         var d = new Date(value);
         if(isNaN(d.getTime())){ return value; }
         return d.toLocaleString();
@@ -690,12 +757,20 @@ $(function(){
         html += sectionActions(step) + '</div>';
         destroyTinyMce();
         h.html(html);
-        if(isLocked){ h.find('input,textarea,select,button').prop('disabled', true); }
+        if(isLocked){
+            h.find('input,textarea,select').prop('disabled', true);
+            h.find('button').not('[data-prev],[data-next],[data-final-action="finalize"]').prop('disabled', true);
+        }
+        if(isReadOnlyMode){
+            h.find('[data-save],[data-add-row],[data-remove-row],[data-step3-search],[data-step3-save],[data-remove-accused],[data-step5-upload-row],[data-step5-save-row],[data-step7-save-row],[data-step7-delete-row],[data-delete-evidence],[data-save-findings-recomm],[data-findings-view-edit]').addClass('d-none');
+            h.find('[data-step5-upload-input]').prop('disabled', true);
+        }
         initTinyMceEditors();
         if(step === 8){ renderFindingsStatusGrid(); }
     }
 
     function bindStepInputs(){
+        if(isReadOnlyMode){ return; }
         var host = $('.wizard-section[data-step="' + currentStep + '"]');
         host.find('[data-bind]').off('input change').on('input change', function(){
             var key = $(this).data('bind');
@@ -1302,6 +1377,9 @@ $(function(){
     }
 
     function saveStep(step){
+        if(isReadOnlyMode){
+            return $.Deferred().reject({ message: 'This report is read-only and cannot be edited.' }).promise();
+        }
         var errs = validateStep(step);
         showValidation(step, errs);
         if(errs.length){ return $.Deferred().reject().promise(); }
@@ -1383,7 +1461,7 @@ $(function(){
     }
 
     function navigateToStep(nextStep){
-        if(hasUnsavedStep(currentStep)){
+        if(!isReadOnlyMode && hasUnsavedStep(currentStep)){
             renderDirtyStepAlert();
             return;
         }
@@ -1392,6 +1470,9 @@ $(function(){
     }
 
     function markSectionCompleted(step){
+        if(isReadOnlyMode){
+            return $.Deferred().reject({ message: 'This report is read-only and cannot be edited.' }).promise();
+        }
         var errs = validateStep(step);
         if(step === 8){
             var step8Completion = validateStepForFinalSubmit(8);
@@ -1418,7 +1499,7 @@ $(function(){
         if(window.bootstrap && window.bootstrap.Modal){
             var modal = $('#iidValidationModal');
             if(!modal.length){
-                $('body').append('<div class="modal fade" id="iidValidationModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-lg"><div class="modal-content"><div class="modal-header"><h5 class="modal-title">Final Submit Validation</h5><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button></div><div class="modal-body" id="iidValidationModalBody"></div><div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button></div></div></div></div>');
+                $('body').append('<div class="modal fade" id="iidValidationModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-lg"><div class="modal-content"><div class="modal-header"><h5 class="modal-title">' + esc(finalActionLabel) + ' Validation</h5><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button></div><div class="modal-body" id="iidValidationModalBody"></div><div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button></div></div></div></div>');
                 modal = $('#iidValidationModal');
             }
             $('#iidValidationModalBody').html(html);
@@ -1439,27 +1520,62 @@ $(function(){
             var c = resp || {};
             state.complainantName = c.complainantName || '';
             state.complainantCnic = c.cnic || '';
+            reportId = reportId || parseInt(c.reportId || 0, 10) || reportId;
+            state.snapshot.status = c.status || '';
+            if(isReadOnlyMode || shouldLockByStatus(c.status)){ isLocked = true; }
             $('#headerComplainantName').text(state.complainantName || 'N/A');
             $('#iidComplaintHiddenCache').text(JSON.stringify(c));
-            state.snapshot = { complaintNo: c.complaintNo, submittedOn: c.submittedOn, region: c.region, branch: c.branch, category: c.category, nature: c.nature, complainantName: c.complainantName, cnic: c.cnic, cellularNumber: c.cellularNumber, mailingAddress: c.mailingAddress, gender: c.gender, receivedFrom: c.receivedFrom, actionRequired: c.actionRequired, contents: c.contents, uploadedComplaint: c.uploadedComplaint || c.UploadedComplaint || c.uploaded_complaint, uploadedFFR: c.uploadedFFR || c.UploadedFFR || c.uploaded_FFR, uploadedEvidence: c.uploadedEvidence || c.UploadedEvidence || c.uploaded_evidence };
+            state.snapshot = { complaintNo: c.complaintNo, submittedOn: c.submittedOn, region: c.region, branch: c.branch, category: c.category, nature: c.nature, complainantName: c.complainantName, cnic: c.cnic, cellularNumber: c.cellularNumber, mailingAddress: c.mailingAddress, gender: c.gender, receivedFrom: c.receivedFrom, actionRequired: c.actionRequired, contents: c.contents, uploadedComplaint: c.uploadedComplaint || c.UploadedComplaint || c.uploaded_complaint, uploadedFFR: c.uploadedFFR || c.UploadedFFR || c.uploaded_FFR, uploadedEvidence: c.uploadedEvidence || c.UploadedEvidence || c.uploaded_evidence, status: c.status || '' };
+            applyStatusBadge(c.status || '');
             renderSnapshotStrip();
         });
     }
 
-    function finalizeReport(){
-        return $.ajax({ url: g_asiBaseURL + '/ApiCalls/FinalizeIidInquiryReport', method: 'POST', contentType: 'application/json; charset=utf-8', dataType: 'json', data: JSON.stringify({ complaintId: complaintId }) }).done(function(resp){
-            if(!resp || resp.ok === false){ showAlert(getResponseMessage(resp) || 'Finalize failed.', 'danger'); return; }
+    function submitForAnalysis(){
+        return $.ajax({ url: g_asiBaseURL + '/ApiCalls/SubmitIidInquiryReportForAnalysis', method: 'POST', contentType: 'application/json; charset=utf-8', dataType: 'json', data: JSON.stringify({ complaintId: complaintId }) }).done(function(resp){
+            if(!resp || resp.ok === false){ showAlert(getResponseMessage(resp) || 'Submission failed.', 'danger'); return; }
             isLocked = true;
-            $('#reportStatusBadge').removeClass('bg-secondary').addClass('bg-success').text('Submitted');
-            showAlert(resp.message || 'Inquiry report finalized successfully.', 'success');
+            state.snapshot.status = 'QC_CLEARED';
+            applyStatusBadge('QC_CLEARED');
+            showAlert(resp.message || finalActionSuccessMessage, 'success');
             renderCurrent(true);
         });
     }
 
-    $(document).on('click', '[data-step-jump]', function(){ navigateToStep(parseInt($(this).data('step-jump'), 10)); });
-    $(document).on('click', '[data-prev]', function(){ var prevStep = getPreviousVisibleStep(currentStep); if(prevStep){ navigateToStep(prevStep); } });
-    $(document).on('click', '[data-next]', function(){ var e = validateStep(currentStep); showValidation(currentStep, e); if(!e.length){ var nextStep = getNextVisibleStep(currentStep); if(nextStep){ navigateToStep(nextStep); } } });
-    $(document).on('click', '[data-save]', function(){
+    function finalizeReportClosure(){
+        return $.ajax({
+            url: g_asiBaseURL + '/ApiCalls/FinalizeIidReport',
+            method: 'POST',
+            contentType: 'application/json; charset=utf-8',
+            dataType: 'json',
+            data: JSON.stringify({ complaintId: complaintId, reportId: reportId || 0 })
+        }).done(function(resp){
+            if(!resp || resp.ok === false){ showAlert(getResponseMessage(resp) || 'Finalization failed.', 'danger'); return; }
+            isLocked = true;
+            state.snapshot.status = 'CLOSED';
+            applyStatusBadge('CLOSED');
+            showAlert(resp.message || finalActionSuccessMessage, 'success');
+            renderCurrent(true);
+        });
+    }
+
+    $(document).off('.iidInquiryReport');
+    $(document).on('click.iidInquiryReport', '[data-step-jump]', function(){ navigateToStep(parseInt($(this).data('step-jump'), 10)); });
+    $(document).on('click.iidInquiryReport', '[data-prev]', function(){ var prevStep = getPreviousVisibleStep(currentStep); if(prevStep){ navigateToStep(prevStep); } });
+    $(document).on('click.iidInquiryReport', '[data-next]', function(){
+        if(isReadOnlyMode){
+            var readonlyNext = getNextVisibleStep(currentStep);
+            if(readonlyNext){ navigateToStep(readonlyNext); }
+            return;
+        }
+        var e = validateStep(currentStep);
+        showValidation(currentStep, e);
+        if(!e.length){
+            var nextStep = getNextVisibleStep(currentStep);
+            if(nextStep){ navigateToStep(nextStep); }
+        }
+    });
+    $(document).on('click.iidInquiryReport', '[data-save]', function(){
         var action = currentStep === 8 ? markSectionCompleted(currentStep) : saveStep(currentStep);
         action.done(function(result){
             if(currentStep !== 8){
@@ -1473,7 +1589,7 @@ $(function(){
         });
     });
 
-    $(document).on('click', '[data-step3-search]', function(){
+    $(document).on('click.iidInquiryReport', '[data-step3-search]', function(){
         var ppno = digitsOnly(state.accusedEmployeeDraft.ppnoNumber);
         state.accusedEmployeeDraft.ppnoNumber = ppno;
         if(!ppno){ showAlert('PPNO is required for search.', 'danger'); renderCurrent(true); return; }
@@ -1492,7 +1608,7 @@ $(function(){
         }).fail(function(){ showAlert('Employee lookup failed for entered PPNO.', 'danger'); });
     });
 
-    $(document).on('click', '[data-step3-save]', function(){
+    $(document).on('click.iidInquiryReport', '[data-step3-save]', function(){
         var type = $(this).data('step3-save');
         saveAccusedSection(type).done(function(resp){
             showAlert((resp && resp.message) || 'Accused row saved successfully.', 'success');
@@ -1501,7 +1617,7 @@ $(function(){
         });
     });
 
-    $(document).on('click', '[data-remove-accused]', function(){
+    $(document).on('click.iidInquiryReport', '[data-remove-accused]', function(){
         var id = parseInt($(this).data('id'), 10) || 0;
         if(!id){ showAlert('Invalid accused row id.', 'danger'); return; }
         window.iidDeleteInqAccused(id, userId || 0).then(function(resp){
@@ -1516,7 +1632,7 @@ $(function(){
         }).fail(function(err){ showAlert((err && err.message) || 'Failed to delete accused row.', 'danger'); });
     });
 
-    $(document).on('click', '[data-step5-save-row]', function(){
+    $(document).on('click.iidInquiryReport', '[data-step5-save-row]', function(){
         var rowIndex = parseInt($(this).data('step5-save-row'), 10);
         saveStatementRow(rowIndex).done(function(resp){
             showAlert((resp && resp.message) || 'Statement saved successfully.', 'success');
@@ -1525,12 +1641,12 @@ $(function(){
         });
     });
 
-    $(document).on('click', '[data-step5-upload-row]', function(){
+    $(document).on('click.iidInquiryReport', '[data-step5-upload-row]', function(){
         var rowIndex = parseInt($(this).data('step5-upload-row'), 10);
         $('[data-step5-upload-input="' + rowIndex + '"]').trigger('click');
     });
 
-    $(document).on('change', '[data-step5-upload-input]', function(){
+    $(document).on('change.iidInquiryReport', '[data-step5-upload-input]', function(){
         var rowIndex = parseInt($(this).data('step5-upload-input'), 10);
         var row = state.statementRegister.rows[rowIndex];
         var file = this.files && this.files[0] ? this.files[0] : null;
@@ -1567,7 +1683,7 @@ $(function(){
         });
     });
 
-    $(document).on('click', '[data-step7-save-row]', function(){
+    $(document).on('click.iidInquiryReport', '[data-step7-save-row]', function(){
         var rowIndex = parseInt($(this).data('step7-save-row'), 10);
         saveProceedingRow(rowIndex).done(function(resp){
             showAlert((resp && resp.message) || 'Inquiry proceeding row saved successfully.', 'success');
@@ -1576,7 +1692,7 @@ $(function(){
         });
     });
 
-    $(document).on('click', '[data-step7-delete-row]', function(){
+    $(document).on('click.iidInquiryReport', '[data-step7-delete-row]', function(){
         var rowIndex = parseInt($(this).data('step7-delete-row'), 10);
         deleteProceedingRow(rowIndex).done(function(resp){
             showAlert((resp && resp.message) || 'Inquiry proceeding row deleted successfully.', 'success');
@@ -1585,7 +1701,7 @@ $(function(){
         });
     });
 
-    $(document).on('click', '[data-add-row]', function(){
+    $(document).on('click.iidInquiryReport', '[data-add-row]', function(){
         var s = $(this).data('add-row');
         if(s==='accusations') state.accusations.push({ accusationId: 0, accusationText: '', sortOrder: state.accusations.length + 1 });
         if(s==='records') state.records.push({ recId: 0, recordTitle: '', recordDetails: '', sortOrder: state.records.length + 1 });
@@ -1596,7 +1712,7 @@ $(function(){
         renderCurrent(true);
     });
 
-    $(document).on('click', '[data-remove-row]', function(){
+    $(document).on('click.iidInquiryReport', '[data-remove-row]', function(){
         var section = $(this).data('remove-row');
         var idx = parseInt($(this).data('index'), 10);
         var row = state[section][idx];
@@ -1612,7 +1728,7 @@ $(function(){
         renderCurrent(true);
     });
 
-    $(document).on('change', '#uploadedEvidence', function(){
+    $(document).on('change.iidInquiryReport', '#uploadedEvidence', function(){
         var files = Array.prototype.slice.call(this.files || []);
         var chain = $.Deferred().resolve().promise();
         files.forEach(function(file){
@@ -1645,7 +1761,7 @@ $(function(){
         this.value = '';
     });
 
-    $(document).on('click', '[data-delete-evidence]', function(){
+    $(document).on('click.iidInquiryReport', '[data-delete-evidence]', function(){
         var evidenceId = parseInt($(this).data('delete-evidence'), 10);
         window.iidDeleteInqEvidenceFile(evidenceId, userId || 0).then(function(resp){
             ensureApiSuccess(resp, 'Failed to delete evidence file.');
@@ -1663,7 +1779,7 @@ $(function(){
         }).fail(function(err){ showAlert((err && err.message) || 'Failed to delete evidence file.', 'danger'); });
     });
 
-    $(document).on('change', '[data-findings-accusation-select]', function(){
+    $(document).on('change.iidInquiryReport', '[data-findings-accusation-select]', function(){
         state.findingsRecomm.selectedAccusationId = $(this).val();
         markDirty(8);
         loadFindingsForSelection(state.findingsRecomm.selectedAccusationId).fail(function(err){
@@ -1671,7 +1787,7 @@ $(function(){
         });
     });
 
-    $(document).on('click', '[data-findings-view-edit]', function(){
+    $(document).on('click.iidInquiryReport', '[data-findings-view-edit]', function(){
         var accusationId = accusationIdValue($(this).data('findings-view-edit'));
         state.findingsRecomm.selectedAccusationId = accusationId;
         $('#findingsAccusationSelect').val(accusationId);
@@ -1680,7 +1796,7 @@ $(function(){
         });
     });
 
-    $(document).on('click', '[data-save-findings-recomm]', function(){
+    $(document).on('click.iidInquiryReport', '[data-save-findings-recomm]', function(){
         saveStep(8).done(function(result){
             showAlert((result && result.message) || 'Saved successfully.', 'success');
             renderCurrent(true);
@@ -1689,13 +1805,13 @@ $(function(){
         });
     });
 
-    $(document).on('change', '.outcome-select', function(){
+    $(document).on('change.iidInquiryReport', '.outcome-select', function(){
         var accusationId = parseInt($(this).data('accusation-id'), 10);
         if(isNaN(accusationId)){ return; }
         $(this).val(state.findingsRecomm.outcomes[accusationId] || '');
     });
 
-    $(document).on('change', '[data-findings-outcome]', function(){
+    $(document).on('change.iidInquiryReport', '[data-findings-outcome]', function(){
         var accusationId = parseInt(state.findingsRecomm.selectedAccusationId, 10);
         if(isNaN(accusationId)){ return; }
         state.findingsRecomm.outcomes[accusationId] = $(this).val() || '';
@@ -1708,7 +1824,11 @@ $(function(){
         renderStepper();
     });
 
-    $(document).on('click', '#finalSubmitBtn', function(){
+    $(document).on('click.iidInquiryReport', '#finalActionBtn', function(){
+        if(reportMode === 'final'){
+            finalizeReportClosure();
+            return;
+        }
         var mandatorySteps = [2,3,4,5,6,7,8,9].concat(state.isDsaVisible ? [10] : []);
         var sectionValidators = mandatorySteps.map(function(stepId){
             var stepInfo = steps.filter(function(s){ return s.id === stepId; })[0] || { title: 'Step ' + stepId };
@@ -1733,7 +1853,15 @@ $(function(){
             showFinalSubmitErrors(missingSections, missingFieldsBySection);
             return;
         }
-        finalizeReport();
+        var finalStepId = getLastVisibleStepId();
+        var finalizeChain = hasUnsavedStep(finalStepId) ? saveStep(finalStepId) : $.Deferred().resolve({}).promise();
+        finalizeChain.done(function(){
+            state.savedSteps[finalStepId] = true;
+            state.dirtySteps[finalStepId] = false;
+            submitForAnalysis();
+        }).fail(function(err){
+            showAlert((err && err.message) || 'Please save the last section before submitting for analysis.', 'danger');
+        });
     });
 
     if(!complaintId){ showAlert('Complaint ID is missing. Open this page from Task List.', 'danger'); return; }
@@ -1742,3 +1870,4 @@ $(function(){
         loadStepData(8).always(function(){ renderCurrent(); });
     }).fail(function(){ showAlert('Failed to load inquiry wizard data.', 'danger'); renderCurrent(true); });
 });
+

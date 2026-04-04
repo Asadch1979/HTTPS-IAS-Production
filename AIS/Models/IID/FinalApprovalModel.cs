@@ -3,6 +3,7 @@ namespace AIS.Models.IID
     {
     public class FinalApprovalModel
         {
+        public int? ComplaintId { get; set; }
         public int? ReportId { get; set; }
         [PlainText]
         public string Comments { get; set; }

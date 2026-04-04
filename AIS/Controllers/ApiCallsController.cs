@@ -5072,6 +5072,58 @@ namespace AIS.Controllers
             }
 
         [HttpPost]
+        public IActionResult FinalizeIidReport([FromBody] AIS.Models.IID.FinalApprovalModel model)
+            {
+            try
+                {
+                if (model == null)
+                    {
+                    return Json(new { ok = false, message = "Final report payload is required." });
+                    }
+
+                var reportId = model.ReportId.GetValueOrDefault();
+                if (reportId <= 0 && model.ComplaintId.GetValueOrDefault() > 0)
+                    {
+                    reportId = dBConnection.GetLatestInquiryReportByComplaintId(model.ComplaintId.Value)?.ReportId ?? 0;
+                    model.ReportId = reportId;
+                    }
+
+                if (reportId <= 0)
+                    {
+                    return Json(new { ok = false, message = "A submitted inquiry report is required before finalization." });
+                    }
+
+                var id = dBConnection.FinalizeIidReport(model);
+                if (id > 0)
+                    {
+                    var complaintId = model.ComplaintId;
+                    if ((!complaintId.HasValue || complaintId.Value <= 0) && model.ReportId.HasValue)
+                        {
+                        complaintId = dBConnection.GetComplaintIdByReportId(model.ReportId);
+                        }
+
+                    if (complaintId.HasValue)
+                        {
+                        dBConnection.EnqueueEmail(
+                            "IID_INQUIRY_APPROVED",
+                            complaintId,
+                            model.ReportId,
+                            string.Empty,
+                            string.Empty,
+                            "IID Inquiry Approved",
+                            $"Inquiry approved for complaint ID {complaintId.Value}.");
+                        }
+                    }
+
+                return Json(new { ok = id > 0, id, message = id > 0 ? "Inquiry report finalized successfully." : "Unable to finalize inquiry report." });
+                }
+            catch (Exception ex)
+                {
+                return Json(new { ok = false, message = ex.Message });
+                }
+            }
+
+        [HttpPost]
         public IActionResult AddCaseStudy([FromBody] AIS.Models.IID.CaseStudyModel model)
             {
             try
@@ -6063,6 +6115,12 @@ namespace AIS.Controllers
         [HttpPost]
         public IActionResult FinalizeIidInquiryReport([FromBody] AIS.Models.IID.InquiryReport.IidInqComplaintRequest request)
             {
+            return SubmitIidInquiryReportForAnalysis(request);
+            }
+
+        [HttpPost]
+        public IActionResult SubmitIidInquiryReportForAnalysis([FromBody] AIS.Models.IID.InquiryReport.IidInqComplaintRequest request)
+            {
             try
                 {
                 var complaintId = request?.ComplaintId ?? 0;
@@ -6074,11 +6132,11 @@ namespace AIS.Controllers
                 var evidence = dBConnection.GetIidInqEvidenceFilesByComplaintId(complaintId);
                 if (evidence == null || evidence.Count == 0)
                     {
-                    return Json(new { ok = false, message = "At least one evidence file is required before finalization." });
+                    return Json(new { ok = false, message = "At least one evidence file is required before submitting for analysis." });
                     }
 
                 var rows = dBConnection.FinalizeIidInquiryReport(complaintId, sessionHandler.GetUser()?.UserEntityID);
-                return Json(new { ok = rows > 0, message = rows > 0 ? "Inquiry report finalized successfully." : "Finalization failed." });
+                return Json(new { ok = rows > 0, message = rows > 0 ? "Inquiry report submitted for analysis successfully." : "Submission for analysis failed." });
                 }
             catch (Exception ex)
                 {

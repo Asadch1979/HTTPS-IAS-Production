@@ -1,70 +1,26 @@
 @model AIS.Models.IID.AnalysisModel
 @{
     ViewData["Title"] = "Analysis";
+    ViewData["IidReportMode"] = "analysis";
     var dashboardMode = ViewData["DashboardMode"] as bool? == true;
     Layout = dashboardMode ? null : "_Layout";
-    var complaintId = ViewData["ComplaintId"];
-    var reportId = ViewData["ReportId"];
 }
-<div id="iidAnalysisRoot"
-     data-iid-page="analysis"
-     data-dashboard-mode="@(dashboardMode ? "true" : "false")"
-     data-complaint-id="@complaintId"
-     data-report-id="@reportId">
-@if (!dashboardMode)
-{
-    <h4>Analysis</h4>
-    @await Html.PartialAsync("_ComplaintSelector")
-}
-<div class="mb-3" id="reportFiles">
-    <h6>Report Downloads</h6>
-    <div id="reportLinks" class="small text-muted">Loading...</div>
-</div>
-<form id="analysisForm" asp-action="Analysis" asp-controller="IID" method="post">
-    @Html.AntiForgeryToken()
-    <input type="hidden" asp-for="ReportId" value="@reportId" />
-    <div class="mb-2">
-        <label class="form-label">Policy Gaps</label>
-        <textarea class="form-control" asp-for="PolicyGaps"></textarea>
-    </div>
-    <div class="mb-2">
-        <label class="form-label">Control Gaps</label>
-        <textarea class="form-control" asp-for="ControlGaps"></textarea>
-    </div>
-    <div class="mb-2">
-        <label class="form-label">Procedural Violations</label>
-        <textarea class="form-control" asp-for="ProceduralViolations"></textarea>
-    </div>
-    <div class="mb-2">
-        <label class="form-label">Forward To</label>
-        <input type="text" class="form-control" asp-for="ForwardTo" />
-    </div>
-    <div class="mb-2">
-        <label class="form-label">Comments</label>
-        <textarea class="form-control" asp-for="Comments"></textarea>
-    </div>
-    <div class="mb-2">
-        <label class="form-label">Decision</label>
-        <select class="form-select" asp-for="Decision" id="Decision">
-            <option value="FORWARD">Forward</option>
-            <option value="REFER_BACK">Refer Back</option>
-        </select>
-    </div>
-    <div class="mb-2 d-none" id="referBackDiv">
-        <label class="form-label">Refer Back Comments</label>
-        <textarea class="form-control" asp-for="ReferBackComments"></textarea>
-    </div>
-    <button type="submit" class="btn btn-primary">Submit Analysis</button>
-</form>
- </div>
+
+@await Html.PartialAsync("_InquiryReportWorkspace")
+
 @if (dashboardMode)
 {
-    <script src="~/js/csp/Views_IID_Analysis.js" asp-append-version="true"></script>
+    <script src="~/js/csp/Views_IID_InquiryReport.js" asp-append-version="true"></script>
+    <script src="~/js/iid/inquiryReportApi.js" asp-append-version="true"></script>
+    <script src="~/js/iid/complaintDetails.js" asp-append-version="true"></script>
+    <script src="~/lib/tinymce/tinymce.min.js" asp-append-version="true"></script>
 }
 else
 {
-@section Scripts{
-    <script src="~/js/csp/Views_IID_Analysis.js" asp-append-version="true"></script>
-
+@section Scripts {
+    <script src="~/js/csp/Views_IID_InquiryReport.js" asp-append-version="true"></script>
+    <script src="~/js/iid/inquiryReportApi.js" asp-append-version="true"></script>
+    <script src="~/js/iid/complaintDetails.js" asp-append-version="true"></script>
+    <script src="~/lib/tinymce/tinymce.min.js" asp-append-version="true"></script>
 }
 }

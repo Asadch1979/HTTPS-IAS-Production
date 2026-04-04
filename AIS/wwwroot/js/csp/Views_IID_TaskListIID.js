@@ -6,7 +6,9 @@
             planApproved: 'PLAN_APPROVED',
             reportDrafted: 'REPORT_DRAFTED',
             qcReturned: 'QC_RETURNED',
-            qcCleared: 'QC_CLEARED'
+            qcCleared: 'QC_CLEARED',
+            reportSubmitted: 'REPORT_SUBMITTED',
+            closed: 'CLOSED'
         };
 
         function resolveValue(row, upperKey, lowerKey, pascalKey){
@@ -21,6 +23,18 @@
             var parts = [dashboardBaseUrl + '?complaintId=' + encodeURIComponent(complaintId)];
             if(stepCode){
                 parts.push('stepCode=' + encodeURIComponent(stepCode));
+            }
+            return parts.join('&');
+        }
+
+        function buildCaseDashboardUtilityUrl(complaintId, utilityCode){
+            if(!dashboardBaseUrl){
+                return '';
+            }
+
+            var parts = [dashboardBaseUrl + '?complaintId=' + encodeURIComponent(complaintId)];
+            if(utilityCode){
+                parts.push('utilityCode=' + encodeURIComponent(utilityCode));
             }
             return parts.join('&');
         }
@@ -48,15 +62,15 @@
                 actions.push('<a href="' + (dashboardBaseUrl ? buildCaseDashboardUrl(complaintId, 'INQUIRY_REPORT') : g_asiBaseURL + '/IID/InquiryReport?complaintId=' + complaintId) + '">Draft Inquiry Report</a>');
             }
 
-            if(status === statuses.qcCleared){
-                actions.push('<a href="' + (dashboardBaseUrl ? buildCaseDashboardUrl(complaintId, 'FINAL_APPROVAL') : g_asiBaseURL + '/IID/InquiryReport?complaintId=' + complaintId) + '">Submit Final Report</a>');
+            if(status === statuses.qcCleared || status === statuses.reportSubmitted){
+                actions.push('<a href="' + (dashboardBaseUrl ? buildCaseDashboardUrl(complaintId, 'FINAL_APPROVAL') : g_asiBaseURL + '/IID/IID_Dashboard?complaintId=' + complaintId + '&stepCode=FINAL_APPROVAL') + '">Finalize Report</a>');
             }
 
             if(complaintId > 0){
                 actions.push('<a href="' + (dashboardBaseUrl ? buildCaseDashboardUrl(complaintId, 'INQUIRY_REPORT') : g_asiBaseURL + '/IID/InquiryReport?complaintId=' + complaintId) + '">Inquiry Report</a>');
             }
 
-            actions.push('<a href="' + g_asiBaseURL + '/sampling/list_reports?engId=' + complaintId + '">Exception Reports</a>');
+            actions.push('<a href="' + (dashboardBaseUrl ? buildCaseDashboardUtilityUrl(complaintId, 'REPORTS') : g_asiBaseURL + '/IID/Reports?complaintId=' + complaintId) + '">Exception Reports</a>');
 
             if(actions.length === 0){
                 actions.push('<span class="text-muted">-</span>');

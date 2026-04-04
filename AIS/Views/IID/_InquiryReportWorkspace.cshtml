@@ -1,0 +1,82 @@
+@{
+    var dashboardMode = ViewData["DashboardMode"] as bool? == true;
+    var complaintId = ViewData["ComplaintId"] ?? 0;
+    var reportId = ViewData["ReportId"] ?? 0;
+    var reportMode = (ViewData["IidReportMode"] as string ?? "edit").Trim().ToLowerInvariant();
+    var pageTitle = ViewData["Title"] as string ?? "Inquiry Report";
+    var subtitle = reportMode switch
+        {
+        "analysis" => "Submitted Inquiry Report available for read-only analysis review.",
+        "final" => "Final review workspace for closing the submitted Inquiry Report.",
+        _ => "Mandatory sectioned wizard aligned with Wazirabad reporting standards."
+        };
+}
+
+<meta name="iid-complaint-id" content="@complaintId" />
+
+<div id="iidReportWorkspaceRoot"
+     data-iid-page="inquiry-report"
+     data-dashboard-mode="@(dashboardMode ? "true" : "false")"
+     data-complaint-id="@complaintId"
+     data-report-id="@reportId"
+     data-report-mode="@reportMode">
+    <div id="iidAlertHost" class="mb-2"></div>
+
+    <div class="inquiry-header card shadow-sm mb-3">
+        <div class="card-body py-3">
+            <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
+                <div>
+                    <h4 class="mb-1">@pageTitle</h4>
+                    <div class="text-muted small">@subtitle</div>
+                </div>
+                <span id="reportStatusBadge" class="badge bg-secondary">Loading</span>
+            </div>
+            <div class="row g-2 mt-2 small">
+                <div class="col-md-4 col-12">
+                    <div class="snap-label">Complainant Name</div>
+                    <div id="headerComplainantName" class="snap-value">N/A</div>
+                </div>
+            </div>
+            <div id="snapshotStrip" class="row g-2 mt-2 small"></div>
+        </div>
+    </div>
+
+    <div id="iidComplaintHiddenCache" class="d-none" style="display:none;"></div>
+    <div id="iidAntiForgeryWrap" class="d-none">@Html.AntiForgeryToken()</div>
+
+    <div class="stepper-wrap sticky-top bg-white py-2 mb-3">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+            <strong id="stepCounter">Step 1 of 10</strong>
+            <span class="text-muted small">Click any step to navigate</span>
+        </div>
+        <div id="wizardStepper" class="wizard-stepper"></div>
+    </div>
+
+    <div id="iidDirtyStepHost" class="mb-3"></div>
+
+    <div class="wizard-section card mb-3" data-step="1"></div>
+    <div class="wizard-section card mb-3 d-none" data-step="2"></div>
+    <div class="wizard-section card mb-3 d-none" data-step="3"></div>
+    <div class="wizard-section card mb-3 d-none" data-step="4"></div>
+    <div class="wizard-section card mb-3 d-none" data-step="5"></div>
+    <div class="wizard-section card mb-3 d-none" data-step="6"></div>
+    <div class="wizard-section card mb-3 d-none" data-step="7"></div>
+    <div class="wizard-section card mb-3 d-none" data-step="8"></div>
+    <div class="wizard-section card mb-3 d-none" data-step="9"></div>
+    <div class="wizard-section card mb-3 d-none" data-step="10"></div>
+</div>
+
+<style>
+.wizard-stepper{display:grid;grid-template-columns:repeat(10,minmax(140px,1fr));gap:.4rem;overflow:auto}
+.step-pill{border:1px solid #ced4da;background:#fff;border-radius:.5rem;padding:.35rem .5rem;text-align:left}
+.step-pill .num{font-weight:700;margin-right:.35rem}
+.step-pill.active{border-color:#0d6efd;box-shadow:0 0 0 2px rgba(13,110,253,.15)}
+.step-pill.completed{background:#ecf9f0;border-color:#198754}
+.step-pill.not-saved{background:#fff5f5;border-color:#dc3545}
+.step-state{font-size:.68rem;vertical-align:middle}
+.snap-label{color:#6c757d}
+.snap-value{font-weight:600}
+.help-text{font-size:.8rem;color:#6c757d}
+.validation-summary{font-size:.9rem}
+.readonly-note{font-size:.85rem;color:#6c757d}
+</style>

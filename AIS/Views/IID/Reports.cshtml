@@ -1,101 +1,180 @@
 @{
-    ViewData["Title"] = "Inquiry Reports";
+    ViewData["Title"] = "Exception Reports";
     var dashboardMode = ViewData["DashboardMode"] as bool? == true;
     Layout = dashboardMode ? null : "_Layout";
+    var complaintId = (int?)ViewData["ComplaintId"] ?? 0;
 }
+
+<link rel="stylesheet" href="~/css/sampling.css" />
+
 <div id="iidReportsRoot"
      data-iid-page="reports"
      data-dashboard-mode="@(dashboardMode ? "true" : "false")"
-     data-complaint-id="@((int?)ViewData["ComplaintId"] ?? 0)">
-@if (!dashboardMode)
-{
-    <h4>Inquiry Reports</h4>
-    @await Html.PartialAsync("_ComplaintSelector")
-}
-<form id="filterForm" class="row g-2">
-    <div class="col">
-        <input class="form-control" type="date" placeholder="Date From" name="DateFrom" />
+     data-complaint-id="@complaintId">
+    <div id="iidReportsAlertHost"></div>
+
+    <div class="container-fluid mt-4">
+        <div class="card card-sample shadow-sm mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <h4 class="mb-0">Exception Reports</h4>
+                <span class="small text-muted">IID reporting in the Sampling exception-report layout.</span>
+            </div>
+            <div class="card-body">
+                <div class="row g-3 mb-4">
+                    <div class="col-lg-4 col-md-6">
+                        <div class="card border-0 bg-light h-100">
+                            <div class="card-body">
+                                <div class="text-muted small">Filtered Results</div>
+                                <div id="iidReportsCount" class="fs-3 fw-semibold">0</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-4 col-md-6">
+                        <div class="card border-0 bg-light h-100">
+                            <div class="card-body">
+                                <div class="text-muted small">Statuses Represented</div>
+                                <div id="iidReportsStatuses" class="fs-3 fw-semibold">0</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-4 col-md-6">
+                        <div class="card border-0 bg-light h-100">
+                            <div class="card-body">
+                                <div class="text-muted small">Locations / Units</div>
+                                <div id="iidReportsCoverage" class="fs-3 fw-semibold">0</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <form id="filterForm" class="row g-3">
+                    <div class="col-xl-2 col-lg-3 col-md-4">
+                        <label class="form-label">Date From</label>
+                        <input class="form-control" type="date" name="DateFrom" />
+                    </div>
+                    <div class="col-xl-2 col-lg-3 col-md-4">
+                        <label class="form-label">Date To</label>
+                        <input class="form-control" type="date" name="DateTo" />
+                    </div>
+                    <div class="col-xl-2 col-lg-3 col-md-4">
+                        <label class="form-label">Complaint ID</label>
+                        <input class="form-control" type="number" min="1" name="ComplaintId" />
+                    </div>
+                    <div class="col-xl-3 col-lg-3 col-md-6">
+                        <label class="form-label">Complaint Reference</label>
+                        <input class="form-control" name="Complaint" placeholder="Complaint no / reference" />
+                    </div>
+                    <div class="col-xl-3 col-lg-3 col-md-6">
+                        <label class="form-label">Nature</label>
+                        <input class="form-control" name="Nature" placeholder="Nature" />
+                    </div>
+
+                    <div class="col-xl-2 col-lg-3 col-md-4">
+                        <label class="form-label">Source</label>
+                        <select class="form-select" name="Source">
+                            <option value="">All Sources</option>
+                            <option>Internal</option>
+                            <option>External</option>
+                            <option>Anonymous</option>
+                            <option>Regulatory</option>
+                            <option>Other</option>
+                        </select>
+                    </div>
+                    <div class="col-xl-2 col-lg-3 col-md-4">
+                        <label class="form-label">Category</label>
+                        <select class="form-select" name="Category">
+                            <option value="">All Categories</option>
+                            <option>Complaint</option>
+                            <option>Reference</option>
+                            <option>Whistle Blow</option>
+                        </select>
+                    </div>
+                    <div class="col-xl-2 col-lg-3 col-md-4">
+                        <label class="form-label">Pertains To</label>
+                        <select class="form-select" name="PertainsTo" id="PertainsTo">
+                            <option value="">All</option>
+                            <option value="HO">HO</option>
+                            <option value="FIELD">Field</option>
+                        </select>
+                    </div>
+                    <div class="col-xl-2 col-lg-3 col-md-4">
+                        <label class="form-label">HO Unit Type</label>
+                        <select class="form-select" id="HOUnitTypeId" name="HOUnitTypeId">
+                            <option value="">All</option>
+                        </select>
+                    </div>
+                    <div class="col-xl-2 col-lg-3 col-md-4">
+                        <label class="form-label">HO Unit</label>
+                        <select class="form-select" id="HOUnitId" name="HOUnitId">
+                            <option value="">All</option>
+                        </select>
+                    </div>
+                    <div class="col-xl-2 col-lg-3 col-md-4">
+                        <label class="form-label">Region</label>
+                        <select class="form-select" id="RegionId" name="RegionId">
+                            <option value="">All</option>
+                        </select>
+                    </div>
+
+                    <div class="col-xl-3 col-lg-3 col-md-4">
+                        <label class="form-label">Branch</label>
+                        <select class="form-select" id="BranchId" name="BranchId">
+                            <option value="">All</option>
+                        </select>
+                    </div>
+                    <div class="col-xl-3 col-lg-3 col-md-4">
+                        <label class="form-label">Accused</label>
+                        <input class="form-control" name="Accused" placeholder="Accused name" />
+                    </div>
+                    <div class="col-xl-3 col-lg-3 col-md-4">
+                        <label class="form-label">Unit</label>
+                        <input class="form-control" name="Unit" placeholder="Assigned unit" />
+                    </div>
+                    <div class="col-xl-3 col-lg-3 col-md-4">
+                        <label class="form-label">Status</label>
+                        <input class="form-control" name="Status" placeholder="Status" />
+                    </div>
+
+                    <div class="col-12 d-flex justify-content-end gap-2 pt-2">
+                        <button type="button" id="btnResetFilters" class="btn btn-outline-secondary">Reset</button>
+                        <button type="submit" class="btn btn-danger">Search</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="card card-sample shadow-sm">
+            <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <h4 class="mb-0">Report Results</h4>
+                <span id="iidReportsResultMeta" class="small text-muted">Run a search to load reports.</span>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table id="iidReportsTable" class="table table-hover table-bordered table-striped mb-0">
+                        <thead id="iidReportsHeader">
+                            <tr>
+                                <th>Result</th>
+                            </tr>
+                        </thead>
+                        <tbody id="iidReportsBody">
+                            <tr>
+                                <td class="text-center text-muted">Run a search to view reports.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
     </div>
-    <div class="col">
-        <input class="form-control" type="date" placeholder="Date To" name="DateTo" />
-    </div>
-    <div class="col">
-        <input class="form-control" placeholder="Nature" name="Nature" />
-    </div>
-    <div class="col">
-        <select class="form-select" name="Source">
-            <option value="">Source</option>
-            <option>Internal</option>
-            <option>External</option>
-            <option>Anonymous</option>
-            <option>Regulatory</option>
-            <option>Other</option>
-        </select>
-    </div>
-    <div class="col">
-        <select class="form-select" name="Category">
-            <option value="">Category</option>
-            <option>Complaint</option>
-            <option>Reference</option>
-            <option>Whistle Blow</option>
-        </select>
-    </div>
-    <div class="col">
-        <select class="form-select" name="PertainsTo" id="PertainsTo">
-            <option value="">Pertains To</option>
-            <option value="HO">HO</option>
-            <option value="FIELD">Field</option>
-        </select>
-    </div>
-    <div class="col">
-        <select class="form-select" id="HOUnitTypeId" name="HOUnitTypeId">
-            <option value="">HO Unit Type</option>
-        </select>
-    </div>
-    <div class="col">
-        <select class="form-select" id="HOUnitId" name="HOUnitId">
-            <option value="">HO Unit</option>
-        </select>
-    </div>
-    <div class="col">
-        <select class="form-select" id="RegionId" name="RegionId">
-            <option value="">Region</option>
-        </select>
-    </div>
-    <div class="col">
-        <select class="form-select" id="BranchId" name="BranchId">
-            <option value="">Branch</option>
-        </select>
-    </div>
-    <div class="col">
-        <input class="form-control" placeholder="Status" name="Status" />
-    </div>
-    <div class="col-auto">
-        <button type="submit" class="btn btn-primary">Search</button>
-    </div>
-</form>
-<table class="table table-sm mt-3" id="resultTable">
-    <thead>
-        <tr>
-            <th>Complaint ID</th>
-            <th>Submitted On</th>
-            <th>Source</th>
-            <th>Category</th>
-            <th>Pertains To</th>
-            <th>Status</th>
-        </tr>
-    </thead>
-    <tbody></tbody>
-</table>
- </div>
+</div>
+
 @if (dashboardMode)
 {
     <script src="~/js/csp/Views_IID_Reports.js" asp-append-version="true"></script>
 }
 else
 {
-@section Scripts{
+@section Scripts {
     <script src="~/js/csp/Views_IID_Reports.js" asp-append-version="true"></script>
-
 }
 }

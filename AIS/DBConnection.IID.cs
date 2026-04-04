@@ -1146,7 +1146,7 @@ namespace AIS.Controllers
                 }
             }
 
-        public int AddFinalApproval(FinalApprovalModel model)
+        private int SaveFinalApprovalRecord(FinalApprovalModel model, string decision)
             {
             var sessionHandler = CreateSessionHandler();
             var loggedInUser = sessionHandler.GetUser();
@@ -1167,18 +1167,28 @@ namespace AIS.Controllers
             using (OracleCommand cmd = con.CreateCommand())
                 {
                 cmd.CommandText = "PKG_INQ.ADD_FINAL_APPROVAL";
-                LogIidSaveDebug("PKG_INQ.ADD_FINAL_APPROVAL", $"ReportId={model?.ReportId}, Decision={model?.Decision}, CommentsLength={(model?.Comments ?? string.Empty).Length}");
+                LogIidSaveDebug("PKG_INQ.ADD_FINAL_APPROVAL", $"ReportId={model?.ReportId}, Decision={decision}, CommentsLength={(model?.Comments ?? string.Empty).Length}");
                 cmd.CommandType = CommandType.StoredProcedure;
                 cmd.BindByName = true;
                 cmd.Parameters.Add("p_report_id", OracleDbType.Int32).Value = model.ReportId ?? (object)DBNull.Value;
                 cmd.Parameters.Add("p_comments", OracleDbType.Clob).Value = model.Comments ?? string.Empty;
-                cmd.Parameters.Add("p_approved", OracleDbType.Varchar2).Value = model.Decision ?? string.Empty;
+                cmd.Parameters.Add("p_approved", OracleDbType.Varchar2).Value = decision ?? string.Empty;
                 cmd.Parameters.Add("p_approved_by", OracleDbType.Decimal).Value = approvedByPpNo.Value;
                 cmd.Parameters.Add("o_final_approval_id", OracleDbType.Decimal).Direction = ParameterDirection.Output;
                 cmd.ExecuteNonQuery();
                 var id = SafeOracleIntValue(cmd.Parameters["o_final_approval_id"].Value);
                 return id;
                 }
+            }
+
+        public int AddFinalApproval(FinalApprovalModel model)
+            {
+            return SaveFinalApprovalRecord(model, model?.Decision ?? string.Empty);
+            }
+
+        public int FinalizeIidReport(FinalApprovalModel model)
+            {
+            return SaveFinalApprovalRecord(model, "APPROVE");
             }
 
         public InquiryReportFilesModel GetInquiryReportFiles(int reportId)
@@ -2295,6 +2305,88 @@ namespace AIS.Controllers
             System.Diagnostics.Debug.WriteLine($"[IID SAVE] Procedure={procedureName}; {summary}");
             }
 
+        private static bool ContainsFilterValue(DataRow row, string filterValue, params string[] columnNames)
+            {
+            if (row == null || string.IsNullOrWhiteSpace(filterValue))
+                {
+                return true;
+                }
+
+            var search = filterValue.Trim();
+            foreach (var columnName in columnNames ?? Array.Empty<string>())
+                {
+                if (string.IsNullOrWhiteSpace(columnName) || !row.Table.Columns.Contains(columnName))
+                    {
+                    continue;
+                    }
+
+                var value = row[columnName]?.ToString() ?? string.Empty;
+                if (value.IndexOf(search, StringComparison.OrdinalIgnoreCase) >= 0)
+                    {
+                    return true;
+                    }
+                }
+
+            return false;
+            }
+
+        private static bool EqualsFilterValue(DataRow row, int? filterValue, params string[] columnNames)
+            {
+            if (row == null || !filterValue.HasValue || filterValue.Value <= 0)
+                {
+                return true;
+                }
+
+            foreach (var columnName in columnNames ?? Array.Empty<string>())
+                {
+                if (string.IsNullOrWhiteSpace(columnName) || !row.Table.Columns.Contains(columnName))
+                    {
+                    continue;
+                    }
+
+                var value = row[columnName]?.ToString() ?? string.Empty;
+                if (int.TryParse(value, out var parsed) && parsed == filterValue.Value)
+                    {
+                    return true;
+                    }
+                }
+
+            return false;
+            }
+
+        private static DataTable ApplyReportFilter(DataTable source, ReportFilterModel filter)
+            {
+            if (source == null || source.Rows.Count == 0 || filter == null)
+                {
+                return source ?? new DataTable();
+                }
+
+            var filtered = source.Clone();
+            foreach (DataRow row in source.Rows)
+                {
+                var include = true;
+
+                include &= EqualsFilterValue(row, filter.ComplaintId, "COMPLAINT_ID", "ComplaintId");
+                include &= ContainsFilterValue(row, filter.Complaint, "COMPLAINT_NO", "ComplaintNo", "COMPLAINT");
+                include &= ContainsFilterValue(row, filter.Nature, "NATURE", "Nature");
+                include &= ContainsFilterValue(row, filter.Source, "SOURCE", "RECEIVED_FROM", "Source");
+                include &= ContainsFilterValue(row, filter.Category, "CATEGORY", "Category");
+                include &= ContainsFilterValue(row, filter.PertainsTo, "PERTAINS_TO_SUMMARY", "PERTAINS_TO", "LOCATION_TYPE_TEXT");
+                include &= ContainsFilterValue(row, filter.Region, "REGION", "REGION_NAME");
+                include &= ContainsFilterValue(row, filter.Branch, "BRANCH", "BRANCH_NAME");
+                include &= ContainsFilterValue(row, filter.Unit, "UNIT", "UNIT_NAME", "ASSIGNED_UNIT", "ASSIGNED_UNIT_NAME");
+                include &= ContainsFilterValue(row, filter.Accused, "NAME_ACCUSED", "ACCUSED", "ACCUSED_NAME");
+                include &= ContainsFilterValue(row, filter.Status, "STATUS", "Status");
+
+                if (include)
+                    {
+                    filtered.ImportRow(row);
+                    }
+                }
+
+            return filtered;
+            }
+
         public DataTable GetReports(ReportFilterModel filter)
             {
             var sessionHandler = CreateSessionHandler();
@@ -2330,7 +2422,7 @@ namespace AIS.Controllers
                     {
                     dt.Load(rdr);
                     }
-                return dt;
+                return ApplyReportFilter(dt, filter);
                 }
             }
         }
