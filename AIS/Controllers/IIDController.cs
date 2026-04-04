@@ -172,7 +172,8 @@ namespace AIS.Controllers
                     return PartialView("../IID/InquiryReportReadOnly");
 
                 case "REPORTS":
-                    return PartialView("../IID/Reports");
+                    ViewData["EngId"] = complaintId;
+                    return PartialView("../IID/Exceptions_Reports");
 
                 default:
                     return NotFound();
@@ -398,14 +399,87 @@ namespace AIS.Controllers
             }
 
         [HttpGet, HttpPost]
-        public IActionResult Reports(int? complaintId = null)
+        public IActionResult Reports(int? complaintId = null, int? engId = null)
             {
             ViewData["TopMenu"] = tm.GetTopMenus();
             ViewData["TopMenuPages"] = tm.GetTopMenusPages();
             if (!User.Identity.IsAuthenticated)
                 return RedirectToAction("Index", "Login");
-            ViewData["ComplaintId"] = complaintId ?? 0;
-            return View("../IID/Reports");
+            ViewData["ComplaintId"] = complaintId ?? engId ?? 0;
+            ViewData["EngId"] = engId ?? complaintId ?? 0;
+            return View("../IID/Exceptions_Reports");
+            }
+
+        [HttpGet, HttpPost]
+        public IActionResult Exceptions_Reports(int? engId = null, int? complaintId = null)
+            {
+            ViewData["TopMenu"] = tm.GetTopMenus();
+            ViewData["TopMenuPages"] = tm.GetTopMenusPages();
+            if (!User.Identity.IsAuthenticated)
+                return RedirectToAction("Index", "Login");
+            ViewData["ComplaintId"] = complaintId ?? engId ?? 0;
+            ViewData["EngId"] = engId ?? complaintId ?? 0;
+            return View("../IID/Exceptions_Reports");
+            }
+
+        [HttpGet, HttpPost]
+        public IActionResult Account_exception()
+            {
+            ViewData["TopMenu"] = tm.GetTopMenus();
+            ViewData["TopMenuPages"] = tm.GetTopMenusPages();
+            if (!User.Identity.IsAuthenticated)
+                return RedirectToAction("Index", "Login");
+            return View("../IID/Account_exception");
+            }
+
+        [HttpGet, HttpPost]
+        public IActionResult loans_exception()
+            {
+            ViewData["TopMenu"] = tm.GetTopMenus();
+            ViewData["TopMenuPages"] = tm.GetTopMenusPages();
+            if (!User.Identity.IsAuthenticated)
+                return RedirectToAction("Index", "Login");
+            return View("../IID/loans_exception");
+            }
+
+        [HttpGet, HttpPost]
+        public IActionResult account_document()
+            {
+            ViewData["TopMenu"] = tm.GetTopMenus();
+            ViewData["TopMenuPages"] = tm.GetTopMenusPages();
+            if (!User.Identity.IsAuthenticated)
+                return RedirectToAction("Index", "Login");
+            return View("../IID/account_document");
+            }
+
+        [HttpGet, HttpPost]
+        public IActionResult account_transaction()
+            {
+            ViewData["TopMenu"] = tm.GetTopMenus();
+            ViewData["TopMenuPages"] = tm.GetTopMenusPages();
+            if (!User.Identity.IsAuthenticated)
+                return RedirectToAction("Index", "Login");
+            return View("../IID/account_transaction");
+            }
+
+        [HttpGet, HttpPost]
+        public IActionResult loan_documents()
+            {
+            ViewData["TopMenu"] = tm.GetTopMenus();
+            ViewData["TopMenuPages"] = tm.GetTopMenusPages();
+            if (!User.Identity.IsAuthenticated)
+                return RedirectToAction("Index", "Login");
+            return View("../IID/loan_documents");
+            }
+
+        [HttpGet, HttpPost]
+        public IActionResult loan_transactions()
+            {
+            ViewData["TopMenu"] = tm.GetTopMenus();
+            ViewData["TopMenuPages"] = tm.GetTopMenusPages();
+            if (!User.Identity.IsAuthenticated)
+                return RedirectToAction("Index", "Login");
+            return View("../IID/loan_transactions");
             }
 
         [HttpGet, HttpPost]
@@ -457,7 +531,7 @@ namespace AIS.Controllers
                 CreateDashboardItem(0, "TASK_LIST", "Task List", "/IID/TaskListIID", requiresComplaintSelection: false, reloadOnComplaintChange: false, isStep: false),
                 CreateDashboardItem(0, "MONITORING_DASHBOARD", "Monitoring Dashboard", "/IID/MonitoringDashboard", requiresComplaintSelection: false, reloadOnComplaintChange: false, isStep: false),
                 CreateDashboardItem(0, "READ_ONLY_REPORT", "Read Only Report", "/IID/InquiryReportReadOnly", requiresComplaintSelection: true, reloadOnComplaintChange: true, isStep: false),
-                CreateDashboardItem(0, "REPORTS", "Exception Reports", "/IID/Reports", requiresComplaintSelection: false, reloadOnComplaintChange: false, isStep: false)
+                CreateDashboardItem(0, "REPORTS", "Exceptions_Reports", "/IID/Reports", requiresComplaintSelection: true, reloadOnComplaintChange: true, isStep: false)
                 };
 
             foreach (var item in items)

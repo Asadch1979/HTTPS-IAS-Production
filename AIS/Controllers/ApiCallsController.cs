@@ -5162,6 +5162,67 @@ namespace AIS.Controllers
                 }
             }
 
+        [HttpGet]
+        [HttpPost]
+        public List<ListOfReportsModel> get_iid_list_of_reports(int ENG_ID)
+            {
+            return dBConnection.GetIidListOfReports(ENG_ID);
+            }
+
+        [HttpGet]
+        [HttpPost]
+        public IActionResult get_iid_exception_account_report(long ENG_ID, long RPT_ID)
+            {
+            var data = dBConnection.GetIidExceptionReportData(RPT_ID, ENG_ID);
+            return Json(new
+                {
+                columns = data.Columns,
+                rows = data.Rows
+                });
+            }
+
+        [HttpGet]
+        [HttpPost]
+        public List<AccountTransactionSampleModel> get_iid_biomet_account_transaction_sampling_details(int ENG_ID, string AC_NO)
+            {
+            return dBConnection.GetIidAccountTransactions(ENG_ID, AC_NO);
+            }
+
+        [HttpGet]
+        [HttpPost]
+        public List<AccountDocumentBiometSamplingModel> get_iid_biomet_account_documents_sampling_details(string AC_NO)
+            {
+            return dBConnection.GetIidAccountDocuments(AC_NO);
+            }
+
+        [HttpGet]
+        [HttpPost]
+        public List<LoanCaseSampleModel> get_iid_loan_Exceptions(string INDICATOR, int STATUS_ID, int ENG_ID)
+            {
+            return dBConnection.GetIidLoanExceptions(INDICATOR, STATUS_ID, ENG_ID);
+            }
+
+        [HttpGet]
+        [HttpPost]
+        public List<LoanCaseSampleDocumentsModel> get_iid_loan_documents(int ENG_ID, string LOAN_DISB_ID)
+            {
+            return dBConnection.GetIidLoanDocuments(ENG_ID, LOAN_DISB_ID);
+            }
+
+        [HttpGet]
+        [HttpPost]
+        public List<LoanCaseSampleDocumentsModel> get_iid_loan_document_data(int IMAGE_ID)
+            {
+            return dBConnection.GetIidLoanDocumentData(IMAGE_ID);
+            }
+
+        [HttpGet]
+        [HttpPost]
+        public List<LoanCaseSampleTransactionsModel> get_iid_sample_loan_transactions(int ENG_ID, string LOAN_DISB_ID)
+            {
+            return dBConnection.GetIidLoanTransactions(ENG_ID, LOAN_DISB_ID);
+            }
+
         [HttpPost]
         public IActionResult GetComplaintsDropdown(int pageId)
             {

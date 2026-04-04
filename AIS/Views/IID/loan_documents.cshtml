@@ -1,0 +1,33 @@
+﻿@{
+    var page_id = ViewData["PageId"] as int? ?? 0;
+    ViewData["Title"] = "Loan Document List";
+    Layout = "_Layout";
+}
+
+<link rel="stylesheet" href="~/css/sampling.css" />
+<div class="container-fluid mt-4">
+    <div class="card card-sample shadow-sm">
+        <div class="card-header">
+            <h4 class="mb-0">Loan Documents List <span id="sampleTypeHeader" style="color:red;font-weight:bold;"></span></h4>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table id="loan_document_list" class="table table-hover table-bordered table-striped">
+                    <thead>
+                        <tr>
+                            <th>Sr No</th>
+                            <th>Branch Code</th>
+                            <th>Loan Case</th>
+                            <th>Customer Name</th>
+                            <th>Document Name</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+<script src="~/js/csp/Views_IID_loan_documents.js" asp-append-version="true"></script>
+

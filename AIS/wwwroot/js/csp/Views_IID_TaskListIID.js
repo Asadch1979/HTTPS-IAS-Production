@@ -70,7 +70,7 @@
                 actions.push('<a href="' + (dashboardBaseUrl ? buildCaseDashboardUrl(complaintId, 'INQUIRY_REPORT') : g_asiBaseURL + '/IID/InquiryReport?complaintId=' + complaintId) + '">Inquiry Report</a>');
             }
 
-            actions.push('<a href="' + (dashboardBaseUrl ? buildCaseDashboardUtilityUrl(complaintId, 'REPORTS') : g_asiBaseURL + '/IID/Reports?complaintId=' + complaintId) + '">Exception Reports</a>');
+            actions.push('<a href="' + (dashboardBaseUrl ? buildCaseDashboardUtilityUrl(complaintId, 'REPORTS') : g_asiBaseURL + '/IID/Exceptions_Reports?engId=' + complaintId + '&complaintId=' + complaintId) + '">Exception Reports</a>');
 
             if(actions.length === 0){
                 actions.push('<span class="text-muted">-</span>');

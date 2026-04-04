@@ -1,0 +1,31 @@
+﻿@{
+    var page_id = ViewData["PageId"] as int? ?? 0;
+    var passedTitle = Context.Request.Query["title"].ToString();
+    var passedDesc = Context.Request.Query["desc"].ToString();
+    ViewData["Title"] = string.IsNullOrEmpty(passedTitle) ? "CTR Reports Related to Accounts" : passedTitle;
+    ViewData["Description"] = passedDesc;
+    Layout = "_Layout";
+}
+
+<link rel="stylesheet" href="~/css/sampling.css" />
+<div class="container-fluid mt-4">
+    <div class="card card-sample shadow-sm">
+        <div class="card-header">
+            <h4 class="mb-0">@ViewData["Title"]</h4>
+        </div>
+        <div class="card-body">
+            @if (!string.IsNullOrWhiteSpace(ViewData["Description"] as string))
+            {
+                <p class="font-weight-bold text-danger">@ViewData["Description"]</p>
+            }
+            <div class="table-responsive">
+                <table id="biomet_sample_list" class="table table-hover table-bordered table-striped">
+                    <thead id="dynamicHeader"></thead>
+                    <tbody id="dynamicBody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+<script src="~/js/csp/Views_IID_Account_exception.js" asp-append-version="true"></script>
+

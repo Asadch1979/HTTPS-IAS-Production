@@ -1,0 +1,53 @@
+﻿@{
+    var page_id = ViewData["PageId"] as int? ?? 0;
+    var dashboardMode = ViewData["DashboardMode"] as bool? == true;
+    var engId = (int?)ViewData["EngId"] ?? (int?)ViewData["ComplaintId"] ?? 0;
+    ViewData["Title"] = "Exceptions_Reports";
+    Layout = dashboardMode ? null : "_Layout";
+}
+
+<link rel="stylesheet" href="~/css/sampling.css" />
+
+<div id="iidExceptionReportsRoot"
+     data-dashboard-mode="@(dashboardMode ? "true" : "false")"
+     data-eng-id="@engId">
+    <div class="container-fluid mt-4">
+        <div class="card card-sample shadow-sm">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h4 class="mb-0">List of Exception Reports</h4>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table id="listOfSamples" class="table table-hover table-bordered table-striped">
+                        <thead>
+                            <tr>
+                                <th class="col-md-auto">Sr. No.</th>
+                                <th class="col-md-auto">Report Name List</th>
+                                <th class="col-md-auto">Things to be checked</th>
+                                <th>Reporting Period</th>
+                                <th class="col-md-auto text-center">View</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td colspan="5" class="text-center text-muted">Loading reports...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@if (dashboardMode)
+{
+    <script src="~/js/csp/Views_IID_Exceptions_Reports.js" asp-append-version="true"></script>
+}
+else
+{
+@section Scripts {
+    <script src="~/js/csp/Views_IID_Exceptions_Reports.js" asp-append-version="true"></script>
+}
+}
+
