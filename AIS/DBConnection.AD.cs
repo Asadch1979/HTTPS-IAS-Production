@@ -5343,8 +5343,8 @@ namespace AIS.Controllers
                     m.SM_NAME = rdr["sub_menu_name"].ToString();
                     m.P_NAME = ReadString(rdr, "page_name");
                     m.P_KEY = ReadString(rdr, "page_key");
-                    m.P_URL = ReadString(rdr, "page_url", "page_path");
-                    m.P_PATH = ReadString(rdr, "page_path", "page_url");
+                    m.P_URL = ReadString(rdr, "page_url");
+                    m.P_PATH = ReadString(rdr, "page_path");
                     m.P_ORDER = ReadString(rdr, "page_order");
                     m.P_STATUS = ReadString(rdr, "status");
                     m.P_HIDE_MENU = ReadString(rdr, "hide_menu");
@@ -5434,10 +5434,8 @@ namespace AIS.Controllers
                     cmd.Parameters.Add("M_ID", OracleDbType.Int32).Value = pageModel.M_ID;
                     cmd.Parameters.Add("SM_ID", OracleDbType.Int32).Value = pageModel.SM_ID;
                     cmd.Parameters.Add("P_NAME", OracleDbType.Varchar2).Value = pageModel.P_NAME;
-                    cmd.Parameters.Add(argumentSet.PageKeyArgument, OracleDbType.Varchar2).Value =
-                        string.IsNullOrWhiteSpace(pageModel.P_KEY) ? DBNull.Value : pageModel.P_KEY;
-                    cmd.Parameters.Add(argumentSet.PageUrlArgument, OracleDbType.Varchar2).Value =
-                        string.IsNullOrWhiteSpace(pageModel.P_URL) ? DBNull.Value : pageModel.P_URL;
+                    cmd.Parameters.Add("P_page_key", OracleDbType.Varchar2).Value = pageModel.P_KEY;
+                    cmd.Parameters.Add("P_page_url", OracleDbType.Varchar2).Value = pageModel.P_NAME;
                     cmd.Parameters.Add("P_PATH", OracleDbType.Varchar2).Value = pageModel.P_PATH;
                     cmd.Parameters.Add("P_ORDER", OracleDbType.Int32).Value = pageModel.P_ORDER;
                     cmd.Parameters.Add("P_STATUS", OracleDbType.Varchar2).Value = pageModel.P_STATUS;
