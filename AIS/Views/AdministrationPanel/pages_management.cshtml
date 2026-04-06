@@ -46,22 +46,26 @@
 </div>
 
 <div class="row col-md-12 mt-3">
-    <table id="listOfMenuPages" class="table table-hover table-bordered table-hover mt-3 table-striped">
-        <thead style="background-color: #19875478 !important;">
-            <tr>
-                <th class="col-md-1">Sr No.</th>
-                <th class="col-md-1">Sub Menu</th>
-                <th class="col-md-1">Page Name</th>
-                <th class="col-md-2">Page Path</th>
-                <th class="col-md-1">Page Order</th>
-                <th class="col-md-1">Page Status</th>
-                <th class="col-md-1">Hide Menu</th>
-                <th class="col-md-1">Action</th>
-            </tr>
-        </thead>
-        <tbody>
-        </tbody>
-    </table>
+    <div class="table-responsive">
+        <table id="listOfMenuPages" class="table table-hover table-bordered table-hover mt-3 table-striped">
+            <thead style="background-color: #19875478 !important;">
+                <tr>
+                    <th class="col-md-1">Sr No.</th>
+                    <th class="col-md-1">Sub Menu</th>
+                    <th class="col-md-2">Page Name</th>
+                    <th class="col-md-2">Page Key</th>
+                    <th class="col-md-2">Page URL</th>
+                    <th class="col-md-2">Page Path</th>
+                    <th class="col-md-1">Page Order</th>
+                    <th class="col-md-1">Page Status</th>
+                    <th class="col-md-1">Hide Menu</th>
+                    <th class="col-md-1">Action</th>
+                </tr>
+            </thead>
+            <tbody>
+            </tbody>
+        </table>
+    </div>
 </div>
 
 
@@ -103,8 +107,16 @@
                         <input class="form-control alnum-only" id="page_name_field" data-allow-amp="true" data-allow-question="true" data-maxlen="150" />
                     </div>
                     <div class="form-group">
+                        <label>Page Key</label>
+                        <input class="form-control" id="page_key_field" data-validate="plain-text" maxlength="100" />
+                    </div>
+                    <div class="form-group">
+                        <label>Page URL</label>
+                        <input class="form-control" id="page_url_field" data-validate="plain-text" maxlength="100" />
+                    </div>
+                    <div class="form-group">
                         <label>Page Path</label>
-                        <input class="form-control" id="page_path_field" data-validate="plain-text" />
+                        <input class="form-control" id="page_path_field" data-validate="plain-text" maxlength="100" />
                     </div>
                       <div class="form-group">
                         <label>Page Order</label>
@@ -131,4 +143,4 @@
         </div>
     </div>
 </div>
-<script src="~/js/csp/Views_AdministrationPanel_pages_management.js?v=1"></script>
+<script src="~/js/csp/Views_AdministrationPanel_pages_management.js?v=2"></script>

@@ -5328,6 +5328,7 @@ namespace AIS.Controllers
                 {
                 cmd.CommandText = "pkg_ad.P_GET_ALL_PAGES";
                 cmd.CommandType = CommandType.StoredProcedure;
+                cmd.BindByName = true;
                 cmd.Parameters.Clear();
                 cmd.Parameters.Add("M_ID", OracleDbType.Int32).Value = M_ID;
                 cmd.Parameters.Add("SM_ID", OracleDbType.Int32).Value = SM_ID;
@@ -5340,11 +5341,13 @@ namespace AIS.Controllers
                     m.M_ID = rdr["menu_id"].ToString();
                     m.SM_ID = rdr["sub_menu_id"].ToString();
                     m.SM_NAME = rdr["sub_menu_name"].ToString();
-                    m.P_NAME = rdr["page_name"].ToString();
-                    m.P_PATH = rdr["page_path"].ToString();
-                    m.P_ORDER = rdr["page_order"].ToString();
-                    m.P_STATUS = rdr["status"].ToString();
-                    m.P_HIDE_MENU = rdr["hide_menu"].ToString();
+                    m.P_NAME = ReadString(rdr, "page_name");
+                    m.P_KEY = ReadString(rdr, "page_key");
+                    m.P_URL = ReadString(rdr, "page_url", "page_path");
+                    m.P_PATH = ReadString(rdr, "page_path", "page_url");
+                    m.P_ORDER = ReadString(rdr, "page_order");
+                    m.P_STATUS = ReadString(rdr, "status");
+                    m.P_HIDE_MENU = ReadString(rdr, "hide_menu");
 
                     resp.Add(m);
                     }
@@ -5369,25 +5372,11 @@ namespace AIS.Controllers
                 }
             string resp = "";
 
-            using (OracleCommand cmd = con.CreateCommand())
-                {
-                cmd.CommandText = "pkg_ad.P_ADD_NEW_PAGE";
-                cmd.CommandType = CommandType.StoredProcedure;
-                cmd.Parameters.Clear();
-                cmd.Parameters.Add("M_ID", OracleDbType.Int32).Value = pageModel.M_ID;
-                cmd.Parameters.Add("SM_ID", OracleDbType.Int32).Value = pageModel.SM_ID;
-                cmd.Parameters.Add("P_NAME", OracleDbType.Varchar2).Value = pageModel.P_NAME;
-                cmd.Parameters.Add("P_PATH", OracleDbType.Varchar2).Value = pageModel.P_PATH;
-                cmd.Parameters.Add("P_ORDER", OracleDbType.Int32).Value = pageModel.P_ORDER;
-                cmd.Parameters.Add("P_STATUS", OracleDbType.Varchar2).Value = pageModel.P_STATUS;
-                cmd.Parameters.Add("P_HIDE_MENU", OracleDbType.Int32).Value = pageModel.P_HIDE_MENU;
-                cmd.Parameters.Add("T_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
-                OracleDataReader rdr = cmd.ExecuteReader();
-                while (rdr.Read())
-                    {
-                    resp = rdr["remarks"].ToString();
-                    }
-                }
+            resp = ExecuteMenuPageMaintenance(
+                con,
+                "pkg_ad.P_ADD_NEW_PAGE",
+                pageModel,
+                includePageId: false);
             con.Dispose();
             return resp;
 
@@ -5408,30 +5397,97 @@ namespace AIS.Controllers
                 }
             string resp = "";
 
-            using (OracleCommand cmd = con.CreateCommand())
-                {
-                cmd.CommandText = "pkg_ad.P_UPDATE_PAGE";
-                cmd.CommandType = CommandType.StoredProcedure;
-                cmd.Parameters.Clear();
-                cmd.Parameters.Add("P_ID", OracleDbType.Int32).Value = pageModel.P_ID;
-                cmd.Parameters.Add("M_ID", OracleDbType.Int32).Value = pageModel.M_ID;
-                cmd.Parameters.Add("SM_ID", OracleDbType.Int32).Value = pageModel.SM_ID;
-                cmd.Parameters.Add("P_NAME", OracleDbType.Varchar2).Value = pageModel.P_NAME;
-                cmd.Parameters.Add("P_PATH", OracleDbType.Varchar2).Value = pageModel.P_PATH;
-                cmd.Parameters.Add("P_ORDER", OracleDbType.Int32).Value = pageModel.P_ORDER;
-                cmd.Parameters.Add("P_STATUS", OracleDbType.Varchar2).Value = pageModel.P_STATUS;
-                cmd.Parameters.Add("P_HIDE_MENU", OracleDbType.Int32).Value = pageModel.P_HIDE_MENU;
-                cmd.Parameters.Add("T_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
-                OracleDataReader rdr = cmd.ExecuteReader();
-                while (rdr.Read())
-                    {
-                    resp = rdr["remarks"].ToString();
-                    }
-                }
+            resp = ExecuteMenuPageMaintenance(
+                con,
+                "pkg_ad.P_UPDATE_PAGE",
+                pageModel,
+                includePageId: true);
             con.Dispose();
             return resp;
 
             }
+
+        private string ExecuteMenuPageMaintenance(
+            OracleConnection con,
+            string procedureName,
+            MenuPagesAssignmentModel pageModel,
+            bool includePageId)
+            {
+            OracleException lastArgumentException = null;
+
+            for (var i = 0; i < MenuPageArgumentSets.Length; i++)
+                {
+                var argumentSet = MenuPageArgumentSets[i];
+
+                using (OracleCommand cmd = con.CreateCommand())
+                    {
+                    cmd.CommandText = procedureName;
+                    cmd.CommandType = CommandType.StoredProcedure;
+                    cmd.BindByName = true;
+                    cmd.Parameters.Clear();
+
+                    if (includePageId)
+                        {
+                        cmd.Parameters.Add("P_ID", OracleDbType.Int32).Value = pageModel.P_ID;
+                        }
+
+                    cmd.Parameters.Add("M_ID", OracleDbType.Int32).Value = pageModel.M_ID;
+                    cmd.Parameters.Add("SM_ID", OracleDbType.Int32).Value = pageModel.SM_ID;
+                    cmd.Parameters.Add("P_NAME", OracleDbType.Varchar2).Value = pageModel.P_NAME;
+                    cmd.Parameters.Add(argumentSet.PageKeyArgument, OracleDbType.Varchar2).Value =
+                        string.IsNullOrWhiteSpace(pageModel.P_KEY) ? DBNull.Value : pageModel.P_KEY;
+                    cmd.Parameters.Add(argumentSet.PageUrlArgument, OracleDbType.Varchar2).Value =
+                        string.IsNullOrWhiteSpace(pageModel.P_URL) ? DBNull.Value : pageModel.P_URL;
+                    cmd.Parameters.Add("P_PATH", OracleDbType.Varchar2).Value = pageModel.P_PATH;
+                    cmd.Parameters.Add("P_ORDER", OracleDbType.Int32).Value = pageModel.P_ORDER;
+                    cmd.Parameters.Add("P_STATUS", OracleDbType.Varchar2).Value = pageModel.P_STATUS;
+                    cmd.Parameters.Add("P_HIDE_MENU", OracleDbType.Int32).Value = pageModel.P_HIDE_MENU;
+                    cmd.Parameters.Add("T_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+
+                    try
+                        {
+                        string resp = "";
+                        using OracleDataReader rdr = cmd.ExecuteReader();
+                        while (rdr.Read())
+                            {
+                            resp = ReadString(rdr, "remarks");
+                            }
+
+                        return resp;
+                        }
+                    catch (OracleException ex) when (i < MenuPageArgumentSets.Length - 1 && IsMenuPageArgumentMismatch(ex))
+                        {
+                        lastArgumentException = ex;
+                        }
+                    }
+                }
+
+            if (lastArgumentException != null)
+                {
+                throw lastArgumentException;
+                }
+
+            return string.Empty;
+            }
+
+        private static bool IsMenuPageArgumentMismatch(OracleException ex)
+            {
+            if (ex == null)
+                {
+                return false;
+                }
+
+            var message = ex.Message ?? string.Empty;
+            return message.IndexOf("PLS-00306", StringComparison.OrdinalIgnoreCase) >= 0
+                || message.IndexOf("wrong number or types of arguments", StringComparison.OrdinalIgnoreCase) >= 0;
+            }
+
+        private static readonly (string PageKeyArgument, string PageUrlArgument)[] MenuPageArgumentSets =
+            {
+            ("P_KEY", "P_URL"),
+            ("P_PAGE_KEY", "P_PAGE_URL"),
+            ("PAGE_KEY", "PAGE_URL")
+            };
 
         public string UpdateComplianceUnit(int ENT_ID, int AUD_ID, string COMP_ID)
             {

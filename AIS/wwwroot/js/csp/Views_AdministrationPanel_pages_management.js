@@ -51,7 +51,7 @@
                 g_pageArr = data;
                 $('#listOfMenuPages tbody').empty();
                 $.each(data, function (i, v) {
-                    $('#listOfMenuPages tbody').append('<tr><td>' + ++i + '</td><td>' + v.sM_NAME + '</td><td>' + v.p_NAME + '</td><td>' + v.p_PATH + '</td><td>' + v.p_ORDER + '</td><td>' + v.p_STATUS + '</td><td>' + v.p_HIDE_MENU + '</td><td><a href="#" data-onclick="event.preventDefault();updatePageAssignment(' + v.p_ID + ', ' + v.m_ID + ', ' + v.sM_ID + ');">Update</a></td></tr>');
+                    $('#listOfMenuPages tbody').append('<tr><td>' + ++i + '</td><td>' + v.sM_NAME + '</td><td>' + v.p_NAME + '</td><td>' + (v.p_KEY || '') + '</td><td>' + (v.p_URL || '') + '</td><td>' + v.p_PATH + '</td><td>' + v.p_ORDER + '</td><td>' + v.p_STATUS + '</td><td>' + v.p_HIDE_MENU + '</td><td><a href="#" data-onclick="event.preventDefault();updatePageAssignment(' + v.p_ID + ', ' + v.m_ID + ', ' + v.sM_ID + ');">Update</a></td></tr>');
                    
                 });
 
@@ -62,10 +62,13 @@
     }
     function setupNewMenuPage() {
         g_pageId = 0;
+        g_subMenuId = 0;
         $('#menuPageDetailModel').modal('show');
         $('#page_menu_field').val(0);
         $('#page_menu_sub_field').val(0);
         $('#page_name_field').val("");
+        $('#page_key_field').val("");
+        $('#page_url_field').val("");
         $('#page_path_field').val("");
         $('#page_order_field').val("");
         $('#page_status_field').val("");
@@ -82,6 +85,8 @@
                 $('#page_menu_field').val(v.m_ID);
                 $('#page_menu_sub_field').val(v.sM_ID);
                 $('#page_name_field').val(v.p_NAME);
+                $('#page_key_field').val(v.p_KEY || "");
+                $('#page_url_field').val(v.p_URL || "");
                 $('#page_path_field').val(v.p_PATH);
                 $('#page_order_field').val(v.p_ORDER);
                 $('#page_status_field').val(v.p_STATUS);
@@ -107,6 +112,14 @@
             alert("Enter Page Name to proceed");
             return;
         }
+        if ($('#page_key_field').val() == "") {
+            alert("Enter Page Key to proceed");
+            return;
+        }
+        if ($('#page_url_field').val() == "") {
+            alert("Enter Page URL to proceed");
+            return;
+        }
         if ($('#page_path_field').val() == "") {
             alert("Enter Page Path to proceed");
             return;
@@ -116,7 +129,7 @@
             return;
         }
         if ($('#page_status_field').val() == "") {
-            alert("Enter Page Path to proceed");
+            alert("Enter Page Status to proceed");
             return;
         }
         if(g_pageId==0){
@@ -128,6 +141,8 @@
                     'SM_ID': $('#page_menu_sub_field').val(),
                     'P_ID': g_pageId,
                     'P_NAME': $('#page_name_field').val(),
+                    'P_KEY': $('#page_key_field').val(),
+                    'P_URL': $('#page_url_field').val(),
                     'P_PATH': $('#page_path_field').val(),
                     'P_ORDER': $('#page_order_field').val(),
                     'P_STATUS': $('#page_status_field').val(),
@@ -150,6 +165,8 @@
                     'SM_ID': $('#page_menu_sub_field').val(),
                     'P_ID': g_pageId,
                     'P_NAME': $('#page_name_field').val(),
+                    'P_KEY': $('#page_key_field').val(),
+                    'P_URL': $('#page_url_field').val(),
                     'P_PATH': $('#page_path_field').val(),
                     'P_ORDER': $('#page_order_field').val(),
                     'P_STATUS': $('#page_status_field').val(),

@@ -14,6 +14,10 @@ namespace AIS.Models
         [PlainText]
         public string P_NAME { get; set; }
         [PlainText]
+        public string P_KEY { get; set; }
+        [PlainText]
+        public string P_URL { get; set; }
+        [PlainText]
         public string P_PATH { get; set; }
         [PlainText]
         public string P_ORDER { get; set; }
