@@ -11,6 +11,7 @@
 
         $(document).on('input change', '#controllerNameInput', function () {
             clearApiMasterFieldValidation($(this), $('#controllerNameValidation'), 'Controller Name is required.');
+            autoFillApiPathFromController();
         });
 
         $(document).on('change', '#apiMenuInput', function () {
@@ -132,6 +133,27 @@
             });
 
             ddl.val(controller);
+        }
+
+        function buildControllerBasePath(controllerName) {
+            var cleaned = $.trim(controllerName || '');
+            if (!cleaned) {
+                return '';
+            }
+
+            cleaned = cleaned.replace(/Controller$/i, '');
+            cleaned = cleaned.replace(/^\/+|\/+$/g, '');
+
+            return cleaned ? ('/' + cleaned + '/') : '';
+        }
+
+        function autoFillApiPathFromController() {
+            var controllerName = $.trim($('#controllerNameInput').val());
+            if (!controllerName) {
+                return;
+            }
+
+            $('#apiPathInput').val(buildControllerBasePath(controllerName));
         }
 
         function loadAllPages() {

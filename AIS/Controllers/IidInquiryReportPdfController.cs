@@ -139,10 +139,9 @@ namespace AIS.Controllers
                 return NotFound("Complaint not found.");
                 }
 
-            var status = (complaint.Status ?? string.Empty).Trim().ToUpperInvariant();
-            if (status != IidStatuses.ReportSubmitted && status != IidStatuses.Closed && status != IidStatuses.QcCleared)
+            if (!_dbConnection.IsIidComplaintFinalized(complaintId))
                 {
-                return BadRequest("Inquiry report must be completed before PDF generation.");
+                return BadRequest("Inquiry report must be finalized before PDF generation.");
                 }
 
             return null;
@@ -163,8 +162,7 @@ namespace AIS.Controllers
 
         private PdfWatermarkText BuildWatermarkTexts(IidInquiryReportPdfData data)
             {
-            var status = data?.Header?.InquiryStatus?.Trim().ToUpperInvariant();
-            var isFinal = status == IidStatuses.ReportSubmitted || status == IidStatuses.Closed || status == IidStatuses.QcCleared;
+            var isFinal = data?.Header?.IsFinalized ?? false;
             var bigWatermarkText = isFinal ? "FINAL" : "DRAFT";
             var generatedOn = FormatKarachiTimestamp(DateTime.UtcNow);
             var generatedByName = string.IsNullOrWhiteSpace(data?.Header?.GeneratedByName) ? "Unknown User" : data.Header.GeneratedByName.Trim();

@@ -5095,6 +5095,12 @@ namespace AIS.Controllers
             {
             try
                 {
+                var unauthorized = EnsureAuthenticatedSession();
+                if (unauthorized != null)
+                    {
+                    return unauthorized;
+                    }
+
                 if (model == null)
                     {
                     return Json(new { ok = false, message = "Final report payload is required." });
@@ -5961,7 +5967,8 @@ namespace AIS.Controllers
                     model?.ComplaintId ?? 0,
                     accusationId,
                     model?.FindingText,
-                    model?.RecommendationText);
+                    model?.RecommendationText,
+                    model?.Outcome);
                 return Json(BuildIidSaveResponse(rows, "Findings and recommendations saved."));
                 }
             catch (Exception ex)
@@ -6025,12 +6032,15 @@ namespace AIS.Controllers
                     accusationId,
                     request?.FindingText,
                     request?.RecomText,
+                    request?.Outcome,
                     ppno);
+                var savedModel = dBConnection.GetIidFindingsRecommByAccusation(request?.ComplaintId ?? 0, accusationId);
                 return Json(new
                     {
                     ok = rows?.Ok ?? false,
                     message = string.IsNullOrWhiteSpace(rows?.Message) ? "Findings and recommendation saved." : rows.Message,
-                    savedOn = DateTime.Now
+                    outcome = savedModel?.Outcome ?? request?.Outcome ?? string.Empty,
+                    savedOn = savedModel?.UpdatedOn ?? DateTime.Now
                     });
                 }
             catch (Exception ex)
@@ -6203,6 +6213,12 @@ namespace AIS.Controllers
             {
             try
                 {
+                var unauthorized = EnsureAuthenticatedSession();
+                if (unauthorized != null)
+                    {
+                    return unauthorized;
+                    }
+
                 var complaintId = request?.ComplaintId ?? 0;
                 if (complaintId <= 0)
                     {

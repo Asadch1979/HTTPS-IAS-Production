@@ -40,6 +40,40 @@ namespace AIS.Controllers
             return SafeOracleNullableIntValue(value) ?? defaultValue;
             }
 
+        private static bool IsOracleTrue(object value)
+            {
+            if (value == null || value == DBNull.Value)
+                {
+                return false;
+                }
+
+            if (value is bool boolValue)
+                {
+                return boolValue;
+                }
+
+            if (value is OracleDecimal oracleDecimal)
+                {
+                return !oracleDecimal.IsNull && oracleDecimal.ToInt32() != 0;
+                }
+
+            var normalized = value.ToString()?.Trim();
+            if (string.IsNullOrWhiteSpace(normalized))
+                {
+                return false;
+                }
+
+            if (int.TryParse(normalized, out var numericValue))
+                {
+                return numericValue != 0;
+                }
+
+            return string.Equals(normalized, "Y", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(normalized, "YES", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(normalized, "TRUE", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(normalized, "T", StringComparison.OrdinalIgnoreCase);
+            }
+
         private static long? SafeOracleNullableLongValue(object value)
             {
             if (value == null || value == DBNull.Value)
@@ -2014,12 +2048,12 @@ namespace AIS.Controllers
             return list;
             }
 
-        public IidInqProcResult SaveIidInqFindingsRecomm(long complaintId, long accusationId, string findingText, string recommendationText)
+        public IidInqProcResult SaveIidInqFindingsRecomm(long complaintId, long accusationId, string findingText, string recommendationText, string outcome = null)
             {
             var sessionHandler = CreateSessionHandler();
             var loggedInUser = sessionHandler.GetUser();
             var ppno = loggedInUser?.PPNumber ?? string.Empty;
-            return SaveIidFindingsRecommByAccusation(complaintId, accusationId, findingText, recommendationText, ppno);
+            return SaveIidFindingsRecommByAccusation(complaintId, accusationId, findingText, recommendationText, outcome, ppno);
             }
 
         public List<IidAccusationForFindingsRow> GetIidAccusationsForFindings(long complaintId)
@@ -2090,7 +2124,7 @@ namespace AIS.Controllers
                 };
             }
 
-        public IidInqProcResult SaveIidFindingsRecommByAccusation(long complaintId, long accusationId, string findingText, string recomText, string ppno)
+        public IidInqProcResult SaveIidFindingsRecommByAccusation(long complaintId, long accusationId, string findingText, string recomText, string outcome, string ppno)
             {
             using var con = this.DatabaseConnection();
             using var cmd = con.CreateCommand();
@@ -2101,6 +2135,7 @@ namespace AIS.Controllers
             cmd.Parameters.Add("p_accusation_id", OracleDbType.Int64).Value = accusationId;
             cmd.Parameters.Add("p_finding_text", OracleDbType.Clob).Value = findingText ?? string.Empty;
             cmd.Parameters.Add("p_recom_text", OracleDbType.Clob).Value = recomText ?? string.Empty;
+            cmd.Parameters.Add("p_outcome", OracleDbType.Varchar2).Value = outcome ?? string.Empty;
             cmd.Parameters.Add("p_ppno", OracleDbType.Varchar2).Value = ppno ?? string.Empty;
             AddIidIoCursor(cmd);
             return ExecuteIidResult(cmd);
@@ -2297,6 +2332,24 @@ namespace AIS.Controllers
             cmd.Parameters.Add("P_UPDATED_BY", OracleDbType.Int64).Value = updatedBy ?? (object)DBNull.Value;
             cmd.ExecuteNonQuery();
             return 1;
+            }
+
+        public bool IsIidComplaintFinalized(long complaintId)
+            {
+            if (complaintId <= 0)
+                {
+                return false;
+                }
+
+            using var con = this.DatabaseConnection();
+            using var cmd = con.CreateCommand();
+            cmd.BindByName = true;
+            cmd.CommandType = CommandType.Text;
+            cmd.CommandText = "select is_finalized from t_au_iid_complaint_hdr where complaint_id = :p_complaint_id";
+            cmd.Parameters.Add("p_complaint_id", OracleDbType.Int64).Value = complaintId;
+
+            var result = cmd.ExecuteScalar();
+            return IsOracleTrue(result);
             }
 
 

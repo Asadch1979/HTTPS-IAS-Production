@@ -51,6 +51,13 @@ namespace AIS.Services
             sb.AppendLine(".record-table{ width:100%; border-collapse:collapse; table-layout:fixed; margin:0 0 2px; }");
             sb.AppendLine(".record-table td{ border:1px solid #666; padding:7px; vertical-align:top; word-wrap:break-word; overflow-wrap:anywhere; }");
             sb.AppendLine(".record-label{ width:29%; font-weight:700; background:#f2f2f2; }");
+            sb.AppendLine(".summary-table{ width:100%; border-collapse:collapse; table-layout:fixed; margin:0 0 2px; font-size:11px; line-height:1.3; }");
+            sb.AppendLine(".summary-table thead{ display:table-header-group; }");
+            sb.AppendLine(".summary-table tr{ page-break-inside:avoid; break-inside:avoid; }");
+            sb.AppendLine(".summary-table th,.summary-table td{ border:1px solid #666; padding:4px 6px; vertical-align:top; text-align:left; word-wrap:break-word; overflow-wrap:anywhere; }");
+            sb.AppendLine(".summary-table th{ background:#f2f2f2; font-weight:700; }");
+            sb.AppendLine(".summary-table p{ margin:0 0 4px; }");
+            sb.AppendLine(".summary-table ul,.summary-table ol{ margin:0; padding-left:18px; }");
             sb.AppendLine(".compact-record{ margin:0 0 8px; }");
             sb.AppendLine(".compact-line{ margin:0 0 4px; }");
             sb.AppendLine(".compact-separator{ color:#666; letter-spacing:1px; margin:6px 0 8px; }");
@@ -66,6 +73,8 @@ namespace AIS.Services
             sb.AppendLine(".signature-name{ font-weight:700; }");
             sb.AppendLine(".signature-role{ padding-top:4px; font-size:11px; color:#444; }");
             sb.AppendLine(".violation-table{ width:100%; border-collapse:collapse; table-layout:fixed; }");
+            sb.AppendLine(".violation-table thead{ display:table-header-group; }");
+            sb.AppendLine(".violation-table tr{ page-break-inside:avoid; break-inside:avoid; }");
             sb.AppendLine(".violation-table th,.violation-table td{ border:1px solid #666; padding:7px; vertical-align:top; word-wrap:break-word; }");
             sb.AppendLine(".violation-table th{ background:#f2f2f2; text-align:left; }");
             sb.AppendLine(".muted{ color:#666; }");
@@ -149,7 +158,18 @@ namespace AIS.Services
                 BuildOrderedList(accusations.Select(x => x.AccusationText)));
 
             AppendAnnexSection(sb, "5. Main Alleged Accused Details",
-                BuildRecordTables(mainAccused, BuildAccusedFields, true));
+                BuildSummaryTable(
+                    mainAccused,
+                    new[] { "Name", "Father Name", "Designation", "Role", "PP No." },
+                    new Func<IidAccusedRowModel, string>[]
+                    {
+                        x => x.PersonName,
+                        x => x.FatherName,
+                        x => x.Designation,
+                        x => x.RoleType,
+                        x => x.PpnoNumber
+                    },
+                    new[] { "22%", "22%", "22%", "18%", "16%" }));
 
             AppendAnnexSection(sb, "6. Alleged Co-accused Details",
                 BuildRecordTables(coAccused, BuildAccusedFields, true));
@@ -165,10 +185,32 @@ namespace AIS.Services
                     BuildRecordScrutinizedFields));
 
             AppendAnnexSection(sb, "9. Time and place of Recording Statement of Complainant",
-                BuildCompactFieldBlocks(complainantStatements, BuildStatementTimelineFields));
+                BuildSummaryTable(
+                    complainantStatements,
+                    new[] { "Name", "Role", "Date", "Place", "Mode" },
+                    new Func<IidStatementRowModel, string>[]
+                    {
+                        x => x.PersonName,
+                        x => x.RoleType,
+                        x => x.StatementDatetime.HasValue ? FormatDate(x.StatementDatetime) : null,
+                        x => x.Place,
+                        x => x.ModeType
+                    },
+                    new[] { "22%", "18%", "20%", "24%", "16%" }));
 
             AppendAnnexSection(sb, "10. Time and place of Recording Statement of Accused",
-                BuildCompactFieldBlocks(accusedStatements, BuildStatementTimelineFields));
+                BuildSummaryTable(
+                    accusedStatements,
+                    new[] { "Name", "Role", "Date", "Place", "Mode" },
+                    new Func<IidStatementRowModel, string>[]
+                    {
+                        x => x.PersonName,
+                        x => x.RoleType,
+                        x => x.StatementDatetime.HasValue ? FormatDate(x.StatementDatetime) : null,
+                        x => x.Place,
+                        x => x.ModeType
+                    },
+                    new[] { "22%", "18%", "20%", "24%", "16%" }));
 
             var complainantKeyPointsHtml = BuildKeyPointsBlocks(complainantStatements.Select(x => x.KeyPoints));
             if (!string.IsNullOrWhiteSpace(complainantKeyPointsHtml))
@@ -211,6 +253,9 @@ namespace AIS.Services
 
             AppendAnnexSection(sb, "20. Summary of violations statement",
                 BuildViolationSummaryBlocks(frRows));
+
+            AppendAnnexSection(sb, "21. Findings & Recommendation",
+                BuildFindingsRecommendationSummary(data, frRows));
 
             AppendSignatureBlock(sb, data);
             sb.AppendLine("</section>");
@@ -418,6 +463,73 @@ namespace AIS.Services
             return string.Join("<div class='compact-separator'>___________</div>", blocks);
             }
 
+        private static string BuildSummaryTable<T>(IEnumerable<T> rows, IReadOnlyList<string> headers, IReadOnlyList<Func<T, string>> valueSelectors, IReadOnlyList<string> widths = null)
+            {
+            if (rows == null || headers == null || valueSelectors == null || headers.Count == 0 || headers.Count != valueSelectors.Count)
+                {
+                return "<div class='annex-paragraph'>N/A</div>";
+                }
+
+            var rowValues = new List<List<string>>();
+            foreach (var row in rows)
+                {
+                if (row == null)
+                    {
+                    continue;
+                    }
+
+                var values = valueSelectors
+                    .Select(selector => selector == null ? null : selector(row))
+                    .ToList();
+
+                if (!values.Any(value => !string.IsNullOrWhiteSpace(NormalizeNarrativeValue(value))))
+                    {
+                    continue;
+                    }
+
+                rowValues.Add(values);
+                }
+
+            if (!rowValues.Any())
+                {
+                return "<div class='annex-paragraph'>N/A</div>";
+                }
+
+            var sb = new StringBuilder();
+            sb.AppendLine("<table class='summary-table'>");
+            if (widths != null && widths.Count == headers.Count)
+                {
+                sb.Append("<colgroup>");
+                foreach (var width in widths)
+                    {
+                    sb.AppendFormat(CultureInfo.InvariantCulture, "<col style='width:{0}'/>", EncodeOrDefault(width, "auto"));
+                    }
+
+                sb.AppendLine("</colgroup>");
+                }
+
+            sb.AppendLine("<thead><tr>");
+            foreach (var header in headers)
+                {
+                sb.AppendFormat(CultureInfo.InvariantCulture, "<th>{0}</th>", EncodeOrDefault(header));
+                }
+
+            sb.AppendLine("</tr></thead><tbody>");
+            foreach (var values in rowValues)
+                {
+                sb.AppendLine("<tr>");
+                foreach (var value in values)
+                    {
+                    sb.AppendFormat(CultureInfo.InvariantCulture, "<td>{0}</td>", ToParagraphs(value));
+                    }
+
+                sb.AppendLine("</tr>");
+                }
+
+            sb.AppendLine("</tbody></table>");
+            return sb.ToString();
+            }
+
         private static string BuildRecordTable(int index, IEnumerable<KeyValuePair<string, string>> fields, bool showNumber)
             {
             var sb = new StringBuilder();
@@ -501,6 +613,37 @@ namespace AIS.Services
                 }
 
             return string.Join(string.Empty, blocks);
+            }
+
+        private static string BuildFindingsRecommendationSummary(IidInquiryReportPdfData data, IEnumerable<IidFindingRecommendationRowModel> rows)
+            {
+            var findings = NormalizeNarrativeValue(data?.FinalConclusion?.Findings);
+            var recommendation = NormalizeNarrativeValue(data?.FinalConclusion?.Recommendation);
+
+            if (!string.IsNullOrWhiteSpace(findings) || !string.IsNullOrWhiteSpace(recommendation))
+                {
+                return BuildParagraphs(
+                    BuildPair("Findings", findings),
+                    BuildPair("Recommendation", recommendation));
+                }
+
+            var items = (rows ?? Enumerable.Empty<IidFindingRecommendationRowModel>())
+                .Where(x => x != null && (
+                    IsVisibleAccusationText(x.AccusationText)
+                    || !string.IsNullOrWhiteSpace(NormalizeNarrativeValue(x.FindingText))
+                    || !string.IsNullOrWhiteSpace(NormalizeNarrativeValue(x.RecommendationText))))
+                .ToList();
+
+            return BuildSummaryTable(
+                items,
+                new[] { "Accusation", "Finding", "Recommendation" },
+                new Func<IidFindingRecommendationRowModel, string>[]
+                {
+                    x => IsVisibleAccusationText(x.AccusationText) ? x.AccusationText : null,
+                    x => x.FindingText,
+                    x => x.RecommendationText
+                },
+                new[] { "26%", "37%", "37%" });
             }
 
         private static IEnumerable<KeyValuePair<string, string>> BuildAccusedFields(IidAccusedRowModel row)

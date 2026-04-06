@@ -54,6 +54,7 @@ namespace AIS.Controllers
                     ReportTitle = "IID Inquiry Report",
                     ComplaintNo = complaint.ComplaintNo,
                     InquiryStatus = complaint.Status,
+                    IsFinalized = IsIidComplaintFinalized(complaintId),
                     InspectionUnit = complaint.AssignedUnit,
                     TeamLead = GetPlanValue("teamLead"),
                     TeamMembers = GetPlanValue("teamMembers")

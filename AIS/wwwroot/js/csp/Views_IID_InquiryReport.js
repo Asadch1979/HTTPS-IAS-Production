@@ -144,6 +144,22 @@ $(function(){
         return '';
     }
 
+    function readAccusationId(source){
+        return parseInt((source && (source.accusationId || source.AccusationId || source.ACCUSATION_ID)) || 0, 10);
+    }
+
+    function readOutcomeValue(source){
+        return source ? (source.outcome || source.Outcome || source.OUTCOME || '') : '';
+    }
+
+    function readFindingTextValue(source){
+        return source ? (source.findingsText || source.findingText || source.FindingText || source.FINDING_TEXT || '') : '';
+    }
+
+    function readRecommendationTextValue(source){
+        return source ? (source.recommendationText || source.recomText || source.RecommendationText || source.RECOM_TEXT || '') : '';
+    }
+
     function ensureApiSuccess(resp, fallback){
         if(resp && resp.ok === false){
             throw new Error(getResponseMessage(resp) || fallback || 'Operation failed.');
@@ -471,9 +487,9 @@ $(function(){
 
         var applySelection = function(savedData){
             var normalized = {
-                findingsText: savedData && typeof savedData.findingsText !== 'undefined' ? savedData.findingsText : (savedData && typeof savedData.findingText !== 'undefined' ? savedData.findingText : ''),
-                recommendationText: savedData && typeof savedData.recommendationText !== 'undefined' ? savedData.recommendationText : (savedData && typeof savedData.recomText !== 'undefined' ? savedData.recomText : ''),
-                outcome: savedData ? (savedData.outcome || savedData.Outcome || '') : ''
+                findingsText: readFindingTextValue(savedData),
+                recommendationText: readRecommendationTextValue(savedData),
+                outcome: readOutcomeValue(savedData)
             };
 
             state.findingsRecomm.savedFindingsMap[parsedId] = normalized;
@@ -504,9 +520,9 @@ $(function(){
             ensureApiSuccess(resp, 'Failed to load findings status grid.');
             var rows = extractData(resp).filter(isStatusRowSaved);
             rows.forEach(function(row){
-                var id = parseInt(row.accusationId, 10);
+                var id = readAccusationId(row);
                 if(!isNaN(id) && id > 0){
-                    var rowOutcome = row.outcome || row.Outcome || state.findingsRecomm.outcomes[id] || "";
+                    var rowOutcome = readOutcomeValue(row) || state.findingsRecomm.outcomes[id] || "";
                     state.findingsRecomm.outcomes[id] = rowOutcome;
                     state.findingsRecomm.lockedOutcomes[id] = isStatusRowSaved(row);
                 }
@@ -544,12 +560,12 @@ $(function(){
             state.findingsRecomm.accusationOptions = buildFindingsAccusationList(extractData(accusationsResponse));
             state.findingsRecomm.savedFindingsMap = {};
             extractData(findingsResponse).forEach(function(row){
-                var id = parseInt(row.accusationId, 10);
+                var id = readAccusationId(row);
                 if(isNaN(id) || id <= 0){ return; }
                 state.findingsRecomm.savedFindingsMap[id] = {
-                    findingsText: row.findingsText || row.findingText || '',
-                    recommendationText: row.recommendationText || row.recomText || '',
-                    outcome: row.outcome || row.Outcome || ''
+                    findingsText: readFindingTextValue(row),
+                    recommendationText: readRecommendationTextValue(row),
+                    outcome: readOutcomeValue(row)
                 };
                 if(state.findingsRecomm.savedFindingsMap[id].outcome){
                     state.findingsRecomm.outcomes[id] = state.findingsRecomm.savedFindingsMap[id].outcome;
@@ -1429,9 +1445,11 @@ $(function(){
 
             return window.iidSaveIidFindingsRecommByAccusation({ complaintId: complaintId, accusationId: selectedAccusationId, findingText: findingHtml, recomText: recommendationHtml, outcome: outcome }).then(function(resp){
                 ensureApiSuccess(resp, 'Findings & recommendations save failed.');
-                state.findingsRecomm.savedFindingsMap[selectedAccusationId] = { findingsText: findingHtml, recommendationText: recommendationHtml, outcome: outcome };
+                var savedOutcome = readOutcomeValue(resp) || outcome;
+                state.findingsRecomm.savedFindingsMap[selectedAccusationId] = { findingsText: findingHtml, recommendationText: recommendationHtml, outcome: savedOutcome };
+                state.findingsRecomm.outcomes[selectedAccusationId] = savedOutcome;
                 state.findingsRecomm.lockedOutcomes[selectedAccusationId] = true;
-                upsertFindingsStatusRow({ accusationId: selectedAccusationId, accusationText: (state.findingsRecomm.accusationOptions || []).filter(function(x){ return parseInt(x.accusationId, 10) === selectedAccusationId; }).map(function(x){ return x.accusationText; })[0] || '', isSaved: true, outcome: outcome, savedOn: (resp && resp.savedOn) || (resp && resp.data && resp.data.savedOn) || new Date().toISOString() });
+                upsertFindingsStatusRow({ accusationId: selectedAccusationId, accusationText: (state.findingsRecomm.accusationOptions || []).filter(function(x){ return parseInt(x.accusationId, 10) === selectedAccusationId; }).map(function(x){ return x.accusationText; })[0] || '', isSaved: true, outcome: savedOutcome, savedOn: (resp && resp.savedOn) || (resp && resp.data && resp.data.savedOn) || new Date().toISOString() });
                 return loadFindingsStatusGrid().then(function(){
                     state.savedSteps[8] = (state.findingsRecomm.statusRows || []).some(isStatusRowSaved);
                     state.dirtySteps[8] = false;
