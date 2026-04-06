@@ -3921,14 +3921,33 @@ namespace AIS.Controllers
             return dBConnection.GetMenuPagesForAdminPanel(M_ID, SM_ID);
             }
         [HttpPost]
-        public string add_menu_page_for_admin_panel(MenuPagesAssignmentModel mPage)
+        public string add_menu_page_for_admin_panel(
+            int M_ID = 0,
+            int SM_ID = 0,
+            string P_NAME = "",
+            string P_KEY = "",
+            string P_URL = "",
+            string P_PATH = "",
+            int P_ORDER = 0,
+            string P_STATUS = "",
+            int P_HIDE_MENU = 0)
             {
-            return "{\"Status\":true,\"Message\":\"" + dBConnection.AddMenuPageForAdminPanel(mPage) + "\"}";
+            return "{\"Status\":true,\"Message\":\"" + dBConnection.AddMenuPageForAdminPanel(M_ID, SM_ID, P_NAME, P_KEY, P_URL, P_PATH, P_ORDER, P_STATUS, P_HIDE_MENU) + "\"}";
             }
         [HttpPost]
-        public string update_menu_page_for_admin_panel(MenuPagesAssignmentModel mPage)
+        public string update_menu_page_for_admin_panel(
+            int P_ID = 0,
+            int M_ID = 0,
+            int SM_ID = 0,
+            string P_NAME = "",
+            string P_KEY = "",
+            string P_URL = "",
+            string P_PATH = "",
+            int P_ORDER = 0,
+            string P_STATUS = "",
+            int P_HIDE_MENU = 0)
             {
-            return "{\"Status\":true,\"Message\":\"" + dBConnection.UpdateMenuPageForAdminPanel(mPage) + "\"}";
+            return "{\"Status\":true,\"Message\":\"" + dBConnection.UpdateMenuPageForAdminPanel(P_ID, M_ID, SM_ID, P_NAME, P_KEY, P_URL, P_PATH, P_ORDER, P_STATUS, P_HIDE_MENU) + "\"}";
             }
 
         [HttpGet]

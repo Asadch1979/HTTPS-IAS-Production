@@ -353,7 +353,17 @@ namespace AIS.Controllers
                     {
                     existingItem.P_PATH = entry.PagePath;
                     existingItem.P_STATUS = "Y";
-                    _dbConnection.UpdateMenuPageForAdminPanel(existingItem);
+                    _dbConnection.UpdateMenuPageForAdminPanel(
+                        ParseIntValue(existingItem.P_ID),
+                        ParseIntValue(existingItem.M_ID),
+                        ParseIntValue(existingItem.SM_ID),
+                        existingItem.P_NAME,
+                        existingItem.P_KEY,
+                        existingItem.P_URL,
+                        existingItem.P_PATH,
+                        ParseIntValue(existingItem.P_ORDER),
+                        existingItem.P_STATUS,
+                        ParseIntValue(existingItem.P_HIDE_MENU));
                     }
                 }
 
@@ -367,7 +377,17 @@ namespace AIS.Controllers
                 if (pageEntries.All(entry => entry.PageId != pageId))
                     {
                     existingItem.P_STATUS = "N";
-                    _dbConnection.UpdateMenuPageForAdminPanel(existingItem);
+                    _dbConnection.UpdateMenuPageForAdminPanel(
+                        ParseIntValue(existingItem.P_ID),
+                        ParseIntValue(existingItem.M_ID),
+                        ParseIntValue(existingItem.SM_ID),
+                        existingItem.P_NAME,
+                        existingItem.P_KEY,
+                        existingItem.P_URL,
+                        existingItem.P_PATH,
+                        ParseIntValue(existingItem.P_ORDER),
+                        existingItem.P_STATUS,
+                        ParseIntValue(existingItem.P_HIDE_MENU));
                     }
                 }
             }
@@ -549,6 +569,13 @@ namespace AIS.Controllers
                 }
 
             return -1;
+            }
+
+        private static int ParseIntValue(string value, int defaultValue = 0)
+            {
+            return int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var parsed)
+                ? parsed
+                : defaultValue;
             }
 
         private static string BuildApiKey(string route, string method)

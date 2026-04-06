@@ -1,6 +1,6 @@
 @model AIS.Models.WorkflowDashboard.WorkflowDashboardViewModel
 @{
-    ViewData["Title"] = "User & Access Administration Workspace";
+    ViewData["Title"] = Model.DashboardTitle;
     Layout = "_Layout";
     var visibleSteps = Model.VisibleSteps.ToList();
     var currentStep = Model.CurrentStep;
@@ -14,7 +14,7 @@
             <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
                 <div>
                     <a class="navbar-brand fw-bold text-decoration-none mb-1 d-inline-block" href="@homeUrl">IAS</a>
-                    <h4 class="mb-0">User &amp; Access Administration Workspace</h4>
+                    <h4 class="mb-0">@Model.DashboardTitle</h4>
                 </div>
                 <a class="btn btn-outline-primary btn-sm" href="@homeUrl">Home</a>
             </div>
