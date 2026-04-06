@@ -114,11 +114,10 @@ namespace AIS.Controllers
                     }
 
                 var normalizedPath = NormalizeApiPath(request.ApiPath);
-                var normalizedMethod = request.HttpMethod.Trim().ToUpperInvariant();
-
-                if (_dbConnection.ApiPathExists(normalizedPath, normalizedMethod, request.ApiId))
+                var normalizedMethod = NormalizeHttpMethod(request.HttpMethod);
+                if (string.IsNullOrWhiteSpace(normalizedMethod))
                     {
-                    return BadRequest(new { success = false, message = "API path and method must be unique." });
+                    return BadRequest(new { success = false, message = "HTTP Method must be GET, POST, or BOTH." });
                     }
 
                 request.ApiPath = normalizedPath;
@@ -130,27 +129,10 @@ namespace AIS.Controllers
                 switch (action)
                     {
                     case "A":
-                        _dbConnection.InsertApiMaster(new ApiMasterModel
-                            {
-                            ApiName = request.ApiName?.Trim(),
-                            ControllerName = request.ControllerName?.Trim(),
-                            ApiPath = request.ApiPath?.Trim(),
-                            HttpMethod = request.HttpMethod?.Trim().ToUpperInvariant(),
-                            PageId = request.PageId,
-                            IsActive = NormalizeIsActive(request.IsActive)
-                            });
+                        InsertOrExpandApiMaster(request);
                         break;
                     case "U":
-                        _dbConnection.UpdateApiMaster(new ApiMasterModel
-                            {
-                            ApiId = request.ApiId,
-                            ApiName = request.ApiName?.Trim(),
-                            ControllerName = request.ControllerName?.Trim(),
-                            ApiPath = request.ApiPath?.Trim(),
-                            HttpMethod = request.HttpMethod?.Trim().ToUpperInvariant(),
-                            PageId = request.PageId,
-                            IsActive = NormalizeIsActive(request.IsActive)
-                            });
+                        UpdateOrExpandApiMaster(request);
                         break;
                     case "D":
                         _dbConnection.MaintainApiMaster(new ApiMasterModel
@@ -163,6 +145,10 @@ namespace AIS.Controllers
                         return BadRequest(new { success = false, message = "Unsupported action indicator." });
                     }
                 }
+            catch (InvalidOperationException ex)
+                {
+                return BadRequest(new { success = false, message = ex.Message });
+                }
             catch (Exception ex)
                 {
                 _logger.LogError(ex, "Failed to save API master entry for path {Path}.", request.ApiPath);
@@ -170,6 +156,84 @@ namespace AIS.Controllers
                 }
 
             return Json(new { success = true });
+            }
+
+        private void InsertOrExpandApiMaster(ApiMasterSaveRequest request)
+            {
+            if (string.Equals(request.HttpMethod, "BOTH", StringComparison.OrdinalIgnoreCase))
+                {
+                EnsureApiPathIsUnique(request.ApiPath, "GET", 0);
+                EnsureApiPathIsUnique(request.ApiPath, "POST", 0);
+
+                _dbConnection.InsertApiMaster(BuildApiMasterModel(request, "GET"));
+                _dbConnection.InsertApiMaster(BuildApiMasterModel(request, "POST"));
+                return;
+                }
+
+            EnsureApiPathIsUnique(request.ApiPath, request.HttpMethod, 0);
+            _dbConnection.InsertApiMaster(BuildApiMasterModel(request, request.HttpMethod));
+            }
+
+        private void UpdateOrExpandApiMaster(ApiMasterSaveRequest request)
+            {
+            if (!string.Equals(request.HttpMethod, "BOTH", StringComparison.OrdinalIgnoreCase))
+                {
+                EnsureApiPathIsUnique(request.ApiPath, request.HttpMethod, request.ApiId);
+                _dbConnection.UpdateApiMaster(BuildApiMasterModel(request, request.HttpMethod, request.ApiId));
+                return;
+                }
+
+            var existingEntries = _dbConnection.GetApiMasterList() ?? new List<ApiMasterModel>();
+            var existingEntry = existingEntries.Find(item => item.ApiId == request.ApiId);
+            if (existingEntry == null)
+                {
+                throw new InvalidOperationException("API definition not found.");
+                }
+
+            var primaryMethod = NormalizeStoredHttpMethod(existingEntry.HttpMethod);
+            var secondaryMethod = string.Equals(primaryMethod, "POST", StringComparison.OrdinalIgnoreCase) ? "GET" : "POST";
+            var existingPath = NormalizeApiPath(existingEntry.ApiPath);
+            var counterpartEntry = existingEntries.Find(item =>
+                item.ApiId != request.ApiId &&
+                string.Equals(NormalizeStoredHttpMethod(item.HttpMethod), secondaryMethod, StringComparison.OrdinalIgnoreCase) &&
+                (string.Equals(NormalizeApiPath(item.ApiPath), existingPath, StringComparison.OrdinalIgnoreCase) ||
+                 string.Equals(NormalizeApiPath(item.ApiPath), request.ApiPath, StringComparison.OrdinalIgnoreCase)));
+
+            EnsureApiPathIsUnique(request.ApiPath, primaryMethod, request.ApiId);
+            EnsureApiPathIsUnique(request.ApiPath, secondaryMethod, counterpartEntry?.ApiId ?? 0);
+
+            _dbConnection.UpdateApiMaster(BuildApiMasterModel(request, primaryMethod, request.ApiId));
+
+            if (counterpartEntry == null)
+                {
+                _dbConnection.InsertApiMaster(BuildApiMasterModel(request, secondaryMethod));
+                }
+            else
+                {
+                _dbConnection.UpdateApiMaster(BuildApiMasterModel(request, secondaryMethod, counterpartEntry.ApiId));
+                }
+            }
+
+        private void EnsureApiPathIsUnique(string apiPath, string httpMethod, int apiId)
+            {
+            if (_dbConnection.ApiPathExists(apiPath, httpMethod, apiId))
+                {
+                throw new InvalidOperationException("API path and method must be unique.");
+                }
+            }
+
+        private static ApiMasterModel BuildApiMasterModel(ApiMasterSaveRequest request, string httpMethod, int apiId = 0)
+            {
+            return new ApiMasterModel
+                {
+                ApiId = apiId,
+                ApiName = request.ApiName?.Trim(),
+                ControllerName = request.ControllerName?.Trim(),
+                ApiPath = request.ApiPath?.Trim(),
+                HttpMethod = httpMethod,
+                PageId = request.PageId,
+                IsActive = NormalizeIsActive(request.IsActive)
+                };
             }
 
         private static string NormalizeApiPath(string path)
@@ -180,13 +244,41 @@ namespace AIS.Controllers
                 }
 
             var cleaned = path.Trim();
+            cleaned = cleaned.Replace("\\", "/");
             var separatorIndex = cleaned.IndexOf(";", StringComparison.Ordinal);
             if (separatorIndex >= 0)
                 {
                 cleaned = cleaned.Substring(0, separatorIndex);
                 }
 
+            if (!cleaned.StartsWith("/", StringComparison.Ordinal))
+                {
+                cleaned = "/" + cleaned;
+                }
+
             return cleaned.Trim();
+            }
+
+        private static string NormalizeHttpMethod(string httpMethod)
+            {
+            if (string.IsNullOrWhiteSpace(httpMethod))
+                {
+                return string.Empty;
+                }
+
+            var normalized = httpMethod.Trim().ToUpperInvariant();
+            if (normalized == "GET" || normalized == "POST" || normalized == "BOTH")
+                {
+                return normalized;
+                }
+
+            return string.Empty;
+            }
+
+        private static string NormalizeStoredHttpMethod(string httpMethod)
+            {
+            var normalized = NormalizeHttpMethod(httpMethod);
+            return string.IsNullOrWhiteSpace(normalized) || normalized == "BOTH" ? "GET" : normalized;
             }
 
         private static string NormalizeIsActive(string isActive)
