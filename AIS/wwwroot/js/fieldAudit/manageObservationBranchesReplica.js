@@ -302,7 +302,13 @@ function getPageData() {
                 $.each(g_obsList, function (i, v) {
                     g_entityID = v.entitY_ID;
                     $('#auditPeriodNameField').val(v.period);
-                    $('#manageObsPanel tbody').append('<tr id="' + v.obS_ID + '"><td class="text-center">' + v.memO_NO + '</td><td class="text-center">' + v.annexurE_CODE + '</td><td>' + v.heading + '</td><td>' + v.nO_OF_INSTANCES + '</td><td>' + v.obS_RISK + '</td><td>' + v.obS_STATUS + '</td><td class="text-center"><a data-onclick="ObservationUpdatePanel(' + v.obS_ID + ')" href="#" class="text-hover me-2">Manage</a><span class="text-muted">|</span><a data-onclick="printObservation(' + v.obS_ID + ')" href="#" class="text-hover ms-2">Print</a></td></tr>');
+                    var statusText = (v.obS_STATUS || '').toString().trim().toLowerCase();
+                    var actionHtml = '<a data-onclick="ObservationUpdatePanel(' + v.obS_ID + ')" href="#" class="text-hover">Manage</a>';
+                    if (statusText === 'submitted to auditee') {
+                        actionHtml += '<span class="text-muted mx-2">|</span><a data-onclick="printObservation(' + v.obS_ID + ')" href="#" class="text-hover">Print</a>';
+                    }
+
+                    $('#manageObsPanel tbody').append('<tr id="' + v.obS_ID + '"><td class="text-center">' + v.memO_NO + '</td><td class="text-center">' + v.annexurE_CODE + '</td><td>' + v.heading + '</td><td>' + v.nO_OF_INSTANCES + '</td><td>' + v.obS_RISK + '</td><td>' + v.obS_STATUS + '</td><td class="text-center">' + actionHtml + '</td></tr>');
                 });
 
                 var tbl = initializeManageObservationTable();
