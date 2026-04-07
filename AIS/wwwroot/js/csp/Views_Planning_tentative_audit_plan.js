@@ -14,7 +14,26 @@
                 entityId: entity_id,
                 entityType: ent_type_id
             });
+            return;
         }
+
+        var baseUrl = (typeof g_asiBaseURL === 'string' && g_asiBaseURL) ? g_asiBaseURL : '';
+        var query = new URLSearchParams({
+            planId: planId || 0,
+            name: name || '',
+            size: size || '',
+            risk: risk || '',
+            freq: freq || '',
+            days: days || '',
+            period: auditperiod || '',
+            periodId: periodId || 0,
+            code: code || '',
+            zoneId: zoneId || 0,
+            entityId: entity_id || 0,
+            entityType: ent_type_id || 0
+        });
+
+        window.location.href = baseUrl + '/Planning/tentative_engagement_plan?' + query.toString();
     }
     $(document).ready(function () {
         $("#searchTableRecord").on("keyup", function () {

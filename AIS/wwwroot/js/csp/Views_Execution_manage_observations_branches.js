@@ -33,6 +33,141 @@ function getPageData() {
     var g_dsa = "";
     var g_tablePage = 0;
     var g_scrollPos = 0;
+    function getManageReferenceContainerSelector() {
+        return '#updateMemoModel #boObservationReferenceSection';
+    }
+    function getManageMemoContent() {
+        var $editor = $('#updateMemoModel .richText-editor').first();
+        if ($editor.length) {
+            return $editor.html();
+        }
+
+        return $('#updateMemoContent').val();
+    }
+    function getManageObservationReferenceId(detail) {
+        if (!detail) {
+            return null;
+        }
+
+        var rawValue = detail.referenceId;
+        if (rawValue === undefined || rawValue === null || rawValue === '') {
+            rawValue = detail.ReferenceId;
+        }
+        if (rawValue === undefined || rawValue === null || rawValue === '') {
+            rawValue = detail.REFERENCE_ID;
+        }
+        if (rawValue === undefined || rawValue === null || rawValue === '') {
+            rawValue = detail.referencE_ID;
+        }
+
+        var parsed = parseInt(rawValue, 10);
+        return Number.isNaN(parsed) ? null : parsed;
+    }
+    function getManageSelectedReferenceId() {
+        var containerSelector = getManageReferenceContainerSelector();
+        var selectedReference = typeof window.getSelectedObservationReference === 'function'
+            ? window.getSelectedObservationReference(containerSelector)
+            : null;
+        var currentReference = typeof window.getCurrentObservationReference === 'function'
+            ? window.getCurrentObservationReference(containerSelector)
+            : null;
+        var rawValue = selectedReference && selectedReference.refId
+            ? selectedReference.refId
+            : (currentReference && currentReference.refId
+                ? currentReference.refId
+                : $(containerSelector + ' #observationReferenceId').val());
+        var parsed = parseInt(rawValue, 10);
+        return Number.isNaN(parsed) ? null : parsed;
+    }
+    function resetManageObservationReference() {
+        var containerSelector = getManageReferenceContainerSelector();
+        var $section = $(containerSelector);
+        if (!$section.length || typeof window.initObservationReference !== 'function') {
+            return;
+        }
+
+        $section.find('#observationReferenceId').val('');
+        window.initObservationReference(containerSelector, {
+            editMode: true,
+            readOnly: false,
+            allowClear: false,
+            forceReload: true,
+            currentReferenceLabel: 'Saved Reference',
+            emptyCurrentText: 'No reference selected yet.',
+            initialRefId: null
+        });
+    }
+    function initManageObservationReference(detail) {
+        var containerSelector = getManageReferenceContainerSelector();
+        if (!$(containerSelector).length || typeof window.initObservationReference !== 'function') {
+            return;
+        }
+
+        window.initObservationReference(containerSelector, {
+            editMode: true,
+            readOnly: false,
+            allowClear: false,
+            forceReload: true,
+            currentReferenceLabel: 'Saved Reference',
+            emptyCurrentText: 'No reference selected yet.',
+            initialRefId: getManageObservationReferenceId(detail)
+        });
+    }
+    function scheduleManageReferenceInit(detail) {
+        var callback = function () {
+            if (detail) {
+                initManageObservationReference(detail);
+                return;
+            }
+
+            resetManageObservationReference();
+        };
+
+        if (window.requestAnimationFrame) {
+            window.requestAnimationFrame(callback);
+            return;
+        }
+
+        window.setTimeout(callback, 0);
+    }
+    function commitManageObservationReference() {
+        if (typeof window.commitObservationReferenceSelection === 'function') {
+            window.commitObservationReferenceSelection(getManageReferenceContainerSelector());
+        }
+    }
+    function buildManageObservationUpdatePayload(obsId) {
+        updateRiskDisplay();
+
+        return {
+            'OBS_ID': obsId,
+            'OBS_TITLE': $('#updateMemo_heading').val(),
+            'OBS_TEXT': getManageMemoContent(),
+            'ANNEXURE_ID': $('#updateMemo_annex').val() || g_annexId,
+            'RISK_ID': g_selectedRiskId || g_riskId,
+            'PROCESS_ID': $('#updateMemo_process').val() || g_processId,
+            'SUBPROCESS_ID': $('#updateMemo_subprocess').val() || g_subProcessId,
+            'CHECKLIST_ID': $('#updateMemo_violation').val() || g_checklistId,
+            'REFERENCE_ID': getManageSelectedReferenceId()
+        };
+    }
+    function saveManageObservationReferenceUpdate(obsId) {
+        var targetObsId = obsId || g_obsId;
+        if (!targetObsId) {
+            alert('Observation is not selected.');
+            return;
+        }
+
+        return $.ajax({
+            url: g_asiBaseURL + "/ApiCalls/update_observation_text",
+            type: "POST",
+            data: buildManageObservationUpdatePayload(targetObsId),
+            cache: false,
+            dataType: "json",
+        }).done(function (data) {
+            commitManageObservationReference();
+            showApiAlert(data);
+        });
+    }
     function preserveTablePosition() {
         g_scrollPos = $('html').scrollTop();
         if ($.fn.DataTable.isDataTable('#manageObsPanel')) {
@@ -66,6 +201,11 @@ function getPageData() {
             },
             engId: engId
         });
+        $('#updateMemoModel').off('hidden.bs.modal.manageReference').on('hidden.bs.modal.manageReference', resetManageObservationReference);
+        $('#obsReferenceSaveUpdateBtn').off('click.manageReference').on('click.manageReference', function () {
+            saveManageObservationReferenceUpdate(g_obsId);
+        });
+        scheduleManageReferenceInit(null);
     });
     function reloadLocation() {
         getEntityObservation();
@@ -215,6 +355,7 @@ function getPageData() {
     }
     function ObservationUpdatePanel(obs_id) {
         g_obsId = obs_id;
+        scheduleManageReferenceInit(null);
         $.each(g_obsList, function (i, v) {
             if (v.obS_ID == obs_id) {
                 g_currentStatus = v.obS_STATUS_ID;
@@ -277,7 +418,7 @@ function getPageData() {
                     $('#updateMemo_evidences').append('<i>No evidence is attached </i>');
                 }
 
-                initReferenceSection(obs_id, false, '#updateMemoModel #referenceSection');
+                scheduleManageReferenceInit(data[0]);
                 var engId = parseInt($('#engIdHidden').val() || 0);
                 respSectionUpdate.updateContext({ newParaId: obs_id, engId: engId });
                 showActionButtons();
@@ -479,22 +620,13 @@ function getPageData() {
     function finalUpdateMemoContent(obs_id) {
         preserveTablePosition();
         g_obsId = obs_id;
-        updateRiskDisplay();
         $.ajax({
             url: g_asiBaseURL + "/ApiCalls/update_observation_text",
             type: "POST",
-            data: {
-                'OBS_ID': g_obsId,
-                'OBS_TITLE': $('#updateMemo_heading').val(),
-                'OBS_TEXT': $('.richText-editor').html(),
-                'ANNEXURE_ID': $('#updateMemo_annex').val() || g_annexId,
-                'RISK_ID': g_selectedRiskId || g_riskId,
-                'PROCESS_ID': $('#updateMemo_process').val() || g_processId,
-                'SUBPROCESS_ID': $('#updateMemo_subprocess').val() || g_subProcessId,
-                'CHECKLIST_ID': $('#updateMemo_violation').val() || g_checklistId
-            },
+            data: buildManageObservationUpdatePayload(g_obsId),
             cache: false,
             success: function (data) {
+                commitManageObservationReference();
                 showApiAlert(data);
                 onAlertCallback(reloadLocation);
             },

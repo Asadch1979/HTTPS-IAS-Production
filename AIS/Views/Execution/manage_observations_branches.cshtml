@@ -208,58 +208,7 @@
                         </div>
                     </div>
                     
-                    <div id="referenceSection" class="mt-3 p-3 border border-danger mb-3">
-                        <h6>References</h6>
-                        <ul id="refList" class="list-group mb-3"></ul>
-                        <button type="button" class="btn btn-success mb-3" id="saveBtn">Save</button>
-                        <div id="searchSection">
-                            <select id="refType" class="form-select mb-2">
-                                <option value="0" selected>Please select reference</option>
-                                <option value="Manual">Manual</option>
-                                <option value="Circular">Circular</option>
-                            </select>
-                            <div id="searchInputs" style="display:none;">
-                                <input id="keyword" class="form-control mb-2" placeholder="keyword" />
-                                <button type="button" class="btn btn-primary" id="searchBtn">Search</button>
-                            </div>
-                            <div id="manualInputs" style="display:none;">
-                                <select id="manualMaster" class="form-select mb-2">
-                                    <option value="">Select manual</option>
-                                </select>
-                                <select id="manualSection" class="form-select mb-2" disabled>
-                                    <option value="">Select section</option>
-                                </select>
-                                <select id="manualChapter" class="form-select mb-2" disabled>
-                                    <option value="">Select chapter</option>
-                                </select>
-                                <div id="manualIndexGridWrapper" style="display:none;">
-                                    <table id="manualIndexTbl" class="table table-sm table-bordered mt-2">
-                                        <thead>
-                                            <tr>
-                                                <th>Action</th>
-                                                <th>Sub Section</th>
-                                                <th>Heading</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody></tbody>
-                                    </table>
-                                </div>
-                            </div>
-                        </div>
-                        <table class="table" id="resultTbl" style="display:none;">
-                            <thead>
-                                <tr>
-                                    <th>TITLE</th>
-                                    <th>Circular Date</th>
-                                    <th>INSTRUCTIONS DETAILS</th>
-                                    <th>KEYWORDS</th>
-                                    <th>View Circular</th>
-                                    <th>Action</th>
-                                </tr>
-                            </thead>
-                            <tbody></tbody>
-                        </table>
-                    </div>
+                    @await Html.PartialAsync("~/Views/FieldAudit/BO_Partials/_ObservationReferenceSection.cshtml")
 
                     <div id="auditeeResponseSection" class="mt-3 p-3 border border-danger mb-3">
                         <h6>Auditee Response</h6>
@@ -433,6 +382,6 @@
 }))
 </script>
 @section Scripts {
-    <script src="~/js/csp/Views_Execution_manage_observations_branches.js?v=1"></script>
+    <script src="~/js/csp/Views_Execution_manage_observations_branches.js?v=2"></script>
     <script src="~/js/responsibilitySectionUpdate.js"></script>
 }

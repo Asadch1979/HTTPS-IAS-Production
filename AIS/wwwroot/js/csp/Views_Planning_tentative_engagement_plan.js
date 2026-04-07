@@ -281,7 +281,11 @@
     function redirectToLocation() {
         if (window.planningDashboard && typeof window.planningDashboard.loadStep === 'function') {
             window.planningDashboard.loadStep('AUDIT_PLAN', '5');
+            return;
         }
+
+        var baseUrl = (typeof g_asiBaseURL === 'string' && g_asiBaseURL) ? g_asiBaseURL : '';
+        window.location.href = baseUrl + '/Planning/tentative_audit_plan';
     }
 
     function previewSelectedTeaM() {
