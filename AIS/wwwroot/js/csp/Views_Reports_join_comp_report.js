@@ -2,15 +2,7 @@ $(document).ready(function () {
     if ($.fn.select2) {
         $('#auditDepartmentSelectBox').select2();
     }
-
-    resetJoiningCompletionFooter();
 });
-
-function resetJoiningCompletionFooter() {
-    $('#JOINING_COMPLETION_TOTAL_HIGH').text('0');
-    $('#JOINING_COMPLETION_TOTAL_MEDIUM').text('0');
-    $('#JOINING_COMPLETION_TOTAL_LOW').text('0');
-}
 
 function getJoiningCompletionValue(row, keys, defaultValue) {
     var fallback = defaultValue === undefined ? '' : defaultValue;
@@ -27,15 +19,6 @@ function getJoiningCompletionValue(row, keys, defaultValue) {
     }
 
     return fallback;
-}
-
-function toJoiningCompletionNumber(value) {
-    var numeric = parseInt(value, 10);
-    if (isNaN(numeric)) {
-        return 0;
-    }
-
-    return numeric;
 }
 
 function formatJoiningCompletionDate(value) {
@@ -65,7 +48,6 @@ function formatJoiningCompletionDate(value) {
 
 function getJoiningCompletionExportOptions() {
     return $.extend(true, {}, getSafeExportFormatOptions(), {
-        footer: true,
         columns: function (idx, data, node) {
             return !$(node).hasClass('hide-export');
         }
@@ -117,36 +99,28 @@ function initializeJoiningCompletionGrid() {
 
 function appendJoiningCompletionRow(index, row) {
     var auditBy = getJoiningCompletionValue(row, ['AUDIT_BY', 'audiT_BY', 'audit_BY']);
+    var reportingOffice = getJoiningCompletionValue(row, ['Reporting', 'reporting']);
+    var auditeeCode = getJoiningCompletionValue(row, ['CODE', 'code']);
     var auditeeName = getJoiningCompletionValue(row, ['AUDITEE_NAME', 'auditeE_NAME', 'auditee_NAME']);
     var risk = getJoiningCompletionValue(row, ['Risk', 'risk']);
-    var joiningDate = formatJoiningCompletionDate(getJoiningCompletionValue(row, ['JOINING_DATE', 'joininG_DATE', 'joining_DATE']));
-    var completionDate = formatJoiningCompletionDate(getJoiningCompletionValue(row, ['COMPLETION_DATE', 'completioN_DATE', 'completion_DATE']));
+    var startDate = formatJoiningCompletionDate(getJoiningCompletionValue(row, ['START_DATE', 'starT_DATE', 'start_DATE']));
+    var endDate = formatJoiningCompletionDate(getJoiningCompletionValue(row, ['END_DATE', 'enD_DATE', 'end_DATE']));
     var status = getJoiningCompletionValue(row, ['STATUS', 'status']);
     var issuanceDate = formatJoiningCompletionDate(getJoiningCompletionValue(row, ['Issuancedate', 'issuancedate']));
-    var high = toJoiningCompletionNumber(getJoiningCompletionValue(row, ['High', 'high'], 0));
-    var medium = toJoiningCompletionNumber(getJoiningCompletionValue(row, ['Medium', 'medium'], 0));
-    var low = toJoiningCompletionNumber(getJoiningCompletionValue(row, ['Low', 'low'], 0));
 
     var $tableRow = $('<tr/>');
     $tableRow.append($('<td/>', { text: index, 'class': 'text-center' }));
     $tableRow.append($('<td/>', { text: auditBy, 'class': 'text-start' }));
+    $tableRow.append($('<td/>', { text: reportingOffice, 'class': 'text-start' }));
+    $tableRow.append($('<td/>', { text: auditeeCode, 'class': 'text-center' }));
     $tableRow.append($('<td/>', { text: auditeeName, 'class': 'text-start' }));
     $tableRow.append($('<td/>', { text: risk, 'class': 'text-center' }));
-    $tableRow.append($('<td/>', { text: joiningDate, 'class': 'text-center' }));
-    $tableRow.append($('<td/>', { text: completionDate, 'class': 'text-center' }));
+    $tableRow.append($('<td/>', { text: startDate, 'class': 'text-center' }));
+    $tableRow.append($('<td/>', { text: endDate, 'class': 'text-center' }));
     $tableRow.append($('<td/>', { text: status, 'class': 'text-center' }));
     $tableRow.append($('<td/>', { text: issuanceDate, 'class': 'text-center' }));
-    $tableRow.append($('<td/>', { text: high, 'class': 'text-end' }));
-    $tableRow.append($('<td/>', { text: medium, 'class': 'text-end' }));
-    $tableRow.append($('<td/>', { text: low, 'class': 'text-end' }));
 
     $('#JoiningCompletionGrid tbody').append($tableRow);
-
-    return {
-        high: high,
-        medium: medium,
-        low: low
-    };
 }
 
 function FindJoiningCompletionData() {
@@ -169,7 +143,6 @@ function FindJoiningCompletionData() {
     }
 
     $('#JoiningCompletionGrid tbody').empty();
-    resetJoiningCompletionFooter();
 
     $.ajax({
         url: g_asiBaseURL + '/ApiCalls/get_joining_completion',
@@ -181,25 +154,13 @@ function FindJoiningCompletionData() {
         },
         cache: false,
         success: function (data) {
-            var totalHigh = 0;
-            var totalMedium = 0;
-            var totalLow = 0;
-
             $.each(data || [], function (index, row) {
-                var rowTotals = appendJoiningCompletionRow(index + 1, row);
-                totalHigh += rowTotals.high;
-                totalMedium += rowTotals.medium;
-                totalLow += rowTotals.low;
+                appendJoiningCompletionRow(index + 1, row);
             });
-
-            $('#JOINING_COMPLETION_TOTAL_HIGH').text(totalHigh);
-            $('#JOINING_COMPLETION_TOTAL_MEDIUM').text(totalMedium);
-            $('#JOINING_COMPLETION_TOTAL_LOW').text(totalLow);
 
             initializeJoiningCompletionGrid();
         },
         error: function () {
-            resetJoiningCompletionFooter();
             initializeJoiningCompletionGrid();
             alert('Unable to load the joining/completion report right now. Please try again.');
         },

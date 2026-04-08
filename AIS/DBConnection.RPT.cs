@@ -690,15 +690,20 @@ namespace AIS.Controllers
                         JoiningCompletionReportModel jc = new JoiningCompletionReportModel();
 
                         jc.AUDIT_BY = rdr["AUDIT_BY"].ToString();
+                        jc.Reporting = rdr["REPORTING"].ToString();
+                        jc.CODE = rdr["CODE"].ToString();
                         jc.AUDITEE_NAME = rdr["AUDITEE_NAME"].ToString();
                         jc.Risk = rdr["RISK"].ToString();
-                        jc.JOINING_DATE = Convert.ToDateTime(rdr["JOINING_DATE"].ToString());
-                        jc.COMPLETION_DATE = Convert.ToDateTime(rdr["COMPLETION_DATE"].ToString());
+                        jc.START_DATE = rdr["START_DATE"] == DBNull.Value
+                            ? (DateTime?)null
+                            : Convert.ToDateTime(rdr["START_DATE"]);
+                        jc.END_DATE = rdr["END_DATE"] == DBNull.Value
+                            ? (DateTime?)null
+                            : Convert.ToDateTime(rdr["END_DATE"]);
                         jc.STATUS = rdr["STATUS"].ToString();
-                        jc.Issuancedate = rdr["issuance_date"].ToString();
-                        jc.High = Convert.ToInt32(rdr["HIGH"].ToString());
-                        jc.Medium = Convert.ToInt32(rdr["MEDIUM"].ToString());
-                        jc.Low = Convert.ToInt32(rdr["LOW"].ToString());
+                        jc.Issuancedate = rdr["ISSUANCE_DATE"] == DBNull.Value
+                            ? string.Empty
+                            : Convert.ToDateTime(rdr["ISSUANCE_DATE"]).ToString("dd-MM-yy");
                         list.Add(jc);
                         }
                     }
