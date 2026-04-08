@@ -445,7 +445,7 @@ $(function(){
             return a.accusationId - b.accusationId;
         });
     }
-
+     
     function renderFindingsStatusGrid(){
         var rows = state.findingsRecomm.statusRows || [];
         var savedCount = rows.filter(isStatusRowSaved).length;
