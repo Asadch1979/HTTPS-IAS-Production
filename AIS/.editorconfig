@@ -249,3 +249,6 @@ dotnet_style_operator_placement_when_wrapping = beginning_of_line
 tab_width = 4
 indent_size = 4
 end_of_line = crlf
+
+[*.{js,css,cshtml,html,json,md}]
+end_of_line = lf
