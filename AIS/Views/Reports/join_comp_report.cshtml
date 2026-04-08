@@ -1,4 +1,4 @@
-﻿@{
+@{
     var page_id = ViewData["PageId"] as int? ?? 0;
 }
 
@@ -7,21 +7,22 @@
     Layout = "_Layout";
 }
 
-
-
-
-<div class="mt-3 mb-4">
-    <h3 style="color: #be0e43">Joining/Completion Report</h3>
-
-
-</div>
-
+<style type="text/css">
+    #JoiningCompletionGrid thead th,
+    #JoiningCompletionGrid tfoot th {
+        vertical-align: middle !important;
+    }
+</style>
 
 <div class="row col-md-12 mt-3">
+    <h3 style="color: #be0e43">Joining/Completion Report</h3>
+</div>
 
-    <label class="font-weight-bold"> Audit Department/ Audit Cluster</label>
+<div class="row g-3 col-md-12 mt-3">
+    <div class="col-12">
+        <label class="font-weight-bold">Audit Department/ Audit Cluster</label>
         <select id="auditDepartmentSelectBox" class="form-select form-control" aria-label="Default select example">
-        <option value="0">--Select Department/Audit Cluster--</option>
+            <option value="0" selected>--All--</option>
             @{
                 if (ViewData["DepartmentList"] != null)
                 {
@@ -32,49 +33,52 @@
                 }
             }
         </select>
-  
-</div>
-
-
-
-
-<div class="row col-md-12 mt-3">
+    </div>
 
     <div class="col-md-6">
         <label class="font-weight-bold">Audit Plan Start Date</label>
         <input id="auditStartDateField" class="form-select form-control" aria-label="Default select example" type="date" />
     </div>
     <div class="col-md-6">
-        <label class="font-weight-bold">Audit Plan End Date </label>
+        <label class="font-weight-bold">Audit Plan End Date</label>
         <input id="auditEndDateField" class="form-select form-control" aria-label="Default select example" type="date" />
+    </div>
+
+    <div class="col-12 d-flex justify-content-end">
+        <button type="button" data-onclick="FindJoiningCompletionData();" class="btn btn-danger">Find</button>
     </div>
 </div>
 
-<div class="row col-md-12 w-100 mt-3">
-    <button data-onclick="FindJoiningCompletionData();" cache: false, class="btn btn-primary">Find</button> 
+<div class="row col-md-12 mt-3">
+    <div class="table-responsive">
+        <table id="JoiningCompletionGrid" class="table table-hover table-bordered mt-3 table-striped">
+            <thead style="background-color: #19875478 !important;">
+                <tr class="text-center align-middle">
+                    <th>Sr. No.</th>
+                    <th>Department / Audit Cluster</th>
+                    <th>Auditee Name</th>
+                    <th>Risk</th>
+                    <th>Joining Date</th>
+                    <th>Completion Date</th>
+                    <th>Status</th>
+                    <th>Report Issuance Date</th>
+                    <th>High</th>
+                    <th>Medium</th>
+                    <th>Low</th>
+                </tr>
+            </thead>
+            <tbody>
+            </tbody>
+            <tfoot>
+                <tr>
+                    <th colspan="8" class="text-end">Totals</th>
+                    <th id="JOINING_COMPLETION_TOTAL_HIGH" class="text-end">0</th>
+                    <th id="JOINING_COMPLETION_TOTAL_MEDIUM" class="text-end">0</th>
+                    <th id="JOINING_COMPLETION_TOTAL_LOW" class="text-end">0</th>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
 </div>
-
-<div class="mt-3">
-    <table id="JoiningCompletionGrid" class="table table-hover table-bordered table-hover mt-3 table-striped">
-        <thead style="background-color: #19875478 !important; ">
-            <tr>
-                <th>Sr. No.</th>
-                <th>Department <br />Audit Cluster</th>
-                <th>Auditee Name</th>
-                <th>Team Name</th>
-                <th>PP No.</th>
-                <th>Name</th>
-                <th>Team Lead</th>
-                <th>Joining Date</th>
-                <th>Completion Date</th>
-                <th>Status</th>
-            </tr>
-        </thead>
-        <tbody>
-         
-        </tbody>
-    </table>
-</div>
-
 
 <script src="~/js/csp/Views_Reports_join_comp_report.js?v=1"></script>

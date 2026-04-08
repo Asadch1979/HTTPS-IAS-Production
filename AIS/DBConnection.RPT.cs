@@ -659,6 +659,18 @@ namespace AIS.Controllers
         public List<JoiningCompletionReportModel> GetJoiningCompletion(int DEPT_ID, DateTime AUDIT_STARTDATE, DateTime AUDIT_ENDDATE)
             {
             List<JoiningCompletionReportModel> list = new List<JoiningCompletionReportModel>();
+            var effectiveDeptId = DEPT_ID;
+            if (effectiveDeptId <= 0)
+                {
+                var loggedInUser = CreateSessionHandler().GetUser();
+                if (loggedInUser == null || loggedInUser.UserEntityID.GetValueOrDefault() <= 0)
+                    {
+                    return list;
+                    }
+
+                effectiveDeptId = loggedInUser.UserEntityID.GetValueOrDefault();
+                }
+
             using (var con = this.DatabaseConnection())
                 {
                
@@ -667,7 +679,7 @@ namespace AIS.Controllers
                     cmd.CommandText = "pkg_rpt.R_JOININGCOMPLETION";
                     cmd.CommandType = CommandType.StoredProcedure;
                     cmd.Parameters.Clear();
-                    cmd.Parameters.Add("DEPT_ID", OracleDbType.Int32).Value = DEPT_ID;
+                    cmd.Parameters.Add("DEPT_ID", OracleDbType.Int32).Value = effectiveDeptId;
                     cmd.Parameters.Add("AUDIT_START", OracleDbType.Date).Value = AUDIT_STARTDATE;
                     cmd.Parameters.Add("AUDIT_END", OracleDbType.Date).Value = AUDIT_ENDDATE;
                     cmd.Parameters.Add("T_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
@@ -679,14 +691,14 @@ namespace AIS.Controllers
 
                         jc.AUDIT_BY = rdr["AUDIT_BY"].ToString();
                         jc.AUDITEE_NAME = rdr["AUDITEE_NAME"].ToString();
-                        jc.TEAM_NAME = rdr["TEAM_NAME"].ToString();
-                        jc.PPNO = Convert.ToInt32(rdr["PPNO"].ToString());
-                        jc.NAME = rdr["NAME"].ToString();
-                        jc.TEAM_LEAD = rdr["TEAM_LEAD"].ToString();
+                        jc.Risk = rdr["RISK"].ToString();
                         jc.JOINING_DATE = Convert.ToDateTime(rdr["JOINING_DATE"].ToString());
                         jc.COMPLETION_DATE = Convert.ToDateTime(rdr["COMPLETION_DATE"].ToString());
                         jc.STATUS = rdr["STATUS"].ToString();
-
+                        jc.Issuancedate = rdr["issuance_date"].ToString();
+                        jc.High = Convert.ToInt32(rdr["HIGH"].ToString());
+                        jc.Medium = Convert.ToInt32(rdr["MEDIUM"].ToString());
+                        jc.Low = Convert.ToInt32(rdr["LOW"].ToString());
                         list.Add(jc);
                         }
                     }
