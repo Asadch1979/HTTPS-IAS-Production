@@ -44,6 +44,26 @@
         location.reload();
     }
 
+    function showApprovalAlert(message, onClose) {
+        if (typeof onClose === 'function' && typeof onAlertCallback === 'function') {
+            onAlertCallback(onClose);
+        }
+
+        var popup = $('#alertMessagesPopup');
+        var content = $('#content_alertMessagesPopup');
+        if (popup.length && content.length && $.fn.modal) {
+            content.empty();
+            content.text(message);
+            popup.modal('show');
+            return;
+        }
+
+        alert(message);
+        if (typeof onClose === 'function') {
+            onClose();
+        }
+    }
+
     function referredBackAuditCriterias() {
         var datalist = [];
 
@@ -67,8 +87,8 @@
             cache: false,
             data: { DATALIST: datalist },
             success: function () {
-                alert("Audit Criteria selected Cases Referred Back");
-                onAlertCallback(reloadLocation);
+                setApprovalMessage('', false);
+                showApprovalAlert("Audit Criteria selected Cases Referred Back", reloadLocation);
             }
         });
     }
@@ -110,17 +130,8 @@
                 }
 
                 var successMessage = "Audit Criteria selected Cases Successfully Approved";
-                setApprovalMessage(successMessage, true);
-
-                if (typeof showApiAlert === 'function') {
-                    showApiAlert({ Message: successMessage });
-                    if (typeof onAlertCallback === 'function') {
-                        onAlertCallback(reloadLocation);
-                        return;
-                    }
-                }
-
-                reloadLocation();
+                setApprovalMessage('', false);
+                showApprovalAlert(successMessage, reloadLocation);
             },
             error: function (xhr) {
                 var message = extractApiMessageFromXhr(xhr, "Unable to approve audit criteria.");

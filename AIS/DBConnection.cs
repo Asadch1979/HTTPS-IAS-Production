@@ -1430,8 +1430,13 @@ namespace AIS.Controllers
             con.Dispose();
             return maxTeamId;
             }
-        public bool AddAuditCriteria(AddAuditCriteriaModel acm)
+        public AuditCriteriaPersistResult AddAuditCriteria(AddAuditCriteriaModel acm)
             {
+            var result = new AuditCriteriaPersistResult
+                {
+                Success = false,
+                Message = "Unable to confirm the audit criteria save result."
+                };
             var sessionHandler = CreateSessionHandler();
             var loggedInUser = sessionHandler.GetUser();
             if (loggedInUser == null
@@ -1439,11 +1444,10 @@ namespace AIS.Controllers
                 || string.IsNullOrWhiteSpace(loggedInUser.PPNumber)
                 || loggedInUser.UserRoleID <= 0)
                 {
-                return false;
+                result.Message = "Session expired. Please sign in again.";
+                return result;
                 }
-            bool isAlreadyAdded = true;
-
-            var con = this.DatabaseConnection();
+            using (var con = this.DatabaseConnection())
             using (OracleCommand cmd = con.CreateCommand())
                 {
                 cmd.CommandText = "pkg_pg.P_ADDAUDITCRITERIA";
@@ -1462,19 +1466,36 @@ namespace AIS.Controllers
                 cmd.Parameters.Add("P_NO", OracleDbType.Int32).Value = loggedInUser.PPNumber;
                 cmd.Parameters.Add("ENT_ID", OracleDbType.Int32).Value = loggedInUser.UserEntityID;
                 cmd.Parameters.Add("R_ID", OracleDbType.Int32).Value = loggedInUser.UserRoleID;
-                cmd.Parameters.Add("T_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
-                OracleDataReader rdr = cmd.ExecuteReader();
-                while (rdr.Read())
+                cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+                using (OracleDataReader rdr = cmd.ExecuteReader())
                     {
-                    if (rdr["REF"].ToString() != "" && rdr["REF"].ToString() != null && rdr["REF"].ToString() == "1")
+                    while (rdr.Read())
                         {
-                        isAlreadyAdded = false;
-                        }
+                        var refValue = ReadFirstAvailableString(rdr, "REF", "ref");
+                        var dbMessage = CleanDbMessage(ReadFirstAvailableString(rdr, "remarks", "REMARKS", "remark", "REMARK", "message", "MESSAGE"));
 
+                        if (string.Equals(refValue, "1", StringComparison.OrdinalIgnoreCase))
+                            {
+                            result.Success = true;
+                            result.Message = !string.IsNullOrWhiteSpace(dbMessage)
+                                ? dbMessage
+                                : "Criteria successfully added.";
+                            break;
+                            }
+
+                        if (!string.IsNullOrWhiteSpace(dbMessage))
+                            {
+                            result.Message = dbMessage;
+                            }
+                        else if (!string.IsNullOrWhiteSpace(refValue))
+                            {
+                            result.Message = "Criteria already defined.";
+                            }
+                        }
                     }
                 }
-            con.Dispose();
-            return !isAlreadyAdded;
+
+            return result;
             }
         public bool UpdateAuditCriteria(AddAuditCriteriaModel acm, string COMMENTS)
             {

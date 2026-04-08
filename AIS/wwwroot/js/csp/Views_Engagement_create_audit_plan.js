@@ -44,6 +44,51 @@
     function addAuditEntitiesModal() {
         $('#setupAuditEntitiesModal').modal('show');
     }
+
+    function mapAuditCriteriaRows(response) {
+        if (response && Array.isArray(response.rows)) {
+            return response.rows;
+        }
+
+        if (Array.isArray(response)) {
+            return $.map(response, function (item, index) {
+                return {
+                    rowIndex: index + 1,
+                    auditPeriod: item[0] || '',
+                    entityName: item[1] || '',
+                    risk: item[2] || '',
+                    size: item[3] || '',
+                    frequency: item[4] || '',
+                    message: item[5] || '',
+                    success: /success/i.test(item[5] || '')
+                };
+            });
+        }
+
+        return [];
+    }
+
+    function buildAuditCriteriaAlertMessage(response) {
+        var rows = mapAuditCriteriaRows(response);
+        if (rows.length > 0) {
+            return $.map(rows, function (row) {
+                return "Criteria = "
+                    + (row.auditPeriod || '')
+                    + " | " + (row.entityName || '')
+                    + " | " + (row.risk || '')
+                    + " | " + (row.size || '')
+                    + " | " + (row.frequency || '')
+                    + " " + (row.message || '');
+            }).join('\n');
+        }
+
+        if (response && response.message) {
+            return response.message;
+        }
+
+        return "Audit criteria request completed.";
+    }
+
     function submitAuditCriteria() {
 
         var criteria_list = [];
@@ -72,15 +117,10 @@
                 },
                 cache: false,
                 success: function (data) {
-                    var row = "";
-                    $.each(data, function (i, v) {
-                        row += "<p>Criteria = " + v[0] + " | " + v[1] + " | " + v[2] + " | " + v[3] + " | " + v[4] + "  " + v[5] + "</p>";
-                    });
-
-                    //console.log('criteria res=',row);
-                    alert(row);
-                    //location.reload();
-
+                    alert(buildAuditCriteriaAlertMessage(data));
+                },
+                error: function (xhr) {
+                    alert(extractApiMessageFromXhr(xhr, "Unable to add audit criteria."));
                 },
                 dataType: "json",
             });

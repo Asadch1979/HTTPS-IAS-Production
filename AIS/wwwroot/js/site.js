@@ -787,7 +787,9 @@ $(document).ready(function () {
     $('body').append('<div id="alertMessagesPopup" class="modal" tabindex="-1" role="dialog"><div class="modal-dialog" role="document">  <div class="modal-content">    <div class="modal-header">      <h5 class="modal-title">Alert</h5>      <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>    </div>    <div class="modal-body">      <div id="content_alertMessagesPopup"></div>    </div>    <div class="modal-footer"><button type="button" class="btn btn-danger" data-bs-dismiss="modal">Close</button>    </div>  </div></div></div >');
     $('#content_alertMessagesPopup').addClass('text-prewrap');
     $('#alertMessagesPopup').on('hidden.bs.modal', function (e) {
-        closeFuncCalled();
+        var callback = closeFuncCalled;
+        closeFuncCalled = function () { };
+        callback();
     });
 
     $('body').append('<div id="confirmAlertMessagesPopup" class="modal" tabindex="-1" role="dialog"><div class="modal-dialog" role="document">  <div class="modal-content">    <div class="modal-header">      <h5 class="modal-title">Confirmation Box</h5>      <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>    </div>    <div class="modal-body">      <div id="content_confirmAlertMessagesPopup"></div>    </div>    <div class="modal-footer"><button type="button" class="btn btn-danger js-confirm-alert-yes" data-bs-dismiss="modal">Yes</button><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">No</button>    </div>  </div></div></div >');
@@ -1354,7 +1356,7 @@ function extractPlainText(clobContent) {
     return plainText;
 }
 function onAlertCallback(funcToCall) {
-    closeFuncCalled = funcToCall;
+    closeFuncCalled = typeof funcToCall === 'function' ? funcToCall : function () { };
 }
 function closeFuncCalled() {
 
