@@ -209,9 +209,23 @@
                                 <td value="@item.ENTITY_TYPEID">@item.ENTITY</td>
                             }
 
-                            <td value="@item.RISK_ID">@item.RISK</td>
+                            @if (@item.ENTITY_TYPEID == 6 || @item.ENTITY_TYPEID == 28)
+                            {
+                                <td value="@item.RISK_ID">@item.RISK</td>
+                            }
+                            else
+                            {
+                                <td value="@item.RISK_ID"></td>
+                            }
                             <td value="@item.FREQUENCY_ID">@item.FREQUENCY</td>
-                            <td value="@item.SIZE_ID">@item.SIZE</td>
+                            @if (@item.ENTITY_TYPEID == 6 || @item.ENTITY_TYPEID == 28)
+                            {
+                                <td value="@item.SIZE_ID">@item.SIZE</td>
+                            }
+                            else
+                            {
+                                <td value="@item.SIZE_ID"></td>
+                            }
                             <td value="@item.NO_OF_DAYS">@item.NO_OF_DAYS</td>
                             <td value="@item.VISIT">@item.VISIT</td>
                             <td class="entCountField" value="@item.ENTITIES_COUNT">@item.ENTITIES_COUNT</td>

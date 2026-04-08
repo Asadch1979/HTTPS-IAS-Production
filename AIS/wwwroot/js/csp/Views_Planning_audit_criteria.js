@@ -1,13 +1,33 @@
     g_status = 'Created';
+    var previousAuditCriteriaEntityTypeId = 0;
+
+    function getSelectedAuditCriteriaEntityTypeId() {
+        var rawValue = $('#auditCriteriaEntityField option:selected').val();
+        var parsedValue = parseInt(rawValue, 10);
+        return Number.isNaN(parsedValue) ? 0 : parsedValue;
+    }
+
+    function isBranchAuditCriteriaEntity(entityTypeId) {
+        return entityTypeId === 6 || entityTypeId === 28;
+    }
+
+    function isCreditAdministrationUnit(entityTypeId) {
+        return entityTypeId === 25;
+    }
 
     function addRecordToauditCriteriaListBox() {
 
         var entityName = '';
-        var entityTypeId = 0;
-        if ($('#auditCriteriaEntityField option:selected').val() != 0)
+        var entityTypeId = getSelectedAuditCriteriaEntityTypeId();
+        var isBranchEntity = isBranchAuditCriteriaEntity(entityTypeId);
+        var isCreditAdministrationEntity = isCreditAdministrationUnit(entityTypeId);
+        var riskId = $('#auditCriteriaRiskField option:selected').val() || '0';
+        var sizeId = $('#auditCriteriaSizeField option:selected').val() || '0';
+        var frequencyId = $('#auditCriteriaFreqField option:selected').val() || '0';
+
+        if (entityTypeId !== 0)
         {
             entityName = $('#auditCriteriaEntityField option:selected').text();
-            entityTypeId = $('#auditCriteriaEntityField option:selected').val();
         }
         var period = '';
         if ($('#auditCriteriaPeriodField option:selected').val() != 0)
@@ -16,14 +36,14 @@
         if ($('#auditCriteriaDaysField').val() != 0)
             days = $('#auditCriteriaDaysField').val();
         var risk = '';
-        if ($('#auditCriteriaRiskField option:selected').val() != 0)
+        if (riskId != '0')
             risk = $('#auditCriteriaRiskField option:selected').text();
 
         var freq = '';
-        if ($('#auditCriteriaFreqField option:selected').val() != 0)
+        if (frequencyId != '0')
             freq = $('#auditCriteriaFreqField option:selected').text();
         var size = '';
-        if ($('#auditCriteriaSizeField option:selected').val() != 0)
+        if (sizeId != '0')
             size = $('#auditCriteriaSizeField option:selected').text();
 
         var visit = 'No';
@@ -39,9 +59,8 @@
             alert('Entity Type Not Selected');
             return;
         }
-       
-       
-        if ($('#auditCriteriaEntityField option:selected').attr("d-risk") == "Y") {
+
+        if (isBranchEntity) {
             if (risk == '') {
                 alert('Risk Category Not Selected');
                 return;
@@ -55,15 +74,25 @@
                 return;
             }
         } else {
+            riskId = '1';
+            sizeId = '1';
+            risk = '';
+            size = '';
             entityName = $('#auditCriteriaCADHUBField  option:selected').text();
         }
+
+        if (isCreditAdministrationEntity) {
+            frequencyId = '1';
+            freq = $('#auditCriteriaFreqField option[value="1"]').text() || '';
+        }
+
         if (days == 0) {
             alert('Number Of Days Not Selected');
             return;
         }
-      
+       
         data = '-';
-        $('#auditCriteriaListBox tbody').append('<tr class="new"><td value="' + $('#auditCriteriaPeriodField option:selected').val() + '">' + period + '</td><td value="' + $('#auditCriteriaEntityField option:selected').val() + '"  data-value="' + $('#auditCriteriaCADHUBField option:selected').val() + '">' + entityName + '</td><td value="' + $('#auditCriteriaRiskField option:selected').val() + '">' + risk + '</td><td value="' + $('#auditCriteriaFreqField option:selected').val() + '">' + freq + '</td><td value="' + $('#auditCriteriaSizeField option:selected').val() + '">' + size + '</td><td value="' + days + '">' + days + '</td><td value="' + visit + '">' + visit + '</td><td class="entCountField">' + data + '</td><td><a data-onclick=CountCriteriaRecordFromGrid(this,' + $('#auditCriteriaPeriodField option:selected').val() + ',' + $('#auditCriteriaEntityField option:selected').val() + ',' + $('#auditCriteriaRiskField option:selected').val() + ',' + $('#auditCriteriaSizeField option:selected').val() + ',' + $('#auditCriteriaFreqField option:selected').val() + '); class="text-hover text-primary">Entities Count</a><a data-onclick=DeleteCriteriaRecordFromGrid(this,' + $('#auditCriteriaPeriodField option:selected').val() + ',' + $('#auditCriteriaEntityField option:selected').val() + ',' + $('#auditCriteriaRiskField option:selected').val() + ',' + $('#auditCriteriaSizeField option:selected').val() + ',' + $('#auditCriteriaFreqField option:selected').val() + '); class="text-hover text-danger pl-3">Delete</a></td></tr>');
+        $('#auditCriteriaListBox tbody').append('<tr class="new"><td value="' + $('#auditCriteriaPeriodField option:selected').val() + '">' + period + '</td><td value="' + $('#auditCriteriaEntityField option:selected').val() + '"  data-value="' + $('#auditCriteriaCADHUBField option:selected').val() + '">' + entityName + '</td><td value="' + riskId + '">' + risk + '</td><td value="' + frequencyId + '">' + freq + '</td><td value="' + sizeId + '">' + size + '</td><td value="' + days + '">' + days + '</td><td value="' + visit + '">' + visit + '</td><td class="entCountField">' + data + '</td><td><a data-onclick=CountCriteriaRecordFromGrid(this,' + $('#auditCriteriaPeriodField option:selected').val() + ',' + $('#auditCriteriaEntityField option:selected').val() + ',' + riskId + ',' + sizeId + ',' + frequencyId + '); class="text-hover text-primary">Entities Count</a><a data-onclick=DeleteCriteriaRecordFromGrid(this,' + $('#auditCriteriaPeriodField option:selected').val() + ',' + $('#auditCriteriaEntityField option:selected').val() + ',' + riskId + ',' + sizeId + ',' + frequencyId + '); class="text-hover text-danger pl-3">Delete</a></td></tr>');
            
         submitAuditCriteria();
     }
@@ -274,33 +303,36 @@
     }
 
     function setSizeEnableForBranches() {
-        var risk_check="N";
-    $.each($('#auditCriteriaEntityField option'), function (e, v)
-    {
-            if ($(v).val() == $('#auditCriteriaEntityField option:selected').val())
-                {risk_check=$(v).attr("d-risk");}
-        });
+        var entityTypeId = getSelectedAuditCriteriaEntityTypeId();
+        var isBranchEntity = isBranchAuditCriteriaEntity(entityTypeId);
+        var isCreditAdministrationEntity = isCreditAdministrationUnit(entityTypeId);
 
-        if ($('#auditCriteriaEntityField option:selected').val() == '25') {
+        if (isCreditAdministrationEntity) {
             $('#auditCriteriaFreqField').val('1');
-            $('#auditCriteriaFreqField').attr('disabled', true).hide();
+            $('#auditCriteriaFreqField').attr('disabled', true);
+            $('#freqPanel').addClass('d-none');
         } else {
+            if (previousAuditCriteriaEntityTypeId === 25) {
+                $('#auditCriteriaFreqField').val('0');
+            }
             $('#auditCriteriaFreqField').attr('disabled', false).show();
+            $('#freqPanel').removeClass('d-none');
         }
-        if ($('#auditCriteriaEntityField option:selected').val() != 6 && $('#auditCriteriaEntityField option:selected').val() != 28) {
+
+        if (!isBranchEntity) {
+            $('#auditCriteriaRiskField').val('1');
             $('#auditCriteriaSizeField').val('1');
             $('#auditCriteriaSizeField').attr('disabled', true);
-
-        } else {
-            $('#auditCriteriaSizeField').attr('disabled', false);
-        }
-
-        if (risk_check == "Y") {
-            $('#nonCADHUBPanel').removeClass('d-none');
-
-        } else {
-            $('#auditCriteriaRiskField').val("3"); //Setting RISK to LOW
+            $('#auditCriteriaRiskField').attr('disabled', true);
             $('#nonCADHUBPanel').addClass('d-none');
+        } else {
+            if (!isBranchAuditCriteriaEntity(previousAuditCriteriaEntityTypeId)) {
+                $('#auditCriteriaRiskField').val('0');
+                $('#auditCriteriaSizeField').val('0');
+            }
+            $('#auditCriteriaRiskField').attr('disabled', false);
+            $('#auditCriteriaSizeField').attr('disabled', false);
+            $('#nonCADHUBPanel').removeClass('d-none');
         }
         $('#auditCriteriaCADHUBField').empty();
         $('#auditCriteriaCADHUBField').append('<option value="0">-- Select Auditable Entity--</option>');
@@ -324,4 +356,9 @@
             dataType: "json",
         });
 
+        previousAuditCriteriaEntityTypeId = entityTypeId;
     }
+
+    $(document).ready(function () {
+        setSizeEnableForBranches();
+    });
