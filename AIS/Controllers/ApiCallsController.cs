@@ -187,6 +187,12 @@ namespace AIS.Controllers
             return BadRequest(response);
             }
 
+        private JsonResult LegacyMessageResponse(string message, string fallbackMessage)
+            {
+            var normalizedMessage = string.IsNullOrWhiteSpace(message) ? fallbackMessage : message.Trim();
+            return Json(new { Status = true, Message = normalizedMessage });
+            }
+
         private static SBPObservationCreateModel MapSbpObservationRequest(SbpObservationRequest request)
             {
             return new SBPObservationCreateModel
@@ -4170,29 +4176,34 @@ namespace AIS.Controllers
             return dBConnection.GetSaveSpecialAuditPlan();
             }
         [HttpPost]
-        public string add_special_audit_plan(string NATURE, string PERIOD, string ENTITY_ID, string NO_DAYS, string PLAN_ID, string INDICATOR)
+        public IActionResult add_special_audit_plan(string NATURE, string PERIOD, string ENTITY_ID, string NO_DAYS, string PLAN_ID, string INDICATOR)
             {
-            return "{\"Status\":true,\"Message\":\"" + dBConnection.AddSpecialAuditPlan(NATURE, PERIOD, ENTITY_ID, NO_DAYS, PLAN_ID, INDICATOR) + "\"}";
+            var response = dBConnection.AddSpecialAuditPlan(NATURE, PERIOD, ENTITY_ID, NO_DAYS, PLAN_ID, INDICATOR);
+            return LegacyMessageResponse(response, "Special audit plan saved successfully.");
             }
         [HttpPost]
-        public string delete_special_audit_plan(string PLAN_ID, string INDICATOR)
+        public IActionResult delete_special_audit_plan(string PLAN_ID, string INDICATOR)
             {
-            return "{\"Status\":true,\"Message\":\"" + dBConnection.DeleteSpecialAuditPlan(PLAN_ID, INDICATOR) + "\"}";
+            var response = dBConnection.DeleteSpecialAuditPlan(PLAN_ID, INDICATOR);
+            return LegacyMessageResponse(response, "Special audit plan deleted successfully.");
             }
         [HttpPost]
-        public string submit_special_audit_plan(string PLAN_ID, string INDICATOR)
+        public IActionResult submit_special_audit_plan(string PLAN_ID, string INDICATOR)
             {
-            return "{\"Status\":true,\"Message\":\"" + dBConnection.SubmitSpecialAuditPlan(PLAN_ID, INDICATOR) + "\"}";
+            var response = dBConnection.SubmitSpecialAuditPlan(PLAN_ID, INDICATOR);
+            return LegacyMessageResponse(response, "Special audit plan submitted successfully.");
             }
         [HttpPost]
-        public string referred_back_special_audit_plan(string PLAN_ID, string INDICATOR)
+        public IActionResult referred_back_special_audit_plan(string PLAN_ID, string INDICATOR)
             {
-            return "{\"Status\":true,\"Message\":\"" + dBConnection.SubmitSpecialAuditPlan(PLAN_ID, INDICATOR) + "\"}";
+            var response = dBConnection.SubmitSpecialAuditPlan(PLAN_ID, INDICATOR);
+            return LegacyMessageResponse(response, "Special audit plan referred back successfully.");
             }
         [HttpPost]
-        public string approve_special_audit_plan(string PLAN_ID, string INDICATOR)
+        public IActionResult approve_special_audit_plan(string PLAN_ID, string INDICATOR)
             {
-            return "{\"Status\":true,\"Message\":\"" + dBConnection.SubmitSpecialAuditPlan(PLAN_ID, INDICATOR) + "\"}";
+            var response = dBConnection.SubmitSpecialAuditPlan(PLAN_ID, INDICATOR);
+            return LegacyMessageResponse(response, "Special audit plan approved successfully.");
             }
 
         [HttpGet]

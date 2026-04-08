@@ -36,6 +36,11 @@
     });
 
     function reloadLocation() {
+        if (window.planningDashboard && typeof window.planningDashboard.reloadCurrentStep === 'function') {
+            window.planningDashboard.reloadCurrentStep();
+            return;
+        }
+
         location.reload();
     }
 
@@ -103,8 +108,19 @@
                     setApprovalMessage(message, false);
                     return;
                 }
-                setApprovalMessage("Audit Criteria selected Cases Successfully Approved", true);
-                onAlertCallback(reloadLocation);
+
+                var successMessage = "Audit Criteria selected Cases Successfully Approved";
+                setApprovalMessage(successMessage, true);
+
+                if (typeof showApiAlert === 'function') {
+                    showApiAlert({ Message: successMessage });
+                    if (typeof onAlertCallback === 'function') {
+                        onAlertCallback(reloadLocation);
+                        return;
+                    }
+                }
+
+                reloadLocation();
             },
             error: function (xhr) {
                 var message = extractApiMessageFromXhr(xhr, "Unable to approve audit criteria.");

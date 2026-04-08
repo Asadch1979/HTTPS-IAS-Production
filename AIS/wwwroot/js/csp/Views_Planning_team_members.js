@@ -18,6 +18,15 @@
         $('#setupAuditTeam').modal('show');
     }
 
+    function reloadLocation() {
+        if (window.planningDashboard && typeof window.planningDashboard.reloadCurrentStep === 'function') {
+            window.planningDashboard.reloadCurrentStep();
+            return;
+        }
+
+        location.reload();
+    }
+
     function publishNewTeamChanges() {
         
        
@@ -89,7 +98,7 @@
             },
             cache: false,
             success: function (data) {
-                location.reload();
+                reloadLocation();
             },
             dataType: "json",
         });
@@ -106,7 +115,7 @@
             },
             cache: false,
             success: function (data) {
-                location.reload();
+                reloadLocation();
             },
             dataType: "json",
         });

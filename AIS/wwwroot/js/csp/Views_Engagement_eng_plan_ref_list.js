@@ -37,6 +37,15 @@
             }
         }
 
+        function reloadLocation() {
+            if (window.planningDashboard && typeof window.planningDashboard.reloadCurrentStep === 'function') {
+                window.planningDashboard.reloadCurrentStep();
+                return;
+            }
+
+            location.reload();
+        }
+
         function loadTeams(deptCode, selectedTeamId) {
             var $team = $("#teamSelectionBox");
             $team.empty().append('<option value="0">Loading...</option>');
@@ -134,9 +143,9 @@
             }).done(function (data) {
                 showApiAlert(data, "Saved successfully.");
                 if (typeof onAlertCallback === "function") {
-                    onAlertCallback(function () { location.reload(); });
+                    onAlertCallback(reloadLocation);
                 } else {
-                    location.reload();
+                    reloadLocation();
                 }
             }).fail(function (xhr) {
                 console.log("Submit error:", xhr && (xhr.responseText || xhr));
@@ -154,9 +163,9 @@
             }).done(function () {
                 alert("Successfully approved Engagement Plan");
                 if (typeof onAlertCallback === "function") {
-                    onAlertCallback(function () { location.reload(); });
+                    onAlertCallback(reloadLocation);
                 } else {
-                    location.reload();
+                    reloadLocation();
                 }
             }).fail(function (xhr) {
                 console.log("Approve error:", xhr && (xhr.responseText || xhr));

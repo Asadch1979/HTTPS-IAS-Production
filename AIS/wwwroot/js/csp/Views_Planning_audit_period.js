@@ -47,6 +47,11 @@
 
     }
     function reloadLocation() {
+        if (window.planningDashboard && typeof window.planningDashboard.reloadCurrentStep === 'function') {
+            window.planningDashboard.reloadCurrentStep();
+            return;
+        }
+
         location.reload();
     }
     function publishNewAuditPeriodChanges() {

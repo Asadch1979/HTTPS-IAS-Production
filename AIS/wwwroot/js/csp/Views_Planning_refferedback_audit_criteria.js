@@ -35,6 +35,15 @@
         $('#commentsBox').modal('show');
         $('#finalCommentsButtonSave').attr('onclick', 'finalRecommendProcessTransaction()');
     }
+
+    function reloadLocation() {
+        if (window.planningDashboard && typeof window.planningDashboard.reloadCurrentStep === 'function') {
+            window.planningDashboard.reloadCurrentStep();
+            return;
+        }
+
+        window.location = window.location.pathname;
+    }
    
     function finalRecommendProcessTransaction() {
         if ($('#commentAreaInCommentsBox').val() == "") {
@@ -86,7 +95,7 @@
             success: function (data) {
                 $('#recommendReferredBackAuditCriteriasModal').modal('hide');
                 //console.log(data);
-                window.location = window.location.pathname;
+                reloadLocation();
             },
             dataType: "json",
         });

@@ -180,6 +180,37 @@
             });
     }
 
+    function resolveStepNo(stepCode) {
+        var activeAnchor = stepper.querySelector('.step-pill.active');
+        if (activeAnchor && (!stepCode || (activeAnchor.getAttribute('data-step-code') || '') === (stepCode || ''))) {
+            return activeAnchor.getAttribute('data-step-no') || '1';
+        }
+
+        if (stepCode) {
+            var matchingAnchor = stepper.querySelector('.step-pill[data-step-code="' + stepCode + '"]');
+            if (matchingAnchor) {
+                return matchingAnchor.getAttribute('data-step-no') || '1';
+            }
+        }
+
+        return '1';
+    }
+
+    function reloadCurrentStep() {
+        var stepCode = currentStepCode();
+        if (!stepCode) {
+            var activeAnchor = stepper.querySelector('.step-pill.active');
+            stepCode = activeAnchor ? (activeAnchor.getAttribute('data-step-code') || '') : '';
+        }
+
+        if (!stepCode) {
+            window.location.reload();
+            return;
+        }
+
+        loadStep(stepCode, resolveStepNo(stepCode));
+    }
+
     function loadSubChildStep(stepKey, childKey, actionKey, options) {
         var loadUrl = '/Planning/LoadPlanningSubChildStep';
         var query = new URLSearchParams();
@@ -238,6 +269,7 @@
 
     window.planningDashboard = {
         loadStep: loadStep,
+        reloadCurrentStep: reloadCurrentStep,
         loadChildStep: loadChildStep,
         loadSubChildStep: loadSubChildStep,
         loadNestedView: function (viewCode, options) {

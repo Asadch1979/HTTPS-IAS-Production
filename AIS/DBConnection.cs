@@ -124,6 +124,52 @@ namespace AIS.Controllers
 
             return new DBConnection(session, _httpCon, _configuration, sessionHandler, _tokenService, _loginAttemptTracker);
             }
+
+        private static string ReadFirstAvailableString(IDataRecord reader, params string[] preferredColumns)
+            {
+            if (reader == null)
+                {
+                return string.Empty;
+                }
+
+            if (preferredColumns != null)
+                {
+                foreach (var preferredColumn in preferredColumns)
+                    {
+                    if (string.IsNullOrWhiteSpace(preferredColumn))
+                        {
+                        continue;
+                        }
+
+                    for (var i = 0; i < reader.FieldCount; i++)
+                        {
+                        if (!string.Equals(reader.GetName(i), preferredColumn, StringComparison.OrdinalIgnoreCase))
+                            {
+                            continue;
+                            }
+
+                        if (reader.IsDBNull(i))
+                            {
+                            return string.Empty;
+                            }
+
+                        return reader.GetValue(i)?.ToString() ?? string.Empty;
+                        }
+                    }
+                }
+
+            for (var i = 0; i < reader.FieldCount; i++)
+                {
+                if (reader.IsDBNull(i))
+                    {
+                    continue;
+                    }
+
+                return reader.GetValue(i)?.ToString() ?? string.Empty;
+                }
+
+            return string.Empty;
+            }
         #region Database Connection
         private OracleConnection DatabaseConnection(bool requireActiveSession = true)
             {
@@ -4209,7 +4255,6 @@ namespace AIS.Controllers
                 return string.Empty;
                 }
             string resp = "";
-            var list = new List<SpecialAuditPlanModel>();
             try
                 {
                 using (var con = this.DatabaseConnection())
@@ -4235,7 +4280,7 @@ namespace AIS.Controllers
                             {
                             while (rdr.Read())
                                 {
-                                resp = rdr["remarks"].ToString();
+                                resp = ReadFirstAvailableString(rdr, "remarks", "REMARKS", "remark", "REMARK", "message", "MESSAGE", "ref", "REF");
                                 }
                             }
                         }
@@ -4284,7 +4329,7 @@ namespace AIS.Controllers
                             {
                             while (rdr.Read())
                                 {
-                                resp = rdr["remarks"].ToString();
+                                resp = ReadFirstAvailableString(rdr, "remarks", "REMARKS", "remark", "REMARK", "message", "MESSAGE", "ref", "REF");
                                 }
                             }
                         }
@@ -4332,7 +4377,7 @@ namespace AIS.Controllers
                             {
                             while (rdr.Read())
                                 {
-                                resp = rdr["remarks"].ToString();
+                                resp = ReadFirstAvailableString(rdr, "remarks", "REMARKS", "remark", "REMARK", "message", "MESSAGE", "ref", "REF");
                                 }
                             }
                         }

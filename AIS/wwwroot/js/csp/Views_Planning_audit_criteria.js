@@ -97,7 +97,7 @@
             },
             cache: false,
             success: function (data) {
-                location.reload();
+                reloadLocation();
             },
 
             dataType: "json",
@@ -105,6 +105,11 @@
     }
 
     function reloadLocation() {
+        if (window.planningDashboard && typeof window.planningDashboard.reloadCurrentStep === 'function') {
+            window.planningDashboard.reloadCurrentStep();
+            return;
+        }
+
         location.reload();
     }
 
