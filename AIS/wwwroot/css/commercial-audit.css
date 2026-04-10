@@ -1,0 +1,56 @@
+:root {
+    --commercial-audit-accent: #1d6f5f;
+    --commercial-audit-accent-soft: #e7f4ef;
+    --commercial-audit-border: #d8e5df;
+    --commercial-audit-text: #1f2d2a;
+}
+
+.commercial-audit-page {
+    color: var(--commercial-audit-text);
+}
+
+.commercial-audit-nav,
+.commercial-audit-card {
+    border: 1px solid var(--commercial-audit-border);
+    border-radius: 1rem;
+    background: linear-gradient(180deg, #ffffff 0%, #fbfdfc 100%);
+}
+
+.commercial-audit-nav {
+    padding: 1.25rem 1.5rem;
+    box-shadow: 0 10px 30px rgba(29, 111, 95, 0.06);
+}
+
+.commercial-audit-card .card-header {
+    background: var(--commercial-audit-accent-soft);
+    border-bottom: 1px solid var(--commercial-audit-border);
+    border-top-left-radius: 1rem;
+    border-top-right-radius: 1rem;
+}
+
+.commercial-audit-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.35rem 0.75rem;
+    border-radius: 999px;
+    background: rgba(29, 111, 95, 0.12);
+    color: var(--commercial-audit-accent);
+    font-weight: 600;
+    width: fit-content;
+}
+
+.commercial-audit-scroll {
+    max-height: 18rem;
+    overflow-y: auto;
+}
+
+.commercial-audit-page .table > :not(caption) > * > * {
+    vertical-align: middle;
+}
+
+@media (max-width: 767.98px) {
+    .commercial-audit-nav {
+        padding: 1rem;
+    }
+}

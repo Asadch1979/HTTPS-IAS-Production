@@ -24,49 +24,21 @@ namespace AIS.Models.SM
         // Hardcoded list of allowed DB columns
         public static readonly List<string> AllowedColumnNames = new List<string>
             {
-                "ACCOUNT_ID",
                 "ACCOUNT_NO",
+                "CODE",
+                "LC_NO",
                 "TITLE",
-                "CUSTOMERNAME",
-
-                "DOB",
-                "DOB_DISP",
-
-                "PHONE_CELL",
+                "DATE",
+                "CELL",
                 "CNIC",
-
-                "CNICEXPIRYDATE_DISP",
-
-                "OPENINGDATE_DISP",
-
-                "BMVS_VERIFIED",
                 "ACCOUNT_PURPOSE",
                 "ACCOUNT_TYPE",
-                "ACCOUNT_CATEGORY",
-                "ACCOUNT_STATUS",
-                "RISK",
-                "TRAN_DATE_DISP",
-                "TRAN_AUTH_DATE_DISP",
-                "TRANSACTIONMASTERCODE",
-                "TRANSACTION_DISCRIPTION",
-                "TR_AMOUNT",
-                "ACCOUNT_BALANCE",
-                "EXCEPTION_DATE_DISP",
-                "EXCEPTION_AMOUNT",
-                "LAST_TRAN_DATE_DISP",
-                "SOURCE_OF_FUND",
-                "NATURE_OF_TRANSACTION",
-                "DATE_OF_CLOSURE_DISP",
-                "ZAKAT_EXEMPTED_DATE_DISP",
-                "TXN_COUNT_PERIOD",
-                "TOTAL_DR_PERIOD",
-                "TOTAL_CR_PERIOD",
-
-                "LAST_AUTH_DATE_DISP",
-
-                "LAST_DR_AMOUNT",
-                "LAST_CR_AMOUNT",
-                "BANK_EMPLOYEE"
+                "TEXT_1",
+                "TEXT_2",
+                "DR_AMOUNT",
+                "CR_AMOUNT",
+                "NET_AMOUNT",
+                "REMARKS"
             };
 
 

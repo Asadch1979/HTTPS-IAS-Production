@@ -1,0 +1,32 @@
+@using AIS.Models.CAU
+@{
+    var currentStage = (ViewData["CommercialAuditStage"] as string ?? string.Empty).ToLowerInvariant();
+    var stages = ViewData["WorkflowStages"] as List<CommercialAuditWorkflowStage> ?? new List<CommercialAuditWorkflowStage>();
+}
+
+<div class="commercial-audit-nav mb-4">
+    <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3">
+        <div>
+            <h3 class="mb-1">Commercial Audit Workflow</h3>
+            <p class="text-muted mb-0">Move stage by stage without splitting the module into disconnected screens.</p>
+        </div>
+        <div class="d-flex flex-wrap gap-2">
+            @foreach (var stage in stages)
+            {
+                var actionName = stage.Key == "workflow"
+                    ? "reports"
+                    : stage.Key == "om"
+                        ? "om_creation"
+                        : stage.Key == "pdp"
+                            ? "om_reply"
+                            : "monitoring_oms";
+                var isActive = currentStage == stage.Key.ToLowerInvariant();
+                <a asp-controller="CAU"
+                   asp-action="@actionName"
+                   class="btn @(isActive ? "btn-success" : "btn-outline-success")">
+                    @stage.Title
+                </a>
+            }
+        </div>
+    </div>
+</div>

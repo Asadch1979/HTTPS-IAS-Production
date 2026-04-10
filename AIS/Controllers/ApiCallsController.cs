@@ -2,6 +2,7 @@ using AIS.Exceptions;
 using AIS.Models;
 using AIS.Models.AIS.Models;
 using AIS.Models.AIS.Models.Execution;
+using AIS.Models.CAU;
 using AIS.Models.HD;
 using AIS.Models.IID;
 using AIS.Models.Reports;
@@ -1927,6 +1928,120 @@ namespace AIS.Controllers
         public List<CAUOMAssignmentModel> CAU_Get_OMs()
             {
             return dBConnection.CAUGetAssignedOMs();
+            }
+
+        [HttpGet]
+        [HttpPost]
+        public IActionResult get_commercial_audit_oms()
+            {
+            return Json(dBConnection.GetCommercialAuditOms());
+            }
+
+        [HttpPost]
+        public IActionResult save_commercial_audit_om([FromBody] CommercialAuditOmModel model)
+            {
+            var validationResult = ValidateCommercialAuditOm(model);
+            if (validationResult != null)
+                {
+                return validationResult;
+                }
+
+            return Json(dBConnection.SaveCommercialAuditOm(model));
+            }
+
+        [HttpGet]
+        [HttpPost]
+        public IActionResult get_commercial_audit_pdps()
+            {
+            return Json(dBConnection.GetCommercialAuditPdps());
+            }
+
+        [HttpPost]
+        public IActionResult save_commercial_audit_pdp([FromBody] CommercialAuditPdpModel model)
+            {
+            var validationResult = ValidateCommercialAuditPdp(model);
+            if (validationResult != null)
+                {
+                return validationResult;
+                }
+
+            return Json(dBConnection.SaveCommercialAuditPdp(model));
+            }
+
+        [HttpGet]
+        [HttpPost]
+        public IActionResult get_commercial_audit_pdp_om_mappings(int pdp_id)
+            {
+            return Json(dBConnection.GetCommercialAuditPdpMappings(pdp_id));
+            }
+
+        [HttpPost]
+        public IActionResult save_commercial_audit_pdp_om_mapping([FromBody] CommercialAuditPdpOmMappingSaveRequest model)
+            {
+            var validationResult = ValidateCommercialAuditPdpMapping(model);
+            if (validationResult != null)
+                {
+                return validationResult;
+                }
+
+            return Json(dBConnection.SaveCommercialAuditPdpMappings(model));
+            }
+
+        [HttpGet]
+        [HttpPost]
+        public IActionResult get_commercial_audit_arpse_headers()
+            {
+            return Json(dBConnection.GetCommercialAuditArpseHeaders());
+            }
+
+        [HttpPost]
+        public IActionResult save_commercial_audit_arpse_header([FromBody] CommercialAuditArpseHeaderModel model)
+            {
+            var validationResult = ValidateCommercialAuditArpseHeader(model);
+            if (validationResult != null)
+                {
+                return validationResult;
+                }
+
+            return Json(dBConnection.SaveCommercialAuditArpseHeader(model));
+            }
+
+        [HttpGet]
+        [HttpPost]
+        public IActionResult get_commercial_audit_arpse_dac_entries(int arpse_id)
+            {
+            return Json(dBConnection.GetCommercialAuditArpseDacEntries(arpse_id));
+            }
+
+        [HttpPost]
+        public IActionResult save_commercial_audit_arpse_dac_entry([FromBody] CommercialAuditArpseDacEntryModel model)
+            {
+            var validationResult = ValidateCommercialAuditArpseDacEntry(model);
+            if (validationResult != null)
+                {
+                return validationResult;
+                }
+
+            return Json(dBConnection.SaveCommercialAuditArpseDacEntry(model));
+            }
+
+        [HttpGet]
+        [HttpPost]
+        public IActionResult get_commercial_audit_arpse_pac_entries(int arpse_id)
+            {
+            return Json(dBConnection.GetCommercialAuditArpsePacEntries(arpse_id));
+            }
+
+        [HttpPost]
+        public IActionResult save_commercial_audit_arpse_pac_entry([FromBody] CommercialAuditArpsePacEntryModel model)
+            {
+            var validationResult = ValidateCommercialAuditArpsePacEntry(model);
+            if (validationResult != null)
+                {
+                return validationResult;
+                }
+
+            return Json(dBConnection.SaveCommercialAuditArpsePacEntry(model));
             }
         [HttpGet]
         [HttpPost]
@@ -6657,6 +6772,126 @@ namespace AIS.Controllers
             if (!AlphaNumericWithSpacesRegex.IsMatch(model.ColumnHeader ?? string.Empty))
                 {
                 return InvalidRequestResponse("ColumnHeader", "Column header must contain only letters, numbers, and spaces.");
+                }
+
+            return null;
+            }
+
+        private IActionResult ValidateCommercialAuditOm(CommercialAuditOmModel model)
+            {
+            if (model == null)
+                {
+                return InvalidRequestResponse("request", "Invalid data supplied.");
+                }
+
+            if (!ModelState.IsValid)
+                {
+                return InvalidModelStateResponse();
+                }
+
+            if (!model.AuditYearId.HasValue || model.AuditYearId <= 0)
+                {
+                return InvalidRequestResponse("AuditYearId", "Audit Year is required.");
+                }
+
+            return null;
+            }
+
+        private IActionResult ValidateCommercialAuditPdp(CommercialAuditPdpModel model)
+            {
+            if (model == null)
+                {
+                return InvalidRequestResponse("request", "Invalid data supplied.");
+                }
+
+            if (!ModelState.IsValid)
+                {
+                return InvalidModelStateResponse();
+                }
+
+            if (!model.AuditYearId.HasValue || model.AuditYearId <= 0)
+                {
+                return InvalidRequestResponse("AuditYearId", "Audit Year is required.");
+                }
+
+            return null;
+            }
+
+        private IActionResult ValidateCommercialAuditPdpMapping(CommercialAuditPdpOmMappingSaveRequest model)
+            {
+            if (model == null)
+                {
+                return InvalidRequestResponse("request", "Invalid data supplied.");
+                }
+
+            if (!ModelState.IsValid)
+                {
+                return InvalidModelStateResponse();
+                }
+
+            if (!model.PdpId.HasValue || model.PdpId <= 0)
+                {
+                return InvalidRequestResponse("PdpId", "PDP is required.");
+                }
+
+            return null;
+            }
+
+        private IActionResult ValidateCommercialAuditArpseHeader(CommercialAuditArpseHeaderModel model)
+            {
+            if (model == null)
+                {
+                return InvalidRequestResponse("request", "Invalid data supplied.");
+                }
+
+            if (!ModelState.IsValid)
+                {
+                return InvalidModelStateResponse();
+                }
+
+            if (!model.ArpseYearId.HasValue || model.ArpseYearId <= 0)
+                {
+                return InvalidRequestResponse("ArpseYearId", "ARPSE Year is required.");
+                }
+
+            return null;
+            }
+
+        private IActionResult ValidateCommercialAuditArpseDacEntry(CommercialAuditArpseDacEntryModel model)
+            {
+            if (model == null)
+                {
+                return InvalidRequestResponse("request", "Invalid data supplied.");
+                }
+
+            if (!ModelState.IsValid)
+                {
+                return InvalidModelStateResponse();
+                }
+
+            if (!model.ArpseId.HasValue || model.ArpseId <= 0)
+                {
+                return InvalidRequestResponse("ArpseId", "Save the ARPSE header first.");
+                }
+
+            return null;
+            }
+
+        private IActionResult ValidateCommercialAuditArpsePacEntry(CommercialAuditArpsePacEntryModel model)
+            {
+            if (model == null)
+                {
+                return InvalidRequestResponse("request", "Invalid data supplied.");
+                }
+
+            if (!ModelState.IsValid)
+                {
+                return InvalidModelStateResponse();
+                }
+
+            if (!model.ArpseId.HasValue || model.ArpseId <= 0)
+                {
+                return InvalidRequestResponse("ArpseId", "Save the ARPSE header first.");
                 }
 
             return null;

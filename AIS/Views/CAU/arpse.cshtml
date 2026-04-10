@@ -1,0 +1,164 @@
+@{
+    Layout = "_Layout";
+}
+
+<link rel="stylesheet" href="~/css/commercial-audit.css" />
+
+<div class="container-fluid mt-4 commercial-audit-page" data-stage="arpse">
+    <partial name="_CommercialAuditNav" />
+
+    <div class="row g-4">
+        <div class="col-xl-4">
+            <div class="card commercial-audit-card shadow-sm">
+                <div class="card-header">
+                    <h4 class="mb-1" id="arpseFormTitle">Create ARPSE Header</h4>
+                    <small class="text-muted">Save the header first, then manage DAC and PAC child entries below.</small>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label for="arpseYear" class="form-label">ARPSE Year</label>
+                        <select id="arpseYear" class="form-select">
+                            <option value="">-- Select ARPSE Year --</option>
+                            @{
+                                if (ViewData["ArpseYearList"] != null)
+                                {
+                                    foreach (var year in (dynamic)ViewData["ArpseYearList"])
+                                    {
+                                        <option value="@year.AUDITPERIODID">@year.DESCRIPTION</option>
+                                    }
+                                }
+                            }
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="arpseParaNo" class="form-label">Para No</label>
+                        <input id="arpseParaNo" type="text" class="form-control" maxlength="100" />
+                    </div>
+                    <div class="mb-3">
+                        <label for="arpseGist" class="form-label">Gist of Para</label>
+                        <textarea id="arpseGist" class="form-control" rows="3" maxlength="500"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="arpseManagementResponse" class="form-label">Management Response</label>
+                        <textarea id="arpseManagementResponse" class="form-control" rows="5" maxlength="4000"></textarea>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button id="btnSaveArpse" type="button" class="btn btn-success">Save Header</button>
+                        <button id="btnCancelArpseEdit" type="button" class="btn btn-secondary d-none">Cancel Edit</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-8">
+            <div class="card commercial-audit-card shadow-sm mb-4">
+                <div class="card-header">
+                    <h4 class="mb-1">ARPSE Register</h4>
+                    <small class="text-muted">Select a header to manage both DAC and PAC history blocks.</small>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table id="tblCommercialArpse" class="table table-bordered table-hover align-middle">
+                            <thead>
+                                <tr>
+                                    <th>ARPSE Year</th>
+                                    <th>Para No</th>
+                                    <th>Gist</th>
+                                    <th>Management Response</th>
+                                    <th class="text-center">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <fieldset id="arpseChildrenFieldset" disabled>
+                <div class="row g-4">
+                    <div class="col-lg-6">
+                        <div class="card commercial-audit-card shadow-sm h-100">
+                            <div class="card-header">
+                                <h4 class="mb-1" id="arpseDacTitle">DAC Entries</h4>
+                                <small class="text-muted">Child block 1 for DAC recommendation tracking.</small>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <label for="arpseDacRecommendation" class="form-label">DAC Recommendation</label>
+                                    <textarea id="arpseDacRecommendation" class="form-control" rows="4" maxlength="4000"></textarea>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="arpseDacDate" class="form-label">DAC Date</label>
+                                    <input id="arpseDacDate" type="date" class="form-control" />
+                                </div>
+                                <div class="mb-3">
+                                    <label for="arpseDacUpdatedStatus" class="form-label">Updated Status</label>
+                                    <input id="arpseDacUpdatedStatus" type="text" class="form-control" maxlength="200" />
+                                </div>
+                                <div class="d-flex gap-2">
+                                    <button id="btnSaveArpseDac" type="button" class="btn btn-success">Add DAC</button>
+                                    <button id="btnCancelArpseDacEdit" type="button" class="btn btn-secondary d-none">Cancel Edit</button>
+                                </div>
+                                <div class="table-responsive mt-4">
+                                    <table id="tblArpseDac" class="table table-sm table-bordered table-hover align-middle">
+                                        <thead>
+                                            <tr>
+                                                <th>Recommendation</th>
+                                                <th>Date</th>
+                                                <th>Updated Status</th>
+                                                <th class="text-center">Action</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody></tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-lg-6">
+                        <div class="card commercial-audit-card shadow-sm h-100">
+                            <div class="card-header">
+                                <h4 class="mb-1" id="arpsePacTitle">PAC Entries</h4>
+                                <small class="text-muted">Child block 2 for PAC directive tracking.</small>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <label for="arpsePacDirective" class="form-label">PAC Directive</label>
+                                    <textarea id="arpsePacDirective" class="form-control" rows="4" maxlength="4000"></textarea>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="arpsePacDate" class="form-label">PAC Date</label>
+                                    <input id="arpsePacDate" type="date" class="form-control" />
+                                </div>
+                                <div class="mb-3">
+                                    <label for="arpsePacUpdatedStatus" class="form-label">Updated Status</label>
+                                    <input id="arpsePacUpdatedStatus" type="text" class="form-control" maxlength="200" />
+                                </div>
+                                <div class="d-flex gap-2">
+                                    <button id="btnSaveArpsePac" type="button" class="btn btn-success">Add PAC</button>
+                                    <button id="btnCancelArpsePacEdit" type="button" class="btn btn-secondary d-none">Cancel Edit</button>
+                                </div>
+                                <div class="table-responsive mt-4">
+                                    <table id="tblArpsePac" class="table table-sm table-bordered table-hover align-middle">
+                                        <thead>
+                                            <tr>
+                                                <th>Directive</th>
+                                                <th>Date</th>
+                                                <th>Updated Status</th>
+                                                <th class="text-center">Action</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody></tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </fieldset>
+        </div>
+    </div>
+</div>
+
+<script src="~/js/csp/Views_CAU_commercial_audit.js?v=1"></script>
