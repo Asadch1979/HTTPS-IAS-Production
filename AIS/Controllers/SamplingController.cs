@@ -74,6 +74,7 @@ namespace AIS.Controllers
             ViewData["TopMenu"] = tm.GetTopMenus();
             ViewData["TopMenuPages"] = tm.GetTopMenusPages();
             ViewData["LoanStatusList"] = dBConnection.GetLoanStatus();
+            ViewBag.AllowedColumns = ExceptionReportFormatModel.AllowedColumnNames;
             if (!User.Identity.IsAuthenticated)
                 {
                 return RedirectToAction("Index", "Login");
@@ -290,8 +291,8 @@ namespace AIS.Controllers
             {
             ViewData["TopMenu"] = tm.GetTopMenus();
             ViewData["TopMenuPages"] = tm.GetTopMenusPages();
-            ViewData["ZonesList"] = dBConnection.GetZones();
             ViewBag.AllowedColumns = ExceptionReportFormatModel.AllowedColumnNames;
+            ViewData["LoanStatusList"] = dBConnection.GetLoanStatus();
             if (!User.Identity.IsAuthenticated)
                 {
                 return RedirectToAction("Index", "Login");
@@ -303,7 +304,7 @@ namespace AIS.Controllers
                     return RedirectToAction("Index", "PageNotFound");
                     }
                 else
-                    return View();
+                    return View("add_report");
                 }
             }
         public IActionResult Account_exception()

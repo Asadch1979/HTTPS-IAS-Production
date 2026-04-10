@@ -489,6 +489,13 @@ namespace AIS.Controllers
                 return unauthorized;
                 }
 
+            if ((eng?.TEAM_ID).GetValueOrDefault() > 0 && string.IsNullOrWhiteSpace(eng.TEAM_NAME))
+                {
+                eng.TEAM_NAME = dBConnection.GetAuditTeams()
+                    .FirstOrDefault(item => item.T_ID == eng.TEAM_ID.Value)
+                    ?.NAME;
+                }
+
             var result = dBConnection.AddAuditEngagementPlan(eng);
             if (string.Equals(result?.IS_SUCCESS, "Yes", StringComparison.OrdinalIgnoreCase))
                 {

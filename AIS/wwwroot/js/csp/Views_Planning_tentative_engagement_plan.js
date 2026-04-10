@@ -243,37 +243,40 @@
 
 
         var status = 1;
-        var desc = $('#descriptionAuditPlanField').val();
+        var teamId = $('#auditTeam_box').val();
+        var payload = {
+            'PERIOD_ID': g_periodId,
+            'PLAN_ID': g_planId,
+            'ENTITY_ID': g_entityId,
+            'AUDIT_STARTDATE': $('#startplan_date').val(),
+            'AUDIT_ENDDATE': $('#endplan_date').val(),
+            'OP_STARTDATE': $('#startop_date').val(),
+            'OP_ENDDATE': $('#endop_date').val(),
+            'TRAVELDAY': $('#travellingDaysSelectField').val(),
+            'RRDAY': $('#revenueDaysSelectField').val(),
+            'D_Day': $('#discussionDaysSelectField').val(),
+            'STATUS': status,
+            'TEAM_ID': teamId
+        };
 
 
         $.ajax({
             url: g_asiBaseURL + "/ApiCalls/AddEngagementPlan",
             type: "POST",
-            data: {
-                'PERIOD_ID': g_periodId,
-                'ENTITY_TYPE': g_entityType,
-                'PLAN_ID': g_planId,
-                'ENTITY_CODE': g_code,
-                'ENTITY_ID': g_entityId,
-                'ENTITY_NAME': g_entityName,
-                'AUDITBY_ID': g_zoneId,
-                'AUDIT_STARTDATE': $('#startplan_date').val(),
-                'AUDIT_ENDDATE': $('#endplan_date').val(),
-                'OP_STARTDATE': $('#startop_date').val(),
-                'OP_ENDDATE': $('#endop_date').val(),
-                'TRAVELDAY': $('#travellingDaysSelectField').val(),
-                'RRDAY': $('#revenueDaysSelectField').val(),
-                'D_Day': $('#discussionDaysSelectField').val(),
-                'TEAM_NAME': $('#auditTeam_box option:selected').text(),
-                'STATUS': 1,
-                'TEAM_ID': $('#auditTeam_box').val(),                
-            },
+            data: payload,
             cache: false,
             success: function (data) {
-                alert(data.remarkS_OUT);
-                if(data.iS_SUCCESS=="Yes")
+                var message = (data && (data.REMARKS_OUT || data.remarkS_OUT)) || 'Engagement saved successfully.';
+                var isSuccess = String((data && (data.IS_SUCCESS || data.iS_SUCCESS)) || '').toLowerCase() === 'yes';
+
+                if (isSuccess) {
                     onAlertCallback(redirectToLocation);
-                
+                }
+
+                alert(message);
+            },
+            error: function (xhr) {
+                showApiAlertFromXhr(xhr, xhr ? xhr.status : null, getErrorReferenceIdFromXhr(xhr), 'Unable to save engagement. Please check the entered values.');
             },
             dataType: "json",
         });

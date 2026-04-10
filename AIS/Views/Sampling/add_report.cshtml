@@ -1,83 +1,179 @@
-﻿@{
-    var page_id = ViewData["PageId"] as int? ?? 0;
-}
-
 @{
-    ViewData["Title"] = "Manage Exception Reports";
+    ViewData["Title"] = "Exception Report Setup";
     Layout = "_Layout";
 }
 
-
 <link rel="stylesheet" href="~/css/sampling.css" />
+
 <div class="container-fluid mt-4">
-    <div class="card card-sample shadow-sm">
-        <div class="card-header d-flex justify-content-between align-items-center">
-            <h4 class="mb-0">Exception Reports</h4>
-            <button class="btn btn-success btn-sm" data-onclick="openAddModal()">Add</button>
+    <div class="card card-sample shadow-sm mb-4">
+        <div class="card-header">
+            <h4 class="mb-0">Exception Report Setup</h4>
         </div>
         <div class="card-body">
-            <div class="table-responsive">
-                <table id="reportList" class="table table-hover table-bordered table-striped">
-                    <thead>
-                        <tr>
-                            <th class="col-md-auto">Sr. No.</th>
-                            <th class="col-md-auto">Report Name List</th>
-                            <th class="col-md-auto">Things to be checked</th>
-                            <th class="col-md-auto text-center">Update</th>
-                        </tr>
-                    </thead>
-                    <tbody></tbody>
-                </table>
+            <div class="row g-4 align-items-start">
+                <div class="col-xl-5">
+                    <div class="border rounded p-3 h-100">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <div>
+                                <h5 class="mb-1" id="reportFormTitle">Create Report</h5>
+                                <small class="text-muted">Save the report master first, then manage its format below.</small>
+                            </div>
+                            <button id="btnResetReportForm" type="button" class="btn btn-outline-secondary btn-sm">New Report</button>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="reportName" class="form-label">Report Name <small class="text-muted">(A-Z, 0-9, space, &amp;, ?)</small></label>
+                            <input id="reportName" type="text" class="form-control alnum-only" maxlength="100" pattern="^[A-Za-z0-9 &,?]+$" title="Enter only Alphabets (A-Z), numbers (0-9), spaces, ampersand (&amp;), comma (,), and question mark (?)" data-allow-amp="true" data-allow-question="true" required placeholder="Report name (Alphabets, numbers, spaces, ampersand (&amp;), comma (,), and question mark (?) only)" />
+                            <small class="form-text text-muted">Enter only Alphabets (A-Z), numbers (0-9), spaces, ampersand (&amp;), comma (,), and question mark (?).</small>
+                            <div class="invalid-feedback">Enter only Alphabets (A-Z), numbers (0-9), spaces, ampersand (&amp;), comma (,), and question mark (?).</div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="thingsCheck" class="form-label">Things to be Checked</label>
+                            <textarea id="thingsCheck" class="form-control" rows="4" placeholder="Enter report description"></textarea>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="reportType" class="form-label">Report Type</label>
+                            <select id="reportType" class="form-select">
+                                <option value="L">Loan</option>
+                                <option value="A">Account</option>
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="loanStatus" class="form-label">Loan Status</label>
+                            <select id="loanStatus" class="form-select">
+                                @{
+                                    if (ViewData["LoanStatusList"] != null)
+                                    {
+                                        foreach (var st in (dynamic)(ViewData["LoanStatusList"]))
+                                        {
+                                            <option value="@st.CODE">@st.NAME</option>
+                                        }
+                                    }
+                                }
+                            </select>
+                            <small class="form-text text-muted">For Account reports, Loan Status is locked to Account (1).</small>
+                        </div>
+
+                        <div class="d-flex gap-2">
+                            <button id="btnSaveReport" type="button" class="btn btn-success">Save Report</button>
+                            <button id="btnCancelReportEdit" type="button" class="btn btn-secondary d-none">Cancel Edit</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-xl-7">
+                    <div class="border rounded p-3 h-100">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <div>
+                                <h5 class="mb-1">Existing Reports</h5>
+                                <small class="text-muted">Choose a report to edit its master details and manage format rows.</small>
+                            </div>
+                            <div class="text-muted small" id="selectedReportBadge">No report selected</div>
+                        </div>
+
+                        <div class="table-responsive">
+                            <table id="reportList" class="table table-hover table-bordered table-striped align-middle">
+                                <thead>
+                                    <tr>
+                                        <th class="col-md-auto">Sr. No.</th>
+                                        <th>Report Name</th>
+                                        <th>Things to be Checked</th>
+                                        <th class="col-md-auto">Report Type</th>
+                                        <th class="col-md-auto">Loan Status</th>
+                                        <th class="col-md-auto text-center">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
             </div>
+        </div>
+    </div>
+
+    <div class="card card-sample shadow-sm">
+        <div class="card-header d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-2">
+            <div>
+                <h4 class="mb-1">Report Format</h4>
+                <small id="formatSectionHint" class="text-muted">Save or select a report above to manage its format.</small>
+            </div>
+            <div class="fw-semibold" id="selectedFormatReportName">No report selected</div>
+        </div>
+        <div class="card-body">
+            <fieldset id="formatSectionFieldset" disabled>
+                <div class="row g-3 align-items-end">
+                    <div class="col-md-3">
+                        <label for="ddlColumnName" class="form-label">Column Name</label>
+                        <select id="ddlColumnName" class="form-select">
+                            @foreach (var c in ViewBag.AllowedColumns as List<string>)
+                            {
+                                <option value="@c">@c</option>
+                            }
+                        </select>
+                    </div>
+
+                    <div class="col-md-3">
+                        <label for="txtHeader" class="form-label">Column Header <small class="text-muted">(A-Z, 0-9, space, &amp;, ?)</small></label>
+                        <input id="txtHeader" class="form-control alnum-only" placeholder="Column header (Alphabets, numbers, spaces, ampersand (&amp;), comma (,), and question mark (?) only)" maxlength="100" pattern="^[A-Za-z0-9 &,?]+$" title="Enter only Alphabets (A-Z), numbers (0-9), spaces, ampersand (&amp;), comma (,), and question mark (?)" data-allow-amp="true" data-allow-question="true" required />
+                        <small class="form-text text-muted">Enter only Alphabets (A-Z), numbers (0-9), spaces, ampersand (&amp;), comma (,), and question mark (?).</small>
+                        <div class="invalid-feedback">Enter only Alphabets (A-Z), numbers (0-9), spaces, ampersand (&amp;), comma (,), and question mark (?).</div>
+                    </div>
+
+                    <div class="col-md-2">
+                        <label for="txtOrder" class="form-label">Column Order</label>
+                        <input id="txtOrder" type="number" class="form-control" min="1" />
+                    </div>
+
+                    <div class="col-md-2">
+                        <label for="ddlType" class="form-label">Data Type</label>
+                        <select id="ddlType" class="form-select">
+                            <option value="TEXT">TEXT</option>
+                            <option value="NUMBER">NUMBER</option>
+                            <option value="DATE">DATE</option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-2">
+                        <label for="ddlStatus" class="form-label">Status</label>
+                        <select id="ddlStatus" class="form-select">
+                            <option value="Y">Active</option>
+                            <option value="N">Inactive</option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-3">
+                        <div class="d-flex gap-2">
+                            <button id="btnSaveFormat" type="button" class="btn btn-success flex-fill">Add</button>
+                            <button id="btnCancelFormatEdit" type="button" class="btn btn-secondary flex-fill d-none">Cancel Edit</button>
+                        </div>
+                    </div>
+                </div>
+
+                <hr />
+
+                <div class="table-responsive">
+                    <table id="tblFormat" class="table table-bordered table-hover align-middle">
+                        <thead>
+                            <tr>
+                                <th>Column Name</th>
+                                <th>Column Header</th>
+                                <th>Column Order</th>
+                                <th>Data Type</th>
+                                <th>Status</th>
+                                <th class="text-center">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </fieldset>
         </div>
     </div>
 </div>
 
-<div id="addReportModal" class="modal" tabindex="-1" role="dialog">
-    <div class="modal-dialog" role="document">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="modalTitle">Add Exception Report</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <div class="mb-3">
-                    <label class="form-label">Report Name List <small class="text-muted">(A-Z, 0-9, space, &amp;, ?)</small></label>
-                    <input id="reportName" type="text" class="form-control alnum-only" maxlength="100" pattern="^[A-Za-z0-9 &,?]+$" title="Enter only Alphabets (A-Z), numbers (0-9), spaces, ampersand (&amp;), comma (,), and question mark (?)" data-allow-amp="true" required placeholder="Report name (Alphabets, numbers, spaces, ampersand (&amp;), comma (,), and question mark (?) only)" />
-                    <small class="form-text text-muted">Enter only Alphabets (A-Z), numbers (0-9), spaces, ampersand (&amp;), comma (,), and question mark (?).</small>
-                    <div class="invalid-feedback">Enter only Alphabets (A-Z), numbers (0-9), spaces, ampersand (&amp;), comma (,), and question mark (?).</div>
-                </div>
-                <div class="mb-3">
-                    <label class="form-label">Things to be checked</label>
-                    <textarea id="thingsCheck" class="form-control" rows="4"></textarea>
-                </div>
-                <div class="mb-3">
-                    <label class="form-label">Report Type</label>
-                    <select id="reportType" class="form-select">
-                        <option value="L">Loan</option>
-                        <option value="A">Account</option>
-                    </select>
-                </div>
-                <div class="mb-3">
-                    <label class="form-label">Loan Status</label>
-                    <select id="loanStatus" class="form-select">
-                        @{
-                            if (ViewData["LoanStatusList"] != null)
-                            {
-                                foreach (var st in (dynamic)(ViewData["LoanStatusList"]))
-                                {
-                                    <option value="@st.CODE">@st.NAME</option>
-                                }
-                            }
-                        }
-                    </select>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                <button type="button" class="btn btn-success" data-onclick="saveReport()">Save</button>
-            </div>
-        </div>
-    </div>
-</div>
-<script src="~/js/csp/Views_Sampling_add_report.js?v=1"></script>
+<script src="~/js/csp/Views_Sampling_add_report.js?v=3"></script>
