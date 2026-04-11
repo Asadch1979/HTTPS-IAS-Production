@@ -28,7 +28,7 @@ namespace AIS.Models.SM
                 "CODE",
                 "LC_NO",
                 "TITLE",
-                "DATE",
+                "DATE_DISP",
                 "CELL",
                 "CNIC",
                 "ACCOUNT_PURPOSE",
