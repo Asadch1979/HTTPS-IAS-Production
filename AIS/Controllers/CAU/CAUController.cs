@@ -231,39 +231,55 @@ namespace AIS.Controllers
 
         private IActionResult RenderCommercialAuditWorkflow(string requestedStepKey)
             {
-            if (!PrepareCauView())
+            try
                 {
-                return RedirectForUnauthorizedOrMissingPermission();
-                }
+                if (!PrepareCauView())
+                    {
+                    return RedirectForUnauthorizedOrMissingPermission();
+                    }
 
-            var model = BuildCommercialAuditWorkflowModel(requestedStepKey);
-            PrepareCommercialAuditWorkflowLookups();
-            ViewData["Title"] = "Commercial Audit Workflow";
-            ViewData["CommercialAuditStage"] = "workflow";
-            ViewData["CommercialAuditHostPath"] = ResolveCommercialAuditHostPath();
-            ViewData["CommercialAuditWorkflowModel"] = model;
-            return View("../CAU/workflow", model);
+                var model = BuildCommercialAuditWorkflowModel(requestedStepKey);
+                PrepareCommercialAuditWorkflowLookups();
+                ViewData["Title"] = "Commercial Audit Workflow";
+                ViewData["CommercialAuditStage"] = "workflow";
+                ViewData["CommercialAuditHostPath"] = ResolveCommercialAuditHostPath();
+                ViewData["CommercialAuditWorkflowModel"] = model;
+                return View("../CAU/workflow", model);
+                }
+            catch (Exception ex)
+                {
+                _logger.LogError(ex, "Failed to render Commercial Audit workflow for step {StepKey}.", requestedStepKey);
+                return StatusCode(500, "Unable to load the Commercial Audit workflow right now.");
+                }
             }
 
         private IActionResult RenderCommercialAuditStepPartial(string stepKey, string hostPath)
             {
-            if (!PrepareCauView(includeMenuData: false))
+            try
                 {
-                return User.Identity.IsAuthenticated ? Forbid() : Unauthorized();
-                }
+                if (!PrepareCauView(includeMenuData: false))
+                    {
+                    return User.Identity.IsAuthenticated ? Forbid() : Unauthorized();
+                    }
 
-            var workflowModel = BuildCommercialAuditWorkflowModel(stepKey);
-            var step = workflowModel.Steps.FirstOrDefault(item =>
-                string.Equals(item.StepKey, workflowModel.CurrentStepKey, StringComparison.OrdinalIgnoreCase));
-            if (step == null)
+                var workflowModel = BuildCommercialAuditWorkflowModel(stepKey);
+                var step = workflowModel.Steps.FirstOrDefault(item =>
+                    string.Equals(item.StepKey, workflowModel.CurrentStepKey, StringComparison.OrdinalIgnoreCase));
+                if (step == null)
+                    {
+                    return NotFound();
+                    }
+
+                PrepareCommercialAuditWorkflowLookups();
+                ViewData["CommercialAuditStage"] = step.StageKey;
+                ViewData["CommercialAuditHostPath"] = ResolveCommercialAuditHostPath(hostPath);
+                return PartialView(step.PartialViewName);
+                }
+            catch (Exception ex)
                 {
-                return NotFound();
+                _logger.LogError(ex, "Failed to load Commercial Audit step partial for step {StepKey}.", stepKey);
+                return StatusCode(500, "Unable to load the requested Commercial Audit step right now.");
                 }
-
-            PrepareCommercialAuditWorkflowLookups();
-            ViewData["CommercialAuditStage"] = step.StageKey;
-            ViewData["CommercialAuditHostPath"] = ResolveCommercialAuditHostPath(hostPath);
-            return PartialView(step.PartialViewName);
             }
 
         [HttpGet("CAU/workflow")]

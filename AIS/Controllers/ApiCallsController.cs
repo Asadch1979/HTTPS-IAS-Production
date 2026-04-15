@@ -117,7 +117,44 @@ namespace AIS.Controllers
                 return Unauthorized(new { error = "unauthorized", message = "User session is not authenticated." });
                 }
 
+            if (!sessionHandler.TryGetUser(out var user) || user == null)
+                {
+                return Unauthorized(new { error = "unauthorized", message = "User session is not available. Please sign in again." });
+                }
+
             return null;
+            }
+
+        private IActionResult ExecuteCommercialAuditRequest(Func<IActionResult> action, string failureMessage)
+            {
+            var unauthorized = EnsureAuthenticatedSession();
+            if (unauthorized != null)
+                {
+                return unauthorized;
+                }
+
+            try
+                {
+                return action();
+                }
+            catch (DatabaseUnavailableException ex)
+                {
+                _logger.LogError(ex, "Commercial Audit request failed because the database is unavailable.");
+                return StatusCode(StatusCodes.Status503ServiceUnavailable, new
+                    {
+                    ok = false,
+                    message = "Commercial Audit data is unavailable right now. Please try again."
+                    });
+                }
+            catch (Exception ex)
+                {
+                _logger.LogError(ex, "Commercial Audit request failed.");
+                return StatusCode(StatusCodes.Status500InternalServerError, new
+                    {
+                    ok = false,
+                    message = failureMessage
+                    });
+                }
             }
 
         private string SaveUploadFile(IFormFile file)
@@ -1888,114 +1925,150 @@ namespace AIS.Controllers
         [HttpPost]
         public IActionResult get_commercial_audit_oms()
             {
-            return Json(dBConnection.GetCommercialAuditOms());
+            return ExecuteCommercialAuditRequest(
+                () => Json(dBConnection.GetCommercialAuditOms()),
+                "Unable to load OM records right now.");
             }
 
         [HttpPost]
         public IActionResult save_commercial_audit_om([FromBody] CommercialAuditOmModel model)
             {
-            var validationResult = ValidateCommercialAuditOm(model);
-            if (validationResult != null)
+            return ExecuteCommercialAuditRequest(() =>
                 {
-                return validationResult;
-                }
+                var validationResult = ValidateCommercialAuditOm(model);
+                if (validationResult != null)
+                    {
+                    return validationResult;
+                    }
 
-            return Json(dBConnection.SaveCommercialAuditOm(model));
+                return Json(dBConnection.SaveCommercialAuditOm(model));
+                },
+                "Unable to save OM right now.");
             }
 
         [HttpGet]
         [HttpPost]
         public IActionResult get_commercial_audit_pdps()
             {
-            return Json(dBConnection.GetCommercialAuditPdps());
+            return ExecuteCommercialAuditRequest(
+                () => Json(dBConnection.GetCommercialAuditPdps()),
+                "Unable to load PDP records right now.");
             }
 
         [HttpPost]
         public IActionResult save_commercial_audit_pdp([FromBody] CommercialAuditPdpModel model)
             {
-            var validationResult = ValidateCommercialAuditPdp(model);
-            if (validationResult != null)
+            return ExecuteCommercialAuditRequest(() =>
                 {
-                return validationResult;
-                }
+                var validationResult = ValidateCommercialAuditPdp(model);
+                if (validationResult != null)
+                    {
+                    return validationResult;
+                    }
 
-            return Json(dBConnection.SaveCommercialAuditPdp(model));
+                return Json(dBConnection.SaveCommercialAuditPdp(model));
+                },
+                "Unable to save PDP right now.");
             }
 
         [HttpGet]
         [HttpPost]
         public IActionResult get_commercial_audit_pdp_om_mappings(int pdp_id)
             {
-            return Json(dBConnection.GetCommercialAuditPdpMappings(pdp_id));
+            return ExecuteCommercialAuditRequest(
+                () => Json(dBConnection.GetCommercialAuditPdpMappings(pdp_id)),
+                "Unable to load PDP to OM mappings right now.");
             }
 
         [HttpPost]
         public IActionResult save_commercial_audit_pdp_om_mapping([FromBody] CommercialAuditPdpOmMappingSaveRequest model)
             {
-            var validationResult = ValidateCommercialAuditPdpMapping(model);
-            if (validationResult != null)
+            return ExecuteCommercialAuditRequest(() =>
                 {
-                return validationResult;
-                }
+                var validationResult = ValidateCommercialAuditPdpMapping(model);
+                if (validationResult != null)
+                    {
+                    return validationResult;
+                    }
 
-            return Json(dBConnection.SaveCommercialAuditPdpMappings(model));
+                return Json(dBConnection.SaveCommercialAuditPdpMappings(model));
+                },
+                "Unable to save PDP mappings right now.");
             }
 
         [HttpGet]
         [HttpPost]
         public IActionResult get_commercial_audit_arpse_headers()
             {
-            return Json(dBConnection.GetCommercialAuditArpseHeaders());
+            return ExecuteCommercialAuditRequest(
+                () => Json(dBConnection.GetCommercialAuditArpseHeaders()),
+                "Unable to load ARPSE headers right now.");
             }
 
         [HttpPost]
         public IActionResult save_commercial_audit_arpse_header([FromBody] CommercialAuditArpseHeaderModel model)
             {
-            var validationResult = ValidateCommercialAuditArpseHeader(model);
-            if (validationResult != null)
+            return ExecuteCommercialAuditRequest(() =>
                 {
-                return validationResult;
-                }
+                var validationResult = ValidateCommercialAuditArpseHeader(model);
+                if (validationResult != null)
+                    {
+                    return validationResult;
+                    }
 
-            return Json(dBConnection.SaveCommercialAuditArpseHeader(model));
+                return Json(dBConnection.SaveCommercialAuditArpseHeader(model));
+                },
+                "Unable to save ARPSE header right now.");
             }
 
         [HttpGet]
         [HttpPost]
         public IActionResult get_commercial_audit_arpse_dac_entries(int arpse_id)
             {
-            return Json(dBConnection.GetCommercialAuditArpseDacEntries(arpse_id));
+            return ExecuteCommercialAuditRequest(
+                () => Json(dBConnection.GetCommercialAuditArpseDacEntries(arpse_id)),
+                "Unable to load ARPSE DAC entries right now.");
             }
 
         [HttpPost]
         public IActionResult save_commercial_audit_arpse_dac_entry([FromBody] CommercialAuditArpseDacEntryModel model)
             {
-            var validationResult = ValidateCommercialAuditArpseDacEntry(model);
-            if (validationResult != null)
+            return ExecuteCommercialAuditRequest(() =>
                 {
-                return validationResult;
-                }
+                var validationResult = ValidateCommercialAuditArpseDacEntry(model);
+                if (validationResult != null)
+                    {
+                    return validationResult;
+                    }
 
-            return Json(dBConnection.SaveCommercialAuditArpseDacEntry(model));
+                return Json(dBConnection.SaveCommercialAuditArpseDacEntry(model));
+                },
+                "Unable to save ARPSE DAC entry right now.");
             }
 
         [HttpGet]
         [HttpPost]
         public IActionResult get_commercial_audit_arpse_pac_entries(int arpse_id)
             {
-            return Json(dBConnection.GetCommercialAuditArpsePacEntries(arpse_id));
+            return ExecuteCommercialAuditRequest(
+                () => Json(dBConnection.GetCommercialAuditArpsePacEntries(arpse_id)),
+                "Unable to load ARPSE PAC entries right now.");
             }
 
         [HttpPost]
         public IActionResult save_commercial_audit_arpse_pac_entry([FromBody] CommercialAuditArpsePacEntryModel model)
             {
-            var validationResult = ValidateCommercialAuditArpsePacEntry(model);
-            if (validationResult != null)
+            return ExecuteCommercialAuditRequest(() =>
                 {
-                return validationResult;
-                }
+                var validationResult = ValidateCommercialAuditArpsePacEntry(model);
+                if (validationResult != null)
+                    {
+                    return validationResult;
+                    }
 
-            return Json(dBConnection.SaveCommercialAuditArpsePacEntry(model));
+                return Json(dBConnection.SaveCommercialAuditArpsePacEntry(model));
+                },
+                "Unable to save ARPSE PAC entry right now.");
             }
         [HttpGet]
         [HttpPost]
