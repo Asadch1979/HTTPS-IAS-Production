@@ -50,14 +50,25 @@ function getPageData() {
         return engId;
     }
 
-    function isClosingReleased() {
+    function getSelectedEngagementState() {
+        if (window.fieldAuditDashboard && typeof window.fieldAuditDashboard.getSelectedEngagementState === 'function') {
+            return window.fieldAuditDashboard.getSelectedEngagementState() || {};
+        }
+
         var selector = document.getElementById('engagementSelector');
         if (!selector || selector.selectedIndex < 0) {
-            return false;
+            return {};
         }
 
         var selectedOption = selector.options[selector.selectedIndex];
-        return ((selectedOption && selectedOption.getAttribute('data-is-close')) || '').toUpperCase() === 'Z';
+        return {
+            statusId: parseInt((selectedOption && selectedOption.getAttribute('data-status-id')) || '0', 10) || 0,
+            isTeamLead: ((selectedOption && selectedOption.getAttribute('data-is-team-lead')) || 'N').toUpperCase()
+        };
+    }
+
+    function isSelectedEngagementTeamLead() {
+        return ((getSelectedEngagementState().isTeamLead) || 'N').toUpperCase() === 'Y';
     }
 
     function preserveTablePosition() {
@@ -182,6 +193,11 @@ function getPageData() {
         $('#updateMemo_annex').off('change.manageObservationBranches').on('change.manageObservationBranches', updateRiskDisplay);
         $('#obsReferenceSaveUpdateBtn').off('click.manageObservationBranches').on('click.manageObservationBranches', saveObservationReferenceUpdate);
         $('#updateMemoModel').off('hidden.bs.modal.manageObservationBranchesReference').on('hidden.bs.modal.manageObservationBranchesReference', resetStep6ObservationReference);
+        $(document).off('fieldAudit:engagement-state-changed.manageObservationBranches').on('fieldAudit:engagement-state-changed.manageObservationBranches', function () {
+            if ($('#updateMemoModel').hasClass('show')) {
+                showActionButtons();
+            }
+        });
         var engId = syncEngagementContext();
         respSectionUpdate = initResponsibilitySection({
             tableSelector: '#update_listofRespPersons',
@@ -517,15 +533,16 @@ function getPageData() {
         $('#submitAuditeeButton_update').addClass('d-none');
         $('#addDraftButton_update').addClass('d-none');
         $('#settleButton_update').addClass('d-none');
-        if (isClosingReleased()) {
-            return;
-        }
 
         if (g_currentStatus == 1) {
-            $('#dropButton_update').removeClass('d-none');
-            $('#submitAuditeeButton_update').removeClass('d-none');
+            if (isSelectedEngagementTeamLead()) {
+                $('#dropButton_update').removeClass('d-none');
+                $('#submitAuditeeButton_update').removeClass('d-none');
+            }
         } else if (g_currentStatus == 3) {
-            $('#addDraftButton_update').removeClass('d-none');
+            if (isSelectedEngagementTeamLead()) {
+                $('#addDraftButton_update').removeClass('d-none');
+            }
             if (g_riskId == 3) {
                 $('#settleButton_update').removeClass('d-none');
             }

@@ -8,8 +8,6 @@
     var engagementAlert = byId('engagementRequiredAlert');
     var stepMessageHost = byId('fieldAuditStepMessage');
     var markCompletedBtn = byId('fieldAuditMarkCompletedBtn');
-    var changeEngagementButton = byId('changeEngagementButton');
-    var lockedEngagementId = '';
     var postJoiningStepCodes = ['MEMO_CREATION', 'MANAGE_OBSERVATION_BRANCHES', 'EXIT_AUDIT', 'AUDIT_REPORT'];
     var closingPerformedDisabledStepCodes = ['JOINING', 'MEMO_CREATION', 'EXIT_AUDIT'];
 
@@ -18,7 +16,7 @@
     }
 
     function selectedEngagementId() {
-        return lockedEngagementId || selector.value || '';
+        return selector.value || '';
     }
 
     function getAppBaseUrl() {
@@ -131,15 +129,11 @@
         engagementAlert.classList.toggle('d-none', !isVisible);
     }
 
-    function setEngagementLocked(isLocked) {
-        selector.disabled = !!isLocked;
-        if (!changeEngagementButton) {
-            return;
-        }
-
-        changeEngagementButton.classList.toggle('d-none', !isLocked);
+    function broadcastEngagementState(state) {
+        document.dispatchEvent(new CustomEvent('fieldAudit:engagement-state-changed', {
+            detail: state || selectedEngagementState()
+        }));
     }
-
 
     function selectedEngagementOption() {
         return selector.options && selector.selectedIndex >= 0
@@ -153,8 +147,10 @@
 
         return {
             hasEngagement: !!selectedEngagementId(),
+            engPlanId: parseInt(selectedEngagementId() || '0', 10) || 0,
             statusId: parseInt(rawStatusId || '0', 10) || 0,
-            isClose: ((option && option.getAttribute('data-is-close')) || '').toUpperCase()
+            isTeamLead: ((option && option.getAttribute('data-is-team-lead')) || 'N').toUpperCase(),
+            display: (option && (option.getAttribute('data-display') || option.textContent)) || ''
         };
     }
 
@@ -171,6 +167,20 @@
         }
 
         var normalizedStepCode = (stepCode || '').toUpperCase();
+        if (normalizedStepCode === 'JOINING') {
+            return {
+                enabled: state.statusId === 1,
+                message: state.statusId === 1 ? '' : 'Joining is not available for the selected engagement.'
+            };
+        }
+
+        if (normalizedStepCode === 'EXIT_AUDIT') {
+            return {
+                enabled: state.statusId === 2,
+                message: state.statusId === 2 ? '' : 'Closing is not available for the selected engagement.'
+            };
+        }
+
         if (state.statusId <= 1 && arrayContains(postJoiningStepCodes, normalizedStepCode)) {
             return {
                 enabled: false,
@@ -182,13 +192,6 @@
             return {
                 enabled: false,
                 message: 'This step is disabled after closing is performed.'
-            };
-        }
-
-        if (normalizedStepCode === 'EXIT_AUDIT' && state.isClose !== 'Z') {
-            return {
-                enabled: false,
-                message: 'Closing is not available yet.'
             };
         }
 
@@ -229,11 +232,17 @@
             option.setAttribute('data-status-id', state.statusId);
         }
 
-        if (state.isClose !== undefined && state.isClose !== null) {
-            option.setAttribute('data-is-close', state.isClose);
+        if (state.isTeamLead !== undefined && state.isTeamLead !== null) {
+            option.setAttribute('data-is-team-lead', state.isTeamLead);
+        }
+
+        if (state.display) {
+            option.setAttribute('data-display', state.display);
+            option.textContent = state.display;
         }
 
         applyStepAvailability();
+        broadcastEngagementState(selectedEngagementState());
 
         var activeAnchor = stepper.querySelector('.step-pill.active');
         if (activeAnchor && activeAnchor.classList.contains('disabled')) {
@@ -479,20 +488,21 @@
     selector.addEventListener('change', function () {
         var engId = selectedEngagementId();
         if (!engId) {
-            lockedEngagementId = '';
             toggleEngagementAlert(true);
             clearStepMessage();
             clearStepContent('Select an engagement from the dropdown above to load workflow content.');
             applyStepAvailability();
-            setEngagementLocked(false);
+            broadcastEngagementState(selectedEngagementState());
             return;
         }
 
-        lockedEngagementId = selector.value || engId;
-        setEngagementLocked(true);
         applyStepAvailability();
+        broadcastEngagementState(selectedEngagementState());
         stepHost.setAttribute('data-eng-id', engId);
-        var targetAnchor = firstAvailableStepAnchor() || stepper.querySelector('.step-pill');
+        var activeAnchor = stepper.querySelector('.step-pill.active');
+        var targetAnchor = activeAnchor && !activeAnchor.classList.contains('disabled')
+            ? activeAnchor
+            : (firstAvailableStepAnchor() || stepper.querySelector('.step-pill'));
         var targetStepCode = (targetAnchor && targetAnchor.getAttribute('data-step-code')) || currentStepCode();
         var targetStepNo = (targetAnchor && targetAnchor.getAttribute('data-step-no')) || '1';
         if (targetAnchor && !targetAnchor.classList.contains('disabled') && targetStepCode) {
@@ -501,19 +511,6 @@
             clearStepContent('No workflow steps are available for the selected engagement right now.');
         }
     });
-
-    if (changeEngagementButton) {
-        changeEngagementButton.addEventListener('click', function () {
-            lockedEngagementId = '';
-            selector.value = '';
-            setEngagementLocked(false);
-            applyStepAvailability();
-            clearStepMessage();
-            toggleEngagementAlert(true);
-            clearStepContent('Select an engagement from the dropdown above to load workflow content.');
-            setCurrentStepCode('');
-        });
-    }
 
     function refreshEngagementState() {
         var engId = selectedEngagementId();
@@ -548,6 +545,7 @@
         reloadCurrentStepContent: reloadCurrentStepContent,
         refreshEngagementState: refreshEngagementState,
         updateEngagementState: updateSelectedEngagementState,
+        getSelectedEngagementState: selectedEngagementState,
         loadNestedView: function (viewCode, options) {
             var engId = selectedEngagementId();
             if (!engId) {
@@ -609,14 +607,8 @@
     };
 
     initStepperTheme();
-    if (selector.value) {
-        lockedEngagementId = selector.value;
-        setEngagementLocked(true);
-        applyStepAvailability();
-    } else {
-        setEngagementLocked(false);
-        applyStepAvailability();
-    }
+    applyStepAvailability();
+    broadcastEngagementState(selectedEngagementState());
     toggleEngagementAlert(!selectedEngagementId());
 
     if (selectedEngagementId() && currentStepCode()) {

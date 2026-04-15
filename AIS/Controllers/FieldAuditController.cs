@@ -70,7 +70,7 @@ namespace AIS.Controllers
                 return RedirectToAction("Index", "Login");
                 }
 
-            var model = BuildWorkflowViewModel(user, stepCode, engId);
+            var model = BuildWorkflowViewModel(user, stepCode, engId, autoSelectDefaultSelection: true);
             return View("~/Views/FieldAudit/AR_Dashboard.cshtml", model);
             }
 
@@ -225,8 +225,10 @@ namespace AIS.Controllers
 
             return Json(new
                 {
+                engPlanId = engagementState.EngagementId,
                 statusId = engagementState.StatusId,
-                isClose = engagementState.IsClose ?? string.Empty
+                isTeamLead = engagementState.IsTeamLead ?? string.Empty,
+                display = string.IsNullOrWhiteSpace(engagementState.Display) ? engagementState.Label : engagementState.Display
                 });
             }
 
@@ -754,29 +756,11 @@ namespace AIS.Controllers
             return details.Any(item => item.ENG_PLAN_ID == engId && !string.IsNullOrWhiteSpace(item.JOINING_DATE));
             }
 
-        private FieldAuditWorkflowViewModel BuildWorkflowViewModel(SessionUser user, string requestedStepCode, int? engId)
+        private FieldAuditWorkflowViewModel BuildWorkflowViewModel(SessionUser user, string requestedStepCode, int? engId, bool autoSelectDefaultSelection = false)
             {
-            var engagementOptions = _dbConnection.GetTaskList()
-                .Where(item => item.ENG_PLAN_ID > 0)
-                .GroupBy(item => item.ENG_PLAN_ID)
-                .Select(group => group.First())
-                .OrderBy(item => item.ENTITY_NAME)
-                .Select(item => new FieldAuditEngagementOptionModel
-                    {
-                    EngagementId = item.ENG_PLAN_ID,
-                    EntityName = item.ENTITY_NAME,
-                    EngStatus = item.ENG_STATUS,
-                    StartDate = item.AUDIT_START_DATE,
-                    EndDate = item.AUDIT_END_DATE,
-                    StageName = item.ENG_STATUS,
-                    StatusId = item.STATUS_ID,
-                    IsClose = item.ISCLOSE
-                    })
-                .ToList();
-
-            var selectedEngagementId = engId.GetValueOrDefault() > 0 && engagementOptions.Any(item => item.EngagementId == engId.Value)
-                ? engId
-                : (int?)null;
+            var engagementOptions = _dbConnection.GetArDashboardDropdownOptions();
+            var selectedEngagementId = ResolveSelectedEngagementId(engagementOptions, engId, autoSelectDefaultSelection);
+            _sessionHandler.SetActiveEngagementId(selectedEngagementId);
 
             var workflowSteps = BuildWorkflowSteps();
             var selectedId = selectedEngagementId.GetValueOrDefault();
@@ -796,7 +780,7 @@ namespace AIS.Controllers
 
                 if (step.IsEnabled && selectedEngagement != null)
                     {
-                    ApplyWorkflowAvailability(step, selectedEngagement.StatusId, selectedEngagement.IsClose);
+                    ApplyWorkflowAvailability(step, selectedEngagement.StatusId);
                     }
 
                 var isPersistedComplete = selectedId > 0 && completedSteps.Contains(step.StepCode);
@@ -835,25 +819,57 @@ namespace AIS.Controllers
                 return null;
                 }
 
-            return _dbConnection.GetTaskList()
-                .Where(item => item.ENG_PLAN_ID == engId)
-                .GroupBy(item => item.ENG_PLAN_ID)
-                .Select(group => group.First())
-                .Select(item => new FieldAuditEngagementOptionModel
-                    {
-                    EngagementId = item.ENG_PLAN_ID,
-                    EntityName = item.ENTITY_NAME,
-                    StageName = item.ENG_STATUS,
-                    StatusId = item.STATUS_ID,
-                    IsClose = item.ISCLOSE
-                    })
-                .FirstOrDefault();
+            return _dbConnection.GetArDashboardDropdownOptions()
+                .FirstOrDefault(item => item.EngagementId == engId);
             }
 
-        private static void ApplyWorkflowAvailability(FieldAuditWorkflowStepModel step, int statusId, string isClose)
+        private static int? ResolveSelectedEngagementId(IReadOnlyCollection<FieldAuditEngagementOptionModel> engagementOptions, int? requestedEngagementId, bool autoSelectDefaultSelection)
+            {
+            if (requestedEngagementId.GetValueOrDefault() > 0 && engagementOptions.Any(item => item.EngagementId == requestedEngagementId.Value))
+                {
+                return requestedEngagementId.Value;
+                }
+
+            if (!autoSelectDefaultSelection)
+                {
+                return null;
+                }
+
+            var activeEngagement = engagementOptions.FirstOrDefault(item => item.StatusId == 2);
+            if (activeEngagement != null)
+                {
+                return activeEngagement.EngagementId;
+                }
+
+            return engagementOptions.FirstOrDefault()?.EngagementId;
+            }
+
+        private static void ApplyWorkflowAvailability(FieldAuditWorkflowStepModel step, int statusId)
             {
             if (step == null || !step.IsEnabled)
                 {
+                return;
+                }
+
+            if (string.Equals(step.StepCode, "JOINING", StringComparison.OrdinalIgnoreCase))
+                {
+                if (statusId != 1)
+                    {
+                    step.IsEnabled = false;
+                    step.DisabledMessage = "Joining is not available for the selected engagement.";
+                    }
+
+                return;
+                }
+
+            if (string.Equals(step.StepCode, "EXIT_AUDIT", StringComparison.OrdinalIgnoreCase))
+                {
+                if (statusId != 2)
+                    {
+                    step.IsEnabled = false;
+                    step.DisabledMessage = "Closing is not available for the selected engagement.";
+                    }
+
                 return;
                 }
 
@@ -868,14 +884,6 @@ namespace AIS.Controllers
                 {
                 step.IsEnabled = false;
                 step.DisabledMessage = "This step is disabled after closing is performed.";
-                return;
-                }
-
-            if (string.Equals(step.StepCode, "EXIT_AUDIT", StringComparison.OrdinalIgnoreCase)
-                && !string.Equals((isClose ?? string.Empty).Trim(), "Z", StringComparison.OrdinalIgnoreCase))
-                {
-                step.IsEnabled = false;
-                step.DisabledMessage = "Closing is not available yet.";
                 }
             }
 

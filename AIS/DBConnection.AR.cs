@@ -1,4 +1,5 @@
 using AIS.Models;
+using AIS.Models.FieldAuditWorkflow;
 using Microsoft.AspNetCore.Mvc;
 using Oracle.ManagedDataAccess.Client;
 using System;
@@ -262,6 +263,54 @@ namespace AIS.Controllers
                 }
             con.Dispose();
             return tasklist;
+            }
+
+        public List<FieldAuditEngagementOptionModel> GetArDashboardDropdownOptions(int engagementId = 0)
+            {
+            var sessionHandler = CreateSessionHandler();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || string.IsNullOrWhiteSpace(loggedInUser.PPNumber)
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return new List<FieldAuditEngagementOptionModel>();
+                }
+
+            var dropdownOptions = new List<FieldAuditEngagementOptionModel>();
+            using (var con = this.DatabaseConnection())
+                {
+                using (OracleCommand cmd = con.CreateCommand())
+                    {
+                    cmd.CommandText = "pkg_ar.P_GET_AR_DASHBOARD_DROPDOWN";
+                    cmd.CommandType = CommandType.StoredProcedure;
+                    cmd.Parameters.Clear();
+                    cmd.Parameters.Add("P_ENG_ID", OracleDbType.Int32).Value = engagementId > 0 ? engagementId : 0;
+                    cmd.Parameters.Add("P_P_NO", OracleDbType.Int32).Value = loggedInUser.PPNumber;
+                    cmd.Parameters.Add("P_R_ID", OracleDbType.Int32).Value = loggedInUser.UserRoleID;
+                    cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+
+                    using (OracleDataReader rdr = cmd.ExecuteReader())
+                        {
+                        while (rdr.Read())
+                            {
+                            var option = new FieldAuditEngagementOptionModel
+                                {
+                                EngPlanId = rdr["ENG_PLAN_ID"] == DBNull.Value ? 0 : Convert.ToInt32(rdr["ENG_PLAN_ID"]),
+                                StatusId = rdr["STATUS_ID"] == DBNull.Value ? 0 : Convert.ToInt32(rdr["STATUS_ID"]),
+                                IsTeamLead = ReadFirstAvailableString(rdr, "ISTEAMLEAD", "IS_TEAM_LEAD"),
+                                Display = ReadFirstAvailableString(rdr, "DISPLAY")
+                                };
+
+                            if (option.EngPlanId > 0)
+                                {
+                                dropdownOptions.Add(option);
+                                }
+                            }
+                        }
+                    }
+                }
+
+            return dropdownOptions;
             }
 
            public JoiningModel GetJoiningDetails(int engId = 0)

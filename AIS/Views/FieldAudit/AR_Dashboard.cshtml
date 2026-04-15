@@ -25,30 +25,39 @@
                         </div>
                         <div class="col-sm">
                             <select id="engagementSelector" class="form-select" data-dashboard-base-url="@Url.Action("AR_Dashboard", "FieldAudit")">
-                        <option value="">-- Select Engagement --</option>
-                        @foreach (var engagement in Model.AvailableEngagements)
-                        {
-                            @if (Model.SelectedEngagementId == engagement.EngagementId)
-                            {
-                                <option value="@engagement.EngagementId"
-                                        data-status-id="@engagement.StatusId"
-                                        data-is-close="@engagement.IsClose"
-                                        selected>@engagement.Label</option>
-                            }
-                            else
-                            {
-                                <option value="@engagement.EngagementId"
-                                        data-status-id="@engagement.StatusId"
-                                        data-is-close="@engagement.IsClose">@engagement.Label</option>
-                            }
-                        }
+                                @if (!Model.AvailableEngagements.Any())
+                                {
+                                    <option value="">-- No Engagements Available --</option>
+                                }
+                                else
+                                {
+                                    @foreach (var engagement in Model.AvailableEngagements)
+                                    {
+                                        var optionText = string.IsNullOrWhiteSpace(engagement.Display) ? engagement.Label : engagement.Display;
+                                        if (Model.SelectedEngagementId == engagement.EngagementId)
+                                        {
+                                            <option value="@engagement.EngagementId"
+                                                    data-status-id="@engagement.StatusId"
+                                                    data-is-team-lead="@engagement.IsTeamLead"
+                                                    data-display="@optionText"
+                                                    selected>@optionText</option>
+                                        }
+                                        else
+                                        {
+                                            <option value="@engagement.EngagementId"
+                                                    data-status-id="@engagement.StatusId"
+                                                    data-is-team-lead="@engagement.IsTeamLead"
+                                                    data-display="@optionText">@optionText</option>
+                                        }
+                                    }
+                                }
                             </select>
                         </div>
                         <div class="col-sm-auto">
                             <button type="button" id="changeEngagementButton" class="btn btn-outline-secondary d-none">Change Engagement</button>
                         </div>
                     </div>
-                    <small class="text-muted">Engagement list uses the same task assignment source as the Engagement task list.</small>
+                    <small class="text-muted">Engagement list and engagement state are loaded from the AR dashboard dropdown source.</small>
                 </div>
                 <div class="col-lg-5 text-lg-end">
                     <strong id="stepCounter">Step @(currentStepIndex > 0 ? currentStepIndex : 1) of @visibleSteps.Count</strong>
@@ -109,7 +118,7 @@
         isSaved = step.IsSaved
     })));
 </script>
-<script src="~/js/fieldAudit/dashboard.js?v=10"></script>
+<script src="~/js/fieldAudit/dashboard.js?v=11"></script>
 
 <style>
     .snap-label { color: #6c757d; }
