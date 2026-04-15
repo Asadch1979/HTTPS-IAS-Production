@@ -306,6 +306,15 @@ namespace AIS.Services
                     }
                 }
 
+            AddAlias(updated, "/CAU/om", "/CAU/workflow");
+            AddAlias(updated, "/CAU/pdp", "/CAU/workflow");
+            AddAlias(updated, "/CAU/arpse", "/CAU/workflow");
+            AddAlias(updated, "/CAU/om_creation", "/CAU/workflow");
+            AddAlias(updated, "/CAU/om_reply", "/CAU/workflow");
+            AddAlias(updated, "/CAU/monitoring_oms", "/CAU/workflow");
+            AddAlias(updated, "/CAU/reports", "/CAU/workflow");
+            AddAlias(updated, "/CAU/LoadStep", "/CAU/workflow");
+
             return updated;
             }
 

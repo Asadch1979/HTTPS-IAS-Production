@@ -22,6 +22,28 @@ namespace AIS.Models.CAU
         public string Description { get; set; }
         }
 
+    public class CommercialAuditWorkflowStep
+        {
+        public int StepNo { get; set; }
+        [PlainText]
+        public string StepKey { get; set; }
+        [PlainText]
+        public string StageKey { get; set; }
+        [PlainText]
+        public string Title { get; set; }
+        [PlainText]
+        public string Description { get; set; }
+        [PlainText]
+        public string PartialViewName { get; set; }
+        }
+
+    public class CommercialAuditWorkflowViewModel
+        {
+        [PlainText]
+        public string CurrentStepKey { get; set; }
+        public List<CommercialAuditWorkflowStep> Steps { get; set; } = new List<CommercialAuditWorkflowStep>();
+        }
+
     public class CommercialAuditOmModel
         {
         public int? OmId { get; set; }
@@ -39,10 +61,10 @@ namespace AIS.Models.CAU
         public string GistOfOm { get; set; }
         [Required]
         [MaxLength(4000)]
-        [PlainText]
+        [RichTextSanitize]
         public string BodyOfOm { get; set; }
         [MaxLength(4000)]
-        [PlainText]
+        [RichTextSanitize]
         public string ManagementResponse { get; set; }
         [PlainText]
         public string IsActive { get; set; } = "Y";
@@ -65,13 +87,13 @@ namespace AIS.Models.CAU
         public string GistOfPdp { get; set; }
         [Required]
         [MaxLength(4000)]
-        [PlainText]
+        [RichTextSanitize]
         public string BodyOfPdp { get; set; }
         [MaxLength(4000)]
-        [PlainText]
+        [RichTextSanitize]
         public string ManagementResponse { get; set; }
         [MaxLength(4000)]
-        [PlainText]
+        [RichTextSanitize]
         public string DacRecommendations { get; set; }
         [MaxLength(200)]
         [PlainText]
@@ -121,7 +143,7 @@ namespace AIS.Models.CAU
         [PlainText]
         public string GistOfPara { get; set; }
         [MaxLength(4000)]
-        [PlainText]
+        [RichTextSanitize]
         public string ManagementResponse { get; set; }
         [PlainText]
         public string IsActive { get; set; } = "Y";
@@ -134,7 +156,7 @@ namespace AIS.Models.CAU
         public int? ArpseId { get; set; }
         [Required]
         [MaxLength(4000)]
-        [PlainText]
+        [RichTextSanitize]
         public string DacRecommendation { get; set; }
         public DateTime? DacDate { get; set; }
         [MaxLength(200)]
@@ -151,7 +173,7 @@ namespace AIS.Models.CAU
         public int? ArpseId { get; set; }
         [Required]
         [MaxLength(4000)]
-        [PlainText]
+        [RichTextSanitize]
         public string PacDirective { get; set; }
         public DateTime? PacDate { get; set; }
         [MaxLength(200)]

@@ -1,11 +1,17 @@
 var commercialAuditPage = {
-    stage: "",
+    workflowUrl: "",
+    loadUrl: "",
+    currentStepKey: "",
+    workflowSteps: [],
     omList: [],
     pdpList: [],
     arpseList: [],
     selectedOmId: 0,
     selectedPdpId: 0,
     selectedArpseId: 0,
+    selectedOmSnapshot: null,
+    selectedPdpSnapshot: null,
+    selectedArpseSnapshot: null,
     selectedPdpMappings: [],
     omMode: "add",
     pdpMode: "add",
@@ -16,31 +22,211 @@ var commercialAuditPage = {
     editingPacId: 0
 };
 
+var commercialAuditRichTextEditorIds = [
+    "omBody",
+    "omManagementResponse",
+    "pdpBody",
+    "pdpManagementResponse",
+    "pdpDacRecommendations",
+    "arpseManagementResponse",
+    "arpseDacRecommendation",
+    "arpsePacDirective"
+];
+
 $(document).ready(function () {
-    var page = $(".commercial-audit-page");
-    if (!page.length) {
+    var workflow = $(".commercial-audit-workflow");
+    if (!workflow.length) {
         return;
     }
 
-    commercialAuditPage.stage = String(page.data("stage") || "").toLowerCase();
+    commercialAuditPage.workflowUrl = String(workflow.data("workflow-url") || "");
+    commercialAuditPage.loadUrl = String(workflow.data("load-url") || "");
+    commercialAuditPage.currentStepKey = normalizeText(workflow.data("current-step"));
+    commercialAuditPage.workflowSteps = Array.isArray(window.commercialAuditWorkflowSteps) ? window.commercialAuditWorkflowSteps.slice() : [];
 
-    if (commercialAuditPage.stage === "om") {
-        initCommercialAuditOm();
-    } else if (commercialAuditPage.stage === "pdp") {
-        initCommercialAuditPdp();
-    } else if (commercialAuditPage.stage === "arpse") {
-        initCommercialAuditArpse();
-    }
+    bindCommercialAuditWorkflowNavigation();
+    syncCommercialAuditWorkflowChrome(commercialAuditPage.currentStepKey);
+    initCommercialAuditStep(commercialAuditPage.currentStepKey);
+
+    window.addEventListener("popstate", function () {
+        var requestedStepKey = getCommercialAuditStepFromLocation();
+        if (!requestedStepKey || requestedStepKey === commercialAuditPage.currentStepKey) {
+            return;
+        }
+
+        loadCommercialAuditStep(requestedStepKey, true);
+    });
 });
 
-function initCommercialAuditOm() {
-    $("#btnSaveOm").on("click", saveCommercialAuditOm);
-    $("#btnCancelOmEdit").on("click", resetCommercialAuditOmForm);
-    $("#tblCommercialOm").on("click", ".btn-edit-om", function () {
-        var rowData = $(this).data("row");
-        if (rowData) {
-            populateCommercialAuditOmForm(rowData);
+function bindCommercialAuditWorkflowNavigation() {
+    var workflow = $(".commercial-audit-workflow");
+
+    workflow.on("click", ".commercial-audit-step-link, .commercial-audit-step-target", function (event) {
+        var stepKey = normalizeText($(this).attr("data-step-key"));
+        if (!stepKey) {
+            return;
         }
+
+        event.preventDefault();
+
+        if (stepKey === commercialAuditPage.currentStepKey) {
+            syncCommercialAuditWorkflowChrome(stepKey);
+            initCommercialAuditStep(stepKey);
+            updateCommercialAuditHistory(stepKey, false);
+            return;
+        }
+
+        loadCommercialAuditStep(stepKey, false);
+    });
+}
+
+function loadCommercialAuditStep(stepKey, replaceHistory) {
+    var resolvedStep = resolveCommercialAuditStep(stepKey);
+    if (!resolvedStep || !commercialAuditPage.loadUrl) {
+        return;
+    }
+
+    destroyCommercialAuditRichTextEditors();
+    setCommercialAuditStepMessage("", "");
+    $("#commercialAuditStepHost").html('<div class="alert alert-secondary mb-0">Loading workflow content...</div>');
+
+    $.ajax({
+        url: commercialAuditPage.loadUrl,
+        type: "GET",
+        cache: false,
+        data: {
+            stepKey: resolvedStep.stepKey,
+            hostPath: commercialAuditPage.workflowUrl
+        },
+        success: function (html) {
+            $("#commercialAuditStepHost").html(html);
+            commercialAuditPage.currentStepKey = resolvedStep.stepKey;
+            $(".commercial-audit-workflow").attr("data-current-step", resolvedStep.stepKey);
+            syncCommercialAuditWorkflowChrome(resolvedStep.stepKey);
+            initCommercialAuditStep(resolvedStep.stepKey);
+            updateCommercialAuditHistory(resolvedStep.stepKey, replaceHistory);
+        },
+        error: function (xhr) {
+            var message = "Unable to load the requested Commercial Audit step.";
+            $("#commercialAuditStepHost").html('<div class="alert alert-danger mb-0">' + message + "</div>");
+            setCommercialAuditStepMessage("danger", message);
+            showApiAlertFromXhr(xhr, xhr ? xhr.status : null, getErrorReferenceIdFromXhr(xhr), message);
+        }
+    });
+}
+
+function syncCommercialAuditWorkflowChrome(stepKey) {
+    var resolvedStep = resolveCommercialAuditStep(stepKey);
+    if (!resolvedStep) {
+        return;
+    }
+
+    commercialAuditPage.currentStepKey = resolvedStep.stepKey;
+
+    $(".commercial-audit-step-link").removeClass("active is-active");
+    $('.commercial-audit-step-link[data-step-key="' + resolvedStep.stepKey + '"]').addClass("active is-active");
+
+    $("#commercialAuditStepCounter").text("Step " + resolvedStep.stepNo + " of " + commercialAuditPage.workflowSteps.length);
+    $("#commercialAuditCurrentStage").text("Stage " + String(resolvedStep.stageKey || "").toUpperCase());
+    $("#commercialAuditCurrentTitle").text(resolvedStep.title || "");
+    $("#commercialAuditCurrentDescription").text(resolvedStep.description || "");
+}
+
+function updateCommercialAuditHistory(stepKey, replaceHistory) {
+    if (!commercialAuditPage.workflowUrl || !window.history || !window.history.pushState) {
+        return;
+    }
+
+    var url = commercialAuditPage.workflowUrl + "?stepKey=" + encodeURIComponent(stepKey);
+    var state = { stepKey: stepKey };
+
+    if (replaceHistory) {
+        window.history.replaceState(state, "", url);
+        return;
+    }
+
+    window.history.pushState(state, "", url);
+}
+
+function getCommercialAuditStepFromLocation() {
+    var searchParams = new URLSearchParams(window.location.search || "");
+    return normalizeText(searchParams.get("stepKey"));
+}
+
+function resolveCommercialAuditStep(stepKey) {
+    var normalizedStepKey = normalizeText(stepKey);
+    if (!normalizedStepKey || !commercialAuditPage.workflowSteps.length) {
+        return null;
+    }
+
+    return commercialAuditPage.workflowSteps.find(function (step) {
+        return normalizeText(step.stepKey) === normalizedStepKey;
+    }) || null;
+}
+
+function initCommercialAuditStep(stepKey) {
+    switch (normalizeText(stepKey)) {
+        case "om-entry":
+            initCommercialAuditOmEntry();
+            break;
+        case "om-register":
+            initCommercialAuditOmRegister();
+            break;
+        case "pdp-entry":
+            initCommercialAuditPdpEntry();
+            break;
+        case "pdp-linking":
+            initCommercialAuditPdpLinking();
+            break;
+        case "arpse-header":
+            initCommercialAuditArpseHeader();
+            break;
+        case "arpse-monitoring":
+            initCommercialAuditArpseMonitoring();
+            break;
+        default:
+            break;
+    }
+}
+
+function setCommercialAuditStepMessage(kind, message) {
+    var alertBox = $("#commercialAuditStepMessage");
+    if (!alertBox.length) {
+        return;
+    }
+
+    if (!kind || !message) {
+        alertBox.addClass("d-none").removeClass("alert-success alert-danger alert-warning alert-info").empty();
+        return;
+    }
+
+    alertBox
+        .removeClass("d-none alert-success alert-danger alert-warning alert-info")
+        .addClass("alert-" + kind)
+        .text(message);
+}
+
+function initCommercialAuditOmEntry() {
+    $("#btnSaveOm").off("click").on("click", saveCommercialAuditOm);
+    $("#btnCancelOmEdit").off("click").on("click", resetCommercialAuditOmForm);
+
+    applyCommercialAuditOmFormState();
+    initializeCommercialAuditRichTextEditors(["omBody", "omManagementResponse"]);
+
+    if (commercialAuditPage.selectedOmId && !commercialAuditPage.selectedOmSnapshot) {
+        loadCommercialAuditOms({ OmId: commercialAuditPage.selectedOmId });
+    }
+}
+
+function initCommercialAuditOmRegister() {
+    $("#tblCommercialOm").off("click", ".btn-edit-om").on("click", ".btn-edit-om", function () {
+        var rowData = $(this).data("row");
+        if (!rowData) {
+            return;
+        }
+
+        populateCommercialAuditOmForm(rowData);
+        loadCommercialAuditStep("om-entry", false);
     });
 
     loadCommercialAuditOms();
@@ -76,6 +262,10 @@ function loadCommercialAuditOms(selectionHint) {
 }
 
 function renderCommercialAuditOmTable(list) {
+    if (!$("#tblCommercialOm").length) {
+        return;
+    }
+
     destroyDatatable("tblCommercialOm");
 
     var tbody = $("#tblCommercialOm tbody");
@@ -91,12 +281,12 @@ function renderCommercialAuditOmTable(list) {
         row.append($("<td>").text(item.AuditYearText));
         row.append($("<td>").text(item.OmNo));
         row.append($("<td>").text(item.GistOfOm));
-        row.append($("<td>").text(item.ManagementResponse));
+        row.append($("<td>").text(getCommercialAuditPreviewText(item.ManagementResponse, 140)));
 
         var editButton = $("<button>")
             .addClass("btn btn-sm btn-primary btn-edit-om")
             .attr("type", "button")
-            .text(commercialAuditPage.selectedOmId === item.OmId ? "Editing" : "Edit")
+            .text("Edit")
             .data("row", item);
 
         row.append($("<td>").addClass("text-center").append(editButton));
@@ -108,42 +298,56 @@ function renderCommercialAuditOmTable(list) {
 
 function populateCommercialAuditOmForm(item) {
     commercialAuditPage.omMode = "edit";
-    commercialAuditPage.selectedOmId = item.OmId || 0;
-
-    $("#omFormTitle").text("Update OM");
-    $("#omAuditYear").val(item.AuditYearId);
-    $("#omNo").val(item.OmNo || "");
-    $("#omGist").val(item.GistOfOm || "");
-    $("#omBody").val(item.BodyOfOm || "");
-    $("#omManagementResponse").val(item.ManagementResponse || "");
-    $("#btnSaveOm").text("Update OM");
-    $("#btnCancelOmEdit").removeClass("d-none");
+    commercialAuditPage.selectedOmSnapshot = normalizeCommercialOm(item);
+    commercialAuditPage.selectedOmId = commercialAuditPage.selectedOmSnapshot.OmId;
+    applyCommercialAuditOmFormState();
     renderCommercialAuditOmTable(commercialAuditPage.omList);
 }
 
-function resetCommercialAuditOmForm() {
-    commercialAuditPage.omMode = "add";
-    commercialAuditPage.selectedOmId = 0;
+function applyCommercialAuditOmFormState() {
+    if (!$("#omFormTitle").length) {
+        return;
+    }
+
+    if (commercialAuditPage.omMode === "edit" && commercialAuditPage.selectedOmSnapshot) {
+        $("#omFormTitle").text("Update OM");
+        $("#omAuditYear").val(commercialAuditPage.selectedOmSnapshot.AuditYearId || "");
+        $("#omNo").val(commercialAuditPage.selectedOmSnapshot.OmNo || "");
+        $("#omGist").val(commercialAuditPage.selectedOmSnapshot.GistOfOm || "");
+        setCommercialAuditFieldValue("omBody", commercialAuditPage.selectedOmSnapshot.BodyOfOm || "");
+        setCommercialAuditFieldValue("omManagementResponse", commercialAuditPage.selectedOmSnapshot.ManagementResponse || "");
+        $("#btnSaveOm").text("Update OM");
+        $("#btnCancelOmEdit").removeClass("d-none");
+        return;
+    }
 
     $("#omFormTitle").text("Create OM");
     $("#omAuditYear").val("");
     $("#omNo").val("");
     $("#omGist").val("");
-    $("#omBody").val("");
-    $("#omManagementResponse").val("");
+    setCommercialAuditFieldValue("omBody", "");
+    setCommercialAuditFieldValue("omManagementResponse", "");
     $("#btnSaveOm").text("Save OM");
     $("#btnCancelOmEdit").addClass("d-none");
+}
+
+function resetCommercialAuditOmForm() {
+    commercialAuditPage.omMode = "add";
+    commercialAuditPage.selectedOmId = 0;
+    commercialAuditPage.selectedOmSnapshot = null;
+    applyCommercialAuditOmFormState();
     renderCommercialAuditOmTable(commercialAuditPage.omList);
 }
 
 function saveCommercialAuditOm() {
+    var wasEdit = commercialAuditPage.omMode === "edit";
     var model = {
-        OmId: commercialAuditPage.omMode === "edit" ? commercialAuditPage.selectedOmId : 0,
+        OmId: wasEdit ? commercialAuditPage.selectedOmId : 0,
         AuditYearId: parseNullableInt($("#omAuditYear").val()),
         OmNo: $("#omNo").val().trim(),
         GistOfOm: $("#omGist").val().trim(),
-        BodyOfOm: $("#omBody").val().trim(),
-        ManagementResponse: $("#omManagementResponse").val().trim(),
+        BodyOfOm: getCommercialAuditRichTextValue("omBody"),
+        ManagementResponse: getCommercialAuditRichTextValue("omManagementResponse"),
         IsActive: "Y"
     };
 
@@ -164,8 +368,9 @@ function saveCommercialAuditOm() {
             }
 
             commercialAuditPage.selectedOmId = parseInt(coalesce(data.Id, data.id, 0), 10) || commercialAuditPage.selectedOmId;
+            commercialAuditPage.omMode = "edit";
             loadCommercialAuditOms({ OmId: commercialAuditPage.selectedOmId, OmNo: model.OmNo });
-            showApiAlert(data, commercialAuditPage.omMode === "edit" ? "OM updated successfully." : "OM saved successfully.");
+            showApiAlert(data, wasEdit ? "OM updated successfully." : "OM saved successfully.");
         },
         error: function (xhr) {
             showApiAlertFromXhr(xhr, xhr ? xhr.status : null, getErrorReferenceIdFromXhr(xhr), "Unable to save OM.");
@@ -173,19 +378,31 @@ function saveCommercialAuditOm() {
     });
 }
 
-function initCommercialAuditPdp() {
-    $("#btnSavePdp").on("click", saveCommercialAuditPdp);
-    $("#btnCancelPdpEdit").on("click", resetCommercialAuditPdpForm);
-    $("#btnSavePdpMappings").on("click", saveCommercialAuditPdpMappings);
+function initCommercialAuditPdpEntry() {
+    $("#btnSavePdp").off("click").on("click", saveCommercialAuditPdp);
+    $("#btnCancelPdpEdit").off("click").on("click", resetCommercialAuditPdpForm);
 
-    $("#tblCommercialPdp").on("click", ".btn-edit-pdp", function () {
+    applyCommercialAuditPdpState();
+    initializeCommercialAuditRichTextEditors(["pdpBody", "pdpManagementResponse", "pdpDacRecommendations"]);
+
+    if (commercialAuditPage.selectedPdpId && !commercialAuditPage.selectedPdpSnapshot) {
+        loadCommercialAuditPdps({ PdpId: commercialAuditPage.selectedPdpId });
+    }
+}
+
+function initCommercialAuditPdpLinking() {
+    $("#btnSavePdpMappings").off("click").on("click", saveCommercialAuditPdpMappings);
+    $("#tblCommercialPdp").off("click", ".btn-manage-pdp").on("click", ".btn-manage-pdp", function () {
         var rowData = $(this).data("row");
-        if (rowData) {
-            populateCommercialAuditPdpForm(rowData);
-            loadCommercialAuditPdpMappings(rowData.PdpId);
+        if (!rowData) {
+            return;
         }
+
+        populateCommercialAuditPdpForm(rowData);
+        loadCommercialAuditPdpMappings(rowData.PdpId);
     });
 
+    applyCommercialAuditPdpState();
     loadCommercialAuditPdpOmLookup();
     loadCommercialAuditPdps();
 }
@@ -238,6 +455,10 @@ function loadCommercialAuditPdps(selectionHint) {
 }
 
 function renderCommercialAuditPdpTable(list) {
+    if (!$("#tblCommercialPdp").length) {
+        return;
+    }
+
     destroyDatatable("tblCommercialPdp");
 
     var tbody = $("#tblCommercialPdp tbody");
@@ -256,13 +477,13 @@ function renderCommercialAuditPdpTable(list) {
         row.append($("<td>").text(item.UpdatedStatus));
         row.append($("<td>").text(item.LinkedOmNumbers || item.LinkedOmCount));
 
-        var editButton = $("<button>")
-            .addClass("btn btn-sm btn-primary btn-edit-pdp")
+        var manageButton = $("<button>")
+            .addClass("btn btn-sm btn-primary btn-manage-pdp")
             .attr("type", "button")
-            .text(commercialAuditPage.selectedPdpId === item.PdpId ? "Editing" : "Edit")
+            .text(commercialAuditPage.selectedPdpId === item.PdpId ? "Managing" : "Manage")
             .data("row", item);
 
-        row.append($("<td>").addClass("text-center").append(editButton));
+        row.append($("<td>").addClass("text-center").append(manageButton));
         tbody.append(row);
     });
 
@@ -270,6 +491,10 @@ function renderCommercialAuditPdpTable(list) {
 }
 
 function renderCommercialAuditPdpOmLookup(omList, selectedMappings) {
+    if (!$("#tblPdpOmLookup").length) {
+        return;
+    }
+
     var selectedOmIds = (selectedMappings || []).map(function (item) {
         return item.OmId;
     });
@@ -309,53 +534,71 @@ function updateCommercialAuditPdpSelectedSummary() {
 
 function populateCommercialAuditPdpForm(item) {
     commercialAuditPage.pdpMode = "edit";
-    commercialAuditPage.selectedPdpId = item.PdpId || 0;
-
-    $("#pdpFormTitle").text("Update PDP");
-    $("#pdpAuditYear").val(item.AuditYearId);
-    $("#pdpNo").val(item.PdpNo || "");
-    $("#pdpGist").val(item.GistOfPdp || "");
-    $("#pdpBody").val(item.BodyOfPdp || "");
-    $("#pdpManagementResponse").val(item.ManagementResponse || "");
-    $("#pdpDacRecommendations").val(item.DacRecommendations || "");
-    $("#pdpUpdatedStatus").val(item.UpdatedStatus || "");
-    $("#btnSavePdp").text("Update PDP");
-    $("#btnCancelPdpEdit").removeClass("d-none");
-    $("#pdpOmMappingFieldset").prop("disabled", false);
-    $("#pdpMappingHint").text("Select one or more OMs and save the mapping for the selected PDP.");
+    commercialAuditPage.selectedPdpSnapshot = normalizeCommercialPdp(item);
+    commercialAuditPage.selectedPdpId = commercialAuditPage.selectedPdpSnapshot.PdpId;
+    applyCommercialAuditPdpState();
     renderCommercialAuditPdpTable(commercialAuditPage.pdpList);
+}
+
+function applyCommercialAuditPdpState() {
+    if ($("#pdpFormTitle").length) {
+        if (commercialAuditPage.pdpMode === "edit" && commercialAuditPage.selectedPdpSnapshot) {
+            $("#pdpFormTitle").text("Update PDP");
+            $("#pdpAuditYear").val(commercialAuditPage.selectedPdpSnapshot.AuditYearId || "");
+            $("#pdpNo").val(commercialAuditPage.selectedPdpSnapshot.PdpNo || "");
+            $("#pdpGist").val(commercialAuditPage.selectedPdpSnapshot.GistOfPdp || "");
+            setCommercialAuditFieldValue("pdpBody", commercialAuditPage.selectedPdpSnapshot.BodyOfPdp || "");
+            setCommercialAuditFieldValue("pdpManagementResponse", commercialAuditPage.selectedPdpSnapshot.ManagementResponse || "");
+            setCommercialAuditFieldValue("pdpDacRecommendations", commercialAuditPage.selectedPdpSnapshot.DacRecommendations || "");
+            $("#pdpUpdatedStatus").val(commercialAuditPage.selectedPdpSnapshot.UpdatedStatus || "");
+            $("#btnSavePdp").text("Update PDP");
+            $("#btnCancelPdpEdit").removeClass("d-none");
+        } else {
+            $("#pdpFormTitle").text("Create PDP");
+            $("#pdpAuditYear").val("");
+            $("#pdpNo").val("");
+            $("#pdpGist").val("");
+            setCommercialAuditFieldValue("pdpBody", "");
+            setCommercialAuditFieldValue("pdpManagementResponse", "");
+            setCommercialAuditFieldValue("pdpDacRecommendations", "");
+            $("#pdpUpdatedStatus").val("");
+            $("#btnSavePdp").text("Save PDP");
+            $("#btnCancelPdpEdit").addClass("d-none");
+        }
+    }
+
+    if ($("#pdpOmMappingFieldset").length) {
+        var hasSelection = !!commercialAuditPage.selectedPdpId;
+        $("#pdpOmMappingFieldset").prop("disabled", !hasSelection);
+        $("#pdpMappingHint").text(hasSelection
+            ? "Select one or more OMs and save the mapping for the selected PDP."
+            : "Save or select a PDP first, then choose one or more OMs to link.");
+        $("#pdpSelectedPdpLabel").text(hasSelection && commercialAuditPage.selectedPdpSnapshot
+            ? commercialAuditPage.selectedPdpSnapshot.PdpNo + " selected"
+            : "No PDP selected");
+        renderCommercialAuditPdpOmLookup(commercialAuditPage.omList, hasSelection ? commercialAuditPage.selectedPdpMappings : []);
+    }
 }
 
 function resetCommercialAuditPdpForm() {
     commercialAuditPage.pdpMode = "add";
     commercialAuditPage.selectedPdpId = 0;
+    commercialAuditPage.selectedPdpSnapshot = null;
     commercialAuditPage.selectedPdpMappings = [];
-
-    $("#pdpFormTitle").text("Create PDP");
-    $("#pdpAuditYear").val("");
-    $("#pdpNo").val("");
-    $("#pdpGist").val("");
-    $("#pdpBody").val("");
-    $("#pdpManagementResponse").val("");
-    $("#pdpDacRecommendations").val("");
-    $("#pdpUpdatedStatus").val("");
-    $("#btnSavePdp").text("Save PDP");
-    $("#btnCancelPdpEdit").addClass("d-none");
-    $("#pdpOmMappingFieldset").prop("disabled", true);
-    $("#pdpMappingHint").text("Save or select a PDP first, then choose one or more OMs to link.");
-    renderCommercialAuditPdpOmLookup(commercialAuditPage.omList, []);
+    applyCommercialAuditPdpState();
     renderCommercialAuditPdpTable(commercialAuditPage.pdpList);
 }
 
 function saveCommercialAuditPdp() {
+    var wasEdit = commercialAuditPage.pdpMode === "edit";
     var model = {
-        PdpId: commercialAuditPage.pdpMode === "edit" ? commercialAuditPage.selectedPdpId : 0,
+        PdpId: wasEdit ? commercialAuditPage.selectedPdpId : 0,
         AuditYearId: parseNullableInt($("#pdpAuditYear").val()),
         PdpNo: $("#pdpNo").val().trim(),
         GistOfPdp: $("#pdpGist").val().trim(),
-        BodyOfPdp: $("#pdpBody").val().trim(),
-        ManagementResponse: $("#pdpManagementResponse").val().trim(),
-        DacRecommendations: $("#pdpDacRecommendations").val().trim(),
+        BodyOfPdp: getCommercialAuditRichTextValue("pdpBody"),
+        ManagementResponse: getCommercialAuditRichTextValue("pdpManagementResponse"),
+        DacRecommendations: getCommercialAuditRichTextValue("pdpDacRecommendations"),
         UpdatedStatus: $("#pdpUpdatedStatus").val().trim(),
         IsActive: "Y"
     };
@@ -377,10 +620,9 @@ function saveCommercialAuditPdp() {
             }
 
             commercialAuditPage.selectedPdpId = parseInt(coalesce(data.Id, data.id, 0), 10) || commercialAuditPage.selectedPdpId;
+            commercialAuditPage.pdpMode = "edit";
             loadCommercialAuditPdps({ PdpId: commercialAuditPage.selectedPdpId, PdpNo: model.PdpNo });
-            $("#pdpOmMappingFieldset").prop("disabled", false);
-            $("#pdpMappingHint").text("Select one or more OMs and save the mapping for the selected PDP.");
-            showApiAlert(data, commercialAuditPage.pdpMode === "edit" ? "PDP updated successfully." : "PDP saved successfully.");
+            showApiAlert(data, wasEdit ? "PDP updated successfully." : "PDP saved successfully.");
         },
         error: function (xhr) {
             showApiAlertFromXhr(xhr, xhr ? xhr.status : null, getErrorReferenceIdFromXhr(xhr), "Unable to save PDP.");
@@ -448,36 +690,52 @@ function saveCommercialAuditPdpMappings() {
     });
 }
 
-function initCommercialAuditArpse() {
-    $("#btnSaveArpse").on("click", saveCommercialAuditArpseHeader);
-    $("#btnCancelArpseEdit").on("click", resetCommercialAuditArpseForm);
-    $("#btnSaveArpseDac").on("click", saveCommercialAuditArpseDacEntry);
-    $("#btnCancelArpseDacEdit").on("click", resetCommercialAuditArpseDacForm);
-    $("#btnSaveArpsePac").on("click", saveCommercialAuditArpsePacEntry);
-    $("#btnCancelArpsePacEdit").on("click", resetCommercialAuditArpsePacForm);
+function initCommercialAuditArpseHeader() {
+    $("#btnSaveArpse").off("click").on("click", saveCommercialAuditArpseHeader);
+    $("#btnCancelArpseEdit").off("click").on("click", resetCommercialAuditArpseForm);
 
-    $("#tblCommercialArpse").on("click", ".btn-edit-arpse", function () {
+    applyCommercialAuditArpseHeaderState();
+    initializeCommercialAuditRichTextEditors(["arpseManagementResponse"]);
+
+    if (commercialAuditPage.selectedArpseId && !commercialAuditPage.selectedArpseSnapshot) {
+        loadCommercialAuditArpseHeaders({ ArpseId: commercialAuditPage.selectedArpseId });
+    }
+}
+
+function initCommercialAuditArpseMonitoring() {
+    $("#btnSaveArpseDac").off("click").on("click", saveCommercialAuditArpseDacEntry);
+    $("#btnCancelArpseDacEdit").off("click").on("click", resetCommercialAuditArpseDacForm);
+    $("#btnSaveArpsePac").off("click").on("click", saveCommercialAuditArpsePacEntry);
+    $("#btnCancelArpsePacEdit").off("click").on("click", resetCommercialAuditArpsePacForm);
+
+    $("#tblCommercialArpse").off("click", ".btn-manage-arpse").on("click", ".btn-manage-arpse", function () {
         var rowData = $(this).data("row");
-        if (rowData) {
-            populateCommercialAuditArpseHeaderForm(rowData);
-            loadCommercialAuditArpseChildren(rowData.ArpseId);
+        if (!rowData) {
+            return;
         }
+
+        populateCommercialAuditArpseHeaderForm(rowData);
+        loadCommercialAuditArpseChildren(rowData.ArpseId);
     });
 
-    $("#tblArpseDac").on("click", ".btn-edit-arpse-dac", function () {
+    $("#tblArpseDac").off("click", ".btn-edit-arpse-dac").on("click", ".btn-edit-arpse-dac", function () {
         var rowData = $(this).data("row");
         if (rowData) {
             populateCommercialAuditArpseDacForm(rowData);
         }
     });
 
-    $("#tblArpsePac").on("click", ".btn-edit-arpse-pac", function () {
+    $("#tblArpsePac").off("click", ".btn-edit-arpse-pac").on("click", ".btn-edit-arpse-pac", function () {
         var rowData = $(this).data("row");
         if (rowData) {
             populateCommercialAuditArpsePacForm(rowData);
         }
     });
 
+    applyCommercialAuditArpseHeaderState();
+    applyCommercialAuditArpseDacState();
+    applyCommercialAuditArpsePacState();
+    initializeCommercialAuditRichTextEditors(["arpseDacRecommendation", "arpsePacDirective"]);
     loadCommercialAuditArpseHeaders();
 }
 
@@ -512,6 +770,10 @@ function loadCommercialAuditArpseHeaders(selectionHint) {
 }
 
 function renderCommercialAuditArpseTable(list) {
+    if (!$("#tblCommercialArpse").length) {
+        return;
+    }
+
     destroyDatatable("tblCommercialArpse");
 
     var tbody = $("#tblCommercialArpse tbody");
@@ -527,15 +789,15 @@ function renderCommercialAuditArpseTable(list) {
         row.append($("<td>").text(item.ArpseYearText));
         row.append($("<td>").text(item.ParaNo));
         row.append($("<td>").text(item.GistOfPara));
-        row.append($("<td>").text(item.ManagementResponse));
+        row.append($("<td>").text(getCommercialAuditPreviewText(item.ManagementResponse, 140)));
 
-        var editButton = $("<button>")
-            .addClass("btn btn-sm btn-primary btn-edit-arpse")
+        var manageButton = $("<button>")
+            .addClass("btn btn-sm btn-primary btn-manage-arpse")
             .attr("type", "button")
-            .text(commercialAuditPage.selectedArpseId === item.ArpseId ? "Editing" : "Edit")
+            .text(commercialAuditPage.selectedArpseId === item.ArpseId ? "Managing" : "Manage")
             .data("row", item);
 
-        row.append($("<td>").addClass("text-center").append(editButton));
+        row.append($("<td>").addClass("text-center").append(manageButton));
         tbody.append(row);
     });
 
@@ -544,31 +806,47 @@ function renderCommercialAuditArpseTable(list) {
 
 function populateCommercialAuditArpseHeaderForm(item) {
     commercialAuditPage.arpseMode = "edit";
-    commercialAuditPage.selectedArpseId = item.ArpseId || 0;
-
-    $("#arpseFormTitle").text("Update ARPSE Header");
-    $("#arpseYear").val(item.ArpseYearId);
-    $("#arpseParaNo").val(item.ParaNo || "");
-    $("#arpseGist").val(item.GistOfPara || "");
-    $("#arpseManagementResponse").val(item.ManagementResponse || "");
-    $("#btnSaveArpse").text("Update Header");
-    $("#btnCancelArpseEdit").removeClass("d-none");
-    $("#arpseChildrenFieldset").prop("disabled", false);
+    commercialAuditPage.selectedArpseSnapshot = normalizeCommercialArpseHeader(item);
+    commercialAuditPage.selectedArpseId = commercialAuditPage.selectedArpseSnapshot.ArpseId;
+    applyCommercialAuditArpseHeaderState();
     renderCommercialAuditArpseTable(commercialAuditPage.arpseList);
+}
+
+function applyCommercialAuditArpseHeaderState() {
+    if ($("#arpseFormTitle").length) {
+        if (commercialAuditPage.arpseMode === "edit" && commercialAuditPage.selectedArpseSnapshot) {
+            $("#arpseFormTitle").text("Update ARPSE Header");
+            $("#arpseYear").val(commercialAuditPage.selectedArpseSnapshot.ArpseYearId || "");
+            $("#arpseParaNo").val(commercialAuditPage.selectedArpseSnapshot.ParaNo || "");
+            $("#arpseGist").val(commercialAuditPage.selectedArpseSnapshot.GistOfPara || "");
+            setCommercialAuditFieldValue("arpseManagementResponse", commercialAuditPage.selectedArpseSnapshot.ManagementResponse || "");
+            $("#btnSaveArpse").text("Update Header");
+            $("#btnCancelArpseEdit").removeClass("d-none");
+        } else {
+            $("#arpseFormTitle").text("Create ARPSE Header");
+            $("#arpseYear").val("");
+            $("#arpseParaNo").val("");
+            $("#arpseGist").val("");
+            setCommercialAuditFieldValue("arpseManagementResponse", "");
+            $("#btnSaveArpse").text("Save Header");
+            $("#btnCancelArpseEdit").addClass("d-none");
+        }
+    }
+
+    if ($("#arpseChildrenFieldset").length) {
+        var hasSelection = !!commercialAuditPage.selectedArpseId;
+        $("#arpseChildrenFieldset").prop("disabled", !hasSelection);
+        $("#arpseSelectedHeaderLabel").text(hasSelection && commercialAuditPage.selectedArpseSnapshot
+            ? commercialAuditPage.selectedArpseSnapshot.ParaNo + " selected"
+            : "No ARPSE header selected");
+    }
 }
 
 function resetCommercialAuditArpseForm() {
     commercialAuditPage.arpseMode = "add";
     commercialAuditPage.selectedArpseId = 0;
-
-    $("#arpseFormTitle").text("Create ARPSE Header");
-    $("#arpseYear").val("");
-    $("#arpseParaNo").val("");
-    $("#arpseGist").val("");
-    $("#arpseManagementResponse").val("");
-    $("#btnSaveArpse").text("Save Header");
-    $("#btnCancelArpseEdit").addClass("d-none");
-    $("#arpseChildrenFieldset").prop("disabled", true);
+    commercialAuditPage.selectedArpseSnapshot = null;
+    applyCommercialAuditArpseHeaderState();
     resetCommercialAuditArpseDacForm();
     resetCommercialAuditArpsePacForm();
     renderCommercialAuditArpseDacTable([]);
@@ -577,12 +855,13 @@ function resetCommercialAuditArpseForm() {
 }
 
 function saveCommercialAuditArpseHeader() {
+    var wasEdit = commercialAuditPage.arpseMode === "edit";
     var model = {
-        ArpseId: commercialAuditPage.arpseMode === "edit" ? commercialAuditPage.selectedArpseId : 0,
+        ArpseId: wasEdit ? commercialAuditPage.selectedArpseId : 0,
         ArpseYearId: parseNullableInt($("#arpseYear").val()),
         ParaNo: $("#arpseParaNo").val().trim(),
         GistOfPara: $("#arpseGist").val().trim(),
-        ManagementResponse: $("#arpseManagementResponse").val().trim(),
+        ManagementResponse: getCommercialAuditRichTextValue("arpseManagementResponse"),
         IsActive: "Y"
     };
 
@@ -603,9 +882,9 @@ function saveCommercialAuditArpseHeader() {
             }
 
             commercialAuditPage.selectedArpseId = parseInt(coalesce(data.Id, data.id, 0), 10) || commercialAuditPage.selectedArpseId;
-            $("#arpseChildrenFieldset").prop("disabled", false);
+            commercialAuditPage.arpseMode = "edit";
             loadCommercialAuditArpseHeaders({ ArpseId: commercialAuditPage.selectedArpseId, ParaNo: model.ParaNo });
-            showApiAlert(data, commercialAuditPage.arpseMode === "edit" ? "ARPSE header updated successfully." : "ARPSE header saved successfully.");
+            showApiAlert(data, wasEdit ? "ARPSE header updated successfully." : "ARPSE header saved successfully.");
         },
         error: function (xhr) {
             showApiAlertFromXhr(xhr, xhr ? xhr.status : null, getErrorReferenceIdFromXhr(xhr), "Unable to save ARPSE header.");
@@ -658,6 +937,10 @@ function loadCommercialAuditArpsePacEntries(arpseId) {
 }
 
 function renderCommercialAuditArpseDacTable(list) {
+    if (!$("#tblArpseDac").length) {
+        return;
+    }
+
     var tbody = $("#tblArpseDac tbody");
     tbody.empty();
 
@@ -668,7 +951,7 @@ function renderCommercialAuditArpseDacTable(list) {
 
     list.forEach(function (item) {
         var row = $("<tr>");
-        row.append($("<td>").text(item.DacRecommendation));
+        row.append($("<td>").text(getCommercialAuditPreviewText(item.DacRecommendation, 120)));
         row.append($("<td>").text(formatDisplayDate(item.DacDate)));
         row.append($("<td>").text(item.UpdatedStatus));
 
@@ -684,6 +967,10 @@ function renderCommercialAuditArpseDacTable(list) {
 }
 
 function renderCommercialAuditArpsePacTable(list) {
+    if (!$("#tblArpsePac").length) {
+        return;
+    }
+
     var tbody = $("#tblArpsePac tbody");
     tbody.empty();
 
@@ -694,7 +981,7 @@ function renderCommercialAuditArpsePacTable(list) {
 
     list.forEach(function (item) {
         var row = $("<tr>");
-        row.append($("<td>").text(item.PacDirective));
+        row.append($("<td>").text(getCommercialAuditPreviewText(item.PacDirective, 120)));
         row.append($("<td>").text(formatDisplayDate(item.PacDate)));
         row.append($("<td>").text(item.UpdatedStatus));
 
@@ -711,24 +998,31 @@ function renderCommercialAuditArpsePacTable(list) {
 
 function populateCommercialAuditArpseDacForm(item) {
     commercialAuditPage.dacMode = "edit";
-    commercialAuditPage.editingDacId = item.DacEntryId || 0;
+    commercialAuditPage.editingDacId = parseInt(coalesce(item.DacEntryId, item.dacEntryId, 0), 10) || 0;
 
-    $("#arpseDacRecommendation").val(item.DacRecommendation || "");
-    $("#arpseDacDate").val(formatInputDate(item.DacDate));
-    $("#arpseDacUpdatedStatus").val(item.UpdatedStatus || "");
-    $("#btnSaveArpseDac").text("Update DAC");
-    $("#btnCancelArpseDacEdit").removeClass("d-none");
+    setCommercialAuditFieldValue("arpseDacRecommendation", coalesce(item.DacRecommendation, item.dacRecommendation, "") || "");
+    $("#arpseDacDate").val(formatInputDate(coalesce(item.DacDate, item.dacDate, null)));
+    $("#arpseDacUpdatedStatus").val(coalesce(item.UpdatedStatus, item.updatedStatus, "") || "");
+    applyCommercialAuditArpseDacState();
+}
+
+function applyCommercialAuditArpseDacState() {
+    if (!$("#btnSaveArpseDac").length) {
+        return;
+    }
+
+    $("#btnSaveArpseDac").text(commercialAuditPage.dacMode === "edit" ? "Update DAC" : "Add DAC");
+    $("#btnCancelArpseDacEdit").toggleClass("d-none", commercialAuditPage.dacMode !== "edit");
 }
 
 function resetCommercialAuditArpseDacForm() {
     commercialAuditPage.dacMode = "add";
     commercialAuditPage.editingDacId = 0;
 
-    $("#arpseDacRecommendation").val("");
+    setCommercialAuditFieldValue("arpseDacRecommendation", "");
     $("#arpseDacDate").val("");
     $("#arpseDacUpdatedStatus").val("");
-    $("#btnSaveArpseDac").text("Add DAC");
-    $("#btnCancelArpseDacEdit").addClass("d-none");
+    applyCommercialAuditArpseDacState();
 }
 
 function saveCommercialAuditArpseDacEntry() {
@@ -737,10 +1031,11 @@ function saveCommercialAuditArpseDacEntry() {
         return;
     }
 
+    var wasEdit = commercialAuditPage.dacMode === "edit";
     var model = {
-        DacEntryId: commercialAuditPage.dacMode === "edit" ? commercialAuditPage.editingDacId : 0,
+        DacEntryId: wasEdit ? commercialAuditPage.editingDacId : 0,
         ArpseId: commercialAuditPage.selectedArpseId,
-        DacRecommendation: $("#arpseDacRecommendation").val().trim(),
+        DacRecommendation: getCommercialAuditRichTextValue("arpseDacRecommendation"),
         DacDate: $("#arpseDacDate").val() || null,
         UpdatedStatus: $("#arpseDacUpdatedStatus").val().trim(),
         IsActive: "Y"
@@ -762,7 +1057,6 @@ function saveCommercialAuditArpseDacEntry() {
                 return;
             }
 
-            var wasEdit = commercialAuditPage.dacMode === "edit";
             resetCommercialAuditArpseDacForm();
             loadCommercialAuditArpseDacEntries(commercialAuditPage.selectedArpseId);
             showApiAlert(data, wasEdit ? "DAC entry updated successfully." : "DAC entry saved successfully.");
@@ -775,24 +1069,31 @@ function saveCommercialAuditArpseDacEntry() {
 
 function populateCommercialAuditArpsePacForm(item) {
     commercialAuditPage.pacMode = "edit";
-    commercialAuditPage.editingPacId = item.PacEntryId || 0;
+    commercialAuditPage.editingPacId = parseInt(coalesce(item.PacEntryId, item.pacEntryId, 0), 10) || 0;
 
-    $("#arpsePacDirective").val(item.PacDirective || "");
-    $("#arpsePacDate").val(formatInputDate(item.PacDate));
-    $("#arpsePacUpdatedStatus").val(item.UpdatedStatus || "");
-    $("#btnSaveArpsePac").text("Update PAC");
-    $("#btnCancelArpsePacEdit").removeClass("d-none");
+    setCommercialAuditFieldValue("arpsePacDirective", coalesce(item.PacDirective, item.pacDirective, "") || "");
+    $("#arpsePacDate").val(formatInputDate(coalesce(item.PacDate, item.pacDate, null)));
+    $("#arpsePacUpdatedStatus").val(coalesce(item.UpdatedStatus, item.updatedStatus, "") || "");
+    applyCommercialAuditArpsePacState();
+}
+
+function applyCommercialAuditArpsePacState() {
+    if (!$("#btnSaveArpsePac").length) {
+        return;
+    }
+
+    $("#btnSaveArpsePac").text(commercialAuditPage.pacMode === "edit" ? "Update PAC" : "Add PAC");
+    $("#btnCancelArpsePacEdit").toggleClass("d-none", commercialAuditPage.pacMode !== "edit");
 }
 
 function resetCommercialAuditArpsePacForm() {
     commercialAuditPage.pacMode = "add";
     commercialAuditPage.editingPacId = 0;
 
-    $("#arpsePacDirective").val("");
+    setCommercialAuditFieldValue("arpsePacDirective", "");
     $("#arpsePacDate").val("");
     $("#arpsePacUpdatedStatus").val("");
-    $("#btnSaveArpsePac").text("Add PAC");
-    $("#btnCancelArpsePacEdit").addClass("d-none");
+    applyCommercialAuditArpsePacState();
 }
 
 function saveCommercialAuditArpsePacEntry() {
@@ -801,10 +1102,11 @@ function saveCommercialAuditArpsePacEntry() {
         return;
     }
 
+    var wasEdit = commercialAuditPage.pacMode === "edit";
     var model = {
-        PacEntryId: commercialAuditPage.pacMode === "edit" ? commercialAuditPage.editingPacId : 0,
+        PacEntryId: wasEdit ? commercialAuditPage.editingPacId : 0,
         ArpseId: commercialAuditPage.selectedArpseId,
-        PacDirective: $("#arpsePacDirective").val().trim(),
+        PacDirective: getCommercialAuditRichTextValue("arpsePacDirective"),
         PacDate: $("#arpsePacDate").val() || null,
         UpdatedStatus: $("#arpsePacUpdatedStatus").val().trim(),
         IsActive: "Y"
@@ -826,7 +1128,6 @@ function saveCommercialAuditArpsePacEntry() {
                 return;
             }
 
-            var wasEdit = commercialAuditPage.pacMode === "edit";
             resetCommercialAuditArpsePacForm();
             loadCommercialAuditArpsePacEntries(commercialAuditPage.selectedArpseId);
             showApiAlert(data, wasEdit ? "PAC entry updated successfully." : "PAC entry saved successfully.");
@@ -835,6 +1136,137 @@ function saveCommercialAuditArpsePacEntry() {
             showApiAlertFromXhr(xhr, xhr ? xhr.status : null, getErrorReferenceIdFromXhr(xhr), "Unable to save PAC entry.");
         }
     });
+}
+
+function getCommercialAuditRichTextConfig() {
+    return {
+        bold: true,
+        italic: true,
+        underline: true,
+        leftAlign: true,
+        centerAlign: true,
+        rightAlign: true,
+        justify: true,
+        ol: true,
+        ul: true,
+        heading: true,
+        fonts: true,
+        fontColor: true,
+        fontSize: true,
+        table: true,
+        removeStyles: true,
+        code: true,
+        imageUpload: false,
+        fileUpload: false,
+        videoEmbed: false,
+        urls: false
+    };
+}
+
+function initCommercialAuditEditors(editorIds) {
+    if (!$.fn.richText) {
+        return;
+    }
+
+    var targets = Array.isArray(editorIds) && editorIds.length ? editorIds : commercialAuditRichTextEditorIds;
+    var config = getCommercialAuditRichTextConfig();
+
+    targets.forEach(function (editorId) {
+        var $field = $("#" + editorId);
+        if (!$field.length) {
+            return;
+        }
+
+        if ($field.closest(".richText").length) {
+            $field.trigger("change");
+            return;
+        }
+
+        $field.richText($.extend({}, config, {
+            id: editorId + "-editor"
+        }));
+        $field.trigger("change");
+    });
+}
+
+function initializeCommercialAuditRichTextEditors(editorIds) {
+    initCommercialAuditEditors(editorIds);
+}
+
+function destroyCommercialAuditRichTextEditors() {
+    if (!$.fn.unRichText) {
+        return;
+    }
+
+    commercialAuditRichTextEditorIds.forEach(function (editorId) {
+        var $field = $("#" + editorId);
+        if ($field.length && $field.closest(".richText").length) {
+            $field.unRichText();
+        }
+    });
+}
+
+function getCommercialAuditRichTextValue(fieldId) {
+    var field = $("#" + fieldId);
+    if (!field.length) {
+        return "";
+    }
+
+    var editor = field.closest(".richText").find(".richText-editor:visible").first();
+    if (editor.length) {
+        field.val(String(editor.html() || ""));
+    }
+
+    return normalizeCommercialAuditRichText(field.val());
+}
+
+function setCommercialAuditFieldValue(fieldId, value) {
+    var field = $("#" + fieldId);
+    if (!field.length) {
+        return;
+    }
+
+    field.val(String(value || ""));
+
+    if (field.closest(".richText").length) {
+        field.trigger("change");
+    }
+}
+
+function normalizeCommercialAuditRichText(value) {
+    var html = String(value || "").trim();
+    if (!html) {
+        return "";
+    }
+
+    if (!stripHtmlToText(html) && html.indexOf("<img") < 0 && html.indexOf("<table") < 0 && html.indexOf("<hr") < 0) {
+        return "";
+    }
+
+    return html;
+}
+
+function getCommercialAuditPreviewText(value, maxLength) {
+    var text = stripHtmlToText(value);
+    if (!text) {
+        return "";
+    }
+
+    if (maxLength && text.length > maxLength) {
+        return text.substring(0, maxLength).trim() + "...";
+    }
+
+    return text;
+}
+
+function stripHtmlToText(value) {
+    if (!value) {
+        return "";
+    }
+
+    var wrapper = document.createElement("div");
+    wrapper.innerHTML = String(value);
+    return String(wrapper.textContent || wrapper.innerText || "").replace(/\s+/g, " ").trim();
 }
 
 function normalizeCommercialOm(item) {

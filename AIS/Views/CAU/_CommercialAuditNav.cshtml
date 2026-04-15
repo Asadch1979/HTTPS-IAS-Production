@@ -1,32 +1,55 @@
 @using AIS.Models.CAU
+@using System.Linq
 @{
-    var currentStage = (ViewData["CommercialAuditStage"] as string ?? string.Empty).ToLowerInvariant();
-    var stages = ViewData["WorkflowStages"] as List<CommercialAuditWorkflowStage> ?? new List<CommercialAuditWorkflowStage>();
+    var workflow = ViewData["CommercialAuditWorkflowModel"] as CommercialAuditWorkflowViewModel ?? new CommercialAuditWorkflowViewModel();
+    var currentStepKey = workflow.CurrentStepKey ?? string.Empty;
+    var currentStep = workflow.Steps.FirstOrDefault(item => string.Equals(item.StepKey, currentStepKey, System.StringComparison.OrdinalIgnoreCase))
+        ?? workflow.Steps.OrderBy(item => item.StepNo).FirstOrDefault();
+    var homeUrl = Url.Content("~/Home/Index");
+    var workflowHostPath = ViewData["CommercialAuditHostPath"] as string ?? Context?.Request?.Path.Value ?? Url.Action("workflow", "CAU");
 }
 
-<div class="commercial-audit-nav mb-4">
-    <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3">
-        <div>
-            <h3 class="mb-1">Commercial Audit Workflow</h3>
-            <p class="text-muted mb-0">Move stage by stage without splitting the module into disconnected screens.</p>
-        </div>
-        <div class="d-flex flex-wrap gap-2">
-            @foreach (var stage in stages)
-            {
-                var actionName = stage.Key == "workflow"
-                    ? "reports"
-                    : stage.Key == "om"
-                        ? "om_creation"
-                        : stage.Key == "pdp"
-                            ? "om_reply"
-                            : "monitoring_oms";
-                var isActive = currentStage == stage.Key.ToLowerInvariant();
-                <a asp-controller="CAU"
-                   asp-action="@actionName"
-                   class="btn @(isActive ? "btn-success" : "btn-outline-success")">
-                    @stage.Title
-                </a>
-            }
+<div class="stepper-wrap sticky-top bg-white py-2 mb-3">
+    <div class="card shadow-sm planning-nav-card commercial-audit-nav-card mb-0">
+        <div class="card-body py-3">
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-3">
+                <div>
+                    <div class="d-flex align-items-center flex-wrap gap-2 mb-1">
+                        <h1 class="h5 mb-0">Commercial Audit Workflow</h1>
+                        <span class="commercial-audit-stage-chip" id="commercialAuditCurrentStage">Stage @((currentStep?.StageKey ?? "om").ToUpperInvariant())</span>
+                    </div>
+                    <div class="small text-muted">
+                        <span id="commercialAuditStepCounter">Step @(currentStep?.StepNo ?? 1) of @(workflow.Steps?.Count ?? 0)</span>
+                        <span class="mx-2 d-none d-sm-inline">|</span>
+                        <span>Use the step strip to move between OM, PDP, and ARPSE.</span>
+                    </div>
+                </div>
+
+                <div class="d-flex align-items-center gap-2 flex-wrap justify-content-lg-end">
+                    <div class="commercial-audit-step-summary">
+                        <span class="commercial-audit-step-summary__label">Current</span>
+                        <strong id="commercialAuditCurrentTitle">@currentStep?.Title</strong>
+                    </div>
+                    <a class="btn btn-outline-primary btn-sm" href="@homeUrl">Home</a>
+                </div>
+            </div>
+
+            <p class="commercial-audit-current-description text-muted mb-3" id="commercialAuditCurrentDescription">@currentStep?.Description</p>
+
+            <div class="commercial-audit-nav-track fa-stepper-track" role="navigation" aria-label="Commercial Audit workflow steps">
+                @foreach (var step in workflow.Steps.OrderBy(item => item.StepNo))
+                {
+                    var isActive = string.Equals(currentStepKey, step.StepKey, System.StringComparison.OrdinalIgnoreCase);
+                    <a class="commercial-audit-step-link step-pill @(isActive ? "active is-active" : string.Empty)"
+                       href="@(workflowHostPath + "?stepKey=" + System.Uri.EscapeDataString(step.StepKey))"
+                       data-step-key="@step.StepKey"
+                       aria-current="@(isActive ? "step" : null)">
+                        <div class="step-title">
+                            <span class="num">@step.StepNo.ToString("00")</span> @step.Title
+                        </div>
+                    </a>
+                }
+            </div>
         </div>
     </div>
 </div>

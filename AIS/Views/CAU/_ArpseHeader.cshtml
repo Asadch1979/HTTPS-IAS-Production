@@ -1,0 +1,55 @@
+@{
+    var workflowHostPath = ViewData["CommercialAuditHostPath"] as string ?? Url.Action("workflow", "CAU");
+}
+
+<div class="commercial-audit-step" data-step="arpse-header">
+    <div class="card commercial-audit-card shadow-sm">
+        <div class="card-header d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3">
+            <div>
+                <h4 class="mb-1" id="arpseFormTitle">Create ARPSE Header</h4>
+                <small class="text-muted">Maintain the ARPSE header here before switching to DAC and PAC follow-up.</small>
+            </div>
+            <a href="@(workflowHostPath + "?stepKey=arpse-monitoring")"
+               class="btn btn-outline-success commercial-audit-step-target"
+               data-step-key="arpse-monitoring">
+                Open ARPSE Monitoring
+            </a>
+        </div>
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-lg-4">
+                    <label for="arpseYear" class="form-label">ARPSE Year</label>
+                    <select id="arpseYear" class="form-select">
+                        <option value="">-- Select ARPSE Year --</option>
+                        @{
+                            if (ViewData["ArpseYearList"] != null)
+                            {
+                                foreach (var year in (dynamic)ViewData["ArpseYearList"])
+                                {
+                                    <option value="@year.AUDITPERIODID">@year.DESCRIPTION</option>
+                                }
+                            }
+                        }
+                    </select>
+                </div>
+                <div class="col-lg-4">
+                    <label for="arpseParaNo" class="form-label">Para No</label>
+                    <input id="arpseParaNo" type="text" class="form-control" maxlength="100" />
+                </div>
+                <div class="col-12">
+                    <label for="arpseGist" class="form-label">Gist of Para</label>
+                    <textarea id="arpseGist" class="form-control" rows="2" maxlength="500"></textarea>
+                </div>
+                <div class="col-12">
+                    <label for="arpseManagementResponse" class="form-label">Management Response</label>
+                    <textarea id="arpseManagementResponse" class="form-control commercial-audit-richtext-target" rows="12" maxlength="4000"></textarea>
+                </div>
+            </div>
+
+            <div class="d-flex gap-2 flex-wrap mt-4">
+                <button id="btnSaveArpse" type="button" class="btn btn-success">Save Header</button>
+                <button id="btnCancelArpseEdit" type="button" class="btn btn-secondary d-none">Cancel Edit</button>
+            </div>
+        </div>
+    </div>
+</div>

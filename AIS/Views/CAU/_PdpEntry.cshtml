@@ -1,0 +1,67 @@
+@{
+    var workflowHostPath = ViewData["CommercialAuditHostPath"] as string ?? Url.Action("workflow", "CAU");
+}
+
+<div class="commercial-audit-step" data-step="pdp-entry">
+    <div class="card commercial-audit-card shadow-sm">
+        <div class="card-header d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3">
+            <div>
+                <h4 class="mb-1" id="pdpFormTitle">Create PDP</h4>
+                <small class="text-muted">Capture the PDP narrative here, then switch to the separate OM linking step.</small>
+            </div>
+            <a href="@(workflowHostPath + "?stepKey=pdp-linking")"
+               class="btn btn-outline-success commercial-audit-step-target"
+               data-step-key="pdp-linking">
+                Open PDP Linking
+            </a>
+        </div>
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-lg-4">
+                    <label for="pdpAuditYear" class="form-label">Audit Year</label>
+                    <select id="pdpAuditYear" class="form-select">
+                        <option value="">-- Select Audit Year --</option>
+                        @{
+                            if (ViewData["AuditYearList"] != null)
+                            {
+                                foreach (var year in (dynamic)ViewData["AuditYearList"])
+                                {
+                                    <option value="@year.AUDITPERIODID">@year.DESCRIPTION</option>
+                                }
+                            }
+                        }
+                    </select>
+                </div>
+                <div class="col-lg-4">
+                    <label for="pdpNo" class="form-label">PDP No</label>
+                    <input id="pdpNo" type="text" class="form-control" maxlength="100" />
+                </div>
+                <div class="col-12">
+                    <label for="pdpGist" class="form-label">Gist of PDP</label>
+                    <textarea id="pdpGist" class="form-control" rows="2" maxlength="500"></textarea>
+                </div>
+                <div class="col-12">
+                    <label for="pdpBody" class="form-label">Body of PDP</label>
+                    <textarea id="pdpBody" class="form-control commercial-audit-richtext-target" rows="12" maxlength="4000"></textarea>
+                </div>
+                <div class="col-12">
+                    <label for="pdpManagementResponse" class="form-label">Management Response</label>
+                    <textarea id="pdpManagementResponse" class="form-control commercial-audit-richtext-target" rows="10" maxlength="4000"></textarea>
+                </div>
+                <div class="col-12">
+                    <label for="pdpDacRecommendations" class="form-label">DAC Recommendations</label>
+                    <textarea id="pdpDacRecommendations" class="form-control commercial-audit-richtext-target" rows="10" maxlength="4000"></textarea>
+                </div>
+                <div class="col-lg-6">
+                    <label for="pdpUpdatedStatus" class="form-label">Updated Status</label>
+                    <input id="pdpUpdatedStatus" type="text" class="form-control" maxlength="200" />
+                </div>
+            </div>
+
+            <div class="d-flex gap-2 flex-wrap mt-4">
+                <button id="btnSavePdp" type="button" class="btn btn-success">Save PDP</button>
+                <button id="btnCancelPdpEdit" type="button" class="btn btn-secondary d-none">Cancel Edit</button>
+            </div>
+        </div>
+    </div>
+</div>

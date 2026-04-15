@@ -1,47 +1,138 @@
 :root {
-    --commercial-audit-accent: #1d6f5f;
-    --commercial-audit-accent-soft: #e7f4ef;
-    --commercial-audit-border: #d8e5df;
-    --commercial-audit-text: #1f2d2a;
+    --commercial-audit-accent: #198754;
+    --commercial-audit-accent-soft: #eef8f2;
+    --commercial-audit-border: #ced4da;
+    --commercial-audit-panel: #f8faf9;
+    --commercial-audit-muted: #6c757d;
 }
 
 .commercial-audit-page {
-    color: var(--commercial-audit-text);
+    color: #212529;
 }
 
-.commercial-audit-nav,
+.commercial-audit-nav-card {
+    border: 1px solid var(--commercial-audit-border);
+}
+
+.commercial-audit-stage-chip {
+    display: inline-flex;
+    align-items: center;
+    min-height: 2rem;
+    padding: 0.35rem 0.8rem;
+    border-radius: 999px;
+    background: var(--commercial-audit-accent-soft);
+    color: #146c43;
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+}
+
+.commercial-audit-step-summary {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.15rem;
+    min-width: 11rem;
+    padding: 0.55rem 0.85rem;
+    border: 1px solid var(--commercial-audit-border);
+    border-radius: 0.75rem;
+    background: #fff;
+}
+
+.commercial-audit-step-summary__label {
+    color: var(--commercial-audit-muted);
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.commercial-audit-current-description {
+    font-size: 0.92rem;
+    line-height: 1.45;
+}
+
+.commercial-audit-nav-track {
+    padding-bottom: 0.15rem;
+}
+
+.commercial-audit-nav-track .commercial-audit-step-link {
+    flex: 1 1 0;
+    min-width: 170px;
+}
+
+.commercial-audit-nav-track .commercial-audit-step-link .step-title {
+    font-size: 0.9rem;
+}
+
+.commercial-audit-shell-card {
+    border: 1px solid var(--commercial-audit-border);
+}
+
+.commercial-audit-shell-body {
+    padding: 0.9rem;
+}
+
+.commercial-audit-step-host {
+    min-height: 18rem;
+}
+
+.commercial-audit-step-host > *:first-child {
+    margin-top: 0 !important;
+}
+
 .commercial-audit-card {
     border: 1px solid var(--commercial-audit-border);
-    border-radius: 1rem;
-    background: linear-gradient(180deg, #ffffff 0%, #fbfdfc 100%);
+    border-radius: 0.9rem;
+    background: #fff;
 }
 
-.commercial-audit-nav {
-    padding: 1.25rem 1.5rem;
-    box-shadow: 0 10px 30px rgba(29, 111, 95, 0.06);
+.commercial-audit-step-host .commercial-audit-card {
+    box-shadow: none !important;
 }
 
 .commercial-audit-card .card-header {
+    padding: 0.8rem 1rem;
     background: var(--commercial-audit-accent-soft);
     border-bottom: 1px solid var(--commercial-audit-border);
-    border-top-left-radius: 1rem;
-    border-top-right-radius: 1rem;
+    border-top-left-radius: 0.9rem;
+    border-top-right-radius: 0.9rem;
 }
 
-.commercial-audit-badge {
+.commercial-audit-card .card-header h4,
+.commercial-audit-card .card-header h5 {
+    font-size: 1.05rem;
+    margin-bottom: 0.3rem !important;
+}
+
+.commercial-audit-card .card-body {
+    padding: 1rem;
+}
+
+.commercial-audit-selection-pill {
     display: inline-flex;
     align-items: center;
-    gap: 0.5rem;
-    padding: 0.35rem 0.75rem;
+    justify-content: center;
+    min-height: 2.2rem;
+    padding: 0.45rem 0.85rem;
     border-radius: 999px;
-    background: rgba(29, 111, 95, 0.12);
-    color: var(--commercial-audit-accent);
+    border: 1px solid var(--commercial-audit-border);
+    background: #fff;
+    color: #495057;
+    font-size: 0.9rem;
     font-weight: 600;
-    width: fit-content;
+}
+
+.commercial-audit-section {
+    padding: 1rem;
+    border: 1px solid var(--commercial-audit-border);
+    border-radius: 0.9rem;
+    background: var(--commercial-audit-panel);
 }
 
 .commercial-audit-scroll {
-    max-height: 18rem;
+    max-height: 22rem;
     overflow-y: auto;
 }
 
@@ -49,8 +140,54 @@
     vertical-align: middle;
 }
 
+.commercial-audit-page .richText {
+    border: 1px solid var(--commercial-audit-border);
+    border-radius: 0.8rem;
+    background: #fff;
+}
+
+.commercial-audit-page .richText .richText-toolbar {
+    border-bottom: 1px solid #e9ecef;
+    background: #fdfefe;
+}
+
+.commercial-audit-page .richText .richText-editor,
+.commercial-audit-page textarea.richText-initial {
+    min-height: 16rem;
+    padding: 0.9rem 1rem;
+    background: #fff;
+}
+
+.commercial-audit-page .richText .richText-editor {
+    overflow-y: auto;
+}
+
+.commercial-audit-page textarea.richText-initial {
+    border: 0;
+}
+
+.commercial-audit-page fieldset[disabled] {
+    opacity: 0.74;
+}
+
+@media (max-width: 991.98px) {
+    .commercial-audit-step-summary {
+        min-width: 0;
+    }
+}
+
 @media (max-width: 767.98px) {
-    .commercial-audit-nav {
-        padding: 1rem;
+    .commercial-audit-shell-body,
+    .commercial-audit-card .card-body {
+        padding: 0.85rem;
+    }
+
+    .commercial-audit-card .card-header,
+    .commercial-audit-section {
+        padding: 0.85rem;
+    }
+
+    .commercial-audit-current-description {
+        margin-bottom: 0.75rem !important;
     }
 }

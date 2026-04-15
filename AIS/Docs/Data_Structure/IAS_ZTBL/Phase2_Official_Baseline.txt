@@ -1,0 +1,17 @@
+IAS_ZTBL Phase 2 Official Baseline
+
+Generated files:
+- procedure_replacement_matrix.csv
+- old_to_new_table_column_migration_matrix.csv
+- status_lookup_normalization_register.csv
+- history_strategy_register.csv
+- db_level_dependency_review_register.csv
+
+Source inventories used:
+- legacy_table_columns.csv
+- target_table_columns.csv
+- active_procedure_package_register.csv
+- active_object_register.csv
+- dbconnection_method_register.csv
+- ..\Table_Structure_for_Codex.txt
+- ..\Packages_for_Codex.txt
