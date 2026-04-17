@@ -32,6 +32,7 @@ namespace AIS.Services
             sb.AppendLine(".cover-bank{ font-size:20px; font-weight:700; letter-spacing:.4px; text-transform:uppercase; }");
             sb.AppendLine(".cover-dept{ font-size:15px; padding-top:10px; font-weight:600; text-transform:uppercase; }");
             sb.AppendLine(".cover-title{ font-size:30px; padding-top:44px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; }");
+            sb.AppendLine(".cover-status{ font-size:20px; padding-top:14px; font-weight:700; letter-spacing:1px; text-transform:uppercase; }");
             sb.AppendLine(".cover-ref{ padding-top:30px; font-size:13px; }");
             sb.AppendLine(".cover-conducted{ padding-top:36px; font-size:13px; line-height:1.8; }");
             sb.AppendLine(".cover-meta{ padding-top:42mm; font-size:10px; color:#555; }");
@@ -97,6 +98,10 @@ namespace AIS.Services
             sb.AppendFormat(CultureInfo.InvariantCulture, "<div class='cover-bank'>{0}</div>", EncodeOrDefault(header.BankName, "Zarai Taraqiati Bank Limited")).AppendLine();
             sb.AppendFormat(CultureInfo.InvariantCulture, "<div class='cover-dept'>{0}</div>", EncodeOrDefault(header.DepartmentName, "Internal Audit Department")).AppendLine();
             sb.AppendLine("<div class='cover-title'>Inquiry Report</div>");
+            if (HasMeaningfulValue(header.InquiryStatus))
+                {
+                sb.AppendFormat(CultureInfo.InvariantCulture, "<div class='cover-status'>{0}</div>", Encode(header.InquiryStatus)).AppendLine();
+                }
             sb.AppendFormat(CultureInfo.InvariantCulture, "<div class='cover-ref'><div><strong>Inquiry / Complaint Reference:</strong> {0}</div><div><strong>Branch / Region Context:</strong> {1}</div><div><strong>Inquiry Status:</strong> {2}</div></div>",
                 EncodeOrDefault(header.ComplaintNo ?? snapshot.ComplaintNo),
                 EncodeOrDefault(JoinNonEmpty(" / ", snapshot.Branch, snapshot.Region), "N/A"),
@@ -175,14 +180,19 @@ namespace AIS.Services
                 BuildRecordTables(coAccused, BuildAccusedFields, true));
 
             AppendAnnexSection(sb, "7. Inquiry Proceedings",
-                proceedings.Any()
-                    ? BuildCompactFieldBlocks(proceedings, BuildProceedingFields)
-                    : BuildParagraphs(data.FinalConclusion?.Proceedings));
+                BuildNarrativeFieldBlocks(
+                    proceedings,
+                    (row, index) => BuildProceedingHeading(row, index),
+                    BuildProceedingFields)
+                ?? BuildParagraphs(data.FinalConclusion?.Proceedings)
+                ?? BuildParagraphs("Nil"));
 
             AppendAnnexSection(sb, "8. Details of Record Scrutinized",
-                BuildCompactFieldBlocks(
+                BuildNarrativeFieldBlocks(
                     data.RecordsScrutinized.OrderBy(x => x.SortOrder),
-                    BuildRecordScrutinizedFields));
+                    (row, index) => BuildRecordScrutinizedHeading(row, index),
+                    BuildRecordScrutinizedFields)
+                ?? BuildParagraphs("Nil"));
 
             AppendAnnexSection(sb, "9. Time and place of Recording Statement of Complainant",
                 BuildSummaryTable(
@@ -196,7 +206,8 @@ namespace AIS.Services
                         x => x.Place,
                         x => x.ModeType
                     },
-                    new[] { "22%", "18%", "20%", "24%", "16%" }));
+                    new[] { "22%", "18%", "20%", "24%", "16%" })
+                ?? BuildParagraphs("Nil"));
 
             AppendAnnexSection(sb, "10. Time and place of Recording Statement of Accused",
                 BuildSummaryTable(
@@ -210,52 +221,78 @@ namespace AIS.Services
                         x => x.Place,
                         x => x.ModeType
                     },
-                    new[] { "22%", "18%", "20%", "24%", "16%" }));
+                    new[] { "22%", "18%", "20%", "24%", "16%" })
+                ?? BuildParagraphs("Nil"));
 
-            var complainantKeyPointsHtml = BuildKeyPointsBlocks(complainantStatements.Select(x => x.KeyPoints));
-            if (!string.IsNullOrWhiteSpace(complainantKeyPointsHtml))
-                {
-                AppendAnnexSection(sb, "11. Key points recorded in statement of complainant",
-                    complainantKeyPointsHtml);
-                }
+            AppendAnnexSection(sb, "11. Critical Points highlighted in statement of complainant",
+                BuildUnorderedList(
+                    complainantStatements
+                        .Where(x => HasMeaningfulValue(x.KeyPoints))
+                        .Select(x => JoinNonEmpty(": ", x.PersonName, x.KeyPoints)))
+                ?? BuildParagraphs("Nil"));
 
-            var accusedKeyPointsHtml = BuildKeyPointsBlocks(accusedStatements.Select(x => x.KeyPoints));
-            if (!string.IsNullOrWhiteSpace(accusedKeyPointsHtml))
-                {
-                AppendAnnexSection(sb, "12. Key points recorded in statement of accused",
-                    accusedKeyPointsHtml);
-                }
+            AppendAnnexSection(sb, "12. Critical Points highlighted in statement of Accused/Co-accused/Witnesses",
+                BuildMatrixTable(
+                    new[] { "Sr. No.", "Name of accused/Co-accused/Witness", "Critical points observed" },
+                    accusedStatements
+                        .Where(x => HasMeaningfulValue(x.KeyPoints))
+                        .Select((x, index) => (IReadOnlyList<string>)new[]
+                            {
+                            (index + 1).ToString(CultureInfo.InvariantCulture),
+                            JoinNonEmpty(" / ", x.PersonName, x.RoleType),
+                            x.KeyPoints
+                            }),
+                    new[] { "10%", "30%", "60%" })
+                ?? BuildParagraphs("Nil"));
 
             AppendAnnexSection(sb, "13. Details of material evidence",
                 !string.IsNullOrWhiteSpace(data.EvidenceSummary?.MaterialEvidenceDetail)
                     ? BuildParagraphs(data.EvidenceSummary.MaterialEvidenceDetail)
-                    : BuildCompactFieldBlocks(materialEvidence, BuildEvidenceFields));
+                    : BuildNarrativeFieldBlocks(materialEvidence, (row, index) => $"Material Evidence {index}", BuildEvidenceFields)
+                ?? BuildParagraphs("Nil"));
 
             AppendAnnexSection(sb, "14. Details of circumstantial evidence",
                 !string.IsNullOrWhiteSpace(data.EvidenceSummary?.CircumstantialEvidenceDetail)
                     ? BuildParagraphs(data.EvidenceSummary.CircumstantialEvidenceDetail)
-                    : BuildCompactFieldBlocks(circumstantialEvidence, BuildEvidenceFields));
+                    : BuildNarrativeFieldBlocks(circumstantialEvidence, (row, index) => $"Circumstantial Evidence {index}", BuildEvidenceFields)
+                ?? BuildParagraphs("Nil"));
 
-            AppendAnnexSection(sb, "15. Details of findings with implications / violated policy references",
-                BuildCompactFieldBlocks(frRows, x => BuildFindingFields(data, x)));
+            AppendAnnexSection(sb, "15. Detail of findings with implications",
+                BuildNarrativeFieldBlocks(frRows, BuildFindingHeading, row => BuildFindingNarrativeFields(data, row))
+                ?? BuildParagraphs(data.FinalConclusion?.Findings)
+                ?? BuildParagraphs("Nil"));
 
             AppendAnnexSection(sb, "16. Details of clear recommendations",
-                BuildCompactFieldBlocks(frRows, BuildRecommendationFields));
+                BuildNarrativeFieldBlocks(frRows, BuildRecommendationHeading, BuildRecommendationNarrativeFields)
+                ?? BuildParagraphs(data.FinalConclusion?.Recommendation)
+                ?? BuildParagraphs("Nil"));
 
-            AppendAnnexSection(sb, "17. Whether reported in latest audit report",
-                BuildParagraphs("No explicit audit report reference was provided in the available IID inquiry dataset."));
+            AppendAnnexSection(sb, "17. Conclusion",
+                BuildParagraphs(data.FinalConclusion?.Conclusion)
+                ?? BuildParagraphs("Nil"));
 
-            AppendAnnexSection(sb, "18. Root cause of incident",
-                BuildParagraphs(data.FinalConclusion?.Gist));
+            AppendAnnexSection(sb, "18. Whether the matter has been reported in audit report",
+                BuildAuditReportSection(data.FinalConclusion)
+                ?? BuildParagraphs("Not reported"));
 
-            AppendAnnexSection(sb, "19. Name with PP.No. of accused against whom DSAs framed",
-                BuildRecordTables(data.DsaFiles.OrderBy(x => x.SortOrder), BuildDsaFields, true));
+            AppendAnnexSection(sb, "19. Root Cause of incident",
+                BuildParagraphs(data.FinalConclusion?.RootCause)
+                ?? BuildParagraphs("Nil"));
 
-            AppendAnnexSection(sb, "20. Summary of violations statement",
-                BuildViolationSummaryBlocks(frRows));
-
-            AppendAnnexSection(sb, "21. Findings & Recommendation",
-                BuildFindingsRecommendationSummary(data, frRows));
+            AppendAnnexSection(sb, "20. Name with PP.No. of accused against whom DSAs framed",
+                BuildMatrixTable(
+                    new[] { "PP.No.", "Name & designation of accused", "Allegations", "Reference of policy / SOP / circular violation" },
+                    data.DsaFiles
+                        .OrderBy(x => x.SortOrder)
+                        .Select(x => (IReadOnlyList<string>)new[]
+                            {
+                            x.PpnoNumber,
+                            JoinNonEmpty(" / ", x.PersonName, x.Designation),
+                            HasMeaningfulValue(x.Remarks) ? x.Remarks : "Nil",
+                            "Nil"
+                            }),
+                    new[] { "16%", "28%", "28%", "28%" })
+                ?? BuildParagraphs("Nil"));
 
             AppendSignatureBlock(sb, data);
             sb.AppendLine("</section>");
@@ -263,36 +300,52 @@ namespace AIS.Services
 
         private static void AppendAnnexThree(StringBuilder sb, IidInquiryReportPdfData data)
             {
+            var violationRows = (data?.Violations ?? new List<IidViolationRowModel>())
+                .Where(HasMeaningfulViolationRow)
+                .OrderBy(x => x.SortOrder)
+                .ToList();
+
             sb.AppendLine("<section class='annex-page'>");
             sb.AppendLine("<div class='annex-title'>Annex-III</div>");
-            sb.AppendLine("<div class='annex-subtitle'>Violation Summary and Recommendations</div>");
-
-            if (!data.Violations.Any())
-                {
-                sb.AppendLine("<div class='muted'>No violation records available.</div>");
-                sb.AppendLine("</section>");
-                return;
-                }
-
+            sb.AppendLine("<div class='annex-subtitle'>Summary of Violations Statement</div>");
+            sb.AppendLine("<div class='annex-section'>");
+            sb.AppendLine("<div class='annex-label'>21. Summary of violations statement</div>");
+            sb.AppendLine("<div class='annex-body'>");
             sb.AppendLine("<table class='violation-table'>");
             sb.AppendLine("<colgroup><col style='width:18%'/><col style='width:34%'/><col style='width:24%'/><col style='width:24%'/></colgroup>");
             sb.AppendLine("<thead><tr><th>Category</th><th>Violation Detail</th><th>Reference</th><th>Recommendation</th></tr></thead><tbody>");
-            foreach (var row in data.Violations.OrderBy(x => x.SortOrder))
+
+            if (violationRows.Any())
                 {
-                sb.AppendFormat(CultureInfo.InvariantCulture,
-                    "<tr><td>{0}</td><td>{1}</td><td>{2}</td><td>{3}</td></tr>",
-                    ToParagraphs(row.Category),
-                    ToParagraphs(row.ViolationDetail),
-                    ToParagraphs(row.ReferenceText),
-                    ToParagraphs(row.Recommendation));
+                foreach (var row in violationRows)
+                    {
+                    sb.AppendFormat(CultureInfo.InvariantCulture,
+                        "<tr><td>{0}</td><td>{1}</td><td>{2}</td><td>{3}</td></tr>",
+                        ToTableCellContent(row.Category),
+                        ToTableCellContent(row.ViolationDetail),
+                        ToTableCellContent(row.ReferenceText),
+                        ToTableCellContent(row.Recommendation));
+                    }
+                }
+            else
+                {
+                sb.AppendLine("<tr><td colspan='4'><div class='summary-block'><div class='summary-heading'>No violations observed</div><div class='summary-text'>No internal, procedural, policy, or control violation was recorded in the Annex-III summary for this inquiry.</div></div></td></tr>");
                 }
 
             sb.AppendLine("</tbody></table>");
+            sb.AppendLine("</div>");
+            sb.AppendFormat(CultureInfo.InvariantCulture, "<div class='section-separator'>{0}</div>", AnnexSeparator).AppendLine();
+            sb.AppendLine("</div>");
             sb.AppendLine("</section>");
             }
 
         private static void AppendAnnexSection(StringBuilder sb, string title, string bodyHtml)
             {
+            if (string.IsNullOrWhiteSpace(bodyHtml))
+                {
+                return;
+                }
+
             sb.AppendLine("<div class='annex-section'>");
             sb.AppendFormat(CultureInfo.InvariantCulture, "<div class='annex-label'>{0}</div>", Encode(title)).AppendLine();
             sb.AppendFormat(CultureInfo.InvariantCulture, "<div class='annex-body'>{0}</div>", bodyHtml).AppendLine();
@@ -352,7 +405,7 @@ namespace AIS.Services
                 .ToList();
             if (!items.Any())
                 {
-                return "<div class='annex-paragraph'>N/A</div>";
+                return null;
                 }
 
             return string.Join(string.Empty, items.Select(x => $"<div class='annex-paragraph'>{ToParagraphs(x)}</div>"));
@@ -366,7 +419,7 @@ namespace AIS.Services
                 .ToList();
             if (!items.Any())
                 {
-                return "<div class='annex-paragraph'>N/A</div>";
+                return null;
                 }
 
             var sb = new StringBuilder("<ol>");
@@ -379,6 +432,27 @@ namespace AIS.Services
             return sb.ToString();
             }
 
+        private static string BuildUnorderedList(IEnumerable<string> values)
+            {
+            var items = (values ?? Enumerable.Empty<string>())
+                .Select(NormalizeNarrativeValue)
+                .Where(x => !string.IsNullOrWhiteSpace(x))
+                .ToList();
+            if (!items.Any())
+                {
+                return null;
+                }
+
+            var sb = new StringBuilder("<ul>");
+            foreach (var item in items)
+                {
+                sb.AppendFormat(CultureInfo.InvariantCulture, "<li>{0}</li>", ToParagraphs(item));
+                }
+
+            sb.Append("</ul>");
+            return sb.ToString();
+            }
+
         private static string BuildNarrativeList(IEnumerable<string> values)
             {
             return BuildOrderedList(values);
@@ -388,7 +462,7 @@ namespace AIS.Services
             {
             if (rows == null || buildFields == null)
                 {
-                return "<div class='annex-paragraph'>N/A</div>";
+                return null;
                 }
 
             var fieldSets = new List<List<KeyValuePair<string, string>>>();
@@ -410,7 +484,7 @@ namespace AIS.Services
 
             if (!fieldSets.Any())
                 {
-                return "<div class='annex-paragraph'>N/A</div>";
+                return null;
                 }
 
             var showNumbers = showNumbersWhenMultiple && fieldSets.Count > 1;
@@ -420,14 +494,14 @@ namespace AIS.Services
 
             return blocks.Any()
                 ? string.Join(string.Empty, blocks)
-                : "<div class='annex-paragraph'>N/A</div>";
+                : null;
             }
 
         private static string BuildCompactFieldBlocks<T>(IEnumerable<T> rows, Func<T, IEnumerable<KeyValuePair<string, string>>> buildFields)
             {
             if (rows == null || buildFields == null)
                 {
-                return "<div class='annex-paragraph'>N/A</div>";
+                return null;
                 }
 
             var blocks = new List<string>();
@@ -452,7 +526,7 @@ namespace AIS.Services
 
             if (!blocks.Any())
                 {
-                return "<div class='annex-paragraph'>N/A</div>";
+                return null;
                 }
 
             if (blocks.Count == 1)
@@ -467,7 +541,7 @@ namespace AIS.Services
             {
             if (rows == null || headers == null || valueSelectors == null || headers.Count == 0 || headers.Count != valueSelectors.Count)
                 {
-                return "<div class='annex-paragraph'>N/A</div>";
+                return null;
                 }
 
             var rowValues = new List<List<string>>();
@@ -492,7 +566,7 @@ namespace AIS.Services
 
             if (!rowValues.Any())
                 {
-                return "<div class='annex-paragraph'>N/A</div>";
+                return null;
                 }
 
             var sb = new StringBuilder();
@@ -520,7 +594,7 @@ namespace AIS.Services
                 sb.AppendLine("<tr>");
                 foreach (var value in values)
                     {
-                    sb.AppendFormat(CultureInfo.InvariantCulture, "<td>{0}</td>", ToParagraphs(value));
+                    sb.AppendFormat(CultureInfo.InvariantCulture, "<td>{0}</td>", ToTableCellContent(value));
                     }
 
                 sb.AppendLine("</tr>");
@@ -528,6 +602,106 @@ namespace AIS.Services
 
             sb.AppendLine("</tbody></table>");
             return sb.ToString();
+            }
+
+        private static string BuildMatrixTable(IReadOnlyList<string> headers, IEnumerable<IReadOnlyList<string>> rows, IReadOnlyList<string> widths = null)
+            {
+            if (headers == null || headers.Count == 0 || rows == null)
+                {
+                return null;
+                }
+
+            var normalizedRows = rows
+                .Where(row => row != null && row.Count == headers.Count && row.Any(value => HasMeaningfulValue(value)))
+                .ToList();
+
+            if (!normalizedRows.Any())
+                {
+                return null;
+                }
+
+            var sb = new StringBuilder();
+            sb.AppendLine("<table class='summary-table'>");
+            if (widths != null && widths.Count == headers.Count)
+                {
+                sb.Append("<colgroup>");
+                foreach (var width in widths)
+                    {
+                    sb.AppendFormat(CultureInfo.InvariantCulture, "<col style='width:{0}'/>", EncodeOrDefault(width, "auto"));
+                    }
+
+                sb.AppendLine("</colgroup>");
+                }
+
+            sb.AppendLine("<thead><tr>");
+            foreach (var header in headers)
+                {
+                sb.AppendFormat(CultureInfo.InvariantCulture, "<th>{0}</th>", EncodeOrDefault(header));
+                }
+
+            sb.AppendLine("</tr></thead><tbody>");
+            foreach (var row in normalizedRows)
+                {
+                sb.AppendLine("<tr>");
+                foreach (var value in row)
+                    {
+                    sb.AppendFormat(CultureInfo.InvariantCulture, "<td>{0}</td>", ToTableCellContent(value));
+                    }
+
+                sb.AppendLine("</tr>");
+                }
+
+            sb.AppendLine("</tbody></table>");
+            return sb.ToString();
+            }
+
+        private static string BuildNarrativeFieldBlocks<T>(IEnumerable<T> rows, Func<T, int, string> headingSelector, Func<T, IEnumerable<KeyValuePair<string, string>>> buildFields)
+            {
+            if (rows == null || buildFields == null)
+                {
+                return null;
+                }
+
+            var blocks = new List<string>();
+            var index = 0;
+            foreach (var row in rows)
+                {
+                if (row == null)
+                    {
+                    continue;
+                    }
+
+                var fields = (buildFields(row) ?? Enumerable.Empty<KeyValuePair<string, string>>())
+                    .Where(x => HasMeaningfulValue(x.Value))
+                    .ToList();
+                if (!fields.Any())
+                    {
+                    continue;
+                    }
+
+                index++;
+                var heading = headingSelector?.Invoke(row, index);
+                var block = new StringBuilder();
+                block.Append("<div class='summary-block'>");
+                if (HasMeaningfulValue(heading))
+                    {
+                    block.AppendFormat(CultureInfo.InvariantCulture, "<div class='summary-heading'>{0}</div>", Encode(heading));
+                    }
+
+                foreach (var field in fields)
+                    {
+                    block.AppendFormat(
+                        CultureInfo.InvariantCulture,
+                        "<div class='summary-text'><strong>{0}:</strong> {1}</div>",
+                        EncodeOrDefault(field.Key, "N/A"),
+                        ToParagraphs(field.Value));
+                    }
+
+                block.Append("<div class='summary-separator'>___________</div></div>");
+                blocks.Add(block.ToString());
+                }
+
+            return blocks.Any() ? string.Join(string.Empty, blocks) : null;
             }
 
         private static string BuildRecordTable(int index, IEnumerable<KeyValuePair<string, string>> fields, bool showNumber)
@@ -598,7 +772,7 @@ namespace AIS.Services
 
             if (!items.Any())
                 {
-                return "<div class='annex-paragraph'>N/A</div>";
+                return null;
                 }
 
             var blocks = new List<string>();
@@ -617,33 +791,50 @@ namespace AIS.Services
 
         private static string BuildFindingsRecommendationSummary(IidInquiryReportPdfData data, IEnumerable<IidFindingRecommendationRowModel> rows)
             {
-            var findings = NormalizeNarrativeValue(data?.FinalConclusion?.Findings);
-            var recommendation = NormalizeNarrativeValue(data?.FinalConclusion?.Recommendation);
-
-            if (!string.IsNullOrWhiteSpace(findings) || !string.IsNullOrWhiteSpace(recommendation))
-                {
-                return BuildParagraphs(
-                    BuildPair("Findings", findings),
-                    BuildPair("Recommendation", recommendation));
-                }
-
             var items = (rows ?? Enumerable.Empty<IidFindingRecommendationRowModel>())
                 .Where(x => x != null && (
                     IsVisibleAccusationText(x.AccusationText)
                     || !string.IsNullOrWhiteSpace(NormalizeNarrativeValue(x.FindingText))
-                    || !string.IsNullOrWhiteSpace(NormalizeNarrativeValue(x.RecommendationText))))
+                    || !string.IsNullOrWhiteSpace(NormalizeNarrativeValue(x.RecommendationText))
+                    || !string.IsNullOrWhiteSpace(NormalizeNarrativeValue(x.Outcome))))
                 .ToList();
 
-            return BuildSummaryTable(
-                items,
-                new[] { "Accusation", "Finding", "Recommendation" },
-                new Func<IidFindingRecommendationRowModel, string>[]
+            var detailsHtml = BuildRecordTables(items, BuildFindingRecommendationSummaryFields, true);
+            if (!string.IsNullOrWhiteSpace(detailsHtml))
                 {
-                    x => IsVisibleAccusationText(x.AccusationText) ? x.AccusationText : null,
-                    x => x.FindingText,
-                    x => x.RecommendationText
-                },
-                new[] { "26%", "37%", "37%" });
+                return detailsHtml;
+                }
+
+            var fallbackFields = BuildFindingRecommendationFallbackFields(data)
+                .Where(x => HasMeaningfulValue(x.Value))
+                .ToList();
+
+            return fallbackFields.Any()
+                ? BuildRecordTable(1, fallbackFields, false)
+                : null;
+            }
+
+        private static string BuildProceedingHeading(IidInquiryProceedingRowModel row, int index)
+            {
+            return JoinNonEmpty(" | ",
+                $"Proceeding {index}",
+                row?.VisitDate.HasValue == true ? FormatDate(row.VisitDate) : null,
+                row?.NoticeReference);
+            }
+
+        private static string BuildRecordScrutinizedHeading(IidRecordScrutinizedRowModel row, int index)
+            {
+            return HasMeaningfulValue(row?.RecordTitle) ? row.RecordTitle : $"Record {index}";
+            }
+
+        private static string BuildFindingHeading(IidFindingRecommendationRowModel row, int index)
+            {
+            return IsVisibleAccusationText(row?.AccusationText) ? row.AccusationText : $"Finding {index}";
+            }
+
+        private static string BuildRecommendationHeading(IidFindingRecommendationRowModel row, int index)
+            {
+            return IsVisibleAccusationText(row?.AccusationText) ? row.AccusationText : $"Recommendation {index}";
             }
 
         private static IEnumerable<KeyValuePair<string, string>> BuildAccusedFields(IidAccusedRowModel row)
@@ -739,6 +930,58 @@ namespace AIS.Services
             yield return BuildField("Last Updated On", row.UpdatedOn.HasValue ? FormatDate(row.UpdatedOn) : null);
             }
 
+        private static IEnumerable<KeyValuePair<string, string>> BuildFindingNarrativeFields(IidInquiryReportPdfData data, IidFindingRecommendationRowModel row)
+            {
+            if (row == null)
+                {
+                yield break;
+                }
+
+            yield return BuildField("Finding with implications", row.FindingText);
+            yield return BuildField("Reference of policy / SOP / circular violation", FindViolationReferenceForAccusation(data, row));
+            yield return BuildField("Outcome", row.Outcome);
+            yield return BuildField("Last updated on", row.UpdatedOn.HasValue ? FormatDate(row.UpdatedOn) : null);
+            }
+
+        private static IEnumerable<KeyValuePair<string, string>> BuildRecommendationNarrativeFields(IidFindingRecommendationRowModel row)
+            {
+            if (row == null)
+                {
+                yield break;
+                }
+
+            yield return BuildField("Clear recommendations", row.RecommendationText);
+            yield return BuildField("Outcome", row.Outcome);
+            yield return BuildField("Last updated on", row.UpdatedOn.HasValue ? FormatDate(row.UpdatedOn) : null);
+            }
+
+        private static IEnumerable<KeyValuePair<string, string>> BuildFindingRecommendationSummaryFields(IidFindingRecommendationRowModel row)
+            {
+            if (row == null)
+                {
+                yield break;
+                }
+
+            yield return BuildField("Allegation", IsVisibleAccusationText(row.AccusationText) ? row.AccusationText : null);
+            yield return BuildField("Finding", row.FindingText);
+            yield return BuildField("Outcome", row.Outcome);
+            yield return BuildField("Recommendations", row.RecommendationText);
+            }
+
+        private static IEnumerable<KeyValuePair<string, string>> BuildFindingRecommendationFallbackFields(IidInquiryReportPdfData data)
+            {
+            var firstAccusation = data?.Accusations?
+                .Where(x => IsVisibleAccusationText(x.AccusationText))
+                .OrderBy(x => x.SortOrder)
+                .Select(x => x.AccusationText)
+                .FirstOrDefault();
+
+            yield return BuildField("Allegation", firstAccusation);
+            yield return BuildField("Finding", data?.FinalConclusion?.Findings);
+            yield return BuildField("Outcome", data?.FinalConclusion?.FinalOutcome);
+            yield return BuildField("Recommendations", data?.FinalConclusion?.Recommendation);
+            }
+
         private static IEnumerable<KeyValuePair<string, string>> BuildDsaFields(IidDsaRowModel row)
             {
             if (row == null)
@@ -752,6 +995,27 @@ namespace AIS.Services
             yield return BuildField("CNIC", row.Cnic);
             yield return BuildField("DSA Status", row.DsaStatus);
             yield return BuildField("Remarks", row.Remarks);
+            }
+
+        private static string BuildAuditReportSection(IidFinalConclusionModel model)
+            {
+            if (model == null)
+                {
+                return null;
+                }
+
+            var reportedInAuditReport = NormalizeYesNoValue(model.ReportedInAuditReport);
+            var body = new List<string>
+                {
+                BuildPair("Reported in audit report", string.IsNullOrWhiteSpace(reportedInAuditReport) ? "Not reported" : reportedInAuditReport)
+                };
+
+            if (string.Equals(reportedInAuditReport, "Yes", StringComparison.OrdinalIgnoreCase))
+                {
+                body.Add(BuildPair("Audit-report reference section", model.AuditReportReferenceDetail));
+                }
+
+            return BuildParagraphs(body.ToArray());
             }
 
         private static string FindViolationReferenceForAccusation(IidInquiryReportPdfData data, IidFindingRecommendationRowModel row)
@@ -817,6 +1081,12 @@ namespace AIS.Services
             return Encode(selected);
         }
 
+        private static string ToTableCellContent(string value)
+            {
+            var normalized = NormalizeNarrativeValue(value);
+            return string.IsNullOrWhiteSpace(normalized) ? "&nbsp;" : ToParagraphs(normalized);
+            }
+
         private static string ToParagraphs(string value)
             {
             var normalized = NormalizeNarrativeValue(value);
@@ -842,8 +1112,48 @@ namespace AIS.Services
                 }
 
             var normalized = value.Replace("\r\n", "\n").Trim();
-            return LooksLikeSqlDebugText(normalized) ? null : normalized;
+            if (LooksLikeSqlDebugText(normalized) || IsNilLikeText(normalized))
+                {
+                return null;
+                }
+
+            return normalized;
         }
+
+        private static string NormalizeYesNoValue(string value)
+            {
+            var normalized = NormalizeNarrativeValue(value);
+            if (string.IsNullOrWhiteSpace(normalized))
+                {
+                return null;
+                }
+
+            if (normalized.Equals("yes", StringComparison.OrdinalIgnoreCase))
+                {
+                return "Yes";
+                }
+
+            if (normalized.Equals("no", StringComparison.OrdinalIgnoreCase))
+                {
+                return "No";
+                }
+
+            return normalized;
+            }
+
+        private static bool HasMeaningfulValue(string value)
+            {
+            return !string.IsNullOrWhiteSpace(NormalizeNarrativeValue(value));
+            }
+
+        private static bool HasMeaningfulViolationRow(IidViolationRowModel row)
+            {
+            return row != null
+                && (HasMeaningfulValue(row.Category)
+                    || HasMeaningfulValue(row.ViolationDetail)
+                    || HasMeaningfulValue(row.ReferenceText)
+                    || HasMeaningfulValue(row.Recommendation));
+            }
 
         private static bool LooksLikeSqlDebugText(string value)
         {
@@ -859,6 +1169,29 @@ namespace AIS.Services
                     || normalized.Contains("pkg_inq.")
                     || normalized.Contains(" where "));
         }
+
+        private static bool IsNilLikeText(string value)
+            {
+            if (string.IsNullOrWhiteSpace(value))
+                {
+                return true;
+                }
+
+            var plainText = HtmlTagPattern.Replace(WebUtility.HtmlDecode(value), " ");
+            plainText = Regex.Replace(plainText, @"\s+", " ").Trim().Trim('.', ':', ';');
+            if (string.IsNullOrWhiteSpace(plainText))
+                {
+                return true;
+                }
+
+            return plainText.Equals("N/A", StringComparison.OrdinalIgnoreCase)
+                || plainText.Equals("NA", StringComparison.OrdinalIgnoreCase)
+                || plainText.Equals("NIL", StringComparison.OrdinalIgnoreCase)
+                || plainText.Equals("NONE", StringComparison.OrdinalIgnoreCase)
+                || plainText.Equals("NOT APPLICABLE", StringComparison.OrdinalIgnoreCase)
+                || plainText.Equals("-", StringComparison.OrdinalIgnoreCase)
+                || plainText.Equals("--", StringComparison.OrdinalIgnoreCase);
+            }
 
         private static bool ContainsHtmlMarkup(string value)
         {

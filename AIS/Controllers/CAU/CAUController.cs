@@ -203,33 +203,14 @@ namespace AIS.Controllers
                 };
             }
 
-        private string ResolveCommercialAuditHostPath(string requestedHostPath = null)
+        private void PrepareCommercialAuditStepContext(long? omId, long? pdpId, long? arpseId)
             {
-            var normalized = PageIdPathHelper.NormalizePath(string.IsNullOrWhiteSpace(requestedHostPath)
-                ? HttpContext?.Request?.Path.Value
-                : requestedHostPath);
-
-            var allowedPaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
-                {
-                "/CAU/workflow",
-                "/CAU/om",
-                "/CAU/pdp",
-                "/CAU/arpse",
-                "/CAU/om_creation",
-                "/CAU/om_reply",
-                "/CAU/monitoring_oms",
-                "/CAU/reports"
-                };
-
-            if (allowedPaths.Contains(normalized))
-                {
-                return normalized;
-                }
-
-            return "/CAU/workflow";
+            ViewData["CommercialAuditSelectedOmId"] = omId;
+            ViewData["CommercialAuditSelectedPdpId"] = pdpId;
+            ViewData["CommercialAuditSelectedArpseId"] = arpseId;
             }
 
-        private IActionResult RenderCommercialAuditWorkflow(string requestedStepKey)
+        private IActionResult RenderCommercialAuditWorkflow(string initialStepKey)
             {
             try
                 {
@@ -238,22 +219,21 @@ namespace AIS.Controllers
                     return RedirectForUnauthorizedOrMissingPermission();
                     }
 
-                var model = BuildCommercialAuditWorkflowModel(requestedStepKey);
+                var model = BuildCommercialAuditWorkflowModel(initialStepKey);
                 PrepareCommercialAuditWorkflowLookups();
                 ViewData["Title"] = "Commercial Audit Workflow";
                 ViewData["CommercialAuditStage"] = "workflow";
-                ViewData["CommercialAuditHostPath"] = ResolveCommercialAuditHostPath();
                 ViewData["CommercialAuditWorkflowModel"] = model;
                 return View("../CAU/workflow", model);
                 }
             catch (Exception ex)
                 {
-                _logger.LogError(ex, "Failed to render Commercial Audit workflow for step {StepKey}.", requestedStepKey);
+                _logger.LogError(ex, "Failed to render Commercial Audit workflow for step {StepKey}.", initialStepKey);
                 return StatusCode(500, "Unable to load the Commercial Audit workflow right now.");
                 }
             }
 
-        private IActionResult RenderCommercialAuditStepPartial(string stepKey, string hostPath)
+        private IActionResult RenderCommercialAuditStepPartial(string stepKey, long? omId, long? pdpId, long? arpseId)
             {
             try
                 {
@@ -272,7 +252,7 @@ namespace AIS.Controllers
 
                 PrepareCommercialAuditWorkflowLookups();
                 ViewData["CommercialAuditStage"] = step.StageKey;
-                ViewData["CommercialAuditHostPath"] = ResolveCommercialAuditHostPath(hostPath);
+                PrepareCommercialAuditStepContext(omId, pdpId, arpseId);
                 return PartialView(step.PartialViewName);
                 }
             catch (Exception ex)
@@ -283,59 +263,65 @@ namespace AIS.Controllers
             }
 
         [HttpGet("CAU/workflow")]
-        public IActionResult workflow(string stepKey = null)
+        public IActionResult workflow()
             {
-            return RenderCommercialAuditWorkflow(stepKey);
+            return RenderCommercialAuditWorkflow(null);
             }
 
         [HttpGet("CAU/om")]
-        public IActionResult om(string stepKey = null)
+        public IActionResult om()
             {
-            return RenderCommercialAuditWorkflow(string.IsNullOrWhiteSpace(stepKey) ? "om-entry" : stepKey);
+            return RenderCommercialAuditWorkflow("om-entry");
             }
 
         [HttpGet("CAU/pdp")]
-        public IActionResult pdp(string stepKey = null)
+        public IActionResult pdp()
             {
-            return RenderCommercialAuditWorkflow(string.IsNullOrWhiteSpace(stepKey) ? "pdp-entry" : stepKey);
+            return RenderCommercialAuditWorkflow("pdp-entry");
             }
 
         [HttpGet("CAU/arpse")]
-        public IActionResult arpse(string stepKey = null)
+        public IActionResult arpse()
             {
-            return RenderCommercialAuditWorkflow(string.IsNullOrWhiteSpace(stepKey) ? "arpse-header" : stepKey);
+            return RenderCommercialAuditWorkflow("arpse-header");
             }
 
 
         [HttpGet("CAU/om_creation")]
-        public IActionResult om_creation(string stepKey = null)
+        public IActionResult om_creation()
             {
-            return RenderCommercialAuditWorkflow(string.IsNullOrWhiteSpace(stepKey) ? "om-entry" : stepKey);
+            return RenderCommercialAuditWorkflow("om-entry");
             }
 
 
         [HttpGet("CAU/om_reply")]
-        public IActionResult om_reply(string stepKey = null)
+        public IActionResult om_reply()
             {
-            return RenderCommercialAuditWorkflow(string.IsNullOrWhiteSpace(stepKey) ? "pdp-entry" : stepKey);
+            return RenderCommercialAuditWorkflow("pdp-entry");
             }
 
         [HttpGet("CAU/monitoring_oms")]
-        public IActionResult monitoring_oms(string stepKey = null)
+        public IActionResult monitoring_oms()
             {
-            return RenderCommercialAuditWorkflow(string.IsNullOrWhiteSpace(stepKey) ? "arpse-monitoring" : stepKey);
+            return RenderCommercialAuditWorkflow("arpse-monitoring");
             }
 
         [HttpGet("CAU/reports")]
-        public IActionResult reports(string stepKey = null)
+        public IActionResult reports()
             {
-            return RenderCommercialAuditWorkflow(stepKey);
+            return RenderCommercialAuditWorkflow(null);
+            }
+
+        [HttpGet("CAU/LoadStepPartial")]
+        public IActionResult LoadStepPartial(string stepKey, long? omId = null, long? pdpId = null, long? arpseId = null)
+            {
+            return RenderCommercialAuditStepPartial(stepKey, omId, pdpId, arpseId);
             }
 
         [HttpGet("CAU/LoadStep")]
-        public IActionResult LoadStep(string stepKey, string hostPath = null)
+        public IActionResult LoadStep(string stepKey, long? omId = null, long? pdpId = null, long? arpseId = null)
             {
-            return RenderCommercialAuditStepPartial(stepKey, hostPath);
+            return LoadStepPartial(stepKey, omId, pdpId, arpseId);
             }
 
         [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]

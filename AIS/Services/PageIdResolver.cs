@@ -314,6 +314,7 @@ namespace AIS.Services
             AddAlias(updated, "/CAU/monitoring_oms", "/CAU/workflow");
             AddAlias(updated, "/CAU/reports", "/CAU/workflow");
             AddAlias(updated, "/CAU/LoadStep", "/CAU/workflow");
+            AddAlias(updated, "/CAU/LoadStepPartial", "/CAU/workflow");
 
             return updated;
             }

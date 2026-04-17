@@ -1,7 +1,3 @@
-@{
-    var workflowHostPath = ViewData["CommercialAuditHostPath"] as string ?? Url.Action("workflow", "CAU");
-}
-
 <div class="commercial-audit-step" data-step="pdp-entry">
     <div class="card commercial-audit-card shadow-sm">
         <div class="card-header d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3">
@@ -9,11 +5,12 @@
                 <h4 class="mb-1" id="pdpFormTitle">Create PDP</h4>
                 <small class="text-muted">Capture the PDP narrative here, then switch to the separate OM linking step.</small>
             </div>
-            <a href="@(workflowHostPath + "?stepKey=pdp-linking")"
+            <button type="button"
                class="btn btn-outline-success commercial-audit-step-target"
+               data-step="pdp-linking"
                data-step-key="pdp-linking">
                 Open PDP Linking
-            </a>
+            </button>
         </div>
         <div class="card-body">
             <div class="row g-3">

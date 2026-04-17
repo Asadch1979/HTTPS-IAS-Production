@@ -28,6 +28,7 @@ namespace AIS.Models.IID
         public string ReportTitle { get; set; }
         public string ComplaintNo { get; set; }
         public string InquiryStatus { get; set; }
+        public string FinalizeState { get; set; }
         public bool IsFinalized { get; set; }
         public string InspectionUnit { get; set; }
         public string TeamLead { get; set; }
@@ -157,6 +158,10 @@ namespace AIS.Models.IID
         public string Proceedings { get; set; }
         public string Findings { get; set; }
         public string Recommendation { get; set; }
+        public string Conclusion { get; set; }
+        public string ReportedInAuditReport { get; set; }
+        public string AuditReportReferenceDetail { get; set; }
+        public string RootCause { get; set; }
         public string FinalOutcome { get; set; }
         public string InquiryStatus { get; set; }
         }

@@ -1,5 +1,4 @@
 var commercialAuditPage = {
-    workflowUrl: "",
     loadUrl: "",
     currentStepKey: "",
     workflowSteps: [],
@@ -39,30 +38,30 @@ $(document).ready(function () {
         return;
     }
 
-    commercialAuditPage.workflowUrl = String(workflow.data("workflow-url") || "");
     commercialAuditPage.loadUrl = String(workflow.data("load-url") || "");
-    commercialAuditPage.currentStepKey = normalizeText(workflow.data("current-step"));
+    var requestedInitialStepKey = normalizeText(workflow.data("current-step"));
+    commercialAuditPage.currentStepKey = "";
     commercialAuditPage.workflowSteps = Array.isArray(window.commercialAuditWorkflowSteps) ? window.commercialAuditWorkflowSteps.slice() : [];
 
     bindCommercialAuditWorkflowNavigation();
-    syncCommercialAuditWorkflowChrome(commercialAuditPage.currentStepKey);
-    initCommercialAuditStep(commercialAuditPage.currentStepKey);
 
-    window.addEventListener("popstate", function () {
-        var requestedStepKey = getCommercialAuditStepFromLocation();
-        if (!requestedStepKey || requestedStepKey === commercialAuditPage.currentStepKey) {
-            return;
-        }
+    var initialStep = resolveCommercialAuditStep(requestedInitialStepKey)
+        || (commercialAuditPage.workflowSteps.length ? commercialAuditPage.workflowSteps[0] : null);
 
-        loadCommercialAuditStep(requestedStepKey, true);
-    });
+    if (!initialStep) {
+        $("#commercialAuditStepHost").html('<div class="alert alert-warning mb-0">No Commercial Audit steps are available.</div>');
+        return;
+    }
+
+    syncCommercialAuditWorkflowChrome(initialStep.stepKey, false);
+    loadCommercialAuditStep(initialStep.stepKey);
 });
 
 function bindCommercialAuditWorkflowNavigation() {
     var workflow = $(".commercial-audit-workflow");
 
     workflow.on("click", ".commercial-audit-step-link, .commercial-audit-step-target", function (event) {
-        var stepKey = normalizeText($(this).attr("data-step-key"));
+        var stepKey = normalizeText($(this).attr("data-step") || $(this).attr("data-step-key"));
         if (!stepKey) {
             return;
         }
@@ -72,15 +71,14 @@ function bindCommercialAuditWorkflowNavigation() {
         if (stepKey === commercialAuditPage.currentStepKey) {
             syncCommercialAuditWorkflowChrome(stepKey);
             initCommercialAuditStep(stepKey);
-            updateCommercialAuditHistory(stepKey, false);
             return;
         }
 
-        loadCommercialAuditStep(stepKey, false);
+        loadCommercialAuditStep(stepKey);
     });
 }
 
-function loadCommercialAuditStep(stepKey, replaceHistory) {
+function loadCommercialAuditStep(stepKey) {
     var resolvedStep = resolveCommercialAuditStep(stepKey);
     if (!resolvedStep || !commercialAuditPage.loadUrl) {
         return;
@@ -90,67 +88,82 @@ function loadCommercialAuditStep(stepKey, replaceHistory) {
     setCommercialAuditStepMessage("", "");
     $("#commercialAuditStepHost").html('<div class="alert alert-secondary mb-0">Loading workflow content...</div>');
 
-    $.ajax({
-        url: commercialAuditPage.loadUrl,
-        type: "GET",
-        cache: false,
-        data: {
-            stepKey: resolvedStep.stepKey,
-            hostPath: commercialAuditPage.workflowUrl
-        },
-        success: function (html) {
-            $("#commercialAuditStepHost").html(html);
+    syncCommercialAuditWorkflowChrome(resolvedStep.stepKey, false);
+
+    var requestQuery = buildCommercialAuditStepRequestQuery(resolvedStep.stepKey);
+    requestQuery.append("_", Date.now());
+
+    fetch(commercialAuditPage.loadUrl + "?" + requestQuery.toString(), {
+        method: "GET",
+        credentials: "same-origin",
+        cache: "no-store",
+        headers: {
+            "X-Requested-With": "XMLHttpRequest",
+            "Accept": "text/html, */*; q=0.01"
+        }
+    })
+        .then(function (response) {
+            return response.text().then(function (html) {
+                return {
+                    ok: response.ok,
+                    status: response.status,
+                    html: html
+                };
+            });
+        })
+        .then(function (payload) {
+            if (!payload.ok) {
+                throw payload;
+            }
+
+            if (looksLikeCommercialAuditFullHtmlDocument(payload.html)) {
+                console.error("Commercial Audit step request returned a full HTML document.", {
+                    stepKey: resolvedStep.stepKey,
+                    status: payload.status,
+                    preview: String(payload.html || "").substring(0, 300)
+                });
+
+                showCommercialAuditStepLoadFailure("Unexpected HTML response. Please try again.");
+                return;
+            }
+
+            $("#commercialAuditStepHost").html(payload.html);
+            executeCommercialAuditInlineScripts(document.getElementById("commercialAuditStepHost"));
             commercialAuditPage.currentStepKey = resolvedStep.stepKey;
             $(".commercial-audit-workflow").attr("data-current-step", resolvedStep.stepKey);
+            $("#commercialAuditStepHost")
+                .attr("data-step", resolvedStep.stepKey)
+                .attr("data-step-key", resolvedStep.stepKey);
             syncCommercialAuditWorkflowChrome(resolvedStep.stepKey);
             initCommercialAuditStep(resolvedStep.stepKey);
-            updateCommercialAuditHistory(resolvedStep.stepKey, replaceHistory);
-        },
-        error: function (xhr) {
-            var message = "Unable to load the requested Commercial Audit step.";
-            $("#commercialAuditStepHost").html('<div class="alert alert-danger mb-0">' + message + "</div>");
-            setCommercialAuditStepMessage("danger", message);
-            showApiAlertFromXhr(xhr, xhr ? xhr.status : null, getErrorReferenceIdFromXhr(xhr), message);
-        }
-    });
+        })
+        .catch(function (error) {
+            var message = resolveCommercialAuditStepLoadErrorMessage(error);
+            console.error("Unable to load Commercial Audit step.", {
+                stepKey: resolvedStep.stepKey,
+                status: error && error.status ? error.status : null
+            });
+            showCommercialAuditStepLoadFailure(message);
+        });
 }
 
-function syncCommercialAuditWorkflowChrome(stepKey) {
+function syncCommercialAuditWorkflowChrome(stepKey, setCurrentStep) {
     var resolvedStep = resolveCommercialAuditStep(stepKey);
     if (!resolvedStep) {
         return;
     }
 
-    commercialAuditPage.currentStepKey = resolvedStep.stepKey;
+    if (setCurrentStep !== false) {
+        commercialAuditPage.currentStepKey = resolvedStep.stepKey;
+    }
 
     $(".commercial-audit-step-link").removeClass("active is-active");
-    $('.commercial-audit-step-link[data-step-key="' + resolvedStep.stepKey + '"]').addClass("active is-active");
+    $('.commercial-audit-step-link[data-step="' + resolvedStep.stepKey + '"], .commercial-audit-step-link[data-step-key="' + resolvedStep.stepKey + '"]').addClass("active is-active");
 
     $("#commercialAuditStepCounter").text("Step " + resolvedStep.stepNo + " of " + commercialAuditPage.workflowSteps.length);
     $("#commercialAuditCurrentStage").text("Stage " + String(resolvedStep.stageKey || "").toUpperCase());
     $("#commercialAuditCurrentTitle").text(resolvedStep.title || "");
     $("#commercialAuditCurrentDescription").text(resolvedStep.description || "");
-}
-
-function updateCommercialAuditHistory(stepKey, replaceHistory) {
-    if (!commercialAuditPage.workflowUrl || !window.history || !window.history.pushState) {
-        return;
-    }
-
-    var url = commercialAuditPage.workflowUrl + "?stepKey=" + encodeURIComponent(stepKey);
-    var state = { stepKey: stepKey };
-
-    if (replaceHistory) {
-        window.history.replaceState(state, "", url);
-        return;
-    }
-
-    window.history.pushState(state, "", url);
-}
-
-function getCommercialAuditStepFromLocation() {
-    var searchParams = new URLSearchParams(window.location.search || "");
-    return normalizeText(searchParams.get("stepKey"));
 }
 
 function resolveCommercialAuditStep(stepKey) {
@@ -204,6 +217,73 @@ function setCommercialAuditStepMessage(kind, message) {
         .removeClass("d-none alert-success alert-danger alert-warning alert-info")
         .addClass("alert-" + kind)
         .text(message);
+}
+
+function buildCommercialAuditStepRequestQuery(stepKey) {
+    var query = new URLSearchParams();
+    query.append("stepKey", stepKey || "");
+
+    if (commercialAuditPage.selectedOmId) {
+        query.append("omId", commercialAuditPage.selectedOmId);
+    }
+
+    if (commercialAuditPage.selectedPdpId) {
+        query.append("pdpId", commercialAuditPage.selectedPdpId);
+    }
+
+    if (commercialAuditPage.selectedArpseId) {
+        query.append("arpseId", commercialAuditPage.selectedArpseId);
+    }
+
+    return query;
+}
+
+function executeCommercialAuditInlineScripts(container) {
+    if (!container) {
+        return;
+    }
+
+    container.querySelectorAll("script").forEach(function (script) {
+        var newScript = document.createElement("script");
+        Array.from(script.attributes).forEach(function (attr) {
+            newScript.setAttribute(attr.name, attr.value);
+        });
+
+        if (!newScript.src) {
+            newScript.textContent = script.textContent;
+        }
+
+        script.parentNode.replaceChild(newScript, script);
+    });
+}
+
+function looksLikeCommercialAuditFullHtmlDocument(html) {
+    var normalizedHtml = String(html || "").trim().toLowerCase();
+    if (!normalizedHtml) {
+        return false;
+    }
+
+    return normalizedHtml.indexOf("<!doctype html") >= 0
+        || normalizedHtml.indexOf("<html") >= 0
+        || normalizedHtml.indexOf("<body") >= 0;
+}
+
+function resolveCommercialAuditStepLoadErrorMessage(error) {
+    if (error && looksLikeCommercialAuditFullHtmlDocument(error.html)) {
+        return "Unexpected HTML response. Please try again.";
+    }
+
+    if (error && (error.status === 401 || error.status === 403)) {
+        return "Your session has expired or you no longer have access to this workflow.";
+    }
+
+    return "Unable to load the requested Commercial Audit step.";
+}
+
+function showCommercialAuditStepLoadFailure(message) {
+    var resolvedMessage = message || "Unable to load the requested Commercial Audit step.";
+    $("#commercialAuditStepHost").html('<div class="alert alert-danger mb-0">' + resolvedMessage + "</div>");
+    setCommercialAuditStepMessage("danger", resolvedMessage);
 }
 
 function initCommercialAuditOmEntry() {

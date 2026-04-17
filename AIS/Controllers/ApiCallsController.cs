@@ -5173,21 +5173,48 @@ namespace AIS.Controllers
 
                 if (Request.HasFormContentType)
                     {
+                    var existingUploadedReport = model.UploadedReport;
+                    var existingUploadedEvidence = model.UploadedEvidence;
+                    var existingUploadedDsa = model.UploadedDsa;
                     var reportFile = Request.Form.Files.GetFile("UploadedReport");
                     var evidenceFiles = Request.Form.Files.GetFiles("UploadedEvidence");
                     var dsaFile = Request.Form.Files.GetFile("UploadedDsa");
-                    model.UploadedReport = SaveUploadFile(reportFile);
-                    var evidenceNames = new List<string>();
-                    foreach (var file in evidenceFiles)
+
+                    if (reportFile != null)
                         {
-                        var savedFile = SaveUploadFile(file);
-                        if (!string.IsNullOrEmpty(savedFile))
-                            {
-                            evidenceNames.Add(savedFile);
-                            }
+                        model.UploadedReport = SaveUploadFile(reportFile);
                         }
-                    model.UploadedEvidence = string.Join(";", evidenceNames);
-                    model.UploadedDsa = SaveUploadFile(dsaFile);
+                    else
+                        {
+                        model.UploadedReport = existingUploadedReport;
+                        }
+
+                    if (evidenceFiles?.Count > 0)
+                        {
+                        var evidenceNames = new List<string>();
+                        foreach (var file in evidenceFiles)
+                            {
+                            var savedFile = SaveUploadFile(file);
+                            if (!string.IsNullOrEmpty(savedFile))
+                                {
+                                evidenceNames.Add(savedFile);
+                                }
+                            }
+                        model.UploadedEvidence = string.Join(";", evidenceNames);
+                        }
+                    else
+                        {
+                        model.UploadedEvidence = existingUploadedEvidence;
+                        }
+
+                    if (dsaFile != null)
+                        {
+                        model.UploadedDsa = SaveUploadFile(dsaFile);
+                        }
+                    else
+                        {
+                        model.UploadedDsa = existingUploadedDsa;
+                        }
                     }
 
                 var id = dBConnection.AddInquiryReport(model);
@@ -5289,6 +5316,8 @@ namespace AIS.Controllers
 
                     if (complaintId.HasValue)
                         {
+                        dBConnection.FinalizeIidInquiryReport(complaintId.Value, sessionHandler.GetUser()?.UserEntityID);
+
                         dBConnection.EnqueueEmail(
                             "IID_INQUIRY_APPROVED",
                             complaintId,
@@ -5484,6 +5513,9 @@ namespace AIS.Controllers
                     proceedings = report.Proceedings,
                     findings = report.Findings,
                     recommendation = report.Recommendation,
+                    conclusion = report.Conclusion,
+                    reportedInAuditReport = report.ReportedInAuditReport,
+                    auditReportReferenceDetail = report.AuditReportReferenceDetail,
                     uploadedReport = report.UploadedReport,
                     uploadedEvidence = report.UploadedEvidence,
                     uploadedDsa = report.UploadedDsa,
@@ -6341,6 +6373,9 @@ namespace AIS.Controllers
             try
                 {
                 var complaintId = request?.ComplaintId ?? 0;
+                var latestReport = complaintId > 0
+                    ? dBConnection.GetLatestInquiryReportByComplaintId((int)complaintId)
+                    : null;
                 var data = new
                     {
                     accusations = dBConnection.GetIidInqAccusationsByComplaintId(complaintId),
@@ -6352,7 +6387,8 @@ namespace AIS.Controllers
                     evidenceFiles = dBConnection.GetIidInqEvidenceFilesByComplaintId(complaintId),
                     findingsRecommendations = dBConnection.GetIidInqFindingsRecommByComplaintId(complaintId),
                     violations = dBConnection.GetIidInqViolationsByComplaintId(complaintId),
-                    dsa = dBConnection.GetIidInqDsaByComplaintId(complaintId)
+                    dsa = dBConnection.GetIidInqDsaByComplaintId(complaintId),
+                    inquiryNarrative = latestReport
                     };
                 return Json(new { ok = true, data });
                 }
@@ -6365,7 +6401,27 @@ namespace AIS.Controllers
         [HttpPost]
         public IActionResult FinalizeIidInquiryReport([FromBody] AIS.Models.IID.InquiryReport.IidInqComplaintRequest request)
             {
-            return SubmitIidInquiryReportForAnalysis(request);
+            try
+                {
+                var unauthorized = EnsureAuthenticatedSession();
+                if (unauthorized != null)
+                    {
+                    return unauthorized;
+                    }
+
+                var complaintId = request?.ComplaintId ?? 0;
+                if (complaintId <= 0)
+                    {
+                    return Json(new { ok = false, message = "ComplaintId is required." });
+                    }
+
+                var rows = dBConnection.FinalizeIidInquiryReport(complaintId, sessionHandler.GetUser()?.UserEntityID);
+                return Json(new { ok = rows > 0, message = rows > 0 ? "Inquiry report finalized successfully." : "Finalization failed." });
+                }
+            catch (Exception ex)
+                {
+                return Json(new { ok = false, message = ex.Message });
+                }
             }
 
         [HttpPost]
@@ -6391,7 +6447,7 @@ namespace AIS.Controllers
                     return Json(new { ok = false, message = "At least one evidence file is required before submitting for analysis." });
                     }
 
-                var rows = dBConnection.FinalizeIidInquiryReport(complaintId, sessionHandler.GetUser()?.UserEntityID);
+                var rows = dBConnection.SubmitIidInquiryReportForAnalysis(complaintId, sessionHandler.GetUser()?.UserEntityID);
                 return Json(new { ok = rows > 0, message = rows > 0 ? "Inquiry report submitted for analysis successfully." : "Submission for analysis failed." });
                 }
             catch (Exception ex)
@@ -6420,6 +6476,15 @@ namespace AIS.Controllers
                 var findings = dBConnection.GetIidInqFindingsRecommByComplaintId(complaintId).FirstOrDefault();
                 var evidenceStep = dBConnection.GetIidInqEvidenceStepByComplaintId(complaintId);
                 var proceedings = dBConnection.GetIidInqProceedingsByComplaintId(complaintId);
+                var latestReport = dBConnection.GetLatestInquiryReportByComplaintId((int)complaintId);
+                var proceedingsNarrative = string.Join(Environment.NewLine, (proceedings ?? new List<AIS.Models.IID.InquiryReport.IidInqProceedingRow>()).Select(x => string.Join(" | ", new[]
+                    {
+                    x.NoticeReference,
+                    x.VisitDate?.ToString("yyyy-MM-dd"),
+                    x.PlaceVisited,
+                    x.ParticipantsDetail,
+                    x.MissingParticipantsReason
+                    }.Where(v => !string.IsNullOrWhiteSpace(v)))));
 
                 var payload = new
                     {
@@ -6445,16 +6510,13 @@ namespace AIS.Controllers
                     finalApprovals = new object[0],
                     inquiryReport = new
                         {
-                        proceedings = string.Join(Environment.NewLine, (proceedings ?? new List<AIS.Models.IID.InquiryReport.IidInqProceedingRow>()).Select(x => string.Join(" | ", new[]
-                            {
-                            x.NoticeReference,
-                            x.VisitDate?.ToString("yyyy-MM-dd"),
-                            x.PlaceVisited,
-                            x.ParticipantsDetail,
-                            x.MissingParticipantsReason
-                            }.Where(v => !string.IsNullOrWhiteSpace(v))))),
-                        findings = findings?.FindingText,
-                        recommendation = findings?.RecommendationText
+                        reportId = latestReport?.ReportId ?? 0,
+                        proceedings = string.IsNullOrWhiteSpace(proceedingsNarrative) ? latestReport?.Proceedings ?? string.Empty : proceedingsNarrative,
+                        findings = findings?.FindingText ?? latestReport?.Findings ?? string.Empty,
+                        recommendation = findings?.RecommendationText ?? latestReport?.Recommendation ?? string.Empty,
+                        conclusion = latestReport?.Conclusion ?? string.Empty,
+                        reportedInAuditReport = latestReport?.ReportedInAuditReport ?? string.Empty,
+                        auditReportReferenceDetail = latestReport?.AuditReportReferenceDetail ?? string.Empty
                         }
                     };
 

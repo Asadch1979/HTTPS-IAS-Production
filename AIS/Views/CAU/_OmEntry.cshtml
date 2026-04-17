@@ -1,6 +1,5 @@
 @{
     var omAuditYears = ViewData["OmAuditYearList"] ?? ViewData["AuditYearList"];
-    var workflowHostPath = ViewData["CommercialAuditHostPath"] as string ?? Url.Action("workflow", "CAU");
 }
 
 <div class="commercial-audit-step" data-step="om-entry">
@@ -10,11 +9,12 @@
                 <h4 class="mb-1" id="omFormTitle">Create OM</h4>
                 <small class="text-muted">Maintain the OM narrative in a focused editor before moving to the register.</small>
             </div>
-            <a href="@(workflowHostPath + "?stepKey=om-register")"
+            <button type="button"
                class="btn btn-outline-success commercial-audit-step-target"
+               data-step="om-register"
                data-step-key="om-register">
                 Open OM Register
-            </a>
+            </button>
         </div>
         <div class="card-body">
             <div class="row g-3">

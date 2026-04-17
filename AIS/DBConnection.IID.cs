@@ -1049,6 +1049,9 @@ namespace AIS.Controllers
                             Proceedings = HasColumn(rdr, "PROCEEDINGS") ? rdr["PROCEEDINGS"]?.ToString() : string.Empty,
                             Findings = HasColumn(rdr, "FINDINGS") ? rdr["FINDINGS"]?.ToString() : string.Empty,
                             Recommendation = HasColumn(rdr, "RECOMMENDATION") ? rdr["RECOMMENDATION"]?.ToString() : string.Empty,
+                            Conclusion = HasColumn(rdr, "CONCLUSION") ? rdr["CONCLUSION"]?.ToString() : string.Empty,
+                            ReportedInAuditReport = HasColumn(rdr, "REPORTED_IN_AUDIT_REPORT") ? rdr["REPORTED_IN_AUDIT_REPORT"]?.ToString() : string.Empty,
+                            AuditReportReferenceDetail = HasColumn(rdr, "AUDIT_REPORT_REFERENCE_DETAIL") ? rdr["AUDIT_REPORT_REFERENCE_DETAIL"]?.ToString() : string.Empty,
                             UploadedReport = rdr["UPLOADED_REPORT"]?.ToString(),
                             UploadedEvidence = rdr["UPLOADED_EVIDENCE"]?.ToString(),
                             UploadedDsa = rdr["UPLOADED_DSA"]?.ToString(),
@@ -1128,6 +1131,10 @@ namespace AIS.Controllers
                 cmd.Parameters.Add("p_proceedings", OracleDbType.Clob).Value = model.Proceedings ?? string.Empty;
                 cmd.Parameters.Add("p_findings", OracleDbType.Clob).Value = model.Findings ?? string.Empty;
                 cmd.Parameters.Add("p_recommendation", OracleDbType.Clob).Value = model.Recommendation ?? string.Empty;
+                // DB dependency: PKG_INQ.ADD_INQUIRY_REPORT must expose these new parameters.
+                cmd.Parameters.Add("p_conclusion", OracleDbType.Clob).Value = model.Conclusion ?? string.Empty;
+                cmd.Parameters.Add("p_reported_in_audit_report", OracleDbType.Varchar2).Value = model.ReportedInAuditReport ?? string.Empty;
+                cmd.Parameters.Add("p_audit_report_reference_detail", OracleDbType.Clob).Value = model.AuditReportReferenceDetail ?? string.Empty;
                 cmd.Parameters.Add("p_uploaded_report", OracleDbType.Varchar2).Value = model.UploadedReport ?? string.Empty;
                 cmd.Parameters.Add("p_uploaded_evidence", OracleDbType.Varchar2).Value = model.UploadedEvidence ?? string.Empty;
                 cmd.Parameters.Add("p_uploaded_dsa", OracleDbType.Varchar2).Value = model.UploadedDsa ?? string.Empty;
@@ -1244,6 +1251,9 @@ namespace AIS.Controllers
                         model = new InquiryReportFilesModel
                             {
                             ReportId = reportId,
+                            Conclusion = HasColumn(rdr, "CONCLUSION") ? rdr["CONCLUSION"]?.ToString() : string.Empty,
+                            ReportedInAuditReport = HasColumn(rdr, "REPORTED_IN_AUDIT_REPORT") ? rdr["REPORTED_IN_AUDIT_REPORT"]?.ToString() : string.Empty,
+                            AuditReportReferenceDetail = HasColumn(rdr, "AUDIT_REPORT_REFERENCE_DETAIL") ? rdr["AUDIT_REPORT_REFERENCE_DETAIL"]?.ToString() : string.Empty,
                             UploadedReport = rdr["UPLOADED_REPORT"].ToString(),
                             UploadedEvidence = rdr["UPLOADED_EVIDENCE"].ToString(),
                             UploadedDsa = rdr["UPLOADED_DSA"].ToString()
@@ -2321,24 +2331,46 @@ namespace AIS.Controllers
             return buffer.ToString();
             }
 
+        public int SubmitIidInquiryReportForAnalysis(long complaintId, long? updatedBy)
+            {
+            return UpdateIidInquiryFinalizeState(complaintId, "A", updatedBy, clearFinalizedOn: true);
+            }
+
         public int FinalizeIidInquiryReport(long complaintId, long? updatedBy)
+            {
+            return UpdateIidInquiryFinalizeState(complaintId, "Y", updatedBy, clearFinalizedOn: false);
+            }
+
+        private int UpdateIidInquiryFinalizeState(long complaintId, string finalizeState, long? updatedBy, bool clearFinalizedOn)
             {
             using var con = this.DatabaseConnection();
             using var cmd = con.CreateCommand();
-            cmd.CommandText = "PKG_INQ.P_FINALIZE_IID_INQUIRY_REPORT";
-            cmd.CommandType = CommandType.StoredProcedure;
             cmd.BindByName = true;
-            cmd.Parameters.Add("P_COMPLAINT_ID", OracleDbType.Int64).Value = complaintId;
-            cmd.Parameters.Add("P_UPDATED_BY", OracleDbType.Int64).Value = updatedBy ?? (object)DBNull.Value;
-            cmd.ExecuteNonQuery();
-            return 1;
+            cmd.CommandType = CommandType.Text;
+            cmd.CommandText = clearFinalizedOn
+                ? @"update t_au_iid_complaint_hdr
+                       set is_finalized = :p_finalize_state,
+                           finalized_on = null,
+                           updated_by_pp_no = :p_updated_by,
+                           updated_on = sysdate
+                     where complaint_id = :p_complaint_id"
+                : @"update t_au_iid_complaint_hdr
+                       set is_finalized = :p_finalize_state,
+                           finalized_on = sysdate,
+                           updated_by_pp_no = :p_updated_by,
+                           updated_on = sysdate
+                     where complaint_id = :p_complaint_id";
+            cmd.Parameters.Add("p_finalize_state", OracleDbType.Char, 1).Value = (finalizeState ?? string.Empty).Trim().ToUpperInvariant();
+            cmd.Parameters.Add("p_updated_by", OracleDbType.Int64).Value = updatedBy ?? (object)DBNull.Value;
+            cmd.Parameters.Add("p_complaint_id", OracleDbType.Int64).Value = complaintId;
+            return cmd.ExecuteNonQuery();
             }
 
-        public bool IsIidComplaintFinalized(long complaintId)
+        public string GetIidComplaintFinalizeState(long complaintId)
             {
             if (complaintId <= 0)
                 {
-                return false;
+                return string.Empty;
                 }
 
             using var con = this.DatabaseConnection();
@@ -2349,7 +2381,24 @@ namespace AIS.Controllers
             cmd.Parameters.Add("p_complaint_id", OracleDbType.Int64).Value = complaintId;
 
             var result = cmd.ExecuteScalar();
-            return IsOracleTrue(result);
+            if (result == null || result == DBNull.Value)
+                {
+                return string.Empty;
+                }
+
+            return Convert.ToString(result)?.Trim().ToUpperInvariant() ?? string.Empty;
+            }
+
+        public bool IsIidComplaintReadyForPdf(long complaintId)
+            {
+            var finalizeState = GetIidComplaintFinalizeState(complaintId);
+            return string.Equals(finalizeState, "A", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(finalizeState, "Y", StringComparison.OrdinalIgnoreCase);
+            }
+
+        public bool IsIidComplaintFinalized(long complaintId)
+            {
+            return string.Equals(GetIidComplaintFinalizeState(complaintId), "Y", StringComparison.OrdinalIgnoreCase);
             }
 
 

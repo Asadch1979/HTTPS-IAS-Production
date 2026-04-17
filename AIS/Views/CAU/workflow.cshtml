@@ -2,9 +2,6 @@
 @using System.Linq
 @{
     Layout = "_Layout";
-    var currentStep = Model?.Steps?.FirstOrDefault(step => step.StepKey == Model.CurrentStepKey)
-        ?? Model?.Steps?.FirstOrDefault();
-    var workflowHostPath = ViewData["CommercialAuditHostPath"] as string ?? Context?.Request?.Path.Value ?? Url.Action("workflow", "CAU");
     ViewData["CommercialAuditWorkflowModel"] = Model;
 }
 
@@ -13,8 +10,7 @@
 
 <div class="container-fluid mt-4 commercial-audit-page commercial-audit-workflow"
      data-current-step="@Model?.CurrentStepKey"
-     data-load-url="@Url.Action("LoadStep", "CAU")"
-     data-workflow-url="@workflowHostPath">
+     data-load-url="@Url.Action("LoadStepPartial", "CAU")">
     <partial name="_CommercialAuditNav" />
 
     <div class="card shadow-sm commercial-audit-shell-card">
@@ -22,14 +18,7 @@
             <div id="commercialAuditStepMessage" class="alert d-none"></div>
 
             <div id="commercialAuditStepHost" class="commercial-audit-step-host">
-                @if (currentStep != null)
-                {
-                    @await Html.PartialAsync(currentStep.PartialViewName)
-                }
-                else
-                {
-                    <div class="alert alert-warning mb-0">No Commercial Audit steps are available.</div>
-                }
+                <div class="alert alert-secondary mb-0">Loading workflow content...</div>
             </div>
         </div>
     </div>
@@ -47,4 +36,4 @@
                 description = step.Description
             })));
 </script>
-<script src="~/js/csp/Views_CAU_commercial_audit.js?v=3"></script>
+<script src="~/js/csp/Views_CAU_commercial_audit.js?v=4"></script>

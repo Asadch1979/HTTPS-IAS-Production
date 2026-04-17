@@ -30,7 +30,8 @@ namespace AIS.Services
             "/Planning/LoadPlanningNestedView",
             "/IID/IID_Dashboard",
             "/CAU/workflow",
-            "/CAU/LoadStep"
+            "/CAU/LoadStep",
+            "/CAU/LoadStepPartial"
             };
 
         public static bool IsExempt(HttpRequest request)

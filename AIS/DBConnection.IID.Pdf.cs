@@ -29,6 +29,7 @@ namespace AIS.Controllers
             var dsaRows = GetIidInqDsaByComplaintId(complaintId) ?? new List<Models.IID.InquiryReport.IidInqDsaRow>();
             var inquiryNarrative = GetLatestInquiryReportByComplaintId((int)complaintId);
             var planDetails = GetIidPlanDetails((int)complaintId);
+            var finalizeState = GetIidComplaintFinalizeState(complaintId);
 
             var accusationLookup = accusations.ToDictionary(x => x.AccusationId, x => x.AccusationText ?? string.Empty);
 
@@ -53,8 +54,9 @@ namespace AIS.Controllers
                     DepartmentName = "Internal Audit Division",
                     ReportTitle = "IID Inquiry Report",
                     ComplaintNo = complaint.ComplaintNo,
-                    InquiryStatus = complaint.Status,
-                    IsFinalized = IsIidComplaintFinalized(complaintId),
+                    InquiryStatus = GetInquiryReportStatusLabel(finalizeState, complaint.Status),
+                    FinalizeState = finalizeState,
+                    IsFinalized = string.Equals(finalizeState, "Y", StringComparison.OrdinalIgnoreCase),
                     InspectionUnit = complaint.AssignedUnit,
                     TeamLead = GetPlanValue("teamLead"),
                     TeamMembers = GetPlanValue("teamMembers")
@@ -196,10 +198,29 @@ namespace AIS.Controllers
                     Proceedings = inquiryNarrative?.Proceedings,
                     Findings = inquiryNarrative?.Findings,
                     Recommendation = inquiryNarrative?.Recommendation,
+                    Conclusion = inquiryNarrative?.Conclusion,
+                    ReportedInAuditReport = inquiryNarrative?.ReportedInAuditReport,
+                    AuditReportReferenceDetail = inquiryNarrative?.AuditReportReferenceDetail,
+                    RootCause = inquiryNarrative?.Gist,
                     FinalOutcome = findingsRows.Select(x => x.Outcome).FirstOrDefault(x => !string.IsNullOrWhiteSpace(x)),
-                    InquiryStatus = complaint.Status
+                    InquiryStatus = GetInquiryReportStatusLabel(finalizeState, complaint.Status)
                     }
                 };
+            }
+
+        private static string GetInquiryReportStatusLabel(string finalizeState, string fallbackStatus)
+            {
+            if (string.Equals(finalizeState, "Y", StringComparison.OrdinalIgnoreCase))
+                {
+                return "FINAL REPORT";
+                }
+
+            if (string.Equals(finalizeState, "A", StringComparison.OrdinalIgnoreCase))
+                {
+                return "DRAFT REPORT";
+                }
+
+            return string.IsNullOrWhiteSpace(fallbackStatus) ? "DRAFT REPORT" : fallbackStatus;
             }
 
         public bool IsComplaintAllowedForIidPdf(long complaintId)

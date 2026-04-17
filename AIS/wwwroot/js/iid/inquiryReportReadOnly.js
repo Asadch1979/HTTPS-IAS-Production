@@ -85,10 +85,15 @@
 
         var report = pick(payload, ['inquiryReport', 'report'], payload);
         var evidenceStep = pick(payload, ['evidenceStep'], {}) || {};
+        var reportedInAuditReport = pick(report, ['reportedInAuditReport', 'ReportedInAuditReport'], '');
         setNarrative('#txtGist', pick(report, ['gist', 'Gist', 'findingText', 'FindingText']));
         setNarrative('#txtProceedings', pick(report, ['proceedings', 'Proceedings']));
         setNarrative('#txtFindings', pick(report, ['findings', 'Findings', 'findingText', 'FindingText']));
         setNarrative('#txtRecommendation', pick(report, ['recommendation', 'Recommendation', 'recommendationText', 'RecommendationText']));
+        setNarrative('#txtConclusion', pick(report, ['conclusion', 'Conclusion']));
+        setNarrative('#txtReportedInAuditReport', reportedInAuditReport || 'Not reported');
+        setNarrative('#txtAuditReportReferenceDetail', pick(report, ['auditReportReferenceDetail', 'AuditReportReferenceDetail']));
+        $('#auditReportReferenceDetailWrap').toggle((reportedInAuditReport || '').toString().toLowerCase() === 'yes');
         setNarrative('#txtMaterialEvidenceDetail', pick(evidenceStep, ['materialEvidenceDetail', 'MaterialEvidenceDetail']));
         setNarrative('#txtCircumstantialEvidenceDetail', pick(evidenceStep, ['circumstantialEvidenceDetail', 'CircumstantialEvidenceDetail']));
     }

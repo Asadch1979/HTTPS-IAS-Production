@@ -17,6 +17,12 @@ namespace AIS.Models.IID
         public string Findings { get; set; }
         [PlainText]
         public string Recommendation { get; set; }
+        [PlainText]
+        public string Conclusion { get; set; }
+        [PlainText]
+        public string ReportedInAuditReport { get; set; }
+        [PlainText]
+        public string AuditReportReferenceDetail { get; set; }
         public string FindingsHtml { get; set; }
         public string RecommendationsHtml { get; set; }
         [PlainText]

@@ -66,6 +66,22 @@ $(function(){
             lockedOutcomes: {},
             savedFindingsMap: {}
         },
+        inquiryNarrative: {
+            reportId: 0,
+            nameComplainant: '',
+            nameAccused: '',
+            gist: '',
+            proceedings: '',
+            findings: '',
+            recommendation: '',
+            conclusion: '',
+            reportedInAuditReport: '',
+            auditReportReferenceDetail: '',
+            uploadedReport: '',
+            uploadedEvidence: '',
+            uploadedDsa: '',
+            submittedOn: ''
+        },
         violations: [{ violationId: 0, category: 'Internal', violationDetail: '', referenceText: '', recommendation: '', sortOrder: 1 }],
         dsa: [{ dsaId: 0, personName: '', designation: '', ppnoNumber: '', cnic: '', dsaStatus: '', remarks: '', sortOrder: 1 }],
         deleteQueue: { accusations: [], accused: [], records: [], proceedings: [], violations: [], dsa: [] },
@@ -158,6 +174,83 @@ $(function(){
 
     function readRecommendationTextValue(source){
         return source ? (source.recommendationText || source.recomText || source.RecommendationText || source.RECOM_TEXT || '') : '';
+    }
+
+    function normalizeYesNo(value){
+        var normalized = String(value || '').trim().toLowerCase();
+        if(normalized === 'yes'){ return 'Yes'; }
+        if(normalized === 'no'){ return 'No'; }
+        return '';
+    }
+
+    function hydrateInquiryNarrative(source){
+        source = source || {};
+        state.inquiryNarrative = {
+            reportId: parseInt(source.reportId || source.ReportId || 0, 10) || 0,
+            nameComplainant: source.nameComplainant || source.NameComplainant || state.complainantName || '',
+            nameAccused: source.nameAccused || source.NameAccused || state.inquiryNarrative.nameAccused || '',
+            gist: source.gist || source.Gist || '',
+            proceedings: source.proceedings || source.Proceedings || '',
+            findings: source.findings || source.Findings || '',
+            recommendation: source.recommendation || source.Recommendation || '',
+            conclusion: source.conclusion || source.Conclusion || '',
+            reportedInAuditReport: normalizeYesNo(source.reportedInAuditReport || source.ReportedInAuditReport || ''),
+            auditReportReferenceDetail: source.auditReportReferenceDetail || source.AuditReportReferenceDetail || '',
+            uploadedReport: source.uploadedReport || source.UploadedReport || '',
+            uploadedEvidence: source.uploadedEvidence || source.UploadedEvidence || '',
+            uploadedDsa: source.uploadedDsa || source.UploadedDsa || '',
+            submittedOn: source.submittedOn || source.SubmittedOn || ''
+        };
+
+        if(state.inquiryNarrative.reportedInAuditReport !== 'Yes'){
+            state.inquiryNarrative.auditReportReferenceDetail = '';
+        }
+
+        reportId = state.inquiryNarrative.reportId || reportId;
+    }
+
+    function buildAccusedNarrativeValue(){
+        var names = state.accusedEmployeeRows
+            .concat(state.accusedManualRows)
+            .map(function(row){ return (row.personName || '').trim(); })
+            .filter(function(name){ return !!name; });
+
+        return names.length ? names.join(', ') : '';
+    }
+
+    function saveInquiryNarrative(){
+        var reportedInAuditReport = normalizeYesNo(state.inquiryNarrative.reportedInAuditReport);
+        var auditReportReferenceDetail = reportedInAuditReport === 'Yes'
+            ? (state.inquiryNarrative.auditReportReferenceDetail || '')
+            : '';
+
+        state.inquiryNarrative.reportedInAuditReport = reportedInAuditReport;
+        state.inquiryNarrative.auditReportReferenceDetail = auditReportReferenceDetail;
+
+        var formData = new FormData();
+        formData.append('ComplaintId', complaintId);
+        formData.append('NameComplainant', state.inquiryNarrative.nameComplainant || state.complainantName || '');
+        formData.append('NameAccused', state.inquiryNarrative.nameAccused || buildAccusedNarrativeValue());
+        formData.append('Gist', state.inquiryNarrative.gist || '');
+        formData.append('Proceedings', state.inquiryNarrative.proceedings || '');
+        formData.append('Findings', state.inquiryNarrative.findings || '');
+        formData.append('Recommendation', state.inquiryNarrative.recommendation || '');
+        formData.append('Conclusion', state.inquiryNarrative.conclusion || '');
+        formData.append('ReportedInAuditReport', reportedInAuditReport);
+        formData.append('AuditReportReferenceDetail', auditReportReferenceDetail);
+        formData.append('UploadedReport', state.inquiryNarrative.uploadedReport || '');
+        formData.append('UploadedEvidence', state.inquiryNarrative.uploadedEvidence || '');
+        formData.append('UploadedDsa', state.inquiryNarrative.uploadedDsa || '');
+
+        return window.iidSaveInquiryReportNarrative(formData).then(function(resp){
+            ensureApiSuccess(resp, 'Failed to save inquiry report narrative.');
+            var savedReportId = parseInt((resp && resp.id) || 0, 10) || 0;
+            if(savedReportId > 0){
+                state.inquiryNarrative.reportId = savedReportId;
+                reportId = savedReportId;
+            }
+            return { message: 'Violations, conclusion, and audit report reference saved successfully.' };
+        });
     }
 
     function ensureApiSuccess(resp, fallback){
@@ -764,7 +857,16 @@ $(function(){
         }
         if(step === 9){
             var rowsV = state.violations.map(function(r,i){ return '<tr data-row-id="' + (r.violationId || 0) + '"><td>'+rowInput('violations['+i+'].category',r.category)+'</td><td>'+rowInput('violations['+i+'].violationDetail',r.violationDetail)+'</td><td>'+rowInput('violations['+i+'].referenceText',r.referenceText)+'</td><td>'+rowInput('violations['+i+'].recommendation',r.recommendation)+'</td><td><button type="button" class="btn btn-outline-danger btn-sm" data-remove-row="violations" data-index="'+i+'">Remove</button></td></tr>'; }).join('');
+            var reportedInAuditReport = normalizeYesNo(state.inquiryNarrative.reportedInAuditReport);
             html += '<h5>Violations (Annex-III)</h5><table class="table table-sm"><thead><tr><th>Category</th><th>Detail</th><th>Reference</th><th>Recommendation</th><th></th></tr></thead><tbody>'+rowsV+'</tbody></table><button type="button" class="btn btn-outline-primary btn-sm" data-add-row="violations">Add Row</button>';
+            html += '<div class="card border-0 bg-light mt-3"><div class="card-body">';
+            html += '<div class="row g-3">';
+            html += '<div class="col-12"><label class="form-label fw-semibold">Conclusion</label><textarea class="form-control" rows="7" data-step9-key="conclusion">'+esc(state.inquiryNarrative.conclusion || '')+'</textarea><div class="form-text">Keep this separate from findings and recommendations.</div></div>';
+            html += '<div class="col-md-6"><label class="form-label fw-semibold">Reported in Audit Report? <span class="text-danger">*</span></label><select class="form-select" data-step9-key="reportedInAuditReport"><option value="">Select</option><option value="Yes"' + (reportedInAuditReport === 'Yes' ? ' selected' : '') + '>Yes</option><option value="No"' + (reportedInAuditReport === 'No' ? ' selected' : '') + '>No</option></select></div>';
+            if(reportedInAuditReport === 'Yes'){
+                html += '<div class="col-12"><label class="form-label fw-semibold">Audit-report reference section <span class="text-danger">*</span></label><textarea class="form-control" rows="4" data-step9-key="auditReportReferenceDetail">'+esc(state.inquiryNarrative.auditReportReferenceDetail || '')+'</textarea></div>';
+            }
+            html += '</div></div></div>';
         }
         if(step === 10){
             var rowsD = state.dsa.map(function(r,i){ return '<tr data-row-id="' + (r.dsaId || 0) + '"><td>'+rowInput('dsa['+i+'].personName',r.personName)+'</td><td>'+rowInput('dsa['+i+'].designation',r.designation)+'</td><td>'+rowInput('dsa['+i+'].ppnoNumber',r.ppnoNumber)+'</td><td>'+rowInput('dsa['+i+'].cnic',r.cnic)+'</td><td>'+rowInput('dsa['+i+'].dsaStatus',r.dsaStatus)+'</td><td><button type="button" class="btn btn-outline-danger btn-sm" data-remove-row="dsa" data-index="'+i+'">Remove</button></td></tr>'; }).join('');
@@ -863,6 +965,27 @@ $(function(){
             markDirty(6);
             renderStepper();
         });
+
+        host.find('[data-step9-key]').off('input change').on('input change', function(){
+            var fieldKey = String($(this).data('step9-key') || '');
+            if(!fieldKey){ return; }
+
+            var value = $(this).val();
+            if(fieldKey === 'reportedInAuditReport'){
+                value = normalizeYesNo(value);
+                state.inquiryNarrative.reportedInAuditReport = value;
+                if(value !== 'Yes'){
+                    state.inquiryNarrative.auditReportReferenceDetail = '';
+                }
+                markDirty(9);
+                renderCurrent(true);
+                return;
+            }
+
+            state.inquiryNarrative[fieldKey] = value;
+            markDirty(9);
+            renderStepper();
+        });
     }
 
     function validateStep(step){
@@ -894,7 +1017,18 @@ $(function(){
             var selectedOutcome = state.findingsRecomm.outcomes[parseInt(state.findingsRecomm.selectedAccusationId, 10)] || '';
             if(!has(selectedOutcome)) errs.push('Outcome is required for selected accusation.');
         }
-        if(step === 9 && !state.violations.some(function(x){ return has(x.category) && has(x.violationDetail) && has(x.referenceText) && has(x.recommendation); })) errs.push('At least one complete violation row is required.');
+        if(step === 9){
+            if(!state.violations.some(function(x){ return has(x.category) && has(x.violationDetail) && has(x.referenceText) && has(x.recommendation); })){
+                errs.push('At least one complete violation row is required.');
+            }
+            var reportedInAuditReport = normalizeYesNo(state.inquiryNarrative.reportedInAuditReport);
+            if(!reportedInAuditReport){
+                errs.push('Reported in Audit Report selection is required.');
+            }
+            if(reportedInAuditReport === 'Yes' && !has(state.inquiryNarrative.auditReportReferenceDetail)){
+                errs.push('Audit-report reference section is required when the matter is reported in audit report.');
+            }
+        }
         if(step === 10 && state.isDsaVisible && !state.dsa.some(function(x){ return has(x.personName) || has(x.dsaStatus); })) errs.push('At least one DSA row is required.');
         return errs;
     }
@@ -940,7 +1074,18 @@ $(function(){
                 }
             });
         }
-        if(step === 9 && !state.violations.some(function(x){ return has(x.category) && has(x.violationDetail) && has(x.referenceText) && has(x.recommendation); })) missingFields.push('At least one complete violation row is required');
+        if(step === 9){
+            if(!state.violations.some(function(x){ return has(x.category) && has(x.violationDetail) && has(x.referenceText) && has(x.recommendation); })){
+                missingFields.push('At least one complete violation row is required');
+            }
+            var reportedInAuditReport = normalizeYesNo(state.inquiryNarrative.reportedInAuditReport);
+            if(!reportedInAuditReport){
+                missingFields.push('Reported in Audit Report?');
+            }
+            if(reportedInAuditReport === 'Yes' && !has(state.inquiryNarrative.auditReportReferenceDetail)){
+                missingFields.push('Audit-report reference section');
+            }
+        }
         if(step === 10 && state.isDsaVisible && !state.dsa.some(function(x){ return has(x.personName) || has(x.dsaStatus); })) missingFields.push('At least one DSA row is required');
         return { ok: missingFields.length === 0, missingFields: missingFields };
     }
@@ -1367,7 +1512,18 @@ $(function(){
                     ensureOneRow('proceedings');
                 }, section: 'proceedings' },
             8: { loadFn: loadFindingsModule, hydrate: function(){}, section: 'findingsRecomm' },
-            9: { loadFn: window.iidGetInqViolations, hydrate: function(resp){ state.violations = extractData(resp); ensureOneRow('violations'); }, section: 'violations' },
+            9: { loadFn: function(id){
+                    return $.when(window.iidGetInqViolations(id), window.iidGetLatestInquiryReportByComplaintId(id)).then(function(violationsResp, narrativeResp){
+                        return {
+                            violationsResp: violationsResp && violationsResp[0] ? violationsResp[0] : violationsResp,
+                            narrativeResp: narrativeResp && narrativeResp[0] ? narrativeResp[0] : narrativeResp
+                        };
+                    });
+                }, hydrate: function(resp){
+                    state.violations = extractData(resp.violationsResp);
+                    ensureOneRow('violations');
+                    hydrateInquiryNarrative(resp.narrativeResp && resp.narrativeResp.ok !== false ? resp.narrativeResp : null);
+                }, section: 'violations' },
             10: { loadFn: window.iidGetInqDsa, hydrate: function(resp){ state.dsa = extractData(resp); ensureOneRow('dsa'); }, section: 'dsa' }
         }[step];
 
@@ -1458,7 +1614,20 @@ $(function(){
             });
         }
         if(step === 9){
-            return saveCollection({ section: 'violations', rows: state.violations.filter(function(x){ return x.violationDetail && x.referenceText && x.recommendation; }), idKey: 'violationId', addFn: window.iidAddInqViolation, updateFn: window.iidUpdateInqViolation, deleteFn: window.iidDeleteInqViolation, loadFn: window.iidGetInqViolations, map: function(row, idx){ return $.extend({}, row, { complaintId: complaintId, sortOrder: idx + 1, status: 'A', createdBy: userId, updatedBy: userId }); }, hydrate: function(resp){ state.violations = extractData(resp); ensureOneRow('violations'); }, successMessage: 'Violations saved successfully.' });
+            return saveCollection({
+                section: 'violations',
+                rows: state.violations.filter(function(x){ return x.category && x.violationDetail && x.referenceText && x.recommendation; }),
+                idKey: 'violationId',
+                addFn: window.iidAddInqViolation,
+                updateFn: window.iidUpdateInqViolation,
+                deleteFn: window.iidDeleteInqViolation,
+                loadFn: window.iidGetInqViolations,
+                map: function(row, idx){ return $.extend({}, row, { complaintId: complaintId, sortOrder: idx + 1, status: 'A', createdBy: userId, updatedBy: userId }); },
+                hydrate: function(resp){ state.violations = extractData(resp); ensureOneRow('violations'); },
+                successMessage: 'Violations saved successfully.'
+            }).then(function(){
+                return saveInquiryNarrative();
+            });
         }
         if(step === 10){
             return saveCollection({ section: 'dsa', rows: state.dsa.filter(function(x){ return x.personName || x.dsaStatus; }), idKey: 'dsaId', addFn: window.iidAddInqDsa, updateFn: window.iidUpdateInqDsa, deleteFn: window.iidDeleteInqDsa, loadFn: window.iidGetInqDsa, map: function(row, idx){ return $.extend({}, row, { complaintId: complaintId, sortOrder: idx + 1, status: 'A', createdBy: userId, updatedBy: userId }); }, hydrate: function(resp){ state.dsa = extractData(resp); ensureOneRow('dsa'); }, successMessage: 'DSA saved successfully.' });

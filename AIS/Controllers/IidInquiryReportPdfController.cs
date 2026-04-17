@@ -139,9 +139,9 @@ namespace AIS.Controllers
                 return NotFound("Complaint not found.");
                 }
 
-            if (!_dbConnection.IsIidComplaintFinalized(complaintId))
+            if (!_dbConnection.IsIidComplaintReadyForPdf(complaintId))
                 {
-                return BadRequest("Inquiry report must be finalized before PDF generation.");
+                return BadRequest("Inquiry report must be submitted for analysis before PDF generation.");
                 }
 
             return null;
@@ -162,8 +162,7 @@ namespace AIS.Controllers
 
         private PdfWatermarkText BuildWatermarkTexts(IidInquiryReportPdfData data)
             {
-            var isFinal = data?.Header?.IsFinalized ?? false;
-            var bigWatermarkText = isFinal ? "FINAL" : "DRAFT";
+            var bigWatermarkText = ResolveReportStageLabel(data);
             var generatedOn = FormatKarachiTimestamp(DateTime.UtcNow);
             var generatedByName = string.IsNullOrWhiteSpace(data?.Header?.GeneratedByName) ? "Unknown User" : data.Header.GeneratedByName.Trim();
             var generatedByPPNo = data?.Header?.GeneratedByPPNo?.Trim();
@@ -177,6 +176,22 @@ namespace AIS.Controllers
                 BigWatermarkText = bigWatermarkText,
                 FooterWatermarkText = footerWatermarkText
                 };
+            }
+
+        private static string ResolveReportStageLabel(IidInquiryReportPdfData data)
+            {
+            var finalizeState = data?.Header?.FinalizeState?.Trim();
+            if (string.Equals(finalizeState, "Y", StringComparison.OrdinalIgnoreCase))
+                {
+                return "FINAL REPORT";
+                }
+
+            if (string.Equals(finalizeState, "A", StringComparison.OrdinalIgnoreCase))
+                {
+                return "DRAFT REPORT";
+                }
+
+            return data?.Header?.IsFinalized == true ? "FINAL REPORT" : "DRAFT REPORT";
             }
 
         private static string FormatKarachiTimestamp(DateTime utcNow)
@@ -275,7 +290,7 @@ namespace AIS.Controllers
                     pdfCanvas.SaveState();
                     pdfCanvas.SetExtGState(new PdfExtGState().SetFillOpacity(0.1f));
                     canvas.SetFontColor(ColorConstants.GRAY);
-                    canvas.SetFontSize(70);
+                    canvas.SetFontSize(string.IsNullOrWhiteSpace(_watermarkText.BigWatermarkText) || _watermarkText.BigWatermarkText.Length <= 8 ? 70 : 52);
                     canvas.ShowTextAligned(_watermarkText.BigWatermarkText, pageSize.GetWidth() / 2, pageSize.GetHeight() / 2, TextAlignment.CENTER, VerticalAlignment.MIDDLE, (float)(Math.PI / 4));
                     pdfCanvas.RestoreState();
 

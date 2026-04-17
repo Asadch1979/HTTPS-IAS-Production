@@ -62,6 +62,14 @@
     min-width: 170px;
 }
 
+.commercial-audit-nav-track button.commercial-audit-step-link {
+    width: 100%;
+    cursor: pointer;
+    appearance: none;
+    -webkit-appearance: none;
+    font: inherit;
+}
+
 .commercial-audit-nav-track .commercial-audit-step-link .step-title {
     font-size: 0.9rem;
 }

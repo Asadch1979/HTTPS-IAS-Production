@@ -6,7 +6,6 @@
     var currentStep = workflow.Steps.FirstOrDefault(item => string.Equals(item.StepKey, currentStepKey, System.StringComparison.OrdinalIgnoreCase))
         ?? workflow.Steps.OrderBy(item => item.StepNo).FirstOrDefault();
     var homeUrl = Url.Content("~/Home/Index");
-    var workflowHostPath = ViewData["CommercialAuditHostPath"] as string ?? Context?.Request?.Path.Value ?? Url.Action("workflow", "CAU");
 }
 
 <div class="stepper-wrap sticky-top bg-white py-2 mb-3">
@@ -40,14 +39,15 @@
                 @foreach (var step in workflow.Steps.OrderBy(item => item.StepNo))
                 {
                     var isActive = string.Equals(currentStepKey, step.StepKey, System.StringComparison.OrdinalIgnoreCase);
-                    <a class="commercial-audit-step-link step-pill @(isActive ? "active is-active" : string.Empty)"
-                       href="@(workflowHostPath + "?stepKey=" + System.Uri.EscapeDataString(step.StepKey))"
+                    <button type="button"
+                       class="commercial-audit-step-link step-pill @(isActive ? "active is-active" : string.Empty)"
+                       data-step="@step.StepKey"
                        data-step-key="@step.StepKey"
                        aria-current="@(isActive ? "step" : null)">
                         <div class="step-title">
                             <span class="num">@step.StepNo.ToString("00")</span> @step.Title
                         </div>
-                    </a>
+                    </button>
                 }
             </div>
         </div>

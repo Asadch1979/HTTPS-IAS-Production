@@ -66,6 +66,15 @@
     window.iidAddInqViolation = function (payload) { return iidPostJson('/ApiCalls/AddIidInqViolation', payload); };
     window.iidUpdateInqViolation = function (payload) { return iidPostJson('/ApiCalls/UpdateIidInqViolation', payload); };
     window.iidDeleteInqViolation = function (id, userId) { return iidPostJson('/ApiCalls/DeleteIidInqViolation', { id: id, userId: userId }); };
+    window.iidGetLatestInquiryReportByComplaintId = function (complaintId) {
+        return $.ajax({
+            url: (window.g_asiBaseURL || '') + '/ApiCalls/GetLatestInquiryReportByComplaintId',
+            method: 'POST',
+            data: { complaintId: complaintId },
+            dataType: 'json'
+        });
+    };
+    window.iidSaveInquiryReportNarrative = function (formData) { return iidPost('/ApiCalls/AddInquiryReport', formData, true); };
 
     window.iidGetInqDsa = function (complaintId) { return iidPostJson('/ApiCalls/GetIidInqDsa', { complaintId: complaintId }); };
     window.iidAddInqDsa = function (payload) { return iidPostJson('/ApiCalls/AddIidInqDsa', payload); };
