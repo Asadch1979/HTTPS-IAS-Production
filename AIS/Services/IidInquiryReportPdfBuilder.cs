@@ -12,7 +12,6 @@ namespace AIS.Services
     {
     public class IidInquiryReportPdfBuilder
         {
-        private const string AnnexSeparator = "________________";
         private static readonly Regex HtmlTagPattern = new Regex(@"<\s*/?\s*[a-zA-Z][^>]*>|&lt;\s*/?\s*[a-zA-Z][^&]*&gt;", RegexOptions.Compiled);
 
         public string BuildHtml(IidInquiryReportPdfData data)
@@ -61,12 +60,9 @@ namespace AIS.Services
             sb.AppendLine(".summary-table ul,.summary-table ol{ margin:0; padding-left:18px; }");
             sb.AppendLine(".compact-record{ margin:0 0 8px; }");
             sb.AppendLine(".compact-line{ margin:0 0 4px; }");
-            sb.AppendLine(".compact-separator{ color:#666; letter-spacing:1px; margin:6px 0 8px; }");
             sb.AppendLine(".summary-block{ margin:0 0 10px; }");
             sb.AppendLine(".summary-heading{ font-weight:700; text-decoration:underline; margin:0 0 3px; }");
             sb.AppendLine(".summary-text{ margin:0 0 6px; }");
-            sb.AppendLine(".summary-separator{ color:#666; letter-spacing:1px; margin:4px 0 0; }");
-            sb.AppendLine(".section-separator{ padding-top:8px; color:#666; letter-spacing:1px; }");
             sb.AppendLine(".signature-wrap{ width:100%; padding-top:26px; border-collapse:collapse; }");
             sb.AppendLine(".signature-wrap td{ width:50%; text-align:center; vertical-align:top; padding:0 12px; }");
             sb.AppendLine(".signature-slot{ padding-top:42px; }");
@@ -180,21 +176,14 @@ namespace AIS.Services
                 BuildRecordTables(coAccused, BuildAccusedFields, true));
 
             AppendAnnexSection(sb, "7. Inquiry Proceedings",
-                BuildNarrativeFieldBlocks(
-                    proceedings,
-                    (row, index) => BuildProceedingHeading(row, index),
-                    BuildProceedingFields)
-                ?? BuildParagraphs(data.FinalConclusion?.Proceedings)
+                BuildProceedingsNarrative(proceedings)
                 ?? BuildParagraphs("Nil"));
 
             AppendAnnexSection(sb, "8. Details of Record Scrutinized",
-                BuildNarrativeFieldBlocks(
-                    data.RecordsScrutinized.OrderBy(x => x.SortOrder),
-                    (row, index) => BuildRecordScrutinizedHeading(row, index),
-                    BuildRecordScrutinizedFields)
+                BuildRecordsScrutinizedTable(data.RecordsScrutinized.OrderBy(x => x.SortOrder))
                 ?? BuildParagraphs("Nil"));
 
-            AppendAnnexSection(sb, "9. Time and place of Recording Statement of Complainant",
+            AppendAnnexSection(sb, "9. Statement of Complainant",
                 BuildSummaryTable(
                     complainantStatements,
                     new[] { "Name", "Role", "Date", "Place", "Mode" },
@@ -209,7 +198,7 @@ namespace AIS.Services
                     new[] { "22%", "18%", "20%", "24%", "16%" })
                 ?? BuildParagraphs("Nil"));
 
-            AppendAnnexSection(sb, "10. Time and place of Recording Statement of Accused",
+            AppendAnnexSection(sb, "10. Statement of Accused",
                 BuildSummaryTable(
                     accusedStatements,
                     new[] { "Name", "Role", "Date", "Place", "Mode" },
@@ -224,14 +213,14 @@ namespace AIS.Services
                     new[] { "22%", "18%", "20%", "24%", "16%" })
                 ?? BuildParagraphs("Nil"));
 
-            AppendAnnexSection(sb, "11. Critical Points highlighted in statement of complainant",
+            AppendAnnexSection(sb, "11. Critical Points of Complainant",
                 BuildUnorderedList(
                     complainantStatements
                         .Where(x => HasMeaningfulValue(x.KeyPoints))
                         .Select(x => JoinNonEmpty(": ", x.PersonName, x.KeyPoints)))
                 ?? BuildParagraphs("Nil"));
 
-            AppendAnnexSection(sb, "12. Critical Points highlighted in statement of Accused/Co-accused/Witnesses",
+            AppendAnnexSection(sb, "12. Critical Points of Accused/Co-accused/Witnesses",
                 BuildMatrixTable(
                     new[] { "Sr. No.", "Name of accused/Co-accused/Witness", "Critical points observed" },
                     accusedStatements
@@ -245,41 +234,41 @@ namespace AIS.Services
                     new[] { "10%", "30%", "60%" })
                 ?? BuildParagraphs("Nil"));
 
-            AppendAnnexSection(sb, "13. Details of material evidence",
+            AppendAnnexSection(sb, "13. Material Evidences",
                 !string.IsNullOrWhiteSpace(data.EvidenceSummary?.MaterialEvidenceDetail)
                     ? BuildParagraphs(data.EvidenceSummary.MaterialEvidenceDetail)
                     : BuildNarrativeFieldBlocks(materialEvidence, (row, index) => $"Material Evidence {index}", BuildEvidenceFields)
                 ?? BuildParagraphs("Nil"));
 
-            AppendAnnexSection(sb, "14. Details of circumstantial evidence",
+            AppendAnnexSection(sb, "14. Circumstantial Evidences",
                 !string.IsNullOrWhiteSpace(data.EvidenceSummary?.CircumstantialEvidenceDetail)
                     ? BuildParagraphs(data.EvidenceSummary.CircumstantialEvidenceDetail)
                     : BuildNarrativeFieldBlocks(circumstantialEvidence, (row, index) => $"Circumstantial Evidence {index}", BuildEvidenceFields)
                 ?? BuildParagraphs("Nil"));
 
-            AppendAnnexSection(sb, "15. Detail of findings with implications",
-                BuildNarrativeFieldBlocks(frRows, BuildFindingHeading, row => BuildFindingNarrativeFields(data, row))
-                ?? BuildParagraphs(data.FinalConclusion?.Findings)
+            AppendAnnexSection(sb, "15. Findings with implications",
+                BuildFindingsOnlyBlocks(frRows)
+                ?? BuildParagraphs(StripLeadingCaption(data.FinalConclusion?.Findings, "Finding with implications", "Findings with implications"))
                 ?? BuildParagraphs("Nil"));
 
-            AppendAnnexSection(sb, "16. Details of clear recommendations",
-                BuildNarrativeFieldBlocks(frRows, BuildRecommendationHeading, BuildRecommendationNarrativeFields)
-                ?? BuildParagraphs(data.FinalConclusion?.Recommendation)
+            AppendAnnexSection(sb, "16. Clear Recommendations",
+                BuildRecommendationsOnlyBlocks(frRows)
+                ?? BuildParagraphs(StripLeadingCaption(data.FinalConclusion?.Recommendation, "Clear recommendations", "Details of clear recommendations"))
                 ?? BuildParagraphs("Nil"));
 
             AppendAnnexSection(sb, "17. Conclusion",
                 BuildParagraphs(data.FinalConclusion?.Conclusion)
                 ?? BuildParagraphs("Nil"));
 
-            AppendAnnexSection(sb, "18. Whether the matter has been reported in audit report",
+            AppendAnnexSection(sb, "18. Whether reported in audit report",
                 BuildAuditReportSection(data.FinalConclusion)
-                ?? BuildParagraphs("Not reported"));
+                ?? BuildParagraphs("Nil"));
 
-            AppendAnnexSection(sb, "19. Root Cause of incident",
+            AppendAnnexSection(sb, "19. Root Cause",
                 BuildParagraphs(data.FinalConclusion?.RootCause)
                 ?? BuildParagraphs("Nil"));
 
-            AppendAnnexSection(sb, "20. Name with PP.No. of accused against whom DSAs framed",
+            AppendAnnexSection(sb, "20. DSA section",
                 BuildMatrixTable(
                     new[] { "PP.No.", "Name & designation of accused", "Allegations", "Reference of policy / SOP / circular violation" },
                     data.DsaFiles
@@ -334,7 +323,6 @@ namespace AIS.Services
 
             sb.AppendLine("</tbody></table>");
             sb.AppendLine("</div>");
-            sb.AppendFormat(CultureInfo.InvariantCulture, "<div class='section-separator'>{0}</div>", AnnexSeparator).AppendLine();
             sb.AppendLine("</div>");
             sb.AppendLine("</section>");
             }
@@ -349,7 +337,6 @@ namespace AIS.Services
             sb.AppendLine("<div class='annex-section'>");
             sb.AppendFormat(CultureInfo.InvariantCulture, "<div class='annex-label'>{0}</div>", Encode(title)).AppendLine();
             sb.AppendFormat(CultureInfo.InvariantCulture, "<div class='annex-body'>{0}</div>", bodyHtml).AppendLine();
-            sb.AppendFormat(CultureInfo.InvariantCulture, "<div class='section-separator'>{0}</div>", AnnexSeparator).AppendLine();
             sb.AppendLine("</div>");
             }
 
@@ -534,7 +521,7 @@ namespace AIS.Services
                 return blocks[0];
                 }
 
-            return string.Join("<div class='compact-separator'>___________</div>", blocks);
+            return string.Join(string.Empty, blocks);
             }
 
         private static string BuildSummaryTable<T>(IEnumerable<T> rows, IReadOnlyList<string> headers, IReadOnlyList<Func<T, string>> valueSelectors, IReadOnlyList<string> widths = null)
@@ -602,6 +589,61 @@ namespace AIS.Services
 
             sb.AppendLine("</tbody></table>");
             return sb.ToString();
+            }
+
+        private static string BuildProceedingsNarrative(IEnumerable<IidInquiryProceedingRowModel> rows)
+            {
+            var items = (rows ?? Enumerable.Empty<IidInquiryProceedingRowModel>())
+                .Where(row => row != null && (
+                    HasMeaningfulValue(row.NoticeReference)
+                    || row.VisitDate.HasValue
+                    || HasMeaningfulValue(row.PlaceVisited)
+                    || HasMeaningfulValue(row.ParticipantsDetail)
+                    || HasMeaningfulValue(row.MissingParticipantsReason)))
+                .ToList();
+
+            if (!items.Any())
+                {
+                return null;
+                }
+
+            var blocks = items
+                .Select(row => BuildCompactFieldBlock(new[]
+                    {
+                    BuildField("Notice Reference", HasMeaningfulValue(row.NoticeReference) ? row.NoticeReference : "Nil"),
+                    BuildField("Visit Date", row.VisitDate.HasValue ? FormatDate(row.VisitDate) : "Nil"),
+                    BuildField("Place Visited", HasMeaningfulValue(row.PlaceVisited) ? row.PlaceVisited : "Nil"),
+                    BuildField("Participants Detail", HasMeaningfulValue(row.ParticipantsDetail) ? row.ParticipantsDetail : "Nil"),
+                    BuildField("Missing Participants Reason", HasMeaningfulValue(row.MissingParticipantsReason) ? row.MissingParticipantsReason : "Nil")
+                    }))
+                .Where(block => !string.IsNullOrWhiteSpace(block))
+                .ToList();
+
+            return blocks.Any() ? string.Join(string.Empty, blocks) : null;
+            }
+
+        private static string BuildRecordsScrutinizedTable(IEnumerable<IidRecordScrutinizedRowModel> rows)
+            {
+            var items = (rows ?? Enumerable.Empty<IidRecordScrutinizedRowModel>())
+                .Where(row => row != null && (
+                    HasMeaningfulValue(row.RecordTitle)
+                    || HasMeaningfulValue(row.RecordDetails)))
+                .ToList();
+
+            if (!items.Any())
+                {
+                return null;
+                }
+
+            return BuildMatrixTable(
+                new[] { "Sr. No.", "Record Title", "Details" },
+                items.Select((row, index) => (IReadOnlyList<string>)new[]
+                    {
+                    (index + 1).ToString(CultureInfo.InvariantCulture),
+                    row.RecordTitle,
+                    row.RecordDetails
+                    }),
+                new[] { "10%", "30%", "60%" });
             }
 
         private static string BuildMatrixTable(IReadOnlyList<string> headers, IEnumerable<IReadOnlyList<string>> rows, IReadOnlyList<string> widths = null)
@@ -697,7 +739,7 @@ namespace AIS.Services
                         ToParagraphs(field.Value));
                     }
 
-                block.Append("<div class='summary-separator'>___________</div></div>");
+                block.Append("</div>");
                 blocks.Add(block.ToString());
                 }
 
@@ -759,9 +801,7 @@ namespace AIS.Services
                 return $"<div class='annex-paragraph'>{ToParagraphs(items[0])}</div>";
                 }
 
-            return string.Join(
-                "<div class='compact-separator'>___________</div>",
-                items.Select(x => $"<div class='annex-paragraph'>{ToParagraphs(x)}</div>"));
+            return string.Join(string.Empty, items.Select(x => $"<div class='annex-paragraph'>{ToParagraphs(x)}</div>"));
             }
 
         private static string BuildViolationSummaryBlocks(IEnumerable<IidFindingRecommendationRowModel> rows)
@@ -780,7 +820,7 @@ namespace AIS.Services
                 {
                 blocks.Add(string.Format(
                     CultureInfo.InvariantCulture,
-                    "<div class='summary-block'><div class='summary-heading'>Allegation:</div><div class='summary-text'>{0}</div><div class='summary-heading'>Finding:</div><div class='summary-text'>{1}</div><div class='summary-heading'>Outcome:</div><div class='summary-text'>{2}</div><div class='summary-separator'>___________</div></div>",
+                    "<div class='summary-block'><div class='summary-heading'>Allegation:</div><div class='summary-text'>{0}</div><div class='summary-heading'>Finding:</div><div class='summary-text'>{1}</div><div class='summary-heading'>Outcome:</div><div class='summary-text'>{2}</div></div>",
                     ToParagraphs(row.AccusationText),
                     ToParagraphs(row.FindingText),
                     ToParagraphs(row.Outcome)));
@@ -943,6 +983,49 @@ namespace AIS.Services
             yield return BuildField("Last updated on", row.UpdatedOn.HasValue ? FormatDate(row.UpdatedOn) : null);
             }
 
+        private static string BuildFindingsOnlyBlocks(IEnumerable<IidFindingRecommendationRowModel> rows)
+            {
+            var items = (rows ?? Enumerable.Empty<IidFindingRecommendationRowModel>())
+                .Where(row => row != null && HasMeaningfulValue(row.FindingText))
+                .Select(row => StripLeadingCaption(row.FindingText, "Finding with implications", "Findings with implications"))
+                .Where(HasMeaningfulValue)
+                .ToList();
+
+            return BuildRomanOrderedList(items);
+            }
+
+        private static string BuildRecommendationsOnlyBlocks(IEnumerable<IidFindingRecommendationRowModel> rows)
+            {
+            var items = (rows ?? Enumerable.Empty<IidFindingRecommendationRowModel>())
+                .Where(row => row != null && HasMeaningfulValue(row.RecommendationText))
+                .Select(row => StripLeadingCaption(row.RecommendationText, "Clear recommendations", "Details of clear recommendations"))
+                .Where(HasMeaningfulValue)
+                .ToList();
+
+            return BuildRomanOrderedList(items);
+            }
+
+        private static string BuildRomanOrderedList(IEnumerable<string> values)
+            {
+            var items = (values ?? Enumerable.Empty<string>())
+                .Select(NormalizeNarrativeValue)
+                .Where(x => !string.IsNullOrWhiteSpace(x))
+                .ToList();
+            if (!items.Any())
+                {
+                return null;
+                }
+
+            var sb = new StringBuilder("<ol style='list-style-type:lower-roman;'>");
+            foreach (var item in items)
+                {
+                sb.AppendFormat(CultureInfo.InvariantCulture, "<li>{0}</li>", ToParagraphs(item));
+                }
+
+            sb.Append("</ol>");
+            return sb.ToString();
+            }
+
         private static IEnumerable<KeyValuePair<string, string>> BuildRecommendationNarrativeFields(IidFindingRecommendationRowModel row)
             {
             if (row == null)
@@ -1005,17 +1088,38 @@ namespace AIS.Services
                 }
 
             var reportedInAuditReport = NormalizeYesNoValue(model.ReportedInAuditReport);
-            var body = new List<string>
-                {
-                BuildPair("Reported in audit report", string.IsNullOrWhiteSpace(reportedInAuditReport) ? "Not reported" : reportedInAuditReport)
-                };
-
             if (string.Equals(reportedInAuditReport, "Yes", StringComparison.OrdinalIgnoreCase))
                 {
-                body.Add(BuildPair("Audit-report reference section", model.AuditReportReferenceDetail));
+                return BuildParagraphs("Yes", model.AuditReportReferenceDetail);
                 }
 
-            return BuildParagraphs(body.ToArray());
+            if (string.Equals(reportedInAuditReport, "No", StringComparison.OrdinalIgnoreCase))
+                {
+                return BuildParagraphs("No");
+                }
+
+            return BuildParagraphs("Nil");
+            }
+
+        private static string StripLeadingCaption(string value, params string[] captions)
+            {
+            var normalized = NormalizeNarrativeValue(value);
+            if (string.IsNullOrWhiteSpace(normalized) || captions == null || captions.Length == 0)
+                {
+                return normalized;
+                }
+
+            var result = normalized;
+            foreach (var caption in captions.Where(x => !string.IsNullOrWhiteSpace(x)))
+                {
+                result = Regex.Replace(
+                    result,
+                    @"^\s*" + Regex.Escape(caption) + @"\s*[:\-]?\s*",
+                    string.Empty,
+                    RegexOptions.IgnoreCase);
+                }
+
+            return result;
             }
 
         private static string FindViolationReferenceForAccusation(IidInquiryReportPdfData data, IidFindingRecommendationRowModel row)

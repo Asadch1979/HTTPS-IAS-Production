@@ -53,6 +53,7 @@ namespace AIS.Controllers
         private readonly PasswordPolicyValidator _passwordPolicyValidator;
         private readonly IStaticAssetVersionTokenProvider _staticAssetVersionTokenProvider;
         private static readonly Regex AlphaNumericWithSpacesRegex = new Regex("^[A-Za-z0-9 &]+$", RegexOptions.Compiled);
+        private static readonly Regex RichTextTagRegex = new Regex("<.*?>", RegexOptions.Compiled | RegexOptions.Singleline);
 
         public ApiCallsController(
             ILogger<ApiCallsController> logger,
@@ -140,21 +141,36 @@ namespace AIS.Controllers
             catch (DatabaseUnavailableException ex)
                 {
                 _logger.LogError(ex, "Commercial Audit request failed because the database is unavailable.");
+                var detail = ResolveCommercialAuditFailureMessage(ex, failureMessage);
                 return StatusCode(StatusCodes.Status503ServiceUnavailable, new
                     {
                     ok = false,
-                    message = "Commercial Audit data is unavailable right now. Please try again."
+                    message = detail,
+                    detail
                     });
                 }
             catch (Exception ex)
                 {
-                _logger.LogError(ex, "Commercial Audit request failed.");
+                var detail = ResolveCommercialAuditFailureMessage(ex, failureMessage);
+                _logger.LogError(ex, "Commercial Audit request failed. Detail: {Detail}", detail);
                 return StatusCode(StatusCodes.Status500InternalServerError, new
                     {
                     ok = false,
-                    message = failureMessage
+                    message = detail,
+                    detail
                     });
                 }
+            }
+
+        private static string ResolveCommercialAuditFailureMessage(Exception ex, string fallbackMessage)
+            {
+            var detail = ex?.GetBaseException()?.Message;
+            if (string.IsNullOrWhiteSpace(detail))
+                {
+                detail = ex?.Message;
+                }
+
+            return string.IsNullOrWhiteSpace(detail) ? fallbackMessage : detail.Trim();
             }
 
         private string SaveUploadFile(IFormFile file)
@@ -207,22 +223,35 @@ namespace AIS.Controllers
             return DBConnection.CreateFromHttpContext(_httpContextAccessor, _configuration, sessionHandler, _tokenService);
             }
 
-        private IActionResult InvalidModelStateResponse()
+        private IActionResult InvalidModelStateResponse(string message = "Invalid request")
             {
             var endpointName = ControllerContext?.ActionDescriptor?.DisplayName ?? "Unknown";
             var errors = ValidationErrorHelper.BuildModelErrors(ModelState);
             ValidationErrorHelper.LogValidationErrors(_logger, endpointName, ModelState);
             HttpContext.Items["AjaxModelErrors"] = errors;
-            return BadRequest(ValidationErrorHelper.BuildInvalidRequestResponse(ModelState));
+            return BadRequest(ValidationErrorHelper.BuildInvalidRequestResponse(ModelState, message));
             }
 
-        private IActionResult InvalidRequestResponse(string field, string error)
+        private IActionResult InvalidRequestResponse(string field, string error, string message = "Invalid request")
             {
             var endpointName = ControllerContext?.ActionDescriptor?.DisplayName ?? "Unknown";
-            var response = ValidationErrorHelper.BuildInvalidRequestResponse(field, error);
+            var response = ValidationErrorHelper.BuildInvalidRequestResponse(field, error, message);
             _logger.LogWarning("Validation failed for {Endpoint}. Errors: {@Errors}", endpointName, response.Errors);
             HttpContext.Items["AjaxModelErrors"] = response.Errors;
             return BadRequest(response);
+            }
+
+        private static bool HasMeaningfulRichTextContent(string html)
+            {
+            if (string.IsNullOrWhiteSpace(html))
+                {
+                return false;
+                }
+
+            var withoutTags = RichTextTagRegex.Replace(html, " ");
+            var decoded = System.Net.WebUtility.HtmlDecode(withoutTags) ?? string.Empty;
+            var normalized = decoded.Replace('\u00A0', ' ').Trim();
+            return !string.IsNullOrWhiteSpace(normalized);
             }
 
         private JsonResult LegacyMessageResponse(string message, string fallbackMessage)
@@ -1935,6 +1964,19 @@ namespace AIS.Controllers
             {
             return ExecuteCommercialAuditRequest(() =>
                 {
+                if (model == null)
+                    {
+                    if (!ModelState.IsValid)
+                        {
+                        return InvalidModelStateResponse("Model binding failed");
+                        }
+
+                    return InvalidRequestResponse(
+                        "request",
+                        "Model binding failed. Ensure the request body is valid JSON matching CommercialAuditOmModel.",
+                        "Model binding failed");
+                    }
+
                 var validationResult = ValidateCommercialAuditOm(model);
                 if (validationResult != null)
                     {
@@ -6870,7 +6912,15 @@ namespace AIS.Controllers
             {
             if (model == null)
                 {
-                return InvalidRequestResponse("request", "Invalid data supplied.");
+                if (!ModelState.IsValid)
+                    {
+                    return InvalidModelStateResponse("Model binding failed");
+                    }
+
+                return InvalidRequestResponse(
+                    "request",
+                    "Model binding failed. Ensure the request body is valid JSON matching CommercialAuditOmModel.",
+                    "Model binding failed");
                 }
 
             if (!ModelState.IsValid)
@@ -6878,9 +6928,28 @@ namespace AIS.Controllers
                 return InvalidModelStateResponse();
                 }
 
+            model.OmNo = model.OmNo?.Trim();
+            model.GistOfOm = model.GistOfOm?.Trim();
+            model.IsActive = string.IsNullOrWhiteSpace(model.IsActive) ? "Y" : model.IsActive.Trim();
+
             if (!model.AuditYearId.HasValue || model.AuditYearId <= 0)
                 {
                 return InvalidRequestResponse("AuditYearId", "Audit Year is required.");
+                }
+
+            if (string.IsNullOrWhiteSpace(model.OmNo))
+                {
+                return InvalidRequestResponse("OmNo", "OM No is required.");
+                }
+
+            if (string.IsNullOrWhiteSpace(model.GistOfOm))
+                {
+                return InvalidRequestResponse("GistOfOm", "Gist of OM is required.");
+                }
+
+            if (!HasMeaningfulRichTextContent(model.BodyOfOm))
+                {
+                return InvalidRequestResponse("BodyOfOm", "Body of OM is required.");
                 }
 
             return null;

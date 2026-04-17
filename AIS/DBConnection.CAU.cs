@@ -8,8 +8,21 @@ using System.Linq;
 
 namespace AIS.Controllers
     {
-    public partial class DBConnection
+        public partial class DBConnection
         {
+        private void TryLogCommercialAuditSaveFailure(string action, string message, Exception ex, string userPpno)
+            {
+            try
+                {
+                var detail = ex?.GetBaseException()?.Message ?? ex?.Message ?? "Unknown save failure.";
+                LogError("CommercialAudit", nameof(DBConnection), action, message, detail, null, null, userPpno);
+                }
+            catch
+                {
+                // Best-effort logging only; never hide the original save exception.
+                }
+            }
+
         private static DateTime? SafeReadNullableDate(OracleDataReader reader, string columnName)
             {
             if (reader == null || string.IsNullOrWhiteSpace(columnName))
@@ -126,28 +139,42 @@ namespace AIS.Controllers
 
             using (var con = this.DatabaseConnection())
                 {
-                using (var cmd = con.CreateCommand())
+                try
                     {
-                    cmd.CommandText = "PKG_COMMERCIAL_AUDIT.P_SAVE_OM";
-                    cmd.CommandType = CommandType.StoredProcedure;
-                    cmd.Parameters.Clear();
+                    using (var cmd = con.CreateCommand())
+                        {
+                        cmd.CommandText = "PKG_COMMERCIAL_AUDIT.P_SAVE_OM";
+                        cmd.CommandType = CommandType.StoredProcedure;
+                        cmd.BindByName = true;
+                        cmd.Parameters.Clear();
 
-                    AddNullableIntParameter(cmd, "P_OM_ID", model?.OmId);
-                    AddNullableIntParameter(cmd, "P_AUDIT_YEAR_ID", model?.AuditYearId);
-                    cmd.Parameters.Add("P_OM_NO", OracleDbType.Varchar2).Value = model?.OmNo ?? string.Empty;
-                    cmd.Parameters.Add("P_GIST_OF_OM", OracleDbType.Varchar2).Value = model?.GistOfOm ?? string.Empty;
-                    cmd.Parameters.Add("P_BODY_OF_OM", OracleDbType.Clob).Value = model?.BodyOfOm ?? string.Empty;
-                    cmd.Parameters.Add("P_MANAGEMENT_RESPONSE", OracleDbType.Clob).Value = model?.ManagementResponse ?? string.Empty;
-                    cmd.Parameters.Add("P_IS_ACTIVE", OracleDbType.Varchar2).Value = NormalizeActiveFlag(model?.IsActive);
-                    cmd.Parameters.Add("P_USER_PPNO", OracleDbType.Int32).Value = Convert.ToInt32(loggedInUser.PPNumber);
-                    cmd.Parameters.Add("P_USER_ROLE_ID", OracleDbType.Int32).Value = loggedInUser.UserRoleID;
-                    cmd.Parameters.Add("P_USER_ENTITY_ID", OracleDbType.Int32).Value = loggedInUser.UserEntityID.GetValueOrDefault();
-                    cmd.Parameters.Add("P_STATUS", OracleDbType.Varchar2, 30).Direction = ParameterDirection.Output;
-                    cmd.Parameters.Add("P_MESSAGE", OracleDbType.Varchar2, 4000).Direction = ParameterDirection.Output;
-                    cmd.Parameters.Add("P_ID", OracleDbType.Int32).Direction = ParameterDirection.Output;
+                        AddNullableIntParameter(cmd, "P_OM_ID", model?.OmId);
+                        AddNullableIntParameter(cmd, "P_AUDIT_YEAR_ID", model?.AuditYearId);
+                        cmd.Parameters.Add("P_OM_NO", OracleDbType.Varchar2).Value = model?.OmNo ?? string.Empty;
+                        cmd.Parameters.Add("P_GIST_OF_OM", OracleDbType.Varchar2).Value = model?.GistOfOm ?? string.Empty;
+                        cmd.Parameters.Add("P_BODY_OF_OM", OracleDbType.Clob).Value = model?.BodyOfOm ?? string.Empty;
+                        cmd.Parameters.Add("P_MANAGEMENT_RESPONSE", OracleDbType.Clob).Value = model?.ManagementResponse ?? string.Empty;
+                        cmd.Parameters.Add("P_IS_ACTIVE", OracleDbType.Varchar2).Value = NormalizeActiveFlag(model?.IsActive);
+                        cmd.Parameters.Add("P_USER_PPNO", OracleDbType.Int32).Value = Convert.ToInt32(loggedInUser.PPNumber);
+                        cmd.Parameters.Add("P_USER_ROLE_ID", OracleDbType.Int32).Value = loggedInUser.UserRoleID;
+                        cmd.Parameters.Add("P_USER_ENTITY_ID", OracleDbType.Int32).Value = loggedInUser.UserEntityID.GetValueOrDefault();
+                        cmd.Parameters.Add("P_STATUS", OracleDbType.Varchar2, 30).Direction = ParameterDirection.Output;
+                        cmd.Parameters.Add("P_MESSAGE", OracleDbType.Varchar2, 4000).Direction = ParameterDirection.Output;
+                        cmd.Parameters.Add("P_ID", OracleDbType.Int32).Direction = ParameterDirection.Output;
 
-                    cmd.ExecuteNonQuery();
-                    return BuildCommercialAuditActionResult(cmd);
+                        cmd.ExecuteNonQuery();
+                        return BuildCommercialAuditActionResult(cmd);
+                        }
+                    }
+                catch (OracleException ex)
+                    {
+                    TryLogCommercialAuditSaveFailure(nameof(SaveCommercialAuditOm), "Commercial Audit OM save failed at database layer.", ex, loggedInUser.PPNumber);
+                    throw;
+                    }
+                catch (Exception ex)
+                    {
+                    TryLogCommercialAuditSaveFailure(nameof(SaveCommercialAuditOm), "Commercial Audit OM save failed before completion.", ex, loggedInUser.PPNumber);
+                    throw;
                     }
                 }
             }

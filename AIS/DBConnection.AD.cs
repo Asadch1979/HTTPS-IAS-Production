@@ -228,10 +228,10 @@ namespace AIS.Controllers
                     cmd.CommandText = "pkg_ad.P_Group_Update";
                     cmd.CommandType = CommandType.StoredProcedure;
                     cmd.Parameters.Clear();
-                    cmd.Parameters.Add("GROUPID", OracleDbType.Varchar2).Value = gm.GROUP_ID;
-                    cmd.Parameters.Add("GROUP_DESCRIPTION", OracleDbType.Varchar2).Value = gm.GROUP_DESCRIPTION;
-                    cmd.Parameters.Add("GROUP_NAME", OracleDbType.Varchar2).Value = gm.GROUP_NAME;
-                    cmd.Parameters.Add("ISACTIVE", OracleDbType.Varchar2).Value = gm.ISACTIVE;
+                    cmd.Parameters.Add("P_GROUPID", OracleDbType.Varchar2).Value = gm.GROUP_ID;
+                    cmd.Parameters.Add("P_GROUP_DESCRIPTION", OracleDbType.Varchar2).Value = gm.GROUP_DESCRIPTION;
+                    cmd.Parameters.Add("P_GROUP_NAME", OracleDbType.Varchar2).Value = gm.GROUP_NAME;
+                    cmd.Parameters.Add("P_ISACTIVE", OracleDbType.Varchar2).Value = gm.ISACTIVE;
                     cmd.Parameters.Add("P_NO", OracleDbType.Int32).Value = loggedInUser.PPNumber;
                     cmd.Parameters.Add("ENT_ID", OracleDbType.Int32).Value = loggedInUser.UserEntityID;
                     cmd.Parameters.Add("R_ID", OracleDbType.Int32).Value = loggedInUser.UserRoleID;

@@ -436,6 +436,8 @@ function saveCommercialAuditOm() {
         return;
     }
 
+    console.debug("Commercial Audit OM save payload", model);
+
     $.ajax({
         url: g_asiBaseURL + "/ApiCalls/save_commercial_audit_om",
         type: "POST",
@@ -453,6 +455,11 @@ function saveCommercialAuditOm() {
             showApiAlert(data, wasEdit ? "OM updated successfully." : "OM saved successfully.");
         },
         error: function (xhr) {
+            console.error("Commercial Audit OM save failed", {
+                status: xhr ? xhr.status : null,
+                responseJSON: xhr ? xhr.responseJSON : null,
+                responseText: xhr ? xhr.responseText : null
+            });
             showApiAlertFromXhr(xhr, xhr ? xhr.status : null, getErrorReferenceIdFromXhr(xhr), "Unable to save OM.");
         }
     });

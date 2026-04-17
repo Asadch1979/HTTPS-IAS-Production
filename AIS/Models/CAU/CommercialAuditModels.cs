@@ -56,14 +56,14 @@ namespace AIS.Models.CAU
         [PlainText]
         public string OmNo { get; set; }
         [Required]
-        [MaxLength(500)]
+        [MaxLength(1000)]
         [PlainText]
         public string GistOfOm { get; set; }
         [Required]
-        [MaxLength(4000)]
+        
         [RichTextSanitize]
         public string BodyOfOm { get; set; }
-        [MaxLength(4000)]
+        
         [RichTextSanitize]
         public string ManagementResponse { get; set; }
         [PlainText]
@@ -86,13 +86,13 @@ namespace AIS.Models.CAU
         [PlainText]
         public string GistOfPdp { get; set; }
         [Required]
-        [MaxLength(4000)]
+        
         [RichTextSanitize]
         public string BodyOfPdp { get; set; }
-        [MaxLength(4000)]
+        
         [RichTextSanitize]
         public string ManagementResponse { get; set; }
-        [MaxLength(4000)]
+        
         [RichTextSanitize]
         public string DacRecommendations { get; set; }
         [MaxLength(200)]
@@ -142,7 +142,7 @@ namespace AIS.Models.CAU
         [MaxLength(500)]
         [PlainText]
         public string GistOfPara { get; set; }
-        [MaxLength(4000)]
+        
         [RichTextSanitize]
         public string ManagementResponse { get; set; }
         [PlainText]
@@ -155,7 +155,7 @@ namespace AIS.Models.CAU
         [Required]
         public int? ArpseId { get; set; }
         [Required]
-        [MaxLength(4000)]
+        
         [RichTextSanitize]
         public string DacRecommendation { get; set; }
         public DateTime? DacDate { get; set; }
@@ -172,7 +172,7 @@ namespace AIS.Models.CAU
         [Required]
         public int? ArpseId { get; set; }
         [Required]
-        [MaxLength(4000)]
+        
         [RichTextSanitize]
         public string PacDirective { get; set; }
         public DateTime? PacDate { get; set; }
