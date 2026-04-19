@@ -1,26 +1,165 @@
-@model AIS.Models.IID.AnalysisModel
 @{
     ViewData["Title"] = "Analysis";
-    ViewData["IidReportMode"] = "analysis";
     var dashboardMode = ViewData["DashboardMode"] as bool? == true;
     Layout = dashboardMode ? null : "_Layout";
+    var complaintId = (int?)ViewData["ComplaintId"] ?? 0;
 }
 
-@await Html.PartialAsync("_InquiryReportWorkspace")
+<div class="container-fluid mt-3" id="iidAnalysisRoot" data-complaint-id="@complaintId" data-dashboard-mode="@(dashboardMode ? "true" : "false")">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h4 class="text-success mb-0">Analysis</h4>
+        <div class="d-flex gap-2">
+            @if (!dashboardMode)
+            {
+                <a class="btn btn-outline-secondary" href="@Url.Action("MonitoringDashboard", "IID")">Back</a>
+            }
+            <button type="button" id="btnGenerateInquiryPdf" class="btn btn-danger">Generate PDF</button>
+            <button type="button" id="btnRegenerateInquiryPdf" class="btn btn-outline-danger">Regenerate PDF</button>
+            <button type="button" id="btnViewInquiryPdf" class="btn btn-outline-primary">View Existing PDF</button>
+        </div>
+    </div>
+
+    <div id="iidAnalysisAlertHost"></div>
+
+    @if (!dashboardMode)
+    {
+        <div class="card shadow-sm mb-3">
+            <div class="card-body">
+                <div class="row g-3 align-items-center">
+                    <div class="col-md-2">
+                        <label for="ddlInquiryComplaint" class="form-label mb-0"><strong>Inquiry:</strong></label>
+                    </div>
+                    <div class="col-md-7">
+                        <select id="ddlInquiryComplaint" class="form-select">
+                            <option value="0">--Select Inquiry--</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+
+    <div class="card shadow-sm mb-3">
+        <div class="card-header bg-light"><strong>Complaint Summary</strong></div>
+        <div class="card-body">
+            <div class="row g-3" id="summaryGrid"></div>
+        </div>
+    </div>
+
+    <div class="card shadow-sm mb-3">
+        <div class="card-header bg-light"><strong>Accused &amp; Accusations</strong></div>
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-lg-6">
+                    <h6>Accused List</h6>
+                    <div class="table-responsive">
+                        <table class="table table-sm table-bordered" id="tblAccused"><thead><tr><th>Name</th><th>Designation</th><th>PP No</th></tr></thead><tbody></tbody></table>
+                    </div>
+                </div>
+                <div class="col-lg-6">
+                    <h6>Accusations</h6>
+                    <div class="table-responsive">
+                        <table class="table table-sm table-bordered" id="tblAccusations"><thead><tr><th>Accusation</th></tr></thead><tbody></tbody></table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card shadow-sm mb-3">
+        <div class="card-header bg-light"><strong>Records Scrutinized</strong></div>
+        <div class="card-body table-responsive">
+            <table class="table table-sm table-bordered" id="tblRecords"><thead><tr><th>Record Title</th><th>Details</th></tr></thead><tbody></tbody></table>
+        </div>
+    </div>
+
+    <div class="card shadow-sm mb-3">
+        <div class="card-header bg-light"><strong>Inquiry Proceedings</strong></div>
+        <div class="card-body table-responsive">
+            <table class="table table-sm table-bordered" id="tblProceedings"><thead><tr><th>Notice Reference</th><th>Visit Date</th><th>Place Visited</th><th>Participants</th><th>Missing Participants / Reasons</th></tr></thead><tbody></tbody></table>
+        </div>
+    </div>
+
+    <div class="card shadow-sm mb-3">
+        <div class="card-header bg-light"><strong>Statement Register</strong></div>
+        <div class="card-body table-responsive">
+            <table class="table table-sm table-bordered" id="tblStatements"><thead><tr><th>Name</th><th>Role</th><th>Date</th><th>Mode</th><th>Key Points</th></tr></thead><tbody></tbody></table>
+        </div>
+    </div>
+
+    <div class="card shadow-sm mb-3">
+        <div class="card-header bg-light"><strong>Evidence Files</strong></div>
+        <div class="card-body table-responsive">
+            <div class="row g-3 mb-3">
+                <div class="col-md-6">
+                    <div class="text-muted small">Detail of Material evidences</div>
+                    <div id="txtMaterialEvidenceDetail" class="border rounded p-2 bg-light"></div>
+                </div>
+                <div class="col-md-6">
+                    <div class="text-muted small">Details of circumstantial evidences</div>
+                    <div id="txtCircumstantialEvidenceDetail" class="border rounded p-2 bg-light"></div>
+                </div>
+            </div>
+            <table class="table table-sm table-bordered" id="tblEvidence"><thead><tr><th>File</th><th>Type</th><th>Uploaded On</th></tr></thead><tbody></tbody></table>
+        </div>
+    </div>
+
+    <div class="card shadow-sm mb-3">
+        <div class="card-header bg-light"><strong>Violations</strong></div>
+        <div class="card-body table-responsive">
+            <table class="table table-sm table-bordered" id="tblViolations"><thead><tr><th>Category</th><th>Detail</th><th>Reference</th><th>Recommendation</th></tr></thead><tbody></tbody></table>
+        </div>
+    </div>
+
+    <div class="card shadow-sm mb-3">
+        <div class="card-header bg-light"><strong>DSA List</strong></div>
+        <div class="card-body table-responsive">
+            <table class="table table-sm table-bordered" id="tblDsa"><thead><tr><th>Person</th><th>Designation</th><th>PP No</th><th>Status</th></tr></thead><tbody></tbody></table>
+        </div>
+    </div>
+
+    <div class="card shadow-sm mb-3">
+        <div class="card-header bg-light"><strong>Inquiry Report Narrative</strong></div>
+        <div class="card-body">
+            <div class="mb-3"><div class="text-muted small">Proceedings</div><div id="txtProceedings" class="border rounded p-2 bg-light"></div></div>
+            <div class="mb-3"><div class="text-muted small">Findings</div><div id="txtFindings" class="border rounded p-2 bg-light"></div></div>
+            <div class="mb-3"><div class="text-muted small">Recommendation</div><div id="txtRecommendation" class="border rounded p-2 bg-light"></div></div>
+            <div class="mb-3"><div class="text-muted small">Root Cause</div><div id="txtRootCause" class="border rounded p-2 bg-light"></div></div>
+            <div class="mb-3"><div class="text-muted small">Reported in Audit Report?</div><div id="txtReportedInAuditReport" class="border rounded p-2 bg-light"></div></div>
+            <div class="mb-0" id="auditReportReferenceDetailWrap">
+                <div class="text-muted small">Audit-report reference section</div>
+                <div id="txtAuditReportReferenceDetail" class="border rounded p-2 bg-light"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card shadow-sm mb-3">
+        <div class="card-header bg-light"><strong>Final Approvals / Comments</strong></div>
+        <div class="card-body table-responsive">
+            <table class="table table-sm table-bordered" id="tblApprovals"><thead><tr><th>Stage</th><th>By</th><th>Comments</th><th>Date</th></tr></thead><tbody></tbody></table>
+        </div>
+    </div>
+
+    <div class="card shadow-sm mb-3">
+        <div class="card-header bg-light"><strong>Finalize Report</strong></div>
+        <div class="card-body">
+            <div id="finalizeStatusText" class="text-muted mb-3">Loading finalization status...</div>
+            <div class="d-flex justify-content-end">
+                <button type="button" id="btnFinalizeInquiryReport" class="btn btn-success">Finalize Report</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@await Html.PartialAsync("_InquiryReport_PrintTemplate")
 
 @if (dashboardMode)
 {
-    <script src="~/js/csp/Views_IID_InquiryReport.js" asp-append-version="true"></script>
-    <script src="~/js/iid/inquiryReportApi.js" asp-append-version="true"></script>
-    <script src="~/js/iid/complaintDetails.js" asp-append-version="true"></script>
-    <script src="~/lib/tinymce/tinymce.min.js" asp-append-version="true"></script>
+<script src="~/js/iid/inquiryReportAnalysis.js" asp-append-version="true"></script>
 }
 else
 {
-@section Scripts {
-    <script src="~/js/csp/Views_IID_InquiryReport.js" asp-append-version="true"></script>
-    <script src="~/js/iid/inquiryReportApi.js" asp-append-version="true"></script>
-    <script src="~/js/iid/complaintDetails.js" asp-append-version="true"></script>
-    <script src="~/lib/tinymce/tinymce.min.js" asp-append-version="true"></script>
+@section Scripts{
+<script src="~/js/iid/inquiryReportAnalysis.js" asp-append-version="true"></script>
 }
 }

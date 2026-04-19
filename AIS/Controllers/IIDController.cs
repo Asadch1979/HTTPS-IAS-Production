@@ -152,6 +152,7 @@ namespace AIS.Controllers
                     return PartialView("../IID/InquiryReport", new InquiryReportModel());
 
                 case "ANALYSIS":
+                    ViewData["ComplaintId"] = complaintId;
                     ViewData["ReportId"] = ResolveReportIdByComplaintId(complaintId);
                     return PartialView("../IID/Analysis", new AnalysisModel());
 
@@ -183,126 +184,37 @@ namespace AIS.Controllers
         [HttpGet]
         public IActionResult FFR_PART1(int complaintId = 0)
             {
-            ViewData["TopMenu"] = tm.GetTopMenus();
-            ViewData["TopMenuPages"] = tm.GetTopMenusPages();
-            if (!User.Identity.IsAuthenticated)
-                return RedirectToAction("Index", "Login");
-            ViewData["RegionList"] = dBConnection.GetRBHList(0);
-            var model = new FFRPart1Model { ComplaintId = complaintId };
-            if (complaintId > 0)
-                {
-                var dt = dBConnection.GetFFRPart1(complaintId);
-                model = MapFfrPart1(dt) ?? model;
-                }
-            return View("../IID/FFR_PART1", model);
+            return RedirectToAction(nameof(InquiryReport), new { complaintId });
             }
 
         [HttpPost]
         public IActionResult FFR_PART1(FFRPart1Model model)
             {
-            ViewData["TopMenu"] = tm.GetTopMenus();
-            ViewData["TopMenuPages"] = tm.GetTopMenusPages();
-            if (!User.Identity.IsAuthenticated)
-                return RedirectToAction("Index", "Login");
-            ViewData["RegionList"] = dBConnection.GetRBHList(0);
-
-            if (model.ComplaintId == 0)
-                {
-                var (complaintId, _) = dBConnection.CreateComplaintHeader("FFR");
-                model.ComplaintId = complaintId;
-                }
-
-            if (model.Attachments?.Any() == true)
-                {
-                var attachmentNames = new List<string>();
-                foreach (var file in model.Attachments)
-                    {
-                    var savedFile = SaveUploadFile(file);
-                    if (!string.IsNullOrEmpty(savedFile))
-                        {
-                        attachmentNames.Add(savedFile);
-                        }
-                    }
-                model.AttachmentsPath = string.Join(";", attachmentNames);
-                }
-
-            if (model.ComplaintId > 0)
-                {
-                dBConnection.SaveFFRPart1(model, model.ComplaintId);
-                return RedirectToAction("FFR_PART2", new { complaintId = model.ComplaintId });
-                }
-
-            return View("../IID/FFR_PART1", model);
+            return RedirectToAction(nameof(InquiryReport), new { complaintId = model?.ComplaintId ?? 0 });
             }
 
         [HttpGet]
         public IActionResult FFR_PART2(int complaintId = 0)
             {
-            ViewData["TopMenu"] = tm.GetTopMenus();
-            ViewData["TopMenuPages"] = tm.GetTopMenusPages();
-            if (!User.Identity.IsAuthenticated)
-                return RedirectToAction("Index", "Login");
-            ViewData["RegionList"] = dBConnection.GetRBHList(0);
-            var model = new FFRPart2Model { ComplaintId = complaintId };
-            if (complaintId > 0)
-                {
-                var dt = dBConnection.GetFFRPart2(complaintId);
-                model = MapFfrPart2(dt) ?? model;
-                }
-            return View("../IID/FFR_PART2", model);
+            return RedirectToAction(nameof(InquiryReport), new { complaintId });
             }
 
         [HttpPost]
         public IActionResult FFR_PART2(FFRPart2Model model)
             {
-            ViewData["TopMenu"] = tm.GetTopMenus();
-            ViewData["TopMenuPages"] = tm.GetTopMenusPages();
-            if (!User.Identity.IsAuthenticated)
-                return RedirectToAction("Index", "Login");
-            ViewData["RegionList"] = dBConnection.GetRBHList(0);
-
-            if (model.ComplaintId > 0)
-                {
-                dBConnection.SaveFFRPart2(model, model.ComplaintId);
-                return RedirectToAction("FFR_PART3", new { complaintId = model.ComplaintId });
-                }
-
-            return RedirectToAction("FFR_PART1");
+            return RedirectToAction(nameof(InquiryReport), new { complaintId = model?.ComplaintId ?? 0 });
             }
 
         [HttpGet]
         public IActionResult FFR_PART3(int complaintId = 0)
             {
-            ViewData["TopMenu"] = tm.GetTopMenus();
-            ViewData["TopMenuPages"] = tm.GetTopMenusPages();
-            if (!User.Identity.IsAuthenticated)
-                return RedirectToAction("Index", "Login");
-            ViewData["RegionList"] = dBConnection.GetRBHList(0);
-            var model = new FFRPart3Model { ComplaintId = complaintId };
-            if (complaintId > 0)
-                {
-                var dt = dBConnection.GetFFRPart3(complaintId);
-                model = MapFfrPart3(dt) ?? model;
-                }
-            return View("../IID/FFR_PART3", model);
+            return RedirectToAction(nameof(InquiryReport), new { complaintId });
             }
 
         [HttpPost]
         public IActionResult FFR_PART3(FFRPart3Model model)
             {
-            ViewData["TopMenu"] = tm.GetTopMenus();
-            ViewData["TopMenuPages"] = tm.GetTopMenusPages();
-            if (!User.Identity.IsAuthenticated)
-                return RedirectToAction("Index", "Login");
-            ViewData["RegionList"] = dBConnection.GetRBHList(0);
-
-            if (model.ComplaintId > 0)
-                {
-                dBConnection.SaveFFRPart3(model, model.ComplaintId);
-                return RedirectToAction("TaskList");
-                }
-
-            return RedirectToAction("FFR_PART1");
+            return RedirectToAction(nameof(InquiryReport), new { complaintId = model?.ComplaintId ?? 0 });
             }
 
         [HttpGet, HttpPost]
@@ -364,13 +276,24 @@ namespace AIS.Controllers
             }
 
         [HttpGet, HttpPost]
-        public IActionResult Analysis(int reportId)
+        public IActionResult Analysis(int reportId = 0, int complaintId = 0)
             {
             ViewData["TopMenu"] = tm.GetTopMenus();
             ViewData["TopMenuPages"] = tm.GetTopMenusPages();
             if (!User.Identity.IsAuthenticated)
                 return RedirectToAction("Index", "Login");
-            ViewData["ComplaintId"] = dBConnection.GetComplaintIdByReportId(reportId) ?? 0;
+
+            if (complaintId <= 0 && reportId > 0)
+                {
+                complaintId = dBConnection.GetComplaintIdByReportId(reportId) ?? 0;
+                }
+
+            if (reportId <= 0 && complaintId > 0)
+                {
+                reportId = ResolveReportIdByComplaintId(complaintId);
+                }
+
+            ViewData["ComplaintId"] = complaintId;
             ViewData["ReportId"] = reportId;
             return View("../IID/Analysis");
             }

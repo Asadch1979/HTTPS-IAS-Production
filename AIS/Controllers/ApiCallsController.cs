@@ -6538,7 +6538,9 @@ namespace AIS.Controllers
                         source = complaint.ReceivedFrom,
                         unitName = complaint.AssignedUnit,
                         status = complaint.Status,
-                        complainantName = complaint.ComplainantName
+                        complainantName = complaint.ComplainantName,
+                        finalizeState = dBConnection.GetIidComplaintFinalizeState(complaintId),
+                        isFinalized = dBConnection.IsIidComplaintFinalized(complaintId)
                         },
                     accusations = dBConnection.GetIidInqAccusationsByComplaintId(complaintId),
                     accused = dBConnection.GetIidInqAccusedListByComplaintId(complaintId),
