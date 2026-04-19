@@ -1,11 +1,21 @@
 @{
-    ViewData["Title"] = "Exception Report Setup";
+    ViewData["Title"] = "IID Exception Report Setup";
     Layout = "_Layout";
+    var engId = (int?)ViewData["EngId"] ?? 0;
+    var complaintId = (int?)ViewData["ComplaintId"] ?? 0;
 }
 
 <link rel="stylesheet" href="~/css/sampling.css" />
 
 <div class="container-fluid mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <h4 class="mb-1">IID Exception Report Setup</h4>
+            <small class="text-muted">Create new exception reports and maintain their format definitions for IID.</small>
+        </div>
+        <a class="btn btn-outline-secondary" href="@Url.Action("Exceptions_Reports", "IID", new { engId, complaintId })">Back to Reports</a>
+    </div>
+
     <div class="card card-sample shadow-sm mb-4">
         <div class="card-header">
             <h4 class="mb-0">Exception Report Setup</h4>
@@ -26,7 +36,6 @@
                             <label for="reportName" class="form-label">Report Name <small class="text-muted">(A-Z, 0-9, space, &amp;, ?)</small></label>
                             <input id="reportName" type="text" class="form-control alnum-only" maxlength="100" pattern="^[A-Za-z0-9 &,?]+$" title="Enter only Alphabets (A-Z), numbers (0-9), spaces, ampersand (&amp;), comma (,), and question mark (?)" data-allow-amp="true" data-allow-question="true" required placeholder="Report name (Alphabets, numbers, spaces, ampersand (&amp;), comma (,), and question mark (?) only)" />
                             <small class="form-text text-muted">Enter only Alphabets (A-Z), numbers (0-9), spaces, ampersand (&amp;), comma (,), and question mark (?).</small>
-                       
                         </div>
 
                         <div class="mb-3">
@@ -48,7 +57,7 @@
                                 @{
                                     if (ViewData["LoanStatusList"] != null)
                                     {
-                                        foreach (var st in (dynamic)(ViewData["LoanStatusList"]))
+                                        foreach (var st in (dynamic)ViewData["LoanStatusList"])
                                         {
                                             <option value="@st.CODE">@st.NAME</option>
                                         }
@@ -176,4 +185,4 @@
     </div>
 </div>
 
-<script src="~/js/csp/Views_Sampling_add_report.js?v=3"></script>
+<script src="~/js/csp/Views_IID_Add_Exception_Reports.js" asp-append-version="true"></script>

@@ -1,5 +1,6 @@
 using AIS.Models;
 using AIS.Models.IID;
+using AIS.Models.SM;
 using AIS.Services;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
@@ -11,7 +12,6 @@ using iText.Layout;
 using iText.Layout.Element;
 using System;
 using System.Collections.Generic;
-using System.Data;
 using System.IO;
 using System.Linq;
 
@@ -181,42 +181,6 @@ namespace AIS.Controllers
                 }
             }
 
-        [HttpGet]
-        public IActionResult FFR_PART1(int complaintId = 0)
-            {
-            return RedirectToAction(nameof(InquiryReport), new { complaintId });
-            }
-
-        [HttpPost]
-        public IActionResult FFR_PART1(FFRPart1Model model)
-            {
-            return RedirectToAction(nameof(InquiryReport), new { complaintId = model?.ComplaintId ?? 0 });
-            }
-
-        [HttpGet]
-        public IActionResult FFR_PART2(int complaintId = 0)
-            {
-            return RedirectToAction(nameof(InquiryReport), new { complaintId });
-            }
-
-        [HttpPost]
-        public IActionResult FFR_PART2(FFRPart2Model model)
-            {
-            return RedirectToAction(nameof(InquiryReport), new { complaintId = model?.ComplaintId ?? 0 });
-            }
-
-        [HttpGet]
-        public IActionResult FFR_PART3(int complaintId = 0)
-            {
-            return RedirectToAction(nameof(InquiryReport), new { complaintId });
-            }
-
-        [HttpPost]
-        public IActionResult FFR_PART3(FFRPart3Model model)
-            {
-            return RedirectToAction(nameof(InquiryReport), new { complaintId = model?.ComplaintId ?? 0 });
-            }
-
         [HttpGet, HttpPost]
         public IActionResult InitialAssessment(int complaintId)
             {
@@ -343,6 +307,21 @@ namespace AIS.Controllers
             ViewData["ComplaintId"] = complaintId ?? engId ?? 0;
             ViewData["EngId"] = engId ?? complaintId ?? 0;
             return View("../IID/Exceptions_Reports");
+            }
+
+        [HttpGet, HttpPost]
+        public IActionResult Add_Exception_Reports(int? engId = null, int? complaintId = null, int? reportId = null)
+            {
+            ViewData["TopMenu"] = tm.GetTopMenus();
+            ViewData["TopMenuPages"] = tm.GetTopMenusPages();
+            if (!User.Identity.IsAuthenticated)
+                return RedirectToAction("Index", "Login");
+            ViewData["ComplaintId"] = complaintId ?? engId ?? 0;
+            ViewData["EngId"] = engId ?? complaintId ?? 0;
+            ViewData["ReportId"] = reportId ?? 0;
+            ViewData["LoanStatusList"] = dBConnection.GetLoanStatus();
+            ViewBag.AllowedColumns = ExceptionReportFormatModel.AllowedColumnNames;
+            return View("../IID/Add_Exception_Reports");
             }
 
         [HttpGet, HttpPost]
@@ -741,189 +720,5 @@ namespace AIS.Controllers
                 }
             }
 
-        private static FFRPart1Model MapFfrPart1(DataTable dt)
-            {
-            if (dt == null || dt.Rows.Count == 0)
-                {
-                return null;
-                }
-
-            var row = dt.Rows[0];
-            var model = new FFRPart1Model
-                {
-                ComplaintId = GetInt(row, "COMPLAINT_ID"),
-                Source = GetString(row, "ORIGINATING_DEPT_SOURCE"),
-                Nature = GetString(row, "NATURE"),
-                ReferenceNo = GetString(row, "REFERENCE_NO"),
-                FFRDate = GetDateValue(row, "FFR_DATE"),
-                IncidentDate = GetDateValue(row, "INCIDENT_DATE"),
-                IncidentVenue = GetString(row, "INCIDENT_VENUE"),
-                IncidentNarrative = GetString(row, "INCIDENT_HOW"),
-                ComplainantName = GetString(row, "COMPLAINANT_NAME"),
-                ComplainantCNIC = GetString(row, "COMPLAINANT_CNIC"),
-                AccountNo = GetString(row, "COMPLAINANT_ACCOUNT_NO"),
-                ComplainantMobile = GetString(row, "COMPLAINANT_MOBILE"),
-                ComplainantAddress = GetString(row, "COMPLAINANT_ADDRESS"),
-                MainAccused = GetString(row, "MAIN_ACCUSED_DETAILS"),
-                CoAccused = GetString(row, "CO_ACCUSED_DETAILS"),
-                Accusations = GetString(row, "ACCUSATION_DETAILS"),
-                ApproachAdopted = GetString(row, "APPROACH_ADOPTED"),
-                RecordScrutinized = GetString(row, "RECORD_SCRUTINIZED"),
-                RootCause = GetString(row, "ROOT_CAUSE"),
-                KeyFindings = GetString(row, "KEY_FINDINGS"),
-                ClearRecommendations = GetString(row, "RECOMMENDATIONS"),
-                AttachmentsPath = GetString(row, "ATTACHMENTS_PATH")
-                };
-
-            var locationTypeId = GetInt(row, "LOCATION_TYPE_ID");
-            var gmOfficeId = GetNullableInt(row, "GM_OFFICE_ID");
-            var regionId = GetNullableInt(row, "REGION_ID");
-            var branchId = GetNullableInt(row, "BRANCH_ID");
-            ApplyLocationDetails(model, locationTypeId, gmOfficeId, regionId, branchId);
-
-            return model;
-            }
-
-        private static FFRPart2Model MapFfrPart2(DataTable dt)
-            {
-            if (dt == null || dt.Rows.Count == 0)
-                {
-                return null;
-                }
-
-            var row = dt.Rows[0];
-            return new FFRPart2Model
-                {
-                ComplaintId = GetInt(row, "COMPLAINT_ID"),
-                ComplainantStatementTime = GetString(row, "COMP_STMT_TIME"),
-                ComplainantStatementPlace = GetString(row, "COMP_STMT_PLACE"),
-                ComplainantStatementMode = GetString(row, "COMP_STMT_MODE"),
-                ComplainantStatementPoints = GetString(row, "COMPLAINANT_KEY_POINTS"),
-                AccusedStatementTime = GetString(row, "ACC_STMT_TIME"),
-                AccusedStatementPlace = GetString(row, "ACC_STMT_PLACE"),
-                AccusedStatementMode = GetString(row, "ACC_STMT_MODE"),
-                AccusedStatementPoints = GetString(row, "ACCUSED_KEY_POINTS"),
-                PrimaryEvidence = GetString(row, "PRIMARY_EVIDENCE"),
-                SecondaryEvidence = GetString(row, "SECONDARY_EVIDENCE")
-                };
-            }
-
-        private static FFRPart3Model MapFfrPart3(DataTable dt)
-            {
-            if (dt == null || dt.Rows.Count == 0)
-                {
-                return null;
-                }
-
-            var row = dt.Rows[0];
-            var auditFlag = GetString(row, "AUDIT_REPORT_FLAG");
-            return new FFRPart3Model
-                {
-                ComplaintId = GetInt(row, "COMPLAINT_ID"),
-                AuditHighlighted = NormalizeAuditFlag(auditFlag),
-                AuditHighlightDetails = GetString(row, "AUDIT_REPORT_DETAILS"),
-                ImplicationReputational = GetFlag(row, "IMPL_REPUTATIONAL_LOSS"),
-                ImplicationOperational = GetFlag(row, "IMPL_OPERATIONAL_RISK"),
-                ImplicationFinancial = GetFlag(row, "IMPL_FINANCIAL_RISK"),
-                ImplicationPrecedence = GetFlag(row, "IMPL_PRECEDENCE"),
-                ImplicationOther = GetFlag(row, "IMPL_OTHER_FLAG"),
-                ImplicationOtherDetails = GetString(row, "IMPL_OTHER_TEXT"),
-                PolicyViolated = GetString(row, "SOP_VIOLATIONS"),
-                SopGaps = GetString(row, "CONTROL_GAPS"),
-                ActionRecommended = GetString(row, "ACTION_RECOMMENDED")
-                };
-            }
-
-        private static string GetString(DataRow row, string columnName)
-            {
-            if (!row.Table.Columns.Contains(columnName) || row[columnName] == DBNull.Value)
-                {
-                return null;
-                }
-            return row[columnName].ToString();
-            }
-
-        private static int GetInt(DataRow row, string columnName)
-            {
-            if (!row.Table.Columns.Contains(columnName) || row[columnName] == DBNull.Value)
-                {
-                return 0;
-                }
-            return Convert.ToInt32(row[columnName]);
-            }
-
-        private static int? GetNullableInt(DataRow row, string columnName)
-            {
-            if (!row.Table.Columns.Contains(columnName) || row[columnName] == DBNull.Value)
-                {
-                return null;
-                }
-            return Convert.ToInt32(row[columnName]);
-            }
-
-        private static string GetDateValue(DataRow row, string columnName)
-            {
-            if (!row.Table.Columns.Contains(columnName) || row[columnName] == DBNull.Value)
-                {
-                return null;
-                }
-            var value = row[columnName];
-            if (value is DateTime dateTime)
-                {
-                return dateTime.ToString("yyyy-MM-dd");
-                }
-            if (DateTime.TryParse(value.ToString(), out var parsed))
-                {
-                return parsed.ToString("yyyy-MM-dd");
-                }
-            return value.ToString();
-            }
-
-        private static bool GetFlag(DataRow row, string columnName)
-            {
-            var value = GetString(row, columnName);
-            return string.Equals(value, "Y", StringComparison.OrdinalIgnoreCase);
-            }
-
-        private static void ApplyLocationDetails(FFRPart1Model model, int locationTypeId, int? gmOfficeId, int? regionId, int? branchId)
-            {
-            if (locationTypeId == 1)
-                {
-                model.PertainsTo = "HO";
-                return;
-                }
-
-            if (locationTypeId == 2)
-                {
-                model.PertainsTo = "FIELD";
-                model.FieldType = "HO_UNIT";
-                model.HOUnitId = gmOfficeId;
-                return;
-                }
-
-            if (locationTypeId == 3)
-                {
-                model.PertainsTo = "FIELD";
-                model.FieldType = "BRANCH";
-                model.RegionId = regionId;
-                model.BranchId = branchId;
-                }
-            }
-
-        private static string NormalizeAuditFlag(string auditFlag)
-            {
-            if (string.IsNullOrWhiteSpace(auditFlag))
-                {
-                return string.Empty;
-                }
-            var normalized = auditFlag.Trim().ToUpperInvariant();
-            return normalized switch
-                {
-                "YES" => "Yes",
-                "NO" => "No",
-                "NA" => "NA",
-                _ => auditFlag
-                };
-            }
         }
     }

@@ -68,6 +68,138 @@ namespace AIS.Controllers
             return list;
             }
 
+        public string AddIidExceptionAccountReport(string indicator, int reportId, string reportTitle, string description, string type, int loanStatusId)
+            {
+            var sessionHandler = CreateSessionHandler();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
+                || string.IsNullOrWhiteSpace(loggedInUser.PPNumber)
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return string.Empty;
+                }
+
+            using var con = this.DatabaseConnection();
+            using var cmd = con.CreateCommand();
+            cmd.CommandText = "pkg_ISM.P_ADD_NEW_EXP_REPORT";
+            cmd.CommandType = CommandType.StoredProcedure;
+            cmd.BindByName = true;
+            cmd.Parameters.Clear();
+            cmd.Parameters.Add("P_IND", OracleDbType.Varchar2).Value = indicator ?? string.Empty;
+            cmd.Parameters.Add("P_REPORT_ID", OracleDbType.Int32).Value = reportId;
+            cmd.Parameters.Add("P_REPORT_TITLE", OracleDbType.Varchar2).Value = reportTitle ?? string.Empty;
+            cmd.Parameters.Add("P_DESCRIPTION", OracleDbType.Varchar2).Value = description ?? string.Empty;
+            cmd.Parameters.Add("P_R_TYPE", OracleDbType.Varchar2).Value = type ?? string.Empty;
+            cmd.Parameters.Add("P_L_STATUS", OracleDbType.Int32).Value = loanStatusId;
+            cmd.Parameters.Add("P_P_NO", OracleDbType.Int32).Value = loggedInUser.PPNumber;
+            cmd.Parameters.Add("P_R_ID", OracleDbType.Int32).Value = loggedInUser.UserRoleID;
+            cmd.Parameters.Add("P_ENT_ID", OracleDbType.Int32).Value = loggedInUser.UserEntityID;
+            cmd.Parameters.Add("IO_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+
+            using var reader = cmd.ExecuteReader();
+            return reader.Read() ? reader["REMARKS"]?.ToString() ?? string.Empty : string.Empty;
+            }
+
+        public List<ExceptionReportFormatModel> GetIidExceptionReportFormat(long reportId)
+            {
+            var list = new List<ExceptionReportFormatModel>();
+
+            using var con = this.DatabaseConnection();
+            using var cmd = con.CreateCommand();
+            cmd.CommandText = "pkg_ISM.P_GET_EXCEPTION_REPORT_FORMAT";
+            cmd.CommandType = CommandType.StoredProcedure;
+            cmd.BindByName = true;
+            cmd.Parameters.Add("P_R_ID", OracleDbType.Int64).Value = reportId;
+            cmd.Parameters.Add("IO_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+
+            using var reader = cmd.ExecuteReader();
+            while (reader.Read())
+                {
+                list.Add(new ExceptionReportFormatModel
+                    {
+                    FormatId = reader["FORMAT_ID"] == DBNull.Value ? 0 : Convert.ToInt64(reader["FORMAT_ID"]),
+                    ReportId = reader["R_ID"] == DBNull.Value ? 0 : Convert.ToInt64(reader["R_ID"]),
+                    ColumnName = reader["COLUMN_NAME"]?.ToString(),
+                    ColumnHeader = reader["COLUMN_HEADER"]?.ToString(),
+                    DataType = reader["DATA_TYPE"]?.ToString(),
+                    ColumnOrder = reader["COLUMN_ORDER"] == DBNull.Value ? 0 : Convert.ToInt32(reader["COLUMN_ORDER"]),
+                    IsActive = reader["IS_ACTIVE"]?.ToString()
+                    });
+                }
+
+            return list;
+            }
+
+        public string InsertIidExceptionReportFormat(ExceptionReportFormatModel model)
+            {
+            var sessionHandler = CreateSessionHandler();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
+                || string.IsNullOrWhiteSpace(loggedInUser.PPNumber)
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return string.Empty;
+                }
+
+            using var con = this.DatabaseConnection();
+            using var cmd = con.CreateCommand();
+            cmd.CommandText = "pkg_ISM.P_INSERT_EXCEPTION_REPORT_FORMAT";
+            cmd.CommandType = CommandType.StoredProcedure;
+            cmd.BindByName = true;
+            cmd.Parameters.Add("P_R_ID", OracleDbType.Int64).Value = model.ReportId ?? (object)DBNull.Value;
+            cmd.Parameters.Add("P_COLUMN_NAME", OracleDbType.Varchar2).Value = model.ColumnName ?? string.Empty;
+            cmd.Parameters.Add("P_COLUMN_HEADER", OracleDbType.Varchar2).Value = model.ColumnHeader ?? string.Empty;
+            cmd.Parameters.Add("P_COLUMN_ORDER", OracleDbType.Int32).Value = model.ColumnOrder ?? (object)DBNull.Value;
+            cmd.Parameters.Add("P_DATA_TYPE", OracleDbType.Varchar2).Value = model.DataType ?? string.Empty;
+            cmd.Parameters.Add("P_IS_ACTIVE", OracleDbType.Varchar2).Value = model.IsActive ?? "Y";
+            cmd.Parameters.Add("P_P_NO", OracleDbType.Int32).Value = loggedInUser.PPNumber;
+            cmd.Parameters.Add("O_FORMAT_ID", OracleDbType.Int64).Direction = ParameterDirection.Output;
+            cmd.ExecuteNonQuery();
+
+            var outputValue = cmd.Parameters["O_FORMAT_ID"].Value;
+            long newId = 0;
+            if (outputValue is Oracle.ManagedDataAccess.Types.OracleDecimal oracleDecimal)
+                {
+                newId = oracleDecimal.IsNull ? 0 : oracleDecimal.ToInt64();
+                }
+            else if (outputValue != null && outputValue != DBNull.Value)
+                {
+                newId = Convert.ToInt64(outputValue);
+                }
+
+            return newId.ToString();
+            }
+
+        public string UpdateIidExceptionReportFormat(ExceptionReportFormatModel model)
+            {
+            var sessionHandler = CreateSessionHandler();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
+                || string.IsNullOrWhiteSpace(loggedInUser.PPNumber)
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return string.Empty;
+                }
+
+            using var con = this.DatabaseConnection();
+            using var cmd = con.CreateCommand();
+            cmd.CommandText = "pkg_ISM.P_UPDATE_EXCEPTION_REPORT_FORMAT";
+            cmd.CommandType = CommandType.StoredProcedure;
+            cmd.BindByName = true;
+            cmd.Parameters.Add("P_FORMAT_ID", OracleDbType.Int64).Value = model.FormatId ?? (object)DBNull.Value;
+            cmd.Parameters.Add("P_COLUMN_HEADER", OracleDbType.Varchar2).Value = model.ColumnHeader ?? string.Empty;
+            cmd.Parameters.Add("P_COLUMN_ORDER", OracleDbType.Int32).Value = model.ColumnOrder ?? (object)DBNull.Value;
+            cmd.Parameters.Add("P_DATA_TYPE", OracleDbType.Varchar2).Value = model.DataType ?? string.Empty;
+            cmd.Parameters.Add("P_IS_ACTIVE", OracleDbType.Varchar2).Value = model.IsActive ?? "Y";
+            cmd.Parameters.Add("P_P_NO", OracleDbType.Int32).Value = loggedInUser.PPNumber;
+            cmd.ExecuteNonQuery();
+
+            return "success";
+            }
+
         public DynamicReportResult GetIidExceptionReportData(long reportId, long engId)
             {
             var result = new DynamicReportResult();

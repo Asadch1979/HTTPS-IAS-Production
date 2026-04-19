@@ -20,6 +20,15 @@ $(document).ready(function () {
         viewSample(reportId, loanStatus, indicator, title, desc);
     });
 
+    $("#btnOpenIidExceptionReportSetup").on("click", function () {
+        window.location.href = buildIidExceptionSetupUrl();
+    });
+
+    $(document).off("click.iidExceptionReports", ".js-iid-edit-report").on("click.iidExceptionReports", ".js-iid-edit-report", function () {
+        var reportId = $(this).data("report-id");
+        window.location.href = buildIidExceptionSetupUrl(reportId);
+    });
+
     listSamples();
 });
 
@@ -49,7 +58,7 @@ function htmlEncode(value) {
 function listSamples() {
     if (!g_iidEngID) {
         destroyDatatable("listOfSamples");
-        $("#listOfSamples tbody").html('<tr><td colspan="5" class="text-center text-muted">Select a complaint to view exception reports.</td></tr>');
+        $("#listOfSamples tbody").html('<tr><td colspan="6" class="text-center text-muted">Select a complaint to view exception reports.</td></tr>');
         return;
     }
 
@@ -65,12 +74,12 @@ function listSamples() {
                 populateTable(data);
             } else {
                 destroyDatatable("listOfSamples");
-                $("#listOfSamples tbody").html('<tr><td colspan="5" class="text-center">No data found.</td></tr>');
+                $("#listOfSamples tbody").html('<tr><td colspan="6" class="text-center">No data found.</td></tr>');
             }
         },
         error: function () {
             destroyDatatable("listOfSamples");
-            $("#listOfSamples tbody").html('<tr><td colspan="5" class="text-center text-danger">Failed to load reports.</td></tr>');
+            $("#listOfSamples tbody").html('<tr><td colspan="6" class="text-center text-danger">Failed to load reports.</td></tr>');
         },
         dataType: "json"
     });
@@ -105,6 +114,12 @@ function populateTable(data) {
                     'View' +
                 '</button>' +
             '</td>' +
+            '<td class="text-center">' +
+                '<button type="button" class="btn btn-primary btn-sm js-iid-edit-report"' +
+                    ' data-report-id="' + htmlEncode(reportId) + '">' +
+                    'Manage' +
+                '</button>' +
+            '</td>' +
             '</tr>';
 
         tableBody.append(row);
@@ -128,5 +143,20 @@ function redirectToAccount(reportId, loanStatus, title, desc) {
 
 function redirectToLoan(reportId, loanStatus, title, desc) {
     window.location.href = g_asiBaseURL + "/IID/loans_exception?engId=" + encodeURIComponent(g_iidEngID) + "&report_id=" + encodeURIComponent(reportId || 0) + "&loan_status=" + encodeURIComponent(loanStatus || 0) + "&title=" + encodeURIComponent(title || "") + "&desc=" + encodeURIComponent(desc || "");
+}
+
+function buildIidExceptionSetupUrl(reportId) {
+    var url = g_asiBaseURL + "/IID/Add_Exception_Reports";
+    var queryParts = [];
+
+    if (g_iidEngID > 0) {
+        queryParts.push("engId=" + encodeURIComponent(g_iidEngID));
+    }
+
+    if (reportId) {
+        queryParts.push("reportId=" + encodeURIComponent(reportId));
+    }
+
+    return queryParts.length > 0 ? url + "?" + queryParts.join("&") : url;
 }
 

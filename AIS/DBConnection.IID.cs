@@ -194,111 +194,6 @@ namespace AIS.Controllers
                 }
             }
 
-        public void SaveFFRPart1(FFRPart1Model model, int complaintId)
-            {
-            var (locationTypeId, gmOfficeId, regionId, branchId) = DeriveLocationValues(
-                model.PertainsTo,
-                model.FieldType,
-                model.HOUnitId,
-                model.RegionId,
-                model.BranchId);
-            var originatingSource = model.Source;
-            if (string.Equals(model.Source, "Other", StringComparison.OrdinalIgnoreCase)
-                && !string.IsNullOrWhiteSpace(model.SourceOtherText))
-                {
-                originatingSource = model.SourceOtherText;
-                }
-            var ffrDate = ParseDate(model.FFRDate);
-            var incidentDate = ParseDate(model.IncidentDate);
-            using var con = this.DatabaseConnection();
-
-            using (OracleCommand cmd = con.CreateCommand())
-                {
-                cmd.CommandText = "PKG_INQ.P_SAVE_FFR_P1";
-                LogIidSaveDebug("PKG_INQ.P_SAVE_FFR_P1", $"ComplaintId={complaintId}, Source={model?.Source}, Nature={model?.Nature}, AttachmentsLength={(model?.AttachmentsPath ?? string.Empty).Length}");
-                cmd.CommandType = CommandType.StoredProcedure;
-                cmd.BindByName = true;
-                cmd.Parameters.Add("P_COMPLAINT_ID", OracleDbType.Int32).Value = complaintId;
-                cmd.Parameters.Add("P_LOCATION_TYPE_ID", OracleDbType.Int32).Value = locationTypeId;
-                cmd.Parameters.Add("P_GM_OFFICE_ID", OracleDbType.Int32).Value = gmOfficeId.HasValue && gmOfficeId > 0 ? gmOfficeId : DBNull.Value;
-                cmd.Parameters.Add("P_REGION_ID", OracleDbType.Int32).Value = regionId.HasValue && regionId > 0 ? regionId : DBNull.Value;
-                cmd.Parameters.Add("P_BRANCH_ID", OracleDbType.Int32).Value = branchId.HasValue && branchId > 0 ? branchId : DBNull.Value;
-                cmd.Parameters.Add("P_ORIG_DEPT_SOURCE", OracleDbType.Varchar2).Value = originatingSource ?? string.Empty;
-                cmd.Parameters.Add("P_NATURE", OracleDbType.Varchar2).Value = model.Nature ?? string.Empty;
-                cmd.Parameters.Add("P_REFERENCE_NO", OracleDbType.Varchar2).Value = model.ReferenceNo ?? string.Empty;
-                cmd.Parameters.Add("P_FFR_DATE", OracleDbType.Date).Value = (object?)ffrDate ?? DBNull.Value;
-                cmd.Parameters.Add("P_INCIDENT_DATE", OracleDbType.Date).Value = (object?)incidentDate ?? DBNull.Value;
-                cmd.Parameters.Add("P_INCIDENT_VENUE", OracleDbType.Varchar2).Value = model.IncidentVenue ?? string.Empty;
-                cmd.Parameters.Add("P_INCIDENT_HOW", OracleDbType.Clob).Value = model.IncidentNarrative ?? string.Empty;
-                cmd.Parameters.Add("P_COMPLAINANT_NAME", OracleDbType.Varchar2).Value = model.ComplainantName ?? string.Empty;
-                cmd.Parameters.Add("P_COMPLAINANT_CNIC", OracleDbType.Varchar2).Value = model.ComplainantCNIC ?? string.Empty;
-                cmd.Parameters.Add("P_COMPLAINANT_ACCOUNT_NO", OracleDbType.Varchar2).Value = model.AccountNo ?? string.Empty;
-                cmd.Parameters.Add("P_COMPLAINANT_MOBILE", OracleDbType.Varchar2).Value = model.ComplainantMobile ?? string.Empty;
-                cmd.Parameters.Add("P_COMPLAINANT_ADDRESS", OracleDbType.Varchar2).Value = model.ComplainantAddress ?? string.Empty;
-                cmd.Parameters.Add("P_MAIN_ACCUSED_DETAILS", OracleDbType.Clob).Value = model.MainAccused ?? string.Empty;
-                cmd.Parameters.Add("P_CO_ACCUSED_DETAILS", OracleDbType.Clob).Value = model.CoAccused ?? string.Empty;
-                cmd.Parameters.Add("P_ACCUSATION_DETAILS", OracleDbType.Clob).Value = model.Accusations ?? string.Empty;
-                cmd.Parameters.Add("P_APPROACH_ADOPTED", OracleDbType.Clob).Value = model.ApproachAdopted ?? string.Empty;
-                cmd.Parameters.Add("P_RECORD_SCRUTINIZED", OracleDbType.Clob).Value = model.RecordScrutinized ?? string.Empty;
-                cmd.Parameters.Add("P_ROOT_CAUSE", OracleDbType.Clob).Value = model.RootCause ?? string.Empty;
-                cmd.Parameters.Add("P_KEY_FINDINGS", OracleDbType.Clob).Value = model.KeyFindings ?? string.Empty;
-                cmd.Parameters.Add("P_RECOMMENDATIONS", OracleDbType.Clob).Value = model.ClearRecommendations ?? string.Empty;
-                cmd.Parameters.Add("P_ATTACHMENTS_PATH", OracleDbType.Varchar2).Value = model.AttachmentsPath ?? string.Empty;
-                cmd.ExecuteNonQuery();
-                }
-            }
-
-        public void SaveFFRPart2(FFRPart2Model model, int complaintId)
-            {
-            using var con = this.DatabaseConnection();
-
-            using (OracleCommand cmd = con.CreateCommand())
-                {
-                cmd.CommandText = "PKG_INQ.P_SAVE_FFR_P2";
-                LogIidSaveDebug("PKG_INQ.P_SAVE_FFR_P2", $"ComplaintId={complaintId}, ComplainantStatementTime={model?.ComplainantStatementTime}, PrimaryEvidenceLength={(model?.PrimaryEvidence ?? string.Empty).Length}");
-                cmd.CommandType = CommandType.StoredProcedure;
-                cmd.BindByName = true;
-                cmd.Parameters.Add("P_COMPLAINT_ID", OracleDbType.Int32).Value = complaintId;
-                cmd.Parameters.Add("P_COMP_STMT_TIME", OracleDbType.Varchar2).Value = model.ComplainantStatementTime ?? string.Empty;
-                cmd.Parameters.Add("P_COMP_STMT_PLACE", OracleDbType.Varchar2).Value = model.ComplainantStatementPlace ?? string.Empty;
-                cmd.Parameters.Add("P_COMP_STMT_MODE", OracleDbType.Varchar2).Value = model.ComplainantStatementMode ?? string.Empty;
-                cmd.Parameters.Add("P_COMP_KEY_POINTS", OracleDbType.Clob).Value = model.ComplainantStatementPoints ?? string.Empty;
-                cmd.Parameters.Add("P_ACC_STMT_TIME", OracleDbType.Varchar2).Value = model.AccusedStatementTime ?? string.Empty;
-                cmd.Parameters.Add("P_ACC_STMT_PLACE", OracleDbType.Varchar2).Value = model.AccusedStatementPlace ?? string.Empty;
-                cmd.Parameters.Add("P_ACC_STMT_MODE", OracleDbType.Varchar2).Value = model.AccusedStatementMode ?? string.Empty;
-                cmd.Parameters.Add("P_ACC_KEY_POINTS", OracleDbType.Clob).Value = model.AccusedStatementPoints ?? string.Empty;
-                cmd.Parameters.Add("P_PRIMARY_EVIDENCE", OracleDbType.Clob).Value = model.PrimaryEvidence ?? string.Empty;
-                cmd.Parameters.Add("P_SECONDARY_EVIDENCE", OracleDbType.Clob).Value = model.SecondaryEvidence ?? string.Empty;
-                cmd.ExecuteNonQuery();
-                }
-            }
-
-        public void SaveFFRPart3(FFRPart3Model model, int complaintId)
-            {
-            using var con = this.DatabaseConnection();
-
-            using (OracleCommand cmd = con.CreateCommand())
-                {
-                cmd.CommandText = "PKG_INQ.P_SAVE_FFR_P3";
-                LogIidSaveDebug("PKG_INQ.P_SAVE_FFR_P3", $"ComplaintId={complaintId}, AuditHighlighted={model?.AuditHighlighted}, PolicyViolatedLength={(model?.PolicyViolated ?? string.Empty).Length}");
-                cmd.CommandType = CommandType.StoredProcedure;
-                cmd.BindByName = true;
-                cmd.Parameters.Add("P_COMPLAINT_ID", OracleDbType.Int32).Value = complaintId;
-                cmd.Parameters.Add("P_AUDIT_REPORT_FLAG", OracleDbType.Varchar2).Value = NormalizeAuditFlag(model.AuditHighlighted);
-                cmd.Parameters.Add("P_AUDIT_REPORT_DETAILS", OracleDbType.Clob).Value = model.AuditHighlightDetails ?? string.Empty;
-                cmd.Parameters.Add("P_IMPL_REPUTATIONAL", OracleDbType.Char).Value = model.ImplicationReputational ? "Y" : "N";
-                cmd.Parameters.Add("P_IMPL_OPERATIONAL", OracleDbType.Char).Value = model.ImplicationOperational ? "Y" : "N";
-                cmd.Parameters.Add("P_IMPL_FINANCIAL", OracleDbType.Char).Value = model.ImplicationFinancial ? "Y" : "N";
-                cmd.Parameters.Add("P_IMPL_PRECEDENCE", OracleDbType.Char).Value = model.ImplicationPrecedence ? "Y" : "N";
-                cmd.Parameters.Add("P_IMPL_OTHER_FLAG", OracleDbType.Char).Value = model.ImplicationOther ? "Y" : "N";
-                cmd.Parameters.Add("P_IMPL_OTHER_TEXT", OracleDbType.Varchar2).Value = model.ImplicationOtherDetails ?? string.Empty;
-                cmd.Parameters.Add("P_SOP_VIOLATIONS", OracleDbType.Clob).Value = model.PolicyViolated ?? string.Empty;
-                cmd.Parameters.Add("P_CONTROL_GAPS", OracleDbType.Clob).Value = model.SopGaps ?? string.Empty;
-                cmd.Parameters.Add("P_ACTION_RECOMMENDED", OracleDbType.Varchar2).Value = model.ActionRecommended ?? string.Empty;
-                cmd.ExecuteNonQuery();
-                }
-            }
-
         public DataTable GetComplaintHeader(int complaintId)
             {
             using var con = this.DatabaseConnection();
@@ -306,66 +201,6 @@ namespace AIS.Controllers
             using (OracleCommand cmd = con.CreateCommand())
                 {
                 cmd.CommandText = "PKG_INQ.P_GET_COMPLAINT_HDR";
-                cmd.CommandType = CommandType.StoredProcedure;
-                cmd.BindByName = true;
-                cmd.Parameters.Add("P_COMPLAINT_ID", OracleDbType.Int32).Value = complaintId;
-                cmd.Parameters.Add("T_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
-                var dt = new DataTable();
-                using (var rdr = cmd.ExecuteReader())
-                    {
-                    dt.Load(rdr);
-                    }
-                return dt;
-                }
-            }
-
-        public DataTable GetFFRPart1(int complaintId)
-            {
-            using var con = this.DatabaseConnection();
-
-            using (OracleCommand cmd = con.CreateCommand())
-                {
-                cmd.CommandText = "PKG_INQ.P_GET_FFR_P1";
-                cmd.CommandType = CommandType.StoredProcedure;
-                cmd.BindByName = true;
-                cmd.Parameters.Add("P_COMPLAINT_ID", OracleDbType.Int32).Value = complaintId;
-                cmd.Parameters.Add("T_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
-                var dt = new DataTable();
-                using (var rdr = cmd.ExecuteReader())
-                    {
-                    dt.Load(rdr);
-                    }
-                return dt;
-                }
-            }
-
-        public DataTable GetFFRPart2(int complaintId)
-            {
-            using var con = this.DatabaseConnection();
-
-            using (OracleCommand cmd = con.CreateCommand())
-                {
-                cmd.CommandText = "PKG_INQ.P_GET_FFR_P2";
-                cmd.CommandType = CommandType.StoredProcedure;
-                cmd.BindByName = true;
-                cmd.Parameters.Add("P_COMPLAINT_ID", OracleDbType.Int32).Value = complaintId;
-                cmd.Parameters.Add("T_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
-                var dt = new DataTable();
-                using (var rdr = cmd.ExecuteReader())
-                    {
-                    dt.Load(rdr);
-                    }
-                return dt;
-                }
-            }
-
-        public DataTable GetFFRPart3(int complaintId)
-            {
-            using var con = this.DatabaseConnection();
-
-            using (OracleCommand cmd = con.CreateCommand())
-                {
-                cmd.CommandText = "PKG_INQ.P_GET_FFR_P3";
                 cmd.CommandType = CommandType.StoredProcedure;
                 cmd.BindByName = true;
                 cmd.Parameters.Add("P_COMPLAINT_ID", OracleDbType.Int32).Value = complaintId;
@@ -436,28 +271,6 @@ namespace AIS.Controllers
                 return parsed;
                 }
             return null;
-            }
-
-        private static string NormalizeAuditFlag(string auditFlag)
-            {
-            if (string.IsNullOrWhiteSpace(auditFlag))
-                {
-                return string.Empty;
-                }
-            var normalized = auditFlag.Trim().ToUpperInvariant();
-            if (normalized == "YES" || normalized == "NO" || normalized == "NA")
-                {
-                return normalized;
-                }
-            if (normalized == "Y")
-                {
-                return "YES";
-                }
-            if (normalized == "N")
-                {
-                return "NO";
-                }
-            return auditFlag;
             }
 
         public List<ComplaintRowDto> GetComplaintsByUser()

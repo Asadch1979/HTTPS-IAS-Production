@@ -53,6 +53,7 @@ namespace AIS.Controllers
         private readonly PasswordPolicyValidator _passwordPolicyValidator;
         private readonly IStaticAssetVersionTokenProvider _staticAssetVersionTokenProvider;
         private static readonly Regex AlphaNumericWithSpacesRegex = new Regex("^[A-Za-z0-9 &]+$", RegexOptions.Compiled);
+        private static readonly Regex ExceptionReportTextRegex = new Regex("^[A-Za-z0-9 &,?]+$", RegexOptions.Compiled);
         private static readonly Regex RichTextTagRegex = new Regex("<.*?>", RegexOptions.Compiled | RegexOptions.Singleline);
 
         public ApiCallsController(
@@ -4843,9 +4844,10 @@ namespace AIS.Controllers
         [HttpPost]
         public IActionResult add_exception_account_report(string IND = "", int REPORT_ID = 0, string REPORT_TITLE = "", string DESCRIPTION = "", string TYPE = "", int LOAN_STATUS_ID = 0)
             {
-            if (string.IsNullOrWhiteSpace(REPORT_TITLE) || !AlphaNumericWithSpacesRegex.IsMatch(REPORT_TITLE))
+            REPORT_TITLE = REPORT_TITLE?.Trim();
+            if (!IsValidExceptionReportText(REPORT_TITLE))
                 {
-                return BadRequest(new { Status = false, Message = "Report title must contain only letters, numbers, and spaces." });
+                return BadRequest(new { Status = false, Message = "Report title must contain only letters, numbers, spaces, ampersand (&), comma (,), and question mark (?)." });
                 }
 
             var response = dBConnection.AddExceptionAccountReport(IND, REPORT_ID, REPORT_TITLE, DESCRIPTION, TYPE, LOAN_STATUS_ID);
@@ -5423,6 +5425,52 @@ namespace AIS.Controllers
         public List<ListOfReportsModel> get_iid_list_of_reports(int ENG_ID)
             {
             return dBConnection.GetIidListOfReports(ENG_ID);
+            }
+
+        [HttpGet]
+        public IActionResult get_iid_exception_report_format(long report_id)
+            {
+            var result = dBConnection.GetIidExceptionReportFormat(report_id);
+            return Json(result);
+            }
+
+        [HttpPost]
+        public IActionResult save_iid_exception_report_format([FromBody] ExceptionReportFormatModel model)
+            {
+            var validationResult = ValidateExceptionReportFormat(model);
+            if (validationResult != null)
+                {
+                return validationResult;
+                }
+
+            var result = dBConnection.InsertIidExceptionReportFormat(model);
+            return Json(new { status = result });
+            }
+
+        [HttpPost]
+        public IActionResult update_iid_exception_report_format([FromBody] ExceptionReportFormatModel model)
+            {
+            var validationResult = ValidateExceptionReportFormat(model);
+            if (validationResult != null)
+                {
+                return validationResult;
+                }
+
+            var result = dBConnection.UpdateIidExceptionReportFormat(model);
+            return Json(new { status = result });
+            }
+
+        [HttpPost]
+        public IActionResult add_iid_exception_account_report(string IND = "", int REPORT_ID = 0, string REPORT_TITLE = "", string DESCRIPTION = "", string TYPE = "", int LOAN_STATUS_ID = 0)
+            {
+            REPORT_TITLE = REPORT_TITLE?.Trim();
+            if (!IsValidExceptionReportText(REPORT_TITLE))
+                {
+                return BadRequest(new { Status = false, Message = "Report title must contain only letters, numbers, spaces, ampersand (&), comma (,), and question mark (?)." });
+                }
+
+            var response = dBConnection.AddIidExceptionAccountReport(IND, REPORT_ID, REPORT_TITLE, DESCRIPTION, TYPE, LOAN_STATUS_ID);
+            return Json(new { Status = true, Message = response });
             }
 
         [HttpGet]
@@ -6902,12 +6950,20 @@ namespace AIS.Controllers
                 return InvalidModelStateResponse();
                 }
 
-            if (!AlphaNumericWithSpacesRegex.IsMatch(model.ColumnHeader ?? string.Empty))
+            model.ColumnHeader = model.ColumnHeader?.Trim();
+            model.IsActive = string.IsNullOrWhiteSpace(model.IsActive) ? "Y" : model.IsActive.Trim().ToUpperInvariant();
+
+            if (!IsValidExceptionReportText(model.ColumnHeader))
                 {
-                return InvalidRequestResponse("ColumnHeader", "Column header must contain only letters, numbers, and spaces.");
+                return InvalidRequestResponse("ColumnHeader", "Column header must contain only letters, numbers, spaces, ampersand (&), comma (,), and question mark (?).");
                 }
 
             return null;
+            }
+
+        private static bool IsValidExceptionReportText(string value)
+            {
+            return !string.IsNullOrWhiteSpace(value) && ExceptionReportTextRegex.IsMatch(value.Trim());
             }
 
         private IActionResult ValidateCommercialAuditOm(CommercialAuditOmModel model)
