@@ -12,8 +12,11 @@ namespace AIS.Session
         public const string SbpAccessGrantedAt = "session:sbp:access:granted-at";
         public const string SessionStamp = "session:stamp";
         public const string UserRole = "session:user-role";
+        public const string UserEntity = "session:user-entity";
+        public const string UserContext = "session:user-context";
         public const string IsSuperUser = "session:is-super-user";
         public const string ActiveEngagementId = "session:active-engagement-id";
         public const string MustChangePassword = "session:must-change-password";
+        public const string PendingLoginContextState = "session:pending-login-context-state";
     }
 }

@@ -1,0 +1,290 @@
+@using System
+@using System.Collections.Generic
+@model AIS.Models.ContextSelectionViewModel
+@{
+    Layout = "_BlankLayout";
+    ViewData["Title"] = "Select Context";
+    var nonce = Context.Items["CSPNonce"]?.ToString();
+}
+
+<style nonce="@nonce">
+    :root {
+        --context-bg: linear-gradient(135deg, #6d92b9 0%, #9cb7d3 100%);
+        --context-card: #f6f8fb;
+        --context-border: #d8e0ea;
+        --context-text: #203246;
+        --context-muted: #5f7184;
+        --context-primary: #21446d;
+        --context-primary-strong: #173555;
+        --context-accent: rgba(33, 68, 109, 0.08);
+        --context-error: #b02a37;
+    }
+
+    body {
+        margin: 0;
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        background: var(--context-bg);
+        color: var(--context-text);
+    }
+
+    .context-shell {
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 32px 16px;
+    }
+
+    .context-card {
+        width: min(760px, 100%);
+        background: var(--context-card);
+        border-radius: 14px;
+        box-shadow: 0 22px 45px rgba(14, 32, 52, 0.18);
+        padding: 28px;
+    }
+
+    .context-heading {
+        margin-bottom: 18px;
+    }
+
+    .context-eyebrow {
+        display: inline-block;
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--context-primary);
+        margin-bottom: 10px;
+    }
+
+    .context-heading h1 {
+        margin: 0 0 6px;
+        font-size: 24px;
+        font-weight: 700;
+    }
+
+    .context-heading p {
+        margin: 0;
+        color: var(--context-muted);
+        font-size: 14px;
+        line-height: 1.5;
+    }
+
+    .context-error {
+        margin-bottom: 16px;
+        border: 1px solid rgba(176, 42, 55, 0.2);
+        background: rgba(176, 42, 55, 0.08);
+        color: var(--context-error);
+        border-radius: 10px;
+        padding: 12px 14px;
+        font-size: 14px;
+    }
+
+    .context-list {
+        display: grid;
+        gap: 14px;
+        margin: 22px 0;
+    }
+
+    .context-option {
+        position: relative;
+        border: 1px solid var(--context-border);
+        border-radius: 12px;
+        background: #fff;
+        transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+    }
+
+    .context-option:hover {
+        border-color: rgba(33, 68, 109, 0.45);
+        box-shadow: 0 10px 20px rgba(33, 68, 109, 0.08);
+        transform: translateY(-1px);
+    }
+
+    .context-option input[type="radio"] {
+        position: absolute;
+        inset: 0;
+        opacity: 0;
+        cursor: pointer;
+        width: 100%;
+        height: 100%;
+        margin: 0;
+    }
+
+    .context-option label {
+        display: block;
+        padding: 18px 18px 16px 54px;
+        cursor: pointer;
+        margin: 0;
+    }
+
+    .context-option label::before {
+        content: "";
+        position: absolute;
+        left: 18px;
+        top: 22px;
+        width: 18px;
+        height: 18px;
+        border: 2px solid rgba(33, 68, 109, 0.4);
+        border-radius: 50%;
+        background: #fff;
+    }
+
+    .context-option input[type="radio"]:checked + label {
+        border-color: transparent;
+        background: var(--context-accent);
+        border-radius: 12px;
+    }
+
+    .context-option input[type="radio"]:checked + label::before {
+        border-color: var(--context-primary);
+        box-shadow: inset 0 0 0 4px #fff;
+        background: var(--context-primary);
+    }
+
+    .context-title {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 8px;
+    }
+
+    .context-role {
+        font-size: 16px;
+        font-weight: 700;
+    }
+
+    .context-default {
+        display: inline-flex;
+        align-items: center;
+        padding: 4px 10px;
+        border-radius: 999px;
+        background: rgba(33, 68, 109, 0.1);
+        color: var(--context-primary);
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+    }
+
+    .context-entity {
+        font-size: 15px;
+        font-weight: 600;
+        margin-bottom: 6px;
+    }
+
+    .context-meta {
+        font-size: 13px;
+        color: var(--context-muted);
+        line-height: 1.5;
+    }
+
+    .context-actions {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+        margin-top: 24px;
+    }
+
+    .context-actions a {
+        color: var(--context-primary);
+        font-weight: 600;
+        text-decoration: none;
+    }
+
+    .context-actions a:hover {
+        text-decoration: underline;
+    }
+
+    .context-submit {
+        border: none;
+        border-radius: 10px;
+        background: linear-gradient(90deg, var(--context-primary), var(--context-primary-strong));
+        color: #fff;
+        padding: 12px 22px;
+        font-size: 14px;
+        font-weight: 700;
+        cursor: pointer;
+        min-width: 180px;
+    }
+
+    @@media (max-width: 640px) {
+        .context-card {
+            padding: 22px 18px;
+        }
+
+        .context-actions {
+            flex-direction: column-reverse;
+            align-items: stretch;
+        }
+
+        .context-submit {
+            width: 100%;
+        }
+    }
+</style>
+
+<div class="context-shell">
+    <div class="context-card">
+        <div class="context-heading">
+            <div class="context-eyebrow">IAS Login</div>
+            <h1>Select Working Context</h1>
+            <p>
+                Signed in as <strong>@Model.UserName</strong> (<strong>@Model.PPNumber</strong>). Choose the role and posting
+                you want to use for this session. Once selected, IAS will continue with the normal home flow.
+            </p>
+        </div>
+
+        @if (!string.IsNullOrWhiteSpace(Model.ErrorMessage))
+        {
+            <div class="context-error">@Model.ErrorMessage</div>
+        }
+
+        <form method="post" asp-action="SelectContext" asp-controller="Login">
+            @Html.AntiForgeryToken()
+            <div class="context-list">
+                @for (var index = 0; index < Model.Contexts.Count; index++)
+                {
+                    var context = Model.Contexts[index];
+                    var detailParts = new List<string>();
+                    if (!string.IsNullOrWhiteSpace(context.RelationshipTypeName))
+                    {
+                        detailParts.Add(context.RelationshipTypeName);
+                    }
+                    if (!string.IsNullOrWhiteSpace(context.ParentEntityName))
+                    {
+                        detailParts.Add("Reporting Office: " + context.ParentEntityName);
+                    }
+
+                    <div class="context-option">
+                        <input type="radio"
+                               id="context_@context.AssignmentId"
+                               name="AssignmentId"
+                               value="@context.AssignmentId"
+                               @(index == 0 ? "checked=\"checked\"" : string.Empty) />
+                        <label for="context_@context.AssignmentId">
+                            <div class="context-title">
+                                <div class="context-role">@context.RoleName</div>
+                                @if (string.Equals(context.IsDefault, "Y", StringComparison.OrdinalIgnoreCase))
+                                {
+                                    <span class="context-default">Default</span>
+                                }
+                            </div>
+                            <div class="context-entity">@context.EntityName</div>
+                            @if (detailParts.Count > 0)
+                            {
+                                <div class="context-meta">@string.Join(" | ", detailParts)</div>
+                            }
+                        </label>
+                    </div>
+                }
+            </div>
+
+            <div class="context-actions">
+                <a href="@Url.Action("Logout", "Login")">Start over</a>
+                <button type="submit" class="context-submit">Continue to IAS</button>
+            </div>
+        </form>
+    </div>
+</div>

@@ -17,6 +17,7 @@ using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
 
@@ -139,48 +140,23 @@ namespace AIS.Controllers
                     return Json(BuildLoginResponse(user, forcePwdChange: true, redirectUrl: BuildChangePasswordRedirectUrl()));
                 }
 
-                if (user.ID != 0 && !user.isAlreadyLoggedIn && user.isAuthenticate)
-                {
-                    if (!sessionHandler.TryGetUser(out var sessionUser))
-                    {
-                        _logger.LogWarning("Session user could not be loaded after successful authentication for PP {PPNumber}.", login.PPNumber);
-                        user.isAuthenticate = false;
-                        user.isAlreadyLoggedIn = false;
-                        user.ErrorCode = "INVALID_CREDENTIALS";
-                        user.ErrorTitle = "Sign in failed";
-                        user.ErrorMsg = "Unable to create a login session. Please try again.";
-                        return Json(BuildLoginResponse(user));
-                    }
-
-                    if (int.TryParse(user.PPNumber, out var ppNumber))
-                    {
-                        dBConnection.KillSessions(ppNumber);
-                        var sessionToken = _tokenService.GenerateSessionToken();
-                        dBConnection.CreateSession(
-                            sessionToken,
-                            ppNumber,
-                            HttpContext.Connection.RemoteIpAddress?.ToString(),
-                            Request.Headers["User-Agent"].ToString());
-
-                        Response.Cookies.Append("IAS_SESSION", sessionToken, new CookieOptions
-                        {
-                            HttpOnly = true,
-                            Secure = ShouldSecureCookies(),
-                            SameSite = SameSiteMode.Lax,
-                            IsEssential = true,
-                            Path = HttpContext.Request.PathBase.HasValue ? HttpContext.Request.PathBase.Value : "/"
-                        });
-                    }
-
-                    SetMustChangePasswordFlag(user);
-                    await SignInUserAsync(sessionUser);
-                    return Json(BuildLoginResponse(user));
-                }
-
                 if (user.isAuthenticate && user.isAlreadyLoggedIn)
                 {
                     user.ErrorTitle ??= "Session Details";
                     user.ErrorMsg ??= "You are already logged in System";
+                    return Json(BuildLoginResponse(user));
+                }
+
+                if (user.ID != 0 && user.isAuthenticate)
+                {
+                    if (user.RequiresContextSelection)
+                    {
+                        PersistPendingContextState(user);
+                        return Json(BuildLoginResponse(user, redirectUrl: BuildContextSelectionRedirectUrl(), requiresContextSelection: true));
+                    }
+
+                    await CompleteAuthenticatedLoginAsync(user);
+                    return Json(BuildLoginResponse(user));
                 }
                 else
                 {
@@ -227,6 +203,52 @@ namespace AIS.Controllers
                 };
                 return Json(BuildLoginResponse(user));
             }
+        }
+
+        [HttpGet]
+        [AllowAnonymous]
+        public async Task<IActionResult> SelectContext()
+        {
+            if (User?.Identity?.IsAuthenticated == true)
+            {
+                return RedirectToAction("Index", "Home");
+            }
+
+            if (!TryGetPendingLoginContextState(out var pendingState))
+            {
+                return RedirectToAction(nameof(Index));
+            }
+
+            if (pendingState.Contexts.Count == 1)
+            {
+                return await CompleteContextSelectionAsync(pendingState, pendingState.Contexts[0].AssignmentId);
+            }
+
+            return View("SelectContext", BuildContextSelectionViewModel(pendingState));
+        }
+
+        [HttpPost]
+        [AllowAnonymous]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> SelectContext([FromForm] ContextSelectionPostModel model)
+        {
+            if (!TryGetPendingLoginContextState(out var pendingState))
+            {
+                return RedirectToAction(nameof(Index));
+            }
+
+            var selectedAssignmentId = model?.AssignmentId ?? 0;
+            var selectedContext = pendingState.Contexts
+                .FirstOrDefault(context => context != null && context.AssignmentId == selectedAssignmentId);
+
+            if (selectedContext == null)
+            {
+                var viewModel = BuildContextSelectionViewModel(pendingState);
+                viewModel.ErrorMessage = "Select one role and posting context to continue.";
+                return View("SelectContext", viewModel);
+            }
+
+            return await CompleteContextSelectionAsync(pendingState, selectedAssignmentId);
         }
 
         [HttpPost]
@@ -441,6 +463,11 @@ namespace AIS.Controllers
                 claims.Add(new Claim("entityId", sessionUser.UserEntityID.Value.ToString()));
             }
 
+            if (sessionUser.UserContextAssignmentId.HasValue)
+            {
+                claims.Add(new Claim("contextId", sessionUser.UserContextAssignmentId.Value.ToString()));
+            }
+
             var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
             var principal = new ClaimsPrincipal(identity);
 
@@ -541,22 +568,7 @@ namespace AIS.Controllers
             return HttpContext?.Connection?.RemoteIpAddress?.ToString() ?? "unknown";
         }
 
-        private object BuildLoginResponse(UserModel user)
-        {
-            return new
-            {
-                isAuthenticate = user?.isAuthenticate ?? false,
-                isAlreadyLoggedIn = user?.isAlreadyLoggedIn ?? false,
-                errorCode = user?.ErrorCode,
-                errorTitle = user?.ErrorTitle,
-                errorMsg = user?.ErrorMsg,
-                retryAfterSeconds = user?.RetryAfterSeconds,
-                passwordChangeRequired = user?.passwordChangeRequired ?? false,
-                changePassword = user?.changePassword
-            };
-        }
-
-        private object BuildLoginResponse(UserModel user, bool forcePwdChange, string redirectUrl)
+        private object BuildLoginResponse(UserModel user, bool forcePwdChange = false, string redirectUrl = null, bool? requiresContextSelection = null)
         {
             return new
             {
@@ -569,6 +581,7 @@ namespace AIS.Controllers
                 passwordChangeRequired = user?.passwordChangeRequired ?? false,
                 changePassword = user?.changePassword,
                 forcePwdChange,
+                requiresContextSelection = requiresContextSelection ?? user?.RequiresContextSelection ?? false,
                 redirectUrl
             };
         }
@@ -589,6 +602,182 @@ namespace AIS.Controllers
             var token = _passwordChangeTokenService.CreateToken(user.ID, user.PPNumber);
             _passwordChangeTokenService.AppendCookie(Response, token, Request.PathBase);
             _passwordChangeStateStore.Store(token, user);
+        }
+
+        private void PersistPendingContextState(UserModel user)
+        {
+            if (user == null)
+            {
+                throw new ArgumentNullException(nameof(user));
+            }
+
+            var pendingState = new PendingLoginContextState
+            {
+                UserId = user.ID,
+                PPNumber = user.PPNumber,
+                Name = user.Name,
+                Email = user.Email,
+                IsActive = user.IsActive,
+                UserLocationType = user.UserLocationType,
+                ChangePassword = user.changePassword,
+                PasswordChangeRequired = user.passwordChangeRequired,
+                CreatedAt = DateTimeOffset.UtcNow,
+                Contexts = user.AvailableContexts
+                    ?.Where(context => context != null)
+                    .Select(CloneUserContext)
+                    .ToList()
+                    ?? new List<UserContextAssignmentModel>()
+            };
+
+            sessionHandler.SetPendingLoginContextState(pendingState);
+        }
+
+        private bool TryGetPendingLoginContextState(out PendingLoginContextState pendingState)
+        {
+            pendingState = null;
+            if (!sessionHandler.TryGetPendingLoginContextState(out pendingState) || pendingState == null)
+            {
+                return false;
+            }
+
+            if (pendingState.CreatedAt != default &&
+                pendingState.CreatedAt.AddMinutes(15) < DateTimeOffset.UtcNow)
+            {
+                sessionHandler.ClearPendingLoginContextState();
+                pendingState = null;
+                return false;
+            }
+
+            if (pendingState.Contexts == null || pendingState.Contexts.Count == 0)
+            {
+                sessionHandler.ClearPendingLoginContextState();
+                pendingState = null;
+                return false;
+            }
+
+            return true;
+        }
+
+        private ContextSelectionViewModel BuildContextSelectionViewModel(PendingLoginContextState pendingState)
+        {
+            return new ContextSelectionViewModel
+            {
+                PPNumber = pendingState?.PPNumber,
+                UserName = pendingState?.Name,
+                Contexts = (pendingState?.Contexts ?? new List<UserContextAssignmentModel>())
+                    .Where(context => context != null)
+                    .OrderByDescending(context => string.Equals(context.IsDefault, "Y", StringComparison.OrdinalIgnoreCase))
+                    .ThenBy(context => context.RoleName)
+                    .ThenBy(context => context.EntityName)
+                    .ToList()
+            };
+        }
+
+        private async Task<IActionResult> CompleteContextSelectionAsync(PendingLoginContextState pendingState, int assignmentId)
+        {
+            var validatedContext = dBConnection.GetValidatedLoginContext(pendingState?.PPNumber, assignmentId);
+            if (validatedContext == null)
+            {
+                sessionHandler.ClearPendingLoginContextState();
+                return RenderLoginView(errorMessage: "The selected role and posting context is no longer available. Please sign in again.");
+            }
+
+            var user = BuildUserFromPendingState(pendingState);
+            dBConnection.ApplyLoginContext(user, validatedContext);
+            await CompleteAuthenticatedLoginAsync(user);
+            return RedirectToAction("Index", "Home");
+        }
+
+        private UserModel BuildUserFromPendingState(PendingLoginContextState pendingState)
+        {
+            return new UserModel
+            {
+                ID = pendingState?.UserId ?? 0,
+                PPNumber = pendingState?.PPNumber,
+                Name = pendingState?.Name,
+                Email = pendingState?.Email,
+                IsActive = pendingState?.IsActive,
+                UserLocationType = pendingState?.UserLocationType,
+                changePassword = pendingState?.ChangePassword,
+                passwordChangeRequired = pendingState?.PasswordChangeRequired ?? false,
+                isAuthenticate = true,
+                isAlreadyLoggedIn = false
+            };
+        }
+
+        private async Task CompleteAuthenticatedLoginAsync(UserModel user)
+        {
+            var sessionUser = dBConnection.CreateLoginSession(user);
+            IssueApplicationSession(user);
+            SetMustChangePasswordFlag(user);
+            await SignInUserAsync(sessionUser);
+        }
+
+        private void IssueApplicationSession(UserModel user)
+        {
+            if (user == null || !int.TryParse(user.PPNumber, out var ppNumber))
+            {
+                return;
+            }
+
+            dBConnection.KillSessions(ppNumber);
+            var sessionToken = _tokenService.GenerateSessionToken();
+            dBConnection.CreateSession(
+                sessionToken,
+                ppNumber,
+                HttpContext.Connection.RemoteIpAddress?.ToString(),
+                Request.Headers["User-Agent"].ToString());
+
+            Response.Cookies.Append("IAS_SESSION", sessionToken, new CookieOptions
+            {
+                HttpOnly = true,
+                Secure = ShouldSecureCookies(),
+                SameSite = SameSiteMode.Lax,
+                IsEssential = true,
+                Path = HttpContext.Request.PathBase.HasValue ? HttpContext.Request.PathBase.Value : "/"
+            });
+        }
+
+        private string BuildContextSelectionRedirectUrl()
+        {
+            var pathBase = Request.PathBase.HasValue ? Request.PathBase.Value : string.Empty;
+            return string.Concat(pathBase, "/Login/SelectContext");
+        }
+
+        private static UserContextAssignmentModel CloneUserContext(UserContextAssignmentModel context)
+        {
+            if (context == null)
+            {
+                return null;
+            }
+
+            return new UserContextAssignmentModel
+            {
+                AssignmentId = context.AssignmentId,
+                UserId = context.UserId,
+                PPNumber = context.PPNumber,
+                GroupId = context.GroupId,
+                RoleId = context.RoleId,
+                RoleName = context.RoleName,
+                EntityId = context.EntityId,
+                EntityName = context.EntityName,
+                ParentEntityId = context.ParentEntityId,
+                ParentEntityName = context.ParentEntityName,
+                RelationshipTypeId = context.RelationshipTypeId,
+                RelationshipTypeName = context.RelationshipTypeName,
+                EntityTypeId = context.EntityTypeId,
+                ParentEntityTypeId = context.ParentEntityTypeId,
+                EntityCode = context.EntityCode,
+                ParentEntityCode = context.ParentEntityCode,
+                UserLocationType = context.UserLocationType,
+                UserPostingAuditZone = context.UserPostingAuditZone,
+                UserPostingDiv = context.UserPostingDiv,
+                UserPostingDept = context.UserPostingDept,
+                UserPostingBranch = context.UserPostingBranch,
+                UserPostingZone = context.UserPostingZone,
+                IsDefault = context.IsDefault,
+                IsActive = context.IsActive
+            };
         }
 
         private void ClearAuthCookies()

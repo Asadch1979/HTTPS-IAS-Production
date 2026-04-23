@@ -1,4 +1,5 @@
 using AIS.Validation;
+using System.Collections.Generic;
 namespace AIS.Models
     {
     public class UserModel
@@ -55,6 +56,10 @@ namespace AIS.Models
         public int? UserParentEntityTypeID { get; set; }
         [PlainText]
         public string UserRoleName { get; set; }
+        public int? UserContextAssignmentId { get; set; }
+        public int AssignmentCount { get; set; }
+        public bool RequiresContextSelection { get; set; }
+        public List<UserContextAssignmentModel> AvailableContexts { get; set; } = new List<UserContextAssignmentModel>();
         [PlainText]
         public string ErrorCode { get; set; }
         public int? RetryAfterSeconds { get; set; }

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 namespace AIS.Models.Requests
     {
@@ -23,6 +24,34 @@ namespace AIS.Models.Requests
         public string EMAIL_ADDRESS { get; set; }
         public string PPNO { get; set; }
         public string ISACTIVE { get; set; }
+        }
+
+    public class ContextSelectionPostModel
+        {
+        public int? AssignmentId { get; set; }
+        }
+
+    public class SaveUserContextsPostModel
+        {
+        public int? USER_ID { get; set; }
+        public string PPNO { get; set; }
+        public string PASSWORD { get; set; }
+        public string EMAIL_ADDRESS { get; set; }
+        public string ISACTIVE { get; set; }
+        public List<UserContextAssignmentPostModel> ASSIGNMENTS { get; set; } = new List<UserContextAssignmentPostModel>();
+        }
+
+    public class UserContextAssignmentPostModel
+        {
+        public int? ASSIGNMENT_ID { get; set; }
+        public int? ROLE_ID { get; set; }
+        public int? GROUP_ID { get; set; }
+        public int? ENTITY_ID { get; set; }
+        public int? PARENT_ENTITY_ID { get; set; }
+        public int? RELATIONSHIP_TYPE_ID { get; set; }
+        public string ISDEFAULT { get; set; }
+        public string ISACTIVE { get; set; }
+        public bool ISDELETED { get; set; }
         }
 
     public class GroupPostModel

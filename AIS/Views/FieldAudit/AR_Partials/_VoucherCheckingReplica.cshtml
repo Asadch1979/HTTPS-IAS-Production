@@ -1,7 +1,47 @@
 @model AIS.Models.FieldAuditWorkflow.FieldAuditGridReplicaViewModel
 <div id="fieldAuditVoucherReplica" data-eng-id="@Model.EngagementId">
-    <div class="d-flex justify-content-between align-items-center mb-2 mt-2"><h5 class="mb-0">Working Paper - Voucher Checking</h5><button type="button" class="btn btn-outline-secondary btn-sm" onclick="window.fieldAuditDashboard && window.fieldAuditDashboard.loadStepContent('WORKING_PAPER', 4)">Back to Working Paper</button></div>
+    <div class="d-flex justify-content-between align-items-center mb-2 mt-2">
+        <h5 class="mb-0">Working Paper - Voucher Checking</h5>
+        <div class="d-flex align-items-center gap-2">
+            <button type="button" id="openVoucherCheckingReplicaBtn" class="rounded-circle btn btn-danger btn-sm" aria-label="Add voucher checking">
+                <i class="fa fa-plus text-white"></i>
+            </button>
+            <button type="button" class="btn btn-outline-secondary btn-sm" onclick="window.fieldAuditDashboard && window.fieldAuditDashboard.loadStepContent('WORKING_PAPER', 4)">Back to Working Paper</button>
+        </div>
+    </div>
     <table id="fieldAuditVoucherTable" class="table table-hover table-bordered table-striped"><thead><tr><th>Sr No</th><th>Voucher /Account No</th><th>Discrepency/Observation</th><th>Memo/Para No</th></tr></thead><tbody></tbody></table>
     <div class="mt-3 d-flex justify-content-end gap-2"><button class="btn btn-success" type="button" onclick="window.fieldAuditDashboard && window.fieldAuditDashboard.loadNestedView('WP_ACCOUNT_OPENING')">Account Opening Form</button></div>
 </div>
-<script src="~/js/fieldAudit/voucherReplica.js?v=1"></script>
+
+<div id="fieldAuditVoucherCheckingDialog" class="modal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-xl modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">New Voucher Checking Record</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="fieldAuditVoucherForm">
+                    <div class="form-group">
+                        <label for="fieldAuditVoucherNumber">Voucher / Account Number</label>
+                        <input type="text" class="form-control" id="fieldAuditVoucherNumber" />
+                    </div>
+                    <div class="form-group">
+                        <label for="fieldAuditVoucherObservation">Observation (if any)</label>
+                        <textarea class="form-control" id="fieldAuditVoucherObservation"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="fieldAuditVoucherParaNo">Para No (if any)</label>
+                        <input type="text" class="form-control" id="fieldAuditVoucherParaNo" />
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" id="addVoucherCheckingReplicaBtn" class="btn btn-danger">Add New</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="~/js/fieldAudit/voucherReplica.js?v=3"></script>

@@ -13,11 +13,11 @@ namespace AIS.Models.IID
         public string Gist { get; set; }
         [PlainText]
         public string Proceedings { get; set; }
-        [PlainText]
+        
         public string Findings { get; set; }
-        [PlainText]
+        
         public string Recommendation { get; set; }
-        [PlainText]
+       
         public string Conclusion { get; set; }
         [PlainText]
         public string ReportedInAuditReport { get; set; }

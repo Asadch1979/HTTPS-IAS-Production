@@ -2,6 +2,7 @@ var commercialAuditPage = {
     loadUrl: "",
     currentStepKey: "",
     workflowSteps: [],
+    yearLookups: {},
     omList: [],
     pdpList: [],
     arpseList: [],
@@ -42,6 +43,7 @@ $(document).ready(function () {
     var requestedInitialStepKey = normalizeText(workflow.data("current-step"));
     commercialAuditPage.currentStepKey = "";
     commercialAuditPage.workflowSteps = Array.isArray(window.commercialAuditWorkflowSteps) ? window.commercialAuditWorkflowSteps.slice() : [];
+    commercialAuditPage.yearLookups = window.commercialAuditYearLookups || {};
 
     bindCommercialAuditWorkflowNavigation();
 
@@ -1356,11 +1358,43 @@ function stripHtmlToText(value) {
     return String(wrapper.textContent || wrapper.innerText || "").replace(/\s+/g, " ").trim();
 }
 
+function getCommercialAuditYearLookupEntries(lookupKey) {
+    var lookups = commercialAuditPage.yearLookups || {};
+    var entries = lookups[lookupKey];
+    return Array.isArray(entries) ? entries : [];
+}
+
+function resolveCommercialAuditYearText(rawText, yearId, lookupKey) {
+    var resolvedRawText = String(rawText || "").trim();
+    if (resolvedRawText && !/^\d+$/.test(resolvedRawText)) {
+        return resolvedRawText;
+    }
+
+    var numericYearId = parseInt(yearId, 10) || 0;
+    if (!numericYearId) {
+        return resolvedRawText;
+    }
+
+    var lookupEntries = getCommercialAuditYearLookupEntries(lookupKey);
+    var matchedEntry = lookupEntries.find(function (entry) {
+        return (parseInt(coalesce(entry.id, entry.Id, entry.AUDITPERIODID, 0), 10) || 0) === numericYearId;
+    });
+
+    var lookupText = matchedEntry ? String(coalesce(matchedEntry.text, matchedEntry.Text, matchedEntry.DESCRIPTION, "") || "").trim() : "";
+    if (lookupText) {
+        return lookupText;
+    }
+
+    return resolvedRawText || String(numericYearId);
+}
+
 function normalizeCommercialOm(item) {
+    var auditYearId = parseInt(coalesce(item.AuditYearId, item.auditYearId, item.AUDIT_YEAR_ID, 0), 10) || 0;
+    var rawAuditYearText = String(coalesce(item.AuditYearText, item.auditYearText, item.AUDIT_YEAR_TEXT, "") || "");
     return {
         OmId: parseInt(coalesce(item.OmId, item.omId, item.OM_ID, 0), 10) || 0,
-        AuditYearId: parseInt(coalesce(item.AuditYearId, item.auditYearId, item.AUDIT_YEAR_ID, 0), 10) || 0,
-        AuditYearText: String(coalesce(item.AuditYearText, item.auditYearText, item.AUDIT_YEAR_TEXT, "") || ""),
+        AuditYearId: auditYearId,
+        AuditYearText: resolveCommercialAuditYearText(rawAuditYearText, auditYearId, "om"),
         OmNo: String(coalesce(item.OmNo, item.omNo, item.OM_NO, "") || ""),
         GistOfOm: String(coalesce(item.GistOfOm, item.gistOfOm, item.GIST_OF_OM, "") || ""),
         BodyOfOm: String(coalesce(item.BodyOfOm, item.bodyOfOm, item.BODY_OF_OM, "") || ""),
@@ -1370,10 +1404,12 @@ function normalizeCommercialOm(item) {
 }
 
 function normalizeCommercialPdp(item) {
+    var auditYearId = parseInt(coalesce(item.AuditYearId, item.auditYearId, item.AUDIT_YEAR_ID, 0), 10) || 0;
+    var rawAuditYearText = String(coalesce(item.AuditYearText, item.auditYearText, item.AUDIT_YEAR_TEXT, "") || "");
     return {
         PdpId: parseInt(coalesce(item.PdpId, item.pdpId, item.PDP_ID, 0), 10) || 0,
-        AuditYearId: parseInt(coalesce(item.AuditYearId, item.auditYearId, item.AUDIT_YEAR_ID, 0), 10) || 0,
-        AuditYearText: String(coalesce(item.AuditYearText, item.auditYearText, item.AUDIT_YEAR_TEXT, "") || ""),
+        AuditYearId: auditYearId,
+        AuditYearText: resolveCommercialAuditYearText(rawAuditYearText, auditYearId, "pdp"),
         PdpNo: String(coalesce(item.PdpNo, item.pdpNo, item.PDP_NO, "") || ""),
         GistOfPdp: String(coalesce(item.GistOfPdp, item.gistOfPdp, item.GIST_OF_PDP, "") || ""),
         BodyOfPdp: String(coalesce(item.BodyOfPdp, item.bodyOfPdp, item.BODY_OF_PDP, "") || ""),
@@ -1397,10 +1433,12 @@ function normalizeCommercialPdpOmMapping(item) {
 }
 
 function normalizeCommercialArpseHeader(item) {
+    var arpseYearId = parseInt(coalesce(item.ArpseYearId, item.arpseYearId, item.ARPSE_YEAR_ID, 0), 10) || 0;
+    var rawArpseYearText = String(coalesce(item.ArpseYearText, item.arpseYearText, item.ARPSE_YEAR_TEXT, "") || "");
     return {
         ArpseId: parseInt(coalesce(item.ArpseId, item.arpseId, item.ARPSE_ID, 0), 10) || 0,
-        ArpseYearId: parseInt(coalesce(item.ArpseYearId, item.arpseYearId, item.ARPSE_YEAR_ID, 0), 10) || 0,
-        ArpseYearText: String(coalesce(item.ArpseYearText, item.arpseYearText, item.ARPSE_YEAR_TEXT, "") || ""),
+        ArpseYearId: arpseYearId,
+        ArpseYearText: resolveCommercialAuditYearText(rawArpseYearText, arpseYearId, "arpse"),
         ParaNo: String(coalesce(item.ParaNo, item.paraNo, item.PARA_NO, "") || ""),
         GistOfPara: String(coalesce(item.GistOfPara, item.gistOfPara, item.GIST_OF_PARA, "") || ""),
         ManagementResponse: String(coalesce(item.ManagementResponse, item.managementResponse, item.MANAGEMENT_RESPONSE, "") || "")

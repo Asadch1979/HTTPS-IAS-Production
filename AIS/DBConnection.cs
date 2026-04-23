@@ -404,23 +404,7 @@ namespace AIS.Controllers
                     }
 
                 bool isSession = false;
-                var isAuthenticated = false;
-                using (OracleCommand cmd = con.CreateCommand())
-                    {
-                    cmd.CommandType = CommandType.StoredProcedure;
-                    cmd.Parameters.Clear();
-                    cmd.Parameters.Add("PPNumber", OracleDbType.Int32).Value = login.PPNumber;
-                    cmd.Parameters.Add("enc_pass", OracleDbType.Varchar2).Value = enc_pass;
-                    cmd.Parameters.Add("T_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
-                    cmd.CommandText = "pkg_lg.p_get_user";
-                    using (OracleDataReader rdr = cmd.ExecuteReader())
-                        {
-                        if (rdr.Read())
-                            {
-                            isAuthenticated = true;
-                            }
-                        }
-                    }
+                var isAuthenticated = LoadAuthenticatedUserBase(con, login, enc_pass) != null;
 
                 if (!isAuthenticated)
                     {
@@ -497,123 +481,42 @@ namespace AIS.Controllers
                     isAuthenticate = false
                     };
                 var enc_pass = HashEncryptedPassword(login.Password);
-                using (OracleCommand cmd = con.CreateCommand())
+
+                user = LoadAuthenticatedUserBase(con, login, enc_pass);
+                if (user == null)
                     {
-                    string _sql = "pkg_lg.p_get_user";
-                    cmd.CommandType = CommandType.StoredProcedure;
-                    cmd.Parameters.Clear();
-                    cmd.Parameters.Add("PPNumber", OracleDbType.Int32).Value = login.PPNumber;
-                    cmd.Parameters.Add("enc_pass", OracleDbType.Varchar2).Value = enc_pass;
-                    cmd.Parameters.Add("T_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
-                    cmd.CommandText = _sql;
-                    OracleDataReader rdr = cmd.ExecuteReader();
-                    while (rdr.Read())
+                    return new UserModel
                         {
-                        user.isAuthenticate = true;
-                        user.changePassword = rdr["password_change_req"].ToString();
-                        user.passwordChangeRequired = enc_pass == HashPassword("Ztbl@1234");
-                        user.ID = Convert.ToInt32(rdr["USERID"]);
-                        user.Name = rdr["Employeefirstname"].ToString() + " " + rdr["employeelastname"].ToString();
-                        user.Email = rdr["LOGIN_NAME"].ToString();
-                        user.UserEntityName = rdr["ENT_NAME"].ToString();
-                        user.UserRoleName = rdr["GROUP_NAME"].ToString();
-                        user.PPNumber = rdr["PPNO"].ToString();
-                        if (rdr["ENTITY_ID"].ToString() != null && rdr["ENTITY_ID"].ToString() != "")
-                            user.UserEntityID = Convert.ToInt32(rdr["ENTITY_ID"]);
-
-                        user.UserLocationType = rdr["USER_LOCATION_TYPE"].ToString();
-                        user.IsActive = rdr["ISACTIVE"].ToString();
-                        if (rdr["DIVISIONID"].ToString() != null && rdr["DIVISIONID"].ToString() != "")
-                            user.UserPostingDiv = Convert.ToInt32(rdr["DIVISIONID"]);
-                        else
-                            user.UserPostingDiv = 0;
-
-                        if (rdr["DEPARTMENTID"].ToString() != null && rdr["DEPARTMENTID"].ToString() != "")
-                            user.UserPostingDept = Convert.ToInt32(rdr["DEPARTMENTID"]);
-                        else
-                            user.UserPostingDept = 0;
-
-                        if (rdr["ZONEID"].ToString() != null && rdr["ZONEID"].ToString() != "")
-                            user.UserPostingZone = Convert.ToInt32(rdr["ZONEID"]);
-                        else
-                            user.UserPostingZone = 0;
-
-                        if (rdr["BRANCHID"].ToString() != null && rdr["BRANCHID"].ToString() != "")
-                            user.UserPostingBranch = Convert.ToInt32(rdr["BRANCHID"]);
-                        else
-                            user.UserPostingBranch = 0;
-
-                        if (rdr["AUDIT_ZONEID"].ToString() != null && rdr["AUDIT_ZONEID"].ToString() != "")
-                            user.UserPostingAuditZone = Convert.ToInt32(rdr["AUDIT_ZONEID"]);
-                        else
-                            user.UserPostingAuditZone = 0;
-
-                        if (rdr["GROUP_ID"].ToString() != null && rdr["GROUP_ID"].ToString() != "")
-                            user.UserGroupID = Convert.ToInt32(rdr["GROUP_ID"]);
-                        else
-                            user.UserGroupID = 0;
-
-                        if (rdr["ROLE_ID"].ToString() != null && rdr["ROLE_ID"].ToString() != "")
-                            user.UserRoleID = Convert.ToInt32(rdr["ROLE_ID"]);
-                    else
-                        user.UserRoleID = 0;
-
-                    if (RequiresPasswordChange(user))
-                        {
-                        user.isAlreadyLoggedIn = false;
-                        return user;
-                        }
-
-                    bool isSessionAvailable = false;
-                    string _sql2 = "pkg_lg.p_get_user_id";
-                    cmd.CommandType = CommandType.StoredProcedure;
-                    cmd.Parameters.Clear();
-                    cmd.Parameters.Add("PPNumber", OracleDbType.Int32).Value = login.PPNumber;
-                    cmd.Parameters.Add("T_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
-                    cmd.CommandText = _sql2;
-                    OracleDataReader rdr2 = cmd.ExecuteReader();
-                    while (rdr2.Read())
-                        {
-                        if (rdr2["ID"].ToString() != null && rdr2["ID"].ToString() != "")
-                            {
-                            isSessionAvailable = true;
-                            break;
-                            }
-                        }
-
-                    var sessionHandler = CreateSessionHandler();
-
-
-                    if (isSessionAvailable)
-                        {
-                        user.isAlreadyLoggedIn = true;
-                        }
-                    else
-                        {
-                        var resp = sessionHandler.SetSessionUser(user);
-                        cmd.CommandText = "pkg_lg.User_SESSION";
-                        cmd.CommandType = CommandType.StoredProcedure;
-                        cmd.Parameters.Clear();
-                        cmd.Parameters.Add("PPNumber", OracleDbType.Int32).Value = user.PPNumber;
-                        cmd.Parameters.Add("UserRoleID", OracleDbType.Int32).Value = user.UserRoleID;
-                        cmd.Parameters.Add("LocalIpAddress", OracleDbType.Varchar2).Value = iPAddress.GetLocalIpAddress();
-                        cmd.Parameters.Add("SessionId", OracleDbType.Varchar2).Value = resp.SessionId;
-                        cmd.Parameters.Add("UserLocationType", OracleDbType.Varchar2).Value = user.UserLocationType;
-                        cmd.Parameters.Add("MACAddress", OracleDbType.Varchar2).Value = iPAddress.GetMACAddress();
-                        cmd.Parameters.Add("FirstMACCardAddress", OracleDbType.Varchar2).Value = iPAddress.GetFirstMACCardAddress();
-                        cmd.Parameters.Add("UserPostingDiv", OracleDbType.Int32).Value = user.UserPostingDiv;
-                        cmd.Parameters.Add("UserGroupID", OracleDbType.Varchar2).Value = user.UserGroupID;
-                        cmd.Parameters.Add("UserPostingDept", OracleDbType.Int32).Value = user.UserPostingDept;
-                        cmd.Parameters.Add("UserPostingZone", OracleDbType.Int32).Value = user.UserPostingZone;
-                        cmd.Parameters.Add("UserPostingBranch", OracleDbType.Int32).Value = user.UserPostingBranch;
-                        cmd.Parameters.Add("UserPostingAuditZone", OracleDbType.Int32).Value = user.UserPostingAuditZone;
-                        cmd.Parameters.Add("ENT_ID", OracleDbType.Int32).Value = user.UserEntityID;
-                        cmd.ExecuteReader();
-                        //this.CreateAuditReport();
-                        }
+                        isAlreadyLoggedIn = false,
+                        isAuthenticate = false
+                        };
                     }
-                }
-            return user;
+
+                user.AvailableContexts = LoadUserLoginContexts(con, user.PPNumber);
+                user.AssignmentCount = user.AvailableContexts.Count;
+                user.passwordChangeRequired = enc_pass == HashPassword("Ztbl@1234");
+
+                if (user.AvailableContexts.Count == 0)
+                    {
+                    user.isAuthenticate = false;
+                    user.ErrorCode = "NO_LOGIN_CONTEXT";
+                    user.ErrorTitle = "No login context assigned";
+                    user.ErrorMsg = "Your account is active, but no valid role and entity assignment is available. Please contact IAS administration.";
+                    return user;
+                    }
+
+                user.RequiresContextSelection = user.AvailableContexts.Count > 1;
+                var preferredContext = ResolvePreferredContext(user.AvailableContexts);
+                ApplyLoginContext(user, preferredContext);
+
+                if (RequiresPasswordChange(user))
+                    {
+                    user.isAlreadyLoggedIn = false;
+                    return user;
+                    }
+
+                user.isAlreadyLoggedIn = HasActiveLoginSession(con, login.PPNumber);
+                return user;
                 }
             finally
                 {
@@ -663,11 +566,328 @@ namespace AIS.Controllers
                     cmd.Parameters.Add("UserPostingBranch", OracleDbType.Int32).Value = user.UserPostingBranch;
                     cmd.Parameters.Add("UserPostingAuditZone", OracleDbType.Int32).Value = user.UserPostingAuditZone;
                     cmd.Parameters.Add("ENT_ID", OracleDbType.Int32).Value = user.UserEntityID;
+                    cmd.Parameters.Add("P_USER_CONTEXT_ID", OracleDbType.Int32).Value = (object?)user.UserContextAssignmentId ?? DBNull.Value;
                     cmd.ExecuteReader();
                     }
                 }
 
             return sessionUser;
+            }
+
+        public UserContextAssignmentModel GetValidatedLoginContext(string ppNumber, int assignmentId)
+            {
+            if (string.IsNullOrWhiteSpace(ppNumber) || assignmentId <= 0)
+                {
+                return null;
+                }
+
+            using (var con = this.DatabaseConnection(requireActiveSession: false))
+                using (OracleCommand cmd = con.CreateCommand())
+                    {
+                    cmd.CommandText = "pkg_lg.p_get_user_context_by_id";
+                    cmd.CommandType = CommandType.StoredProcedure;
+                    cmd.Parameters.Clear();
+                    cmd.Parameters.Add("PPNumber", OracleDbType.Int32).Value = ppNumber;
+                    cmd.Parameters.Add("P_USER_CONTEXT_ID", OracleDbType.Int32).Value = assignmentId;
+                    cmd.Parameters.Add("T_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+
+                    using (var reader = cmd.ExecuteReader())
+                        {
+                        while (reader.Read())
+                            {
+                            return ReadUserContextAssignment(reader);
+                            }
+                        }
+                    }
+
+            return null;
+            }
+
+        public UserModel ApplyLoginContext(UserModel user, UserContextAssignmentModel context)
+            {
+            if (user == null)
+                {
+                throw new ArgumentNullException(nameof(user));
+                }
+
+            if (context == null)
+                {
+                throw new ArgumentNullException(nameof(context));
+                }
+
+            user.UserContextAssignmentId = context.AssignmentId;
+            user.UserGroupID = context.GroupId;
+            user.UserRoleID = context.RoleId;
+            user.UserGroup = context.RoleName;
+            user.UserRole = context.RoleName;
+            user.UserRoleName = context.RoleName;
+            user.UserEntityID = context.EntityId;
+            user.UserEntityName = context.EntityName;
+            user.UserParentEntityID = context.ParentEntityId;
+            user.UserParentEntityName = context.ParentEntityName;
+            user.RelationshipId = context.RelationshipTypeId;
+            user.UserEntityTypeID = context.EntityTypeId;
+            user.UserParentEntityTypeID = context.ParentEntityTypeId;
+            user.UserEntityCode = context.EntityCode;
+            user.UserParentEntityCode = context.ParentEntityCode;
+            user.UserPostingDiv = context.UserPostingDiv ?? user.UserPostingDiv;
+            user.UserPostingDept = context.UserPostingDept ?? user.UserPostingDept;
+            user.UserPostingZone = context.UserPostingZone ?? user.UserPostingZone;
+            user.UserPostingBranch = context.UserPostingBranch ?? user.UserPostingBranch;
+            user.UserPostingAuditZone = context.UserPostingAuditZone ?? user.UserPostingAuditZone;
+            if (!string.IsNullOrWhiteSpace(context.UserLocationType))
+                {
+                user.UserLocationType = context.UserLocationType;
+                }
+
+            return user;
+            }
+
+        private UserModel LoadAuthenticatedUserBase(OracleConnection con, LoginModel login, string encryptedPassword)
+            {
+            if (con == null)
+                {
+                throw new ArgumentNullException(nameof(con));
+                }
+
+            if (login == null || string.IsNullOrWhiteSpace(login.PPNumber) || string.IsNullOrWhiteSpace(encryptedPassword))
+                {
+                return null;
+                }
+
+            using (OracleCommand cmd = con.CreateCommand())
+                {
+                cmd.CommandText = "pkg_lg.p_get_user_base";
+                cmd.CommandType = CommandType.StoredProcedure;
+                cmd.Parameters.Clear();
+                cmd.Parameters.Add("PPNumber", OracleDbType.Int32).Value = login.PPNumber;
+                cmd.Parameters.Add("enc_pass", OracleDbType.Varchar2).Value = encryptedPassword;
+                cmd.Parameters.Add("T_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+
+                using (var reader = cmd.ExecuteReader())
+                    {
+                    while (reader.Read())
+                        {
+                        return new UserModel
+                            {
+                            isAuthenticate = true,
+                            isAlreadyLoggedIn = false,
+                            changePassword = GetAuthString(reader, "PASSWORD_CHANGE_REQ"),
+                            ID = GetOptionalInt(reader, "USERID") ?? 0,
+                            Name = BuildFullName(GetAuthString(reader, "EMPLOYEEFIRSTNAME"), GetAuthString(reader, "EMPLOYEELASTNAME")),
+                            Email = GetAuthString(reader, "LOGIN_NAME"),
+                            PPNumber = GetAuthString(reader, "PPNO"),
+                            UserLocationType = GetAuthString(reader, "USER_LOCATION_TYPE"),
+                            IsActive = GetAuthString(reader, "ISACTIVE"),
+                            UserPostingDiv = GetOptionalInt(reader, "DIVISIONID") ?? 0,
+                            UserPostingDept = GetOptionalInt(reader, "DEPARTMENTID") ?? 0,
+                            UserPostingZone = GetOptionalInt(reader, "ZONEID") ?? 0,
+                            UserPostingBranch = GetOptionalInt(reader, "BRANCHID") ?? 0,
+                            UserPostingAuditZone = GetOptionalInt(reader, "AUDIT_ZONEID") ?? 0
+                            };
+                        }
+                    }
+                }
+
+            return null;
+            }
+
+        private List<UserContextAssignmentModel> LoadUserLoginContexts(OracleConnection con, string ppNumber)
+            {
+            var contexts = new List<UserContextAssignmentModel>();
+            if (con == null || string.IsNullOrWhiteSpace(ppNumber))
+                {
+                return contexts;
+                }
+
+            using (OracleCommand cmd = con.CreateCommand())
+                {
+                cmd.CommandText = "pkg_lg.p_get_user_login_contexts";
+                cmd.CommandType = CommandType.StoredProcedure;
+                cmd.Parameters.Clear();
+                cmd.Parameters.Add("PPNumber", OracleDbType.Int32).Value = ppNumber;
+                cmd.Parameters.Add("T_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+
+                using (var reader = cmd.ExecuteReader())
+                    {
+                    while (reader.Read())
+                        {
+                        var context = ReadUserContextAssignment(reader);
+                        if (context == null)
+                            {
+                            continue;
+                            }
+
+                        if (contexts.Any(existing => existing.AssignmentId == context.AssignmentId))
+                            {
+                            continue;
+                            }
+
+                        contexts.Add(context);
+                        }
+                    }
+                }
+
+            return contexts;
+            }
+
+        private bool HasActiveLoginSession(OracleConnection con, string ppNumber)
+            {
+            if (con == null || string.IsNullOrWhiteSpace(ppNumber))
+                {
+                return false;
+                }
+
+            using (OracleCommand cmd = con.CreateCommand())
+                {
+                cmd.CommandType = CommandType.StoredProcedure;
+                cmd.Parameters.Clear();
+                cmd.Parameters.Add("PPNumber", OracleDbType.Int32).Value = ppNumber;
+                cmd.Parameters.Add("T_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+                cmd.CommandText = "pkg_lg.p_get_user_id";
+
+                using (var reader = cmd.ExecuteReader())
+                    {
+                    while (reader.Read())
+                        {
+                        if (GetOptionalInt(reader, "ID").HasValue)
+                            {
+                            return true;
+                            }
+                        }
+                    }
+                }
+
+            return false;
+            }
+
+        private static UserContextAssignmentModel ResolvePreferredContext(IEnumerable<UserContextAssignmentModel> contexts)
+            {
+            if (contexts == null)
+                {
+                return null;
+                }
+
+            return contexts
+                .OrderByDescending(context => string.Equals(context.IsDefault, "Y", StringComparison.OrdinalIgnoreCase))
+                .ThenBy(context => context.RoleName)
+                .ThenBy(context => context.EntityName)
+                .FirstOrDefault();
+            }
+
+        private static UserContextAssignmentModel ReadUserContextAssignment(IDataRecord reader)
+            {
+            if (reader == null)
+                {
+                return null;
+                }
+
+            var assignmentId = GetOptionalInt(reader, "USER_CONTEXT_ID")
+                               ?? GetOptionalInt(reader, "ASSIGNMENT_ID")
+                               ?? 0;
+            var entityId = GetOptionalInt(reader, "ENTITY_ID") ?? 0;
+            var roleId = GetOptionalInt(reader, "ROLE_ID") ?? 0;
+
+            if (assignmentId <= 0 || entityId <= 0 || roleId <= 0)
+                {
+                return null;
+                }
+
+            return new UserContextAssignmentModel
+                {
+                AssignmentId = assignmentId,
+                UserId = GetOptionalInt(reader, "USERID") ?? 0,
+                PPNumber = GetAuthString(reader, "PPNO"),
+                GroupId = GetOptionalInt(reader, "GROUP_ID") ?? roleId,
+                RoleId = roleId,
+                RoleName = GetAuthString(reader, "GROUP_NAME"),
+                EntityId = entityId,
+                EntityName = GetAuthString(reader, "ENT_NAME"),
+                ParentEntityId = GetOptionalInt(reader, "PARENT_ENTITY_ID"),
+                ParentEntityName = GetAuthString(reader, "PARENT_ENTITY_NAME"),
+                RelationshipTypeId = GetOptionalInt(reader, "RELATIONSHIP_TYPE_ID"),
+                RelationshipTypeName = GetAuthString(reader, "RELATIONSHIP_TYPE_NAME"),
+                EntityTypeId = GetOptionalInt(reader, "ENTITY_TYPE_ID"),
+                ParentEntityTypeId = GetOptionalInt(reader, "PARENT_ENTITY_TYPE_ID"),
+                EntityCode = GetOptionalInt(reader, "ENTITY_CODE"),
+                ParentEntityCode = GetOptionalInt(reader, "PARENT_ENTITY_CODE"),
+                UserLocationType = GetAuthString(reader, "USER_LOCATION_TYPE"),
+                UserPostingDiv = GetOptionalInt(reader, "POSTING_DIV") ?? GetOptionalInt(reader, "DIVISIONID"),
+                UserPostingDept = GetOptionalInt(reader, "POSTING_DEPT") ?? GetOptionalInt(reader, "DEPARTMENTID"),
+                UserPostingZone = GetOptionalInt(reader, "POSTING_ZONE") ?? GetOptionalInt(reader, "ZONEID"),
+                UserPostingBranch = GetOptionalInt(reader, "POSTING_BRANCH") ?? GetOptionalInt(reader, "BRANCHID"),
+                UserPostingAuditZone = GetOptionalInt(reader, "POSTING_AZ") ?? GetOptionalInt(reader, "AUDIT_ZONEID"),
+                IsDefault = GetAuthString(reader, "IS_DEFAULT_ASSIGNMENT"),
+                IsActive = GetAuthString(reader, "IS_ACTIVE_ASSIGNMENT")
+                };
+            }
+
+        private static bool HasAuthColumn(IDataRecord reader, string column)
+            {
+            if (reader == null || string.IsNullOrWhiteSpace(column))
+                {
+                return false;
+                }
+
+            for (var index = 0; index < reader.FieldCount; index++)
+                {
+                if (string.Equals(reader.GetName(index), column, StringComparison.OrdinalIgnoreCase))
+                    {
+                    return true;
+                    }
+                }
+
+            return false;
+            }
+
+        private static int? GetOptionalInt(IDataRecord reader, string column)
+            {
+            if (!HasAuthColumn(reader, column))
+                {
+                return null;
+                }
+
+            var value = reader[column];
+            if (value == null || value == DBNull.Value)
+                {
+                return null;
+                }
+
+            if (value is int intValue)
+                {
+                return intValue;
+                }
+
+            if (value is long longValue)
+                {
+                return longValue > int.MaxValue || longValue < int.MinValue ? (int?)null : (int)longValue;
+                }
+
+            if (value is decimal decimalValue)
+                {
+                return decimalValue > int.MaxValue || decimalValue < int.MinValue ? (int?)null : decimal.ToInt32(decimalValue);
+                }
+
+            return int.TryParse(value.ToString(), out var parsed) ? parsed : (int?)null;
+            }
+
+        private static string GetAuthString(IDataRecord reader, string column)
+            {
+            if (!HasAuthColumn(reader, column))
+                {
+                return string.Empty;
+                }
+
+            var value = reader[column];
+            return value == null || value == DBNull.Value ? string.Empty : value.ToString();
+            }
+
+        private static string BuildFullName(string firstName, string lastName)
+            {
+            var parts = new[] { firstName, lastName }
+                .Where(part => !string.IsNullOrWhiteSpace(part))
+                .Select(part => part.Trim());
+            return string.Join(" ", parts);
             }
         public async Task<List<AuditeeResponseEvidenceModel>> GetUploadedAuditReportsFromDirectory(string subfolder)
             {

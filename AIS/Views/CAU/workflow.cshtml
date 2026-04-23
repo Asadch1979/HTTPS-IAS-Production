@@ -1,8 +1,18 @@
 @model AIS.Models.CAU.CommercialAuditWorkflowViewModel
+@using AIS.Models
 @using System.Linq
 @{
     Layout = "_Layout";
     ViewData["CommercialAuditWorkflowModel"] = Model;
+    var auditYearList = (ViewData["AuditYearList"] as IEnumerable<AuditPeriodModel>) ?? Enumerable.Empty<AuditPeriodModel>();
+    var omAuditYearList = (ViewData["OmAuditYearList"] as IEnumerable<AuditPeriodModel>) ?? auditYearList;
+    var arpseYearList = (ViewData["ArpseYearList"] as IEnumerable<AuditPeriodModel>) ?? Enumerable.Empty<AuditPeriodModel>();
+    var commercialAuditYearLookups = new
+    {
+        om = omAuditYearList.Select(item => new { id = item.AUDITPERIODID, text = item.DESCRIPTION }).ToList(),
+        pdp = auditYearList.Select(item => new { id = item.AUDITPERIODID, text = item.DESCRIPTION }).ToList(),
+        arpse = arpseYearList.Select(item => new { id = item.AUDITPERIODID, text = item.DESCRIPTION }).ToList()
+    };
 }
 
 <link rel="stylesheet" href="~/css/fieldaudit-stepper-theme.css" />
@@ -35,5 +45,6 @@
                 title = step.Title,
                 description = step.Description
             })));
+    window.commercialAuditYearLookups = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(commercialAuditYearLookups));
 </script>
-<script src="~/js/csp/Views_CAU_commercial_audit.js?v=4"></script>
+<script src="~/js/csp/Views_CAU_commercial_audit.js?v=5"></script>

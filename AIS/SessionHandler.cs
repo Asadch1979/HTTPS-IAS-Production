@@ -149,9 +149,30 @@ namespace AIS
 
             var serialized = JsonSerializer.Serialize(user, _serializerOptions);
             session.Remove("_sessionId");
+            session.Remove(SessionKeys.AllowedViewIds);
+            session.Remove(SessionKeys.AllowedApiPaths);
             session.SetString(SessionKeys.User, serialized);
             session.SetInt32(SessionKeys.UserRole, user.UserRoleID);
+            if (user.UserEntityID.HasValue)
+                {
+                session.SetInt32(SessionKeys.UserEntity, user.UserEntityID.Value);
+                }
+            else
+                {
+                session.Remove(SessionKeys.UserEntity);
+                }
+
+            if (user.UserContextAssignmentId.HasValue)
+                {
+                session.SetInt32(SessionKeys.UserContext, user.UserContextAssignmentId.Value);
+                }
+            else
+                {
+                session.Remove(SessionKeys.UserContext);
+                }
+
             session.SetString(SessionKeys.IsSuperUser, user.UserRoleID == 1 ? "Y" : "N");
+            session.Remove(SessionKeys.PendingLoginContextState);
             IssueSessionStamp(user);
             }
 
@@ -175,7 +196,64 @@ namespace AIS
             Session.Remove(SessionKeys.AllowedViewIds);
             Session.Remove(SessionKeys.AllowedApiPaths);
             Session.Remove(SessionKeys.UserRole);
+            Session.Remove(SessionKeys.UserEntity);
+            Session.Remove(SessionKeys.UserContext);
             Session.Remove(SessionKeys.IsSuperUser);
+            Session.Remove(SessionKeys.PendingLoginContextState);
+            }
+
+        public void SetPendingLoginContextState(PendingLoginContextState state)
+            {
+            if (state == null)
+                {
+                throw new ArgumentNullException(nameof(state));
+                }
+
+            var session = Session;
+            if (session == null || !session.IsAvailable)
+                {
+                throw new SessionMissingException("Session is not available to persist the pending login context selection.");
+                }
+
+            var serialized = JsonSerializer.Serialize(state, _serializerOptions);
+            session.SetString(SessionKeys.PendingLoginContextState, serialized);
+            }
+
+        public bool TryGetPendingLoginContextState(out PendingLoginContextState state)
+            {
+            state = null;
+            var session = Session;
+            if (session == null || !session.IsAvailable)
+                {
+                return false;
+                }
+
+            var serialized = session.GetString(SessionKeys.PendingLoginContextState);
+            if (string.IsNullOrWhiteSpace(serialized))
+                {
+                return false;
+                }
+
+            try
+                {
+                state = JsonSerializer.Deserialize<PendingLoginContextState>(serialized, _serializerOptions);
+                }
+            catch (JsonException)
+                {
+                return false;
+                }
+
+            return state != null;
+            }
+
+        public void ClearPendingLoginContextState()
+            {
+            if (Session == null || !Session.IsAvailable)
+                {
+                return;
+                }
+
+            Session.Remove(SessionKeys.PendingLoginContextState);
             }
 
         public void SetPageId(int pageId)
@@ -634,7 +712,9 @@ namespace AIS
                 Name = user.Name,
                 PPNumber = user.PPNumber,
                 ID = user.ID,
+                UserContextAssignmentId = user.UserContextAssignmentId,
                 UserEntityName = user.UserEntityName,
+                UserParentEntityName = user.UserParentEntityName,
                 UserRoleName = user.UserRoleName,
                 UserPostingAuditZone = user.UserPostingAuditZone,
                 UserPostingBranch = user.UserPostingBranch,
@@ -642,6 +722,11 @@ namespace AIS
                 UserPostingDiv = user.UserPostingDiv,
                 UserPostingZone = user.UserPostingZone,
                 UserEntityID = user.UserEntityID,
+                UserParentEntityID = user.UserParentEntityID,
+                UserEntityCode = user.UserEntityCode,
+                UserParentEntityCode = user.UserParentEntityCode,
+                UserEntityTypeID = user.UserEntityTypeID,
+                UserParentEntityTypeID = user.UserParentEntityTypeID,
                 IsActive = user.IsActive,
                 UserLocationType = user.UserLocationType,
                 UserGroupID = Convert.ToInt32(user.UserGroupID),

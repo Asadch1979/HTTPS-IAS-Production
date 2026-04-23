@@ -2744,6 +2744,24 @@ namespace AIS.Controllers
                 return StatusCode(StatusCodes.Status503ServiceUnavailable, new { error = "database_unavailable", message = "The database is currently unavailable. Please try again later." });
                 }
             }
+
+        [HttpPost]
+        public IActionResult GetUserContexts([FromForm] int? userId, [FromForm] string ppNumber)
+            {
+            var unauthorized = EnsureAuthenticatedSession();
+            if (unauthorized != null)
+                {
+                return unauthorized;
+                }
+
+            if (!userId.HasValue && string.IsNullOrWhiteSpace(ppNumber))
+                {
+                return BadRequest(new { error = "invalid_request", message = "A user id or PP number is required." });
+                }
+
+            return Ok(dBConnection.GetUserContextAssignments(userId, ppNumber));
+            }
+
         [HttpGet]
         [HttpPost]
         public string get_user_name(string PPNUMBER)

@@ -1,9 +1,12 @@
 using AIS.Models;
+using AIS.Models.Requests;
 using Microsoft.AspNetCore.Mvc;
 using Oracle.ManagedDataAccess.Client;
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Linq;
+using System.Text.Json;
 
 namespace AIS.Controllers
     {
@@ -436,33 +439,144 @@ namespace AIS.Controllers
                     }
                 }
             con.Dispose();
-            return userList;
+            return MergeUserSearchResults(userList);
 
             }
 
         public string AddNewUser(FindUserModel user)
             {
-            string resp = "";
-            var enc_pass = HashPassword(user.PASSWORD);
+            if (user == null)
+                {
+                return string.Empty;
+                }
+
+            return SaveUserContextAssignments(new SaveUserContextsPostModel
+                {
+                USER_ID = null,
+                PPNO = user.PPNUMBER?.ToString(),
+                PASSWORD = user.PASSWORD,
+                EMAIL_ADDRESS = user.EMAIL,
+                ISACTIVE = "Y",
+                ASSIGNMENTS = new List<UserContextAssignmentPostModel>
+                    {
+                    new UserContextAssignmentPostModel
+                        {
+                        ROLE_ID = user.GROUPID,
+                        GROUP_ID = user.GROUPID,
+                        ENTITY_ID = user.ENTITYID,
+                        ISDEFAULT = "Y",
+                        ISACTIVE = "Y"
+                        }
+                    }
+                });
+            }
+
+        public List<UserContextAssignmentModel> GetUserContextAssignments(int? userId = null, string ppNumber = null)
+            {
+            var sessionHandler = CreateSessionHandler();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
+                || string.IsNullOrWhiteSpace(loggedInUser.PPNumber)
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return new List<UserContextAssignmentModel>();
+                }
+
+            if (!userId.HasValue && string.IsNullOrWhiteSpace(ppNumber))
+                {
+                return new List<UserContextAssignmentModel>();
+                }
+
+            var parsedPpNumber = int.TryParse(ppNumber, out var resolvedPpNumber)
+                ? (object)resolvedPpNumber
+                : DBNull.Value;
+            var assignments = new List<UserContextAssignmentModel>();
             var con = this.DatabaseConnection();
             using (OracleCommand cmd = con.CreateCommand())
                 {
-                cmd.CommandText = "pkg_ad.P_add_new_user";
+                cmd.CommandText = "pkg_ad.p_get_user_context_assignments";
                 cmd.CommandType = CommandType.StoredProcedure;
                 cmd.Parameters.Clear();
-                cmd.Parameters.Add("ENC_PASS", OracleDbType.Varchar2).Value = enc_pass;
-                cmd.Parameters.Add("ROLE_ID", OracleDbType.Int32).Value = user.GROUPID;
-                cmd.Parameters.Add("P_NO", OracleDbType.Int32).Value = user.PPNUMBER;
-                cmd.Parameters.Add("ENT_ID", OracleDbType.Int32).Value = user.ENTITYID;
+                cmd.Parameters.Add("P_USER_ID", OracleDbType.Int32).Value = (object?)userId ?? DBNull.Value;
+                cmd.Parameters.Add("P_PPNO", OracleDbType.Int32).Value = parsedPpNumber;
+                cmd.Parameters.Add("ENT_ID", OracleDbType.Int32).Value = loggedInUser.UserEntityID;
+                cmd.Parameters.Add("P_NO", OracleDbType.Int32).Value = loggedInUser.PPNumber;
+                cmd.Parameters.Add("R_ID", OracleDbType.Int32).Value = loggedInUser.UserRoleID;
                 cmd.Parameters.Add("T_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
-                OracleDataReader rdr = cmd.ExecuteReader();
-                while (rdr.Read())
+
+                using (OracleDataReader rdr = cmd.ExecuteReader())
                     {
-                    resp = rdr["remarks"].ToString();
+                    while (rdr.Read())
+                        {
+                        var assignment = ReadUserContextAssignment(rdr);
+                        if (assignment == null)
+                            {
+                            continue;
+                            }
+
+                        assignments.Add(assignment);
+                        }
                     }
                 }
+
             con.Dispose();
-            return resp;
+            return assignments
+                .OrderByDescending(item => string.Equals(item.IsDefault, "Y", StringComparison.OrdinalIgnoreCase))
+                .ThenBy(item => item.RoleName)
+                .ThenBy(item => item.EntityName)
+                .ToList();
+            }
+
+        public string SaveUserContextAssignments(SaveUserContextsPostModel user)
+            {
+            var sessionHandler = CreateSessionHandler();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
+                || string.IsNullOrWhiteSpace(loggedInUser.PPNumber)
+                || loggedInUser.UserRoleID <= 0
+                || user == null)
+                {
+                return string.Empty;
+                }
+
+            var assignments = NormalizeContextAssignments(user.ASSIGNMENTS);
+            var serializedAssignments = JsonSerializer.Serialize(assignments);
+            var hashedPassword = string.IsNullOrWhiteSpace(user.PASSWORD) ? null : HashPassword(user.PASSWORD);
+            var parsedPpNumber = int.TryParse(user.PPNO, out var resolvedPpNumber)
+                ? (object)resolvedPpNumber
+                : DBNull.Value;
+            var response = string.Empty;
+            var con = this.DatabaseConnection();
+
+            using (OracleCommand cmd = con.CreateCommand())
+                {
+                cmd.CommandText = "pkg_ad.p_save_user_account";
+                cmd.CommandType = CommandType.StoredProcedure;
+                cmd.Parameters.Clear();
+                cmd.Parameters.Add("P_USER_ID", OracleDbType.Int32).Value = (object?)user.USER_ID ?? DBNull.Value;
+                cmd.Parameters.Add("P_PPNO", OracleDbType.Int32).Value = parsedPpNumber;
+                cmd.Parameters.Add("P_PASSWORD", OracleDbType.Varchar2).Value = string.IsNullOrWhiteSpace(hashedPassword) ? (object)DBNull.Value : hashedPassword;
+                cmd.Parameters.Add("P_EMAIL_ADDRESS", OracleDbType.Varchar2).Value = string.IsNullOrWhiteSpace(user.EMAIL_ADDRESS) ? (object)DBNull.Value : user.EMAIL_ADDRESS.Trim();
+                cmd.Parameters.Add("P_ISACTIVE", OracleDbType.Varchar2).Value = NormalizeContextFlag(user.ISACTIVE, "Y");
+                cmd.Parameters.Add("P_ASSIGNMENTS_JSON", OracleDbType.Clob).Value = serializedAssignments;
+                cmd.Parameters.Add("ENT_ID", OracleDbType.Int32).Value = loggedInUser.UserEntityID;
+                cmd.Parameters.Add("P_NO", OracleDbType.Int32).Value = loggedInUser.PPNumber;
+                cmd.Parameters.Add("R_ID", OracleDbType.Int32).Value = loggedInUser.UserRoleID;
+                cmd.Parameters.Add("T_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+
+                using (OracleDataReader rdr = cmd.ExecuteReader())
+                    {
+                    while (rdr.Read())
+                        {
+                        response = ReadFirstAvailableString(rdr, "remarks", "REMARKS", "message", "MESSAGE");
+                        }
+                    }
+                }
+
+            con.Dispose();
+            return response;
             }
 
         public List<AuditEntitiesModel> GetAuditEntityTypes(int page_id)
@@ -1073,35 +1187,129 @@ namespace AIS.Controllers
                 {
                 return new UpdateUserModel();
                 }
-            var newPassword = "";
-            bool setPassword = false;
-            if (user.PASSWORD != "" && user.PASSWORD != null)
-                {
-                newPassword = HashPassword(user.PASSWORD);
-                setPassword = !setPassword;
-                }
 
-            var con = this.DatabaseConnection();
-            using (OracleCommand cmd = con.CreateCommand())
+            SaveUserContextAssignments(new SaveUserContextsPostModel
                 {
-                cmd.CommandText = "pkg_ad.UPDATE_USERS";
-                cmd.CommandType = CommandType.StoredProcedure;
-                cmd.Parameters.Clear();
-                cmd.Parameters.Add("PPNUMBER", OracleDbType.Int32).Value = user.PPNO;
-                if (setPassword)
-                    cmd.Parameters.Add("PASS", OracleDbType.Varchar2).Value = newPassword;
-                else
-                    cmd.Parameters.Add("PASS", OracleDbType.Varchar2).Value = newPassword;
-                cmd.Parameters.Add("IS_ACTIVE", OracleDbType.Varchar2).Value = user.ISACTIVE;
-                cmd.Parameters.Add("ROLEID", OracleDbType.Int32).Value = user.ROLE_ID;
-                cmd.Parameters.Add("ENTITYID", OracleDbType.Int32).Value = user.ENTITY_ID;
-                cmd.Parameters.Add("EMAIL_ADDRESS", OracleDbType.Varchar2).Value = user.EMAIL_ADDRESS;
-                cmd.Parameters.Add("T_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
-                cmd.ExecuteReader();
-                }
-            con.Dispose();
+                USER_ID = user.USER_ID,
+                PPNO = user.PPNO,
+                PASSWORD = user.PASSWORD,
+                EMAIL_ADDRESS = user.EMAIL_ADDRESS,
+                ISACTIVE = user.ISACTIVE,
+                ASSIGNMENTS = new List<UserContextAssignmentPostModel>
+                    {
+                    new UserContextAssignmentPostModel
+                        {
+                        ROLE_ID = user.ROLE_ID,
+                        GROUP_ID = user.ROLE_ID,
+                        ENTITY_ID = user.ENTITY_ID,
+                        ISDEFAULT = "Y",
+                        ISACTIVE = NormalizeContextFlag(user.ISACTIVE, "Y")
+                        }
+                    }
+                });
+
             user.PASSWORD = "";
             return user;
+            }
+
+        private static List<UserModel> MergeUserSearchResults(IEnumerable<UserModel> users)
+            {
+            return users
+                .Where(user => user != null)
+                .GroupBy(user => user.ID > 0 ? user.ID.ToString() : user.PPNumber ?? Guid.NewGuid().ToString(), StringComparer.OrdinalIgnoreCase)
+                .Select(group =>
+                    {
+                    var primary = group.First();
+                    var roleNames = group
+                        .Select(item => item.UserRole)
+                        .Where(value => !string.IsNullOrWhiteSpace(value))
+                        .Distinct(StringComparer.OrdinalIgnoreCase)
+                        .ToList();
+                    var entityNames = group
+                        .Select(item => item.UserEntityName)
+                        .Where(value => !string.IsNullOrWhiteSpace(value))
+                        .Distinct(StringComparer.OrdinalIgnoreCase)
+                        .ToList();
+                    var parentNames = group
+                        .Select(item => item.UserParentEntityName)
+                        .Where(value => !string.IsNullOrWhiteSpace(value))
+                        .Distinct(StringComparer.OrdinalIgnoreCase)
+                        .ToList();
+                    var assignmentCount = group
+                        .Select(item => string.Concat(
+                            item.UserRoleID.GetValueOrDefault(),
+                            ":",
+                            item.UserEntityID.GetValueOrDefault(),
+                            ":",
+                            item.RelationshipId.GetValueOrDefault(),
+                            ":",
+                            item.UserParentEntityID.GetValueOrDefault()))
+                        .Distinct(StringComparer.OrdinalIgnoreCase)
+                        .Count();
+
+                    primary.UserRole = string.Join(", ", roleNames);
+                    primary.UserGroup = primary.UserRole;
+                    primary.UserEntityName = string.Join(", ", entityNames);
+                    primary.UserParentEntityName = string.Join(", ", parentNames);
+                    primary.AssignmentCount = Math.Max(assignmentCount, 1);
+                    return primary;
+                    })
+                .OrderBy(user => user.Name)
+                .ThenBy(user => user.PPNumber)
+                .ToList();
+            }
+
+        private static List<UserContextAssignmentPostModel> NormalizeContextAssignments(IEnumerable<UserContextAssignmentPostModel> assignments)
+            {
+            var normalized = (assignments ?? Enumerable.Empty<UserContextAssignmentPostModel>())
+                .Where(item => item != null)
+                .Select(item => new UserContextAssignmentPostModel
+                    {
+                    ASSIGNMENT_ID = item.ASSIGNMENT_ID,
+                    ROLE_ID = item.ROLE_ID,
+                    GROUP_ID = item.GROUP_ID ?? item.ROLE_ID,
+                    ENTITY_ID = item.ENTITY_ID,
+                    PARENT_ENTITY_ID = item.PARENT_ENTITY_ID,
+                    RELATIONSHIP_TYPE_ID = item.RELATIONSHIP_TYPE_ID,
+                    ISDEFAULT = NormalizeContextFlag(item.ISDEFAULT, "N"),
+                    ISACTIVE = NormalizeContextFlag(item.ISACTIVE, "Y"),
+                    ISDELETED = item.ISDELETED
+                    })
+                .ToList();
+
+            var activeAssignments = normalized
+                .Where(item => !item.ISDELETED)
+                .ToList();
+
+            if (activeAssignments.Count > 0 && !activeAssignments.Any(item => string.Equals(item.ISDEFAULT, "Y", StringComparison.OrdinalIgnoreCase)))
+                {
+                activeAssignments[0].ISDEFAULT = "Y";
+                }
+
+            var defaultAssigned = false;
+            foreach (var assignment in activeAssignments)
+                {
+                if (string.Equals(assignment.ISDEFAULT, "Y", StringComparison.OrdinalIgnoreCase) && !defaultAssigned)
+                    {
+                    assignment.ISDEFAULT = "Y";
+                    defaultAssigned = true;
+                    continue;
+                    }
+
+                assignment.ISDEFAULT = "N";
+                }
+
+            return normalized;
+            }
+
+        private static string NormalizeContextFlag(string flag, string defaultValue)
+            {
+            if (string.IsNullOrWhiteSpace(flag))
+                {
+                return defaultValue;
+                }
+
+            return string.Equals(flag.Trim(), "Y", StringComparison.OrdinalIgnoreCase) ? "Y" : "N";
             }
 
         public PasswordResetResult ResetUserPassword(string PPNumber, string CNICNumber, string generatedPassword = null)

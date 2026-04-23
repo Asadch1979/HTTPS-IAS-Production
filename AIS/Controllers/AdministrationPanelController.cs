@@ -1030,28 +1030,85 @@ namespace AIS.Controllers
                 return BadRequest(new { status = false, message = "Invalid input data." });
                 }
 
+            var request = new SaveUserContextsPostModel
+                {
+                USER_ID = user.USER_ID,
+                PPNO = user.PPNO,
+                PASSWORD = user.PASSWORD,
+                EMAIL_ADDRESS = user.EMAIL_ADDRESS,
+                ISACTIVE = user.ISACTIVE,
+                ASSIGNMENTS = new List<UserContextAssignmentPostModel>
+                    {
+                    new UserContextAssignmentPostModel
+                        {
+                        ROLE_ID = user.ROLE_ID,
+                        GROUP_ID = user.ROLE_ID,
+                        ENTITY_ID = user.ENTITY_ID,
+                        ISDEFAULT = "Y",
+                        ISACTIVE = string.Equals(user.ISACTIVE, "Y", StringComparison.OrdinalIgnoreCase) ? "Y" : "N"
+                        }
+                    }
+                };
+
+            return SaveUserContextsInternal(request, "update_user");
+            }
+
+        [HttpPost]
+        [IgnoreAntiforgeryToken]
+        [Consumes("application/json")]
+        public IActionResult save_user_contexts([FromBody] SaveUserContextsPostModel user)
+            {
+            return SaveUserContextsInternal(user, "save_user_contexts");
+            }
+
+        private IActionResult SaveUserContextsInternal(SaveUserContextsPostModel user, string source)
+            {
+            if (user == null)
+                {
+                _logger.LogWarning("{Source} received no payload.", source);
+                return BadRequest(new { status = false, message = "Invalid request." });
+                }
+
+            if (string.IsNullOrWhiteSpace(user.PPNO))
+                {
+                _logger.LogWarning("{Source} missing PP number.", source);
+                return BadRequest(new { status = false, message = "PP number is required." });
+                }
+
+            var assignments = (user.ASSIGNMENTS ?? new List<UserContextAssignmentPostModel>())
+                .Where(item => item != null && !item.ISDELETED)
+                .ToList();
+
+            if (assignments.Count == 0)
+                {
+                _logger.LogWarning("{Source} missing active assignments for PP {PPNO}.", source, user.PPNO);
+                return BadRequest(new { status = false, message = "At least one active role and posting assignment is required." });
+                }
+
+            if (assignments.Any(item => !item.ROLE_ID.HasValue || item.ROLE_ID.Value <= 0 || !item.ENTITY_ID.HasValue || item.ENTITY_ID.Value <= 0))
+                {
+                _logger.LogWarning("{Source} received an incomplete assignment set for PP {PPNO}.", source, user.PPNO);
+                return BadRequest(new { status = false, message = "Each assignment must include one role and one entity." });
+                }
+
             if (!string.IsNullOrWhiteSpace(user.PASSWORD))
                 {
                 var validation = _passwordPolicyValidator.Validate(user.PASSWORD, user.PPNO);
                 if (!validation.IsValid)
                     {
-                    _logger.LogWarning("update_user password policy failed for USER_ID {UserId}: {Message}", user.USER_ID, validation.ErrorMessage);
+                    _logger.LogWarning("{Source} password policy failed for PP {PPNO}: {Message}", source, user.PPNO, validation.ErrorMessage);
                     return Json(new { status = false, message = validation.ErrorMessage });
                     }
                 }
 
-            var updatedUser = dBConnection.UpdateUser(new UpdateUserModel
+            var response = dBConnection.SaveUserContextAssignments(user);
+            _logger.LogInformation("{Source} succeeded for USER_ID {UserId} / PP {PPNO}.", source, user.USER_ID, user.PPNO);
+            return Json(new
                 {
-                USER_ID = user.USER_ID ?? 0,
-                ROLE_ID = user.ROLE_ID ?? 0,
-                ENTITY_ID = user.ENTITY_ID ?? 0,
-                PASSWORD = user.PASSWORD,
-                EMAIL_ADDRESS = user.EMAIL_ADDRESS,
-                PPNO = user.PPNO,
-                ISACTIVE = user.ISACTIVE
+                status = true,
+                message = string.IsNullOrWhiteSpace(response) ? "User assignments saved successfully." : response.Trim(),
+                user
                 });
-            _logger.LogInformation("update_user succeeded for USER_ID {UserId}.", user.USER_ID);
-            return Json(new { status = true, user = updatedUser });
             }
 
         private Dictionary<string, string[]> ExtractModelStateErrors()

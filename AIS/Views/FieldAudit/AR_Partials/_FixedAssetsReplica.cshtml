@@ -1,7 +1,55 @@
 @model AIS.Models.FieldAuditWorkflow.FieldAuditGridReplicaViewModel
 <div id="fieldAuditFixedAssetsReplica" data-eng-id="@Model.EngagementId">
-    <div class="d-flex justify-content-between align-items-center mb-2 mt-2"><h5 class="mb-0">Working Paper - Fixed Assets</h5><button type="button" class="btn btn-outline-secondary btn-sm" onclick="window.fieldAuditDashboard && window.fieldAuditDashboard.loadNestedView('WP_ACCOUNT_OPENING')">Back</button></div>
+    <div class="d-flex justify-content-between align-items-center mb-2 mt-2">
+        <h5 class="mb-0">Working Paper - Fixed Assets</h5>
+        <div class="d-flex align-items-center gap-2">
+            <button type="button" id="openFixedAssetsReplicaBtn" class="rounded-circle btn btn-danger btn-sm" aria-label="Add fixed asset">
+                <i class="fa fa-plus text-white"></i>
+            </button>
+            <button type="button" class="btn btn-outline-secondary btn-sm" onclick="window.fieldAuditDashboard && window.fieldAuditDashboard.loadNestedView('WP_ACCOUNT_OPENING')">Back</button>
+        </div>
+    </div>
     <table id="fieldAuditFixedAssetsTable" class="table table-hover table-bordered table-striped"><thead><tr><th>Sr No</th><th>Asset</th><th>Physical</th><th>FAR Location</th><th>Difference</th><th>Remarks</th></tr></thead><tbody></tbody></table>
     <div class="mt-3 d-flex justify-content-end gap-2"><button class="btn btn-success" type="button" onclick="window.fieldAuditDashboard && window.fieldAuditDashboard.loadNestedView('WP_CASH_COUNT')">Cash Count</button></div>
 </div>
-<script src="~/js/fieldAudit/fixedAssetsReplica.js?v=1"></script>
+
+<div id="fieldAuditFixedAssetsDialog" class="modal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-xl modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">New Fixed Assets Record</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="fieldAuditFixedAssetsForm">
+                    <div class="form-group">
+                        <label for="fieldAuditAssetName">Asset Name</label>
+                        <input type="text" class="form-control" id="fieldAuditAssetName" />
+                    </div>
+                    <div class="form-group">
+                        <label for="fieldAuditAssetPhysical">Physical Existance</label>
+                        <input type="text" class="form-control" id="fieldAuditAssetPhysical" />
+                    </div>
+                    <div class="form-group">
+                        <label for="fieldAuditAssetFar">As per Fixed Asset Register</label>
+                        <input type="text" class="form-control" id="fieldAuditAssetFar" />
+                    </div>
+                    <div class="form-group">
+                        <label for="fieldAuditAssetDifference">Difference</label>
+                        <input type="text" class="form-control" id="fieldAuditAssetDifference" />
+                    </div>
+                    <div class="form-group">
+                        <label for="fieldAuditAssetRemarks">Remarks</label>
+                        <input type="text" class="form-control" id="fieldAuditAssetRemarks" />
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" id="addFixedAssetsReplicaBtn" class="btn btn-danger">Add New</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="~/js/fieldAudit/fixedAssetsReplica.js?v=3"></script>

@@ -53,5 +53,6 @@ namespace AIS.Models
         public string UserRoleName { get; set; }
         public int? UserEntityTypeID { get; set; }
         public int? UserParentEntityTypeID { get; set; }
+        public int? UserContextAssignmentId { get; set; }
         }
     }

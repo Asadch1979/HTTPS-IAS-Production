@@ -148,8 +148,14 @@
             return;
         }
 
+        if (data.requiresContextSelection) {
+            var selectionTarget = data.redirectUrl || (resolveBaseUrl() + '/Login/SelectContext');
+            window.location.href = selectionTarget;
+            return;
+        }
+
         var baseUrl = resolveBaseUrl();
-        window.location.href = baseUrl + '/Home/Index';
+        window.location.href = (data.redirectUrl || (baseUrl + '/Home/Index'));
     }
 
     function executeLoginRequest() {
