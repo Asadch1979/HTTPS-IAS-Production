@@ -1,3 +1,4 @@
+using System;
 using AIS.Validation;
 
 namespace AIS.Models
@@ -36,5 +37,11 @@ namespace AIS.Models
         public string IsDefault { get; set; }
         [PlainText]
         public string IsActive { get; set; }
+        [PlainText]
+        public string AssignmentType { get; set; }
+        public DateTime? EffectiveFrom { get; set; }
+        public DateTime? EffectiveTo { get; set; }
+        [PlainText]
+        public string Remarks { get; set; }
         }
     }

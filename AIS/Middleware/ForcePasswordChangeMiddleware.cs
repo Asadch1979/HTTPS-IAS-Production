@@ -65,6 +65,8 @@ namespace AIS.Middleware
             var path = request.Path.Value ?? string.Empty;
             if (path.Equals("/Home/Change_Password", StringComparison.OrdinalIgnoreCase) ||
                 path.Equals("/Home/DoChangePassword", StringComparison.OrdinalIgnoreCase) ||
+                path.Equals("/Login/SelectContext", StringComparison.OrdinalIgnoreCase) ||
+                path.Equals("/Login/ConfirmContext", StringComparison.OrdinalIgnoreCase) ||
                 path.Equals("/Login/Logout", StringComparison.OrdinalIgnoreCase))
             {
                 return true;

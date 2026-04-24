@@ -18,6 +18,8 @@ namespace AIS.Services
             "/Login/DoLogin",
             "/Login/Index",
             "/Login/Index_Dev",
+            "/Login/SelectContext",
+            "/Login/ConfirmContext",
             "/Login/KillSessions",
             "/Login/Maintenance",
             "/IidInquiryReportPdf/GeneratePdf",

@@ -1,9 +1,12 @@
 @using System.Linq
+@using System.Security.Claims
 @inject Microsoft.Extensions.Configuration.IConfiguration Configuration
+@inject AIS.SessionHandler SessionHandler
 @{
     var baseUrl = ViewBag.BaseURL as string ?? Configuration["BaseURL"] ?? Context.Request.PathBase.Value ?? string.Empty;
 
     var nonce = Context.Items["CSPNonce"]?.ToString();
+    var sessionUser = SessionHandler?.GetUser();
 
     var menus = (ViewData["TopMenu"] as IEnumerable<dynamic> ?? Enumerable.Empty<dynamic>()).ToList();
     var pages = (ViewData["TopMenuPages"] as IEnumerable<dynamic> ?? Enumerable.Empty<dynamic>()).ToList();
@@ -64,7 +67,58 @@
 
     if (string.IsNullOrWhiteSpace(userDisplay))
     {
-        try { userDisplay = User?.Identity?.Name ?? ""; } catch { }
+        try
+        {
+            var sessionName = sessionUser?.Name?.Trim();
+            var sessionPp = sessionUser?.PPNumber?.Trim();
+            if (!string.IsNullOrWhiteSpace(sessionName) && !string.IsNullOrWhiteSpace(sessionPp))
+            {
+                userDisplay = $"{sessionName} ({sessionPp})";
+            }
+            else if (!string.IsNullOrWhiteSpace(sessionName))
+            {
+                userDisplay = sessionName;
+            }
+            else if (!string.IsNullOrWhiteSpace(sessionPp))
+            {
+                userDisplay = sessionPp;
+            }
+        }
+        catch { }
+    }
+
+    if (string.IsNullOrWhiteSpace(userPosting))
+    {
+        try { userPosting = sessionUser?.UserEntityName ?? ""; } catch { }
+    }
+
+    if (string.IsNullOrWhiteSpace(userRole))
+    {
+        try { userRole = sessionUser?.UserRoleName ?? ""; } catch { }
+    }
+
+    if (string.IsNullOrWhiteSpace(userDisplay))
+    {
+        try
+        {
+            var identityName = User?.Identity?.Name?.Trim() ?? "";
+            var claimPp = User?.FindFirst(ClaimTypes.SerialNumber)?.Value?.Trim() ?? "";
+            if (!string.IsNullOrWhiteSpace(identityName) &&
+                !string.IsNullOrWhiteSpace(claimPp) &&
+                !string.Equals(identityName, claimPp, StringComparison.OrdinalIgnoreCase))
+            {
+                userDisplay = $"{identityName} ({claimPp})";
+            }
+            else if (!string.IsNullOrWhiteSpace(identityName))
+            {
+                userDisplay = identityName;
+            }
+            else
+            {
+                userDisplay = claimPp;
+            }
+        }
+        catch { }
     }
 
     var year = DateTime.Now.Year;

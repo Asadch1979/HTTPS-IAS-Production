@@ -72,6 +72,8 @@ namespace AIS.Middleware
 
             return path.Equals("/login/index", StringComparison.OrdinalIgnoreCase) ||
                    path.Equals("/login/dologin", StringComparison.OrdinalIgnoreCase) ||
+                   path.Equals("/login/selectcontext", StringComparison.OrdinalIgnoreCase) ||
+                   path.Equals("/login/confirmcontext", StringComparison.OrdinalIgnoreCase) ||
                    path.Equals("/login/resetpassword", StringComparison.OrdinalIgnoreCase) ||
                    path.Equals("/login/killsession", StringComparison.OrdinalIgnoreCase) ||
                    path.Equals("/home/change_password", StringComparison.OrdinalIgnoreCase) ||

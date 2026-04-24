@@ -262,6 +262,18 @@ namespace AIS.Services
                 return true;
                 }
 
+            if (path.Equals("/Login/SelectContext", StringComparison.OrdinalIgnoreCase) &&
+                (HttpMethods.IsGet(method) || HttpMethods.IsPost(method)))
+                {
+                return true;
+                }
+
+            if (path.Equals("/Login/ConfirmContext", StringComparison.OrdinalIgnoreCase) &&
+                (HttpMethods.IsGet(method) || HttpMethods.IsPost(method)))
+                {
+                return true;
+                }
+
             if (path.Equals("/Login/Index_Dev", StringComparison.OrdinalIgnoreCase) &&
                 HttpMethods.IsGet(method))
                 {

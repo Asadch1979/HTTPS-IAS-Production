@@ -8,12 +8,23 @@ $(document).ready(function () {
         $('#roleSaveField').css('width', '100%');
     }
 
+    $('#isActiveSaveField').prop('checked', true);
     $('#addAssignmentButton').on('click', addAssignmentButtonClickHandler);
 });
 
 function normalizeFlag(value, defaultValue) {
     var flag = (value || defaultValue || 'N').toString().trim().toUpperCase();
     return flag === 'Y' ? 'Y' : 'N';
+}
+
+function normalizeOptionalText(value) {
+    var text = (value || '').toString().trim();
+    return text === '' ? null : text;
+}
+
+function normalizeOptionalDateValue(value) {
+    var text = normalizeOptionalText(value);
+    return text || null;
 }
 
 function escapeHtml(value) {
@@ -52,19 +63,23 @@ function mapApiContext(context) {
     }
 
     return {
-        assignmentId: toInt(context.assignmentId || context.userContextId || context.userContextAssignmentId),
-        roleId: toInt(context.roleId || context.groupId),
-        groupId: toInt(context.groupId || context.roleId),
-        roleName: (context.roleName || context.userRoleName || '').toString(),
-        entityId: toInt(context.entityId),
-        entityName: (context.entityName || context.userEntityName || '').toString(),
-        parentEntityId: toInt(context.parentEntityId),
-        parentEntityName: (context.parentEntityName || context.userParentEntityName || '').toString(),
-        relationshipTypeId: toInt(context.relationshipTypeId),
-        relationshipTypeName: (context.relationshipTypeName || '').toString(),
-        isDefault: normalizeFlag(context.isDefault, 'N'),
-        isActive: normalizeFlag(context.isActive, 'Y'),
-        isDeleted: !!context.isDeleted
+        assignmentId: toInt(context.assignmentId || context.userContextId || context.userContextAssignmentId || context.ASSIGNMENT_ID || context.USER_CONTEXT_ID),
+        roleId: toInt(context.roleId || context.groupId || context.ROLE_ID || context.GROUP_ID),
+        groupId: toInt(context.groupId || context.roleId || context.GROUP_ID || context.ROLE_ID),
+        roleName: (context.roleName || context.userRoleName || context.GROUP_NAME || '').toString(),
+        entityId: toInt(context.entityId || context.ENTITY_ID),
+        entityName: (context.entityName || context.userEntityName || context.ENT_NAME || '').toString(),
+        parentEntityId: toInt(context.parentEntityId || context.PARENT_ENTITY_ID),
+        parentEntityName: (context.parentEntityName || context.userParentEntityName || context.PARENT_ENTITY_NAME || '').toString(),
+        relationshipTypeId: toInt(context.relationshipTypeId || context.RELATIONSHIP_TYPE_ID),
+        relationshipTypeName: (context.relationshipTypeName || context.RELATIONSHIP_TYPE_NAME || '').toString(),
+        isDefault: normalizeFlag(context.isDefault || context.IS_DEFAULT || context.ISDEFAULT, 'N'),
+        isActive: normalizeFlag(context.isActive || context.IS_ACTIVE || context.ISACTIVE, 'Y'),
+        assignmentType: normalizeOptionalText(context.assignmentType || context.ASSIGNMENT_TYPE) || 'MANUAL',
+        effectiveFrom: normalizeOptionalDateValue(context.effectiveFrom || context.EFFECTIVE_FROM),
+        effectiveTo: normalizeOptionalDateValue(context.effectiveTo || context.EFFECTIVE_TO),
+        remarks: normalizeOptionalText(context.remarks || context.REMARKS),
+        isDeleted: !!(context.isDeleted || context.ISDELETED)
     };
 }
 
@@ -82,6 +97,10 @@ function buildLegacyContextFromUser(user) {
         relationshipTypeName: '',
         isDefault: 'Y',
         isActive: normalizeFlag(user.isActive, 'Y'),
+        assignmentType: 'MANUAL',
+        effectiveFrom: null,
+        effectiveTo: null,
+        remarks: null,
         isDeleted: false
     };
 }
@@ -153,27 +172,35 @@ function renderUserList(users) {
     });
 }
 
-function ensureSingleDefaultContext() {
-    var defaultAssigned = false;
-    var visibleIndexes = [];
-
+function normalizeContextCollection(preferredDefaultIndex) {
     $.each(g_userContexts, function (index, context) {
-        if (context && !context.isDeleted) {
-            visibleIndexes.push(index);
-        }
-    });
-
-    $.each(visibleIndexes, function (_, index) {
-        if (g_userContexts[index].isDefault === 'Y' && !defaultAssigned) {
-            defaultAssigned = true;
+        if (!context) {
             return;
         }
 
-        g_userContexts[index].isDefault = 'N';
+        context.assignmentId = toInt(context.assignmentId);
+        context.roleId = toInt(context.roleId);
+        context.groupId = toInt(context.groupId || context.roleId);
+        context.entityId = toInt(context.entityId);
+        context.parentEntityId = toInt(context.parentEntityId);
+        context.relationshipTypeId = toInt(context.relationshipTypeId);
+        context.isDeleted = !!context.isDeleted;
+        context.isDefault = context.isDeleted ? 'N' : normalizeFlag(context.isDefault, 'N');
+        context.isActive = context.isDeleted ? 'N' : normalizeFlag(context.isActive, 'Y');
+        context.assignmentType = normalizeOptionalText(context.assignmentType) || 'MANUAL';
+        context.effectiveFrom = normalizeOptionalDateValue(context.effectiveFrom);
+        context.effectiveTo = normalizeOptionalDateValue(context.effectiveTo);
+        context.remarks = normalizeOptionalText(context.remarks);
     });
 
-    if (!defaultAssigned && visibleIndexes.length > 0) {
-        g_userContexts[visibleIndexes[0]].isDefault = 'Y';
+    if (typeof preferredDefaultIndex === 'number' && preferredDefaultIndex >= 0 && g_userContexts[preferredDefaultIndex] && !g_userContexts[preferredDefaultIndex].isDeleted) {
+        $.each(g_userContexts, function (index, context) {
+            if (!context || context.isDeleted) {
+                return;
+            }
+
+            context.isDefault = index === preferredDefaultIndex ? 'Y' : 'N';
+        });
     }
 }
 
@@ -192,7 +219,7 @@ function renderUserContexts() {
         var isActiveChecked = context.isActive === 'Y' ? 'checked="checked"' : '';
 
         $tbody.append(
-            '<tr>' +
+            '<tr data-context-index="' + index + '">' +
             '<td class="text-center"><input type="radio" name="defaultUserContext" ' + isDefaultChecked + ' onclick="setDefaultContext(' + index + ')" /></td>' +
             '<td class="text-center"><input type="checkbox" ' + isActiveChecked + ' onclick="toggleContextActive(' + index + ', this.checked)" /></td>' +
             '<td>' + escapeHtml(context.roleName) + '</td>' +
@@ -214,11 +241,11 @@ function resetUserContexts() {
     renderUserContexts();
 }
 
-function findContextIndex(candidate) {
+function findContextIndex(candidate, includeDeleted) {
     var matchIndex = -1;
 
     $.each(g_userContexts, function (index, context) {
-        if (!context || context.isDeleted) {
+        if (!context || (!includeDeleted && context.isDeleted)) {
             return;
         }
 
@@ -259,21 +286,31 @@ function buildCurrentContext() {
         relationshipTypeName: getOptionText('#RelationshipField option:selected'),
         isDefault: $('#defaultAssignmentSaveField').is(':checked') ? 'Y' : 'N',
         isActive: $('#isActiveSaveField').is(':checked') ? 'Y' : 'N',
+        assignmentType: 'MANUAL',
+        effectiveFrom: null,
+        effectiveTo: null,
+        remarks: null,
         isDeleted: false
     };
 }
 
 function upsertContext(candidate) {
-    var existingIndex = findContextIndex(candidate);
+    var existingIndex = findContextIndex(candidate, false);
+    if (existingIndex < 0) {
+        existingIndex = findContextIndex(candidate, true);
+    }
+
     if (existingIndex >= 0) {
         var existing = g_userContexts[existingIndex];
         candidate.assignmentId = existing.assignmentId || candidate.assignmentId;
+        candidate.isDeleted = false;
         g_userContexts[existingIndex] = candidate;
     } else {
         g_userContexts.push(candidate);
+        existingIndex = g_userContexts.length - 1;
     }
 
-    ensureSingleDefaultContext();
+    normalizeContextCollection(candidate.isDefault === 'Y' ? existingIndex : null);
     renderUserContexts();
 }
 
@@ -295,23 +332,17 @@ function removeUserContext(index) {
     if (g_userContexts[index].assignmentId > 0) {
         g_userContexts[index].isDeleted = true;
         g_userContexts[index].isDefault = 'N';
+        g_userContexts[index].isActive = 'N';
     } else {
         g_userContexts.splice(index, 1);
     }
 
-    ensureSingleDefaultContext();
+    normalizeContextCollection();
     renderUserContexts();
 }
 
 function setDefaultContext(index) {
-    $.each(g_userContexts, function (currentIndex, context) {
-        if (!context || context.isDeleted) {
-            return;
-        }
-
-        context.isDefault = currentIndex === index ? 'Y' : 'N';
-    });
-
+    normalizeContextCollection(index);
     renderUserContexts();
 }
 
@@ -321,7 +352,11 @@ function toggleContextActive(index, isActive) {
     }
 
     g_userContexts[index].isActive = isActive ? 'Y' : 'N';
-    ensureSingleDefaultContext();
+    if (!isActive && g_userContexts[index].isDefault === 'Y') {
+        g_userContexts[index].isDefault = 'N';
+    }
+
+    normalizeContextCollection();
     renderUserContexts();
 }
 
@@ -363,7 +398,7 @@ function loadUserContexts(user) {
                 g_userContexts = [buildLegacyContextFromUser(user)];
             }
 
-            ensureSingleDefaultContext();
+            normalizeContextCollection();
             renderUserContexts();
 
             var defaultContext = null;
@@ -533,10 +568,133 @@ function clearSearchFields() {
     $('#RelationshipField').val(0);
     $('#controlingsearch').empty().append('<option id="0" value="0">--Select Controlling/Reporting Office--</option>');
     $('#childposting').empty().append('<option id="0" value="0">--Select Place of Posting--</option>');
-    $('#isActiveSaveField').prop('checked', false);
+    $('#isActiveSaveField').prop('checked', true);
     $('#defaultAssignmentSaveField').prop('checked', false);
     $('#resetpassword').prop('checked', false);
     resetUserContexts();
+}
+
+function buildAssignmentPayloadFromContext(context, isDeleted) {
+    return {
+        ASSIGNMENT_ID: context.assignmentId > 0 ? context.assignmentId : null,
+        USER_CONTEXT_ID: context.assignmentId > 0 ? context.assignmentId : null,
+        ROLE_ID: context.roleId > 0 ? context.roleId : null,
+        GROUP_ID: context.groupId > 0 ? context.groupId : (context.roleId > 0 ? context.roleId : null),
+        ENTITY_ID: context.entityId > 0 ? context.entityId : null,
+        ISDEFAULT: isDeleted ? 'N' : normalizeFlag(context.isDefault, 'N'),
+        ISACTIVE: isDeleted ? 'N' : normalizeFlag(context.isActive, 'Y'),
+        ASSIGNMENT_TYPE: normalizeOptionalText(context.assignmentType) || 'MANUAL',
+        EFFECTIVE_FROM: normalizeOptionalDateValue(context.effectiveFrom),
+        EFFECTIVE_TO: normalizeOptionalDateValue(context.effectiveTo),
+        REMARKS: normalizeOptionalText(context.remarks),
+        ISDELETED: !!isDeleted
+    };
+}
+
+function collectAssignmentsFromGrid() {
+    var visibleAssignments = [];
+    var deletedAssignments = [];
+    var rowCount = 0;
+
+    $('#userContextTableBody tr[data-context-index]').each(function () {
+        var contextIndex = toInt($(this).attr('data-context-index'));
+        var context = g_userContexts[contextIndex];
+        if (!context || context.isDeleted) {
+            return;
+        }
+
+        rowCount++;
+        visibleAssignments.push(buildAssignmentPayloadFromContext(context, false));
+    });
+
+    $.each(g_userContexts, function (_, context) {
+        if (!context || !context.isDeleted || !(context.assignmentId > 0)) {
+            return;
+        }
+
+        deletedAssignments.push(buildAssignmentPayloadFromContext(context, true));
+    });
+
+    return {
+        rowCount: rowCount,
+        visibleAssignments: visibleAssignments,
+        assignments: deletedAssignments.concat(visibleAssignments)
+    };
+}
+
+function validateAssignments(collectedAssignments) {
+    if (!collectedAssignments || collectedAssignments.rowCount === 0 || !collectedAssignments.visibleAssignments.length) {
+        return 'Add at least one role and posting assignment to the grid before saving the user.';
+    }
+
+    var duplicateRows = {};
+    var activeCount = 0;
+    var defaultRows = [];
+    var inactiveDefaultRow = 0;
+
+    $.each(collectedAssignments.visibleAssignments, function (index, assignment) {
+        var rowNumber = index + 1;
+
+        if (!(assignment.ROLE_ID > 0) || !(assignment.ENTITY_ID > 0)) {
+            duplicateRows.invalid = rowNumber;
+            return false;
+        }
+
+        assignment.GROUP_ID = assignment.GROUP_ID || assignment.ROLE_ID;
+        assignment.ISDEFAULT = normalizeFlag(assignment.ISDEFAULT, 'N');
+        assignment.ISACTIVE = normalizeFlag(assignment.ISACTIVE, 'Y');
+        assignment.ASSIGNMENT_TYPE = normalizeOptionalText(assignment.ASSIGNMENT_TYPE) || 'MANUAL';
+        assignment.EFFECTIVE_FROM = normalizeOptionalDateValue(assignment.EFFECTIVE_FROM);
+        assignment.EFFECTIVE_TO = normalizeOptionalDateValue(assignment.EFFECTIVE_TO);
+        assignment.REMARKS = normalizeOptionalText(assignment.REMARKS);
+
+        if (assignment.ISACTIVE === 'Y') {
+            activeCount++;
+        }
+
+        if (assignment.ISDEFAULT === 'Y') {
+            defaultRows.push(rowNumber);
+            if (assignment.ISACTIVE !== 'Y' && !inactiveDefaultRow) {
+                inactiveDefaultRow = rowNumber;
+            }
+        }
+
+        var duplicateKey = [assignment.ROLE_ID, assignment.GROUP_ID, assignment.ENTITY_ID].join(':');
+        if (duplicateRows[duplicateKey]) {
+            duplicateRows.duplicate = duplicateRows[duplicateKey] + ',' + rowNumber;
+            return false;
+        }
+
+        duplicateRows[duplicateKey] = rowNumber;
+        return true;
+    });
+
+    if (duplicateRows.invalid) {
+        return 'Assignment row ' + duplicateRows.invalid + ' must include one role and one entity.';
+    }
+
+    if (duplicateRows.duplicate) {
+        var rows = duplicateRows.duplicate.split(',').join(' and ');
+        return 'Duplicate role and posting assignments are not allowed. Check rows ' + rows + '.';
+    }
+
+    if (activeCount === 0) {
+        return 'At least one active role and posting assignment is required.';
+    }
+
+    if (defaultRows.length === 0) {
+        return 'Mark one active assignment as the default before saving.';
+    }
+
+    if (defaultRows.length > 1) {
+        return 'Only one assignment can be marked as default. Check rows ' + defaultRows.join(', ') + '.';
+    }
+
+    if (inactiveDefaultRow) {
+        return 'Default assignment row ' + inactiveDefaultRow + ' must be active.';
+    }
+
+    return null;
 }
 
 function buildSavePayload(isNewUser) {
@@ -545,43 +703,24 @@ function buildSavePayload(isNewUser) {
         return null;
     }
 
-    var candidate = buildCurrentContext();
-    if (candidate) {
-        upsertContext(candidate);
-    }
-
-    var activeAssignments = $.grep(g_userContexts, function (context) {
-        return context && !context.isDeleted && context.roleId > 0 && context.entityId > 0;
-    });
-
-    if (!activeAssignments.length) {
-        alert('Add at least one role and posting assignment before saving the user.');
+    var collectedAssignments = collectAssignmentsFromGrid();
+    var validationMessage = validateAssignments(collectedAssignments);
+    if (validationMessage) {
+        alert(validationMessage);
         return null;
     }
 
-    return {
-        user_id: isNewUser ? 0 : g_userId,
-        ppno: $('#ppnoSaveField').val(),
-        password: $('#passSaveField').val(),
-        email_address: $('#emailSaveField').val(),
-        isactive: $('#isActiveSaveField').is(':checked') ? 'Y' : 'N',
-        assignments: $.map(g_userContexts, function (context) {
-            if (!context) {
-                return null;
-            }
+    if (window.console && console.info) {
+        console.info('Manage_user assignments payload', collectedAssignments.assignments);
+    }
 
-            return {
-                assignment_id: context.assignmentId || null,
-                role_id: context.roleId,
-                group_id: context.groupId || context.roleId,
-                entity_id: context.entityId,
-                parent_entity_id: context.parentEntityId || null,
-                relationship_type_id: context.relationshipTypeId || null,
-                isdefault: context.isDefault,
-                isactive: context.isActive,
-                isdeleted: !!context.isDeleted
-            };
-        })
+    return {
+        USER_ID: isNewUser ? null : g_userId,
+        PPNO: $.trim($('#ppnoSaveField').val()),
+        PASSWORD: $('#passSaveField').val(),
+        EMAIL_ADDRESS: $.trim($('#emailSaveField').val()),
+        ISACTIVE: $('#isActiveSaveField').is(':checked') ? 'Y' : 'N',
+        ASSIGNMENTS: collectedAssignments.assignments
     };
 }
 

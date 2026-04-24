@@ -44,6 +44,7 @@ namespace AIS.Models.Requests
     public class UserContextAssignmentPostModel
         {
         public int? ASSIGNMENT_ID { get; set; }
+        public int? USER_CONTEXT_ID { get; set; }
         public int? ROLE_ID { get; set; }
         public int? GROUP_ID { get; set; }
         public int? ENTITY_ID { get; set; }
@@ -51,6 +52,10 @@ namespace AIS.Models.Requests
         public int? RELATIONSHIP_TYPE_ID { get; set; }
         public string ISDEFAULT { get; set; }
         public string ISACTIVE { get; set; }
+        public string ASSIGNMENT_TYPE { get; set; }
+        public string EFFECTIVE_FROM { get; set; }
+        public string EFFECTIVE_TO { get; set; }
+        public string REMARKS { get; set; }
         public bool ISDELETED { get; set; }
         }
 

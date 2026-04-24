@@ -566,7 +566,6 @@ namespace AIS.Controllers
                     cmd.Parameters.Add("UserPostingBranch", OracleDbType.Int32).Value = user.UserPostingBranch;
                     cmd.Parameters.Add("UserPostingAuditZone", OracleDbType.Int32).Value = user.UserPostingAuditZone;
                     cmd.Parameters.Add("ENT_ID", OracleDbType.Int32).Value = user.UserEntityID;
-                    cmd.Parameters.Add("P_USER_CONTEXT_ID", OracleDbType.Int32).Value = (object?)user.UserContextAssignmentId ?? DBNull.Value;
                     cmd.ExecuteReader();
                     }
                 }
@@ -574,7 +573,22 @@ namespace AIS.Controllers
             return sessionUser;
             }
 
-        public UserContextAssignmentModel GetValidatedLoginContext(string ppNumber, int assignmentId)
+        public List<UserContextAssignmentModel> GetLoginContexts(string ppNumber)
+            {
+            if (string.IsNullOrWhiteSpace(ppNumber))
+                {
+                return new List<UserContextAssignmentModel>();
+                }
+
+            using (var con = this.DatabaseConnection(requireActiveSession: false))
+                {
+                return LoadUserLoginContexts(con, ppNumber)
+                    .Where(context => context != null && !string.Equals(context.IsActive, "N", StringComparison.OrdinalIgnoreCase))
+                    .ToList();
+                }
+            }
+
+        public UserContextAssignmentModel GetValidatedLoginContext(string ppNumber, int assignmentId, int? userId = null)
             {
             if (string.IsNullOrWhiteSpace(ppNumber) || assignmentId <= 0)
                 {
@@ -584,18 +598,39 @@ namespace AIS.Controllers
             using (var con = this.DatabaseConnection(requireActiveSession: false))
                 using (OracleCommand cmd = con.CreateCommand())
                     {
-                    cmd.CommandText = "pkg_lg.p_get_user_context_by_id";
+                    cmd.CommandText = "pkg_user_context.p_validate_user_context";
                     cmd.CommandType = CommandType.StoredProcedure;
+                    cmd.BindByName = true;
                     cmd.Parameters.Clear();
-                    cmd.Parameters.Add("PPNumber", OracleDbType.Int32).Value = ppNumber;
+                    cmd.Parameters.Add("P_PPNO", OracleDbType.Int32).Value = ppNumber;
                     cmd.Parameters.Add("P_USER_CONTEXT_ID", OracleDbType.Int32).Value = assignmentId;
-                    cmd.Parameters.Add("T_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+                    cmd.Parameters.Add("IO_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
 
                     using (var reader = cmd.ExecuteReader())
                         {
                         while (reader.Read())
                             {
-                            return ReadUserContextAssignment(reader);
+                            var validatedContext = ReadUserContextAssignment(reader);
+                            if (validatedContext == null)
+                                {
+                                return null;
+                                }
+
+                            if (!string.IsNullOrWhiteSpace(validatedContext.PPNumber) &&
+                                !string.Equals(validatedContext.PPNumber, ppNumber, StringComparison.OrdinalIgnoreCase))
+                                {
+                                return null;
+                                }
+
+                            if (userId.HasValue &&
+                                userId.Value > 0 &&
+                                validatedContext.UserId > 0 &&
+                                validatedContext.UserId != userId.Value)
+                                {
+                                return null;
+                                }
+
+                            return validatedContext;
                             }
                         }
                     }
@@ -657,8 +692,9 @@ namespace AIS.Controllers
 
             using (OracleCommand cmd = con.CreateCommand())
                 {
-                cmd.CommandText = "pkg_lg.p_get_user_base";
+                cmd.CommandText = "pkg_user_context.p_get_user_base";
                 cmd.CommandType = CommandType.StoredProcedure;
+                cmd.BindByName = true;
                 cmd.Parameters.Clear();
                 cmd.Parameters.Add("PPNumber", OracleDbType.Int32).Value = login.PPNumber;
                 cmd.Parameters.Add("enc_pass", OracleDbType.Varchar2).Value = encryptedPassword;
@@ -702,11 +738,12 @@ namespace AIS.Controllers
 
             using (OracleCommand cmd = con.CreateCommand())
                 {
-                cmd.CommandText = "pkg_lg.p_get_user_login_contexts";
+                cmd.CommandText = "pkg_user_context.p_get_user_contexts_by_ppno";
                 cmd.CommandType = CommandType.StoredProcedure;
+                cmd.BindByName = true;
                 cmd.Parameters.Clear();
-                cmd.Parameters.Add("PPNumber", OracleDbType.Int32).Value = ppNumber;
-                cmd.Parameters.Add("T_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+                cmd.Parameters.Add("P_PPNO", OracleDbType.Int32).Value = ppNumber;
+                cmd.Parameters.Add("IO_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
 
                 using (var reader = cmd.ExecuteReader())
                     {
@@ -793,6 +830,9 @@ namespace AIS.Controllers
                 return null;
                 }
 
+            var isDefault = ReadFirstAvailableString(reader, "IS_DEFAULT_ASSIGNMENT", "IS_DEFAULT");
+            var isActive = ReadFirstAvailableString(reader, "IS_ACTIVE_ASSIGNMENT", "IS_ACTIVE");
+
             return new UserContextAssignmentModel
                 {
                 AssignmentId = assignmentId,
@@ -812,13 +852,17 @@ namespace AIS.Controllers
                 EntityCode = GetOptionalInt(reader, "ENTITY_CODE"),
                 ParentEntityCode = GetOptionalInt(reader, "PARENT_ENTITY_CODE"),
                 UserLocationType = GetAuthString(reader, "USER_LOCATION_TYPE"),
-                UserPostingDiv = GetOptionalInt(reader, "POSTING_DIV") ?? GetOptionalInt(reader, "DIVISIONID"),
-                UserPostingDept = GetOptionalInt(reader, "POSTING_DEPT") ?? GetOptionalInt(reader, "DEPARTMENTID"),
-                UserPostingZone = GetOptionalInt(reader, "POSTING_ZONE") ?? GetOptionalInt(reader, "ZONEID"),
-                UserPostingBranch = GetOptionalInt(reader, "POSTING_BRANCH") ?? GetOptionalInt(reader, "BRANCHID"),
-                UserPostingAuditZone = GetOptionalInt(reader, "POSTING_AZ") ?? GetOptionalInt(reader, "AUDIT_ZONEID"),
-                IsDefault = GetAuthString(reader, "IS_DEFAULT_ASSIGNMENT"),
-                IsActive = GetAuthString(reader, "IS_ACTIVE_ASSIGNMENT")
+                UserPostingDiv = GetOptionalInt(reader, "POSTING_DIV") ?? GetOptionalInt(reader, "USER_POSTING_DIV") ?? GetOptionalInt(reader, "DIVISIONID"),
+                UserPostingDept = GetOptionalInt(reader, "POSTING_DEPT") ?? GetOptionalInt(reader, "USER_POSTING_DEPT") ?? GetOptionalInt(reader, "DEPARTMENTID"),
+                UserPostingZone = GetOptionalInt(reader, "POSTING_ZONE") ?? GetOptionalInt(reader, "USER_POSTING_ZONE") ?? GetOptionalInt(reader, "ZONEID"),
+                UserPostingBranch = GetOptionalInt(reader, "POSTING_BRANCH") ?? GetOptionalInt(reader, "USER_POSTING_BRANCH") ?? GetOptionalInt(reader, "BRANCHID"),
+                UserPostingAuditZone = GetOptionalInt(reader, "POSTING_AZ") ?? GetOptionalInt(reader, "USER_POSTING_AUDIT_ZONE") ?? GetOptionalInt(reader, "AUDIT_ZONEID"),
+                IsDefault = isDefault,
+                IsActive = isActive,
+                AssignmentType = GetAuthString(reader, "ASSIGNMENT_TYPE"),
+                EffectiveFrom = GetOptionalDate(reader, "EFFECTIVE_FROM"),
+                EffectiveTo = GetOptionalDate(reader, "EFFECTIVE_TO"),
+                Remarks = GetAuthString(reader, "REMARKS")
                 };
             }
 
@@ -869,6 +913,27 @@ namespace AIS.Controllers
                 }
 
             return int.TryParse(value.ToString(), out var parsed) ? parsed : (int?)null;
+            }
+
+        private static DateTime? GetOptionalDate(IDataRecord reader, string column)
+            {
+            if (!HasAuthColumn(reader, column))
+                {
+                return null;
+                }
+
+            var value = reader[column];
+            if (value == null || value == DBNull.Value)
+                {
+                return null;
+                }
+
+            if (value is DateTime dateTimeValue)
+                {
+                return dateTimeValue;
+                }
+
+            return DateTime.TryParse(value.ToString(), out var parsed) ? parsed : (DateTime?)null;
             }
 
         private static string GetAuthString(IDataRecord reader, string column)

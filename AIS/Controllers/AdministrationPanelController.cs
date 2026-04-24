@@ -1075,20 +1075,10 @@ namespace AIS.Controllers
                 return BadRequest(new { status = false, message = "PP number is required." });
                 }
 
-            var assignments = (user.ASSIGNMENTS ?? new List<UserContextAssignmentPostModel>())
-                .Where(item => item != null && !item.ISDELETED)
-                .ToList();
-
-            if (assignments.Count == 0)
+            var assignments = NormalizeAssignmentsForValidation(user.ASSIGNMENTS);
+            if (!TryValidateAssignments(assignments, source, user.PPNO, out var assignmentError))
                 {
-                _logger.LogWarning("{Source} missing active assignments for PP {PPNO}.", source, user.PPNO);
-                return BadRequest(new { status = false, message = "At least one active role and posting assignment is required." });
-                }
-
-            if (assignments.Any(item => !item.ROLE_ID.HasValue || item.ROLE_ID.Value <= 0 || !item.ENTITY_ID.HasValue || item.ENTITY_ID.Value <= 0))
-                {
-                _logger.LogWarning("{Source} received an incomplete assignment set for PP {PPNO}.", source, user.PPNO);
-                return BadRequest(new { status = false, message = "Each assignment must include one role and one entity." });
+                return assignmentError;
                 }
 
             if (!string.IsNullOrWhiteSpace(user.PASSWORD))
@@ -1101,14 +1091,154 @@ namespace AIS.Controllers
                     }
                 }
 
+            user.ASSIGNMENTS = assignments;
+            _logger.LogInformation("{Source} processing {AssignmentCount} assignments for USER_ID {UserId} / PP {PPNO}.", source, assignments.Count, user.USER_ID, user.PPNO);
+
             var response = dBConnection.SaveUserContextAssignments(user);
+            if (!IsSuccessfulSaveResponse(response))
+                {
+                var failureMessage = string.IsNullOrWhiteSpace(response) ? "Unable to save user assignments." : response.Trim();
+                _logger.LogWarning("{Source} failed for USER_ID {UserId} / PP {PPNO}: {Message}", source, user.USER_ID, user.PPNO, failureMessage);
+                return BadRequest(new { status = false, message = failureMessage });
+                }
+
             _logger.LogInformation("{Source} succeeded for USER_ID {UserId} / PP {PPNO}.", source, user.USER_ID, user.PPNO);
             return Json(new
                 {
                 status = true,
-                message = string.IsNullOrWhiteSpace(response) ? "User assignments saved successfully." : response.Trim(),
+                message = string.IsNullOrWhiteSpace(response) || string.Equals(response.Trim(), "OK", StringComparison.OrdinalIgnoreCase)
+                    ? "User assignments saved successfully."
+                    : response.Trim(),
                 user
                 });
+            }
+
+        private bool TryValidateAssignments(List<UserContextAssignmentPostModel> assignments, string source, string ppNumber, out IActionResult errorResult)
+            {
+            errorResult = null;
+            var visibleAssignments = assignments
+                .Where(item => item != null && !item.ISDELETED)
+                .ToList();
+            var activeAssignments = visibleAssignments
+                .Where(item => string.Equals(item.ISACTIVE, "Y", StringComparison.OrdinalIgnoreCase))
+                .ToList();
+
+            if (visibleAssignments.Count == 0 || activeAssignments.Count == 0)
+                {
+                _logger.LogWarning("{Source} missing active assignments for PP {PPNO}.", source, ppNumber);
+                errorResult = BadRequest(new { status = false, message = "At least one active role and posting assignment is required." });
+                return false;
+                }
+
+            var invalidAssignment = visibleAssignments
+                .Select((item, index) => new { Assignment = item, RowNumber = index + 1 })
+                .FirstOrDefault(item =>
+                    !item.Assignment.ROLE_ID.HasValue
+                    || item.Assignment.ROLE_ID.Value <= 0
+                    || !item.Assignment.ENTITY_ID.HasValue
+                    || item.Assignment.ENTITY_ID.Value <= 0);
+
+            if (invalidAssignment != null)
+                {
+                _logger.LogWarning("{Source} received an incomplete assignment row {RowNumber} for PP {PPNO}.", source, invalidAssignment.RowNumber, ppNumber);
+                errorResult = BadRequest(new { status = false, message = $"Assignment row {invalidAssignment.RowNumber} must include one role and one entity." });
+                return false;
+                }
+
+            var duplicateAssignments = visibleAssignments
+                .Select((item, index) => new
+                    {
+                    Assignment = item,
+                    RowNumber = index + 1,
+                    RoleId = item.ROLE_ID.GetValueOrDefault(),
+                    GroupId = (item.GROUP_ID ?? item.ROLE_ID).GetValueOrDefault(),
+                    EntityId = item.ENTITY_ID.GetValueOrDefault()
+                    })
+                .GroupBy(item => new { item.RoleId, item.GroupId, item.EntityId })
+                .FirstOrDefault(group => group.Count() > 1);
+
+            if (duplicateAssignments != null)
+                {
+                var duplicateRows = string.Join(", ", duplicateAssignments.Select(item => item.RowNumber));
+                _logger.LogWarning("{Source} received duplicate assignments for PP {PPNO} in rows {Rows}.", source, ppNumber, duplicateRows);
+                errorResult = BadRequest(new { status = false, message = $"Duplicate role and posting assignments are not allowed. Check rows {duplicateRows}." });
+                return false;
+                }
+
+            var defaultAssignments = visibleAssignments
+                .Select((item, index) => new { Assignment = item, RowNumber = index + 1 })
+                .Where(item => string.Equals(item.Assignment.ISDEFAULT, "Y", StringComparison.OrdinalIgnoreCase))
+                .ToList();
+
+            if (defaultAssignments.Count == 0)
+                {
+                _logger.LogWarning("{Source} received no default assignment for PP {PPNO}.", source, ppNumber);
+                errorResult = BadRequest(new { status = false, message = "Mark one active assignment as the default before saving." });
+                return false;
+                }
+
+            if (defaultAssignments.Count > 1)
+                {
+                var duplicateDefaultRows = string.Join(", ", defaultAssignments.Select(item => item.RowNumber));
+                _logger.LogWarning("{Source} received multiple default assignments for PP {PPNO} in rows {Rows}.", source, ppNumber, duplicateDefaultRows);
+                errorResult = BadRequest(new { status = false, message = $"Only one assignment can be marked as default. Check rows {duplicateDefaultRows}." });
+                return false;
+                }
+
+            if (!string.Equals(defaultAssignments[0].Assignment.ISACTIVE, "Y", StringComparison.OrdinalIgnoreCase))
+                {
+                _logger.LogWarning("{Source} received an inactive default assignment for PP {PPNO} in row {RowNumber}.", source, ppNumber, defaultAssignments[0].RowNumber);
+                errorResult = BadRequest(new { status = false, message = $"Default assignment row {defaultAssignments[0].RowNumber} must be active." });
+                return false;
+                }
+
+            return true;
+            }
+
+        private static List<UserContextAssignmentPostModel> NormalizeAssignmentsForValidation(IEnumerable<UserContextAssignmentPostModel> assignments)
+            {
+            return (assignments ?? new List<UserContextAssignmentPostModel>())
+                .Where(item => item != null)
+                .Select(item => new UserContextAssignmentPostModel
+                    {
+                    ASSIGNMENT_ID = item.ASSIGNMENT_ID ?? item.USER_CONTEXT_ID,
+                    USER_CONTEXT_ID = item.USER_CONTEXT_ID ?? item.ASSIGNMENT_ID,
+                    ROLE_ID = item.ROLE_ID,
+                    GROUP_ID = item.GROUP_ID ?? item.ROLE_ID,
+                    ENTITY_ID = item.ENTITY_ID,
+                    PARENT_ENTITY_ID = item.PARENT_ENTITY_ID,
+                    RELATIONSHIP_TYPE_ID = item.RELATIONSHIP_TYPE_ID,
+                    ISDEFAULT = NormalizeAssignmentFlag(item.ISDEFAULT, "N"),
+                    ISACTIVE = NormalizeAssignmentFlag(item.ISACTIVE, "Y"),
+                    ASSIGNMENT_TYPE = string.IsNullOrWhiteSpace(item.ASSIGNMENT_TYPE) ? "MANUAL" : item.ASSIGNMENT_TYPE.Trim(),
+                    EFFECTIVE_FROM = string.IsNullOrWhiteSpace(item.EFFECTIVE_FROM) ? null : item.EFFECTIVE_FROM.Trim(),
+                    EFFECTIVE_TO = string.IsNullOrWhiteSpace(item.EFFECTIVE_TO) ? null : item.EFFECTIVE_TO.Trim(),
+                    REMARKS = string.IsNullOrWhiteSpace(item.REMARKS) ? null : item.REMARKS.Trim(),
+                    ISDELETED = item.ISDELETED
+                    })
+                .ToList();
+            }
+
+        private static string NormalizeAssignmentFlag(string value, string defaultValue)
+            {
+            if (string.IsNullOrWhiteSpace(value))
+                {
+                return defaultValue;
+                }
+
+            return string.Equals(value.Trim(), "Y", StringComparison.OrdinalIgnoreCase) ? "Y" : "N";
+            }
+
+        private static bool IsSuccessfulSaveResponse(string response)
+            {
+            if (string.IsNullOrWhiteSpace(response))
+                {
+                return true;
+                }
+
+            var normalized = response.Trim();
+            return string.Equals(normalized, "OK", StringComparison.OrdinalIgnoreCase)
+                || normalized.IndexOf("success", StringComparison.OrdinalIgnoreCase) >= 0;
             }
 
         private Dictionary<string, string[]> ExtractModelStateErrors()

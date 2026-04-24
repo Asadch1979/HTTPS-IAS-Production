@@ -5,8 +5,8 @@ using Oracle.ManagedDataAccess.Client;
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Globalization;
 using System.Linq;
-using System.Text.Json;
 
 namespace AIS.Controllers
     {
@@ -495,15 +495,13 @@ namespace AIS.Controllers
             var con = this.DatabaseConnection();
             using (OracleCommand cmd = con.CreateCommand())
                 {
-                cmd.CommandText = "pkg_ad.p_get_user_context_assignments";
+                cmd.CommandText = "pkg_user_context.p_get_user_context_assignments";
                 cmd.CommandType = CommandType.StoredProcedure;
+                cmd.BindByName = true;
                 cmd.Parameters.Clear();
                 cmd.Parameters.Add("P_USER_ID", OracleDbType.Int32).Value = (object?)userId ?? DBNull.Value;
                 cmd.Parameters.Add("P_PPNO", OracleDbType.Int32).Value = parsedPpNumber;
-                cmd.Parameters.Add("ENT_ID", OracleDbType.Int32).Value = loggedInUser.UserEntityID;
-                cmd.Parameters.Add("P_NO", OracleDbType.Int32).Value = loggedInUser.PPNumber;
-                cmd.Parameters.Add("R_ID", OracleDbType.Int32).Value = loggedInUser.UserRoleID;
-                cmd.Parameters.Add("T_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+                cmd.Parameters.Add("IO_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
 
                 using (OracleDataReader rdr = cmd.ExecuteReader())
                     {
@@ -541,42 +539,130 @@ namespace AIS.Controllers
                 return string.Empty;
                 }
 
-            var assignments = NormalizeContextAssignments(user.ASSIGNMENTS);
-            var serializedAssignments = JsonSerializer.Serialize(assignments);
-            var hashedPassword = string.IsNullOrWhiteSpace(user.PASSWORD) ? null : HashPassword(user.PASSWORD);
-            var parsedPpNumber = int.TryParse(user.PPNO, out var resolvedPpNumber)
-                ? (object)resolvedPpNumber
-                : DBNull.Value;
-            var response = string.Empty;
-            var con = this.DatabaseConnection();
-
-            using (OracleCommand cmd = con.CreateCommand())
+            if (!int.TryParse(user.PPNO, out var parsedPpNumber))
                 {
-                cmd.CommandText = "pkg_ad.p_save_user_account";
-                cmd.CommandType = CommandType.StoredProcedure;
-                cmd.Parameters.Clear();
-                cmd.Parameters.Add("P_USER_ID", OracleDbType.Int32).Value = (object?)user.USER_ID ?? DBNull.Value;
-                cmd.Parameters.Add("P_PPNO", OracleDbType.Int32).Value = parsedPpNumber;
-                cmd.Parameters.Add("P_PASSWORD", OracleDbType.Varchar2).Value = string.IsNullOrWhiteSpace(hashedPassword) ? (object)DBNull.Value : hashedPassword;
-                cmd.Parameters.Add("P_EMAIL_ADDRESS", OracleDbType.Varchar2).Value = string.IsNullOrWhiteSpace(user.EMAIL_ADDRESS) ? (object)DBNull.Value : user.EMAIL_ADDRESS.Trim();
-                cmd.Parameters.Add("P_ISACTIVE", OracleDbType.Varchar2).Value = NormalizeContextFlag(user.ISACTIVE, "Y");
-                cmd.Parameters.Add("P_ASSIGNMENTS_JSON", OracleDbType.Clob).Value = serializedAssignments;
-                cmd.Parameters.Add("ENT_ID", OracleDbType.Int32).Value = loggedInUser.UserEntityID;
-                cmd.Parameters.Add("P_NO", OracleDbType.Int32).Value = loggedInUser.PPNumber;
-                cmd.Parameters.Add("R_ID", OracleDbType.Int32).Value = loggedInUser.UserRoleID;
-                cmd.Parameters.Add("T_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
-
-                using (OracleDataReader rdr = cmd.ExecuteReader())
-                    {
-                    while (rdr.Read())
-                        {
-                        response = ReadFirstAvailableString(rdr, "remarks", "REMARKS", "message", "MESSAGE");
-                        }
-                    }
+                return "PP number is required.";
                 }
 
-            con.Dispose();
-            return response;
+            var assignments = NormalizeContextAssignments(user.ASSIGNMENTS);
+            var validationMessage = ValidateContextAssignments(assignments);
+            if (!string.IsNullOrWhiteSpace(validationMessage))
+                {
+                return validationMessage;
+                }
+
+            var hashedPassword = string.IsNullOrWhiteSpace(user.PASSWORD) ? null : HashPassword(user.PASSWORD);
+            var actionBy = loggedInUser.PPNumber?.Trim();
+            using (var con = this.DatabaseConnection())
+            using (var tx = con.BeginTransaction())
+                {
+                try
+                    {
+                    var userId = user.USER_ID;
+                    var saveAccountMessage = SaveUserAccountCore(
+                        con,
+                        tx,
+                        ref userId,
+                        parsedPpNumber,
+                        hashedPassword,
+                        user.EMAIL_ADDRESS,
+                        NormalizeContextFlag(user.ISACTIVE, "Y"),
+                        actionBy);
+
+                    if (!string.IsNullOrWhiteSpace(saveAccountMessage))
+                        {
+                        tx.Rollback();
+                        return saveAccountMessage;
+                        }
+
+                    user.USER_ID = userId;
+                    System.Diagnostics.Debug.WriteLine($"[ManageUser] Saving {assignments.Count} assignments for USER_ID {userId} / PP {parsedPpNumber}.");
+
+                    var visibleRowNumber = 0;
+                    for (var index = 0; index < assignments.Count; index++)
+                        {
+                        var assignment = assignments[index];
+                        if (assignment == null)
+                            {
+                            continue;
+                            }
+
+                        var userContextId = assignment.USER_CONTEXT_ID ?? assignment.ASSIGNMENT_ID;
+
+                        if (assignment.ISDELETED)
+                            {
+                            if (userContextId.HasValue && userContextId.Value > 0)
+                                {
+                                var disableMessage = DisableUserContextAssignmentCore(con, tx, userContextId.Value, actionBy);
+                                if (!string.IsNullOrWhiteSpace(disableMessage))
+                                    {
+                                    tx.Rollback();
+                                    return disableMessage;
+                                    }
+                                }
+
+                            continue;
+                            }
+
+                        visibleRowNumber++;
+                        var rowNumber = visibleRowNumber;
+
+                        if (!TryParseAssignmentDate(assignment.EFFECTIVE_FROM, out var effectiveFrom, out var effectiveFromError))
+                            {
+                            tx.Rollback();
+                            return $"Assignment row {rowNumber} has an invalid EFFECTIVE_FROM value: {effectiveFromError}";
+                            }
+
+                        if (!TryParseAssignmentDate(assignment.EFFECTIVE_TO, out var effectiveTo, out var effectiveToError))
+                            {
+                            tx.Rollback();
+                            return $"Assignment row {rowNumber} has an invalid EFFECTIVE_TO value: {effectiveToError}";
+                            }
+
+                        var saveAssignmentMessage = SaveUserContextAssignmentCore(
+                            con,
+                            tx,
+                            ref userContextId,
+                            userId.GetValueOrDefault(),
+                            parsedPpNumber,
+                            assignment,
+                            effectiveFrom,
+                            effectiveTo,
+                            actionBy);
+
+                        if (!string.IsNullOrWhiteSpace(saveAssignmentMessage))
+                            {
+                            tx.Rollback();
+                            return saveAssignmentMessage;
+                            }
+
+                        assignment.USER_CONTEXT_ID = userContextId;
+                        assignment.ASSIGNMENT_ID = userContextId;
+                        }
+
+                    var syncMessage = SyncUserDefaultContextCore(con, tx, userId.GetValueOrDefault(), actionBy);
+                    if (!string.IsNullOrWhiteSpace(syncMessage))
+                        {
+                        tx.Rollback();
+                        return syncMessage;
+                        }
+
+                    tx.Commit();
+                    return "User assignments saved successfully.";
+                    }
+                catch (Exception ex)
+                    {
+                    try
+                        {
+                        tx.Rollback();
+                        }
+                    catch
+                        {
+                        }
+
+                    return ex.Message;
+                    }
+                }
             }
 
         public List<AuditEntitiesModel> GetAuditEntityTypes(int page_id)
@@ -1261,11 +1347,12 @@ namespace AIS.Controllers
 
         private static List<UserContextAssignmentPostModel> NormalizeContextAssignments(IEnumerable<UserContextAssignmentPostModel> assignments)
             {
-            var normalized = (assignments ?? Enumerable.Empty<UserContextAssignmentPostModel>())
+            return (assignments ?? Enumerable.Empty<UserContextAssignmentPostModel>())
                 .Where(item => item != null)
                 .Select(item => new UserContextAssignmentPostModel
                     {
-                    ASSIGNMENT_ID = item.ASSIGNMENT_ID,
+                    ASSIGNMENT_ID = item.ASSIGNMENT_ID ?? item.USER_CONTEXT_ID,
+                    USER_CONTEXT_ID = item.USER_CONTEXT_ID ?? item.ASSIGNMENT_ID,
                     ROLE_ID = item.ROLE_ID,
                     GROUP_ID = item.GROUP_ID ?? item.ROLE_ID,
                     ENTITY_ID = item.ENTITY_ID,
@@ -1273,33 +1360,304 @@ namespace AIS.Controllers
                     RELATIONSHIP_TYPE_ID = item.RELATIONSHIP_TYPE_ID,
                     ISDEFAULT = NormalizeContextFlag(item.ISDEFAULT, "N"),
                     ISACTIVE = NormalizeContextFlag(item.ISACTIVE, "Y"),
+                    ASSIGNMENT_TYPE = string.IsNullOrWhiteSpace(item.ASSIGNMENT_TYPE) ? "MANUAL" : item.ASSIGNMENT_TYPE.Trim(),
+                    EFFECTIVE_FROM = string.IsNullOrWhiteSpace(item.EFFECTIVE_FROM) ? null : item.EFFECTIVE_FROM.Trim(),
+                    EFFECTIVE_TO = string.IsNullOrWhiteSpace(item.EFFECTIVE_TO) ? null : item.EFFECTIVE_TO.Trim(),
+                    REMARKS = string.IsNullOrWhiteSpace(item.REMARKS) ? null : item.REMARKS.Trim(),
                     ISDELETED = item.ISDELETED
                     })
                 .ToList();
+            }
 
-            var activeAssignments = normalized
-                .Where(item => !item.ISDELETED)
+        private static string ValidateContextAssignments(IReadOnlyList<UserContextAssignmentPostModel> assignments)
+            {
+            var visibleAssignments = (assignments ?? Array.Empty<UserContextAssignmentPostModel>())
+                .Where(item => item != null && !item.ISDELETED)
+                .ToList();
+            var activeAssignments = visibleAssignments
+                .Where(item => string.Equals(item.ISACTIVE, "Y", StringComparison.OrdinalIgnoreCase))
                 .ToList();
 
-            if (activeAssignments.Count > 0 && !activeAssignments.Any(item => string.Equals(item.ISDEFAULT, "Y", StringComparison.OrdinalIgnoreCase)))
+            if (visibleAssignments.Count == 0 || activeAssignments.Count == 0)
                 {
-                activeAssignments[0].ISDEFAULT = "Y";
+                return "At least one active role and posting assignment is required.";
                 }
 
-            var defaultAssigned = false;
-            foreach (var assignment in activeAssignments)
+            var invalidAssignment = visibleAssignments
+                .Select((item, index) => new { Assignment = item, RowNumber = index + 1 })
+                .FirstOrDefault(item =>
+                    !item.Assignment.ROLE_ID.HasValue
+                    || item.Assignment.ROLE_ID.Value <= 0
+                    || !item.Assignment.ENTITY_ID.HasValue
+                    || item.Assignment.ENTITY_ID.Value <= 0);
+
+            if (invalidAssignment != null)
                 {
-                if (string.Equals(assignment.ISDEFAULT, "Y", StringComparison.OrdinalIgnoreCase) && !defaultAssigned)
+                return $"Assignment row {invalidAssignment.RowNumber} must include one role and one entity.";
+                }
+
+            var duplicateAssignments = visibleAssignments
+                .Select((item, index) => new
                     {
-                    assignment.ISDEFAULT = "Y";
-                    defaultAssigned = true;
-                    continue;
+                    RowNumber = index + 1,
+                    RoleId = item.ROLE_ID.GetValueOrDefault(),
+                    GroupId = (item.GROUP_ID ?? item.ROLE_ID).GetValueOrDefault(),
+                    EntityId = item.ENTITY_ID.GetValueOrDefault()
+                    })
+                .GroupBy(item => new { item.RoleId, item.GroupId, item.EntityId })
+                .FirstOrDefault(group => group.Count() > 1);
+
+            if (duplicateAssignments != null)
+                {
+                return $"Duplicate role and posting assignments are not allowed. Check rows {string.Join(", ", duplicateAssignments.Select(item => item.RowNumber))}.";
+                }
+
+            var defaultAssignments = visibleAssignments
+                .Select((item, index) => new { Assignment = item, RowNumber = index + 1 })
+                .Where(item => string.Equals(item.Assignment.ISDEFAULT, "Y", StringComparison.OrdinalIgnoreCase))
+                .ToList();
+
+            if (defaultAssignments.Count == 0)
+                {
+                return "Mark one active assignment as the default before saving.";
+                }
+
+            if (defaultAssignments.Count > 1)
+                {
+                return $"Only one assignment can be marked as default. Check rows {string.Join(", ", defaultAssignments.Select(item => item.RowNumber))}.";
+                }
+
+            if (!string.Equals(defaultAssignments[0].Assignment.ISACTIVE, "Y", StringComparison.OrdinalIgnoreCase))
+                {
+                return $"Default assignment row {defaultAssignments[0].RowNumber} must be active.";
+                }
+
+            return null;
+            }
+
+        private static string SaveUserAccountCore(
+            OracleConnection con,
+            OracleTransaction tx,
+            ref int? userId,
+            int ppNumber,
+            string hashedPassword,
+            string emailAddress,
+            string isActive,
+            string actionBy)
+            {
+            using (var cmd = con.CreateCommand())
+                {
+                cmd.Transaction = tx;
+                cmd.CommandText = "pkg_user_context.p_save_user_account";
+                cmd.CommandType = CommandType.StoredProcedure;
+                cmd.BindByName = true;
+                cmd.Parameters.Clear();
+
+                var userIdParameter = cmd.Parameters.Add("P_USER_ID", OracleDbType.Int32);
+                userIdParameter.Direction = ParameterDirection.InputOutput;
+                userIdParameter.Value = userId.HasValue && userId.Value > 0 ? (object)userId.Value : DBNull.Value;
+
+                cmd.Parameters.Add("P_PPNO", OracleDbType.Int32).Value = ppNumber;
+                cmd.Parameters.Add("P_PASSWORD", OracleDbType.Varchar2).Value = string.IsNullOrWhiteSpace(hashedPassword) ? (object)DBNull.Value : hashedPassword;
+                cmd.Parameters.Add("P_EMAIL_ADDRESS", OracleDbType.Varchar2).Value = string.IsNullOrWhiteSpace(emailAddress) ? (object)DBNull.Value : emailAddress.Trim();
+                cmd.Parameters.Add("P_ISACTIVE", OracleDbType.Varchar2).Value = NormalizeContextFlag(isActive, "Y");
+                cmd.Parameters.Add("P_ACTION_BY", OracleDbType.Varchar2).Value = string.IsNullOrWhiteSpace(actionBy) ? (object)DBNull.Value : actionBy;
+
+                var statusParameter = cmd.Parameters.Add("O_STATUS", OracleDbType.Varchar2, 100);
+                statusParameter.Direction = ParameterDirection.Output;
+                var messageParameter = cmd.Parameters.Add("O_MESSAGE", OracleDbType.Varchar2, 4000);
+                messageParameter.Direction = ParameterDirection.Output;
+
+                cmd.ExecuteNonQuery();
+
+                var status = ReadOutputString(statusParameter);
+                var message = ReadOutputString(messageParameter);
+                userId = ReadOutputInt(userIdParameter);
+
+                if (!string.Equals(status, "OK", StringComparison.OrdinalIgnoreCase))
+                    {
+                    return string.IsNullOrWhiteSpace(message) ? "Unable to save user account." : message;
                     }
 
-                assignment.ISDEFAULT = "N";
+                if (!userId.HasValue || userId.Value <= 0)
+                    {
+                    return "Unable to resolve the saved user account.";
+                    }
+
+                return null;
+                }
+            }
+
+        private static string SaveUserContextAssignmentCore(
+            OracleConnection con,
+            OracleTransaction tx,
+            ref int? userContextId,
+            int userId,
+            int ppNumber,
+            UserContextAssignmentPostModel assignment,
+            DateTime? effectiveFrom,
+            DateTime? effectiveTo,
+            string actionBy)
+            {
+            using (var cmd = con.CreateCommand())
+                {
+                cmd.Transaction = tx;
+                cmd.CommandText = "pkg_user_context.p_save_user_context_assignment";
+                cmd.CommandType = CommandType.StoredProcedure;
+                cmd.BindByName = true;
+                cmd.Parameters.Clear();
+
+                var userContextIdParameter = cmd.Parameters.Add("P_USER_CONTEXT_ID", OracleDbType.Int32);
+                userContextIdParameter.Direction = ParameterDirection.InputOutput;
+                userContextIdParameter.Value = userContextId.HasValue && userContextId.Value > 0 ? (object)userContextId.Value : DBNull.Value;
+
+                cmd.Parameters.Add("P_USER_ID", OracleDbType.Int32).Value = userId;
+                cmd.Parameters.Add("P_PPNO", OracleDbType.Int32).Value = ppNumber;
+                cmd.Parameters.Add("P_ROLE_ID", OracleDbType.Int32).Value = assignment.ROLE_ID.GetValueOrDefault();
+                cmd.Parameters.Add("P_GROUP_ID", OracleDbType.Int32).Value = (assignment.GROUP_ID ?? assignment.ROLE_ID).GetValueOrDefault();
+                cmd.Parameters.Add("P_ENTITY_ID", OracleDbType.Int32).Value = assignment.ENTITY_ID.GetValueOrDefault();
+                cmd.Parameters.Add("P_IS_DEFAULT", OracleDbType.Char).Value = NormalizeContextFlag(assignment.ISDEFAULT, "N");
+                cmd.Parameters.Add("P_IS_ACTIVE", OracleDbType.Char).Value = NormalizeContextFlag(assignment.ISACTIVE, "Y");
+                cmd.Parameters.Add("P_ASSIGNMENT_TYPE", OracleDbType.Varchar2).Value = string.IsNullOrWhiteSpace(assignment.ASSIGNMENT_TYPE) ? "MANUAL" : assignment.ASSIGNMENT_TYPE.Trim();
+                cmd.Parameters.Add("P_EFFECTIVE_FROM", OracleDbType.Date).Value = effectiveFrom.HasValue ? (object)effectiveFrom.Value : DBNull.Value;
+                cmd.Parameters.Add("P_EFFECTIVE_TO", OracleDbType.Date).Value = effectiveTo.HasValue ? (object)effectiveTo.Value : DBNull.Value;
+                cmd.Parameters.Add("P_REMARKS", OracleDbType.Varchar2).Value = string.IsNullOrWhiteSpace(assignment.REMARKS) ? (object)DBNull.Value : assignment.REMARKS.Trim();
+                cmd.Parameters.Add("P_ACTION_BY", OracleDbType.Varchar2).Value = string.IsNullOrWhiteSpace(actionBy) ? (object)DBNull.Value : actionBy;
+
+                var statusParameter = cmd.Parameters.Add("O_STATUS", OracleDbType.Varchar2, 100);
+                statusParameter.Direction = ParameterDirection.Output;
+                var messageParameter = cmd.Parameters.Add("O_MESSAGE", OracleDbType.Varchar2, 4000);
+                messageParameter.Direction = ParameterDirection.Output;
+
+                cmd.ExecuteNonQuery();
+
+                var status = ReadOutputString(statusParameter);
+                var message = ReadOutputString(messageParameter);
+                userContextId = ReadOutputInt(userContextIdParameter);
+
+                if (!string.Equals(status, "OK", StringComparison.OrdinalIgnoreCase))
+                    {
+                    return string.IsNullOrWhiteSpace(message) ? "Unable to save user context assignment." : message;
+                    }
+
+                return null;
+                }
+            }
+
+        private static string DisableUserContextAssignmentCore(
+            OracleConnection con,
+            OracleTransaction tx,
+            int userContextId,
+            string actionBy)
+            {
+            using (var cmd = con.CreateCommand())
+                {
+                cmd.Transaction = tx;
+                cmd.CommandText = "pkg_user_context.p_disable_user_context_assignment";
+                cmd.CommandType = CommandType.StoredProcedure;
+                cmd.BindByName = true;
+                cmd.Parameters.Clear();
+                cmd.Parameters.Add("P_USER_CONTEXT_ID", OracleDbType.Int32).Value = userContextId;
+                cmd.Parameters.Add("P_ACTION_BY", OracleDbType.Varchar2).Value = string.IsNullOrWhiteSpace(actionBy) ? (object)DBNull.Value : actionBy;
+
+                var statusParameter = cmd.Parameters.Add("O_STATUS", OracleDbType.Varchar2, 100);
+                statusParameter.Direction = ParameterDirection.Output;
+                var messageParameter = cmd.Parameters.Add("O_MESSAGE", OracleDbType.Varchar2, 4000);
+                messageParameter.Direction = ParameterDirection.Output;
+
+                cmd.ExecuteNonQuery();
+
+                var status = ReadOutputString(statusParameter);
+                var message = ReadOutputString(messageParameter);
+                return string.Equals(status, "OK", StringComparison.OrdinalIgnoreCase)
+                    ? null
+                    : (string.IsNullOrWhiteSpace(message) ? "Unable to disable user context assignment." : message);
+                }
+            }
+
+        private static string SyncUserDefaultContextCore(
+            OracleConnection con,
+            OracleTransaction tx,
+            int userId,
+            string actionBy)
+            {
+            using (var cmd = con.CreateCommand())
+                {
+                cmd.Transaction = tx;
+                cmd.CommandText = "pkg_user_context.p_sync_user_default_context";
+                cmd.CommandType = CommandType.StoredProcedure;
+                cmd.BindByName = true;
+                cmd.Parameters.Clear();
+                cmd.Parameters.Add("P_USER_ID", OracleDbType.Int32).Value = userId;
+                cmd.Parameters.Add("P_ACTION_BY", OracleDbType.Varchar2).Value = string.IsNullOrWhiteSpace(actionBy) ? (object)DBNull.Value : actionBy;
+
+                var statusParameter = cmd.Parameters.Add("O_STATUS", OracleDbType.Varchar2, 100);
+                statusParameter.Direction = ParameterDirection.Output;
+                var messageParameter = cmd.Parameters.Add("O_MESSAGE", OracleDbType.Varchar2, 4000);
+                messageParameter.Direction = ParameterDirection.Output;
+
+                cmd.ExecuteNonQuery();
+
+                var status = ReadOutputString(statusParameter);
+                var message = ReadOutputString(messageParameter);
+                return string.Equals(status, "OK", StringComparison.OrdinalIgnoreCase)
+                    ? null
+                    : (string.IsNullOrWhiteSpace(message) ? "Unable to synchronize the user's default context." : message);
+                }
+            }
+
+        private static bool TryParseAssignmentDate(string value, out DateTime? parsedDate, out string errorMessage)
+            {
+            parsedDate = null;
+            errorMessage = null;
+
+            if (string.IsNullOrWhiteSpace(value))
+                {
+                return true;
                 }
 
-            return normalized;
+            var trimmedValue = value.Trim();
+            if (DateTime.TryParse(trimmedValue, CultureInfo.InvariantCulture, DateTimeStyles.AllowWhiteSpaces | DateTimeStyles.AssumeLocal, out var invariantDate)
+                || DateTime.TryParse(trimmedValue, CultureInfo.CurrentCulture, DateTimeStyles.AllowWhiteSpaces | DateTimeStyles.AssumeLocal, out invariantDate))
+                {
+                parsedDate = invariantDate;
+                return true;
+                }
+
+            errorMessage = trimmedValue;
+            return false;
+            }
+
+        private static int? ReadOutputInt(OracleParameter parameter)
+            {
+            if (parameter?.Value == null || parameter.Value == DBNull.Value)
+                {
+                return null;
+                }
+
+            if (parameter.Value is int intValue)
+                {
+                return intValue;
+                }
+
+            if (parameter.Value is decimal decimalValue)
+                {
+                return decimal.ToInt32(decimalValue);
+                }
+
+            if (parameter.Value is long longValue)
+                {
+                return Convert.ToInt32(longValue);
+                }
+
+            return int.TryParse(parameter.Value.ToString(), out var parsedValue) ? parsedValue : (int?)null;
+            }
+
+        private static string ReadOutputString(OracleParameter parameter)
+            {
+            return parameter?.Value == null || parameter.Value == DBNull.Value
+                ? string.Empty
+                : parameter.Value.ToString()?.Trim();
             }
 
         private static string NormalizeContextFlag(string flag, string defaultValue)

@@ -131,6 +131,7 @@ namespace AIS.Controllers
                 if (user.isAuthenticate)
                 {
                     ResetRateLimit(loginModel);
+                    RefreshAuthenticatedContexts(user);
                 }
 
                 if (user.isAuthenticate && RequiresPasswordChange(user))
@@ -149,10 +150,16 @@ namespace AIS.Controllers
 
                 if (user.ID != 0 && user.isAuthenticate)
                 {
-                    if (user.RequiresContextSelection)
+                    var contextCount = user.AvailableContexts?.Count ?? 0;
+                    if (contextCount > 1)
                     {
                         PersistPendingContextState(user);
                         return Json(BuildLoginResponse(user, redirectUrl: BuildContextSelectionRedirectUrl(), requiresContextSelection: true));
+                    }
+
+                    if (contextCount == 1 && !user.UserContextAssignmentId.HasValue)
+                    {
+                        dBConnection.ApplyLoginContext(user, user.AvailableContexts[0]);
                     }
 
                     await CompleteAuthenticatedLoginAsync(user);
@@ -160,11 +167,14 @@ namespace AIS.Controllers
                 }
                 else
                 {
-                    RegisterFailedAttempt(loginModel);
-                    user.isAuthenticate = false;
-                    user.ErrorCode = "INVALID_CREDENTIALS";
-                    user.ErrorTitle = "Sign in failed";
-                    user.ErrorMsg = "Invalid user ID or password.";
+                    if (string.IsNullOrWhiteSpace(user?.ErrorCode))
+                    {
+                        RegisterFailedAttempt(loginModel);
+                        user.isAuthenticate = false;
+                        user.ErrorCode = "INVALID_CREDENTIALS";
+                        user.ErrorTitle = "Sign in failed";
+                        user.ErrorMsg = "Invalid user ID or password.";
+                    }
                 }
 
                 return Json(BuildLoginResponse(user));
@@ -211,7 +221,7 @@ namespace AIS.Controllers
         {
             if (User?.Identity?.IsAuthenticated == true)
             {
-                return RedirectToAction("Index", "Home");
+                return LocalRedirect(BuildHomeRedirectUrl());
             }
 
             if (!TryGetPendingLoginContextState(out var pendingState))
@@ -249,6 +259,21 @@ namespace AIS.Controllers
             }
 
             return await CompleteContextSelectionAsync(pendingState, selectedAssignmentId);
+        }
+
+        [HttpGet]
+        [AllowAnonymous]
+        public Task<IActionResult> ConfirmContext()
+        {
+            return SelectContext();
+        }
+
+        [HttpPost]
+        [AllowAnonymous]
+        [ValidateAntiForgeryToken]
+        public Task<IActionResult> ConfirmContext([FromForm] ContextSelectionPostModel model)
+        {
+            return SelectContext(model);
         }
 
         [HttpPost]
@@ -443,10 +468,14 @@ namespace AIS.Controllers
         {
             await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
 
+            var displayName = !string.IsNullOrWhiteSpace(sessionUser?.Name)
+                ? sessionUser.Name.Trim()
+                : sessionUser?.PPNumber ?? string.Empty;
+
             var claims = new List<Claim>
             {
                 new Claim(ClaimTypes.NameIdentifier, sessionUser.ID.ToString()),
-                new Claim(ClaimTypes.Name, sessionUser.Name ?? sessionUser.PPNumber ?? string.Empty),
+                new Claim(ClaimTypes.Name, displayName),
                 new Claim(ClaimTypes.SerialNumber, sessionUser.PPNumber ?? string.Empty),
                 new Claim("sessionId", sessionUser.SessionId ?? string.Empty)
             };
@@ -597,6 +626,61 @@ namespace AIS.Controllers
                    string.Equals(user.changePassword, "Y", StringComparison.OrdinalIgnoreCase);
         }
 
+        private void RefreshAuthenticatedContexts(UserModel user)
+        {
+            if (user == null || !user.isAuthenticate || string.IsNullOrWhiteSpace(user.PPNumber))
+            {
+                return;
+            }
+
+            var contexts = dBConnection.GetLoginContexts(user.PPNumber);
+            user.AvailableContexts = contexts;
+            user.AssignmentCount = contexts.Count;
+            user.RequiresContextSelection = contexts.Count > 1;
+
+            if (contexts.Count == 0)
+            {
+                ClearResolvedLoginContext(user);
+                user.isAuthenticate = false;
+                user.ErrorCode ??= "NO_LOGIN_CONTEXT";
+                user.ErrorTitle ??= "No login context assigned";
+                user.ErrorMsg ??= "Your account is active, but no valid role and entity assignment is available. Please contact IAS administration.";
+                return;
+            }
+
+            if (contexts.Count == 1)
+            {
+                dBConnection.ApplyLoginContext(user, contexts[0]);
+                return;
+            }
+
+            ClearResolvedLoginContext(user);
+        }
+
+        private static void ClearResolvedLoginContext(UserModel user)
+        {
+            if (user == null)
+            {
+                return;
+            }
+
+            user.UserContextAssignmentId = null;
+            user.UserGroupID = null;
+            user.UserRoleID = null;
+            user.UserGroup = null;
+            user.UserRole = null;
+            user.UserRoleName = null;
+            user.UserEntityID = null;
+            user.UserEntityName = null;
+            user.UserParentEntityID = null;
+            user.UserParentEntityName = null;
+            user.RelationshipId = null;
+            user.UserEntityTypeID = null;
+            user.UserParentEntityTypeID = null;
+            user.UserEntityCode = null;
+            user.UserParentEntityCode = null;
+        }
+
         private void IssuePasswordChangeToken(UserModel user)
         {
             var token = _passwordChangeTokenService.CreateToken(user.ID, user.PPNumber);
@@ -675,7 +759,7 @@ namespace AIS.Controllers
 
         private async Task<IActionResult> CompleteContextSelectionAsync(PendingLoginContextState pendingState, int assignmentId)
         {
-            var validatedContext = dBConnection.GetValidatedLoginContext(pendingState?.PPNumber, assignmentId);
+            var validatedContext = dBConnection.GetValidatedLoginContext(pendingState?.PPNumber, assignmentId, pendingState?.UserId);
             if (validatedContext == null)
             {
                 sessionHandler.ClearPendingLoginContextState();
@@ -685,7 +769,7 @@ namespace AIS.Controllers
             var user = BuildUserFromPendingState(pendingState);
             dBConnection.ApplyLoginContext(user, validatedContext);
             await CompleteAuthenticatedLoginAsync(user);
-            return RedirectToAction("Index", "Home");
+            return LocalRedirect(BuildHomeRedirectUrl());
         }
 
         private UserModel BuildUserFromPendingState(PendingLoginContextState pendingState)
@@ -742,6 +826,12 @@ namespace AIS.Controllers
         {
             var pathBase = Request.PathBase.HasValue ? Request.PathBase.Value : string.Empty;
             return string.Concat(pathBase, "/Login/SelectContext");
+        }
+
+        private string BuildHomeRedirectUrl()
+        {
+            var pathBase = Request.PathBase.HasValue ? Request.PathBase.Value : string.Empty;
+            return string.Concat(pathBase, "/Home/Index");
         }
 
         private static UserContextAssignmentModel CloneUserContext(UserContextAssignmentModel context)

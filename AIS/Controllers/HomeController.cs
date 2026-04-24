@@ -263,10 +263,14 @@ namespace AIS.Controllers
 
             await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
 
+            var displayName = !string.IsNullOrWhiteSpace(sessionUser.Name)
+                ? sessionUser.Name.Trim()
+                : sessionUser.PPNumber ?? string.Empty;
+
             var claims = new List<Claim>
                 {
                 new Claim(ClaimTypes.NameIdentifier, sessionUser.ID.ToString()),
-                new Claim(ClaimTypes.Name, sessionUser.Name ?? sessionUser.PPNumber ?? string.Empty),
+                new Claim(ClaimTypes.Name, displayName),
                 new Claim(ClaimTypes.SerialNumber, sessionUser.PPNumber ?? string.Empty),
                 new Claim("sessionId", sessionUser.SessionId ?? string.Empty)
                 };
