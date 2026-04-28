@@ -95,8 +95,10 @@ namespace AIS.Models.CAU
         
         [RichTextSanitize]
         public string DacRecommendations { get; set; }
-        [MaxLength(200)]
-        [PlainText]
+        [RichTextSanitize]
+        public string UpdateManagementResponse { get; set; }
+
+        [RichTextSanitize]
         public string UpdatedStatus { get; set; }
         [PlainText]
         public string IsActive { get; set; } = "Y";

@@ -1460,25 +1460,62 @@ namespace AIS.Controllers
         #endregion
         public List<AuditPeriodModel> GetInsYearsForCAU(int dept_code = 0)
             {
-            var con = this.DatabaseConnection();
             List<AuditPeriodModel> periodList = new List<AuditPeriodModel>();
-            using (OracleCommand cmd = con.CreateCommand())
+            try
                 {
-                cmd.CommandText = "PKG_COMMERCIAL_AUDIT.p_CAU_OM_YEAR";
-                cmd.CommandType = CommandType.StoredProcedure;
-                cmd.Parameters.Clear();
-                cmd.Parameters.Add("T_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
-                OracleDataReader rdr = cmd.ExecuteReader();
-
-                while (rdr.Read())
+                var con = this.DatabaseConnection();
+                using (OracleCommand cmd = con.CreateCommand())
                     {
-                    AuditPeriodModel period = new AuditPeriodModel();
-                    period.AUDITPERIODID = Convert.ToInt32(rdr["auditperiodid"]);
-                    period.DESCRIPTION = rdr["period"].ToString();
-                    periodList.Add(period);
+                    cmd.CommandText = "PKG_COMMERCIAL_AUDIT.p_CAU_OM_YEAR";
+                    cmd.CommandType = CommandType.StoredProcedure;
+                    cmd.Parameters.Clear();
+                    cmd.Parameters.Add("T_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+                    OracleDataReader rdr = cmd.ExecuteReader();
+
+                    while (rdr.Read())
+                        {
+                        AuditPeriodModel period = new AuditPeriodModel();
+                        period.AUDITPERIODID = Convert.ToInt32(rdr["auditperiodid"]);
+                        period.DESCRIPTION = rdr["period"].ToString();
+                        periodList.Add(period);
+                        }
                     }
+                con.Dispose();
                 }
-            con.Dispose();
+            catch
+                {
+                var sessionHandler = CreateSessionHandler();
+                var loggedInUser = sessionHandler.GetUser();
+                if (loggedInUser == null
+                    || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
+                    || string.IsNullOrWhiteSpace(loggedInUser.PPNumber)
+                    || loggedInUser.UserRoleID <= 0)
+                    {
+                    return periodList;
+                    }
+
+                var con = this.DatabaseConnection();
+                using (OracleCommand cmd = con.CreateCommand())
+                    {
+                    cmd.CommandText = "pkg_pg.P_GetAuditPeriods";
+                    cmd.CommandType = CommandType.StoredProcedure;
+                    cmd.Parameters.Clear();
+                    cmd.Parameters.Add("P_NO", OracleDbType.Int32).Value = loggedInUser.PPNumber;
+                    cmd.Parameters.Add("ENT_ID", OracleDbType.Int32).Value = loggedInUser.UserEntityID;
+                    cmd.Parameters.Add("R_ID", OracleDbType.Int32).Value = loggedInUser.UserRoleID;
+                    cmd.Parameters.Add("T_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+                    OracleDataReader rdr = cmd.ExecuteReader();
+
+                    while (rdr.Read())
+                        {
+                        AuditPeriodModel period = new AuditPeriodModel();
+                        period.AUDITPERIODID = Convert.ToInt32(rdr["AUDITPERIODID"]);
+                        period.DESCRIPTION = rdr["DESCRIPTION"].ToString();
+                        periodList.Add(period);
+                        }
+                    }
+                con.Dispose();
+                }
             return periodList;
             }
         public List<AuditPeriodModel> GetParaPrintingYearsForCAU()

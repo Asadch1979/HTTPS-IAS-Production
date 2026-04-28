@@ -242,7 +242,7 @@ namespace AIS.Controllers
                     cmd.Parameters.Add("P_BODY_OF_PDP", OracleDbType.Clob).Value = model?.BodyOfPdp ?? string.Empty;
                     cmd.Parameters.Add("P_MANAGEMENT_RESPONSE", OracleDbType.Clob).Value = model?.ManagementResponse ?? string.Empty;
                     cmd.Parameters.Add("P_DAC_RECOMMENDATIONS", OracleDbType.Clob).Value = model?.DacRecommendations ?? string.Empty;
-                    cmd.Parameters.Add("P_UPDATED_STATUS", OracleDbType.Varchar2).Value = model?.UpdatedStatus ?? string.Empty;
+                    cmd.Parameters.Add("P_UPDATE_MANAGEMENT_RESPONSE", OracleDbType.Clob).Value = model?.UpdateManagementResponse ?? model?.UpdatedStatus ?? string.Empty;
                     cmd.Parameters.Add("P_IS_ACTIVE", OracleDbType.Varchar2).Value = NormalizeActiveFlag(model?.IsActive);
                     cmd.Parameters.Add("P_USER_PPNO", OracleDbType.Int32).Value = Convert.ToInt32(loggedInUser.PPNumber);
                     cmd.Parameters.Add("P_USER_ROLE_ID", OracleDbType.Int32).Value = loggedInUser.UserRoleID;
@@ -284,7 +284,8 @@ namespace AIS.Controllers
                                 BodyOfPdp = SafeReadString(dr, "BODY_OF_PDP"),
                                 ManagementResponse = SafeReadString(dr, "MANAGEMENT_RESPONSE"),
                                 DacRecommendations = SafeReadString(dr, "DAC_RECOMMENDATIONS"),
-                                UpdatedStatus = SafeReadString(dr, "UPDATED_STATUS"),
+                                UpdateManagementResponse = SafeReadString(dr, "UPDATE_MANAGEMENT_RESPONSE"),
+                                UpdatedStatus = SafeReadString(dr, "UPDATE_MANAGEMENT_RESPONSE"),
                                 LinkedOmCount = SafeReadInt(dr, "LINKED_OM_COUNT"),
                                 LinkedOmNumbers = SafeReadString(dr, "LINKED_OM_NUMBERS"),
                                 IsActive = NormalizeActiveFlag(SafeReadString(dr, "IS_ACTIVE"))

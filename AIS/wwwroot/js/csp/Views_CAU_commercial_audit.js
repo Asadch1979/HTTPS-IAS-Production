@@ -28,6 +28,7 @@ var commercialAuditRichTextEditorIds = [
     "pdpBody",
     "pdpManagementResponse",
     "pdpDacRecommendations",
+    "pdpUpdateManagementResponse",
     "arpseManagementResponse",
     "arpseDacRecommendation",
     "arpsePacDirective"
@@ -451,9 +452,11 @@ function saveCommercialAuditOm() {
                 return;
             }
 
-            commercialAuditPage.selectedOmId = parseInt(coalesce(data.Id, data.id, 0), 10) || commercialAuditPage.selectedOmId;
-            commercialAuditPage.omMode = "edit";
-            loadCommercialAuditOms({ OmId: commercialAuditPage.selectedOmId, OmNo: model.OmNo });
+            commercialAuditPage.selectedOmId = 0;
+            commercialAuditPage.omMode = "add";
+            commercialAuditPage.selectedOmSnapshot = null;
+            resetCommercialAuditOmForm();
+            loadCommercialAuditOms();
             showApiAlert(data, wasEdit ? "OM updated successfully." : "OM saved successfully.");
         },
         error: function (xhr) {
@@ -472,7 +475,7 @@ function initCommercialAuditPdpEntry() {
     $("#btnCancelPdpEdit").off("click").on("click", resetCommercialAuditPdpForm);
 
     applyCommercialAuditPdpState();
-    initializeCommercialAuditRichTextEditors(["pdpBody", "pdpManagementResponse", "pdpDacRecommendations"]);
+    initializeCommercialAuditRichTextEditors(["pdpBody", "pdpManagementResponse", "pdpDacRecommendations", "pdpUpdateManagementResponse"]);
 
     if (commercialAuditPage.selectedPdpId && !commercialAuditPage.selectedPdpSnapshot) {
         loadCommercialAuditPdps({ PdpId: commercialAuditPage.selectedPdpId });
@@ -563,7 +566,7 @@ function renderCommercialAuditPdpTable(list) {
         row.append($("<td>").text(item.AuditYearText));
         row.append($("<td>").text(item.PdpNo));
         row.append($("<td>").text(item.GistOfPdp));
-        row.append($("<td>").text(item.UpdatedStatus));
+        row.append($("<td>").text(getCommercialAuditPreviewText(item.UpdateManagementResponse, 120)));
         row.append($("<td>").text(item.LinkedOmNumbers || item.LinkedOmCount));
 
         var manageButton = $("<button>")
@@ -639,7 +642,7 @@ function applyCommercialAuditPdpState() {
             setCommercialAuditFieldValue("pdpBody", commercialAuditPage.selectedPdpSnapshot.BodyOfPdp || "");
             setCommercialAuditFieldValue("pdpManagementResponse", commercialAuditPage.selectedPdpSnapshot.ManagementResponse || "");
             setCommercialAuditFieldValue("pdpDacRecommendations", commercialAuditPage.selectedPdpSnapshot.DacRecommendations || "");
-            $("#pdpUpdatedStatus").val(commercialAuditPage.selectedPdpSnapshot.UpdatedStatus || "");
+            setCommercialAuditFieldValue("pdpUpdateManagementResponse", commercialAuditPage.selectedPdpSnapshot.UpdateManagementResponse || "");
             $("#btnSavePdp").text("Update PDP");
             $("#btnCancelPdpEdit").removeClass("d-none");
         } else {
@@ -650,7 +653,7 @@ function applyCommercialAuditPdpState() {
             setCommercialAuditFieldValue("pdpBody", "");
             setCommercialAuditFieldValue("pdpManagementResponse", "");
             setCommercialAuditFieldValue("pdpDacRecommendations", "");
-            $("#pdpUpdatedStatus").val("");
+            setCommercialAuditFieldValue("pdpUpdateManagementResponse", "");
             $("#btnSavePdp").text("Save PDP");
             $("#btnCancelPdpEdit").addClass("d-none");
         }
@@ -688,7 +691,8 @@ function saveCommercialAuditPdp() {
         BodyOfPdp: getCommercialAuditRichTextValue("pdpBody"),
         ManagementResponse: getCommercialAuditRichTextValue("pdpManagementResponse"),
         DacRecommendations: getCommercialAuditRichTextValue("pdpDacRecommendations"),
-        UpdatedStatus: $("#pdpUpdatedStatus").val().trim(),
+        UpdateManagementResponse: getCommercialAuditRichTextValue("pdpUpdateManagementResponse"),
+        UpdatedStatus: getCommercialAuditRichTextValue("pdpUpdateManagementResponse"),
         IsActive: "Y"
     };
 
@@ -1318,6 +1322,7 @@ function setCommercialAuditFieldValue(fieldId, value) {
     field.val(String(value || ""));
 
     if (field.closest(".richText").length) {
+        field.closest(".richText").find(".richText-editor").first().html(String(value || ""));
         field.trigger("change");
     }
 }
@@ -1415,7 +1420,8 @@ function normalizeCommercialPdp(item) {
         BodyOfPdp: String(coalesce(item.BodyOfPdp, item.bodyOfPdp, item.BODY_OF_PDP, "") || ""),
         ManagementResponse: String(coalesce(item.ManagementResponse, item.managementResponse, item.MANAGEMENT_RESPONSE, "") || ""),
         DacRecommendations: String(coalesce(item.DacRecommendations, item.dacRecommendations, item.DAC_RECOMMENDATIONS, "") || ""),
-        UpdatedStatus: String(coalesce(item.UpdatedStatus, item.updatedStatus, item.UPDATED_STATUS, "") || ""),
+        UpdateManagementResponse: String(coalesce(item.UpdateManagementResponse, item.updateManagementResponse, item.UPDATE_MANAGEMENT_RESPONSE, item.UpdatedStatus, item.updatedStatus, item.UPDATED_STATUS, "") || ""),
+        UpdatedStatus: String(coalesce(item.UpdateManagementResponse, item.updateManagementResponse, item.UPDATE_MANAGEMENT_RESPONSE, item.UpdatedStatus, item.updatedStatus, item.UPDATED_STATUS, "") || ""),
         LinkedOmCount: parseInt(coalesce(item.LinkedOmCount, item.linkedOmCount, item.LINKED_OM_COUNT, 0), 10) || 0,
         LinkedOmNumbers: String(coalesce(item.LinkedOmNumbers, item.linkedOmNumbers, item.LINKED_OM_NUMBERS, "") || ""),
         IsActive: String(coalesce(item.IsActive, item.isActive, item.IS_ACTIVE, "Y") || "Y")
