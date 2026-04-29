@@ -1,0 +1,87 @@
+@{
+    var page_id = ViewData["PageId"] as int? ?? 0;
+}
+
+@{
+    ViewData["Title"] = "Outstanding Audit Paras PDF Export";
+    Layout = "_Layout";
+}
+
+<div class="row col-md-12">
+    <div class="col-md-12">
+        <h3 style="color: #be0e43">Outstanding Audit Paras PDF Export</h3>
+    </div>
+
+    <div class="row g-3 align-items-end col-md-12 mt-2">
+        <div class="col-12 col-lg-4">
+            <label for="auditDepartmentField" class="form-label">Audit Department</label>
+            <select id="auditDepartmentField" class="form-select form-control">
+                <option value="0" selected>--Select Audit Department--</option>
+                @{
+                    if (ViewData["AuditDepartments"] != null)
+                    {
+                        foreach (var item in (dynamic)(ViewData["AuditDepartments"]))
+                        {
+                            <option value="@item.ID">@item.NAME</option>
+                        }
+                    }
+                }
+            </select>
+            <div id="auditDepartmentValidationMessage" class="text-danger small d-none">Audit Department is required.</div>
+        </div>
+
+        <div class="col-12 col-md-6 col-lg-3">
+            <label for="executionFromDateField" class="form-label">Execution From Date</label>
+            <input type="date" id="executionFromDateField" class="form-control" />
+            <div id="executionFromValidationMessage" class="text-danger small d-none">Execution From Date is required.</div>
+        </div>
+
+        <div class="col-12 col-md-6 col-lg-3">
+            <label for="executionToDateField" class="form-label">Execution To Date</label>
+            <input type="date" id="executionToDateField" class="form-control" />
+            <div id="executionToValidationMessage" class="text-danger small d-none">Execution To Date is required.</div>
+            <div id="dateRangeValidationMessage" class="text-danger small d-none">Execution From Date cannot be after Execution To Date.</div>
+        </div>
+
+        <div class="col-12 col-lg-2 d-flex align-items-end">
+            <button type="button" id="loadOutstandingParasEntitiesButton" class="btn btn-danger w-100">
+                Search / Load
+            </button>
+        </div>
+    </div>
+
+    <div class="col-md-12 mt-4">
+        <div id="outstandingParasMessage" class="alert d-none" role="alert"></div>
+        <div class="table-responsive">
+            <table class="table table-bordered table-striped table-sm" id="outstandingParasEntitiesTable">
+                <thead>
+                    <tr>
+                        <th style="width: 48px;">
+                            <input type="checkbox" id="selectAllOutstandingParasEntities" />
+                        </th>
+                        <th>Entity Name</th>
+                        <th>Entity Code</th>
+                        <th>Audit Department</th>
+                        <th>Audit Period</th>
+                        <th>Execution Start Date</th>
+                        <th>Execution End Date</th>
+                        <th>Team Lead</th>
+                        <th>Team Members</th>
+                        <th>Outstanding Paras Count</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td colspan="10" class="text-center text-muted">Select filters and click Search / Load.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <button type="button" id="exportSelectedOutstandingParasPdfsButton" class="btn btn-danger" disabled>
+            Export Selected PDFs
+        </button>
+    </div>
+</div>
+
+<script src="~/js/csp/Views_Reports_consolidated_outstanding_paras_pdf.js?v=3"></script>

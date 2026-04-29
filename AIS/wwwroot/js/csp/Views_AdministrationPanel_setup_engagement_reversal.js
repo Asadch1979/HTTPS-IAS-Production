@@ -131,7 +131,7 @@
 
                     i = i + 1;
 
-                    $('#engObsListPanel_changeNo').append('<tr><td class="text-center">' + i + '</td><td>' + v.memO_NO + '</td><td>' + v.memO_DATE + '</td><td>' + v.heading + '</td><td>' + v.assigneD_TO + '</td><td>' + v.status + '</td><td class="text-center"><button data-onclick="event.preventDefault();obsChangeNumber(' + v.id + ');" class="btn btn-small btn-primary">Update Number</button></td></tr>');
+                    $('#engObsListPanel_changeNo').append('<tr><td class="text-center">' + i + '</td><td>' + v.memO_NO + '</td><td>' + v.memO_DATE + '</td><td>' + v.headings + '</td><td>' + v.assigneD_TO + '</td><td>' + v.status + '</td><td class="text-center"><button data-onclick="event.preventDefault();obsChangeNumber(' + v.id + ');" class="btn btn-small btn-primary">Update Number</button></td></tr>');
                 })
             },
             dataType: "json",

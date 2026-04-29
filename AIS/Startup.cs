@@ -79,6 +79,8 @@ namespace AIS
             services.AddScoped<IStaticAssetVersionTokenProvider, StaticAssetVersionTokenProvider>();
             services.AddScoped<FieldAuditReportPdfBuilder>();
             services.AddScoped<FieldAuditReportPdfGenerator>();
+            services.AddScoped<OutstandingParasPdfBuilder>();
+            services.AddScoped<OutstandingParasPdfGenerator>();
             services.AddScoped<IidInquiryReportPdfBuilder>();
             services.AddScoped<ManagementAuditReportPdfBuilder>();
             services.AddScoped<ObservationPdfBuilder>();

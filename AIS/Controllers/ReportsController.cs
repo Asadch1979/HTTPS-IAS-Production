@@ -599,6 +599,25 @@ namespace AIS.Controllers
                     return View();
                 }
             }
+        public IActionResult consolidated_outstanding_paras_pdf()
+            {
+            ViewData["TopMenu"] = tm.GetTopMenus();
+            ViewData["TopMenuPages"] = tm.GetTopMenusPages();
+            ViewData["AuditDepartments"] = dBConnection.GetAuditDepartments();
+            if (!User.Identity.IsAuthenticated)
+                {
+                return RedirectToAction("Index", "Login");
+                }
+            else
+                {
+                if (!this.UserHasPagePermissionForCurrentAction(sessionHandler)) //MIGRATION_PERMISSION_CHECK (Controller)
+                    {
+                    return RedirectToAction("Index", "PageNotFound");
+                    }
+                else
+                    return View();
+                }
+            }
         public IActionResult glhead_details()
             {
             ViewData["TopMenu"] = tm.GetTopMenus();
