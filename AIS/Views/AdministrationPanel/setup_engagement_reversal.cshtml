@@ -73,7 +73,7 @@
                 <th class="col-md-auto">Operational Start Date</th>
                 <th class="col-md-auto">Operational End Date</th>
                 <th class="col-md-auto">Status</th>
-                <th colspan="5" class="col-md-auto text-center">Action</th>
+                <th colspan="4" class="col-md-auto text-center">Action</th>
             </tr>
         </thead>
         <tbody></tbody>
@@ -104,7 +104,7 @@
                                     <th class="col-md-auto">Memo Date</th>
                                     <th class="col-md-auto">Assigned To</th>
                                     <th class="col-md-auto">Status</th>
-                                    <th class="col-md-auto"></th>
+                                    <th class="col-md-auto">Action</th>
                                 </tr>
                             </thead>
                             <tbody></tbody>
@@ -249,7 +249,7 @@
     <div class="modal-dialog modal-xxl" role="document">
         <div class="modal-content">
             <div class="modal-header bg-danger text-white">
-                <h5 class="modal-title">Observation Status Reversal</h5>
+                <h5 class="modal-title">Change Observation Number</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
                     <span aria-hidden="true">&times;</span>
                 </button>
@@ -282,6 +282,7 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button data-onclick="updateMemoStatuses();" type="button" data-bs-dismiss="modal" class="btn btn-success">Update Status</button>
 
             </div>
         </div>
@@ -376,4 +377,4 @@
         </div>
     </div>
 </div>
-<script src="~/js/csp/Views_AdministrationPanel_setup_engagement_reversal.js?v=1"></script>
+<script src="~/js/csp/Views_AdministrationPanel_setup_engagement_reversal.js?v=2"></script>

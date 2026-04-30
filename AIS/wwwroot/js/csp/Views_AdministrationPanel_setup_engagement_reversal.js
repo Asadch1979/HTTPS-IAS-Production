@@ -9,6 +9,10 @@
         return v.assigneD_TO || v.assigned_TO || v.assignedTo || v.ASSIGNED_TO || '';
     }
 
+    function getObservationHeading(v) {
+        return v.heading || v.HEADING || v.headinG || v.headings || '';
+    }
+
     $(document).ready(function () {
       
     });
@@ -106,7 +110,7 @@
 
                     i = i + 1;
 
-                    $('#engsListPanel').append('<tr><td>' + i + '</td><td>' + v.enG_ID + '</td><td>' + v.teaM_NAME + '</td><td>' + v.audiT_START_DATE + '</td><td>' + v.audiT_END_DATE + '</td><td>' + v.oP_START_DATE + '</td><td>' + v.oP_END_DATE + '</td><td>' + v.status + '</td><td><a class="text-sucess text-center" data-onclick="event.preventDefault();getObservationsForStatusReversal(' + v.enG_ID + ');" href="#">Status Reversal</a></td><td><a href="#" data-onclick="getObservationsForAssignmentReversal(' + v.enG_ID + ',' + v.plaN_ID + ');" class="text-sucess text-center">Assignment Reversal At Planning Stage</a></td><td><a href="#" data-onclick="proceedToChangeInAuditTeam(' + v.auditeD_BY_ID + ',' + v.enG_ID + ');" class="text-sucess text-center">Post Changes in Team</a></td><td><a href="#" data-onclick="proceedToChangeEndDate(' + v.enG_ID + ',\'' + v.audiT_START_DATE + '\',\'' + v.audiT_END_DATE + '\');" class="text-sucess text-center">Change Dates</a></td><td class="text-center"><a class="text-sucess text-center" data-onclick="getObservationsForReNumbering(' + v.enG_ID + ');" href="#">Change Observation Number</a></td></tr>');
+                    $('#engsListPanel').append('<tr><td>' + i + '</td><td>' + v.enG_ID + '</td><td>' + v.teaM_NAME + '</td><td>' + v.audiT_START_DATE + '</td><td>' + v.audiT_END_DATE + '</td><td>' + v.oP_START_DATE + '</td><td>' + v.oP_END_DATE + '</td><td>' + v.status + '</td><td><a href="#" data-onclick="getObservationsForAssignmentReversal(' + v.enG_ID + ',' + v.plaN_ID + ');" class="text-sucess text-center">Assignment Reversal At Planning Stage</a></td><td><a href="#" data-onclick="proceedToChangeInAuditTeam(' + v.auditeD_BY_ID + ',' + v.enG_ID + ');" class="text-sucess text-center">Post Changes in Team</a></td><td><a href="#" data-onclick="proceedToChangeEndDate(' + v.enG_ID + ',\'' + v.audiT_START_DATE + '\',\'' + v.audiT_END_DATE + '\');" class="text-sucess text-center">Change Dates</a></td><td class="text-center"><a class="text-sucess text-center" data-onclick="getObservationsForReNumbering(' + v.enG_ID + ');" href="#">Change Observation Number</a></td></tr>');
                 })
 
             },
@@ -116,6 +120,7 @@
     }
     function getObservationsForReNumbering(engId) {
 
+        g_engID = engId;
         $('#numberChangeModal').modal('show');
         $('#engObsListPanel_changeNo tbody').empty();
 
@@ -135,7 +140,7 @@
 
                     i = i + 1;
 
-                    $('#engObsListPanel_changeNo').append('<tr><td class="text-center">' + i + '</td><td>' + v.memO_NO + '</td><td>' + v.memO_DATE + '</td><td>' + v.headings + '</td><td>' + getAssignedTo(v) + '</td><td>' + v.status + '</td><td class="text-center"><button data-onclick="event.preventDefault();obsChangeNumber(' + v.id + ');" class="btn btn-small btn-primary">Update Number</button></td></tr>');
+                    $('#engObsListPanel_changeNo').append('<tr><td class="text-center">' + i + '</td><td>' + v.memO_NO + '</td><td>' + v.memO_DATE + '</td><td>' + getObservationHeading(v) + '</td><td>' + getAssignedTo(v) + '</td><td>' + v.status + '</td><td class="text-center"><input class="statusselected me-2" id="' + v.id + '" type="checkbox" /><button data-onclick="event.preventDefault();obsChangeNumber(' + v.id + ');" class="btn btn-small btn-primary">Update Number</button></td></tr>');
                 })
             },
             dataType: "json",
