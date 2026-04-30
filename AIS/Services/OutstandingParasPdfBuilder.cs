@@ -34,14 +34,14 @@ namespace AIS.Services
             sb.AppendLine(".bank-name{ font-size:18pt; font-weight:700; margin-top:8px; }");
             sb.AppendLine(".division{ font-size:13pt; margin-top:6px; }");
             sb.AppendLine(".report-title{ font-size:18pt; font-weight:700; margin:36px 0 24px; }");
-            sb.AppendLine(".cover-box{ border:1px solid #111; padding:16px 18px; margin:18px auto 0; width:74%; text-align:left; }");
+            sb.AppendLine(".cover-box{ border:1px solid #111; padding:16px 18px; margin:18px auto 0; width:82%; text-align:left; }");
             sb.AppendLine(".confidential{ margin-top:24px; font-weight:700; }");
             sb.AppendLine(".page-break{ page-break-before:always; break-before:page; }");
             sb.AppendLine(".break-after{ page-break-after:always; break-after:page; }");
             sb.AppendLine(".entity-divider{ border:0; border-top:2px solid #111; margin:0 0 18px; }");
             sb.AppendLine(".meta-grid{ width:100%; border-collapse:collapse; margin:8pt 0; }");
-            sb.AppendLine(".meta-grid th,.meta-grid td{ border:1px solid #111; padding:6px 8px; vertical-align:top; }");
-            sb.AppendLine(".meta-grid th{ width:34%; text-align:left; background:#f6f8fa; }");
+            sb.AppendLine(".meta-grid th,.meta-grid td{ border:1px solid #111; padding:6px 8px; vertical-align:top; text-align:left; }");
+            sb.AppendLine(".meta-grid th{ width:34%; background:#f6f8fa; font-weight:700; }");
             sb.AppendLine(".section-title{ font-size:14px; font-weight:700; margin:12px 0 8px; padding:7px 10px; border-left:4px solid #111; background:#f6f8fa; }");
             sb.AppendLine(".para-card{ border:1px solid #d0d7de; border-radius:6px; padding:12px 14px; margin:12px 0; page-break-inside:avoid; break-inside:avoid; }");
             sb.AppendLine(".para-title{ font-size:13px; font-weight:700; margin-bottom:8px; }");
@@ -100,10 +100,12 @@ namespace AIS.Services
 
             sb.AppendLine("<div class=\"bank-name\">Zarai Taraqiati Bank Limited</div>");
             sb.AppendLine("<div class=\"division\">Internal Audit Division</div>");
-            sb.AppendFormat(CultureInfo.InvariantCulture, "<div class=\"report-title\">{0}</div>", Encode(string.IsNullOrWhiteSpace(data.ReportTitle) ? "Audit Report" : data.ReportTitle));
+            sb.AppendFormat(CultureInfo.InvariantCulture, "<div class=\"report-title\">{0}</div>", Encode(string.IsNullOrWhiteSpace(data.ReportTitle) ? "Outstanding Audit Paras Report" : data.ReportTitle));
             sb.AppendLine("<div class=\"cover-box\"><table class=\"meta-grid\"><tbody>");
             AppendCoverDetails(sb, data, entity);
-            AppendMetaRow(sb, "Generated On", FormatDateTime(data.GeneratedOn));
+            AppendMetaRow(sb, "Report Scope", "Outstanding audit paras only");
+            AppendMetaRow(sb, "Status As Of / Generated On", FormatDateTime(data.GeneratedOn));
+            AppendMetaRow(sb, "Classification", "CONFIDENTIAL");
             sb.AppendLine("</tbody></table></div>");
             sb.AppendLine("<div class=\"confidential\">Confidential - Internal Use Only</div>");
             sb.AppendLine("</section>");
@@ -152,6 +154,7 @@ namespace AIS.Services
                 AppendMetaRow(sb, "Para No", para.ParaNo);
                 AppendMetaRow(sb, "Para Title", para.ParaTitle);
                 AppendMetaRow(sb, "Risk Category", para.RiskCategory);
+                AppendMetaRow(sb, "Current Compliance Status", para.CurrentComplianceStatus);
                 AppendRichRow(sb, "Observation Text", para.ObservationText);
                 AppendRichRow(sb, "Latest Management Response", para.LatestManagementResponse);
                 AppendRichRow(sb, "Audit Remarks", para.AuditRemarks);

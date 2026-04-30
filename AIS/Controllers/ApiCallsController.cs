@@ -1922,26 +1922,6 @@ namespace AIS.Controllers
             return "{\"Status\":true,\"Message\":\"" + dBConnection.UpdateAuditeeEntity(ENTITY_MODEL, IND) + "\"}";
             }
         [HttpPost]
-        public List<AuditeeEntitiesModel> GetAISEntities(string ENTITY_ID, string TYPE_ID)
-            {
-            return dBConnection.GetAISEntities(ENTITY_ID, TYPE_ID);
-            }
-        [HttpPost]
-        public List<AuditeeEntitiesModel> GetCBASEntities(string E_CODE, string E_NAME)
-            {
-            return dBConnection.GetCBASEntities(E_CODE, E_NAME);
-            }
-        [HttpPost]
-        public List<AuditeeEntitiesModel> GetERPEntities(string E_CODE, string E_NAME)
-            {
-            return dBConnection.GetERPEntities(E_CODE, E_NAME);
-            }
-        [HttpPost]
-        public List<AuditeeEntitiesModel> GetHREntities(string E_CODE, string E_NAME)
-            {
-            return dBConnection.GetHREntities(E_CODE, E_NAME);
-            }
-        [HttpPost]
         public bool submit_audit_criterias(int PERIOD_ID)
             {
             return dBConnection.SubmitAuditCriteriaForApproval(PERIOD_ID);
@@ -3650,18 +3630,6 @@ namespace AIS.Controllers
             }
 
         [HttpPost]
-        public string update_observation_status_for_reversal(List<int> OBS_IDS, int NEW_STATUS_ID, int ENG_ID)
-            {
-            string resp = "";
-            foreach (int ID in OBS_IDS)
-                {
-                resp += dBConnection.UpdateObservationStatusForReversal(ID, NEW_STATUS_ID, ENG_ID) + "<br />";
-                }
-            return "{\"Status\":true,\"Message\":\"" + resp + "\"}";
-            }
-
-        [HttpPost]
-
         public string Para_Shifted_To(List<int> OBS_IDS, int NEW_ENT_ID, int OLD_ENT_ID, List<string> P_INDS)
             {
             string resp = "";

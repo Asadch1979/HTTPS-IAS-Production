@@ -19,6 +19,8 @@ namespace AIS.Models
         [PlainText]
         public string STATUS { get; set; }
         [PlainText]
+        public string ASSIGNED_TO { get; set; }
+        [PlainText]
         public string FINAL_PARA { get; set; }
         }
     }

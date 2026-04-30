@@ -100,7 +100,7 @@ namespace AIS.Services
                     {
                     AuditDepartmentId = 0,
                     AuditDepartmentName = entity.AuditDepartment,
-                    ReportTitle = "Audit Report",
+                    ReportTitle = "Outstanding Audit Paras Report",
                     ExecutionStartDate = startDate,
                     ExecutionEndDate = endDate,
                     GeneratedOn = GetKarachiNow(),
@@ -178,7 +178,7 @@ namespace AIS.Services
 
         private static PdfWatermarkText BuildWatermarkTexts(OutstandingParasPdfReportData data)
             {
-            var footer = $"Generated on {FormatDateTime(data.GeneratedOn)}";
+            var footer = $"CONFIDENTIAL | Generated on {FormatDateTime(data.GeneratedOn)}";
 
             return new PdfWatermarkText
                 {
@@ -272,12 +272,8 @@ namespace AIS.Services
                 pdfCanvas.SetExtGState(new PdfExtGState().SetFillOpacity(0.45f));
                 canvas.SetFontColor(ColorConstants.DARK_GRAY);
                 canvas.SetFontSize(8);
-                canvas.ShowTextAligned(_watermarkText.FooterWatermarkText, pageSize.GetRight() - 30, pageSize.GetBottom() + 32, TextAlignment.RIGHT);
+                canvas.ShowTextAligned($"{_watermarkText.FooterWatermarkText} | Page {pageNumber}", pageSize.GetWidth() / 2, pageSize.GetBottom() + 24, TextAlignment.CENTER);
                 pdfCanvas.RestoreState();
-
-                canvas.SetFontColor(ColorConstants.BLACK);
-                canvas.SetFontSize(9);
-                canvas.ShowTextAligned($"Page {pageNumber}", pageSize.GetWidth() / 2, pageSize.GetBottom() + 20, TextAlignment.CENTER);
                 }
             }
         }

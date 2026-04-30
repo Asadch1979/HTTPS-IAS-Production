@@ -258,51 +258,7 @@ namespace AIS.Controllers
                 }
             }
 
-        public IActionResult status_reversal_audit_entities()
-            {
-            ViewData["TopMenu"] = tm.GetTopMenus();
-            ViewData["TopMenuPages"] = tm.GetTopMenusPages();
-            ViewData["Userrelationship"] = dBConnection.Getrealtionshiptype(ViewData["PageId"] as int? ?? 0);
-            ViewData["EntTypeList"] = dBConnection.GetEntityTypeList();
-
-            if (!User.Identity.IsAuthenticated)
-                {
-                return RedirectToAction("Index", "Login");
-                }
-            else
-                {
-                if (!this.UserHasPagePermissionForCurrentAction(sessionHandler)) //MIGRATION_PERMISSION_CHECK (Controller)
-                    {
-                    return RedirectToAction("Index", "PageNotFound");
-                    }
-                else
-                    return View();
-                }
-            }
-
-
         public IActionResult setup_engagement_reversal()
-            {
-            ViewData["TopMenu"] = tm.GetTopMenus();
-            ViewData["TopMenuPages"] = tm.GetTopMenusPages();
-            ViewData["Userrelationship"] = dBConnection.Getrealtionshiptype(ViewData["PageId"] as int? ?? 0);
-            ViewData["statusList"] = dBConnection.GetObservationReversalStatus();
-
-            if (!User.Identity.IsAuthenticated)
-                {
-                return RedirectToAction("Index", "Login");
-                }
-            else
-                {
-                if (!this.UserHasPagePermissionForCurrentAction(sessionHandler)) //MIGRATION_PERMISSION_CHECK (Controller)
-                    {
-                    return RedirectToAction("Index", "PageNotFound");
-                    }
-                else
-                    return View();
-                }
-            }
-        public IActionResult setup_observation_reversal()
             {
             ViewData["TopMenu"] = tm.GetTopMenus();
             ViewData["TopMenuPages"] = tm.GetTopMenusPages();

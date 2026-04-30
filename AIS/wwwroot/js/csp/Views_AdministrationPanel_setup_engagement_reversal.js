@@ -5,6 +5,10 @@
     var g_auditedByID = 0;
     var g_obsIdsArr = [];
 
+    function getAssignedTo(v) {
+        return v.assigneD_TO || v.assigned_TO || v.assignedTo || v.ASSIGNED_TO || '';
+    }
+
     $(document).ready(function () {
       
     });
@@ -131,7 +135,7 @@
 
                     i = i + 1;
 
-                    $('#engObsListPanel_changeNo').append('<tr><td class="text-center">' + i + '</td><td>' + v.memO_NO + '</td><td>' + v.memO_DATE + '</td><td>' + v.headings + '</td><td>' + v.assigneD_TO + '</td><td>' + v.status + '</td><td class="text-center"><button data-onclick="event.preventDefault();obsChangeNumber(' + v.id + ');" class="btn btn-small btn-primary">Update Number</button></td></tr>');
+                    $('#engObsListPanel_changeNo').append('<tr><td class="text-center">' + i + '</td><td>' + v.memO_NO + '</td><td>' + v.memO_DATE + '</td><td>' + v.headings + '</td><td>' + getAssignedTo(v) + '</td><td>' + v.status + '</td><td class="text-center"><button data-onclick="event.preventDefault();obsChangeNumber(' + v.id + ');" class="btn btn-small btn-primary">Update Number</button></td></tr>');
                 })
             },
             dataType: "json",
@@ -189,7 +193,7 @@
 
                     i = i + 1;
 
-                    $('#engObsListPanel').append('<tr><td class="text-center">' + i + '</td><td>' + v.memO_NO + '</td><td>' + v.memO_DATE + '</td><td>' + v.assigneD_TO + '</td><td>' + v.status + '</td><td class="text-center"><input class="statusselected" id="' + v.id + '"  type="checkbox" /></td></tr>');
+                    $('#engObsListPanel').append('<tr><td class="text-center">' + i + '</td><td>' + v.memO_NO + '</td><td>' + v.memO_DATE + '</td><td>' + getAssignedTo(v) + '</td><td>' + v.status + '</td><td class="text-center"><input class="statusselected" id="' + v.id + '"  type="checkbox" /></td></tr>');
                 })
             },
             dataType: "json",
