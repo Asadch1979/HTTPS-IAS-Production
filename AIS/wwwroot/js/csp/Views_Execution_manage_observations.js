@@ -12,6 +12,12 @@
         return hiddenEngagement && hiddenEngagement.value ? hiddenEngagement.value : 0;
     }
 
+    function isCurrentEngagementTeamLead() {
+        var teamLeadField = document.getElementById('maIsTeamLeadField');
+        var value = teamLeadField && teamLeadField.value ? teamLeadField.value.toString().trim().toUpperCase() : '';
+        return value === 'Y' || value === 'YES' || value === 'TRUE' || value === '1';
+    }
+
     $(document).ready(function () {
         var entName = $('#manageObsPanel tbody .entity_name_field:first').text();
         $('#entityNameField').val(entName);
@@ -50,6 +56,43 @@
                 $('#viewMemo_response').html(data[0].obS_REPLY);
                 $('#viewMemo_subprocess').html(data[0].nature);
                 $('#viewMemo_violation').html(data[0].violation);
+                $('#dropButton_memoReply').addClass('d-none');
+                $('#submitAuditeeButton_memoReply').addClass('d-none');
+
+                if (!isCurrentEngagementTeamLead()) {
+                    $('#complianceCycleEvidences').empty();
+                    if (data[0].attacheD_EVIDENCES.length>0){
+                        $.each(data[0].attacheD_EVIDENCES, function (i, pp) {
+
+                            var extension = pp.imagE_NAME.split('.').pop().toLowerCase();
+                            const contentType = getContentType(extension);
+
+                            const container = document.createElement('div');
+                            container.className = 'evidence-link';
+
+                            const icon = document.createElement('i');
+                            icon.className = getIconClass(extension) + ' evidence-icon mr-1';
+                            container.appendChild(icon);
+
+                            const label = document.createElement('span');
+                            label.innerText = pp.imagE_NAME;
+                            label.classList.add('text-primary');
+                            label.style.cursor = 'pointer';
+                            container.appendChild(label);
+
+                            container.addEventListener('click', function () {
+                                downloadFile(pp.filE_ID);
+                            });
+
+                            $('#complianceCycleEvidences').append(container);
+                        });
+                    }
+                    else{
+                        $('#complianceCycleEvidences').append("<i>No evidence is attached </i>");
+                    }
+
+                    return;
+                }
 
                 if (g_currentStatus == 1) {
                     $('#dropButton_memoReply').removeClass('d-none');
@@ -206,6 +249,10 @@
         });
     }
     function updateObservationStatus(obs_id, new_status_id, risk_id) {
+        if (!isCurrentEngagementTeamLead()) {
+            return;
+        }
+
         g_obsId = obs_id;
         g_newStatusId = new_status_id;
         g_riskId = risk_id;
@@ -213,6 +260,10 @@
         $('#commentAreaInCommentsBox').val('');
     }
     function dropObservation(obs_id, new_status_id, risk_id) {
+        if (!isCurrentEngagementTeamLead()) {
+            return;
+        }
+
         g_obsId = obs_id;
         g_newStatusId = new_status_id;
         g_riskId = risk_id;
@@ -233,6 +284,10 @@
         });
     }
     function submitObservationToAuditee(obs_id, new_status_id, risk_id) {
+        if (!isCurrentEngagementTeamLead()) {
+            return;
+        }
+
         $('#' + $('#auditeeEvidences').find('input[type="file"]').attr('id'))
 
 
@@ -268,9 +323,11 @@
                 },
                 cache: false,
                 success: function (data) {
+                    var canManageObservation = isCurrentEngagementTeamLead();
                     $.each(data, function (i, v) {
                         $('#auditPeriodNameField').val(v.period);
-                        $('#manageObsPanel tbody').append(' <tr id="' + v.obS_ID + '"><td class="text-center">' + v.memO_NO + '</td><td>' + v.heading + '</td><td>' + v.violation + '</td><td>' + v.obS_RISK + '</td><td>' + v.obS_STATUS + '</td><td class="text-center"><a data-onclick="event.preventDefault();ObservationViewerPanel(' + v.obS_ID + ',' + v.obS_STATUS_ID + ', ' + v.obS_RISK_ID + ')" href="#" class="text-hover">View Memo</a></td><td class="text-center"><a data-onclick="ObservationUpdatePanel(' + v.obS_ID + ')" href="#" class="text-hover">Edit Memo</a></td></tr>');
+                        var editAction = canManageObservation ? '<a data-onclick="ObservationUpdatePanel(' + v.obS_ID + ')" href="#" class="text-hover">Edit Memo</a>' : '';
+                        $('#manageObsPanel tbody').append(' <tr id="' + v.obS_ID + '"><td class="text-center">' + v.memO_NO + '</td><td>' + v.heading + '</td><td>' + v.violation + '</td><td>' + v.obS_RISK + '</td><td>' + v.obS_STATUS + '</td><td class="text-center"><a data-onclick="event.preventDefault();ObservationViewerPanel(' + v.obS_ID + ',' + v.obS_STATUS_ID + ', ' + v.obS_RISK_ID + ')" href="#" class="text-hover">View Memo</a></td><td class="text-center">' + editAction + '</td></tr>');
                     });
                     setTimeout(function () {
                         if (g_obsId != 0) {
@@ -288,6 +345,10 @@
     }
 
     function ObservationUpdatePanel(obs_id) {
+        if (!isCurrentEngagementTeamLead()) {
+            return;
+        }
+
         g_obsId = obs_id;
         $.ajax({
             url: g_asiBaseURL + "/ApiCalls/get_dept_observation_text",
@@ -309,6 +370,10 @@
     }
 
     function finalUpdateMemoContent(obs_id) {
+        if (!isCurrentEngagementTeamLead()) {
+            return;
+        }
+
         g_obsId = obs_id;
         $.ajax({
             url: g_asiBaseURL + "/ApiCalls/update_observation_text",

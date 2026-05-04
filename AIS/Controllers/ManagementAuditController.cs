@@ -91,7 +91,12 @@ namespace AIS.Controllers
             }
 
             PopulateReplicaViewData(step.RequiredPermissionPageId);
-            var partialModel = new FieldAuditGridReplicaViewModel { EngagementId = engId };
+            var selectedEngagement = model.AvailableEngagements.FirstOrDefault(item => item.EngagementId == engId);
+            var partialModel = new FieldAuditGridReplicaViewModel
+            {
+                EngagementId = engId,
+                IsTeamLead = selectedEngagement?.IsTeamLead
+            };
 
             switch (step.StepCode)
             {
@@ -144,17 +149,11 @@ namespace AIS.Controllers
 
         private FieldAuditWorkflowViewModel BuildWorkflowViewModel(SessionUser user, string requestedStepCode, int? engId)
         {
-            var engagementOptions = _dbConnection.GetTaskList()
-                .Where(item => item.ENG_PLAN_ID > 0)
-                .GroupBy(item => item.ENG_PLAN_ID)
+            var engagementOptions = _dbConnection.GetArDashboardDropdownOptions()
+                .Where(item => item.EngagementId > 0)
+                .GroupBy(item => item.EngagementId)
                 .Select(group => group.First())
-                .OrderBy(item => item.ENTITY_NAME)
-                .Select(item => new FieldAuditEngagementOptionModel
-                {
-                    EngagementId = item.ENG_PLAN_ID,
-                    EntityName = item.ENTITY_NAME,
-                    StageName = item.ENG_STATUS
-                })
+                .OrderBy(item => item.Label)
                 .ToList();
 
             var selectedEngagementId = engId.GetValueOrDefault() > 0 && engagementOptions.Any(item => item.EngagementId == engId.Value)

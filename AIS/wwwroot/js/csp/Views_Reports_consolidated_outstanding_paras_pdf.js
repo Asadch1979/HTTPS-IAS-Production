@@ -69,17 +69,75 @@
         return g_asiBaseURL + '/OutstandingParasPdf/GenerateSelectedZip';
     }
 
+    function getTableExportColumns(idx) {
+        return idx > 0;
+    }
+
+    function getTableExportOptions() {
+        var safeOptions = typeof getSafeExportFormatOptions === 'function'
+            ? getSafeExportFormatOptions()
+            : {};
+
+        safeOptions.columns = getTableExportColumns;
+        return safeOptions;
+    }
+
+    function destroyOutstandingParasTable() {
+        if ($.fn.DataTable.isDataTable('#outstandingParasEntitiesTable')) {
+            $('#outstandingParasEntitiesTable').DataTable().clear().destroy();
+        }
+    }
+
+    function initializeOutstandingParasTable() {
+        var exportOptions = getTableExportOptions();
+        var pdfButton = typeof getPdfExportButtonConfig === 'function'
+            ? getPdfExportButtonConfig()
+            : { extend: 'pdfHtml5', orientation: 'landscape', pageSize: 'A4' };
+
+        pdfButton.text = 'Export PDF';
+        pdfButton.className = 'btn btn-danger';
+        pdfButton.title = 'Outstanding Audit Paras';
+        pdfButton.exportOptions = exportOptions;
+
+        $('#outstandingParasEntitiesTable').DataTable({
+            dom: '<"top d-flex flex-wrap gap-2 mb-2"B>rt<"bottom"i><"clear">',
+            paging: false,
+            searching: false,
+            ordering: false,
+            info: false,
+            buttons: [
+                pdfButton,
+                {
+                    extend: 'excelHtml5',
+                    text: 'Export Excel',
+                    className: 'btn btn-success',
+                    title: 'Outstanding Audit Paras',
+                    exportOptions: exportOptions
+                },
+                {
+                    extend: 'csvHtml5',
+                    text: 'Export CSV',
+                    className: 'btn btn-primary',
+                    title: 'Outstanding Audit Paras',
+                    exportOptions: exportOptions
+                }
+            ]
+        });
+    }
+
     function encodeText(value) {
         return $('<div/>').text(value === null || value === undefined || value === '' ? '-' : value).html();
     }
 
     function setEmptyTableMessage(message) {
+        destroyOutstandingParasTable();
         $('#outstandingParasEntitiesTable tbody').html(
             '<tr><td colspan="10" class="text-center text-muted">' + encodeText(message) + '</td></tr>'
         );
     }
 
     function renderEntities(entities) {
+        destroyOutstandingParasTable();
         var $tbody = $('#outstandingParasEntitiesTable tbody');
         loadedEntities = entities || [];
         $('#selectAllOutstandingParasEntities').prop('checked', false);
@@ -106,6 +164,7 @@
         });
 
         $tbody.html(rows.join(''));
+        initializeOutstandingParasTable();
         updateExportButtonState();
     }
 
