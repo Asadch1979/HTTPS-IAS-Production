@@ -8,6 +8,8 @@
     var homeUrl = Url.Content("~/Home/Index");
 }
 
+<form id="maCsrfForm" class="d-none">@Html.AntiForgeryToken()</form>
+
 <div class="stepper-wrap sticky-top bg-white py-2 mb-3">
     <div class="card shadow-sm planning-nav-card mb-0">
         <div class="card-body py-3">
@@ -26,19 +28,27 @@
                                 <option value="">-- Select Engagement --</option>
                                 @foreach (var engagement in Model.AvailableEngagements)
                                 {
+                                    var optionText = string.IsNullOrWhiteSpace(engagement.Display) ? engagement.Label : engagement.Display;
                                     if (Model.SelectedEngagementId == engagement.EngagementId)
                                     {
-                                        <option value="@engagement.EngagementId" selected>@engagement.Label</option>
+                                        <option value="@engagement.EngagementId"
+                                                data-status-id="@engagement.StatusId"
+                                                data-is-team-lead="@engagement.IsTeamLead"
+                                                data-display="@optionText"
+                                                selected>@optionText</option>
                                     }
                                     else
                                     {
-                                        <option value="@engagement.EngagementId">@engagement.Label</option>
+                                        <option value="@engagement.EngagementId"
+                                                data-status-id="@engagement.StatusId"
+                                                data-is-team-lead="@engagement.IsTeamLead"
+                                                data-display="@optionText">@optionText</option>
                                     }
                                 }
                             </select>
                         </div>
                         <div class="col-sm-auto">
-                            <button id="maChangeEngagementBtn" type="button" class="btn btn-outline-secondary">Change Engagement</button>
+                            <button id="maChangeEngagementBtn" type="button" class="btn btn-outline-secondary d-none">Change Engagement</button>
                         </div>
                     </div>
                     <small class="text-muted">Engagement list uses the same task assignment source as the Engagement task list.</small>
@@ -64,9 +74,12 @@
 </div>
 
 <div class="card">
-    <div class="card-body field-audit-compact">
+    <div class="card-body field-audit-compact"
+         data-mark-complete-url="@Url.Action("MarkStepCompleted", "ManagementAudit")">
+        <div id="maStepMessage" class="alert d-none"></div>
         <div id="maStepHost"
              data-load-url="@Url.Action("LoadStep", "ManagementAudit")"
+             data-engagement-state-url="@Url.Action("GetDashboardEngagementState", "ManagementAudit")"
              data-management-report-url="@Url.Action("OpenManagementReport", "ManagementAudit")"
              data-step-code="@Model.CurrentStepCode"
              data-eng-id="@Model.SelectedEngagementId">
@@ -79,6 +92,9 @@
                 <div class="alert alert-secondary mb-0">Loading workflow content...</div>
             }
         </div>
+        <div class="field-audit-step-footer border-top mt-3 pt-3 d-flex justify-content-end">
+            <button type="button" id="maMarkCompletedBtn" class="btn btn-outline-success">Mark as Saved</button>
+        </div>
     </div>
 </div>
 
@@ -90,8 +106,10 @@
         stepCode = step.StepCode,
         stepNo = step.StepNo,
         stepTitle = step.StepTitle,
+        isEnabled = step.IsEnabled,
+        disabledMessage = step.DisabledMessage,
         isCompleted = step.IsCompleted,
         isSaved = step.IsSaved
     })));
 </script>
-<script src="~/js/managementAudit/dashboard.js?v=2"></script>
+<script src="~/js/managementAudit/dashboard.js?v=3"></script>
