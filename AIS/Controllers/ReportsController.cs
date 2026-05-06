@@ -604,6 +604,7 @@ namespace AIS.Controllers
             ViewData["TopMenu"] = tm.GetTopMenus();
             ViewData["TopMenuPages"] = tm.GetTopMenusPages();
             ViewData["AuditDepartments"] = dBConnection.GetAuditDepartments();
+            ViewData["RiskList"] = dBConnection.GetRisks();
             if (!User.Identity.IsAuthenticated)
                 {
                 return RedirectToAction("Index", "Login");

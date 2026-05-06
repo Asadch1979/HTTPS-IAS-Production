@@ -170,6 +170,107 @@ namespace AIS.Controllers
             return rows;
             }
 
+        public List<OutstandingParasSummaryPdfModel> GetOutstandingParasSummaryForPdf(int auditDepartmentId, string risk)
+            {
+            var rows = new List<OutstandingParasSummaryPdfModel>();
+
+            using var con = DatabaseConnection();
+            using var cmd = con.CreateCommand();
+            cmd.BindByName = true;
+            cmd.CommandText = "PKG_FRPT.P_GET_OUTSTANDING_PARAS_SUMMARY_PDF";
+            cmd.CommandType = CommandType.StoredProcedure;
+            cmd.Parameters.Add("P_AUDIT_DEPARTMENT_ID", OracleDbType.Int32).Value = auditDepartmentId <= 0 ? DBNull.Value : auditDepartmentId;
+            cmd.Parameters.Add("P_RISK", OracleDbType.Varchar2).Value = string.IsNullOrWhiteSpace(risk) || string.Equals(risk.Trim(), "ALL", StringComparison.OrdinalIgnoreCase)
+                ? DBNull.Value
+                : risk.Trim();
+            cmd.Parameters.Add("O_CURSOR", OracleDbType.RefCursor, ParameterDirection.Output);
+
+            using var reader = cmd.ExecuteReader();
+            while (reader.Read())
+                {
+                rows.Add(new OutstandingParasSummaryPdfModel
+                    {
+                    EntityId = OutstandingPdfGetInt(reader, "ENTITY_ID", "ENT_ID"),
+                    AuditDepartment = OutstandingPdfGetString(reader, "AUDIT_DEPARTMENT", "AUDIT_DEPARTMENT_NAME", "DEPARTMENT_NAME"),
+                    EntityName = OutstandingPdfGetString(reader, "ENTITY_NAME", "BRANCH_NAME", "AUDIT_ENTITY_NAME"),
+                    ParaNo = OutstandingPdfGetString(reader, "PARA_NO", "PARANO", "PARA_NUMBER", "COM_ID"),
+                    AuditPeriod = OutstandingPdfGetString(reader, "AUDIT_PERIOD", "AUDIT_PERIOD_NAME"),
+                    GistHeading = OutstandingPdfGetString(reader, "GIST_HEADING", "PARA_TITLE", "V_HEADER", "GIST"),
+                    Risk = OutstandingPdfGetString(reader, "RISK", "RISK_CATEGORY"),
+                    ParaText = OutstandingPdfGetString(reader, "PARA_TEXT", "OBSERVATION_TEXT", "V_DETAIL", "PARA_DETAIL"),
+                    CurrentComplianceStatus = OutstandingPdfGetString(reader, "CURRENT_COMPLIANCE_STATUS", "COMPLIANCE_STATUS", "STATUS")
+                    });
+                }
+
+            return rows;
+            }
+
+        public List<OutstandingParasSummarySetModel> GetOutstandingParasSummarySetsForPdf(int auditDepartmentId, string risk)
+            {
+            var rows = new List<OutstandingParasSummarySetModel>();
+
+            using var con = DatabaseConnection();
+            using var cmd = con.CreateCommand();
+            cmd.BindByName = true;
+            cmd.CommandText = "PKG_FRPT.P_GET_OUTSTANDING_PARAS_SUMMARY_SETS";
+            cmd.CommandType = CommandType.StoredProcedure;
+            cmd.Parameters.Add("P_AUDIT_DEPARTMENT_ID", OracleDbType.Int32).Value = auditDepartmentId <= 0 ? DBNull.Value : auditDepartmentId;
+            cmd.Parameters.Add("P_RISK", OracleDbType.Varchar2).Value = string.IsNullOrWhiteSpace(risk) || string.Equals(risk.Trim(), "ALL", StringComparison.OrdinalIgnoreCase)
+                ? DBNull.Value
+                : risk.Trim();
+            cmd.Parameters.Add("O_CURSOR", OracleDbType.RefCursor, ParameterDirection.Output);
+
+            using var reader = cmd.ExecuteReader();
+            while (reader.Read())
+                {
+                rows.Add(new OutstandingParasSummarySetModel
+                    {
+                    EntityId = OutstandingPdfGetInt(reader, "ENTITY_ID", "ENT_ID"),
+                    EntityName = OutstandingPdfGetString(reader, "ENTITY_NAME", "BRANCH_NAME", "AUDIT_ENTITY_NAME"),
+                    Risk = OutstandingPdfGetString(reader, "RISK", "RISK_CATEGORY"),
+                    RowCount = OutstandingPdfGetInt(reader, "ROW_COUNT", "TOTAL_ROWS", "PARA_COUNT")
+                    });
+                }
+
+            return rows;
+            }
+
+        public List<OutstandingParasSummaryPdfModel> GetOutstandingParasSummaryForPdfSet(int auditDepartmentId, int entityId, string risk)
+            {
+            var rows = new List<OutstandingParasSummaryPdfModel>();
+
+            using var con = DatabaseConnection();
+            using var cmd = con.CreateCommand();
+            cmd.BindByName = true;
+            cmd.CommandText = "PKG_FRPT.P_GET_OUTSTANDING_PARAS_SUMMARY_SET_PDF";
+            cmd.CommandType = CommandType.StoredProcedure;
+            cmd.Parameters.Add("P_AUDIT_DEPARTMENT_ID", OracleDbType.Int32).Value = auditDepartmentId <= 0 ? DBNull.Value : auditDepartmentId;
+            cmd.Parameters.Add("P_ENTITY_ID", OracleDbType.Int32).Value = entityId;
+            cmd.Parameters.Add("P_RISK", OracleDbType.Varchar2).Value = string.IsNullOrWhiteSpace(risk) || string.Equals(risk.Trim(), "ALL", StringComparison.OrdinalIgnoreCase)
+                ? DBNull.Value
+                : risk.Trim();
+            cmd.Parameters.Add("O_CURSOR", OracleDbType.RefCursor, ParameterDirection.Output);
+
+            using var reader = cmd.ExecuteReader();
+            while (reader.Read())
+                {
+                rows.Add(new OutstandingParasSummaryPdfModel
+                    {
+                    EntityId = OutstandingPdfGetInt(reader, "ENTITY_ID", "ENT_ID"),
+                    AuditDepartment = OutstandingPdfGetString(reader, "AUDIT_DEPARTMENT", "AUDIT_DEPARTMENT_NAME", "DEPARTMENT_NAME"),
+                    EntityName = OutstandingPdfGetString(reader, "ENTITY_NAME", "BRANCH_NAME", "AUDIT_ENTITY_NAME"),
+                    ParaNo = OutstandingPdfGetString(reader, "PARA_NO", "PARANO", "PARA_NUMBER", "COM_ID"),
+                    AuditPeriod = OutstandingPdfGetString(reader, "AUDIT_PERIOD", "AUDIT_PERIOD_NAME"),
+                    GistHeading = OutstandingPdfGetString(reader, "GIST_HEADING", "PARA_TITLE", "V_HEADER", "GIST"),
+                    Risk = OutstandingPdfGetString(reader, "RISK", "RISK_CATEGORY"),
+                    ParaText = OutstandingPdfGetString(reader, "PARA_TEXT", "OBSERVATION_TEXT", "V_DETAIL", "PARA_DETAIL"),
+                    CurrentComplianceStatus = OutstandingPdfGetString(reader, "CURRENT_COMPLIANCE_STATUS", "COMPLIANCE_STATUS", "STATUS")
+                    });
+                }
+
+            return rows;
+            }
+
         private static string OutstandingPdfGetString(IDataRecord reader, params string[] columnNames)
             {
             foreach (var columnName in columnNames)

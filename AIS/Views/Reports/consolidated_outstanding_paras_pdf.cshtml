@@ -12,6 +12,49 @@
         <h3 style="color: #be0e43">Outstanding Audit Paras PDF Export</h3>
     </div>
 
+    <div class="col-md-12 mt-2 p-3 border rounded">
+        <h5 class="mb-3">CIA Consolidated Outstanding Paras Summary PDF</h5>
+        <div class="row g-3 align-items-end">
+            <div class="col-12 col-lg-4">
+                <label for="summaryAuditDepartmentField" class="form-label">Audit Department</label>
+                <select id="summaryAuditDepartmentField" class="form-select form-control">
+                    <option value="0" selected>All</option>
+                    @{
+                        if (ViewData["AuditDepartments"] != null)
+                        {
+                            foreach (var item in (dynamic)(ViewData["AuditDepartments"]))
+                            {
+                                <option value="@item.ID">@item.NAME</option>
+                            }
+                        }
+                    }
+                </select>
+            </div>
+
+            <div class="col-12 col-lg-4">
+                <label for="summaryRiskField" class="form-label">Risk</label>
+                <select id="summaryRiskField" class="form-select form-control">
+                    <option value="All" selected>All</option>
+                    @{
+                        if (ViewData["RiskList"] != null)
+                        {
+                            foreach (var item in (dynamic)(ViewData["RiskList"]))
+                            {
+                                <option value="@item.DESCRIPTION">@item.DESCRIPTION</option>
+                            }
+                        }
+                    }
+                </select>
+            </div>
+
+            <div class="col-12 col-lg-4 d-flex align-items-end">
+                <button type="button" id="generateOutstandingParasSummaryPdfButton" class="btn btn-danger w-100">
+                    Generate Consolidated Summary PDF
+                </button>
+            </div>
+        </div>
+    </div>
+
     <div class="row g-3 align-items-end col-md-12 mt-2">
         <div class="col-12 col-lg-4">
             <label for="auditDepartmentField" class="form-label">Audit Department</label>
@@ -83,4 +126,4 @@
     </div>
 </div>
 
-<script src="~/js/csp/Views_Reports_consolidated_outstanding_paras_pdf.js?v=4"></script>
+<script src="~/js/csp/Views_Reports_consolidated_outstanding_paras_pdf.js?v=5"></script>

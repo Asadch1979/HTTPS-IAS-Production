@@ -113,6 +113,36 @@ namespace AIS.Controllers
                 }
             }
 
+        [HttpGet("GenerateSummaryPdf")]
+        public async Task<IActionResult> GenerateSummaryPdf(int auditDepartmentId = 0, string risk = "All")
+            {
+            var stopwatch = Stopwatch.StartNew();
+            try
+                {
+                var precheck = EnsureAuthorized();
+                if (precheck != null)
+                    {
+                    return precheck;
+                    }
+
+                var normalizedRisk = string.IsNullOrWhiteSpace(risk) ? "All" : risk.Trim();
+                var document = await _pdfGenerator.GenerateSummaryAsync(auditDepartmentId, normalizedRisk);
+                if (!document.IsSuccess)
+                    {
+                    return StatusCode(document.FailureStatusCode == 0 ? 500 : document.FailureStatusCode, document.ErrorMessage);
+                    }
+
+                stopwatch.Stop();
+                _logger.LogInformation("CIA consolidated outstanding paras summary PDF completed for department {AuditDepartmentId}, risk {Risk} in {ElapsedMs} ms.", auditDepartmentId, normalizedRisk, stopwatch.ElapsedMilliseconds);
+                return File(document.ContentBytes, document.ContentType, document.FileName);
+                }
+            catch (Exception ex)
+                {
+                _logger.LogError(ex, "Failed to generate CIA consolidated outstanding paras summary PDF.");
+                return StatusCode(500, "An error occurred while generating the PDF. Please try again later.");
+                }
+            }
+
         [HttpGet("GeneratePdfByEngId")]
         public async Task<IActionResult> GeneratePdfByEngId(int engId)
             {

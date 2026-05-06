@@ -87,6 +87,82 @@ namespace AIS.Services
             return sb.ToString();
             }
 
+        public string BuildSummaryHtml(OutstandingParasSummaryPdfReportData data)
+            {
+            if (data == null)
+                {
+                throw new ArgumentNullException(nameof(data));
+                }
+
+            var rows = data.Paras ?? new List<OutstandingParasSummaryPdfModel>();
+            var sb = new StringBuilder();
+            sb.AppendLine("<!DOCTYPE html>");
+            sb.AppendLine("<html><head><meta charset=\"utf-8\" />");
+            sb.AppendLine("<style>");
+            sb.AppendLine("@page { size: A4 landscape; margin: 10mm 8mm 14mm; }");
+            sb.AppendLine("body{ font-family: Arial, Helvetica, sans-serif; font-size:8px; color:#111; margin:0; }");
+            sb.AppendLine("h1{ font-size:15pt; text-align:center; margin:0 0 8pt; }");
+            sb.AppendLine(".filters{ font-size:8px; margin:0 0 7pt; }");
+            sb.AppendLine("table{ width:100%; border-collapse:collapse; table-layout:fixed; }");
+            sb.AppendLine("thead{ display:table-header-group; }");
+            sb.AppendLine("th,td{ border:1px solid #333; padding:3px 4px; vertical-align:top; white-space:normal; overflow-wrap:anywhere; word-break:break-word; }");
+            sb.AppendLine("th{ background:#eeeeee; font-weight:700; text-align:center; }");
+            sb.AppendLine(".entity{ width:10%; }");
+            sb.AppendLine(".period{ width:8%; }");
+            sb.AppendLine(".para-no{ width:2%; text-align:center; }");
+            sb.AppendLine(".gist{ width:10%; }");
+            sb.AppendLine(".risk{ width:6%; text-align:center; }");
+            sb.AppendLine(".text{ width:74%; }");
+            sb.AppendLine(".summary-rich,.summary-rich *{ font-size:8px !important; white-space:normal !important; overflow-wrap:anywhere; max-width:100% !important; box-sizing:border-box !important; }");
+            sb.AppendLine(".summary-rich table{ width:100% !important; max-width:100% !important; table-layout:auto !important; border-collapse:collapse; }");
+            sb.AppendLine(".summary-rich th,.summary-rich td{ border:1px solid #999; padding:2px 3px; vertical-align:top; word-break:break-word; }");
+            sb.AppendLine(".summary-rich p{ margin:0 0 3px; }");
+            sb.AppendLine(".summary-rich ul,.summary-rich ol{ margin:0 0 3px 12px; padding:0; }");
+            sb.AppendLine(".empty{ text-align:center; color:#555; font-style:italic; }");
+            sb.AppendLine("</style></head><body>");
+            sb.AppendFormat(CultureInfo.InvariantCulture, "<h1>{0}</h1>", Encode(data.ReportTitle));
+            sb.AppendLine();
+            sb.AppendFormat(
+                CultureInfo.InvariantCulture,
+                "<div class=\"filters\"><strong>Audit Department:</strong> {0} &nbsp; <strong>Risk:</strong> {1}</div>",
+                FormatPlainCell(string.IsNullOrWhiteSpace(data.AuditDepartmentName) ? "All" : data.AuditDepartmentName),
+                FormatPlainCell(string.IsNullOrWhiteSpace(data.Risk) ? "All" : data.Risk));
+            sb.AppendLine();
+            sb.AppendLine("<table>");
+            sb.AppendLine("<thead><tr>");
+            sb.AppendLine("<th class=\"entity\">Entity Name</th>");
+            sb.AppendLine("<th class=\"period\">Audit Period</th>");
+            sb.AppendLine("<th class=\"para-no\">Para No.</th>");
+            sb.AppendLine("<th class=\"gist\">Gist / Heading</th>");
+            sb.AppendLine("<th class=\"risk\">Risk</th>");
+            sb.AppendLine("<th class=\"text\">Para Text</th>");
+            sb.AppendLine("</tr></thead><tbody>");
+
+            if (rows.Count == 0)
+                {
+                sb.AppendLine("<tr><td colspan=\"6\" class=\"empty\">No outstanding audit paras found for the selected filters.</td></tr>");
+                }
+
+            for (var i = 0; i < rows.Count; i++)
+                {
+                var row = rows[i];
+                sb.AppendLine("<tr>");
+                sb.AppendFormat(CultureInfo.InvariantCulture, "<td class=\"entity\">{0}</td>", FormatPlainCell(row.EntityName));
+                sb.AppendFormat(CultureInfo.InvariantCulture, "<td class=\"period\">{0}</td>", FormatPlainCell(row.AuditPeriod));
+                sb.AppendFormat(CultureInfo.InvariantCulture, "<td class=\"para-no\">{0}</td>", FormatPlainCell(row.ParaNo));
+                sb.AppendFormat(CultureInfo.InvariantCulture, "<td class=\"gist\">{0}</td>", FormatPlainCell(row.GistHeading));
+                sb.AppendFormat(CultureInfo.InvariantCulture, "<td class=\"risk\">{0}</td>", FormatPlainCell(row.Risk));
+                sb.Append("<td class=\"text\"><div class=\"summary-rich\">");
+                sb.Append(NormalizeHtml(row.ParaText));
+                sb.Append("</div></td>");
+                sb.AppendLine("</tr>");
+                }
+
+            sb.AppendLine("</tbody></table>");
+            sb.AppendLine("</body></html>");
+            return sb.ToString();
+            }
+
         private static void AppendMainCover(StringBuilder sb, OutstandingParasPdfReportData data, OutstandingParaEntityPdfModel entity)
             {
             var logoDataUri = GetLogoDataUri();
@@ -193,6 +269,11 @@ namespace AIS.Services
             return string.IsNullOrWhiteSpace(value) ? "-" : Encode(value);
             }
 
+        private static string FormatPlainCell(string value)
+            {
+            return string.IsNullOrWhiteSpace(value) ? "-" : Encode(ToPlainText(value));
+            }
+
         private static string Encode(string value)
             {
             return WebUtility.HtmlEncode(value ?? string.Empty);
@@ -216,6 +297,24 @@ namespace AIS.Services
                 }
 
             return string.IsNullOrWhiteSpace(current) ? "-" : current;
+            }
+
+        private static string ToPlainText(string value)
+            {
+            if (string.IsNullOrWhiteSpace(value))
+                {
+                return string.Empty;
+                }
+
+            var current = Regex.Replace(value, "<script[\\s\\S]*?</script>", string.Empty, RegexOptions.IgnoreCase);
+            current = Regex.Replace(current, "<style[\\s\\S]*?</style>", string.Empty, RegexOptions.IgnoreCase);
+            current = Regex.Replace(current, "<br\\s*/?>", Environment.NewLine, RegexOptions.IgnoreCase);
+            current = Regex.Replace(current, "</p\\s*>", Environment.NewLine, RegexOptions.IgnoreCase);
+            current = Regex.Replace(current, "<[^>]+>", " ");
+            current = WebUtility.HtmlDecode(current);
+            current = Regex.Replace(current, "[ \\t\\r\\f\\v]+", " ");
+            current = Regex.Replace(current, "\\n\\s+", Environment.NewLine);
+            return current.Trim();
             }
 
         private static string FormatDate(DateTime? date)

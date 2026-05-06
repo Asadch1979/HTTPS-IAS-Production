@@ -210,6 +210,26 @@ PROCEDURE P_GET_AUDIT_DEPARTMENTS
         P_EXECUTION_END_DATE    IN DATE,
         O_CURSOR                OUT T_CURSOR
     );
+    PROCEDURE P_GET_OUTSTANDING_PARAS_SUMMARY_PDF
+    (
+        P_AUDIT_DEPARTMENT_ID   IN NUMBER,
+        P_RISK                  IN VARCHAR2,
+        O_CURSOR                OUT T_CURSOR
+    );
+    PROCEDURE P_GET_OUTSTANDING_PARAS_SUMMARY_SETS
+    (
+        P_AUDIT_DEPARTMENT_ID   IN NUMBER,
+        P_RISK                  IN VARCHAR2,
+        O_CURSOR                OUT T_CURSOR
+    );
+
+    PROCEDURE P_GET_OUTSTANDING_PARAS_SUMMARY_SET_PDF
+    (
+        P_AUDIT_DEPARTMENT_ID   IN NUMBER,
+        P_ENTITY_ID             IN NUMBER,
+        P_RISK                  IN VARCHAR2,
+        O_CURSOR                OUT T_CURSOR
+    );
     PROCEDURE P_GET_OUTSTANDING_PARA_ENTITY_BY_ENG_ID
     (
         P_ENG_ID IN NUMBER,
@@ -1996,7 +2016,117 @@ END     P_GET_ALLOWED_PDF_ENG_DETAILS;
 
 
 
+
     ----------------------------------------------------------------------
+    -- Procedure: P_GET_OUTSTANDING_PARAS_SUMMARY_PDF
+    -- Purpose  : Returns one consolidated outstanding paras register for
+    --            CIA review. This is independent of the detailed PDF/ZIP
+    --            export procedures above.
+    -- Used By  : DBConnection.GetOutstandingParasSummaryForPdf()
+    ----------------------------------------------------------------------
+  PROCEDURE P_GET_OUTSTANDING_PARAS_SUMMARY_PDF(P_AUDIT_DEPARTMENT_ID IN NUMBER,
+                                                P_RISK                IN VARCHAR2,
+                                                O_CURSOR              OUT T_CURSOR) IS
+  BEGIN
+    OPEN O_CURSOR FOR
+    
+      Select c.entity_id AS ENTITY_ID,
+             az.name AS AUDIT_DEPARTMENT,
+             m.p_name as REPORTING,
+             m.c_name AS ENTITY_NAME,
+             c.audit_period as AUDIT_PERIOD,
+             c.gist_of_paras as GIST_HEADING,
+             r.description as risk,
+             TO_CHAR(t.com_id) AS PARA_NO,
+             t.text PARA_TEXT,
+             'Outstanding' AS CURRENT_COMPLIANCE_STATUS
+      
+        from ais_t_au_post_compliance c
+       inner join t_auditee_entities_maping m
+          on c.entity_id = m.entity_id
+       inner join t_auditee_entities az
+          on az.entity_id = m.auditedby
+       inner join t_risk r
+          on r.rating = c.risk
+       inner join v_get_all_para_text t
+          on t.com_id = c.com_id
+       where c.para_status = 8
+            
+         AND (NVL(P_AUDIT_DEPARTMENT_ID, 0) = 0 OR
+             m.auditedby = P_AUDIT_DEPARTMENT_ID)
+         AND (P_RISK IS NULL OR TRIM(P_RISK) IS NULL OR
+             UPPER(TRIM(P_RISK)) = 'ALL' OR
+             UPPER(TRIM(R.DESCRIPTION)) = UPPER(TRIM(P_RISK)));
+  END P_GET_OUTSTANDING_PARAS_SUMMARY_PDF;
+
+    
+  PROCEDURE P_GET_OUTSTANDING_PARAS_SUMMARY_SETS(P_AUDIT_DEPARTMENT_ID IN NUMBER,
+                                                 P_RISK                IN VARCHAR2,
+                                                 O_CURSOR              OUT T_CURSOR) IS
+  BEGIN
+    OPEN O_CURSOR FOR
+      SELECT c.entity_id AS ENTITY_ID,
+             m.c_name AS ENTITY_NAME,
+             r.description AS RISK,
+             COUNT(1) AS ROW_COUNT
+        FROM ais_t_au_post_compliance c
+       INNER JOIN t_auditee_entities_maping m
+          ON c.entity_id = m.entity_id
+       INNER JOIN t_risk r
+          ON r.rating = c.risk
+       INNER JOIN v_get_all_para_text t
+          ON t.com_id = c.com_id
+       WHERE c.para_status = 8
+         AND (NVL(P_AUDIT_DEPARTMENT_ID, 0) = 0 OR
+             m.auditedby = P_AUDIT_DEPARTMENT_ID)
+         AND (P_RISK IS NULL OR TRIM(P_RISK) IS NULL OR
+             UPPER(TRIM(P_RISK)) = 'ALL' OR
+             UPPER(TRIM(r.description)) = UPPER(TRIM(P_RISK)))
+       GROUP BY c.entity_id,
+                m.c_name,
+                r.description
+       ORDER BY m.c_name,
+                DECODE(UPPER(r.description), 'HIGH', 1, 'MEDIUM', 2, 'LOW', 3, 4),
+                r.description;
+  END P_GET_OUTSTANDING_PARAS_SUMMARY_SETS;
+
+  PROCEDURE P_GET_OUTSTANDING_PARAS_SUMMARY_SET_PDF(P_AUDIT_DEPARTMENT_ID IN NUMBER,
+                                                     P_ENTITY_ID           IN NUMBER,
+                                                     P_RISK                IN VARCHAR2,
+                                                     O_CURSOR              OUT T_CURSOR) IS
+  BEGIN
+    OPEN O_CURSOR FOR
+      SELECT c.entity_id AS ENTITY_ID,
+             az.name AS AUDIT_DEPARTMENT,
+             m.p_name as REPORTING,
+             m.c_name AS ENTITY_NAME,
+             c.audit_period as AUDIT_PERIOD,
+             TO_CHAR(t.com_id) AS PARA_NO,
+             c.gist_of_paras as GIST_HEADING,
+             r.description as risk,
+             t.text PARA_TEXT,
+             'Outstanding' AS CURRENT_COMPLIANCE_STATUS
+        FROM ais_t_au_post_compliance c
+       INNER JOIN t_auditee_entities_maping m
+          ON c.entity_id = m.entity_id
+       INNER JOIN t_auditee_entities az
+          ON az.entity_id = m.auditedby
+       INNER JOIN t_risk r
+          ON r.rating = c.risk
+       INNER JOIN v_get_all_para_text t
+          ON t.com_id = c.com_id
+       WHERE c.para_status = 8
+         AND (NVL(P_AUDIT_DEPARTMENT_ID, 0) = 0 OR
+             m.auditedby = P_AUDIT_DEPARTMENT_ID)
+         AND c.entity_id = P_ENTITY_ID
+         AND (P_RISK IS NULL OR TRIM(P_RISK) IS NULL OR
+             UPPER(TRIM(P_RISK)) = 'ALL' OR
+             UPPER(TRIM(r.description)) = UPPER(TRIM(P_RISK)))
+       ORDER BY c.audit_period,
+                TO_NUMBER(NULLIF(REGEXP_REPLACE(TO_CHAR(t.com_id), '[^0-9]', ''), '')) NULLS LAST,
+                TO_CHAR(t.com_id);
+  END P_GET_OUTSTANDING_PARAS_SUMMARY_SET_PDF;
+----------------------------------------------------------------------
     -- Procedure: P_GET_OUTSTANDING_PARA_ENTITY_BY_ENG_ID
     -- Purpose  : Returns one engagement/entity row for single PDF export.
     -- Used By  : DBConnection.GetOutstandingParaEntityForPdfByEngId()

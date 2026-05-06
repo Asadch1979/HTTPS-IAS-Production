@@ -69,6 +69,15 @@
         return g_asiBaseURL + '/OutstandingParasPdf/GenerateSelectedZip';
     }
 
+    function buildSummaryPdfUrl() {
+        var query = $.param({
+            auditDepartmentId: $('#summaryAuditDepartmentField').val() || 0,
+            risk: $('#summaryRiskField').val() || 'All'
+        });
+
+        return g_asiBaseURL + '/OutstandingParasPdf/GenerateSummaryPdf?' + query;
+    }
+
     function getTableExportColumns(idx) {
         return idx > 0;
     }
@@ -223,6 +232,45 @@
         }, 1000);
     }
 
+    function getPdfFileName(response) {
+        var disposition = response.headers.get('content-disposition') || '';
+        var encodedMatch = disposition.match(/filename\*=UTF-8''([^;]+)/i);
+        if (encodedMatch && encodedMatch[1]) {
+            return decodeURIComponent(encodedMatch[1].replace(/"/g, ''));
+        }
+
+        var match = disposition.match(/filename="?([^"]+)"?/i);
+        if (match && match[1]) {
+            return match[1].replace(/;$/, '');
+        }
+
+        return 'Consolidated_Outstanding_Audit_Paras_Summary.pdf';
+    }
+
+    async function generateSummaryPdf() {
+        $('#generateOutstandingParasSummaryPdfButton').prop('disabled', true);
+        showMessage('Generating consolidated summary PDF. This may take a few minutes.', 'info');
+
+        try {
+            var response = await fetch(buildSummaryPdfUrl(), {
+                method: 'GET'
+            });
+
+            if (!response.ok) {
+                var errorText = await response.text();
+                throw new Error(errorText || 'Unable to generate consolidated summary PDF. Please try again.');
+            }
+
+            var blob = await response.blob();
+            downloadBlob(blob, getPdfFileName(response));
+            showMessage('Consolidated summary PDF generated successfully.', 'success');
+        } catch (error) {
+            showMessage(error.message || 'Unable to generate consolidated summary PDF. Please try again.', 'danger');
+        }
+
+        $('#generateOutstandingParasSummaryPdfButton').prop('disabled', false);
+    }
+
     async function exportSelectedPdfs() {
         var selected = getSelectedEntities();
         if (selected.length === 0) {
@@ -291,6 +339,8 @@
 
     $(document).ready(function () {
         $('#auditDepartmentField').select2();
+        $('#summaryAuditDepartmentField').select2();
+        $('#summaryRiskField').select2();
 
         $('#auditDepartmentField, #executionFromDateField, #executionToDateField').on('change blur', function () {
             validateFilters();
@@ -312,6 +362,10 @@
 
         $('#exportSelectedOutstandingParasPdfsButton').on('click', function () {
             exportSelectedPdfs();
+        });
+
+        $('#generateOutstandingParasSummaryPdfButton').on('click', function () {
+            generateSummaryPdf();
         });
     });
 })();

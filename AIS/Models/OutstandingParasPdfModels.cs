@@ -17,6 +17,16 @@ namespace AIS.Models
         public List<OutstandingParaPdfModel> Paras { get; set; } = new List<OutstandingParaPdfModel>();
         }
 
+    public class OutstandingParasSummaryPdfReportData
+        {
+        public int AuditDepartmentId { get; set; }
+        public string AuditDepartmentName { get; set; }
+        public string Risk { get; set; }
+        public string ReportTitle { get; set; } = "Consolidated Outstanding Audit Paras Summary";
+        public DateTime GeneratedOn { get; set; } = DateTime.Now;
+        public List<OutstandingParasSummaryPdfModel> Paras { get; set; } = new List<OutstandingParasSummaryPdfModel>();
+        }
+
     public class OutstandingParaEntityPdfModel
         {
         public int EngagementId { get; set; }
@@ -44,6 +54,27 @@ namespace AIS.Models
         public string LatestManagementResponse { get; set; }
         public string AuditRemarks { get; set; }
         public string CurrentComplianceStatus { get; set; }
+        }
+
+    public class OutstandingParasSummaryPdfModel
+        {
+        public int EntityId { get; set; }
+        public string AuditDepartment { get; set; }
+        public string EntityName { get; set; }
+        public string ParaNo { get; set; }
+        public string AuditPeriod { get; set; }
+        public string GistHeading { get; set; }
+        public string Risk { get; set; }
+        public string ParaText { get; set; }
+        public string CurrentComplianceStatus { get; set; }
+        }
+
+    public class OutstandingParasSummarySetModel
+        {
+        public int EntityId { get; set; }
+        public string EntityName { get; set; }
+        public string Risk { get; set; }
+        public int RowCount { get; set; }
         }
 
     public class OutstandingParasGeneratedPdfDocument
