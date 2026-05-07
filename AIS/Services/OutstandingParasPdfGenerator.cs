@@ -10,6 +10,7 @@ using iText.Kernel.Pdf.Canvas;
 using iText.Kernel.Pdf.Extgstate;
 using iText.Layout;
 using iText.Layout.Properties;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
@@ -29,18 +30,22 @@ namespace AIS.Services
         private readonly SessionHandler _sessionHandler;
         private readonly DBConnection _dbConnection;
         private readonly OutstandingParasPdfBuilder _pdfBuilder;
+        private readonly IWebHostEnvironment _webHostEnvironment;
         private const int SummaryZipRowsPerPdf = 200;
+        private const int SummaryBatchRetentionHours = 24;
 
         public OutstandingParasPdfGenerator(
             ILogger<OutstandingParasPdfGenerator> logger,
             SessionHandler sessionHandler,
             DBConnection dbConnection,
-            OutstandingParasPdfBuilder pdfBuilder)
+            OutstandingParasPdfBuilder pdfBuilder,
+            IWebHostEnvironment webHostEnvironment)
             {
             _logger = logger;
             _sessionHandler = sessionHandler;
             _dbConnection = dbConnection;
             _pdfBuilder = pdfBuilder;
+            _webHostEnvironment = webHostEnvironment;
             }
 
         public async Task<OutstandingParasGeneratedPdfDocument> GenerateAsync(int auditDepartmentId, DateTime executionStartDate, DateTime executionEndDate)
@@ -256,6 +261,7 @@ namespace AIS.Services
                 .GroupBy(item => new { item.EntityId, Risk = item.Risk.Trim().ToUpperInvariant() })
                 .Select(group => group.First())
                 .OrderBy(item => RiskSortOrder(item.Risk))
+                .ThenBy(item => item.AuditDepartment)
                 .ThenBy(item => item.EntityName)
                 .ToList();
 
@@ -319,10 +325,11 @@ namespace AIS.Services
                             {
                             var partStopwatch = Stopwatch.StartNew();
                             var partRows = rows.Skip(partIndex * SummaryZipRowsPerPdf).Take(SummaryZipRowsPerPdf).ToList();
+                            var setDepartmentName = string.IsNullOrWhiteSpace(set.AuditDepartment) ? departmentName : set.AuditDepartment;
                             var data = new OutstandingParasSummaryPdfReportData
                                 {
                                 AuditDepartmentId = auditDepartmentId,
-                                AuditDepartmentName = departmentName,
+                                AuditDepartmentName = setDepartmentName,
                                 Risk = set.Risk,
                                 GeneratedOn = generatedOn,
                                 Paras = partRows
@@ -414,6 +421,374 @@ namespace AIS.Services
                 ContentType = "application/zip",
                 FileName = $"Consolidated_Outstanding_Audit_Paras_Summary_{SanitizeFilename(departmentName)}_{SanitizeFilename(normalizedRisk)}_{generatedOn:yyyyMMdd_HHmmss}.zip"
                 };
+            }
+
+        public async Task<OutstandingParasSummaryBatchResult> GenerateSummaryBatchAsync(int auditDepartmentId, string risk)
+            {
+            try
+                {
+                CleanupOldSummaryBatches();
+
+                var generatedOn = GetKarachiNow();
+                var batchId = $"{generatedOn:yyyyMMdd_HHmmss}_{Guid.NewGuid():N}";
+                var batchRootPath = GetSummaryBatchRootPath();
+                var batchPath = GetSafeChildPath(batchRootPath, batchId);
+                Directory.CreateDirectory(batchPath);
+
+                var normalizedRisk = string.IsNullOrWhiteSpace(risk) || string.Equals(risk.Trim(), "ALL", StringComparison.OrdinalIgnoreCase)
+                    ? "All"
+                    : risk.Trim();
+                var departments = _dbConnection.GetAuditDepartments();
+                var departmentName = auditDepartmentId <= 0
+                    ? "All"
+                    : departments.FirstOrDefault(item => item.ID == auditDepartmentId)?.NAME ?? "All";
+
+                var result = new OutstandingParasSummaryBatchResult
+                    {
+                    BatchId = batchId,
+                    FolderPath = batchPath,
+                    FolderRelativeUrl = $"/PDF/CIAOutstandingParas/{batchId}"
+                    };
+
+                if (auditDepartmentId <= 0 || IsAllRisk(normalizedRisk))
+                    {
+                    await GenerateSummaryBatchByEntityRiskSetsAsync(result, auditDepartmentId, departmentName, normalizedRisk, generatedOn, batchPath);
+                    }
+                else
+                    {
+                    await GenerateSpecificSummaryBatchAsync(result, auditDepartmentId, departmentName, normalizedRisk, generatedOn, batchPath);
+                    }
+
+                _logger.LogInformation(
+                    "CIA summary batch completed. BatchId={BatchId}, DepartmentId={AuditDepartmentId}, Department={AuditDepartment}, Risk={Risk}, TotalSets={TotalSets}, SuccessCount={SuccessCount}, FailureCount={FailureCount}, FolderPath={FolderPath}.",
+                    batchId,
+                    auditDepartmentId,
+                    departmentName,
+                    normalizedRisk,
+                    result.TotalSets,
+                    result.SuccessCount,
+                    result.FailureCount,
+                    batchPath);
+
+                return result;
+                }
+            catch (Exception ex)
+                {
+                _logger.LogError(ex, "Failed to generate CIA consolidated outstanding paras summary batch.");
+                return OutstandingParasSummaryBatchResult.Fail(500, "An error occurred while generating the PDF batch. Please try again later.");
+                }
+            }
+
+        public bool DeleteSummaryBatch(string batchId)
+            {
+            if (!IsSafeBatchId(batchId))
+                {
+                _logger.LogWarning("Rejected CIA summary batch delete for invalid BatchId={BatchId}.", batchId);
+                return false;
+                }
+
+            try
+                {
+                var batchRootPath = GetSummaryBatchRootPath();
+                var batchPath = GetSafeChildPath(batchRootPath, batchId.Trim());
+                if (!Directory.Exists(batchPath))
+                    {
+                    _logger.LogInformation("CIA summary batch delete requested for missing folder. BatchId={BatchId}, FolderPath={FolderPath}.", batchId, batchPath);
+                    return true;
+                    }
+
+                Directory.Delete(batchPath, true);
+                _logger.LogInformation("CIA summary batch folder deleted. BatchId={BatchId}, FolderPath={FolderPath}.", batchId, batchPath);
+                return true;
+                }
+            catch (Exception ex)
+                {
+                _logger.LogError(ex, "Failed to delete CIA summary batch folder. BatchId={BatchId}.", batchId);
+                return false;
+                }
+            }
+
+        private async Task GenerateSpecificSummaryBatchAsync(OutstandingParasSummaryBatchResult result, int auditDepartmentId, string departmentName, string normalizedRisk, DateTime generatedOn, string batchPath)
+            {
+            var rows = _dbConnection.GetOutstandingParasSummaryForPdf(auditDepartmentId, normalizedRisk);
+            result.TotalSets = rows.Count > 0 ? 1 : 0;
+            _logger.LogInformation(
+                "CIA summary batch specific generation starting. BatchId={BatchId}, DepartmentId={AuditDepartmentId}, Department={AuditDepartment}, Risk={Risk}, TotalRows={TotalRows}, TotalSets={TotalSets}.",
+                result.BatchId,
+                auditDepartmentId,
+                departmentName,
+                normalizedRisk,
+                rows.Count,
+                result.TotalSets);
+
+            if (rows.Count == 0)
+                {
+                await SaveSummaryFailureFileAsync(result, batchPath, "NO_DATA.txt", "No outstanding audit paras found for the selected filters.");
+                return;
+                }
+
+            var partCount = (int)Math.Ceiling(rows.Count / (double)SummaryZipRowsPerPdf);
+            for (var partIndex = 0; partIndex < partCount; partIndex++)
+                {
+                var partRows = rows.Skip(partIndex * SummaryZipRowsPerPdf).Take(SummaryZipRowsPerPdf).ToList();
+                var partName = $"Consolidated_Outstanding_Audit_Paras_Summary_{SanitizeFilename(departmentName)}_{SanitizeFilename(normalizedRisk)}_Part_{partIndex + 1:00}.pdf";
+                try
+                    {
+                    await GenerateAndSaveSummaryPdfPartAsync(
+                        result,
+                        batchPath,
+                        auditDepartmentId,
+                        departmentName,
+                        normalizedRisk,
+                        generatedOn,
+                        partRows,
+                        partName,
+                        1,
+                        1,
+                        0,
+                        string.Empty,
+                        partIndex + 1,
+                        partCount);
+                    }
+                catch (Exception ex)
+                    {
+                    result.FailureCount++;
+                    await SaveSummaryFailureFileAsync(
+                        result,
+                        batchPath,
+                        $"FAILED_ENTITY_0_{normalizedRisk}_Part_{partIndex + 1:00}.txt",
+                        $"Department ID: {auditDepartmentId}{Environment.NewLine}Department: {departmentName}{Environment.NewLine}Risk: {normalizedRisk}{Environment.NewLine}PDF generation failed for this summary part.{Environment.NewLine}{Environment.NewLine}{ex.Message}");
+                    _logger.LogError(
+                        ex,
+                        "CIA summary batch specific part failed. BatchId={BatchId}, DepartmentId={AuditDepartmentId}, Department={AuditDepartment}, Risk={Risk}, Part={Part}, Parts={Parts}, RowCount={RowCount}, SuccessCount={SuccessCount}, FailureCount={FailureCount}, FolderPath={FolderPath}.",
+                        result.BatchId,
+                        auditDepartmentId,
+                        departmentName,
+                        normalizedRisk,
+                        partIndex + 1,
+                        partCount,
+                        partRows.Count,
+                        result.SuccessCount,
+                        result.FailureCount,
+                        batchPath);
+                    }
+                }
+            }
+
+        private async Task GenerateSummaryBatchByEntityRiskSetsAsync(OutstandingParasSummaryBatchResult result, int auditDepartmentId, string departmentName, string normalizedRisk, DateTime generatedOn, string batchPath)
+            {
+            var risks = IsAllRisk(normalizedRisk)
+                ? new[] { "High", "Medium", "Low" }
+                : new[] { normalizedRisk };
+            var sets = new List<OutstandingParasSummarySetModel>();
+
+            foreach (var setRisk in risks)
+                {
+                sets.AddRange(_dbConnection.GetOutstandingParasSummarySetsForPdf(auditDepartmentId, setRisk)
+                    .Where(item => item.EntityId > 0 && !string.IsNullOrWhiteSpace(item.Risk)));
+                }
+
+            sets = sets
+                .GroupBy(item => new { item.EntityId, Risk = item.Risk.Trim().ToUpperInvariant() })
+                .Select(group => group.First())
+                .OrderBy(item => RiskSortOrder(item.Risk))
+                .ThenBy(item => item.AuditDepartment)
+                .ThenBy(item => item.EntityName)
+                .ToList();
+
+            result.TotalSets = sets.Count;
+            _logger.LogInformation(
+                "CIA summary batch set generation starting. BatchId={BatchId}, DepartmentId={AuditDepartmentId}, Department={AuditDepartment}, Risk={Risk}, TotalSets={TotalSets}.",
+                result.BatchId,
+                auditDepartmentId,
+                departmentName,
+                normalizedRisk,
+                sets.Count);
+
+            if (sets.Count == 0)
+                {
+                await SaveSummaryFailureFileAsync(result, batchPath, "NO_DATA.txt", "No outstanding audit paras found for the selected filters.");
+                return;
+                }
+
+            for (var setIndex = 0; setIndex < sets.Count; setIndex++)
+                {
+                var set = sets[setIndex];
+                var setStopwatch = Stopwatch.StartNew();
+                try
+                    {
+                    var rows = _dbConnection.GetOutstandingParasSummaryForPdfSet(auditDepartmentId, set.EntityId, set.Risk);
+                    if (rows.Count == 0)
+                        {
+                        setStopwatch.Stop();
+                        _logger.LogInformation(
+                            "CIA summary batch set skipped because no rows were returned. BatchId={BatchId}, CurrentSet={CurrentSet}, TotalSets={TotalSets}, EntityId={EntityId}, EntityName={EntityName}, Risk={Risk}, RowCount={RowCount}, DurationMs={DurationMs}, SuccessCount={SuccessCount}, FailureCount={FailureCount}.",
+                            result.BatchId,
+                            setIndex + 1,
+                            sets.Count,
+                            set.EntityId,
+                            set.EntityName,
+                            set.Risk,
+                            rows.Count,
+                            setStopwatch.ElapsedMilliseconds,
+                            result.SuccessCount,
+                            result.FailureCount);
+                        continue;
+                        }
+
+                    var partCount = (int)Math.Ceiling(rows.Count / (double)SummaryZipRowsPerPdf);
+                    _logger.LogInformation(
+                        "CIA summary batch set rows loaded. BatchId={BatchId}, CurrentSet={CurrentSet}, TotalSets={TotalSets}, EntityId={EntityId}, EntityName={EntityName}, Risk={Risk}, RowCount={RowCount}, Parts={Parts}.",
+                        result.BatchId,
+                        setIndex + 1,
+                        sets.Count,
+                        set.EntityId,
+                        set.EntityName,
+                        set.Risk,
+                        rows.Count,
+                        partCount);
+
+                    for (var partIndex = 0; partIndex < partCount; partIndex++)
+                        {
+                        var partRows = rows.Skip(partIndex * SummaryZipRowsPerPdf).Take(SummaryZipRowsPerPdf).ToList();
+                        var setDepartmentName = string.IsNullOrWhiteSpace(set.AuditDepartment) ? departmentName : set.AuditDepartment;
+                        var fileName = BuildSummarySetEntryFilename(set, partIndex + 1);
+                        await GenerateAndSaveSummaryPdfPartAsync(
+                            result,
+                            batchPath,
+                            auditDepartmentId,
+                            setDepartmentName,
+                            set.Risk,
+                            generatedOn,
+                            partRows,
+                            fileName,
+                            setIndex + 1,
+                            sets.Count,
+                            set.EntityId,
+                            set.EntityName,
+                            partIndex + 1,
+                            partCount);
+                        }
+
+                    setStopwatch.Stop();
+                    }
+                catch (Exception ex)
+                    {
+                    setStopwatch.Stop();
+                    result.FailureCount++;
+                    var failureFileName = SafeZipEntryName($"FAILED_ENTITY_{set.EntityId}_{set.Risk}.txt");
+                    await SaveSummaryFailureFileAsync(
+                        result,
+                        batchPath,
+                        failureFileName,
+                        $"Entity ID: {set.EntityId}{Environment.NewLine}Entity Name: {set.EntityName}{Environment.NewLine}Risk: {set.Risk}{Environment.NewLine}PDF generation failed for this Entity/Risk set.{Environment.NewLine}{Environment.NewLine}{ex.Message}");
+
+                    _logger.LogError(
+                        ex,
+                        "CIA summary batch set failed. BatchId={BatchId}, CurrentSet={CurrentSet}, TotalSets={TotalSets}, EntityId={EntityId}, EntityName={EntityName}, Risk={Risk}, ExpectedRowCount={ExpectedRowCount}, DurationMs={DurationMs}, SuccessCount={SuccessCount}, FailureCount={FailureCount}, FolderPath={FolderPath}.",
+                        result.BatchId,
+                        setIndex + 1,
+                        sets.Count,
+                        set.EntityId,
+                        set.EntityName,
+                        set.Risk,
+                        set.RowCount,
+                        setStopwatch.ElapsedMilliseconds,
+                        result.SuccessCount,
+                        result.FailureCount,
+                        batchPath);
+                    }
+                }
+            }
+
+        private async Task GenerateAndSaveSummaryPdfPartAsync(OutstandingParasSummaryBatchResult result, string batchPath, int auditDepartmentId, string departmentName, string risk, DateTime generatedOn, List<OutstandingParasSummaryPdfModel> rows, string fileName, int currentSet, int totalSets, int entityId, string entityName, int part, int parts)
+            {
+            var partStopwatch = Stopwatch.StartNew();
+            var data = new OutstandingParasSummaryPdfReportData
+                {
+                AuditDepartmentId = auditDepartmentId,
+                AuditDepartmentName = departmentName,
+                Risk = risk,
+                GeneratedOn = generatedOn,
+                Paras = rows
+                };
+            var html = _pdfBuilder.BuildSummaryHtml(data);
+            var pdfBytes = await RenderSummaryPdfAsync(html, generatedOn);
+            partStopwatch.Stop();
+
+            if (pdfBytes == null || pdfBytes.Length == 0)
+                {
+                throw new InvalidOperationException("Generated PDF is empty.");
+                }
+
+            var safeFileName = SanitizeFilename(fileName);
+            var filePath = GetSafeChildPath(batchPath, safeFileName);
+            await File.WriteAllBytesAsync(filePath, pdfBytes);
+            var savedPdf = _dbConnection.SaveCiaSummaryPdf(
+                result.BatchId,
+                auditDepartmentId,
+                departmentName,
+                entityId,
+                entityName,
+                risk,
+                part,
+                safeFileName,
+                "application/pdf",
+                pdfBytes,
+                GetGeneratedBy(),
+                generatedOn.AddDays(30),
+                "GENERATED",
+                string.Empty);
+            if (!savedPdf.IsSuccess)
+                {
+                throw new InvalidOperationException(string.IsNullOrWhiteSpace(savedPdf.Message) ? "Unable to save generated PDF to database." : savedPdf.Message);
+                }
+
+            result.SuccessCount++;
+            result.Files.Add(new OutstandingParasSummaryBatchFileModel
+                {
+                PdfId = savedPdf.PdfId,
+                FileName = safeFileName,
+                Url = $"/OutstandingParasPdf/DownloadSummaryPdf?pdfId={savedPdf.PdfId}",
+                ContentType = "application/pdf",
+                SizeBytes = pdfBytes.LongLength
+                });
+
+            _logger.LogInformation(
+                "CIA summary batch PDF saved. BatchId={BatchId}, PdfId={PdfId}, CurrentSet={CurrentSet}, TotalSets={TotalSets}, EntityId={EntityId}, EntityName={EntityName}, Risk={Risk}, RowCount={RowCount}, Part={Part}, Parts={Parts}, HtmlLength={HtmlLength}, DurationMs={DurationMs}, PdfSizeBytes={PdfSizeBytes}, FilePath={FilePath}, SuccessCount={SuccessCount}, FailureCount={FailureCount}.",
+                result.BatchId,
+                savedPdf.PdfId,
+                currentSet,
+                totalSets,
+                entityId,
+                entityName,
+                risk,
+                rows?.Count ?? 0,
+                part,
+                parts,
+                html?.Length ?? 0,
+                partStopwatch.ElapsedMilliseconds,
+                pdfBytes.Length,
+                filePath,
+                result.SuccessCount,
+                result.FailureCount);
+            }
+
+        private async Task SaveSummaryFailureFileAsync(OutstandingParasSummaryBatchResult result, string batchPath, string fileName, string content)
+            {
+            var safeFileName = SanitizeFilename(fileName);
+            var filePath = GetSafeChildPath(batchPath, safeFileName);
+            await File.WriteAllTextAsync(filePath, content ?? string.Empty, Encoding.UTF8);
+            var fileInfo = new FileInfo(filePath);
+            result.Files.Add(new OutstandingParasSummaryBatchFileModel
+                {
+                FileName = safeFileName,
+                Url = $"{result.FolderRelativeUrl}/{Uri.EscapeDataString(safeFileName)}",
+                ContentType = "text/plain",
+                SizeBytes = fileInfo.Exists ? fileInfo.Length : 0,
+                IsFailureFile = true
+                });
+            _logger.LogInformation("CIA summary batch failure file saved. BatchId={BatchId}, FilePath={FilePath}, SizeBytes={SizeBytes}.", result.BatchId, filePath, fileInfo.Exists ? fileInfo.Length : 0);
             }
 
         private async Task<OutstandingParasGeneratedPdfDocument> GenerateSummaryZipFallbackAsync(OutstandingParasSummaryPdfReportData data)
@@ -534,6 +909,13 @@ namespace AIS.Services
             data.GeneratedByPPNo = user.PPNumber?.Trim();
             }
 
+        private string GetGeneratedBy()
+            {
+            return _sessionHandler.TryGetUser(out var user) && user != null
+                ? user.PPNumber?.Trim()
+                : string.Empty;
+            }
+
         private static byte[] RenderPdf(string html, PdfWatermarkText watermarkTexts)
             {
             using var output = new MemoryStream();
@@ -639,7 +1021,75 @@ namespace AIS.Services
 
         private static string BuildSummarySetEntryFilename(OutstandingParasSummarySetModel set, int partNumber)
             {
-            return SafeZipEntryName($"CIA_Summary_{SanitizeFilename(set?.EntityName)}_Entity_{set?.EntityId ?? 0}_{SanitizeFilename(set?.Risk)}_Part_{partNumber:00}.pdf");
+            return SafeZipEntryName($"CIA_Summary_{SanitizeFilename(set?.AuditDepartment)}_{SanitizeFilename(set?.EntityName)}_Entity_{set?.EntityId ?? 0}_{SanitizeFilename(set?.Risk)}_Part_{partNumber:00}.pdf");
+            }
+
+        private string GetSummaryBatchRootPath()
+            {
+            var webRootPath = string.IsNullOrWhiteSpace(_webHostEnvironment?.WebRootPath)
+                ? System.IO.Path.Combine(Directory.GetCurrentDirectory(), "wwwroot")
+                : _webHostEnvironment.WebRootPath;
+            return System.IO.Path.GetFullPath(System.IO.Path.Combine(webRootPath, "PDF", "CIAOutstandingParas"));
+            }
+
+        private static string GetSafeChildPath(string parentPath, string childName)
+            {
+            var parentFullPath = System.IO.Path.GetFullPath(parentPath);
+            var childFullPath = System.IO.Path.GetFullPath(System.IO.Path.Combine(parentFullPath, childName));
+            var parentWithSeparator = parentFullPath.EndsWith(System.IO.Path.DirectorySeparatorChar.ToString(), StringComparison.Ordinal)
+                ? parentFullPath
+                : parentFullPath + System.IO.Path.DirectorySeparatorChar;
+            if (!childFullPath.StartsWith(parentWithSeparator, StringComparison.OrdinalIgnoreCase) && !string.Equals(childFullPath, parentFullPath, StringComparison.OrdinalIgnoreCase))
+                {
+                throw new InvalidOperationException("Invalid output path.");
+                }
+
+            return childFullPath;
+            }
+
+        private void CleanupOldSummaryBatches()
+            {
+            try
+                {
+                var rootPath = GetSummaryBatchRootPath();
+                if (!Directory.Exists(rootPath))
+                    {
+                    return;
+                    }
+
+                var cutoffUtc = DateTime.UtcNow.AddHours(-SummaryBatchRetentionHours);
+                foreach (var directory in Directory.EnumerateDirectories(rootPath))
+                    {
+                    try
+                        {
+                        var info = new DirectoryInfo(directory);
+                        if (info.CreationTimeUtc < cutoffUtc)
+                            {
+                            info.Delete(true);
+                            _logger.LogInformation("Deleted old CIA summary batch folder. FolderPath={FolderPath}.", info.FullName);
+                            }
+                        }
+                    catch (Exception ex)
+                        {
+                        _logger.LogWarning(ex, "Unable to delete old CIA summary batch folder. FolderPath={FolderPath}.", directory);
+                        }
+                    }
+                }
+            catch (Exception ex)
+                {
+                _logger.LogWarning(ex, "Unable to clean old CIA summary batch folders.");
+                }
+            }
+
+        private static bool IsSafeBatchId(string batchId)
+            {
+            if (string.IsNullOrWhiteSpace(batchId))
+                {
+                return false;
+                }
+
+            var value = batchId.Trim();
+            return value.Length <= 80 && value.All(item => char.IsLetterOrDigit(item) || item == '_' || item == '-');
             }
 
         private static bool IsAllRisk(string risk)

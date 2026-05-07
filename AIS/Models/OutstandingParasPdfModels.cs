@@ -72,9 +72,105 @@ namespace AIS.Models
     public class OutstandingParasSummarySetModel
         {
         public int EntityId { get; set; }
+        public string AuditDepartment { get; set; }
         public string EntityName { get; set; }
         public string Risk { get; set; }
         public int RowCount { get; set; }
+        }
+
+    public class OutstandingParasSummaryBatchFileModel
+        {
+        public int PdfId { get; set; }
+        public string FileName { get; set; } = string.Empty;
+        public string Url { get; set; } = string.Empty;
+        public string ContentType { get; set; } = "application/pdf";
+        public long SizeBytes { get; set; }
+        public bool IsFailureFile { get; set; }
+        }
+
+    public class OutstandingParasSummaryBatchResult
+        {
+        public string BatchId { get; set; } = string.Empty;
+        public int TotalSets { get; set; }
+        public int SuccessCount { get; set; }
+        public int FailureCount { get; set; }
+        public string FolderRelativeUrl { get; set; } = string.Empty;
+        public string FolderPath { get; set; } = string.Empty;
+        public List<OutstandingParasSummaryBatchFileModel> Files { get; set; } = new List<OutstandingParasSummaryBatchFileModel>();
+        public int FailureStatusCode { get; set; }
+        public string ErrorMessage { get; set; } = string.Empty;
+        public bool IsSuccess => string.IsNullOrWhiteSpace(ErrorMessage);
+
+        public static OutstandingParasSummaryBatchResult Fail(int failureStatusCode, string errorMessage)
+            {
+            return new OutstandingParasSummaryBatchResult
+                {
+                FailureStatusCode = failureStatusCode,
+                ErrorMessage = errorMessage ?? string.Empty
+                };
+            }
+        }
+
+    public class OutstandingParasSummaryBatchDeleteRequest
+        {
+        public string BatchId { get; set; } = string.Empty;
+        }
+
+    public class OutstandingParasSummaryPdfStoreModel
+        {
+        public int PdfId { get; set; }
+        public string BatchId { get; set; } = string.Empty;
+        public int AuditDepartmentId { get; set; }
+        public string AuditDepartmentName { get; set; } = string.Empty;
+        public int EntityId { get; set; }
+        public string EntityName { get; set; } = string.Empty;
+        public string Risk { get; set; } = string.Empty;
+        public int PartNo { get; set; }
+        public string FileName { get; set; } = string.Empty;
+        public string FileMimeType { get; set; } = "application/pdf";
+        public long FileSize { get; set; }
+        public string GeneratedBy { get; set; } = string.Empty;
+        public DateTime? GeneratedOn { get; set; }
+        public DateTime? ExpiresOn { get; set; }
+        public string Status { get; set; } = string.Empty;
+        public string ErrorMessage { get; set; } = string.Empty;
+        }
+
+    public class OutstandingParasSummaryPdfSaveResult
+        {
+        public int PdfId { get; set; }
+        public string Status { get; set; } = string.Empty;
+        public string Message { get; set; } = string.Empty;
+        public bool IsSuccess => string.Equals(Status, "SUCCESS", StringComparison.OrdinalIgnoreCase) && PdfId > 0;
+        }
+
+    public class OutstandingParasSummaryPdfDownloadModel
+        {
+        public int PdfId { get; set; }
+        public string FileName { get; set; } = string.Empty;
+        public string FileMimeType { get; set; } = "application/pdf";
+        public long FileSize { get; set; }
+        public byte[] ContentBytes { get; set; } = Array.Empty<byte>();
+        public string Status { get; set; } = string.Empty;
+        public string Message { get; set; } = string.Empty;
+        public bool IsSuccess => string.Equals(Status, "SUCCESS", StringComparison.OrdinalIgnoreCase) && ContentBytes != null && ContentBytes.Length > 0;
+        }
+
+    public class OutstandingParasSummaryPdfDeleteRequest
+        {
+        public int PdfId { get; set; }
+        }
+
+    public class OutstandingParasSummaryPdfZipExportRequest
+        {
+        public List<int> PdfIds { get; set; } = new List<int>();
+        }
+
+    public class OutstandingParasSummaryPdfDeleteResult
+        {
+        public string Status { get; set; } = string.Empty;
+        public string Message { get; set; } = string.Empty;
+        public bool IsSuccess => string.Equals(Status, "SUCCESS", StringComparison.OrdinalIgnoreCase);
         }
 
     public class OutstandingParasGeneratedPdfDocument

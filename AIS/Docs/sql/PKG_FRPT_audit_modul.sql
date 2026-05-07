@@ -2066,12 +2066,15 @@ END     P_GET_ALLOWED_PDF_ENG_DETAILS;
   BEGIN
     OPEN O_CURSOR FOR
       SELECT c.entity_id AS ENTITY_ID,
+             az.name AS AUDIT_DEPARTMENT,
              m.c_name AS ENTITY_NAME,
              r.description AS RISK,
              COUNT(1) AS ROW_COUNT
         FROM ais_t_au_post_compliance c
        INNER JOIN t_auditee_entities_maping m
           ON c.entity_id = m.entity_id
+       INNER JOIN t_auditee_entities az
+          ON az.entity_id = m.auditedby
        INNER JOIN t_risk r
           ON r.rating = c.risk
        INNER JOIN v_get_all_para_text t
@@ -2083,9 +2086,11 @@ END     P_GET_ALLOWED_PDF_ENG_DETAILS;
              UPPER(TRIM(P_RISK)) = 'ALL' OR
              UPPER(TRIM(r.description)) = UPPER(TRIM(P_RISK)))
        GROUP BY c.entity_id,
+                az.name,
                 m.c_name,
                 r.description
-       ORDER BY m.c_name,
+       ORDER BY az.name,
+                m.c_name,
                 DECODE(UPPER(r.description), 'HIGH', 1, 'MEDIUM', 2, 'LOW', 3, 4),
                 r.description;
   END P_GET_OUTSTANDING_PARAS_SUMMARY_SETS;

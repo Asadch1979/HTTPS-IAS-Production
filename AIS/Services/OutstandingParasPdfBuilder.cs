@@ -124,7 +124,7 @@ namespace AIS.Services
             sb.AppendLine();
             sb.AppendFormat(
                 CultureInfo.InvariantCulture,
-                "<div class=\"filters\"><strong>Audit Department:</strong> {0} &nbsp; <strong>Risk:</strong> {1}</div>",
+                "<div class=\"filters\"><strong>Audit Department:</strong> {0} | <strong>Risk:</strong> {1}</div>",
                 FormatPlainCell(string.IsNullOrWhiteSpace(data.AuditDepartmentName) ? "All" : data.AuditDepartmentName),
                 FormatPlainCell(string.IsNullOrWhiteSpace(data.Risk) ? "All" : data.Risk));
             sb.AppendLine();

@@ -1,5 +1,6 @@
 using AIS.Models;
 using Oracle.ManagedDataAccess.Client;
+using Oracle.ManagedDataAccess.Types;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -226,6 +227,7 @@ namespace AIS.Controllers
                 rows.Add(new OutstandingParasSummarySetModel
                     {
                     EntityId = OutstandingPdfGetInt(reader, "ENTITY_ID", "ENT_ID"),
+                    AuditDepartment = OutstandingPdfGetString(reader, "AUDIT_DEPARTMENT", "AUDIT_DEPARTMENT_NAME", "DEPARTMENT_NAME"),
                     EntityName = OutstandingPdfGetString(reader, "ENTITY_NAME", "BRANCH_NAME", "AUDIT_ENTITY_NAME"),
                     Risk = OutstandingPdfGetString(reader, "RISK", "RISK_CATEGORY"),
                     RowCount = OutstandingPdfGetInt(reader, "ROW_COUNT", "TOTAL_ROWS", "PARA_COUNT")
@@ -271,6 +273,148 @@ namespace AIS.Controllers
             return rows;
             }
 
+        public OutstandingParasSummaryPdfSaveResult SaveCiaSummaryPdf(
+            string batchId,
+            int auditDepartmentId,
+            string auditDepartmentName,
+            int entityId,
+            string entityName,
+            string risk,
+            int partNo,
+            string fileName,
+            string fileMimeType,
+            byte[] pdfBytes,
+            string generatedBy,
+            DateTime? expiresOn,
+            string status,
+            string errorMessage)
+            {
+            using var con = DatabaseConnection();
+            using var cmd = con.CreateCommand();
+            cmd.BindByName = true;
+            cmd.CommandText = "PKG_CIA_SUMMARY_PDF.P_SAVE_CIA_SUMMARY_PDF";
+            cmd.CommandType = CommandType.StoredProcedure;
+            cmd.Parameters.Add("P_BATCH_ID", OracleDbType.Varchar2).Value = CiaDbValue(batchId);
+            cmd.Parameters.Add("P_AUDIT_DEPARTMENT_ID", OracleDbType.Int32).Value = auditDepartmentId <= 0 ? DBNull.Value : auditDepartmentId;
+            cmd.Parameters.Add("P_AUDIT_DEPARTMENT_NAME", OracleDbType.Varchar2).Value = CiaDbValue(auditDepartmentName);
+            cmd.Parameters.Add("P_ENTITY_ID", OracleDbType.Int32).Value = entityId <= 0 ? DBNull.Value : entityId;
+            cmd.Parameters.Add("P_ENTITY_NAME", OracleDbType.Varchar2).Value = CiaDbValue(entityName);
+            cmd.Parameters.Add("P_RISK", OracleDbType.Varchar2).Value = CiaDbValue(risk);
+            cmd.Parameters.Add("P_PART_NO", OracleDbType.Int32).Value = partNo <= 0 ? 1 : partNo;
+            cmd.Parameters.Add("P_FILE_NAME", OracleDbType.Varchar2).Value = CiaDbValue(fileName);
+            cmd.Parameters.Add("P_FILE_MIME_TYPE", OracleDbType.Varchar2).Value = CiaDbValue(fileMimeType);
+            cmd.Parameters.Add("P_FILE_SIZE", OracleDbType.Int64).Value = pdfBytes?.LongLength ?? 0;
+            cmd.Parameters.Add("P_PDF_BLOB", OracleDbType.Blob).Value = pdfBytes == null || pdfBytes.Length == 0 ? DBNull.Value : pdfBytes;
+            cmd.Parameters.Add("P_GENERATED_BY", OracleDbType.Varchar2).Value = CiaDbValue(generatedBy);
+            cmd.Parameters.Add("P_EXPIRES_ON", OracleDbType.Date).Value = expiresOn.HasValue ? (object)expiresOn.Value : DBNull.Value;
+            cmd.Parameters.Add("P_STATUS", OracleDbType.Varchar2).Value = CiaDbValue(status);
+            cmd.Parameters.Add("P_ERROR_MESSAGE", OracleDbType.Varchar2).Value = CiaDbValue(errorMessage);
+            cmd.Parameters.Add("O_PDF_ID", OracleDbType.Int32).Direction = ParameterDirection.Output;
+            cmd.Parameters.Add("O_STATUS", OracleDbType.Varchar2, 50).Direction = ParameterDirection.Output;
+            cmd.Parameters.Add("O_MESSAGE", OracleDbType.Varchar2, 4000).Direction = ParameterDirection.Output;
+            cmd.ExecuteNonQuery();
+
+            return new OutstandingParasSummaryPdfSaveResult
+                {
+                PdfId = ConvertOracleInt(cmd.Parameters["O_PDF_ID"].Value),
+                Status = ConvertOracleString(cmd.Parameters["O_STATUS"].Value),
+                Message = ConvertOracleString(cmd.Parameters["O_MESSAGE"].Value)
+                };
+            }
+
+        public List<OutstandingParasSummaryPdfStoreModel> GetCiaSummaryPdfList()
+            {
+            var rows = new List<OutstandingParasSummaryPdfStoreModel>();
+
+            using var con = DatabaseConnection();
+            using var cmd = con.CreateCommand();
+            cmd.BindByName = true;
+            cmd.CommandText = "PKG_CIA_SUMMARY_PDF.P_GET_CIA_SUMMARY_PDF_LIST";
+            cmd.CommandType = CommandType.StoredProcedure;
+            cmd.Parameters.Add("P_BATCH_ID", OracleDbType.Varchar2).Value = DBNull.Value;
+            cmd.Parameters.Add("P_GENERATED_BY", OracleDbType.Varchar2).Value = DBNull.Value;
+            cmd.Parameters.Add("P_AUDIT_DEPARTMENT_ID", OracleDbType.Int32).Value = DBNull.Value;
+            cmd.Parameters.Add("P_RISK", OracleDbType.Varchar2).Value = DBNull.Value;
+            cmd.Parameters.Add("P_FROM_DATE", OracleDbType.Date).Value = DBNull.Value;
+            cmd.Parameters.Add("P_TO_DATE", OracleDbType.Date).Value = DBNull.Value;
+            cmd.Parameters.Add("P_LATEST_BATCH_ONLY", OracleDbType.Varchar2).Value = "N";
+            cmd.Parameters.Add("O_CURSOR", OracleDbType.RefCursor, ParameterDirection.Output);
+
+            using var reader = cmd.ExecuteReader();
+            while (reader.Read())
+                {
+                rows.Add(new OutstandingParasSummaryPdfStoreModel
+                    {
+                    PdfId = OutstandingPdfGetInt(reader, "PDF_ID"),
+                    BatchId = OutstandingPdfGetString(reader, "BATCH_ID"),
+                    AuditDepartmentId = OutstandingPdfGetInt(reader, "AUDIT_DEPARTMENT_ID"),
+                    AuditDepartmentName = OutstandingPdfGetString(reader, "AUDIT_DEPARTMENT_NAME"),
+                    EntityId = OutstandingPdfGetInt(reader, "ENTITY_ID"),
+                    EntityName = OutstandingPdfGetString(reader, "ENTITY_NAME"),
+                    Risk = OutstandingPdfGetString(reader, "RISK"),
+                    PartNo = OutstandingPdfGetInt(reader, "PART_NO"),
+                    FileName = OutstandingPdfGetString(reader, "FILE_NAME"),
+                    FileMimeType = OutstandingPdfGetString(reader, "FILE_MIME_TYPE"),
+                    FileSize = OutstandingPdfGetLong(reader, "FILE_SIZE"),
+                    GeneratedBy = OutstandingPdfGetString(reader, "GENERATED_BY"),
+                    GeneratedOn = OutstandingPdfGetNullableDate(reader, "GENERATED_ON"),
+                    ExpiresOn = OutstandingPdfGetNullableDate(reader, "EXPIRES_ON"),
+                    Status = OutstandingPdfGetString(reader, "STATUS"),
+                    ErrorMessage = OutstandingPdfGetString(reader, "ERROR_MESSAGE")
+                    });
+                }
+
+            return rows;
+            }
+
+        public OutstandingParasSummaryPdfDownloadModel DownloadCiaSummaryPdf(int pdfId)
+            {
+            using var con = DatabaseConnection();
+            using var cmd = con.CreateCommand();
+            cmd.BindByName = true;
+            cmd.CommandText = "PKG_CIA_SUMMARY_PDF.P_DOWNLOAD_CIA_SUMMARY_PDF";
+            cmd.CommandType = CommandType.StoredProcedure;
+            cmd.Parameters.Add("P_PDF_ID", OracleDbType.Int32).Value = pdfId;
+            cmd.Parameters.Add("O_FILE_NAME", OracleDbType.Varchar2, 1000).Direction = ParameterDirection.Output;
+            cmd.Parameters.Add("O_FILE_MIME_TYPE", OracleDbType.Varchar2, 100).Direction = ParameterDirection.Output;
+            cmd.Parameters.Add("O_FILE_SIZE", OracleDbType.Int64).Direction = ParameterDirection.Output;
+            cmd.Parameters.Add("O_PDF_BLOB", OracleDbType.Blob).Direction = ParameterDirection.Output;
+            cmd.Parameters.Add("O_STATUS", OracleDbType.Varchar2, 50).Direction = ParameterDirection.Output;
+            cmd.Parameters.Add("O_MESSAGE", OracleDbType.Varchar2, 4000).Direction = ParameterDirection.Output;
+            cmd.ExecuteNonQuery();
+
+            return new OutstandingParasSummaryPdfDownloadModel
+                {
+                PdfId = pdfId,
+                FileName = ConvertOracleString(cmd.Parameters["O_FILE_NAME"].Value),
+                FileMimeType = ConvertOracleString(cmd.Parameters["O_FILE_MIME_TYPE"].Value),
+                FileSize = ConvertOracleLong(cmd.Parameters["O_FILE_SIZE"].Value),
+                ContentBytes = ConvertOracleBlob(cmd.Parameters["O_PDF_BLOB"].Value),
+                Status = ConvertOracleString(cmd.Parameters["O_STATUS"].Value),
+                Message = ConvertOracleString(cmd.Parameters["O_MESSAGE"].Value)
+                };
+            }
+
+        public OutstandingParasSummaryPdfDeleteResult DeleteCiaSummaryPdf(int pdfId, string deletedBy)
+            {
+            using var con = DatabaseConnection();
+            using var cmd = con.CreateCommand();
+            cmd.BindByName = true;
+            cmd.CommandText = "PKG_CIA_SUMMARY_PDF.P_DELETE_CIA_SUMMARY_PDF";
+            cmd.CommandType = CommandType.StoredProcedure;
+            cmd.Parameters.Add("P_PDF_ID", OracleDbType.Int32).Value = pdfId;
+            cmd.Parameters.Add("P_DELETED_BY", OracleDbType.Varchar2).Value = CiaDbValue(deletedBy);
+            cmd.Parameters.Add("O_STATUS", OracleDbType.Varchar2, 50).Direction = ParameterDirection.Output;
+            cmd.Parameters.Add("O_MESSAGE", OracleDbType.Varchar2, 4000).Direction = ParameterDirection.Output;
+            cmd.ExecuteNonQuery();
+
+            return new OutstandingParasSummaryPdfDeleteResult
+                {
+                Status = ConvertOracleString(cmd.Parameters["O_STATUS"].Value),
+                Message = ConvertOracleString(cmd.Parameters["O_MESSAGE"].Value)
+                };
+            }
+
         private static string OutstandingPdfGetString(IDataRecord reader, params string[] columnNames)
             {
             foreach (var columnName in columnNames)
@@ -294,6 +438,24 @@ namespace AIS.Controllers
                     {
                     var value = Convert.ToString(reader.GetValue(ordinal));
                     if (int.TryParse(value, out var parsed))
+                        {
+                        return parsed;
+                        }
+                    }
+                }
+
+            return 0;
+            }
+
+        private static long OutstandingPdfGetLong(IDataRecord reader, params string[] columnNames)
+            {
+            foreach (var columnName in columnNames)
+                {
+                var ordinal = OutstandingPdfGetOrdinal(reader, columnName);
+                if (ordinal >= 0 && !reader.IsDBNull(ordinal))
+                    {
+                    var value = Convert.ToString(reader.GetValue(ordinal));
+                    if (long.TryParse(value, out var parsed))
                         {
                         return parsed;
                         }
@@ -328,6 +490,61 @@ namespace AIS.Controllers
                 }
 
             return -1;
+            }
+
+        private static object CiaDbValue(string value)
+            {
+            return string.IsNullOrWhiteSpace(value) ? DBNull.Value : value.Trim();
+            }
+
+        private static string ConvertOracleString(object value)
+            {
+            if (value == null || value == DBNull.Value)
+                {
+                return string.Empty;
+                }
+
+            return value.ToString();
+            }
+
+        private static int ConvertOracleInt(object value)
+            {
+            if (value == null || value == DBNull.Value)
+                {
+                return 0;
+                }
+
+            return int.TryParse(value.ToString(), out var parsed) ? parsed : 0;
+            }
+
+        private static long ConvertOracleLong(object value)
+            {
+            if (value == null || value == DBNull.Value)
+                {
+                return 0;
+                }
+
+            return long.TryParse(value.ToString(), out var parsed) ? parsed : 0;
+            }
+
+        private static byte[] ConvertOracleBlob(object value)
+            {
+            if (value == null || value == DBNull.Value)
+                {
+                return Array.Empty<byte>();
+                }
+
+            if (value is byte[] bytes)
+                {
+                return bytes;
+                }
+
+            if (value is OracleBlob blob && !blob.IsNull)
+                {
+                return blob.Value;
+                }
+
+            return Array.Empty<byte>();
             }
         }
     }
