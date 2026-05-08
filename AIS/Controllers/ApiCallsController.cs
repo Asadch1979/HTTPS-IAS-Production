@@ -673,11 +673,6 @@ namespace AIS.Controllers
 
             return Ok(dBConnection.GetAuditEmployees(dept_code));
             }
-        [HttpPost]
-        public List<AuditPlanEngagementModel> getauditplanengagement(int b_id)
-            {
-            return dBConnection.GetAuditPlanEngagement(b_id);
-            }
 
         [HttpPost]
         public BranchModel branch_add(BranchModel br)
@@ -1246,158 +1241,14 @@ namespace AIS.Controllers
                 }
             }
 
-        [HttpPost]
-        public IActionResult get_department_performance_summary_and_detail([FromBody] DepartmentPerformanceRequest request)
-            {
-            return GetDepartmentPerformanceSummaryAndDetail(request?.EntId ?? 0, request?.StartDate, request?.EndDate);
-            }
 
-        [HttpGet]
-        public IActionResult get_department_performance_summary_and_detail(int ent_id, string start_date, string end_date)
-            {
-            return GetDepartmentPerformanceSummaryAndDetail(ent_id, start_date, end_date);
-            }
 
-        [HttpPost]
-        public IActionResult get_department_performance_by_zone([FromBody] DepartmentPerformanceByZoneRequest request)
-            {
-            return GetDepartmentPerformanceByZone(request?.EntId ?? 0, request?.ZoneId ?? 0, request?.StartDate, request?.EndDate);
-            }
 
-        [HttpGet]
-        public IActionResult get_department_performance_by_zone(int ent_id, int zone_id, string start_date, string end_date)
-            {
-            return GetDepartmentPerformanceByZone(ent_id, zone_id, start_date, end_date);
-            }
 
-        [HttpPost]
-        public IActionResult get_auditor_performance([FromBody] AuditorPerformanceRequest request)
-            {
-            return GetAuditorPerformance(request?.EntId ?? 0, request?.ZoneId, request?.StartDate, request?.EndDate);
-            }
 
-        [HttpGet]
-        public IActionResult get_auditor_performance(int ent_id, int? zone_id, string start_date, string end_date)
-            {
-            return GetAuditorPerformance(ent_id, zone_id, start_date, end_date);
-            }
 
-        private IActionResult GetDepartmentPerformanceSummaryAndDetail(int entId, string startDateValue, string endDateValue)
-            {
-            if (entId <= 0)
-                {
-                return BadRequest("Invalid request payload.");
-                }
 
-            if (!TryParseIsoDate(startDateValue, out var startDate))
-                {
-                return BadRequest("Invalid start_date.");
-                }
 
-            if (!TryParseIsoDate(endDateValue, out var endDate))
-                {
-                return BadRequest("Invalid end_date.");
-                }
-
-            if (startDate > endDate)
-                {
-                return BadRequest("start_date cannot be later than end_date.");
-                }
-
-            try
-                {
-                var response = dBConnection.GetDepartmentPerformanceSummaryAndDetail(entId, startDate, endDate);
-                return Ok(response ?? new DepartmentPerformanceSummaryDetailResponse());
-                }
-            catch (OracleException ex)
-                {
-                _logger.LogError(ex, "Error retrieving department performance summary and detail.");
-                return StatusCode(StatusCodes.Status500InternalServerError, "Unable to fetch department performance data.");
-                }
-            catch (Exception ex)
-                {
-                _logger.LogError(ex, "Unexpected error retrieving department performance summary and detail.");
-                return StatusCode(StatusCodes.Status500InternalServerError, "Unable to fetch department performance data.");
-                }
-            }
-
-        private IActionResult GetDepartmentPerformanceByZone(int entId, int zoneId, string startDateValue, string endDateValue)
-            {
-            if (entId <= 0)
-                {
-                return BadRequest("Invalid request payload.");
-                }
-
-            if (!TryParseIsoDate(startDateValue, out var startDate))
-                {
-                return BadRequest("Invalid start_date.");
-                }
-
-            if (!TryParseIsoDate(endDateValue, out var endDate))
-                {
-                return BadRequest("Invalid end_date.");
-                }
-
-            if (startDate > endDate)
-                {
-                return BadRequest("start_date cannot be later than end_date.");
-                }
-
-            try
-                {
-                var rows = dBConnection.GetDepartmentPerformanceByZone(entId, zoneId, startDate, endDate);
-                return Ok(rows ?? new List<DeptPerfByZoneRow>());
-                }
-            catch (OracleException ex)
-                {
-                _logger.LogError(ex, "Error retrieving department performance by zone.");
-                return StatusCode(StatusCodes.Status500InternalServerError, "Unable to fetch department performance data.");
-                }
-            catch (Exception ex)
-                {
-                _logger.LogError(ex, "Unexpected error retrieving department performance by zone.");
-                return StatusCode(StatusCodes.Status500InternalServerError, "Unable to fetch department performance data.");
-                }
-            }
-
-        private IActionResult GetAuditorPerformance(int entId, int? zoneId, string startDateValue, string endDateValue)
-            {
-            if (entId <= 0)
-                {
-                return BadRequest("Invalid request payload.");
-                }
-
-            if (!TryParseIsoDate(startDateValue, out var startDate))
-                {
-                return BadRequest("Invalid start_date.");
-                }
-
-            if (!TryParseIsoDate(endDateValue, out var endDate))
-                {
-                return BadRequest("Invalid end_date.");
-                }
-
-            if (startDate > endDate)
-                {
-                return BadRequest("start_date cannot be later than end_date.");
-                }
-
-            try
-                {
-                var rows = dBConnection.GetAuditorPerformance(entId, zoneId, startDate, endDate);
-                return Ok(rows ?? new List<AuditorPerformanceRow>());
-                }
-            catch (OracleException ex)
-                {
-                _logger.LogError(ex, "Error retrieving auditor performance.");
-                return StatusCode(StatusCodes.Status500InternalServerError, "Unable to fetch auditor performance data.");
-                }
-            catch (Exception ex)
-                {
-                _logger.LogError(ex, "Unexpected error retrieving auditor performance.");
-                return StatusCode(StatusCodes.Status500InternalServerError, "Unable to fetch auditor performance data.");
-                }
-            }
 
         [HttpPost]
         public List<AuditChecklistSubModel> sub_checklist(int T_ID, int ENG_ID)
@@ -1825,12 +1676,6 @@ namespace AIS.Controllers
         public List<ClosingDraftTeamDetailsModel> closing_draft_report_status(int ENG_ID = 0)
             {
             return dBConnection.GetClosingDraftObservations(ENG_ID);
-            }
-        [HttpGet]
-        [HttpPost]
-        public List<FadOldParaReportModel> get_fad_paras(int PROCESS_ID = 0, int SUB_PROCESS_ID = 0, int PROCESS_DETAIL_ID = 0)
-            {
-            return dBConnection.GetFadBranchesParas(PROCESS_ID, SUB_PROCESS_ID, PROCESS_DETAIL_ID);
             }
         [HttpGet]
         [HttpPost]
@@ -2287,12 +2132,6 @@ namespace AIS.Controllers
             return "{\"Status\":true,\"Message\":\"" + response + "\"}";
 
             }
-        [HttpGet]
-        [HttpPost]
-        public ActiveInactiveChart get_pie_chart_data()
-            {
-            return archiveDbConnection.GetActiveInactiveChartData();
-            }
 
         [HttpPost]
         public List<UserRelationshipModel> getparentrel(int ENTITY_REALTION_ID)
@@ -2413,29 +2252,8 @@ namespace AIS.Controllers
 
             }
 
-        [HttpGet]
-        [HttpPost]
-        public List<AuditPlanCompletionReportModel> get_auditplan_completion(int DEPT_ID)
-            {
-            return dBConnection.GetauditplanCompletion(DEPT_ID);
 
-            }
 
-        [HttpGet]
-        [HttpPost]
-        public List<CurrentAuditProgress> get_current_audit_progress(int ENTITY_ID)
-            {
-            return dBConnection.GetCurrentAuditProgress(ENTITY_ID);
-
-            }
-
-        [HttpGet]
-        [HttpPost]
-        public List<CurrentActiveUsers> get_active_users()
-            {
-            return dBConnection.GetCurrentActiveUsers();
-
-            }
 
         [HttpGet]
         [HttpPost]
@@ -2789,12 +2607,6 @@ namespace AIS.Controllers
             return "{\"Status\":true,\"Message\":\"" + response + "\"}";
             }
 
-        [HttpGet]
-        [HttpPost]
-        public List<ZoneBranchParaStatusModel> get_zone_brach_para_position(int ENTITY_ID)
-            {
-            return dBConnection.GetZoneBranchParaPositionStatus(ENTITY_ID);
-            }
         [HttpPost]
         public string Add_Authorization_Old_Para_Change_status(string REFID, string OBS_ID, string IND, string Action_IND)
             {
@@ -2837,12 +2649,6 @@ namespace AIS.Controllers
             return dBConnection.GetTeamDetails(ENG_ID);
             }
 
-        [HttpGet]
-        [HttpPost]
-        public List<GetAuditeeParasModel> get_report_status(int ENG_ID)
-            {
-            return dBConnection.GetAuditeReportStatus(ENG_ID);
-            }
         [HttpPost]
         public string submit_pre_concluding(int ENG_ID)
             {
@@ -2953,36 +2759,6 @@ namespace AIS.Controllers
 
             }
 
-        [HttpPost]
-        public List<AuditPlanReportModel> GetFADAuditPlan(int ENT_ID, int Z_ID, int RISK, int SIZE)
-            {
-            return dBConnection.GetFadAuditPlanReport(ENT_ID, Z_ID, RISK, SIZE);
-
-            }
-        [HttpGet]
-        [HttpPost]
-        public List<FADNewOldParaPerformanceModel> get_fad_new_old_para_performance(int AUDIT_ZONE_ID)
-            {
-            return dBConnection.GetFADNewOldParaPerformance(AUDIT_ZONE_ID);
-            }
-        [HttpGet]
-        [HttpPost]
-        public List<LegacyZoneWiseOldParasPerformanceModel> get_legacy_zone_wise_performance(DateTime? FILTER_DATE)
-            {
-            return dBConnection.GetLegacyZoneWiseOldParasPerformance(FILTER_DATE);
-            }
-        [HttpGet]
-        [HttpPost]
-        public List<LegacyUserWiseOldParasPerformanceModel> get_legacy_user_wise_performance(DateTime? FILTER_DATE)
-            {
-            return dBConnection.GetLegacyUserWiseOldParasPerformance(FILTER_DATE);
-            }
-        [HttpGet]
-        [HttpPost]
-        public List<FADHOUserLegacyParaUserWiseParasPerformanceModel> get_fad_ho_user_legacy_para_user_wise_performance(DateTime? FILTER_DATE)
-            {
-            return dBConnection.GetFADHOUserLegacyParaUserWiseOldParasPerformance(FILTER_DATE);
-            }
 
         [HttpPost]
         public string delete_legacy_para_responsibility(string PARA_REF, int PARA_ID, int PP_NO)
@@ -3174,12 +2950,6 @@ namespace AIS.Controllers
             return "{\"Status\":true,\"Message\":\"" + dBConnection.UpdateAuditChecklistDetail(PROCESS_DETAIL_ID, PROCESS_ID, SUB_PROCESS_ID, HEADING, V_ID, CONTROL_ID, ROLE_ID, RISK_ID, ANNEX_CODE) + "\"}";
             }
 
-        [HttpGet]
-        [HttpPost]
-        public List<ParaPositionReportModel> get_para_position_report(int P_ID = 0, int C_ID = 0)
-            {
-            return dBConnection.GetParaPositionReport(P_ID, C_ID);
-            }
 
         [HttpGet]
         [HttpPost]
@@ -3207,12 +2977,6 @@ namespace AIS.Controllers
             return dBConnection.GetEntitiesByParentEntityTypeId(ENTITY_TYPE_ID);
             }
 
-        [HttpGet]
-        [HttpPost]
-        public List<ParaPositionDetailsModel> get_para_position_details(int ENTITY_ID = 0, int AUDIT_PERIOD = 0)
-            {
-            return dBConnection.GetParaPositionParaDetails(ENTITY_ID, AUDIT_PERIOD);
-            }
         [HttpGet]
         [HttpPost]
         public List<ObservationStatusReversalModel> get_engagement_status_for_reversal(int ENG_ID = 0)
@@ -3324,13 +3088,6 @@ namespace AIS.Controllers
             }
         [HttpGet]
         [HttpPost]
-        public List<FADNewOldParaPerformanceModel> get_total_para_details_ho(int ENTITY_ID = 0)
-            {
-            return dBConnection.GetTotalParasDetailsHO(ENTITY_ID);
-
-            }
-        [HttpGet]
-        [HttpPost]
         public List<ObservationReversalModel> get_auditee_engagement_plan(int ENTITY_ID, int PERIOD)
             {
             return dBConnection.GetAuditeeEngagements(ENTITY_ID, PERIOD);
@@ -3366,20 +3123,6 @@ namespace AIS.Controllers
 
             }
 
-        [HttpGet]
-        [HttpPost]
-        public List<RoleActivityLogModel> get_role_activity_log(int ROLE_ID, int DEPT_ID, int AZ_ID)
-            {
-            return dBConnection.GetRoleActivityLog(ROLE_ID, DEPT_ID, AZ_ID);
-
-            }
-        [HttpGet]
-        [HttpPost]
-        public List<RoleActivityLogModel> get_user_activity_log(int PP_NO)
-            {
-            return dBConnection.GetUserActivityLog(PP_NO);
-
-            }
 
         #region BAC API CALLS
 
@@ -3654,12 +3397,6 @@ namespace AIS.Controllers
 
             }
 
-        [HttpGet]
-        [HttpPost]
-        public List<StatusWiseComplianceModel> get_status_wise_compliance(string AUDITEE_ID, string START_DATE, string END_DATE, string RELATION_CHECK)
-            {
-            return dBConnection.GetStatusWiseCompliance(AUDITEE_ID, START_DATE, END_DATE, RELATION_CHECK);
-            }
         [HttpPost]
         public List<AdminNewUsersAIS> admin_get_new_users()
             {
@@ -3722,13 +3459,6 @@ namespace AIS.Controllers
 
             }
 
-        [HttpGet]
-        [HttpPost]
-        public List<AuditPlanEngDetailReport> get_audit_plan_engagement_detailed_report(string AUDITED_BY, string PERIOD_ID)
-            {
-            return dBConnection.GetAuditPlanEngagementDetailedReport(AUDITED_BY, PERIOD_ID);
-
-            }
 
         [HttpGet]
         [HttpPost]
@@ -3801,13 +3531,6 @@ namespace AIS.Controllers
         public string Add_Working_Paper_Cash_Counter(string ENGID, string DVAULT, string NOVAULT, string TOTVAULT, string DSR, string NOSR, string TOTSR, string DIFF)
             {
             return "{\"Status\":true,\"Message\":\"" + dBConnection.AddWorkingCashCounter(ENGID, DVAULT, NOVAULT, TOTVAULT, DSR, NOSR, TOTSR, DIFF) + "\"}";
-
-            }
-        [HttpGet]
-        [HttpPost]
-        public List<AnnexureExerciseStatus> Get_Annexure_Exercise_Status()
-            {
-            return dBConnection.GetAnnexureExerciseStatus();
 
             }
 
@@ -3886,18 +3609,6 @@ namespace AIS.Controllers
             {
             return "{\"Status\":true,\"Message\":\"" + dBConnection.SubmitEntityConvToIslamicFromAdminPanel(FROM_ENT_ID, TO_ENT_ID) + "\"}";
             }
-        [HttpGet]
-        [HttpPost]
-        public List<GroupWiseUsersCountModel> get_group_wise_users_count()
-            {
-            return dBConnection.GetGroupWiseUsersCount();
-            }
-        [HttpGet]
-        [HttpPost]
-        public List<GroupWisePagesModel> get_group_wise_pages(string GROUP_ID)
-            {
-            return dBConnection.GetGroupWisePages(GROUP_ID);
-            }
 
         [HttpPost]
         public string add_compliance_flow(string ID, string ENTITY_TYPE_ID, string GROUP_ID, string PREV_GROUP_ID, string NEXT_GROUP_ID, string COMP_UP_STATUS, string COMP_DOWN_STATUS)
@@ -3917,22 +3628,6 @@ namespace AIS.Controllers
             return dBConnection.GetComplianceFlowByEntityType(ENTITY_TYPE_ID, GROUP_ID);
             }
 
-        [HttpGet]
-        [HttpPost]
-        public List<DepttWiseOutstandingParasModel> get_outstanding_paras_for_entity_type_id(string ENTITY_TYPE_ID, string P_REF_DATE, int P_USE_TRUNC = 0)
-            {
-            DateTime refDateValue = DateTime.Today;
-
-            if (!string.IsNullOrWhiteSpace(P_REF_DATE))
-                {
-                if (!DateTime.TryParseExact(P_REF_DATE, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out refDateValue))
-                    {
-                    refDateValue = DateTime.Today;
-                    }
-                }
-
-            return dBConnection.GetOutstandingParasForEntityTypeId(ENTITY_TYPE_ID, refDateValue, P_USE_TRUNC);
-            }
 
         [HttpGet]
         [HttpPost]
@@ -4027,25 +3722,7 @@ namespace AIS.Controllers
             return "{\"Status\":true,\"Message\":\"" + dBConnection.UpdateEntityAuditDepartment(ENT_AUD_DEPT_MODEL) + "\"}";
             }
 
-        [HttpGet]
-        [HttpPost]
-        public List<LoanDetailReportModel> get_loan_detail_report(int ENT_ID, int GLSUBID, int STATUSID, DateTime START_DATE, DateTime END_DATE)
-            {
-            return dBConnection.GetLoanDetailsReport(ENT_ID, GLSUBID, STATUSID, START_DATE, END_DATE);
-            }
 
-        [HttpGet]
-        [HttpPost]
-        public List<LoanDetailReportModel> get_cnic_loan_detail_report(string CNIC)
-            {
-            return dBConnection.GetCNICLoanDetailsReport(CNIC);
-            }
-        [HttpGet]
-        [HttpPost]
-        public List<DefaultHisotryLoanDetailReportModel> get_default_cnic_loan_detail_report(string CNIC, string LOAN_DISB_ID)
-            {
-            return dBConnection.GetDefaultCNICLoanDetailsReport(CNIC, LOAN_DISB_ID);
-            }
 
         [HttpGet]
         [HttpPost]
@@ -4275,12 +3952,6 @@ namespace AIS.Controllers
             return new List<SettledParasModel>(); //dBConnection.GetSettledParasForComplianceReport();
             }
 
-        [HttpGet]
-        [HttpPost]
-        public List<ComplianceOSParasModel> get_paras_for_compliance_summary_report()
-            {
-            return dBConnection.GetParasForComplianceSummaryReport();
-            }
 
         [HttpGet]
         [HttpPost]
@@ -4799,19 +4470,7 @@ namespace AIS.Controllers
             {
             return dBConnection.GetBiometAccountDocumentsSamplingDetails(AC_NO);
             }
-        [HttpGet]
-        [HttpPost]
-        public List<YearWiseOutstandingObservationsModel> get_year_wise_outstanding_observations(int ENTITY_ID)
-            {
-            return dBConnection.GetYearWiseOutstandingParas(ENTITY_ID);
-            }
 
-        [HttpGet]
-        [HttpPost]
-        public List<AuditeeOldParasModel> get_year_wise_outstanding_observations_detials(int ENTITY_ID, int AUDIT_PERIOD)
-            {
-            return dBConnection.GetYearWiseOutstandingParasDetails(ENTITY_ID, AUDIT_PERIOD);
-            }
 
         [HttpGet]
         [HttpPost]
@@ -4883,12 +4542,6 @@ namespace AIS.Controllers
             return "{\"Status\":true,\"Message\":\"" + dBConnection.RegenerateSampleofLoan(ENG_ID, LOAN_SAMPLE_ID) + "\"}";
             }
 
-        [HttpGet]
-        [HttpPost]
-        public List<YearWiseAllParasModel> get_year_wise_all_audit_paras(string AUDIT_PERIOD)
-            {
-            return dBConnection.GetYearWiseAllParas(AUDIT_PERIOD);
-            }
 
         [HttpGet]
         [HttpPost]
@@ -6606,12 +6259,6 @@ namespace AIS.Controllers
                 }
             }
 
-        [HttpGet]
-        [HttpPost]
-        public List<string> get_fad_desk_officer_audit_periods()
-            {
-            return dBConnection.GetDistinctFadDeskOfficerAuditPeriods();
-            }
 
         [HttpPost]
         public PublicHolidayModel add_public_holiday([FromBody] PublicHolidayModel model)

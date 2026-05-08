@@ -9,10 +9,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Content Remove="Views\Reports\master_cdms.cshtml" />
-  </ItemGroup>
-
-  <ItemGroup>
     <None Remove="Views\Planning\special_audit_criteria.cshtml~RF117b2e7.TMP" />
   </ItemGroup>
 
@@ -76,18 +72,6 @@
       <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
     </Content>
-    <Content Update="Views\Reports\analysis_of_settlement_paras.cshtml">
-      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
-      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
-    </Content>
-    <Content Update="Views\Reports\ho_total_paras_details.cshtml">
-      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
-      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
-    </Content>
-    <Content Update="Views\Reports\year_wise_outstanding_paras.cshtml">
-      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
-      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
-    </Content>
     <Content Update="Views\RiskAssessment\risk_rating_annex_wise.cshtml">
       <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
@@ -126,7 +110,6 @@
     <None Include="D:\AIS\ais\AIS\AIS\.editorconfig" />
     <None Include="Properties\PublishProfiles\FolderProfile.pubxml.user" />
     <None Include="Properties\PublishProfiles\FolderProfile1.pubxml.user" />
-    <None Include="Views\Reports\master_cdms.cshtml" />
   </ItemGroup>
 
   <ItemGroup>

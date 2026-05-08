@@ -1,43 +1,106 @@
-"Page_ID","ID","MENU_ID","PAGE_NAME","Menu","PAGE_PATH","PAGE_ORDER","STATUS","HIDE_MENU","SUB_MENU","PAGE_KEY"
-"120","120","1","Dashboard","HM","HM/dashboard","1","A","0","","dashboard"
-"123","123","4","Staff Position","Execution","Execution/staff_pos_info","6","A","1","","staff_pos_info"
-"124","124","4","Loan Documents","Execution","Execution/loan_case_document","6","A","1","","loan_case_document"
-"125","125","16","Functional Resposibility Wise Paras","Dashboard","Dashboard/functional_resp_wise_paras","3","A","0","","functional_resp_wise_paras"
-"148","148","4","Deposit Account","Execution","Execution/deposit_account","5","I","1","","deposit_account"
-"149","149","4","Deposit Account Details","Execution","Execution/deposit_account_details","6","A","1","","deposit_account_details"
-"151","151","4","Loan Schemes","Execution","Execution/loan_scheme","20","A","1","","loan_scheme"
-"152","152","4","Loan Schemes Yearly","Execution","Execution/loan_scheme_yearly","21","A","1","","loan_scheme_yearly"
-"167","167","19","Marking of Legacy Para as Settle / Un-settle","Execution","Execution/Settled_Para","7","A","0","","Settled_Para"
-"169","169","19","Authorize Marking of Legacy Para as Settle/ Un-settle","Execution","Execution/Authorize_Change_Settle_Para_Status","8","A","0","","Authorize_Change_Settle_Para_Status"
-"18","18","4","Departmental Observation","Execution","Execution/audit_execution","4","A","1","","audit_execution"
-"182","182","18","Review Gist and Recommendaiton","FAD","FAD/review_gist_recommendation","1","A","0","","review_gist_recommendation"
-"183","183","4","Update text of Legacy Paras ","Execution","Execution/Update_Legacy_Paras","19","A","0","","Update_Legacy_Paras"
-"188","188","4","FAD Update Legacy Paras","Execution","Execution/Update_Legacy_Paras_FAD","20","A","0","","Update_Legacy_Paras_FAD"
-"192","192","4","Add Legacy Para","Execution","Execution/Add_Legacy_Para","2","A","0","","Add_Legacy_Para"
-"193","193","4","Authorize Legacy para addition","Execution","Execution/Authorize_Adding_Legacy_Para","3","A","0","","Authorize_Adding_Legacy_Para"
-"194","194","4","Update Gist/Para no in legacy data ","Execution","Execution/Update_Gist_Para_No","4","A","0","","Update_Gist_Para_No"
-"195","195","4","Authorize Update of Legacy Para Gist Para","Execution","Execution/Authorize_Update_Legacy_Para_Gist_Para","5","A","0","","Authorize_Update_Legacy_Para_Gist_Para"
-"197","197","4","Update Legacy Paras HO","Execution","Execution/Update_Legacy_Paras_HO","2","A","0","","Update_Legacy_Paras_HO"
-"200","200","16","Risk Based Planning Criteria","dashboard","dashboard/no_entities_risk_based_planning","2","A","0","","no_entities_risk_based_planning"
-"201","201","16","Risk Based Planning (No of Entities)","dashboard","dashboard/no_entities_risk_based_planning_b","3","A","0","","no_entities_risk_based_planning_b"
-"216","216","10","Entity Relationship","AdministrationPanel","AdministrationPanel/entity_relationship","7","A","0","","entity_relationship"
-"220","220","19","Marking of New/AIS Para as Settle/Un-settle","PostCompliance","PostCompliance/change_status_new_Para","8","A","0","","change_status_new_Para"
-"222","222","19","Authorize Marking of New/AIS Para as Settle/ Un-settle","PostCompliance","PostCompliance/change_status_new_Para_authorize","6","A","0","","change_status_new_Para_authorize"
-"223","223","16","Functional Resposibility Wise Paras For HO","Dashboard","Dashboard/functional_resp_wise_paras_ho","5","A","0","","functional_resp_wise_paras_ho"
-"243","243","16","Para View","Dashboard","Dashboard/para_view","0","A","0","","para_view"
-"244","244","16","Reporting Office wise Observations","Dashboard","Dashboard/reporting_wise_obs","0","A","0","","reporting_wise_obs"
-"253","253","4","Manage Observation Revised","Execution","Execution/obs_management","1","A","1","","obs_management"
-"27","27","6","Control Violation","Setup","Setup/control_violation","1","A","0","","control_violation"
-"352","352","19","Para Status Change","PostCompliance","PostCompliance/change_para_status","9","A","0","","change_para_status"
-"353","353","19","Authorize Para Status Change","PostCompliance","PostCompliance/change_para_status_authorize","10","A","0","","change_para_status_authorize"
-"44","44","6","Audit Template","AdministrationPanel","AdministrationPanel/Audit_Template","12","I","1","","Audit_Template"
-"45","45","6","Audit Observation Text","AdministrationPanel","AdministrationPanel/Audit_Observation_text","13","I","1","","Audit_Observation_text"
-"48","48","8","Old Outstanding Paras","AuditeePortal","AuditeePortal/old_outstanding_paras","1","A","0","","old_outstanding_paras"
-"50","50","8","Observation Status","AdministrationPanel","AdministrationPanel/Memo_Status","3","I","0","","Memo_Status"
-"78","78","4","Pre Audit/Inspection Information","Execution","Execution/pre_audit_info","3","A","0","","pre_audit_info"
-"80","80","4","Pre Audit Infrormation Detail","Execution","Execution/pre_audit_info_detail","9","A","0","","pre_audit_info_detail"
-"81","81","4","GL Head Summary","Reports","Reports/glhead_summary","15","A","1","","glhead_summary"
-"82","82","4","Income Expenditure Report","Reports","Reports/income_expenditure","23","A","1","","income_expenditure"
-"87","87","4","Loan Case Details","Execution","Execution/loan_case_details","20","A","1","","loan_case_details"
-"88","88","4","Branch Deposit Information","Execution","Execution/branch_deposit_info","21","A","1","","branch_deposit_info"
-"89","89","4","Disbursement Information","Execution","Execution/disb_info","22","A","1","","disb_info"
+Page_ID,ID,MENU_ID,PAGE_NAME,Menu,PAGE_PATH,PAGE_ORDER,STATUS,HIDE_MENU,SUB_MENU,PAGE_KEY,
+120,120,1,Dashboard,HM,HM/dashboard,1,A,0,,dashboard,
+123,123,4,Staff Position,Execution,Execution/staff_pos_info,6,A,1,,staff_pos_info,
+124,124,4,Loan Documents,Execution,Execution/loan_case_document,6,A,1,,loan_case_document,
+125,125,16,Functional Resposibility Wise Paras,Dashboard,Dashboard/functional_resp_wise_paras,3,A,0,,functional_resp_wise_paras,
+148,148,4,Deposit Account,Execution,Execution/deposit_account,5,I,1,,deposit_account,
+149,149,4,Deposit Account Details,Execution,Execution/deposit_account_details,6,A,1,,deposit_account_details,
+151,151,4,Loan Schemes,Execution,Execution/loan_scheme,20,A,1,,loan_scheme,
+152,152,4,Loan Schemes Yearly,Execution,Execution/loan_scheme_yearly,21,A,1,,loan_scheme_yearly,
+167,167,19,Marking of Legacy Para as Settle / Un-settle,Execution,Execution/Settled_Para,7,A,0,,Settled_Para,
+169,169,19,Authorize Marking of Legacy Para as Settle/ Un-settle,Execution,Execution/Authorize_Change_Settle_Para_Status,8,A,0,,Authorize_Change_Settle_Para_Status,
+18,18,4,Departmental Observation,Execution,Execution/audit_execution,4,A,1,,audit_execution,
+182,182,18,Review Gist and Recommendaiton,FAD,FAD/review_gist_recommendation,1,A,0,,review_gist_recommendation,
+183,183,4,Update text of Legacy Paras ,Execution,Execution/Update_Legacy_Paras,19,A,0,,Update_Legacy_Paras,
+188,188,4,FAD Update Legacy Paras,Execution,Execution/Update_Legacy_Paras_FAD,20,A,0,,Update_Legacy_Paras_FAD,
+192,192,4,Add Legacy Para,Execution,Execution/Add_Legacy_Para,2,A,0,,Add_Legacy_Para,
+193,193,4,Authorize Legacy para addition,Execution,Execution/Authorize_Adding_Legacy_Para,3,A,0,,Authorize_Adding_Legacy_Para,
+194,194,4,Update Gist/Para no in legacy data ,Execution,Execution/Update_Gist_Para_No,4,A,0,,Update_Gist_Para_No,
+195,195,4,Authorize Update of Legacy Para Gist Para,Execution,Execution/Authorize_Update_Legacy_Para_Gist_Para,5,A,0,,Authorize_Update_Legacy_Para_Gist_Para,
+197,197,4,Update Legacy Paras HO,Execution,Execution/Update_Legacy_Paras_HO,2,A,0,,Update_Legacy_Paras_HO,
+200,200,16,Risk Based Planning Criteria,dashboard,dashboard/no_entities_risk_based_planning,2,A,0,,no_entities_risk_based_planning,
+201,201,16,Risk Based Planning (No of Entities),dashboard,dashboard/no_entities_risk_based_planning_b,3,A,0,,no_entities_risk_based_planning_b,
+216,216,10,Entity Relationship,AdministrationPanel,AdministrationPanel/entity_relationship,7,A,0,,entity_relationship,
+220,220,19,Marking of New/AIS Para as Settle/Un-settle,PostCompliance,PostCompliance/change_status_new_Para,8,A,0,,change_status_new_Para,
+222,222,19,Authorize Marking of New/AIS Para as Settle/ Un-settle,PostCompliance,PostCompliance/change_status_new_Para_authorize,6,A,0,,change_status_new_Para_authorize,
+223,223,16,Functional Resposibility Wise Paras For HO,Dashboard,Dashboard/functional_resp_wise_paras_ho,5,A,0,,functional_resp_wise_paras_ho,
+243,243,16,Para View,Dashboard,Dashboard/para_view,0,A,0,,para_view,
+244,244,16,Reporting Office wise Observations,Dashboard,Dashboard/reporting_wise_obs,0,A,0,,reporting_wise_obs,
+253,253,4,Manage Observation Revised,Execution,Execution/obs_management,1,A,1,,obs_management,
+27,27,6,Control Violation,Setup,Setup/control_violation,1,A,0,,control_violation,
+352,352,19,Para Status Change,PostCompliance,PostCompliance/change_para_status,9,A,0,,change_para_status,
+353,353,19,Authorize Para Status Change,PostCompliance,PostCompliance/change_para_status_authorize,10,A,0,,change_para_status_authorize,
+44,44,6,Audit Template,AdministrationPanel,AdministrationPanel/Audit_Template,12,I,1,,Audit_Template,
+45,45,6,Audit Observation Text,AdministrationPanel,AdministrationPanel/Audit_Observation_text,13,I,1,,Audit_Observation_text,
+48,48,8,Old Outstanding Paras,AuditeePortal,AuditeePortal/old_outstanding_paras,1,A,0,,old_outstanding_paras,
+50,50,8,Observation Status,AdministrationPanel,AdministrationPanel/Memo_Status,3,I,0,,Memo_Status,
+78,78,4,Pre Audit/Inspection Information,Execution,Execution/pre_audit_info,3,A,0,,pre_audit_info,
+80,80,4,Pre Audit Infrormation Detail,Execution,Execution/pre_audit_info_detail,9,A,0,,pre_audit_info_detail,
+81,81,4,GL Head Summary,Reports,Reports/glhead_summary,15,A,1,,glhead_summary,
+82,82,4,Income Expenditure Report,Reports,Reports/income_expenditure,23,A,1,,income_expenditure,
+87,87,4,Loan Case Details,Execution,Execution/loan_case_details,20,A,1,,loan_case_details,
+88,88,4,Branch Deposit Information,Execution,Execution/branch_deposit_info,21,A,1,,branch_deposit_info,
+89,89,4,Disbursement Information,Execution,Execution/disb_info,22,A,1,,disb_info,
+215,215,10,Observation Reversal / Re-Numbering,AdministrationPanel,AdministrationPanel/setup_observation_reversal,7,A,0,,setup_observation_reversal,215
+248,248,16,Entity wise Observations Detail,Dashboard,Dashboard/entity_wise_obs_detail,1,A,1,,entity_wise_obs_detail,248
+162,162,4,Auditee Observations Report,Execution,Execution/auditee_observations_report,16,A,1,,auditee_observations_report,162
+150,150,4,Concluding Closing Audit,Execution,Execution/Concluding_Closing_Audit,25,A,0,,Concluding_Closing_Audit,150
+26,26,5,Aging of Observations,Reports,Reports/aging_observations,7,A,0,,aging_observations,26
+176,176,5,Analysis of Settlement of Audit Paras,Reports,Reports/analysis_of_settlement_paras,5,A,0,,analysis_of_settlement_paras,176
+111,111,5,Annexure of Violation,Reports,Reports/annex_violation,9,I,0,,annex_violation,111
+252,252,5,Annexure Exercise Status,Reports,Reports/annexure_exercise_status,1,A,0,,annexure_exercise_status,252
+20,20,5,Approved Plan,Reports,Reports/approved_plan,1,A,0,,approved_plan,20
+268,268,5,Audit Para Reconciliation,Reports,Reports/audit_para_recon,8,A,0,,audit_para_recon,268
+168,168,5,Audit Period Or Entity Wise Report,Reports,Reports/Audit_Period_Or_Entity_Wise_Report,5,A,0,,Audit_Period_Or_Entity_Wise_Report,168
+145,145,5,Audit Plan Engagement,Reports,Reports/Audit_Plan_Engagement,1,A,0,,Audit_Plan_Engagement,145
+103,103,5,Audit Report,Reports,Reports/audit_report,1,A,0,,audit_report,103
+117,117,5,Audit Type Wise Report,Reports,Reports/audit_typewise_report,15,A,0,,audit_typewise_report,117
+106,106,5,Branch Audit Position,Reports,Reports/br_au_pos,4,A,0,,br_au_pos,106
+114,114,5,CAD/ ISAD Performance Achievement,Reports,Reports/cad_isad_achievement,12,A,0,,cad_isad_achievement,114
+164,164,5,Default Loan Report,Reports,Reports/cnic_default_loan_report,2,A,1,,cnic_default_loan_report,164
+230,230,5,CNIC Wise All Loans,Reports,Reports/cnic_loan_report,2,A,1,,cnic_loan_report,230
+154,154,5,Current Audit Progress,Reports,Reports/current_audit_progress,3,A,0,,current_audit_progress,154
+155,155,5,Active Users,Reports,Reports/current_sessions,4,A,0,,current_sessions,155
+23,23,5,Department Performance,Reports,Reports/department_performance,4,A,0,,department_performance,23
+261,261,5,Entity wise Aging of Paras,Reports,Reports/dept_wise_outstanding_paras,1,A,0,,dept_wise_outstanding_paras,261
+112,112,5,Div Wise Outstanding Para,Reports,Reports/div_out_paras,10,A,0,,div_out_paras,112
+113,113,5,Div Wise List of Segregated Para,Reports,Reports/div_seg_paras,11,A,0,,div_seg_paras,113
+105,105,5,Employee Information,Reports,Reports/emp_info,3,A,0,,emp_info,105
+116,116,5,Execution/ Statistics,Reports,Reports/exec_stats,14,A,0,,exec_stats,116
+174,174,5,FAD Aging of Audit Paras Monthly,Reports,Reports/FAD_Aging_of_Audit_Paras_Monthly,8,A,0,21,FAD_Aging_of_Audit_Paras_Monthly,174
+175,175,5,FAD Audit Plan,Reports,Reports/FAD_Audit_Plan,9,A,0,,FAD_Audit_Plan,175
+179,179,5,FAD Branch Audit Status,Reports,Reports/FAD_Branch_Audit_Status,14,A,0,,FAD_Branch_Audit_Status,179
+178,178,5,FAD Branch Risk Rating,Reports,Reports/FAD_Branch_Risk_Rating,13,A,0,,FAD_Branch_Risk_Rating,178
+180,180,5,FAD Compliance Position Fortnightly(FAD Level),Reports,Reports/FAD_Compliance_Pos_Fortnightly_FAD_Level,12,A,0,,FAD_Compliance_Pos_Fortnightly_FAD_Level,180
+177,177,5,FAD Compliance Position Fortnightly (Zone Level),Reports,Reports/FAD_Compliance_Pos_Fortnightly_Zone_Level,11,A,0,,FAD_Compliance_Pos_Fortnightly_Zone_Level,177
+173,173,5,FAD Gistwise Details Monthly,Reports,Reports/FAD_Gistwise_Details_Monthly,7,A,0,,FAD_Gistwise_Details_Monthly,173
+196,196,5,FAD HO User Legacy Para User Wise Performance ,Reports,Reports/FAD_HO_User_Legacy_Para_Performance,5,A,0,21,FAD_HO_User_Legacy_Para_Performance,196
+185,185,5,FAD Legacy Para Performance,Reports,Reports/FAD_Legacy_Para_Performance,13,A,0,,FAD_Legacy_Para_Performance,185
+189,189,5,FAD Legacy Para User Wise Performance,Reports,Reports/FAD_Legacy_User_Wise_Performance,4,A,0,21,FAD_Legacy_User_Wise_Performance,189
+190,190,5,FAD Legacy Para Zone Wise Performance,Reports,Reports/FAD_Legacy_Zone_Wise_Performance,5,A,0,21,FAD_Legacy_Zone_Wise_Performance,190
+187,187,5,Violation Wise Paras of Current Year,Reports,Reports/FAD_New_Old_Para_Performance,15,A,0,21,FAD_New_Old_Para_Performance,187
+186,186,5,FAD New Para Performance,Reports,Reports/FAD_New_Para_Performance,14,A,0,,FAD_New_Para_Performance,186
+153,153,5,Violation Wise Total Paras,Reports,Reports/fad_para_res,2,A,0,21,fad_para_res,153
+85,85,4,GL Head Details,Reports,Reports/glhead_details,17,A,1,,glhead_details,85
+144,144,5,GLHead Transaction Details,Reports,Reports/glhead_transaction_details,10,A,1,,glhead_transaction_details,144
+147,147,5,GLHead Year Wise Summary,Reports,Reports/glhead_yearwise_summary,12,A,1,,glhead_yearwise_summary,147
+259,259,5,Group Wise Pages,Reports,Reports/group_wise_pages,1,A,0,,group_wise_pages,259
+224,224,5,Total Para Details HO,Reports,Reports/ho_total_paras_details,5,A,0,,ho_total_paras_details,224
+104,104,5,Loan Report,Reports,Reports/loan_report,0,A,0,,loan_report,104
+232,232,5,Bucket In Bucket Out,Reports,Reports/loan_transfer_report,3,A,0,,loan_transfer_report,232
+110,110,5,Management Audit Report (Zone Wise),Reports,Reports/management_au_report_zonewise,8,A,0,,management_au_report_zonewise,110
+306,306,5,Master CDMS Transactions,Reports,Reports/master_cdms_trns,6,A,0,,master_cdms_trns,306
+109,109,5,Monthwise Breakup of Settlement of Paras,Reports,Reports/monthwise_settlement_paras,7,A,0,,monthwise_settlement_paras,109
+25,25,5,Risk Wise Observations,Reports,Reports/riskwise_observations,6,A,0,,riskwise_observations,25
+229,229,5,Role Activity Logs,Reports,Reports/role_activity_logs,2,A,0,,role_activity_logs,229
+22,22,5,Role wise Users,Reports,Reports/role_wise_user,3,A,0,,role_wise_user,22
+107,107,5,Settlement of Old Paras,Reports,Reports/settlement_old_paras,5,A,0,,settlement_old_paras,107
+24,24,5,Significant Findings,Reports,Reports/significant_finding,5,A,0,,significant_finding,24
+250,250,5,Status Wise Compliance,Reports,Reports/status_wise_compliance,5,A,0,,status_wise_compliance,250
+21,21,5,User Activity Graph,Reports,Reports/user_activity_graph,2,A,0,,user_activity_graph,21
+228,228,5,User Activity Logs,Reports,Reports/user_activity_logs,1,A,0,,user_activity_logs,228
+118,118,5,User wise Performance,Reports,Reports/user_wise_performance,2,A,0,,user_wise_performance,118
+301,301,5,Year wise Outstanding Paras,Reports,Reports/year_wise_outstanding_paras,1,A,0,,year_wise_outstanding_paras,301
+170,170,5,Zone Branch Wise Para Position,Reports,Reports/zone_branch_wise_para_position_report,6,A,0,,zone_branch_wise_para_position_report,170
+119,119,5,Zone wise Performancre,Reports,Reports/zone_wise_performance,3,A,0,,zone_wise_performance,119
+108,108,5,Zonewise Settlement of Paras,Reports,Reports/zonewise_settlement_paras,6,A,0,,zonewise_settlement_paras,108

@@ -395,10 +395,7 @@ namespace AIS.Controllers
         [HttpGet("/HM/dashboard")]
         public IActionResult dashboard()
             {
-            return RenderArchiveView("dashboard", () =>
-            {
-                ViewData["ActiveInactive"] = archiveDbConnection.GetActiveInactiveChartData();
-            });
+            return RenderArchiveView("dashboard");
             }
 
         private IActionResult RenderArchiveView(string viewName, Action prepareViewData = null)

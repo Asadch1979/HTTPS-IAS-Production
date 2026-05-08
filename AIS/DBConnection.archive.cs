@@ -43,7 +43,6 @@ namespace AIS.Controllers
         public object GetControlViolations() => _dbConnection.GetControlViolations();
         public object Getrealtionshiptype(int pageId) => _dbConnection.Getrealtionshiptype(pageId);
         public object GetCurrentParasEntitiesForStatusChange() => _dbConnection.GetCurrentParasEntitiesForStatusChange();
-        public ActiveInactiveChart GetActiveInactiveChartData() => _dbConnection.GetActiveInactiveChartData();
 
         public List<AuditeeOldParasModel> GetAuditeeOldParas(int entityId = 0) => _dbConnection.GetAuditeeOldParas(entityId);
         public List<OldParasModelCAD> GetOldParasManagement() => _dbConnection.GetOldParasManagement();
