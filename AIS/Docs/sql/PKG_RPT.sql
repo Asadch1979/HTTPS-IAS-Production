@@ -105,6 +105,27 @@
                                                  endDate   date,
                                                  io_cursor OUT t_cursor);
 
+  PROCEDURE P_GET_SETTLED_PARA_ENTITIES(P_NO      IN NUMBER,
+                                        ENT_ID    IN NUMBER,
+                                        R_ID      IN NUMBER,
+                                        io_cursor OUT t_cursor);
+
+  PROCEDURE P_GET_SETTLED_PARA_DETAILS(P_NO       IN NUMBER,
+                                       ENT_ID     IN NUMBER,
+                                       R_ID       IN NUMBER,
+                                       auditee_id IN NUMBER,
+                                       io_cursor  OUT t_cursor);
+
+  PROCEDURE P_GET_SETTLED_PARA_DETAILS_PARA_COMPLIANCE(P_COM_ID  IN NUMBER,
+                                                       io_cursor OUT t_cursor);
+
+  PROCEDURE P_GetParasForCompliancehistory(P_COM_ID  IN NUMBER,
+                                           io_cursor OUT t_cursor);
+
+  PROCEDURE P_GetParasForComplianceforhistory(P_C_CYCLE IN NUMBER,
+                                              P_COM_ID   IN NUMBER,
+                                              io_cursor  OUT t_cursor);
+
 End PKG_RPT;
 /
 
@@ -2008,6 +2029,181 @@ create or replace package body PKG_RPT is
        where c.para_added_on between trunc(startDate) and trunc(endDate);
   
   end P_GET_FAD_DESK_OFFICER_RPT_BY_PERIOD;
+
+CREATE OR REPLACE VIEW V_P_GET_SETTLED_PARA_DETAILS AS
+SELECT DISTINCT
+       m.p_name        AS reporting_office,
+       m.c_name        AS entity_name,
+       c.audit_period,
+       c.com_id,
+       c.para_no,
+       c.setteled_by   AS settled_by,
+       c.setteled_on   AS settled_on,
+       r.description   AS risk,
+       c.ind           AS para_category,
+       c.com_cycle     AS compliance_cycle,
+       c.entity_id,
+       m.auditedby
+  FROM ais_t_au_post_compliance c
+ INNER JOIN ais_t_au_post_compliance_history h
+    ON h.com_id = c.com_id
+ INNER JOIN t_auditee_entities_maping m
+    ON m.entity_id = c.entity_id
+ INNER JOIN t_risk r
+    ON r.rating = c.risk
+ WHERE c.setteled_on IS NOT NULL;
+/
+
+PROCEDURE P_GET_SETTLED_PARA_ENTITIES
+(
+    P_NO      IN  NUMBER,
+    ENT_ID    IN  NUMBER,
+    R_ID      IN  NUMBER,
+    io_cursor OUT t_cursor
+)
+AS
+BEGIN
+    IF R_ID IN (1, 3, 5, 7, 11) THEN
+
+        OPEN io_cursor FOR
+            SELECT DISTINCT
+                   e.name,
+                   e.entity_id
+              FROM V_P_GET_SETTLED_PARA_DETAILS f
+             INNER JOIN t_auditee_entities e
+                ON e.entity_id = f.auditedby
+             WHERE f.settled_on IS NOT NULL;
+
+    ELSE
+
+        OPEN io_cursor FOR
+            SELECT DISTINCT
+                   e.name,
+                   e.entity_id
+              FROM V_P_GET_SETTLED_PARA_DETAILS f
+             INNER JOIN t_auditee_entities e
+                ON e.entity_id = f.entity_id
+             INNER JOIN t_auditee_entities_maping_fad fad
+                ON fad.entity_id = f.auditedby
+             INNER JOIN T_AU_POST_COMPLIANCE_SETTLEMETMENT_HISTORY h
+                ON h.entity_id = f.entity_id
+             WHERE fad.ppno = P_NO
+               AND h.reviewed_by IS NULL;
+
+    END IF;
+END P_GET_SETTLED_PARA_ENTITIES;
+
+PROCEDURE P_GET_SETTLED_PARA_DETAILS
+(
+    P_NO       IN  NUMBER,
+    ENT_ID     IN  NUMBER,
+    R_ID       IN  NUMBER,
+    auditee_id IN  NUMBER,
+    io_cursor  OUT t_cursor
+)
+AS
+BEGIN
+    OPEN io_cursor FOR
+        SELECT d.reporting_office,
+               d.entity_name,
+               d.audit_period,
+               d.para_no,
+               d.settled_by,
+               d.settled_on,
+               d.risk,
+               d.para_category,
+               d.com_id,
+               d.compliance_cycle,
+               d.entity_id,
+               d.auditedby
+          FROM V_P_GET_SETTLED_PARA_DETAILS d
+         WHERE d.entity_id = auditee_id
+            OR d.auditedby = auditee_id
+         ORDER BY d.settled_on;
+
+END P_GET_SETTLED_PARA_DETAILS;
+
+PROCEDURE P_GET_SETTLED_PARA_DETAILS_PARA_COMPLIANCE
+(
+    P_COM_ID  IN  NUMBER,
+    io_cursor OUT t_cursor
+)
+AS
+BEGIN
+    OPEN io_cursor FOR
+        SELECT h.comment_by_ppno AS attended_by,
+               d.description     AS designation,
+               emp.employeefirstname || ' ' || emp.employeelastname AS emp_name,
+               h.comments        AS remarks,
+               f.com_cycle       AS compliance_cycle
+          FROM ais_t_au_post_compliance_history h
+         INNER JOIN ais_t_au_post_compliance f
+            ON f.com_id = h.com_id
+         INNER JOIN v_service_employeeinfo emp
+            ON emp.ppno = h.comment_by_ppno
+         INNER JOIN t_groups d
+            ON d.group_id = h.com_stage
+         WHERE f.com_id = P_COM_ID
+         ORDER BY f.com_cycle, h.comment_on;
+
+END P_GET_SETTLED_PARA_DETAILS_PARA_COMPLIANCE;
+
+PROCEDURE P_GetParasForCompliancehistory
+(
+    P_COM_ID  IN  NUMBER,
+    io_cursor OUT t_cursor
+)
+AS
+BEGIN
+    OPEN io_cursor FOR
+        SELECT h.hist_id,
+               h.com_id,
+               h.com_cycle,
+               h.com_status,
+               h.com_stage,
+               NVL(g.description, h.com_stage) AS comment_by_role,
+               h.comment_by_ppno AS pp_no,
+               NVL(emp.employeefirstname || ' ' || emp.employeelastname, '') AS name,
+               '' AS designation,
+               h.comment_on,
+               h.comments,
+               h.com_flow
+          FROM ais_t_au_post_compliance_history h
+          LEFT JOIN t_groups g
+            ON g.group_id = h.com_stage
+          LEFT JOIN v_service_employeeinfo emp
+            ON emp.ppno = h.comment_by_ppno
+         WHERE h.com_id = P_COM_ID
+         ORDER BY h.com_cycle, h.comment_on, h.hist_id;
+END P_GetParasForCompliancehistory;
+
+PROCEDURE P_GetParasForComplianceforhistory
+(
+    P_C_CYCLE IN  NUMBER,
+    P_COM_ID   IN  NUMBER,
+    io_cursor  OUT t_cursor
+)
+AS
+BEGIN
+    OPEN io_cursor FOR
+        SELECT pct.reply,
+               pct.text_id,
+               pc.para_no,
+               para_text.gist_of_paras,
+               para_text.text AS para_text
+          FROM ais_t_au_post_compliance pc
+          LEFT JOIN ais_t_au_post_compliance_text pct
+            ON pct.com_id = pc.com_id
+           AND pct.com_cycle = P_C_CYCLE
+          LEFT JOIN VM_GET_ALL_PARA_TEXT para_text
+            ON para_text.entity_id = pc.entity_id
+           AND TO_CHAR(para_text.audit_period) = TO_CHAR(pc.audit_period)
+           AND UPPER(TRIM(para_text.para_no)) = UPPER(TRIM(pc.para_no))
+         WHERE pc.com_id = P_COM_ID
+           AND ROWNUM = 1;
+END P_GetParasForComplianceforhistory;
+
+
 
 End PKG_RPT;
 /

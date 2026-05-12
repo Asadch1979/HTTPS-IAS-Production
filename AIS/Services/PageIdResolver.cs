@@ -288,6 +288,7 @@ namespace AIS.Services
                 ["/FieldAuditReport/StaffSnapshot"] = 970105,
                 ["/FieldAuditReport/FinalizeReport"] = 970106,
                 ["/Reports/consolidated_outstanding_paras_pdf"] = 970107,
+                ["/Reports/monitoring_of_para_settlement"] = 249,
                 ["/OutstandingParasPdf/GeneratePdf"] = 970107,
                 ["/OutstandingParasPdf/LoadEntities"] = 970107,
                 ["/OutstandingParasPdf/GeneratePdfByEngId"] = 970107,

@@ -19,10 +19,6 @@ namespace AIS.Models
         public string RISK { get; set; }
         [PlainText]
         public string PARA_CATEGORY { get; set; }
-        [PlainText]
-        public string REF_P { get; set; }
-        
-        public string AU_OBS_ID { get; set; }
         public string COM_ID { get; set; }
         [PlainText]
         public string COMPLIANCE_CYCLE { get; set; }

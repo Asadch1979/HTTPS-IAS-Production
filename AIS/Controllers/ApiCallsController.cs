@@ -3044,9 +3044,9 @@ namespace AIS.Controllers
 
         [HttpGet]
         [HttpPost]
-        public List<ComplianceHistoryModel> get_settled_para_compliance_history(string REF_P, string OBS_ID)
+        public List<PostComplianceHistoryModel> get_settled_para_compliance_history(string COM_ID)
             {
-            return dBConnection.GetSettledParaComplianceHistory(REF_P, OBS_ID);
+            return dBConnection.GetSettledParaComplianceHistory(COM_ID);
 
             }
 
@@ -3390,13 +3390,6 @@ namespace AIS.Controllers
             {
             return dBConnection.GetSettledParasForMonitoring(ENTITY_ID);
             }
-        [HttpPost]
-        public string submit_settled_para_compliance_comments(string REF_P, string OBS_ID, string COMMENTS)
-            {
-            return "{\"Status\":true,\"Message\":\"" + dBConnection.SaveSettledParaCompliacne(REF_P, OBS_ID, COMMENTS) + "\"}";
-
-            }
-
         [HttpPost]
         public List<AdminNewUsersAIS> admin_get_new_users()
             {

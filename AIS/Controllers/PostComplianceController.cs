@@ -205,24 +205,6 @@ namespace AIS.Controllers
                 }
             }
 
-        public IActionResult monitoring_of_para_settlement()
-            {
-            ViewData["TopMenu"] = tm.GetTopMenus();
-            ViewData["TopMenuPages"] = tm.GetTopMenusPages();
-            ViewData["EntitiesList"] = dBConnection.GetSettledParasEntitiesForMonitoringFAD();
-            if (!User.Identity.IsAuthenticated)
-                return RedirectToAction("Index", "Login");
-            else
-                {
-                if (!this.UserHasPagePermissionForCurrentAction(sessionHandler)) //MIGRATION_PERMISSION_CHECK (Controller)
-                    {
-                    return RedirectToAction("Index", "PageNotFound");
-                    }
-                else
-                    return View();
-                }
-            }
-
         [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
         public IActionResult Error()
             {

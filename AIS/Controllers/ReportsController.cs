@@ -76,6 +76,14 @@ namespace AIS.Controllers
             return ReportView();
             }
 
+        public IActionResult monitoring_of_para_settlement()
+            {
+            ViewData["TopMenu"] = tm.GetTopMenus();
+            ViewData["TopMenuPages"] = tm.GetTopMenusPages();
+            ViewData["EntitiesList"] = dBConnection.GetSettledParasEntitiesForMonitoringFAD();
+            return ReportView();
+            }
+
         public IActionResult eng_plan_delay_analysis_report()
             {
             ViewData["TopMenu"] = tm.GetTopMenus();

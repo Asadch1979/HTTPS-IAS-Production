@@ -4,11 +4,6 @@ namespace AIS.Models
     public class ComplianceHistoryModel
         {
         public int ID { get; set; }
-        [PlainText]
-        public string REF_P { get; set; }
-        [PlainText]
-        public string OBS_ID { get; set; }
-        [PlainText]
         public string REMARKS { get; set; }
         [PlainText]
         public string ATTENDED_ON { get; set; }

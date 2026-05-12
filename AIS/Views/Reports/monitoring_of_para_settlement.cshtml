@@ -1,0 +1,116 @@
+@{
+    ViewData["Title"] = "Settled Para Monitoring Report";
+    Layout = "_Layout";
+}
+
+<div class="container-fluid mt-3">
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+        <div>
+            <h3 class="mb-1" style="color:#be0e43">Settled Para Monitoring Report</h3>
+            <div class="text-muted">Read-only report of settled para details and compliance history.</div>
+        </div>
+    </div>
+
+    <div class="row align-items-end g-3 mb-3">
+        <div class="col-md-8 col-lg-6">
+            <label for="entitySelectField" class="form-label fw-bold">Entity</label>
+            <select id="entitySelectField" class="form-control form-select">
+                <option value="0" id="0">--Select Audit Entity--</option>
+                @{
+                    if (ViewData["EntitiesList"] != null)
+                        {
+                        foreach (var item in (dynamic)(ViewData["EntitiesList"]))
+                            {
+                            <option value="@item.ID" id="@item.ID">@item.ENTITY_NAME</option>
+                            }
+                        }
+                }
+            </select>
+        </div>
+    </div>
+
+    <div class="table-responsive">
+        <table id="manageObsPanel" class="table table-hover table-bordered table-striped align-middle w-100">
+            <thead style="background-color:#19875478 !important;">
+                <tr>
+                    <th>Reporting/Controlling Office</th>
+                    <th>Entity Name</th>
+                    <th>Audit Year</th>
+                    <th>Para No.</th>
+                    <th>Settled By</th>
+                    <th>Settled On</th>
+                    <th>Risk</th>
+                    <th>Compliance History</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+</div>
+
+<div id="viewParaComplianceModel" class="modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-xl" role="document" style="min-width:95% !important;">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">Compliance History</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="table-responsive">
+                    <table id="manageComplianceHistPanel" class="table table-hover table-bordered table-striped align-middle w-100">
+                        <thead style="background-color:#19875478 !important;">
+                            <tr>
+                                <th>Compliance Cycle</th>
+                                <th>PP Number</th>
+                                <th>Name</th>
+                                <th>Remarks Role</th>
+                                <th>Remarks</th>
+                                <th>Compliance Text</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="viewParaComplianceTextModel" class="modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-xl" role="document" style="min-width:85% !important;">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">Observation</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form>
+                    <div class="form-group">
+                        <label for="viewParaDetails_paraNo">Para No.</label>
+                        <input id="viewParaDetails_paraNo" class="form-control" disabled="disabled" />
+                    </div>
+                    <div class="form-group">
+                        <label for="viewParaDetails_gist">Gist of Paras</label>
+                        <input id="viewParaDetails_gist" class="form-control" disabled="disabled" />
+                    </div>
+                    <div class="form-group">
+                        <label for="viewParaDetails_paraText">Para Text</label>
+                        <div id="viewParaDetails_paraText" class="form-control container-clob" style="height:auto; min-height:120px;"></div>
+                    </div>
+                    <div class="form-group mt-3">
+                        <label for="viewParaDetails_complianceReply">Compliance Reply</label>
+                        <div id="viewParaDetails_complianceReply" class="form-control container-clob" style="height:auto; min-height:120px;"></div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="~/js/csp/Views_Reports_monitoring_of_para_settlement.js?v=1"></script>

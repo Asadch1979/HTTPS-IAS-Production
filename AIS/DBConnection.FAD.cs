@@ -1347,7 +1347,7 @@ ORDER BY SUB_SECTION_NO, INDEX_ID";
             List<AuditeeOldParasModel> list = new List<AuditeeOldParasModel>();
             using (OracleCommand cmd = con.CreateCommand())
                 {
-                cmd.CommandText = "pkg_FAD.P_GET_SETTLED_PARA_ENTITIES";
+                cmd.CommandText = "PKG_RPT.P_GET_SETTLED_PARA_ENTITIES";
                 cmd.CommandType = CommandType.StoredProcedure;
                 cmd.Parameters.Clear();
                 cmd.Parameters.Add("P_NO", OracleDbType.Int32).Value = loggedInUser.PPNumber;
@@ -1998,121 +1998,6 @@ ORDER BY SUB_SECTION_NO, INDEX_ID";
                 }
             con.Dispose();
             return resp;
-            }
-
-        public List<SettledParasMonitoringModel> GetSettledParasForMonitoring(int ENTITY_ID)
-            {
-            var sessionHandler = CreateSessionHandler();
-            var con = this.DatabaseConnection();
-            var loggedInUser = sessionHandler.GetUser();
-            if (loggedInUser == null
-                || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
-                || string.IsNullOrWhiteSpace(loggedInUser.PPNumber)
-                || loggedInUser.UserRoleID <= 0)
-                {
-                return new List<SettledParasMonitoringModel>();
-                }
-            List<SettledParasMonitoringModel> list = new List<SettledParasMonitoringModel>();
-            using (OracleCommand cmd = con.CreateCommand())
-
-                {
-                cmd.CommandText = "pkg_fad.P_GET_SETTLED_PARA_DETAILS";
-                cmd.CommandType = CommandType.StoredProcedure;
-                cmd.Parameters.Clear();
-                cmd.Parameters.Add("P_NO", OracleDbType.Int32).Value = loggedInUser.PPNumber;
-                cmd.Parameters.Add("ENT_ID", OracleDbType.Varchar2).Value = loggedInUser.UserEntityID;
-                cmd.Parameters.Add("R_ID", OracleDbType.Varchar2).Value = loggedInUser.UserRoleID;
-                cmd.Parameters.Add("AUDITEE_ID", OracleDbType.Int32).Value = ENTITY_ID;
-                cmd.Parameters.Add("T_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
-                OracleDataReader rdr = cmd.ExecuteReader();
-                while (rdr.Read())
-                    {
-                    SettledParasMonitoringModel chk = new SettledParasMonitoringModel();
-                    chk.REPORTING_OFFICE = rdr["REPORTING_OFFICE"].ToString();
-                    chk.ENTITY_NAME = rdr["ENTITY_NAME"].ToString();
-                    chk.AUDIT_PERIOD = rdr["AUDIT_PERIOD"].ToString();
-                    chk.AU_OBS_ID = rdr["AU_OBS_ID"].ToString();
-                    chk.COM_ID = rdr["COM_ID"].ToString();
-                    chk.REF_P = rdr["REF_P"].ToString();
-                    chk.SETTLED_BY = rdr["SETTLED_BY"].ToString();
-                    chk.SETTLED_ON = rdr["settled_on"].ToString();
-                    chk.RISK = rdr["RISK"].ToString();
-                    chk.PARA_NO = rdr["PARA_NO"].ToString();
-                    chk.PARA_CATEGORY = rdr["PARA_CATEGORY"].ToString();
-                    chk.COMPLIANCE_CYCLE = rdr["COMPLIANCE_CYCLE"].ToString();
-                    chk.AUDITED_BY = rdr["AUDITEDBY"].ToString();
-                    chk.ENTITY_ID = rdr["ENTITY_ID"].ToString();
-                    list.Add(chk);
-                    }
-
-                }
-            con.Dispose();
-            return list;
-            }
-
-        public List<ComplianceHistoryModel> GetSettledParaComplianceHistory(string REF_P, string OBS_ID)
-            {
-
-            List<ComplianceHistoryModel> stList = new List<ComplianceHistoryModel>();
-            var con = this.DatabaseConnection();
-
-            using (OracleCommand cmd = con.CreateCommand())
-                {
-                cmd.CommandText = "pkg_fad.P_GET_SETTLED_PARA_DETAILS_PARA_COMPLIANCE";
-                cmd.CommandType = CommandType.StoredProcedure;
-                cmd.Parameters.Clear();
-                cmd.Parameters.Add("REFP", OracleDbType.Varchar2).Value = REF_P;
-                cmd.Parameters.Add("OBS_ID", OracleDbType.Varchar2).Value = OBS_ID;
-                cmd.Parameters.Add("T_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
-                OracleDataReader rdr = cmd.ExecuteReader();
-                while (rdr.Read())
-                    {
-                    ComplianceHistoryModel st = new ComplianceHistoryModel();
-
-                    st.REMARKS = rdr["remarks"].ToString();
-                    st.ATTENDED_BY = rdr["attended_by"].ToString();
-
-                    st.NAME = rdr["EMP_NAME"].ToString();
-                    st.DESIGNATION = rdr["DESIGNATION"].ToString();
-                    st.COM_SEQ_NO = rdr["COMPLIANCE_CYCLE"].ToString();
-                    stList.Add(st);
-                    }
-                }
-            con.Dispose();
-            return stList;
-
-            }
-
-        public string SaveSettledParaCompliacne(string REF_P, string OBS_ID, string COMMENTS)
-            {
-
-            string resp = "";
-            var con = this.DatabaseConnection();
-            using (OracleCommand cmd = con.CreateCommand())
-                {
-                cmd.CommandText = "pkg_fad.P_GET_SETTLED_PARA_DETAILS_PARA_COMPLIANCE";
-                cmd.CommandType = CommandType.StoredProcedure;
-                cmd.Parameters.Clear();
-                cmd.Parameters.Add("REFP", OracleDbType.Varchar2).Value = REF_P;
-                cmd.Parameters.Add("OBS_ID", OracleDbType.Varchar2).Value = OBS_ID;
-                cmd.Parameters.Add("T_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
-                OracleDataReader rdr = cmd.ExecuteReader();
-                while (rdr.Read())
-                    {
-                    ComplianceHistoryModel st = new ComplianceHistoryModel();
-
-                    st.REMARKS = rdr["remarks"].ToString();
-                    st.ATTENDED_BY = rdr["attended_by"].ToString();
-
-                    st.NAME = rdr["EMP_NAME"].ToString();
-                    st.DESIGNATION = rdr["DESIGNATION"].ToString();
-                    st.COM_SEQ_NO = rdr["COMPLIANCE_CYCLE"].ToString();
-                    resp = "";
-                    }
-                }
-            con.Dispose();
-            return resp;
-
             }
 
         public List<ObservationReversalModel> GetEngagementDetailsForFadReview(int ENTITY_ID = 0)

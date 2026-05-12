@@ -12,6 +12,8 @@ namespace AIS.Models
         public string OBS_TEXT { get; set; }
         [PlainText]
         public string PARA_TEXT_ID { get; set; }
+        [PlainText]
+        public string PARA_NO { get; set; }
         [RichTextSanitize]
         public string GIST_OF_PARA { get; set; }
         public List<ObservationResponsiblePPNOModel> RESPONSIBLE_PPs { get; set; }

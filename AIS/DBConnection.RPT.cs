@@ -50,10 +50,6 @@ namespace AIS.Controllers
             return zones;
             }
 
-
-
-
-
         public List<DepartmentModel> GetDepartments(int div_code = 0, bool sessionCheck = true)
             {
             var sessionHandler = CreateSessionHandler();
@@ -107,7 +103,7 @@ namespace AIS.Controllers
 
                             dept.AUDITED_BY_DEPID = Convert.ToInt32(rdr["AUDITED_BY_DEPID"]);
                             cmd.Parameters.Clear();
-                            cmd.CommandText = "pkg_ais.P_GetDepartments";
+                            cmd.CommandText = "PKG_RPT.P_GetDepartments";
                             cmd.CommandType = CommandType.StoredProcedure;
                             cmd.Parameters.Clear();
                             cmd.Parameters.Add("E_id", OracleDbType.Int32).Value = 3;
@@ -124,6 +120,130 @@ namespace AIS.Controllers
                     }
                 }
             return deptList;
+            }
+
+
+        public List<SettledParasMonitoringModel> GetSettledParasForMonitoring(int ENTITY_ID)
+            {
+            var sessionHandler = CreateSessionHandler();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
+                || string.IsNullOrWhiteSpace(loggedInUser.PPNumber)
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return new List<SettledParasMonitoringModel>();
+                }
+
+            List<SettledParasMonitoringModel> list = new List<SettledParasMonitoringModel>();
+            using (var con = this.DatabaseConnection())
+                {
+                using (OracleCommand cmd = con.CreateCommand())
+                    {
+                    cmd.CommandText = "PKG_RPT.P_GET_SETTLED_PARA_DETAILS";
+                    cmd.CommandType = CommandType.StoredProcedure;
+                    cmd.Parameters.Clear();
+                    cmd.Parameters.Add("P_NO", OracleDbType.Int32).Value = loggedInUser.PPNumber;
+                    cmd.Parameters.Add("ENT_ID", OracleDbType.Int32).Value = loggedInUser.UserEntityID;
+                    cmd.Parameters.Add("R_ID", OracleDbType.Int32).Value = loggedInUser.UserRoleID;
+                    cmd.Parameters.Add("AUDITEE_ID", OracleDbType.Int32).Value = ENTITY_ID;
+                    cmd.Parameters.Add("T_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+                    OracleDataReader rdr = cmd.ExecuteReader();
+                    while (rdr.Read())
+                        {
+                        SettledParasMonitoringModel chk = new SettledParasMonitoringModel();
+                        chk.REPORTING_OFFICE = rdr["REPORTING_OFFICE"].ToString();
+                        chk.ENTITY_NAME = rdr["ENTITY_NAME"].ToString();
+                        chk.AUDIT_PERIOD = rdr["AUDIT_PERIOD"].ToString();
+                        chk.COM_ID = rdr["COM_ID"].ToString();
+                        chk.SETTLED_BY = rdr["SETTLED_BY"].ToString();
+                        chk.SETTLED_ON = rdr["SETTLED_ON"].ToString();
+                        chk.RISK = rdr["RISK"].ToString();
+                        chk.PARA_NO = rdr["PARA_NO"].ToString();
+                        chk.PARA_CATEGORY = rdr["PARA_CATEGORY"].ToString();
+                        chk.COMPLIANCE_CYCLE = rdr["COMPLIANCE_CYCLE"].ToString();
+                        chk.AUDITED_BY = rdr["AUDITEDBY"].ToString();
+                        chk.ENTITY_ID = rdr["ENTITY_ID"].ToString();
+                        list.Add(chk);
+                        }
+                    }
+                }
+
+            return list;
+            }
+
+        public List<PostComplianceHistoryModel> GetSettledParaComplianceHistory(string COM_ID)
+            {
+            List<PostComplianceHistoryModel> stList = new List<PostComplianceHistoryModel>();
+            using (var con = this.DatabaseConnection())
+                {
+                using (OracleCommand cmd = con.CreateCommand())
+                    {
+                    cmd.CommandText = "PKG_RPT.P_GetParasForCompliancehistory";
+                    cmd.CommandType = CommandType.StoredProcedure;
+                    cmd.Parameters.Clear();
+                    cmd.Parameters.Add("P_COM_ID", OracleDbType.Int32).Value = COM_ID;
+                    cmd.Parameters.Add("T_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+                    OracleDataReader rdr = cmd.ExecuteReader();
+                    while (rdr.Read())
+                        {
+                        PostComplianceHistoryModel st = new PostComplianceHistoryModel();
+                        st.HIST_ID = Convert.ToInt32(rdr["HIST_ID"].ToString());
+                        st.COM_ID = Convert.ToInt32(rdr["COM_ID"].ToString());
+                        st.COM_CYCLE = rdr["COM_CYCLE"].ToString();
+                        st.COM_STAGE = rdr["COM_STAGE"].ToString();
+                        st.COM_STATUS = rdr["COM_STATUS"].ToString();
+                        st.COMMENT_BY_ROLE = rdr["COMMENT_BY_ROLE"].ToString();
+                        st.NAME = rdr["NAME"].ToString();
+                        st.DESIGNATION = rdr["DESIGNATION"].ToString();
+                        st.PP_NO = rdr["PP_NO"] == DBNull.Value ? (int?)null : Convert.ToInt32(rdr["PP_NO"]);
+                        st.COMMENT_ON = rdr["COMMENT_ON"].ToString();
+                        st.COMMENTS = rdr["COMMENTS"].ToString();
+                        st.COM_FLOW = rdr["COM_FLOW"].ToString();
+                        stList.Add(st);
+                        }
+                    }
+                }
+
+            return stList;
+            }
+
+        public GetOldParasBranchComplianceTextModel GetOldParasComplianceCycleText(string COM_ID, string C_CYCLE)
+            {
+            var sessionHandler = CreateSessionHandler();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
+                || string.IsNullOrWhiteSpace(loggedInUser.PPNumber)
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return new GetOldParasBranchComplianceTextModel();
+                }
+
+            GetOldParasBranchComplianceTextModel resp = new GetOldParasBranchComplianceTextModel();
+            using (var con = this.DatabaseConnection())
+                {
+                using (OracleCommand cmd = con.CreateCommand())
+                    {
+                    cmd.CommandText = "PKG_RPT.P_GetParasForComplianceforhistory";
+                    cmd.CommandType = CommandType.StoredProcedure;
+                    cmd.Parameters.Clear();
+                    cmd.Parameters.Add("P_C_CYCLE", OracleDbType.Int32).Value = C_CYCLE;
+                    cmd.Parameters.Add("P_COM_ID", OracleDbType.Int32).Value = COM_ID;
+                    cmd.Parameters.Add("T_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+                    OracleDataReader rdr = cmd.ExecuteReader();
+                    while (rdr.Read())
+                        {
+                        resp.PARA_TEXT = rdr["REPLY"].ToString();
+                        resp.PARA_TEXT_ID = rdr["TEXT_ID"].ToString();
+                        resp.OBS_TEXT = rdr["PARA_TEXT"].ToString();
+                        resp.PARA_NO = rdr["PARA_NO"].ToString();
+                        resp.GIST_OF_PARA = rdr["GIST_OF_PARAS"].ToString();
+                        }
+                    }
+                }
+
+            return resp;
             }
 
 
@@ -150,7 +270,7 @@ namespace AIS.Controllers
 
                 using (var cmd = con.CreateCommand())
                     {
-                    cmd.CommandText = "pkg_rpt.P_Getchildposting";
+                    cmd.CommandText = "PKG_RPT.P_Getchildposting";
                     cmd.CommandType = CommandType.StoredProcedure;
                     cmd.Parameters.Clear();
                     cmd.Parameters.Add("erid", OracleDbType.Int32).Value = e_r_id;
@@ -306,13 +426,6 @@ namespace AIS.Controllers
                 }
             return list;
             }
-
-
-
-
-
-
-
 
         public List<AuditeeAddressModel> GetAddress(int ENT_ID)
             {

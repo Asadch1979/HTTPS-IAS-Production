@@ -1361,11 +1361,42 @@ namespace AIS.Controllers
                     modelList.Add(menuPage);
                     }
                 }
+            MoveSettledParaMonitoringReportMenu(modelList);
             //AppendFieldAuditReportMenuPages(modelList);
             AppendFrptPdfEngagementMenu(modelList, user);
             con.Dispose();
             return modelList;
             }      
+
+        private void MoveSettledParaMonitoringReportMenu(List<MenuPagesModel> modelList)
+            {
+            if (modelList == null)
+                {
+                return;
+                }
+
+            var reportPage = modelList.FirstOrDefault(item =>
+                string.Equals(item.Page_Path, "PostCompliance/monitoring_of_para_settlement", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(item.Page_Path, "/PostCompliance/monitoring_of_para_settlement", StringComparison.OrdinalIgnoreCase));
+            if (reportPage == null)
+                {
+                return;
+                }
+
+            var reportsMenu = GetTopMenus().FirstOrDefault(menu =>
+                string.Equals(menu.Menu_Name, "Reports", StringComparison.OrdinalIgnoreCase));
+            if (reportsMenu == null)
+                {
+                return;
+                }
+
+            reportPage.Menu_Id = reportsMenu.Menu_Id;
+            reportPage.Page_Name = "Settled Para Monitoring Report";
+            reportPage.Page_Path = "Reports/monitoring_of_para_settlement";
+            reportPage.Sub_Menu = string.Empty;
+            reportPage.Sub_Menu_Id = string.Empty;
+            reportPage.Sub_Menu_Name = string.Empty;
+            }
 
         private void AppendFrptPdfEngagementMenu(List<MenuPagesModel> modelList, SessionUser user)
             {
