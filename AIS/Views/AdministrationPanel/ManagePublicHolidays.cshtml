@@ -27,7 +27,9 @@
                 <label>Holiday Name (optional)</label>
                 <input type="text" class="form-control" id="holidayName" />
             </div>
-            <button type="submit" class="btn btn-primary">Add/Mark</button>
+            <input type="hidden" id="holidayId" />
+            <button type="submit" id="holidaySubmitButton" class="btn btn-primary">Add/Mark</button>
+            <button type="button" id="holidayCancelEditButton" class="btn btn-secondary d-none">Cancel Edit</button>
         </form>
     </div>
     <div class="col-md-6">
@@ -38,6 +40,7 @@
                     <th>Date</th>
                     <th>Type</th>
                     <th>Name</th>
+                    <th>Action</th>
                 </tr>
             </thead>
             <tbody></tbody>
@@ -46,4 +49,4 @@
 </div>
 
 
-<script src="~/js/csp/Views_AdministrationPanel_ManagePublicHolidays.js?v=1"></script>
+<script src="~/js/csp/Views_AdministrationPanel_ManagePublicHolidays.js?v=2"></script>

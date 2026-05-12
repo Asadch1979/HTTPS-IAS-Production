@@ -1,6 +1,7 @@
 var g_userList = [];
 var g_userId = 0;
 var g_userContexts = [];
+var g_editingContextIndex = null;
 
 $(document).ready(function () {
     if ($('#roleSaveField').length && $.fn.select2) {
@@ -9,7 +10,11 @@ $(document).ready(function () {
     }
 
     $('#isActiveSaveField').prop('checked', true);
-    $('#addAssignmentButton').on('click', addAssignmentButtonClickHandler);
+    $(document).on('click', '#addAssignmentButton', assignmentActionButtonClickHandler);
+    $(document).on('click', '.js-edit-context', editUserContextClickHandler);
+    $(document).on('click', '.js-remove-context', removeUserContextClickHandler);
+    $(document).on('change', '.js-default-context', defaultContextChangeHandler);
+    $(document).on('change', '.js-context-active', contextActiveChangeHandler);
 });
 
 function normalizeFlag(value, defaultValue) {
@@ -220,13 +225,13 @@ function renderUserContexts() {
 
         $tbody.append(
             '<tr data-context-index="' + index + '">' +
-            '<td class="text-center"><input type="radio" name="defaultUserContext" ' + isDefaultChecked + ' onclick="setDefaultContext(' + index + ')" /></td>' +
-            '<td class="text-center"><input type="checkbox" ' + isActiveChecked + ' onclick="toggleContextActive(' + index + ', this.checked)" /></td>' +
+            '<td class="text-center"><input type="radio" class="js-default-context" name="defaultUserContext" data-context-index="' + index + '" ' + isDefaultChecked + ' /></td>' +
+            '<td class="text-center"><input type="checkbox" class="js-context-active" data-context-index="' + index + '" ' + isActiveChecked + ' /></td>' +
             '<td>' + escapeHtml(context.roleName) + '</td>' +
             '<td>' + escapeHtml(context.parentEntityName) + '</td>' +
             '<td>' + escapeHtml(context.entityName) + '</td>' +
             '<td>' + escapeHtml(context.relationshipTypeName) + '</td>' +
-            '<td class="text-center"><a href="#" onclick="event.preventDefault();removeUserContext(' + index + ')">Remove</a></td>' +
+            '<td class="text-center"><a href="#" class="js-edit-context" data-context-index="' + index + '">Edit</a> | <a href="#" class="js-remove-context" data-context-index="' + index + '">Remove</a></td>' +
             '</tr>'
         );
     });
@@ -238,6 +243,7 @@ function renderUserContexts() {
 
 function resetUserContexts() {
     g_userContexts = [];
+    resetAssignmentEditMode();
     renderUserContexts();
 }
 
@@ -314,6 +320,22 @@ function upsertContext(candidate) {
     renderUserContexts();
 }
 
+function resetAssignmentEditMode() {
+    g_editingContextIndex = null;
+    $('#addAssignmentButton').text('Add Assignment');
+}
+
+function assignmentActionButtonClickHandler(event) {
+    event.preventDefault();
+
+    if (typeof g_editingContextIndex === 'number') {
+        updateAssignmentButtonClickHandler();
+        return;
+    }
+
+    addAssignmentButtonClickHandler();
+}
+
 function addAssignmentButtonClickHandler() {
     var candidate = buildCurrentContext();
     if (!candidate) {
@@ -324,11 +346,58 @@ function addAssignmentButtonClickHandler() {
     upsertContext(candidate);
 }
 
+function editUserContextClickHandler(event) {
+    event.preventDefault();
+
+    var index = toInt($(this).attr('data-context-index'));
+    if (!g_userContexts[index] || g_userContexts[index].isDeleted) {
+        return;
+    }
+
+    g_editingContextIndex = index;
+    applyContextToBuilder(g_userContexts[index]);
+    $('#addAssignmentButton').text('Update Assignment');
+}
+
+function updateAssignmentButtonClickHandler() {
+    var index = g_editingContextIndex;
+    if (typeof index !== 'number' || !g_userContexts[index] || g_userContexts[index].isDeleted) {
+        resetAssignmentEditMode();
+        return;
+    }
+
+    var candidate = buildCurrentContext();
+    if (!candidate) {
+        alert('Select one role and one place of posting before updating the assignment.');
+        return;
+    }
+
+    var duplicateIndex = findContextIndex(candidate, false);
+    if (duplicateIndex >= 0 && duplicateIndex !== index) {
+        alert('Duplicate role and posting assignments are not allowed.');
+        return;
+    }
+
+    candidate.assignmentId = g_userContexts[index].assignmentId || 0;
+    candidate.isDeleted = false;
+    g_userContexts[index] = candidate;
+
+    normalizeContextCollection(candidate.isDefault === 'Y' ? index : null);
+    renderUserContexts();
+    resetAssignmentEditMode();
+}
+
+function removeUserContextClickHandler(event) {
+    event.preventDefault();
+    removeUserContext(toInt($(this).attr('data-context-index')));
+}
+
 function removeUserContext(index) {
     if (!g_userContexts[index]) {
         return;
     }
 
+    var removedUnsavedRow = !(g_userContexts[index].assignmentId > 0);
     if (g_userContexts[index].assignmentId > 0) {
         g_userContexts[index].isDeleted = true;
         g_userContexts[index].isDefault = 'N';
@@ -339,11 +408,25 @@ function removeUserContext(index) {
 
     normalizeContextCollection();
     renderUserContexts();
+
+    if (g_editingContextIndex === index) {
+        resetAssignmentEditMode();
+    } else if (removedUnsavedRow && typeof g_editingContextIndex === 'number' && index < g_editingContextIndex) {
+        g_editingContextIndex--;
+    }
+}
+
+function defaultContextChangeHandler() {
+    setDefaultContext(toInt($(this).attr('data-context-index')));
 }
 
 function setDefaultContext(index) {
     normalizeContextCollection(index);
     renderUserContexts();
+}
+
+function contextActiveChangeHandler() {
+    toggleContextActive(toInt($(this).attr('data-context-index')), this.checked);
 }
 
 function toggleContextActive(index, isActive) {

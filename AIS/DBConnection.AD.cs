@@ -6867,12 +6867,14 @@ namespace AIS.Controllers
                 {
                 cmd.CommandText = "PKG_AD.P_INSERT_PUBLIC_HOLIDAY";
                 cmd.CommandType = CommandType.StoredProcedure;
+                cmd.BindByName = true;
                 cmd.Parameters.Clear();
 
                 cmd.Parameters.Add("p_holiday_date", OracleDbType.Date).Value = model.HOLIDAY_DATE ?? (object)DBNull.Value;
                 cmd.Parameters.Add("p_is_weekend", OracleDbType.Char).Value = model.IS_WEEKEND;
                 cmd.Parameters.Add("p_is_holiday", OracleDbType.Char).Value = model.IS_HOLIDAY;
                 cmd.Parameters.Add("p_holiday_name", OracleDbType.Varchar2).Value = string.IsNullOrEmpty(model.HOLIDAY_NAME) ? (object)DBNull.Value : model.HOLIDAY_NAME;
+                cmd.Parameters.Add("p_id", OracleDbType.Int32).Value = model.ID.HasValue && model.ID.Value > 0 ? (object)model.ID.Value : DBNull.Value;
 
                 cmd.ExecuteNonQuery();
                 }
