@@ -208,7 +208,7 @@ namespace AIS.Controllers
             return stList;
             }
 
-        public GetOldParasBranchComplianceTextModel GetOldParasComplianceCycleText(string COM_ID, string C_CYCLE)
+        public GetOldParasBranchComplianceTextModel GetComplianceCycleText(string COM_ID, string C_CYCLE)
             {
             var sessionHandler = CreateSessionHandler();
             var loggedInUser = sessionHandler.GetUser();

@@ -911,6 +911,40 @@ namespace AIS.Controllers
             return chk;
             }
 
+        public GetOldParasBranchComplianceTextModel GetOldParasComplianceCycleText(string COM_ID, string C_CYCLE)
+            {
+            var sessionHandler = CreateSessionHandler();
+            var con = this.DatabaseConnection();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
+                || string.IsNullOrWhiteSpace(loggedInUser.PPNumber)
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return new GetOldParasBranchComplianceTextModel();
+                }
+            GetOldParasBranchComplianceTextModel resp = new GetOldParasBranchComplianceTextModel();
+            using (OracleCommand cmd = con.CreateCommand())
+                {
+                cmd.CommandText = "pkg_ae.P_GetParasForComplianceforhistory";
+                cmd.CommandType = CommandType.StoredProcedure;
+                cmd.Parameters.Clear();
+                cmd.Parameters.Add("C_CYCLE", OracleDbType.Int32).Value = C_CYCLE;
+                cmd.Parameters.Add("COM_ID", OracleDbType.Int32).Value = COM_ID;
+                cmd.Parameters.Add("T_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+                OracleDataReader rdr = cmd.ExecuteReader();
+                while (rdr.Read())
+                    {
+                    resp.PARA_TEXT = rdr["reply"].ToString();
+                    resp.PARA_TEXT_ID = rdr["text_id"].ToString();
+                    resp.OBS_TEXT = rdr["para_text"].ToString();
+                    resp.EVIDENCES = this.GetOldParasEvidences(resp.PARA_TEXT_ID);
+                    }
+                }
+            con.Dispose();
+            return resp;
+            }
+
         public AuditeeResponseEvidenceModel GetPostComplianceEvidenceData(string FILE_ID)
             {
             var sessionHandler = CreateSessionHandler();

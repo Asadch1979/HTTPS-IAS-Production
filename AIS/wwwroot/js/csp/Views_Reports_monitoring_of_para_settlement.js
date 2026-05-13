@@ -132,7 +132,7 @@ function getParaDetails(comId, cycle) {
     $('#viewParaDetails_complianceReply').empty();
 
     $.ajax({
-        url: g_asiBaseURL + "/ApiCalls/get_old_para_compliance_cycle_text",
+        url: g_asiBaseURL + "/ApiCalls/get_para_compliance_text",
         type: "POST",
         data: {
             'COM_ID': comId,

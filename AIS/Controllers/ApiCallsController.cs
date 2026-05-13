@@ -2324,6 +2324,13 @@ namespace AIS.Controllers
             {
             return dBConnection.GetOldParasComplianceCycleText(COM_ID, C_CYCLE);
             }
+
+         [HttpGet]
+        [HttpPost]
+        public GetOldParasBranchComplianceTextModel GetComplianceCycleText(string COM_ID, string C_CYCLE)
+            {
+            return dBConnection.GetComplianceCycleText(COM_ID, C_CYCLE);
+            }
         [HttpGet]
         [HttpPost]
         public AuditeeResponseEvidenceModel get_post_compliance_evidence_data(string FILE_ID)
