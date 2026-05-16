@@ -5,12 +5,20 @@
                 <h4 class="mb-1" id="arpseFormTitle">Create ARPSE Header</h4>
                 <small class="text-muted">Maintain the ARPSE header here before switching to DAC and PAC follow-up.</small>
             </div>
-            <button type="button"
-               class="btn btn-outline-success commercial-audit-step-target"
-               data-step="arpse-monitoring"
-               data-step-key="arpse-monitoring">
-                Open ARPSE Monitoring
-            </button>
+            <div class="d-flex gap-2 flex-wrap">
+                <button type="button"
+                   class="btn btn-outline-success commercial-audit-step-target"
+                   data-step="arpse-linking"
+                   data-step-key="arpse-linking">
+                    Open ARPSE Linking
+                </button>
+                <button type="button"
+                   class="btn btn-outline-success commercial-audit-step-target"
+                   data-step="arpse-monitoring"
+                   data-step-key="arpse-monitoring">
+                    Open ARPSE Monitoring
+                </button>
+            </div>
         </div>
         <div class="card-body">
             <div class="row g-3">
@@ -36,6 +44,10 @@
                 <div class="col-12">
                     <label for="arpseGist" class="form-label">Gist of Para</label>
                     <textarea id="arpseGist" class="form-control" rows="2" maxlength="500"></textarea>
+                </div>
+                <div class="col-12">
+                    <label for="arpseBody" class="form-label">Body of Para</label>
+                    <textarea id="arpseBody" class="form-control commercial-audit-richtext-target" rows="12" maxlength="4000"></textarea>
                 </div>
                 <div class="col-12">
                     <label for="arpseManagementResponse" class="form-label">Management Response</label>

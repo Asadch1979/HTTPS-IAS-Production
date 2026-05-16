@@ -13,6 +13,7 @@ var commercialAuditPage = {
     selectedPdpSnapshot: null,
     selectedArpseSnapshot: null,
     selectedPdpMappings: [],
+    selectedArpsePdpMappings: [],
     omMode: "add",
     pdpMode: "add",
     arpseMode: "add",
@@ -29,6 +30,7 @@ var commercialAuditRichTextEditorIds = [
     "pdpManagementResponse",
     "pdpDacRecommendations",
     "pdpUpdateManagementResponse",
+    "arpseBody",
     "arpseManagementResponse",
     "arpseDacRecommendation",
     "arpsePacDirective"
@@ -196,6 +198,9 @@ function initCommercialAuditStep(stepKey) {
             break;
         case "arpse-header":
             initCommercialAuditArpseHeader();
+            break;
+        case "arpse-linking":
+            initCommercialAuditArpseLinking();
             break;
         case "arpse-monitoring":
             initCommercialAuditArpseMonitoring();
@@ -783,12 +788,166 @@ function saveCommercialAuditPdpMappings() {
     });
 }
 
+function initCommercialAuditArpseLinking() {
+    $("#btnSaveArpsePdpMappings").off("click").on("click", saveCommercialAuditArpsePdpMappings);
+    $("#tblCommercialArpsePdpRegister").off("click", ".btn-manage-arpse-pdp").on("click", ".btn-manage-arpse-pdp", function () {
+        var rowData = $(this).data("row");
+        if (!rowData) {
+            return;
+        }
+
+        populateCommercialAuditArpseHeaderForm(rowData);
+        loadCommercialAuditArpsePdpMappings(rowData.ArpseId);
+    });
+
+    applyCommercialAuditArpseLinkingState();
+    loadCommercialAuditPdpLookupForArpse();
+    loadCommercialAuditArpseHeaders();
+}
+
+function loadCommercialAuditPdpLookupForArpse() {
+    $.ajax({
+        url: g_asiBaseURL + "/ApiCalls/get_commercial_audit_pdps",
+        type: "GET",
+        cache: false,
+        success: function (data) {
+            commercialAuditPage.pdpList = Array.isArray(data) ? data.map(normalizeCommercialPdp) : [];
+            renderCommercialAuditArpsePdpLookup(commercialAuditPage.pdpList, commercialAuditPage.selectedArpsePdpMappings);
+        },
+        error: function (xhr) {
+            commercialAuditPage.pdpList = [];
+            renderCommercialAuditArpsePdpLookup([], []);
+            showApiAlertFromXhr(xhr, xhr ? xhr.status : null, getErrorReferenceIdFromXhr(xhr), "Unable to load PDP lookup.");
+        }
+    });
+}
+
+function loadCommercialAuditArpsePdpMappings(arpseId) {
+    if (!arpseId) {
+        commercialAuditPage.selectedArpsePdpMappings = [];
+        renderCommercialAuditArpsePdpLookup(commercialAuditPage.pdpList, []);
+        return;
+    }
+
+    $.ajax({
+        url: g_asiBaseURL + "/ApiCalls/get_commercial_audit_arpse_pdp_mappings",
+        type: "GET",
+        cache: false,
+        data: { arpse_id: arpseId },
+        success: function (data) {
+            commercialAuditPage.selectedArpsePdpMappings = Array.isArray(data) ? data.map(normalizeCommercialArpsePdpMapping) : [];
+            renderCommercialAuditArpsePdpLookup(commercialAuditPage.pdpList, commercialAuditPage.selectedArpsePdpMappings);
+        },
+        error: function (xhr) {
+            commercialAuditPage.selectedArpsePdpMappings = [];
+            renderCommercialAuditArpsePdpLookup(commercialAuditPage.pdpList, []);
+            showApiAlertFromXhr(xhr, xhr ? xhr.status : null, getErrorReferenceIdFromXhr(xhr), "Unable to load ARPSE PDP mappings.");
+        }
+    });
+}
+
+function renderCommercialAuditArpsePdpLookup(pdpList, selectedMappings) {
+    if (!$("#tblArpsePdpLookup").length) {
+        return;
+    }
+
+    var selectedPdpIds = (selectedMappings || []).map(function (item) {
+        return item.PdpId;
+    });
+
+    var tbody = $("#tblArpsePdpLookup tbody");
+    tbody.empty();
+
+    if (!pdpList.length) {
+        tbody.append('<tr><td colspan="6" class="text-center">No PDP records available for linking.</td></tr>');
+        updateCommercialAuditArpsePdpSelectedSummary();
+        return;
+    }
+
+    pdpList.forEach(function (item) {
+        var row = $("<tr>");
+        var checkbox = $("<input>")
+            .attr("type", "checkbox")
+            .addClass("form-check-input commercial-arpse-pdp-checkbox")
+            .attr("data-pdp-id", item.PdpId)
+            .prop("checked", selectedPdpIds.indexOf(item.PdpId) >= 0);
+
+        row.append($("<td>").addClass("text-center").append(checkbox));
+        row.append($("<td>").text(item.AuditYearText));
+        row.append($("<td>").text(item.PdpNo));
+        row.append($("<td>").text(item.GistOfPdp));
+        row.append($("<td>").text(getCommercialAuditPreviewText(item.BodyOfPdp, 120)));
+        row.append($("<td>").text(item.LinkedOmNumbers || item.LinkedOmCount));
+        tbody.append(row);
+    });
+
+    $(".commercial-arpse-pdp-checkbox").off("change").on("change", updateCommercialAuditArpsePdpSelectedSummary);
+    updateCommercialAuditArpsePdpSelectedSummary();
+}
+
+function updateCommercialAuditArpsePdpSelectedSummary() {
+    var selected = $(".commercial-arpse-pdp-checkbox:checked").length;
+    $("#arpsePdpSelectedSummary").text(selected > 0 ? selected + " PDPs selected" : "No PDPs selected");
+}
+
+function saveCommercialAuditArpsePdpMappings() {
+    if (!commercialAuditPage.selectedArpseId) {
+        alert("Save or select an ARPSE first.");
+        return;
+    }
+
+    var pdpIds = $(".commercial-arpse-pdp-checkbox:checked").map(function () {
+        return parseInt($(this).attr("data-pdp-id"), 10) || 0;
+    }).get().filter(function (value) {
+        return value > 0;
+    });
+
+    $.ajax({
+        url: g_asiBaseURL + "/ApiCalls/save_commercial_audit_arpse_pdp_mapping",
+        type: "POST",
+        contentType: "application/json",
+        data: JSON.stringify({
+            ArpseId: commercialAuditPage.selectedArpseId,
+            PdpIds: pdpIds,
+            IsActive: "Y"
+        }),
+        success: function (data) {
+            if (!isCommercialAuditActionSuccessful(data)) {
+                showApiAlert(data, "Unable to save linked PDPs.");
+                return;
+            }
+
+            loadCommercialAuditArpseHeaders({ ArpseId: commercialAuditPage.selectedArpseId });
+            showApiAlert(data, "Linked PDPs saved successfully.");
+        },
+        error: function (xhr) {
+            showApiAlertFromXhr(xhr, xhr ? xhr.status : null, getErrorReferenceIdFromXhr(xhr), "Unable to save linked PDPs.");
+        }
+    });
+}
+
+function applyCommercialAuditArpseLinkingState() {
+    if (!$("#arpsePdpMappingFieldset").length) {
+        return;
+    }
+
+    var hasSelection = !!commercialAuditPage.selectedArpseId;
+    $("#arpsePdpMappingFieldset").prop("disabled", !hasSelection);
+    $("#arpsePdpMappingHint").text(hasSelection
+        ? "Select one or more PDPs and save the mapping for the selected ARPSE."
+        : "Save or select an ARPSE first, then choose one or more PDPs to link.");
+    $("#arpsePdpSelectedHeaderLabel").text(hasSelection && commercialAuditPage.selectedArpseSnapshot
+        ? commercialAuditPage.selectedArpseSnapshot.ParaNo + " selected"
+        : "No ARPSE selected");
+    renderCommercialAuditArpsePdpLookup(commercialAuditPage.pdpList, hasSelection ? commercialAuditPage.selectedArpsePdpMappings : []);
+}
+
 function initCommercialAuditArpseHeader() {
     $("#btnSaveArpse").off("click").on("click", saveCommercialAuditArpseHeader);
     $("#btnCancelArpseEdit").off("click").on("click", resetCommercialAuditArpseForm);
 
     applyCommercialAuditArpseHeaderState();
-    initializeCommercialAuditRichTextEditors(["arpseManagementResponse"]);
+    initializeCommercialAuditRichTextEditors(["arpseBody", "arpseManagementResponse"]);
 
     if (commercialAuditPage.selectedArpseId && !commercialAuditPage.selectedArpseSnapshot) {
         loadCommercialAuditArpseHeaders({ ArpseId: commercialAuditPage.selectedArpseId });
@@ -845,18 +1004,25 @@ function loadCommercialAuditArpseHeaders(selectionHint) {
             }
 
             renderCommercialAuditArpseTable(commercialAuditPage.arpseList);
+            renderCommercialAuditArpsePdpRegister(commercialAuditPage.arpseList);
 
             if (commercialAuditPage.selectedArpseId) {
                 var selected = findById(commercialAuditPage.arpseList, "ArpseId", commercialAuditPage.selectedArpseId);
                 if (selected) {
                     populateCommercialAuditArpseHeaderForm(selected);
-                    loadCommercialAuditArpseChildren(selected.ArpseId);
+                    if ($("#arpseChildrenFieldset").length) {
+                        loadCommercialAuditArpseChildren(selected.ArpseId);
+                    }
+                    if ($("#arpsePdpMappingFieldset").length) {
+                        loadCommercialAuditArpsePdpMappings(selected.ArpseId);
+                    }
                 }
             }
         },
         error: function (xhr) {
             commercialAuditPage.arpseList = [];
             renderCommercialAuditArpseTable([]);
+            renderCommercialAuditArpsePdpRegister([]);
             showApiAlertFromXhr(xhr, xhr ? xhr.status : null, getErrorReferenceIdFromXhr(xhr), "Unable to load ARPSE headers.");
         }
     });
@@ -897,12 +1063,51 @@ function renderCommercialAuditArpseTable(list) {
     initializeDataTable("tblCommercialArpse");
 }
 
+function renderCommercialAuditArpsePdpRegister(list) {
+    if (!$("#tblCommercialArpsePdpRegister").length) {
+        return;
+    }
+
+    destroyDatatable("tblCommercialArpsePdpRegister");
+
+    var tbody = $("#tblCommercialArpsePdpRegister tbody");
+    tbody.empty();
+
+    if (!list.length) {
+        tbody.append('<tr><td colspan="7" class="text-center">No ARPSE headers found.</td></tr>');
+        return;
+    }
+
+    list.forEach(function (item) {
+        var row = $("<tr>").toggleClass("table-active", commercialAuditPage.selectedArpseId === item.ArpseId);
+        row.append($("<td>").text(item.ArpseYearText));
+        row.append($("<td>").text(item.ParaNo));
+        row.append($("<td>").text(item.GistOfPara));
+        row.append($("<td>").text(getCommercialAuditPreviewText(item.BodyOfPara, 120)));
+        row.append($("<td>").text(getCommercialAuditPreviewText(item.ManagementResponse, 120)));
+        row.append($("<td>").text(item.LinkedPdpNumbers || item.LinkedPdpCount));
+
+        var manageButton = $("<button>")
+            .addClass("btn btn-sm btn-primary btn-manage-arpse-pdp")
+            .attr("type", "button")
+            .text(commercialAuditPage.selectedArpseId === item.ArpseId ? "Managing" : "Manage")
+            .data("row", item);
+
+        row.append($("<td>").addClass("text-center").append(manageButton));
+        tbody.append(row);
+    });
+
+    initializeDataTable("tblCommercialArpsePdpRegister");
+}
+
 function populateCommercialAuditArpseHeaderForm(item) {
     commercialAuditPage.arpseMode = "edit";
     commercialAuditPage.selectedArpseSnapshot = normalizeCommercialArpseHeader(item);
     commercialAuditPage.selectedArpseId = commercialAuditPage.selectedArpseSnapshot.ArpseId;
     applyCommercialAuditArpseHeaderState();
+    applyCommercialAuditArpseLinkingState();
     renderCommercialAuditArpseTable(commercialAuditPage.arpseList);
+    renderCommercialAuditArpsePdpRegister(commercialAuditPage.arpseList);
 }
 
 function applyCommercialAuditArpseHeaderState() {
@@ -912,6 +1117,7 @@ function applyCommercialAuditArpseHeaderState() {
             $("#arpseYear").val(commercialAuditPage.selectedArpseSnapshot.ArpseYearId || "");
             $("#arpseParaNo").val(commercialAuditPage.selectedArpseSnapshot.ParaNo || "");
             $("#arpseGist").val(commercialAuditPage.selectedArpseSnapshot.GistOfPara || "");
+            setCommercialAuditFieldValue("arpseBody", commercialAuditPage.selectedArpseSnapshot.BodyOfPara || "");
             setCommercialAuditFieldValue("arpseManagementResponse", commercialAuditPage.selectedArpseSnapshot.ManagementResponse || "");
             $("#btnSaveArpse").text("Update Header");
             $("#btnCancelArpseEdit").removeClass("d-none");
@@ -920,6 +1126,7 @@ function applyCommercialAuditArpseHeaderState() {
             $("#arpseYear").val("");
             $("#arpseParaNo").val("");
             $("#arpseGist").val("");
+            setCommercialAuditFieldValue("arpseBody", "");
             setCommercialAuditFieldValue("arpseManagementResponse", "");
             $("#btnSaveArpse").text("Save Header");
             $("#btnCancelArpseEdit").addClass("d-none");
@@ -939,12 +1146,15 @@ function resetCommercialAuditArpseForm() {
     commercialAuditPage.arpseMode = "add";
     commercialAuditPage.selectedArpseId = 0;
     commercialAuditPage.selectedArpseSnapshot = null;
+    commercialAuditPage.selectedArpsePdpMappings = [];
     applyCommercialAuditArpseHeaderState();
+    applyCommercialAuditArpseLinkingState();
     resetCommercialAuditArpseDacForm();
     resetCommercialAuditArpsePacForm();
     renderCommercialAuditArpseDacTable([]);
     renderCommercialAuditArpsePacTable([]);
     renderCommercialAuditArpseTable(commercialAuditPage.arpseList);
+    renderCommercialAuditArpsePdpRegister(commercialAuditPage.arpseList);
 }
 
 function saveCommercialAuditArpseHeader() {
@@ -954,12 +1164,13 @@ function saveCommercialAuditArpseHeader() {
         ArpseYearId: parseNullableInt($("#arpseYear").val()),
         ParaNo: $("#arpseParaNo").val().trim(),
         GistOfPara: $("#arpseGist").val().trim(),
+        BodyOfPara: getCommercialAuditRichTextValue("arpseBody"),
         ManagementResponse: getCommercialAuditRichTextValue("arpseManagementResponse"),
         IsActive: "Y"
     };
 
-    if (!model.ArpseYearId || !model.ParaNo || !model.GistOfPara) {
-        alert("ARPSE Year, Para No, and Gist of Para are required.");
+    if (!model.ArpseYearId || !model.ParaNo || !model.GistOfPara || !model.BodyOfPara) {
+        alert("ARPSE Year, Para No, Gist of Para, and Body of Para are required.");
         return;
     }
 
@@ -1438,6 +1649,16 @@ function normalizeCommercialPdpOmMapping(item) {
     };
 }
 
+function normalizeCommercialArpsePdpMapping(item) {
+    return {
+        MappingId: parseInt(coalesce(item.MappingId, item.mappingId, item.MAPPING_ID, 0), 10) || 0,
+        ArpseId: parseInt(coalesce(item.ArpseId, item.arpseId, item.ARPSE_ID, 0), 10) || 0,
+        PdpId: parseInt(coalesce(item.PdpId, item.pdpId, item.PDP_ID, 0), 10) || 0,
+        PdpNo: String(coalesce(item.PdpNo, item.pdpNo, item.PDP_NO, "") || ""),
+        GistOfPdp: String(coalesce(item.GistOfPdp, item.gistOfPdp, item.GIST_OF_PDP, "") || "")
+    };
+}
+
 function normalizeCommercialArpseHeader(item) {
     var arpseYearId = parseInt(coalesce(item.ArpseYearId, item.arpseYearId, item.ARPSE_YEAR_ID, 0), 10) || 0;
     var rawArpseYearText = String(coalesce(item.ArpseYearText, item.arpseYearText, item.ARPSE_YEAR_TEXT, "") || "");
@@ -1447,7 +1668,10 @@ function normalizeCommercialArpseHeader(item) {
         ArpseYearText: resolveCommercialAuditYearText(rawArpseYearText, arpseYearId, "arpse"),
         ParaNo: String(coalesce(item.ParaNo, item.paraNo, item.PARA_NO, "") || ""),
         GistOfPara: String(coalesce(item.GistOfPara, item.gistOfPara, item.GIST_OF_PARA, "") || ""),
-        ManagementResponse: String(coalesce(item.ManagementResponse, item.managementResponse, item.MANAGEMENT_RESPONSE, "") || "")
+        BodyOfPara: String(coalesce(item.BodyOfPara, item.bodyOfPara, item.BODY_OF_PARA, "") || ""),
+        ManagementResponse: String(coalesce(item.ManagementResponse, item.managementResponse, item.MANAGEMENT_RESPONSE, "") || ""),
+        LinkedPdpCount: parseInt(coalesce(item.LinkedPdpCount, item.linkedPdpCount, item.LINKED_PDP_COUNT, 0), 10) || 0,
+        LinkedPdpNumbers: String(coalesce(item.LinkedPdpNumbers, item.linkedPdpNumbers, item.LINKED_PDP_NUMBERS, "") || "")
     };
 }
 

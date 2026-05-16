@@ -144,9 +144,37 @@ namespace AIS.Models.CAU
         [MaxLength(500)]
         [PlainText]
         public string GistOfPara { get; set; }
+        [Required]
+        [RichTextSanitize]
+        public string BodyOfPara { get; set; }
         
         [RichTextSanitize]
         public string ManagementResponse { get; set; }
+        [PlainText]
+        public string IsActive { get; set; } = "Y";
+        public int LinkedPdpCount { get; set; }
+        [PlainText]
+        public string LinkedPdpNumbers { get; set; }
+        }
+
+    public class CommercialAuditArpsePdpMappingModel
+        {
+        public int? MappingId { get; set; }
+        public int? ArpseId { get; set; }
+        public int? PdpId { get; set; }
+        [PlainText]
+        public string PdpNo { get; set; }
+        [PlainText]
+        public string GistOfPdp { get; set; }
+        [PlainText]
+        public string IsActive { get; set; } = "Y";
+        }
+
+    public class CommercialAuditArpsePdpMappingSaveRequest
+        {
+        [Required]
+        public int? ArpseId { get; set; }
+        public List<int> PdpIds { get; set; } = new List<int>();
         [PlainText]
         public string IsActive { get; set; } = "Y";
         }

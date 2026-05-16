@@ -1,8 +1,10 @@
     var g_newParaId = 0;
+    var g_comId = 0;
     var g_oldParaId = 0;
     var g_prevRole = "";
     var g_nextRole = "";
     var g_indicator = "";
+    var g_memoNo = "";
     var g_obsList = [];
     var g_allAttachedImages = [];
     var g_allowedFormats = ["pdf", "jpg", "jpeg", "png", "doc", "docx", "jpg", "csv", "xls", "xlsx"]; // allowed file formats
@@ -58,7 +60,7 @@
                         continue;
                     try {
                         const base64Data = await readFileAsDataURL(file);
-                        var fileNameGen = generateUniqueTimestamp();
+                        var fileNameGen = generateUniqueTimestamp() + "_" + i;
                         var extension = getFileExtension(file);
                         const ProductObject = {
                             'TEXT_ID': g_comId,
@@ -250,22 +252,42 @@
 
 
         var commentsRemarks = "";
-        if ($('#viewMemo_compliance_rep').val() == "") {
+        var evidenceList = [];
+        var requestData = {};
+        if ($('#viewMemoModel').hasClass('show')) {
+            commentsRemarks = $('#viewMemoModel .richText-editor').html() || $('#viewMemo_compliance').val();
+            evidenceList = g_allAttachedImages;
+        } else {
+            commentsRemarks = $('#viewMemo_compliance_rep').val();
+        }
+
+        if ($.trim(commentsRemarks) == "") {
             alert("Please provide Remarks to proceed");
             return;
         }
-        commentsRemarks = $('#viewMemo_compliance_rep').val();
+
+        requestData = {
+            'OLD_PARA_ID': g_oldParaId,
+            'NEW_PARA_ID': g_newParaId,
+            'INDICATOR': ind,
+            'COMMENTS': commentsRemarks,
+        };
+
+        $.each(evidenceList, function (index, item) {
+            requestData['EVIDENCE_LIST[' + index + '].TEXT_ID'] = item.TEXT_ID;
+            requestData['EVIDENCE_LIST[' + index + '].IMAGE_NAME'] = item.IMAGE_NAME;
+            requestData['EVIDENCE_LIST[' + index + '].FILE_NAME'] = item.FILE_NAME;
+            requestData['EVIDENCE_LIST[' + index + '].IMAGE_DATA'] = item.IMAGE_DATA;
+            requestData['EVIDENCE_LIST[' + index + '].IMAGE_TYPE'] = item.IMAGE_TYPE;
+            requestData['EVIDENCE_LIST[' + index + '].LENGTH'] = item.LENGTH;
+            requestData['EVIDENCE_LIST[' + index + '].SEQUENCE'] = item.SEQUENCE;
+        });
 
 
         $.ajax({
             url: g_asiBaseURL + "/ApiCalls/submit_post_audit_compliance_review",
             type: "POST",
-            data: {
-                'OLD_PARA_ID': g_oldParaId,
-                'NEW_PARA_ID': g_newParaId,
-                'INDICATOR': ind,
-                'COMMENTS': commentsRemarks,
-            },
+            data: requestData,
             cache: false,
             success: function (data) {
                 showApiAlert(data);
@@ -289,7 +311,11 @@
     function clearEvidencesLog() {
         $('.aks-file-upload-delete').click();
         $('.aks-file-upload-error').remove();
-        document.getElementById('aksfileupload').value = '';
+        g_allAttachedImages = [];
+        var fileInput = document.getElementById('aksfileupload');
+        if (fileInput) {
+            fileInput.value = '';
+        }
     }
     function getComplianceText(comID, cycle) {
         $.ajax({
@@ -308,7 +334,11 @@
                   
                     $('.aks-file-upload-delete').click();
                     $('.aks-file-upload-error').remove();
-                    document.getElementById('aksfileupload').value = '';
+                    g_allAttachedImages = [];
+                    var fileInput = document.getElementById('aksfileupload');
+                    if (fileInput) {
+                        fileInput.value = '';
+                    }
 
                     $('#viewMemo_memoNumber').val(g_memoNo);
                     $('#viewMemo_paraGist').val(data.gisT_OF_PARA);

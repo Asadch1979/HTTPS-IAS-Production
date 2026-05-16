@@ -1,0 +1,73 @@
+<div class="commercial-audit-step" data-step="arpse-linking">
+    <div class="card commercial-audit-card shadow-sm">
+        <div class="card-header d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3">
+            <div>
+                <h4 class="mb-1">ARPSE Linking and Register</h4>
+                <small class="text-muted">Choose an ARPSE from the register, then link one or more PDPs in the same wide workspace.</small>
+            </div>
+            <button type="button"
+               class="btn btn-outline-success commercial-audit-step-target"
+               data-step="arpse-header"
+               data-step-key="arpse-header">
+                Edit ARPSE Header
+            </button>
+        </div>
+        <div class="card-body">
+            <div class="commercial-audit-section">
+                <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-2 mb-3">
+                    <div>
+                        <h5 class="mb-1">ARPSE Register</h5>
+                        <p class="text-muted mb-0">Select an ARPSE to manage its linked PDPs. Use the ARPSE Header step to edit the narrative fields.</p>
+                    </div>
+                    <span id="arpsePdpSelectedHeaderLabel" class="commercial-audit-selection-pill">No ARPSE selected</span>
+                </div>
+                <div class="table-responsive">
+                    <table id="tblCommercialArpsePdpRegister" class="table table-bordered table-hover align-middle">
+                        <thead>
+                            <tr>
+                                <th>ARPSE Year</th>
+                                <th>Para No</th>
+                                <th>Gist of Para</th>
+                                <th>Body of Para</th>
+                                <th>Management Response</th>
+                                <th>Linked PDPs</th>
+                                <th class="text-center">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="commercial-audit-section mt-4">
+                <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-2 mb-3">
+                    <div>
+                        <h5 class="mb-1">Link PDPs</h5>
+                        <p id="arpsePdpMappingHint" class="text-muted mb-0">Save or select an ARPSE first, then choose one or more PDPs to link.</p>
+                    </div>
+                    <span id="arpsePdpSelectedSummary" class="small text-muted">No PDPs selected</span>
+                </div>
+                <fieldset id="arpsePdpMappingFieldset" disabled>
+                    <div class="table-responsive commercial-audit-scroll">
+                        <table id="tblArpsePdpLookup" class="table table-sm table-bordered align-middle">
+                            <thead>
+                                <tr>
+                                    <th class="text-center">Link</th>
+                                    <th>Audit Year</th>
+                                    <th>PDP No</th>
+                                    <th>Gist of PDP</th>
+                                    <th>Body of PDP</th>
+                                    <th>Linked OMs</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                    <div class="d-flex gap-2 flex-wrap mt-3">
+                        <button id="btnSaveArpsePdpMappings" type="button" class="btn btn-outline-success">Save Linked PDPs</button>
+                    </div>
+                </fieldset>
+            </div>
+        </div>
+    </div>
+</div>

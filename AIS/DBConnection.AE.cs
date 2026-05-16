@@ -316,7 +316,7 @@ namespace AIS.Controllers
                 {
                 using (var con = this.DatabaseConnection())
                     {
-                   
+
 
                     using (var cmd = con.CreateCommand())
                         {
@@ -1945,7 +1945,7 @@ namespace AIS.Controllers
                 {
                 using (var con = this.DatabaseConnection())
                     {
-                   
+
 
                     using (var cmd = con.CreateCommand())
                         {

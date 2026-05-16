@@ -185,6 +185,15 @@ namespace AIS.Controllers
                 new CommercialAuditWorkflowStep
                     {
                     StepNo = 6,
+                    StepKey = "arpse-linking",
+                    StageKey = "arpse",
+                    Title = "ARPSE Linking",
+                    Description = "Select an ARPSE, review the register, and link one or more PDPs from a separate step.",
+                    PartialViewName = "~/Views/CAU/_ArpseLinking.cshtml"
+                    },
+                new CommercialAuditWorkflowStep
+                    {
+                    StepNo = 7,
                     StepKey = "arpse-monitoring",
                     StageKey = "arpse",
                     Title = "ARPSE Monitoring",

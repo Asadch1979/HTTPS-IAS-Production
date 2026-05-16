@@ -397,6 +397,7 @@ namespace AIS.Controllers
                     AddNullableIntParameter(cmd, "P_ARPSE_YEAR_ID", model?.ArpseYearId);
                     cmd.Parameters.Add("P_PARA_NO", OracleDbType.Varchar2).Value = model?.ParaNo ?? string.Empty;
                     cmd.Parameters.Add("P_GIST_OF_PARA", OracleDbType.Varchar2).Value = model?.GistOfPara ?? string.Empty;
+                    cmd.Parameters.Add("P_BODY_OF_PARA", OracleDbType.Clob).Value = model?.BodyOfPara ?? string.Empty;
                     cmd.Parameters.Add("P_MANAGEMENT_RESPONSE", OracleDbType.Clob).Value = model?.ManagementResponse ?? string.Empty;
                     cmd.Parameters.Add("P_IS_ACTIVE", OracleDbType.Varchar2).Value = NormalizeActiveFlag(model?.IsActive);
                     cmd.Parameters.Add("P_USER_PPNO", OracleDbType.Int32).Value = Convert.ToInt32(loggedInUser.PPNumber);
@@ -436,7 +437,85 @@ namespace AIS.Controllers
                                 ArpseYearText = SafeReadString(dr, "ARPSE_YEAR_TEXT"),
                                 ParaNo = SafeReadString(dr, "PARA_NO"),
                                 GistOfPara = SafeReadString(dr, "GIST_OF_PARA"),
+                                BodyOfPara = SafeReadString(dr, "BODY_OF_PARA"),
                                 ManagementResponse = SafeReadString(dr, "MANAGEMENT_RESPONSE"),
+                                LinkedPdpCount = SafeReadInt(dr, "LINKED_PDP_COUNT"),
+                                LinkedPdpNumbers = SafeReadString(dr, "LINKED_PDP_NUMBERS"),
+                                IsActive = NormalizeActiveFlag(SafeReadString(dr, "IS_ACTIVE"))
+                                });
+                            }
+                        }
+                    }
+                }
+
+            return list;
+            }
+
+        public CommercialAuditActionResultModel SaveCommercialAuditArpsePdpMappings(CommercialAuditArpsePdpMappingSaveRequest request)
+            {
+            var sessionHandler = CreateSessionHandler();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
+                || string.IsNullOrWhiteSpace(loggedInUser.PPNumber)
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return InvalidCommercialAuditSessionResult();
+                }
+
+            var pdpIdsCsv = request?.PdpIds == null
+                ? string.Empty
+                : string.Join(",", request.PdpIds.Where(item => item > 0).Distinct());
+
+            using (var con = this.DatabaseConnection())
+                {
+                using (var cmd = con.CreateCommand())
+                    {
+                    cmd.CommandText = "PKG_COMMERCIAL_AUDIT.P_SAVE_ARPSE_PDP_MAP";
+                    cmd.CommandType = CommandType.StoredProcedure;
+                    cmd.Parameters.Clear();
+
+                    AddNullableIntParameter(cmd, "P_ARPSE_ID", request?.ArpseId);
+                    cmd.Parameters.Add("P_PDP_IDS_CSV", OracleDbType.Clob).Value = pdpIdsCsv;
+                    cmd.Parameters.Add("P_IS_ACTIVE", OracleDbType.Varchar2).Value = NormalizeActiveFlag(request?.IsActive);
+                    cmd.Parameters.Add("P_USER_PPNO", OracleDbType.Int32).Value = Convert.ToInt32(loggedInUser.PPNumber);
+                    cmd.Parameters.Add("P_USER_ROLE_ID", OracleDbType.Int32).Value = loggedInUser.UserRoleID;
+                    cmd.Parameters.Add("P_USER_ENTITY_ID", OracleDbType.Int32).Value = loggedInUser.UserEntityID.GetValueOrDefault();
+                    cmd.Parameters.Add("P_STATUS", OracleDbType.Varchar2, 30).Direction = ParameterDirection.Output;
+                    cmd.Parameters.Add("P_MESSAGE", OracleDbType.Varchar2, 4000).Direction = ParameterDirection.Output;
+                    cmd.Parameters.Add("P_ID", OracleDbType.Int32).Direction = ParameterDirection.Output;
+
+                    cmd.ExecuteNonQuery();
+                    return BuildCommercialAuditActionResult(cmd);
+                    }
+                }
+            }
+
+        public List<CommercialAuditArpsePdpMappingModel> GetCommercialAuditArpsePdpMappings(int arpseId)
+            {
+            var list = new List<CommercialAuditArpsePdpMappingModel>();
+
+            using (var con = this.DatabaseConnection())
+                {
+                using (var cmd = con.CreateCommand())
+                    {
+                    cmd.CommandText = "PKG_COMMERCIAL_AUDIT.P_GET_ARPSE_PDP_MAP";
+                    cmd.CommandType = CommandType.StoredProcedure;
+                    cmd.Parameters.Clear();
+                    cmd.Parameters.Add("P_ARPSE_ID", OracleDbType.Int32).Value = arpseId;
+                    cmd.Parameters.Add("IO_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+
+                    using (var dr = cmd.ExecuteReader())
+                        {
+                        while (dr.Read())
+                            {
+                            list.Add(new CommercialAuditArpsePdpMappingModel
+                                {
+                                MappingId = SafeReadNullableInt(dr, "MAPPING_ID"),
+                                ArpseId = SafeReadNullableInt(dr, "ARPSE_ID"),
+                                PdpId = SafeReadNullableInt(dr, "PDP_ID"),
+                                PdpNo = SafeReadString(dr, "PDP_NO"),
+                                GistOfPdp = SafeReadString(dr, "GIST_OF_PDP"),
                                 IsActive = NormalizeActiveFlag(SafeReadString(dr, "IS_ACTIVE"))
                                 });
                             }

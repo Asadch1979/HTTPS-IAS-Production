@@ -1891,6 +1891,31 @@ namespace AIS.Controllers
 
         [HttpGet]
         [HttpPost]
+        public IActionResult get_commercial_audit_arpse_pdp_mappings(int arpse_id)
+            {
+            return ExecuteCommercialAuditRequest(
+                () => Json(dBConnection.GetCommercialAuditArpsePdpMappings(arpse_id)),
+                "Unable to load ARPSE to PDP mappings right now.");
+            }
+
+        [HttpPost]
+        public IActionResult save_commercial_audit_arpse_pdp_mapping([FromBody] CommercialAuditArpsePdpMappingSaveRequest model)
+            {
+            return ExecuteCommercialAuditRequest(() =>
+                {
+                var validationResult = ValidateCommercialAuditArpsePdpMapping(model);
+                if (validationResult != null)
+                    {
+                    return validationResult;
+                    }
+
+                return Json(dBConnection.SaveCommercialAuditArpsePdpMappings(model));
+                },
+                "Unable to save ARPSE PDP mappings right now.");
+            }
+
+        [HttpGet]
+        [HttpPost]
         public IActionResult get_commercial_audit_arpse_dac_entries(int arpse_id)
             {
             return ExecuteCommercialAuditRequest(
@@ -2375,7 +2400,12 @@ namespace AIS.Controllers
             {
             return dBConnection.GetOldParasBranchComplianceTextForImpIncharge(PID, REF_P, PARA_CATEGORY, REPLY_DATE, OBS_ID);
             }
-
+        [HttpGet]
+        [HttpPost]
+        public GetOldParasBranchComplianceTextModel get_compliance_text(string COM_ID, string C_CYCLE)
+            {
+            return dBConnection.GetComplianceCycleText(COM_ID, C_CYCLE);
+            }
         [HttpGet]
         [HttpPost]
         public GetOldParasBranchComplianceTextModel get_old_para_imp_text_ref(int PID, string REF_P, string PARA_CATEGORY, string REPLY_DATE, string OBS_ID)
@@ -6686,6 +6716,26 @@ namespace AIS.Controllers
             return null;
             }
 
+        private IActionResult ValidateCommercialAuditArpsePdpMapping(CommercialAuditArpsePdpMappingSaveRequest model)
+            {
+            if (model == null)
+                {
+                return InvalidRequestResponse("request", "Invalid data supplied.");
+                }
+
+            if (!ModelState.IsValid)
+                {
+                return InvalidModelStateResponse();
+                }
+
+            if (!model.ArpseId.HasValue || model.ArpseId <= 0)
+                {
+                return InvalidRequestResponse("ArpseId", "ARPSE is required.");
+                }
+
+            return null;
+            }
+
         private IActionResult ValidateCommercialAuditArpseHeader(CommercialAuditArpseHeaderModel model)
             {
             if (model == null)
@@ -6701,6 +6751,11 @@ namespace AIS.Controllers
             if (!model.ArpseYearId.HasValue || model.ArpseYearId <= 0)
                 {
                 return InvalidRequestResponse("ArpseYearId", "ARPSE Year is required.");
+                }
+
+            if (!HasMeaningfulRichTextContent(model.BodyOfPara))
+                {
+                return InvalidRequestResponse("BodyOfPara", "Body of Para is required.");
                 }
 
             return null;
