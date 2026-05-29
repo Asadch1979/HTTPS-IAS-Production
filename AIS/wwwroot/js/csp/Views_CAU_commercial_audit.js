@@ -33,6 +33,8 @@ var commercialAuditRichTextEditorIds = [
     "arpseBody",
     "arpseManagementResponse",
     "arpseDacRecommendation",
+    "arpseDacUpdatedStatus",
+    "arpsePacUpdatedStatus",
     "arpsePacDirective"
 ];
 
@@ -987,7 +989,7 @@ function initCommercialAuditArpseMonitoring() {
     applyCommercialAuditArpseHeaderState();
     applyCommercialAuditArpseDacState();
     applyCommercialAuditArpsePacState();
-    initializeCommercialAuditRichTextEditors(["arpseDacRecommendation", "arpsePacDirective"]);
+    initializeCommercialAuditRichTextEditors(["arpseDacRecommendation", "arpseDacUpdatedStatus", "arpsePacDirective", "arpsePacUpdatedStatus"]);
     loadCommercialAuditArpseHeaders();
 }
 
@@ -1255,9 +1257,9 @@ function renderCommercialAuditArpseDacTable(list) {
 
     list.forEach(function (item) {
         var row = $("<tr>");
-        row.append($("<td>").text(getCommercialAuditPreviewText(item.DacRecommendation, 120)));
         row.append($("<td>").text(formatDisplayDate(item.DacDate)));
-        row.append($("<td>").text(item.UpdatedStatus));
+        row.append($("<td>").addClass("commercial-audit-longtext-cell").text(stripHtmlToText(item.DacRecommendation)));
+        row.append($("<td>").addClass("commercial-audit-longtext-cell").text(stripHtmlToText(item.UpdatedStatus)));
 
         var editButton = $("<button>")
             .addClass("btn btn-sm btn-primary btn-edit-arpse-dac")
@@ -1285,9 +1287,9 @@ function renderCommercialAuditArpsePacTable(list) {
 
     list.forEach(function (item) {
         var row = $("<tr>");
-        row.append($("<td>").text(getCommercialAuditPreviewText(item.PacDirective, 120)));
         row.append($("<td>").text(formatDisplayDate(item.PacDate)));
-        row.append($("<td>").text(item.UpdatedStatus));
+        row.append($("<td>").addClass("commercial-audit-longtext-cell").text(stripHtmlToText(item.PacDirective)));
+        row.append($("<td>").addClass("commercial-audit-longtext-cell").text(stripHtmlToText(item.UpdatedStatus)));
 
         var editButton = $("<button>")
             .addClass("btn btn-sm btn-primary btn-edit-arpse-pac")
@@ -1306,7 +1308,7 @@ function populateCommercialAuditArpseDacForm(item) {
 
     setCommercialAuditFieldValue("arpseDacRecommendation", coalesce(item.DacRecommendation, item.dacRecommendation, "") || "");
     $("#arpseDacDate").val(formatInputDate(coalesce(item.DacDate, item.dacDate, null)));
-    $("#arpseDacUpdatedStatus").val(coalesce(item.UpdatedStatus, item.updatedStatus, "") || "");
+    setCommercialAuditFieldValue("arpseDacUpdatedStatus", coalesce(item.UpdatedStatus, item.updatedStatus, "") || "");
     applyCommercialAuditArpseDacState();
 }
 
@@ -1325,7 +1327,7 @@ function resetCommercialAuditArpseDacForm() {
 
     setCommercialAuditFieldValue("arpseDacRecommendation", "");
     $("#arpseDacDate").val("");
-    $("#arpseDacUpdatedStatus").val("");
+    setCommercialAuditFieldValue("arpseDacUpdatedStatus", "");
     applyCommercialAuditArpseDacState();
 }
 
@@ -1341,7 +1343,7 @@ function saveCommercialAuditArpseDacEntry() {
         ArpseId: commercialAuditPage.selectedArpseId,
         DacRecommendation: getCommercialAuditRichTextValue("arpseDacRecommendation"),
         DacDate: $("#arpseDacDate").val() || null,
-        UpdatedStatus: $("#arpseDacUpdatedStatus").val().trim(),
+        UpdatedStatus: getCommercialAuditRichTextValue("arpseDacUpdatedStatus"),
         IsActive: "Y"
     };
 
@@ -1377,7 +1379,7 @@ function populateCommercialAuditArpsePacForm(item) {
 
     setCommercialAuditFieldValue("arpsePacDirective", coalesce(item.PacDirective, item.pacDirective, "") || "");
     $("#arpsePacDate").val(formatInputDate(coalesce(item.PacDate, item.pacDate, null)));
-    $("#arpsePacUpdatedStatus").val(coalesce(item.UpdatedStatus, item.updatedStatus, "") || "");
+    setCommercialAuditFieldValue("arpsePacUpdatedStatus", coalesce(item.UpdatedStatus, item.updatedStatus, "") || "");
     applyCommercialAuditArpsePacState();
 }
 
@@ -1396,7 +1398,7 @@ function resetCommercialAuditArpsePacForm() {
 
     setCommercialAuditFieldValue("arpsePacDirective", "");
     $("#arpsePacDate").val("");
-    $("#arpsePacUpdatedStatus").val("");
+    setCommercialAuditFieldValue("arpsePacUpdatedStatus", "");
     applyCommercialAuditArpsePacState();
 }
 
@@ -1412,7 +1414,7 @@ function saveCommercialAuditArpsePacEntry() {
         ArpseId: commercialAuditPage.selectedArpseId,
         PacDirective: getCommercialAuditRichTextValue("arpsePacDirective"),
         PacDate: $("#arpsePacDate").val() || null,
-        UpdatedStatus: $("#arpsePacUpdatedStatus").val().trim(),
+        UpdatedStatus: getCommercialAuditRichTextValue("arpsePacUpdatedStatus"),
         IsActive: "Y"
     };
 

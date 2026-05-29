@@ -14,6 +14,7 @@
 
     var activeStepCode = 'DRAFT_REPORT';
     var lockedEngagementId = '';
+    var lockedEngagementStatusId = null;
     var scriptLoadCache = {};
     var steps = [
         { stepCode: 'DRAFT_REPORT', stepNo: 1, stepTitle: 'Draft Report', isCompleted: false, isSaved: false },
@@ -111,6 +112,71 @@
 
     function selectedEngagementId() {
         return lockedEngagementId || selector.value || '';
+    }
+
+    function selectedEngagementOption() {
+        return selector.options && selector.selectedIndex >= 0
+            ? selector.options[selector.selectedIndex]
+            : null;
+    }
+
+    function selectedStatusId() {
+        var option = selectedEngagementOption();
+        var rawStatusId = lockedEngagementStatusId !== null && lockedEngagementStatusId !== undefined
+            ? lockedEngagementStatusId
+            : (option ? option.getAttribute('data-status-id') : '');
+        return parseInt(rawStatusId || '0', 10) || 0;
+    }
+
+    function resolveStepStatusAccess(stepCode) {
+        var statusId = selectedStatusId();
+        var normalizedStepCode = (stepCode || '').toUpperCase();
+
+        if (!selectedEngagementId()) {
+            return {
+                enabled: false,
+                message: 'Please select an engagement before opening workflow steps.'
+            };
+        }
+
+        if (statusId === 12 && normalizedStepCode === 'ISSUE_REPORT') {
+            return {
+                enabled: false,
+                message: 'This step is not available for the selected engagement status.'
+            };
+        }
+
+        if (statusId === 13 && (normalizedStepCode === 'DRAFT_REPORT' || normalizedStepCode === 'CHECKING_DRAFT_REPORT' || normalizedStepCode === 'QUALITY_REVIEW')) {
+            return {
+                enabled: false,
+                message: 'This step is not available for the selected engagement status.'
+            };
+        }
+
+        return {
+            enabled: true,
+            message: ''
+        };
+    }
+
+    function applyStepAvailability() {
+        stepper.querySelectorAll('.step-pill').forEach(function (anchor) {
+            var access = resolveStepStatusAccess(anchor.getAttribute('data-step-code'));
+            anchor.classList.toggle('disabled', !access.enabled);
+            anchor.setAttribute('data-step-enabled', access.enabled ? 'true' : 'false');
+            anchor.setAttribute('data-disabled-message', access.message || '');
+        });
+    }
+
+    function firstAvailableStepAnchor() {
+        var anchors = stepper.querySelectorAll('.step-pill');
+        for (var index = 0; index < anchors.length; index += 1) {
+            if (!anchors[index].classList.contains('disabled')) {
+                return anchors[index];
+            }
+        }
+
+        return null;
     }
 
     function setEngagementLocked(locked) {
@@ -277,6 +343,7 @@
     function initializeStep(stepCode, engId, readOnly) {
         window.fieldAuditBoContext = {
             engId: engId,
+            statusId: selectedStatusId(),
             readOnly: !!readOnly
         };
 
@@ -297,6 +364,14 @@
         if (!engId) {
             showAlert(true);
             clearContent('Please select an engagement before opening workflow tabs.');
+            applyStepAvailability();
+            return Promise.resolve();
+        }
+
+        var statusAccess = resolveStepStatusAccess(stepCode);
+        if (!statusAccess.enabled) {
+            clearContent(statusAccess.message || 'This step is not available for the selected engagement status.');
+            applyStepAvailability();
             return Promise.resolve();
         }
 
@@ -330,7 +405,9 @@
                 }
 
                 if (!response.ok) {
-                    throw new Error('Failed to load Back Office step.');
+                    return response.text().then(function (message) {
+                        throw new Error(message || 'Failed to load Back Office step.');
+                    });
                 }
                 return response.text().then(function (html) {
                     return {
@@ -359,7 +436,7 @@
             })
             .catch(function (error) {
                 console.error('Back Office step load/initialize failed:', error);
-                clearContent('Unable to load workflow content right now. Please try again.');
+                clearContent((error && error.message) || 'Unable to load workflow content right now. Please try again.');
             });
     }
 
@@ -375,6 +452,11 @@
             disabled: true,
             linkMode: 'button',
             onStepClick: function (anchor) {
+                if (anchor.classList.contains('disabled') || anchor.getAttribute('data-step-enabled') === 'false') {
+                    clearContent(anchor.getAttribute('data-disabled-message') || 'This step is not available for the selected engagement status.');
+                    return;
+                }
+
                 loadStep(anchor.getAttribute('data-step-code'), anchor.getAttribute('data-step-no'));
             }
         });
@@ -392,9 +474,16 @@
             .then(function (items) {
                 selector.innerHTML = '<option value="">-- Select Engagement --</option>';
                 (items || []).forEach(function (item) {
+                    var engagementId = item.engagementId || item.ENG_ID || '';
+                    var displayText = item.displayText || item.DISPLAY_TEXT || item.label || item.ENGAGEMENT_NAME || item.entityName || engagementId;
+                    var statusId = item.statusId || item.STATUS_ID || '';
+                    var statusName = item.statusName || item.STATUS_NAME || '';
                     var option = document.createElement('option');
-                    option.value = item.engagementId;
-                    option.textContent = item.label || ((item.entityName || 'Engagement') + ' (' + item.engagementId + ')');
+                    option.value = engagementId;
+                    option.textContent = displayText;
+                    option.setAttribute('data-status-id', statusId);
+                    option.setAttribute('data-status-name', statusName);
+                    option.setAttribute('data-display', displayText);
                     selector.appendChild(option);
                 });
             })
@@ -412,8 +501,10 @@
 
         if (!hasSelection) {
             lockedEngagementId = '';
+            lockedEngagementStatusId = null;
             setEngagementLocked(false);
             clearContent('Select an engagement from the dropdown above to load Back Office workflow content.');
+            applyStepAvailability();
             return;
         }
 
@@ -424,32 +515,45 @@
         }
 
         lockedEngagementId = selector.value;
+        lockedEngagementStatusId = selectedStatusId();
         setEngagementLocked(true);
+        applyStepAvailability();
 
         var active = stepper.querySelector('.step-pill.active')
             || stepper.querySelector('.step-pill[data-step-code="' + activeStepCode + '"]')
             || stepper.querySelector('.step-pill[data-step-code="' + steps[0].stepCode + '"]');
+        if (!active || active.classList.contains('disabled')) {
+            active = firstAvailableStepAnchor();
+        }
+
+        if (!active) {
+            clearContent('No workflow steps are available for the selected engagement right now.');
+            return;
+        }
+
         loadStep(active ? active.getAttribute('data-step-code') : steps[0].stepCode, active ? active.getAttribute('data-step-no') : steps[0].stepNo);
     });
 
     if (changeEngagementButton) {
         changeEngagementButton.addEventListener('click', function () {
             lockedEngagementId = '';
+            lockedEngagementStatusId = null;
             selector.value = '';
             setEngagementLocked(false);
             showAlert(true);
-            stepper.querySelectorAll('.step-pill').forEach(function (anchor) {
-                anchor.classList.add('disabled');
-            });
+            applyStepAvailability();
             clearContent('Select an engagement from the dropdown above to load Back Office workflow content.');
         });
     }
 
     window.fieldAuditBoDashboard = {
-        loadStepContent: loadStep
+        loadStepContent: loadStep,
+        getSelectedEngagementId: selectedEngagementId,
+        getSelectedStatusId: selectedStatusId
     };
 
     initStepper();
+    applyStepAvailability();
     loadEngagements();
     setEngagementLocked(false);
     showAlert(true);

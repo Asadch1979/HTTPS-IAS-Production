@@ -123,6 +123,12 @@ namespace AIS.Controllers
                 return CreateStepAccessDeniedResult();
                 }
 
+            var statusId = GetBackOfficeEngagementStatusId(engId);
+            if (!IsBackOfficeStepEnabledForStatus(stepCode, statusId))
+                {
+                return BadRequest("This step is not available for the selected engagement status.");
+                }
+
             PopulateReplicaViewData(backOfficePageId);
             ViewData["AnnexList"] = _dbConnection.GetAnnexuresForChecklistDetail();
             ViewData["ProcessList"] = _dbConnection.GetAuditChecklist();
@@ -589,6 +595,32 @@ namespace AIS.Controllers
                     && pageId > 0
                     && _permissionService.HasViewPermission(user, pageId))
                 .ToList();
+            }
+
+        private int? GetBackOfficeEngagementStatusId(int engId)
+            {
+            return _dbConnection.GetBackOfficeDashboardEngagements()
+                .Where(item => item.ENG_ID == engId)
+                .Select(item => item.STATUS_ID)
+                .FirstOrDefault();
+            }
+
+        private static bool IsBackOfficeStepEnabledForStatus(string stepCode, int? statusId)
+            {
+            var normalizedStepCode = (stepCode ?? string.Empty).Trim().ToUpperInvariant();
+            if (statusId == 12)
+                {
+                return normalizedStepCode != "ISSUE_REPORT";
+                }
+
+            if (statusId == 13)
+                {
+                return normalizedStepCode != "DRAFT_REPORT"
+                    && normalizedStepCode != "CHECKING_DRAFT_REPORT"
+                    && normalizedStepCode != "QUALITY_REVIEW";
+                }
+
+            return true;
             }
 
         private static string ResolveBackOfficePermissionPath(string stepCode)

@@ -9,5 +9,13 @@ namespace AIS.Models
 
         public int? TYPE_ID { get; set; }
 
+        public int? STATUS_ID { get; set; }
+
+        [PlainText]
+        public string STATUS_NAME { get; set; }
+
+        [PlainText]
+        public string DISPLAY_TEXT { get; set; }
+
         }
     }

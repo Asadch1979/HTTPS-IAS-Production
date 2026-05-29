@@ -6818,9 +6818,17 @@ namespace AIS.Controllers
                 .OrderBy(item => item.ENTITY_NAME)
                 .Select(item => new
                     {
+                    ENG_ID = item.ENG_ID,
+                    ENGAGEMENT_NAME = item.ENTITY_NAME,
+                    DISPLAY_TEXT = string.IsNullOrWhiteSpace(item.DISPLAY_TEXT) ? item.ENTITY_NAME : item.DISPLAY_TEXT,
+                    STATUS_ID = item.STATUS_ID,
+                    STATUS_NAME = item.STATUS_NAME,
                     engagementId = item.ENG_ID,
                     entityName = item.ENTITY_NAME,
-                    label = $"{item.ENTITY_NAME} ({item.ENG_ID})"
+                    displayText = string.IsNullOrWhiteSpace(item.DISPLAY_TEXT) ? item.ENTITY_NAME : item.DISPLAY_TEXT,
+                    statusId = item.STATUS_ID,
+                    statusName = item.STATUS_NAME,
+                    label = string.IsNullOrWhiteSpace(item.DISPLAY_TEXT) ? item.ENTITY_NAME : item.DISPLAY_TEXT
                     })
                 .ToList();
 

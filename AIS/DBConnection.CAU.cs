@@ -550,7 +550,7 @@ namespace AIS.Controllers
                     AddNullableIntParameter(cmd, "P_ARPSE_ID", model?.ArpseId);
                     cmd.Parameters.Add("P_DAC_RECOMMENDATION", OracleDbType.Clob).Value = model?.DacRecommendation ?? string.Empty;
                     AddNullableDateParameter(cmd, "P_DAC_DATE", model?.DacDate);
-                    cmd.Parameters.Add("P_UPDATED_STATUS", OracleDbType.Varchar2).Value = model?.UpdatedStatus ?? string.Empty;
+                    cmd.Parameters.Add("P_UPDATED_STATUS", OracleDbType.Clob).Value = model?.UpdatedStatus ?? string.Empty;
                     cmd.Parameters.Add("P_IS_ACTIVE", OracleDbType.Varchar2).Value = NormalizeActiveFlag(model?.IsActive);
                     cmd.Parameters.Add("P_USER_PPNO", OracleDbType.Int32).Value = Convert.ToInt32(loggedInUser.PPNumber);
                     cmd.Parameters.Add("P_USER_ROLE_ID", OracleDbType.Int32).Value = loggedInUser.UserRoleID;
@@ -624,7 +624,7 @@ namespace AIS.Controllers
                     AddNullableIntParameter(cmd, "P_ARPSE_ID", model?.ArpseId);
                     cmd.Parameters.Add("P_PAC_DIRECTIVE", OracleDbType.Clob).Value = model?.PacDirective ?? string.Empty;
                     AddNullableDateParameter(cmd, "P_PAC_DATE", model?.PacDate);
-                    cmd.Parameters.Add("P_UPDATED_STATUS", OracleDbType.Varchar2).Value = model?.UpdatedStatus ?? string.Empty;
+                    cmd.Parameters.Add("P_UPDATED_STATUS", OracleDbType.Clob).Value = model?.UpdatedStatus ?? string.Empty;
                     cmd.Parameters.Add("P_IS_ACTIVE", OracleDbType.Varchar2).Value = NormalizeActiveFlag(model?.IsActive);
                     cmd.Parameters.Add("P_USER_PPNO", OracleDbType.Int32).Value = Convert.ToInt32(loggedInUser.PPNumber);
                     cmd.Parameters.Add("P_USER_ROLE_ID", OracleDbType.Int32).Value = loggedInUser.UserRoleID;

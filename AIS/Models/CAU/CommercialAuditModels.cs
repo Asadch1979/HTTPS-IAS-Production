@@ -189,8 +189,7 @@ namespace AIS.Models.CAU
         [RichTextSanitize]
         public string DacRecommendation { get; set; }
         public DateTime? DacDate { get; set; }
-        [MaxLength(200)]
-        [PlainText]
+        [RichTextSanitize]
         public string UpdatedStatus { get; set; }
         [PlainText]
         public string IsActive { get; set; } = "Y";
@@ -206,8 +205,7 @@ namespace AIS.Models.CAU
         [RichTextSanitize]
         public string PacDirective { get; set; }
         public DateTime? PacDate { get; set; }
-        [MaxLength(200)]
-        [PlainText]
+        [RichTextSanitize]
         public string UpdatedStatus { get; set; }
         [PlainText]
         public string IsActive { get; set; } = "Y";

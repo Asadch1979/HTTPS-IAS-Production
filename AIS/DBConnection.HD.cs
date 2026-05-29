@@ -2720,12 +2720,34 @@ namespace AIS.Controllers
                 cmd.Parameters.Add("R_ID", OracleDbType.Int32).Value = loggedInUser.UserRoleID;
                 cmd.Parameters.Add("T_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
                 OracleDataReader rdr = cmd.ExecuteReader();
+                bool HasColumn(IDataRecord reader, string columnName)
+                    {
+                    for (var index = 0; index < reader.FieldCount; index++)
+                        {
+                        if (string.Equals(reader.GetName(index), columnName, StringComparison.OrdinalIgnoreCase))
+                            {
+                            return true;
+                            }
+                        }
+
+                    return false;
+                    }
+
                 while (rdr.Read())
                     {
                     AuditConcludingEntitiesModel chk = new AuditConcludingEntitiesModel();
                     chk.ENTITY_NAME = rdr["ENTITY_NAME"].ToString();
                     chk.ENG_ID = Convert.ToInt32(rdr["ENG_ID"].ToString());
                     chk.TYPE_ID = Convert.ToInt32(rdr["TYPE_ID"].ToString());
+                    chk.STATUS_ID = HasColumn(rdr, "STATUS_ID") && rdr["STATUS_ID"] != DBNull.Value
+                        ? Convert.ToInt32(rdr["STATUS_ID"].ToString())
+                        : (int?)null;
+                    chk.STATUS_NAME = HasColumn(rdr, "STATUS_NAME") && rdr["STATUS_NAME"] != DBNull.Value
+                        ? rdr["STATUS_NAME"].ToString()
+                        : string.Empty;
+                    chk.DISPLAY_TEXT = HasColumn(rdr, "DISPLAY_TEXT") && rdr["DISPLAY_TEXT"] != DBNull.Value
+                        ? rdr["DISPLAY_TEXT"].ToString()
+                        : string.Empty;
                     EngList.Add(chk);
                     }
                 }
