@@ -104,7 +104,7 @@
                            p_module     IN VARCHAR2 DEFAULT NULL,
                            p_user_ppno  IN NUMBER DEFAULT NULL,
                            p_eng_id     IN NUMBER DEFAULT NULL,
-                           o_cursor     OUT SYS_REFCURSOR);
+                           io_cursor     OUT SYS_REFCURSOR);
 
 end PKG_LG;
 
@@ -604,9 +604,9 @@ create or replace package body PKG_LG is
                            p_module     IN VARCHAR2 DEFAULT NULL,
                            p_user_ppno  IN NUMBER DEFAULT NULL,
                            p_eng_id     IN NUMBER DEFAULT NULL,
-                           o_cursor     OUT SYS_REFCURSOR) IS
+                           io_cursor     OUT SYS_REFCURSOR) IS
   BEGIN
-    OPEN o_cursor FOR
+    OPEN io_cursor FOR
       SELECT LOG_ID,
              LOG_LEVEL,
              LOG_TIME,

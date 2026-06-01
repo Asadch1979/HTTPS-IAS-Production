@@ -20,15 +20,17 @@ namespace AIS.Controllers
                 {
                 return new List<AuditPeriodModel>();
                 }
-            var con = this.DatabaseConnection();
+            using var con = this.DatabaseConnection();
             List<AuditPeriodModel> periodList = new List<AuditPeriodModel>();
             using (OracleCommand cmd = con.CreateCommand())
                 {
                 cmd.CommandText = "pkg_pg.P_GET_Auditperiod_status";
                 cmd.CommandType = CommandType.StoredProcedure;
+                cmd.BindByName = true;
+                GuardAgainstDynamicSql(cmd);
                 cmd.Parameters.Clear();
-                cmd.Parameters.Add("T_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
-                OracleDataReader rdr = cmd.ExecuteReader();
+                cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+                using OracleDataReader rdr = cmd.ExecuteReader();
 
                 while (rdr.Read())
                     {
@@ -38,7 +40,6 @@ namespace AIS.Controllers
                     periodList.Add(period);
                     }
                 }
-            con.Dispose();
             return periodList;
             }
 
@@ -53,18 +54,20 @@ namespace AIS.Controllers
                 {
                 return new List<AuditPeriodModel>();
                 }
-            var con = this.DatabaseConnection();
+            using var con = this.DatabaseConnection();
             List<AuditPeriodModel> periodList = new List<AuditPeriodModel>();
             using (OracleCommand cmd = con.CreateCommand())
                 {
                 cmd.CommandText = "pkg_pg.P_GetAuditPeriods";
                 cmd.CommandType = CommandType.StoredProcedure;
+                cmd.BindByName = true;
+                GuardAgainstDynamicSql(cmd);
                 cmd.Parameters.Clear();
-                cmd.Parameters.Add("P_NO", OracleDbType.Int32).Value = loggedInUser.PPNumber;
                 cmd.Parameters.Add("ENT_ID", OracleDbType.Int32).Value = loggedInUser.UserEntityID;
+                cmd.Parameters.Add("P_NO", OracleDbType.Int32).Value = loggedInUser.PPNumber;
                 cmd.Parameters.Add("R_ID", OracleDbType.Int32).Value = loggedInUser.UserRoleID;
-                cmd.Parameters.Add("T_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
-                OracleDataReader rdr = cmd.ExecuteReader();
+                cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+                using OracleDataReader rdr = cmd.ExecuteReader();
 
                 while (rdr.Read())
                     {
@@ -78,7 +81,6 @@ namespace AIS.Controllers
                     periodList.Add(period);
                     }
                 }
-            con.Dispose();
             return periodList;
             }
 
@@ -95,18 +97,20 @@ namespace AIS.Controllers
                 {
                 return new List<AuditCriteriaModel>();
                 }
-            var con = this.DatabaseConnection();
+            using var con = this.DatabaseConnection();
             List<AuditCriteriaModel> criteriaList = new List<AuditCriteriaModel>();
             using (OracleCommand cmd = con.CreateCommand())
                 {
                 cmd.CommandText = "pkg_pg.P_GetAuditCriteriasToAuthorize";
                 cmd.CommandType = CommandType.StoredProcedure;
+                cmd.BindByName = true;
+                GuardAgainstDynamicSql(cmd);
                 cmd.Parameters.Clear();
                 cmd.Parameters.Add("ENT_ID", OracleDbType.Int32).Value = loggedInUser.UserEntityID;
                 cmd.Parameters.Add("P_NO", OracleDbType.Int32).Value = loggedInUser.PPNumber;
                 cmd.Parameters.Add("R_ID", OracleDbType.Int32).Value = loggedInUser.UserRoleID;
-                cmd.Parameters.Add("T_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
-                OracleDataReader rdr = cmd.ExecuteReader();
+                cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+                using OracleDataReader rdr = cmd.ExecuteReader();
                 while (rdr.Read())
                     {
                     AuditCriteriaModel acr = new AuditCriteriaModel();
@@ -133,7 +137,6 @@ namespace AIS.Controllers
                     criteriaList.Add(acr);
                     }
                 }
-            con.Dispose();
             return criteriaList;
             }
 
@@ -149,18 +152,20 @@ namespace AIS.Controllers
                 {
                 return new List<AuditRefEngagementPlanModel>();
                 }
-            var con = this.DatabaseConnection();
+            using var con = this.DatabaseConnection();
             List<AuditRefEngagementPlanModel> list = new List<AuditRefEngagementPlanModel>();
             using (OracleCommand cmd = con.CreateCommand())
                 {
                 cmd.CommandText = "pkg_pg.P_GetRefferedBackAuditEngagementPlans";
                 cmd.CommandType = CommandType.StoredProcedure;
+                cmd.BindByName = true;
+                GuardAgainstDynamicSql(cmd);
                 cmd.Parameters.Clear();
                 cmd.Parameters.Add("ENT_ID", OracleDbType.Int32).Value = loggedInUser.UserEntityID;
                 cmd.Parameters.Add("P_NO", OracleDbType.Int32).Value = loggedInUser.PPNumber;
                 cmd.Parameters.Add("R_ID", OracleDbType.Int32).Value = loggedInUser.UserRoleID;
-                cmd.Parameters.Add("T_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
-                OracleDataReader ardr = cmd.ExecuteReader();
+                cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+                using OracleDataReader ardr = cmd.ExecuteReader();
                 while (ardr.Read())
                     {
                     AuditRefEngagementPlanModel eng = new AuditRefEngagementPlanModel();
@@ -179,7 +184,6 @@ namespace AIS.Controllers
                     list.Add(eng);
                     }
                 }
-            con.Dispose();
             return list;
             }
 

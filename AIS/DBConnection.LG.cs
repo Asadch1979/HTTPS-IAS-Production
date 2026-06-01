@@ -31,6 +31,7 @@ namespace AIS.Controllers
                     {
                     cmd.CommandText = "PKG_LG.P_GET_SYS_LOGS";
                     cmd.CommandType = CommandType.StoredProcedure;
+                    GuardAgainstDynamicSql(cmd);
                     cmd.BindByName = true;
                     cmd.Parameters.Clear();
                     cmd.Parameters.Add("p_start_time", OracleDbType.TimeStamp).Value = startTime.HasValue ? (object)startTime.Value : DBNull.Value;
@@ -39,7 +40,7 @@ namespace AIS.Controllers
                     cmd.Parameters.Add("p_module", OracleDbType.Varchar2).Value = string.IsNullOrWhiteSpace(module) ? (object)DBNull.Value : module;
                     cmd.Parameters.Add("p_user_ppno", OracleDbType.Varchar2).Value = string.IsNullOrWhiteSpace(userPpno) ? (object)DBNull.Value : userPpno;
                     cmd.Parameters.Add("p_eng_id", OracleDbType.Int32).Value = engId.HasValue ? (object)engId.Value : DBNull.Value;
-                    cmd.Parameters.Add("o_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+                    cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
 
                     using (var reader = cmd.ExecuteReader())
                         {
@@ -73,6 +74,7 @@ namespace AIS.Controllers
                     {
                     cmd.CommandText = "PKG_LG.P_DELETE_SYS_LOGS";
                     cmd.CommandType = CommandType.StoredProcedure;
+                    GuardAgainstDynamicSql(cmd);
                     cmd.BindByName = true;
                     cmd.Parameters.Clear();
                     cmd.Parameters.Add("p_cutoff_time", OracleDbType.TimeStamp).Value = cutoffTime;

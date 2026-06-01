@@ -139,6 +139,8 @@ namespace AIS.Controllers
                         {
                         cmd.CommandText = "PKG_HD.P_VALIDATE_SBP_PASSWORD";
                         cmd.CommandType = CommandType.StoredProcedure;
+                        cmd.BindByName = true;
+                        GuardAgainstDynamicSql(cmd);
                         var hashedInput = HashPassword(inputPassword);
                         cmd.Parameters.Add("p_input_key", OracleDbType.Varchar2, 200).Value = hashedInput;
                         var output = new OracleParameter("p_is_valid", OracleDbType.Varchar2, 1)
@@ -190,6 +192,8 @@ namespace AIS.Controllers
                     {
                     cmd.CommandText = "PKG_HD.P_INSERT_SBP_OBSERVATION";
                     cmd.CommandType = CommandType.StoredProcedure;
+                    cmd.BindByName = true;
+                    GuardAgainstDynamicSql(cmd);
                     cmd.Parameters.Add("p_ref_no", OracleDbType.Varchar2, 20).Value = model.RefNo;
                     cmd.Parameters.Add("p_function_name", OracleDbType.Varchar2, 255).Value = model.FunctionName;
                     cmd.Parameters.Add("p_para_no", OracleDbType.Varchar2, 50).Value = string.IsNullOrWhiteSpace(model.ParaNo) ? (object)DBNull.Value : model.ParaNo;
@@ -248,6 +252,8 @@ namespace AIS.Controllers
                     {
                     cmd.CommandText = "PKG_HD.P_INSERT_SBP_RESPONSE";
                     cmd.CommandType = CommandType.StoredProcedure;
+                    cmd.BindByName = true;
+                    GuardAgainstDynamicSql(cmd);
                     cmd.Parameters.Add("p_para_id", OracleDbType.Int64).Value = model.ParaId;
                     cmd.Parameters.Add("p_ref_no", OracleDbType.Varchar2, 20).Value = model.RefNo;
                     cmd.Parameters.Add("p_bank_response", OracleDbType.Clob).Value = model.BankResponse;
@@ -270,6 +276,8 @@ namespace AIS.Controllers
                     {
                     cmd.CommandText = "PKG_HD.P_GET_SBP_RESPONSE";
                     cmd.CommandType = CommandType.StoredProcedure;
+                    cmd.BindByName = true;
+                    GuardAgainstDynamicSql(cmd);
                     cmd.Parameters.Add("p_response_id", OracleDbType.Int64).Value = responseId;
                     cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
 
@@ -313,6 +321,8 @@ namespace AIS.Controllers
                     {
                     cmd.CommandText = "PKG_HD.P_UPDATE_SBP_RESPONSE";
                     cmd.CommandType = CommandType.StoredProcedure;
+                    cmd.BindByName = true;
+                    GuardAgainstDynamicSql(cmd);
 
                     // IN parameters
                     cmd.Parameters.Add("p_response_id", OracleDbType.Int64)
@@ -375,6 +385,8 @@ namespace AIS.Controllers
                     {
                     cmd.CommandText = "PKG_HD.P_GET_SBP_REGISTER";
                     cmd.CommandType = CommandType.StoredProcedure;
+                    cmd.BindByName = true;
+                    GuardAgainstDynamicSql(cmd);
                     cmd.Parameters.Add("p_observation_type", OracleDbType.Int64).Value = observationTypeId;
                     cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
                     using (var reader = cmd.ExecuteReader())
@@ -420,6 +432,8 @@ namespace AIS.Controllers
                     {
                     cmd.CommandText = "PKG_HD.P_GET_SBP_OBS_TYPES";
                     cmd.CommandType = CommandType.StoredProcedure;
+                    cmd.BindByName = true;
+                    GuardAgainstDynamicSql(cmd);
                     cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
 
                     using (var reader = cmd.ExecuteReader())
@@ -474,6 +488,8 @@ namespace AIS.Controllers
                     {
                     cmd.CommandText = "PKG_HD.P_UPDATE_SBP_OBSERVATION";
                     cmd.CommandType = CommandType.StoredProcedure;
+                    cmd.BindByName = true;
+                    GuardAgainstDynamicSql(cmd);
 
                     // Match parameter names and types EXACTLY
                     cmd.Parameters.Add("p_para_id", OracleDbType.Int64).Value = model.ParaId;
@@ -533,6 +549,8 @@ namespace AIS.Controllers
                     {
                     cmd.CommandText = "PKG_HD.P_GET_SBP_HISTORY";
                     cmd.CommandType = CommandType.StoredProcedure;
+                    cmd.BindByName = true;
+                    GuardAgainstDynamicSql(cmd);
                     cmd.Parameters.Add("p_para_id", OracleDbType.Int64).Value = paraId;
                     cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
                     using (var reader = cmd.ExecuteReader())
@@ -594,6 +612,8 @@ namespace AIS.Controllers
                     {
                     cmd.CommandText = "pkg_hd.P_Update_Cad_Passwrod";
                     cmd.CommandType = CommandType.StoredProcedure;
+                    cmd.BindByName = true;
+                    GuardAgainstDynamicSql(cmd);
 
                     // --- Input parameters ---
                     cmd.Parameters.Add("R_ID", OracleDbType.Int32).Value = roleId;
@@ -653,6 +673,8 @@ namespace AIS.Controllers
                     {
                     cmd.CommandText = "PKG_HD.P_REQUEST_DELETE_OBSERVATION";
                     cmd.CommandType = CommandType.StoredProcedure;
+                    cmd.BindByName = true;
+                    GuardAgainstDynamicSql(cmd);
 
                     cmd.Parameters.Add("p_para_id", OracleDbType.Int64).Value = paraId;
                     cmd.Parameters.Add("p_reason", OracleDbType.Clob).Value = (object)(reason ?? string.Empty);
@@ -694,6 +716,8 @@ namespace AIS.Controllers
                     {
                     cmd.CommandText = "PKG_HD.P_REQUEST_DELETE_RESPONSE";
                     cmd.CommandType = CommandType.StoredProcedure;
+                    cmd.BindByName = true;
+                    GuardAgainstDynamicSql(cmd);
 
                     cmd.Parameters.Add("p_response_id", OracleDbType.Int64).Value = responseId;
                     cmd.Parameters.Add("p_reason", OracleDbType.Clob).Value = (object)(reason ?? string.Empty);
@@ -735,6 +759,8 @@ namespace AIS.Controllers
                     {
                     cmd.CommandText = "PKG_HD.P_REQUEST_REVERSE";
                     cmd.CommandType = CommandType.StoredProcedure;
+                    cmd.BindByName = true;
+                    GuardAgainstDynamicSql(cmd);
 
                     cmd.Parameters.Add("p_request_id_to_reverse", OracleDbType.Int64).Value = requestIdToReverse;
                     cmd.Parameters.Add("p_reason", OracleDbType.Clob).Value = (object)(reason ?? string.Empty);
@@ -776,6 +802,8 @@ namespace AIS.Controllers
                     {
                     cmd.CommandText = "PKG_HD.P_APPROVE_REQUEST";
                     cmd.CommandType = CommandType.StoredProcedure;
+                    cmd.BindByName = true;
+                    GuardAgainstDynamicSql(cmd);
 
                     cmd.Parameters.Add("p_request_id", OracleDbType.Int64).Value = requestId;
                     cmd.Parameters.Add("p_approver_pp", OracleDbType.Int64).Value = user.PPNumber;
@@ -813,6 +841,8 @@ namespace AIS.Controllers
                     {
                     cmd.CommandText = "PKG_HD.P_REJECT_REQUEST";
                     cmd.CommandType = CommandType.StoredProcedure;
+                    cmd.BindByName = true;
+                    GuardAgainstDynamicSql(cmd);
 
                     cmd.Parameters.Add("p_request_id", OracleDbType.Int64).Value = requestId;
                     cmd.Parameters.Add("p_approver_pp", OracleDbType.Int64).Value = user.PPNumber;
@@ -840,6 +870,8 @@ namespace AIS.Controllers
                     {
                     cmd.CommandText = "PKG_HD.P_GET_REQUESTS";
                     cmd.CommandType = CommandType.StoredProcedure;
+                    cmd.BindByName = true;
+                    GuardAgainstDynamicSql(cmd);
 
                     cmd.Parameters.Add("p_status", OracleDbType.Varchar2, 50).Value =
                         string.IsNullOrWhiteSpace(status) ? (object)DBNull.Value : status;
@@ -874,6 +906,8 @@ namespace AIS.Controllers
                     {
                     cmd.CommandText = "PKG_HD.P_GET_REQUEST_HISTORY";
                     cmd.CommandType = CommandType.StoredProcedure;
+                    cmd.BindByName = true;
+                    GuardAgainstDynamicSql(cmd);
 
                     cmd.Parameters.Add("p_request_id", OracleDbType.Int64).Value = requestId;
 

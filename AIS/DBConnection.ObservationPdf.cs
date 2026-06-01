@@ -54,6 +54,8 @@ namespace AIS.Controllers
             using var cmd = con.CreateCommand();
             cmd.BindByName = true;
             cmd.CommandType = CommandType.StoredProcedure;
+            cmd.BindByName = true;
+            GuardAgainstDynamicSql(cmd);
             cmd.CommandText = "pkg_ae.P_GetObservationResponsible";
 
             cmd.Parameters.Add("OBSID", OracleDbType.Int32).Value = obsId;

@@ -657,24 +657,24 @@
   PROCEDURE P_GET_REFERENCE_MASTER_DETAIL(p_search_text           IN VARCHAR2 DEFAULT NULL,
                                           p_reference_source_type IN VARCHAR2 DEFAULT NULL,
                                           p_ref_id                IN NUMBER DEFAULT NULL,
-                                          o_cursor                OUT SYS_REFCURSOR);
+                                          io_cursor                OUT SYS_REFCURSOR);
 
-  PROCEDURE P_GET_MANUAL_MASTER(o_cursor OUT SYS_REFCURSOR);
+  PROCEDURE P_GET_MANUAL_MASTER(io_cursor OUT SYS_REFCURSOR);
 
   PROCEDURE P_GET_MANUAL_SECTIONS(p_manual_id IN NUMBER,
-                                  o_cursor    OUT SYS_REFCURSOR);
+                                  io_cursor    OUT SYS_REFCURSOR);
 
   PROCEDURE P_GET_MANUAL_CHAPTERS(p_manual_id    IN NUMBER,
                                   p_section_text IN VARCHAR2,
-                                  o_cursor       OUT SYS_REFCURSOR);
+                                  io_cursor       OUT SYS_REFCURSOR);
 
   PROCEDURE P_GET_MANUAL_REFERENCE_GRID(p_manual_id    IN NUMBER,
                                         p_section_text IN VARCHAR2,
                                         p_chapter_no   IN VARCHAR2,
-                                        o_cursor       OUT SYS_REFCURSOR);
+                                        io_cursor       OUT SYS_REFCURSOR);
 
   PROCEDURE P_GET_REFERENCE_DETAIL_BY_ID(p_ref_id IN NUMBER,
-                                         o_cursor OUT SYS_REFCURSOR);
+                                         io_cursor OUT SYS_REFCURSOR);
 
 end PKG_AR;
 
@@ -6822,9 +6822,9 @@ create or replace package body PKG_AR is
   PROCEDURE P_GET_REFERENCE_MASTER_DETAIL(p_search_text           IN VARCHAR2 DEFAULT NULL,
                                           p_reference_source_type IN VARCHAR2 DEFAULT NULL,
                                           p_ref_id                IN NUMBER DEFAULT NULL,
-                                          o_cursor                OUT SYS_REFCURSOR) IS
+                                          io_cursor                OUT SYS_REFCURSOR) IS
   BEGIN
-    OPEN o_cursor FOR
+    OPEN io_cursor FOR
       SELECT v.ref_id,
              v.reference_source_type,
              v.source_pk_id,
@@ -6874,9 +6874,9 @@ create or replace package body PKG_AR is
                 v.title_or_heading;
   END P_GET_REFERENCE_MASTER_DETAIL;
 
-  PROCEDURE P_GET_MANUAL_MASTER(o_cursor OUT SYS_REFCURSOR) IS
+  PROCEDURE P_GET_MANUAL_MASTER(io_cursor OUT SYS_REFCURSOR) IS
   BEGIN
-    OPEN o_cursor FOR
+    OPEN io_cursor FOR
       SELECT m.manual_id,
              m.manual_name,
              m.volume_name,
@@ -6892,9 +6892,9 @@ create or replace package body PKG_AR is
   END P_GET_MANUAL_MASTER;
 
   PROCEDURE P_GET_MANUAL_SECTIONS(p_manual_id IN NUMBER,
-                                  o_cursor    OUT SYS_REFCURSOR) IS
+                                  io_cursor    OUT SYS_REFCURSOR) IS
   BEGIN
-    OPEN o_cursor FOR
+    OPEN io_cursor FOR
       SELECT DISTINCT m.section AS section_text
         FROM t_manual_index m
        WHERE m.manual_id = p_manual_id
@@ -6905,9 +6905,9 @@ create or replace package body PKG_AR is
 
   PROCEDURE P_GET_MANUAL_CHAPTERS(p_manual_id    IN NUMBER,
                                   p_section_text IN VARCHAR2,
-                                  o_cursor       OUT SYS_REFCURSOR) IS
+                                  io_cursor       OUT SYS_REFCURSOR) IS
   BEGIN
-    OPEN o_cursor FOR
+    OPEN io_cursor FOR
       SELECT DISTINCT m.chapter_no
         FROM t_manual_index m
        WHERE m.manual_id = p_manual_id
@@ -6920,9 +6920,9 @@ create or replace package body PKG_AR is
   PROCEDURE P_GET_MANUAL_REFERENCE_GRID(p_manual_id    IN NUMBER,
                                         p_section_text IN VARCHAR2,
                                         p_chapter_no   IN VARCHAR2,
-                                        o_cursor       OUT SYS_REFCURSOR) IS
+                                        io_cursor       OUT SYS_REFCURSOR) IS
   BEGIN
-    OPEN o_cursor FOR
+    OPEN io_cursor FOR
       SELECT v.ref_id,
              v.reference_source_type,
              v.source_pk_id,
@@ -6943,9 +6943,9 @@ create or replace package body PKG_AR is
   END P_GET_MANUAL_REFERENCE_GRID;
 
   PROCEDURE P_GET_REFERENCE_DETAIL_BY_ID(p_ref_id IN NUMBER,
-                                         o_cursor OUT SYS_REFCURSOR) IS
+                                         io_cursor OUT SYS_REFCURSOR) IS
   BEGIN
-    OPEN o_cursor FOR
+    OPEN io_cursor FOR
       SELECT v.ref_id,
              v.reference_source_type,
              v.source_pk_id,

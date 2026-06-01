@@ -966,7 +966,7 @@
                                      o_result       OUT VARCHAR2);
 
   PROCEDURE P_GET_ROLE_DASHBOARD_PAGES(p_role_id IN NUMBER,
-                                       o_cursor  OUT SYS_REFCURSOR);
+                                       io_cursor  OUT SYS_REFCURSOR);
 
   PROCEDURE P_MAINT_ROLE_DASHBOARD_PAGE(P_ROLE_ID         IN NUMBER,
                                         P_PAGE_ID         IN NUMBER,
@@ -976,9 +976,9 @@
                                         O_MESSAGE         OUT VARCHAR2);
 
   PROCEDURE P_GET_ROLE_DASHBOARD_CONFIG(p_role_id IN NUMBER,
-                                        o_cursor  OUT SYS_REFCURSOR);
+                                        io_cursor  OUT SYS_REFCURSOR);
 
-  PROCEDURE P_GET_API_MASTER(O_CURSOR OUT SYS_REFCURSOR);
+  PROCEDURE P_GET_API_MASTER(io_cursor OUT SYS_REFCURSOR);
 
   PROCEDURE P_MAINT_API_MASTER(P_API_ID          IN NUMBER,
                                P_API_NAME        IN VARCHAR2,
@@ -1009,7 +1009,7 @@
                                 O_MESSAGE     OUT VARCHAR2);
 
   PROCEDURE P_GET_DASHBOARD_QUICK_LINKS(P_ROLE_ID IN NUMBER,
-                                        O_CURSOR  OUT SYS_REFCURSOR);
+                                        io_cursor  OUT SYS_REFCURSOR);
 
   PROCEDURE P_ADD_USER_ENTITY(p_user_id    IN NUMBER,
                               p_entity_id  IN NUMBER,
@@ -1034,9 +1034,9 @@
                                  o_message    OUT VARCHAR2);
 
   PROCEDURE P_GET_USER_ENTITIES(p_user_id IN NUMBER,
-                                o_cursor  OUT SYS_REFCURSOR);
+                                io_cursor  OUT SYS_REFCURSOR);
 
-  Procedure P_GET_ALL_CONTROLLER(o_cursor OUT SYS_REFCURSOR);
+  Procedure P_GET_ALL_CONTROLLER(io_cursor OUT SYS_REFCURSOR);
 
 end PKG_AD;
 
@@ -7961,9 +7961,9 @@ create or replace package body PKG_AD is
   END;
 
   PROCEDURE P_GET_ROLE_DASHBOARD_PAGES(p_role_id IN NUMBER,
-                                       o_cursor  OUT SYS_REFCURSOR) AS
+                                       io_cursor  OUT SYS_REFCURSOR) AS
   BEGIN
-    OPEN o_cursor FOR
+    OPEN io_cursor FOR
       SELECT mp.ID AS PAGE_ID,
              mp.PAGE_NAME,
              mp.PAGE_URL,
@@ -8025,9 +8025,9 @@ create or replace package body PKG_AD is
   END P_MAINT_ROLE_DASHBOARD_PAGE;
 
   PROCEDURE P_GET_ROLE_DASHBOARD_CONFIG(p_role_id IN NUMBER,
-                                        o_cursor  OUT SYS_REFCURSOR) AS
+                                        io_cursor  OUT SYS_REFCURSOR) AS
   BEGIN
-    OPEN o_cursor FOR
+    OPEN io_cursor FOR
       SELECT rdp.ROLE_ID,
              rdp.PAGE_ID,
              mp.PAGE_NAME,
@@ -8041,9 +8041,9 @@ create or replace package body PKG_AD is
        ORDER BY rdp.DASHBOARD_ORDER;
   END P_GET_ROLE_DASHBOARD_CONFIG;
 
-  PROCEDURE P_GET_API_MASTER(O_CURSOR OUT SYS_REFCURSOR) IS
+  PROCEDURE P_GET_API_MASTER(io_cursor OUT SYS_REFCURSOR) IS
   BEGIN
-    OPEN O_CURSOR FOR
+    OPEN io_cursor FOR
       SELECT API_ID,PAGE_ID, action_name as VIEW_NAME,CONTROLLER_NAME, API_PATH, HTTP_METHOD, IS_ACTIVE
         FROM T_AU_API_MASTER
        ORDER BY API_PATH;
@@ -8216,7 +8216,7 @@ create or replace package body PKG_AD is
   END P_MAINT_API_MASTER;
 
   PROCEDURE P_GET_DASHBOARD_QUICK_LINKS(P_ROLE_ID IN NUMBER,
-                                        O_CURSOR  OUT SYS_REFCURSOR) AS
+                                        io_cursor  OUT SYS_REFCURSOR) AS
     V_COUNT NUMBER := 0;
   BEGIN
     /*
@@ -8232,7 +8232,7 @@ create or replace package body PKG_AD is
       Step 2: If dashboard layout exists ? use it
     */
     IF V_COUNT > 0 THEN
-      OPEN O_CURSOR FOR
+      OPEN io_cursor FOR
         SELECT d.PAGE_ID,
                p.PAGE_NAME,
                p.page_path,
@@ -8251,7 +8251,7 @@ create or replace package body PKG_AD is
         Step 3: Else fallback to menu/page order
       */
     ELSE
-      OPEN O_CURSOR FOR
+      OPEN io_cursor FOR
         SELECT p.ID         as PAGE_ID,
                p.PAGE_NAME,
                p.PAGE_URL,
@@ -8394,9 +8394,9 @@ create or replace package body PKG_AD is
   END;
 
   PROCEDURE P_GET_USER_ENTITIES(p_user_id IN NUMBER,
-                                o_cursor  OUT SYS_REFCURSOR) AS
+                                io_cursor  OUT SYS_REFCURSOR) AS
   BEGIN
-    OPEN o_cursor FOR
+    OPEN io_cursor FOR
       SELECT ue.id,
              ue.entity_id,
              e.name,
@@ -8415,9 +8415,9 @@ create or replace package body PKG_AD is
        ORDER BY ue.is_primary DESC, e.name;
   END;
 
-  Procedure P_GET_ALL_CONTROLLER(o_cursor OUT SYS_REFCURSOR) AS
+  Procedure P_GET_ALL_CONTROLLER(io_cursor OUT SYS_REFCURSOR) AS
   BEGIN
-    OPEN o_cursor FOR
+    OPEN io_cursor FOR
 
       select distinct m.controller_name from t_Au_Api_Master m;
   end P_GET_ALL_CONTROLLER;
