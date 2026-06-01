@@ -1,6 +1,13 @@
 ﻿create or replace package PKG_AR is
   TYPE t_cursor IS REF CURSOR;
 
+  TYPE t_num_list IS TABLE OF NUMBER;
+
+  Procedure P_GET_AR_DASHBOARD_DROPDOWN(P_ENG_ID  in number,
+                                        P_P_NO    in number,
+                                        P_R_ID    in number,
+                                        io_cursor OUT t_cursor);
+
   procedure P_GetTaskList(ENT_ID    in number,
                           P_NO      in number,
                           R_ID      in number,
@@ -17,8 +24,6 @@
                                P_NO            in number,
                                R_ID            in number,
                                COMPLETION_DATE in date,
-                               ENT_EMAIL_ADD   in varchar2,
-                               ENT_PHONE_NO    in varchar2,
                                io_cursor       OUT t_cursor);
 
   procedure P_SetEngIdOnHold(ENGID IN NUMBER, ppno in number);
@@ -83,6 +88,7 @@
                                       P_NO              in number,
                                       R_ID              in number,
                                       ANNEX_ID          IN NUMBER,
+                                      P_REFERENCE_ID    IN NUMBER,
                                       io_cursor         OUT t_cursor);
 
   procedure P_SaveAuditObservation(PLANID            in T_AU_OBSERVATION.ENGPLANID%type,
@@ -103,10 +109,12 @@
                                    P_NO              in number,
                                    R_ID              in number,
                                    ANNEX_ID          IN NUMBER,
+                                   P_REFERENCE_ID    IN NUMBER,
                                    io_cursor         OUT t_cursor);
 
   procedure P_responibilityassigned(N_ID      IN NUMBER,
                                     E_ID      IN NUMBER,
+                                    C_ID      IN NUMBER,
                                     IND       in varchar2,
                                     PPNO      IN NUMBER,
                                     RES_PP    IN NUMBER,
@@ -116,17 +124,18 @@
                                     ACAMOUNT  IN NUMBER,
                                     io_cursor OUT t_cursor);
 
-  procedure P_UpdateObservation(OBS_ID       in number,
-                                title        in varchar2,
-                                obtext       in clob,
-                                subprocessid in number,
-                                checklistid  in number,
-                                RiskID       in number,
-                                AnnexureID   in number,
-                                ENT_ID       in number,
-                                P_NO         in number,
-                                R_ID         in number,
-                                io_cursor    OUT t_cursor);
+  procedure P_UpdateObservation(OBS_ID         in number,
+                                title          in varchar2,
+                                obtext         in clob,
+                                subprocessid   in number,
+                                checklistid    in number,
+                                RiskID         in number,
+                                AnnexureID     in number,
+                                P_REFERENCE_ID in number,
+                                ENT_ID         in number,
+                                P_NO           in number,
+                                R_ID           in number,
+                                io_cursor      OUT t_cursor);
 
   /*  PROCEDURE P_MERGE_ANNEXURE_INSTRUCTIONS(IND                   in Varchar2,
   p_annexure_id         IN NUMBER,
@@ -184,15 +193,15 @@
                                            R_ID          in number,
                                            io_cursor     OUT t_cursor);
 
-  procedure AUDITOR_RESPONSE(OBS_ID          IN T_AU_OBSERVATIONS_AUDITOR_RECOMMENDATION.AU_OBS_ID%type,
+  PROCEDURE AUDITOR_RESPONSE(OBS_ID          IN T_AU_OBSERVATIONS_AUDITOR_RECOMMENDATION.AU_OBS_ID%TYPE,
                              PPNumber        IN T_AU_OBSERVATIONS_AUDITOR_RECOMMENDATION.RECO_BY%TYPE,
-                             AUDITOR_COMMENT IN T_AU_OBSERVATIONS_AUDITOR_RECOMMENDATION.RECOMMENDATION%type,
-                             status          IN T_AU_OBSERVATIONS_AUDITOR_RECOMMENDATION.STATUS%type);
+                             AUDITOR_COMMENT IN T_AU_OBSERVATIONS_AUDITOR_RECOMMENDATION.RECOMMENDATION%TYPE,
+                             P_STATUS        IN T_AU_OBSERVATIONS_AUDITOR_RECOMMENDATION.STATUS%TYPE);
 
-  procedure AUDITOR_REPLY(OBS_ID          IN T_AU_OBSERVATIONS_AUDITOR_REPLY.AU_OBS_ID%type,
+  PROCEDURE AUDITOR_REPLY(OBS_ID          IN T_AU_OBSERVATIONS_AUDITOR_REPLY.AU_OBS_ID%TYPE,
                           PPNumber        IN T_AU_OBSERVATIONS_AUDITOR_REPLY.REPLIEDBY%TYPE,
-                          AUDITOR_COMMENT IN T_AU_OBSERVATIONS_AUDITOR_REPLY.AUDIT_REPLY%type,
-                          status          IN T_AU_OBSERVATIONS_AUDITOR_REPLY.OBS_STATUS%type);
+                          AUDITOR_COMMENT IN T_AU_OBSERVATIONS_AUDITOR_REPLY.AUDIT_REPLY%TYPE,
+                          P_STATUS        IN T_AU_OBSERVATIONS_AUDITOR_REPLY.OBS_STATUS%TYPE);
 
   procedure P_GetLatestAuditorResponse(obs_id    IN NUMBER,
                                        ENT_ID    in number,
@@ -379,7 +388,7 @@
                               PARA_NO   in T_WORKING_PAPER_LOAN_CASE_FILE.PARA_NO%type,
                               io_cursor OUT t_cursor);
 
-  procedure P_GetLoanCaseFile(ENGID     in number,
+  procedure P_GetLoanCaseFile(ENGID     in varchar2,
                               ENT_ID    in number,
                               P_NO      in number,
                               R_ID      in number,
@@ -394,7 +403,7 @@
                                  PARA_NO   in T_WORKING_PAPER_VOUCHER_CHECKING.PARA_NO%type,
                                  io_cursor OUT t_cursor);
 
-  procedure P_GetVoucherChecking(ENGID     in number,
+  procedure P_GetVoucherChecking(ENGID     in varchar2,
                                  ENT_ID    in number,
                                  P_NO      in number,
                                  R_ID      in number,
@@ -409,7 +418,7 @@
                                        OBS       in T_WORKING_PAPER_ACCOUNT_OPENING.OBSERVATION%type,
                                        PARA_NO   in T_WORKING_PAPER_ACCOUNT_OPENING.PARA_NO%type,
                                        io_cursor OUT t_cursor);
-  procedure P_GetAccountOpeningDetails(ENGID     in number,
+  procedure P_GetAccountOpeningDetails(ENGID     in varchar2,
                                        ENT_ID    in number,
                                        P_NO      in number,
                                        R_ID      in number,
@@ -425,7 +434,7 @@
                                     DIFF      in T_WORKING_PAPER_FIXED_ASSETS.DIFFERENCE%type,
                                     REM       in T_WORKING_PAPER_FIXED_ASSETS.REMARKS%type,
                                     io_cursor OUT t_cursor);
-  procedure P_GetFixedAssetsDetails(ENGID     in number,
+  procedure P_GetFixedAssetsDetails(ENGID     in varchar2,
                                     ENT_ID    in number,
                                     P_NO      in number,
                                     R_ID      in number,
@@ -444,7 +453,7 @@
                                     DIFF      in T_WORKING_PAPER_CASH_COUNT.DIFFERENCE%type,
                                     io_cursor OUT t_cursor);
 
-  procedure P_GetCashCounterDetails(ENGID     in number,
+  procedure P_GetCashCounterDetails(ENGID     in varchar2,
                                     ENT_ID    in number,
                                     P_NO      in number,
                                     R_ID      in number,
@@ -473,6 +482,15 @@
                                                  P_NO      in number,
                                                  R_ID      in number,
                                                  io_cursor OUT t_cursor);
+
+  PROCEDURE P_GetObservationsDetailsForManageAuditParas(C_ID      IN NUMBER,
+                                                        ENT_ID    IN NUMBER,
+                                                        P_NO      IN NUMBER,
+                                                        R_ID      IN NUMBER,
+                                                        io_cursor OUT t_cursor);
+
+  procedure GetResponsiblePPNOforoldPara(C_ID      in number,
+                                         io_cursor OUT t_cursor);
 
   procedure P_Update_Audit_Paras(COM_ID         in number,
                                  N_PARA_ID      IN NUMBER,
@@ -535,28 +553,32 @@
                                            P_DECISION     IN VARCHAR2,
                                            io_cursor      OUT t_cursor);
 
-  Procedure P_Update_responsibility(IND        in varchar2,
-                                    C_ID       in number,
-                                    O_Para_ID  IN NUMBER,
-                                    N_PARA_ID  in number,
+  PROCEDURE P_Update_responsibility(IND        IN VARCHAR2,
+                                    C_ID       IN NUMBER,
+                                    N_PARA_ID  IN NUMBER,
+                                    E_ID       IN NUMBER,
+                                    PPNO       IN NUMBER,
+                                    L_CASE     IN NUMBER,
+                                    LC_AMOUNT  IN NUMBER,
+                                    AC_Amount  IN NUMBER,
+                                    NO_account IN NUMBER,
+                                    Remarks    IN VARCHAR2,
+                                    U_D_action IN VARCHAR2,
+                                    E_NAME     IN VARCHAR2,
+                                    ENT_ID     IN NUMBER,
+                                    P_NO       IN NUMBER,
+                                    R_ID       IN NUMBER,
+                                    io_cursor  OUT t_cursor);
+
+  Procedure P_Delete_responsibility(PARA_ID    in number,
+                                    E_ID       in number,
                                     PPNO       in number,
                                     L_CASE     in number,
-                                    LC_AMOUNT  in number,
-                                    AC_Amount  in number,
-                                    NO_account in number,
-                                    Remarks    in varchar2,
-                                    U_D_action in varchar2,
-                                    E_NAME     in varchar2,
+                                    NO_ACCOUNT in number,
                                     ENT_ID     in number,
                                     P_NO       in number,
                                     R_ID       in number,
                                     io_cursor  OUT t_cursor);
-
-  Procedure P_Delete_responsibility(IND       in varchar2,
-                                    O_Para_ID IN NUMBER,
-                                    N_PARA_ID in number,
-                                    PPNO      in number,
-                                    io_cursor OUT t_cursor);
 
   procedure P_draft_dsa(EID           number,
                         OBSID         number,
@@ -599,9 +621,94 @@
                                         P_NO      number,
                                         io_cursor OUT t_cursor);
 
+  PROCEDURE P_responibilityforoldpara(C_ID      IN NUMBER,
+                                      IND       IN VARCHAR2, -- 'A' / 'U' / 'D'
+                                      PPNO      IN NUMBER, -- actor PP number
+                                      RES_PP    IN NUMBER, -- responsible PP number
+                                      LOANCASE  IN NUMBER,
+                                      ACCNUMBER IN NUMBER,
+                                      LCAMOUNT  IN NUMBER,
+                                      ACAMOUNT  IN NUMBER,
+                                      io_cursor OUT t_cursor);
+
+  PROCEDURE P_SearchReferences(p_ref_type IN VARCHAR2,
+                               p_keyword  IN VARCHAR2,
+                               io_cursor  OUT SYS_REFCURSOR);
+
+  PROCEDURE P_SAVE_OBSERVATION_REFERENCES(p_obs_id        IN NUMBER,
+                                          p_reference_ids IN SYS.ODCINUMBERLIST, -- Oracle collection type for multiple refs
+                                          p_created_by    IN VARCHAR2,
+                                          io_cursor       OUT SYS_REFCURSOR);
+
+  PROCEDURE P_DELETE_OBS_REFERENCE(p_ref_id     IN NUMBER,
+                                   p_deleted_by IN VARCHAR2,
+                                   io_cursor    OUT SYS_REFCURSOR);
+
+  PROCEDURE P_GET_OBSERVATION_REFERENCES(p_obs_id  IN NUMBER,
+                                         io_cursor OUT SYS_REFCURSOR);
+
+  PROCEDURE P_UPDATE_OBS_REFERENCE_STATUS(p_ref_id     IN NUMBER,
+                                          p_new_status IN VARCHAR2,
+                                          p_updated_by IN VARCHAR2,
+                                          io_cursor    OUT SYS_REFCURSOR);
+
+  PROCEDURE P_GET_ALL_OBSERVATION_REFERENCES(io_cursor OUT SYS_REFCURSOR);
+
+  PROCEDURE P_GET_REFERENCE_MASTER_DETAIL(p_search_text           IN VARCHAR2 DEFAULT NULL,
+                                          p_reference_source_type IN VARCHAR2 DEFAULT NULL,
+                                          p_ref_id                IN NUMBER DEFAULT NULL,
+                                          o_cursor                OUT SYS_REFCURSOR);
+
+  PROCEDURE P_GET_MANUAL_MASTER(o_cursor OUT SYS_REFCURSOR);
+
+  PROCEDURE P_GET_MANUAL_SECTIONS(p_manual_id IN NUMBER,
+                                  o_cursor    OUT SYS_REFCURSOR);
+
+  PROCEDURE P_GET_MANUAL_CHAPTERS(p_manual_id    IN NUMBER,
+                                  p_section_text IN VARCHAR2,
+                                  o_cursor       OUT SYS_REFCURSOR);
+
+  PROCEDURE P_GET_MANUAL_REFERENCE_GRID(p_manual_id    IN NUMBER,
+                                        p_section_text IN VARCHAR2,
+                                        p_chapter_no   IN VARCHAR2,
+                                        o_cursor       OUT SYS_REFCURSOR);
+
+  PROCEDURE P_GET_REFERENCE_DETAIL_BY_ID(p_ref_id IN NUMBER,
+                                         o_cursor OUT SYS_REFCURSOR);
+
 end PKG_AR;
 
 create or replace package body PKG_AR is
+
+  Procedure P_GET_AR_DASHBOARD_DROPDOWN(P_ENG_ID  in number,
+                                        P_P_NO    in number,
+                                        P_R_ID    in number,
+                                        io_cursor OUT t_cursor) is
+  
+  begin
+  
+    OPEN io_Cursor FOR
+      Select t.eng_plan_id,
+             t.teammember_ppno,
+             m.isteamlead,
+             t.status_id,
+             e.name || '(' || p.audit_startdate || '-' || p.audit_enddate || ')' || '-' ||
+             s.description as display
+      
+        from t_au_audit_team_tasklist t
+       inner join t_au_team_members m
+          on m.t_id = t.team_id
+         and m.member_ppno = t.teammember_ppno
+       inner join t_au_plan_eng p
+          on p.eng_id = t.eng_plan_id
+       inner join t_auditee_entities e
+          on e.entity_id = p.entity_id
+       inner join t_au_audit_team_tasklist_status s
+          on s.status_id = t.status_id
+       where t.teammember_ppno = P_P_NO
+         and p.status between 4 and 12;
+  
+  end P_GET_AR_DASHBOARD_DROPDOWN;
 
   procedure P_GetTaskList(ENT_ID    in number,
                           P_NO      in number,
@@ -678,7 +785,7 @@ create or replace package body PKG_AR is
        WHERE t.teammember_ppno = P_NO
          and t.isactive = 'Y'
          and t.status_id < 6
-       order by T.AUDIT_START_DATE asc;
+       order by T.AUDIT_START_DATE;
   
   end P_GetTaskList;
 
@@ -756,6 +863,8 @@ create or replace package body PKG_AR is
              t.entity_name,
              t.audit_start_date,
              t.audit_end_date,
+             E.EMAIL_ADDRESS,
+             E.TELEPHONE,
              rt.description     as RISK,
              st.description     as ENT_SIZE,
              p.description      as AUDIT_PERIOD,
@@ -765,6 +874,8 @@ create or replace package body PKG_AR is
           on t.eng_plan_id = pe.eng_id
        INNER JOIN T_AU_PLAN P
           ON P.ID = PE.PLAN_ID
+       INNER JOIN T_AUDITEE_ENTITIES E
+          ON E.ENTITY_ID = PE.ENTITY_ID
        inner join t_au_period p
           on pe.period_id = p.auditperiodid
        inner join t_au_team_members tm
@@ -782,46 +893,111 @@ create or replace package body PKG_AR is
   
   end P_GetJoiningDetails;
 
-  procedure P_AddJoiningReport(ENGID           in number,
-                               ENT_ID          in number,
-                               P_NO            in number,
-                               R_ID            in number,
-                               COMPLETION_DATE in date,
-                               ENT_EMAIL_ADD   in varchar2,
-                               ENT_PHONE_NO    in varchar2,
-                               io_cursor       OUT t_cursor) is
+  PROCEDURE P_AddJoiningReport(ENGID           IN NUMBER,
+                               ENT_ID          IN NUMBER,
+                               P_NO            IN NUMBER,
+                               R_ID            IN NUMBER,
+                               COMPLETION_DATE IN DATE,
+                               io_cursor       OUT t_cursor) IS
+    -----------------------------------------------------------------------
+    -- Constants
+    -----------------------------------------------------------------------
+    c_page_id CONSTANT NUMBER := 19;
   
-    T_F        number := 0;
-    V_F        NUMBER := 0;
-    A_F        NUMBER := 0;
-    C_F        date;
-    E_F        number := 0;
-    R_F        number := 0;
-    AUD_ENT_ID number := 0;
-    M_F        varchar2(2);
+    -----------------------------------------------------------------------
+    -- Local variables (business)
+    -----------------------------------------------------------------------
+    v_aud_ent_id      NUMBER;
+    v_is_teamlead     VARCHAR2(1) := 'N';
+    v_prev_log_id     NUMBER;
+    v_new_log_id      NUMBER;
+    v_joining_id      NUMBER;
+    v_entity_type     NUMBER;
+    v_plan_enddate    DATE;
+    v_pending_cnt     NUMBER := 0;
+    v_existing_join   NUMBER := 0;
+    v_is_special_type NUMBER := 0;
+    v_next_status     NUMBER;
   
-  begin
-    select eg.entity_id
-      into AUD_ENT_ID
-      from t_au_plan_eng eg
-     where eg.eng_id = ENGID;
+    v_email_to       VARCHAR2(320);
+    v_email_cc       VARCHAR2(320);
+    v_auditee_name   VARCHAR2(255);
+    v_team_lead_line VARCHAR2(500);
+    v_team_members   VARCHAR2(200);
+    v_team_id        NUMBER;
+    v_team_count     NUMBER;
   
-    select NVL(tm.isteamlead, 'N')
-      into M_F
+    -----------------------------------------------------------------------
+    -- Cursor output variables (ONLY these go to io_cursor)
+    -----------------------------------------------------------------------
+    v_remarks       VARCHAR2(4000);
+    v_email_flag    VARCHAR2(1) := 'N';
+    v_to_email      VARCHAR2(320) := '';
+    v_cc_email      VARCHAR2(320) := '';
+    v_out_name      VARCHAR2(255) := '';
+    v_team          VARCHAR2(100) := '';
+    v_team_lead     VARCHAR2(500) := '';
+    v_team_memberso VARCHAR2(200) := '';
+    v_errmsg        VARCHAR2(4000);
+  
+  BEGIN
+    -----------------------------------------------------------------------
+    -- 1) Base lookups
+    -----------------------------------------------------------------------
+    SELECT e.entity_id, e.entity_type, e.audit_enddate
+      INTO v_aud_ent_id, v_entity_type, v_plan_enddate
+      FROM t_au_plan_eng e
+     WHERE e.eng_id = ENGID;
+  
+    v_is_special_type := CASE
+                           WHEN v_entity_type IN (6, 28) THEN
+                            1
+                           ELSE
+                            0
+                         END;
+  
+    SELECT NVL(tm.isteamlead, 'N'), t.team_id
+      INTO v_is_teamlead, v_team_id
       FROM t_au_audit_teams t
-     inner join t_au_team_members tm
-        on tm.t_id = t.team_id
-     where t.eng_id = ENGID
-       and tm.member_ppno = P_NO;
+      JOIN t_au_team_members tm
+        ON tm.t_id = t.team_id
+     WHERE t.eng_id = ENGID
+       AND tm.member_ppno = P_NO;
   
-    select NVL(MAX(l.id), 0)
-      into E_F
-      from t_au_activity_log l
-     where l.ppnum = P_NO;
-    update t_au_activity_log l set l.end_time = sysdate where l.id = E_F;
-    commit;
+    SELECT COUNT(*)
+      INTO v_pending_cnt
+      FROM t_au_audit_team_tasklist
+     WHERE teammember_ppno = P_NO
+       AND status_id = 2;
   
-    insert into t_au_activity_log
+    -----------------------------------------------------------------------
+    -- 2) Pending task check
+    -----------------------------------------------------------------------
+    IF v_pending_cnt > 0 THEN
+      v_remarks := 'Please close/Exit the pending audit in your task list';
+      GOTO open_cursor;
+    END IF;
+  
+    -----------------------------------------------------------------------
+    -- 3) Close previous activity log
+    -----------------------------------------------------------------------
+    SELECT NVL(MAX(id), 0)
+      INTO v_prev_log_id
+      FROM t_au_activity_log
+     WHERE ppnum = P_NO;
+  
+    IF v_prev_log_id > 0 THEN
+      UPDATE t_au_activity_log
+         SET end_time = SYSDATE
+       WHERE id = v_prev_log_id;
+    END IF;
+  
+    -----------------------------------------------------------------------
+    -- 4) Insert new activity log
+    -----------------------------------------------------------------------
+    SELECT SEQ_T_AU_ACTIVITY_LOG.NEXTVAL INTO v_new_log_id FROM dual;
+  
+    INSERT INTO t_au_activity_log
       (id,
        entity_id,
        role_id,
@@ -832,207 +1008,149 @@ create or replace package body PKG_AR is
        seq,
        unattend)
     VALUES
-      ((select COALESCE(max(p.ID) + 1, 1) from t_au_activity_log p),
+      (v_new_log_id,
        ENT_ID,
        R_ID,
        P_NO,
-       19,
+       c_page_id,
        'Submit Joining in ' ||
-       (select bt.name
-          from t_auditee_entities bt
-         inner join t_au_plan_eng e
-            on bt.entity_id = e.entity_id
-         where e.eng_id = ENGID),
-       sysdate,
-       (select COALESCE(max(l.seq) + 1, 1)
-          from t_au_activity_log l
-         where l.id = E_F
-           and l.ppnum = P_NO),
+       (SELECT bt.name
+          FROM t_auditee_entities bt
+          JOIN t_au_plan_eng e
+            ON e.entity_id = bt.entity_id
+         WHERE e.eng_id = ENGID),
+       SYSDATE,
+       NVL((SELECT MAX(seq) + 1
+             FROM t_au_activity_log
+            WHERE id = v_prev_log_id),
+           1),
        'Y');
-    commit;
-    select nvl(max(t.id), 0)
-      into R_F
-      from t_au_audit_team_tasklist t
-     where t.teammember_ppno = P_NO
-       and t.status_id = 2;
-    if (R_F = 0) then
-      SELECT COUNT(M.T_ID)
-        INTO A_F
-        FROM T_AU_TEAM_MEMBERS M
-       WHERE M.MEMBER_PPNO = P_NO
-         AND M.ISTEAMLEAD = 'Y';
-      Update t_au_audit_joining ji
-         SET ji.STATUS = 'P'
-       where Ji.Team_Mem_Ppno = P_NO
-         and ji.eng_plan_id != ENGID;
-      select e.audit_enddate
-        into C_F
-        from t_au_plan_eng e
-       where e.eng_id = ENGID;
-      commit;
-      Update t_au_plan_eng e SET e.STATUS = 10 where e.eng_id = ENGID;
-      COMMIT;
-      select e.entity_type
-        into T_F
-        from t_au_plan_eng e
-       WHERE E.ENG_ID = ENGID;
-      SELECT nvl(max(j.id), 0)
-        INTO V_F
-        FROM T_AU_AUDIT_JOINING j
-       WHERE j.ENG_PLAN_ID = ENGID
-         and j.TEAM_MEM_PPNO = P_NO
-         and j.STATUS = 'I';
-      if (V_F = 0 AND T_F in (6, 28)) then
-        INSERT INTO T_AU_AUDIT_JOINING al
-          (al.ID,
-           al.ENG_PLAN_ID,
-           al.TEAM_MEM_PPNO,
-           al.JOINING_DATE,
-           al.ENTEREDBY,
-           al.ENTEREDDATE,
-           al.COMPLETION_DATE,
-           al.STATUS)
-        VALUES
-          ((select COALESCE(max(acc.ID) + 1, 1) from T_AU_AUDIT_JOINING acc),
-           ENGID,
-           P_NO,
-           trunc(sysdate),
-           P_NO,
-           trunc(SYSDATE),
-           C_F,
-           'I');
-        COMMIT;
-        UPDATE T_AU_AUDIT_TEAM_TASKLIST t
-           SET t.STATUS_ID =
-               (select COALESCE(acc.STATUS_ID + 1, 1)
-                  from T_AU_AUDIT_TEAM_TASKLIST acc
-                 WHERE acc.ENG_PLAN_ID = ENGID
-                   and acc.TEAMMEMBER_PPNO = P_NO)
-         WHERE t.ENG_PLAN_ID = ENGID
-           and t.TEAMMEMBER_PPNO = P_NO;
-        COMMIT;
-        IF (A_F != 0) THEN
-          FOR NM IN (SELECT * FROM T_AUDIT_CHECKLIST_DETAILS) LOOP
-          
-            insert into t_auditee_checkklist
-              (id, eng_id, checklist_id, ENTEREDBY, ENTEREDON, STATUS)
-              select (select COALESCE(MAX(acc.ID) + 1, 1)
-                        from t_auditee_checkklist acc),
-                     ENGID,
-                     d.id,
-                     P_NO,
-                     TRUNC(SYSDATE),
-                     1
-                from t_audit_checklist_details d
-               WHERE D.ID = NM.ID;
-            commit;
-          
-          END LOOP;
-        END IF;
-      ELSE
-        if (V_F = 0 AND T_F not in (6, 28)) then
-          INSERT INTO T_AU_AUDIT_JOINING al
-            (al.ID,
-             al.ENG_PLAN_ID,
-             al.TEAM_MEM_PPNO,
-             al.JOINING_DATE,
-             al.ENTEREDBY,
-             al.ENTEREDDATE,
-             al.COMPLETION_DATE,
-             al.STATUS)
-          VALUES
-            ((select COALESCE(max(acc.ID) + 1, 1)
-               from T_AU_AUDIT_JOINING acc),
-             ENGID,
-             P_NO,
-             sysdate,
-             P_NO,
-             SYSDATE,
-             COMPLETION_DATE,
-             'I');
-          COMMIT;
-          UPDATE T_AU_AUDIT_TEAM_TASKLIST t
-             SET t.STATUS_ID =
-                 (select COALESCE(acc.STATUS_ID + 1, 1)
-                    from T_AU_AUDIT_TEAM_TASKLIST acc
-                   WHERE acc.ENG_PLAN_ID = ENGID
-                     and acc.TEAMMEMBER_PPNO = P_NO)
-           WHERE t.ENG_PLAN_ID = ENGID
-             and t.TEAMMEMBER_PPNO = P_NO;
-          COMMIT;
-        
-        else
-          UPDATE T_AU_AUDIT_TEAM_TASKLIST t
-             SET t.STATUS_ID =
-                 (select COALESCE(acc.STATUS_ID + 1, 1)
-                    from T_AU_AUDIT_TEAM_TASKLIST acc
-                   WHERE acc.ENG_PLAN_ID = ENGID
-                     and acc.TEAMMEMBER_PPNO = P_NO)
-           WHERE t.ENG_PLAN_ID = ENGID
-             and t.TEAMMEMBER_PPNO = P_NO;
-          COMMIT;
-        end if;
-      end if;
-      select eg.entity_id
-        into AUD_ENT_ID
-        from t_au_plan_eng eg
-       where eg.eng_id = ENGID;
-      update t_auditee_entities et
-         set et.email_address = ENT_EMAIL_ADD, et.telephone = ENT_PHONE_NO
-       where et.entity_id = AUD_ENT_ID;
-    
-      if (M_F = 'Y') then
-        OPEN io_Cursor FOR
-          SELECT 'Joining Submitted Successfully' AS remarks,
-                 'Y' as email,
-                 e.email_address as to_email,
-                 ad.email_address as cc_email,
-                 e.name as auditee_name,
-                 'Team Details ' as team,
-                 (case
-                   when tm.isteamlead = 'Y' then
-                    'Team Lead:- ' || tm.member_ppno || ' - ' ||
-                    tm.member_name
-                 end) as team_lead,
-                 'along with ' || (c.no_of_members - 1) || ' Team Members' as team_members
-            FROM t_auditee_entities e
-           inner join t_Au_Plan_Eng ep
-              on ep.entity_id = e.entity_id
-            left join t_au_audit_teams t
-              on t.eng_id = ep.eng_id
-           inner join t_au_team_members tm
-              on tm.t_id = t.team_id
-           inner join t_auditee_entities ad
-              on ad.entity_id = ep.auditby_id
-           inner join v_get_audit_team_count c
-              on c.t_id = t.team_id
-           where ep.eng_id = ENGID
-             and tm.isteamlead = 'Y';
-      else
-        OPEN io_Cursor FOR
-          SELECT 'Joining Submitted Successfully' AS remarks,
-                 'N' as email,
-                 '' as to_email,
-                 '' as cc_email,
-                 '' as auditee_name,
-                 '' as team,
-                 '' as team_lead,
-                 '' as team_members
-            from dual;
-      end if;
-    
-    else
-      OPEN io_Cursor FOR
-        select 'Please close/Exit the pending audit in your task list' as remarks,
-               '' as to_email,
-               '' as cc_email,
-               '' as auditee_name,
-               '' as aud_entity,
-               '' as team_members
-          from dual;
-    end if;
   
-  end p_AddJoiningReport;
+    -----------------------------------------------------------------------
+    -- 5) Update joining & tasklist
+    -----------------------------------------------------------------------
+    UPDATE t_au_audit_joining
+       SET status = 'P'
+     WHERE team_mem_ppno = P_NO
+       AND eng_plan_id <> ENGID;
+  
+    SELECT NVL(MAX(id), 0)
+      INTO v_existing_join
+      FROM t_au_audit_joining
+     WHERE eng_plan_id = ENGID
+       AND team_mem_ppno = P_NO
+       AND status = 'I';
+  
+    IF v_existing_join = 0 THEN
+      SELECT SEQ_T_AU_AUDIT_JOINING.NEXTVAL INTO v_joining_id FROM dual;
+    
+      INSERT INTO t_au_audit_joining
+        (id,
+         eng_plan_id,
+         team_mem_ppno,
+         joining_date,
+         enteredby,
+         entereddate,
+         completion_date,
+         status)
+      VALUES
+        (v_joining_id,
+         ENGID,
+         P_NO,
+         CASE WHEN v_is_special_type = 1 THEN TRUNC(SYSDATE) ELSE SYSDATE END,
+         P_NO,
+         CASE WHEN v_is_special_type = 1 THEN TRUNC(SYSDATE) ELSE SYSDATE END,
+         CASE WHEN v_is_special_type = 1 THEN v_plan_enddate ELSE
+         COMPLETION_DATE END,
+         'I');
+    END IF;
+  
+    SELECT NVL(MAX(status_id), 0) + 1
+      INTO v_next_status
+      FROM t_au_audit_team_tasklist
+     WHERE eng_plan_id = ENGID
+       AND teammember_ppno = P_NO;
+  
+    UPDATE t_au_audit_team_tasklist
+       SET status_id = v_next_status
+     WHERE eng_plan_id = ENGID
+       AND teammember_ppno = P_NO;
+  
+    /*    -----------------------------------------------------------------------
+    -- 6) Update auditee contact
+    -----------------------------------------------------------------------
+    UPDATE t_auditee_entities
+       SET email_address = ENT_EMAIL_ADD, telephone = ENT_PHONE_NO
+     WHERE entity_id = v_aud_ent_id; 
+     */
+  
+    -----------------------------------------------------------------------
+    -- 7) Prepare output message
+    -----------------------------------------------------------------------
+    v_remarks := 'Joining Submitted Successfully';
+  
+    IF v_is_teamlead = 'Y' THEN
+      SELECT e.email_address, ad.email_address, e.name
+        INTO v_email_to, v_email_cc, v_auditee_name
+        FROM t_auditee_entities e
+        JOIN t_au_plan_eng ep
+          ON ep.entity_id = e.entity_id
+        JOIN t_auditee_entities ad
+          ON ad.entity_id = ep.auditby_id
+       WHERE ep.eng_id = ENGID;
+    
+      SELECT COUNT(*)
+        INTO v_team_count
+        FROM t_au_team_members
+       WHERE t_id = v_team_id;
+    
+      SELECT 'Team Lead:- ' || member_ppno || ' - ' || member_name
+        INTO v_team_lead_line
+        FROM t_au_team_members
+       WHERE t_id = v_team_id
+         AND isteamlead = 'Y'
+         AND ROWNUM = 1;
+    
+      v_email_flag    := 'Y';
+      v_to_email      := v_email_to;
+      v_cc_email      := v_email_cc;
+      v_out_name      := v_auditee_name;
+      v_team          := 'Team Details';
+      v_team_lead     := v_team_lead_line;
+      v_team_memberso := 'along with ' || (v_team_count - 1) ||
+                         ' Team Members';
+    END IF;
+  
+    <<open_cursor>>
+  -----------------------------------------------------------------------
+    -- 8) SINGLE cursor open (FINAL STATEMENT)
+    -----------------------------------------------------------------------
+    OPEN io_cursor FOR
+      SELECT v_remarks       AS remarks,
+             v_email_flag    AS email,
+             v_to_email      AS to_email,
+             v_cc_email      AS cc_email,
+             v_out_name      AS auditee_name,
+             v_team          AS team,
+             v_team_lead     AS team_lead,
+             v_team_memberso AS team_members
+        FROM dual;
+  
+  EXCEPTION
+  
+    WHEN OTHERS THEN
+      v_errmsg := 'Error: ' || SUBSTR(SQLERRM, 1, 3500);
+      OPEN io_cursor FOR
+        SELECT v_errmsg AS remarks,
+               'N' AS email,
+               '' AS to_email,
+               '' AS cc_email,
+               '' AS auditee_name,
+               '' AS team,
+               '' AS team_lead,
+               '' AS team_members
+          FROM dual;
+  END P_AddJoiningReport;
 
   Procedure P_ADD_Working_paper_loan(ENG_ID    in number,
                                      LC_num    in number,
@@ -1352,6 +1470,7 @@ create or replace package body PKG_AR is
                                       P_NO              in number,
                                       R_ID              in number,
                                       ANNEX_ID          IN NUMBER,
+                                      P_REFERENCE_ID    IN NUMBER,
                                       io_cursor         OUT t_cursor) is
     V_F NUMBER := 0;
     R_F NUMBER := 0;
@@ -1364,7 +1483,7 @@ create or replace package body PKG_AR is
     OBS NUMBER := 0;
   begin
   
-      select max(o.ID+1)INTO OBS from T_AU_OBSERVATION o;
+    select max(o.ID + 1) INTO OBS from T_AU_OBSERVATION o;
     select NVL(MAX(l.id), 0)
       into Z_B
       from t_au_activity_log l
@@ -1387,8 +1506,7 @@ create or replace package body PKG_AR is
        R_ID,
        P_NO,
        142,
-       OBS||
-       ' Observation Saved',
+       OBS || ' Observation Saved',
        sysdate,
        (select COALESCE(max(l.seq) + 1, 1)
           from t_au_activity_log l
@@ -1444,6 +1562,7 @@ create or replace package body PKG_AR is
          o.V_CAT_NATURE_ID,
          o.ENTITY_CODE,
          O.ANNEX,
+         O.REFERENCE_ID,
          o.Amount_Involved,
          o.No_Of_Instances
          
@@ -1465,6 +1584,7 @@ create or replace package body PKG_AR is
          0,
          BRANCHID,
          ANNEX_ID,
+         P_REFERENCE_ID,
          AMOUNT_INV,
          NO_INST);
       commit;
@@ -1479,7 +1599,7 @@ create or replace package body PKG_AR is
       VALUES
         ((select COALESCE(max(acc.ID) + 1, 1)
            from T_AU_OBSERVATION_TEXT acc),
-        OBS,
+         OBS,
          TEXT_DATA,
          ENTEREDBY,
          SYSDATE,
@@ -1488,10 +1608,7 @@ create or replace package body PKG_AR is
       commit;
     
       Open io_cursor FOR
-        SELECT OBS AS ID,
-               PLANID AS ENG_ID,
-               r.remarks,
-               r.ref
+        SELECT OBS AS ID, PLANID AS ENG_ID, r.remarks, r.ref
           from t_au_remarks r
          where r.id = 15;
     ELSE
@@ -1511,6 +1628,7 @@ create or replace package body PKG_AR is
          o.V_CAT_ID,
          o.V_CAT_NATURE_ID,
          O.ANNEX,
+         o.reference_id,
          o.Amount_Involved,
          o.No_Of_Instances)
       VALUES
@@ -1529,6 +1647,7 @@ create or replace package body PKG_AR is
          0,
          0,
          ANNEX_ID,
+         P_reference_id,
          AMOUNT_INV,
          NO_INST);
       commit;
@@ -1554,10 +1673,7 @@ create or replace package body PKG_AR is
       commit;
     
       Open io_cursor FOR
-        SELECT OBS AS ID,
-               PLANID AS ENG_ID,
-               r.remarks,
-               r.ref
+        SELECT OBS AS ID, PLANID AS ENG_ID, r.remarks, r.ref
           from t_au_remarks r
          where r.id = 15;
     
@@ -1583,6 +1699,7 @@ create or replace package body PKG_AR is
                                    P_NO              in number,
                                    R_ID              in number,
                                    ANNEX_ID          IN NUMBER,
+                                   P_REFERENCE_ID    in number,
                                    io_cursor         OUT t_cursor) is
   
     cursor V is
@@ -1626,9 +1743,9 @@ create or replace package body PKG_AR is
     Fetch V
       into vr1;
     Close v;
-    
-    select max(o.ID+1) into OBS from T_AU_OBSERVATION o;
-    
+  
+    select max(o.ID + 1) into OBS from T_AU_OBSERVATION o;
+  
     if (vr1.ENTITY_ID is not null) then
       select NVL(MAX(l.id), 0)
         into Z_B
@@ -1652,8 +1769,7 @@ create or replace package body PKG_AR is
          R_ID,
          P_NO,
          142,
-         obs ||
-         'Observation Saved',
+         obs || 'Observation Saved',
          sysdate,
          (select COALESCE(max(l.seq) + 1, 1)
             from t_au_activity_log l
@@ -1682,6 +1798,7 @@ create or replace package body PKG_AR is
                o.V_CAT_NATURE_ID,
                o.NO_OF_INSTANCES,
                O.ANNEX,
+               o.REFERENCE_ID,
                o.amount_involved)
             VALUES
               (obs,
@@ -1701,6 +1818,7 @@ create or replace package body PKG_AR is
                0,
                NOINSTANCES,
                ANNEX_ID,
+               P_REFERENCE_ID,
                AMOUNT_INV);
             commit;
             INSERT INTO T_AU_OBSERVATION_TEXT
@@ -1728,18 +1846,12 @@ create or replace package body PKG_AR is
             commit;
           
             Open io_cursor FOR
-              SELECT OBS AS ID,
-                     PLANID AS ENG_ID,
-                     r.remarks,
-                     R.ref
+              SELECT OBS AS ID, PLANID AS ENG_ID, r.remarks, R.ref
                 from t_au_remarks r
                where r.id = 15;
           else
             Open io_cursor FOR
-              SELECT OBS AS ID,
-                     PLANID AS ENG_ID,
-                     r.remarks,
-                     R.ref
+              SELECT OBS AS ID, PLANID AS ENG_ID, r.remarks, R.ref
                 from t_au_remarks r
                where r.id = 16;
           end if;
@@ -1804,10 +1916,7 @@ create or replace package body PKG_AR is
           commit;
         
           Open io_cursor FOR
-            SELECT OBS AS ID,
-                     PLANID AS ENG_ID,
-                   r.remarks,
-                   R.ref
+            SELECT OBS AS ID, PLANID AS ENG_ID, r.remarks, R.ref
               from t_au_remarks r
              where r.id = 15;
         
@@ -1831,7 +1940,8 @@ create or replace package body PKG_AR is
   end P_SaveAuditObservation;
 
   PROCEDURE P_responibilityassigned(N_ID      IN NUMBER,
-                                    E_ID    IN NUMBER,
+                                    E_ID      IN NUMBER,
+                                    C_ID      IN NUMBER,
                                     IND       IN VARCHAR2,
                                     PPNO      IN NUMBER,
                                     RES_PP    IN NUMBER,
@@ -1843,11 +1953,12 @@ create or replace package body PKG_AR is
     v_new_id  NUMBER;
     v_err_msg VARCHAR2(4000);
   BEGIN
+  
     IF IND = 'D' THEN
       DELETE FROM t_au_observation_responibility_assigned r
        WHERE r.obs_id = N_ID
-         AND r.pp_no = RES_PP;
-    
+         AND r.pp_no = RES_PP
+         and r.loan_case = loancase;
       INSERT INTO T_AU_RESPONSIBILITY_LOG
         (LOG_ID,
          OBS_ID,
@@ -1870,7 +1981,6 @@ create or replace package body PKG_AR is
          ACAMOUNT,
          PPNO,
          'Deleted responsibility record.');
-    
       OPEN io_cursor FOR
         SELECT 'Responsibility deleted successfully.' AS REMARKS FROM DUAL;
     
@@ -1888,7 +1998,9 @@ create or replace package body PKG_AR is
          loan_case,
          account_number,
          lc_amount,
-         ac_amount,ENG_ID)
+         ac_amount,
+         ENG_ID,
+         com_id)
       VALUES
         (v_new_id,
          N_ID,
@@ -1898,7 +2010,9 @@ create or replace package body PKG_AR is
          LOANCASE,
          ACCNUMBER,
          LCAMOUNT,
-         ACAMOUNT,E_ID);
+         ACAMOUNT,
+         E_ID,
+         C_ID);
     
       INSERT INTO T_AU_RESPONSIBILITY_LOG
         (LOG_ID,
@@ -1933,7 +2047,7 @@ create or replace package body PKG_AR is
              lc_amount      = LCAMOUNT,
              ac_amount      = ACAMOUNT,
              ENG_ID         = E_ID
-       WHERE obs_id = N_ID 
+       WHERE obs_id = N_ID
          AND pp_no = RES_PP;
     
       INSERT INTO T_AU_RESPONSIBILITY_LOG
@@ -1972,17 +2086,18 @@ create or replace package body PKG_AR is
         SELECT 'Error: ' || v_err_msg AS REMARKS FROM DUAL;
   END P_responibilityassigned;
 
-  procedure P_UpdateObservation(OBS_ID       in number,
-                                title        in varchar2,
-                                obtext       in clob,
-                                subprocessid in number,
-                                checklistid  in number,
-                                RiskID       in number,
-                                AnnexureID   in number,
-                                ENT_ID       in number,
-                                P_NO         in number,
-                                R_ID         in number,
-                                io_cursor    OUT t_cursor) is
+  procedure P_UpdateObservation(OBS_ID         in number,
+                                title          in varchar2,
+                                obtext         in clob,
+                                subprocessid   in number,
+                                checklistid    in number,
+                                RiskID         in number,
+                                AnnexureID     in number,
+                                P_REFERENCE_ID in number,
+                                ENT_ID         in number,
+                                P_NO           in number,
+                                R_ID           in number,
+                                io_cursor      OUT t_cursor) is
     V_F number := 0;
     N_F number := 0;
     Z_B number := 0;
@@ -2048,7 +2163,8 @@ create or replace package body PKG_AR is
            set o.subchecklist_id    = subprocessid,
                o.checklistdetail_id = checklistid,
                o.severity           = RiskID,
-               o.annex              = AnnexureID
+               o.annex              = AnnexureID,
+               o.reference_id       = P_REFERENCE_ID
          where o.id = OBS_ID;
         commit;
         update T_AU_OBSERVATION_TEXT ot
@@ -2349,7 +2465,7 @@ create or replace package body PKG_AR is
   begin
   
     OPEN io_Cursor FOR
-      select ot.REPLY
+      select NVL(ot.REPLY, '') AS REPLY
         from T_AU_OBSERVATIONS_AUDITEE_RESPONSE ot
        where ot.au_obs_id = OBS_ID;
   
@@ -2432,25 +2548,32 @@ create or replace package body PKG_AR is
   
   end P_get_AUDITEE_OBSERVATION_RESPONSE_evidences_FileData;
 
-  procedure P_UpdateAuditObservationStatus(OBS_ID        IN NUMBER,
+  PROCEDURE P_UpdateAuditObservationStatus(OBS_ID        IN NUMBER,
                                            NEW_STATUS_ID IN NUMBER,
-                                           D_PARA_NO     in varchar2,
+                                           D_PARA_NO     IN VARCHAR2,
                                            Remarks       IN VARCHAR2,
-                                           ENT_ID        in number,
-                                           P_NO          in number,
-                                           R_ID          in number,
-                                           io_cursor     OUT t_cursor) is
-    R_D varchar2(2);
-    Z_B number := 0;
-  begin
+                                           ENT_ID        IN NUMBER,
+                                           P_NO          IN NUMBER,
+                                           R_ID          IN NUMBER,
+                                           io_cursor     OUT t_cursor) IS
   
-    select NVL(MAX(l.id), 0)
-      into Z_B
-      from t_au_activity_log l
-     where l.ppnum = P_NO;
-    update t_au_activity_log l set l.end_time = sysdate where l.id = Z_B;
-    commit;
-    insert into t_au_activity_log
+    R_D         VARCHAR2(2);
+    Z_B         NUMBER := 0;
+    V_DUP_COUNT NUMBER := 0;
+    V_ENGPLANID NUMBER := 0;
+  
+  BEGIN
+  
+    SELECT NVL(MAX(l.id), 0)
+      INTO Z_B
+      FROM t_au_activity_log l
+     WHERE l.ppnum = P_NO;
+  
+    UPDATE t_au_activity_log l SET l.end_time = SYSDATE WHERE l.id = Z_B;
+  
+    COMMIT;
+  
+    INSERT INTO t_au_activity_log
       (id,
        entity_id,
        role_id,
@@ -2463,7 +2586,7 @@ create or replace package body PKG_AR is
        seq,
        unattend)
     VALUES
-      ((select COALESCE(max(p.ID) + 1, 1) from t_au_activity_log p),
+      ((SELECT COALESCE(MAX(p.ID) + 1, 1) FROM t_au_activity_log p),
        ENT_ID,
        R_ID,
        OBS_ID,
@@ -2471,162 +2594,299 @@ create or replace package body PKG_AR is
        P_NO,
        79,
        OBS_ID || ' Observation Status Marked as ' || NEW_STATUS_ID,
-       sysdate,
-       (select COALESCE(max(l.seq) + 1, 1)
-          from t_au_activity_log l
-         where l.id = Z_B
-           and l.ppnum = P_NO),
+       SYSDATE,
+       (SELECT COALESCE(MAX(l.seq) + 1, 1)
+          FROM t_au_activity_log l
+         WHERE l.id = Z_B
+           AND l.ppnum = P_NO),
        'Y');
-    commit;
   
-    select nvl(max(m.isteamlead), 'O')
-      into R_D
-      from t_au_team_members m
-     inner join t_au_audit_team_tasklist t
-        on t.team_id = m.t_id
-       and t.teammember_ppno = m.member_ppno
-     inner join t_au_observation o
-        on o.engplanid = t.eng_plan_id
-     where m.member_ppno = P_NO
-       and o.id = obs_id;
+    COMMIT;
   
-    if (R_D = 'Y') then
+    SELECT NVL(MAX(m.isteamlead), 'O')
+      INTO R_D
+      FROM t_au_team_members m
+     INNER JOIN t_au_audit_team_tasklist t
+        ON t.team_id = m.t_id
+       AND t.teammember_ppno = m.member_ppno
+     INNER JOIN t_au_observation o
+        ON o.engplanid = t.eng_plan_id
+     WHERE m.member_ppno = P_NO
+       AND o.id = OBS_ID;
+  
+    SELECT NVL(MAX(o.engplanid), 0)
+      INTO V_ENGPLANID
+      FROM t_au_observation o
+     WHERE o.id = OBS_ID;
+  
+    IF R_D = 'Y' THEN
+    
       UPDATE T_AU_OBSERVATIONS_AUDITEE_RESPONSE e
          SET e.REMARKS         = Remarks,
-             E.LASTUPDATEDBY   = P_NO,
-             E.LASTUPDATEDDATE = TRUNC(SYSDATE)
+             e.LASTUPDATEDBY   = P_NO,
+             e.LASTUPDATEDDATE = TRUNC(SYSDATE)
        WHERE e.AU_OBS_ID = OBS_ID;
+    
       COMMIT;
+    
+      /*
+        Duplicate check for Draft Para No.
+        Applicable when Team Lead is assigning / updating draft para number.
+      */
+      IF D_PARA_NO IS NOT NULL THEN
+      
+        SELECT COUNT(*)
+          INTO V_DUP_COUNT
+          FROM T_AU_OBSERVATION o
+         WHERE o.engplanid = V_ENGPLANID
+           AND o.id <> OBS_ID
+           AND TRIM(UPPER(o.Draft_Para_No)) = TRIM(UPPER(D_PARA_NO));
+      
+        IF V_DUP_COUNT > 0 THEN
+          OPEN io_cursor FOR
+            SELECT '0' AS ref,
+                   'Draft Para No. already exists against another observation. Please enter a different para number.' AS remarks
+              FROM dual;
+          RETURN;
+        END IF;
+      
+      END IF;
+    
       UPDATE T_AU_OBSERVATION o
          SET o.status              = NEW_STATUS_ID,
              o.Draft_Para_No       = D_PARA_NO,
              o.Draft_Para_Added_On = SYSDATE,
-             o.stelled_on = (case
-                              when NEW_STATUS_ID = 9 then
-                               sysdate
-                              else
-                               null
-                            end),
-             o.settled_by = (case
-                              when NEW_STATUS_ID = 9 then
+             o.stelled_on = CASE
+                              WHEN NEW_STATUS_ID = 9 THEN
+                               SYSDATE
+                              ELSE
+                               NULL
+                            END,
+             o.settled_by = CASE
+                              WHEN NEW_STATUS_ID = 9 THEN
                                P_NO
-                              else
-                               null
-                            end)
+                              ELSE
+                               NULL
+                            END
        WHERE o.id = OBS_ID;
+    
       COMMIT;
-      open io_cursor for
-        select '1' as ref, r.statusname as remarks
-          from t_au_observation_status r
-         where r.statusid = NEW_STATUS_ID;
-    else
-      if (R_ID in (6, 7, 15) and R_D = 'O') then
+    
+      OPEN io_cursor FOR
+        SELECT '1' AS ref, r.statusname AS remarks
+          FROM t_au_observation_status r
+         WHERE r.statusid = NEW_STATUS_ID;
+    
+    ELSE
+    
+      IF R_ID IN (6, 7, 15) AND R_D = 'O' THEN
+      
         UPDATE T_AU_OBSERVATIONS_AUDITEE_RESPONSE e
            SET e.REMARKS         = Remarks,
-               E.LASTUPDATEDBY   = P_NO,
-               E.LASTUPDATEDDATE = TRUNC(SYSDATE)
+               e.LASTUPDATEDBY   = P_NO,
+               e.LASTUPDATEDDATE = TRUNC(SYSDATE)
          WHERE e.AU_OBS_ID = OBS_ID;
+      
         COMMIT;
-        if (NEW_STATUS_ID = 8) then
+      
+        IF NEW_STATUS_ID = 8 THEN
+        
+          /*
+            Duplicate check for Final Para No.
+            Applicable before assigning final para number.
+          */
+          IF D_PARA_NO IS NOT NULL THEN
+          
+            SELECT COUNT(*)
+              INTO V_DUP_COUNT
+              FROM T_AU_OBSERVATION o
+             WHERE o.engplanid = V_ENGPLANID
+               AND o.id <> OBS_ID
+               AND TRIM(UPPER(o.final_para_no)) = TRIM(UPPER(D_PARA_NO));
+          
+            IF V_DUP_COUNT > 0 THEN
+              OPEN io_cursor FOR
+                SELECT '0' AS ref,
+                       'Final Para No. already exists against another observation. Please enter a different para number.' AS remarks
+                  FROM dual;
+              RETURN;
+            END IF;
+          
+          END IF;
+        
           UPDATE T_AU_OBSERVATION o
              SET o.status              = NEW_STATUS_ID,
                  o.final_para_no       = D_PARA_NO,
                  o.final_para_added_on = SYSDATE
            WHERE o.id = OBS_ID;
+        
           COMMIT;
-        else
-          if (NEW_STATUS_ID = 9) then
+        
+        ELSE
+        
+          IF NEW_STATUS_ID = 9 THEN
+          
+            /*
+              Duplicate check for Final Para No.
+              Applicable before settling with final para number.
+            */
+            IF D_PARA_NO IS NOT NULL THEN
+            
+              SELECT COUNT(*)
+                INTO V_DUP_COUNT
+                FROM T_AU_OBSERVATION o
+               WHERE o.engplanid = V_ENGPLANID
+                 AND o.id <> OBS_ID
+                 AND TRIM(UPPER(o.final_para_no)) = TRIM(UPPER(D_PARA_NO));
+            
+              IF V_DUP_COUNT > 0 THEN
+                OPEN io_cursor FOR
+                  SELECT '0' AS ref,
+                         'Final Para No. already exists against another observation. Please enter a different para number.' AS remarks
+                    FROM dual;
+                RETURN;
+              END IF;
+            
+            END IF;
+          
             UPDATE T_AU_OBSERVATION o
                SET o.status              = NEW_STATUS_ID,
                    o.final_para_no       = D_PARA_NO,
                    o.final_para_added_on = SYSDATE,
-                   o.stelled_on          = sysdate,
-                   o.settled_by          = p_no
+                   o.stelled_on          = SYSDATE,
+                   o.settled_by          = P_NO
              WHERE o.id = OBS_ID;
+          
             COMMIT;
-          end if;
-        end if;
+          
+          END IF;
+        
+        END IF;
       
-        open io_cursor for
-          select '1' as ref, r.statusname as remarks
-            from t_au_observation_status r
-           where r.statusid = NEW_STATUS_ID;
-      else
-        open io_cursor for
-          select r.ref, r.remarks from t_au_remarks r where r.id = 22;
-      end if;
-    end if;
-  end P_UpdateAuditObservationStatus;
+        OPEN io_cursor FOR
+          SELECT '1' AS ref, r.statusname AS remarks
+            FROM t_au_observation_status r
+           WHERE r.statusid = NEW_STATUS_ID;
+      
+      ELSE
+      
+        OPEN io_cursor FOR
+          SELECT r.ref, r.remarks FROM t_au_remarks r WHERE r.id = 22;
+      
+      END IF;
+    
+    END IF;
+  
+  END P_UpdateAuditObservationStatus;
 
-  procedure AUDITOR_RESPONSE(OBS_ID          IN T_AU_OBSERVATIONS_AUDITOR_RECOMMENDATION.AU_OBS_ID%type,
+  PROCEDURE AUDITOR_RESPONSE(OBS_ID          IN T_AU_OBSERVATIONS_AUDITOR_RECOMMENDATION.AU_OBS_ID%TYPE,
                              PPNumber        IN T_AU_OBSERVATIONS_AUDITOR_RECOMMENDATION.RECO_BY%TYPE,
-                             AUDITOR_COMMENT IN T_AU_OBSERVATIONS_AUDITOR_RECOMMENDATION.RECOMMENDATION%type,
-                             status          IN T_AU_OBSERVATIONS_AUDITOR_RECOMMENDATION.STATUS%type) is
-  begin
-    INSERT INTO T_AU_OBSERVATIONS_AUDITOR_RECOMMENDATION
-      (ID,
-       AU_OBS_ID,
-       RECOMMENDATION,
-       RECO_BY,
-       RECO_DATE,
-       OBS_TEXT_ID,
-       RECO_ROLE,
-       STATUS,
-       SUBMITTED)
-    VALUES
-      ((select COALESCE(max(acc.ID) + 1, 1)
-         from T_AU_OBSERVATIONS_AUDITOR_RECOMMENDATION acc),
-       OBS_ID,
-       AUDITOR_COMMENT,
-       PPNumber,
-       sysdate,
-       (select ot.id
-          from t_au_observation_text ot
-         WHERE ot.observatsion_id = OBS_ID),
-       'TEAM LEAD',
-       status,
-       'Y');
+                             AUDITOR_COMMENT IN T_AU_OBSERVATIONS_AUDITOR_RECOMMENDATION.RECOMMENDATION%TYPE,
+                             P_STATUS        IN T_AU_OBSERVATIONS_AUDITOR_RECOMMENDATION.STATUS%TYPE) IS
+  BEGIN
   
-    commit;
+    MERGE INTO T_AU_OBSERVATIONS_AUDITOR_RECOMMENDATION tgt
+    USING (SELECT OBS_ID AS AU_OBS_ID FROM dual) src
+    ON (tgt.AU_OBS_ID = src.AU_OBS_ID)
+    WHEN MATCHED THEN
+      UPDATE
+         SET tgt.RECOMMENDATION = AUDITOR_COMMENT,
+             tgt.RECO_BY        = PPNumber,
+             tgt.RECO_DATE      = SYSDATE,
+             tgt.OBS_TEXT_ID   =
+             (SELECT MAX(ot.id)
+                FROM t_au_observation_text ot
+               WHERE ot.observatsion_id = OBS_ID),
+             tgt.RECO_ROLE      = 'TEAM LEAD',
+             tgt.STATUS         = P_STATUS,
+             tgt.SUBMITTED      = 'Y'
+    WHEN NOT MATCHED THEN
+      INSERT
+        (ID,
+         AU_OBS_ID,
+         RECOMMENDATION,
+         RECO_BY,
+         RECO_DATE,
+         OBS_TEXT_ID,
+         RECO_ROLE,
+         STATUS,
+         SUBMITTED)
+      VALUES
+        ((SELECT COALESCE(MAX(acc.ID) + 1, 1)
+           FROM T_AU_OBSERVATIONS_AUDITOR_RECOMMENDATION acc),
+         OBS_ID,
+         AUDITOR_COMMENT,
+         PPNumber,
+         SYSDATE,
+         (SELECT MAX(ot.id)
+            FROM t_au_observation_text ot
+           WHERE ot.observatsion_id = OBS_ID),
+         'TEAM LEAD',
+         P_STATUS,
+         'Y');
   
-  end AUDITOR_RESPONSE;
+    COMMIT;
+  
+  END AUDITOR_RESPONSE;
 
-  procedure AUDITOR_REPLY(OBS_ID          IN T_AU_OBSERVATIONS_AUDITOR_REPLY.AU_OBS_ID%type,
+  PROCEDURE AUDITOR_REPLY(OBS_ID          IN T_AU_OBSERVATIONS_AUDITOR_REPLY.AU_OBS_ID%TYPE,
                           PPNumber        IN T_AU_OBSERVATIONS_AUDITOR_REPLY.REPLIEDBY%TYPE,
-                          AUDITOR_COMMENT IN T_AU_OBSERVATIONS_AUDITOR_REPLY.AUDIT_REPLY%type,
-                          status          IN T_AU_OBSERVATIONS_AUDITOR_REPLY.OBS_STATUS%type) is
-  begin
-    INSERT INTO T_AU_OBSERVATIONS_AUDITOR_REPLY
-      (ID,
-       AU_OBS_ID,
-       AUDIT_REPLY,
-       REPLIEDBY,
-       REPLIEDDATE,
-       OBS_TEXT_ID,
-       REPLY_ROLE,
-       OBS_STATUS,
-       SUBMITTED)
-    VALUES
-      ((select COALESCE(max(acc.ID) + 1, 1)
-         from T_AU_OBSERVATIONS_AUDITOR_REPLY acc),
-       OBS_ID,
-       AUDITOR_COMMENT,
-       PPNumber,
-       sysdate,
-       (select ot.id
-          from t_au_observation_text ot
-         WHERE ot.observatsion_id = OBS_ID),
-       (select g.description
-          from t_groups g
-         inner join t_user_maping mp
-            on mp.group_id = g.group_id
-         where mp.ppno = PPNumber),
-       status,
-       'Y');
+                          AUDITOR_COMMENT IN T_AU_OBSERVATIONS_AUDITOR_REPLY.AUDIT_REPLY%TYPE,
+                          P_STATUS        IN T_AU_OBSERVATIONS_AUDITOR_REPLY.OBS_STATUS%TYPE) IS
+  BEGIN
   
-    commit;
+    MERGE INTO T_AU_OBSERVATIONS_AUDITOR_REPLY tgt
+    USING (SELECT OBS_ID AS AU_OBS_ID FROM dual) src
+    ON (tgt.AU_OBS_ID = src.AU_OBS_ID)
+    WHEN MATCHED THEN
+      UPDATE
+         SET tgt.AUDIT_REPLY = AUDITOR_COMMENT,
+             tgt.REPLIEDBY   = PPNumber,
+             tgt.REPLIEDDATE = SYSDATE,
+             tgt.OBS_TEXT_ID =
+             (SELECT MAX(ot.id)
+                FROM t_au_observation_text ot
+               WHERE ot.observatsion_id = OBS_ID),
+             tgt.REPLY_ROLE =
+             (SELECT MAX(g.description)
+                FROM t_groups g
+               INNER JOIN t_user_context_assignment mp
+                  ON mp.group_id = g.group_id
+               WHERE mp.ppno = PPNumber),
+             tgt.OBS_STATUS  = P_STATUS,
+             tgt.SUBMITTED   = 'Y'
+    WHEN NOT MATCHED THEN
+      INSERT
+        (ID,
+         AU_OBS_ID,
+         AUDIT_REPLY,
+         REPLIEDBY,
+         REPLIEDDATE,
+         OBS_TEXT_ID,
+         REPLY_ROLE,
+         OBS_STATUS,
+         SUBMITTED)
+      VALUES
+        ((SELECT COALESCE(MAX(acc.ID) + 1, 1)
+           FROM T_AU_OBSERVATIONS_AUDITOR_REPLY acc),
+         OBS_ID,
+         AUDITOR_COMMENT,
+         PPNumber,
+         SYSDATE,
+         (SELECT MAX(ot.id)
+            FROM t_au_observation_text ot
+           WHERE ot.observatsion_id = OBS_ID),
+         (SELECT MAX(g.description)
+            FROM t_groups g
+           INNER JOIN t_user_context_assignment mp
+              ON mp.group_id = g.group_id
+           WHERE mp.ppno = PPNumber),
+         P_STATUS,
+         'Y');
   
-  end AUDITOR_REPLY;
+    COMMIT;
+  
+  END AUDITOR_REPLY;
 
   procedure P_GetLatestAuditorResponse(obs_id    IN NUMBER,
                                        ENT_ID    in number,
@@ -2672,11 +2932,11 @@ create or replace package body PKG_AR is
   
     SELECT NVL(max(G.GROUP_ID), 0)
       INTO V_F
-      FROM t_User_Maping G
+      FROM t_User_Context_Assignment G
      WHERE g.ppno = PP_NO;
     select NVL(MAX(u.entity_id), 0)
       into E_F
-      from t_user u
+      from t_User_Context_Assignment u
      where u.ppno = pp_no;
     if (V_F = 1) then
       open io_cursor for
@@ -2769,9 +3029,9 @@ create or replace package body PKG_AR is
                   on t.entity_id = e.entity_id
                inner join t_au_period p
                   on e.period_id = p.auditperiodid
-               where p.status_id = 2
-                 and ja.team_mem_ppno = PP_NO
-                 and e.status < 13;
+               where --p.status_id = 2   and 
+               ja.team_mem_ppno = PP_NO
+               and e.status between 4 and 13;
           end if;
         end if;
       end if;
@@ -2838,7 +3098,9 @@ create or replace package body PKG_AR is
              ot.text           as OBS_TEXT,
              ot.headings       as OBS_HEADING,
              o.severity        as OBS_RISK_ID,
-             r.description     as OBS_RISK
+             r.description     as OBS_RISK,
+             o.engplanid,
+             o.reference_id
         from t_au_observation o
        inner join t_au_plan_eng e
           on o.engplanid = e.eng_id
@@ -2886,6 +3148,7 @@ create or replace package body PKG_AR is
              ost.Statusname as OBS_STATUS,
              o.annex as annex_id,
              ax.code as annex_code,
+             nvl(o.reference_id, 0) as reference_id,
              (case
                when o.annex = 1 then
                 'Y'
@@ -2923,17 +3186,19 @@ create or replace package body PKG_AR is
   begin
   
     OPEN io_Cursor FOR
-      select c.heading     as Process,
-             c.t_id        as process_id,
-             cc.heading    as Sub_process,
-             cc.s_id       as Sub_process_id,
-             csb.heading   AS Check_List_Detail,
-             csb.id        as Check_List_Detail_id,
-             o.memo_number as MEMO_NO,
-             ot.text       as OBS_TEXT,
-             ot.headings   as headings,
-             o.severity    as risk_id,
-             o.annex       as annexure_id
+      select c.heading      as Process,
+             c.t_id         as process_id,
+             cc.heading     as Sub_process,
+             cc.s_id        as Sub_process_id,
+             csb.heading    AS Check_List_Detail,
+             csb.id         as Check_List_Detail_id,
+             o.memo_number  as MEMO_NO,
+             ot.text        as OBS_TEXT,
+             ot.headings    as headings,
+             o.severity     as risk_id,
+             o.annex        as annexure_id,
+             o.engplanid,
+             o.reference_id
         from t_au_observation o
        inner join t_au_plan_eng e
           on o.engplanid = e.eng_id
@@ -2945,6 +3210,7 @@ create or replace package body PKG_AR is
           on cc.s_id = csb.s_id
        inner join t_audit_checklist c
           on c.t_id = cc.t_id
+      
        Where O.ID = OBSID
        order by o.memo_number;
   end P_GetManagedObservationsForBranchesTEXT;
@@ -3328,6 +3594,7 @@ create or replace package body PKG_AR is
         from V_GETCLOSINGDRAFT_TEAM_SUMMARY t
       
        where t.engplanid = ENGID
+         and t.member_ppno = P_NO
        order by teamlead desc;
   
   end p_GetClosingDraftObservations;
@@ -4536,19 +4803,55 @@ create or replace package body PKG_AR is
         from dual;
   end P_AddLoanCaseFile;
 
-  procedure P_GetLoanCaseFile(ENGID     in number,
-                              ENT_ID    in number,
-                              P_NO      in number,
-                              R_ID      in number,
-                              io_cursor OUT t_cursor) as
+  PROCEDURE P_GetLoanCaseFile(ENGID     IN VARCHAR2,
+                              ENT_ID    IN NUMBER,
+                              P_NO      IN NUMBER,
+                              R_ID      IN NUMBER,
+                              io_cursor OUT t_cursor) AS
+    v_engid NUMBER;
   BEGIN
+    -- Safe conversion: if ENGID is not numeric, return empty cursor (no error)
+    BEGIN
+      v_engid := TO_NUMBER(TRIM(ENGID));
+    EXCEPTION
+      WHEN VALUE_ERROR THEN
+        OPEN io_cursor FOR
+          SELECT 0    AS lc_id,
+                 NULL AS lc_number,
+                 NULL AS amount,
+                 NULL AS disb_date,
+                 NULL AS category,
+                 NULL AS observation,
+                 NULL AS para_no,
+                 NULL AS entered_by,
+                 NULL AS entered_on,
+                 NULL AS eng_id
+            FROM dual
+           WHERE 1 = 0; -- empty result
+        RETURN;
+    END;
   
     OPEN io_cursor FOR
-      Select *
-        from T_WORKING_PAPER_LOAN_CASE_FILE lc
-       where lc.Eng_Id = ENGID;
+      Select nvl(lc.lc_id, 0) as lc_id,
+             nvl(lc.lc_number, '-') as lc_number,
+             nvl(lc.amount, 0) as amount,
+             lc.disb_date,
+             nvl(lc.category, '-') as category,
+             nvl(lc.observation, '-') as observation,
+             nvl(lc.para_no, 0) as para_no,
+             nvl(lc.entered_by, 0) as entered_by,
+             lc.entered_on,
+             nvl(lc.eng_id, '-') as eng_id
+      
+        FROM T_WORKING_PAPER_LOAN_CASE_FILE lc
+       WHERE lc.eng_id = ENGID;
   
-  end P_GetLoanCaseFile;
+    -- If your table has these columns, uncomment and use them:
+    --   AND lc.ent_id = ENT_ID
+    --   AND lc.p_no   = P_NO
+    --   AND lc.r_id   = R_ID;
+  
+  END P_GetLoanCaseFile;
 
   procedure P_AddVoucherChecking(ENT_ID    in number,
                                  P_NO      in number,
@@ -4582,7 +4885,7 @@ create or replace package body PKG_AR is
         from dual;
   end P_AddVoucherChecking;
 
-  procedure P_GetVoucherChecking(ENGID     in number,
+  procedure P_GetVoucherChecking(ENGID     in varchar2,
                                  ENT_ID    in number,
                                  P_NO      in number,
                                  R_ID      in number,
@@ -4630,7 +4933,7 @@ create or replace package body PKG_AR is
         from dual;
   end P_AddAccountOpeningDetails;
 
-  procedure P_GetAccountOpeningDetails(ENGID     in number,
+  procedure P_GetAccountOpeningDetails(ENGID     in VARCHAR2,
                                        ENT_ID    in number,
                                        P_NO      in number,
                                        R_ID      in number,
@@ -4681,7 +4984,7 @@ create or replace package body PKG_AR is
       SELECT 'Fixed Assets Added ' as remarks from dual;
   end P_AddFixedAssetsDetails;
 
-  procedure P_GetFixedAssetsDetails(ENGID     in number,
+  procedure P_GetFixedAssetsDetails(ENGID     in VARCHAR2,
                                     ENT_ID    in number,
                                     P_NO      in number,
                                     R_ID      in number,
@@ -4738,7 +5041,7 @@ create or replace package body PKG_AR is
       SELECT 'Cash Counter Details Added ' as remarks from dual;
   end P_AddCashCounterDetails;
 
-  procedure P_GetCashCounterDetails(ENGID     in number,
+  procedure P_GetCashCounterDetails(ENGID     in VARCHAR2,
                                     ENT_ID    in number,
                                     P_NO      in number,
                                     R_ID      in number,
@@ -4935,6 +5238,7 @@ create or replace package body PKG_AR is
     if (IND = 'B') then
       open io_cursor for
         select o.obsid,
+               o.engplanid,
                o.CP_ID,
                o.CP,
                o.PSN_ID,
@@ -4953,6 +5257,7 @@ create or replace package body PKG_AR is
     else
       open io_cursor for
         select o.obsid,
+               o.engplanid,
                o.CP_ID,
                o.CP,
                o.PSN_ID,
@@ -5007,6 +5312,34 @@ create or replace package body PKG_AR is
   BEGIN
     OPEN io_cursor FOR
       SELECT f.com_id,
+             f.para_no,
+             f.audit_period,
+             f.gist_of_paras,
+             r.description AS risk,
+             NVL(n.code, 0) AS Annex
+        FROM Ais_t_Au_Post_Compliance f
+       INNER JOIN t_risk r
+          ON f.risk = r.r_id
+        LEFT JOIN t_audit_checklist_annexure n
+          ON f.ANNEX = n.id
+       WHERE f.entity_id = S_ENT_ID
+         AND f.para_status = 8
+         AND f.audited_by = ENT_ID
+         and not exists (select 1
+                from T_AU_OBSERVATION_UPDATED_REFERENCE ud2
+               where ud2.c_id = f.com_id
+                 AND ud2.status = 'P')
+       ORDER BY f.audit_period, f.para_no;
+  END P_GetObservationsForManageAuditParas;
+
+  PROCEDURE P_GetObservationsDetailsForManageAuditParas(C_ID      IN NUMBER,
+                                                        ENT_ID    IN NUMBER,
+                                                        P_NO      IN NUMBER,
+                                                        R_ID      IN NUMBER,
+                                                        io_cursor OUT t_cursor) IS
+  BEGIN
+    OPEN io_cursor FOR
+      SELECT f.com_id,
              f.old_para_id,
              f.new_para_id,
              f.para_no,
@@ -5014,7 +5347,7 @@ create or replace package body PKG_AR is
              f.gist_of_paras,
              r.description AS risk,
              r.r_id AS risk_id,
-             f.IND,
+             f.IND as INDICATOR,
              NVL(n.code, 0) AS Annex,
              n.id AS Annex_ID,
              -- Get para_text by joining each type, then using CASE
@@ -5028,15 +5361,8 @@ create or replace package body PKG_AR is
                ELSE
                 NULL
              END AS para_text,
-             0 AS amount,
-             f.no_of_instances AS no_instances,
-             f.annex_ref_id,
-             
-             ud.annexure_ref_id,
-             c.REFERENCE_TYPE,
-             c.INSTRUCTIONSTITLE,
-             trunc(c.INSTRUCTIONSDATE) as INSTRUCTIONS_DATE,
-             E.NAME AS DIVISION
+             f.amount AS AMOUNT_INV,
+             f.no_of_instances AS no_instances
       
         FROM Ais_t_Au_Post_Compliance f
        INNER JOIN t_risk r
@@ -5050,23 +5376,28 @@ create or replace package body PKG_AR is
         LEFT JOIN t_au_observation_old_cad_paras_text nt
           ON (f.IND = 'C' AND nt.observatsion_id = f.new_para_id)
       
-        left join T_AU_OBSERVATION_UPDATED_REFERENCE ud
-          on ud.c_id = f.com_id
-         AND ud.status = 'A'
-        left join t_Audit_Checklist_Annexure_Circular c
-          on c.id = ud.annexure_ref_id
-        left join t_Auditee_Entities e
-          on c.division_ent_id = e.entity_id
-      
-       WHERE f.entity_id = S_ENT_ID
-         AND f.para_status = 8
-         AND f.audited_by = ENT_ID
-         and not exists (select 1
-                from T_AU_OBSERVATION_UPDATED_REFERENCE ud2
-               where ud2.c_id = f.com_id
-                 AND ud2.status = 'P')
-       ORDER BY f.audit_period, f.para_no;
-  END P_GetObservationsForManageAuditParas;
+       WHERE f.com_id = C_ID;
+  END P_GetObservationsDetailsForManageAuditParas;
+
+  procedure GetResponsiblePPNOforoldPara(C_ID      in number,
+                                         io_cursor OUT t_cursor) is
+  
+  begin
+    OPEN io_Cursor FOR
+      select 1 as RESP_ROW_ID,
+             
+             ot.pp_no,
+             em.EMPLOYEEFIRSTNAME || '  ' || em.EMPLOYEELASTNAME as EMP_NAME,
+             nvl(ot.LOAN_CASE, 0) as LOANCASE,
+             nvl(ot.lc_amount, 0) as LCAMOUNT,
+             nvl(ot.account_number, 0) as ACCNUMBER,
+             nvl(ot.ac_amount, 0) as ACAMOUNT
+        from v_get_auditee_paras_fad_compliance_ppno ot
+       inner join v_service_employeeinfo em
+          on em.PPNO = ot.pp_no
+       where ot.com_id = C_ID;
+  
+  end GetResponsiblePPNOforoldPara;
 
   procedure P_Get_responsibility(Para_ID   IN NUMBER,
                                  IND       in varchar2,
@@ -5080,11 +5411,11 @@ create or replace package body PKG_AR is
     OPEN io_Cursor FOR
     
       select v.pp_no,
-             v.loan_case,
-             v.lc_amount,
-             v.ac_amount,
-             v.amount_involved,
-             v.account_number,
+             nvl(v.loan_case, 0) as loan_case,
+             nvl(v.lc_amount, 0) as lc_amount,
+             nvl(v.ac_amount, 0) as ac_amount,
+             nvl(v.amount_involved, 0) as amount_involved,
+             nvl(v.account_number, 0) as account_number,
              (case
                when v.status in ('Y', 'N') then
                 'Responsibity Fixed'
@@ -5125,11 +5456,10 @@ create or replace package body PKG_AR is
                                  D_PARA_TEXT    in clob,
                                  D_AMOUNT       in decimal,
                                  D_INSTANCES    in number,
-                                 
-                                 ENT_ID    in number,
-                                 P_NO      in number,
-                                 R_ID      in number,
-                                 io_cursor OUT t_cursor) IS
+                                 ENT_ID         in number,
+                                 P_NO           in number,
+                                 R_ID           in number,
+                                 io_cursor      OUT t_cursor) IS
   
   begin
     update T_AU_OBSERVATION_UPDATED_REFERENCE c
@@ -5180,8 +5510,8 @@ create or replace package body PKG_AR is
 
   PROCEDURE P_Update_responsibility(IND        IN VARCHAR2,
                                     C_ID       IN NUMBER,
-                                    O_Para_ID  IN NUMBER,
                                     N_PARA_ID  IN NUMBER,
+                                    E_ID       IN NUMBER,
                                     PPNO       IN NUMBER,
                                     L_CASE     IN NUMBER,
                                     LC_AMOUNT  IN NUMBER,
@@ -5197,60 +5527,117 @@ create or replace package body PKG_AR is
     v_f       NUMBER := 0;
     v_err_msg VARCHAR2(4000);
   BEGIN
-    -- COM_ID + PPNO uniquely identifies the row for old para flow
-    SELECT NVL(MAX(p.para_id), 0)
-      INTO v_f
-      FROM t_Au_Observation_Responsibility_Updated p
-     WHERE p.pp_no = PPNO
-       AND p.com_id = C_ID;
-  
-    IF (v_f = 0 OR v_f IS NULL) THEN
-      INSERT INTO t_Au_Observation_Responsibility_Updated
-        (para_id,
-         IND,
-         Old_Para_Id,
-         New_Para_Id,
-         Pp_No,
-         Loan_Case,
-         Loan_Amount,
-         Acccount_Amount,
-         Reasons,
-         action,
-         Account_no,
-         Updated_By,
-         Updated_On,
-         com_id)
-      VALUES
-        ((SELECT COALESCE(MAX(acc.para_ID) + 1, 1)
-           FROM t_Au_Observation_Responsibility_Updated acc),
-         IND,
-         NULL, -- not used in COM flow
-         NULL, -- not used in COM flow
-         PPNO,
-         L_CASE,
-         LC_AMOUNT,
-         AC_Amount,
-         Remarks,
-         U_D_action,
-         NO_Account,
-         P_NO,
-         SYSDATE,
-         C_ID);
-    ELSE
-      UPDATE t_Au_Observation_Responsibility_Updated c
-         SET c.loan_case       = L_CASE,
-             c.loan_amount     = LC_AMOUNT,
-             c.account_no      = NO_account,
-             c.acccount_amount = AC_Amount,
-             c.action          = U_D_action,
-             c.authorized_by   = NULL,
-             c.authorized_on   = NULL,
-             c.com_id          = C_ID
-       WHERE c.para_id = v_f;
+    if (C_ID is not null) then
+      -- COM_ID + PPNO uniquely identifies the row for old para flow
+      SELECT NVL(MAX(p.para_id), 0)
+        INTO v_f
+        FROM t_Au_Observation_Responsibility_Updated p
+       WHERE p.pp_no = PPNO
+         AND p.com_id = C_ID;
+    
+      IF (v_f = 0 OR v_f IS NULL) THEN
+        INSERT INTO t_Au_Observation_Responsibility_Updated
+          (para_id,
+           IND,
+           Old_Para_Id,
+           New_Para_Id,
+           Pp_No,
+           Loan_Case,
+           Loan_Amount,
+           Acccount_Amount,
+           Reasons,
+           action,
+           Account_no,
+           Updated_By,
+           Updated_On,
+           com_id)
+        VALUES
+          ((SELECT COALESCE(MAX(acc.para_ID) + 1, 1)
+             FROM t_Au_Observation_Responsibility_Updated acc),
+           IND,
+           NULL, -- not used in COM flow
+           NULL, -- not used in COM flow
+           PPNO,
+           L_CASE,
+           LC_AMOUNT,
+           AC_Amount,
+           Remarks,
+           U_D_action,
+           NO_Account,
+           P_NO,
+           SYSDATE,
+           C_ID);
+      ELSE
+        UPDATE t_Au_Observation_Responsibility_Updated c
+           SET c.loan_case       = L_CASE,
+               c.loan_amount     = LC_AMOUNT,
+               c.account_no      = NO_account,
+               c.acccount_amount = AC_Amount,
+               c.action          = U_D_action,
+               c.authorized_by   = NULL,
+               c.authorized_on   = NULL,
+               c.com_id          = C_ID
+         WHERE c.para_id = v_f
+           and c.pp_no = ppno;
+      END IF;
+    
+      COMMIT;
+    
+    else
+    
+      SELECT NVL(MAX(p.para_id), 0)
+        INTO v_f
+        FROM t_Au_Observation_Responsibility_Updated p
+       WHERE p.pp_no = PPNO
+         AND p.eng_id = E_ID
+         and p.new_para_id = N_PARA_ID;
+    
+      IF (v_f = 0 OR v_f IS NULL) THEN
+        INSERT INTO t_Au_Observation_Responsibility_Updated
+          (para_id,
+           IND,
+           Old_Para_Id,
+           New_Para_Id,
+           Pp_No,
+           Loan_Case,
+           Loan_Amount,
+           Acccount_Amount,
+           Reasons,
+           action,
+           Account_no,
+           Updated_By,
+           Updated_On,
+           Eng_Id)
+        VALUES
+          ((SELECT COALESCE(MAX(acc.para_ID) + 1, 1)
+             FROM t_Au_Observation_Responsibility_Updated acc),
+           IND,
+           NULL, -- not used in COM flow
+           N_PARA_ID,
+           PPNO,
+           L_CASE,
+           LC_AMOUNT,
+           AC_Amount,
+           Remarks,
+           U_D_action,
+           NO_Account,
+           P_NO,
+           SYSDATE,
+           E_ID);
+      ELSE
+        UPDATE t_Au_Observation_Responsibility_Updated c
+           SET c.loan_case       = L_CASE,
+               c.loan_amount     = LC_AMOUNT,
+               c.account_no      = NO_account,
+               c.acccount_amount = AC_Amount,
+               c.action          = U_D_action,
+               c.authorized_by   = NULL,
+               c.authorized_on   = NULL
+         WHERE c.new_para_id = n_para_id
+           and c.eng_id = E_ID
+           and c.pp_no = ppno;
+      END IF;
     END IF;
-  
-    COMMIT;
-  
     OPEN io_cursor FOR
       SELECT 'Responsibility ' || (CASE U_D_action
                WHEN 'A' THEN
@@ -5335,32 +5722,24 @@ create or replace package body PKG_AR is
   
   begin
     open io_cursor for
-      select d.c_id as com_ID,
-             d.n_para_id as new_para_id,
-             d.o_para_id as old_para_id,
+      select d.c_id            as com_ID,
+             d.n_para_id       as new_para_id,
+             d.o_para_id       as old_para_id,
              d.para_no,
              d.audit_period,
-             d.gist_of_paras as gist_of_para,
-             r.description as risk,
-             r.r_id as risk_id,
+             d.gist_of_paras   as gist_of_para,
+             r.description     as risk,
+             r.r_id            as risk_id,
              d.ind,
              d.annex_id,
              d.no_instances,
              d.amount,
              d.p_type_ind,
              d.para_text,
-             c.REFERENCE_TYPE,
-             c.INSTRUCTIONSTITLE,
-             trunc(c.INSTRUCTIONSDATE) as INSTRUCTIONS_DATE,
-             d.annexure_ref_id as annex_ref_id,
-             E.NAME AS DIVISION
+             d.annexure_ref_id as annex_ref_id
         from T_AU_OBSERVATION_UPDATED_REFERENCE d
-        left join t_Audit_Checklist_Annexure_Circular c
-          on d.annexure_ref_id = c.id
        INNER JOIN T_AUDIT_CHECKLIST_ANNEXURE A
           ON D.ANNEX_ID = A.ID
-        left JOIN T_AUDITEE_ENTITIES E
-          ON E.ENTITY_ID = C.DIVISION_ENT_ID
        inner join t_risk r
           on r.r_id = a.risk
        where d.c_id = Com_ID
@@ -5377,10 +5756,11 @@ create or replace package body PKG_AR is
              r.old_para_id,
              r.new_para_id,
              r.pp_no,
+             em.employeefirstname || ' ' || em.employeelastname as emp_name,
              r.loan_case,
              r.loan_amount,
-             r.acccount_amount,
-             r.account_no,
+             nvl(r.acccount_amount, 0) as acccount_amount,
+             nvl(r.account_no, 0) as account_no,
              r.reasons,
              (case
                when r.action = 'A' then
@@ -5395,24 +5775,69 @@ create or replace package body PKG_AR is
              r.authorized_by,
              r.authorized_on
         from t_Au_Observation_Responsibility_Updated r
+       inner join v_service_employeeinfo em
+          on em.PPNO = r.pp_no
        where r.com_id = C_ID
          and r.authorized_on is null;
   
   end P_Get_responsibility_for_Authorize;
 
-  Procedure P_Delete_responsibility(IND       in varchar2,
-                                    O_Para_ID IN NUMBER,
-                                    N_PARA_ID in number,
-                                    PPNO      in number,
-                                    io_cursor OUT t_cursor) is
+  Procedure P_GET_OBSERVATION_TO_PRINT(OBS_ID    in number,
+                                       io_cursor OUT t_cursor) is
   
   begin
-  
-    commit;
-  
     open io_cursor for
-      select 'Responsibilility deleted ' as remarks from dual;
-  
+      select et.name as Entity_Name,
+             E.Operation_Startdate || ' ' || e.operation_enddate as Audit_Period,
+             o.memo_number,
+             o.memo_date,
+             a.heading as Annexure,
+             t.headings as TITLE,
+             r.description as Risk,
+             t.text as para_text,
+             tm.member_name as Team_Lead
+        from t_au_observation o
+       inner join t_au_plan_eng e
+          on e.eng_id = o.engplanid
+       inner join t_au_team_members tm
+          on tm.t_id = e.team_id
+         and tm.isteamlead = 'Y'
+       inner join t_auditee_entities et
+          on et.entity_id = e.entity_id
+       inner join t_audit_checklist_annexure a
+          on o.annex = a.id
+       inner join t_risk r
+          on r.rating = a.risk
+       inner join t_au_observation_text t
+          on t.observatsion_id = o.id
+       where o.id = OBS_ID;
+  end P_GET_OBSERVATION_TO_PRINT;
+
+  Procedure P_Delete_responsibility(PARA_ID    in number,
+                                    E_ID       in number,
+                                    PPNO       in number,
+                                    L_CASE     in number,
+                                    NO_ACCOUNT in number,
+                                    ENT_ID     in number,
+                                    P_NO       in number,
+                                    R_ID       in number,
+                                    io_cursor  OUT t_cursor) is
+    S_F number := 0;
+  begin
+    select o.status into S_F from t_au_observation o where o.id = para_id;
+    if (S_F < 8) then
+      delete from T_AU_OBSERVATION_RESPONIBILITY_ASSIGNED r
+       where r.obs_id = PARA_ID
+         and r.pp_no = ppno
+         and r.loan_case = L_CASE;
+      commit;
+      open io_cursor for
+        select 'Responsibilility deleted ' as remarks from dual;
+    else
+      open io_cursor for
+        select 'Responsibilility cannot be deleted after finalization of Para ' as remarks
+          from dual;
+    end if;
   end P_Delete_responsibility;
 
   PROCEDURE P_Authorize_Update_Audit_Paras(C_ID           IN NUMBER,
@@ -5495,14 +5920,14 @@ create or replace package body PKG_AR is
                o.lastupdatedby   = P_NO,
                o.lastupdateddate = SYSDATE
          WHERE o.id = N_PARA_ID;
-      
+        commit;
         UPDATE t_au_observation_text t
            SET t.headings        = D_GIST,
                t.text            = D_PARA_TEXT,
                t.lastupdatedby   = P_NO,
                t.lastupdateddate = SYSDATE
          WHERE t.observatsion_id = N_PARA_ID;
-      
+        commit;
         UPDATE ais_t_au_post_compliance c
            SET c.para_no         = D_PARA_NO,
                c.gist_of_paras   = D_GIST,
@@ -5512,7 +5937,7 @@ create or replace package body PKG_AR is
                c.amount          = D_AMOUNT,
                c.no_of_instances = D_INSTANCES
          WHERE c.com_id = C_ID;
-      
+        commit;
         FOR j IN (SELECT rm.*
                     FROM T_AU_OBSERVATION_RESPONSIBILITY_UPDATED rm
                    WHERE rm.com_id = C_ID
@@ -5569,7 +5994,7 @@ create or replace package body PKG_AR is
              WHERE dm.com_id = j.com_id;
           END IF;
         END LOOP;
-      
+        commit;
       ELSE
         -- Old-paras branch
         UPDATE t_au_old_paras_fad d
@@ -5583,18 +6008,21 @@ create or replace package body PKG_AR is
                d.annex                = D_ANNEX,
                d.az_updated_on        = SYSDATE
          WHERE d.com_id = C_ID;
-      
+        commit;
         UPDATE t_au_old_paras_fad_text t
            SET t.para_text = D_PARA_TEXT
          WHERE t.com_id = C_ID;
-      
+        commit;
         UPDATE ais_t_au_post_compliance c
-           SET c.para_no       = D_PARA_NO,
-               c.gist_of_paras = D_GIST,
-               c.audit_period  = D_AUDIT_PERIOD,
-               c.risk          = D_RISK
+           SET c.para_no         = D_PARA_NO,
+               c.gist_of_paras   = D_GIST,
+               c.audit_period    = D_AUDIT_PERIOD,
+               c.risk            = D_RISK,
+               c.no_of_instances = D_INSTANCES,
+               c.amount          = D_AMOUNT,
+               c.annex           = D_ANNEX
          WHERE c.com_id = C_ID;
-      
+        commit;
         FOR j IN (SELECT rm.*
                     FROM T_AU_OBSERVATION_RESPONSIBILITY_UPDATED rm
                    WHERE rm.com_id = C_ID
@@ -5651,6 +6079,7 @@ create or replace package body PKG_AR is
              WHERE dm.com_id = j.com_id;
           END IF;
         END LOOP;
+        commit;
       END IF;
     
       -- Finalize reference and logs for Authorization
@@ -5924,7 +6353,7 @@ create or replace package body PKG_AR is
               on p.auditperiodid = eg.period_id
            inner join t_auditee_entities_maping me
               on me.entity_id = ee.entity_id
-           inner join t_au_dsa_status ds
+            left join t_au_dsa_status ds
               on ds.status = d.status
            where d.status in (2, 5);
       else
@@ -5983,7 +6412,7 @@ create or replace package body PKG_AR is
                 on p.auditperiodid = eg.period_id
              inner join t_auditee_entities_maping me
                 on me.entity_id = ee.entity_id
-             inner join t_au_dsa_status ds
+              left join t_au_dsa_status ds
                 on ds.status = d.status
              where d.status in (4, 6);
         end if;
@@ -6096,5 +6525,448 @@ create or replace package body PKG_AR is
        where e.entity_id = ENT_ID;
   
   end p_get_email_address_for_dsa;
+
+  PROCEDURE P_responibilityforoldpara(C_ID      IN NUMBER,
+                                      IND       IN VARCHAR2, -- 'A' / 'U' / 'D'
+                                      PPNO      IN NUMBER, -- actor PP number
+                                      RES_PP    IN NUMBER, -- responsible PP number
+                                      LOANCASE  IN NUMBER,
+                                      ACCNUMBER IN NUMBER,
+                                      LCAMOUNT  IN NUMBER,
+                                      ACAMOUNT  IN NUMBER,
+                                      io_cursor OUT t_cursor) IS
+    v_ind    VARCHAR2(1) := UPPER(TRIM(IND));
+    v_msg    VARCHAR2(4000);
+    v_action varchar2(20);
+    v_new_id NUMBER;
+    P_IND    varchar2(2);
+    N_P_ID   number;
+    O_P_ID   number;
+  BEGIN
+  
+    if (v_ind = 'A') then
+      v_action := 'Added';
+    ELSIF V_ind = 'D' then
+      v_action := 'Deleted';
+    elsif v_ind = 'U' then
+      v_action := 'Updated';
+    end if;
+  
+    SELECT NVL(c.old_para_id, 0), NVL(c.new_para_id, 0), c.ind
+      INTO O_P_ID, N_P_ID, P_IND
+      FROM ais_t_au_post_compliance c
+     WHERE c.com_id = C_ID;
+  
+    IF v_ind NOT IN ('A', 'U', 'D') THEN
+      v_msg := 'Invalid IND. Allowed values are A, U, D.';
+      OPEN IO_CURSOR FOR
+        SELECT v_msg AS remarks FROM dual;
+      RETURN;
+    END IF;
+  
+    IF C_ID IS NULL THEN
+      v_msg := 'C_ID is required.';
+      OPEN IO_CURSOR FOR
+        SELECT v_msg AS remarks FROM dual;
+      RETURN;
+    END IF;
+  
+    IF v_ind in ('A', 'D') THEN
+      -- generate a new primary key (assuming SEQ_RESP_UPDATED exists)
+      SELECT NVL(MAX(r.para_id), 0) + 1
+        INTO v_new_id
+        FROM T_AU_OBSERVATION_RESPONSIBILITY_UPDATED r;
+    
+      INSERT INTO T_AU_OBSERVATION_RESPONSIBILITY_UPDATED
+        (PARA_ID,
+         IND,
+         OLD_PARA_ID,
+         NEW_PARA_ID,
+         COM_ID,
+         PP_NO,
+         LOAN_CASE,
+         ACCOUNT_NO,
+         LOAN_AMOUNT,
+         ACCCOUNT_AMOUNT,
+         ACTION,
+         
+         UPDATED_BY,
+         UPDATED_ON
+         
+         )
+      VALUES
+        (v_new_id,
+         P_IND,
+         O_P_ID,
+         N_P_ID,
+         C_ID,
+         RES_PP,
+         LOANCASE,
+         ACCNUMBER,
+         LCAMOUNT,
+         ACAMOUNT,
+         v_ind,
+         PPNO,
+         SYSDATE);
+    
+      v_msg := 'Responsibility of' || RES_PP || ' ' || v_action || '(ID=' ||
+               v_new_id || ') for COM_ID=' || C_ID;
+    
+    ELSIF v_ind = 'U' THEN
+      -- Here you should pass the row’s primary key (e.g., RES_ID)
+      UPDATE T_AU_OBSERVATION_RESPONSIBILITY_UPDATED r
+         SET r.loan_case       = LOANCASE,
+             r.account_no      = ACCNUMBER,
+             r.loan_amount     = LCAMOUNT,
+             r.acccount_amount = ACAMOUNT,
+             r.updated_by      = PPNO,
+             r.updated_on      = SYSDATE,
+             r.action          = v_ind,
+             r.ind             = P_IND,
+             r.old_para_id     = O_P_ID,
+             r.new_para_id     = N_P_ID
+       WHERE r.com_id = C_ID
+         AND r.pp_no = RES_PP; -- ?? might update multiple rows if PP_NO repeats!
+    
+      v_msg := SQL%ROWCOUNT || ' row(s) ' || RES_PP || ' ' || v_action ||
+               'for COM_ID=' || C_ID;
+    
+    ELSE
+      -- v_ind = 'D'
+      DELETE FROM T_AU_OBSERVATION_RESPONSIBILITY_UPDATED r
+       WHERE r.com_id = C_ID
+         AND r.pp_no = RES_PP; -- ?? might delete multiple rows if PP_NO repeats!
+    
+      v_msg := SQL%ROWCOUNT || ' row(s) deleted for COM_ID=' || C_ID;
+    END IF;
+  
+    OPEN IO_CURSOR FOR
+      SELECT v_msg AS remarks FROM dual;
+  
+  EXCEPTION
+    WHEN OTHERS THEN
+      v_msg := 'Error: ' || SQLERRM;
+      OPEN IO_CURSOR FOR
+        SELECT v_msg AS remarks FROM dual;
+  END P_responibilityforoldpara;
+
+  PROCEDURE P_SearchReferences(p_ref_type IN VARCHAR2,
+                               p_keyword  IN VARCHAR2,
+                               io_cursor  OUT SYS_REFCURSOR) IS
+  BEGIN
+    OPEN io_cursor FOR
+      SELECT ID AS REFERENCE_ID,
+             id,
+             REFERENCE_TYPE as REFERENCE_TYPE,
+             INSTRUCTIONSTITLE AS TITLE,
+             trunc(INSTRUCTIONSDATE) as INSTRUCTIONSDATE,
+             DIVISION,
+             INSTRUCTIONSDETAILS,
+             KEYWORDS,
+             'http://10.100.20.14/' || redirectedpage as REFERENCEURL
+        FROM T_AUDIT_CHECKLIST_ANNEXURE_CIRCULAR
+       WHERE (UPPER(REFERENCE_TYPE) = UPPER(p_ref_type) OR
+             p_ref_type IS NULL)
+         AND (UPPER(INSTRUCTIONSTITLE) LIKE '%' || UPPER(p_keyword) || '%' OR
+             UPPER(KEYWORDS) LIKE '%' || UPPER(p_keyword) || '%' OR
+             UPPER(INSTRUCTIONSDETAILS) LIKE
+             '%' || UPPER(p_keyword) || '%' OR p_keyword IS NULL)
+       ORDER BY INSTRUCTIONSDATE DESC, INSTRUCTIONSTITLE;
+  END P_SearchReferences;
+
+  PROCEDURE P_SAVE_OBSERVATION_REFERENCES(p_obs_id        IN NUMBER,
+                                          p_reference_ids IN SYS.ODCINUMBERLIST, -- Oracle collection type for multiple refs
+                                          p_created_by    IN VARCHAR2,
+                                          io_cursor       OUT SYS_REFCURSOR) IS
+    v_ref_id NUMBER;
+  BEGIN
+    -- Remove existing active links (optional, comment out if not desired)
+    DELETE FROM T_AU_OBSERVATION_REFERENCE_MAP
+     WHERE obs_id = p_obs_id
+       AND status = 'ACTIVE';
+  
+    -- Insert new mappings
+    FOR i IN 1 .. p_reference_ids.COUNT LOOP
+      INSERT INTO T_AU_OBSERVATION_REFERENCE_MAP
+        (obs_id, reference_id, status, created_by, created_on)
+      VALUES
+        (p_obs_id, p_reference_ids(i), 'ACTIVE', p_created_by, SYSDATE);
+    END LOOP;
+  
+    COMMIT;
+  
+    OPEN io_cursor FOR
+      SELECT 'References linked successfully to observation ' || p_obs_id AS remarks
+        FROM DUAL;
+  
+  EXCEPTION
+    WHEN OTHERS THEN
+      DECLARE
+        v_err VARCHAR2(4000);
+      BEGIN
+        v_err := SQLERRM;
+        OPEN io_cursor FOR
+          SELECT 'Error in P_SAVE_OBSERVATION_REFERENCES: ' || v_err AS remarks
+            FROM DUAL;
+      END;
+    
+  END P_SAVE_OBSERVATION_REFERENCES;
+
+  PROCEDURE P_DELETE_OBS_REFERENCE(p_ref_id     IN NUMBER,
+                                   p_deleted_by IN VARCHAR2,
+                                   io_cursor    OUT SYS_REFCURSOR) IS
+  BEGIN
+    UPDATE T_AU_OBSERVATION_REFERENCE_MAP
+       SET status     = 'DELETED',
+           updated_by = p_deleted_by,
+           updated_on = SYSDATE
+     WHERE ref_id = p_ref_id
+       AND status <> 'DELETED';
+  
+    IF SQL%ROWCOUNT > 0 THEN
+      COMMIT;
+      OPEN io_cursor FOR
+        SELECT 'Reference ID ' || p_ref_id || ' deleted successfully.' AS remarks
+          FROM DUAL;
+    ELSE
+      OPEN io_cursor FOR
+        SELECT 'No active reference found for Reference ID ' || p_ref_id AS remarks
+          FROM DUAL;
+    END IF;
+  
+  EXCEPTION
+    WHEN OTHERS THEN
+      DECLARE
+        v_err VARCHAR2(4000);
+      BEGIN
+        v_err := SQLERRM;
+        OPEN io_cursor FOR
+          SELECT 'Error in P_DELETE_OBS_REFERENCE: ' || v_err AS remarks
+            FROM DUAL;
+      END;
+    
+  END P_DELETE_OBS_REFERENCE;
+
+  PROCEDURE P_GET_OBSERVATION_REFERENCES(p_obs_id  IN NUMBER,
+                                         io_cursor OUT SYS_REFCURSOR) IS
+  BEGIN
+    OPEN io_cursor FOR
+      SELECT m.ref_id,
+             m.obs_id,
+             m.reference_id,
+             r.INSTRUCTIONSTITLE,
+             r.reference_type,
+             r.INSTRUCTIONSDATE,
+             m.status,
+             m.created_by,
+             m.created_on,
+             m.updated_by,
+             m.updated_on
+        FROM T_AU_OBSERVATION_REFERENCE_MAP m
+        LEFT JOIN T_AUDIT_CHECKLIST_ANNEXURE_CIRCULAR r
+          ON m.reference_id = r.id
+       WHERE m.obs_id = p_obs_id
+       ORDER BY m.created_on DESC;
+  END P_GET_OBSERVATION_REFERENCES;
+
+  PROCEDURE P_UPDATE_OBS_REFERENCE_STATUS(p_ref_id     IN NUMBER,
+                                          p_new_status IN VARCHAR2,
+                                          p_updated_by IN VARCHAR2,
+                                          io_cursor    OUT SYS_REFCURSOR) IS
+  BEGIN
+    UPDATE T_AU_OBSERVATION_REFERENCE_MAP
+       SET status     = p_new_status,
+           updated_by = p_updated_by,
+           updated_on = SYSDATE
+     WHERE ref_id = p_ref_id;
+  
+    COMMIT;
+  
+    OPEN io_cursor FOR
+      SELECT 'Status updated to ' || p_new_status AS remarks FROM DUAL;
+  
+  EXCEPTION
+    WHEN OTHERS THEN
+      DECLARE
+        v_err VARCHAR2(4000);
+      BEGIN
+        v_err := SQLERRM;
+        OPEN io_cursor FOR
+          SELECT 'Error in P_UPDATE_OBS_REFERENCE_STATUS: ' || v_err AS remarks
+            FROM DUAL;
+      END;
+    
+  END P_UPDATE_OBS_REFERENCE_STATUS;
+
+  PROCEDURE P_GET_ALL_OBSERVATION_REFERENCES(io_cursor OUT SYS_REFCURSOR) IS
+  BEGIN
+    OPEN io_cursor FOR
+      SELECT m.ref_id,
+             m.obs_id,
+             t.headings as gist_of_paras,
+             r.INSTRUCTIONSTITLE,
+             r.reference_type,
+             m.status,
+             m.created_by,
+             m.created_on
+        FROM T_AU_OBSERVATION_REFERENCE_MAP m
+        LEFT JOIN T_AU_OBSERVATION o
+          ON m.obs_id = o.id
+       inner join t_au_observation_text t
+          on t.observatsion_id = o.id
+        LEFT JOIN T_AUDIT_CHECKLIST_ANNEXURE_CIRCULAR r
+          ON m.reference_id = r.id
+       ORDER BY m.created_on DESC;
+  END P_GET_ALL_OBSERVATION_REFERENCES;
+
+  PROCEDURE P_GET_REFERENCE_MASTER_DETAIL(p_search_text           IN VARCHAR2 DEFAULT NULL,
+                                          p_reference_source_type IN VARCHAR2 DEFAULT NULL,
+                                          p_ref_id                IN NUMBER DEFAULT NULL,
+                                          o_cursor                OUT SYS_REFCURSOR) IS
+  BEGIN
+    OPEN o_cursor FOR
+      SELECT v.ref_id,
+             v.reference_source_type,
+             v.source_pk_id,
+             v.manual_id,
+             v.reference_type,
+             v.division,
+             v.instruction_date,
+             v.section_text,
+             v.chapter_no,
+             v.sub_section_no,
+             v.title_or_heading,
+             CASE
+               WHEN v.reference_source_type = 'MANUAL_INDEX' THEN
+                NVL(v.section_text, '-') || ' / ' || NVL(v.chapter_no, '-') ||
+                ' / ' || NVL(v.sub_section_no, '-') || ' / ' ||
+                NVL(v.title_or_heading, '-')
+               ELSE
+                NVL(v.title_or_heading, '-')
+             END AS display_text
+        FROM vw_reference_master_detail v
+       WHERE (p_ref_id IS NULL OR v.ref_id = p_ref_id)
+         AND (p_reference_source_type IS NULL OR
+             UPPER(v.reference_source_type) =
+             UPPER(p_reference_source_type))
+         AND (p_search_text IS NULL OR UPPER(NVL(v.title_or_heading, '')) LIKE
+             '%' || UPPER(p_search_text) || '%' OR
+             UPPER(NVL(v.section_text, '')) LIKE
+             '%' || UPPER(p_search_text) || '%' OR
+             UPPER(NVL(v.chapter_no, '')) LIKE
+             '%' || UPPER(p_search_text) || '%' OR
+             UPPER(NVL(v.sub_section_no, '')) LIKE
+             '%' || UPPER(p_search_text) || '%' OR
+             UPPER(NVL(v.reference_type, '')) LIKE
+             '%' || UPPER(p_search_text) || '%' OR
+             UPPER(NVL(v.division, '')) LIKE
+             '%' || UPPER(p_search_text) || '%')
+       ORDER BY CASE
+                  WHEN v.reference_source_type = 'MANUAL_INDEX' THEN
+                   1
+                  ELSE
+                   2
+                END,
+                v.manual_id,
+                v.section_text,
+                v.chapter_no,
+                v.sub_section_no,
+                v.title_or_heading;
+  END P_GET_REFERENCE_MASTER_DETAIL;
+
+  PROCEDURE P_GET_MANUAL_MASTER(o_cursor OUT SYS_REFCURSOR) IS
+  BEGIN
+    OPEN o_cursor FOR
+      SELECT m.manual_id,
+             m.manual_name,
+             m.volume_name,
+             CASE
+               WHEN m.volume_name IS NOT NULL THEN
+                m.manual_name || ' - ' || m.volume_name
+               ELSE
+                m.manual_name
+             END AS display_name
+        FROM t_manual_master m
+       WHERE NVL(m.is_active, 'Y') = 'Y'
+       ORDER BY m.manual_name, m.volume_name;
+  END P_GET_MANUAL_MASTER;
+
+  PROCEDURE P_GET_MANUAL_SECTIONS(p_manual_id IN NUMBER,
+                                  o_cursor    OUT SYS_REFCURSOR) IS
+  BEGIN
+    OPEN o_cursor FOR
+      SELECT DISTINCT m.section AS section_text
+        FROM t_manual_index m
+       WHERE m.manual_id = p_manual_id
+         AND NVL(m.is_active, 'Y') = 'Y'
+         AND m.section IS NOT NULL
+       ORDER BY m.section;
+  END P_GET_MANUAL_SECTIONS;
+
+  PROCEDURE P_GET_MANUAL_CHAPTERS(p_manual_id    IN NUMBER,
+                                  p_section_text IN VARCHAR2,
+                                  o_cursor       OUT SYS_REFCURSOR) IS
+  BEGIN
+    OPEN o_cursor FOR
+      SELECT DISTINCT m.chapter_no
+        FROM t_manual_index m
+       WHERE m.manual_id = p_manual_id
+         AND NVL(m.is_active, 'Y') = 'Y'
+         AND NVL(m.section, '##') = NVL(p_section_text, '##')
+         AND m.chapter_no IS NOT NULL
+       ORDER BY m.chapter_no;
+  END P_GET_MANUAL_CHAPTERS;
+
+  PROCEDURE P_GET_MANUAL_REFERENCE_GRID(p_manual_id    IN NUMBER,
+                                        p_section_text IN VARCHAR2,
+                                        p_chapter_no   IN VARCHAR2,
+                                        o_cursor       OUT SYS_REFCURSOR) IS
+  BEGIN
+    OPEN o_cursor FOR
+      SELECT v.ref_id,
+             v.reference_source_type,
+             v.source_pk_id,
+             v.manual_id,
+             v.section_text,
+             v.chapter_no,
+             v.sub_section_no,
+             v.title_or_heading,
+             NVL(v.section_text, '-') || ' / ' || NVL(v.chapter_no, '-') ||
+             ' / ' || NVL(v.sub_section_no, '-') || ' / ' ||
+             NVL(v.title_or_heading, '-') AS display_text
+        FROM vw_reference_master_detail v
+       WHERE UPPER(v.reference_source_type) = 'MANUAL_INDEX'
+         AND v.manual_id = p_manual_id
+         AND NVL(v.section_text, '##') = NVL(p_section_text, '##')
+         AND NVL(v.chapter_no, '##') = NVL(p_chapter_no, '##')
+       ORDER BY v.sub_section_no, v.title_or_heading;
+  END P_GET_MANUAL_REFERENCE_GRID;
+
+  PROCEDURE P_GET_REFERENCE_DETAIL_BY_ID(p_ref_id IN NUMBER,
+                                         o_cursor OUT SYS_REFCURSOR) IS
+  BEGIN
+    OPEN o_cursor FOR
+      SELECT v.ref_id,
+             v.reference_source_type,
+             v.source_pk_id,
+             v.manual_id,
+             v.reference_type,
+             v.division,
+             v.instruction_date,
+             v.section_text,
+             v.chapter_no,
+             v.sub_section_no,
+             v.title_or_heading,
+             CASE
+               WHEN v.reference_source_type = 'MANUAL_INDEX' THEN
+                NVL(v.section_text, '-') || ' / ' || NVL(v.chapter_no, '-') ||
+                ' / ' || NVL(v.sub_section_no, '-') || ' / ' ||
+                NVL(v.title_or_heading, '-')
+               ELSE
+                NVL(v.title_or_heading, '-')
+             END AS display_text
+        FROM vw_reference_master_detail v
+       WHERE v.ref_id = p_ref_id;
+  END P_GET_REFERENCE_DETAIL_BY_ID;
 
 end PKG_AR;
