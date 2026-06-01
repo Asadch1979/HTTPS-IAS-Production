@@ -1476,19 +1476,20 @@ namespace AIS.Controllers
         [HttpPost]
         public string update_observation_status(int OBS_ID, int NEW_STATUS_ID, string DRAFT_PARA_NO, int RISK_ID, string AUDITOR_COMMENT)
             {
-            string response = "";
+            if (NEW_STATUS_ID == 4 && RISK_ID != 3)
+                {
+                return System.Text.Json.JsonSerializer.Serialize(new { Status = false, Message = "Only Low Risk para can be settled by Team Lead" });
+                }
 
-            if (NEW_STATUS_ID == 4)
-                if (RISK_ID != 3)
-                    return "{\"Status\":false,\"Message\":\"Only Low Risk para can be settled by Team Lead\"}";
+            var response = dBConnection.UpdateAuditObservationStatus(OBS_ID, NEW_STATUS_ID, DRAFT_PARA_NO, AUDITOR_COMMENT);
+            var status = !string.IsNullOrWhiteSpace(response)
+                && !response.Contains("authorized", StringComparison.OrdinalIgnoreCase)
+                && !response.Contains("required", StringComparison.OrdinalIgnoreCase)
+                && !response.Contains("unsupported", StringComparison.OrdinalIgnoreCase);
 
-            response = dBConnection.UpdateAuditObservationStatus(OBS_ID, NEW_STATUS_ID, DRAFT_PARA_NO, AUDITOR_COMMENT);
+            return System.Text.Json.JsonSerializer.Serialize(new { Status = status, Message = response ?? string.Empty });
 
-            return "{\"Status\":true,\"Message\":\"" + response + "\"}";
-
-            }
-
-        [HttpPost]
+            }        [HttpPost]
         public string drop_observation(int OBS_ID)
             {
             string response = "";

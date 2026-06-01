@@ -30,6 +30,8 @@ namespace AIS.Controllers
                 {
                 cmd.CommandText = "pkg_hd.p_ppno_name";
                 cmd.CommandType = CommandType.StoredProcedure;
+                cmd.BindByName = true;
+                GuardAgainstDynamicSql(cmd);
                 cmd.Parameters.Clear();
                 cmd.Parameters.Add("ppno", OracleDbType.Int32).Value = PPNUMBER;
                 cmd.Parameters.Add("ENT_ID", OracleDbType.Int32).Value = loggedInUser.UserEntityID;
@@ -65,6 +67,8 @@ namespace AIS.Controllers
                 {
                 cmd.CommandText = "pkg_hd.P_GetOldParasEntityid";
                 cmd.CommandType = CommandType.StoredProcedure;
+                cmd.BindByName = true;
+                GuardAgainstDynamicSql(cmd);
                 cmd.Parameters.Clear();
                 cmd.Parameters.Add("Entityid", OracleDbType.Int32).Value = zone_code;
                 cmd.Parameters.Add("ENT_ID", OracleDbType.Int32).Value = loggedInUser.UserEntityID;
@@ -101,6 +105,8 @@ namespace AIS.Controllers
                 {
                 cmd.CommandText = "pkg_hd.P_get_audit_pre_Concluding";
                 cmd.CommandType = CommandType.StoredProcedure;
+                cmd.BindByName = true;
+                GuardAgainstDynamicSql(cmd);
                 cmd.Parameters.Clear();
                 cmd.Parameters.Add("engid", OracleDbType.Int32).Value = ENG_ID;
                 cmd.Parameters.Add("ENT_ID", OracleDbType.Int32).Value = loggedInUser.UserEntityID;
@@ -133,6 +139,8 @@ namespace AIS.Controllers
                 {
                 cmd.CommandText = "pkg_hd.P_GetOldParasforfinalsettlement_responsibles";
                 cmd.CommandType = CommandType.StoredProcedure;
+                cmd.BindByName = true;
+                GuardAgainstDynamicSql(cmd);
                 cmd.Parameters.Clear();
                 cmd.Parameters.Add("paraRef", OracleDbType.Varchar2).Value = PARA_ID;
                 cmd.Parameters.Add("OBSID", OracleDbType.Varchar2).Value = AU_OBS_ID;
@@ -175,6 +183,8 @@ namespace AIS.Controllers
                 {
                 cmd.CommandText = "pkg_hd.P_GetFinalizedDraftObservations";
                 cmd.CommandType = CommandType.StoredProcedure;
+                cmd.BindByName = true;
+                GuardAgainstDynamicSql(cmd);
                 cmd.Parameters.Clear();
                 cmd.Parameters.Add("ENGID", OracleDbType.Int32).Value = ENG_ID;
                 cmd.Parameters.Add("ENT_ID", OracleDbType.Int32).Value = loggedInUser.UserEntityID;
@@ -230,6 +240,8 @@ namespace AIS.Controllers
                 {
                 cmd.CommandText = "pkg_hd.P_GetFinalizedDraftObservationsbranch";
                 cmd.CommandType = CommandType.StoredProcedure;
+                cmd.BindByName = true;
+                GuardAgainstDynamicSql(cmd);
                 cmd.Parameters.Clear();
                 cmd.Parameters.Add("ENGID", OracleDbType.Int32).Value = ENG_ID;
                 cmd.Parameters.Add("ENT_ID", OracleDbType.Int32).Value = loggedInUser.UserEntityID;
@@ -280,6 +292,8 @@ namespace AIS.Controllers
                 {
                 cmd.CommandText = "pkg_hd.P_GetOldParas";
                 cmd.CommandType = CommandType.StoredProcedure;
+                cmd.BindByName = true;
+                GuardAgainstDynamicSql(cmd);
                 cmd.Parameters.Clear();
                 cmd.Parameters.Add("ENTITYID", OracleDbType.Int32).Value = AUDITED_BY;
                 cmd.Parameters.Add("AUDITPERIOD", OracleDbType.Int32).Value = AUDIT_YEAR;
@@ -326,6 +340,8 @@ namespace AIS.Controllers
                 {
                 cmd.CommandText = "pkg_hd.P_GetOldParasForResponse";
                 cmd.CommandType = CommandType.StoredProcedure;
+                cmd.BindByName = true;
+                GuardAgainstDynamicSql(cmd);
                 cmd.Parameters.Clear();
                 cmd.Parameters.Add("UserEntityId", OracleDbType.Int32).Value = loggedInUser.UserEntityID;
                 cmd.Parameters.Add("ENTITYID", OracleDbType.Int32).Value = ENTITY_ID;
@@ -373,6 +389,8 @@ namespace AIS.Controllers
                 {
                 cmd.CommandText = "pkg_hd.P_GetnewParasForResponse";
                 cmd.CommandType = CommandType.StoredProcedure;
+                cmd.BindByName = true;
+                GuardAgainstDynamicSql(cmd);
                 cmd.Parameters.Clear();
                 cmd.Parameters.Add("UserEntityId", OracleDbType.Int32).Value = loggedInUser.UserEntityID;
                 cmd.Parameters.Add("ENTITYID", OracleDbType.Int32).Value = ENTITY_ID;
@@ -415,6 +433,8 @@ namespace AIS.Controllers
                 {
                 cmd.CommandText = "pkg_hd.P_GetnewParasForResponse_reviewer";
                 cmd.CommandType = CommandType.StoredProcedure;
+                cmd.BindByName = true;
+                GuardAgainstDynamicSql(cmd);
                 cmd.Parameters.Clear();
                 cmd.Parameters.Add("UserEntityId", OracleDbType.Int32).Value = loggedInUser.UserEntityID;
                 cmd.Parameters.Add("T_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
@@ -456,6 +476,8 @@ namespace AIS.Controllers
                 {
                 cmd.CommandText = "pkg_hd.P_GetOldParas";
                 cmd.CommandType = CommandType.StoredProcedure;
+                cmd.BindByName = true;
+                GuardAgainstDynamicSql(cmd);
                 cmd.Parameters.Clear();
                 cmd.Parameters.Add("ENTITYID", OracleDbType.Int32).Value = loggedInUser.UserEntityID;
                 cmd.Parameters.Add("T_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
@@ -501,6 +523,8 @@ namespace AIS.Controllers
                 {
                 cmd.CommandText = "pkg_hd.P_GetEntitiesForNewPara";
                 cmd.CommandType = CommandType.StoredProcedure;
+                cmd.BindByName = true;
+                GuardAgainstDynamicSql(cmd);
                 cmd.Parameters.Clear();
                 cmd.Parameters.Add("ENTITYID", OracleDbType.Int32).Value = loggedInUser.UserEntityID;
                 cmd.Parameters.Add("T_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
@@ -536,6 +560,8 @@ namespace AIS.Controllers
                 {
                 cmd.CommandText = "pkg_hd.P_UpdateOldParasFadsettleunsettle";
                 cmd.CommandType = CommandType.StoredProcedure;
+                cmd.BindByName = true;
+                GuardAgainstDynamicSql(cmd);
                 cmd.Parameters.Clear();
                 cmd.Parameters.Add("PPNO", OracleDbType.Int32).Value = loggedInUser.PPNumber;
                 cmd.Parameters.Add("PID", OracleDbType.Int32).Value = ID;
@@ -564,6 +590,8 @@ namespace AIS.Controllers
                 {
                 cmd.CommandText = "pkg_hd.P_get_audit_pre_Concluding_entities";
                 cmd.CommandType = CommandType.StoredProcedure;
+                cmd.BindByName = true;
+                GuardAgainstDynamicSql(cmd);
                 cmd.Parameters.Clear();
                 cmd.Parameters.Add("userentityid", OracleDbType.Int32).Value = loggedInUser.UserEntityID;
                 cmd.Parameters.Add("T_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
@@ -601,6 +629,8 @@ namespace AIS.Controllers
                 {
                 cmd.CommandText = "pkg_hd.P_get_audit_pre_Concluding_entities";
                 cmd.CommandType = CommandType.StoredProcedure;
+                cmd.BindByName = true;
+                GuardAgainstDynamicSql(cmd);
                 cmd.Parameters.Clear();
                 cmd.Parameters.Add("userentityid", OracleDbType.Int32).Value = loggedInUser.UserEntityID;
                 //cmd.Parameters.Add("PAGE_ID", OracleDbType.Int32).Value = pageId;
@@ -637,6 +667,8 @@ namespace AIS.Controllers
                 {
                 cmd.CommandText = "pkg_hd.P_GetSettledParasForReview";
                 cmd.CommandType = CommandType.StoredProcedure;
+                cmd.BindByName = true;
+                GuardAgainstDynamicSql(cmd);
                 cmd.Parameters.Clear();
                 cmd.Parameters.Add("P_NO", OracleDbType.Int32).Value = loggedInUser.PPNumber;
                 cmd.Parameters.Add("ENT_ID", OracleDbType.Int32).Value = loggedInUser.UserEntityID;
@@ -702,6 +734,8 @@ namespace AIS.Controllers
                 {
                 cmd.CommandText = "pkg_hd.P_GetOldParasforsettlementext";
                 cmd.CommandType = CommandType.StoredProcedure;
+                cmd.BindByName = true;
+                GuardAgainstDynamicSql(cmd);
                 cmd.Parameters.Clear();
                 cmd.Parameters.Add("Entityid", OracleDbType.Int32).Value = loggedInUser.UserEntityID;
                 cmd.Parameters.Add("pid", OracleDbType.Int32).Value = PID;
@@ -740,6 +774,8 @@ namespace AIS.Controllers
                 {
                 cmd.CommandText = "pkg_hd.P_GetOldParasforsettlementext_referedack";
                 cmd.CommandType = CommandType.StoredProcedure;
+                cmd.BindByName = true;
+                GuardAgainstDynamicSql(cmd);
                 cmd.Parameters.Clear();
                 cmd.Parameters.Add("Entityid", OracleDbType.Int32).Value = loggedInUser.UserEntityID;
                 cmd.Parameters.Add("pid", OracleDbType.Int32).Value = PID;
@@ -779,6 +815,8 @@ namespace AIS.Controllers
                 {
                 cmd.CommandText = "pkg_hd.P_GetOldParasforfinalsettlementext";
                 cmd.CommandType = CommandType.StoredProcedure;
+                cmd.BindByName = true;
+                GuardAgainstDynamicSql(cmd);
                 cmd.Parameters.Clear();
                 cmd.Parameters.Add("Entityid", OracleDbType.Int32).Value = loggedInUser.UserEntityID;
                 cmd.Parameters.Add("OBS_ID", OracleDbType.Varchar2).Value = OBS_ID;
@@ -818,6 +856,8 @@ namespace AIS.Controllers
                 {
                 cmd.CommandText = "pkg_hd.P_GetOldParasforsettlement";
                 cmd.CommandType = CommandType.StoredProcedure;
+                cmd.BindByName = true;
+                GuardAgainstDynamicSql(cmd);
                 cmd.Parameters.Clear();
                 cmd.Parameters.Add("EntityID", OracleDbType.Int32).Value = loggedInUser.UserEntityID;
                 cmd.Parameters.Add("T_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
@@ -865,6 +905,8 @@ namespace AIS.Controllers
                 {
                 cmd.CommandText = "pkg_hd.P_GetOldParasforsettlement_ref";
                 cmd.CommandType = CommandType.StoredProcedure;
+                cmd.BindByName = true;
+                GuardAgainstDynamicSql(cmd);
                 cmd.Parameters.Clear();
                 cmd.Parameters.Add("EntityID", OracleDbType.Int32).Value = loggedInUser.UserEntityID;
                 cmd.Parameters.Add("T_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
@@ -912,6 +954,8 @@ namespace AIS.Controllers
                 {
                 cmd.CommandText = "pkg_hd.P_GetOldParasforsettlement";
                 cmd.CommandType = CommandType.StoredProcedure;
+                cmd.BindByName = true;
+                GuardAgainstDynamicSql(cmd);
                 cmd.Parameters.Clear();
                 cmd.Parameters.Add("EntityID", OracleDbType.Int32).Value = loggedInUser.UserEntityID;
                 cmd.Parameters.Add("T_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
@@ -959,6 +1003,8 @@ namespace AIS.Controllers
                 {
                 cmd.CommandText = "pkg_hd.P_GetOldParasforfinalsettlement";
                 cmd.CommandType = CommandType.StoredProcedure;
+                cmd.BindByName = true;
+                GuardAgainstDynamicSql(cmd);
                 cmd.Parameters.Clear();
                 cmd.Parameters.Add("EntityID", OracleDbType.Int32).Value = loggedInUser.UserEntityID;
                 cmd.Parameters.Add("T_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
@@ -1006,6 +1052,8 @@ namespace AIS.Controllers
                 {
                 cmd.CommandText = "pkg_hd.P_AddOldParasImpRemarks";
                 cmd.CommandType = CommandType.StoredProcedure;
+                cmd.BindByName = true;
+                GuardAgainstDynamicSql(cmd);
                 cmd.Parameters.Clear();
                 cmd.Parameters.Add("P_NO", OracleDbType.Int32).Value = loggedInUser.PPNumber;
                 cmd.Parameters.Add("ENT_ID", OracleDbType.Int32).Value = loggedInUser.UserEntityID;
@@ -1045,6 +1093,8 @@ namespace AIS.Controllers
                 {
                 cmd.CommandText = "pkg_hd.P_AddOldParasImpRemarks_partial_comp";
                 cmd.CommandType = CommandType.StoredProcedure;
+                cmd.BindByName = true;
+                GuardAgainstDynamicSql(cmd);
                 cmd.Parameters.Clear();
                 cmd.Parameters.Add("P_NO", OracleDbType.Int32).Value = loggedInUser.PPNumber;
                 cmd.Parameters.Add("ENT_ID", OracleDbType.Int32).Value = loggedInUser.UserEntityID;
@@ -1072,6 +1122,8 @@ namespace AIS.Controllers
                             {
                             cmd.CommandText = "pkg_hd.p_add_para_responsibility_partial_comp";
                             cmd.CommandType = CommandType.StoredProcedure;
+                cmd.BindByName = true;
+                GuardAgainstDynamicSql(cmd);
                             cmd.Parameters.Clear();
                             cmd.Parameters.Add("PPNO", OracleDbType.Int32).Value = loggedInUser.PPNumber;
                             cmd.Parameters.Add("ENT_ID", OracleDbType.Int32).Value = loggedInUser.UserEntityID;
@@ -1115,6 +1167,8 @@ namespace AIS.Controllers
                 {
                 cmd.CommandText = "pkg_hd.P_AddFinalsettlement";
                 cmd.CommandType = CommandType.StoredProcedure;
+                cmd.BindByName = true;
+                GuardAgainstDynamicSql(cmd);
                 cmd.Parameters.Clear();
                 cmd.Parameters.Add("P_NO", OracleDbType.Int32).Value = loggedInUser.PPNumber;
                 cmd.Parameters.Add("ENT_ID", OracleDbType.Int32).Value = loggedInUser.UserEntityID;
@@ -1156,6 +1210,8 @@ namespace AIS.Controllers
                 {
                 cmd.CommandText = "pkg_hd.P_GET_ALL_PARAS_MONITORING";
                 cmd.CommandType = CommandType.StoredProcedure;
+                cmd.BindByName = true;
+                GuardAgainstDynamicSql(cmd);
                 cmd.Parameters.Clear();
                 cmd.Parameters.Add("EntityID", OracleDbType.Int32).Value = ENTITY_ID;
                 cmd.Parameters.Add("T_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
@@ -1187,6 +1243,8 @@ namespace AIS.Controllers
                 {
                 cmd.CommandText = "pkg_hd.P_GetOldParastext";
                 cmd.CommandType = CommandType.StoredProcedure;
+                cmd.BindByName = true;
+                GuardAgainstDynamicSql(cmd);
                 cmd.Parameters.Clear();
                 cmd.Parameters.Add("para_ref", OracleDbType.Varchar2).Value = ref_p;
                 cmd.Parameters.Add("T_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
@@ -1208,6 +1266,8 @@ namespace AIS.Controllers
                 {
                 cmd.CommandText = "pkg_hd.P_GET_ALL_PARA_TEXT";
                 cmd.CommandType = CommandType.StoredProcedure;
+                cmd.BindByName = true;
+                GuardAgainstDynamicSql(cmd);
                 cmd.Parameters.Clear();
                 cmd.Parameters.Add("CM_ID", OracleDbType.Varchar2).Value = COM_ID;
                 cmd.Parameters.Add("T_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
@@ -1240,6 +1300,8 @@ namespace AIS.Controllers
                 {
                 cmd.CommandText = "pkg_hd.p_ppno_para";
                 cmd.CommandType = CommandType.StoredProcedure;
+                cmd.BindByName = true;
+                GuardAgainstDynamicSql(cmd);
                 cmd.Parameters.Clear();
                 cmd.Parameters.Add("P_NO", OracleDbType.Int32).Value = loggedInUser.PPNumber;
                 cmd.Parameters.Add("R_ID", OracleDbType.Int32).Value = loggedInUser.UserRoleID;
@@ -1287,6 +1349,8 @@ namespace AIS.Controllers
                 {
                 cmd.CommandText = "pkg_hd.p_changestatusrequestforsettledpara";
                 cmd.CommandType = CommandType.StoredProcedure;
+                cmd.BindByName = true;
+                GuardAgainstDynamicSql(cmd);
                 cmd.Parameters.Clear();
                 cmd.Parameters.Add("refp", OracleDbType.Varchar2).Value = REFID;
                 cmd.Parameters.Add("au_obs_id", OracleDbType.Int32).Value = OBS_ID;
@@ -1323,6 +1387,8 @@ namespace AIS.Controllers
                 {
                 cmd.CommandText = "pkg_hd.P_ChangeStatusRequestForSettledPara_new_reviewer";
                 cmd.CommandType = CommandType.StoredProcedure;
+                cmd.BindByName = true;
+                GuardAgainstDynamicSql(cmd);
                 cmd.Parameters.Clear();
                 cmd.Parameters.Add("obsid", OracleDbType.Varchar2).Value = REFID;
                 cmd.Parameters.Add("P_IND", OracleDbType.Varchar2).Value = IND;
@@ -1360,6 +1426,8 @@ namespace AIS.Controllers
                 {
                 cmd.CommandText = "pkg_hd.P_ChangeStatusRequestForSettledPara_new";
                 cmd.CommandType = CommandType.StoredProcedure;
+                cmd.BindByName = true;
+                GuardAgainstDynamicSql(cmd);
                 cmd.Parameters.Clear();
                 cmd.Parameters.Add("obs_id", OracleDbType.Varchar2).Value = REFID;
                 cmd.Parameters.Add("NewStatus", OracleDbType.Int32).Value = NEW_STATUS;
@@ -1398,6 +1466,8 @@ namespace AIS.Controllers
 
                 string _sql = "pkg_hd.P_audit_pre_Concluding";
                 cmd.CommandType = CommandType.StoredProcedure;
+                cmd.BindByName = true;
+                GuardAgainstDynamicSql(cmd);
                 cmd.Parameters.Add("obsid", OracleDbType.Int32).Value = OBS_ID;
                 cmd.Parameters.Add("gist", OracleDbType.Varchar2).Value = GIST_OF_PARA;
                 cmd.Parameters.Add("recom", OracleDbType.Varchar2).Value = AUDITOR_RECOMMENDATION;
@@ -1434,6 +1504,8 @@ namespace AIS.Controllers
                 {
                 cmd.CommandText = "pkg_hd.p_get_audit_concluding_entities";
                 cmd.CommandType = CommandType.StoredProcedure;
+                cmd.BindByName = true;
+                GuardAgainstDynamicSql(cmd);
                 cmd.Parameters.Clear();
                 cmd.Parameters.Add("ENT_ID", OracleDbType.Int32).Value = loggedInUser.UserEntityID;
                 cmd.Parameters.Add("P_NO", OracleDbType.Int32).Value = loggedInUser.PPNumber;
@@ -1475,6 +1547,8 @@ namespace AIS.Controllers
                 {
                 cmd.CommandText = "pkg_hd.P_Audit_Concluding";
                 cmd.CommandType = CommandType.StoredProcedure;
+                cmd.BindByName = true;
+                GuardAgainstDynamicSql(cmd);
                 cmd.Parameters.Clear();
                 cmd.Parameters.Add("ENGID", OracleDbType.Int32).Value = ENG_ID;
                 cmd.Parameters.Add("ENT_ID", OracleDbType.Int32).Value = loggedInUser.UserEntityID;
@@ -1508,6 +1582,8 @@ namespace AIS.Controllers
                 {
                 cmd.CommandText = "pkg_hd.P_audit_pre_submission";
                 cmd.CommandType = CommandType.StoredProcedure;
+                cmd.BindByName = true;
+                GuardAgainstDynamicSql(cmd);
                 cmd.Parameters.Clear();
                 cmd.Parameters.Add("engid", OracleDbType.Int32).Value = ENG_ID;
                 cmd.Parameters.Add("ENT_ID", OracleDbType.Int32).Value = loggedInUser.UserEntityID;
@@ -1542,6 +1618,8 @@ namespace AIS.Controllers
                 {
                 cmd.CommandText = "pkg_hd.P_audit_para_update_svz_az";
                 cmd.CommandType = CommandType.StoredProcedure;
+                cmd.BindByName = true;
+                GuardAgainstDynamicSql(cmd);
                 cmd.Parameters.Clear();
                 cmd.Parameters.Add("OBID", OracleDbType.Int32).Value = OBS_ID;
                 cmd.Parameters.Add("ANXID", OracleDbType.Int32).Value = ANNEX_ID;
@@ -1587,6 +1665,8 @@ namespace AIS.Controllers
                 {
                 cmd.CommandText = "pkg_hd.P_audit_para_update_head_dept";
                 cmd.CommandType = CommandType.StoredProcedure;
+                cmd.BindByName = true;
+                GuardAgainstDynamicSql(cmd);
                 cmd.Parameters.Clear();
                 cmd.Parameters.Add("OBID", OracleDbType.Int32).Value = OBS_ID;
                 cmd.Parameters.Add("VID", OracleDbType.Int32).Value = VIOLATION_ID;
@@ -1627,6 +1707,8 @@ namespace AIS.Controllers
                 {
                 cmd.CommandText = "pkg_hd.P_GetAuditEntitiestype";
                 cmd.CommandType = CommandType.StoredProcedure;
+                cmd.BindByName = true;
+                GuardAgainstDynamicSql(cmd);
                 cmd.Parameters.Clear();
                 cmd.Parameters.Add("ENTITYID", OracleDbType.Int32).Value = loggedInUser.UserEntityID;
                 cmd.Parameters.Add("T_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
@@ -1663,6 +1745,8 @@ namespace AIS.Controllers
                 {
                 cmd.CommandText = "pkg_hd.P_GetAuditEntities";
                 cmd.CommandType = CommandType.StoredProcedure;
+                cmd.BindByName = true;
+                GuardAgainstDynamicSql(cmd);
                 cmd.Parameters.Clear();
                 cmd.Parameters.Add("TYPEID", OracleDbType.Int32).Value = ENTITY_TYPE_ID;
                 cmd.Parameters.Add("ENTITYID", OracleDbType.Int32).Value = loggedInUser.UserEntityID;
@@ -1700,6 +1784,8 @@ namespace AIS.Controllers
                 {
                 cmd.CommandText = "pkg_hd.P_GetAuditYear";
                 cmd.CommandType = CommandType.StoredProcedure;
+                cmd.BindByName = true;
+                GuardAgainstDynamicSql(cmd);
                 cmd.Parameters.Clear();
                 cmd.Parameters.Add("T_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
                 OracleDataReader rdr = cmd.ExecuteReader();
@@ -1735,6 +1821,8 @@ namespace AIS.Controllers
                 {
                 cmd.CommandText = "pkg_hd.P_GetAuditnature";
                 cmd.CommandType = CommandType.StoredProcedure;
+                cmd.BindByName = true;
+                GuardAgainstDynamicSql(cmd);
                 cmd.Parameters.Clear();
                 cmd.Parameters.Add("T_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
                 OracleDataReader rdr = cmd.ExecuteReader();
@@ -1771,6 +1859,8 @@ namespace AIS.Controllers
                 {
                 cmd.CommandText = "pkg_hd.P_add_legacy_Para";
                 cmd.CommandType = CommandType.StoredProcedure;
+                cmd.BindByName = true;
+                GuardAgainstDynamicSql(cmd);
                 cmd.Parameters.Clear();
                 cmd.Parameters.Add("typeid", OracleDbType.Int32).Value = LEGACY_PARA.ENTITY_TYPE_ID;
                 cmd.Parameters.Add("audityear", OracleDbType.Varchar2).Value = LEGACY_PARA.AUDIT_YEAR;
@@ -1816,6 +1906,8 @@ namespace AIS.Controllers
                 {
                 cmd.CommandText = "pkg_hd.P_get_legacy_para_to_authorize";
                 cmd.CommandType = CommandType.StoredProcedure;
+                cmd.BindByName = true;
+                GuardAgainstDynamicSql(cmd);
                 cmd.Parameters.Clear();
                 cmd.Parameters.Add("ENTITY_ID", OracleDbType.Int32).Value = loggedInUser.UserEntityID;
                 cmd.Parameters.Add("T_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
@@ -1860,6 +1952,8 @@ namespace AIS.Controllers
                 {
                 cmd.CommandText = "pkg_hd.P_Authorize_legacy_para_addition";
                 cmd.CommandType = CommandType.StoredProcedure;
+                cmd.BindByName = true;
+                GuardAgainstDynamicSql(cmd);
                 cmd.Parameters.Clear();
                 cmd.Parameters.Add("REFP", OracleDbType.Varchar2).Value = PARA_REF;
                 cmd.Parameters.Add("PPNO", OracleDbType.Int32).Value = loggedInUser.PPNumber;
@@ -1895,6 +1989,8 @@ namespace AIS.Controllers
                 {
                 cmd.CommandText = "pkg_hd.P_referedback_Del_para";
                 cmd.CommandType = CommandType.StoredProcedure;
+                cmd.BindByName = true;
+                GuardAgainstDynamicSql(cmd);
                 cmd.Parameters.Clear();
                 cmd.Parameters.Add("REFP", OracleDbType.Varchar2).Value = PARA_REF;
                 cmd.Parameters.Add("PPNO", OracleDbType.Int32).Value = loggedInUser.PPNumber;
@@ -1919,6 +2015,8 @@ namespace AIS.Controllers
                 {
                 cmd.CommandText = "pkg_hd.P_GetnewParastext";
                 cmd.CommandType = CommandType.StoredProcedure;
+                cmd.BindByName = true;
+                GuardAgainstDynamicSql(cmd);
                 cmd.Parameters.Clear();
                 cmd.Parameters.Add("OBS_ID", OracleDbType.Varchar2).Value = OBS_ID;
                 cmd.Parameters.Add("T_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
@@ -1955,6 +2053,8 @@ namespace AIS.Controllers
                         {
                         cmd.CommandText = "pkg_hd.P_ADD_DUPLICATE_PARAS";
                         cmd.CommandType = CommandType.StoredProcedure;
+                cmd.BindByName = true;
+                GuardAgainstDynamicSql(cmd);
                         cmd.Parameters.Add("o_para_id", OracleDbType.Int32).Value = OLD_PARA_ID;
                         cmd.Parameters.Add("n_para_id", OracleDbType.Int32).Value = NEW_PARA_ID;
                         cmd.Parameters.Add("p_ind", OracleDbType.Varchar2).Value = INDICATOR;
@@ -2000,6 +2100,8 @@ namespace AIS.Controllers
                 {
                 cmd.CommandText = "pkg_hd.P_GET_DUPLICATE_PARAS_ENT_FOR_AUTH";
                 cmd.CommandType = CommandType.StoredProcedure;
+                cmd.BindByName = true;
+                GuardAgainstDynamicSql(cmd);
                 cmd.Parameters.Clear();
                 cmd.Parameters.Add("P_NO", OracleDbType.Int32).Value = loggedInUser.PPNumber;
                 cmd.Parameters.Add("ENT_ID", OracleDbType.Int32).Value = loggedInUser.UserEntityID;
@@ -2036,6 +2138,8 @@ namespace AIS.Controllers
                 {
                 cmd.CommandText = "pkg_hd.P_GET_DUPLICATE_PARAS_FOR_AUTH";
                 cmd.CommandType = CommandType.StoredProcedure;
+                cmd.BindByName = true;
+                GuardAgainstDynamicSql(cmd);
                 cmd.Parameters.Clear();
                 cmd.Parameters.Add("P_NO", OracleDbType.Int32).Value = loggedInUser.PPNumber;
                 cmd.Parameters.Add("ENT_ID", OracleDbType.Int32).Value = loggedInUser.UserEntityID;
@@ -2092,6 +2196,8 @@ namespace AIS.Controllers
                         {
                         cmd.CommandText = "pkg_hd.P_REJECT_DUPLICATE_PARAS";
                         cmd.CommandType = CommandType.StoredProcedure;
+                cmd.BindByName = true;
+                GuardAgainstDynamicSql(cmd);
                         cmd.Parameters.Add("did", OracleDbType.Int32).Value = D_PARA_ID;
                         cmd.Parameters.Add("P_NO", OracleDbType.Int32).Value = loggedInUser.PPNumber;
                         cmd.Parameters.Add("ENT_ID", OracleDbType.Int32).Value = loggedInUser.UserEntityID;
@@ -2140,6 +2246,8 @@ namespace AIS.Controllers
                         {
                         cmd.CommandText = "pkg_hd.P_AUTH_DUPLICATE_PARAS";
                         cmd.CommandType = CommandType.StoredProcedure;
+                cmd.BindByName = true;
+                GuardAgainstDynamicSql(cmd);
                         cmd.Parameters.Add("did", OracleDbType.Int32).Value = D_PARA_ID;
                         cmd.Parameters.Add("P_NO", OracleDbType.Int32).Value = loggedInUser.PPNumber;
                         cmd.Parameters.Add("ENT_ID", OracleDbType.Int32).Value = loggedInUser.UserEntityID;
@@ -2182,6 +2290,8 @@ namespace AIS.Controllers
                 {
                 cmd.CommandText = "pkg_hd.P_GET_OBSERVATION_DETAILS_FROM_ID";
                 cmd.CommandType = CommandType.StoredProcedure;
+                cmd.BindByName = true;
+                GuardAgainstDynamicSql(cmd);
                 cmd.Parameters.Clear();
                 cmd.Parameters.Add("obid", OracleDbType.Int32).Value = OBS_ID;
                 cmd.Parameters.Add("P_NO", OracleDbType.Int32).Value = loggedInUser.PPNumber;
@@ -2231,6 +2341,8 @@ namespace AIS.Controllers
                 {
                 cmd.CommandText = "pkg_hd.P_GET_OBSERVATION_DETAILS_FROM_ID_HO";
                 cmd.CommandType = CommandType.StoredProcedure;
+                cmd.BindByName = true;
+                GuardAgainstDynamicSql(cmd);
                 cmd.Parameters.Clear();
                 cmd.Parameters.Add("obid", OracleDbType.Int32).Value = OBS_ID;
                 cmd.Parameters.Add("P_NO", OracleDbType.Int32).Value = loggedInUser.PPNumber;
@@ -2274,6 +2386,8 @@ namespace AIS.Controllers
                 {
                 cmd.CommandText = "pkg_hd.P_GET_OBSERVATION_DETAILS_FROM_ID_PRE_CON";
                 cmd.CommandType = CommandType.StoredProcedure;
+                cmd.BindByName = true;
+                GuardAgainstDynamicSql(cmd);
                 cmd.Parameters.Clear();
                 cmd.Parameters.Add("obid", OracleDbType.Int32).Value = OBS_ID;
                 cmd.Parameters.Add("P_NO", OracleDbType.Int32).Value = loggedInUser.PPNumber;
@@ -2326,6 +2440,8 @@ namespace AIS.Controllers
                 {
                 cmd.CommandText = "pkg_hd.P_GET_OBSERVATION_DETAILS_FROM_ID_PRE_CON_HO";
                 cmd.CommandType = CommandType.StoredProcedure;
+                cmd.BindByName = true;
+                GuardAgainstDynamicSql(cmd);
                 cmd.Parameters.Clear();
                 cmd.Parameters.Add("obid", OracleDbType.Int32).Value = OBS_ID;
                 cmd.Parameters.Add("P_NO", OracleDbType.Int32).Value = loggedInUser.PPNumber;
@@ -2387,6 +2503,8 @@ namespace AIS.Controllers
                             {
                             cmd.CommandText = "pkg_hd.P_UPLOAD_AUDIT_REPORT";
                             cmd.CommandType = CommandType.StoredProcedure;
+                cmd.BindByName = true;
+                GuardAgainstDynamicSql(cmd);
                             cmd.Parameters.Clear();
                             cmd.Parameters.Add("ENGID", OracleDbType.Int32).Value = ENG_ID;
                             cmd.Parameters.Add("AREP", OracleDbType.Clob).Value = item.IMAGE_DATA;
@@ -2432,6 +2550,8 @@ namespace AIS.Controllers
                 {
                 cmd.CommandText = "pkg_hd.P_GET_FINAL_AUDIT_REPORT";
                 cmd.CommandType = CommandType.StoredProcedure;
+                cmd.BindByName = true;
+                GuardAgainstDynamicSql(cmd);
                 cmd.Parameters.Clear();
                 cmd.Parameters.Add("ENGID", OracleDbType.Int32).Value = ENG_ID;
                 cmd.Parameters.Add("P_NO", OracleDbType.Int32).Value = loggedInUser.PPNumber;
@@ -2470,6 +2590,8 @@ namespace AIS.Controllers
                 {
                 cmd.CommandText = "pkg_hd.P_GET_AUDIT_REPORT_CONTENT";
                 cmd.CommandType = CommandType.StoredProcedure;
+                cmd.BindByName = true;
+                GuardAgainstDynamicSql(cmd);
                 cmd.Parameters.Clear();
                 cmd.Parameters.Add("FILE_ID", OracleDbType.Varchar2).Value = FILE_ID;
                 cmd.Parameters.Add("P_NO", OracleDbType.Int32).Value = loggedInUser.PPNumber;
@@ -2519,6 +2641,8 @@ namespace AIS.Controllers
                 {
                 cmd.CommandText = "pkg_hd.P_GET_CHECK_AUDIT_REPORT_UPLOADED";
                 cmd.CommandType = CommandType.StoredProcedure;
+                cmd.BindByName = true;
+                GuardAgainstDynamicSql(cmd);
                 cmd.Parameters.Clear();
                 cmd.Parameters.Add("ENGID", OracleDbType.Int32).Value = ENG_ID;
                 cmd.Parameters.Add("P_NO", OracleDbType.Int32).Value = loggedInUser.PPNumber;
@@ -2554,6 +2678,8 @@ namespace AIS.Controllers
                 {
                 cmd.CommandText = "pkg_hd.P_Get_Paras_For_Status_Change";
                 cmd.CommandType = CommandType.StoredProcedure;
+                cmd.BindByName = true;
+                GuardAgainstDynamicSql(cmd);
                 cmd.Parameters.Clear();
                 cmd.Parameters.Add("ENT_ID", OracleDbType.Int32).Value = loggedInUser.UserEntityID;
                 cmd.Parameters.Add("R_ID", OracleDbType.Int32).Value = loggedInUser.UserRoleID;
@@ -2596,6 +2722,8 @@ namespace AIS.Controllers
                 {
                 cmd.CommandText = "pkg_hd.P_Add_Paras_For_Status_Change";
                 cmd.CommandType = CommandType.StoredProcedure;
+                cmd.BindByName = true;
+                GuardAgainstDynamicSql(cmd);
                 cmd.Parameters.Clear();
                 cmd.Parameters.Add("C_ID", OracleDbType.Int32).Value = COM_ID;
                 cmd.Parameters.Add("NewStatus", OracleDbType.Int32).Value = NEW_STATUS;
@@ -2634,6 +2762,8 @@ namespace AIS.Controllers
                 {
                 cmd.CommandText = "pkg_hd.P_Get_Paras_For_Status_Change_For_Authorize";
                 cmd.CommandType = CommandType.StoredProcedure;
+                cmd.BindByName = true;
+                GuardAgainstDynamicSql(cmd);
                 cmd.Parameters.Clear();
                 cmd.Parameters.Add("ENT_ID", OracleDbType.Int32).Value = loggedInUser.UserEntityID;
                 cmd.Parameters.Add("T_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
@@ -2675,6 +2805,8 @@ namespace AIS.Controllers
                 {
                 cmd.CommandText = "pkg_hd.P_Authorize_Paras_For_Status";
                 cmd.CommandType = CommandType.StoredProcedure;
+                cmd.BindByName = true;
+                GuardAgainstDynamicSql(cmd);
                 cmd.Parameters.Clear();
                 cmd.Parameters.Add("C_ID", OracleDbType.Int32).Value = COM_ID;
                 cmd.Parameters.Add("N_PARA_ID", OracleDbType.Int32).Value = NEW_PARA_ID;
@@ -2714,6 +2846,8 @@ namespace AIS.Controllers
                 {
                 cmd.CommandText = "pkg_hd.P_get_BackOfficeDashboardEngagements";
                 cmd.CommandType = CommandType.StoredProcedure;
+                cmd.BindByName = true;
+                GuardAgainstDynamicSql(cmd);
                 cmd.Parameters.Clear();
                 cmd.Parameters.Add("ENT_ID", OracleDbType.Int32).Value = loggedInUser.UserEntityID;
                 cmd.Parameters.Add("P_NO", OracleDbType.Int32).Value = loggedInUser.PPNumber;
@@ -2782,6 +2916,8 @@ namespace AIS.Controllers
                     }
                 cmd.CommandText = "pkg_hd.P_AddOldParas";
                 cmd.CommandType = CommandType.StoredProcedure;
+                cmd.BindByName = true;
+                GuardAgainstDynamicSql(cmd);
                 cmd.Parameters.Clear();
                 cmd.Parameters.Add("PROCESS", OracleDbType.Int32).Value = jm.PROCESS;
                 cmd.Parameters.Add("SUBPROCESS", OracleDbType.Int32).Value = jm.SUB_PROCESS;
@@ -2794,6 +2930,8 @@ namespace AIS.Controllers
                     {
                     cmd.CommandText = "pkg_ais.P_AddOldParasResponsibilityAssigned";
                     cmd.CommandType = CommandType.StoredProcedure;
+                cmd.BindByName = true;
+                GuardAgainstDynamicSql(cmd);
                     cmd.Parameters.Clear();
                     cmd.Parameters.Add("REF_P", OracleDbType.Int32).Value = jm.ID;
                     cmd.Parameters.Add("PPNO", OracleDbType.Int32).Value = pp;
