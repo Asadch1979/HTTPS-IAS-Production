@@ -39,7 +39,7 @@ namespace AIS.Controllers
     {
     [IgnoreAntiforgeryToken]
     [EnableRateLimiting("GeneralApiPolicy")]
-    public class ApiCallsController : Controller
+    public partial class ApiCallsController : Controller
         {
         private readonly ILogger<ApiCallsController> _logger;
 
@@ -3647,11 +3647,6 @@ namespace AIS.Controllers
             return "{\"Status\":true,\"Message\":\"" + dBConnection.AddComplianceFlow(ID, ENTITY_TYPE_ID, GROUP_ID, PREV_GROUP_ID, NEXT_GROUP_ID, COMP_UP_STATUS, COMP_DOWN_STATUS) + "\"}";
             }
 
-        [HttpPost]
-        public string update_compliance_flow(string ID, string ENTITY_TYPE_ID, string GROUP_ID, string PREV_GROUP_ID, string NEXT_GROUP_ID)
-            {
-            return "{\"Status\":true,\"Message\":\"" + dBConnection.UpdateComplianceFlow(ID, ENTITY_TYPE_ID, GROUP_ID, PREV_GROUP_ID, NEXT_GROUP_ID) + "\"}";
-            }
         [HttpGet]
         [HttpPost]
         public List<ComplianceFlowModel> get_compliance_flow_by_entity_type(int ENTITY_TYPE_ID = 0, int GROUP_ID = 0)

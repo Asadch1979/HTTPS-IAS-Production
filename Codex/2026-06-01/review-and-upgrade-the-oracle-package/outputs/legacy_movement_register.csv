@@ -1,0 +1,3 @@
+"Method/action moved","Old location","New legacy file","Reason","Replacement method/procedure","Active caller remaining","Final action"
+"ApiCallsController.update_compliance_flow","AIS/Controllers/ApiCallsController.cs","AIS/Controllers/ApiCallsController_Legacy.cs","No active JS/View endpoint reference found; functionality consolidated through add_compliance_flow","add_compliance_flow -> AddComplianceFlow -> pkg_ad.P_ADD_UPDATE_COMPLIANCE_FLOW","No","Move to Legacy"
+"DBConnection.UpdateComplianceFlow","AIS/DBConnection.AD.cs","AIS/DBConnection.AD.Legacy.cs","Only called by the legacy NonAction API wrapper after active UI trace check","AddComplianceFlow -> pkg_ad.P_ADD_UPDATE_COMPLIANCE_FLOW","No","Move to Legacy"
