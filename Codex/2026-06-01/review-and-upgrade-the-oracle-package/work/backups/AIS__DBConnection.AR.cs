@@ -37,6 +37,7 @@ namespace AIS.Controllers
             {
             var sessionHandler = CreateSessionHandler();
 
+            var con = this.DatabaseConnection();
             var loggedInUser = sessionHandler.GetUser();
             if (loggedInUser == null
                 || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
@@ -44,8 +45,7 @@ namespace AIS.Controllers
                 || loggedInUser.UserRoleID <= 0)
                 {
                 return new List<AuditEntitiesModel>();
-                }            using var con = this.DatabaseConnection();
-
+                }
 
             List<AuditEntitiesModel> entitiesList = new List<AuditEntitiesModel>();
             using (OracleCommand cmd = con.CreateCommand())
@@ -56,8 +56,8 @@ namespace AIS.Controllers
                 GuardAgainstDynamicSql(cmd);
                 cmd.Parameters.Clear();
                 cmd.Parameters.Add("ENT_ID", OracleDbType.Int32).Value = loggedInUser.UserEntityID;
-                cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
-                using OracleDataReader rdr = cmd.ExecuteReader();
+                cmd.Parameters.Add("T_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+                OracleDataReader rdr = cmd.ExecuteReader();
                 while (rdr.Read())
                     {
                     AuditEntitiesModel entity = new AuditEntitiesModel();
@@ -67,13 +67,14 @@ namespace AIS.Controllers
                     entitiesList.Add(entity);
                     }
                 }
+            con.Dispose();
             return entitiesList;
 
             }
 
         public List<RiskGroupModel> GetRiskGroup()
             {
-            using var con = this.DatabaseConnection();
+            var con = this.DatabaseConnection();
             List<RiskGroupModel> riskgroupList = new List<RiskGroupModel>();
             using (OracleCommand cmd = con.CreateCommand())
                 {
@@ -82,8 +83,8 @@ namespace AIS.Controllers
                 cmd.BindByName = true;
                 GuardAgainstDynamicSql(cmd);
                 cmd.Parameters.Clear();
-                cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
-                using OracleDataReader rdr = cmd.ExecuteReader();
+                cmd.Parameters.Add("T_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+                OracleDataReader rdr = cmd.ExecuteReader();
 
                 while (rdr.Read())
                     {
@@ -94,12 +95,13 @@ namespace AIS.Controllers
                     }
                 }
 
+            con.Dispose();
             return riskgroupList;
             }
 
         public List<RiskSubGroupModel> GetRiskSubGroup(int group_id)
             {
-            using var con = this.DatabaseConnection();
+            var con = this.DatabaseConnection();
             List<RiskSubGroupModel> risksubgroupList = new List<RiskSubGroupModel>();
             using (OracleCommand cmd = con.CreateCommand())
                 {
@@ -109,8 +111,8 @@ namespace AIS.Controllers
                 GuardAgainstDynamicSql(cmd);
                 cmd.Parameters.Clear();
                 cmd.Parameters.Add("group_id", OracleDbType.Int32).Value = group_id;
-                cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
-                using OracleDataReader rdr = cmd.ExecuteReader();
+                cmd.Parameters.Add("T_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+                OracleDataReader rdr = cmd.ExecuteReader();
 
                 while (rdr.Read())
                     {
@@ -122,12 +124,13 @@ namespace AIS.Controllers
                     risksubgroupList.Add(rsgm);
                     }
                 }
+            con.Dispose();
             return risksubgroupList;
             }
 
         public List<RiskActivityModel> GetRiskActivities(int Sub_group_id)
             {
-            using var con = this.DatabaseConnection();
+            var con = this.DatabaseConnection();
             List<RiskActivityModel> riskActivityList = new List<RiskActivityModel>();
             using (OracleCommand cmd = con.CreateCommand())
                 {
@@ -137,8 +140,8 @@ namespace AIS.Controllers
                 GuardAgainstDynamicSql(cmd);
                 cmd.Parameters.Clear();
                 cmd.Parameters.Add("Sub_group_id", OracleDbType.Int32).Value = Sub_group_id;
-                cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
-                using OracleDataReader rdr = cmd.ExecuteReader();
+                cmd.Parameters.Add("T_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+                OracleDataReader rdr = cmd.ExecuteReader();
 
                 while (rdr.Read())
                     {
@@ -150,12 +153,13 @@ namespace AIS.Controllers
                     riskActivityList.Add(ram);
                     }
                 }
+            con.Dispose();
             return riskActivityList;
             }
 
         public List<AuditVoilationcatModel> GetAuditVoilationcats()
             {
-            using var con = this.DatabaseConnection();
+            var con = this.DatabaseConnection();
             List<AuditVoilationcatModel> voilationList = new List<AuditVoilationcatModel>();
             using (OracleCommand cmd = con.CreateCommand())
                 {
@@ -164,8 +168,8 @@ namespace AIS.Controllers
                 cmd.BindByName = true;
                 GuardAgainstDynamicSql(cmd);
                 cmd.Parameters.Clear();
-                cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
-                using OracleDataReader rdr = cmd.ExecuteReader();
+                cmd.Parameters.Add("T_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+                OracleDataReader rdr = cmd.ExecuteReader();
                 while (rdr.Read())
                     {
                     AuditVoilationcatModel voilationcat = new AuditVoilationcatModel();
@@ -176,12 +180,13 @@ namespace AIS.Controllers
                     voilationList.Add(voilationcat);
                     }
                 }
+            con.Dispose();
             return voilationList;
             }
 
         public List<AuditSubVoilationcatModel> GetVoilationSubGroup(int group_id)
             {
-            using var con = this.DatabaseConnection();
+            var con = this.DatabaseConnection();
             List<AuditSubVoilationcatModel> voilationsubgroupList = new List<AuditSubVoilationcatModel>();
             using (OracleCommand cmd = con.CreateCommand())
                 {
@@ -191,8 +196,8 @@ namespace AIS.Controllers
                 GuardAgainstDynamicSql(cmd);
                 cmd.Parameters.Clear();
                 cmd.Parameters.Add("group_id", OracleDbType.Int32).Value = group_id;
-                cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
-                using OracleDataReader rdr = cmd.ExecuteReader();
+                cmd.Parameters.Add("T_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+                OracleDataReader rdr = cmd.ExecuteReader();
 
                 while (rdr.Read())
                     {
@@ -208,12 +213,14 @@ namespace AIS.Controllers
                     voilationsubgroupList.Add(vsgm);
                     }
                 }
+            con.Dispose();
             return voilationsubgroupList;
             }
 
         public List<TaskListModel> GetTaskList()
             {
             var sessionHandler = CreateSessionHandler();
+            var con = this.DatabaseConnection();
             List<TaskListModel> tasklist = new List<TaskListModel>();
             var loggedInUser = sessionHandler.GetUser();
             if (loggedInUser == null
@@ -222,8 +229,7 @@ namespace AIS.Controllers
                 || loggedInUser.UserRoleID <= 0)
                 {
                 return new List<TaskListModel>();
-                }            using var con = this.DatabaseConnection();
-
+                }
             using (OracleCommand cmd = con.CreateCommand())
                 {
                 cmd.CommandText = "pkg_ar.P_GetTaskList";
@@ -234,8 +240,8 @@ namespace AIS.Controllers
                 cmd.Parameters.Add("ENT_ID", OracleDbType.Int32).Value = loggedInUser.UserEntityID;
                 cmd.Parameters.Add("P_NO", OracleDbType.Int32).Value = loggedInUser.PPNumber;
                 cmd.Parameters.Add("R_ID", OracleDbType.Int32).Value = loggedInUser.UserRoleID;
-                cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
-                using OracleDataReader rdr = cmd.ExecuteReader();
+                cmd.Parameters.Add("T_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+                OracleDataReader rdr = cmd.ExecuteReader();
                 while (rdr.Read())
                     {
                     TaskListModel tlist = new TaskListModel();
@@ -269,6 +275,7 @@ namespace AIS.Controllers
                     tasklist.Add(tlist);
                     }
                 }
+            con.Dispose();
             return tasklist;
             }
 
@@ -325,6 +332,7 @@ namespace AIS.Controllers
            public JoiningModel GetJoiningDetails(int engId = 0)
             {
             var sessionHandler = CreateSessionHandler();
+            var con = this.DatabaseConnection();
             JoiningModel jm = new JoiningModel();
             List<JoiningTeamModel> tjlist = new List<JoiningTeamModel>();
             var loggedInUser = sessionHandler.GetUser();
@@ -334,8 +342,7 @@ namespace AIS.Controllers
                 || loggedInUser.UserRoleID <= 0)
                 {
                 return new JoiningModel();
-                }            using var con = this.DatabaseConnection();
-
+                }
             if (engId == 0)
                 engId = this.GetLoggedInUserEngId();
             using (OracleCommand cmd = con.CreateCommand())
@@ -349,8 +356,8 @@ namespace AIS.Controllers
                 cmd.Parameters.Add("ENT_ID", OracleDbType.Int32).Value = loggedInUser.UserEntityID;
                 cmd.Parameters.Add("P_NO", OracleDbType.Int32).Value = loggedInUser.PPNumber;
                 cmd.Parameters.Add("R_ID", OracleDbType.Int32).Value = loggedInUser.UserRoleID;
-                cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
-                using OracleDataReader rdr = cmd.ExecuteReader();
+                cmd.Parameters.Add("T_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+                OracleDataReader rdr = cmd.ExecuteReader();
                 while (rdr.Read())
                     {
                     jm.ENG_PLAN_ID = engId;
@@ -374,6 +381,7 @@ namespace AIS.Controllers
                     jm.TEAM_DETAILS = tjlist;
                     }
                 }
+            con.Dispose();
             return jm;
             }
 
@@ -389,6 +397,9 @@ namespace AIS.Controllers
             string email = "";
             string teamLead = "";
 
+            using (var con = this.DatabaseConnection())
+                {
+               
                 var loggedInUser = sessionHandler.GetUser();
             if (loggedInUser == null
                 || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
@@ -396,9 +407,7 @@ namespace AIS.Controllers
                 || loggedInUser.UserRoleID <= 0)
                 {
                 return string.Empty;
-                }            using (var con = this.DatabaseConnection())
-                {               
-
+                }
                 jm.ENTEREDBY = Convert.ToInt32(loggedInUser.PPNumber);
                 jm.ENTEREDDATE = DateTime.Now;
 
@@ -414,7 +423,7 @@ namespace AIS.Controllers
                     cmd.Parameters.Add("P_NO", OracleDbType.Int32).Value = loggedInUser.PPNumber;
                     cmd.Parameters.Add("R_ID", OracleDbType.Int32).Value = loggedInUser.UserRoleID;
                     cmd.Parameters.Add("COMPLETION_DATE", OracleDbType.Date).Value = jm.COMPLETION_DATE;
-                    cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+                    cmd.Parameters.Add("T_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
 
                     using (OracleDataReader rdr = cmd.ExecuteReader())
                         {
@@ -443,7 +452,7 @@ namespace AIS.Controllers
 
         public List<AuditChecklistModel> GetAuditChecklist()
             {
-            using var con = this.DatabaseConnection();
+            var con = this.DatabaseConnection();
             List<AuditChecklistModel> list = new List<AuditChecklistModel>();
             using (OracleCommand cmd = con.CreateCommand())
                 {
@@ -453,9 +462,9 @@ namespace AIS.Controllers
                 cmd.BindByName = true;
                 GuardAgainstDynamicSql(cmd);
                 cmd.Parameters.Clear();
-                cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+                cmd.Parameters.Add("T_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
 
-                using OracleDataReader rdr = cmd.ExecuteReader();
+                OracleDataReader rdr = cmd.ExecuteReader();
                 while (rdr.Read())
                     {
                     AuditChecklistModel chk = new AuditChecklistModel();
@@ -469,12 +478,13 @@ namespace AIS.Controllers
                     list.Add(chk);
                     }
                 }
+            con.Dispose();
             return list;
             }
 
         public List<AuditChecklistModel> GetAuditChecklistCAD()
             {
-            using var con = this.DatabaseConnection();
+            var con = this.DatabaseConnection();
             List<AuditChecklistModel> list = new List<AuditChecklistModel>();
             using (OracleCommand cmd = con.CreateCommand())
                 {
@@ -484,9 +494,9 @@ namespace AIS.Controllers
                 cmd.BindByName = true;
                 GuardAgainstDynamicSql(cmd);
                 cmd.Parameters.Clear();
-                cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+                cmd.Parameters.Add("T_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
 
-                using OracleDataReader rdr = cmd.ExecuteReader();
+                OracleDataReader rdr = cmd.ExecuteReader();
                 while (rdr.Read())
                     {
                     AuditChecklistModel chk = new AuditChecklistModel();
@@ -498,6 +508,7 @@ namespace AIS.Controllers
                     list.Add(chk);
                     }
                 }
+            con.Dispose();
             return list;
             }
 
@@ -512,7 +523,7 @@ namespace AIS.Controllers
                 {
                 return new List<AuditChecklistSubModel>();
                 }
-            using var con = this.DatabaseConnection();
+            var con = this.DatabaseConnection();
             List<AuditChecklistSubModel> list = new List<AuditChecklistSubModel>();
             using (OracleCommand cmd = con.CreateCommand())
                 {
@@ -525,8 +536,8 @@ namespace AIS.Controllers
                 cmd.Parameters.Add("ENT_ID", OracleDbType.Int32).Value = loggedInUser.UserEntityID;
                 cmd.Parameters.Add("P_NO", OracleDbType.Int32).Value = loggedInUser.PPNumber;
                 cmd.Parameters.Add("R_ID", OracleDbType.Int32).Value = loggedInUser.UserRoleID;
-                cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
-                using OracleDataReader rdr = cmd.ExecuteReader();
+                cmd.Parameters.Add("T_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+                OracleDataReader rdr = cmd.ExecuteReader();
                 while (rdr.Read())
                     {
                     AuditChecklistSubModel chk = new AuditChecklistSubModel();
@@ -540,6 +551,7 @@ namespace AIS.Controllers
                     list.Add(chk);
                     }
                 }
+            con.Dispose();
             return list;
             }
 
@@ -554,7 +566,7 @@ namespace AIS.Controllers
                 {
                 return new List<AuditChecklistDetailsModel>();
                 }
-            using var con = this.DatabaseConnection();
+            var con = this.DatabaseConnection();
             List<AuditChecklistDetailsModel> list = new List<AuditChecklistDetailsModel>();
             using (OracleCommand cmd = con.CreateCommand())
                 {
@@ -567,8 +579,8 @@ namespace AIS.Controllers
                 cmd.Parameters.Add("ENT_ID", OracleDbType.Int32).Value = loggedInUser.UserEntityID;
                 cmd.Parameters.Add("P_NO", OracleDbType.Int32).Value = loggedInUser.PPNumber;
                 cmd.Parameters.Add("R_ID", OracleDbType.Int32).Value = loggedInUser.UserRoleID;
-                cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
-                using OracleDataReader rdr = cmd.ExecuteReader();
+                cmd.Parameters.Add("T_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+                OracleDataReader rdr = cmd.ExecuteReader();
                 while (rdr.Read())
                     {
                     AuditChecklistDetailsModel chk = new AuditChecklistDetailsModel();
@@ -593,6 +605,7 @@ namespace AIS.Controllers
                     list.Add(chk);
                     }
                 }
+            con.Dispose();
             return list;
             }
 
@@ -603,6 +616,7 @@ namespace AIS.Controllers
             bool proceed = false;
 
             var sessionHandler = CreateSessionHandler();
+            var con = this.DatabaseConnection();
             var loggedInUser = sessionHandler.GetUser();
             if (loggedInUser == null
                 || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
@@ -610,8 +624,7 @@ namespace AIS.Controllers
                 || loggedInUser.UserRoleID <= 0)
                 {
                 return string.Empty;
-                }            using var con = this.DatabaseConnection();
-
+                }
 
             var entityId = loggedInUser.UserEntityID.GetValueOrDefault();
             var skipResponsibility = entityId == 112242 || entityId == 112248;  // EXCLUDE these entities from responsibility assignment
@@ -682,9 +695,9 @@ namespace AIS.Controllers
                 cmd.Parameters.Add("ANNEX_ID", OracleDbType.Int32).Value = annexureId;
                 cmd.Parameters.Add("P_REFERENCE_ID", OracleDbType.Int64).Value = ob.REFERENCE_ID.HasValue ? (object)ob.REFERENCE_ID.Value : DBNull.Value;
 
-                cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+                cmd.Parameters.Add("T_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
 
-                using OracleDataReader rdr = cmd.ExecuteReader();
+                OracleDataReader rdr = cmd.ExecuteReader();
                 while (rdr.Read())
                     {
                     var refVal = rdr["REF"]?.ToString();
@@ -742,13 +755,14 @@ namespace AIS.Controllers
                             cmd.Parameters.Add("LCAMOUNT", OracleDbType.Int32).Value = Convert.ToInt32(lcAmount);
                             cmd.Parameters.Add("ACAMOUNT", OracleDbType.Int32).Value = Convert.ToInt32(accAmount);
 
-                            cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+                            cmd.Parameters.Add("T_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
                             cmd.ExecuteReader();
                             }
                         }
                     }
                 }
 
+            con.Dispose();
             return returnResp;
             }
 
@@ -759,6 +773,7 @@ namespace AIS.Controllers
             string returnResp = "";
             bool proceed = false;
             var sessionHandler = CreateSessionHandler();
+            var con = this.DatabaseConnection();
             var loggedInUser = sessionHandler.GetUser();
             if (loggedInUser == null
                 || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
@@ -766,8 +781,7 @@ namespace AIS.Controllers
                 || loggedInUser.UserRoleID <= 0)
                 {
                 return string.Empty;
-                }            using var con = this.DatabaseConnection();
-
+                }
             var INDICATOR = "A";
             if (ob.ENGPLANID == 0)
                 ob.ENGPLANID = this.GetLoggedInUserEngId();
@@ -795,8 +809,8 @@ namespace AIS.Controllers
                 cmd.Parameters.Add("R_ID", OracleDbType.Int32).Value = loggedInUser.UserRoleID;
                 cmd.Parameters.Add("ANNEX_ID", OracleDbType.Int32).Value = ob.ANNEXURE_ID == "" ? 0 : Convert.ToInt32(ob.ANNEXURE_ID);
                 cmd.Parameters.Add("P_REFERENCE_ID", OracleDbType.Int64).Value = ob.REFERENCE_ID.HasValue ? (object)ob.REFERENCE_ID.Value : DBNull.Value;
-                cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
-                using OracleDataReader rdr = cmd.ExecuteReader();
+                cmd.Parameters.Add("T_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+                OracleDataReader rdr = cmd.ExecuteReader();
                 while (rdr.Read())
                     {
                     if (rdr["REF"].ToString() != "" && rdr["REF"].ToString() != null && rdr["REF"].ToString() == "2")
@@ -844,7 +858,7 @@ namespace AIS.Controllers
                                     pp.ACC_AMOUNT;
 
 
-                                cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+                                cmd.Parameters.Add("T_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
                                 cmd.ExecuteReader();
                                 }
                             }
@@ -853,12 +867,14 @@ namespace AIS.Controllers
 
 
                 }
+            con.Dispose();
             return returnResp;
             }
 
         public bool SetEngIdOnHold()
             {
             var sessionHandler = CreateSessionHandler();
+            var con = this.DatabaseConnection();
             var loggedInUser = sessionHandler.GetUser();
             if (loggedInUser == null
                 || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
@@ -866,8 +882,7 @@ namespace AIS.Controllers
                 || loggedInUser.UserRoleID <= 0)
                 {
                 return false;
-                }            using var con = this.DatabaseConnection();
-
+                }
             int ENG_ID = this.GetLoggedInUserEngId();
             using (OracleCommand cmd = con.CreateCommand())
                 {
@@ -878,14 +893,16 @@ namespace AIS.Controllers
                 cmd.Parameters.Clear();
                 cmd.Parameters.Add("ENGID", OracleDbType.Int32).Value = ENG_ID;
                 cmd.Parameters.Add("PPNO", OracleDbType.Int32).Value = loggedInUser.PPNumber;
-                cmd.ExecuteNonQuery();
+                cmd.ExecuteReader();
                 }
+            con.Dispose();
             return true;
             }
 
         public string GetLatestAuditorResponse(int obs_id = 0)
             {
             var sessionHandler = CreateSessionHandler();
+            var con = this.DatabaseConnection();
             var loggedInUser = sessionHandler.GetUser();
             if (loggedInUser == null
                 || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
@@ -893,8 +910,7 @@ namespace AIS.Controllers
                 || loggedInUser.UserRoleID <= 0)
                 {
                 return string.Empty;
-                }            using var con = this.DatabaseConnection();
-
+                }
             string response = "";
             using (OracleCommand cmd = con.CreateCommand())
                 {
@@ -907,19 +923,21 @@ namespace AIS.Controllers
                 cmd.Parameters.Add("ENT_ID", OracleDbType.Int32).Value = loggedInUser.UserEntityID;
                 cmd.Parameters.Add("P_NO", OracleDbType.Int32).Value = loggedInUser.PPNumber;
                 cmd.Parameters.Add("R_ID", OracleDbType.Int32).Value = loggedInUser.UserRoleID;
-                cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
-                using OracleDataReader rdr = cmd.ExecuteReader();
+                cmd.Parameters.Add("T_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+                OracleDataReader rdr = cmd.ExecuteReader();
                 while (rdr.Read())
                     {
                     response = rdr["Recommendation"].ToString();
                     }
                 }
+            con.Dispose();
             return response;
             }
 
         public string GetLatestDepartmentalHeadResponse(int obs_id = 0)
             {
             var sessionHandler = CreateSessionHandler();
+            var con = this.DatabaseConnection();
             var loggedInUser = sessionHandler.GetUser();
             if (loggedInUser == null
                 || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
@@ -927,8 +945,7 @@ namespace AIS.Controllers
                 || loggedInUser.UserRoleID <= 0)
                 {
                 return string.Empty;
-                }            using var con = this.DatabaseConnection();
-
+                }
             string response = "";
             using (OracleCommand cmd = con.CreateCommand())
                 {
@@ -941,19 +958,21 @@ namespace AIS.Controllers
                 cmd.Parameters.Add("ENT_ID", OracleDbType.Int32).Value = loggedInUser.UserEntityID;
                 cmd.Parameters.Add("P_NO", OracleDbType.Int32).Value = loggedInUser.PPNumber;
                 cmd.Parameters.Add("R_ID", OracleDbType.Int32).Value = loggedInUser.UserRoleID;
-                cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
-                using OracleDataReader rdr = cmd.ExecuteReader();
+                cmd.Parameters.Add("T_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+                OracleDataReader rdr = cmd.ExecuteReader();
                 while (rdr.Read())
                     {
                     response = rdr["audit_reply"].ToString();
                     }
                 }
+            con.Dispose();
             return response;
             }
 
         public string GetLatestAuditeeResponse(int obs_id = 0)
             {
             var sessionHandler = CreateSessionHandler();
+            var con = this.DatabaseConnection();
             var loggedInUser = sessionHandler.GetUser();
             if (loggedInUser == null
                 || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
@@ -961,8 +980,7 @@ namespace AIS.Controllers
                 || loggedInUser.UserRoleID <= 0)
                 {
                 return string.Empty;
-                }            using var con = this.DatabaseConnection();
-
+                }
             string response = "";
             using (OracleCommand cmd = con.CreateCommand())
                 {
@@ -975,19 +993,21 @@ namespace AIS.Controllers
                 cmd.Parameters.Add("ENT_ID", OracleDbType.Int32).Value = loggedInUser.UserEntityID;
                 cmd.Parameters.Add("P_NO", OracleDbType.Int32).Value = loggedInUser.PPNumber;
                 cmd.Parameters.Add("R_ID", OracleDbType.Int32).Value = loggedInUser.UserRoleID;
-                cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
-                using OracleDataReader rdr = cmd.ExecuteReader();
+                cmd.Parameters.Add("T_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+                OracleDataReader rdr = cmd.ExecuteReader();
                 while (rdr.Read())
                     {
                     response = rdr["reply"].ToString();
                     }
                 }
+            con.Dispose();
             return response;
             }
 
         public List<ObservationSummaryModel> GetManagedObservationsSummaryForSelectedEntity(int ENG_ID = 0)
             {
             var sessionHandler = CreateSessionHandler();
+            var con = this.DatabaseConnection();
             var loggedInUser = sessionHandler.GetUser();
             if (loggedInUser == null
                 || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
@@ -995,8 +1015,7 @@ namespace AIS.Controllers
                 || loggedInUser.UserRoleID <= 0)
                 {
                 return new List<ObservationSummaryModel>();
-                }            using var con = this.DatabaseConnection();
-
+                }
             List<ObservationSummaryModel> list = new List<ObservationSummaryModel>();
 
             using (OracleCommand cmd = con.CreateCommand())
@@ -1010,8 +1029,8 @@ namespace AIS.Controllers
                 cmd.Parameters.Add("ENT_ID", OracleDbType.Int32).Value = loggedInUser.UserEntityID;
                 cmd.Parameters.Add("P_NO", OracleDbType.Int32).Value = loggedInUser.PPNumber;
                 cmd.Parameters.Add("R_ID", OracleDbType.Int32).Value = loggedInUser.UserRoleID;
-                cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
-                using OracleDataReader rdr = cmd.ExecuteReader();
+                cmd.Parameters.Add("T_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+                OracleDataReader rdr = cmd.ExecuteReader();
                 while (rdr.Read())
                     {
                     ObservationSummaryModel chk = new ObservationSummaryModel();
@@ -1032,12 +1051,14 @@ namespace AIS.Controllers
                     list.Add(chk);
                     }
                 }
+            con.Dispose();
             return list;
             }
 
         public List<ObservationRevisedModel> GetManagedObservationsForSelectedEntity(int ENG_ID = 0)
             {
             var sessionHandler = CreateSessionHandler();
+            var con = this.DatabaseConnection();
             var loggedInUser = sessionHandler.GetUser();
             if (loggedInUser == null
                 || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
@@ -1045,8 +1066,7 @@ namespace AIS.Controllers
                 || loggedInUser.UserRoleID <= 0)
                 {
                 return new List<ObservationRevisedModel>();
-                }            using var con = this.DatabaseConnection();
-
+                }
             List<ObservationRevisedModel> list = new List<ObservationRevisedModel>();
 
             using (OracleCommand cmd = con.CreateCommand())
@@ -1060,8 +1080,8 @@ namespace AIS.Controllers
                 cmd.Parameters.Add("ENT_ID", OracleDbType.Int32).Value = loggedInUser.UserEntityID;
                 cmd.Parameters.Add("P_NO", OracleDbType.Int32).Value = loggedInUser.PPNumber;
                 cmd.Parameters.Add("R_ID", OracleDbType.Int32).Value = loggedInUser.UserRoleID;
-                cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
-                using OracleDataReader rdr = cmd.ExecuteReader();
+                cmd.Parameters.Add("T_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+                OracleDataReader rdr = cmd.ExecuteReader();
                 while (rdr.Read())
                     {
                     ObservationRevisedModel chk = new ObservationRevisedModel();
@@ -1083,6 +1103,7 @@ namespace AIS.Controllers
                     list.Add(chk);
                     }
                 }
+            con.Dispose();
             return list;
             }
 
@@ -1099,7 +1120,7 @@ namespace AIS.Controllers
                 return string.Empty;
                 }
 
-            using var con = this.DatabaseConnection();
+            var con = this.DatabaseConnection();
             using (OracleCommand cmd = con.CreateCommand())
                 {
 
@@ -1123,13 +1144,14 @@ namespace AIS.Controllers
                 cmd.Parameters.Add("ENT_ID", OracleDbType.Int32).Value = loggedInUser.UserEntityID;
                 cmd.Parameters.Add("P_NO", OracleDbType.Int32).Value = loggedInUser.PPNumber;
                 cmd.Parameters.Add("R_ID", OracleDbType.Int32).Value = loggedInUser.UserRoleID;
-                cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
-                using OracleDataReader rdr = cmd.ExecuteReader();
+                cmd.Parameters.Add("T_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+                OracleDataReader rdr = cmd.ExecuteReader();
                 while (rdr.Read())
                     {
                     resp = rdr["REMARKS"].ToString();
                     }
                 }
+            con.Dispose();
             return resp;
             }
 
@@ -1146,7 +1168,7 @@ namespace AIS.Controllers
                 return string.Empty;
                 }
 
-            using var con = this.DatabaseConnection();
+            var con = this.DatabaseConnection();
             using (OracleCommand cmd = con.CreateCommand())
                 {
 
@@ -1174,8 +1196,8 @@ namespace AIS.Controllers
                 cmd.Parameters.Add("P_NO", OracleDbType.Int32).Value = loggedInUser.PPNumber;
                 cmd.Parameters.Add("R_ID", OracleDbType.Int32).Value = loggedInUser.UserRoleID;
                 cmd.Parameters.Add("P_DECISION", OracleDbType.Varchar2).Value = pm.P_DECISION;
-                cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
-                using OracleDataReader rdr = cmd.ExecuteReader();
+                cmd.Parameters.Add("T_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+                OracleDataReader rdr = cmd.ExecuteReader();
                 while (rdr.Read())
                     {
                     resp = rdr["REMARKS"].ToString();
@@ -1183,6 +1205,7 @@ namespace AIS.Controllers
 
 
                 }
+            con.Dispose();
             return resp;
             }
 
@@ -1199,7 +1222,7 @@ namespace AIS.Controllers
                 return string.Empty;
                 }
 
-            using var con = this.DatabaseConnection();
+            var con = this.DatabaseConnection();
             using (OracleCommand cmd = con.CreateCommand())
                 {
 
@@ -1225,8 +1248,8 @@ namespace AIS.Controllers
                 cmd.Parameters.Add("P_NO", OracleDbType.Int32).Value = loggedInUser.PPNumber;
                 cmd.Parameters.Add("R_ID", OracleDbType.Int32).Value = loggedInUser.UserRoleID;
                 cmd.Parameters.Add("P_DECISION", OracleDbType.Varchar2).Value = pm.P_DECISION;
-                cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
-                using OracleDataReader rdr = cmd.ExecuteReader();
+                cmd.Parameters.Add("T_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+                OracleDataReader rdr = cmd.ExecuteReader();
                 while (rdr.Read())
                     {
                     resp = rdr["REMARKS"].ToString();
@@ -1234,12 +1257,14 @@ namespace AIS.Controllers
 
 
                 }
+            con.Dispose();
             return resp;
             }
 
         public List<ManageObservations> GetManagedObservations(int ENG_ID = 0, int OBS_ID = 0)
             {
             var sessionHandler = CreateSessionHandler();
+            var con = this.DatabaseConnection();
             var loggedInUser = sessionHandler.GetUser();
             if (loggedInUser == null
                 || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
@@ -1247,8 +1272,7 @@ namespace AIS.Controllers
                 || loggedInUser.UserRoleID <= 0)
                 {
                 return new List<ManageObservations>();
-                }            using var con = this.DatabaseConnection();
-
+                }
             List<ManageObservations> list = new List<ManageObservations>();
 
             using (OracleCommand cmd = con.CreateCommand())
@@ -1263,8 +1287,8 @@ namespace AIS.Controllers
                 cmd.Parameters.Add("ENT_ID", OracleDbType.Int32).Value = loggedInUser.UserEntityID;
                 cmd.Parameters.Add("P_NO", OracleDbType.Int32).Value = loggedInUser.PPNumber;
                 cmd.Parameters.Add("R_ID", OracleDbType.Int32).Value = loggedInUser.UserRoleID;
-                cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
-                using OracleDataReader rdr = cmd.ExecuteReader();
+                cmd.Parameters.Add("T_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+                OracleDataReader rdr = cmd.ExecuteReader();
                 while (rdr.Read())
                     {
                     ManageObservations chk = new ManageObservations();
@@ -1285,12 +1309,14 @@ namespace AIS.Controllers
                     list.Add(chk);
                     }
                 }
+            con.Dispose();
             return list;
             }
 
         public List<ManageObservations> GetManagedObservationText(int ENG_ID = 0, int OBS_ID = 0)
             {
             var sessionHandler = CreateSessionHandler();
+            var con = this.DatabaseConnection();
             var loggedInUser = sessionHandler.GetUser();
             if (loggedInUser == null
                 || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
@@ -1298,8 +1324,7 @@ namespace AIS.Controllers
                 || loggedInUser.UserRoleID <= 0)
                 {
                 return new List<ManageObservations>();
-                }            using var con = this.DatabaseConnection();
-
+                }
             List<ManageObservations> list = new List<ManageObservations>();
 
             using (OracleCommand cmd = con.CreateCommand())
@@ -1313,8 +1338,8 @@ namespace AIS.Controllers
                 cmd.Parameters.Add("ENT_ID", OracleDbType.Int32).Value = loggedInUser.UserEntityID;
                 cmd.Parameters.Add("P_NO", OracleDbType.Int32).Value = loggedInUser.PPNumber;
                 cmd.Parameters.Add("R_ID", OracleDbType.Int32).Value = loggedInUser.UserRoleID;
-                cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
-                using OracleDataReader rdr = cmd.ExecuteReader();
+                cmd.Parameters.Add("T_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+                OracleDataReader rdr = cmd.ExecuteReader();
                 while (rdr.Read())
                     {
                     ManageObservations chk = new ManageObservations();
@@ -1331,12 +1356,14 @@ namespace AIS.Controllers
                     list.Add(chk);
                     }
                 }
+            con.Dispose();
             return list;
             }
 
         public List<AuditeeResponseEvidenceModel> GetRespondedObservationEvidences(int OBS_ID)
             {
             var sessionHandler = CreateSessionHandler();
+            var con = this.DatabaseConnection();
             var loggedInUser = sessionHandler.GetUser();
             if (loggedInUser == null
                 || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
@@ -1344,8 +1371,7 @@ namespace AIS.Controllers
                 || loggedInUser.UserRoleID <= 0)
                 {
                 return new List<AuditeeResponseEvidenceModel>();
-                }            using var con = this.DatabaseConnection();
-
+                }
             List<AuditeeResponseEvidenceModel> modellist = new List<AuditeeResponseEvidenceModel>();
             using (OracleCommand cmd = con.CreateCommand())
                 {
@@ -1356,8 +1382,8 @@ namespace AIS.Controllers
                 GuardAgainstDynamicSql(cmd);
                 cmd.Parameters.Clear();
                 cmd.Parameters.Add("OBS_ID", OracleDbType.Int32).Value = OBS_ID;
-                cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
-                using OracleDataReader rdr3 = cmd.ExecuteReader();
+                cmd.Parameters.Add("T_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+                OracleDataReader rdr3 = cmd.ExecuteReader();
                 while (rdr3.Read())
                     {
                     AuditeeResponseEvidenceModel am = new AuditeeResponseEvidenceModel();
@@ -1369,12 +1395,14 @@ namespace AIS.Controllers
                     modellist.Add(am);
                     }
                 }
+            con.Dispose();
             return modellist;
             }
 
         public List<ObservationTextModel> GetManagedAllObservationsText(int OBS_ID = 0, string INDICATOR = "")
             {
             var sessionHandler = CreateSessionHandler();
+            var con = this.DatabaseConnection();
             var loggedInUser = sessionHandler.GetUser();
             if (loggedInUser == null
                 || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
@@ -1382,8 +1410,7 @@ namespace AIS.Controllers
                 || loggedInUser.UserRoleID <= 0)
                 {
                 return new List<ObservationTextModel>();
-                }            using var con = this.DatabaseConnection();
-
+                }
             List<ObservationTextModel> list = new List<ObservationTextModel>();
 
             using (OracleCommand cmd = con.CreateCommand())
@@ -1398,8 +1425,8 @@ namespace AIS.Controllers
                 cmd.Parameters.Add("ENT_ID", OracleDbType.Int32).Value = loggedInUser.UserEntityID;
                 cmd.Parameters.Add("P_NO", OracleDbType.Int32).Value = loggedInUser.PPNumber;
                 cmd.Parameters.Add("R_ID", OracleDbType.Int32).Value = loggedInUser.UserRoleID;
-                cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
-                using OracleDataReader rdr = cmd.ExecuteReader();
+                cmd.Parameters.Add("T_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+                OracleDataReader rdr = cmd.ExecuteReader();
                 while (rdr.Read())
                     {
                     ObservationTextModel chk = new ObservationTextModel();
@@ -1421,12 +1448,14 @@ namespace AIS.Controllers
                     list.Add(chk);
                     }
                 }
+            con.Dispose();
             return list;
             }
 
         public List<ManageObservations> GetManagedObservationsForBranches(int ENG_ID = 0, int OBS_ID = 0)
             {
             var sessionHandler = CreateSessionHandler();
+            var con = this.DatabaseConnection();
             var loggedInUser = sessionHandler.GetUser();
             if (loggedInUser == null
                 || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
@@ -1434,8 +1463,7 @@ namespace AIS.Controllers
                 || loggedInUser.UserRoleID <= 0)
                 {
                 return new List<ManageObservations>();
-                }            using var con = this.DatabaseConnection();
-
+                }
 
             List<ManageObservations> list = new List<ManageObservations>();
             using (OracleCommand cmd = con.CreateCommand())
@@ -1450,9 +1478,9 @@ namespace AIS.Controllers
                 cmd.Parameters.Add("ENT_ID", OracleDbType.Int32).Value = loggedInUser.UserEntityID;
                 cmd.Parameters.Add("P_NO", OracleDbType.Int32).Value = loggedInUser.PPNumber;
                 cmd.Parameters.Add("R_ID", OracleDbType.Int32).Value = loggedInUser.UserRoleID;
-                cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+                cmd.Parameters.Add("T_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
 
-                using OracleDataReader rdr = cmd.ExecuteReader();
+                OracleDataReader rdr = cmd.ExecuteReader();
                 while (rdr.Read())
                     {
                     ManageObservations chk = new ManageObservations();
@@ -1480,12 +1508,14 @@ namespace AIS.Controllers
                     list.Add(chk);
                     }
                 }
+            con.Dispose();
             return list;
             }
 
         public List<ManageObservations> GetManagedObservationTextForBranches(int OBS_ID = 0)
             {
             var sessionHandler = CreateSessionHandler();
+            var con = this.DatabaseConnection();
             var loggedInUser = sessionHandler.GetUser();
             if (loggedInUser == null
                 || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
@@ -1493,8 +1523,7 @@ namespace AIS.Controllers
                 || loggedInUser.UserRoleID <= 0)
                 {
                 return new List<ManageObservations>();
-                }            using var con = this.DatabaseConnection();
-
+                }
 
             List<ManageObservations> list = new List<ManageObservations>();
             bool HasColumn(IDataRecord reader, string columnName)
@@ -1523,9 +1552,9 @@ namespace AIS.Controllers
                     cmd.Parameters.Add("ENT_ID", OracleDbType.Int32).Value = loggedInUser.UserEntityID;
                     cmd.Parameters.Add("P_NO", OracleDbType.Int32).Value = loggedInUser.PPNumber;
                     cmd.Parameters.Add("R_ID", OracleDbType.Int32).Value = loggedInUser.UserRoleID;
-                    cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+                    cmd.Parameters.Add("T_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
 
-                    using OracleDataReader rdr = cmd.ExecuteReader();
+                    OracleDataReader rdr = cmd.ExecuteReader();
                     while (rdr.Read())
                         {
                         ManageObservations chk = new ManageObservations();
@@ -1563,9 +1592,9 @@ namespace AIS.Controllers
                     cmd.Parameters.Add("ENT_ID", OracleDbType.Int32).Value = loggedInUser.UserEntityID;
                     cmd.Parameters.Add("P_NO", OracleDbType.Int32).Value = loggedInUser.PPNumber;
                     cmd.Parameters.Add("R_ID", OracleDbType.Int32).Value = loggedInUser.UserRoleID;
-                    cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+                    cmd.Parameters.Add("T_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
 
-                    using OracleDataReader rdr = cmd.ExecuteReader();
+                    OracleDataReader rdr = cmd.ExecuteReader();
                     while (rdr.Read())
                         {
                         ManageObservations chk = new ManageObservations();
@@ -1593,6 +1622,7 @@ namespace AIS.Controllers
                 }
 
 
+            con.Dispose();
             return list;
             }
 
@@ -1607,7 +1637,7 @@ namespace AIS.Controllers
                 {
                 return new List<ManageObservations>();
                 }
-            using var con = this.DatabaseConnection();
+            var con = this.DatabaseConnection();
             if (ENG_ID == 0)
                 ENG_ID = this.GetLoggedInUserEngId();
             List<ManageObservations> list = new List<ManageObservations>();
@@ -1622,8 +1652,8 @@ namespace AIS.Controllers
                 cmd.Parameters.Add("ENT_ID", OracleDbType.Int32).Value = loggedInUser.UserEntityID;
                 cmd.Parameters.Add("P_NO", OracleDbType.Int32).Value = loggedInUser.PPNumber;
                 cmd.Parameters.Add("R_ID", OracleDbType.Int32).Value = loggedInUser.UserRoleID;
-                cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
-                using OracleDataReader rdr = cmd.ExecuteReader();
+                cmd.Parameters.Add("T_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+                OracleDataReader rdr = cmd.ExecuteReader();
                 while (rdr.Read())
                     {
                     ManageObservations chk = new ManageObservations();
@@ -1650,6 +1680,7 @@ namespace AIS.Controllers
 
                     }
                 }
+            con.Dispose();
 
             return list;
             }
@@ -1665,7 +1696,7 @@ namespace AIS.Controllers
                 {
                 return new List<ManageObservations>();
                 }
-            using var con = this.DatabaseConnection();
+            var con = this.DatabaseConnection();
             if (ENG_ID == 0)
                 ENG_ID = this.GetLoggedInUserEngId();
             List<ManageObservations> list = new List<ManageObservations>();
@@ -1680,8 +1711,8 @@ namespace AIS.Controllers
                 cmd.Parameters.Add("ENT_ID", OracleDbType.Int32).Value = loggedInUser.UserEntityID;
                 cmd.Parameters.Add("P_NO", OracleDbType.Int32).Value = loggedInUser.PPNumber;
                 cmd.Parameters.Add("R_ID", OracleDbType.Int32).Value = loggedInUser.UserRoleID;
-                cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
-                using OracleDataReader rdr = cmd.ExecuteReader();
+                cmd.Parameters.Add("T_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+                OracleDataReader rdr = cmd.ExecuteReader();
                 while (rdr.Read())
                     {
                     ManageObservations chk = new ManageObservations();
@@ -1711,13 +1742,14 @@ namespace AIS.Controllers
 
                     }
                 }
+            con.Dispose();
 
             return list;
             }
 
         public List<ManageObservations> GetEntityReportParasForBranch(int ENG_ID = 0)
             {
-            using var con = this.DatabaseConnection();
+            var con = this.DatabaseConnection();
             if (ENG_ID == 0)
                 ENG_ID = this.GetLoggedInUserEngId();
             List<ManageObservations> list = new List<ManageObservations>();
@@ -1729,8 +1761,8 @@ namespace AIS.Controllers
                 GuardAgainstDynamicSql(cmd);
                 cmd.Parameters.Clear();
                 cmd.Parameters.Add("ENGID", OracleDbType.Int32).Value = ENG_ID;
-                cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
-                using OracleDataReader rdr = cmd.ExecuteReader();
+                cmd.Parameters.Add("T_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+                OracleDataReader rdr = cmd.ExecuteReader();
                 while (rdr.Read())
                     {
                     ManageObservations chk = new ManageObservations();
@@ -1761,6 +1793,7 @@ namespace AIS.Controllers
 
                     }
                 }
+            con.Dispose();
 
             return list;
             }
@@ -1776,7 +1809,7 @@ namespace AIS.Controllers
                 {
                 return new List<ManageObservations>();
                 }
-            using var con = this.DatabaseConnection();
+            var con = this.DatabaseConnection();
             if (ENG_ID == 0)
                 ENG_ID = this.GetLoggedInUserEngId();
             List<ManageObservations> list = new List<ManageObservations>();
@@ -1791,8 +1824,8 @@ namespace AIS.Controllers
                 cmd.Parameters.Add("ENT_ID", OracleDbType.Int32).Value = loggedInUser.UserEntityID;
                 cmd.Parameters.Add("P_NO", OracleDbType.Int32).Value = loggedInUser.PPNumber;
                 cmd.Parameters.Add("R_ID", OracleDbType.Int32).Value = loggedInUser.UserRoleID;
-                cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
-                using OracleDataReader rdr = cmd.ExecuteReader();
+                cmd.Parameters.Add("T_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+                OracleDataReader rdr = cmd.ExecuteReader();
                 while (rdr.Read())
                     {
                     ManageObservations chk = new ManageObservations();
@@ -1801,13 +1834,14 @@ namespace AIS.Controllers
                     list.Add(chk);
                     }
                 }
+            con.Dispose();
 
             return list;
             }
 
         public List<ManageObservations> GetManagedDraftObservationsForBranches(int ENG_ID = 0)
             {
-            using var con = this.DatabaseConnection();
+            var con = this.DatabaseConnection();
             if (ENG_ID == 0)
                 ENG_ID = this.GetLoggedInUserEngId();
             List<ManageObservations> list = new List<ManageObservations>();
@@ -1820,10 +1854,10 @@ namespace AIS.Controllers
                 GuardAgainstDynamicSql(cmd);
                 cmd.Parameters.Clear();
                 cmd.Parameters.Add("ENGID", OracleDbType.Int32).Value = ENG_ID;
-                cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+                cmd.Parameters.Add("T_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
 
 
-                using OracleDataReader rdr = cmd.ExecuteReader();
+                OracleDataReader rdr = cmd.ExecuteReader();
                 while (rdr.Read())
                     {
                     ManageObservations chk = new ManageObservations();
@@ -1854,6 +1888,7 @@ namespace AIS.Controllers
 
                     }
                 }
+            con.Dispose();
 
             return list;
             }
@@ -1861,7 +1896,7 @@ namespace AIS.Controllers
         public List<SubCheckListStatus> GetSubChecklistStatus(int ENG_ID = 0, int S_ID = 0)
             {
             List<SubCheckListStatus> list = new List<SubCheckListStatus>();
-            using var con = this.DatabaseConnection();
+            var con = this.DatabaseConnection();
             if (ENG_ID == 0)
                 ENG_ID = this.GetLoggedInUserEngId();
             using (OracleCommand cmd = con.CreateCommand())
@@ -1873,8 +1908,8 @@ namespace AIS.Controllers
                 cmd.Parameters.Clear();
                 cmd.Parameters.Add("PLANID", OracleDbType.Int32).Value = ENG_ID;
                 cmd.Parameters.Add("SUBCHECKLISTID", OracleDbType.Int32).Value = S_ID;
-                cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
-                using OracleDataReader rdr = cmd.ExecuteReader();
+                cmd.Parameters.Add("T_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+                OracleDataReader rdr = cmd.ExecuteReader();
                 while (rdr.Read())
                     {
                     SubCheckListStatus chk = new SubCheckListStatus();
@@ -1889,6 +1924,7 @@ namespace AIS.Controllers
                     list.Add(chk);
                     }
                 }
+            con.Dispose();
             return list;
             }
 
@@ -1896,6 +1932,7 @@ namespace AIS.Controllers
             {
             string resp = "";
             var sessionHandler = CreateSessionHandler();
+            var con = this.DatabaseConnection();
             var loggedInUser = sessionHandler.GetUser();
             if (loggedInUser == null
                 || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
@@ -1903,8 +1940,7 @@ namespace AIS.Controllers
                 || loggedInUser.UserRoleID <= 0)
                 {
                 return string.Empty;
-                }            using var con = this.DatabaseConnection();
-
+                }
             using (OracleCommand cmd = con.CreateCommand())
                 {
                 cmd.CommandText = "pkg_ar.P_DropAuditObservation";
@@ -1916,8 +1952,8 @@ namespace AIS.Controllers
                 cmd.Parameters.Add("ENT_ID", OracleDbType.Int32).Value = loggedInUser.UserEntityID;
                 cmd.Parameters.Add("P_NO", OracleDbType.Int32).Value = loggedInUser.PPNumber;
                 cmd.Parameters.Add("R_ID", OracleDbType.Int32).Value = loggedInUser.UserRoleID;
-                cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
-                using OracleDataReader rdr = cmd.ExecuteReader();
+                cmd.Parameters.Add("T_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+                OracleDataReader rdr = cmd.ExecuteReader();
                 while (rdr.Read())
                     {
                     resp = rdr["REMARKS"].ToString();
@@ -1930,6 +1966,7 @@ namespace AIS.Controllers
             {
             string resp = "";
             var sessionHandler = CreateSessionHandler();
+            var con = this.DatabaseConnection();
             var loggedInUser = sessionHandler.GetUser();
             if (loggedInUser == null
                 || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
@@ -1937,8 +1974,7 @@ namespace AIS.Controllers
                 || loggedInUser.UserRoleID <= 0)
                 {
                 return string.Empty;
-                }            using var con = this.DatabaseConnection();
-
+                }
             using (OracleCommand cmd = con.CreateCommand())
                 {
                 cmd.CommandText = "pkg_ar.P_SubmitAuditObservationToAuditee";
@@ -1950,8 +1986,8 @@ namespace AIS.Controllers
                 cmd.Parameters.Add("ENT_ID", OracleDbType.Int32).Value = loggedInUser.UserEntityID;
                 cmd.Parameters.Add("P_NO", OracleDbType.Int32).Value = loggedInUser.PPNumber;
                 cmd.Parameters.Add("R_ID", OracleDbType.Int32).Value = loggedInUser.UserRoleID;
-                cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
-                using OracleDataReader rdr = cmd.ExecuteReader();
+                cmd.Parameters.Add("T_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+                OracleDataReader rdr = cmd.ExecuteReader();
                 while (rdr.Read())
                     {
                     resp = rdr["REMARKS"].ToString();
@@ -2031,7 +2067,7 @@ namespace AIS.Controllers
                 cmd.Parameters.Add("ENT_ID", OracleDbType.Int32).Value = loggedInUser.UserEntityID;
                 cmd.Parameters.Add("P_NO", OracleDbType.Int32).Value = loggedInUser.PPNumber;
                 cmd.Parameters.Add("R_ID", OracleDbType.Int32).Value = loggedInUser.UserRoleID;
-                cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+                cmd.Parameters.Add("T_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
 
                 using (OracleDataReader rdr = cmd.ExecuteReader())
                     {
@@ -2081,7 +2117,7 @@ namespace AIS.Controllers
                 {
                 return string.Empty;
                 }
-            using var con = this.DatabaseConnection();
+            var con = this.DatabaseConnection();
             using (OracleCommand cmd = con.CreateCommand())
                 {
 
@@ -2090,7 +2126,7 @@ namespace AIS.Controllers
                 cmd.BindByName = true;
                 GuardAgainstDynamicSql(cmd);
                 cmd.Parameters.Clear();
-                cmd.Parameters.Add("OBS_ID", OracleDbType.Int32).Value = OBS_ID;
+                cmd.Parameters.Add("OBSID", OracleDbType.Int32).Value = OBS_ID;
                 cmd.Parameters.Add("title", OracleDbType.Clob).Value = OBS_TITLE;
                 cmd.Parameters.Add("OBTEXT", OracleDbType.Clob).Value = OBS_TEXT;
                 cmd.Parameters.Add("SUBPROCESSID", OracleDbType.Int32).Value = SUBPROCESS_ID;
@@ -2101,19 +2137,21 @@ namespace AIS.Controllers
                 cmd.Parameters.Add("ENT_ID", OracleDbType.Int32).Value = loggedInUser.UserEntityID;
                 cmd.Parameters.Add("P_NO", OracleDbType.Int32).Value = loggedInUser.PPNumber;
                 cmd.Parameters.Add("R_ID", OracleDbType.Int32).Value = loggedInUser.UserRoleID;
-                cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
-                using OracleDataReader rdr = cmd.ExecuteReader();
+                cmd.Parameters.Add("T_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+                OracleDataReader rdr = cmd.ExecuteReader();
                 while (rdr.Read())
                     {
                     resp = rdr["REMARKS"].ToString();
                     }
                 }
+            con.Dispose();
             return resp;
             }
 
         public List<ClosingDraftTeamDetailsModel> GetClosingDraftObservations(int ENG_ID = 0)
             {
             var sessionHandler = CreateSessionHandler();
+            var con = this.DatabaseConnection();
             var loggedInUser = sessionHandler.GetUser();
             if (loggedInUser == null
                 || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
@@ -2121,8 +2159,7 @@ namespace AIS.Controllers
                 || loggedInUser.UserRoleID <= 0)
                 {
                 return new List<ClosingDraftTeamDetailsModel>();
-                }            using var con = this.DatabaseConnection();
-
+                }
 
             List<ClosingDraftTeamDetailsModel> list = new List<ClosingDraftTeamDetailsModel>();
             using (OracleCommand cmd = con.CreateCommand())
@@ -2136,8 +2173,8 @@ namespace AIS.Controllers
                 cmd.Parameters.Add("ENT_ID", OracleDbType.Int32).Value = loggedInUser.UserEntityID;
                 cmd.Parameters.Add("P_NO", OracleDbType.Int32).Value = loggedInUser.PPNumber;
                 cmd.Parameters.Add("R_ID", OracleDbType.Int32).Value = loggedInUser.UserRoleID;
-                cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
-                using OracleDataReader rdr = cmd.ExecuteReader();
+                cmd.Parameters.Add("T_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+                OracleDataReader rdr = cmd.ExecuteReader();
                 while (rdr.Read())
                     {
                     ClosingDraftTeamDetailsModel chk = new ClosingDraftTeamDetailsModel();
@@ -2174,12 +2211,14 @@ namespace AIS.Controllers
                     list.Add(chk);
                     }
                 }
+            con.Dispose();
             return list;
             }
 
         public List<ClosingDraftTeamDetailsModel> GetClosingDraftTeamDetails(int ENG_ID = 0)
             {
             var sessionHandler = CreateSessionHandler();
+            var con = this.DatabaseConnection();
             var loggedInUser = sessionHandler.GetUser();
             if (loggedInUser == null
                 || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
@@ -2187,8 +2226,7 @@ namespace AIS.Controllers
                 || loggedInUser.UserRoleID <= 0)
                 {
                 return new List<ClosingDraftTeamDetailsModel>();
-                }            using var con = this.DatabaseConnection();
-
+                }
             if (ENG_ID == 0)
                 ENG_ID = this.GetLoggedInUserEngId();
             List<ClosingDraftTeamDetailsModel> list = new List<ClosingDraftTeamDetailsModel>();
@@ -2203,8 +2241,8 @@ namespace AIS.Controllers
                 cmd.Parameters.Add("ENT_ID", OracleDbType.Int32).Value = loggedInUser.UserEntityID;
                 cmd.Parameters.Add("P_NO", OracleDbType.Int32).Value = loggedInUser.PPNumber;
                 cmd.Parameters.Add("R_ID", OracleDbType.Int32).Value = loggedInUser.UserRoleID;
-                cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
-                using OracleDataReader rdr = cmd.ExecuteReader();
+                cmd.Parameters.Add("T_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+                OracleDataReader rdr = cmd.ExecuteReader();
                 while (rdr.Read())
                     {
                     ClosingDraftTeamDetailsModel chk = new ClosingDraftTeamDetailsModel();
@@ -2230,12 +2268,14 @@ namespace AIS.Controllers
                     list.Add(chk);
                     }
                 }
+            con.Dispose();
             return list;
             }
 
         public List<SearchChecklistDetailsModel> SearchChecklistDetails()
             {
             var sessionHandler = CreateSessionHandler();
+            var con = this.DatabaseConnection();
             var loggedInUser = sessionHandler.GetUser();
             if (loggedInUser == null
                 || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
@@ -2243,8 +2283,7 @@ namespace AIS.Controllers
                 || loggedInUser.UserRoleID <= 0)
                 {
                 return new List<SearchChecklistDetailsModel>();
-                }            using var con = this.DatabaseConnection();
-
+                }
             List<SearchChecklistDetailsModel> list = new List<SearchChecklistDetailsModel>();
             using (OracleCommand cmd = con.CreateCommand())
                 {
@@ -2253,8 +2292,8 @@ namespace AIS.Controllers
                 cmd.BindByName = true;
                 GuardAgainstDynamicSql(cmd);
                 cmd.Parameters.Clear();
-                cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
-                using OracleDataReader rdr = cmd.ExecuteReader();
+                cmd.Parameters.Add("T_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+                OracleDataReader rdr = cmd.ExecuteReader();
                 while (rdr.Read())
                     {
                     SearchChecklistDetailsModel cm = new SearchChecklistDetailsModel();
@@ -2267,12 +2306,14 @@ namespace AIS.Controllers
 
                     }
                 }
+            con.Dispose();
             return list;
             }
 
         public List<AuditeeOldParasModel> GetLegacyParasEntities()
             {
             var sessionHandler = CreateSessionHandler();
+            var con = this.DatabaseConnection();
             var loggedInUser = sessionHandler.GetUser();
             if (loggedInUser == null
                 || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
@@ -2280,8 +2321,7 @@ namespace AIS.Controllers
                 || loggedInUser.UserRoleID <= 0)
                 {
                 return new List<AuditeeOldParasModel>();
-                }            using var con = this.DatabaseConnection();
-
+                }
             List<AuditeeOldParasModel> list = new List<AuditeeOldParasModel>();
             using (OracleCommand cmd = con.CreateCommand())
                 {
@@ -2293,8 +2333,8 @@ namespace AIS.Controllers
                 cmd.Parameters.Add("ENTITYID", OracleDbType.Int32).Value = loggedInUser.UserEntityID;
                 cmd.Parameters.Add("P_NO", OracleDbType.Int32).Value = loggedInUser.PPNumber;
                 cmd.Parameters.Add("R_ID", OracleDbType.Int32).Value = loggedInUser.UserGroupID;
-                cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
-                using OracleDataReader rdr = cmd.ExecuteReader();
+                cmd.Parameters.Add("T_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+                OracleDataReader rdr = cmd.ExecuteReader();
                 while (rdr.Read())
                     {
                     AuditeeOldParasModel chk = new AuditeeOldParasModel();
@@ -2304,12 +2344,14 @@ namespace AIS.Controllers
                     list.Add(chk);
                     }
                 }
+            con.Dispose();
             return list;
             }
 
         public List<AuditeeOldParasModel> GetLegacyParasEntitiesHO()
             {
             var sessionHandler = CreateSessionHandler();
+            var con = this.DatabaseConnection();
             var loggedInUser = sessionHandler.GetUser();
             if (loggedInUser == null
                 || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
@@ -2317,8 +2359,7 @@ namespace AIS.Controllers
                 || loggedInUser.UserRoleID <= 0)
                 {
                 return new List<AuditeeOldParasModel>();
-                }            using var con = this.DatabaseConnection();
-
+                }
             List<AuditeeOldParasModel> list = new List<AuditeeOldParasModel>();
             using (OracleCommand cmd = con.CreateCommand())
                 {
@@ -2328,8 +2369,8 @@ namespace AIS.Controllers
                 GuardAgainstDynamicSql(cmd);
                 cmd.Parameters.Clear();
                 cmd.Parameters.Add("ENTITYID", OracleDbType.Int32).Value = loggedInUser.UserEntityID;
-                cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
-                using OracleDataReader rdr = cmd.ExecuteReader();
+                cmd.Parameters.Add("T_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+                OracleDataReader rdr = cmd.ExecuteReader();
                 while (rdr.Read())
                     {
                     AuditeeOldParasModel chk = new AuditeeOldParasModel();
@@ -2339,12 +2380,14 @@ namespace AIS.Controllers
                     list.Add(chk);
                     }
                 }
+            con.Dispose();
             return list;
             }
 
         public List<AuditeeOldParasModel> GetLegacyParasEntitiesReport(int ENTITY_ID)
             {
             var sessionHandler = CreateSessionHandler();
+            var con = this.DatabaseConnection();
             var loggedInUser = sessionHandler.GetUser();
             if (loggedInUser == null
                 || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
@@ -2352,8 +2395,7 @@ namespace AIS.Controllers
                 || loggedInUser.UserRoleID <= 0)
                 {
                 return new List<AuditeeOldParasModel>();
-                }            using var con = this.DatabaseConnection();
-
+                }
             List<AuditeeOldParasModel> list = new List<AuditeeOldParasModel>();
             using (OracleCommand cmd = con.CreateCommand())
                 {
@@ -2363,8 +2405,8 @@ namespace AIS.Controllers
                 GuardAgainstDynamicSql(cmd);
                 cmd.Parameters.Clear();
                 cmd.Parameters.Add("ENTITYID", OracleDbType.Int32).Value = ENTITY_ID;
-                cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
-                using OracleDataReader rdr = cmd.ExecuteReader();
+                cmd.Parameters.Add("T_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+                OracleDataReader rdr = cmd.ExecuteReader();
                 while (rdr.Read())
                     {
                     AuditeeOldParasModel chk = new AuditeeOldParasModel();
@@ -2374,12 +2416,14 @@ namespace AIS.Controllers
                     list.Add(chk);
                     }
                 }
+            con.Dispose();
             return list;
             }
 
         public List<OldParasModel> GetLegacyParasForUpdate(int ENTITY_ID, string PARA_REF = "", int PARA_ID = 0)
             {
             var sessionHandler = CreateSessionHandler();
+            var con = this.DatabaseConnection();
             var loggedInUser = sessionHandler.GetUser();
             if (loggedInUser == null
                 || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
@@ -2387,8 +2431,7 @@ namespace AIS.Controllers
                 || loggedInUser.UserRoleID <= 0)
                 {
                 return new List<OldParasModel>();
-                }            using var con = this.DatabaseConnection();
-
+                }
             List<OldParasModel> list = new List<OldParasModel>();
             using (OracleCommand cmd = con.CreateCommand())
 
@@ -2401,8 +2444,8 @@ namespace AIS.Controllers
                 cmd.Parameters.Add("entityId", OracleDbType.Int32).Value = ENTITY_ID;
                 cmd.Parameters.Add("paraRef", OracleDbType.Varchar2).Value = PARA_REF;
                 cmd.Parameters.Add("ppno", OracleDbType.Int32).Value = loggedInUser.PPNumber;
-                cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
-                using OracleDataReader rdr = cmd.ExecuteReader();
+                cmd.Parameters.Add("T_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+                OracleDataReader rdr = cmd.ExecuteReader();
                 while (rdr.Read())
                     {
                     OldParasModel chk = new OldParasModel();
@@ -2441,12 +2484,14 @@ namespace AIS.Controllers
 
 
                 }
+            con.Dispose();
             return list;
             }
 
         public List<OldParasModel> GetLegacyParasForUpdateHO(string entityName, string PARA_REF = "", int PARA_ID = 0)
             {
             var sessionHandler = CreateSessionHandler();
+            var con = this.DatabaseConnection();
             var loggedInUser = sessionHandler.GetUser();
             if (loggedInUser == null
                 || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
@@ -2454,8 +2499,7 @@ namespace AIS.Controllers
                 || loggedInUser.UserRoleID <= 0)
                 {
                 return new List<OldParasModel>();
-                }            using var con = this.DatabaseConnection();
-
+                }
             List<OldParasModel> list = new List<OldParasModel>();
             using (OracleCommand cmd = con.CreateCommand())
 
@@ -2468,8 +2512,8 @@ namespace AIS.Controllers
                 cmd.Parameters.Add("entityname", OracleDbType.Varchar2).Value = entityName;
                 cmd.Parameters.Add("paraRef", OracleDbType.Varchar2).Value = PARA_REF;
                 cmd.Parameters.Add("ppno", OracleDbType.Int32).Value = loggedInUser.PPNumber;
-                cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
-                using OracleDataReader rdr = cmd.ExecuteReader();
+                cmd.Parameters.Add("T_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+                OracleDataReader rdr = cmd.ExecuteReader();
                 while (rdr.Read())
                     {
                     OldParasModel chk = new OldParasModel();
@@ -2503,12 +2547,14 @@ namespace AIS.Controllers
 
 
                 }
+            con.Dispose();
             return list;
             }
 
         public List<OldParasModel> GetLegacyParasForGistUpdate(int ENTITY_ID, string PARA_REF = "", int PARA_ID = 0)
             {
             var sessionHandler = CreateSessionHandler();
+            var con = this.DatabaseConnection();
             var loggedInUser = sessionHandler.GetUser();
             if (loggedInUser == null
                 || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
@@ -2516,8 +2562,7 @@ namespace AIS.Controllers
                 || loggedInUser.UserRoleID <= 0)
                 {
                 return new List<OldParasModel>();
-                }            using var con = this.DatabaseConnection();
-
+                }
             List<OldParasModel> list = new List<OldParasModel>();
             using (OracleCommand cmd = con.CreateCommand())
 
@@ -2530,8 +2575,8 @@ namespace AIS.Controllers
                 cmd.Parameters.Add("entityId", OracleDbType.Int32).Value = ENTITY_ID;
                 cmd.Parameters.Add("paraRef", OracleDbType.Varchar2).Value = PARA_REF;
                 cmd.Parameters.Add("ppno", OracleDbType.Int32).Value = loggedInUser.PPNumber;
-                cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
-                using OracleDataReader rdr = cmd.ExecuteReader();
+                cmd.Parameters.Add("T_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+                OracleDataReader rdr = cmd.ExecuteReader();
                 while (rdr.Read())
                     {
                     OldParasModel chk = new OldParasModel();
@@ -2556,6 +2601,7 @@ namespace AIS.Controllers
 
 
                 }
+            con.Dispose();
             return list;
             }
 
@@ -2564,6 +2610,7 @@ namespace AIS.Controllers
             string resp = "";
             string responseRes = "";
             var sessionHandler = CreateSessionHandler();
+            var con = this.DatabaseConnection();
             var loggedInUser = sessionHandler.GetUser();
             if (loggedInUser == null
                 || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
@@ -2571,8 +2618,7 @@ namespace AIS.Controllers
                 || loggedInUser.UserRoleID <= 0)
                 {
                 return string.Empty;
-                }            using var con = this.DatabaseConnection();
-
+                }
             using (OracleCommand cmd = con.CreateCommand())
                 {
                 cmd.CommandText = "pkg_ar.P_update_legacy_Para_text";
@@ -2587,8 +2633,8 @@ namespace AIS.Controllers
                 cmd.Parameters.Add("checklistid", OracleDbType.Int32).Value = LEGACY_PARA.CHECKLIST_DETAIL_ID;
                 cmd.Parameters.Add("pp_no", OracleDbType.Int32).Value = loggedInUser.PPNumber;
                 cmd.Parameters.Add("risk_id", OracleDbType.Int32).Value = LEGACY_PARA.RISK_ID;
-                cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
-                using OracleDataReader rdr = cmd.ExecuteReader();
+                cmd.Parameters.Add("T_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+                OracleDataReader rdr = cmd.ExecuteReader();
                 while (rdr.Read())
                     {
                     if (rdr["REF"].ToString() != "" && rdr["REF"].ToString() != null && rdr["REF"].ToString() == "2")
@@ -2623,8 +2669,8 @@ namespace AIS.Controllers
                             cmd.Parameters.Add("AC_NO", OracleDbType.Int32).Value = respRow.ACCOUNT_NUMBER;
                             cmd.Parameters.Add("AC_AMOUNT", OracleDbType.Int32).Value = respRow.ACC_AMOUNT;
                             cmd.Parameters.Add("refp", OracleDbType.Varchar2).Value = LEGACY_PARA.REF_P;
-                            cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
-                            using OracleDataReader rdr2 = cmd.ExecuteReader();
+                            cmd.Parameters.Add("T_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+                            OracleDataReader rdr2 = cmd.ExecuteReader();
                             while (rdr2.Read())
                                 {
                                 responseRes = rdr2["REMARKS"].ToString();
@@ -2636,6 +2682,7 @@ namespace AIS.Controllers
 
                     }
                 }
+            con.Dispose();
             return resp + "<br/>" + responseRes;
             }
 
@@ -2643,6 +2690,7 @@ namespace AIS.Controllers
             {
             string resp = "";
             var sessionHandler = CreateSessionHandler();
+            var con = this.DatabaseConnection();
             var loggedInUser = sessionHandler.GetUser();
             if (loggedInUser == null
                 || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
@@ -2650,8 +2698,7 @@ namespace AIS.Controllers
                 || loggedInUser.UserRoleID <= 0)
                 {
                 return string.Empty;
-                }            using var con = this.DatabaseConnection();
-
+                }
             using (OracleCommand cmd = con.CreateCommand())
                 {
                 cmd.CommandText = "pkg_ar.P_update_legacy_Para_Gist";
@@ -2664,8 +2711,8 @@ namespace AIS.Controllers
                 cmd.Parameters.Add("PARANO", OracleDbType.Varchar2).Value = PARA_NO;
                 cmd.Parameters.Add("pp_no", OracleDbType.Int32).Value = loggedInUser.PPNumber;
                 cmd.Parameters.Add("u_entity", OracleDbType.Int32).Value = loggedInUser.UserEntityID;
-                cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
-                using OracleDataReader rdr = cmd.ExecuteReader();
+                cmd.Parameters.Add("T_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+                OracleDataReader rdr = cmd.ExecuteReader();
                 while (rdr.Read())
                     {
                     resp = rdr["REMARKS"].ToString();
@@ -2673,6 +2720,7 @@ namespace AIS.Controllers
                     }
 
                 }
+            con.Dispose();
             return resp;
             }
 
@@ -2680,6 +2728,7 @@ namespace AIS.Controllers
             {
             string responseRes = "";
             var sessionHandler = CreateSessionHandler();
+            var con = this.DatabaseConnection();
             var loggedInUser = sessionHandler.GetUser();
             if (loggedInUser == null
                 || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
@@ -2687,8 +2736,7 @@ namespace AIS.Controllers
                 || loggedInUser.UserRoleID <= 0)
                 {
                 return string.Empty;
-                }            using var con = this.DatabaseConnection();
-
+                }
             using (OracleCommand cmd = con.CreateCommand())
                 {
                 cmd.CommandText = "pkg_ar.p_add_para_responsibility";
@@ -2705,8 +2753,8 @@ namespace AIS.Controllers
                 cmd.Parameters.Add("AC_NO", OracleDbType.Int32).Value = RESP_PP.ACCOUNT_NUMBER;
                 cmd.Parameters.Add("AC_AMOUNT", OracleDbType.Int32).Value = RESP_PP.ACC_AMOUNT;
                 cmd.Parameters.Add("refp", OracleDbType.Varchar2).Value = REF_P;
-                cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
-                using OracleDataReader rdr2 = cmd.ExecuteReader();
+                cmd.Parameters.Add("T_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+                OracleDataReader rdr2 = cmd.ExecuteReader();
                 while (rdr2.Read())
                     {
                     responseRes = rdr2["REMARKS"].ToString();
@@ -2714,6 +2762,7 @@ namespace AIS.Controllers
                     }
 
                 }
+            con.Dispose();
             return responseRes;
             }
 
@@ -2721,6 +2770,7 @@ namespace AIS.Controllers
             {
             string responseRes = "";
             var sessionHandler = CreateSessionHandler();
+            var con = this.DatabaseConnection();
             var loggedInUser = sessionHandler.GetUser();
             if (loggedInUser == null
                 || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
@@ -2728,8 +2778,7 @@ namespace AIS.Controllers
                 || loggedInUser.UserRoleID <= 0)
                 {
                 return string.Empty;
-                }            using var con = this.DatabaseConnection();
-
+                }
             using (OracleCommand cmd = con.CreateCommand())
                 {
                 cmd.CommandText = "pkg_ar.p_delete_para_responsibility";
@@ -2739,8 +2788,8 @@ namespace AIS.Controllers
                 cmd.Parameters.Clear();
                 cmd.Parameters.Add("refid", OracleDbType.Int32).Value = P_ID;
                 cmd.Parameters.Add("PPNO", OracleDbType.Int32).Value = PP_NO;
-                cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
-                using OracleDataReader rdr2 = cmd.ExecuteReader();
+                cmd.Parameters.Add("T_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+                OracleDataReader rdr2 = cmd.ExecuteReader();
                 while (rdr2.Read())
                     {
                     responseRes = rdr2["REMARKS"].ToString();
@@ -2748,6 +2797,7 @@ namespace AIS.Controllers
                     }
 
                 }
+            con.Dispose();
             return responseRes;
             }
 
@@ -2755,6 +2805,7 @@ namespace AIS.Controllers
             {
             string resp = "";
             var sessionHandler = CreateSessionHandler();
+            var con = this.DatabaseConnection();
             var loggedInUser = sessionHandler.GetUser();
             if (loggedInUser == null
                 || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
@@ -2762,8 +2813,7 @@ namespace AIS.Controllers
                 || loggedInUser.UserRoleID <= 0)
                 {
                 return string.Empty;
-                }            using var con = this.DatabaseConnection();
-
+                }
             using (OracleCommand cmd = con.CreateCommand())
                 {
                 cmd.CommandText = "pkg_ar.P_no_update_legacy_Para_text";
@@ -2774,8 +2824,8 @@ namespace AIS.Controllers
                 cmd.Parameters.Add("ref_id", OracleDbType.Varchar2).Value = LEGACY_PARA.REF_P;
                 cmd.Parameters.Add("ppno", OracleDbType.Int32).Value = loggedInUser.PPNumber;
                 cmd.Parameters.Add("risk_id", OracleDbType.Int32).Value = LEGACY_PARA.RISK_ID;
-                cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
-                using OracleDataReader rdr = cmd.ExecuteReader();
+                cmd.Parameters.Add("T_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+                OracleDataReader rdr = cmd.ExecuteReader();
                 while (rdr.Read())
                     {
                     if (rdr["REF"].ToString() != "" && rdr["REF"].ToString() != null && rdr["REF"].ToString() == "2")
@@ -2790,12 +2840,14 @@ namespace AIS.Controllers
 
                     }
                 }
+            con.Dispose();
             return resp;
             }
 
         public List<AuditeeEntitiesModel> GetEntitiesDropDownForManageObservations()
             {
             var sessionHandler = CreateSessionHandler();
+            var con = this.DatabaseConnection();
             var loggedInUser = sessionHandler.GetUser();
             if (loggedInUser == null
                 || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
@@ -2803,8 +2855,7 @@ namespace AIS.Controllers
                 || loggedInUser.UserRoleID <= 0)
                 {
                 return new List<AuditeeEntitiesModel>();
-                }            using var con = this.DatabaseConnection();
-
+                }
             List<AuditeeEntitiesModel> list = new List<AuditeeEntitiesModel>();
             using (OracleCommand cmd = con.CreateCommand())
                 {
@@ -2816,8 +2867,8 @@ namespace AIS.Controllers
                 cmd.Parameters.Add("ENT_ID", OracleDbType.Int32).Value = loggedInUser.UserEntityID;
                 cmd.Parameters.Add("P_NO", OracleDbType.Int32).Value = loggedInUser.PPNumber;
                 cmd.Parameters.Add("R_ID", OracleDbType.Int32).Value = loggedInUser.UserRoleID;
-                cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
-                using OracleDataReader rdr = cmd.ExecuteReader();
+                cmd.Parameters.Add("T_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+                OracleDataReader rdr = cmd.ExecuteReader();
                 while (rdr.Read())
                     {
                     AuditeeEntitiesModel chk = new AuditeeEntitiesModel();
@@ -2827,12 +2878,14 @@ namespace AIS.Controllers
                     list.Add(chk);
                     }
                 }
+            con.Dispose();
             return list;
             }
 
         public List<AuditeeEntitiesModel> GetEntitiesForManageAuditParas()
             {
             var sessionHandler = CreateSessionHandler();
+            var con = this.DatabaseConnection();
             var loggedInUser = sessionHandler.GetUser();
             if (loggedInUser == null
                 || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
@@ -2840,8 +2893,7 @@ namespace AIS.Controllers
                 || loggedInUser.UserRoleID <= 0)
                 {
                 return new List<AuditeeEntitiesModel>();
-                }            using var con = this.DatabaseConnection();
-
+                }
             List<AuditeeEntitiesModel> list = new List<AuditeeEntitiesModel>();
             using (OracleCommand cmd = con.CreateCommand())
                 {
@@ -2853,8 +2905,8 @@ namespace AIS.Controllers
                 cmd.Parameters.Add("P_NO", OracleDbType.Int32).Value = loggedInUser.PPNumber;
                 cmd.Parameters.Add("R_ID", OracleDbType.Int32).Value = loggedInUser.UserRoleID;
                 cmd.Parameters.Add("ENT_ID", OracleDbType.Int32).Value = loggedInUser.UserEntityID;
-                cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
-                using OracleDataReader rdr = cmd.ExecuteReader();
+                cmd.Parameters.Add("T_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+                OracleDataReader rdr = cmd.ExecuteReader();
                 while (rdr.Read())
                     {
                     AuditeeEntitiesModel chk = new AuditeeEntitiesModel();
@@ -2864,12 +2916,14 @@ namespace AIS.Controllers
                     list.Add(chk);
                     }
                 }
+            con.Dispose();
             return list;
             }
 
         public List<AuditeeEntitiesModel> GetObservationEntitiesForManageObservations()
             {
             var sessionHandler = CreateSessionHandler();
+            var con = this.DatabaseConnection();
             var loggedInUser = sessionHandler.GetUser();
             if (loggedInUser == null
                 || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
@@ -2877,8 +2931,7 @@ namespace AIS.Controllers
                 || loggedInUser.UserRoleID <= 0)
                 {
                 return new List<AuditeeEntitiesModel>();
-                }            using var con = this.DatabaseConnection();
-
+                }
             List<AuditeeEntitiesModel> list = new List<AuditeeEntitiesModel>();
             using (OracleCommand cmd = con.CreateCommand())
                 {
@@ -2887,9 +2940,9 @@ namespace AIS.Controllers
                 cmd.BindByName = true;
                 GuardAgainstDynamicSql(cmd);
                 cmd.Parameters.Clear();
-                cmd.Parameters.Add("PP_NO", OracleDbType.Int32).Value = loggedInUser.PPNumber;
-                cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
-                using OracleDataReader rdr = cmd.ExecuteReader();
+                cmd.Parameters.Add("ppno", OracleDbType.Int32).Value = loggedInUser.PPNumber;
+                cmd.Parameters.Add("T_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+                OracleDataReader rdr = cmd.ExecuteReader();
                 while (rdr.Read())
                     {
                     AuditeeEntitiesModel chk = new AuditeeEntitiesModel();
@@ -2901,12 +2954,14 @@ namespace AIS.Controllers
                     list.Add(chk);
                     }
                 }
+            con.Dispose();
             return list;
             }
 
         public AuditeeResponseEvidenceModel GetAuditeeEvidenceData(string FILE_ID)
             {
             var sessionHandler = CreateSessionHandler();
+            var con = this.DatabaseConnection();
             var loggedInUser = sessionHandler.GetUser();
             if (loggedInUser == null
                 || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
@@ -2914,8 +2969,7 @@ namespace AIS.Controllers
                 || loggedInUser.UserRoleID <= 0)
                 {
                 return new AuditeeResponseEvidenceModel();
-                }            using var con = this.DatabaseConnection();
-
+                }
             var resp = new AuditeeResponseEvidenceModel();
             using (OracleCommand cmd = con.CreateCommand())
                 {
@@ -2925,8 +2979,8 @@ namespace AIS.Controllers
                 GuardAgainstDynamicSql(cmd);
                 cmd.Parameters.Clear();
                 cmd.Parameters.Add("FILE_ID", OracleDbType.Varchar2).Value = FILE_ID;
-                cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
-                using OracleDataReader rdr = cmd.ExecuteReader();
+                cmd.Parameters.Add("T_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+                OracleDataReader rdr = cmd.ExecuteReader();
                 while (rdr.Read())
                     {
                     resp = new AuditeeResponseEvidenceModel
@@ -2946,6 +3000,7 @@ namespace AIS.Controllers
 
                     }
                 }
+            con.Dispose();
             return resp;
             }
 
@@ -2953,6 +3008,7 @@ namespace AIS.Controllers
             {
             string resp = "";
             var sessionHandler = CreateSessionHandler();
+            var con = this.DatabaseConnection();
             var loggedInUser = sessionHandler.GetUser();
             if (loggedInUser == null
                 || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
@@ -2960,8 +3016,7 @@ namespace AIS.Controllers
                 || loggedInUser.UserRoleID <= 0)
                 {
                 return string.Empty;
-                }            using var con = this.DatabaseConnection();
-
+                }
             if (ENG_ID == 0)
                 ENG_ID = this.GetLoggedInUserEngId();
             using (OracleCommand cmd = con.CreateCommand())
@@ -2975,19 +3030,21 @@ namespace AIS.Controllers
                 cmd.Parameters.Add("ENT_ID", OracleDbType.Int32).Value = loggedInUser.UserEntityID;
                 cmd.Parameters.Add("P_NO", OracleDbType.Int32).Value = loggedInUser.PPNumber;
                 cmd.Parameters.Add("R_ID", OracleDbType.Int32).Value = loggedInUser.UserRoleID;
-                cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
-                using OracleDataReader rdr = cmd.ExecuteReader();
+                cmd.Parameters.Add("T_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+                OracleDataReader rdr = cmd.ExecuteReader();
                 while (rdr.Read())
                     {
                     resp = rdr["REMARKS"].ToString();
                     }
                 }
+            con.Dispose();
             return resp;
             }
 
         public List<ObservationResponsiblePPNOModel> GetLegacyParaResponsiblePersons(int PARA_REF)
             {
             var sessionHandler = CreateSessionHandler();
+            var con = this.DatabaseConnection();
             var loggedInUser = sessionHandler.GetUser();
             if (loggedInUser == null
                 || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
@@ -2995,8 +3052,7 @@ namespace AIS.Controllers
                 || loggedInUser.UserRoleID <= 0)
                 {
                 return new List<ObservationResponsiblePPNOModel>();
-                }            using var con = this.DatabaseConnection();
-
+                }
             List<ObservationResponsiblePPNOModel> list = new List<ObservationResponsiblePPNOModel>();
             using (OracleCommand cmd = con.CreateCommand())
                 {
@@ -3006,8 +3062,8 @@ namespace AIS.Controllers
                 GuardAgainstDynamicSql(cmd);
                 cmd.Parameters.Clear();
                 cmd.Parameters.Add("paraRef", OracleDbType.Int32).Value = PARA_REF;
-                cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
-                using OracleDataReader rdr = cmd.ExecuteReader();
+                cmd.Parameters.Add("T_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+                OracleDataReader rdr = cmd.ExecuteReader();
                 while (rdr.Read())
                     {
                     ObservationResponsiblePPNOModel rp = new ObservationResponsiblePPNOModel();
@@ -3020,6 +3076,7 @@ namespace AIS.Controllers
                     list.Add(rp);
                     }
                 }
+            con.Dispose();
             return list;
             }
 
@@ -3027,6 +3084,7 @@ namespace AIS.Controllers
             {
 
             var sessionHandler = CreateSessionHandler();
+            var con = this.DatabaseConnection();
             var loggedInUser = sessionHandler.GetUser();
             if (loggedInUser == null
                 || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
@@ -3034,26 +3092,26 @@ namespace AIS.Controllers
                 || loggedInUser.UserRoleID <= 0)
                 {
                 return new UserModel();
-                }            using var con = this.DatabaseConnection();
-
+                }
             UserModel um = new UserModel();
 
             using (OracleCommand cmd = con.CreateCommand())
                 {
-                cmd.CommandText = "pkg_ar.P_get_employees_information";
+                cmd.CommandText = " pkg_ar.P_get_employees_information";
                 cmd.CommandType = CommandType.StoredProcedure;
                 cmd.BindByName = true;
                 GuardAgainstDynamicSql(cmd);
                 cmd.Parameters.Clear();
                 cmd.Parameters.Add("P_NO", OracleDbType.Int32).Value = PP_NO;
-                cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
-                using OracleDataReader rdr = cmd.ExecuteReader();
+                cmd.Parameters.Add("T_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+                OracleDataReader rdr = cmd.ExecuteReader();
                 while (rdr.Read())
                     {
                     um.Name = rdr["emp_name"].ToString();
                     um.PPNumber = rdr["ppno"].ToString();
                     }
                 }
+            con.Dispose();
             return um;
             }
 
@@ -3062,6 +3120,7 @@ namespace AIS.Controllers
             List<AddNewLegacyParaModel> list = new List<AddNewLegacyParaModel>();
             var sessionHandler = CreateSessionHandler();
 
+            var con = this.DatabaseConnection();
             var loggedInUser = sessionHandler.GetUser();
             if (loggedInUser == null
                 || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
@@ -3069,8 +3128,7 @@ namespace AIS.Controllers
                 || loggedInUser.UserRoleID <= 0)
                 {
                 return new List<AddNewLegacyParaModel>();
-                }            using var con = this.DatabaseConnection();
-
+                }
 
             using (OracleCommand cmd = con.CreateCommand())
                 {
@@ -3080,8 +3138,8 @@ namespace AIS.Controllers
                 GuardAgainstDynamicSql(cmd);
                 cmd.Parameters.Clear();
                 cmd.Parameters.Add("ENTITYID", OracleDbType.Int32).Value = loggedInUser.UserEntityID;
-                cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
-                using OracleDataReader rdr = cmd.ExecuteReader();
+                cmd.Parameters.Add("T_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+                OracleDataReader rdr = cmd.ExecuteReader();
                 while (rdr.Read())
                     {
                     AddNewLegacyParaModel lpara = new AddNewLegacyParaModel();
@@ -3097,6 +3155,7 @@ namespace AIS.Controllers
                     list.Add(lpara);
                     }
                 }
+            con.Dispose();
             return list;
 
             }
@@ -3106,6 +3165,7 @@ namespace AIS.Controllers
             string resp = "";
             var sessionHandler = CreateSessionHandler();
 
+            var con = this.DatabaseConnection();
             var loggedInUser = sessionHandler.GetUser();
             if (loggedInUser == null
                 || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
@@ -3113,8 +3173,7 @@ namespace AIS.Controllers
                 || loggedInUser.UserRoleID <= 0)
                 {
                 return string.Empty;
-                }            using var con = this.DatabaseConnection();
-
+                }
 
             using (OracleCommand cmd = con.CreateCommand())
                 {
@@ -3128,13 +3187,14 @@ namespace AIS.Controllers
                 cmd.Parameters.Add("PARANO", OracleDbType.Varchar2).Value = PARA_NO;
                 cmd.Parameters.Add("PPNO", OracleDbType.Int32).Value = loggedInUser.PPNumber;
                 cmd.Parameters.Add("ENTITYID", OracleDbType.Int32).Value = loggedInUser.UserEntityID;
-                cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
-                using OracleDataReader rdr = cmd.ExecuteReader();
+                cmd.Parameters.Add("T_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+                OracleDataReader rdr = cmd.ExecuteReader();
                 while (rdr.Read())
                     {
                     resp = rdr["Remarks"].ToString();
                     }
                 }
+            con.Dispose();
             return resp;
 
             }
@@ -3143,6 +3203,7 @@ namespace AIS.Controllers
             {
             string resp = "";
             var sessionHandler = CreateSessionHandler();
+            var con = this.DatabaseConnection();
             var loggedInUser = sessionHandler.GetUser();
             if (loggedInUser == null
                 || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
@@ -3150,8 +3211,7 @@ namespace AIS.Controllers
                 || loggedInUser.UserRoleID <= 0)
                 {
                 return string.Empty;
-                }            using var con = this.DatabaseConnection();
-
+                }
             using (OracleCommand cmd = con.CreateCommand())
                 {
                 cmd.CommandText = "pkg_ar.P_Settel_Legacy_Para_HO";
@@ -3163,13 +3223,14 @@ namespace AIS.Controllers
                 cmd.Parameters.Add("NEW_STATUS ", OracleDbType.Int32).Value = NEW_STATUS;
                 cmd.Parameters.Add("PPNO", OracleDbType.Int32).Value = loggedInUser.PPNumber;
                 cmd.Parameters.Add("REMARK", OracleDbType.Varchar2).Value = SETTLEMENT_NOTES;
-                cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
-                using OracleDataReader rdr = cmd.ExecuteReader();
+                cmd.Parameters.Add("T_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+                OracleDataReader rdr = cmd.ExecuteReader();
                 while (rdr.Read())
                     {
                     resp = rdr["Remarks"].ToString();
                     }
                 }
+            con.Dispose();
             return resp;
             }
 
@@ -3177,6 +3238,7 @@ namespace AIS.Controllers
             {
             string resp = "";
             var sessionHandler = CreateSessionHandler();
+            var con = this.DatabaseConnection();
             var loggedInUser = sessionHandler.GetUser();
             if (loggedInUser == null
                 || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
@@ -3184,8 +3246,7 @@ namespace AIS.Controllers
                 || loggedInUser.UserRoleID <= 0)
                 {
                 return string.Empty;
-                }            using var con = this.DatabaseConnection();
-
+                }
             using (OracleCommand cmd = con.CreateCommand())
                 {
                 cmd.CommandText = "pkg_ar.P_Delete_Legacy_Para_HO";
@@ -3195,13 +3256,14 @@ namespace AIS.Controllers
                 cmd.Parameters.Clear();
                 cmd.Parameters.Add("REFP", OracleDbType.Int32).Value = PARA_REF;
                 cmd.Parameters.Add("PPNO", OracleDbType.Int32).Value = loggedInUser.PPNumber;
-                cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
-                using OracleDataReader rdr = cmd.ExecuteReader();
+                cmd.Parameters.Add("T_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+                OracleDataReader rdr = cmd.ExecuteReader();
                 while (rdr.Read())
                     {
                     resp = rdr["Remarks"].ToString();
                     }
                 }
+            con.Dispose();
             return resp;
             }
 
@@ -3209,6 +3271,7 @@ namespace AIS.Controllers
             {
 
             var sessionHandler = CreateSessionHandler();
+            var con = this.DatabaseConnection();
             var loggedInUser = sessionHandler.GetUser();
             if (loggedInUser == null
                 || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
@@ -3216,8 +3279,7 @@ namespace AIS.Controllers
                 || loggedInUser.UserRoleID <= 0)
                 {
                 return new List<LoanCaseFileDetailsModel>();
-                }            using var con = this.DatabaseConnection();
-
+                }
             List<LoanCaseFileDetailsModel> resp = new List<LoanCaseFileDetailsModel>();
 
             using (OracleCommand cmd = con.CreateCommand())
@@ -3231,8 +3293,8 @@ namespace AIS.Controllers
                 cmd.Parameters.Add("ENT_ID", OracleDbType.Int32).Value = loggedInUser.UserEntityID;
                 cmd.Parameters.Add("P_NO", OracleDbType.Int32).Value = loggedInUser.PPNumber;
                 cmd.Parameters.Add("R_ID", OracleDbType.Int32).Value = loggedInUser.UserGroupID;
-                cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
-                using OracleDataReader rdr = cmd.ExecuteReader();
+                cmd.Parameters.Add("T_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+                OracleDataReader rdr = cmd.ExecuteReader();
                 while (rdr.Read())
                     {
                     LoanCaseFileDetailsModel eng = new LoanCaseFileDetailsModel();
@@ -3246,6 +3308,7 @@ namespace AIS.Controllers
                     resp.Add(eng);
                     }
                 }
+            con.Dispose();
             return resp;
 
             }
@@ -3254,6 +3317,7 @@ namespace AIS.Controllers
             {
 
             var sessionHandler = CreateSessionHandler();
+            var con = this.DatabaseConnection();
             var loggedInUser = sessionHandler.GetUser();
             if (loggedInUser == null
                 || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
@@ -3261,8 +3325,7 @@ namespace AIS.Controllers
                 || loggedInUser.UserRoleID <= 0)
                 {
                 return string.Empty;
-                }            using var con = this.DatabaseConnection();
-
+                }
             string resp = "";
             using (OracleCommand cmd = con.CreateCommand())
                 {
@@ -3281,13 +3344,14 @@ namespace AIS.Controllers
                 cmd.Parameters.Add("LC", OracleDbType.Varchar2).Value = LCAT;
                 cmd.Parameters.Add("OBS", OracleDbType.Varchar2).Value = OBS;
                 cmd.Parameters.Add("PARA_NO", OracleDbType.Varchar2).Value = PARA_NO;
-                cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
-                using OracleDataReader rdr = cmd.ExecuteReader();
+                cmd.Parameters.Add("T_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+                OracleDataReader rdr = cmd.ExecuteReader();
                 while (rdr.Read())
                     {
                     resp = rdr["remarks"].ToString();
                     }
                 }
+            con.Dispose();
             return resp;
 
             }
@@ -3296,6 +3360,7 @@ namespace AIS.Controllers
             {
 
             var sessionHandler = CreateSessionHandler();
+            var con = this.DatabaseConnection();
             var loggedInUser = sessionHandler.GetUser();
             if (loggedInUser == null
                 || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
@@ -3303,8 +3368,7 @@ namespace AIS.Controllers
                 || loggedInUser.UserRoleID <= 0)
                 {
                 return new List<VoucherCheckingDetailsModel>();
-                }            using var con = this.DatabaseConnection();
-
+                }
             List<VoucherCheckingDetailsModel> resp = new List<VoucherCheckingDetailsModel>();
 
             using (OracleCommand cmd = con.CreateCommand())
@@ -3318,8 +3382,8 @@ namespace AIS.Controllers
                 cmd.Parameters.Add("ENT_ID", OracleDbType.Int32).Value = loggedInUser.UserEntityID;
                 cmd.Parameters.Add("P_NO", OracleDbType.Int32).Value = loggedInUser.PPNumber;
                 cmd.Parameters.Add("R_ID", OracleDbType.Int32).Value = loggedInUser.UserGroupID;
-                cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
-                using OracleDataReader rdr = cmd.ExecuteReader();
+                cmd.Parameters.Add("T_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+                OracleDataReader rdr = cmd.ExecuteReader();
                 while (rdr.Read())
                     {
                     VoucherCheckingDetailsModel eng = new VoucherCheckingDetailsModel();
@@ -3330,6 +3394,7 @@ namespace AIS.Controllers
                     resp.Add(eng);
                     }
                 }
+            con.Dispose();
             return resp;
 
             }
@@ -3338,6 +3403,7 @@ namespace AIS.Controllers
             {
 
             var sessionHandler = CreateSessionHandler();
+            var con = this.DatabaseConnection();
             var loggedInUser = sessionHandler.GetUser();
             if (loggedInUser == null
                 || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
@@ -3345,8 +3411,7 @@ namespace AIS.Controllers
                 || loggedInUser.UserRoleID <= 0)
                 {
                 return string.Empty;
-                }            using var con = this.DatabaseConnection();
-
+                }
             string resp = "";
             using (OracleCommand cmd = con.CreateCommand())
                 {
@@ -3362,13 +3427,14 @@ namespace AIS.Controllers
                 cmd.Parameters.Add("VNUMBER", OracleDbType.Varchar2).Value = VNUMBER;
                 cmd.Parameters.Add("OBS", OracleDbType.Varchar2).Value = OBS;
                 cmd.Parameters.Add("PARA_NO", OracleDbType.Varchar2).Value = PARA_NO;
-                cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
-                using OracleDataReader rdr = cmd.ExecuteReader();
+                cmd.Parameters.Add("T_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+                OracleDataReader rdr = cmd.ExecuteReader();
                 while (rdr.Read())
                     {
                     resp = rdr["remarks"].ToString();
                     }
                 }
+            con.Dispose();
             return resp;
 
             }
@@ -3377,6 +3443,7 @@ namespace AIS.Controllers
             {
 
             var sessionHandler = CreateSessionHandler();
+            var con = this.DatabaseConnection();
             var loggedInUser = sessionHandler.GetUser();
             if (loggedInUser == null
                 || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
@@ -3384,8 +3451,7 @@ namespace AIS.Controllers
                 || loggedInUser.UserRoleID <= 0)
                 {
                 return new List<AccountOpeningDetailsModel>();
-                }            using var con = this.DatabaseConnection();
-
+                }
             List<AccountOpeningDetailsModel> resp = new List<AccountOpeningDetailsModel>();
 
             using (OracleCommand cmd = con.CreateCommand())
@@ -3399,8 +3465,8 @@ namespace AIS.Controllers
                 cmd.Parameters.Add("ENT_ID", OracleDbType.Int32).Value = loggedInUser.UserEntityID;
                 cmd.Parameters.Add("P_NO", OracleDbType.Int32).Value = loggedInUser.PPNumber;
                 cmd.Parameters.Add("R_ID", OracleDbType.Int32).Value = loggedInUser.UserGroupID;
-                cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
-                using OracleDataReader rdr = cmd.ExecuteReader();
+                cmd.Parameters.Add("T_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+                OracleDataReader rdr = cmd.ExecuteReader();
                 while (rdr.Read())
                     {
                     AccountOpeningDetailsModel eng = new AccountOpeningDetailsModel();
@@ -3412,6 +3478,7 @@ namespace AIS.Controllers
                     resp.Add(eng);
                     }
                 }
+            con.Dispose();
             return resp;
 
             }
@@ -3420,6 +3487,7 @@ namespace AIS.Controllers
             {
 
             var sessionHandler = CreateSessionHandler();
+            var con = this.DatabaseConnection();
             var loggedInUser = sessionHandler.GetUser();
             if (loggedInUser == null
                 || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
@@ -3427,8 +3495,7 @@ namespace AIS.Controllers
                 || loggedInUser.UserRoleID <= 0)
                 {
                 return string.Empty;
-                }            using var con = this.DatabaseConnection();
-
+                }
             string resp = "";
             using (OracleCommand cmd = con.CreateCommand())
                 {
@@ -3445,13 +3512,14 @@ namespace AIS.Controllers
                 cmd.Parameters.Add("ANATURE", OracleDbType.Varchar2).Value = ANATURE;
                 cmd.Parameters.Add("OBS", OracleDbType.Varchar2).Value = OBS;
                 cmd.Parameters.Add("PARA_NO", OracleDbType.Varchar2).Value = PARA_NO;
-                cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
-                using OracleDataReader rdr = cmd.ExecuteReader();
+                cmd.Parameters.Add("T_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+                OracleDataReader rdr = cmd.ExecuteReader();
                 while (rdr.Read())
                     {
                     resp = rdr["remarks"].ToString();
                     }
                 }
+            con.Dispose();
             return resp;
 
             }
@@ -3460,6 +3528,7 @@ namespace AIS.Controllers
             {
 
             var sessionHandler = CreateSessionHandler();
+            var con = this.DatabaseConnection();
             var loggedInUser = sessionHandler.GetUser();
             if (loggedInUser == null
                 || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
@@ -3467,8 +3536,7 @@ namespace AIS.Controllers
                 || loggedInUser.UserRoleID <= 0)
                 {
                 return new List<FixedAssetsDetailsModel>();
-                }            using var con = this.DatabaseConnection();
-
+                }
             List<FixedAssetsDetailsModel> resp = new List<FixedAssetsDetailsModel>();
 
             using (OracleCommand cmd = con.CreateCommand())
@@ -3482,8 +3550,8 @@ namespace AIS.Controllers
                 cmd.Parameters.Add("ENT_ID", OracleDbType.Int32).Value = loggedInUser.UserEntityID;
                 cmd.Parameters.Add("P_NO", OracleDbType.Int32).Value = loggedInUser.PPNumber;
                 cmd.Parameters.Add("R_ID", OracleDbType.Int32).Value = loggedInUser.UserGroupID;
-                cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
-                using OracleDataReader rdr = cmd.ExecuteReader();
+                cmd.Parameters.Add("T_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+                OracleDataReader rdr = cmd.ExecuteReader();
                 while (rdr.Read())
                     {
                     FixedAssetsDetailsModel eng = new FixedAssetsDetailsModel();
@@ -3496,6 +3564,7 @@ namespace AIS.Controllers
                     resp.Add(eng);
                     }
                 }
+            con.Dispose();
             return resp;
 
             }
@@ -3504,6 +3573,7 @@ namespace AIS.Controllers
             {
 
             var sessionHandler = CreateSessionHandler();
+            var con = this.DatabaseConnection();
             var loggedInUser = sessionHandler.GetUser();
             if (loggedInUser == null
                 || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
@@ -3511,8 +3581,7 @@ namespace AIS.Controllers
                 || loggedInUser.UserRoleID <= 0)
                 {
                 return string.Empty;
-                }            using var con = this.DatabaseConnection();
-
+                }
             string resp = "";
             using (OracleCommand cmd = con.CreateCommand())
                 {
@@ -3530,13 +3599,14 @@ namespace AIS.Controllers
                 cmd.Parameters.Add("LFAR", OracleDbType.Varchar2).Value = FAR;
                 cmd.Parameters.Add("DIFF", OracleDbType.Varchar2).Value = DIFF;
                 cmd.Parameters.Add("REM", OracleDbType.Varchar2).Value = REM;
-                cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
-                using OracleDataReader rdr = cmd.ExecuteReader();
+                cmd.Parameters.Add("T_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+                OracleDataReader rdr = cmd.ExecuteReader();
                 while (rdr.Read())
                     {
                     resp = rdr["remarks"].ToString();
                     }
                 }
+            con.Dispose();
             return resp;
 
             }
@@ -3545,6 +3615,7 @@ namespace AIS.Controllers
             {
 
             var sessionHandler = CreateSessionHandler();
+            var con = this.DatabaseConnection();
             var loggedInUser = sessionHandler.GetUser();
             if (loggedInUser == null
                 || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
@@ -3552,8 +3623,7 @@ namespace AIS.Controllers
                 || loggedInUser.UserRoleID <= 0)
                 {
                 return new List<CashCountDetailsModel>();
-                }            using var con = this.DatabaseConnection();
-
+                }
             List<CashCountDetailsModel> resp = new List<CashCountDetailsModel>();
 
             using (OracleCommand cmd = con.CreateCommand())
@@ -3567,8 +3637,8 @@ namespace AIS.Controllers
                 cmd.Parameters.Add("ENT_ID", OracleDbType.Int32).Value = loggedInUser.UserEntityID;
                 cmd.Parameters.Add("P_NO", OracleDbType.Int32).Value = loggedInUser.PPNumber;
                 cmd.Parameters.Add("R_ID", OracleDbType.Int32).Value = loggedInUser.UserGroupID;
-                cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
-                using OracleDataReader rdr = cmd.ExecuteReader();
+                cmd.Parameters.Add("T_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+                OracleDataReader rdr = cmd.ExecuteReader();
                 while (rdr.Read())
                     {
                     CashCountDetailsModel eng = new CashCountDetailsModel();
@@ -3583,6 +3653,7 @@ namespace AIS.Controllers
                     resp.Add(eng);
                     }
                 }
+            con.Dispose();
             return resp;
 
             }
@@ -3591,6 +3662,7 @@ namespace AIS.Controllers
             {
 
             var sessionHandler = CreateSessionHandler();
+            var con = this.DatabaseConnection();
             var loggedInUser = sessionHandler.GetUser();
             if (loggedInUser == null
                 || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
@@ -3598,8 +3670,7 @@ namespace AIS.Controllers
                 || loggedInUser.UserRoleID <= 0)
                 {
                 return string.Empty;
-                }            using var con = this.DatabaseConnection();
-
+                }
             string resp = "";
             using (OracleCommand cmd = con.CreateCommand())
                 {
@@ -3619,13 +3690,14 @@ namespace AIS.Controllers
                 cmd.Parameters.Add("DSR", OracleDbType.Varchar2).Value = NOSR;
                 cmd.Parameters.Add("ASR", OracleDbType.Varchar2).Value = TOTSR;
                 cmd.Parameters.Add("DIFF", OracleDbType.Varchar2).Value = DIFF;
-                cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
-                using OracleDataReader rdr = cmd.ExecuteReader();
+                cmd.Parameters.Add("T_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+                OracleDataReader rdr = cmd.ExecuteReader();
                 while (rdr.Read())
                     {
                     resp = rdr["remarks"].ToString();
                     }
                 }
+            con.Dispose();
             return resp;
 
             }
@@ -3634,6 +3706,7 @@ namespace AIS.Controllers
             {
 
             var sessionHandler = CreateSessionHandler();
+            var con = this.DatabaseConnection();
             var loggedInUser = sessionHandler.GetUser();
             if (loggedInUser == null
                 || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
@@ -3641,8 +3714,7 @@ namespace AIS.Controllers
                 || loggedInUser.UserRoleID <= 0)
                 {
                 return new List<DraftDSAGuidelines>();
-                }            using var con = this.DatabaseConnection();
-
+                }
             List<DraftDSAGuidelines> resp = new List<DraftDSAGuidelines>();
 
             using (OracleCommand cmd = con.CreateCommand())
@@ -3652,8 +3724,8 @@ namespace AIS.Controllers
                 cmd.BindByName = true;
                 GuardAgainstDynamicSql(cmd);
                 cmd.Parameters.Clear();
-                cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
-                using OracleDataReader rdr = cmd.ExecuteReader();
+                cmd.Parameters.Add("T_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+                OracleDataReader rdr = cmd.ExecuteReader();
                 while (rdr.Read())
                     {
                     DraftDSAGuidelines d = new DraftDSAGuidelines();
@@ -3663,6 +3735,7 @@ namespace AIS.Controllers
                     resp.Add(d);
                     }
                 }
+            con.Dispose();
             return resp;
 
             }
@@ -3671,6 +3744,7 @@ namespace AIS.Controllers
             {
 
             var sessionHandler = CreateSessionHandler();
+            var con = this.DatabaseConnection();
             var loggedInUser = sessionHandler.GetUser();
             if (loggedInUser == null
                 || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
@@ -3678,8 +3752,7 @@ namespace AIS.Controllers
                 || loggedInUser.UserRoleID <= 0)
                 {
                 return new List<Object>();
-                }            using var con = this.DatabaseConnection();
-
+                }
             string resp = "";
             int DSA_ID = 0;
             List<Object> outRec = new List<object>();
@@ -3696,8 +3769,8 @@ namespace AIS.Controllers
                 cmd.Parameters.Add("RES_P_NO", OracleDbType.Int32).Value = PPNO;
                 cmd.Parameters.Add("P_NO", OracleDbType.Int32).Value = loggedInUser.PPNumber;
                 cmd.Parameters.Add("ENT_ID", OracleDbType.Int32).Value = loggedInUser.UserEntityID;
-                cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
-                using OracleDataReader rdr = cmd.ExecuteReader();
+                cmd.Parameters.Add("T_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+                OracleDataReader rdr = cmd.ExecuteReader();
                 while (rdr.Read())
                     {
                     resp = rdr["remarks"].ToString();
@@ -3706,6 +3779,7 @@ namespace AIS.Controllers
                     outRec.Add(DSA_ID);
                     }
                 }
+            con.Dispose();
             return outRec;
 
             }
@@ -3722,7 +3796,7 @@ namespace AIS.Controllers
                 {
                 return;
                 }
-            using var con = this.DatabaseConnection();
+            var con = this.DatabaseConnection();
 
             using (OracleCommand cmd = con.CreateCommand())
                 {
@@ -3734,15 +3808,17 @@ namespace AIS.Controllers
                 cmd.Parameters.Add("d_id", OracleDbType.Int32).Value = D_ID;
                 cmd.Parameters.Add("check_list", OracleDbType.Int32).Value = G_ID;
                 cmd.Parameters.Add("P_NO", OracleDbType.Int32).Value = loggedInUser.PPNumber;
-                cmd.ExecuteNonQuery();
+                cmd.ExecuteReader();
 
                 }
+            con.Dispose();
 
             }
 
         public List<ObservationResponsiblePPNOModel> GetResponsiblePersonsList(int PARA_ID, string INDICATOR)
             {
             var sessionHandler = CreateSessionHandler();
+            var con = this.DatabaseConnection();
             var loggedInUser = sessionHandler.GetUser();
             if (loggedInUser == null
                 || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
@@ -3750,8 +3826,7 @@ namespace AIS.Controllers
                 || loggedInUser.UserRoleID <= 0)
                 {
                 return new List<ObservationResponsiblePPNOModel>();
-                }            using var con = this.DatabaseConnection();
-
+                }
             List<ObservationResponsiblePPNOModel> list = new List<ObservationResponsiblePPNOModel>();
             using (OracleCommand cmd = con.CreateCommand())
                 {
@@ -3765,8 +3840,8 @@ namespace AIS.Controllers
                 cmd.Parameters.Add("ENT_ID", OracleDbType.Int32).Value = loggedInUser.UserEntityID;
                 cmd.Parameters.Add("P_NO", OracleDbType.Int32).Value = loggedInUser.PPNumber;
                 cmd.Parameters.Add("R_ID", OracleDbType.Int32).Value = loggedInUser.UserRoleID;
-                cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
-                using OracleDataReader rdr = cmd.ExecuteReader();
+                cmd.Parameters.Add("T_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+                OracleDataReader rdr = cmd.ExecuteReader();
                 while (rdr.Read())
                     {
                     ObservationResponsiblePPNOModel usr = new ObservationResponsiblePPNOModel();
@@ -3781,12 +3856,14 @@ namespace AIS.Controllers
                     list.Add(usr);
                     }
                 }
+            con.Dispose();
             return list;
             }
 
         private string AddInitialResponsibilityAssignment(int paraId, int eng_id, int com_id, ObservationResponsiblePPNOModel responsible, string INDICATOR)
             {
             var sessionHandler = CreateSessionHandler();
+            var con = this.DatabaseConnection();
            
             var loggedInUser = sessionHandler.GetUser();
             if (loggedInUser == null
@@ -3795,8 +3872,7 @@ namespace AIS.Controllers
                 || loggedInUser.UserRoleID <= 0)
                 {
                 return string.Empty;
-                }            using var con = this.DatabaseConnection();
-
+                }
             string resp = "";
 
             using (OracleCommand cmd = con.CreateCommand())
@@ -3817,20 +3893,22 @@ namespace AIS.Controllers
                 cmd.Parameters.Add("ACCNUMBER", OracleDbType.Int32).Value = responsible.ACCOUNT_NUMBER;
                 cmd.Parameters.Add("LCAMOUNT", OracleDbType.Int32).Value = responsible.LC_AMOUNT.HasValue ? (object)responsible.LC_AMOUNT.Value : DBNull.Value;
                 cmd.Parameters.Add("ACAMOUNT", OracleDbType.Int32).Value = responsible.ACC_AMOUNT;
-                cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
-                using OracleDataReader rdr = cmd.ExecuteReader();
+                cmd.Parameters.Add("T_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+                OracleDataReader rdr = cmd.ExecuteReader();
                 while (rdr.Read())
                     {
                     resp = rdr["remarks"].ToString();
                     }
                 }
 
+            con.Dispose();
             return resp;
             }
 
         private string UpdateResponsibilityAssignment(int newParaId, int eng_id, int com_id, string indicator, ObservationResponsiblePPNOModel responsible)
             {
             var sessionHandler = CreateSessionHandler();
+            var con = this.DatabaseConnection();
            
             var loggedInUser = sessionHandler.GetUser();
             if (loggedInUser == null
@@ -3839,8 +3917,7 @@ namespace AIS.Controllers
                 || loggedInUser.UserRoleID <= 0)
                 {
                 return string.Empty;
-                }            using var con = this.DatabaseConnection();
-
+                }
             string resp = "";
 
             using (OracleCommand cmd = con.CreateCommand())
@@ -3866,21 +3943,23 @@ namespace AIS.Controllers
                 cmd.Parameters.Add("ENT_ID", OracleDbType.Int32).Value = loggedInUser.UserEntityID;
                 cmd.Parameters.Add("P_NO", OracleDbType.Int32).Value = loggedInUser.PPNumber;
                 cmd.Parameters.Add("R_ID", OracleDbType.Int32).Value = loggedInUser.UserRoleID;
-                cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+                cmd.Parameters.Add("T_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
 
-                using OracleDataReader rdr = cmd.ExecuteReader();
+                OracleDataReader rdr = cmd.ExecuteReader();
                 while (rdr.Read())
                     {
                     resp = rdr["remarks"].ToString();
                     }
                 }
 
+            con.Dispose();
             return resp;
             }
 
         public string SubmitDSAToAuditee(int ENTITY_ID, int OBS_ID, int ENG_ID, int RESP_PPNO, int RESP_ROW_ID)
             {
             var sessionHandler = CreateSessionHandler();
+            var con = this.DatabaseConnection();
             var loggedInUser = sessionHandler.GetUser();
             if (loggedInUser == null
                 || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
@@ -3888,8 +3967,7 @@ namespace AIS.Controllers
                 || loggedInUser.UserRoleID <= 0)
                 {
                 return string.Empty;
-                }            using var con = this.DatabaseConnection();
-
+                }
             string resp = "";
             using (OracleCommand cmd = con.CreateCommand())
                 {
@@ -3906,13 +3984,14 @@ namespace AIS.Controllers
                 cmd.Parameters.Add("P_NO", OracleDbType.Int32).Value = loggedInUser.PPNumber;
                 cmd.Parameters.Add("ENT_ID", OracleDbType.Int32).Value = loggedInUser.UserEntityID;
                 cmd.Parameters.Add("R_ID", OracleDbType.Int32).Value = loggedInUser.UserRoleID;
-                cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
-                using OracleDataReader rdr = cmd.ExecuteReader();
+                cmd.Parameters.Add("T_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+                OracleDataReader rdr = cmd.ExecuteReader();
                 while (rdr.Read())
                     {
                     resp = rdr["remarks"].ToString();
                     }
                 }
+            con.Dispose();
             return resp;
             }
 
@@ -3920,6 +3999,7 @@ namespace AIS.Controllers
             {
 
             var sessionHandler = CreateSessionHandler();
+            var con = this.DatabaseConnection();
             var loggedInUser = sessionHandler.GetUser();
             if (loggedInUser == null
                 || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
@@ -3927,8 +4007,7 @@ namespace AIS.Controllers
                 || loggedInUser.UserRoleID <= 0)
                 {
                 return new List<DraftDSAList>();
-                }            using var con = this.DatabaseConnection();
-
+                }
             List<DraftDSAList> resp = new List<DraftDSAList>();
 
             using (OracleCommand cmd = con.CreateCommand())
@@ -3943,8 +4022,8 @@ namespace AIS.Controllers
                 cmd.Parameters.Add("P_NO", OracleDbType.Int32).Value = loggedInUser.PPNumber;
                 cmd.Parameters.Add("R_ID", OracleDbType.Int32).Value = loggedInUser.UserRoleID;
                 cmd.Parameters.Add("ENT_ID", OracleDbType.Int32).Value = loggedInUser.UserEntityID;
-                cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
-                using OracleDataReader rdr = cmd.ExecuteReader();
+                cmd.Parameters.Add("T_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+                OracleDataReader rdr = cmd.ExecuteReader();
                 while (rdr.Read())
                     {
                     var dm = new DraftDSAList
@@ -3974,6 +4053,7 @@ namespace AIS.Controllers
                     resp.Add(dm);
                     }
                 }
+            con.Dispose();
             return resp;
             }
 
@@ -3981,6 +4061,7 @@ namespace AIS.Controllers
             {
 
             var sessionHandler = CreateSessionHandler();
+            var con = this.DatabaseConnection();
             var loggedInUser = sessionHandler.GetUser();
             if (loggedInUser == null
                 || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
@@ -3988,8 +4069,7 @@ namespace AIS.Controllers
                 || loggedInUser.UserRoleID <= 0)
                 {
                 return new DSAContentModel();
-                }            using var con = this.DatabaseConnection();
-
+                }
             DSAContentModel resp = new DSAContentModel();
 
             using (OracleCommand cmd = con.CreateCommand())
@@ -4002,8 +4082,8 @@ namespace AIS.Controllers
                 cmd.Parameters.Clear();
 
                 cmd.Parameters.Add("D_ID", OracleDbType.Int32).Value = DSA_ID;
-                cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
-                using OracleDataReader rdr = cmd.ExecuteReader();
+                cmd.Parameters.Add("T_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+                OracleDataReader rdr = cmd.ExecuteReader();
                 while (rdr.Read())
                     {
                     resp = new DSAContentModel
@@ -4016,12 +4096,14 @@ namespace AIS.Controllers
 
                     }
                 }
+            con.Dispose();
             return resp;
             }
 
         public string SubmitDSAToHeadFAD(int DSA_ID)
             {
             var sessionHandler = CreateSessionHandler();
+            var con = this.DatabaseConnection();
             var loggedInUser = sessionHandler.GetUser();
             if (loggedInUser == null
                 || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
@@ -4029,8 +4111,7 @@ namespace AIS.Controllers
                 || loggedInUser.UserRoleID <= 0)
                 {
                 return string.Empty;
-                }            using var con = this.DatabaseConnection();
-
+                }
             string resp = "";
             using (OracleCommand cmd = con.CreateCommand())
                 {
@@ -4040,19 +4121,21 @@ namespace AIS.Controllers
                 GuardAgainstDynamicSql(cmd);
                 cmd.Parameters.Clear();
                 cmd.Parameters.Add("D_ID", OracleDbType.Int32).Value = DSA_ID;
-                cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
-                using OracleDataReader rdr = cmd.ExecuteReader();
+                cmd.Parameters.Add("T_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+                OracleDataReader rdr = cmd.ExecuteReader();
                 while (rdr.Read())
                     {
                     resp = rdr["remarks"].ToString();
                     }
                 }
+            con.Dispose();
             return resp;
             }
 
         public string UpdateDSAHeading(int DSA_ID, string DSA_HEADING)
             {
             var sessionHandler = CreateSessionHandler();
+            var con = this.DatabaseConnection();
             var loggedInUser = sessionHandler.GetUser();
             if (loggedInUser == null
                 || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
@@ -4060,8 +4143,7 @@ namespace AIS.Controllers
                 || loggedInUser.UserRoleID <= 0)
                 {
                 return string.Empty;
-                }            using var con = this.DatabaseConnection();
-
+                }
             string resp = "";
             using (OracleCommand cmd = con.CreateCommand())
                 {
@@ -4075,19 +4157,21 @@ namespace AIS.Controllers
                 cmd.Parameters.Add("P_NO", OracleDbType.Int32).Value = loggedInUser.PPNumber;
                 cmd.Parameters.Add("ENT_ID", OracleDbType.Int32).Value = loggedInUser.UserEntityID;
                 cmd.Parameters.Add("R_ID", OracleDbType.Int32).Value = loggedInUser.UserRoleID;
-                cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
-                using OracleDataReader rdr = cmd.ExecuteReader();
+                cmd.Parameters.Add("T_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+                OracleDataReader rdr = cmd.ExecuteReader();
                 while (rdr.Read())
                     {
                     resp = rdr["remarks"].ToString();
                     }
                 }
+            con.Dispose();
             return resp;
             }
 
         public string ReferredBackDSAByHeadFad(int DSA_ID)
             {
             var sessionHandler = CreateSessionHandler();
+            var con = this.DatabaseConnection();
             var loggedInUser = sessionHandler.GetUser();
             if (loggedInUser == null
                 || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
@@ -4095,8 +4179,7 @@ namespace AIS.Controllers
                 || loggedInUser.UserRoleID <= 0)
                 {
                 return string.Empty;
-                }            using var con = this.DatabaseConnection();
-
+                }
             string resp = "";
             using (OracleCommand cmd = con.CreateCommand())
                 {
@@ -4106,19 +4189,21 @@ namespace AIS.Controllers
                 GuardAgainstDynamicSql(cmd);
                 cmd.Parameters.Clear();
                 cmd.Parameters.Add("D_ID", OracleDbType.Int32).Value = DSA_ID;
-                cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
-                using OracleDataReader rdr = cmd.ExecuteReader();
+                cmd.Parameters.Add("T_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+                OracleDataReader rdr = cmd.ExecuteReader();
                 while (rdr.Read())
                     {
                     resp = rdr["remarks"].ToString();
                     }
                 }
+            con.Dispose();
             return resp;
             }
 
         public string SubmitDSAToDPD(int DSA_ID)
             {
             var sessionHandler = CreateSessionHandler();
+            var con = this.DatabaseConnection();
             var loggedInUser = sessionHandler.GetUser();
             if (loggedInUser == null
                 || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
@@ -4126,8 +4211,7 @@ namespace AIS.Controllers
                 || loggedInUser.UserRoleID <= 0)
                 {
                 return string.Empty;
-                }            using var con = this.DatabaseConnection();
-
+                }
             string resp = "";
             using (OracleCommand cmd = con.CreateCommand())
                 {
@@ -4137,19 +4221,21 @@ namespace AIS.Controllers
                 GuardAgainstDynamicSql(cmd);
                 cmd.Parameters.Clear();
                 cmd.Parameters.Add("D_ID", OracleDbType.Int32).Value = DSA_ID;
-                cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
-                using OracleDataReader rdr = cmd.ExecuteReader();
+                cmd.Parameters.Add("T_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+                OracleDataReader rdr = cmd.ExecuteReader();
                 while (rdr.Read())
                     {
                     resp = rdr["remarks"].ToString();
                     }
                 }
+            con.Dispose();
             return resp;
             }
 
         public string ReferredBackDSAByDPD(int DSA_ID)
             {
             var sessionHandler = CreateSessionHandler();
+            var con = this.DatabaseConnection();
             var loggedInUser = sessionHandler.GetUser();
             if (loggedInUser == null
                 || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
@@ -4157,8 +4243,7 @@ namespace AIS.Controllers
                 || loggedInUser.UserRoleID <= 0)
                 {
                 return string.Empty;
-                }            using var con = this.DatabaseConnection();
-
+                }
             string resp = "";
             using (OracleCommand cmd = con.CreateCommand())
                 {
@@ -4168,19 +4253,21 @@ namespace AIS.Controllers
                 GuardAgainstDynamicSql(cmd);
                 cmd.Parameters.Clear();
                 cmd.Parameters.Add("D_ID", OracleDbType.Int32).Value = DSA_ID;
-                cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
-                using OracleDataReader rdr = cmd.ExecuteReader();
+                cmd.Parameters.Add("T_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+                OracleDataReader rdr = cmd.ExecuteReader();
                 while (rdr.Read())
                     {
                     resp = rdr["remarks"].ToString();
                     }
                 }
+            con.Dispose();
             return resp;
             }
 
         public string AcknowledgeDSA(int DSA_ID)
             {
             var sessionHandler = CreateSessionHandler();
+            var con = this.DatabaseConnection();
             var loggedInUser = sessionHandler.GetUser();
             if (loggedInUser == null
                 || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
@@ -4188,8 +4275,7 @@ namespace AIS.Controllers
                 || loggedInUser.UserRoleID <= 0)
                 {
                 return string.Empty;
-                }            using var con = this.DatabaseConnection();
-
+                }
             string resp = "";
             using (OracleCommand cmd = con.CreateCommand())
                 {
@@ -4199,19 +4285,21 @@ namespace AIS.Controllers
                 GuardAgainstDynamicSql(cmd);
                 cmd.Parameters.Clear();
                 cmd.Parameters.Add("D_ID", OracleDbType.Int32).Value = DSA_ID;
-                cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
-                using OracleDataReader rdr = cmd.ExecuteReader();
+                cmd.Parameters.Add("T_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+                OracleDataReader rdr = cmd.ExecuteReader();
                 while (rdr.Read())
                     {
                     resp = rdr["remarks"].ToString();
                     }
                 }
+            con.Dispose();
             return resp;
             }
 
         public List<LoanCaseDetailModel> GetLoanCaseDetailsWithBRCode(int LC, int BR_CODE)
             {
             var sessionHandler = CreateSessionHandler();
+            var con = this.DatabaseConnection();
             var loggedInUser = sessionHandler.GetUser();
             if (loggedInUser == null
                 || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
@@ -4219,8 +4307,7 @@ namespace AIS.Controllers
                 || loggedInUser.UserRoleID <= 0)
                 {
                 return new List<LoanCaseDetailModel>();
-                }            using var con = this.DatabaseConnection();
-
+                }
             List<LoanCaseDetailModel> list = new List<LoanCaseDetailModel>();
             using (OracleCommand cmd = con.CreateCommand())
                 {
@@ -4233,8 +4320,8 @@ namespace AIS.Controllers
                 cmd.Parameters.Add("B_CODE", OracleDbType.Int32).Value = BR_CODE;
                 cmd.Parameters.Add("P_NO", OracleDbType.Int32).Value = loggedInUser.PPNumber;
                 cmd.Parameters.Add("ENT_ID", OracleDbType.Int32).Value = loggedInUser.UserEntityID;
-                cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
-                using OracleDataReader rdr = cmd.ExecuteReader();
+                cmd.Parameters.Add("T_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+                OracleDataReader rdr = cmd.ExecuteReader();
                 while (rdr.Read())
                     {
                     LoanCaseDetailModel lcm = new LoanCaseDetailModel
@@ -4265,6 +4352,7 @@ namespace AIS.Controllers
 
                     }
                 }
+            con.Dispose();
             return list;
             }
 

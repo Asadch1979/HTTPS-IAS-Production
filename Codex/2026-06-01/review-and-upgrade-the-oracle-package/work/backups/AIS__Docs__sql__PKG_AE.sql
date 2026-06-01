@@ -63,13 +63,6 @@
   procedure P_UpdateOldParasStatus(PPNO       in number,
                                    PID        IN varchar2,
                                    NEW_STATUS in number);
-  Procedure P_updateoldparamanagement(Paraid       in number,
-                                      VCATID       in number,
-                                      VCATNATUREID in number,
-                                      RISKID       in number,
-                                      ParaText     in clob,
-                                      CREATEDBY    IN NUMBER,
-                                      io_cursor    OUT t_cursor);
 
   procedure P_GetAuditeeOldParasentities(EntityID  in number,
                                          io_cursor OUT t_cursor);
