@@ -1,4 +1,4 @@
-﻿create or replace package PKG_AD is
+create or replace package PKG_AD is
 
   TYPE t_cursor IS REF CURSOR;
   procedure RESET_USER_PASSWORD(PPNUMBER  IN T_USER.PPNO%TYPE,
@@ -971,7 +971,7 @@
                                      o_result       OUT VARCHAR2);
 
   PROCEDURE P_GET_ROLE_DASHBOARD_PAGES(p_role_id IN NUMBER,
-                                       io_cursor  OUT SYS_REFCURSOR);
+                                       O_CURSOR   OUT SYS_REFCURSOR);
 
   PROCEDURE P_MAINT_ROLE_DASHBOARD_PAGE(P_ROLE_ID         IN NUMBER,
                                         P_PAGE_ID         IN NUMBER,
@@ -981,9 +981,9 @@
                                         O_MESSAGE         OUT VARCHAR2);
 
   PROCEDURE P_GET_ROLE_DASHBOARD_CONFIG(p_role_id IN NUMBER,
-                                        io_cursor  OUT SYS_REFCURSOR);
+                                        O_CURSOR   OUT SYS_REFCURSOR);
 
-  PROCEDURE P_GET_API_MASTER(io_cursor OUT SYS_REFCURSOR);
+  PROCEDURE P_GET_API_MASTER(O_CURSOR OUT SYS_REFCURSOR);
 
   PROCEDURE P_MAINT_API_MASTER(P_API_ID          IN NUMBER,
                                P_API_NAME        IN VARCHAR2,
@@ -1014,7 +1014,7 @@
                                 O_MESSAGE     OUT VARCHAR2);
 
   PROCEDURE P_GET_DASHBOARD_QUICK_LINKS(P_ROLE_ID IN NUMBER,
-                                        io_cursor  OUT SYS_REFCURSOR);
+                                        O_CURSOR   OUT SYS_REFCURSOR);
 
   PROCEDURE P_ADD_USER_ENTITY(p_user_id    IN NUMBER,
                               p_entity_id  IN NUMBER,
@@ -1041,10 +1041,10 @@
   PROCEDURE P_GET_USER_ENTITIES(p_user_id IN NUMBER,
                                 io_cursor  OUT SYS_REFCURSOR);
 
-  Procedure P_GET_ALL_CONTROLLER(io_cursor OUT SYS_REFCURSOR);
+  Procedure P_GET_ALL_CONTROLLER(O_CURSOR OUT SYS_REFCURSOR);
 
 end PKG_AD;
-
+/
 create or replace package body PKG_AD is
 
 
@@ -1227,7 +1227,7 @@ create or replace package body PKG_AD is
           v_email_primary := '0';
       END;
     ELSE
-      OPEN io_cursor FOR
+      OPEN IO_CURSOR FOR
         SELECT 'Your entity type is not supported for password reset. Please contact System Administrator on 051-2002110' AS remarks,
                '' AS emailAddress,
                '' AS emailAddress2,
@@ -1476,7 +1476,7 @@ create or replace package body PKG_AD is
 
   Procedure P_Get_observvation_no(obs_id in number, io_cursor OUT t_cursor) as
   begin
-    open io_cursor for
+    OPEN IO_CURSOR FOR
       Select o.memo_number, o.draft_para_no, o.final_para_no
         from t_au_observation o
        where o.id = obs_id;
@@ -1700,7 +1700,7 @@ create or replace package body PKG_AD is
                              R_ID      in number,
                              io_cursor OUT t_cursor) as
   begin
-    OPEN io_cursor FOR
+    OPEN IO_CURSOR FOR
 
       select m.* from t_menu m ORDER BY M.MENU_ORDER ASC;
 
@@ -1713,7 +1713,7 @@ create or replace package body PKG_AD is
                                    R_ID      in number,
                                    io_cursor OUT t_cursor) as
   begin
-    OPEN io_cursor FOR
+    OPEN IO_CURSOR FOR
 
       Select *
         FROM T_MENU_PAGES mp
@@ -2084,7 +2084,7 @@ create or replace package body PKG_AD is
 
   begin
 
-    open io_cursor for
+    OPEN IO_CURSOR FOR
       select distinct F.ID, f.entity_realtion_id, F.field_name
         from v_Get_realtionshiptype f
 
@@ -7966,9 +7966,9 @@ create or replace package body PKG_AD is
   END;
 
   PROCEDURE P_GET_ROLE_DASHBOARD_PAGES(p_role_id IN NUMBER,
-                                       io_cursor  OUT SYS_REFCURSOR) AS
+                                       O_CURSOR   OUT SYS_REFCURSOR) AS
   BEGIN
-    OPEN io_cursor FOR
+    OPEN O_CURSOR FOR
       SELECT mp.ID AS PAGE_ID,
              mp.PAGE_NAME,
              mp.PAGE_URL,
@@ -8030,9 +8030,9 @@ create or replace package body PKG_AD is
   END P_MAINT_ROLE_DASHBOARD_PAGE;
 
   PROCEDURE P_GET_ROLE_DASHBOARD_CONFIG(p_role_id IN NUMBER,
-                                        io_cursor  OUT SYS_REFCURSOR) AS
+                                        O_CURSOR   OUT SYS_REFCURSOR) AS
   BEGIN
-    OPEN io_cursor FOR
+    OPEN O_CURSOR FOR
       SELECT rdp.ROLE_ID,
              rdp.PAGE_ID,
              mp.PAGE_NAME,
@@ -8046,9 +8046,9 @@ create or replace package body PKG_AD is
        ORDER BY rdp.DASHBOARD_ORDER;
   END P_GET_ROLE_DASHBOARD_CONFIG;
 
-  PROCEDURE P_GET_API_MASTER(io_cursor OUT SYS_REFCURSOR) IS
+  PROCEDURE P_GET_API_MASTER(O_CURSOR OUT SYS_REFCURSOR) IS
   BEGIN
-    OPEN io_cursor FOR
+    OPEN O_CURSOR FOR
       SELECT API_ID,PAGE_ID, action_name as VIEW_NAME,CONTROLLER_NAME, API_PATH, HTTP_METHOD, IS_ACTIVE
         FROM T_AU_API_MASTER
        ORDER BY API_PATH;
@@ -8221,7 +8221,7 @@ create or replace package body PKG_AD is
   END P_MAINT_API_MASTER;
 
   PROCEDURE P_GET_DASHBOARD_QUICK_LINKS(P_ROLE_ID IN NUMBER,
-                                        io_cursor  OUT SYS_REFCURSOR) AS
+                                        O_CURSOR   OUT SYS_REFCURSOR) AS
     V_COUNT NUMBER := 0;
   BEGIN
     /*
@@ -8237,7 +8237,7 @@ create or replace package body PKG_AD is
       Step 2: If dashboard layout exists ? use it
     */
     IF V_COUNT > 0 THEN
-      OPEN io_cursor FOR
+      OPEN O_CURSOR FOR
         SELECT d.PAGE_ID,
                p.PAGE_NAME,
                p.page_path,
@@ -8256,7 +8256,7 @@ create or replace package body PKG_AD is
         Step 3: Else fallback to menu/page order
       */
     ELSE
-      OPEN io_cursor FOR
+      OPEN O_CURSOR FOR
         SELECT p.ID         as PAGE_ID,
                p.PAGE_NAME,
                p.PAGE_URL,
@@ -8420,12 +8420,12 @@ create or replace package body PKG_AD is
        ORDER BY ue.is_primary DESC, e.name;
   END;
 
-  Procedure P_GET_ALL_CONTROLLER(io_cursor OUT SYS_REFCURSOR) AS
+  Procedure P_GET_ALL_CONTROLLER(O_CURSOR OUT SYS_REFCURSOR) AS
   BEGIN
-    OPEN io_cursor FOR
+    OPEN O_CURSOR FOR
 
       select distinct m.controller_name from t_Au_Api_Master m;
   end P_GET_ALL_CONTROLLER;
 
 end PKG_AD;
-
+/

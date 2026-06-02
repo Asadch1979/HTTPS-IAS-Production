@@ -1,9 +1,9 @@
-﻿CREATE OR REPLACE PACKAGE PKG_USER_CONTEXT AS
+CREATE OR REPLACE PACKAGE PKG_USER_CONTEXT AS
   TYPE T_CURSOR IS REF CURSOR;
 
   PROCEDURE P_GET_USER_BASE(PPNumber IN NUMBER,
                             enc_pass IN VARCHAR2,
-                            T_CURSOR OUT T_CURSOR);
+                            IO_CURSOR OUT T_CURSOR);
 
   PROCEDURE P_GET_USER_CONTEXTS(P_USER_ID IN NUMBER,
                                 IO_CURSOR OUT T_CURSOR);
@@ -108,11 +108,11 @@ CREATE OR REPLACE PACKAGE BODY PKG_USER_CONTEXT AS
     (
         PPNumber  IN NUMBER,
         enc_pass  IN VARCHAR2,
-        T_CURSOR  OUT T_CURSOR
+        IO_CURSOR  OUT T_CURSOR
     )
     IS
     BEGIN
-        OPEN T_CURSOR FOR
+        OPEN IO_CURSOR FOR
             SELECT U.PASSWORD_CHANGE_REQ,
                    U.USERID,
                    HR.EMPLOYEEFIRSTNAME,
