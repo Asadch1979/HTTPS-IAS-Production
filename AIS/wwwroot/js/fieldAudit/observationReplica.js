@@ -25,7 +25,6 @@ window.addEventListener("unhandledrejection", function (e) {
     const pageData = getPageData();
     var g_annexList = pageData.AnnexList || [];
     var OBSERVATION_HEADING_VALIDATION_MESSAGE = 'Observation Heading/Title can contain only alphabets, numbers, space, &, ?, and comma.';
-    var OBSERVATION_HEADING_REGEX = /^[A-Za-z0-9 &,?]+$/;
 
     function escapeHtml(value) {
         return $('<div>').text(value || '').html();
@@ -67,12 +66,17 @@ window.addEventListener("unhandledrejection", function (e) {
     }
 
     function validateObservationHeading(showMessage) {
+        var isValid = false;
         if (window.CommonValidation && CommonValidation.isAlnumOk) {
-            CommonValidation.isAlnumOk('#viewMemo_heading', { allowAmp: true, allowQuestion: true, allowComma: true, allowSpace: true, required: true });
+            isValid = CommonValidation.isAlnumOk('#viewMemo_heading', {
+                allowAmp: true,
+                allowQuestion: true,
+                allowComma: true,
+                allowSpace: true,
+                required: true,
+                rejectInvalid: true
+            });
         }
-
-        var heading = getObservationHeading();
-        var isValid = heading.length > 0 && OBSERVATION_HEADING_REGEX.test(heading);
         setObservationHeadingValidation(isValid);
 
         if (!isValid && showMessage) {
@@ -183,6 +187,8 @@ window.addEventListener("unhandledrejection", function (e) {
         }
 
         if (root.getAttribute('data-initialized') === '1') {
+            syncEngagementId();
+            attachObservationHeadingRestriction();
             initStep5ObservationReference();
             return;
         }

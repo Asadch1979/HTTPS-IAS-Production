@@ -147,7 +147,7 @@
     });
   }
 
-  function isAlnumOk(selector, { allowAmp = true, allowQuestion = true, allowComma = true, allowSpace = true, required = false } = {}) {
+  function isAlnumOk(selector, { allowAmp = true, allowQuestion = true, allowComma = true, allowSpace = true, required = false, rejectInvalid = false } = {}) {
     const el = document.querySelector(selector);
     if (!el) return true;
 
@@ -156,6 +156,11 @@
     const rawVal = el.value || "";
     const value = sanitizeAlnum(rawVal, options);
     const isEmpty = value.trim() === "";
+
+    if (rejectInvalid && value !== rawVal) {
+      el.classList.add("is-invalid");
+      return false;
+    }
 
     if (required && isEmpty) {
       el.classList.add("is-invalid");
