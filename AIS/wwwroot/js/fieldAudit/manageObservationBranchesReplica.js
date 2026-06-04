@@ -90,7 +90,10 @@ function getPageData() {
                 allowSpace: true,
                 maxLen: 200
             });
+            return;
         }
+
+        window.setTimeout(bindObservationHeadingRestriction, 50);
     }
 
     function resolveCurrentEngagementId() {

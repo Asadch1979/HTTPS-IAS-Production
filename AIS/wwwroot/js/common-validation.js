@@ -74,6 +74,7 @@
 
       if (el._commonValidationAlnumHandlers) {
         const previous = el._commonValidationAlnumHandlers;
+        el.removeEventListener("keydown", previous.keydown);
         el.removeEventListener("beforeinput", previous.beforeinput);
         el.removeEventListener("paste", previous.paste);
         el.removeEventListener("input", previous.input);
@@ -111,6 +112,21 @@
         }
       };
 
+      const handleKeydown = evt => {
+        if (evt.ctrlKey || evt.metaKey || evt.altKey) {
+          return;
+        }
+
+        if (!evt.key || evt.key.length !== 1) {
+          return;
+        }
+
+        if (invalidCharPattern.test(evt.key)) {
+          evt.preventDefault();
+          markInvalid(true);
+        }
+      };
+
       const handlePaste = evt => {
         const clipboardData = evt.clipboardData || (window.clipboardData || null);
         if (!clipboardData) return;
@@ -134,12 +150,14 @@
       };
 
       el._commonValidationAlnumHandlers = {
+        keydown: handleKeydown,
         beforeinput: handleBeforeInput,
         paste: handlePaste,
         input: handleInput,
         blur: handleBlur
       };
 
+      el.addEventListener("keydown", handleKeydown);
       el.addEventListener("beforeinput", handleBeforeInput);
       el.addEventListener("paste", handlePaste);
       el.addEventListener("input", handleInput);

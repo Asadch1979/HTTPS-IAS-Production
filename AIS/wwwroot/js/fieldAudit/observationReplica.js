@@ -95,7 +95,10 @@ window.addEventListener("unhandledrejection", function (e) {
                 allowSpace: true,
                 maxLen: 500
             });
+            return;
         }
+
+        window.setTimeout(attachObservationHeadingRestriction, 50);
     }
 
     function initStep5ObservationReference() {
