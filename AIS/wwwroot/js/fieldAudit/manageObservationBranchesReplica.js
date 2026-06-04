@@ -33,6 +33,61 @@ function getPageData() {
     var g_dsa = "";
     var g_tablePage = 0;
     var g_scrollPos = 0;
+    var OBSERVATION_HEADING_VALIDATION_MESSAGE = 'Observation Heading/Title can contain only alphabets, numbers, space, &, ?, and comma.';
+    var OBSERVATION_HEADING_REGEX = /^[A-Za-z0-9 &,?]+$/;
+
+    function escapeHtml(value) {
+        return $('<div>').text(value || '').html();
+    }
+
+    function getUpdateObservationHeading() {
+        return $.trim($('#updateMemo_heading').val() || '');
+    }
+
+    function setObservationHeadingValidation(isValid) {
+        var $heading = $('#updateMemo_heading');
+        var $message = $('#updateMemoHeadingValidation');
+        if (!$heading.length) {
+            return;
+        }
+
+        if (isValid) {
+            $heading.removeClass('is-invalid');
+            $message.text(OBSERVATION_HEADING_VALIDATION_MESSAGE);
+            return;
+        }
+
+        $heading.addClass('is-invalid');
+        $message.text(OBSERVATION_HEADING_VALIDATION_MESSAGE);
+    }
+
+    function validateUpdateObservationHeading(showMessage) {
+        if (window.CommonValidation && CommonValidation.isAlnumOk) {
+            CommonValidation.isAlnumOk('#updateMemo_heading', { allowAmp: true, allowQuestion: true, allowComma: true, allowSpace: true, required: true });
+        }
+
+        var heading = getUpdateObservationHeading();
+        var isValid = heading.length > 0 && OBSERVATION_HEADING_REGEX.test(heading);
+        setObservationHeadingValidation(isValid);
+
+        if (!isValid && showMessage) {
+            alert(OBSERVATION_HEADING_VALIDATION_MESSAGE);
+        }
+
+        return isValid;
+    }
+
+    function bindObservationHeadingRestriction() {
+        if (window.CommonValidation && CommonValidation.attachAlnumOnly) {
+            CommonValidation.attachAlnumOnly('#updateMemo_heading', {
+                allowAmp: true,
+                allowQuestion: true,
+                allowComma: true,
+                allowSpace: true,
+                maxLen: 200
+            });
+        }
+    }
 
     function resolveCurrentEngagementId() {
         var hiddenValue = $('#engIdHidden').val();
@@ -137,6 +192,11 @@ function getPageData() {
             return;
         }
 
+        if (!validateUpdateObservationHeading(true)) {
+            return;
+        }
+
+        var observationHeading = getUpdateObservationHeading();
         var referenceId = getStep6SelectedReferenceId();
         if (!referenceId) {
             alert('Please select a reference before saving.');
@@ -149,7 +209,7 @@ function getPageData() {
             type: "POST",
             data: {
                 'OBS_ID': g_obsId,
-                'OBS_TITLE': $('#updateMemo_heading').val(),
+                'OBS_TITLE': observationHeading,
                 'OBS_TEXT': $('.richText-editor').html(),
                 'ANNEXURE_ID': $('#updateMemo_annex').val() || g_annexId,
                 'RISK_ID': g_selectedRiskId || g_riskId,
@@ -212,6 +272,7 @@ function getPageData() {
         $('#updateMemo_annex').off('change.manageObservationBranches').on('change.manageObservationBranches', updateRiskDisplay);
         $('#obsReferenceSaveUpdateBtn').off('click.manageObservationBranches').on('click.manageObservationBranches', saveObservationReferenceUpdate);
         $('#updateMemoModel').off('hidden.bs.modal.manageObservationBranchesReference').on('hidden.bs.modal.manageObservationBranchesReference', resetStep6ObservationReference);
+        bindObservationHeadingRestriction();
         $(document).off('fieldAudit:engagement-state-changed.manageObservationBranches').on('fieldAudit:engagement-state-changed.manageObservationBranches', function () {
             if ($('#updateMemoModel').hasClass('show')) {
                 showActionButtons();
@@ -336,16 +397,17 @@ function getPageData() {
                 }
 
                 $.each(g_obsList, function (i, v) {
+                    var obsId = parseInt(v.obS_ID, 10) || 0;
                     g_entityID = v.entitY_ID;
                     $('#auditPeriodNameField').val(v.period);
                     var statusText = (v.obS_STATUS || '').toString().trim().toLowerCase();
                     var actionText = isSelectedEngagementTeamLead() ? 'Manage' : 'View';
-                    var actionHtml = '<a data-onclick="ObservationUpdatePanel(' + v.obS_ID + ')" href="#" class="text-hover">' + actionText + '</a>';
+                    var actionHtml = '<a data-onclick="ObservationUpdatePanel(' + obsId + ')" href="#" class="text-hover">' + escapeHtml(actionText) + '</a>';
                     if (statusText === 'submitted to auditee') {
-                        actionHtml += '<span class="text-muted mx-2">|</span><a data-onclick="printObservation(' + v.obS_ID + ')" href="#" class="text-hover">Print</a>';
+                        actionHtml += '<span class="text-muted mx-2">|</span><a data-onclick="printObservation(' + obsId + ')" href="#" class="text-hover">Print</a>';
                     }
 
-                    $('#manageObsPanel tbody').append('<tr id="' + v.obS_ID + '"><td class="text-center">' + v.memO_NO + '</td><td class="text-center">' + v.annexurE_CODE + '</td><td>' + v.heading + '</td><td>' + v.nO_OF_INSTANCES + '</td><td>' + v.obS_RISK + '</td><td>' + v.obS_STATUS + '</td><td class="text-center">' + actionHtml + '</td></tr>');
+                    $('#manageObsPanel tbody').append('<tr id="' + obsId + '"><td class="text-center">' + escapeHtml(v.memO_NO) + '</td><td class="text-center">' + escapeHtml(v.annexurE_CODE) + '</td><td>' + escapeHtml(v.heading) + '</td><td>' + escapeHtml(v.nO_OF_INSTANCES) + '</td><td>' + escapeHtml(v.obS_RISK) + '</td><td>' + escapeHtml(v.obS_STATUS) + '</td><td class="text-center">' + actionHtml + '</td></tr>');
                 });
 
                 var tbl = initializeManageObservationTable();
@@ -405,7 +467,7 @@ function getPageData() {
                 success: function (data) {
                     $('#updateMemo_subprocess').append("<option value=\"0\" id=\"0\">--Select Sub Group--</option>");
                     $.each(data, function (index, item) {
-                        $('#updateMemo_subprocess').append("<option value=\"" + item.s_ID + "\"> " + item.heading + " </option>");
+                        $('#updateMemo_subprocess').append("<option value=\"" + escapeHtml(item.s_ID) + "\"> " + escapeHtml(item.heading) + " </option>");
                     });
 
                 },
@@ -429,7 +491,7 @@ function getPageData() {
                 success: function (data) {
                     $('#updateMemo_violation').append("<option value=\"0\" id=\"0\">--Select Sub Group--</option>");
                     $.each(data, function (index, item) {
-                        $('#updateMemo_violation').append("<option value=\"" + item.id + "\"> " + item.heading + "</option>");
+                        $('#updateMemo_violation').append("<option value=\"" + escapeHtml(item.id) + "\"> " + escapeHtml(item.heading) + "</option>");
                     });
 
                 },
@@ -500,9 +562,9 @@ function getPageData() {
                 g_checklistId = data[0].checklist_Details_Id;
                 updateRiskDisplay();
                 $('#updateMemo_subprocess').empty();
-                $('#updateMemo_subprocess').append('<option value="' + g_subProcessId + '">' + data[0].suB_PROCESS + '</option>');
+                $('#updateMemo_subprocess').append('<option value="' + escapeHtml(g_subProcessId) + '">' + escapeHtml(data[0].suB_PROCESS) + '</option>');
                 $('#updateMemo_violation').empty();
-                $('#updateMemo_violation').append('<option value="' + g_checklistId + '">' + data[0].checklist_Details + '</option>');
+                $('#updateMemo_violation').append('<option value="' + escapeHtml(g_checklistId) + '">' + escapeHtml(data[0].checklist_Details) + '</option>');
 
                 $('#updateMemo_response').html(data[0].obS_REPLY || '');
                 $('#updateMemo_evidences').empty();
@@ -675,7 +737,7 @@ function getPageData() {
 
             $.each(g_obsList, function (i, v) {
                 if (v.obS_ID == obs_id) {
-                    $('#dsaHeading').val(v.heading);
+                    $('#dsaHeading').val(v.heading || '');
 
                     $.ajax({
                         url: g_asiBaseURL + "/ApiCalls/get_observation_text_branches",
@@ -691,7 +753,9 @@ function getPageData() {
                             if (data[0].responsiblE_PPs && data[0].responsiblE_PPs.length > 0) {
                                 $.each(data[0].responsiblE_PPs, function (j, pp) {
                                     var srNo = $('#dsaResponsibles tbody tr').length + 1;
-                                    $('#dsaResponsibles tbody').append('<tr id="tr_' + pp.pP_NO + '"><td>' + srNo + '</td><td>' + pp.pP_NO + '</td><td>' + pp.emP_NAME + '</td><td>' + pp.loaN_CASE + '</td><td>' + pp.lC_AMOUNT + '</td><td>' + pp.accounT_NUMBER + '</td><td>' + pp.acC_AMOUNT + '</td><td><input class="chk_dsaissued" resp_row_id="' + pp.resP_ROW_ID + '" id="' + pp.pP_NO + '" type="checkbox" /></td></tr>');
+                                    var ppNo = parseInt(pp.pP_NO, 10) || 0;
+                                    var respRowId = parseInt(pp.resP_ROW_ID, 10) || 0;
+                                    $('#dsaResponsibles tbody').append('<tr id="tr_' + ppNo + '"><td>' + srNo + '</td><td>' + escapeHtml(pp.pP_NO) + '</td><td>' + escapeHtml(pp.emP_NAME) + '</td><td>' + escapeHtml(pp.loaN_CASE) + '</td><td>' + escapeHtml(pp.lC_AMOUNT) + '</td><td>' + escapeHtml(pp.accounT_NUMBER) + '</td><td>' + escapeHtml(pp.acC_AMOUNT) + '</td><td><input class="chk_dsaissued" resp_row_id="' + respRowId + '" id="' + ppNo + '" type="checkbox" /></td></tr>');
                                 });
                             }
                         },
@@ -777,12 +841,17 @@ function getPageData() {
         preserveTablePosition();
         g_obsId = obs_id;
         updateRiskDisplay();
+        if (!validateUpdateObservationHeading(true)) {
+            return;
+        }
+
+        var observationHeading = getUpdateObservationHeading();
         $.ajax({
             url: g_asiBaseURL + "/ApiCalls/update_observation_text",
             type: "POST",
             data: {
                 'OBS_ID': g_obsId,
-                'OBS_TITLE': $('#updateMemo_heading').val(),
+                'OBS_TITLE': observationHeading,
                 'OBS_TEXT': $('.richText-editor').html(),
                 'ANNEXURE_ID': $('#updateMemo_annex').val() || g_annexId,
                 'RISK_ID': g_selectedRiskId || g_riskId,

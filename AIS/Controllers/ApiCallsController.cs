@@ -1501,9 +1501,19 @@ namespace AIS.Controllers
         [HttpPost]
         public string update_observation_text(int OBS_ID, string OBS_TEXT, int PROCESS_ID = 0, int SUBPROCESS_ID = 0, int CHECKLIST_ID = 0, string OBS_TITLE = "", int RISK_ID = 0, int ANNEXURE_ID = 0, long? REFERENCE_ID = null)
             {
+            if (!IsValidObservationHeading(OBS_TITLE))
+                {
+                _logger.LogWarning("Observation heading validation failed for update_observation_text. OBS_ID: {ObsId}", OBS_ID);
+                return System.Text.Json.JsonSerializer.Serialize(new
+                    {
+                    Status = false,
+                    Message = ObservationHeadingValidationMessage
+                    });
+                }
+
             string response = "";
-            response = dBConnection.UpdateAuditObservationText(OBS_ID, OBS_TEXT, PROCESS_ID, SUBPROCESS_ID, CHECKLIST_ID, OBS_TITLE, RISK_ID, ANNEXURE_ID, REFERENCE_ID);
-            return "{\"Status\":true,\"Message\":\"" + response + "\"}";
+            response = dBConnection.UpdateAuditObservationText(OBS_ID, OBS_TEXT, PROCESS_ID, SUBPROCESS_ID, CHECKLIST_ID, OBS_TITLE.Trim(), RISK_ID, ANNEXURE_ID, REFERENCE_ID);
+            return System.Text.Json.JsonSerializer.Serialize(new { Status = true, Message = response });
             }
         [HttpPost]
         public string update_observation_status(int OBS_ID, int NEW_STATUS_ID, string DRAFT_PARA_NO, int RISK_ID, string AUDITOR_COMMENT)

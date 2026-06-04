@@ -27,6 +27,10 @@ window.addEventListener("unhandledrejection", function (e) {
     var OBSERVATION_HEADING_VALIDATION_MESSAGE = 'Observation Heading/Title can contain only alphabets, numbers, space, &, ?, and comma.';
     var OBSERVATION_HEADING_REGEX = /^[A-Za-z0-9 &,?]+$/;
 
+    function escapeHtml(value) {
+        return $('<div>').text(value || '').html();
+    }
+
     function resolveCurrentEngagementId() {
         var localValue = $('#fieldAuditObservationReplica').attr('data-eng-id');
         var hostValue = $('#fieldAuditStepHost').attr('data-eng-id');
@@ -63,6 +67,10 @@ window.addEventListener("unhandledrejection", function (e) {
     }
 
     function validateObservationHeading(showMessage) {
+        if (window.CommonValidation && CommonValidation.isAlnumOk) {
+            CommonValidation.isAlnumOk('#viewMemo_heading', { allowAmp: true, allowQuestion: true, allowComma: true, allowSpace: true, required: true });
+        }
+
         var heading = getObservationHeading();
         var isValid = heading.length > 0 && OBSERVATION_HEADING_REGEX.test(heading);
         setObservationHeadingValidation(isValid);
@@ -72,6 +80,18 @@ window.addEventListener("unhandledrejection", function (e) {
         }
 
         return isValid;
+    }
+
+    function attachObservationHeadingRestriction() {
+        if (window.CommonValidation && CommonValidation.attachAlnumOnly) {
+            CommonValidation.attachAlnumOnly('#viewMemo_heading', {
+                allowAmp: true,
+                allowQuestion: true,
+                allowComma: true,
+                allowSpace: true,
+                maxLen: 500
+            });
+        }
     }
 
     function initStep5ObservationReference() {
@@ -207,17 +227,7 @@ window.addEventListener("unhandledrejection", function (e) {
         }
 
         $('#updatedAnnexlist').off('change.observationReplica').on('change.observationReplica', updateRiskDisplay);
-        $('#viewMemo_heading')
-            .off('input.observationHeadingValidation blur.observationHeadingValidation')
-            .on('input.observationHeadingValidation blur.observationHeadingValidation', function () {
-                var heading = getObservationHeading();
-                if (!heading) {
-                    setObservationHeadingValidation(true);
-                    return;
-                }
-
-                validateObservationHeading(false);
-            });
+        attachObservationHeadingRestriction();
 
         var amountField = document.getElementById('amount_inv_field');
         if (amountField) {
@@ -293,7 +303,7 @@ window.addEventListener("unhandledrejection", function (e) {
                 success: function (data) {
                     $('#riskSubGroupSelectBox').append("<option value=\"0\" id=\"0\">--Select Sub Group--</option>");
                     $.each(data, function (index, item) {
-                        $('#riskSubGroupSelectBox').append("<option value=\"" + item.s_ID + "\"> " + item.heading + " </option > ");
+                        $('#riskSubGroupSelectBox').append("<option value=\"" + escapeHtml(item.s_ID) + "\"> " + escapeHtml(item.heading) + " </option > ");
                     });
 
                 },
@@ -319,7 +329,7 @@ window.addEventListener("unhandledrejection", function (e) {
             success: function (data) {
                 $('#riskActivitiesSelectBox').append("<option value=\"0\" id=\"0\">--Select Sub Group--</option>");
                 $.each(data, function (index, item) {
-                    $('#riskActivitiesSelectBox').append("<option value=\"" + item.id + "\"> " + item.heading + "</option>");
+                    $('#riskActivitiesSelectBox').append("<option value=\"" + escapeHtml(item.id) + "\"> " + escapeHtml(item.heading) + "</option>");
                 });
 
                 if ($.fn.select2) {

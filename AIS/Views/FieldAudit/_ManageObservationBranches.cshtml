@@ -146,8 +146,11 @@
                         </select>
                     </div>
                     <div class="form-group mb-3">
-                        <label for="updateMemo_heading" class="font-weight-bold">Title / Heading <small class="text-muted">(A-Z, 0-9, space, &amp;, ?)</small></label>
-                        <input type="text" id="updateMemo_heading" class="form-control alnum-only" placeholder="Title / Heading (Alphabets, numbers, spaces, ampersand (&amp;), comma (,), and question mark (?) only)" data-allow-space="true" data-allow-amp="true" maxlength="200" title="Enter only Alphabets (A-Z), numbers (0-9), spaces, ampersand (&amp;), comma (,), and question mark (?)" />
+                        <label for="updateMemo_heading" class="font-weight-bold">Title / Heading <small class="text-muted">(A-Z, 0-9, space, &amp;, ?, comma)</small></label>
+                        <input type="text" id="updateMemo_heading" class="form-control alnum-only" placeholder="Title / Heading (Alphabets, numbers, spaces, ampersand (&amp;), comma (,), and question mark (?) only)" data-allow-amp="true" data-allow-question="true" data-maxlen="200" maxlength="200" pattern="[A-Za-z0-9 &amp;,?]+" aria-describedby="updateMemoHeadingValidation" title="Observation Heading/Title can contain only alphabets, numbers, space, &amp;, ?, and comma." />
+                        <div id="updateMemoHeadingValidation" class="invalid-feedback">
+                            Observation Heading/Title can contain only alphabets, numbers, space, &amp;, ?, and comma.
+                        </div>
                     </div>
                     <div class="form-group mb-3">
                         <label for="updateMemoContent" class="font-weight-bold">Memo</label>
@@ -279,7 +282,7 @@
                 <button id="submitAuditeeButton_update" data-onclick="submitObservationToAuditee(g_obsId, 2, g_riskId);" type="button" class="btn btn-danger d-none">Submit to Auditee</button>
                 <button id="addDraftButton_update" data-onclick="updateObservationStatus(g_obsId,5,g_riskId);" type="button" class="btn btn-primary d-none">Add to Draft</button>
                 <button id="settleButton_update" data-onclick="updateObservationStatus(g_obsId,4,g_riskId);" type="button" class="btn btn-success d-none">Settle</button>
-                <button id="updateMemoContent_submit" data-onclick="finalUpdateMemoContent(g_obsId);" type="button" data-bs-dismiss="modal" class="btn btn-danger">Update Memo Text</button>
+                <button id="updateMemoContent_submit" data-onclick="finalUpdateMemoContent(g_obsId);" type="button" class="btn btn-danger">Update Memo Text</button>
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
             </div>
         </div>

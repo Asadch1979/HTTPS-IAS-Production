@@ -1,59 +1,160 @@
 (function () {
-  function buildRegex({ allowAmp = true, allowQuestion = true } = {}) {
-    const allowedChars = `A-Za-z0-9, ${allowAmp ? "&" : ""}${allowQuestion ? "\\?" : ""}`;
+  function getAllowedChars({ allowAmp = true, allowQuestion = true, allowComma = true, allowSpace = true } = {}) {
+    return `A-Za-z0-9${allowSpace ? " " : ""}${allowComma ? "," : ""}${allowAmp ? "&" : ""}${allowQuestion ? "\\?" : ""}`;
+  }
+
+  function buildRegex(options = {}) {
+    const allowedChars = getAllowedChars(options);
     return new RegExp(`^[${allowedChars}]*$`);
   }
 
-  function sanitizeAlnum(value, { allowAmp = true, allowQuestion = true } = {}) {
+  function sanitizeAlnum(value, options = {}) {
     if (value == null) return "";
     let sanitized = String(value);
-    const allowedChars = `A-Za-z0-9, ${allowAmp ? "&" : ""}${allowQuestion ? "\\?" : ""}`;
+    const allowedChars = getAllowedChars(options);
     const pattern = new RegExp(`[^${allowedChars}]+`, "g");
     sanitized = sanitized.replace(pattern, "");
     return sanitized;
   }
 
-  function attachAlnumOnly(selector, { allowAmp = true, allowQuestion = true, maxLen = null } = {}) {
+  function readBooleanData(el, name, fallback) {
+    if (!el.dataset || el.dataset[name] === undefined) return fallback;
+    if (el.dataset[name] === "false") return false;
+    if (el.dataset[name] === "true") return true;
+    return fallback;
+  }
+
+  function setElementValuePreservingCaret(el, value) {
+    const currentValue = el.value || "";
+    if (currentValue === value) return;
+
+    const selectionStart = el.selectionStart || 0;
+    el.value = value;
+
+    if (typeof el.setSelectionRange === "function") {
+      const nextCaret = Math.min(selectionStart, value.length);
+      el.setSelectionRange(nextCaret, nextCaret);
+    }
+  }
+
+  function insertSanitizedText(el, text, options, maxLen) {
+    const sanitizedText = sanitizeAlnum(text, options);
+    if (!sanitizedText) return false;
+
+    const currentValue = el.value || "";
+    const start = el.selectionStart || 0;
+    const end = el.selectionEnd || start;
+    const nextValue = currentValue.substring(0, start) + sanitizedText + currentValue.substring(end);
+    const limitedValue = maxLen && !Number.isNaN(maxLen) ? nextValue.substring(0, maxLen) : nextValue;
+
+    el.value = limitedValue;
+    if (typeof el.setSelectionRange === "function") {
+      const nextCaret = Math.min(start + sanitizedText.length, limitedValue.length);
+      el.setSelectionRange(nextCaret, nextCaret);
+    }
+    el.dispatchEvent(new Event("input", { bubbles: true }));
+    return sanitizedText === text;
+  }
+
+  function attachAlnumOnly(selector, { allowAmp = true, allowQuestion = true, allowComma = true, allowSpace = true, maxLen = null } = {}) {
     document.querySelectorAll(selector).forEach(el => {
-      const elementAllowAmp = el.dataset.allowAmp === "false" ? false : allowAmp;
-      const elementAllowQuestion = el.dataset.allowQuestion === "true" ? true : allowQuestion;
+      const elementAllowAmp = readBooleanData(el, "allowAmp", allowAmp);
+      const elementAllowQuestion = readBooleanData(el, "allowQuestion", allowQuestion);
+      const elementAllowComma = readBooleanData(el, "allowComma", allowComma);
+      const elementAllowSpace = readBooleanData(el, "allowSpace", allowSpace);
       const elementMaxLen = el.dataset.maxlen ? parseInt(el.dataset.maxlen, 10) : maxLen;
-      const regex = buildRegex({ allowAmp: elementAllowAmp, allowQuestion: elementAllowQuestion });
+      const options = {
+        allowAmp: elementAllowAmp,
+        allowQuestion: elementAllowQuestion,
+        allowComma: elementAllowComma,
+        allowSpace: elementAllowSpace
+      };
+      const regex = buildRegex(options);
+      const invalidCharPattern = new RegExp(`[^${getAllowedChars(options)}]+`);
+
+      if (el._commonValidationAlnumHandlers) {
+        const previous = el._commonValidationAlnumHandlers;
+        el.removeEventListener("beforeinput", previous.beforeinput);
+        el.removeEventListener("paste", previous.paste);
+        el.removeEventListener("input", previous.input);
+        el.removeEventListener("blur", previous.blur);
+      }
 
       el.setAttribute("autocomplete", "off");
 
-      el.addEventListener("input", () => {
-        const clean = sanitizeAlnum(el.value, { allowAmp: elementAllowAmp, allowQuestion: elementAllowQuestion });
-        if (elementMaxLen && !Number.isNaN(elementMaxLen) && clean.length > elementMaxLen) {
-          el.value = clean.substring(0, elementMaxLen);
-        } else {
-          el.value = clean;
-        }
-        if (el.value === "") {
+      const markInvalid = invalid => {
+        if (el.value === "" && !invalid) {
           el.classList.remove("is-invalid");
           return;
         }
-        el.classList.toggle("is-invalid", !regex.test(el.value));
-      });
+        el.classList.toggle("is-invalid", invalid || !regex.test(el.value));
+      };
 
-      el.addEventListener("blur", () => {
-        el.value = sanitizeAlnum(el.value, { allowAmp: elementAllowAmp, allowQuestion: elementAllowQuestion });
-        if (el.value === "") {
-          el.classList.remove("is-invalid");
+      const handleInput = () => {
+        const clean = sanitizeAlnum(el.value, options);
+        if (elementMaxLen && !Number.isNaN(elementMaxLen) && clean.length > elementMaxLen) {
+          setElementValuePreservingCaret(el, clean.substring(0, elementMaxLen));
+        } else {
+          setElementValuePreservingCaret(el, clean);
+        }
+        markInvalid(false);
+      };
+
+      const handleBeforeInput = evt => {
+        if (!evt.data || evt.inputType === "deleteContentBackward" || evt.inputType === "deleteContentForward") {
           return;
         }
-        el.classList.toggle("is-invalid", !regex.test(el.value));
-      });
+
+        if (invalidCharPattern.test(evt.data)) {
+          evt.preventDefault();
+          markInvalid(true);
+        }
+      };
+
+      const handlePaste = evt => {
+        const clipboardData = evt.clipboardData || (window.clipboardData || null);
+        if (!clipboardData) return;
+
+        const pastedText = clipboardData.getData("text") || "";
+        if (!pastedText) return;
+
+        evt.preventDefault();
+        if (invalidCharPattern.test(pastedText)) {
+          markInvalid(true);
+          return;
+        }
+
+        insertSanitizedText(el, pastedText, options, elementMaxLen);
+        markInvalid(false);
+      };
+
+      const handleBlur = () => {
+        setElementValuePreservingCaret(el, sanitizeAlnum(el.value, options));
+        markInvalid(false);
+      };
+
+      el._commonValidationAlnumHandlers = {
+        beforeinput: handleBeforeInput,
+        paste: handlePaste,
+        input: handleInput,
+        blur: handleBlur
+      };
+
+      el.addEventListener("beforeinput", handleBeforeInput);
+      el.addEventListener("paste", handlePaste);
+      el.addEventListener("input", handleInput);
+      el.addEventListener("blur", handleBlur);
     });
   }
 
-  function isAlnumOk(selector, { allowAmp = true, allowQuestion = true, required = false } = {}) {
+  function isAlnumOk(selector, { allowAmp = true, allowQuestion = true, allowComma = true, allowSpace = true, required = false } = {}) {
     const el = document.querySelector(selector);
     if (!el) return true;
 
-    const regex = buildRegex({ allowAmp, allowQuestion });
+    const options = { allowAmp, allowQuestion, allowComma, allowSpace };
+    const regex = buildRegex(options);
     const rawVal = el.value || "";
-    const value = sanitizeAlnum(rawVal, { allowAmp, allowQuestion });
+    const value = sanitizeAlnum(rawVal, options);
     const isEmpty = value.trim() === "";
 
     if (required && isEmpty) {
@@ -178,6 +279,10 @@
 
   function attachPlainTextValidation(selector = '[data-validate="plain-text"]') {
     document.querySelectorAll(selector).forEach(el => {
+      if ((el.className || "").toLowerCase().includes("alnum-only")) {
+        return;
+      }
+
       const handler = () => sanitizeElementPlainText(el);
       ["input", "blur"].forEach(evt => el.addEventListener(evt, handler));
       el.addEventListener("paste", () => {
@@ -367,6 +472,10 @@ document.addEventListener("DOMContentLoaded", function () {
 
   plainTextCandidates.forEach(el => {
     const className = (el.className || "").toLowerCase();
+    if (className.includes("alnum-only")) {
+      return;
+    }
+
     const isRichText =
       className.includes("richtext") ||
       className.includes("rich-text") ||
