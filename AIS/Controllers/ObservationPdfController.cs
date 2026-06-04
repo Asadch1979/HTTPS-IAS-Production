@@ -1,4 +1,5 @@
 using AIS.Models;
+using AIS.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using System;
@@ -12,15 +13,22 @@ namespace AIS.Controllers
         {
         private readonly ILogger<ObservationPdfController> _logger;
         private readonly DBConnection _dbConnection;
+        private readonly IPermissionService _permissionService;
+        private readonly IPageIdResolver _pageIdResolver;
+        private const string ManageObservationBranchesPath = "/Execution/manage_observations_branches";
 
         public ObservationPdfController(
             ILogger<ObservationPdfController> logger,
             SessionHandler sessionHandler,
-            DBConnection dbConnection)
+            DBConnection dbConnection,
+            IPermissionService permissionService,
+            IPageIdResolver pageIdResolver)
             : base(sessionHandler)
             {
             _logger = logger;
             _dbConnection = dbConnection;
+            _permissionService = permissionService;
+            _pageIdResolver = pageIdResolver;
             }
 
         [HttpGet("GeneratePdf")]
@@ -38,7 +46,7 @@ namespace AIS.Controllers
                     return StatusCode(401, "User session is not authenticated.");
                     }
 
-                if (!this.UserHasPagePermissionForCurrentAction(SessionHandler))
+                if (!HasObservationPdfPermission(user))
                     {
                     return StatusCode(403, "User is not authorized to access observation PDFs.");
                     }
@@ -53,7 +61,8 @@ namespace AIS.Controllers
                     return BadRequest("Engagement id is required.");
                     }
 
-                if (!IsObservationAuthorized(engId, obsId))
+                var observation = GetAuthorizedObservation(engId, obsId);
+                if (observation == null)
                     {
                     return StatusCode(403, "Not authorized. Observation is not available for this engagement.");
                     }
@@ -61,15 +70,25 @@ namespace AIS.Controllers
                 _logger.LogInformation("Preparing observation print view for OBS_ID {ObsId} ENG_ID {EngId} by user {UserId}.", obsId, engId, user?.PPNumber);
 
                 var data = _dbConnection.GetObservationPrintDetails(obsId);
-                if (data == null || string.IsNullOrWhiteSpace(data.MemoNumber))
+                if (!HasPrintableObservationData(data))
                     {
-                    return BadRequest("Observation data is not available for the selected record.");
+                    _logger.LogWarning("Observation print data is missing for OBS_ID {ObsId} ENG_ID {EngId}.", obsId, engId);
+                    return BadRequest("Observation print data is not available for the selected record.");
                     }
 
                 if (!data.ReferenceId.HasValue)
                     {
-                    var observation = _dbConnection.GetManagedObservationsForBranches(engId, obsId).FirstOrDefault();
                     data.ReferenceId = observation?.ReferenceId;
+                    }
+
+                if (string.IsNullOrWhiteSpace(data.MemoNumber) && observation.MEMO_NO > 0)
+                    {
+                    data.MemoNumber = observation.MEMO_NO.ToString();
+                    }
+
+                if (string.IsNullOrWhiteSpace(data.Title))
+                    {
+                    data.Title = observation.HEADING;
                     }
 
                 if (data.ReferenceId.HasValue && data.ReferenceId.Value > 0)
@@ -84,19 +103,54 @@ namespace AIS.Controllers
                 }
             catch (Exception ex)
                 {
-                _logger.LogError(ex, "Failed to prepare observation print view for OBS_ID {ObsId}.", obsId);
+                _logger.LogError(ex, "Failed to prepare observation print view for OBS_ID {ObsId} ENG_ID {EngId}.", obsId, engId);
                 return StatusCode(500, "An error occurred while preparing the print view. Please try again later.");
                 }
             }
 
-        private bool IsObservationAuthorized(int engId, int obsId)
+        private bool HasObservationPdfPermission(SessionUser user)
+            {
+            if (this.UserHasPagePermissionForCurrentAction(SessionHandler))
+                {
+                return true;
+                }
+
+            if (_pageIdResolver?.TryResolvePageId(ManageObservationBranchesPath, out var managePageId) == true
+                && managePageId > 0
+                && _permissionService.HasViewPermission(user, managePageId))
+                {
+                return true;
+                }
+
+            _logger.LogWarning("Observation PDF permission denied for user {UserId}. Current PAGE_ID {PageId}, fallback path {Path}.",
+                user?.PPNumber,
+                SessionHandler.GetPageId(),
+                ManageObservationBranchesPath);
+            return false;
+            }
+
+        private ManageObservations GetAuthorizedObservation(int engId, int obsId)
             {
             if (engId <= 0 || obsId <= 0)
+                {
+                return null;
+                }
+
+            return _dbConnection.GetManagedObservationsForBranches(engId, obsId).FirstOrDefault();
+            }
+
+        private static bool HasPrintableObservationData(ObservationPdfDataModel data)
+            {
+            if (data == null)
                 {
                 return false;
                 }
 
-            return _dbConnection.GetManagedObservationsForBranches(engId, obsId).Any();
+            return !string.IsNullOrWhiteSpace(data.MemoNumber)
+                || !string.IsNullOrWhiteSpace(data.Title)
+                || !string.IsNullOrWhiteSpace(data.ParaText)
+                || !string.IsNullOrWhiteSpace(data.EntityName)
+                || !string.IsNullOrWhiteSpace(data.Annexure);
             }
 
         private static string FormatReferenceText(ReferenceMasterDetailItemModel detail)

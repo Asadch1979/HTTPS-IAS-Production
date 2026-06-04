@@ -2058,7 +2058,7 @@ namespace AIS.Controllers
                 cmd.Parameters.Add("OBS_ID", OracleDbType.Int32).Value = OBS_ID;
                 cmd.Parameters.Add("PPNumber", OracleDbType.Int32).Value = loggedInUser.PPNumber;
                 cmd.Parameters.Add("AUDITOR_COMMENT", OracleDbType.Varchar2).Value = string.IsNullOrWhiteSpace(AUDITOR_COMMENT) ? remarks : AUDITOR_COMMENT;
-                cmd.Parameters.Add("status", OracleDbType.Int32).Value = NEW_STATUS_ID;
+                cmd.Parameters.Add("P_status", OracleDbType.Int32).Value = NEW_STATUS_ID;
                 cmd.ExecuteNonQuery();
                 }
 

@@ -62,7 +62,10 @@
 
         <div id="div_headingPanel" class="col-md-12 mt-3">
             <h5>Heading/Title <small class="text-muted">(A-Z, 0-9, space, &amp;, ?, comma)</small></h5>
-            <input type="text" class="form-control alnum-only" id="viewMemo_heading" placeholder="Heading/Title (Alphabets, numbers, spaces, ampersand (&amp;), comma (,), and question mark (?) only)" data-allow-amp="true" data-allow-question="true" data-maxlen="500" maxlength="500" />
+            <input type="text" class="form-control alnum-only" id="viewMemo_heading" placeholder="Heading/Title (Alphabets, numbers, spaces, ampersand (&amp;), comma (,), and question mark (?) only)" data-allow-amp="true" data-allow-question="true" data-maxlen="500" maxlength="500" pattern="[A-Za-z0-9 &amp;,?]+" aria-describedby="viewMemoHeadingValidation" title="Observation Heading/Title can contain only alphabets, numbers, space, &amp;, ?, and comma." />
+            <div id="viewMemoHeadingValidation" class="invalid-feedback">
+                Observation Heading/Title can contain only alphabets, numbers, space, &amp;, ?, and comma.
+            </div>
         </div>
 
         <div class="col-md-12 mt-3">

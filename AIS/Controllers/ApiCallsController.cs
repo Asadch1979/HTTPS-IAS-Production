@@ -54,7 +54,9 @@ namespace AIS.Controllers
         private readonly IStaticAssetVersionTokenProvider _staticAssetVersionTokenProvider;
         private static readonly Regex AlphaNumericWithSpacesRegex = new Regex("^[A-Za-z0-9 &]+$", RegexOptions.Compiled);
         private static readonly Regex ExceptionReportTextRegex = new Regex("^[A-Za-z0-9 &,?]+$", RegexOptions.Compiled);
+        private static readonly Regex ObservationHeadingRegex = new Regex("^[A-Za-z0-9 &,?]+$", RegexOptions.Compiled);
         private static readonly Regex RichTextTagRegex = new Regex("<.*?>", RegexOptions.Compiled | RegexOptions.Singleline);
+        private const string ObservationHeadingValidationMessage = "Observation Heading/Title can contain only alphabets, numbers, space, &, ?, and comma.";
 
         public ApiCallsController(
             ILogger<ApiCallsController> logger,
@@ -253,6 +255,22 @@ namespace AIS.Controllers
             var decoded = System.Net.WebUtility.HtmlDecode(withoutTags) ?? string.Empty;
             var normalized = decoded.Replace('\u00A0', ' ').Trim();
             return !string.IsNullOrWhiteSpace(normalized);
+            }
+
+        private static bool IsValidObservationHeading(string heading)
+            {
+            return !string.IsNullOrWhiteSpace(heading)
+                && ObservationHeadingRegex.IsMatch(heading.Trim());
+            }
+
+        private IActionResult InvalidObservationHeadingResponse()
+            {
+            _logger.LogWarning("Observation heading validation failed for {Endpoint}.", ControllerContext?.ActionDescriptor?.DisplayName ?? "Unknown");
+            return Ok(new
+                {
+                Status = false,
+                Message = ObservationHeadingValidationMessage
+                });
             }
 
         private JsonResult LegacyMessageResponse(string message, string fallbackMessage)
@@ -1342,6 +1360,13 @@ namespace AIS.Controllers
                     return BadRequest(new { Status = false, Message = "Observation checklist detail is required." });
                     }
 
+                if (!IsValidObservationHeading(m.HEADING))
+                    {
+                    return InvalidObservationHeadingResponse();
+                    }
+
+                var observationHeading = m.HEADING.Trim();
+
                 var subChecklistId = request.S_ID;
                 var annexureId = m.ANNEXURE_ID;
                 var noOfInstances = m.NO_OF_INSTANCES;
@@ -1360,7 +1385,7 @@ namespace AIS.Controllers
 
                 var ob = new ObservationModel
                     {
-                    HEADING = m.HEADING,
+                    HEADING = observationHeading,
                     SUBCHECKLIST_ID = subChecklistId.GetValueOrDefault(),
                     ANNEXURE_ID = annexureId,
                     CHECKLISTDETAIL_ID = checklistDetailId,
@@ -1433,6 +1458,13 @@ namespace AIS.Controllers
                     return BadRequest(new { Status = false, Message = "Checklist is required for final submission." });
                     }
 
+                if (!IsValidObservationHeading(m.HEADING))
+                    {
+                    return InvalidObservationHeadingResponse();
+                    }
+
+                var observationHeading = m.HEADING.Trim();
+
                 var ob = new ObservationModel
                     {
                     SUBCHECKLIST_ID = request.SUB_CHECKLISTID.GetValueOrDefault(),
@@ -1441,7 +1473,7 @@ namespace AIS.Controllers
                     ENGPLANID = request.ENG_ID.GetValueOrDefault(),
                     REPLYDATE = DateTime.Today.AddDays(m.DAYS.GetValueOrDefault()),
                     OBSERVATION_TEXT = m.MEMO,
-                    HEADING = m.HEADING,
+                    HEADING = observationHeading,
                     SEVERITY = m.RISK.GetValueOrDefault(),
                     BRANCH_ID = request.BRANCH_ID.GetValueOrDefault(),
                     AMOUNT_INVOLVED = m.AMOUNT_INVOLVED,

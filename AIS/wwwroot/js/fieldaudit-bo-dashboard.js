@@ -207,23 +207,46 @@
         stepHost.innerHTML = '<div class="alert alert-info mb-0">' + message + '</div>';
     }
 
-    function ensureScriptLoaded(scriptUrl) {
+    function getScriptPathKey(url) {
+        var anchor = document.createElement('a');
+        anchor.href = resolveAppUrl(url);
+        return (anchor.pathname || '').toLowerCase();
+    }
+
+    function removeLoadedScript(scriptUrl) {
+        var targetPath = getScriptPathKey(scriptUrl);
+        Array.prototype.slice.call(document.getElementsByTagName('script')).forEach(function (script) {
+            var scriptSource = script.getAttribute('src') || '';
+            if (scriptSource && getScriptPathKey(scriptSource) === targetPath) {
+                script.parentNode.removeChild(script);
+            }
+        });
+    }
+
+    function ensureScriptLoaded(scriptUrl, forceReload) {
         var resolvedUrl = resolveAppUrl(scriptUrl);
-        if (scriptLoadCache[resolvedUrl]) {
-            return scriptLoadCache[resolvedUrl];
+        var cacheKey = getScriptPathKey(resolvedUrl);
+        if (forceReload) {
+            removeLoadedScript(resolvedUrl);
+            delete scriptLoadCache[cacheKey];
+            resolvedUrl += (resolvedUrl.indexOf('?') >= 0 ? '&' : '?') + 'boReload=' + Date.now();
+        }
+
+        if (scriptLoadCache[cacheKey]) {
+            return scriptLoadCache[cacheKey];
         }
 
         var scripts = Array.prototype.slice.call(document.getElementsByTagName('script'));
         var existing = scripts.find(function (script) {
-            return (script.getAttribute('src') || '').indexOf(resolvedUrl) !== -1;
+            return (script.getAttribute('src') || '') && getScriptPathKey(script.getAttribute('src')) === cacheKey;
         });
 
         if (existing) {
-            scriptLoadCache[resolvedUrl] = Promise.resolve();
-            return scriptLoadCache[resolvedUrl];
+            scriptLoadCache[cacheKey] = Promise.resolve();
+            return scriptLoadCache[cacheKey];
         }
 
-        scriptLoadCache[resolvedUrl] = new Promise(function (resolve, reject) {
+        scriptLoadCache[cacheKey] = new Promise(function (resolve, reject) {
             var script = document.createElement('script');
             script.src = resolvedUrl;
             script.async = false;
@@ -232,14 +255,27 @@
             document.body.appendChild(script);
         });
 
-        return scriptLoadCache[resolvedUrl];
+        return scriptLoadCache[cacheKey];
+    }
+
+    function shouldReloadStepScript(stepCode, scriptUrl) {
+        var scriptPath = getScriptPathKey(scriptUrl);
+        if (stepCode === 'DRAFT_REPORT' || stepCode === 'CHECKING_DRAFT_REPORT') {
+            return scriptPath.indexOf('/views_execution_draft_audit_report_branch.js') >= 0;
+        }
+
+        if (stepCode === 'QUALITY_REVIEW' || stepCode === 'CHECKING_QUALITY_REVIEW') {
+            return scriptPath.indexOf('/views_execution_pre_concluding_audit.js') >= 0;
+        }
+
+        return false;
     }
 
     function ensureStepDependencies(stepCode) {
         var dependencies = scriptDependenciesByStep[stepCode] || [];
         return dependencies.reduce(function (chain, scriptUrl) {
             return chain.then(function () {
-                return ensureScriptLoaded(scriptUrl);
+                return ensureScriptLoaded(scriptUrl, shouldReloadStepScript(stepCode, scriptUrl));
             });
         }, Promise.resolve());
     }
