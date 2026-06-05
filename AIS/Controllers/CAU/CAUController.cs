@@ -21,7 +21,8 @@ namespace AIS.Controllers
             "/CAU/om_creation",
             "/CAU/om_reply",
             "/CAU/monitoring_oms",
-            "/CAU/reports"
+            "/CAU/reports",
+            "/CAU/ARPSEYearWiseReport"
             };
 
         private readonly ILogger<CAUController> _logger;
@@ -271,6 +272,27 @@ namespace AIS.Controllers
                 }
             }
 
+        private IActionResult RenderARPSEYearWiseReport()
+            {
+            try
+                {
+                if (!PrepareCauView())
+                    {
+                    return RedirectForUnauthorizedOrMissingPermission();
+                    }
+
+                ViewData["Title"] = "ARPSE Year DAC / PAC Report";
+                ViewData["CommercialAuditStage"] = "reports";
+                ViewData["ARPSEYears"] = dBConnection.GetARPSEYears();
+                return View("../CAU/ARPSEYearWiseReport");
+                }
+            catch (Exception ex)
+                {
+                _logger.LogError(ex, "Failed to render ARPSE Year DAC / PAC Report.");
+                return StatusCode(500, "Unable to load the ARPSE Year DAC / PAC Report right now.");
+                }
+            }
+
         [HttpGet("CAU/workflow")]
         public IActionResult workflow()
             {
@@ -318,7 +340,37 @@ namespace AIS.Controllers
         [HttpGet("CAU/reports")]
         public IActionResult reports()
             {
-            return RenderCommercialAuditWorkflow(null);
+            return RenderARPSEYearWiseReport();
+            }
+
+        [HttpGet("CAU/ARPSEYearWiseReport")]
+        public IActionResult ARPSEYearWiseReport()
+            {
+            return RenderARPSEYearWiseReport();
+            }
+
+        [HttpGet("CAU/GetARPSEYearWiseReport")]
+        public IActionResult GetARPSEYearWiseReport(int arpseYear)
+            {
+            try
+                {
+                if (!PrepareCauView(includeMenuData: false))
+                    {
+                    return User.Identity.IsAuthenticated ? Forbid() : Unauthorized();
+                    }
+
+                if (arpseYear <= 0)
+                    {
+                    return BadRequest(new { success = false, message = "ARPSE Year is required." });
+                    }
+
+                return Json(dBConnection.GetARPSEYearWiseReport(arpseYear));
+                }
+            catch (Exception ex)
+                {
+                _logger.LogError(ex, "Failed to load ARPSE Year Wise report data for year {ArpseYear}.", arpseYear);
+                return StatusCode(500, new { success = false, message = "Unable to load report data right now." });
+                }
             }
 
         [HttpGet("CAU/LoadStepPartial")]

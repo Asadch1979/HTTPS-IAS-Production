@@ -1,10 +1,13 @@
 using AIS.Models.CAU;
+using Ganss.Xss;
 using Oracle.ManagedDataAccess.Client;
 using Oracle.ManagedDataAccess.Types;
 using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
+using System.Net;
+using System.Text.RegularExpressions;
 
 namespace AIS.Controllers
     {
@@ -49,6 +52,71 @@ namespace AIS.Controllers
                 {
                 return null;
                 }
+            }
+
+        private static string CleanHtmlForReport(string input)
+            {
+            if (string.IsNullOrWhiteSpace(input))
+                {
+                return string.Empty;
+                }
+
+            var text = DecodeHtmlRepeatedly(input)
+                .Replace("\u00A0", " ")
+                .Trim();
+
+            text = Regex.Replace(
+                text,
+                @"(^|\r\n|\r|\n)\s*((?:(?:DAC|PAC)\s+)?\d{2}-[A-Z]{3}-\d{4}:)",
+                "$1<strong>$2</strong> ",
+                RegexOptions.IgnoreCase);
+
+            text = Regex.Replace(text, @"\r\n|\r|\n", "<br />");
+
+            return CreateCommercialAuditReportSanitizer().Sanitize(text).Trim();
+            }
+
+        private static string DecodeHtmlRepeatedly(string input)
+            {
+            var current = input ?? string.Empty;
+
+            for (var index = 0; index < 4; index++)
+                {
+                var decoded = WebUtility.HtmlDecode(current) ?? string.Empty;
+                if (string.Equals(decoded, current, StringComparison.Ordinal))
+                    {
+                    break;
+                    }
+
+                current = decoded;
+                }
+
+            return current;
+            }
+
+        private static HtmlSanitizer CreateCommercialAuditReportSanitizer()
+            {
+            var sanitizer = new HtmlSanitizer();
+
+            sanitizer.AllowedSchemes.Clear();
+            sanitizer.AllowedSchemes.Add("http");
+            sanitizer.AllowedSchemes.Add("https");
+
+            sanitizer.AllowedTags.Clear();
+            sanitizer.AllowedTags.UnionWith(new[]
+                {
+                "a", "b", "blockquote", "br", "caption", "col", "colgroup", "div", "em", "h1", "h2", "h3", "h4",
+                "h5", "h6", "hr", "i", "li", "ol", "p", "span", "strong", "sub", "sup", "table", "tbody", "td",
+                "tfoot", "th", "thead", "tr", "u", "ul"
+                });
+
+            sanitizer.AllowedAttributes.Clear();
+            sanitizer.AllowedAttributes.UnionWith(new[] { "href", "title", "colspan", "rowspan", "target", "rel" });
+
+            sanitizer.AllowedCssProperties.Clear();
+            sanitizer.AllowedClasses.Clear();
+
+            return sanitizer;
             }
 
         private static void AddNullableIntParameter(OracleCommand cmd, string name, int? value)
@@ -665,6 +733,85 @@ namespace AIS.Controllers
                                 PacDate = SafeReadNullableDate(dr, "PAC_DATE"),
                                 UpdatedStatus = SafeReadString(dr, "UPDATED_STATUS"),
                                 IsActive = NormalizeActiveFlag(SafeReadString(dr, "IS_ACTIVE"))
+                                });
+                            }
+                        }
+                    }
+                }
+
+            return list;
+            }
+
+        public List<ARPSEYearDropdownVM> GetARPSEYears()
+            {
+            var list = new List<ARPSEYearDropdownVM>();
+
+            using (var con = this.DatabaseConnection())
+                {
+                using (var cmd = con.CreateCommand())
+                    {
+                    cmd.CommandText = "PKG_COMMERCIAL_AUDIT.P_GET_ARPSE_YEARS";
+                    cmd.CommandType = CommandType.StoredProcedure;
+                    cmd.BindByName = true;
+                    cmd.Parameters.Clear();
+                    cmd.Parameters.Add("IO_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+
+                    using (var dr = cmd.ExecuteReader())
+                        {
+                        while (dr.Read())
+                            {
+                            var arpseYear = SafeReadInt(dr, "ARPSE_YEAR");
+                            if (arpseYear <= 0)
+                                {
+                                continue;
+                                }
+
+                            list.Add(new ARPSEYearDropdownVM
+                                {
+                                ARPSEYear = arpseYear,
+                                DisplayText = SafeReadString(dr, "DISPLAY_TEXT")
+                                });
+                            }
+                        }
+                    }
+                }
+
+            return list;
+            }
+
+        public List<ARPSEYearWiseReportVM> GetARPSEYearWiseReport(int arpseYear)
+            {
+            var list = new List<ARPSEYearWiseReportVM>();
+
+            if (arpseYear <= 0)
+                {
+                return list;
+                }
+
+            using (var con = this.DatabaseConnection())
+                {
+                using (var cmd = con.CreateCommand())
+                    {
+                    cmd.CommandText = "PKG_COMMERCIAL_AUDIT.P_GET_ARPSE_YEAR_WISE_REPORT";
+                    cmd.CommandType = CommandType.StoredProcedure;
+                    cmd.BindByName = true;
+                    cmd.Parameters.Clear();
+                    cmd.Parameters.Add("P_ARPSE_YEAR", OracleDbType.Int32).Value = arpseYear;
+                    cmd.Parameters.Add("IO_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+
+                    using (var dr = cmd.ExecuteReader())
+                        {
+                        while (dr.Read())
+                            {
+                            list.Add(new ARPSEYearWiseReportVM
+                                {
+                                SrNo = SafeReadInt(dr, "SR_NO"),
+                                ParaNo = SafeReadString(dr, "PARA_NO"),
+                                ContentsOfPara = CleanHtmlForReport(SafeReadString(dr, "CONTENTS_OF_PARA")),
+                                ReplyOfManagement = CleanHtmlForReport(SafeReadString(dr, "REPLY_OF_MANAGEMENT")),
+                                DACRecommendations = CleanHtmlForReport(SafeReadString(dr, "DAC_RECOMMENDATIONS")),
+                                PACDirectives = CleanHtmlForReport(SafeReadString(dr, "PAC_DIRECTIVES")),
+                                Progress = CleanHtmlForReport(SafeReadString(dr, "PROGRESS"))
                                 });
                             }
                         }

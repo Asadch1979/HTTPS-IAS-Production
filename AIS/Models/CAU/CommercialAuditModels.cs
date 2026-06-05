@@ -210,4 +210,28 @@ namespace AIS.Models.CAU
         [PlainText]
         public string IsActive { get; set; } = "Y";
         }
+
+    public class ARPSEYearWiseReportVM
+        {
+        public int SrNo { get; set; }
+        [PlainText]
+        public string ParaNo { get; set; }
+        [RichTextSanitize]
+        public string ContentsOfPara { get; set; }
+        [RichTextSanitize]
+        public string ReplyOfManagement { get; set; }
+        [RichTextSanitize]
+        public string DACRecommendations { get; set; }
+        [RichTextSanitize]
+        public string PACDirectives { get; set; }
+        [RichTextSanitize]
+        public string Progress { get; set; }
+        }
+
+    public class ARPSEYearDropdownVM
+        {
+        public int ARPSEYear { get; set; }
+        [PlainText]
+        public string DisplayText { get; set; }
+        }
     }

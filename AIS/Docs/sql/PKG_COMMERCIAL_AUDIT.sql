@@ -84,6 +84,15 @@
         IO_CURSOR OUT T_CURSOR
     );
 
+    PROCEDURE P_GET_ARPSE_YEARS(
+        IO_CURSOR OUT T_CURSOR
+    );
+
+    PROCEDURE P_GET_ARPSE_YEAR_WISE_REPORT(
+        P_ARPSE_YEAR IN NUMBER,
+        IO_CURSOR OUT T_CURSOR
+    );
+
     PROCEDURE P_SAVE_ARPSE_PDP_MAP(
         P_ARPSE_ID IN NUMBER,
         P_PDP_IDS_CSV IN CLOB,
@@ -949,6 +958,121 @@ CREATE OR REPLACE PACKAGE BODY PKG_COMMERCIAL_AUDIT AS
             WHERE A.IS_ACTIVE = C_ACTIVE
             ORDER BY A.ARPSE_YEAR_ID DESC, A.PARA_NO;
     END P_GET_ARPSE_HEADERS;
+
+    PROCEDURE P_GET_ARPSE_YEARS(
+        IO_CURSOR OUT T_CURSOR
+    ) IS
+    BEGIN
+        OPEN IO_CURSOR FOR
+            SELECT DISTINCT
+                A.ARPSE_YEAR_ID AS ARPSE_YEAR,
+                TO_CHAR(A.ARPSE_YEAR_ID) AS DISPLAY_TEXT
+            FROM T_COM_AUDIT_ARPSE A
+            WHERE A.IS_ACTIVE = C_ACTIVE
+              AND A.ARPSE_YEAR_ID IS NOT NULL
+            ORDER BY A.ARPSE_YEAR_ID ASC;
+    END P_GET_ARPSE_YEARS;
+
+    PROCEDURE P_GET_ARPSE_YEAR_WISE_REPORT(
+        P_ARPSE_YEAR IN NUMBER,
+        IO_CURSOR OUT T_CURSOR
+    ) IS
+    BEGIN
+        OPEN IO_CURSOR FOR
+            SELECT
+                ROW_NUMBER() OVER (ORDER BY A.PARA_NO DESC, A.ARPSE_ID DESC) AS SR_NO,
+                A.PARA_NO AS PARA_NO,
+                A.BODY_OF_PARA AS CONTENTS_OF_PARA,
+                A.MANAGEMENT_RESPONSE AS REPLY_OF_MANAGEMENT,
+                D.DAC_RECOMMENDATIONS,
+                P.PAC_DIRECTIVES,
+                PR.PROGRESS
+            FROM T_COM_AUDIT_ARPSE A
+            LEFT JOIN (
+                SELECT
+                    ARPSE_ID,
+                    XMLAGG(
+                        XMLELEMENT(
+                            E,
+                            CASE
+                                WHEN DAC_DATE IS NOT NULL THEN TO_CHAR(DAC_DATE, 'DD-MON-YYYY') || ': '
+                                ELSE ''
+                            END || DBMS_LOB.SUBSTR(DAC_RECOMMENDATION, 3000, 1) || CHR(10)
+                        )
+                        ORDER BY NVL(DAC_DATE, CREATED_ON), DAC_ENTRY_ID
+                    ).EXTRACT('//text()').GETCLOBVAL() AS DAC_RECOMMENDATIONS
+                FROM T_COM_AUDIT_ARPSE_DAC
+                WHERE IS_ACTIVE = C_ACTIVE
+                GROUP BY ARPSE_ID
+            ) D
+              ON D.ARPSE_ID = A.ARPSE_ID
+            LEFT JOIN (
+                SELECT
+                    ARPSE_ID,
+                    XMLAGG(
+                        XMLELEMENT(
+                            E,
+                            CASE
+                                WHEN PAC_DATE IS NOT NULL THEN TO_CHAR(PAC_DATE, 'DD-MON-YYYY') || ': '
+                                ELSE ''
+                            END || DBMS_LOB.SUBSTR(PAC_DIRECTIVE, 3000, 1) || CHR(10)
+                        )
+                        ORDER BY NVL(PAC_DATE, CREATED_ON), PAC_ENTRY_ID
+                    ).EXTRACT('//text()').GETCLOBVAL() AS PAC_DIRECTIVES
+                FROM T_COM_AUDIT_ARPSE_PAC
+                WHERE IS_ACTIVE = C_ACTIVE
+                GROUP BY ARPSE_ID
+            ) P
+              ON P.ARPSE_ID = A.ARPSE_ID
+            LEFT JOIN (
+                SELECT
+                    ARPSE_ID,
+                    XMLAGG(
+                        XMLELEMENT(E, PROGRESS_TEXT || CHR(10))
+                        ORDER BY PROGRESS_DATE, SOURCE_ORDER, ENTRY_ID
+                    ).EXTRACT('//text()').GETCLOBVAL() AS PROGRESS
+                FROM (
+                    SELECT
+                        ARPSE_ID,
+                        NVL(DAC_DATE, CREATED_ON) AS PROGRESS_DATE,
+                        1 AS SOURCE_ORDER,
+                        DAC_ENTRY_ID AS ENTRY_ID,
+                        'DAC'
+                            || CASE
+                                WHEN DAC_DATE IS NOT NULL THEN ' ' || TO_CHAR(DAC_DATE, 'DD-MON-YYYY')
+                                ELSE ''
+                               END
+                            || ': '
+                            || DBMS_LOB.SUBSTR(UPDATED_STATUS, 3000, 1) AS PROGRESS_TEXT
+                    FROM T_COM_AUDIT_ARPSE_DAC
+                    WHERE IS_ACTIVE = C_ACTIVE
+                      AND UPDATED_STATUS IS NOT NULL
+                      AND NVL(DBMS_LOB.GETLENGTH(UPDATED_STATUS), 0) > 0
+                    UNION ALL
+                    SELECT
+                        ARPSE_ID,
+                        NVL(PAC_DATE, CREATED_ON) AS PROGRESS_DATE,
+                        2 AS SOURCE_ORDER,
+                        PAC_ENTRY_ID AS ENTRY_ID,
+                        'PAC'
+                            || CASE
+                                WHEN PAC_DATE IS NOT NULL THEN ' ' || TO_CHAR(PAC_DATE, 'DD-MON-YYYY')
+                                ELSE ''
+                               END
+                            || ': '
+                            || DBMS_LOB.SUBSTR(UPDATED_STATUS, 3000, 1) AS PROGRESS_TEXT
+                    FROM T_COM_AUDIT_ARPSE_PAC
+                    WHERE IS_ACTIVE = C_ACTIVE
+                      AND UPDATED_STATUS IS NOT NULL
+                      AND NVL(DBMS_LOB.GETLENGTH(UPDATED_STATUS), 0) > 0
+                )
+                GROUP BY ARPSE_ID
+            ) PR
+              ON PR.ARPSE_ID = A.ARPSE_ID
+            WHERE A.IS_ACTIVE = C_ACTIVE
+              AND A.ARPSE_YEAR_ID = P_ARPSE_YEAR
+            ORDER BY A.PARA_NO DESC, A.ARPSE_ID DESC;
+    END P_GET_ARPSE_YEAR_WISE_REPORT;
 
     PROCEDURE P_SAVE_ARPSE_PDP_MAP(
         P_ARPSE_ID IN NUMBER,
