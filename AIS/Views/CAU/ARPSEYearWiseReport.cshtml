@@ -1,0 +1,76 @@
+@using AIS.Models.CAU
+@using System.Linq
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = "ARPSE Year DAC / PAC Report";
+    var arpseYears = (ViewData["ARPSEYears"] as IEnumerable<ARPSEYearDropdownVM>) ?? Enumerable.Empty<ARPSEYearDropdownVM>();
+}
+
+<link rel="stylesheet" href="~/css/commercial-audit.css" asp-append-version="true" />
+
+<div class="container-fluid mt-4 commercial-audit-page arpse-report-page"
+     data-report-url="@Url.Action("GetARPSEYearWiseReport", "CAU")">
+    <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-start gap-3 mb-3">
+        <div>
+            <h3 id="arpseReportHeading" class="arpse-report-title mb-1">ARPSE Year DAC / PAC Report</h3>
+            <p class="text-muted mb-0">Select an ARPSE Year to view related DAC and PAC progress position.</p>
+        </div>
+        <a class="btn btn-outline-secondary btn-sm" href="@Url.Action("workflow", "CAU")">Commercial Audit Workflow</a>
+    </div>
+
+    <div class="arpse-report-filter mb-3">
+        <div class="row g-3 align-items-end">
+            <div class="col-12 col-md-5 col-lg-3">
+                <label for="arpseYearFilter" class="form-label">ARPSE Year</label>
+                <select id="arpseYearFilter" class="form-select">
+                    <option value="">-- Select ARPSE Year --</option>
+                    @foreach (var year in arpseYears.OrderBy(item => item.ARPSEYear))
+                    {
+                        <option value="@(year.ARPSEYear)">@(year.DisplayText)</option>
+                    }
+                </select>
+            </div>
+            <div class="col-12 col-md-auto">
+                <button id="btnLoadArpseYearReport" type="button" class="btn btn-success">Load Report</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="arpseYearReportMessage" class="arpse-report-message alert alert-info">
+        Select an ARPSE Year and load the report.
+    </div>
+
+    <div id="arpseYearReportContainer" class="d-none">
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2 mb-2">
+            <h5 id="arpseYearReportPrintTitle" class="mb-0">ARPSE Year DAC / PAC Report</h5>
+            <span id="arpseYearReportSelectedLabel" class="text-muted small"></span>
+        </div>
+        <div class="table-responsive arpse-report-table-wrap">
+            <table id="tblArpseYearWiseReport" class="table table-bordered table-hover table-striped align-middle arpse-report-table" style="width: 100%;">
+                <colgroup>
+                    <col class="arpse-report-sr-col" />
+                    <col class="arpse-report-para-col" />
+                    <col class="arpse-report-contents-col" />
+                    <col class="arpse-report-management-col" />
+                    <col class="arpse-report-dac-col" />
+                    <col class="arpse-report-pac-col" />
+                    <col class="arpse-report-progress-col" />
+                </colgroup>
+                <thead style="background-color: #19875478 !important;">
+                    <tr>
+                        <th>Sr. No.</th>
+                        <th>Para No.</th>
+                        <th>Contents of Para</th>
+                        <th>Reply of Management</th>
+                        <th>DAC Recommendations</th>
+                        <th>PAC Directives</th>
+                        <th>Progress</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script src="~/js/csp/Views_CAU_ARPSEYearWiseReport.js" asp-append-version="true"></script>
