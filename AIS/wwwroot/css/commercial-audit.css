@@ -244,6 +244,11 @@
     max-width: 100%;
 }
 
+.arpse-report-page .arpse-report-table-wrap {
+    overflow-x: auto;
+    overflow-y: visible;
+}
+
 .arpse-report-page .dataTables_wrapper .top,
 .arpse-report-page .dataTables_wrapper .bottom {
     width: 100%;
@@ -273,10 +278,9 @@
 }
 
 .arpse-report-page .arpse-report-table {
-    table-layout: fixed;
-    width: 100% !important;
+    table-layout: auto;
+    width: max-content !important;
     min-width: 2250px !important;
-    max-width: 100%;
     margin-left: 0 !important;
     margin-right: 0 !important;
 }
@@ -335,6 +339,7 @@
 }
 
 .arpse-report-page .report-rich-text {
+    min-width: 280px;
     white-space: normal;
     word-break: normal !important;
     overflow-wrap: break-word;
@@ -353,15 +358,20 @@
 }
 
 .arpse-report-page .report-rich-text table {
-    width: 100%;
+    width: max-content;
+    min-width: 100%;
     border-collapse: collapse;
     margin-bottom: 6px;
+    table-layout: auto;
 }
 
 .arpse-report-page .report-rich-text th,
 .arpse-report-page .report-rich-text td {
     border: 1px solid #dee2e6;
     padding: 0.25rem;
+    min-width: 90px;
+    vertical-align: top;
+    white-space: normal !important;
 }
 
 @media (max-width: 991.98px) {

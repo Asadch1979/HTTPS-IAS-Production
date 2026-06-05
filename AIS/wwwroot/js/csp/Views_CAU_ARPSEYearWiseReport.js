@@ -109,8 +109,9 @@ function initializeArpseYearReportDataTable() {
     }
 
     var table = $("#tblArpseYearWiseReport");
-    var displayExportOptions = getArpseYearReportExportOptions(false);
-    var safeTextExportOptions = getArpseYearReportExportOptions(true);
+    var pdfExportOptions = getArpseYearReportExportOptions({ preserveHtml: true });
+    var displayExportOptions = getArpseYearReportExportOptions({ applyCsvSafety: false });
+    var safeTextExportOptions = getArpseYearReportExportOptions({ applyCsvSafety: true });
     var reportTitle = getCurrentArpseReportTitle();
     var buttons = [];
 
@@ -119,7 +120,7 @@ function initializeArpseYearReportDataTable() {
             title: reportTitle,
             orientation: "landscape",
             pageSize: "LEGAL",
-            exportOptions: displayExportOptions,
+            exportOptions: pdfExportOptions,
             customize: customizeArpseYearReportPdf
         }));
     }
@@ -181,28 +182,21 @@ function initializeArpseYearReportDataTable() {
     }, 0);
 }
 
-function getArpseYearReportExportOptions(applyCsvSafety) {
+function getArpseYearReportExportOptions(options) {
+    var settings = typeof options === "object"
+        ? options
+        : { applyCsvSafety: !!options };
+
     return {
         format: {
             body: function (data, row, column, node) {
-                var textContent = "";
-                if (node && typeof node.innerText === "string") {
-                    textContent = node.innerText;
-                } else if (node && typeof node.textContent === "string") {
-                    textContent = node.textContent;
-                } else if (typeof data === "string") {
-                    textContent = data;
-                } else if (data !== null && data !== undefined) {
-                    textContent = String(data);
+                if (settings.preserveHtml) {
+                    return getRenderedExportHtml(node || data);
                 }
 
-                textContent = decodeHtmlRepeatedly(textContent)
-                    .replace(/\u00a0/g, " ")
-                    .replace(/[ \t]+\n/g, "\n")
-                    .replace(/\n{3,}/g, "\n\n")
-                    .trim();
+                var textContent = getCleanExportText(node || data);
 
-                if (applyCsvSafety && typeof sanitizeCsvValue === "function") {
+                if (settings.applyCsvSafety && typeof sanitizeCsvValue === "function") {
                     return sanitizeCsvValue(textContent);
                 }
 
@@ -250,6 +244,7 @@ function customizeArpseYearReportPdf(doc) {
             tableBlock.margin = [0, 0, 0, 0];
             tableBlock.table.headerRows = 1;
             tableBlock.table.widths = ["2%", "2%", "18%", "22%", "22%", "22%", "11%"];
+            renderArpseYearReportPdfHtmlCells(tableBlock);
 
             tableBlock.table.body.forEach(function (row, rowIndex) {
                 if (!Array.isArray(row)) {
@@ -280,7 +275,7 @@ function forceArpseReportTableLayout() {
         return;
     }
 
-    table.attr("style", "width: 100% !important; min-width: 2250px !important; table-layout: fixed !important;");
+    table.attr("style", "width: max-content !important; min-width: 2250px !important; table-layout: auto !important;");
     table.closest(".arpse-report-table-wrap").css({
         width: "100%",
         maxWidth: "100%",
@@ -316,6 +311,354 @@ function setArpseReportTitle(selectedYearText) {
 
 function getCurrentArpseReportTitle() {
     return String($("#arpseReportHeading").text() || "ARPSE Year DAC / PAC Report").trim();
+}
+
+function getRenderedExportHtml(node) {
+    var html = "";
+    if (node && typeof node.innerHTML === "string") {
+        html = node.innerHTML;
+    } else if (typeof node === "string") {
+        html = node;
+    } else if (node !== null && node !== undefined) {
+        html = String(node);
+    }
+
+    return decodeHtmlRepeatedly(html).replace(/\u00a0/g, " ").trim();
+}
+
+function renderArpseYearReportPdfHtmlCells(tableBlock) {
+    if (!tableBlock || !tableBlock.table || !Array.isArray(tableBlock.table.body)) {
+        return;
+    }
+
+    tableBlock.table.body.forEach(function (row, rowIndex) {
+        if (rowIndex === 0 || !Array.isArray(row)) {
+            return;
+        }
+
+        row.forEach(function (cell, columnIndex) {
+            if (columnIndex < 2) {
+                return;
+            }
+
+            var html = getArpseYearReportPdfCellHtml(cell);
+            if (!html) {
+                return;
+            }
+
+            var content = convertReportHtmlToPdfMake(html);
+            if (cell && typeof cell === "object") {
+                delete cell.text;
+                cell.stack = content.length ? content : [{ text: "" }];
+            } else {
+                row[columnIndex] = { stack: content.length ? content : [{ text: "" }] };
+            }
+        });
+    });
+}
+
+function getArpseYearReportPdfCellHtml(cell) {
+    if (cell && typeof cell === "object" && typeof cell.text === "string") {
+        return cell.text;
+    }
+
+    if (typeof cell === "string") {
+        return cell;
+    }
+
+    return "";
+}
+
+function convertReportHtmlToPdfMake(html) {
+    var template = document.createElement("template");
+    template.innerHTML = decodeHtmlRepeatedly(html || "");
+    sanitizeReportHtmlNode(template.content);
+
+    var stack = [];
+    Array.from(template.content.childNodes).forEach(function (node) {
+        appendReportPdfBlock(stack, node, {});
+    });
+
+    if (!stack.length) {
+        var text = getCleanExportText(html);
+        if (text) {
+            stack.push({ text: text });
+        }
+    }
+
+    return stack;
+}
+
+function appendReportPdfBlock(stack, node, style) {
+    if (!node) {
+        return;
+    }
+
+    if (node.nodeType === Node.TEXT_NODE) {
+        var text = normalizeReportPdfText(node.nodeValue);
+        if (text) {
+            stack.push({ text: text });
+        }
+        return;
+    }
+
+    if (node.nodeType !== Node.ELEMENT_NODE) {
+        return;
+    }
+
+    var tagName = node.tagName;
+    if (tagName === "BR") {
+        stack.push({ text: "\n" });
+        return;
+    }
+
+    if (tagName === "TABLE") {
+        stack.push(convertReportHtmlTableToPdfMake(node));
+        return;
+    }
+
+    if (tagName === "UL" || tagName === "OL") {
+        stack.push(convertReportHtmlListToPdfMake(node, tagName === "OL"));
+        return;
+    }
+
+    var inlineStyle = extendReportPdfInlineStyle(style, tagName);
+    var inlineContent = getReportPdfInlineContent(node, inlineStyle);
+    if (inlineContent.length) {
+        stack.push({
+            text: inlineContent,
+            margin: getReportPdfBlockMargin(tagName),
+            fontSize: getReportPdfBlockFontSize(tagName),
+            bold: /^H[1-6]$/.test(tagName) ? true : undefined
+        });
+    }
+
+    Array.from(node.childNodes).forEach(function (child) {
+        if (child.nodeType === Node.ELEMENT_NODE && child.tagName === "TABLE") {
+            appendReportPdfBlock(stack, child, style);
+        }
+    });
+}
+
+function getReportPdfInlineContent(node, style) {
+    var parts = [];
+    Array.from(node.childNodes).forEach(function (child) {
+        appendReportPdfInline(parts, child, style || {});
+    });
+    return parts;
+}
+
+function appendReportPdfInline(parts, node, style) {
+    if (!node) {
+        return;
+    }
+
+    if (node.nodeType === Node.TEXT_NODE) {
+        var text = normalizeReportPdfText(node.nodeValue);
+        if (text) {
+            parts.push($.extend({}, style, { text: text }));
+        }
+        return;
+    }
+
+    if (node.nodeType !== Node.ELEMENT_NODE) {
+        return;
+    }
+
+    if (node.tagName === "BR") {
+        parts.push({ text: "\n" });
+        return;
+    }
+
+    if (node.tagName === "TABLE") {
+        var tableText = getCleanExportText(node);
+        if (tableText) {
+            parts.push($.extend({}, style, { text: tableText }));
+        }
+        return;
+    }
+
+    var childStyle = extendReportPdfInlineStyle(style, node.tagName);
+    Array.from(node.childNodes).forEach(function (child) {
+        appendReportPdfInline(parts, child, childStyle);
+    });
+
+    if (/^(P|DIV|LI|H[1-6])$/.test(node.tagName)) {
+        parts.push({ text: "\n" });
+    }
+}
+
+function extendReportPdfInlineStyle(style, tagName) {
+    var nextStyle = $.extend({}, style);
+    if (tagName === "B" || tagName === "STRONG" || /^H[1-6]$/.test(tagName) || tagName === "TH") {
+        nextStyle.bold = true;
+    }
+
+    if (tagName === "I" || tagName === "EM") {
+        nextStyle.italics = true;
+    }
+
+    if (tagName === "U" || tagName === "A") {
+        nextStyle.decoration = "underline";
+    }
+
+    if (tagName === "A") {
+        nextStyle.color = "#0d6efd";
+    }
+
+    return nextStyle;
+}
+
+function convertReportHtmlListToPdfMake(listNode, isOrdered) {
+    var items = Array.from(listNode.children)
+        .filter(function (child) { return child.tagName === "LI"; })
+        .map(function (item) {
+            var content = getReportPdfInlineContent(item, {});
+            return content.length ? { text: content } : getCleanExportText(item);
+        });
+
+    var listBlock = {
+        margin: [0, 0, 0, 4]
+    };
+    listBlock[isOrdered ? "ol" : "ul"] = items;
+    return listBlock;
+}
+
+function convertReportHtmlTableToPdfMake(tableNode) {
+    var rows = Array.from(tableNode.rows);
+    var body = [];
+    var maxColumns = 0;
+    var activeRowSpans = [];
+
+    rows.forEach(function (row) {
+        var pdfRow = [];
+        var columnIndex = 0;
+
+        appendActiveReportPdfRowSpanCells(pdfRow, activeRowSpans, columnIndex);
+        columnIndex = pdfRow.length;
+
+        Array.from(row.cells).forEach(function (cell) {
+            while (activeRowSpans[columnIndex] > 0) {
+                pdfRow.push({});
+                activeRowSpans[columnIndex] -= 1;
+                columnIndex += 1;
+            }
+
+            var cellContent = getReportPdfInlineContent(cell, extendReportPdfInlineStyle({}, cell.tagName));
+            var pdfCell = {
+                text: cellContent.length ? cellContent : getCleanExportText(cell),
+                bold: cell.tagName === "TH" ? true : undefined,
+                fillColor: cell.tagName === "TH" ? "#f3f4f6" : undefined,
+                margin: [1, 1, 1, 1]
+            };
+            var colSpan = parseInt(cell.getAttribute("colspan") || "1", 10);
+            var rowSpan = parseInt(cell.getAttribute("rowspan") || "1", 10);
+            if (colSpan > 1) {
+                pdfCell.colSpan = colSpan;
+            }
+
+            if (rowSpan > 1) {
+                pdfCell.rowSpan = rowSpan;
+            }
+
+            pdfRow.push(pdfCell);
+            markReportPdfRowSpans(activeRowSpans, columnIndex, colSpan, rowSpan);
+            columnIndex += 1;
+
+            for (var index = 1; index < colSpan; index++) {
+                pdfRow.push({});
+                columnIndex += 1;
+            }
+        });
+
+        while (columnIndex < activeRowSpans.length) {
+            if (activeRowSpans[columnIndex] > 0) {
+                pdfRow.push({});
+                activeRowSpans[columnIndex] -= 1;
+            }
+            columnIndex += 1;
+        }
+
+        maxColumns = Math.max(maxColumns, pdfRow.length);
+        body.push(pdfRow);
+    });
+
+    body.forEach(function (row) {
+        while (row.length < maxColumns) {
+            row.push({ text: "" });
+        }
+    });
+
+    if (!body.length || !maxColumns) {
+        return { text: getCleanExportText(tableNode) };
+    }
+
+    return {
+        table: {
+            body: body,
+            widths: Array(maxColumns).fill("*")
+        },
+        layout: {
+            hLineWidth: function () { return 0.4; },
+            vLineWidth: function () { return 0.4; },
+            hLineColor: function () { return "#d1d5db"; },
+            vLineColor: function () { return "#d1d5db"; },
+            paddingLeft: function () { return 2; },
+            paddingRight: function () { return 2; },
+            paddingTop: function () { return 2; },
+            paddingBottom: function () { return 2; }
+        },
+        margin: [0, 1, 0, 5],
+        fontSize: 7
+    };
+}
+
+function appendActiveReportPdfRowSpanCells(pdfRow, activeRowSpans, columnIndex) {
+    while (activeRowSpans[columnIndex] > 0) {
+        pdfRow.push({});
+        activeRowSpans[columnIndex] -= 1;
+        columnIndex += 1;
+    }
+}
+
+function markReportPdfRowSpans(activeRowSpans, columnIndex, colSpan, rowSpan) {
+    if (rowSpan <= 1) {
+        return;
+    }
+
+    for (var index = 0; index < Math.max(colSpan, 1); index++) {
+        activeRowSpans[columnIndex + index] = Math.max(activeRowSpans[columnIndex + index] || 0, rowSpan - 1);
+    }
+}
+
+function getReportPdfBlockMargin(tagName) {
+    if (/^H[1-6]$/.test(tagName)) {
+        return [0, 0, 0, 4];
+    }
+
+    if (tagName === "P" || tagName === "DIV" || tagName === "BLOCKQUOTE") {
+        return [0, 0, 0, 3];
+    }
+
+    return [0, 0, 0, 2];
+}
+
+function getReportPdfBlockFontSize(tagName) {
+    if (tagName === "H1" || tagName === "H2") {
+        return 9;
+    }
+
+    if (/^H[3-6]$/.test(tagName)) {
+        return 8;
+    }
+
+    return undefined;
+}
+
+function normalizeReportPdfText(value) {
+    return String(value || "")
+        .replace(/\u00a0/g, " ")
+        .replace(/[ \t\r\n]+/g, " ");
 }
 
 function appendReportRichTextCell(row, value) {
