@@ -118,7 +118,7 @@ function initializeArpseYearReportDataTable() {
         buttons.push($.extend(true, {}, getPdfExportButtonConfig(), {
             title: reportTitle,
             orientation: "landscape",
-            pageSize: "A4",
+            pageSize: "LEGAL",
             exportOptions: displayExportOptions,
             customize: customizeArpseYearReportPdf
         }));
@@ -156,13 +156,13 @@ function initializeArpseYearReportDataTable() {
         scrollX: false,
         deferRender: true,
         columns: [
-            { width: "5%", className: "arpse-report-number-cell" },
-            { width: "7%", className: "arpse-report-para-cell" },
+            { width: "2%", className: "arpse-report-number-cell" },
+            { width: "2%", className: "arpse-report-para-cell" },
             { width: "18%" },
-            { width: "18%" },
-            { width: "18%" },
-            { width: "18%" },
-            { width: "16%" }
+            { width: "22%" },
+            { width: "22%" },
+            { width: "22%" },
+            { width: "11%" }
         ],
         buttons: buttons,
         lengthMenu: [
@@ -218,7 +218,7 @@ function customizeArpseYearReportPdf(doc) {
     }
 
     doc.pageOrientation = "landscape";
-    doc.pageSize = "A4";
+    doc.pageSize = "LEGAL";
     doc.pageMargins = [10, 16, 10, 16];
     doc.defaultStyle = doc.defaultStyle || {};
     doc.defaultStyle.fontSize = 8;
@@ -249,7 +249,7 @@ function customizeArpseYearReportPdf(doc) {
             };
             tableBlock.margin = [0, 0, 0, 0];
             tableBlock.table.headerRows = 1;
-            tableBlock.table.widths = ["5%", "7%", "18%", "18%", "18%", "18%", "16%"];
+            tableBlock.table.widths = ["2%", "2%", "18%", "22%", "22%", "22%", "11%"];
 
             tableBlock.table.body.forEach(function (row, rowIndex) {
                 if (!Array.isArray(row)) {
@@ -463,7 +463,7 @@ function exportArpseYearReportToWord() {
         "<meta charset='utf-8'>",
         "<title>", title, "</title>",
         "<style>",
-        "@page { size: A4 landscape; margin: 0.35in; }",
+        "@page { size: legal landscape; margin: 0.35in; }",
         "body { font-family: Arial, sans-serif; font-size: 9pt; color: #111; }",
         "h2 { font-size: 12pt; margin: 0 0 10px 0; text-align: left; }",
         "table { border-collapse: collapse; table-layout: fixed; width: 100%; }",
@@ -477,7 +477,7 @@ function exportArpseYearReportToWord() {
         "<table>",
         "<colgroup>",
         "<col style='width:2%'>",
-        "<col style='width:3%'>",
+        "<col style='width:2%'>",
         "<col style='width:18%'>",
         "<col style='width:22%'>",
         "<col style='width:22%'>",

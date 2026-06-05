@@ -958,7 +958,7 @@ namespace AIS.Controllers
                 GuardAgainstDynamicSql(cmd);
                 cmd.Parameters.Clear();
                 cmd.Parameters.Add("C_CYCLE", OracleDbType.Int32).Value = C_CYCLE;
-                cmd.Parameters.Add("COM_ID", OracleDbType.Int32).Value = COM_ID;
+                cmd.Parameters.Add("COMP_ID", OracleDbType.Int32).Value = COM_ID;
                 cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
                 using OracleDataReader rdr = cmd.ExecuteReader();
                 while (rdr.Read())
@@ -1197,7 +1197,7 @@ namespace AIS.Controllers
                 cmd.Parameters.Clear();
                 cmd.Parameters.Add("Old_id", OracleDbType.Int32).Value = OLD_PARA_ID;
                 cmd.Parameters.Add("new_id", OracleDbType.Int32).Value = NEW_PARA_ID;
-                cmd.Parameters.Add("Entity_ID", OracleDbType.Int32).Value = loggedInUser.UserEntityID;
+                cmd.Parameters.Add("ENT_ID", OracleDbType.Int32).Value = loggedInUser.UserEntityID;
                 cmd.Parameters.Add("P_NO", OracleDbType.Int32).Value = loggedInUser.PPNumber;
                 cmd.Parameters.Add("R_ID", OracleDbType.Int32).Value = loggedInUser.UserRoleID;
                 cmd.Parameters.Add("Auditee_COM", OracleDbType.Clob).Value = COMPLIANCE;
@@ -1576,7 +1576,7 @@ namespace AIS.Controllers
                 cmd.BindByName = true;
                 GuardAgainstDynamicSql(cmd);
                 cmd.Parameters.Clear();
-                cmd.Parameters.Add("COM_ID", OracleDbType.Varchar2).Value = COM_ID;
+                cmd.Parameters.Add("COMP_ID", OracleDbType.Varchar2).Value = COM_ID;
                 cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
                 using OracleDataReader rdr = cmd.ExecuteReader();
                 while (rdr.Read())

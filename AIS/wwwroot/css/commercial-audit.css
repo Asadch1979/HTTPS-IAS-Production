@@ -275,7 +275,7 @@
 .arpse-report-page .arpse-report-table {
     table-layout: fixed;
     width: 100% !important;
-    min-width: 1200px !important;
+    min-width: 2250px !important;
     max-width: 100%;
     margin-left: 0 !important;
     margin-right: 0 !important;
@@ -309,22 +309,25 @@
 }
 
 .arpse-report-page .arpse-report-sr-col {
-    width: 5%;
+    width: 2%;
 }
 
 .arpse-report-page .arpse-report-para-col {
-    width: 7%;
+    width: 2%;
 }
 
-.arpse-report-page .arpse-report-contents-col,
-.arpse-report-page .arpse-report-management-col,
-.arpse-report-page .arpse-report-dac-col,
-.arpse-report-page .arpse-report-pac-col {
+.arpse-report-page .arpse-report-contents-col {
     width: 18%;
 }
 
+.arpse-report-page .arpse-report-management-col,
+.arpse-report-page .arpse-report-dac-col,
+.arpse-report-page .arpse-report-pac-col {
+    width: 22%;
+}
+
 .arpse-report-page .arpse-report-progress-col {
-    width: 16%;
+    width: 11%;
 }
 
 .arpse-report-page .arpse-report-message {
