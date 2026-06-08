@@ -309,25 +309,28 @@
 }
 
 .arpse-report-page .arpse-report-sr-col {
-    width: 2%;
+    width: 4%;
 }
 
 .arpse-report-page .arpse-report-para-col {
-    width: 2%;
+    width: 4%;
 }
 
 .arpse-report-page .arpse-report-contents-col {
-    width: 18%;
-}
-
-.arpse-report-page .arpse-report-management-col,
-.arpse-report-page .arpse-report-dac-col,
-.arpse-report-page .arpse-report-pac-col {
     width: 22%;
 }
 
-.arpse-report-page .arpse-report-progress-col {
+.arpse-report-page .arpse-report-management-col {
+    width: 24%;
+}
+
+.arpse-report-page .arpse-report-dac-col,
+.arpse-report-page .arpse-report-pac-col {
     width: 11%;
+}
+
+.arpse-report-page .arpse-report-progress-col {
+    width: 28%;
 }
 
 .arpse-report-page .arpse-report-message {
@@ -343,7 +346,23 @@
 
 .arpse-report-page .report-rich-text p,
 .arpse-report-page .report-rich-text div {
-    margin-bottom: 6px;
+    margin: 0 0 0.35rem 0;
+}
+
+.arpse-report-page .report-rich-text p:empty,
+.arpse-report-page .report-rich-text div:empty,
+.arpse-report-page .report-rich-text span:empty {
+    display: none;
+}
+
+.arpse-report-page .report-rich-text p:first-child,
+.arpse-report-page .report-rich-text div:first-child {
+    margin-top: 0;
+}
+
+.arpse-report-page .report-rich-text p:last-child,
+.arpse-report-page .report-rich-text div:last-child {
+    margin-bottom: 0;
 }
 
 .arpse-report-page .report-rich-text ul,
