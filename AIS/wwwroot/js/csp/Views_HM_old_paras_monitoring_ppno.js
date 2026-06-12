@@ -1,29 +1,3 @@
-    function getParaDetailValue(source, names) {
-        if (!source || typeof source !== 'object') {
-            return '';
-        }
-
-        for (var i = 0; i < names.length; i++) {
-            var value = source[names[i]];
-            if (value !== undefined && value !== null && String(value).trim() !== '') {
-                return value;
-            }
-        }
-
-        return '';
-    }
-
-    function setParaDetailHtml(selector, value) {
-        $(selector).html(value && String(value).trim() !== '' ? value : '<span class="text-muted">N/A</span>');
-    }
-
-    function resolveAuditeeResponse(source) {
-        return getParaDetailValue(source, ['AUDITEE_RESPONSE', 'auditeE_RESPONSE', 'auditeeResponse', 'BRANCH_REPLY', 'branchReply']);
-    }
-
-    function resolveAuditRecommendation(source) {
-        return getParaDetailValue(source, ['AUDIT_RECOMMENDATION', 'auditRecommendation', 'AUDITOR_RECOMMENDATION', 'auditoR_RECOMMENDATION', 'RECOMMENDATION', 'recommendation', 'CAU_INSTRUCTION', 'cauInstruction']);
-    }
     $(document).on('click', '.js-old-paras-find', function (event) {
         event.preventDefault();
         getEmployeeName();
@@ -111,8 +85,6 @@
 
         $('#viewMemoModel').modal('show');
         $('#viewMemo_memo').html("");
-        setParaDetailHtml('#viewMemo_auditeeResponse', '');
-        setParaDetailHtml('#viewMemo_auditRecommendation', '');
         $.ajax({
             url: g_asiBaseURL + "/ApiCalls/getallparatext",
             type: "GET",
@@ -132,8 +104,6 @@
 
                 var text = para ? (para.ParaText || para.paraText || "") : "";
                 $('#viewMemo_memo').html(text);
-                setParaDetailHtml('#viewMemo_auditeeResponse', resolveAuditeeResponse(para));
-                setParaDetailHtml('#viewMemo_auditRecommendation', resolveAuditRecommendation(para));
             },
             error: function (jqXHR, textStatus) {
                 handlePageAjaxError(jqXHR, textStatus);

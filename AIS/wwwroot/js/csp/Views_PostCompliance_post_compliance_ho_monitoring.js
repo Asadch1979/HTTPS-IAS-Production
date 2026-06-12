@@ -53,33 +53,6 @@
     }
 
     });
-
-    function getParaDetailValue(source, names) {
-        if (!source || typeof source !== 'object') {
-            return '';
-        }
-
-        for (var i = 0; i < names.length; i++) {
-            var value = source[names[i]];
-            if (value !== undefined && value !== null && String(value).trim() !== '') {
-                return value;
-            }
-        }
-
-        return '';
-    }
-
-    function setParaDetailHtml(selector, value) {
-        $(selector).html(value && String(value).trim() !== '' ? value : '<span class="text-muted">N/A</span>');
-    }
-
-    function resolveAuditeeResponse(source) {
-        return getParaDetailValue(source, ['AUDITEE_RESPONSE', 'auditeE_RESPONSE', 'auditeeResponse', 'BRANCH_REPLY', 'branchReply']);
-    }
-
-    function resolveAuditRecommendation(source) {
-        return getParaDetailValue(source, ['AUDIT_RECOMMENDATION', 'auditRecommendation', 'AUDITOR_RECOMMENDATION', 'auditoR_RECOMMENDATION', 'RECOMMENDATION', 'recommendation', 'CAU_INSTRUCTION', 'cauInstruction']);
-    }
     function getFileExtension(file) {
         var fileName = file.name;
         var extension = fileName.substring(fileName.lastIndexOf('.') + 1).toLowerCase();
@@ -236,8 +209,6 @@
                 $('#viewMemo_memoNumber_rep').val(g_memoNo);
                 $('#viewMemo_paraGist_rep').val(data.gisT_OF_PARA);
                 $('#viewMemo_memo_rep').html(data.parA_TEXT);
-                setParaDetailHtml('#viewMemo_auditeeResponse_rep', resolveAuditeeResponse(data));
-                setParaDetailHtml('#viewMemo_auditRecommendation_rep', resolveAuditRecommendation(data));
                 $('#viewMemo_compliance_rep').val('');
                 if (g_prevRole == "")
                     $('#prevRoleButtonHandler_rep').remove();
