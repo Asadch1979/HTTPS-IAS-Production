@@ -547,7 +547,7 @@ namespace AIS.Controllers
                     cmd.BindByName = true;
                     GuardAgainstDynamicSql(cmd);
                     cmd.Parameters.Clear();
-                    cmd.Parameters.Add("userentityid", OracleDbType.Int32).Value = eng_id;
+                    cmd.Parameters.Add("ENGID", OracleDbType.Int32).Value = eng_id;
                     cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
                     using OracleDataReader rdr = cmd.ExecuteReader();
 
