@@ -85,7 +85,7 @@
 
 .commercial-audit-nav-track .commercial-audit-step-link .step-title {
     font-size: 0.9rem;
-    overflow-wrap: anywhere;
+    overflow-wrap: break-word;
     word-break: normal;
     white-space: normal;
 }
@@ -179,7 +179,7 @@
     min-width: 0;
     line-height: 1.45;
     overflow: visible;
-    overflow-wrap: anywhere;
+    overflow-wrap: break-word;
     text-overflow: clip;
     word-break: normal;
 }
@@ -342,11 +342,13 @@
     word-break: normal !important;
     overflow-wrap: break-word;
     line-height: 1.4;
+    text-align: justify;
 }
 
 .arpse-report-page .report-rich-text p,
 .arpse-report-page .report-rich-text div {
     margin: 0 0 0.35rem 0;
+    text-align: justify;
 }
 
 .arpse-report-page .report-rich-text p:empty,
@@ -369,10 +371,17 @@
 .arpse-report-page .report-rich-text ol {
     padding-left: 18px;
     margin-bottom: 6px;
+    text-align: justify;
+}
+
+.arpse-report-page .report-rich-text .arpse-section-label {
+    font-weight: 700;
+    text-decoration: underline;
 }
 
 .arpse-report-page .report-rich-text table {
     width: 100%;
+    table-layout: fixed;
     border-collapse: collapse;
     margin-bottom: 6px;
 }
@@ -381,6 +390,18 @@
 .arpse-report-page .report-rich-text td {
     border: 1px solid #dee2e6;
     padding: 0.25rem;
+    white-space: normal;
+    word-break: normal !important;
+    overflow-wrap: break-word;
+    vertical-align: top;
+}
+
+.arpse-report-page .report-rich-text th {
+    text-align: center;
+}
+
+.arpse-report-page .report-rich-text td {
+    text-align: left;
 }
 
 @media (max-width: 991.98px) {

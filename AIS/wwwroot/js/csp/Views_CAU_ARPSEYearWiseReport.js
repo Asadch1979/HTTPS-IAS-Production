@@ -1361,11 +1361,59 @@ function normalizeRepeatedReportRichTextBreaks(root) {
             return;
         }
 
+        if (isReportRichTextBreakInsideStructuredContent(br)) {
+            return;
+        }
+
         var previous = getPreviousReportRichTextContentSibling(br);
+        var next = getNextReportRichTextContentSibling(br);
+
         if (previous && previous.nodeType === 1 && previous.tagName === "BR") {
-            br.parentNode.removeChild(br);
+            return;
+        }
+
+        if (next && next.nodeType === 1 && next.tagName === "BR") {
+            collapseReportRichTextBreakRun(br, next);
+            return;
+        }
+
+        if (previous && next && previous.nodeType === 3 && next.nodeType === 3) {
+            br.parentNode.replaceChild(document.createTextNode(" "), br);
         }
     });
+}
+
+function collapseReportRichTextBreakRun(firstBreak, secondBreak) {
+    var next = secondBreak;
+
+    while (next) {
+        if (next.nodeType === 3 && !String(next.nodeValue || "").trim()) {
+            next = next.nextSibling;
+            continue;
+        }
+
+        if (next.nodeType === 1 && next.tagName === "BR") {
+            var duplicate = next;
+            next = next.nextSibling;
+            duplicate.parentNode.removeChild(duplicate);
+            continue;
+        }
+
+        break;
+    }
+}
+
+function isReportRichTextBreakInsideStructuredContent(br) {
+    var parent = br && br.parentElement;
+    while (parent) {
+        if (/^(LI|UL|OL|TABLE|THEAD|TBODY|TFOOT|TR|TD|TH)$/.test(parent.tagName)) {
+            return true;
+        }
+
+        parent = parent.parentElement;
+    }
+
+    return false;
 }
 
 function trimReportRichTextBoundaryBreaks(root) {
@@ -1465,7 +1513,7 @@ function formatArpseDacPacSectionLabels(root) {
             }
 
             var labelSpan = document.createElement("span");
-            labelSpan.setAttribute("style", "font-weight:bold;text-decoration:underline;");
+            labelSpan.className = "arpse-section-label";
             labelSpan.appendChild(document.createTextNode(match));
             fragment.appendChild(labelSpan);
             lastIndex = offset + match.length;
@@ -1561,7 +1609,7 @@ function sanitizeReportHtmlNode(root) {
             }
 
             if (attrName === "style") {
-                var safeStyle = sanitizeReportStyleAttribute(attrValue);
+                var safeStyle = sanitizeReportStyleAttribute(attrValue, node.tagName);
                 if (safeStyle) {
                     node.setAttribute(attr.name, safeStyle);
                 } else {
@@ -1576,7 +1624,10 @@ function sanitizeReportHtmlNode(root) {
     });
 }
 
-function sanitizeReportStyleAttribute(value) {
+function sanitizeReportStyleAttribute(value, tagName) {
+    if (/^(DIV|SPAN|P|TABLE|TD|TH)$/.test(String(tagName || "").toUpperCase())) {
+        return "";
+    }
     var allowedStyles = {
         "background-color": true,
         "border": true,
@@ -1682,7 +1733,7 @@ function buildArpseYearReportExportHtml(table, title, extraStyles) {
         "<body>",
         "<div class='WordSection1'>",
         "<h2>", escapedTitle, "</h2>",
-        "<table class='arpse-export-table' border='1' cellspacing='0' cellpadding='3' style='border-collapse:collapse;width:100%;table-layout:fixed;'>",
+        "<table class='arpse-export-table' border='1' cellspacing='0' cellpadding='3'>",
         "<colgroup>",
         "<col style='width:4%'>",
         "<col style='width:4%'>",
@@ -1705,16 +1756,17 @@ function buildArpseYearReportWordRows(table) {
     var html = ["<thead><tr>"];
 
     Array.from(table.querySelectorAll("thead th")).forEach(function (cell) {
-        html.push("<th valign='top' style='border:1px solid #9ca3af;vertical-align:top;text-align:center;'>", getExportCellHtml(cell, ""), "</th>");
+        html.push("<th valign='top'>", getExportCellHtml(cell, ""), "</th>");
     });
 
     html.push("</tr></thead><tbody>");
 
-    rows.forEach(function (row) {
-        html.push("<tr>");
+    rows.forEach(function (row, rowIndex) {
+        var rowClass = rowIndex < rows.length - 1 ? " class='arpse-record-row page-break-after'" : " class='arpse-record-row'";
+        html.push("<tr", rowClass, ">");
         Array.from(row.cells || []).forEach(function (cell, index) {
             var cssClass = index < 2 ? " class='num'" : " class='rich-html'";
-            html.push("<td", cssClass, " valign='top' style='border:1px solid #9ca3af;vertical-align:top;text-align:left;'>", getExportCellHtml(cell, ""), "</td>");
+            html.push("<td", cssClass, " valign='top'>", getExportCellHtml(cell, ""), "</td>");
         });
         html.push("</tr>");
     });
@@ -1731,18 +1783,23 @@ function getArpseYearReportWordStyles() {
         "body { font-family: Arial, sans-serif; font-size: 9pt; color: #111; }",
         "h2 { font-size: 12pt; margin: 0 0 10px 0; text-align: left; }",
         ".arpse-export-table { border-collapse: collapse; table-layout: fixed; width: 100%; }",
-        ".arpse-export-table > thead > tr > th, .arpse-export-table > tbody > tr > td { border: 1px solid #9ca3af; padding: 5px; vertical-align: top; white-space: normal; word-break: break-word; overflow-wrap: anywhere; }",
+        ".arpse-export-table > thead > tr > th, .arpse-export-table > tbody > tr > td { border: 1px solid #9ca3af; padding: 5px; vertical-align: top; white-space: normal; word-break: normal; overflow-wrap: break-word; }",
         ".arpse-export-table > thead > tr > th { background: #8399c7; color: #000; font-weight: bold; text-align: center; }",
-        ".arpse-export-table > tbody > tr > td { text-align: left; }",
-        ".num { text-align: left; }",
-        ".rich-html, .rich-html * { max-width: 100%; box-sizing: border-box; overflow-wrap: anywhere; word-break: break-word; vertical-align: top; text-align: left; }",
-        ".rich-html p, .rich-html div, .rich-html span { margin: 0 0 6px 0; max-width: 100%; box-sizing: border-box; overflow-wrap: anywhere; word-break: break-word; text-align: left; vertical-align: top; }",
-        ".rich-html ul, .rich-html ol { margin: 0 0 6px 18px; padding: 0; }",
+        ".arpse-export-table > tbody > tr > td { text-align: justify; }",
+        ".num { text-align: center; }",
+        ".rich-html, .rich-html * { max-width: 100%; box-sizing: border-box; overflow-wrap: break-word; word-break: normal; vertical-align: top; }",
+        ".rich-html { text-align: justify; }",
+        ".rich-html p, .rich-html div { margin: 0 0 6px 0; max-width: 100%; box-sizing: border-box; overflow-wrap: break-word; word-break: normal; text-align: justify; vertical-align: top; }",
+        ".rich-html span { max-width: 100%; box-sizing: border-box; overflow-wrap: break-word; word-break: normal; vertical-align: top; }",
+        ".rich-html ul, .rich-html ol { margin: 0 0 6px 18px; padding: 0; text-align: justify; }",
+        ".rich-html li { margin: 0 0 3px 0; }",
         ".rich-html b, .rich-html strong { font-weight: bold; }",
+        ".rich-html .arpse-section-label { font-weight: bold; text-decoration: underline; }",
         ".rich-html u { text-decoration: underline; }",
         ".rich-html table { border-collapse: collapse; table-layout: fixed; width: 100%; max-width: 100%; margin: 0 0 6px 0; box-sizing: border-box; }",
-        ".rich-html table th, .rich-html table td { border: 1px solid #9ca3af; padding: 3px; vertical-align: top; text-align: left; white-space: normal; word-break: break-word; overflow-wrap: anywhere; max-width: 100%; box-sizing: border-box; font-size: 8pt; }",
-        ".rich-html table th { background: #eef2f7; font-weight: bold; text-align: center; }"
+        ".rich-html table th, .rich-html table td { border: 1px solid #9ca3af; padding: 3px; vertical-align: top; text-align: left; white-space: normal; word-break: normal; overflow-wrap: break-word; max-width: 100%; box-sizing: border-box; font-size: 8pt; }",
+        ".rich-html table th { background: #eef2f7; font-weight: bold; text-align: center; }",
+        ".page-break-after { page-break-after: always; break-after: page; }"
     ].join("");
 }
 
@@ -1751,12 +1808,12 @@ function getArpseYearReportPdfRenderStyles() {
         "html, body { margin: 0; padding: 0; background: #fff; }",
         ".WordSection1 { width: 1344px; min-height: 816px; padding: 34px; box-sizing: border-box; background: #fff; overflow: visible; }",
         ".arpse-export-table { width: 100%; max-width: 100%; table-layout: fixed; border-collapse: collapse; box-sizing: border-box; }",
-        ".arpse-export-table > thead > tr > th, .arpse-export-table > tbody > tr > td { box-sizing: border-box; vertical-align: top; overflow-wrap: anywhere; word-break: break-word; }",
+        ".arpse-export-table > thead > tr > th, .arpse-export-table > tbody > tr > td { box-sizing: border-box; vertical-align: top; overflow-wrap: break-word; word-break: normal; }",
         ".rich-html, .rich-html * { max-width: 100%; box-sizing: border-box; }",
         ".rich-html table { width: 100% !important; max-width: 100% !important; table-layout: fixed !important; border-collapse: collapse !important; box-sizing: border-box !important; display: table; }",
         ".rich-html thead, .rich-html tbody, .rich-html tfoot { max-width: 100%; }",
         ".rich-html tr { page-break-inside: avoid; break-inside: avoid; }",
-        ".rich-html th, .rich-html td { max-width: 100%; box-sizing: border-box; overflow-wrap: anywhere; word-break: break-word; vertical-align: top; }"
+        ".rich-html th, .rich-html td { max-width: 100%; box-sizing: border-box; overflow-wrap: break-word; word-break: normal; vertical-align: top; }"
     ].join("");
 }
 
@@ -1820,24 +1877,23 @@ function applyArpseExportHtmlConstraints(root) {
         table.setAttribute("border", "1");
         table.setAttribute("cellspacing", "0");
         table.setAttribute("cellpadding", "3");
-        mergeArpseExportStyle(table, "border-collapse:collapse;width:100%;max-width:100%;table-layout:fixed;box-sizing:border-box;overflow-wrap:anywhere;word-break:break-word;");
+        removeConflictingArpseExportStyle(table);
     });
 
     Array.from(root.querySelectorAll("td,th")).forEach(function (cell) {
         cell.setAttribute("valign", "top");
-        var alignment = cell.tagName === "TH" ? "center" : "left";
-        mergeArpseExportStyle(cell, "border:1px solid #9ca3af;vertical-align:top;text-align:" + alignment + ";max-width:100%;box-sizing:border-box;overflow-wrap:anywhere;word-break:break-word;");
+        removeConflictingArpseExportStyle(cell);
     });
 
     Array.from(root.querySelectorAll("div,span,p")).forEach(function (element) {
-        mergeArpseExportStyle(element, "max-width:100%;width:100%;box-sizing:border-box;overflow-wrap:anywhere;word-break:break-word;text-align:left;vertical-align:top;");
+        removeConflictingArpseExportStyle(element);
     });
 }
 
-function mergeArpseExportStyle(element, styleText) {
-    var existing = String(element.getAttribute("style") || "").trim();
-    var merged = existing ? existing.replace(/;?\s*$/, ";") + styleText : styleText;
-    element.setAttribute("style", merged);
+function removeConflictingArpseExportStyle(element) {
+    if (element && element.removeAttribute) {
+        element.removeAttribute("style");
+    }
 }
 
 function getDelimitedExportTextFromHtml(html) {
