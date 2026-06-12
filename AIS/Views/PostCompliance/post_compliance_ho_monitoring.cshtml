@@ -1,4 +1,4 @@
-﻿@{
+@{
     var page_id = ViewData["PageId"] as int? ?? 0;
 }
 
@@ -17,6 +17,15 @@
 
         .evidence-icon {
             margin-right: 10px;
+        }
+
+        .para-detail-field {
+            margin-top: 1rem;
+        }
+
+        .para-detail-label {
+            font-weight: 600;
+            margin-bottom: .35rem;
         }
     </style>
 </head>
@@ -132,6 +141,14 @@
                         <label for="viewMemo_memo">Para</label>
                         <div id="viewMemo_memo_rep" disabled="disabled" class="form-control container-clob"></div>
                     </div>
+                    <div class="form-group para-detail-field">
+                        <label for="viewMemo_auditeeResponse_rep" class="para-detail-label">Auditee Response</label>
+                        <div id="viewMemo_auditeeResponse_rep" class="form-control container-clob"></div>
+                    </div>
+                    <div class="form-group para-detail-field">
+                        <label for="viewMemo_auditRecommendation_rep" class="para-detail-label">Audit Recommendation</label>
+                        <div id="viewMemo_auditRecommendation_rep" class="form-control container-clob"></div>
+                    </div>
                     <div class="form-group mt-3">
                         <label for="viewMemo_respPP_rep" class="font-weight-bold">Responsible Personals</label>
                         <div class="col-md-12 pl-0 pr-0">
@@ -176,4 +193,4 @@
         </div>
     </div>
 </div>
-<script src="~/js/csp/Views_PostCompliance_post_compliance_ho_monitoring.js?v=1"></script>
+<script src="~/js/csp/Views_PostCompliance_post_compliance_ho_monitoring.js?v=2"></script>
