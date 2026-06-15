@@ -68,6 +68,11 @@ function bindCommercialAuditWorkflowNavigation() {
     var workflow = $(".commercial-audit-workflow");
 
     workflow.on("click", ".commercial-audit-step-link, .commercial-audit-step-target", function (event) {
+        if ($(this).is(":disabled") || String($(this).attr("aria-disabled") || "").toLowerCase() === "true") {
+            event.preventDefault();
+            return;
+        }
+
         var stepKey = normalizeText($(this).attr("data-step") || $(this).attr("data-step-key"));
         if (!stepKey) {
             return;
@@ -206,6 +211,11 @@ function initCommercialAuditStep(stepKey) {
             break;
         case "arpse-monitoring":
             initCommercialAuditArpseMonitoring();
+            break;
+        case "arpse-follow-up":
+            if (typeof initArpseFollowUpPage === "function") {
+                initArpseFollowUpPage();
+            }
             break;
         default:
             break;
@@ -964,12 +974,16 @@ function initCommercialAuditArpseMonitoring() {
 
     $("#tblCommercialArpse").off("click", ".btn-manage-arpse").on("click", ".btn-manage-arpse", function () {
         var rowData = $(this).data("row");
-        if (!rowData) {
+        var arpseId = rowData ? rowData.ArpseId : (parseInt($(this).attr("data-arpse-id"), 10) || 0);
+        if (!arpseId) {
+            alert("Unable to open ARPSE follow-up without a selected para.");
             return;
         }
 
-        populateCommercialAuditArpseHeaderForm(rowData);
-        openCommercialAuditArpseFollowUpTab(rowData.ArpseId);
+        if (rowData) {
+            populateCommercialAuditArpseHeaderForm(rowData);
+        }
+        openCommercialAuditArpseFollowUpTab(arpseId);
     });
 
     $("#tblArpseDac").off("click", ".btn-edit-arpse-dac").on("click", ".btn-edit-arpse-dac", function () {
@@ -993,6 +1007,16 @@ function initCommercialAuditArpseMonitoring() {
     loadCommercialAuditArpseHeaders();
 }
 
+function openCommercialAuditArpseFollowUpTab(arpseId) {
+    var resolvedArpseId = parseInt(arpseId, 10) || 0;
+    if (!resolvedArpseId) {
+        alert("Unable to open ARPSE follow-up without a selected para.");
+        return;
+    }
+
+    commercialAuditPage.selectedArpseId = resolvedArpseId;
+    loadCommercialAuditStep("arpse-follow-up");
+}
 function loadCommercialAuditArpseHeaders(selectionHint) {
     $.ajax({
         url: g_asiBaseURL + "/ApiCalls/get_commercial_audit_arpse_headers",
@@ -1055,6 +1079,7 @@ function renderCommercialAuditArpseTable(list) {
         var manageButton = $("<button>")
             .addClass("btn btn-sm btn-primary btn-manage-arpse")
             .attr("type", "button")
+            .attr("data-arpse-id", item.ArpseId)
             .text("Manage")
             .data("row", item);
 

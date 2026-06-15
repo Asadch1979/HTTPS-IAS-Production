@@ -1,4 +1,4 @@
-@using AIS.Models.CAU
+﻿@using AIS.Models.CAU
 @using System.Linq
 @{
     var workflow = ViewData["CommercialAuditWorkflowModel"] as CommercialAuditWorkflowViewModel ?? new CommercialAuditWorkflowViewModel();
@@ -39,11 +39,14 @@
                 @foreach (var step in workflow.Steps.OrderBy(item => item.StepNo))
                 {
                     var isActive = string.Equals(currentStepKey, step.StepKey, System.StringComparison.OrdinalIgnoreCase);
+                    var isStepDisabled = string.Equals(step.StepKey, "arpse-follow-up", System.StringComparison.OrdinalIgnoreCase);
                     <button type="button"
                        class="commercial-audit-step-link step-pill @(isActive ? "active is-active" : string.Empty)"
                        data-step="@step.StepKey"
                        data-step-key="@step.StepKey"
-                       aria-current="@(isActive ? "step" : null)">
+                       aria-current="@(isActive ? "step" : null)"
+                       aria-disabled="@(isStepDisabled ? "true" : "false")"
+                       disabled="@(isStepDisabled ? "disabled" : null)">
                         <div class="step-title">
                             <span class="num">@step.StepNo.ToString("00")</span> @step.Title
                         </div>

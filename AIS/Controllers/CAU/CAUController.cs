@@ -201,8 +201,17 @@ namespace AIS.Controllers
                     StepKey = "arpse-monitoring",
                     StageKey = "arpse",
                     Title = "ARPSE Monitoring",
-                    Description = "Manage ARPSE register selection plus DAC and PAC follow-up in one wide monitoring workspace.",
+                    Description = "Select an ARPSE para and continue to DAC/PAC follow-up.",
                     PartialViewName = "~/Views/CAU/_ArpseMonitoring.cshtml"
+                    },
+                new CommercialAuditWorkflowStep
+                    {
+                    StepNo = 8,
+                    StepKey = "arpse-follow-up",
+                    StageKey = "arpse",
+                    Title = "ARPSE Follow-up",
+                    Description = "Maintain DAC recommendations and PAC directives for the selected ARPSE para.",
+                    PartialViewName = "~/Views/CAU/_ArpseFollowUp.cshtml"
                     }
                 };
 

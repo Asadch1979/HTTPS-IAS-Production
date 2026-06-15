@@ -8,22 +8,24 @@
     activeEntryId: 0
 };
 
-$(document).ready(function () {
+$(document).ready(initArpseFollowUpPage);
+
+function initArpseFollowUpPage() {
     var page = $(".arpse-follow-up-page");
     if (!page.length) {
         return;
     }
 
     arpseFollowUpState.arpseId = parseInt(page.data("arpse-id"), 10) || 0;
-    $("#btnAddArpseFollowUpDac").on("click", function () { openArpseFollowUpEntryModal("dac", null); });
-    $("#btnAddArpseFollowUpPac").on("click", function () { openArpseFollowUpEntryModal("pac", null); });
-    $("#btnSaveArpseFollowUpEntry").on("click", saveArpseFollowUpEntry);
-    $("#tblArpseFollowUpDac").on("click", ".btn-view-follow-up-dac", function () { openArpseFollowUpEntryModal("dac", $(this).data("row")); });
-    $("#tblArpseFollowUpPac").on("click", ".btn-view-follow-up-pac", function () { openArpseFollowUpEntryModal("pac", $(this).data("row")); });
+    $("#btnAddArpseFollowUpDac").off("click").on("click", function () { openArpseFollowUpEntryModal("dac", null); });
+    $("#btnAddArpseFollowUpPac").off("click").on("click", function () { openArpseFollowUpEntryModal("pac", null); });
+    $("#btnSaveArpseFollowUpEntry").off("click").on("click", saveArpseFollowUpEntry);
+    $("#tblArpseFollowUpDac").off("click", ".btn-view-follow-up-dac").on("click", ".btn-view-follow-up-dac", function () { openArpseFollowUpEntryModal("dac", $(this).data("row")); });
+    $("#tblArpseFollowUpPac").off("click", ".btn-view-follow-up-pac").on("click", ".btn-view-follow-up-pac", function () { openArpseFollowUpEntryModal("pac", $(this).data("row")); });
 
     initializeArpseFollowUpEditors();
     loadArpseFollowUpHeader();
-});
+}
 
 function loadArpseFollowUpHeader() {
     if (!arpseFollowUpState.arpseId) {

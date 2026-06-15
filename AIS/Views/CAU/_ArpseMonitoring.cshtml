@@ -3,7 +3,7 @@
         <div class="card-header d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3">
             <div>
                 <h4 class="mb-1">ARPSE Monitoring</h4>
-                <small class="text-muted">Use Manage to open DAC and PAC follow-up for an ARPSE para in a dedicated tab.</small>
+                <small class="text-muted">Use Manage to continue to ARPSE Follow-up for the selected para.</small>
             </div>
             <button type="button"
                class="btn btn-outline-success commercial-audit-step-target"
@@ -17,7 +17,7 @@
                 <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-2 mb-3">
                     <div>
                         <h5 class="mb-1">ARPSE Register</h5>
-                        <p class="text-muted mb-0">Use Manage against any ARPSE para to open DAC and PAC follow-up in a new tab.</p>
+                        <p class="text-muted mb-0">Use Manage against any ARPSE para to continue to step 8 for DAC and PAC follow-up.</p>
                     </div>
                     <span id="arpseSelectedHeaderLabel" class="commercial-audit-selection-pill">No ARPSE header selected</span>
                 </div>
@@ -36,100 +36,6 @@
                     </table>
                 </div>
             </div>
-
-            <fieldset id="arpseChildrenFieldset" disabled>
-                <div class="commercial-audit-section mt-4">
-                    <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-2 mb-3">
-                        <div>
-                            <h5 class="mb-1" id="arpseDacTitle">DAC Entries</h5>
-                            <p class="text-muted mb-0">Track DAC recommendations for the selected ARPSE header.</p>
-                        </div>
-                    </div>
-                    <div class="row g-3">
-                        <div class="col-12">
-                            <label for="arpseDacDate" class="form-label">DAC Date</label>
-                            <input id="arpseDacDate" type="date" class="form-control" />
-                        </div>
-                        <div class="col-12">
-                            <label for="arpseDacRecommendation" class="form-label">DAC Recommendations</label>
-                            <textarea id="arpseDacRecommendation" class="form-control commercial-audit-richtext-target" rows="10" maxlength="4000"></textarea>
-                        </div>
-                        <div class="col-12">
-                            <label for="arpseDacUpdatedStatus" class="form-label">Updated Management Response</label>
-                            <textarea id="arpseDacUpdatedStatus" class="form-control commercial-audit-richtext-target" rows="10" maxlength="4000"></textarea>
-                        </div>
-                    </div>
-                    <div class="d-flex gap-2 flex-wrap mt-3">
-                        <button id="btnSaveArpseDac" type="button" class="btn btn-success">Add DAC</button>
-                        <button id="btnCancelArpseDacEdit" type="button" class="btn btn-secondary d-none">Cancel Edit</button>
-                    </div>
-                    <div class="table-responsive mt-4">
-                        <table id="tblArpseDac" class="table table-sm table-bordered table-hover align-middle commercial-audit-monitoring-table">
-                            <colgroup>
-                                <col class="commercial-audit-date-col" />
-                                <col />
-                                <col class="commercial-audit-status-col" />
-                                <col class="commercial-audit-action-col" />
-                            </colgroup>
-                            <thead>
-                                <tr>
-                                    <th class="commercial-audit-date-col">Date</th>
-                                    <th>Recommendations</th>
-                                    <th class="commercial-audit-status-col">Updated Management Response</th>
-                                    <th class="text-center">Action</th>
-                                </tr>
-                            </thead>
-                            <tbody></tbody>
-                        </table>
-                    </div>
-                </div>
-
-                <div class="commercial-audit-section mt-4">
-                    <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-2 mb-3">
-                        <div>
-                            <h5 class="mb-1" id="arpsePacTitle">PAC Entries</h5>
-                            <p class="text-muted mb-0">Track PAC directives for the selected ARPSE header.</p>
-                        </div>
-                    </div>
-                    <div class="row g-3">
-                        <div class="col-12">
-                            <label for="arpsePacDate" class="form-label">PAC Date</label>
-                            <input id="arpsePacDate" type="date" class="form-control" />
-                        </div>
-                        <div class="col-12">
-                            <label for="arpsePacDirective" class="form-label">PAC Recommendations</label>
-                            <textarea id="arpsePacDirective" class="form-control commercial-audit-richtext-target" rows="10" maxlength="4000"></textarea>
-                        </div>
-                        <div class="col-12">
-                            <label for="arpsePacUpdatedStatus" class="form-label">Updated Management Response</label>
-                            <textarea id="arpsePacUpdatedStatus" class="form-control commercial-audit-richtext-target" rows="10" maxlength="4000"></textarea>
-                        </div>
-                    </div>
-                    <div class="d-flex gap-2 flex-wrap mt-3">
-                        <button id="btnSaveArpsePac" type="button" class="btn btn-success">Add PAC</button>
-                        <button id="btnCancelArpsePacEdit" type="button" class="btn btn-secondary d-none">Cancel Edit</button>
-                    </div>
-                    <div class="table-responsive mt-4">
-                        <table id="tblArpsePac" class="table table-sm table-bordered table-hover align-middle commercial-audit-monitoring-table">
-                            <colgroup>
-                                <col class="commercial-audit-date-col" />
-                                <col />
-                                <col class="commercial-audit-status-col" />
-                                <col class="commercial-audit-action-col" />
-                            </colgroup>
-                            <thead>
-                                <tr>
-                                    <th class="commercial-audit-date-col">Date</th>
-                                    <th>Recommendations</th>
-                                    <th class="commercial-audit-status-col">Updated Management Response</th>
-                                    <th class="text-center">Action</th>
-                                </tr>
-                            </thead>
-                            <tbody></tbody>
-                        </table>
-                    </div>
-                </div>
-            </fieldset>
         </div>
     </div>
 </div>
