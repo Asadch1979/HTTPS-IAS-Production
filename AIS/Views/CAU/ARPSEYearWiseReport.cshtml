@@ -1,4 +1,4 @@
-@using AIS.Models.CAU
+﻿@using AIS.Models.CAU
 @using System.Linq
 @{
     Layout = "_Layout";
@@ -17,7 +17,10 @@
             <h3 id="arpseReportHeading" class="arpse-report-title mb-1">ARPSE Year DAC / PAC Report</h3>
             <p class="text-muted mb-0">Select an ARPSE Year to view related DAC and PAC progress position.</p>
         </div>
-        <a class="btn btn-outline-secondary btn-sm" href="@Url.Action("workflow", "CAU")">Commercial Audit Workflow</a>
+        <div class="d-flex gap-2 flex-wrap justify-content-lg-end">
+            <a class="btn btn-outline-primary btn-sm" href="@Url.Action("ParaDetailedView", "CAU")">Para Detailed View</a>
+            <a class="btn btn-outline-secondary btn-sm" href="@Url.Action("workflow", "CAU")">Commercial Audit Workflow</a>
+        </div>
     </div>
 
     <div class="arpse-report-filter mb-3">

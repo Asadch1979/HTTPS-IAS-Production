@@ -1,0 +1,78 @@
+﻿@using AIS.Models.CAU
+@using System.Linq
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = "Para Detailed View";
+    var arpseYears = (ViewData["ARPSEYears"] as IEnumerable<ARPSEYearDropdownVM>) ?? Enumerable.Empty<ARPSEYearDropdownVM>();
+}
+
+<link rel="stylesheet" href="~/css/commercial-audit.css" asp-append-version="true" />
+
+<div class="container-fluid mt-4 commercial-audit-page para-detail-page"
+     data-grid-url="@Url.Action("GetParaDetailedViewGrid", "CAU")"
+     data-detail-url="@Url.Action("GetParaDetailedViewDetail", "CAU")">
+    <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-start gap-3 mb-3">
+        <div>
+            <h3 class="mb-1">Para Detailed View</h3>
+            <p class="text-muted mb-0">Select an ARPSE Year, then open detailed para information on demand.</p>
+        </div>
+        <a class="btn btn-outline-secondary btn-sm" href="@Url.Action("ARPSEYearWiseReport", "CAU")">ARPSE Year DAC / PAC Report</a>
+    </div>
+
+    <div class="arpse-report-filter mb-3">
+        <div class="row g-3 align-items-end">
+            <div class="col-12 col-md-5 col-lg-3">
+                <label for="paraDetailYearFilter" class="form-label">ARPSE Year</label>
+                <select id="paraDetailYearFilter" class="form-select">
+                    <option value="">-- Select ARPSE Year --</option>
+                    @foreach (var year in arpseYears.OrderBy(item => item.ARPSEYear))
+                    {
+                        <option value="@(year.ARPSEYear)">@(year.DisplayText)</option>
+                    }
+                </select>
+            </div>
+            <div class="col-12 col-md-auto">
+                <button id="btnLoadParaDetailGrid" type="button" class="btn btn-success">Load Paras</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="paraDetailMessage" class="alert alert-info">Select an ARPSE Year and load paras.</div>
+
+    <div id="paraDetailGridContainer" class="d-none">
+        <div class="table-responsive">
+            <table id="tblParaDetailedView" class="table table-bordered table-hover align-middle" style="width: 100%;">
+                <thead style="background-color: #19875478 !important;">
+                    <tr>
+                        <th>Para No</th>
+                        <th>Para Title</th>
+                        <th class="text-center">View</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="paraDetailModal" tabindex="-1" aria-labelledby="paraDetailModalTitle" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content commercial-audit-page">
+            <div class="modal-header">
+                <div>
+                    <h5 class="modal-title" id="paraDetailModalTitle">Para Detail</h5>
+                    <div id="paraDetailModalSubtitle" class="text-muted small"></div>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body para-detail-modal-body">
+                <div id="paraDetailModalContent" class="para-detail-sections"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="~/js/csp/Views_CAU_ParaDetailedView.js" asp-append-version="true"></script>

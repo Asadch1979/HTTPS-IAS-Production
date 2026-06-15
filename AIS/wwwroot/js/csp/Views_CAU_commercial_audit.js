@@ -1,4 +1,4 @@
-var commercialAuditPage = {
+﻿var commercialAuditPage = {
     loadUrl: "",
     currentStepKey: "",
     workflowSteps: [],
@@ -969,7 +969,7 @@ function initCommercialAuditArpseMonitoring() {
         }
 
         populateCommercialAuditArpseHeaderForm(rowData);
-        loadCommercialAuditArpseChildren(rowData.ArpseId);
+        openCommercialAuditArpseFollowUpTab(rowData.ArpseId);
     });
 
     $("#tblArpseDac").off("click", ".btn-edit-arpse-dac").on("click", ".btn-edit-arpse-dac", function () {
@@ -1055,7 +1055,7 @@ function renderCommercialAuditArpseTable(list) {
         var manageButton = $("<button>")
             .addClass("btn btn-sm btn-primary btn-manage-arpse")
             .attr("type", "button")
-            .text(commercialAuditPage.selectedArpseId === item.ArpseId ? "Managing" : "Manage")
+            .text("Manage")
             .data("row", item);
 
         row.append($("<td>").addClass("text-center").append(manageButton));
@@ -1092,7 +1092,7 @@ function renderCommercialAuditArpsePdpRegister(list) {
         var manageButton = $("<button>")
             .addClass("btn btn-sm btn-primary btn-manage-arpse-pdp")
             .attr("type", "button")
-            .text(commercialAuditPage.selectedArpseId === item.ArpseId ? "Managing" : "Manage")
+            .text("Manage")
             .data("row", item);
 
         row.append($("<td>").addClass("text-center").append(manageButton));

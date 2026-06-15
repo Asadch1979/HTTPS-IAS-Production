@@ -1,0 +1,114 @@
+﻿@{
+    Layout = "_Layout";
+    ViewData["Title"] = "ARPSE DAC / PAC Follow-up";
+    var selectedArpseId = Convert.ToInt64(ViewData["SelectedArpseId"] ?? 0L);
+}
+
+<link rel="stylesheet" href="~/css/commercial-audit.css" asp-append-version="true" />
+
+<div class="container-fluid mt-4 commercial-audit-page arpse-follow-up-page"
+     data-arpse-id="@selectedArpseId"
+     data-headers-url="@Url.Content("~/ApiCalls/get_commercial_audit_arpse_headers")"
+     data-dac-url="@Url.Content("~/ApiCalls/get_commercial_audit_arpse_dac_entries")"
+     data-pac-url="@Url.Content("~/ApiCalls/get_commercial_audit_arpse_pac_entries")"
+     data-dac-save-url="@Url.Content("~/ApiCalls/save_commercial_audit_arpse_dac_entry")"
+     data-pac-save-url="@Url.Content("~/ApiCalls/save_commercial_audit_arpse_pac_entry")">
+    <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-start gap-3 mb-3">
+        <div>
+            <h3 class="mb-1">ARPSE DAC / PAC Follow-up</h3>
+            <p id="arpseFollowUpHeaderText" class="text-muted mb-0">Loading selected ARPSE para...</p>
+        </div>
+        <a class="btn btn-outline-secondary btn-sm" href="@Url.Action("monitoring_oms", "CAU")">ARPSE Monitoring</a>
+    </div>
+
+    <div id="arpseFollowUpMessage" class="alert alert-info">Loading follow-up details...</div>
+
+    <div class="commercial-audit-section mb-4">
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2 mb-3">
+            <div>
+                <h5 class="mb-1">DAC Recommendations</h5>
+                <p class="text-muted mb-0">Existing DAC recommendations for the selected ARPSE para.</p>
+            </div>
+            <button id="btnAddArpseFollowUpDac" type="button" class="btn btn-success">ADD DAC</button>
+        </div>
+        <div class="table-responsive">
+            <table id="tblArpseFollowUpDac" class="table table-bordered table-hover align-middle commercial-audit-monitoring-table">
+                <colgroup>
+                    <col class="commercial-audit-date-col" />
+                    <col />
+                    <col class="commercial-audit-action-col" />
+                </colgroup>
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Recommendation/Decision</th>
+                        <th class="text-center">View</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="commercial-audit-section">
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2 mb-3">
+            <div>
+                <h5 class="mb-1">PAC Directives</h5>
+                <p class="text-muted mb-0">Existing PAC directives for the selected ARPSE para.</p>
+            </div>
+            <button id="btnAddArpseFollowUpPac" type="button" class="btn btn-success">ADD PAC</button>
+        </div>
+        <div class="table-responsive">
+            <table id="tblArpseFollowUpPac" class="table table-bordered table-hover align-middle commercial-audit-monitoring-table">
+                <colgroup>
+                    <col class="commercial-audit-date-col" />
+                    <col />
+                    <col class="commercial-audit-action-col" />
+                </colgroup>
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Directive/Recommendation</th>
+                        <th class="text-center">View</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="arpseFollowUpEntryModal" tabindex="-1" aria-labelledby="arpseFollowUpEntryModalTitle" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content commercial-audit-page">
+            <div class="modal-header">
+                <h5 class="modal-title" id="arpseFollowUpEntryModalTitle">ARPSE Follow-up</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="arpseFollowUpEntryType" />
+                <input type="hidden" id="arpseFollowUpEntryId" />
+                <div class="row g-3">
+                    <div class="col-12 col-md-4">
+                        <label for="arpseFollowUpEntryDate" class="form-label" id="arpseFollowUpDateLabel">Date</label>
+                        <input id="arpseFollowUpEntryDate" type="date" class="form-control" />
+                    </div>
+                    <div class="col-12">
+                        <label for="arpseFollowUpEntryText" class="form-label" id="arpseFollowUpTextLabel">Recommendation/Directive</label>
+                        <textarea id="arpseFollowUpEntryText" class="form-control arpse-follow-up-editor" rows="10" maxlength="4000"></textarea>
+                    </div>
+                    <div class="col-12">
+                        <label for="arpseFollowUpUpdatedStatus" class="form-label">Updated Management Response</label>
+                        <textarea id="arpseFollowUpUpdatedStatus" class="form-control arpse-follow-up-editor" rows="10" maxlength="4000"></textarea>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button id="btnSaveArpseFollowUpEntry" type="button" class="btn btn-success">Save</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="~/js/csp/Views_CAU_ArpseFollowUp.js" asp-append-version="true"></script>

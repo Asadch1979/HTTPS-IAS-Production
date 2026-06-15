@@ -1,4 +1,4 @@
-:root {
+﻿:root {
     --commercial-audit-accent: #198754;
     --commercial-audit-accent-soft: #eef8f2;
     --commercial-audit-border: #ced4da;
@@ -455,4 +455,77 @@
     .arpse-report-page .dataTables_wrapper .dataTables_filter input {
         max-width: 100%;
     }
+}
+.arpse-follow-up-page .commercial-audit-section,
+.para-detail-page .arpse-report-filter {
+    border-radius: 0.5rem;
+}
+
+.arpse-follow-up-page .commercial-audit-monitoring-table th,
+.arpse-follow-up-page .commercial-audit-monitoring-table td,
+.para-detail-page #tblParaDetailedView th,
+.para-detail-page #tblParaDetailedView td {
+    white-space: normal !important;
+    overflow-wrap: break-word;
+    word-break: normal;
+}
+
+.arpse-follow-up-page .modal .richText .richText-editor {
+    min-height: 12rem;
+    max-height: 18rem;
+}
+
+.para-detail-page .para-detail-title-cell {
+    min-width: 0;
+    white-space: normal !important;
+    overflow-wrap: break-word;
+}
+
+.para-detail-modal-body {
+    max-height: 72vh;
+    overflow-y: auto;
+}
+
+.para-detail-page .para-detail-section {
+    border: 1px solid var(--commercial-audit-border);
+    border-radius: 0.5rem;
+    background: #fff;
+    padding: 1rem;
+    margin-bottom: 1rem;
+}
+
+.para-detail-page .para-detail-section h6 {
+    color: #146c43;
+    font-size: 1rem;
+    font-weight: 700;
+    margin-bottom: 0.75rem;
+}
+
+.para-detail-page .para-detail-rich-text,
+.para-detail-page .para-detail-empty {
+    line-height: 1.5;
+    white-space: normal;
+    overflow-wrap: break-word;
+    word-break: normal;
+}
+
+.para-detail-page .para-detail-rich-text + .para-detail-rich-text {
+    border-top: 1px solid #e9ecef;
+    margin-top: 0.85rem;
+    padding-top: 0.85rem;
+}
+
+.para-detail-page .para-detail-rich-text p,
+.para-detail-page .para-detail-rich-text div {
+    max-width: 100%;
+    overflow-wrap: break-word;
+}
+
+.para-detail-page .para-detail-entry-heading {
+    margin-bottom: 0.35rem;
+}
+
+.para-detail-page .para-detail-empty {
+    color: var(--commercial-audit-muted);
+    font-style: italic;
 }

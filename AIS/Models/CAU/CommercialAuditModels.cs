@@ -1,4 +1,4 @@
-using AIS.Validation;
+﻿using AIS.Validation;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
@@ -234,4 +234,30 @@ namespace AIS.Models.CAU
         [PlainText]
         public string DisplayText { get; set; }
         }
-    }
+    
+    public class CommercialAuditParaDetailedGridRow
+        {
+        public int ArpseId { get; set; }
+        [PlainText]
+        public string ParaNo { get; set; }
+        [PlainText]
+        public string ParaTitle { get; set; }
+        }
+
+    public class CommercialAuditParaDetailedSection
+        {
+        [PlainText]
+        public string Title { get; set; }
+        [RichTextSanitize]
+        public List<string> Items { get; set; } = new List<string>();
+        }
+
+    public class CommercialAuditParaDetailedViewModel
+        {
+        public int ArpseId { get; set; }
+        [PlainText]
+        public string ParaNo { get; set; }
+        [PlainText]
+        public string ParaTitle { get; set; }
+        public List<CommercialAuditParaDetailedSection> Sections { get; set; } = new List<CommercialAuditParaDetailedSection>();
+        }    }
