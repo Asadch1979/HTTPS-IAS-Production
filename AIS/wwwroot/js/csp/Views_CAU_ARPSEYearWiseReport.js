@@ -84,10 +84,14 @@ function renderArpseYearWiseReport(rows) {
         var tr = $("<tr>");
         tr.append($("<td>").addClass("text-center").text(resolveValue(row, "SrNo", "srNo", "SR_NO") || (index + 1)));
         tr.append($("<td>").text(resolveValue(row, "ParaNo", "paraNo", "PARA_NO")));
-        appendReportRichTextCell(tr, resolveValue(row, "ContentsOfPara", "contentsOfPara", "CONTENTS_OF_PARA"));
+        appendReportContentsCell(
+            tr,
+            resolveValue(row, "Title", "title", "TITLE"),
+            resolveValue(row, "ContentsOfPara", "contentsOfPara", "CONTENTS_OF_PARA")
+        );
         appendReportRichTextCell(tr, resolveValue(row, "ReplyOfManagement", "replyOfManagement", "REPLY_OF_MANAGEMENT"));
-        appendReportRichTextCell(tr, resolveValue(row, "DACRecommendations", "dacRecommendations", "DAC_RECOMMENDATIONS"));
-        appendReportRichTextCell(tr, resolveValue(row, "PACDirectives", "pacDirectives", "PAC_DIRECTIVES"));
+        appendReportRichTextCell(tr, resolveValue(row, "DACRecommendations", "dacRecommendations", "DAC_RECOMMENDATIONS"), "DAC");
+        appendReportRichTextCell(tr, resolveValue(row, "PACDirectives", "pacDirectives", "PAC_DIRECTIVES"), "PAC");
         appendReportRichTextCell(tr, resolveValue(row, "Progress", "progress", "PROGRESS"));
         tbody.append(tr);
     });
@@ -287,33 +291,24 @@ function exportArpseYearReportToPdfFromHtml(table) {
     var title = getCurrentArpseReportTitle();
     var html = buildArpseYearReportExportHtml(table, title, getArpseYearReportPdfRenderStyles());
     var renderHost = createArpseYearReportPdfRenderHost(html);
+    var recordPages = renderHost.recordPages.length ? renderHost.recordPages : [renderHost.section];
+    var JsPdf = getArpseYearReportJsPdfConstructor();
+    var pdf = new JsPdf("l", "pt", [1008, 612]);
+    var hasPdfPageContent = false;
 
-    return window.html2canvas(renderHost.section, {
-        backgroundColor: "#ffffff",
-        scale: 1.35,
-        useCORS: true,
-        logging: false,
-        windowWidth: renderHost.section.scrollWidth
-    }).then(function (canvas) {
-        var JsPdf = getArpseYearReportJsPdfConstructor();
-        var pdf = new JsPdf("l", "pt", [1008, 612]);
-        var pageWidth = 1008;
-        var pageHeight = 612;
-        var margin = 25.2;
-        var imageWidth = pageWidth - (margin * 2);
-        var imageHeight = canvas.height * imageWidth / canvas.width;
-        var pageContentHeight = pageHeight - (margin * 2);
-        var totalPages = Math.max(1, Math.ceil(imageHeight / pageContentHeight));
-        var imageData = canvas.toDataURL("image/jpeg", 0.95);
-
-        for (var pageIndex = 0; pageIndex < totalPages; pageIndex++) {
-            if (pageIndex > 0) {
-                pdf.addPage(pageWidth, pageHeight);
-            }
-
-            pdf.addImage(imageData, "JPEG", margin, margin - (pageIndex * pageContentHeight), imageWidth, imageHeight);
-        }
-
+    return recordPages.reduce(function (promise, recordPage) {
+        return promise.then(function () {
+            return window.html2canvas(recordPage, {
+                backgroundColor: "#ffffff",
+                scale: 1.35,
+                useCORS: true,
+                logging: false,
+                windowWidth: recordPage.scrollWidth
+            });
+        }).then(function (canvas) {
+            hasPdfPageContent = appendArpseCanvasToPdf(pdf, canvas, hasPdfPageContent);
+        });
+    }, Promise.resolve()).then(function () {
         pdf.save(getSafeReportFileName(title) + ".pdf");
     }).then(function () {
         if (renderHost && renderHost.host && renderHost.host.parentNode) {
@@ -325,6 +320,28 @@ function exportArpseYearReportToPdfFromHtml(table) {
         }
         throw error;
     });
+}
+
+function appendArpseCanvasToPdf(pdf, canvas, hasPdfPageContent) {
+    var pageWidth = 1008;
+    var pageHeight = 612;
+    var margin = 25.2;
+    var imageWidth = pageWidth - (margin * 2);
+    var imageHeight = canvas.height * imageWidth / canvas.width;
+    var pageContentHeight = pageHeight - (margin * 2);
+    var totalPages = Math.max(1, Math.ceil(imageHeight / pageContentHeight));
+    var imageData = canvas.toDataURL("image/jpeg", 0.95);
+
+    for (var pageIndex = 0; pageIndex < totalPages; pageIndex++) {
+        if (hasPdfPageContent || pageIndex > 0) {
+            pdf.addPage(pageWidth, pageHeight);
+        }
+
+        pdf.addImage(imageData, "JPEG", margin, margin - (pageIndex * pageContentHeight), imageWidth, imageHeight);
+        hasPdfPageContent = true;
+    }
+
+    return hasPdfPageContent;
 }
 
 function createArpseYearReportPdfRenderHost(html) {
@@ -351,7 +368,8 @@ function createArpseYearReportPdfRenderHost(html) {
 
     return {
         host: host,
-        section: host.querySelector(".WordSection1") || host
+        section: host.querySelector(".WordSection1") || host,
+        recordPages: Array.from(host.querySelectorAll(".arpse-record-page"))
     };
 }
 
@@ -392,11 +410,11 @@ function customizeArpseYearReportPdf(doc) {
     try {
         applyArpseYearReportBasicPdfSettings(doc);
 
-        var tableBlock = Array.isArray(doc.content)
-            ? doc.content.find(function (item) {
+        var tableBlockIndex = Array.isArray(doc.content)
+            ? doc.content.findIndex(function (item) {
                 return item && item.table && Array.isArray(item.table.body);
             })
-            : null;
+            : -1;
 
         var body = [];
         try {
@@ -406,12 +424,22 @@ function customizeArpseYearReportPdf(doc) {
             console.error("Unable to apply rich ARPSE PDF formatting; exporting with default PDF table.", formatError);
         }
 
-        if (tableBlock && body.length > 1) {
-            tableBlock.table.headerRows = 1;
-            tableBlock.table.widths = getArpseYearReportPdfColumnWidths();
-            tableBlock.table.body = body;
-            tableBlock.layout = getArpseYearReportPdfTableLayout();
-            tableBlock.margin = [0, 0, 0, 0];
+        if (tableBlockIndex >= 0 && body.length > 1) {
+            var headerRow = body[0];
+            var paraTables = body.slice(1).map(function (row, rowIndex) {
+                return {
+                    table: {
+                        headerRows: 1,
+                        widths: getArpseYearReportPdfColumnWidths(),
+                        body: [headerRow, row]
+                    },
+                    layout: getArpseYearReportPdfTableLayout(),
+                    margin: [0, 0, 0, 0],
+                    pageBreak: rowIndex > 0 ? "before" : undefined
+                };
+            });
+
+            doc.content.splice.apply(doc.content, [tableBlockIndex, 1].concat(paraTables));
         }
 
         normalizeArpsePdfMakeTablesInDoc(doc);
@@ -423,10 +451,43 @@ function customizeArpseYearReportPdf(doc) {
 function customizeArpseYearReportStandardPdf(doc) {
     try {
         applyArpseYearReportBasicPdfSettings(doc);
+        splitArpseYearReportPdfTableByPara(doc);
         normalizeArpsePdfMakeTablesInDoc(doc);
     } catch (error) {
         console.error("Unable to apply standard ARPSE PDF settings.", error);
     }
+}
+
+function splitArpseYearReportPdfTableByPara(doc) {
+    if (!Array.isArray(doc.content)) {
+        return;
+    }
+
+    var tableBlockIndex = doc.content.findIndex(function (item) {
+        return item && item.table && Array.isArray(item.table.body);
+    });
+    if (tableBlockIndex < 0) {
+        return;
+    }
+
+    var tableBlock = doc.content[tableBlockIndex];
+    var body = tableBlock.table.body;
+    if (body.length <= 2) {
+        return;
+    }
+
+    var headerRow = body[0];
+    var paraTables = body.slice(1).map(function (row, rowIndex) {
+        return $.extend({}, tableBlock, {
+            table: $.extend({}, tableBlock.table, {
+                headerRows: 1,
+                body: [headerRow, row]
+            }),
+            pageBreak: rowIndex > 0 ? "before" : undefined
+        });
+    });
+
+    doc.content.splice.apply(doc.content, [tableBlockIndex, 1].concat(paraTables));
 }
 
 function applyArpseYearReportBasicPdfSettings(doc) {
@@ -1273,8 +1334,24 @@ function getCurrentArpseReportTitle() {
     return String($("#arpseReportHeading").text() || "ARPSE Year DAC / PAC Report").trim();
 }
 
-function appendReportRichTextCell(row, value) {
-    row.append($("<td>").addClass("text-wrap report-rich-text").html(cleanReportRichHtml(value)));
+function appendReportContentsCell(row, title, contents) {
+    var cell = $("<td>").addClass("text-wrap report-rich-text");
+    var titleText = String(title || "").trim();
+
+    if (titleText) {
+        cell.append($("<span>").addClass("arpse-para-title").text(titleText));
+    }
+
+    var contentsHtml = cleanReportRichHtml(contents);
+    if (contentsHtml) {
+        cell.append($("<div>").addClass("arpse-para-contents").html(contentsHtml));
+    }
+
+    row.append(cell);
+}
+
+function appendReportRichTextCell(row, value, sectionType) {
+    row.append($("<td>").addClass("text-wrap report-rich-text").html(cleanReportRichHtml(value, sectionType)));
 }
 
 function resolveValue(source) {
@@ -1292,7 +1369,7 @@ function resolveValue(source) {
     return "";
 }
 
-function cleanReportRichHtml(value) {
+function cleanReportRichHtml(value, sectionType) {
     var decoded = decodeHtmlRepeatedly(value || "").replace(/\u00a0/g, " ").trim();
     if (!decoded) {
         return "";
@@ -1304,10 +1381,67 @@ function cleanReportRichHtml(value) {
     template.innerHTML = decoded;
 
     sanitizeReportHtmlNode(template.content);
+    formatArpseMeetingDateLabels(template.content, sectionType);
     normalizeReportRichTextSpacing(template.content);
     formatArpseDacPacSectionLabels(template.content);
     normalizeReportRichTextSpacing(template.content);
     return template.innerHTML.trim();
+}
+
+function formatArpseMeetingDateLabels(root, sectionType) {
+    var normalizedSection = String(sectionType || "").toUpperCase();
+    if (normalizedSection !== "DAC" && normalizedSection !== "PAC") {
+        return;
+    }
+
+    var datePattern = "(?:\\d{1,2}[\\/.]\\d{1,2}[\\/.]\\d{2,4}|\\d{1,2}-[A-Za-z]{3}-\\d{4}|[A-Za-z]{3,9}\\s+\\d{1,2},?\\s+\\d{4})";
+    var meetingText = normalizedSection === "DAC" ? "DAC meeting held on " : "PAC Meeting held on ";
+    var existingMeetingPattern = new RegExp("^\\s*" + normalizedSection + "\\s+meeting\\s+held\\s+on\\s+(" + datePattern + ")\\s*:?", "i");
+    var leadingDatePattern = new RegExp("^\\s*\\(?((" + datePattern + "))\\)?\\s*:?");
+    var textNodes = [];
+    var walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, null);
+    var node = walker.nextNode();
+
+    while (node) {
+        textNodes.push(node);
+        node = walker.nextNode();
+    }
+
+    textNodes.forEach(function (textNode) {
+        if (!isStartOfArpseMeetingEntry(textNode)) {
+            return;
+        }
+
+        var value = textNode.nodeValue || "";
+        var match = existingMeetingPattern.exec(value) || leadingDatePattern.exec(value);
+        if (!match) {
+            return;
+        }
+
+        var date = match[1];
+        var remainder = value.substring(match[0].length).replace(/^\s+/, "");
+        var fragment = document.createDocumentFragment();
+        var label = document.createElement("span");
+        label.className = "arpse-section-label";
+        label.appendChild(document.createTextNode(meetingText + date));
+        fragment.appendChild(label);
+
+        if (remainder) {
+            fragment.appendChild(document.createElement("br"));
+            fragment.appendChild(document.createTextNode(remainder));
+        }
+
+        textNode.parentNode.replaceChild(fragment, textNode);
+    });
+}
+
+function isStartOfArpseMeetingEntry(textNode) {
+    var previous = getPreviousReportRichTextContentSibling(textNode);
+    if (!previous) {
+        return true;
+    }
+
+    return previous.nodeType === 1 && previous.tagName === "BR";
 }
 
 function normalizeReportRichTextSpacing(root) {
@@ -1717,7 +1851,7 @@ function exportArpseYearReportToWord() {
 
 function buildArpseYearReportExportHtml(table, title, extraStyles) {
     var escapedTitle = escapeHtml(title);
-    var rowsHtml = buildArpseYearReportWordRows(table);
+    var recordPagesHtml = buildArpseYearReportWordPages(table, escapedTitle);
 
     return [
         "<!DOCTYPE html>",
@@ -1732,8 +1866,23 @@ function buildArpseYearReportExportHtml(table, title, extraStyles) {
         "</head>",
         "<body>",
         "<div class='WordSection1'>",
-        "<h2>", escapedTitle, "</h2>",
-        "<table class='arpse-export-table' border='1' cellspacing='0' cellpadding='3'>",
+        recordPagesHtml,
+        "</div>",
+        "</body>",
+        "</html>"
+    ].join("");
+}
+
+function buildArpseYearReportWordPages(table, escapedTitle) {
+    var rows = getArpseYearReportExportRows(table);
+    var headerHtml = ["<thead><tr>"];
+
+    Array.from(table.querySelectorAll("thead th")).forEach(function (cell) {
+        headerHtml.push("<th valign='top'>", getExportCellHtml(cell, ""), "</th>");
+    });
+
+    headerHtml.push("</tr></thead>");
+    var columnHtml = [
         "<colgroup>",
         "<col style='width:4%'>",
         "<col style='width:4%'>",
@@ -1742,36 +1891,25 @@ function buildArpseYearReportExportHtml(table, title, extraStyles) {
         "<col style='width:11%'>",
         "<col style='width:11%'>",
         "<col style='width:28%'>",
-        "</colgroup>",
-        rowsHtml,
-        "</table>",
-        "</div>",
-        "</body>",
-        "</html>"
+        "</colgroup>"
     ].join("");
-}
-
-function buildArpseYearReportWordRows(table) {
-    var rows = getArpseYearReportExportRows(table);
-    var html = ["<thead><tr>"];
-
-    Array.from(table.querySelectorAll("thead th")).forEach(function (cell) {
-        html.push("<th valign='top'>", getExportCellHtml(cell, ""), "</th>");
-    });
-
-    html.push("</tr></thead><tbody>");
+    var html = [];
 
     rows.forEach(function (row, rowIndex) {
-        var rowClass = rowIndex < rows.length - 1 ? " class='arpse-record-row page-break-after'" : " class='arpse-record-row'";
-        html.push("<tr", rowClass, ">");
+        var pageClass = rowIndex > 0 ? "arpse-record-page page-break-before" : "arpse-record-page";
+        html.push("<div class='", pageClass, "'>");
+        if (rowIndex === 0) {
+            html.push("<h2>", escapedTitle, "</h2>");
+        }
+        html.push("<table class='arpse-export-table' border='1' cellspacing='0' cellpadding='3'>");
+        html.push(columnHtml, headerHtml.join(""), "<tbody><tr class='arpse-record-row'>");
         Array.from(row.cells || []).forEach(function (cell, index) {
             var cssClass = index < 2 ? " class='num'" : " class='rich-html'";
             html.push("<td", cssClass, " valign='top'>", getExportCellHtml(cell, ""), "</td>");
         });
-        html.push("</tr>");
+        html.push("</tr></tbody></table></div>");
     });
 
-    html.push("</tbody>");
     return html.join("");
 }
 
@@ -1794,19 +1932,22 @@ function getArpseYearReportWordStyles() {
         ".rich-html ul, .rich-html ol { margin: 0 0 6px 18px; padding: 0; text-align: justify; }",
         ".rich-html li { margin: 0 0 3px 0; }",
         ".rich-html b, .rich-html strong { font-weight: bold; }",
+        ".rich-html .arpse-para-title { display: block; margin-bottom: 6px; font-weight: bold; text-decoration: underline; }",
         ".rich-html .arpse-section-label { font-weight: bold; text-decoration: underline; }",
         ".rich-html u { text-decoration: underline; }",
         ".rich-html table { border-collapse: collapse; table-layout: fixed; width: 100%; max-width: 100%; margin: 0 0 6px 0; box-sizing: border-box; }",
         ".rich-html table th, .rich-html table td { border: 1px solid #9ca3af; padding: 3px; vertical-align: top; text-align: left; white-space: normal; word-break: normal; overflow-wrap: break-word; max-width: 100%; box-sizing: border-box; font-size: 8pt; }",
         ".rich-html table th { background: #eef2f7; font-weight: bold; text-align: center; }",
-        ".page-break-after { page-break-after: always; break-after: page; }"
+        ".arpse-record-page { width: 100%; }",
+        ".page-break-before { page-break-before: always; break-before: page; }"
     ].join("");
 }
 
 function getArpseYearReportPdfRenderStyles() {
     return [
         "html, body { margin: 0; padding: 0; background: #fff; }",
-        ".WordSection1 { width: 1344px; min-height: 816px; padding: 34px; box-sizing: border-box; background: #fff; overflow: visible; }",
+        ".WordSection1 { width: 1344px; background: #fff; overflow: visible; }",
+        ".arpse-record-page { width: 1344px; padding: 34px; box-sizing: border-box; background: #fff; overflow: visible; }",
         ".arpse-export-table { width: 100%; max-width: 100%; table-layout: fixed; border-collapse: collapse; box-sizing: border-box; }",
         ".arpse-export-table > thead > tr > th, .arpse-export-table > tbody > tr > td { box-sizing: border-box; vertical-align: top; overflow-wrap: break-word; word-break: normal; }",
         ".rich-html, .rich-html * { max-width: 100%; box-sizing: border-box; }",

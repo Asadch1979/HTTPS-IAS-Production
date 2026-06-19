@@ -1,4 +1,4 @@
-using AIS.Models;
+﻿using AIS.Models;
 using AIS.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
@@ -36,6 +36,8 @@ namespace AIS.Controllers
             ViewData["TopMenu"] = tm.GetTopMenus();
             ViewData["TopMenuPages"] = tm.GetTopMenusPages();
             ViewData["EntitiesList"] = dBConnection.GetEntityTypesForEntityWiseOutstandingObsPosition();
+            var roleId = sessionHandler.GetCurrentUserRoleId() ?? 0;
+            ViewData["ShowReportingOffice"] = roleId == 1 || roleId == 3 || roleId == 5 || roleId == 6 || roleId == 7;
             return ReportView();
             }
 

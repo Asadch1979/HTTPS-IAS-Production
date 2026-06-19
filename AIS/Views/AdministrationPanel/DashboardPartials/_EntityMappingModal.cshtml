@@ -1,0 +1,94 @@
+@{ Layout = null; }
+
+<div id="updateMappingEntityModal" class="modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-xl" style="min-width:90%" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">Update AIS Entity</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form>
+                    <div class="row col-md-12 mt-3">
+                        <div class="row col-md-12">
+                            <label class="text-center">Existing Entity Mapping</label>
+                        </div>
+                        <div class="row col-md-12 mt-2">
+                            <table id="entity_mapping_panel" class="table table-hover table-bordered mt-3 table-striped">
+                                <thead style="background-color: #19875478 !important;">
+                                    <tr>
+                                        <th class="col-md-auto">Parent ID</th>
+                                        <th class="col-md-auto">Parent Type ID</th>
+                                        <th class="col-md-auto">Parent Code</th>
+                                        <th class="col-md-auto">Parent Name</th>
+                                        <th class="col-md-auto">Child ID</th>
+                                        <th class="col-md-auto">Child Type ID</th>
+                                        <th class="col-md-auto">Child Code</th>
+                                        <th class="col-md-auto">Child Name</th>
+                                        <th class="col-md-auto">Audit By</th>
+                                        <th class="col-md-auto">Relationship ID</th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="row col-md-12 mt-3">
+                        <div class="row col-md-4">
+                            <label>Parent Entity Type</label>
+                        </div>
+                        <div class="row col-md-8">
+                            <select data-onchange="getOnChageList();" id="mapentTypeField" class="form-select form-control">
+                                <option value="0" selected>--Select Entity--</option>
+                                @if (ViewData["AuditEntitiesType"] != null)
+                                {
+                                    foreach (var item in (dynamic)ViewData["AuditEntitiesType"])
+                                    {
+                                        <option value="@item.AUTID">@item.ENTITYTYPEDESC</option>
+                                    }
+                                }
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="row col-md-12 mt-3">
+                        <div class="row col-md-4">
+                            <label>Parent Entity</label>
+                        </div>
+                        <div class="row col-md-8">
+                            <select id="mapentParentField" class="form-control">
+                                <option value="0">--Select Parent Entity--</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="row col-md-12 mt-3">
+                        <div class="row col-md-4">
+                            <label>RelationShip</label>
+                        </div>
+                        <div class="row col-md-8">
+                            <select id="mapentRelationshipField" class="form-select form-control">
+                                <option value="0" selected>--Select Entity--</option>
+                                @if (ViewData["RelationshipList"] != null)
+                                {
+                                    foreach (var item in (dynamic)ViewData["RelationshipList"])
+                                    {
+                                        <option value="@item.ENTITY_REALTION_ID">@item.FIELD_NAME</option>
+                                    }
+                                }
+                            </select>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button data-onclick="saveInsertAISEntityMapping();" type="button" data-bs-dismiss="modal" class="btn btn-danger">Add Mapping</button>
+                <button data-onclick="saveUpdateAISEntityMapping();" type="button" data-bs-dismiss="modal" class="btn btn-success">Update Mapping</button>
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,4 +1,4 @@
-    $(document).ready(function () {
+﻿    $(document).ready(function () {
         $('#entityTypeSelectionField').select2();
 
     });
@@ -52,6 +52,7 @@
 
     function entityTypeSelectionChangeEvent() {
         if ($('#entityTypeSelectionField').val() != 0) {
+            var showReportingOffice = $('#fadMonthlyReviewGrid').data('show-reporting-office') === true;
             destroyDatatable('fadMonthlyReviewGrid');
 
             $('#fadMonthlyReviewGrid tbody').empty();
@@ -101,10 +102,14 @@
                         totals.mediumRisk += mediumRisk;
                         totals.lowRisk += lowRisk;
 
+                        var reportingOfficeCell = showReportingOffice
+                            ? '<td>' + record.reportinG_OFFICE + '</td>'
+                            : '';
+
                         $('#fadMonthlyReviewGrid tbody').append(
                             '<tr>' +
                             '<td>' + rowNumber + '</td>' +
-                            '<td>' + record.reportinG_OFFICE + '</td>' +
+                            reportingOfficeCell +
                             '<td>' + record.chilD_CODE + '</td>' +
                             '<td>' + record.placE_OF_POSTING + '</td>' +
                             '<td class="text-end">' + formatNumber(openingBalance) + '</td>' +

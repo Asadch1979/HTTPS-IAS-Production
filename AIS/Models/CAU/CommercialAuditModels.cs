@@ -216,6 +216,8 @@ namespace AIS.Models.CAU
         public int SrNo { get; set; }
         [PlainText]
         public string ParaNo { get; set; }
+        [PlainText]
+        public string Title { get; set; }
         [RichTextSanitize]
         public string ContentsOfPara { get; set; }
         [RichTextSanitize]

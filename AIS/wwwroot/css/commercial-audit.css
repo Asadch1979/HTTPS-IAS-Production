@@ -379,6 +379,13 @@
     text-decoration: underline;
 }
 
+.arpse-report-page .report-rich-text .arpse-para-title {
+    display: block;
+    margin-bottom: 0.45rem;
+    font-weight: 700;
+    text-decoration: underline;
+}
+
 .arpse-report-page .report-rich-text table {
     width: 100%;
     table-layout: fixed;

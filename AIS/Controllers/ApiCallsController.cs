@@ -1,4 +1,4 @@
-using AIS.Exceptions;
+﻿using AIS.Exceptions;
 using AIS.Models;
 using AIS.Models.AIS.Models;
 using AIS.Models.AIS.Models.Execution;
@@ -4084,7 +4084,15 @@ namespace AIS.Controllers
         [HttpPost]
         public List<FADMonthlyReviewParasModel> get_fad_monthly_review_paras_for_entity_type_id(string ENT_TYPE_ID, DateTime? S_DATE, DateTime? E_DATE)
             {
-            return dBConnection.GetFADMonthlyReviewParasForEntityTypeId(ENT_TYPE_ID, S_DATE, E_DATE);
+            var rows = dBConnection.GetFADMonthlyReviewParasForEntityTypeId(ENT_TYPE_ID, S_DATE, E_DATE);
+            var canViewReportingOffice = new[] { 1, 3, 5, 6, 7,15,16,40 }.Contains(sessionHandler.GetCurrentUserRoleId() ?? 0);
+
+            if (!canViewReportingOffice)
+                {
+                rows.ForEach(row => row.REPORTING_OFFICE = string.Empty);
+                }
+
+            return rows;
             }
         [HttpGet]
         [HttpPost]

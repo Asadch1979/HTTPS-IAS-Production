@@ -807,6 +807,7 @@ namespace AIS.Controllers
                                 {
                                 SrNo = SafeReadInt(dr, "SR_NO"),
                                 ParaNo = SafeReadString(dr, "PARA_NO"),
+                                Title = SafeReadString(dr, "TITLE"),
                                 ContentsOfPara = CleanHtmlForReport(SafeReadString(dr, "CONTENTS_OF_PARA")),
                                 ReplyOfManagement = CleanHtmlForReport(SafeReadString(dr, "REPLY_OF_MANAGEMENT")),
                                 DACRecommendations = CleanHtmlForReport(SafeReadString(dr, "DAC_RECOMMENDATIONS")),

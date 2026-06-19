@@ -1526,7 +1526,10 @@ namespace AIS.Controllers
                     ViewData["Audit_By"] = dBConnection.GetAuditBy();
                     break;
                 case "ENTITY_RELATIONSHIP":
-                    ViewData["Userrelationship"] = dBConnection.Getrealtionshiptype(pageId);
+                    var entityRelationships = dBConnection.Getrealtionshiptype(pageId);
+                    ViewData["Userrelationship"] = entityRelationships;
+                    ViewData["RelationshipList"] = entityRelationships;
+                    ViewData["AuditEntitiesType"] = pageId > 0 ? dBConnection.GetAuditEntityTypes(pageId) : new List<AuditEntitiesModel>();
                     break;
                 case "ENTITY_SHIFTING":
                     ViewData["AuditEntitiesType"] = pageId > 0 ? dBConnection.GetAuditEntityTypes(pageId) : new List<AuditEntitiesModel>();

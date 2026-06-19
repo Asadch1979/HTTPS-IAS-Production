@@ -1,3 +1,5 @@
+var g_entityRelationshipPostingRequest = null;
+
 $(document).ready(function () {
     $('.menu_page_selectAll').on('click', function () {
 
@@ -71,6 +73,7 @@ function getrelation(parentEntityId = 0, userEntityId = 0) {
 
     $('#controlingsearch').empty();
     $('#childposting').empty();
+    showEntityRelationshipPostingMessage('Select a Controlling/Reporting Office to load Place of Posting records.');
     $.ajax({
         url: g_asiBaseURL + "/ApiCalls/getparentrel",
         type: "POST",
@@ -105,18 +108,32 @@ function getrelation(parentEntityId = 0, userEntityId = 0) {
 
 function getplacepost(userEntityId = 0) {
     $('#childposting').empty();
+    var controllingOfficeId = $('#controlingsearch option:selected').val();
 
-    $.ajax({
+    if (g_entityRelationshipPostingRequest) {
+        g_entityRelationshipPostingRequest.abort();
+        g_entityRelationshipPostingRequest = null;
+    }
+
+    if (!controllingOfficeId || controllingOfficeId == 0) {
+        $('#childposting').append('<option id="0" value="0" selected="selected">--Select Place of Posting--</option>');
+        showEntityRelationshipPostingMessage('Select a Controlling/Reporting Office to load Place of Posting records.');
+        return;
+    }
+
+    showEntityRelationshipPostingMessage('Loading Place of Posting records...');
+    g_entityRelationshipPostingRequest = $.ajax({
         url: g_asiBaseURL + "/ApiCalls/getpostplace",
         type: "POST",
         data: {
-            'E_R_ID': $('#controlingsearch option:selected').val()
+            'E_R_ID': controllingOfficeId
         },
 
 
         cache: false,
         success: function (data) {
             $('#childposting').append('<option id="0" value="0" selected="selected">--Select Place of Posting--</option>');
+            renderEntityRelationshipPostingGrid(data);
             $.each(data, function (index, gpp) {
 
                 var selected = '';
@@ -125,7 +142,62 @@ function getplacepost(userEntityId = 0) {
                 $('#childposting').append('<option ' + selected + ' value="' + gpp.entitY_ID + '" id="' + gpp.entitY_ID + '">' + gpp.c_NAME + '</option>')
             });
         },
+        error: function () {
+            showEntityRelationshipPostingMessage('Unable to load Place of Posting records.');
+        },
+        complete: function () {
+            g_entityRelationshipPostingRequest = null;
+        },
         dataType: "json",
     });
 
+}
+
+function renderEntityRelationshipPostingGrid(data) {
+    var tbody = $('#entityRelationshipPostingGrid tbody');
+    tbody.empty();
+
+    if (!Array.isArray(data) || data.length === 0) {
+        showEntityRelationshipPostingMessage('No Place of Posting records found.');
+        return;
+    }
+
+    $.each(data, function (index, posting) {
+        var entityId = parseInt(posting.entitY_ID, 10);
+        var row = $('<tr>');
+        row.append($('<td>').text(index + 1));
+        row.append($('<td>').text(isNaN(entityId) ? '' : entityId));
+        row.append($('<td>').text(posting.c_NAME || ''));
+        row.append($('<td>').text(posting.c_TYPE_ID || ''));
+        row.append($('<td>').text(posting.audiT_BY || ''));
+        row.append($('<td>').text(posting.gM_OFFICE || ''));
+        row.append($('<td>').text(posting.reporting || ''));
+
+        var actionButton = $('<button>')
+            .attr('type', 'button')
+            .addClass('btn btn-sm btn-danger')
+            .text('Update Entity Mapping');
+
+        if (!isNaN(entityId) && entityId > 0) {
+            actionButton.attr('data-onclick', 'updateAISEntityMapping(' + entityId + ');');
+        } else {
+            actionButton.prop('disabled', true);
+        }
+
+        row.append($('<td>').append(actionButton));
+        tbody.append(row);
+    });
+}
+
+function showEntityRelationshipPostingMessage(message) {
+    var tbody = $('#entityRelationshipPostingGrid tbody');
+    if (!tbody.length) {
+        return;
+    }
+
+    tbody.empty().append(
+        $('<tr>').addClass('entity-relationship-empty-row').append(
+            $('<td>').attr('colspan', 8).addClass('text-center text-muted').text(message)
+        )
+    );
 }
