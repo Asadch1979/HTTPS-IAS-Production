@@ -3630,6 +3630,34 @@ namespace AIS.Controllers
             {
             return dBConnection.GetComplianceSummary(ENTITY_ID);
             }
+
+        [HttpPost]
+        public IActionResult get_head_observation_risk_summary(string cycleBucket)
+            {
+            var loggedInUser = sessionHandler.GetUser();
+            if (!IsDivisionalOrGroupHead(loggedInUser))
+                return Forbid();
+
+            if (!string.Equals(cycleBucket, "OVER_THREE", StringComparison.OrdinalIgnoreCase)
+                && !string.Equals(cycleBucket, "ZERO", StringComparison.OrdinalIgnoreCase))
+                {
+                return BadRequest("Invalid compliance cycle filter.");
+                }
+
+            return Ok(dBConnection.GetHeadObservationRiskSummary(cycleBucket));
+            }
+
+        private static bool IsDivisionalOrGroupHead(SessionUser user)
+            {
+            if (user == null || user.UserEntityID.GetValueOrDefault() <= 0)
+                return false;
+
+            var roleName = (user.UserRoleName ?? string.Empty).Trim().ToUpperInvariant();
+            return roleName.Contains("DIVISIONAL HEAD")
+                || roleName.Contains("DIVISION HEAD")
+                || roleName.Contains("GROUP HEAD");
+            }
+
         [HttpGet]
         [HttpPost]
         public List<EntitiesShiftingDetailsModel> get_entity_shifting_details(string ENTITY_ID = "")

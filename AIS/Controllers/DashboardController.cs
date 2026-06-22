@@ -171,6 +171,26 @@ namespace AIS.Controllers
                     return View();
                 }
             }
+
+        public IActionResult head_observation_risk_summary()
+            {
+            ViewData["TopMenu"] = tm.GetTopMenus();
+            ViewData["TopMenuPages"] = tm.GetTopMenusPages();
+
+            if (!User.Identity.IsAuthenticated)
+                return RedirectToAction("Index", "Login");
+
+            var loggedInUser = sessionHandler.GetUser();
+            if (!IsDivisionalOrGroupHead(loggedInUser))
+                return RedirectToAction("Index", "PageNotFound");
+
+            if (!this.UserHasPagePermissionForCurrentAction(sessionHandler)) //MIGRATION_PERMISSION_CHECK (Controller)
+                return RedirectToAction("Index", "PageNotFound");
+
+            ViewData["UserEntityName"] = loggedInUser.UserEntityName ?? string.Empty;
+            return View();
+            }
+
         public IActionResult entity_wise_obs_detail()
             {
             ViewData["TopMenu"] = tm.GetTopMenus();
@@ -186,6 +206,17 @@ namespace AIS.Controllers
                 else
                     return View();
                 }
+            }
+
+        private static bool IsDivisionalOrGroupHead(SessionUser user)
+            {
+            if (user == null || user.UserEntityID.GetValueOrDefault() <= 0)
+                return false;
+
+            var roleName = (user.UserRoleName ?? string.Empty).Trim().ToUpperInvariant();
+            return roleName.Contains("DIVISIONAL HEAD")
+                || roleName.Contains("DIVISION HEAD")
+                || roleName.Contains("GROUP HEAD");
             }
 
         [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]

@@ -1233,5 +1233,63 @@ namespace AIS.Controllers
             return resp;
 
             }
+
+        public List<HeadObservationRiskSummaryModel> GetHeadObservationRiskSummary(string cycleBucket)
+            {
+            var sessionHandler = CreateSessionHandler();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
+                || loggedInUser.UserRoleID <= 0
+                || !IsDivisionalOrGroupHeadRole(loggedInUser.UserRoleName))
+                {
+                return new List<HeadObservationRiskSummaryModel>();
+                }
+
+            var normalizedBucket = string.Equals(cycleBucket, "ZERO", StringComparison.OrdinalIgnoreCase)
+                ? "ZERO"
+                : "OVER_THREE";
+            var result = new List<HeadObservationRiskSummaryModel>();
+
+            using var con = this.DatabaseConnection();
+            using (OracleCommand cmd = con.CreateCommand())
+                {
+                cmd.CommandText = "pkg_ad.P_GET_HEAD_OBS_RISK_SUMMARY";
+                cmd.CommandType = CommandType.StoredProcedure;
+                cmd.BindByName = true;
+                GuardAgainstDynamicSql(cmd);
+                cmd.Parameters.Clear();
+                cmd.Parameters.Add("P_ROLE_ID", OracleDbType.Int32).Value = loggedInUser.UserRoleID;
+                cmd.Parameters.Add("P_ENT_ID", OracleDbType.Int32).Value = loggedInUser.UserEntityID;
+                cmd.Parameters.Add("P_CYCLE_BUCKET", OracleDbType.Varchar2).Value = normalizedBucket;
+                cmd.Parameters.Add("IO_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+
+                using OracleDataReader rdr = cmd.ExecuteReader();
+                while (rdr.Read())
+                    {
+                    result.Add(new HeadObservationRiskSummaryModel
+                        {
+                        DepartmentId = Convert.ToInt32(rdr["DEPARTMENT_ID"].ToString()),
+                        DepartmentName = rdr["DEPARTMENT_NAME"].ToString(),
+                        TotalObservations = Convert.ToInt32(rdr["TOTAL_OBSERVATIONS"].ToString()),
+                        HighRisk = Convert.ToInt32(rdr["HIGH_RISK"].ToString()),
+                        MediumRisk = Convert.ToInt32(rdr["MEDIUM_RISK"].ToString()),
+                        LowRisk = Convert.ToInt32(rdr["LOW_RISK"].ToString()),
+                        UnratedRisk = Convert.ToInt32(rdr["UNRATED_RISK"].ToString()),
+                        RiskStatus = rdr["RISK_STATUS"].ToString()
+                        });
+                    }
+                }
+
+            return result;
+            }
+
+        private static bool IsDivisionalOrGroupHeadRole(string roleName)
+            {
+            var normalizedRoleName = (roleName ?? string.Empty).Trim().ToUpperInvariant();
+            return normalizedRoleName.Contains("DIVISIONAL HEAD")
+                || normalizedRoleName.Contains("DIVISION HEAD")
+                || normalizedRoleName.Contains("GROUP HEAD");
+            }
         }
     }
