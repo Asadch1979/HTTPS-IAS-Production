@@ -1,23 +1,23 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\Asad Ali\\Documents\\GitHub\\HTTPS-IAS-Production\\AIS\\AIS.csproj": {}
+    "C:\\Users\\Asad\\Documents\\GitHub\\HTTPS-IAS-Production\\AIS\\AIS.csproj": {}
   },
   "projects": {
-    "C:\\Users\\Asad Ali\\Documents\\GitHub\\HTTPS-IAS-Production\\AIS\\AIS.csproj": {
+    "C:\\Users\\Asad\\Documents\\GitHub\\HTTPS-IAS-Production\\AIS\\AIS.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\Asad Ali\\Documents\\GitHub\\HTTPS-IAS-Production\\AIS\\AIS.csproj",
+        "projectUniqueName": "C:\\Users\\Asad\\Documents\\GitHub\\HTTPS-IAS-Production\\AIS\\AIS.csproj",
         "projectName": "AIS",
-        "projectPath": "C:\\Users\\Asad Ali\\Documents\\GitHub\\HTTPS-IAS-Production\\AIS\\AIS.csproj",
-        "packagesPath": "C:\\Users\\Asad Ali\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\Asad Ali\\Documents\\GitHub\\HTTPS-IAS-Production\\AIS\\obj\\publish\\win-x64\\",
+        "projectPath": "C:\\Users\\Asad\\Documents\\GitHub\\HTTPS-IAS-Production\\AIS\\AIS.csproj",
+        "packagesPath": "C:\\Users\\Asad\\.nuget\\packages\\",
+        "outputPath": "C:\\Users\\Asad\\Documents\\GitHub\\HTTPS-IAS-Production\\AIS\\obj\\publish\\win-x64\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
         ],
         "configFilePaths": [
-          "C:\\Users\\Asad Ali\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Users\\Asad\\AppData\\Roaming\\NuGet\\NuGet.Config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
         ],
@@ -52,7 +52,7 @@
           "dependencies": {
             "ExcelDataReader": {
               "target": "Package",
-              "version": "[3.6.0, )"
+              "version": "[3.8.0, )"
             },
             "ExcelDataReader.DataSet": {
               "target": "Package",
@@ -115,15 +115,15 @@
           "downloadDependencies": [
             {
               "name": "Microsoft.AspNetCore.App.Runtime.win-x64",
-              "version": "[8.0.22, 8.0.22]"
+              "version": "[8.0.27, 8.0.27]"
             },
             {
               "name": "Microsoft.NETCore.App.Runtime.win-x64",
-              "version": "[8.0.22, 8.0.22]"
+              "version": "[8.0.27, 8.0.27]"
             },
             {
               "name": "Microsoft.WindowsDesktop.App.Runtime.win-x64",
-              "version": "[8.0.22, 8.0.22]"
+              "version": "[8.0.27, 8.0.27]"
             }
           ],
           "frameworkReferences": {
@@ -134,7 +134,7 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.308/PortableRuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.314/PortableRuntimeIdentifierGraph.json"
         }
       },
       "runtimes": {

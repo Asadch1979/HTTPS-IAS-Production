@@ -216,7 +216,7 @@ namespace AIS.Controllers
             return list;
             }
 
-        public bool ApiPathExists(string apiPath, string httpMethod, int apiId)
+        public bool ApiPathExists(string apiPath, string httpMethod, int pageId)
             {
             using var con = DatabaseConnection();
             using var cmd = con.CreateCommand();
@@ -226,7 +226,7 @@ namespace AIS.Controllers
             cmd.BindByName = true;
             cmd.Parameters.Clear();
 
-            cmd.Parameters.Add("P_API_ID", OracleDbType.Int32).Value = apiId;
+            cmd.Parameters.Add("P_PAGE_ID", OracleDbType.Int32).Value = pageId;
             cmd.Parameters.Add("P_API_PATH", OracleDbType.Varchar2).Value = apiPath;
             cmd.Parameters.Add("P_HTTP_METHOD", OracleDbType.Varchar2).Value = httpMethod;
             cmd.Parameters.Add("O_EXISTS", OracleDbType.Int32).Direction = ParameterDirection.Output;

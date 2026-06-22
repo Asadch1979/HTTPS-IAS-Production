@@ -3635,7 +3635,7 @@ namespace AIS.Controllers
         public IActionResult get_head_observation_risk_summary(string cycleBucket)
             {
             var loggedInUser = sessionHandler.GetUser();
-            if (!IsDivisionalOrGroupHead(loggedInUser))
+            if (!IsAuthorizedHeadRole(loggedInUser))
                 return Forbid();
 
             if (!string.Equals(cycleBucket, "OVER_THREE", StringComparison.OrdinalIgnoreCase)
@@ -3647,15 +3647,31 @@ namespace AIS.Controllers
             return Ok(dBConnection.GetHeadObservationRiskSummary(cycleBucket));
             }
 
-        private static bool IsDivisionalOrGroupHead(SessionUser user)
+        [HttpPost]
+        public IActionResult get_head_observation_risk_details(int departmentId, string cycleBucket)
+            {
+            var loggedInUser = sessionHandler.GetUser();
+            if (!IsAuthorizedHeadRole(loggedInUser))
+                return Forbid();
+
+            if (departmentId <= 0
+                || (!string.Equals(cycleBucket, "OVER_THREE", StringComparison.OrdinalIgnoreCase)
+                    && !string.Equals(cycleBucket, "ZERO", StringComparison.OrdinalIgnoreCase)))
+                {
+                return BadRequest("Invalid department para detail request.");
+                }
+
+            return Ok(dBConnection.GetHeadObservationRiskDetails(departmentId, cycleBucket));
+            }
+
+        private static bool IsAuthorizedHeadRole(SessionUser user)
             {
             if (user == null || user.UserEntityID.GetValueOrDefault() <= 0)
                 return false;
 
-            var roleName = (user.UserRoleName ?? string.Empty).Trim().ToUpperInvariant();
-            return roleName.Contains("DIVISIONAL HEAD")
-                || roleName.Contains("DIVISION HEAD")
-                || roleName.Contains("GROUP HEAD");
+            return user.UserRoleID == 1
+                || user.UserRoleID == 3
+                || user.UserRoleID == 14;
             }
 
         [HttpGet]
@@ -3705,6 +3721,13 @@ namespace AIS.Controllers
             {
             return "{\"Status\":true,\"Message\":\"" + dBConnection.SubmitEntityShiftingFromAdminPanel(FROM_ENT_ID, TO_ENT_ID, CIR_REF, CIR_DATE, CIR) + "\"}";
             }
+
+        [HttpPost]
+        public string submit_department_entity_shifting_from_admin_panel(string FROM_ENT_ID, string TO_ENT_ID, string CIR_REF, DateTime CIR_DATE, string CIR)
+            {
+            return "{\"Status\":true,\"Message\":\"" + dBConnection.SubmitDepartmentEntityShiftingFromAdminPanel(FROM_ENT_ID, TO_ENT_ID, CIR_REF, CIR_DATE, CIR) + "\"}";
+            }
+
         [HttpPost]
         public string submit_entity_conv_to_islamic_from_admin_panel(string FROM_ENT_ID, string TO_ENT_ID)
             {

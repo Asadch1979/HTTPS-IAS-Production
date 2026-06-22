@@ -5,6 +5,8 @@
     var stepper = byId('entityDashboardStepper');
     var stepCounter = byId('entityDashboardStepCounter');
     var storageKey = 'ais.entity.dashboard.step';
+    var selectionStorageKey = 'ais.entity.dashboard.shifting.selection';
+    var stepCache = {};
 
     if (!stepHost || !stepper) {
         return;
@@ -124,7 +126,7 @@
         });
     }
 
-    function destroyStepDataTables(container) {
+    function prepareStepDataTablesForCaching(container) {
         if (!container || !window.jQuery || !window.jQuery.fn || !window.jQuery.fn.DataTable) {
             return;
         }
@@ -136,9 +138,84 @@
 
             var selector = '#' + table.id;
             if (window.jQuery.fn.DataTable.isDataTable(selector)) {
-                window.jQuery(selector).DataTable().clear().destroy(true);
+                window.jQuery(selector).DataTable().destroy(false);
             }
         });
+    }
+
+    function captureControlState(container) {
+        return Array.prototype.map.call(container.querySelectorAll('input, select, textarea'), function (control, index) {
+            return {
+                index: index,
+                value: control.value,
+                checked: !!control.checked,
+                selectedIndex: control.selectedIndex
+            };
+        });
+    }
+
+    function restoreControlState(container, controls) {
+        var currentControls = container.querySelectorAll('input, select, textarea');
+        (controls || []).forEach(function (state) {
+            var control = currentControls[state.index];
+            if (!control || control.type === 'file') {
+                return;
+            }
+
+            if (control.type === 'checkbox' || control.type === 'radio') {
+                control.checked = state.checked;
+            } else {
+                control.value = state.value;
+                if (control.tagName === 'SELECT' && state.selectedIndex >= 0 && control.value !== state.value) {
+                    control.selectedIndex = state.selectedIndex;
+                }
+            }
+        });
+    }
+
+    function captureCurrentStep() {
+        var stepKey = currentStepKey();
+        if (!stepKey || !stepHost.firstElementChild || stepHost.querySelector('.alert-secondary')) {
+            return;
+        }
+
+        prepareStepDataTablesForCaching(stepHost);
+        var adapter = window.entityDashboardStepStateAdapters
+            ? window.entityDashboardStepStateAdapters[stepKey]
+            : null;
+
+        stepCache[stepKey] = {
+            html: stepHost.innerHTML,
+            controls: captureControlState(stepHost),
+            custom: adapter && typeof adapter.capture === 'function' ? adapter.capture() : null
+        };
+    }
+
+    function restoreCachedStep(stepKey, stepNo) {
+        var cached = stepCache[stepKey];
+        if (!cached) {
+            return false;
+        }
+
+        stepHost.innerHTML = cached.html;
+        executeInlineScripts(stepHost).then(function () {
+            restoreControlState(stepHost, cached.controls);
+            var adapter = window.entityDashboardStepStateAdapters
+                ? window.entityDashboardStepStateAdapters[stepKey]
+                : null;
+            if (adapter && typeof adapter.restore === 'function') {
+                adapter.restore(cached.custom);
+            }
+            setCurrentStepKey(stepKey);
+            setActiveStep(stepKey);
+            updateStepCounter(stepNo);
+            updateBrowserState(stepKey);
+        }).catch(function () {
+            delete stepCache[stepKey];
+            loadStep(stepKey, stepNo);
+        });
+
+        return true;
     }
 
     function executeInlineScripts(container) {
@@ -185,7 +262,15 @@
             return;
         }
 
-        destroyStepDataTables(stepHost);
+        if (currentStepKey() === stepKey && stepHost.firstElementChild && !stepHost.querySelector('.alert-secondary')) {
+            return;
+        }
+
+        captureCurrentStep();
+        if (restoreCachedStep(stepKey, stepNo)) {
+            return;
+        }
+
         stepHost.innerHTML = '<div class="alert alert-secondary mb-0">Loading workflow content...</div>';
 
         var loadUrl = resolveAppUrl(stepHost.getAttribute('data-load-url') || '/AdministrationPanel/LoadEntityDashboardStep');
@@ -234,6 +319,37 @@
                 stepHost.innerHTML = '<div class="alert alert-danger mb-0">Unable to load workflow content right now. Please try again.</div>';
             });
     }
+
+    function readShiftingSelection() {
+        try {
+            return JSON.parse(window.sessionStorage.getItem(selectionStorageKey) || '{}') || {};
+        } catch (error) {
+            return {};
+        }
+    }
+
+    window.entityDashboardSelectEntity = function (entityId, entityName, target) {
+        var parsedId = parseInt(entityId, 10);
+        if (!parsedId || parsedId <= 0 || (target !== 'from' && target !== 'to')) {
+            return;
+        }
+
+        var selection = readShiftingSelection();
+        selection[target] = {
+            id: parsedId,
+            name: entityName || ''
+        };
+        try {
+            window.sessionStorage.setItem(selectionStorageKey, JSON.stringify(selection));
+        } catch (error) {
+        }
+
+        window.dispatchEvent(new CustomEvent('entity-dashboard-shifting-selection', {
+            detail: selection
+        }));
+    };
+
+    window.entityDashboardGetShiftingSelection = readShiftingSelection;
 
     function interceptLegacyLinks() {
         stepHost.addEventListener('click', function (event) {

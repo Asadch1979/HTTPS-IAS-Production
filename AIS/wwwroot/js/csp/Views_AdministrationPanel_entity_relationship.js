@@ -184,7 +184,25 @@ function renderEntityRelationshipPostingGrid(data) {
             actionButton.prop('disabled', true);
         }
 
-        row.append($('<td>').append(actionButton));
+        var actionCell = $('<td>').append(actionButton);
+        if (!isNaN(entityId) && entityId > 0) {
+            actionCell.append(
+                $('<div>').addClass('d-flex flex-wrap gap-1 mt-1').append(
+                    $('<button>')
+                        .attr('type', 'button')
+                        .addClass('btn btn-sm btn-outline-primary')
+                        .text('Use as From')
+                        .attr('data-onclick', "entityDashboardSelectEntity(" + entityId + ",'" + String(posting.c_NAME || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'") + "','from');"),
+                    $('<button>')
+                        .attr('type', 'button')
+                        .addClass('btn btn-sm btn-outline-success')
+                        .text('Use as To')
+                        .attr('data-onclick', "entityDashboardSelectEntity(" + entityId + ",'" + String(posting.c_NAME || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'") + "','to');")
+                )
+            );
+        }
+
+        row.append(actionCell);
         tbody.append(row);
     });
 }

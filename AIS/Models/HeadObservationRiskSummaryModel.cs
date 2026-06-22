@@ -18,4 +18,21 @@ namespace AIS.Models
         [PlainText]
         public string RiskStatus { get; set; }
         }
+
+    public class HeadObservationRiskDetailModel
+        {
+        public int ComId { get; set; }
+
+        [PlainText]
+        public string AuditPeriod { get; set; }
+
+        [PlainText]
+        public string ParaNo { get; set; }
+
+        [RichTextSanitize]
+        public string ParaGist { get; set; }
+
+        [PlainText]
+        public string Risk { get; set; }
+        }
     }

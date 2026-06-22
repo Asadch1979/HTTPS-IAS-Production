@@ -1241,7 +1241,7 @@ namespace AIS.Controllers
             if (loggedInUser == null
                 || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
                 || loggedInUser.UserRoleID <= 0
-                || !IsDivisionalOrGroupHeadRole(loggedInUser.UserRoleName))
+                || !IsAuthorizedHeadRole(loggedInUser.UserRoleID))
                 {
                 return new List<HeadObservationRiskSummaryModel>();
                 }
@@ -1284,12 +1284,57 @@ namespace AIS.Controllers
             return result;
             }
 
-        private static bool IsDivisionalOrGroupHeadRole(string roleName)
+        public List<HeadObservationRiskDetailModel> GetHeadObservationRiskDetails(int departmentId, string cycleBucket)
             {
-            var normalizedRoleName = (roleName ?? string.Empty).Trim().ToUpperInvariant();
-            return normalizedRoleName.Contains("DIVISIONAL HEAD")
-                || normalizedRoleName.Contains("DIVISION HEAD")
-                || normalizedRoleName.Contains("GROUP HEAD");
+            var sessionHandler = CreateSessionHandler();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
+                || departmentId <= 0
+                || !IsAuthorizedHeadRole(loggedInUser.UserRoleID))
+                {
+                return new List<HeadObservationRiskDetailModel>();
+                }
+
+            var normalizedBucket = string.Equals(cycleBucket, "ZERO", StringComparison.OrdinalIgnoreCase)
+                ? "ZERO"
+                : "OVER_THREE";
+            var result = new List<HeadObservationRiskDetailModel>();
+
+            using var con = this.DatabaseConnection();
+            using (OracleCommand cmd = con.CreateCommand())
+                {
+                cmd.CommandText = "pkg_ad.P_GET_HEAD_OBS_RISK_DETAILS";
+                cmd.CommandType = CommandType.StoredProcedure;
+                cmd.BindByName = true;
+                GuardAgainstDynamicSql(cmd);
+                cmd.Parameters.Clear();
+                cmd.Parameters.Add("P_ROLE_ID", OracleDbType.Int32).Value = loggedInUser.UserRoleID;
+                cmd.Parameters.Add("P_ENT_ID", OracleDbType.Int32).Value = loggedInUser.UserEntityID;
+                cmd.Parameters.Add("P_DEPARTMENT_ID", OracleDbType.Int32).Value = departmentId;
+                cmd.Parameters.Add("P_CYCLE_BUCKET", OracleDbType.Varchar2).Value = normalizedBucket;
+                cmd.Parameters.Add("IO_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+
+                using OracleDataReader rdr = cmd.ExecuteReader();
+                while (rdr.Read())
+                    {
+                    result.Add(new HeadObservationRiskDetailModel
+                        {
+                        ComId = Convert.ToInt32(rdr["COM_ID"].ToString()),
+                        AuditPeriod = rdr["AUDIT_PERIOD"].ToString(),
+                        ParaNo = rdr["PARA_NO"].ToString(),
+                        ParaGist = rdr["GIST_OF_PARAS"].ToString(),
+                        Risk = rdr["RISK"].ToString()
+                        });
+                    }
+                }
+
+            return result;
+            }
+
+        private static bool IsAuthorizedHeadRole(int roleId)
+            {
+            return roleId == 1 || roleId == 3 || roleId == 14;
             }
         }
     }

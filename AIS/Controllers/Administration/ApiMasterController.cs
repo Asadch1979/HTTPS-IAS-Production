@@ -162,27 +162,20 @@ namespace AIS.Controllers
             {
             if (string.Equals(request.HttpMethod, "BOTH", StringComparison.OrdinalIgnoreCase))
                 {
-                EnsureApiPathIsUnique(request.ApiPath, "GET", 0);
-                EnsureApiPathIsUnique(request.ApiPath, "POST", 0);
+                EnsureApiPathIsUnique(request.ApiPath, "GET", request.PageId);
+                EnsureApiPathIsUnique(request.ApiPath, "POST", request.PageId);
 
                 _dbConnection.InsertApiMaster(BuildApiMasterModel(request, "GET"));
                 _dbConnection.InsertApiMaster(BuildApiMasterModel(request, "POST"));
                 return;
                 }
 
-            EnsureApiPathIsUnique(request.ApiPath, request.HttpMethod, 0);
+            EnsureApiPathIsUnique(request.ApiPath, request.HttpMethod, request.PageId);
             _dbConnection.InsertApiMaster(BuildApiMasterModel(request, request.HttpMethod));
             }
 
         private void UpdateOrExpandApiMaster(ApiMasterSaveRequest request)
             {
-            if (!string.Equals(request.HttpMethod, "BOTH", StringComparison.OrdinalIgnoreCase))
-                {
-                EnsureApiPathIsUnique(request.ApiPath, request.HttpMethod, request.ApiId);
-                _dbConnection.UpdateApiMaster(BuildApiMasterModel(request, request.HttpMethod, request.ApiId));
-                return;
-                }
-
             var existingEntries = _dbConnection.GetApiMasterList() ?? new List<ApiMasterModel>();
             var existingEntry = existingEntries.Find(item => item.ApiId == request.ApiId);
             if (existingEntry == null)
@@ -190,17 +183,37 @@ namespace AIS.Controllers
                 throw new InvalidOperationException("API definition not found.");
                 }
 
+            if (!string.Equals(request.HttpMethod, "BOTH", StringComparison.OrdinalIgnoreCase))
+                {
+                if (!MatchesPageApiKey(existingEntry, request.ApiPath, request.HttpMethod, request.PageId))
+                    {
+                    EnsureApiPathIsUnique(request.ApiPath, request.HttpMethod, request.PageId);
+                    }
+
+                _dbConnection.UpdateApiMaster(BuildApiMasterModel(request, request.HttpMethod, request.ApiId));
+                return;
+                }
+
             var primaryMethod = NormalizeStoredHttpMethod(existingEntry.HttpMethod);
             var secondaryMethod = string.Equals(primaryMethod, "POST", StringComparison.OrdinalIgnoreCase) ? "GET" : "POST";
             var existingPath = NormalizeApiPath(existingEntry.ApiPath);
             var counterpartEntry = existingEntries.Find(item =>
                 item.ApiId != request.ApiId &&
+                item.PageId == existingEntry.PageId &&
                 string.Equals(NormalizeStoredHttpMethod(item.HttpMethod), secondaryMethod, StringComparison.OrdinalIgnoreCase) &&
                 (string.Equals(NormalizeApiPath(item.ApiPath), existingPath, StringComparison.OrdinalIgnoreCase) ||
                  string.Equals(NormalizeApiPath(item.ApiPath), request.ApiPath, StringComparison.OrdinalIgnoreCase)));
 
-            EnsureApiPathIsUnique(request.ApiPath, primaryMethod, request.ApiId);
-            EnsureApiPathIsUnique(request.ApiPath, secondaryMethod, counterpartEntry?.ApiId ?? 0);
+            if (!MatchesPageApiKey(existingEntry, request.ApiPath, primaryMethod, request.PageId))
+                {
+                EnsureApiPathIsUnique(request.ApiPath, primaryMethod, request.PageId);
+                }
+
+            if (counterpartEntry == null
+                || !MatchesPageApiKey(counterpartEntry, request.ApiPath, secondaryMethod, request.PageId))
+                {
+                EnsureApiPathIsUnique(request.ApiPath, secondaryMethod, request.PageId);
+                }
 
             _dbConnection.UpdateApiMaster(BuildApiMasterModel(request, primaryMethod, request.ApiId));
 
@@ -214,12 +227,20 @@ namespace AIS.Controllers
                 }
             }
 
-        private void EnsureApiPathIsUnique(string apiPath, string httpMethod, int apiId)
+        private void EnsureApiPathIsUnique(string apiPath, string httpMethod, int pageId)
             {
-            if (_dbConnection.ApiPathExists(apiPath, httpMethod, apiId))
+            if (_dbConnection.ApiPathExists(apiPath, httpMethod, pageId))
                 {
-                throw new InvalidOperationException("API path and method must be unique.");
+                throw new InvalidOperationException("API path and method must be unique within the selected page.");
                 }
+            }
+
+        private static bool MatchesPageApiKey(ApiMasterModel entry, string apiPath, string httpMethod, int pageId)
+            {
+            return entry != null
+                && entry.PageId == pageId
+                && string.Equals(NormalizeApiPath(entry.ApiPath), NormalizeApiPath(apiPath), StringComparison.OrdinalIgnoreCase)
+                && string.Equals(NormalizeStoredHttpMethod(entry.HttpMethod), NormalizeStoredHttpMethod(httpMethod), StringComparison.OrdinalIgnoreCase);
             }
 
         private static ApiMasterModel BuildApiMasterModel(ApiMasterSaveRequest request, string httpMethod, int apiId = 0)

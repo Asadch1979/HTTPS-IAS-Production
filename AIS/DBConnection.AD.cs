@@ -4390,6 +4390,10 @@ namespace AIS.Controllers
                 while (rdr.Read())
                     {
                     EntitiesShiftingDetailsModel m = new EntitiesShiftingDetailsModel();
+                    m.ENTITY_ID = Convert.ToInt32(rdr["ENTITY_ID"].ToString());
+                    m.ENTITY_CODE = Convert.ToInt32(rdr["ENTITY_CODE"].ToString());
+                    m.TYPE_ID = Convert.ToInt32(rdr["TYPE_ID"].ToString());
+                    m.AUDIT_TYPE = rdr["AUDIT_TYPE"].ToString();
                     m.NAME = rdr["NAME"].ToString();
                     m.E_SIZE = rdr["E_SIZE"].ToString();
                     m.RISK = rdr["RISK"].ToString();
@@ -4705,7 +4709,7 @@ namespace AIS.Controllers
                 cmd.Parameters.Add("new_ent_id", OracleDbType.Varchar2).Value = TO_ENT_ID;
                 cmd.Parameters.Add("P_NO", OracleDbType.Varchar2).Value = loggedInUser.PPNumber;
                 cmd.Parameters.Add("ENT_ID", OracleDbType.Varchar2).Value = loggedInUser.UserEntityID;
-                cmd.Parameters.Add("R_ID", OracleDbType.Varchar2).Value = loggedInUser.UserEntityID;
+                cmd.Parameters.Add("R_ID", OracleDbType.Varchar2).Value = loggedInUser.UserRoleID;
                 cmd.Parameters.Add("CIR_NO", OracleDbType.Varchar2).Value = CIR_REF_NO;
                 cmd.Parameters.Add("CIR_ATTACH", OracleDbType.Clob).Value = CIR;
                 cmd.Parameters.Add("CIR_DATE", OracleDbType.Date).Value = CIR_DATE;
@@ -4718,6 +4722,56 @@ namespace AIS.Controllers
                 }
             return resp;
 
+            }
+
+        public string SubmitDepartmentEntityShiftingFromAdminPanel(string FROM_ENT_ID, string TO_ENT_ID, string CIR_REF_NO, DateTime CIR_DATE, string CIR)
+            {
+            var sessionHandler = CreateSessionHandler();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
+                || string.IsNullOrWhiteSpace(loggedInUser.PPNumber)
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return string.Empty;
+                }
+
+            if (!int.TryParse(FROM_ENT_ID, out int fromEntityId)
+                || !int.TryParse(TO_ENT_ID, out int toEntityId)
+                || fromEntityId <= 0
+                || toEntityId <= 0
+                || fromEntityId == toEntityId
+                || string.IsNullOrWhiteSpace(CIR_REF_NO))
+                {
+                return "Invalid departmental entity shifting request.";
+                }
+
+            using var con = this.DatabaseConnection();
+            string resp = "";
+            using (OracleCommand cmd = con.CreateCommand())
+                {
+                cmd.CommandText = "pkg_ad.P_Add_Department_Entity_Shifting";
+                cmd.CommandType = CommandType.StoredProcedure;
+                cmd.BindByName = true;
+                GuardAgainstDynamicSql(cmd);
+                cmd.Parameters.Clear();
+                cmd.Parameters.Add("Old_Ent_id", OracleDbType.Int32).Value = fromEntityId;
+                cmd.Parameters.Add("new_ent_id", OracleDbType.Int32).Value = toEntityId;
+                cmd.Parameters.Add("P_NO", OracleDbType.Int32).Value = loggedInUser.PPNumber;
+                cmd.Parameters.Add("ENT_ID", OracleDbType.Int32).Value = loggedInUser.UserEntityID;
+                cmd.Parameters.Add("R_ID", OracleDbType.Int32).Value = loggedInUser.UserRoleID;
+                cmd.Parameters.Add("CIR_NO", OracleDbType.Varchar2).Value = CIR_REF_NO.Trim();
+                cmd.Parameters.Add("CIR_ATTACH", OracleDbType.Clob).Value = string.IsNullOrWhiteSpace(CIR) ? DBNull.Value : CIR;
+                cmd.Parameters.Add("CIR_DATE", OracleDbType.Date).Value = CIR_DATE;
+                cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+                using OracleDataReader rdr = cmd.ExecuteReader();
+                while (rdr.Read())
+                    {
+                    resp = rdr["remarks"].ToString();
+                    }
+                }
+
+            return resp;
             }
 
         public string SubmitEntityConvToIslamicFromAdminPanel(string FROM_ENT_ID, string TO_ENT_ID)

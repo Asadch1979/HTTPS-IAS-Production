@@ -181,7 +181,7 @@ namespace AIS.Controllers
                 return RedirectToAction("Index", "Login");
 
             var loggedInUser = sessionHandler.GetUser();
-            if (!IsDivisionalOrGroupHead(loggedInUser))
+            if (!IsAuthorizedHeadRole(loggedInUser))
                 return RedirectToAction("Index", "PageNotFound");
 
             if (!this.UserHasPagePermissionForCurrentAction(sessionHandler)) //MIGRATION_PERMISSION_CHECK (Controller)
@@ -208,15 +208,14 @@ namespace AIS.Controllers
                 }
             }
 
-        private static bool IsDivisionalOrGroupHead(SessionUser user)
+        private static bool IsAuthorizedHeadRole(SessionUser user)
             {
             if (user == null || user.UserEntityID.GetValueOrDefault() <= 0)
                 return false;
 
-            var roleName = (user.UserRoleName ?? string.Empty).Trim().ToUpperInvariant();
-            return roleName.Contains("DIVISIONAL HEAD")
-                || roleName.Contains("DIVISION HEAD")
-                || roleName.Contains("GROUP HEAD");
+            return user.UserRoleID == 1
+                || user.UserRoleID == 3
+                || user.UserRoleID == 14;
             }
 
         [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]

@@ -7,6 +7,14 @@
     var ent_code = url.searchParams.get("code");
     var ent_name = url.searchParams.get("name");
 
+    function getShiftingSelectionActions(entityId, entityName) {
+        var safeName = String(entityName || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+        return '<div class="d-flex flex-wrap gap-1">'
+            + '<button type="button" class="btn btn-sm btn-outline-primary" data-onclick="entityDashboardSelectEntity(' + entityId + ',\'' + safeName + '\',\'from\');">Use as From</button>'
+            + '<button type="button" class="btn btn-sm btn-outline-success" data-onclick="entityDashboardSelectEntity(' + entityId + ',\'' + safeName + '\',\'to\');">Use as To</button>'
+            + '</div>';
+    }
+
     $(document).ready(function () {
 
         $('#entityNameTextBar').val(ent_name);
@@ -92,7 +100,7 @@
                 g_aisEntitiesRec = data;
                 $.each(data, function (i, v) {
 
-                    $('#ais_entity_find_panel tbody').append('<tr><td>' + ++i + '</td><td>' + v.entitY_ID + '</td><td>' + v.entitY_CODE + '</td><td>' + v.entitY_NAME + '</td><td>' + v.typE_ID + '</td><td>' + v.audiT_BY + '</td><td>' + v.auditable + '</td><td>' + v.status + '</td><td><a data-onclick="event.preventDefault();updateAISEntity(' + v.entitY_ID + ');" href="#">Update Entity</a></td><td><a data-onclick="updateAISEntityMapping(' + v.entitY_ID + ');" href="#">Update Entity Mapping</a></td></tr>');
+                    $('#ais_entity_find_panel tbody').append('<tr><td>' + ++i + '</td><td>' + v.entitY_ID + '</td><td>' + v.entitY_CODE + '</td><td>' + v.entitY_NAME + '</td><td>' + v.typE_ID + '</td><td>' + v.audiT_BY + '</td><td>' + v.auditable + '</td><td>' + v.status + '</td><td><a data-onclick="event.preventDefault();updateAISEntity(' + v.entitY_ID + ');" href="#">Update Entity</a></td><td><a data-onclick="updateAISEntityMapping(' + v.entitY_ID + ');" href="#">Update Entity Mapping</a>' + getShiftingSelectionActions(v.entitY_ID, v.entitY_NAME) + '</td></tr>');
                 });
 
 
@@ -118,7 +126,7 @@
                 g_aisEntitiesRec = data;
                 $.each(data, function (i, v) {
 
-                    $('#ais_entity_find_panel tbody').append('<tr><td>' + ++i + '</td><td>' + v.entitY_ID + '</td><td>' + v.entitY_CODE + '</td><td>' + v.entitY_NAME + '</td><td>' + v.typE_ID + '</td><td>' + v.audiT_BY + '</td><td>' + v.auditable + '</td><td>' + v.status + '</td><td><a data-onclick="event.preventDefault();updateAISEntity(' + v.entitY_ID + ');" href="#">Update Entity</a></td><td><a data-onclick="updateAISEntityMapping(' + v.entitY_ID + ');" href="#">Update Entity Mapping</a></td></tr>');
+                    $('#ais_entity_find_panel tbody').append('<tr><td>' + ++i + '</td><td>' + v.entitY_ID + '</td><td>' + v.entitY_CODE + '</td><td>' + v.entitY_NAME + '</td><td>' + v.typE_ID + '</td><td>' + v.audiT_BY + '</td><td>' + v.auditable + '</td><td>' + v.status + '</td><td><a data-onclick="event.preventDefault();updateAISEntity(' + v.entitY_ID + ');" href="#">Update Entity</a></td><td><a data-onclick="updateAISEntityMapping(' + v.entitY_ID + ');" href="#">Update Entity Mapping</a>' + getShiftingSelectionActions(v.entitY_ID, v.entitY_NAME) + '</td></tr>');
                 });
 
             },
@@ -330,3 +338,22 @@
         });
 
     }
+
+    window.entityDashboardStepStateAdapters = window.entityDashboardStepStateAdapters || {};
+    window.entityDashboardStepStateAdapters.ENTITY_ADDITION = {
+        capture: function () {
+            return {
+                aisEntities: g_aisEntitiesRec,
+                entityIdToUpdate: g_entIdToUpdate,
+                mappingEntityId: g_entIdtoUpdateMapping,
+                mappingExists: g_mappingExists
+            };
+        },
+        restore: function (state) {
+            state = state || {};
+            g_aisEntitiesRec = state.aisEntities || [];
+            g_entIdToUpdate = state.entityIdToUpdate || 0;
+            g_entIdtoUpdateMapping = state.mappingEntityId || 0;
+            g_mappingExists = state.mappingExists || [];
+        }
+    };

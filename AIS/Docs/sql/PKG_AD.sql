@@ -731,6 +731,16 @@ create or replace package PKG_AD is
                                   cir_date   in date,
                                   io_cursor  OUT t_cursor);
 
+  Procedure P_Add_Department_Entity_Shifting(Old_Ent_id in number,
+                                             new_ent_id in number,
+                                             P_NO       in number,
+                                             ENT_ID     in number,
+                                             R_ID       in number,
+                                             cir_no     in varchar2,
+                                             cir_attach in clob,
+                                             cir_date   in date,
+                                             io_cursor  OUT t_cursor);
+
   procedure P_get_roles_for_compliance_flow(ENT_ID    in number,
                                             P_NO      in number,
                                             R_ID      in number,
@@ -995,7 +1005,7 @@ create or replace package PKG_AD is
                                P_ACTION_IND      IN VARCHAR2,
                                O_MESSAGE         OUT VARCHAR2);
 
-  PROCEDURE P_CHECK_API_UNIQUE(P_API_ID      IN NUMBER,
+  PROCEDURE P_CHECK_API_UNIQUE(P_PAGE_ID     IN NUMBER,
                                P_API_PATH    IN VARCHAR2,
                                P_HTTP_METHOD IN VARCHAR2,
                                O_EXISTS      OUT NUMBER);
@@ -5943,7 +5953,11 @@ create or replace package body PKG_AD is
                                               io_cursor OUT t_cursor) as
   begin
     open io_cursor for
-      Select e.name,
+      Select e.entity_id,
+             e.code as entity_code,
+             e.type_id,
+             et.audit_type,
+             e.name,
              max(sd.description) as E_size,
              max(rd.description) as Risk,
              max(ep.eng_id) as Eng_id,
@@ -5988,6 +6002,8 @@ create or replace package body PKG_AD is
                  end) as Ais_Close,
              count(h.id) as Comp_Sub
         from t_auditee_entities e
+        left join t_auditee_ent_types et
+          on et.autid = e.type_id
         left join t_au_plan_eng ep
           on ep.entity_id = e.entity_id
         left join t_au_observation_fad o
@@ -6005,7 +6021,7 @@ create or replace package body PKG_AD is
           on h.entity_id = e.entity_id
 
        where e.entity_id = ENT_ID
-       group by e.name;
+       group by e.entity_id, e.code, e.type_id, et.audit_type, e.name;
 
   end P_Get_details_for_entity_shifting;
 
@@ -6481,6 +6497,209 @@ create or replace package body PKG_AD is
     end if;
 
   end P_Add_Entity_shifting;
+
+  Procedure P_Add_Department_Entity_Shifting(Old_Ent_id in number,
+                                             new_ent_id in number,
+                                             P_NO       in number,
+                                             ENT_ID     in number,
+                                             R_ID       in number,
+                                             cir_no     in varchar2,
+                                             cir_attach in clob,
+                                             cir_date   in date,
+                                             io_cursor  OUT t_cursor) as
+    V_OLD_NAME varchar2(1000);
+    V_NEW_NAME varchar2(1000);
+    V_OLD_CODE number;
+    V_NEW_CODE number;
+    V_OLD_TYPE number;
+    V_NEW_TYPE number;
+    V_EXISTS   number := 0;
+  begin
+    if Old_Ent_id is null or new_ent_id is null or Old_Ent_id = new_ent_id then
+      open io_cursor for
+        select 'Old and new entities must be different valid entities.' as remarks
+          from dual;
+      return;
+    end if;
+
+    select e.name, e.code, e.type_id
+      into V_OLD_NAME, V_OLD_CODE, V_OLD_TYPE
+      from t_auditee_entities e
+     where e.entity_id = Old_Ent_id;
+
+    select e.name, e.code, e.type_id
+      into V_NEW_NAME, V_NEW_CODE, V_NEW_TYPE
+      from t_auditee_entities e
+     where e.entity_id = new_ent_id;
+
+    if V_OLD_TYPE = 6 or V_NEW_TYPE = 6 then
+      open io_cursor for
+        select 'Branch shifting must use the existing branch shifting process.' as remarks
+          from dual;
+      return;
+    end if;
+
+    if V_OLD_TYPE <> V_NEW_TYPE then
+      open io_cursor for
+        select 'Department/entity shifting requires matching entity types.' as remarks
+          from dual;
+      return;
+    end if;
+
+    select count(*)
+      into V_EXISTS
+      from t_au_entity_shifting s
+     where s.old_entity_id = Old_Ent_id
+       and s.new_entity_id = new_ent_id;
+
+    if V_EXISTS > 0 then
+      open io_cursor for
+        select V_OLD_NAME || ' to ' || V_NEW_NAME ||
+               ' request already entered.' as remarks
+          from dual;
+      return;
+    end if;
+
+    insert into t_au_entity_shifting
+      (ref_id,
+       old_entity_id,
+       new_entity_id,
+       circular_no,
+       circular_date,
+       circular,
+       entered_by,
+       entered_on)
+    values
+      ((select COALESCE(max(s.ref_id) + 1, 1) from t_au_entity_shifting s),
+       Old_Ent_id,
+       new_ent_id,
+       cir_no,
+       cir_date,
+       cir_attach,
+       P_NO,
+       sysdate);
+
+    insert into t_au_observation_shifting
+      (id,
+       old_entity_id,
+       new_entity_id,
+       old_para_id,
+       new_para_id,
+       shifting_date,
+       para_status,
+       annex)
+      select (select COALESCE(max(s.id), 0)
+                from t_au_observation_shifting s) +
+             row_number() over(order by f.com_id),
+             Old_Ent_id,
+             new_ent_id,
+             f.old_para_id,
+             f.new_paraid,
+             sysdate,
+             f.para_status,
+             null
+        from AIS_T_AU_POST_COMPLIANCE f
+       where f.entity_id = Old_Ent_id
+         and f.para_status = 8;
+
+    update t_au_observation o
+       set o.entity_id = new_ent_id,
+           o.entity_code = V_NEW_CODE
+     where o.entity_id = Old_Ent_id
+       and o.status = 8;
+
+    update t_au_observation_assignedto a
+       set a.entity_id = new_ent_id
+     where a.entity_id = Old_Ent_id;
+
+    update t_au_old_paras_fad f
+       set f.entity_id = new_ent_id,
+           f.entity_code = V_NEW_CODE,
+           f.entity_name = V_NEW_NAME
+     where f.entity_id = Old_Ent_id
+       and f.para_status = 8;
+
+    update t_au_observation_old_cad_paras c
+       set c.entity_id = new_ent_id,
+           c.entity_name = V_NEW_NAME
+     where c.entity_id = Old_Ent_id
+       and c.para_status = 8;
+
+    update AIS_T_AU_POST_COMPLIANCE c
+       set c.entity_id = new_ent_id,
+           c.entity_code = V_NEW_CODE,
+           c.entity_type_id = V_NEW_TYPE
+     where c.entity_id = Old_Ent_id
+       and c.para_status = 8;
+
+    update t_auditee_entities_size s
+       set s.entity_id = new_ent_id,
+           s.entity_code = V_NEW_CODE
+     where s.entity_id = Old_Ent_id;
+
+    update t_auditee_entities_risk r
+       set r.entity_id = new_ent_id,
+           r.entity_code = V_NEW_CODE
+     where r.entity_id = Old_Ent_id;
+
+    update t_auditee_entities_maping m
+       set m.parent_id = new_ent_id,
+           m.parent_code = V_NEW_CODE,
+           m.p_name = V_NEW_NAME,
+           m.p_type_id = V_NEW_TYPE
+     where m.parent_id = Old_Ent_id;
+
+    update t_auditee_entities_maping m
+       set m.entity_id = new_ent_id,
+           m.child_code = V_NEW_CODE,
+           m.c_name = V_NEW_NAME,
+           m.c_type_id = V_NEW_TYPE,
+           m.r_key = m.parent_id || new_ent_id
+     where m.entity_id = Old_Ent_id;
+
+    update t_auditee_entities_maping m
+       set m.reporting = case when m.reporting = Old_Ent_id then new_ent_id else m.reporting end,
+           m.gm_office = case when m.gm_office = Old_Ent_id then new_ent_id else m.gm_office end,
+           m.div_office = case when m.div_office = Old_Ent_id then new_ent_id else m.div_office end,
+           m.b_group = case when m.b_group = Old_Ent_id then new_ent_id else m.b_group end
+     where m.reporting = Old_Ent_id
+        or m.gm_office = Old_Ent_id
+        or m.div_office = Old_Ent_id
+        or m.b_group = Old_Ent_id;
+
+    update t_auditee_entities_maping_reporting m
+       set m.parent_id = new_ent_id,
+           m.parent_code = V_NEW_CODE,
+           m.p_name = V_NEW_NAME,
+           m.p_type_id = V_NEW_TYPE
+     where m.parent_id = Old_Ent_id;
+
+    update t_auditee_entities_maping_reporting m
+       set m.entity_id = new_ent_id,
+           m.child_code = V_NEW_CODE,
+           m.c_name = V_NEW_NAME,
+           m.c_type_id = V_NEW_TYPE
+     where m.entity_id = Old_Ent_id;
+
+    update t_auditee_entities e
+       set e.auditable = 'N',
+           e.active = 'N'
+     where e.entity_id = Old_Ent_id;
+
+    commit;
+    open io_cursor for
+      select V_OLD_NAME || ' has been shifted to ' || V_NEW_NAME ||
+             ' successfully.' as remarks
+        from dual;
+  exception
+    when no_data_found then
+      rollback;
+      open io_cursor for
+        select 'Old or new entity could not be found.' as remarks from dual;
+    when others then
+      rollback;
+      raise;
+  end P_Add_Department_Entity_Shifting;
 
   procedure P_Shift_BR_to_islamic(Old_br    number,
                                   new_br    number,
@@ -8112,17 +8331,17 @@ create or replace package body PKG_AD is
       ROLLBACK;
       O_MESSAGE := 'Error: ' || SQLERRM;
   END;
-  PROCEDURE P_CHECK_API_UNIQUE(P_API_ID      IN NUMBER,
+  PROCEDURE P_CHECK_API_UNIQUE(P_PAGE_ID     IN NUMBER,
                                P_API_PATH    IN VARCHAR2,
                                P_HTTP_METHOD IN VARCHAR2,
                                O_EXISTS      OUT NUMBER) IS
   BEGIN
     SELECT COUNT(1)
       INTO O_EXISTS
-      FROM T_AU_API_MASTER
+     FROM T_AU_API_MASTER
      WHERE UPPER(API_PATH) = UPPER(P_API_PATH)
-       AND UPPER(HTTP_METHOD) = UPPER(P_HTTP_METHOD);
-    -- AND (P_API_ID = 0 OR API_ID <> P_API_ID);
+       AND UPPER(HTTP_METHOD) = UPPER(P_HTTP_METHOD)
+       AND PAGE_ID = P_PAGE_ID;
   END P_CHECK_API_UNIQUE;
 
   PROCEDURE P_INSERT_API_MASTER(P_API_NAME    IN VARCHAR2,

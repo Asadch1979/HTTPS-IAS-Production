@@ -4,6 +4,11 @@ namespace AIS.Models
     public class EntitiesShiftingDetailsModel
         {
 
+        public int ENTITY_ID { get; set; }
+        public int ENTITY_CODE { get; set; }
+        public int TYPE_ID { get; set; }
+        [PlainText]
+        public string AUDIT_TYPE { get; set; }
         [PlainText]
         public string NAME { get; set; }
         [PlainText]

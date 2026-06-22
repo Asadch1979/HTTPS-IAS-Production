@@ -1,7 +1,7 @@
 @{ Layout = null; }
 
 <div class="row col-md-12">
-    <h3 style=" display:block;color: #be0e43">Entity Addition</h3>
+    <h3 style=" display:block;color: #be0e43">Entity Shifting</h3>
 </div>
 
 <div class="col-md-12 row mt-3">
@@ -46,8 +46,8 @@
                         <th class="col-md-auto">Audit By</th>
                         <th class="col-md-auto">Auditable</th>
                         <th class="col-md-auto">Status</th>
-                        <th class="col-md-auto"></th>
-                        <th class="col-md-auto"></th>
+                        <th class="col-md-auto">Shift From</th>
+                        <th class="col-md-auto">Shift To</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -93,6 +93,11 @@
                     <td id="entityNameFrom"> </td>
                     <td id="entityNameTo"> </td>
 
+                </tr>
+                <tr>
+                    <td>Entity Type</td>
+                    <td id="entityTypeFrom"> </td>
+                    <td id="entityTypeTo"> </td>
                 </tr>
                 <tr>
                     <td>Entity Size</td>
@@ -179,8 +184,8 @@
 </div>
 
 <div class="row col-md-12 mt-3">
-    <button class="col-md-3 offset-md-4 btn btn-danger" data-onclick="proceedToEntityShifting();">Proceed to Shift Entity</button>
-    <button class="col-md-4 offset-md-1 btn btn-danger" data-onclick="proceedConvToIslamic();">Convert Conventional Branch to Islamic</button> 
+    <button id="proceedEntityShiftButton" class="col-md-3 offset-md-4 btn btn-danger" data-onclick="proceedToEntityShifting();">Proceed to Shift Entity</button>
+    <button id="convertIslamicButton" class="col-md-4 offset-md-1 btn btn-danger d-none" data-onclick="proceedConvToIslamic();">Convert Conventional Branch to Islamic</button>
 
 </div>
 
@@ -580,11 +585,11 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                <button data-onclick="saveInsertAISEntityShifting();" type="button" data-bs-dismiss="modal" class="btn btn-danger">Submit</button>
+                <button data-onclick="saveInsertAISEntityShifting();" type="button" class="btn btn-danger">Submit</button>
 
             </div>
         </div>
     </div>
 </div>
 
-<script src="~/js/csp/Views_AdministrationPanel_entity_shifting.js?v=1"></script>
+<script src="~/js/csp/Views_AdministrationPanel_entity_shifting.js?v=2"></script>

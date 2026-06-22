@@ -93,15 +93,15 @@
           }
         }
       },
-      "ExcelDataReader/3.6.0": {
+      "ExcelDataReader/3.8.0": {
         "type": "package",
         "compile": {
-          "lib/netstandard2.0/ExcelDataReader.dll": {
+          "lib/net8.0/ExcelDataReader.dll": {
             "related": ".pdb;.xml"
           }
         },
         "runtime": {
-          "lib/netstandard2.0/ExcelDataReader.dll": {
+          "lib/net8.0/ExcelDataReader.dll": {
             "related": ".pdb;.xml"
           }
         }
@@ -3047,15 +3047,15 @@
           }
         }
       },
-      "ExcelDataReader/3.6.0": {
+      "ExcelDataReader/3.8.0": {
         "type": "package",
         "compile": {
-          "lib/netstandard2.0/ExcelDataReader.dll": {
+          "lib/net8.0/ExcelDataReader.dll": {
             "related": ".pdb;.xml"
           }
         },
         "runtime": {
-          "lib/netstandard2.0/ExcelDataReader.dll": {
+          "lib/net8.0/ExcelDataReader.dll": {
             "related": ".pdb;.xml"
           }
         }
@@ -6000,27 +6000,29 @@
         "packageIcon.png"
       ]
     },
-    "ExcelDataReader/3.6.0": {
-      "sha512": "eXyxTwG7EEWpgQX3juZ2KcndqTqm/ydx9GXS2lUiMJU54U4h5eXdygRtVgINv0t60ezPWEb+lL7uM7Q+wm5BBA==",
+    "ExcelDataReader/3.8.0": {
+      "sha512": "kbUsldc5Fn9IKgzL2nr4VvN/mKqPqn8zGXUZpA7uL6svCA4psF+qMK519EhMvderpU4pAJoqk9DWpiSIkiZtXA==",
       "type": "package",
-      "path": "exceldatareader/3.6.0",
+      "path": "exceldatareader/3.8.0",
       "files": [
         ".nupkg.metadata",
         ".signature.p7s",
-        "exceldatareader.3.6.0.nupkg.sha512",
+        "ExcelDataReader.png",
+        "README.md",
+        "exceldatareader.3.8.0.nupkg.sha512",
         "exceldatareader.nuspec",
-        "lib/net20/ExcelDataReader.dll",
-        "lib/net20/ExcelDataReader.pdb",
-        "lib/net20/ExcelDataReader.xml",
-        "lib/net45/ExcelDataReader.dll",
-        "lib/net45/ExcelDataReader.pdb",
-        "lib/net45/ExcelDataReader.xml",
-        "lib/netstandard1.3/ExcelDataReader.dll",
-        "lib/netstandard1.3/ExcelDataReader.pdb",
-        "lib/netstandard1.3/ExcelDataReader.xml",
+        "lib/net462/ExcelDataReader.dll",
+        "lib/net462/ExcelDataReader.pdb",
+        "lib/net462/ExcelDataReader.xml",
+        "lib/net8.0/ExcelDataReader.dll",
+        "lib/net8.0/ExcelDataReader.pdb",
+        "lib/net8.0/ExcelDataReader.xml",
         "lib/netstandard2.0/ExcelDataReader.dll",
         "lib/netstandard2.0/ExcelDataReader.pdb",
-        "lib/netstandard2.0/ExcelDataReader.xml"
+        "lib/netstandard2.0/ExcelDataReader.xml",
+        "lib/netstandard2.1/ExcelDataReader.dll",
+        "lib/netstandard2.1/ExcelDataReader.pdb",
+        "lib/netstandard2.1/ExcelDataReader.xml"
       ]
     },
     "ExcelDataReader.DataSet/3.6.0": {
@@ -12460,7 +12462,7 @@
   },
   "projectFileDependencyGroups": {
     "net8.0": [
-      "ExcelDataReader >= 3.6.0",
+      "ExcelDataReader >= 3.8.0",
       "ExcelDataReader.DataSet >= 3.6.0",
       "HtmlSanitizer >= 9.0.892",
       "Microsoft.AspNetCore.Mvc.Razor.RuntimeCompilation >= 8.0.2",
@@ -12475,23 +12477,23 @@
     ]
   },
   "packageFolders": {
-    "C:\\Users\\Asad Ali\\.nuget\\packages\\": {},
+    "C:\\Users\\Asad\\.nuget\\packages\\": {},
     "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages": {}
   },
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\Asad Ali\\Documents\\GitHub\\HTTPS-IAS-Production\\AIS\\AIS.csproj",
+      "projectUniqueName": "C:\\Users\\Asad\\Documents\\GitHub\\HTTPS-IAS-Production\\AIS\\AIS.csproj",
       "projectName": "AIS",
-      "projectPath": "C:\\Users\\Asad Ali\\Documents\\GitHub\\HTTPS-IAS-Production\\AIS\\AIS.csproj",
-      "packagesPath": "C:\\Users\\Asad Ali\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\Asad Ali\\Documents\\GitHub\\HTTPS-IAS-Production\\AIS\\obj\\publish\\win-x64\\",
+      "projectPath": "C:\\Users\\Asad\\Documents\\GitHub\\HTTPS-IAS-Production\\AIS\\AIS.csproj",
+      "packagesPath": "C:\\Users\\Asad\\.nuget\\packages\\",
+      "outputPath": "C:\\Users\\Asad\\Documents\\GitHub\\HTTPS-IAS-Production\\AIS\\obj\\publish\\win-x64\\",
       "projectStyle": "PackageReference",
       "fallbackFolders": [
         "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
       ],
       "configFilePaths": [
-        "C:\\Users\\Asad Ali\\AppData\\Roaming\\NuGet\\NuGet.Config",
+        "C:\\Users\\Asad\\AppData\\Roaming\\NuGet\\NuGet.Config",
         "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
         "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
       ],
@@ -12526,7 +12528,7 @@
         "dependencies": {
           "ExcelDataReader": {
             "target": "Package",
-            "version": "[3.6.0, )"
+            "version": "[3.8.0, )"
           },
           "ExcelDataReader.DataSet": {
             "target": "Package",
@@ -12589,15 +12591,15 @@
         "downloadDependencies": [
           {
             "name": "Microsoft.AspNetCore.App.Runtime.win-x64",
-            "version": "[8.0.22, 8.0.22]"
+            "version": "[8.0.27, 8.0.27]"
           },
           {
             "name": "Microsoft.NETCore.App.Runtime.win-x64",
-            "version": "[8.0.22, 8.0.22]"
+            "version": "[8.0.27, 8.0.27]"
           },
           {
             "name": "Microsoft.WindowsDesktop.App.Runtime.win-x64",
-            "version": "[8.0.22, 8.0.22]"
+            "version": "[8.0.27, 8.0.27]"
           }
         ],
         "frameworkReferences": {
@@ -12608,7 +12610,7 @@
             "privateAssets": "all"
           }
         },
-        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.308/PortableRuntimeIdentifierGraph.json"
+        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.314/PortableRuntimeIdentifierGraph.json"
       }
     },
     "runtimes": {

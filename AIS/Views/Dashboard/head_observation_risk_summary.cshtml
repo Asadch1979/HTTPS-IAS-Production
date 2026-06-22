@@ -4,86 +4,205 @@
     Layout = "_Layout";
 }
 
-<div class="row col-md-12">
-    <div class="col-md-12">
-        <h3 style="color: #be0e43;">Department-wise Observation Summary with Risk Status</h3>
-        <p class="text-muted mb-3">
-            Scope: @(ViewData["UserEntityName"] ?? string.Empty)
-        </p>
+<style>
+    .head-observation-summary .nav-tabs {
+        flex-wrap: wrap;
+        gap: 0.25rem;
+        margin-bottom: 0;
+    }
 
-        <ul class="nav nav-tabs" id="observationCycleTabs" role="tablist">
-            <li class="nav-item" role="presentation">
-                <a class="nav-link active"
-                   id="over-three-tab"
-                   data-bs-toggle="tab"
-                   href="#over-three-panel"
-                   role="tab"
-                   aria-controls="over-three-panel"
-                   aria-selected="true">
-                    Observations with COM_CYCLE &gt; 3
-                </a>
-            </li>
-            <li class="nav-item" role="presentation">
-                <a class="nav-link"
-                   id="zero-cycle-tab"
-                   data-bs-toggle="tab"
-                   href="#zero-cycle-panel"
-                   role="tab"
-                   aria-controls="zero-cycle-panel"
-                   aria-selected="false">
-                    Observations with COM_CYCLE = 0
-                </a>
-            </li>
-        </ul>
+    .head-observation-summary .nav-tabs .nav-link {
+        white-space: normal;
+        text-align: center;
+    }
 
-        <div class="tab-content pt-3" id="observationCycleTabContent">
-            <div class="tab-pane fade show active"
-                 id="over-three-panel"
-                 role="tabpanel"
-                 aria-labelledby="over-three-tab">
-                <div class="table-responsive">
-                    <table id="overThreeObservationTable" class="table table-hover table-bordered table-striped">
-                        <thead style="background-color: #19875478 !important;">
-                            <tr>
-                                <th>Sr. No.</th>
-                                <th>Department</th>
-                                <th class="text-center">Total Observations</th>
-                                <th class="text-center">High</th>
-                                <th class="text-center">Medium</th>
-                                <th class="text-center">Low</th>
-                                <th class="text-center">Unrated</th>
-                                <th class="text-center">Risk Status</th>
-                            </tr>
-                        </thead>
-                        <tbody></tbody>
-                    </table>
+    .head-observation-summary .tab-content {
+        padding-top: 1.25rem;
+    }
+
+    .head-observation-summary .table-responsive {
+        padding-top: 0.25rem;
+        overflow-x: auto;
+    }
+
+    .head-observation-summary .dataTables_wrapper .top,
+    .head-observation-summary .dataTables_wrapper .bottom {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+        width: 100%;
+    }
+
+    .head-observation-summary .dataTables_wrapper .top {
+        margin-bottom: 1rem;
+    }
+
+    .head-observation-summary .dataTables_wrapper .bottom {
+        margin-top: 1rem;
+    }
+
+    .head-observation-summary .dataTables_wrapper .dataTables_length,
+    .head-observation-summary .dataTables_wrapper .dataTables_filter,
+    .head-observation-summary .dataTables_wrapper .dataTables_info,
+    .head-observation-summary .dataTables_wrapper .dataTables_paginate {
+        float: none;
+        margin: 0;
+    }
+
+    .head-observation-summary .dataTables_wrapper .dataTables_filter {
+        margin-left: auto;
+        text-align: right;
+    }
+
+    .head-observation-summary table.dataTable {
+        width: 100% !important;
+        margin-top: 0 !important;
+    }
+
+    @@media (max-width: 767.98px) {
+        .head-observation-summary .dataTables_wrapper .top,
+        .head-observation-summary .dataTables_wrapper .bottom {
+            align-items: stretch;
+            flex-direction: column;
+        }
+
+        .head-observation-summary .dataTables_wrapper .dataTables_filter {
+            margin-left: 0;
+            text-align: left;
+        }
+    }
+</style>
+
+<div class="container-fluid head-observation-summary px-0">
+    <div class="row g-0">
+        <div class="col-12">
+            <h3 class="mb-2" style="color: #be0e43;">Department-wise Observation Summary with Risk Status</h3>
+            <p class="text-muted mb-4">
+                Scope: @(ViewData["UserEntityName"] ?? string.Empty)
+            </p>
+
+            <ul class="nav nav-tabs" id="observationCycleTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <a class="nav-link active"
+                       id="over-three-tab"
+                       data-bs-toggle="tab"
+                       href="#over-three-panel"
+                       role="tab"
+                       aria-controls="over-three-panel"
+                       aria-selected="true">
+                        Repeatedly Rejected Paras
+                    </a>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <a class="nav-link"
+                       id="zero-cycle-tab"
+                       data-bs-toggle="tab"
+                       href="#zero-cycle-panel"
+                       role="tab"
+                       aria-controls="zero-cycle-panel"
+                       aria-selected="false">
+                        Unattended Paras / Zero Compliance Paras
+                    </a>
+                </li>
+            </ul>
+
+            <div class="tab-content" id="observationCycleTabContent">
+                <div class="tab-pane fade show active"
+                     id="over-three-panel"
+                     role="tabpanel"
+                     aria-labelledby="over-three-tab">
+                    <div class="table-responsive">
+                        <table id="overThreeObservationTable" class="table table-hover table-bordered table-striped align-middle mb-0">
+                            <thead style="background-color: #19875478 !important;">
+                                <tr>
+                                    <th>Sr. No.</th>
+                                    <th>Department</th>
+                                    <th class="text-center">Total Observations</th>
+                                    <th class="text-center">High</th>
+                                    <th class="text-center">Medium</th>
+                                    <th class="text-center">Low</th>
+                                    <th class="text-center">Details</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
                 </div>
-            </div>
 
-            <div class="tab-pane fade"
-                 id="zero-cycle-panel"
-                 role="tabpanel"
-                 aria-labelledby="zero-cycle-tab">
-                <div class="table-responsive">
-                    <table id="zeroCycleObservationTable" class="table table-hover table-bordered table-striped">
-                        <thead style="background-color: #19875478 !important;">
-                            <tr>
-                                <th>Sr. No.</th>
-                                <th>Department</th>
-                                <th class="text-center">Total Observations</th>
-                                <th class="text-center">High</th>
-                                <th class="text-center">Medium</th>
-                                <th class="text-center">Low</th>
-                                <th class="text-center">Unrated</th>
-                                <th class="text-center">Risk Status</th>
-                            </tr>
-                        </thead>
-                        <tbody></tbody>
-                    </table>
+                <div class="tab-pane fade"
+                     id="zero-cycle-panel"
+                     role="tabpanel"
+                     aria-labelledby="zero-cycle-tab">
+                    <div class="table-responsive">
+                        <table id="zeroCycleObservationTable" class="table table-hover table-bordered table-striped align-middle mb-0">
+                            <thead style="background-color: #19875478 !important;">
+                                <tr>
+                                    <th>Sr. No.</th>
+                                    <th>Department</th>
+                                    <th class="text-center">Total Observations</th>
+                                    <th class="text-center">High</th>
+                                    <th class="text-center">Medium</th>
+                                    <th class="text-center">Low</th>
+                                    <th class="text-center">Details</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 </div>
 
-<script src="~/js/csp/Views_Dashboard_head_observation_risk_summary.js?v=1"></script>
+<div id="headObservationDetailsModal" class="modal fade" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 id="headObservationDetailsTitle" class="modal-title">Department Paras</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="table-responsive">
+                    <table id="headObservationDetailsTable" class="table table-hover table-bordered table-striped align-middle mb-0">
+                        <thead style="background-color: #19875478 !important;">
+                            <tr>
+                                <th>Sr. No.</th>
+                                <th>Audit Period</th>
+                                <th>Para No.</th>
+                                <th>Gist of Para</th>
+                                <th>Risk</th>
+                                <th class="text-center">Details</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="headParaTextViewerModal" class="modal fade" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">Para Text</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="headParaTextDivField"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="~/js/csp/Views_Dashboard_head_observation_risk_summary.js?v=2"></script>

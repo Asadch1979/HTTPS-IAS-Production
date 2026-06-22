@@ -17,21 +17,11 @@ CREATE OR REPLACE PROCEDURE P_GET_HEAD_OBS_RISK_SUMMARY
     IO_CURSOR      OUT SYS_REFCURSOR
 )
 AS
-    V_ROLE_NAME VARCHAR2(300);
     V_BUCKET    VARCHAR2(20) := UPPER(TRIM(P_CYCLE_BUCKET));
 BEGIN
-    SELECT MAX(UPPER(NVL(g.group_name, g.description)))
-      INTO V_ROLE_NAME
-      FROM T_GROUPS g
-     WHERE g.group_id = P_ROLE_ID
-       AND NVL(g.status, 'Y') = 'Y';
-
     IF P_ENT_ID IS NULL
        OR P_ENT_ID <= 0
-       OR V_ROLE_NAME IS NULL
-       OR (V_ROLE_NAME NOT LIKE '%DIVISIONAL HEAD%'
-           AND V_ROLE_NAME NOT LIKE '%DIVISION HEAD%'
-           AND V_ROLE_NAME NOT LIKE '%GROUP HEAD%')
+       OR P_ROLE_ID NOT IN (1, 3, 14)
        OR V_BUCKET IS NULL
        OR V_BUCKET NOT IN ('OVER_THREE', 'ZERO')
     THEN
@@ -81,4 +71,64 @@ BEGIN
          GROUP BY department_id, department_name
          ORDER BY department_name;
 END P_GET_HEAD_OBS_RISK_SUMMARY;
+/
+
+CREATE OR REPLACE PROCEDURE P_GET_HEAD_OBS_RISK_DETAILS
+(
+    P_ROLE_ID       IN NUMBER,
+    P_ENT_ID        IN NUMBER,
+    P_DEPARTMENT_ID IN NUMBER,
+    P_CYCLE_BUCKET  IN VARCHAR2,
+    IO_CURSOR       OUT SYS_REFCURSOR
+)
+AS
+    V_BUCKET VARCHAR2(20) := UPPER(TRIM(P_CYCLE_BUCKET));
+BEGIN
+    IF P_ENT_ID IS NULL
+       OR P_ENT_ID <= 0
+       OR P_DEPARTMENT_ID IS NULL
+       OR P_DEPARTMENT_ID <= 0
+       OR P_ROLE_ID NOT IN (1, 3, 14)
+       OR V_BUCKET NOT IN ('OVER_THREE', 'ZERO')
+    THEN
+        OPEN IO_CURSOR FOR
+            SELECT CAST(NULL AS NUMBER) AS com_id,
+                   CAST(NULL AS VARCHAR2(50)) AS audit_period,
+                   CAST(NULL AS VARCHAR2(100)) AS para_no,
+                   CAST(NULL AS VARCHAR2(4000)) AS gist_of_paras,
+                   CAST(NULL AS VARCHAR2(20)) AS risk
+              FROM dual
+             WHERE 1 = 0;
+        RETURN;
+    END IF;
+
+    OPEN IO_CURSOR FOR
+        SELECT c.com_id,
+               c.audit_period,
+               c.para_no,
+               c.gist_of_paras,
+               CASE c.risk
+                   WHEN 1 THEN 'High'
+                   WHEN 2 THEN 'Medium'
+                   WHEN 3 THEN 'Low'
+                   ELSE 'Unrated'
+               END AS risk
+          FROM AIS_T_AU_POST_COMPLIANCE c
+         WHERE c.entity_id = P_DEPARTMENT_ID
+           AND ((V_BUCKET = 'OVER_THREE' AND NVL(c.com_cycle, 0) > 3)
+             OR (V_BUCKET = 'ZERO' AND NVL(c.com_cycle, 0) = 0))
+           AND (P_DEPARTMENT_ID = P_ENT_ID
+             OR EXISTS (
+                    SELECT 1
+                      FROM T_AUDITEE_ENTITIES_MAPING m
+                     WHERE m.entity_id = P_DEPARTMENT_ID
+                       AND NVL(m.status, 'Y') = 'Y'
+                       AND (m.parent_id = P_ENT_ID
+                         OR m.reporting = P_ENT_ID
+                         OR m.gm_office = P_ENT_ID
+                         OR m.div_office = P_ENT_ID
+                         OR m.b_group = P_ENT_ID)
+                ))
+         ORDER BY c.audit_period DESC, c.para_no, c.com_id;
+END P_GET_HEAD_OBS_RISK_DETAILS;
 /
