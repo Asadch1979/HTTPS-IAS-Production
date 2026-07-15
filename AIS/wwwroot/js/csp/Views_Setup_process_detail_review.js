@@ -61,20 +61,24 @@
 
     }
     function finalRecommendProcessTransaction() {
+        function toInt(value) {
+            var parsed = parseInt(value, 10);
+            return isNaN(parsed) ? 0 : parsed;
+        }
 
         $.ajax({
             url: g_asiBaseURL + "/ApiCalls/recommend_process_transaction_by_reviewer",
             type: "POST",
             data: {
-                'T_ID': g_trId,
+                'T_ID': toInt(g_trId),
                 'COMMENTS': $('#commentAreaInCommentsBox').val(),               
-                'SUB_PROCESS_ID': g_sId,
-                'PROCESS_DETAIL_ID': g_selectedChecklistDetailRecord.n_D_ID,
+                'SUB_PROCESS_ID': toInt(g_sId || g_selectedChecklistDetailRecord.n_S_ID),
+                'PROCESS_DETAIL_ID': toInt(g_selectedChecklistDetailRecord.n_D_ID),
                 'HEADING': $('#processDetailNewField').val(),
-                'V_ID': $('#updatedViolationlist').val(),
-                'CONTROL_ID': $('#updatedProcOwnerlist').val(),
-                'ROLE_ID': $('#updatedRoleResplist').val(),
-                'RISK_ID': $('#updatedRisklist').val(),
+                'V_ID': toInt($('#updatedViolationlist').val()),
+                'CONTROL_ID': toInt($('#updatedProcOwnerlist').val()),
+                'ROLE_ID': toInt($('#updatedRoleResplist').val()),
+                'RISK_ID': toInt($('#updatedRisklist').val()),
                 'ANNEX_CODE': $('#updatedAnnexlist').val()
             },
             cache: false,

@@ -1339,7 +1339,12 @@ function appendReportContentsCell(row, title, contents) {
     var titleText = String(title || "").trim();
 
     if (titleText) {
-        cell.append($("<span>").addClass("arpse-para-title").text(titleText));
+        cell.append(
+            $("<span>")
+                .addClass("arpse-para-title")
+                .attr("style", "display:block;font-weight:bold;text-decoration:underline;margin-bottom:6px;")
+                .text(titleText)
+        );
     }
 
     var contentsHtml = cleanReportRichHtml(contents);
@@ -1896,8 +1901,10 @@ function buildArpseYearReportWordPages(table, escapedTitle) {
     var html = [];
 
     rows.forEach(function (row, rowIndex) {
-        var pageClass = rowIndex > 0 ? "arpse-record-page page-break-before" : "arpse-record-page";
-        html.push("<div class='", pageClass, "'>");
+        if (rowIndex > 0) {
+            html.push("<br clear='all' class='word-page-break' style='mso-special-character:line-break;page-break-before:always;mso-page-break-before:always;break-before:page;' />");
+        }
+        html.push("<div class='arpse-record-page'>");
         if (rowIndex === 0) {
             html.push("<h2>", escapedTitle, "</h2>");
         }
@@ -1939,7 +1946,8 @@ function getArpseYearReportWordStyles() {
         ".rich-html table th, .rich-html table td { border: 1px solid #9ca3af; padding: 3px; vertical-align: top; text-align: left; white-space: normal; word-break: normal; overflow-wrap: break-word; max-width: 100%; box-sizing: border-box; font-size: 8pt; }",
         ".rich-html table th { background: #eef2f7; font-weight: bold; text-align: center; }",
         ".arpse-record-page { width: 100%; }",
-        ".page-break-before { page-break-before: always; break-before: page; }"
+        ".page-break-before, .word-page-break { page-break-before: always; mso-page-break-before: always; break-before: page; }",
+        ".word-page-break { height: 0; line-height: 0; font-size: 0; }"
     ].join("");
 }
 

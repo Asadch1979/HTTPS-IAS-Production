@@ -693,9 +693,9 @@ namespace AIS.Controllers
             return dBConnection.AddRiskSubProcessTransaction(tran);
             }
         [HttpPost]
-        public string recommend_process_transaction_by_reviewer(int T_ID, string COMMENTS, int PROCESS_DETAIL_ID = 0, int SUB_PROCESS_ID = 0, string HEADING = "", int V_ID = 0, int CONTROL_ID = 0, int ROLE_ID = 0, int RISK_ID = 0, string ANNEX_CODE = "")
+        public string recommend_process_transaction_by_reviewer(int T_ID, string COMMENTS, int? PROCESS_DETAIL_ID = null, int? SUB_PROCESS_ID = null, string HEADING = "", int? V_ID = null, int? CONTROL_ID = null, int? ROLE_ID = null, int? RISK_ID = null, string ANNEX_CODE = "")
             {
-            return "{\"Status\":true,\"Message\":\"" + dBConnection.RecommendProcessTransactionByReviewer(T_ID, COMMENTS, PROCESS_DETAIL_ID, SUB_PROCESS_ID, HEADING, V_ID, CONTROL_ID, ROLE_ID, RISK_ID, ANNEX_CODE) + "\"}";
+            return "{\"Status\":true,\"Message\":\"" + dBConnection.RecommendProcessTransactionByReviewer(T_ID, COMMENTS, PROCESS_DETAIL_ID.GetValueOrDefault(), SUB_PROCESS_ID.GetValueOrDefault(), HEADING, V_ID.GetValueOrDefault(), CONTROL_ID.GetValueOrDefault(), ROLE_ID.GetValueOrDefault(), RISK_ID.GetValueOrDefault(), ANNEX_CODE) + "\"}";
 
             }
         [HttpPost]
