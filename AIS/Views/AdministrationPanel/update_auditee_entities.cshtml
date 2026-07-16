@@ -1,4 +1,4 @@
-﻿@{
+@{
     var page_id = ViewData["PageId"] as int? ?? 0;
 }
 
@@ -63,7 +63,7 @@
                 <div class="form-group"><label>Auditable</label><input id="modalAuditable" type="text" class="form-control" /></div>
                 <div class="form-group"><label>Address</label><input id="modalAddress" type="text" class="form-control" /></div>
                 <div class="form-group"><label>Telephone</label><input id="modalTelephone" type="text" class="form-control" /></div>
-                <div class="form-group"><label>Email</label><input id="modalEmail" type="text" class="form-control" /></div>
+                <div class="form-group"><label>Email</label><input id="modalEmail" type="email" class="form-control" data-allow-at="true" /></div>
                 <div class="form-group">
                     <label>Risk</label>
                     <select id="modalRisk" class="form-select">

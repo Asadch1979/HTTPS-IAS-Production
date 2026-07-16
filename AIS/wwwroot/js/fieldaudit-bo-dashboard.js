@@ -17,11 +17,13 @@
     var lockedEngagementStatusId = null;
     var scriptLoadCache = {};
     var steps = [
-        { stepCode: 'DRAFT_REPORT', stepNo: 1, stepTitle: 'Draft Report', isCompleted: false, isSaved: false },
-        { stepCode: 'QUALITY_REVIEW', stepNo: 2, stepTitle: 'Quality Review', isCompleted: false, isSaved: false },
-        { stepCode: 'ISSUE_REPORT', stepNo: 3, stepTitle: 'Issue Report', isCompleted: false, isSaved: false },
-        { stepCode: 'CHECKING_DRAFT_REPORT', stepNo: 4, stepTitle: 'Checking of Draft Report', isCompleted: false, isSaved: false },
-        { stepCode: 'CHECKING_QUALITY_REVIEW', stepNo: 5, stepTitle: 'Checking of Quality Review', isCompleted: false, isSaved: false }
+        { stepCode: 'DRAFT_REPORT', stepNo: 1, stepTitle: 'Draft Report (Branch)', isCompleted: false, isSaved: false },
+        { stepCode: 'DRAFT_REPORT_HO', stepNo: 2, stepTitle: 'Draft Report (HO)', isCompleted: false, isSaved: false },
+        { stepCode: 'QUALITY_REVIEW', stepNo: 3, stepTitle: 'Quality Review (Branch)', isCompleted: false, isSaved: false },
+        { stepCode: 'QUALITY_REVIEW_HO', stepNo: 4, stepTitle: 'Quality Review (HO)', isCompleted: false, isSaved: false },
+        { stepCode: 'ISSUE_REPORT', stepNo: 5, stepTitle: 'Issue Report', isCompleted: false, isSaved: false },
+        { stepCode: 'CHECKING_DRAFT_REPORT', stepNo: 6, stepTitle: 'Checking of Draft Report', isCompleted: false, isSaved: false },
+        { stepCode: 'CHECKING_QUALITY_REVIEW', stepNo: 7, stepTitle: 'Checking of Quality Review', isCompleted: false, isSaved: false }
     ];
     var visibleStepCodes = Array.isArray(window.backOfficeVisibleStepCodes) ? window.backOfficeVisibleStepCodes : null;
 
@@ -90,6 +92,9 @@
             '/js/obsreference.js?v=4',
             '/js/csp/Views_Execution_draft_audit_report_branch.js?v=3'
         ],
+        DRAFT_REPORT_HO: [
+            '/js/csp/Views_Execution_draft_audit_report.js?v=1'
+        ],
         CHECKING_DRAFT_REPORT: [
             '/js/responsibilitySection.js',
             '/js/obsreference.js?v=4',
@@ -99,6 +104,9 @@
             '/js/responsibilitySection.js',
             '/js/obsreference.js?v=4',
             '/js/csp/Views_Execution_pre_concluding_audit.js?v=3'
+        ],
+        QUALITY_REVIEW_HO: [
+            '/js/csp/Views_Execution_pre_concluding_audit_ho.js?v=1'
         ],
         CHECKING_QUALITY_REVIEW: [
             '/js/responsibilitySection.js',
@@ -146,7 +154,7 @@
             };
         }
 
-        if (statusId === 13 && (normalizedStepCode === 'DRAFT_REPORT' || normalizedStepCode === 'CHECKING_DRAFT_REPORT' || normalizedStepCode === 'QUALITY_REVIEW')) {
+        if (statusId === 13 && (normalizedStepCode === 'DRAFT_REPORT' || normalizedStepCode === 'DRAFT_REPORT_HO' || normalizedStepCode === 'CHECKING_DRAFT_REPORT' || normalizedStepCode === 'QUALITY_REVIEW' || normalizedStepCode === 'QUALITY_REVIEW_HO')) {
             return {
                 enabled: false,
                 message: 'This step is not available for the selected engagement status.'
@@ -338,6 +346,24 @@
         applyReadOnlyMode(readOnly);
     }
 
+    function initializeDraftHoStep(engId, readOnly) {
+        assignEngagementToPartial(engId);
+        if (typeof window.getEntityObservation !== 'function') {
+            throw new Error('Missing BO initializer: getEntityObservation');
+        }
+        window.getEntityObservation();
+        applyReadOnlyMode(readOnly);
+    }
+
+    function initializeQualityReviewHoStep(engId, readOnly) {
+        assignEngagementToPartial(engId);
+        if (typeof window.getEntityObservations !== 'function') {
+            throw new Error('Missing BO initializer: getEntityObservations');
+        }
+        window.getEntityObservations();
+        applyReadOnlyMode(readOnly);
+    }
+
     function initializeIssueReportStep(engId, readOnly) {
         assignEngagementToPartial(engId);
         if (typeof window.fieldAuditBoLoadIssueReport !== 'function') {
@@ -354,9 +380,19 @@
             initialize: initializeDraftStep,
             requiredApis: ['get_finalized_observations_draft_branch', 'draft_report_summary']
         },
+        DRAFT_REPORT_HO: {
+            readOnly: false,
+            initialize: initializeDraftHoStep,
+            requiredApis: ['get_finalized_observations_draft']
+        },
         QUALITY_REVIEW: {
             readOnly: false,
             initialize: initializeQualityReviewStep,
+            requiredApis: ['get_obs_for_pre_concluding']
+        },
+        QUALITY_REVIEW_HO: {
+            readOnly: false,
+            initialize: initializeQualityReviewHoStep,
             requiredApis: ['get_obs_for_pre_concluding']
         },
         ISSUE_REPORT: {

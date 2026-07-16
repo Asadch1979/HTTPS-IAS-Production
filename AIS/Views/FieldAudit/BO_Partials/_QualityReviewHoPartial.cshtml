@@ -1,0 +1,3 @@
+@model AIS.Models.FieldAuditWorkflow.FieldAuditGridReplicaViewModel
+@{ ViewData["ReadOnlyMode"] = Model.IsReadOnly; }
+@await Html.PartialAsync("~/Views/Execution/pre_concluding_audit_ho.cshtml")
