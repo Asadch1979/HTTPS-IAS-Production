@@ -1,0 +1,72 @@
+@model AIS.Models.EmailConfigurationAdminModel
+@{
+    ViewData["Title"] = "Email Configuration";
+    Layout = "_Layout";
+    var success = ViewBag.Success as bool?;
+}
+
+<div class="container mt-4">
+    <h2>Email Configuration</h2>
+    <p class="text-muted">SMTP credentials are encrypted before being stored. Saved passwords are never displayed.</p>
+
+    @if (ViewBag.Message != null)
+    {
+        <div class="alert @(success == false ? "alert-danger" : "alert-success")">@ViewBag.Message</div>
+    }
+    @if (ViewBag.EncryptionKeyConfigured == false)
+    {
+        <div class="alert alert-warning">Email password encryption is unavailable. Configure the IIS environment variable <code>Email__EncryptionKey</code> before saving a new password.</div>
+    }
+
+    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+    <form asp-action="Save" method="post" autocomplete="off">
+        @Html.AntiForgeryToken()
+        <input asp-for="ConfigId" type="hidden" />
+        <div class="row">
+            <div class="col-md-8 mb-3">
+                <label asp-for="SmtpHost" class="form-label">SMTP host</label>
+                <input asp-for="SmtpHost" class="form-control" />
+                <span asp-validation-for="SmtpHost" class="text-danger"></span>
+            </div>
+            <div class="col-md-4 mb-3">
+                <label asp-for="SmtpPort" class="form-label">SMTP port</label>
+                <input asp-for="SmtpPort" class="form-control" />
+                <span asp-validation-for="SmtpPort" class="text-danger"></span>
+            </div>
+        </div>
+        <div class="mb-3">
+            <label asp-for="FromEmail" class="form-label">Sender email</label>
+            <input asp-for="FromEmail" class="form-control" />
+            <span asp-validation-for="FromEmail" class="text-danger"></span>
+        </div>
+        <div class="mb-3">
+            <label asp-for="SmtpUsername" class="form-label">SMTP username</label>
+            <input asp-for="SmtpUsername" class="form-control" autocomplete="off" />
+        </div>
+        <div class="mb-3">
+            <label asp-for="NewPassword" class="form-label">New password</label>
+            <input asp-for="NewPassword" type="password" class="form-control" value="" autocomplete="new-password" />
+            <small class="form-text text-muted">Leave blank to retain the existing encrypted password. @(Model.HasSavedPassword ? "A saved password is present." : "No saved password is present.")</small>
+            <span asp-validation-for="NewPassword" class="text-danger"></span>
+        </div>
+        <div class="form-check mb-2">
+            <input asp-for="EnableSsl" class="form-check-input" />
+            <label asp-for="EnableSsl" class="form-check-label">Enable SSL</label>
+        </div>
+        <div class="form-check mb-3">
+            <input asp-for="IsActive" class="form-check-input" />
+            <label asp-for="IsActive" class="form-check-label">Active</label>
+        </div>
+        <button type="submit" class="btn btn-primary">Save Configuration</button>
+    </form>
+
+    <hr class="my-4" />
+    <form asp-action="SendTestEmail" method="post">
+        @Html.AntiForgeryToken()
+        <div class="mb-3">
+            <label for="testRecipient" class="form-label">Test recipient</label>
+            <input id="testRecipient" name="testRecipient" type="email" class="form-control" required />
+        </div>
+        <button type="submit" class="btn btn-outline-success">Send Test Email</button>
+    </form>
+</div>
