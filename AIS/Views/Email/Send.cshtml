@@ -5,7 +5,7 @@
     <h3 class="mb-3">Send Notification</h3>
     @if (ViewBag.Message != null)
     {
-        <div class="alert alert-success">@ViewBag.Message</div>
+        <div class="alert @(ViewBag.Success == true ? "alert-success" : "alert-danger")">@ViewBag.Message</div>
     }
     <form method="post">
         <div class="mb-3">
@@ -23,10 +23,6 @@
         <div class="mb-3">
             <label class="form-label">Body</label>
             <textarea name="body" class="form-control" rows="10">@ViewBag.TemplateBody</textarea>
-        </div>
-        <div class="mb-3">
-            <label class="form-label">Auto Reminder (minutes)</label>
-            <input type="number" name="reminderMinutes" class="form-control" min="0" />
         </div>
         <button type="submit" class="btn btn-success">Send</button>
     </form>

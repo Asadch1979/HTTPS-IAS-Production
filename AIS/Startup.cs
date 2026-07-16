@@ -41,11 +41,7 @@ namespace AIS
                 "ConnectionStrings:DBUserPassword",
                 "ConnectionStrings:DBDataSource",
                 "Security:SecretKey",
-                "Security:CauKey",
-                "Email:Host",
-                "Email:Port",
-                "Email:From",
-                "Email:Password"
+                "Security:CauKey"
                 };
 
             foreach (var setting in requiredSettings)

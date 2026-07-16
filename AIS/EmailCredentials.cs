@@ -16,9 +16,11 @@ namespace AIS
         public EmailCredentailsModel GetEmailCredentails()
             {
             var email = _configuration["Email:From"];
+            var username = _configuration["Email:Username"];
             var password = _configuration["Email:Password"];
             var host = _configuration["Email:Host"];
             var port = _configuration.GetValue<int?>("Email:Port") ?? 587;
+            var enableSsl = _configuration.GetValue<bool?>("Email:EnableSsl") ?? true;
 
             if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(password) || string.IsNullOrWhiteSpace(host))
                 {
@@ -27,7 +29,9 @@ namespace AIS
                     EMAIL = string.Empty,
                     PASSWORD = string.Empty,
                     Host = string.Empty,
+                    Username = string.Empty,
                     Port = port,
+                    EnableSsl = enableSsl,
                     IsConfigured = false,
                     StatusMessage = "disabled"
                     };
@@ -37,7 +41,9 @@ namespace AIS
             em.EMAIL = email;
             em.PASSWORD = password;
             em.Host = host;
+            em.Username = string.IsNullOrWhiteSpace(username) ? email : username;
             em.Port = port;
+            em.EnableSsl = enableSsl;
             em.IsConfigured = true;
             em.StatusMessage = "enabled";
             return em;

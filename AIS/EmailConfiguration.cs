@@ -379,8 +379,10 @@ public class EmailConfiguration
         return new SmtpClient(credentials.Host)
             {
             Port = credentials.Port,
-            Credentials = new NetworkCredential(credentials.EMAIL, credentials.PASSWORD),
-            EnableSsl = true
+            Credentials = new NetworkCredential(
+                string.IsNullOrWhiteSpace(credentials.Username) ? credentials.EMAIL : credentials.Username,
+                credentials.PASSWORD),
+            EnableSsl = credentials.EnableSsl
             };
         }
 

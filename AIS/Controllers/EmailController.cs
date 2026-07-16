@@ -2,7 +2,6 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
 using System;
 using System.IO;
-using System.Threading;
 using AIS.Models.Notifications;
 
 namespace AIS.Controllers
@@ -10,7 +9,6 @@ namespace AIS.Controllers
     public class EmailController : Controller
         {
         private readonly IWebHostEnvironment _env;
-        private static Timer? _reminderTimer;
         private readonly EmailConfiguration _emailConfig;
 
         public EmailController(IWebHostEnvironment env, Microsoft.Extensions.Configuration.IConfiguration configuration, IServiceProvider serviceProvider)
@@ -45,7 +43,7 @@ namespace AIS.Controllers
             }
 
         [HttpPost]
-        public IActionResult Send(string toEmail, string ccEmail, string subject, string body, int reminderMinutes = 0)
+        public IActionResult Send(string toEmail, string ccEmail, string subject, string body)
             {
             var result = _emailConfig.Send(new EmailMessageRequest
                 {
@@ -59,18 +57,10 @@ namespace AIS.Controllers
                 IsBodyHtml = true
                 });
 
-            _reminderTimer?.Dispose();
-            if (result.IsSuccess && reminderMinutes > 0)
-                {
-                _reminderTimer = new Timer(_ =>
-                {
-                    _emailConfig.ConfigEmail(toEmail, ccEmail, subject, body);
-                }, null, reminderMinutes * 60000, reminderMinutes * 60000);
-                }
-
             ViewBag.Message = result.IsSuccess
                 ? "Email sent successfully."
                 : $"Email could not be sent ({result.Status}). {result.ErrorMessage}";
+            ViewBag.Success = result.IsSuccess;
             ViewBag.TemplateBody = body;
             return View();
             }
