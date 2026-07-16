@@ -26,7 +26,7 @@ public class EmailConfiguration
             throw new ArgumentNullException(nameof(configuration));
             }
 
-        emailCredentails = new EmailCredentails(configuration, serviceProvider);
+        emailCredentails = new EmailCredentails(configuration);
         _serviceProvider = serviceProvider;
         }
 
@@ -379,10 +379,8 @@ public class EmailConfiguration
         return new SmtpClient(credentials.Host)
             {
             Port = credentials.Port,
-            Credentials = new NetworkCredential(
-                string.IsNullOrWhiteSpace(credentials.Username) ? credentials.EMAIL : credentials.Username,
-                credentials.PASSWORD),
-            EnableSsl = credentials.EnableSsl
+            Credentials = new NetworkCredential(credentials.EMAIL, credentials.PASSWORD),
+            EnableSsl = true
             };
         }
 

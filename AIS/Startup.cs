@@ -41,7 +41,11 @@ namespace AIS
                 "ConnectionStrings:DBUserPassword",
                 "ConnectionStrings:DBDataSource",
                 "Security:SecretKey",
-                "Security:CauKey"
+                "Security:CauKey",
+                "Email:Host",
+                "Email:Port",
+                "Email:From",
+                "Email:Password"
                 };
 
             foreach (var setting in requiredSettings)
@@ -95,7 +99,6 @@ namespace AIS
             services.AddScoped<ObjectScopeAuthorizationFilter>();
             services.AddScoped<LoginAttemptTracker>();
             services.AddSingleton<PasswordPolicyValidator>();
-            services.AddSingleton<EmailPasswordProtector>();
             services.AddSingleton<SecurityTokenService>();
             services.AddSingleton<LoginViewResolver>();
             services.AddSingleton<PasswordChangeTokenService>();
@@ -258,7 +261,10 @@ namespace AIS
 
             app.UseHsts();
             logger.LogInformation("HSTS is enabled for this deployment.");
-            logger.LogInformation("Email delivery configuration will be resolved from the active database configuration, with environment fallback.");
+            logger.LogInformation("SMTP configuration loaded. Host={Host}; Port={Port}; From={From}.",
+                Configuration["Email:Host"],
+                Configuration.GetValue<int?>("Email:Port") ?? 587,
+                Configuration["Email:From"]);
 
             app.UseHttpsRedirection();
             app.UseMiddleware<CspReportOnlyMiddleware>();
