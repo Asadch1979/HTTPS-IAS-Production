@@ -829,6 +829,7 @@ namespace AIS.Controllers
                     chk.STATUS_UP = rdr["c_status_up"].ToString();
                     chk.STATUS_DOWN = rdr["c_status_down"].ToString();
                     chk.INDICATOR = rdr["ind"].ToString();
+                    chk.PARA_RISK = rdr["RISK"].ToString();
                     chk.COM_ID = rdr["COM_ID"].ToString();
                     chk.AUDIT_DATE = rdr["audit_date"].ToString();
                     chk.RECEIVED_FROM = rdr["rec_from"].ToString();
@@ -887,6 +888,7 @@ namespace AIS.Controllers
                     chk.NEXT_ROLE = (loggedInUser.UserRoleID == 44 || loggedInUser.UserRoleID == 41) ? "Settle" : "Recommend";
                     chk.RECEIVED_FROM = rdr["rec_from"].ToString();
                     chk.INDICATOR = rdr["ind"].ToString();
+                    chk.PARA_RISK = rdr["RISK"].ToString();
                     chk.COM_ID = rdr["COM_ID"].ToString();
 
                     list.Add(chk);

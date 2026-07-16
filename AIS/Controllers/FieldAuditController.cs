@@ -145,8 +145,16 @@ namespace AIS.Controllers
                 {
                 case "DRAFT_REPORT":
                     return PartialView("~/Views/FieldAudit/BO_Partials/_DraftReportPartial.cshtml", viewModel);
+                case "DRAFT_REPORT_HO":
+                    ViewData["ProcessList"] = _dbConnection.GetRiskProcessDefinition();
+                    ViewData["Voilation_Cat"] = _dbConnection.GetAuditVoilationcats();
+                    return PartialView("~/Views/FieldAudit/BO_Partials/_DraftReportHoPartial.cshtml", viewModel);
                 case "QUALITY_REVIEW":
                     return PartialView("~/Views/FieldAudit/BO_Partials/_QualityReviewPartial.cshtml", viewModel);
+                case "QUALITY_REVIEW_HO":
+                    ViewData["ProcessList"] = _dbConnection.GetRiskProcessDefinition();
+                    ViewData["Voilation_Cat"] = _dbConnection.GetAuditVoilationcats();
+                    return PartialView("~/Views/FieldAudit/BO_Partials/_QualityReviewHoPartial.cshtml", viewModel);
                 case "ISSUE_REPORT":
                     return PartialView("~/Views/FieldAudit/BO_Partials/_IssueReportPartial.cshtml", viewModel);
                 case "CHECKING_DRAFT_REPORT":
@@ -583,7 +591,9 @@ namespace AIS.Controllers
             var stepCodes = new[]
                 {
                 "DRAFT_REPORT",
+                "DRAFT_REPORT_HO",
                 "QUALITY_REVIEW",
+                "QUALITY_REVIEW_HO",
                 "ISSUE_REPORT",
                 "CHECKING_DRAFT_REPORT",
                 "CHECKING_QUALITY_REVIEW"
@@ -616,8 +626,10 @@ namespace AIS.Controllers
             if (statusId == 13)
                 {
                 return normalizedStepCode != "DRAFT_REPORT"
+                    && normalizedStepCode != "DRAFT_REPORT_HO"
                     && normalizedStepCode != "CHECKING_DRAFT_REPORT"
-                    && normalizedStepCode != "QUALITY_REVIEW";
+                    && normalizedStepCode != "QUALITY_REVIEW"
+                    && normalizedStepCode != "QUALITY_REVIEW_HO";
                 }
 
             return true;
@@ -631,6 +643,10 @@ namespace AIS.Controllers
                     return "/Execution/draft_audit_report_branch";
                 case "QUALITY_REVIEW":
                     return "/Execution/pre_concluding_audit";
+                case "DRAFT_REPORT_HO":
+                    return "/Execution/draft_audit_report";
+                case "QUALITY_REVIEW_HO":
+                    return "/Execution/pre_concluding_audit_ho";
                 case "ISSUE_REPORT":
                     return "/Execution/Concluding_Closing_Audit";
                 case "CHECKING_DRAFT_REPORT":
