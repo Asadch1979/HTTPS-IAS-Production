@@ -39,9 +39,9 @@ namespace AIS.Controllers
                 OracleDataReader rdr = cmd.ExecuteReader();
                 while (rdr.Read())
                     {
-                    resp = rdr["REMARKS"].ToString();
-                    //email = rdr["email"].ToString();
-                    // email_cc = rdr["email_cc"].ToString();
+                    resp = HasColumn(rdr, "REMARKS") ? rdr["REMARKS"]?.ToString() ?? string.Empty : string.Empty;
+                    email = HasColumn(rdr, "EMAIL") ? rdr["EMAIL"]?.ToString() ?? string.Empty : string.Empty;
+                    email_cc = HasColumn(rdr, "EMAIL_CC") ? rdr["EMAIL_CC"]?.ToString() ?? string.Empty : string.Empty;
                     }
                 }
             con.Dispose();
@@ -81,9 +81,9 @@ namespace AIS.Controllers
                 OracleDataReader rdr = cmd.ExecuteReader();
                 while (rdr.Read())
                     {
-                    resp = rdr["REMARKS"].ToString();
-                    //email = rdr["email"].ToString();
-                    // email_cc = rdr["email_cc"].ToString();
+                    resp = HasColumn(rdr, "REMARKS") ? rdr["REMARKS"]?.ToString() ?? string.Empty : string.Empty;
+                    email = HasColumn(rdr, "EMAIL") ? rdr["EMAIL"]?.ToString() ?? string.Empty : string.Empty;
+                    email_cc = HasColumn(rdr, "EMAIL_CC") ? rdr["EMAIL_CC"]?.ToString() ?? string.Empty : string.Empty;
                     }
                 }
             con.Dispose();

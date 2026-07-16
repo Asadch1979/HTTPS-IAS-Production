@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using System;
 using System.IO;
 using System.Threading;
+using AIS.Models.Notifications;
 
 namespace AIS.Controllers
     {
@@ -46,10 +47,20 @@ namespace AIS.Controllers
         [HttpPost]
         public IActionResult Send(string toEmail, string ccEmail, string subject, string body, int reminderMinutes = 0)
             {
-            _emailConfig.ConfigEmail(toEmail, ccEmail, subject, body);
+            var result = _emailConfig.Send(new EmailMessageRequest
+                {
+                Module = "Administration",
+                TriggerPoint = "ManualEmailScreen",
+                ReferenceId = HttpContext.TraceIdentifier,
+                ToRecipients = new[] { toEmail },
+                CcRecipients = new[] { ccEmail },
+                Subject = subject,
+                Body = body,
+                IsBodyHtml = true
+                });
 
             _reminderTimer?.Dispose();
-            if (reminderMinutes > 0)
+            if (result.IsSuccess && reminderMinutes > 0)
                 {
                 _reminderTimer = new Timer(_ =>
                 {
@@ -57,7 +68,9 @@ namespace AIS.Controllers
                 }, null, reminderMinutes * 60000, reminderMinutes * 60000);
                 }
 
-            ViewBag.Message = "Email Sent";
+            ViewBag.Message = result.IsSuccess
+                ? "Email sent successfully."
+                : $"Email could not be sent ({result.Status}). {result.ErrorMessage}";
             ViewBag.TemplateBody = body;
             return View();
             }

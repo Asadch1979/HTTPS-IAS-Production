@@ -436,7 +436,19 @@ namespace AIS.Controllers
             if (email == "Y")
                 {
                 var serviceProvider = _httpCon?.HttpContext?.RequestServices;
-                Task.Run(() => EmailNotification.SendJoiningNotificationAsync(_configuration, toEmail, ccEmail, auditEntity, teamLead, teamMembers, serviceProvider));
+                var emailSent = EmailNotification.SendJoiningNotificationAsync(
+                    _configuration,
+                    jm.ENG_PLAN_ID.ToString(),
+                    toEmail,
+                    ccEmail,
+                    auditEntity,
+                    teamLead,
+                    teamMembers,
+                    serviceProvider).GetAwaiter().GetResult();
+                if (!emailSent)
+                    {
+                    response = $"{response} Joining was recorded successfully, but the email notification could not be delivered.".Trim();
+                    }
                 }
             return response;
             }

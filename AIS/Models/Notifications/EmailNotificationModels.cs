@@ -11,6 +11,9 @@ namespace AIS.Models.Notifications
         public string Body { get; set; } = string.Empty;
         public bool IsBodyHtml { get; set; }
         public IEnumerable<NotificationEmailAttachmentData> Attachments { get; set; } = Array.Empty<NotificationEmailAttachmentData>();
+        public string Module { get; set; } = "Email";
+        public string TriggerPoint { get; set; } = string.Empty;
+        public string ReferenceId { get; set; } = string.Empty;
         }
 
     public class EmailSendResult
@@ -19,6 +22,7 @@ namespace AIS.Models.Notifications
         public List<string> ToRecipients { get; set; } = new List<string>();
         public List<string> CcRecipients { get; set; } = new List<string>();
         public string ErrorMessage { get; set; } = string.Empty;
+        public string Status { get; set; } = string.Empty;
         }
 
     public class NotificationEmailAttachmentData

@@ -43,7 +43,9 @@ namespace AIS
                 "Security:SecretKey",
                 "Security:CauKey",
                 "Email:Host",
-                "Email:Port"
+                "Email:Port",
+                "Email:From",
+                "Email:Password"
                 };
 
             foreach (var setting in requiredSettings)

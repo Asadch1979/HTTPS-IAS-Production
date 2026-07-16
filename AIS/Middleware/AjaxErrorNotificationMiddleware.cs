@@ -85,7 +85,7 @@ namespace AIS.Middleware
                 modelErrors,
                 exceptionSummary);
 
-            await SendEmailIfAllowedAsync(errorReferenceId, statusCode, endpointPath, actionName, userLabel, contentType, modelErrors, exceptionSummary);
+            await SendEmailIfAllowedAsync(context, errorReferenceId, statusCode, endpointPath, actionName, userLabel, contentType, modelErrors, exceptionSummary);
             }
 
         private static bool ShouldHandle(HttpRequest request)
@@ -190,6 +190,7 @@ namespace AIS.Middleware
             }
 
         private async Task SendEmailIfAllowedAsync(
+            HttpContext context,
             string errorReferenceId,
             int statusCode,
             string endpoint,
@@ -236,12 +237,20 @@ namespace AIS.Middleware
 
             try
                 {
-                var email = new EmailConfiguration(_configuration);
-                email.ConfigEmail(
-                    "asad.chaudhry@ztbl.com.pk",
-                    "",
-                    $"IAS AJAX Error {statusCode} ({errorReferenceId})",
-                    bodyBuilder.ToString());
+                var email = new EmailConfiguration(_configuration, context?.RequestServices);
+                var result = email.Send(new AIS.Models.Notifications.EmailMessageRequest
+                    {
+                    Module = "Application",
+                    TriggerPoint = nameof(AjaxErrorNotificationMiddleware),
+                    ReferenceId = errorReferenceId,
+                    ToRecipients = new[] { _configuration["AjaxErrorNotification:To"] },
+                    Subject = $"IAS AJAX Error {statusCode} ({errorReferenceId})",
+                    Body = bodyBuilder.ToString()
+                    });
+                if (!result.IsSuccess)
+                    {
+                    _logger.LogError("AJAX error notification email failed for RefId={RefId}. Status={Status}; Error={Error}", errorReferenceId, result.Status, result.ErrorMessage);
+                    }
                 }
             catch (Exception ex)
                 {

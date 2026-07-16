@@ -91,6 +91,8 @@ public class EmailConfiguration
 
     public EmailSendResult Send(EmailMessageRequest request)
         {
+        request ??= new EmailMessageRequest();
+        var logId = BeginAttemptLog(request);
         try
             {
             EmailCredentailsModel em = emailCredentails.GetEmailCredentails();
@@ -98,9 +100,11 @@ public class EmailConfiguration
             if (!em.IsConfigured)
                 {
                 LogEmailNotConfigured("Send", preparedRequest, string.Empty);
+                CompleteAttemptLog(logId, "CONFIGURATION_MISSING", "Email configuration is incomplete.", false);
                 return new EmailSendResult
                     {
                     IsSuccess = false,
+                    Status = "CONFIGURATION_MISSING",
                     ToRecipients = preparedRequest.ToRecipients,
                     CcRecipients = preparedRequest.CcRecipients,
                     ErrorMessage = "Email is disabled because credentials are not configured."
@@ -109,9 +113,11 @@ public class EmailConfiguration
 
             if (preparedRequest.ToRecipients.Count == 0)
                 {
+                CompleteAttemptLog(logId, "RECIPIENT_MISSING", "No valid recipient email addresses were supplied.", false);
                 return new EmailSendResult
                     {
                     IsSuccess = false,
+                    Status = "RECIPIENT_MISSING",
                     ToRecipients = preparedRequest.ToRecipients,
                     CcRecipients = preparedRequest.CcRecipients,
                     ErrorMessage = "No valid recipient email addresses were supplied."
@@ -126,9 +132,11 @@ public class EmailConfiguration
                 smtp.Send(mail);
                 }
 
+            CompleteAttemptLog(logId, "SENT", string.Empty, true);
             return new EmailSendResult
                 {
                 IsSuccess = true,
+                Status = "SENT",
                 ToRecipients = preparedRequest.ToRecipients,
                 CcRecipients = preparedRequest.CcRecipients
                 };
@@ -136,17 +144,21 @@ public class EmailConfiguration
         catch (SmtpException ex)
             {
             LogError("SMTP error while sending email.", ex);
-            return new EmailSendResult { IsSuccess = false, ErrorMessage = ex.Message };
+            CompleteAttemptLog(logId, "SMTP_FAILED", ex.Message, false);
+            return new EmailSendResult { IsSuccess = false, Status = "SMTP_FAILED", ErrorMessage = ex.Message };
             }
         catch (Exception ex)
             {
             LogError("General error while sending email.", ex);
-            return new EmailSendResult { IsSuccess = false, ErrorMessage = ex.Message };
+            CompleteAttemptLog(logId, "FAILED", ex.Message, false);
+            return new EmailSendResult { IsSuccess = false, Status = "FAILED", ErrorMessage = ex.Message };
             }
         }
 
     public async Task<EmailSendResult> SendAsync(EmailMessageRequest request)
         {
+        request ??= new EmailMessageRequest();
+        var logId = BeginAttemptLog(request);
         try
             {
             EmailCredentailsModel em = emailCredentails.GetEmailCredentails();
@@ -154,9 +166,11 @@ public class EmailConfiguration
             if (!em.IsConfigured)
                 {
                 LogEmailNotConfigured("SendAsync", preparedRequest, string.Empty);
+                CompleteAttemptLog(logId, "CONFIGURATION_MISSING", "Email configuration is incomplete.", false);
                 return new EmailSendResult
                     {
                     IsSuccess = false,
+                    Status = "CONFIGURATION_MISSING",
                     ToRecipients = preparedRequest.ToRecipients,
                     CcRecipients = preparedRequest.CcRecipients,
                     ErrorMessage = "Email is disabled because credentials are not configured."
@@ -165,9 +179,11 @@ public class EmailConfiguration
 
             if (preparedRequest.ToRecipients.Count == 0)
                 {
+                CompleteAttemptLog(logId, "RECIPIENT_MISSING", "No valid recipient email addresses were supplied.", false);
                 return new EmailSendResult
                     {
                     IsSuccess = false,
+                    Status = "RECIPIENT_MISSING",
                     ToRecipients = preparedRequest.ToRecipients,
                     CcRecipients = preparedRequest.CcRecipients,
                     ErrorMessage = "No valid recipient email addresses were supplied."
@@ -182,9 +198,11 @@ public class EmailConfiguration
                 await smtp.SendMailAsync(mail);
                 }
 
+            CompleteAttemptLog(logId, "SENT", string.Empty, true);
             return new EmailSendResult
                 {
                 IsSuccess = true,
+                Status = "SENT",
                 ToRecipients = preparedRequest.ToRecipients,
                 CcRecipients = preparedRequest.CcRecipients
                 };
@@ -192,14 +210,62 @@ public class EmailConfiguration
         catch (SmtpException ex)
             {
             LogError("SMTP error while sending async email.", ex);
-            return new EmailSendResult { IsSuccess = false, ErrorMessage = ex.Message };
+            CompleteAttemptLog(logId, "SMTP_FAILED", ex.Message, false);
+            return new EmailSendResult { IsSuccess = false, Status = "SMTP_FAILED", ErrorMessage = ex.Message };
             }
         catch (Exception ex)
             {
             LogError("General error while sending async email.", ex);
-            return new EmailSendResult { IsSuccess = false, ErrorMessage = ex.Message };
+            CompleteAttemptLog(logId, "FAILED", ex.Message, false);
+            return new EmailSendResult { IsSuccess = false, Status = "FAILED", ErrorMessage = ex.Message };
             }
         }
+
+    private long? BeginAttemptLog(EmailMessageRequest request)
+        {
+        try
+            {
+            var db = _serviceProvider?.GetService<DBConnection>();
+            if (db == null)
+                {
+                LogInfo("Database email-attempt logging is unavailable because no request service provider was supplied.");
+                return null;
+                }
+
+            return db.LogEmailTriggerAttempt(
+                string.IsNullOrWhiteSpace(request.Module) ? "Email" : request.Module,
+                string.IsNullOrWhiteSpace(request.TriggerPoint) ? "Unspecified" : request.TriggerPoint,
+                request.ReferenceId,
+                JoinRawRecipients(request.ToRecipients),
+                JoinRawRecipients(request.CcRecipients),
+                request.Subject);
+            }
+        catch (Exception ex)
+            {
+            LogError("Failed to create email-attempt log.", ex);
+            return null;
+            }
+        }
+
+    private void CompleteAttemptLog(long? logId, string status, string errorMessage, bool sent)
+        {
+        if (!logId.HasValue)
+            {
+            return;
+            }
+
+        try
+            {
+            _serviceProvider?.GetService<DBConnection>()?.CompleteEmailTriggerAttempt(logId.Value, status, errorMessage, sent);
+            }
+        catch (Exception ex)
+            {
+            LogError($"Failed to complete email-attempt log with status {status}.", ex);
+            }
+        }
+
+    private static string JoinRawRecipients(IEnumerable<string> recipients) =>
+        string.Join(";", recipients ?? Array.Empty<string>());
 
     private PreparedEmailRequest PrepareRequest(EmailMessageRequest request)
         {

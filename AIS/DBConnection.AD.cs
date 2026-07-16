@@ -1559,8 +1559,11 @@ namespace AIS.Controllers
 
             if (result.AccountFound)
                 {
-                EmailNotification.SendPasswordResetSuccess(_configuration, userFullName, PPNumber, pass, userEmail, userCCEmail, _httpCon?.HttpContext?.RequestServices);
-                result.EmailSent = true;
+                result.EmailSent = EmailNotification.SendPasswordResetSuccess(_configuration, userFullName, PPNumber, pass, userEmail, userCCEmail, _httpCon?.HttpContext?.RequestServices);
+                if (!result.EmailSent)
+                    {
+                    result.Message = "The password was reset, but the temporary-password email could not be delivered. Contact support for assistance.";
+                    }
                 }
 
             return result;
