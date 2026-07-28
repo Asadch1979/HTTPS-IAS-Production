@@ -4404,7 +4404,7 @@ namespace AIS.Controllers
                     m.START_DATE = rdr["START_DATE"].ToString();
                     m.END_DATE = rdr["END_DATE"].ToString();
                     m.TOTAL_PARA = rdr["TOTAL_PARA"].ToString();
-                    m.LEGACY_PARA = rdr["LEGAGY_PARA"].ToString();
+                    m.LEGACY_PARA = rdr["LEGACY_PARA"].ToString();
                     m.LEGACY_OPEN = rdr["LEGACY_OPEN"].ToString();
                     m.LEGACY_CLOSE = rdr["LEGACY_CLOSE"].ToString();
                     m.AIS_PARA = rdr["AIS_PARA"].ToString();
