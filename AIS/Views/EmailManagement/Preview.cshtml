@@ -1,0 +1,18 @@
+@model AIS.Models.EmailManagement.EmailManagementPreview
+@{
+    ViewData["Title"] = "Template Preview";
+}
+<div class="container-fluid">
+    <h2>Template Preview</h2><partial name="_Navigation" />
+    <form method="get" class="row g-3 mb-4">
+        <div class="col-md-5"><label class="form-label">Event</label><select name="eventId" asp-items="ViewBag.EventOptions" class="form-select"><option value="">Select</option></select></div>
+        <div class="col-md-5"><label class="form-label">Template (optional; otherwise active)</label><select name="templateId" class="form-select"><option value="">Active template</option>@foreach (var item in ViewBag.Templates ?? new object[0]) { <option value="@item.TemplateId">@item.TemplateName v@item.VersionNo</option> }</select></div>
+        <div class="col-md-2 align-self-end"><button class="btn btn-primary w-100">Preview</button></div>
+    </form>
+    @if (ViewBag.Error != null) { <div class="alert alert-danger">@ViewBag.Error</div> }
+    @if (Model.TemplateId > 0)
+    {
+        <div class="card mb-3"><div class="card-header">Subject</div><div class="card-body">@Model.Subject</div></div>
+        <div class="card"><div class="card-header">HTML body</div><div class="card-body border">@Html.Raw(Model.BodyHtml)</div></div>
+    }
+</div>

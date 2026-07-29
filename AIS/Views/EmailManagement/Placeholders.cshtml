@@ -1,0 +1,23 @@
+@model AIS.Models.EmailManagement.EmailManagementPlaceholder
+@using AIS.Models.EmailManagement
+@{
+    ViewData["Title"] = "Email Placeholders";
+    var placeholders = ViewBag.Placeholders as IEnumerable<EmailManagementPlaceholder> ?? Enumerable.Empty<EmailManagementPlaceholder>();
+}
+<div class="container-fluid">
+    <h2>Placeholders</h2><partial name="_Navigation" />
+    <form asp-action="SavePlaceholder" method="post" class="card card-body mb-4">
+        @Html.AntiForgeryToken()<input asp-for="PlaceholderId" type="hidden" />
+        <div class="row">
+            <div class="col-md-3 mb-3"><label asp-for="EventId" class="form-label">Event</label><select asp-for="EventId" asp-items="ViewBag.EventOptions" class="form-select"><option value="">Select</option></select></div>
+            <div class="col-md-3 mb-3"><label asp-for="Token" class="form-label"></label><input asp-for="Token" class="form-control" placeholder="{Entity.Name}" /></div>
+            <div class="col-md-3 mb-3"><label asp-for="DisplayName" class="form-label"></label><input asp-for="DisplayName" class="form-control" /></div>
+            <div class="col-md-3 form-check mt-4"><input asp-for="IsActive" class="form-check-input" /><label asp-for="IsActive" class="form-check-label"></label></div>
+        </div>
+        <div class="mb-3"><label asp-for="TestValue" class="form-label"></label><textarea asp-for="TestValue" class="form-control"></textarea></div>
+        <button class="btn btn-primary">Save placeholder</button>
+    </form>
+    <table class="table table-sm table-striped"><thead><tr><th>Event</th><th>Token</th><th>Name</th><th>Test value</th><th>Active</th></tr></thead><tbody>
+    @foreach (var item in placeholders) { <tr><td>@item.EventKey</td><td><code>@item.Token</code></td><td>@item.DisplayName</td><td>@item.TestValue</td><td>@item.IsActive</td></tr> }
+    </tbody></table>
+</div>

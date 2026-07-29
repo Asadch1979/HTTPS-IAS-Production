@@ -4,6 +4,7 @@ using AIS.Middleware;
 using AIS.Security.Cryptography;
 using AIS.Security.PasswordPolicy;
 using AIS.Services;
+using AIS.Services.EmailManagement;
 using AIS.Session;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Builder;
@@ -73,6 +74,7 @@ namespace AIS
             services.AddScoped<SessionHandler>();
             services.AddScoped<IDBConnection, DBConnection>();
             services.AddScoped<DBConnection>();
+            services.AddScoped<IStandaloneEmailManagementService, StandaloneEmailManagementService>();
             services.AddScoped<DBConnectionArchive>();
             services.AddScoped<IStaticAssetVersionTokenProvider, StaticAssetVersionTokenProvider>();
             services.AddScoped<FieldAuditReportPdfBuilder>();

@@ -1,0 +1,24 @@
+@model IEnumerable<AIS.Models.EmailManagement.EmailManagementLog>
+@using AIS.Models.EmailManagement
+@{
+    ViewData["Title"] = "Email Logs";
+    var filter = ViewBag.Filter as EmailManagementLogFilter ?? new EmailManagementLogFilter();
+}
+<div class="container-fluid">
+    <h2>Email Logs</h2><partial name="_Navigation" />
+    <form method="get" class="card card-body mb-4">
+        <div class="row g-2">
+            <div class="col-md-2"><label class="form-label">From</label><input type="date" name="FromDate" value="@filter.FromDate?.ToString("yyyy-MM-dd")" class="form-control"/></div>
+            <div class="col-md-2"><label class="form-label">To</label><input type="date" name="ToDate" value="@filter.ToDate?.ToString("yyyy-MM-dd")" class="form-control"/></div>
+            <div class="col-md-2"><label class="form-label">Event key</label><input name="EventKey" value="@filter.EventKey" class="form-control"/></div>
+            <div class="col-md-2"><label class="form-label">Status</label><select name="Status" class="form-select"><option value="">All</option>@foreach (var status in ViewBag.Statuses) { <option value="@status">@status</option> }</select></div>
+            <div class="col-md-2"><label class="form-label">Recipient</label><input name="Recipient" value="@filter.Recipient" class="form-control"/></div>
+            <div class="col-md-2"><label class="form-label">Subject</label><input name="Subject" value="@filter.Subject" class="form-control"/></div>
+            <div class="col-md-4"><label class="form-label">Correlation/reference</label><input name="CorrelationId" value="@filter.CorrelationId" class="form-control"/></div>
+            <div class="col-md-2 align-self-end"><button class="btn btn-primary w-100">Filter</button></div>
+        </div>
+    </form>
+    <table class="table table-sm table-striped"><thead><tr><th>UTC date</th><th>Event</th><th>Subject</th><th>To</th><th>Status</th><th>Attempt</th><th></th></tr></thead><tbody>
+    @foreach (var item in Model) { <tr><td>@item.AttemptedOnUtc.ToString("u")</td><td>@item.EventKey</td><td>@item.SubjectSent</td><td>@item.ToRecipients</td><td>@item.Status</td><td>@item.AttemptNumber</td><td><a asp-action="LogDetail" asp-route-id="@item.LogId">Details</a></td></tr> }
+    </tbody></table>
+</div>

@@ -1,0 +1,36 @@
+@model AIS.Models.EmailManagement.EmailManagementEvent
+@using AIS.Models.EmailManagement
+@{
+    ViewData["Title"] = "Email Events";
+    var events = ViewBag.Events as IEnumerable<EmailManagementEvent> ?? Enumerable.Empty<EmailManagementEvent>();
+}
+<div class="container-fluid">
+    <h2>Email Events</h2><partial name="_Navigation" />
+    <div class="row">
+        <div class="col-lg-5">
+            <form asp-action="SaveEvent" method="post" class="card card-body">
+                @Html.AntiForgeryToken()
+                <input asp-for="EventId" type="hidden" />
+                <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+                <div class="mb-3"><label asp-for="EventKey" class="form-label"></label><input asp-for="EventKey" class="form-control" /><span asp-validation-for="EventKey" class="text-danger"></span></div>
+                <div class="mb-3"><label asp-for="DisplayName" class="form-label"></label><input asp-for="DisplayName" class="form-control" /><span asp-validation-for="DisplayName" class="text-danger"></span></div>
+                <div class="mb-3"><label asp-for="Description" class="form-label"></label><textarea asp-for="Description" class="form-control"></textarea></div>
+                <div class="form-check mb-3"><input asp-for="IsEnabled" class="form-check-input" /><label asp-for="IsEnabled" class="form-check-label"></label></div>
+                <button class="btn btn-primary" type="submit">Save event</button>
+            </form>
+        </div>
+        <div class="col-lg-7">
+            <table class="table table-sm table-striped">
+                <thead><tr><th>Key</th><th>Name</th><th>Template</th><th>Status</th><th></th></tr></thead>
+                <tbody>
+                @foreach (var item in events)
+                {
+                    <tr><td>@item.EventKey</td><td>@item.DisplayName</td><td>@item.ActiveTemplateName</td><td>@(item.IsEnabled ? "Enabled" : "Disabled")</td>
+                        <td class="text-nowrap"><a class="btn btn-sm btn-outline-primary" asp-route-id="@item.EventId">Edit</a>
+                            <form asp-action="ToggleEvent" method="post" class="d-inline">@Html.AntiForgeryToken()<input type="hidden" name="id" value="@item.EventId" /><input type="hidden" name="enabled" value="@(!item.IsEnabled)" /><button class="btn btn-sm btn-outline-secondary">@(item.IsEnabled ? "Disable" : "Enable")</button></form></td></tr>
+                }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

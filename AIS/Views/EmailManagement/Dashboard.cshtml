@@ -1,0 +1,27 @@
+@model AIS.Models.EmailManagement.EmailManagementDashboard
+@{
+    ViewData["Title"] = "Email Management";
+}
+<div class="container-fluid">
+    <h2>Email Management</h2>
+    <partial name="_Navigation" />
+    <div class="row g-3 mb-4">
+        <div class="col-md-3"><div class="card"><div class="card-body"><div class="text-muted">Events</div><h3>@Model.EventCount</h3></div></div></div>
+        <div class="col-md-3"><div class="card"><div class="card-body"><div class="text-muted">Enabled events</div><h3>@Model.EnabledEventCount</h3></div></div></div>
+        <div class="col-md-3"><div class="card"><div class="card-body"><div class="text-muted">Templates</div><h3>@Model.TemplateCount</h3></div></div></div>
+        <div class="col-md-3"><div class="card"><div class="card-body"><div class="text-muted">Failures, last 30 days</div><h3>@Model.FailedAttemptCount</h3></div></div></div>
+    </div>
+    <h4>Recent test-email attempts</h4>
+    <table class="table table-sm table-striped">
+        <thead><tr><th>UTC date</th><th>Event</th><th>Subject</th><th>Status</th><th>Correlation</th></tr></thead>
+        <tbody>
+        @foreach (var item in Model.RecentLogs)
+        {
+            <tr>
+                <td>@item.AttemptedOnUtc.ToString("u")</td><td>@item.EventKey</td><td>@item.SubjectSent</td>
+                <td>@item.Status</td><td><a asp-action="LogDetail" asp-route-id="@item.LogId">@item.CorrelationId</a></td>
+            </tr>
+        }
+        </tbody>
+    </table>
+</div>

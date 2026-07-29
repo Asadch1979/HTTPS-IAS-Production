@@ -1,0 +1,21 @@
+@model AIS.Models.EmailManagement.EmailManagementTestRequest
+@using AIS.Models.EmailManagement
+@{
+    ViewData["Title"] = "Manual Test Email";
+    var result = ViewBag.SendResult as EmailManagementSendResult;
+}
+<div class="container-fluid">
+    <h2>Manual Test Email</h2><partial name="_Navigation" />
+    @if (result != null) { <div class="alert @(result.IsSuccess ? "alert-success" : "alert-danger")"><strong>@result.Status</strong>: @result.Message<br/><small>Correlation: @result.CorrelationId</small></div> }
+    <form method="post" class="card card-body">
+        @Html.AntiForgeryToken()
+        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+        <div class="mb-3"><label asp-for="EventId" class="form-label">Event</label><select asp-for="EventId" asp-items="ViewBag.EventOptions" class="form-select"><option value="">Select</option></select></div>
+        <div class="mb-3"><label asp-for="TemplateId" class="form-label">Template ID (optional)</label><input asp-for="TemplateId" class="form-control" /></div>
+        <div class="mb-3"><label asp-for="ToRecipients" class="form-label">To</label><input asp-for="ToRecipients" class="form-control" /><span asp-validation-for="ToRecipients" class="text-danger"></span></div>
+        <div class="mb-3"><label asp-for="CcRecipients" class="form-label">CC</label><input asp-for="CcRecipients" class="form-control" /></div>
+        <div class="mb-3"><label asp-for="BccRecipients" class="form-label">BCC</label><input asp-for="BccRecipients" class="form-control" /></div>
+        <div class="mb-3"><label asp-for="ReferenceId" class="form-label"></label><input asp-for="ReferenceId" class="form-control" /></div>
+        <button class="btn btn-danger" type="submit">Send manual test email</button>
+    </form>
+</div>

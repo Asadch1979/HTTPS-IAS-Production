@@ -1,0 +1,31 @@
+@model AIS.Models.EmailManagement.EmailManagementTemplate
+@using AIS.Models.EmailManagement
+@{
+    ViewData["Title"] = "Email Templates";
+    var templates = ViewBag.Templates as IEnumerable<EmailManagementTemplate> ?? Enumerable.Empty<EmailManagementTemplate>();
+}
+<div class="container-fluid">
+    <h2>Email Templates</h2><partial name="_Navigation" />
+    <form asp-action="SaveTemplate" method="post" class="card card-body mb-4">
+        @Html.AntiForgeryToken()<input asp-for="TemplateId" type="hidden" />
+        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+        <div class="row">
+            <div class="col-md-4 mb-3"><label asp-for="EventId" class="form-label">Event</label><select asp-for="EventId" asp-items="ViewBag.EventOptions" class="form-select"><option value="">Select</option></select></div>
+            <div class="col-md-4 mb-3"><label asp-for="TemplateName" class="form-label"></label><input asp-for="TemplateName" class="form-control" /></div>
+            <div class="col-md-2 mb-3"><label asp-for="Culture" class="form-label"></label><input asp-for="Culture" class="form-control" /></div>
+            <div class="col-md-2 form-check mt-4"><input asp-for="IsActive" class="form-check-input" /><label asp-for="IsActive" class="form-check-label"></label></div>
+        </div>
+        <div class="mb-3"><label asp-for="SubjectTemplate" class="form-label"></label><textarea asp-for="SubjectTemplate" class="form-control" rows="2"></textarea></div>
+        <div class="mb-3"><label asp-for="BodyHtmlTemplate" class="form-label">HTML body template</label><textarea asp-for="BodyHtmlTemplate" class="form-control font-monospace" rows="10"></textarea></div>
+        <button class="btn btn-primary" type="submit">Save template</button>
+    </form>
+    <table class="table table-sm table-striped"><thead><tr><th>Event</th><th>Name</th><th>Version</th><th>Culture</th><th>Active</th><th></th></tr></thead><tbody>
+    @foreach (var item in templates)
+    {
+        <tr><td>@item.EventKey</td><td>@item.TemplateName</td><td>@item.VersionNo</td><td>@item.Culture</td><td>@item.IsActive</td><td>
+            <a class="btn btn-sm btn-outline-primary" asp-route-id="@item.TemplateId">Edit</a>
+            @if (item.IsActive) { <form asp-action="ActivateTemplate" method="post" class="d-inline">@Html.AntiForgeryToken()<input type="hidden" name="eventId" value="@item.EventId"/><input type="hidden" name="templateId" value="@item.TemplateId"/><button class="btn btn-sm btn-outline-success">Assign to event</button></form> }
+        </td></tr>
+    }
+    </tbody></table>
+</div>

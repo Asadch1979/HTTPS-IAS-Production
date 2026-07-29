@@ -1,0 +1,24 @@
+@model AIS.Models.EmailManagement.EmailManagementLog
+@{
+    ViewData["Title"] = "Email Log Detail";
+}
+<div class="container-fluid">
+    <h2>Email Log Detail</h2><partial name="_Navigation" />
+    <dl class="row">
+        <dt class="col-sm-3">Log ID</dt><dd class="col-sm-9">@Model.LogId</dd>
+        <dt class="col-sm-3">Event</dt><dd class="col-sm-9">@Model.EventKey</dd>
+        <dt class="col-sm-3">Template/version</dt><dd class="col-sm-9">@Model.TemplateId / @Model.TemplateVersion</dd>
+        <dt class="col-sm-3">Status</dt><dd class="col-sm-9">@Model.Status</dd>
+        <dt class="col-sm-3">Attempted UTC</dt><dd class="col-sm-9">@Model.AttemptedOnUtc.ToString("u")</dd>
+        <dt class="col-sm-3">Sent to SMTP UTC</dt><dd class="col-sm-9">@Model.SentToSmtpOnUtc?.ToString("u")</dd>
+        <dt class="col-sm-3">To</dt><dd class="col-sm-9">@Model.ToRecipients</dd>
+        <dt class="col-sm-3">CC</dt><dd class="col-sm-9">@Model.CcRecipients</dd>
+        <dt class="col-sm-3">BCC</dt><dd class="col-sm-9">@Model.BccRecipients</dd>
+        <dt class="col-sm-3">Subject</dt><dd class="col-sm-9">@Model.SubjectSent</dd>
+        <dt class="col-sm-3">SMTP response</dt><dd class="col-sm-9">@Model.SmtpResponse</dd>
+        <dt class="col-sm-3">Failure</dt><dd class="col-sm-9"><pre class="text-wrap">@Model.FailureDetails</pre></dd>
+        <dt class="col-sm-3">Correlation/reference</dt><dd class="col-sm-9">@Model.CorrelationId / @Model.ReferenceId</dd>
+        <dt class="col-sm-3">Initiator/component</dt><dd class="col-sm-9">@Model.InitiatedBy / @Model.CallingComponent</dd>
+    </dl>
+    <div class="card"><div class="card-header">Resolved HTML body</div><div class="card-body">@Html.Raw(Model.BodySent)</div></div>
+</div>

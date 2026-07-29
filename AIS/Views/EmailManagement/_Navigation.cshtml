@@ -1,0 +1,17 @@
+<nav class="nav nav-pills mb-4" aria-label="Email management navigation">
+    <a class="nav-link" asp-action="Dashboard">Dashboard</a>
+    <a class="nav-link" asp-action="Events">Events</a>
+    <a class="nav-link" asp-action="Templates">Templates</a>
+    <a class="nav-link" asp-action="Rules">Recipient rules</a>
+    <a class="nav-link" asp-action="Placeholders">Placeholders</a>
+    <a class="nav-link" asp-action="Preview">Preview</a>
+    <a class="nav-link" asp-action="Test">Manual test</a>
+    <a class="nav-link" asp-action="Logs">Logs</a>
+</nav>
+@if (TempData["EmailManagementMessage"] != null)
+{
+    <div class="alert alert-success">@TempData["EmailManagementMessage"]</div>
+}
+<div class="alert alert-info py-2">
+    This module is isolated. Configured events do not trigger any AIS business email automatically.
+</div>

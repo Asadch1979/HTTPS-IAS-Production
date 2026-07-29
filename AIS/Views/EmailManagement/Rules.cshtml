@@ -1,0 +1,21 @@
+@model AIS.Models.EmailManagement.EmailManagementRule
+@using AIS.Models.EmailManagement
+@{
+    ViewData["Title"] = "Recipient Rules";
+    var rules = ViewBag.Rules as IEnumerable<EmailManagementRule> ?? Enumerable.Empty<EmailManagementRule>();
+}
+<div class="container-fluid">
+    <h2>Recipient Rules</h2><partial name="_Navigation" />
+    <form asp-action="SaveRule" method="post" class="card card-body mb-4">
+        @Html.AntiForgeryToken()<input asp-for="RuleId" type="hidden" />
+        <div class="mb-3"><label asp-for="EventId" class="form-label">Event</label><select asp-for="EventId" asp-items="ViewBag.EventOptions" class="form-select"><option value="">Select</option></select></div>
+        <div class="mb-3"><label asp-for="ToRecipients" class="form-label">Default To addresses</label><textarea asp-for="ToRecipients" class="form-control"></textarea></div>
+        <div class="mb-3"><label asp-for="CcRecipients" class="form-label">Default CC addresses</label><textarea asp-for="CcRecipients" class="form-control"></textarea></div>
+        <div class="mb-3"><label asp-for="BccRecipients" class="form-label">Default BCC addresses</label><textarea asp-for="BccRecipients" class="form-control"></textarea></div>
+        <div class="form-check mb-3"><input asp-for="IsActive" class="form-check-input" /><label asp-for="IsActive" class="form-check-label"></label></div>
+        <button class="btn btn-primary">Save rule</button>
+    </form>
+    <table class="table table-sm table-striped"><thead><tr><th>Event</th><th>To</th><th>CC</th><th>BCC</th><th>Active</th><th></th></tr></thead><tbody>
+    @foreach (var item in rules) { <tr><td>@item.EventKey</td><td>@item.ToRecipients</td><td>@item.CcRecipients</td><td>@item.BccRecipients</td><td>@item.IsActive</td><td><a asp-route-eventId="@item.EventId" class="btn btn-sm btn-outline-primary">Edit</a></td></tr> }
+    </tbody></table>
+</div>
