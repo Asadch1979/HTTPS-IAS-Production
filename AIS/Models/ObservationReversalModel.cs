@@ -11,6 +11,8 @@ namespace AIS.Models
         [PlainText]
         public string TEAM_NAME { get; set; }
         [PlainText]
+        public string TEAM_ID { get; set; }
+        [PlainText]
         public string AUDIT_START_DATE { get; set; }
         [PlainText]
         public string AUDIT_END_DATE { get; set; }

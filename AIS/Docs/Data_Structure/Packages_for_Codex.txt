@@ -4441,6 +4441,7 @@ package body PKG_AD is
       select ep.id                   as plan_id,
              eng.ENG_ID,
              tm.t_name               as TEAM_NAME,
+             tm.t_id                 as TEAM_ID,
              eng.AUDIT_STARTDATE,
              eng.AUDIT_ENDDATE,
              eng.operation_startdate as OP_STARTDATE,
@@ -4562,6 +4563,7 @@ package body PKG_AD is
       select o.id,
              ot.obs_id,
              o.memo_number   as memo_no,
+             O.DRAFT_PARA_NO,
              O.FINAL_PARA_NO,
              o.memo_date,
              e.name          as assigned_to,
@@ -60644,5 +60646,3 @@ PACKAGE PKG_SYS_IAS AS
     IO_CURSOR          OUT SYS_REFCURSOR
   );
 END PKG_SYS_IAS;
-
-

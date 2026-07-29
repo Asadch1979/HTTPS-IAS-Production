@@ -110,7 +110,7 @@
 
                     i = i + 1;
 
-                    $('#engsListPanel').append('<tr><td>' + i + '</td><td>' + v.enG_ID + '</td><td>' + v.teaM_NAME + '</td><td>' + v.audiT_START_DATE + '</td><td>' + v.audiT_END_DATE + '</td><td>' + v.oP_START_DATE + '</td><td>' + v.oP_END_DATE + '</td><td>' + v.status + '</td><td><a href="#" data-onclick="getObservationsForAssignmentReversal(' + v.enG_ID + ',' + v.plaN_ID + ');" class="text-sucess text-center">Assignment Reversal At Planning Stage</a></td><td><a href="#" data-onclick="proceedToChangeInAuditTeam(' + v.auditeD_BY_ID + ',' + v.enG_ID + ');" class="text-sucess text-center">Post Changes in Team</a></td><td><a href="#" data-onclick="proceedToChangeEndDate(' + v.enG_ID + ',\'' + v.audiT_START_DATE + '\',\'' + v.audiT_END_DATE + '\');" class="text-sucess text-center">Change Dates</a></td><td class="text-center"><a class="text-sucess text-center" data-onclick="getObservationsForReNumbering(' + v.enG_ID + ');" href="#">Change Observation Number</a></td></tr>');
+                    $('#engsListPanel').append('<tr><td>' + i + '</td><td>' + v.enG_ID + '</td><td>' + v.teaM_NAME + '</td><td>' + v.audiT_START_DATE + '</td><td>' + v.audiT_END_DATE + '</td><td>' + v.oP_START_DATE + '</td><td>' + v.oP_END_DATE + '</td><td>' + v.status + '</td><td><a href="#" data-onclick="getObservationsForAssignmentReversal(' + v.enG_ID + ',' + v.plaN_ID + ');" class="text-sucess text-center">Assignment Reversal At Planning Stage</a></td><td><a href="#" data-onclick="proceedToChangeInAuditTeam(' + v.auditeD_BY_ID + ',' + v.enG_ID + ',' + v.teaM_ID + ');" class="text-sucess text-center">Post Changes in Team</a></td><td><a href="#" data-onclick="proceedToChangeEndDate(' + v.enG_ID + ',\'' + v.audiT_START_DATE + '\',\'' + v.audiT_END_DATE + '\');" class="text-sucess text-center">Change Dates</a></td><td class="text-center"><a class="text-sucess text-center" data-onclick="getObservationsForReNumbering(' + v.enG_ID + ');" href="#">Change Observation Number</a></td></tr>');
                 })
 
             },
@@ -140,7 +140,7 @@
 
                     i = i + 1;
 
-                    $('#engObsListPanel_changeNo').append('<tr><td class="text-center">' + i + '</td><td>' + v.memO_NO + '</td><td>' + v.memO_DATE + '</td><td>' + getObservationHeading(v) + '</td><td>' + getAssignedTo(v) + '</td><td>' + v.status + '</td><td class="text-center"><input class="statusselected me-2" id="' + v.id + '" type="checkbox" /><button data-onclick="event.preventDefault();obsChangeNumber(' + v.id + ');" class="btn btn-small btn-primary">Update Number</button></td></tr>');
+                    $('#engObsListPanel_changeNo').append('<tr><td class="text-center">' + i + '</td><td>' + v.memO_NO + '</td><td>' + (v.drafT_PARA || '') + '</td><td>' + (v.finaL_PARA || '') + '</td><td>' + v.memO_DATE + '</td><td>' + getObservationHeading(v) + '</td><td>' + getAssignedTo(v) + '</td><td>' + v.status + '</td><td class="text-center"><input class="statusselected me-2" id="' + v.id + '" type="checkbox" /><button data-onclick="event.preventDefault();obsChangeNumber(' + v.id + ');" class="btn btn-small btn-primary">Update Number</button></td></tr>');
                 })
             },
             dataType: "json",
@@ -149,6 +149,8 @@
 
     function obsChangeNumber(obsId) {
         g_obsID = obsId;
+        $('#memo_no_old, #draft_no_old, #final_no_old').text('');
+        $('#memonumber_input, #draftnumber_input, #finalnumber_input').val('');
         $.ajax({
             url: g_asiBaseURL + "/ApiCalls/get_observation_numbers_for_status_reversal",
             type: "POST",
@@ -165,9 +167,9 @@
                     $('#final_no_old').html(v.finaL_PARA_NUMBER);
 
 
-                    $('#memonumber_input').html(v.memO_NUMBER);
-                    $('#draftnumber_input').html(v.drafT_PARA_NUMBER);
-                    $('#finalnumber_input').html(v.finaL_PARA_NUMBER);
+                    $('#memonumber_input').val(v.memO_NUMBER);
+                    $('#draftnumber_input').val(v.drafT_PARA_NUMBER);
+                    $('#finalnumber_input').val(v.finaL_PARA_NUMBER);
 
                 });
             },
@@ -229,11 +231,11 @@
 
     }
 
-    function proceedToChangeInAuditTeam(audById, engId) {
+    function proceedToChangeInAuditTeam(audById, engId, currentTeamId) {
         g_auditedByID = audById;
         g_engID = engId;
         $('#setupAuditTeam').modal('show');
-        $('#listOfEmployeeTeam tbody').empty();
+        $('#existingEmployeeTeam tbody, #availableEmployeeTeam tbody').empty();
         $.ajax({
             url: g_asiBaseURL + "/ApiCalls/get_team_memeber_details_for_post_changes_team_eng_reversal",
             type: "POST",
@@ -242,37 +244,48 @@
             },
             cache: false,
             success: function (data) {
-                console.log('auditteams', data);
-                var teamId = 0;
-                var srNo = 1;
-                var teamMembers = [];
-                $.each(data, function (index, team) {
-
-                    if (team.iS_TEAMLEAD == "Y") {
-                        if (team.status == 'Y')
-                            team.status = 'Active';
-                        else
-                            team.status = 'Inactive';
-                        if (team.status == 'Active')
-                            $('#listOfEmployeeTeam tbody').append('<tr id=teamcode_' + team.code + '><td class="searchable"><p class="fw-normal mb-1">' + srNo + '</p></td><td class="tName_Col"><p class="fw-normal mb-1">' + team.name + ' </p></td><td class="searchable"><p class="empName fw-normal mb-1">' + team.employeename + ' (' + team.teammembeR_ID + ') </p></td><td class="empMembers"></td><td><input name="newTeamChange" class="newTeamChange" teamName="' + team.name + '" teamCode="' + team.code + '" teamId="' + team.t_ID + '" id="team_' + team.t_ID + '" type="radio" /></td></tr>');
-
-                        srNo++;
-                    } else {
-                        teamMembers.push(team);
-                        if (team.code != teamId) {
-                            teamId = team.code;
-                            srNo++;
-                        }
+                var teams = {};
+                $.each(data, function (index, member) {
+                    var key = String(member.t_ID);
+                    if (!teams[key]) {
+                        teams[key] = {
+                            id: member.t_ID,
+                            code: member.code,
+                            name: member.name,
+                            status: member.status,
+                            lead: '',
+                            members: []
+                        };
                     }
+                    var staffName = member.employeename + ' (' + member.teammembeR_ID + ')';
+                    if (member.iS_TEAMLEAD == 'Y')
+                        teams[key].lead = staffName;
+                    else
+                        teams[key].members.push(staffName);
                 });
-                $.each(teamMembers, function (index, team) {
-                    if (team.iS_TEAMLEAD != "Y") {
-                        prevText = $('#listOfEmployeeTeam tbody #teamcode_' + team.code + ' .empMembers').html();
-                        if (prevText != '')
-                            prevText += ", ";
-                        $('#listOfEmployeeTeam tbody #teamcode_' + team.code + ' .empMembers').text(prevText + team.employeename + '(' + team.teammembeR_ID + ')');
-                    }
+
+                var availableSrNo = 1;
+                $.each(teams, function (key, team) {
+                    var isExisting = Number(team.id) === Number(currentTeamId);
+                    if (!isExisting && team.status != 'Y')
+                        return;
+
+                    var selected = isExisting ? ' checked' : '';
+                    var badge = isExisting ? '<span class="badge bg-success ms-2">Existing</span>' : '';
+                    var serialCell = isExisting ? '' : '<td>' + availableSrNo++ + '</td>';
+                    var row = '<tr>' + serialCell +
+                        '<td>' + team.name + badge + '</td>' +
+                        '<td>' + team.lead + '</td>' +
+                        '<td>' + team.members.join(', ') + '</td>' +
+                        '<td><input name="newTeamChange" class="newTeamChange" teamName="' + team.name + '" teamCode="' + team.code + '" teamId="' + team.id + '" id="team_' + team.id + '" type="radio"' + selected + ' /></td></tr>';
+
+                    $(isExisting ? '#existingEmployeeTeam tbody' : '#availableEmployeeTeam tbody').append(row);
                 });
+
+                if ($('#existingEmployeeTeam tbody tr').length == 0)
+                    $('#existingEmployeeTeam tbody').append('<tr><td colspan="4" class="text-muted text-center">Existing team details are unavailable.</td></tr>');
+                if ($('#availableEmployeeTeam tbody tr').length == 0)
+                    $('#availableEmployeeTeam tbody').append('<tr><td colspan="5" class="text-muted text-center">No other active teams are available.</td></tr>');
             },
             dataType: "json",
         });

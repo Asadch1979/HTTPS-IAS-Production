@@ -1458,7 +1458,8 @@ namespace AIS.Controllers
                 CreateDashboardStep(3, "ENTITY_SHIFTING", "Entity Shifting", "/AdministrationPanel/entity_shifting", "~/Views/AdministrationPanel/DashboardPartials/_EntityShifting.cshtml"),
                 CreateDashboardStep(4, "SETUP_AUDITEE_ENTITIES", "Setup Auditee Entities", "/AdministrationPanel/setup_auditee_entities", "~/Views/AdministrationPanel/DashboardPartials/_SetupAuditeeEntities.cshtml"),
                 CreateDashboardStep(5, "UPDATE_AUDITEE_ENTITIES", "Update Auditee Entities", "/AdministrationPanel/update_auditee_entities", "~/Views/AdministrationPanel/DashboardPartials/_UpdateAuditeeEntities.cshtml"),
-                CreateDashboardStep(6, "AUTHORIZE_AUDITEE_ENTITIES_UPDATE", "Authorize Auditee Entities Update", "/AdministrationPanel/authorize_auditee_entities_update", "~/Views/AdministrationPanel/DashboardPartials/_AuthorizeAuditeeEntitiesUpdate.cshtml")
+                CreateDashboardStep(6, "AUTHORIZE_AUDITEE_ENTITIES_UPDATE", "Authorize Auditee Entities Update", "/AdministrationPanel/authorize_auditee_entities_update", "~/Views/AdministrationPanel/DashboardPartials/_AuthorizeAuditeeEntitiesUpdate.cshtml"),
+                CreateDashboardStep(7, "SETUP_ENGAGEMENT_REVERSAL", "Setup Engagement Reversal", "/AdministrationPanel/setup_engagement_reversal", "~/Views/AdministrationPanel/setup_engagement_reversal.cshtml")
                 };
             }
 
@@ -1546,6 +1547,11 @@ namespace AIS.Controllers
                     ViewData["RiskList"] = dBConnection.GetRisks();
                     break;
                 case "AUTHORIZE_AUDITEE_ENTITIES_UPDATE":
+                    break;
+                case "SETUP_ENGAGEMENT_REVERSAL":
+                    ViewData["IsDashboardPartial"] = true;
+                    ViewData["Userrelationship"] = dBConnection.Getrealtionshiptype(pageId);
+                    ViewData["statusList"] = dBConnection.GetObservationReversalStatus();
                     break;
                 default:
                     break;

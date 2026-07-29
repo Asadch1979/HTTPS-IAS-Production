@@ -8,6 +8,8 @@ namespace AIS.Models
         public string ID { get; set; }
         [PlainText]
         public string MEMO_NO { get; set; }
+        [PlainText]
+        public string DRAFT_PARA { get; set; }
         [RichTextSanitize]
         public string GIST { get; set; }
         [PlainText]

@@ -3401,6 +3401,7 @@ namespace AIS.Controllers
                     os.PLAN_ID = rdr["plan_id"].ToString();
                     os.ENG_ID = rdr["ENG_ID"].ToString();
                     os.TEAM_NAME = rdr["TEAM_NAME"].ToString();
+                    os.TEAM_ID = rdr["TEAM_ID"].ToString();
                     os.AUDIT_START_DATE = rdr["AUDIT_STARTDATE"].ToString();
                     os.AUDIT_END_DATE = rdr["AUDIT_ENDDATE"].ToString();
                     os.OP_START_DATE = rdr["OP_STARTDATE"].ToString();
@@ -3434,6 +3435,8 @@ namespace AIS.Controllers
                     EngagementObservationsForStatusReversalModel os = new EngagementObservationsForStatusReversalModel();
                     os.ID = rdr["ID"].ToString();
                     os.MEMO_NO = rdr["MEMO_NO"].ToString();
+                    os.DRAFT_PARA = HasStatusReversalColumn(rdr, "DRAFT_PARA_NO") ? rdr["DRAFT_PARA_NO"].ToString() : string.Empty;
+                    os.FINAL_PARA = HasStatusReversalColumn(rdr, "FINAL_PARA_NO") ? rdr["FINAL_PARA_NO"].ToString() : string.Empty;
                     os.GIST = rdr["GIST"].ToString();
                     os.MEMO_DATE = rdr["MEMO_DATE"].ToString();
                     os.HEADING = rdr["HEADINGS"].ToString();
