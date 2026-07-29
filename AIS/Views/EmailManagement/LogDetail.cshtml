@@ -20,5 +20,11 @@
         <dt class="col-sm-3">Correlation/reference</dt><dd class="col-sm-9">@Model.CorrelationId / @Model.ReferenceId</dd>
         <dt class="col-sm-3">Initiator/component</dt><dd class="col-sm-9">@Model.InitiatedBy / @Model.CallingComponent</dd>
     </dl>
-    <div class="card"><div class="card-header">Resolved HTML body</div><div class="card-body">@Html.Raw(Model.BodySent)</div></div>
+    <div class="card">
+        <div class="card-header">Resolved HTML body source</div>
+        <div class="card-body">
+            <div class="alert alert-secondary">Log bodies are shown as encoded source for safety; use Template Preview to render sanitized HTML.</div>
+            <pre class="text-wrap">@Model.BodySent</pre>
+        </div>
+    </div>
 </div>

@@ -119,6 +119,8 @@ namespace AIS.Models.EmailManagement
         public string EventKey { get; set; } = string.Empty;
         public string Subject { get; set; } = string.Empty;
         public string BodyHtml { get; set; } = string.Empty;
+        public bool HtmlWasSanitized { get; set; }
+        public List<string> UnresolvedPlaceholders { get; set; } = new List<string>();
         public Dictionary<string, string> Values { get; set; } = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         }
 
@@ -140,6 +142,8 @@ namespace AIS.Models.EmailManagement
 
         [StringLength(200)]
         public string ReferenceId { get; set; } = string.Empty;
+
+        public bool UseConfiguredRecipientRule { get; set; }
         }
 
     public class EmailManagementLogFilter
@@ -193,5 +197,7 @@ namespace AIS.Models.EmailManagement
         public string Message { get; set; } = string.Empty;
         public string CorrelationId { get; set; } = string.Empty;
         public long? LogId { get; set; }
+        public List<string> InvalidRecipients { get; set; } = new List<string>();
+        public List<string> Warnings { get; set; } = new List<string>();
         }
     }

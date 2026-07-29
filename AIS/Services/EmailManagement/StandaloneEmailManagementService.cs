@@ -26,6 +26,7 @@ namespace AIS.Services.EmailManagement
         private readonly IConfiguration _configuration;
         private readonly DBConnection _db;
         private readonly ILogger<StandaloneEmailManagementService> _logger;
+        private readonly List<string> _logWarnings = new List<string>();
 
         public StandaloneEmailManagementService(
             IConfiguration configuration,
@@ -62,14 +63,30 @@ namespace AIS.Services.EmailManagement
                 resolvedValues[pair.Key] = pair.Value ?? string.Empty;
                 }
 
+            var subject = Resolve(template.SubjectTemplate, resolvedValues);
+            var resolvedBody = Resolve(template.BodyHtmlTemplate, resolvedValues);
+            var sanitizedBody = HtmlSanitizer.Sanitize(resolvedBody);
+            var unresolved = TokenRegex.Matches((template.SubjectTemplate ?? string.Empty) + " " + (template.BodyHtmlTemplate ?? string.Empty))
+                .Select(match => match.Value)
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .Where(token => !resolvedValues.ContainsKey(token))
+                .OrderBy(token => token, StringComparer.OrdinalIgnoreCase)
+                .ToList();
+            if (unresolved.Count > 0)
+                {
+                throw new InvalidOperationException("Template contains unresolved placeholders: " + string.Join(", ", unresolved));
+                }
+
             return new EmailManagementPreview
                 {
                 EventId = eventId,
                 TemplateId = template.TemplateId,
                 EventKey = emailEvent.EventKey,
                 Values = resolvedValues,
-                Subject = Resolve(template.SubjectTemplate, resolvedValues),
-                BodyHtml = HtmlSanitizer.Sanitize(Resolve(template.BodyHtmlTemplate, resolvedValues))
+                Subject = subject,
+                BodyHtml = sanitizedBody,
+                HtmlWasSanitized = !string.Equals(resolvedBody, sanitizedBody, StringComparison.Ordinal),
+                UnresolvedPlaceholders = unresolved
                 };
             }
 
@@ -79,6 +96,7 @@ namespace AIS.Services.EmailManagement
             string callingComponent)
             {
             request ??= new EmailManagementTestRequest();
+            _logWarnings.Clear();
             var correlationId = Guid.NewGuid().ToString("N");
             EmailManagementEvent emailEvent = null;
             EmailManagementTemplate template = null;
@@ -102,19 +120,58 @@ namespace AIS.Services.EmailManagement
 
                 preview = BuildPreview(request.EventId, request.TemplateId);
                 template = _db.GetManagedEmailTemplates(request.EventId, preview.TemplateId).Single();
-                to = NormalizeAddresses(request.ToRecipients);
-                cc = NormalizeAddresses(request.CcRecipients).Except(to, StringComparer.OrdinalIgnoreCase).ToList();
-                bcc = NormalizeAddresses(request.BccRecipients)
+                var recipientSource = request;
+                if (request.UseConfiguredRecipientRule)
+                    {
+                    var rule = _db.GetManagedEmailRules(request.EventId).SingleOrDefault(item => item.IsActive);
+                    if (rule == null)
+                        {
+                        return await RecordSkippedAsync(emailEvent.EventKey, template, preview, request, initiatedBy, callingComponent, correlationId, "No active recipient rule is configured for this event.");
+                        }
+
+                    recipientSource = new EmailManagementTestRequest
+                        {
+                        EventId = request.EventId,
+                        TemplateId = request.TemplateId,
+                        ToRecipients = rule.ToRecipients,
+                        CcRecipients = rule.CcRecipients,
+                        BccRecipients = rule.BccRecipients,
+                        ReferenceId = request.ReferenceId,
+                        UseConfiguredRecipientRule = true
+                        };
+                    }
+
+                var invalidRecipients = new List<string>();
+                to = NormalizeAddresses(recipientSource.ToRecipients, invalidRecipients);
+                cc = NormalizeAddresses(recipientSource.CcRecipients, invalidRecipients).Except(to, StringComparer.OrdinalIgnoreCase).ToList();
+                bcc = NormalizeAddresses(recipientSource.BccRecipients, invalidRecipients)
                     .Except(to, StringComparer.OrdinalIgnoreCase)
                     .Except(cc, StringComparer.OrdinalIgnoreCase)
                     .ToList();
 
-                if (to.Count == 0)
+                if (invalidRecipients.Count > 0)
                     {
-                    return await RecordSkippedAsync(emailEvent.EventKey, template, preview, request, initiatedBy, callingComponent, correlationId, "At least one valid To recipient is required.");
+                    var message = "Invalid recipient address(es): " + string.Join("; ", invalidRecipients);
+                    var result = await RecordSkippedAsync(emailEvent.EventKey, template, preview, recipientSource, initiatedBy, callingComponent, correlationId, message);
+                    result.InvalidRecipients = invalidRecipients;
+                    return result;
                     }
 
-                var log = CreateLog(emailEvent.EventKey, template, preview, request, initiatedBy, callingComponent,
+                if (to.Count == 0)
+                    {
+                    return await RecordSkippedAsync(emailEvent.EventKey, template, preview, recipientSource, initiatedBy, callingComponent, correlationId, "At least one valid To recipient is required.");
+                    }
+
+                var attachments = _db.GetManagedEmailAttachments(request.EventId).Where(item => item.IsActive).ToList();
+                if (attachments.Count > 0)
+                    {
+                    var message = "Attachment definitions are configured, but attachment sending is formally deferred for this standalone module.";
+                    var result = await RecordSkippedAsync(emailEvent.EventKey, template, preview, recipientSource, initiatedBy, callingComponent, correlationId, message);
+                    result.Warnings.Add(message);
+                    return result;
+                    }
+
+                var log = CreateLog(emailEvent.EventKey, template, preview, recipientSource, initiatedBy, callingComponent,
                     correlationId, EmailManagementStatuses.Pending, to, cc, bcc, string.Empty);
                 logId = TryCreateLog(log);
 
@@ -220,6 +277,7 @@ namespace AIS.Services.EmailManagement
             catch (Exception ex)
                 {
                 _logger.LogError(ex, "Standalone email log creation failed. CorrelationId={CorrelationId}", log.CorrelationId);
+                _logWarnings.Add("Email attempt could not be persisted to EM_EMAIL_LOG; see application logs. CorrelationId=" + log.CorrelationId);
                 return null;
                 }
             }
@@ -237,6 +295,7 @@ namespace AIS.Services.EmailManagement
             catch (Exception ex)
                 {
                 _logger.LogError(ex, "Standalone email log completion failed. LogId={LogId}", logId);
+                _logWarnings.Add("Email log status update failed for LogId=" + logId + "; see application logs.");
                 }
             }
 
@@ -268,11 +327,16 @@ namespace AIS.Services.EmailManagement
                 values.TryGetValue(match.Value, out var value) ? value ?? string.Empty : match.Value);
             }
 
-        private static List<string> NormalizeAddresses(string addresses)
+        private static List<string> NormalizeAddresses(string addresses, List<string> invalidRecipients = null)
             {
             var result = new List<string>();
             foreach (var token in (addresses ?? string.Empty).Split(new[] { ';', ',' }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
                 {
+                if (HasHeaderInjection(token))
+                    {
+                    invalidRecipients?.Add(token);
+                    continue;
+                    }
                 try
                     {
                     var normalized = new MailAddress(token).Address;
@@ -283,10 +347,14 @@ namespace AIS.Services.EmailManagement
                     }
                 catch (FormatException)
                     {
+                    invalidRecipients?.Add(token);
                     }
                 }
             return result;
             }
+
+        private static bool HasHeaderInjection(string value) =>
+            !string.IsNullOrEmpty(value) && (value.Contains('\r') || value.Contains('\n'));
 
         private static void AddAddresses(MailAddressCollection target, IEnumerable<string> addresses)
             {
@@ -296,14 +364,15 @@ namespace AIS.Services.EmailManagement
                 }
             }
 
-        private static EmailManagementSendResult Result(bool success, string status, string message, string correlationId, long? logId) =>
+        private EmailManagementSendResult Result(bool success, string status, string message, string correlationId, long? logId) =>
             new EmailManagementSendResult
                 {
                 IsSuccess = success,
                 Status = status,
                 Message = message,
                 CorrelationId = correlationId,
-                LogId = logId
+                LogId = logId,
+                Warnings = _logWarnings.Distinct().ToList()
                 };
 
         private sealed class SmtpSettings

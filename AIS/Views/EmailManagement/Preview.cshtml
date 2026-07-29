@@ -12,6 +12,14 @@
     @if (ViewBag.Error != null) { <div class="alert alert-danger">@ViewBag.Error</div> }
     @if (Model.TemplateId > 0)
     {
+        @if (Model.HtmlWasSanitized)
+        {
+            <div class="alert alert-warning">Preview HTML was sanitized before rendering. Script, unsafe attributes, and other unsafe markup were removed.</div>
+        }
+        @if (Model.UnresolvedPlaceholders?.Count > 0)
+        {
+            <div class="alert alert-danger">Unresolved placeholders: @string.Join(", ", Model.UnresolvedPlaceholders)</div>
+        }
         <div class="card mb-3"><div class="card-header">Subject</div><div class="card-body">@Model.Subject</div></div>
         <div class="card"><div class="card-header">HTML body</div><div class="card-body border">@Html.Raw(Model.BodyHtml)</div></div>
     }

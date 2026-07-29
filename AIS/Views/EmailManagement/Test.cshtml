@@ -6,7 +6,24 @@
 }
 <div class="container-fluid">
     <h2>Manual Test Email</h2><partial name="_Navigation" />
-    @if (result != null) { <div class="alert @(result.IsSuccess ? "alert-success" : "alert-danger")"><strong>@result.Status</strong>: @result.Message<br/><small>Correlation: @result.CorrelationId</small></div> }
+    @if (result != null) {
+        <div class="alert @(result.IsSuccess ? "alert-success" : "alert-danger")">
+            <strong>@result.Status</strong>: @result.Message<br/><small>Correlation: @result.CorrelationId</small>
+            @if (result.InvalidRecipients?.Count > 0)
+            {
+                <div class="mt-2"><strong>Invalid recipients:</strong> @string.Join("; ", result.InvalidRecipients)</div>
+            }
+            @if (result.Warnings?.Count > 0)
+            {
+                <ul class="mt-2 mb-0">
+                    @foreach (var warning in result.Warnings)
+                    {
+                        <li>@warning</li>
+                    }
+                </ul>
+            }
+        </div>
+    }
     <form method="post" class="card card-body">
         @Html.AntiForgeryToken()
         <div asp-validation-summary="ModelOnly" class="text-danger"></div>
@@ -16,6 +33,10 @@
         <div class="mb-3"><label asp-for="CcRecipients" class="form-label">CC</label><input asp-for="CcRecipients" class="form-control" /></div>
         <div class="mb-3"><label asp-for="BccRecipients" class="form-label">BCC</label><input asp-for="BccRecipients" class="form-control" /></div>
         <div class="mb-3"><label asp-for="ReferenceId" class="form-label"></label><input asp-for="ReferenceId" class="form-control" /></div>
+        <div class="form-check mb-3">
+            <input asp-for="UseConfiguredRecipientRule" class="form-check-input" />
+            <label asp-for="UseConfiguredRecipientRule" class="form-check-label">Use this event's active configured recipient rule instead of the manual To/CC/BCC fields</label>
+        </div>
         <button class="btn btn-danger" type="submit">Send manual test email</button>
     </form>
 </div>

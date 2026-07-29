@@ -348,8 +348,8 @@ namespace AIS.Controllers
             cmd.CommandType = CommandType.StoredProcedure;
             cmd.BindByName = true;
             cmd.Parameters.Add("P_LOG_ID", OracleDbType.Int64).Value = logId ?? (object)DBNull.Value;
-            cmd.Parameters.Add("P_FROM_UTC", OracleDbType.TimeStampTZ).Value = filter.FromDate.HasValue ? new DateTimeOffset(filter.FromDate.Value.ToUniversalTime()) : (object)DBNull.Value;
-            cmd.Parameters.Add("P_TO_UTC", OracleDbType.TimeStampTZ).Value = filter.ToDate.HasValue ? new DateTimeOffset(filter.ToDate.Value.Date.AddDays(1).ToUniversalTime()) : (object)DBNull.Value;
+            cmd.Parameters.Add("P_FROM_UTC", OracleDbType.TimeStampTZ).Value = filter.FromDate.HasValue ? ToUtcOffset(filter.FromDate.Value.Date) : (object)DBNull.Value;
+            cmd.Parameters.Add("P_TO_UTC", OracleDbType.TimeStampTZ).Value = filter.ToDate.HasValue ? ToUtcOffset(filter.ToDate.Value.Date.AddDays(1)) : (object)DBNull.Value;
             cmd.Parameters.Add("P_EVENT_KEY", OracleDbType.Varchar2).Value = DbValue(filter.EventKey, 100);
             cmd.Parameters.Add("P_STATUS", OracleDbType.Varchar2).Value = DbValue(filter.Status, 30);
             cmd.Parameters.Add("P_RECIPIENT", OracleDbType.Varchar2).Value = DbValue(filter.Recipient, 320);
@@ -413,7 +413,7 @@ namespace AIS.Controllers
                 CcRecipients = reader["CC_RECIPIENTS"]?.ToString() ?? string.Empty,
                 BccRecipients = reader["BCC_RECIPIENTS"]?.ToString() ?? string.Empty,
                 AttachmentMetadata = reader["ATTACHMENT_METADATA"]?.ToString() ?? string.Empty,
-                AttemptedOnUtc = Convert.ToDateTime(reader["ATTEMPTED_ON_UTC"]),
+                AttemptedOnUtc = ReadTimestampTzAsUtc(reader, "ATTEMPTED_ON_UTC"),
                 Status = reader["STATUS"]?.ToString() ?? string.Empty,
                 SmtpResponse = reader["SMTP_RESPONSE"]?.ToString() ?? string.Empty,
                 AttemptNumber = Convert.ToInt32(reader["ATTEMPT_NUMBER"]),
@@ -421,9 +421,26 @@ namespace AIS.Controllers
                 InitiatedBy = reader["INITIATED_BY"]?.ToString() ?? string.Empty,
                 CorrelationId = reader["CORRELATION_ID"]?.ToString() ?? string.Empty,
                 ReferenceId = reader["REFERENCE_ID"]?.ToString() ?? string.Empty,
-                SentToSmtpOnUtc = reader["SENT_TO_SMTP_ON_UTC"] == DBNull.Value ? null : Convert.ToDateTime(reader["SENT_TO_SMTP_ON_UTC"]),
+                SentToSmtpOnUtc = reader["SENT_TO_SMTP_ON_UTC"] == DBNull.Value ? null : ReadTimestampTzAsUtc(reader, "SENT_TO_SMTP_ON_UTC"),
                 FailureDetails = reader["FAILURE_DETAILS"]?.ToString() ?? string.Empty
                 };
+            }
+
+        private static DateTimeOffset ToUtcOffset(DateTime value)
+            {
+            var local = value.Kind == DateTimeKind.Unspecified
+                ? DateTime.SpecifyKind(value, DateTimeKind.Local)
+                : value;
+            return new DateTimeOffset(local).ToUniversalTime();
+            }
+
+        private static DateTime ReadTimestampTzAsUtc(OracleDataReader reader, string columnName)
+            {
+            var ordinal = reader.GetOrdinal(columnName);
+            var timestamp = reader.GetOracleTimeStampTZ(ordinal);
+            return timestamp.IsNull
+                ? DateTime.MinValue
+                : DateTime.SpecifyKind(timestamp.Value, DateTimeKind.Local).ToUniversalTime();
             }
         }
     }
