@@ -104,3 +104,4 @@ Page_ID,ID,MENU_ID,PAGE_NAME,Menu,PAGE_PATH,PAGE_ORDER,STATUS,HIDE_MENU,SUB_MENU
 170,170,5,Zone Branch Wise Para Position,Reports,Reports/zone_branch_wise_para_position_report,6,A,0,,zone_branch_wise_para_position_report,170
 119,119,5,Zone wise Performancre,Reports,Reports/zone_wise_performance,3,A,0,,zone_wise_performance,119
 108,108,5,Zonewise Settlement of Paras,Reports,Reports/zonewise_settlement_paras,6,A,0,,zonewise_settlement_paras,108
+1000218,1000218,,Entity Shifting History,Administration Panel,AdministrationPanel/EntityShiftingHistory,,A,0,,ENTITY_SHIFTING_HISTORY,1000218

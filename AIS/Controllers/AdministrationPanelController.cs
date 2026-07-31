@@ -10,6 +10,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
+using System.Threading.Tasks;
 using AIS.Services;
 
 namespace AIS.Controllers
@@ -516,6 +517,55 @@ namespace AIS.Controllers
                     }
                 else
                     return View();
+                }
+            }
+
+        [HttpGet]
+        public async Task<IActionResult> EntityShiftingHistory()
+            {
+            if (User.Identity?.IsAuthenticated != true || !sessionHandler.TryGetUser(out var user) || user == null)
+                return RedirectToAction("Index", "Login");
+
+            if (!HasPageAccess(user, "/AdministrationPanel/EntityShiftingHistory"))
+                return RedirectToAction("Index", "PageNotFound");
+
+            ViewData["TopMenu"] = tm.GetTopMenus();
+            ViewData["TopMenuPages"] = tm.GetTopMenusPages();
+
+            try
+                {
+                var records = await dBConnection.GetEntityShiftingHistoryAsync();
+                return View(new EntityShiftingHistoryPageModel { ShiftingRecords = records });
+                }
+            catch (Exception ex)
+                {
+                _logger.LogError(ex, "Unable to retrieve entity shifting history.");
+                TempData["ErrorMessage"] = "Unable to load entity shifting history.";
+                return View(new EntityShiftingHistoryPageModel());
+                }
+            }
+
+        [HttpGet]
+        public async Task<IActionResult> GetEntityShiftingParas(int refId)
+            {
+            if (User.Identity?.IsAuthenticated != true || !sessionHandler.TryGetUser(out var user) || user == null)
+                return Unauthorized(new { success = false, message = "Your session has expired." });
+
+            if (!HasPageAccess(user, "/AdministrationPanel/EntityShiftingHistory"))
+                return Forbid();
+
+            if (refId <= 0)
+                return BadRequest(new { success = false, message = "A valid shifting reference is required." });
+
+            try
+                {
+                var paras = await dBConnection.GetEntityShiftingParasAsync(refId);
+                return Ok(new { success = true, data = paras });
+                }
+            catch (Exception ex)
+                {
+                _logger.LogError(ex, "Unable to retrieve paras for shifting reference {RefId}.", refId);
+                return StatusCode(500, new { success = false, message = "Unable to retrieve shifted paras." });
                 }
             }
 

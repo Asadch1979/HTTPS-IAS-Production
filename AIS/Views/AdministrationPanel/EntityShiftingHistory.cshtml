@@ -1,0 +1,108 @@
+@model AIS.Models.EntityShiftingHistoryPageModel
+@{
+    ViewData["Title"] = "Entity Shifting History";
+    Layout = "_Layout";
+}
+
+<div class="container-fluid py-3" id="entityShiftingHistoryPage"
+     data-detail-url="@Url.Action("GetEntityShiftingParas", "AdministrationPanel")">
+    <div class="mb-3">
+        <h3 class="mb-1">Entity Shifting History</h3>
+        <p class="text-muted mb-0">View completed entity-shifting transactions and the paras processed under each transaction.</p>
+    </div>
+
+    @if (TempData["ErrorMessage"] is string errorMessage)
+        {
+        <div class="alert alert-danger" role="alert">@errorMessage</div>
+        }
+
+    <div id="entityShiftingHistoryAlert" class="alert d-none" role="alert"></div>
+
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-white">
+            <h5 class="mb-0">Entity Shifting Transactions</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-striped table-hover align-middle w-100" id="entityShiftingHistoryTable">
+                    <thead>
+                        <tr>
+                            <th>Ref. ID</th>
+                            <th>Old Entity Code</th>
+                            <th>Old Entity</th>
+                            <th>New Entity Code</th>
+                            <th>New Entity</th>
+                            <th>Circular No.</th>
+                            <th>Circular Date</th>
+                            <th>Entered By</th>
+                            <th>Entered On</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    @foreach (var item in Model.ShiftingRecords)
+                        {
+                        <tr>
+                            <td>@item.RefId</td>
+                            <td>@item.OldEntityCode</td>
+                            <td>@item.OldEntity</td>
+                            <td>@item.NewEntityCode</td>
+                            <td>@item.NewEntity</td>
+                            <td>@(string.IsNullOrWhiteSpace(item.CircularNo) ? "-" : item.CircularNo)</td>
+                            <td data-order="@(item.CircularDate?.ToString("yyyy-MM-dd") ?? string.Empty)">
+                                @(item.CircularDate?.ToString("dd-MMM-yyyy") ?? "-")
+                            </td>
+                            <td>@(item.EnteredBy?.ToString() ?? "-")</td>
+                            <td data-order="@(item.EnteredOn?.ToString("yyyy-MM-ddTHH:mm:ss") ?? string.Empty)">
+                                @(item.EnteredOn?.ToString("dd-MMM-yyyy HH:mm") ?? "-")
+                            </td>
+                            <td>
+                                <button type="button"
+                                        class="btn btn-sm btn-primary view-shifted-paras"
+                                        data-ref-id="@item.RefId"
+                                        data-old-code="@item.OldEntityCode"
+                                        data-old-name="@item.OldEntity"
+                                        data-new-code="@item.NewEntityCode"
+                                        data-new-name="@item.NewEntity">
+                                    <i class="fa fa-eye" aria-hidden="true"></i> View Paras
+                                </button>
+                            </td>
+                        </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="card shadow-sm" id="entityShiftingParasSection">
+        <div class="card-header bg-white">
+            <h5 class="mb-1">Shifted Paras</h5>
+            <div id="selectedShiftingReference" class="text-muted">Select an entity-shifting transaction to view its paras.</div>
+            <div id="selectedShiftingEntities" class="fw-semibold"></div>
+        </div>
+        <div class="card-body">
+            <div id="entityShiftingParasMessage" class="text-muted">
+                Select an entity-shifting transaction to view its paras.
+            </div>
+            <div id="entityShiftingParasTableContainer" class="table-responsive d-none">
+                <table class="table table-striped table-hover align-middle" id="entityShiftingParasTable">
+                    <thead>
+                        <tr>
+                            <th>Audit Period</th>
+                            <th>Para No.</th>
+                            <th>Gist of Para</th>
+                            <th>Status</th>
+                            <th>Annexure</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/js/csp/Views_AdministrationPanel_EntityShiftingHistory.js" asp-append-version="true"></script>
+}

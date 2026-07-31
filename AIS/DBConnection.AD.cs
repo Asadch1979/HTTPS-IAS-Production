@@ -7,11 +7,76 @@ using System.Collections.Generic;
 using System.Data;
 using System.Globalization;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace AIS.Controllers
     {
     public partial class DBConnection : Controller, IDBConnection
         {
+        public async Task<List<EntityShiftingHistoryModel>> GetEntityShiftingHistoryAsync()
+            {
+            var result = new List<EntityShiftingHistoryModel>();
+            using var con = this.DatabaseConnection();
+            using var cmd = con.CreateCommand();
+            cmd.CommandText = "PKG_AD.P_Get_Entity_Shifting_List";
+            cmd.CommandType = CommandType.StoredProcedure;
+            cmd.BindByName = true;
+            GuardAgainstDynamicSql(cmd);
+            cmd.Parameters.Add("IO_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+
+            using var reader = await cmd.ExecuteReaderAsync();
+            while (await reader.ReadAsync())
+                {
+                result.Add(new EntityShiftingHistoryModel
+                    {
+                    RefId = Convert.ToInt32(reader["REF_ID"]),
+                    OldEntityId = Convert.ToInt32(reader["OLD_ENT_ID"]),
+                    OldEntityCode = reader["OLD_ENT_CODE"] == DBNull.Value ? string.Empty : reader["OLD_ENT_CODE"].ToString(),
+                    OldEntity = reader["OLD_ENTITY"] == DBNull.Value ? string.Empty : reader["OLD_ENTITY"].ToString(),
+                    NewEntityId = Convert.ToInt32(reader["NEW_ENT_ID"]),
+                    NewEntityCode = reader["NEW_ENT_CODE"] == DBNull.Value ? string.Empty : reader["NEW_ENT_CODE"].ToString(),
+                    NewEntity = reader["NEW_ENTITY"] == DBNull.Value ? string.Empty : reader["NEW_ENTITY"].ToString(),
+                    CircularNo = reader["CIRCULAR_NO"] == DBNull.Value ? null : reader["CIRCULAR_NO"].ToString(),
+                    CircularDate = reader["CIRCULAR_DATE"] == DBNull.Value ? (DateTime?)null : Convert.ToDateTime(reader["CIRCULAR_DATE"]),
+                    EnteredBy = reader["ENTERED_BY"] == DBNull.Value ? (int?)null : Convert.ToInt32(reader["ENTERED_BY"]),
+                    EnteredOn = reader["ENTERED_ON"] == DBNull.Value ? (DateTime?)null : Convert.ToDateTime(reader["ENTERED_ON"])
+                    });
+                }
+
+            return result;
+            }
+
+        public async Task<List<EntityShiftingParaModel>> GetEntityShiftingParasAsync(int refId)
+            {
+            if (refId <= 0)
+                throw new ArgumentOutOfRangeException(nameof(refId), "A valid shifting reference ID is required.");
+
+            var result = new List<EntityShiftingParaModel>();
+            using var con = this.DatabaseConnection();
+            using var cmd = con.CreateCommand();
+            cmd.CommandText = "PKG_AD.P_Get_Entity_Shifting_Paras";
+            cmd.CommandType = CommandType.StoredProcedure;
+            cmd.BindByName = true;
+            GuardAgainstDynamicSql(cmd);
+            cmd.Parameters.Add("P_REF_ID", OracleDbType.Int32).Value = refId;
+            cmd.Parameters.Add("IO_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+
+            using var reader = await cmd.ExecuteReaderAsync();
+            while (await reader.ReadAsync())
+                {
+                result.Add(new EntityShiftingParaModel
+                    {
+                    AuditPeriod = reader["AUDIT_PERIOD"] == DBNull.Value ? null : reader["AUDIT_PERIOD"].ToString(),
+                    ParaNo = reader["PARA_NO"] == DBNull.Value ? null : reader["PARA_NO"].ToString(),
+                    GistOfParas = reader["GIST_OF_PARAS"] == DBNull.Value ? null : reader["GIST_OF_PARAS"].ToString(),
+                    ParaStatus = reader["PARA_STATUS"] == DBNull.Value ? string.Empty : reader["PARA_STATUS"].ToString(),
+                    Annex = reader["ANNEX"] == DBNull.Value ? (int?)null : Convert.ToInt32(reader["ANNEX"])
+                    });
+                }
+
+            return result;
+            }
+
         public List<MenuModel> GetAllTopMenus()
             {
             var sessionHandler = CreateSessionHandler();

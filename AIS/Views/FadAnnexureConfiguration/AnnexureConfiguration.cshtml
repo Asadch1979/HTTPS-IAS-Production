@@ -22,8 +22,8 @@
                         <tr>
                             <th>Annexure ID</th>
                             <th>Annexure Code</th>
-                            <th>Description</th>
-                            <th>Applicable for Shifting</th>
+                            <th class="fad-annexure-description-column">Description</th>
+                            <th class="fad-annexure-applicability-column">Applicable for Shifting</th>
                             <th>Last Updated</th>
                             <th><span class="visually-hidden">Actions</span></th>
                         </tr>
@@ -34,8 +34,8 @@
                         <tr data-annexure-id="@item.AnnexureId">
                             <td>@item.AnnexureId</td>
                             <td>@item.AnnexureCode</td>
-                            <td>@item.Description</td>
-                            <td>
+                            <td class="fad-annexure-description-column">@item.Description</td>
+                            <td class="fad-annexure-applicability-column">
                                 <select class="form-select annexure-status" data-original-value="@item.ShiftApplicable"
                                         disabled="@(item.Active != "Y")">
                                     <option value="Y" selected="@(item.ShiftApplicable == "Y")">Applicable</option>

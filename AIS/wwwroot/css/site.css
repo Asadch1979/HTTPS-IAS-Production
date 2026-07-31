@@ -366,3 +366,11 @@ table.dataTable thead th {
 .num-right {
     text-align: right !important;
 }
+.fad-annexure-description-column {
+    width: 28%;
+}
+
+.fad-annexure-applicability-column {
+    width: 24%;
+    min-width: 220px;
+}
