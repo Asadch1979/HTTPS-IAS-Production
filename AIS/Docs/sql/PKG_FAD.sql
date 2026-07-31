@@ -1,6 +1,14 @@
 create or replace package PKG_FAD is
   TYPE t_cursor IS REF CURSOR;
 
+  PROCEDURE P_GET_FAD_ANNEXURE_CONFIG(IO_CURSOR OUT T_CURSOR);
+
+  PROCEDURE P_UPDATE_FAD_ANNEXURE_STATUS(
+    P_ANNEXURE_ID      IN NUMBER,
+    P_SHIFT_APPLICABLE IN VARCHAR2,
+    P_NO               IN NUMBER,
+    IO_CURSOR          OUT T_CURSOR);
+
   procedure P_GetRelationTypes(R_ID IN NUMBER, io_cursor OUT t_cursor);
 
   procedure P_GetReportingOffices(p_relation_id in number,
@@ -319,6 +327,7 @@ PROCEDURE P_GET_REFERENCE_MASTER_DETAIL(p_search_text           IN VARCHAR2 DEFA
                                          io_cursor OUT SYS_REFCURSOR);
 
 end PKG_FAD;
+/
 
 create or replace package body PKG_FAD is
 
@@ -3148,7 +3157,73 @@ create or replace package body PKG_FAD is
         FROM vw_reference_master_detail v
        WHERE v.ref_id = p_ref_id;
   END P_GET_REFERENCE_DETAIL_BY_ID;
+  PROCEDURE P_GET_FAD_ANNEXURE_CONFIG(IO_CURSOR OUT T_CURSOR) IS
+  BEGIN
+    OPEN IO_CURSOR FOR
+      SELECT C.ANNEXURE_ID,
+             A.CODE AS ANNEXURE_CODE,
+             A.HEADING AS DESCRIPTION,
+             C.SHIFT_APPLICABLE,
+             C.ACTIVE,
+             C.UPDATED_BY,
+             C.UPDATED_ON
+        FROM T_AU_FAD_ANNEXURE_CONFIG C
+        JOIN T_AUDIT_CHECKLIST_ANNEXURE A ON A.ID = C.ANNEXURE_ID
+       ORDER BY C.ANNEXURE_ID;
+  END P_GET_FAD_ANNEXURE_CONFIG;
 
+  PROCEDURE P_UPDATE_FAD_ANNEXURE_STATUS(
+    P_ANNEXURE_ID      IN NUMBER,
+    P_SHIFT_APPLICABLE IN VARCHAR2,
+    P_NO               IN NUMBER,
+    IO_CURSOR          OUT T_CURSOR) IS
+    V_ACTIVE T_AU_FAD_ANNEXURE_CONFIG.ACTIVE%TYPE;
+  BEGIN
+    IF P_ANNEXURE_ID IS NULL THEN
+      RAISE_APPLICATION_ERROR(-20001, 'Annexure ID is required.');
+    END IF;
+    IF UPPER(TRIM(P_SHIFT_APPLICABLE)) NOT IN ('Y', 'N')
+       OR P_SHIFT_APPLICABLE IS NULL THEN
+      RAISE_APPLICATION_ERROR(-20002, 'Shifting applicability must be Y or N.');
+    END IF;
+    IF P_NO IS NULL OR P_NO <= 0 THEN
+      RAISE_APPLICATION_ERROR(-20003, 'A valid logged-in user is required.');
+    END IF;
 
+    BEGIN
+      SELECT ACTIVE INTO V_ACTIVE
+        FROM T_AU_FAD_ANNEXURE_CONFIG
+       WHERE ANNEXURE_ID = P_ANNEXURE_ID
+       FOR UPDATE;
+    EXCEPTION
+      WHEN NO_DATA_FOUND THEN
+        RAISE_APPLICATION_ERROR(-20004, 'Annexure configuration was not found.');
+    END;
+
+    IF V_ACTIVE <> 'Y' THEN
+      RAISE_APPLICATION_ERROR(-20005, 'Inactive Annexure configuration cannot be updated.');
+    END IF;
+
+    UPDATE T_AU_FAD_ANNEXURE_CONFIG
+       SET SHIFT_APPLICABLE = UPPER(TRIM(P_SHIFT_APPLICABLE)),
+           UPDATED_BY = P_NO,
+           UPDATED_ON = SYSDATE
+     WHERE ANNEXURE_ID = P_ANNEXURE_ID
+       AND ACTIVE = 'Y';
+
+    COMMIT;
+    OPEN IO_CURSOR FOR
+      SELECT 'Y' AS SUCCESS,
+             'Annexure shifting status has been updated successfully.' AS REMARKS,
+             UPDATED_BY,
+             UPDATED_ON
+        FROM T_AU_FAD_ANNEXURE_CONFIG
+       WHERE ANNEXURE_ID = P_ANNEXURE_ID;
+  EXCEPTION
+    WHEN OTHERS THEN
+      ROLLBACK;
+      RAISE;
+  END P_UPDATE_FAD_ANNEXURE_STATUS;
 
 end PKG_FAD;
+/

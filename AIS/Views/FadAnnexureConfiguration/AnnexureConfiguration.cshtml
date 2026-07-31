@@ -1,0 +1,61 @@
+@model IReadOnlyCollection<AIS.Models.FadAnnexureConfiguration>
+@{
+    ViewData["Title"] = "Annexure Shifting Configuration";
+}
+
+<div class="container-fluid py-3">
+    <div class="card shadow-sm">
+        <div class="card-header bg-white">
+            <h4 class="mb-1">Annexure Shifting Configuration</h4>
+            <p class="text-muted mb-0">Choose whether each Field Audit Annexure is applicable during entity shifting.</p>
+        </div>
+        <div class="card-body">
+            @if (TempData["ErrorMessage"] is string errorMessage)
+                {
+                <div class="alert alert-danger" role="alert">@errorMessage</div>
+                }
+            <form id="annexure-config-token">@Html.AntiForgeryToken()</form>
+            <div id="annexure-config-alert" class="alert d-none" role="alert"></div>
+            <div class="table-responsive">
+                <table class="table table-striped table-hover align-middle">
+                    <thead>
+                        <tr>
+                            <th>Annexure ID</th>
+                            <th>Annexure Code</th>
+                            <th>Description</th>
+                            <th>Applicable for Shifting</th>
+                            <th>Last Updated</th>
+                            <th><span class="visually-hidden">Actions</span></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    @foreach (var item in Model)
+                        {
+                        <tr data-annexure-id="@item.AnnexureId">
+                            <td>@item.AnnexureId</td>
+                            <td>@item.AnnexureCode</td>
+                            <td>@item.Description</td>
+                            <td>
+                                <select class="form-select annexure-status" data-original-value="@item.ShiftApplicable"
+                                        disabled="@(item.Active != "Y")">
+                                    <option value="Y" selected="@(item.ShiftApplicable == "Y")">Applicable</option>
+                                    <option value="N" selected="@(item.ShiftApplicable != "Y")">Not Applicable</option>
+                                </select>
+                            </td>
+                            <td class="last-updated">@(item.UpdatedOn?.ToString("dd-MMM-yyyy HH:mm") ?? "Never")</td>
+                            <td>
+                                <button type="button" class="btn btn-primary update-annexure"
+                                        disabled="@(item.Active != "Y")">Update</button>
+                            </td>
+                        </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/js/csp/Views_FadAnnexureConfiguration_AnnexureConfiguration.js" asp-append-version="true"></script>
+}

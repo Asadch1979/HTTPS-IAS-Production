@@ -1,0 +1,60 @@
+-- Field Audit Annexure shifting configuration
+-- Source master: T_AUDIT_CHECKLIST_ANNEXURE (ID, CODE, HEADING, STATUS).
+-- Safe to rerun. P_Add_Entity_Shifting is intentionally not changed here.
+
+DECLARE
+  v_count NUMBER;
+BEGIN
+  SELECT COUNT(*) INTO v_count
+    FROM USER_TABLES
+   WHERE TABLE_NAME = 'T_AU_FAD_ANNEXURE_CONFIG';
+
+  IF v_count = 0 THEN
+    EXECUTE IMMEDIATE q'[
+      CREATE TABLE T_AU_FAD_ANNEXURE_CONFIG
+      (
+        ANNEXURE_ID       NUMBER       NOT NULL,
+        SHIFT_APPLICABLE  CHAR(1)      DEFAULT 'N' NOT NULL,
+        ACTIVE            CHAR(1)      DEFAULT 'Y' NOT NULL,
+        ENTERED_BY        NUMBER,
+        ENTERED_ON        DATE         DEFAULT SYSDATE NOT NULL,
+        UPDATED_BY        NUMBER,
+        UPDATED_ON        DATE,
+        CONSTRAINT PK_AU_FAD_ANNEX_CONFIG PRIMARY KEY (ANNEXURE_ID),
+        CONSTRAINT FK_AU_FAD_ANNEX_CONFIG FOREIGN KEY (ANNEXURE_ID)
+          REFERENCES T_AUDIT_CHECKLIST_ANNEXURE (ID),
+        CONSTRAINT CK_AU_FAD_ANNEX_SHIFT CHECK (SHIFT_APPLICABLE IN ('Y', 'N')),
+        CONSTRAINT CK_AU_FAD_ANNEX_ACTIVE CHECK (ACTIVE IN ('Y', 'N'))
+      )
+    ]';
+  END IF;
+END;
+/
+
+-- The primary-key index is created by the primary-key constraint; no duplicate
+-- ANNEXURE_ID index is needed for the EXISTS lookup used by future integration.
+MERGE INTO T_AU_FAD_ANNEXURE_CONFIG c
+USING
+(
+  SELECT a.ID AS ANNEXURE_ID,
+         CASE WHEN a.ID IN (1, 2, 3, 4, 5, 6, 11, 33, 69) THEN 'Y' ELSE 'N' END
+           AS SHIFT_APPLICABLE
+    FROM T_AUDIT_CHECKLIST_ANNEXURE a
+) src
+ON (c.ANNEXURE_ID = src.ANNEXURE_ID)
+WHEN NOT MATCHED THEN
+  INSERT (ANNEXURE_ID, SHIFT_APPLICABLE, ACTIVE, ENTERED_ON)
+  VALUES (src.ANNEXURE_ID, src.SHIFT_APPLICABLE, 'Y', SYSDATE);
+
+COMMIT;
+
+-- Smoke checks (expected to return zero rows).
+SELECT c.*
+  FROM T_AU_FAD_ANNEXURE_CONFIG c
+ WHERE c.SHIFT_APPLICABLE NOT IN ('Y', 'N')
+    OR c.ACTIVE NOT IN ('Y', 'N');
+
+SELECT a.ID
+  FROM T_AUDIT_CHECKLIST_ANNEXURE a
+ WHERE NOT EXISTS
+       (SELECT 1 FROM T_AU_FAD_ANNEXURE_CONFIG c WHERE c.ANNEXURE_ID = a.ID);

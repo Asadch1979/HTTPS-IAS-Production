@@ -6,11 +6,79 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace AIS.Controllers
     {
     public partial class DBConnection : Controller, IDBConnection
         {
+
+        public async Task<List<FadAnnexureConfiguration>> GetFadAnnexureConfigurationsAsync()
+            {
+            var list = new List<FadAnnexureConfiguration>();
+            using var con = this.DatabaseConnection();
+            using var cmd = con.CreateCommand();
+            cmd.CommandText = "PKG_FAD.P_GET_FAD_ANNEXURE_CONFIG";
+            cmd.CommandType = CommandType.StoredProcedure;
+            cmd.BindByName = true;
+            GuardAgainstDynamicSql(cmd);
+            cmd.Parameters.Add("IO_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+
+            using var rdr = await cmd.ExecuteReaderAsync();
+            while (await rdr.ReadAsync())
+                {
+                list.Add(new FadAnnexureConfiguration
+                    {
+                    AnnexureId = Convert.ToInt32(rdr["ANNEXURE_ID"]),
+                    AnnexureCode = rdr["ANNEXURE_CODE"] == DBNull.Value ? string.Empty : rdr["ANNEXURE_CODE"].ToString(),
+                    Description = rdr["DESCRIPTION"] == DBNull.Value ? null : rdr["DESCRIPTION"].ToString(),
+                    ShiftApplicable = rdr["SHIFT_APPLICABLE"] == DBNull.Value ? "N" : rdr["SHIFT_APPLICABLE"].ToString(),
+                    Active = rdr["ACTIVE"] == DBNull.Value ? "N" : rdr["ACTIVE"].ToString(),
+                    UpdatedBy = rdr["UPDATED_BY"] == DBNull.Value ? (int?)null : Convert.ToInt32(rdr["UPDATED_BY"]),
+                    UpdatedOn = rdr["UPDATED_ON"] == DBNull.Value ? (DateTime?)null : Convert.ToDateTime(rdr["UPDATED_ON"])
+                    });
+                }
+
+            return list;
+            }
+
+        public async Task<FadAnnexureStatusResult> UpdateFadAnnexureStatusAsync(
+            UpdateFadAnnexureStatusRequest request,
+            int ppNumber)
+            {
+            if (request == null || request.AnnexureId <= 0)
+                return new FadAnnexureStatusResult { Success = false, Message = "Invalid Annexure ID." };
+
+            var status = request.ShiftApplicable?.Trim().ToUpperInvariant();
+            if (status != "Y" && status != "N")
+                return new FadAnnexureStatusResult { Success = false, Message = "Shifting applicability must be Y or N." };
+
+            if (ppNumber <= 0)
+                return new FadAnnexureStatusResult { Success = false, Message = "Invalid user session." };
+
+            using var con = this.DatabaseConnection();
+            using var cmd = con.CreateCommand();
+            cmd.CommandText = "PKG_FAD.P_UPDATE_FAD_ANNEXURE_STATUS";
+            cmd.CommandType = CommandType.StoredProcedure;
+            cmd.BindByName = true;
+            GuardAgainstDynamicSql(cmd);
+            cmd.Parameters.Add("P_ANNEXURE_ID", OracleDbType.Int32).Value = request.AnnexureId;
+            cmd.Parameters.Add("P_SHIFT_APPLICABLE", OracleDbType.Varchar2).Value = status;
+            cmd.Parameters.Add("P_NO", OracleDbType.Int32).Value = ppNumber;
+            cmd.Parameters.Add("IO_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+
+            using var rdr = await cmd.ExecuteReaderAsync();
+            if (!await rdr.ReadAsync())
+                return new FadAnnexureStatusResult { Success = false, Message = "The database returned no update result." };
+
+            return new FadAnnexureStatusResult
+                {
+                Success = string.Equals(rdr["SUCCESS"]?.ToString(), "Y", StringComparison.OrdinalIgnoreCase),
+                Message = rdr["REMARKS"] == DBNull.Value ? "Unable to update the Annexure status." : rdr["REMARKS"].ToString(),
+                UpdatedBy = rdr["UPDATED_BY"] == DBNull.Value ? (int?)null : Convert.ToInt32(rdr["UPDATED_BY"]),
+                UpdatedOn = rdr["UPDATED_ON"] == DBNull.Value ? (DateTime?)null : Convert.ToDateTime(rdr["UPDATED_ON"])
+                };
+            }
 
         public List<AuditChecklistAnnexureCircularModel> GetAuditChecklistAnnexureCirculars()
             {
