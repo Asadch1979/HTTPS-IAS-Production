@@ -13,6 +13,101 @@ namespace AIS.Controllers
     public partial class DBConnection : Controller, IDBConnection
         {
 
+        public string UpdateFadAuditObservationStatus(int observationId, int newStatusId, string draftParaNumber, int? finalParaNumber, string auditorComment)
+            {
+            const int SettledByTeamLeadStatus = 4;
+            const int DraftReportStatus = 5;
+            const int FinalReportStatus = 8;
+            const int SettledStatus = 9;
+
+            var user = CreateSessionHandler().GetUser();
+            if (user == null
+                || user.UserEntityID.GetValueOrDefault() <= 0
+                || string.IsNullOrWhiteSpace(user.PPNumber)
+                || user.UserRoleID <= 0)
+                {
+                return string.Empty;
+                }
+
+            if (newStatusId == FinalReportStatus && (!finalParaNumber.HasValue || finalParaNumber.Value <= 0))
+                {
+                return "Final Para Number is required and must be greater than zero.";
+                }
+
+            if (newStatusId == SettledStatus)
+                {
+                finalParaNumber = null;
+                }
+
+            var remarks = newStatusId switch
+                {
+                SettledByTeamLeadStatus => "Settle",
+                DraftReportStatus => "Add to Draft Report",
+                FinalReportStatus => "Add to Final Report",
+                SettledStatus => "Para settle in discussion",
+                _ => string.Empty
+                };
+            var response = string.Empty;
+            var statusUpdated = false;
+
+            using var con = DatabaseConnection();
+            using var cmd = con.CreateCommand();
+            cmd.CommandText = "pkg_ar.P_UpdateAuditObservationStatus";
+            cmd.CommandType = CommandType.StoredProcedure;
+            cmd.BindByName = true;
+            GuardAgainstDynamicSql(cmd);
+            cmd.Parameters.Add("OBS_ID", OracleDbType.Int32).Value = observationId;
+            cmd.Parameters.Add("NEW_STATUS_ID", OracleDbType.Int32).Value = newStatusId;
+            var paraParameter = cmd.Parameters.Add("D_PARA_NO", OracleDbType.Varchar2);
+            if (newStatusId == FinalReportStatus || newStatusId == SettledStatus)
+                {
+                paraParameter.Value = finalParaNumber.HasValue
+                    ? finalParaNumber.Value
+                    : DBNull.Value;
+                }
+            else
+                {
+                paraParameter.Value = string.IsNullOrWhiteSpace(draftParaNumber)
+                    ? DBNull.Value
+                    : draftParaNumber.Trim();
+                }
+            cmd.Parameters.Add("Remarks", OracleDbType.Varchar2).Value = remarks;
+            cmd.Parameters.Add("ENT_ID", OracleDbType.Int32).Value = user.UserEntityID;
+            cmd.Parameters.Add("P_NO", OracleDbType.Int32).Value = user.PPNumber;
+            cmd.Parameters.Add("R_ID", OracleDbType.Int32).Value = user.UserRoleID;
+            cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+
+            using (var reader = cmd.ExecuteReader())
+                {
+                while (reader.Read())
+                    {
+                    response = reader["REMARKS"].ToString();
+                    statusUpdated = HasColumn(reader, "REF")
+                        && string.Equals(reader["REF"]?.ToString(), "1", StringComparison.OrdinalIgnoreCase);
+                    }
+                }
+
+            if (!statusUpdated)
+                {
+                return response;
+                }
+
+            cmd.Parameters.Clear();
+            cmd.CommandText = newStatusId == SettledByTeamLeadStatus || newStatusId == DraftReportStatus
+                ? "pkg_ar.AUDITOR_RESPONSE"
+                : "pkg_ar.AUDITOR_REPLY";
+            cmd.CommandType = CommandType.StoredProcedure;
+            cmd.BindByName = true;
+            GuardAgainstDynamicSql(cmd);
+            cmd.Parameters.Add("OBS_ID", OracleDbType.Int32).Value = observationId;
+            cmd.Parameters.Add("PPNumber", OracleDbType.Int32).Value = user.PPNumber;
+            cmd.Parameters.Add("AUDITOR_COMMENT", OracleDbType.Varchar2).Value = string.IsNullOrWhiteSpace(auditorComment) ? remarks : auditorComment;
+            cmd.Parameters.Add("P_status", OracleDbType.Int32).Value = newStatusId;
+            cmd.ExecuteNonQuery();
+
+            return response;
+            }
+
         public async Task<List<FadAnnexureConfiguration>> GetFadAnnexureConfigurationsAsync()
             {
             var list = new List<FadAnnexureConfiguration>();

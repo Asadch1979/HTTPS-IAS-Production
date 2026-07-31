@@ -1516,20 +1516,48 @@ namespace AIS.Controllers
             return System.Text.Json.JsonSerializer.Serialize(new { Status = true, Message = response });
             }
         [HttpPost]
-        public string update_observation_status(int OBS_ID, int NEW_STATUS_ID, string DRAFT_PARA_NO, int RISK_ID, string AUDITOR_COMMENT)
+        public IActionResult update_observation_status(UpdateObservationStatusRequest request)
             {
-            if (NEW_STATUS_ID == 4 && RISK_ID != 3)
+            var finalParaNumber = request.FinalParaNumber;
+            if (request.NEW_STATUS_ID == 8
+                && !finalParaNumber.HasValue
+                && int.TryParse(request.DRAFT_PARA_NO?.Trim(), out var legacyFinalParaNumber))
                 {
-                return System.Text.Json.JsonSerializer.Serialize(new { Status = false, Message = "Only Low Risk para can be settled by Team Lead" });
+                finalParaNumber = legacyFinalParaNumber;
                 }
 
-            var response = dBConnection.UpdateAuditObservationStatus(OBS_ID, NEW_STATUS_ID, DRAFT_PARA_NO, AUDITOR_COMMENT);
+            if (request.NEW_STATUS_ID == 8
+                && (!finalParaNumber.HasValue || finalParaNumber.Value <= 0))
+                {
+                return BadRequest(new
+                    {
+                    success = false,
+                    message = "Final Para Number is required and must be greater than zero."
+                    });
+                }
+
+            if (request.NEW_STATUS_ID == 9)
+                {
+                finalParaNumber = null;
+                }
+
+            if (request.NEW_STATUS_ID == 4 && request.RISK_ID != 3)
+                {
+                return Ok(new { Status = false, Message = "Only Low Risk para can be settled by Team Lead" });
+                }
+
+            var response = dBConnection.UpdateFadAuditObservationStatus(
+                request.OBS_ID,
+                request.NEW_STATUS_ID,
+                request.DRAFT_PARA_NO,
+                finalParaNumber,
+                request.AUDITOR_COMMENT);
             var status = !string.IsNullOrWhiteSpace(response)
                 && !response.Contains("authorized", StringComparison.OrdinalIgnoreCase)
                 && !response.Contains("required", StringComparison.OrdinalIgnoreCase)
                 && !response.Contains("unsupported", StringComparison.OrdinalIgnoreCase);
 
-            return System.Text.Json.JsonSerializer.Serialize(new { Status = status, Message = response ?? string.Empty });
+            return Ok(new { Status = status, Message = response ?? string.Empty });
 
             }        [HttpPost]
         public string drop_observation(int OBS_ID)

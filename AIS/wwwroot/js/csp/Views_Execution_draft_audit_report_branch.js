@@ -438,10 +438,16 @@ function getPageData() {
     }
     function finalCommentsButtonSave() {
         var svpComments = "";
+        var finalParaNo = ($('#finalNoInCommentsBox').val() || '').trim();
 
-        if ($('#finalNoInCommentsBox').val() == "") {
-            alert("Please enter Final Para No to proceed");
+        if (g_newStatusId === 8 && (!/^\d+$/.test(finalParaNo) || parseInt(finalParaNo, 10) <= 0)) {
+            alert("Final Para Number is required and must be greater than zero.");
             return;
+        }
+
+        if (g_newStatusId === 9) {
+            finalParaNo = null;
+            $('#finalNoInCommentsBox').val('');
         }
 
 
@@ -458,7 +464,7 @@ function getPageData() {
             data: {
                 'OBS_ID': g_obsId,
                 'NEW_STATUS_ID': g_newStatusId,
-                'DRAFT_PARA_NO': $('#finalNoInCommentsBox').val(),
+                'FinalParaNumber': finalParaNo,
                 'RISK_ID': g_riskId,
                 'AUDITOR_COMMENT': svpComments
             },
@@ -467,6 +473,10 @@ function getPageData() {
                 showApiAlert(data);
                 onAlertCallback(reloadLocation);
                 $('#commentsBox').modal('hide');
+            },
+            error: function (xhr) {
+                var response = xhr.responseJSON || {};
+                alert(response.message || "Unable to update para status.");
             },
             dataType: "json",
         });
@@ -478,7 +488,7 @@ function getPageData() {
         g_riskId = risk_id;
         $('#commentsBox').modal('show');
         if (g_newStatusId == 9) {
-            $('#finalNoInCommentsBox').val(0);
+            $('#finalNoInCommentsBox').val('');
             $('#finalNoInCommentsBox').attr("disabled", true);
 
         } else {

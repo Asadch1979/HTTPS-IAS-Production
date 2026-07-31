@@ -90,7 +90,7 @@
         DRAFT_REPORT: [
             '/js/responsibilitySection.js',
             '/js/obsreference.js?v=4',
-            '/js/csp/Views_Execution_draft_audit_report_branch.js?v=3'
+            '/js/csp/Views_Execution_draft_audit_report_branch.js?v=4'
         ],
         DRAFT_REPORT_HO: [
             '/js/csp/Views_Execution_draft_audit_report.js?v=1'
@@ -98,7 +98,7 @@
         CHECKING_DRAFT_REPORT: [
             '/js/responsibilitySection.js',
             '/js/obsreference.js?v=4',
-            '/js/csp/Views_Execution_draft_audit_report_branch.js?v=3'
+            '/js/csp/Views_Execution_draft_audit_report_branch.js?v=4'
         ],
         QUALITY_REVIEW: [
             '/js/responsibilitySection.js',
