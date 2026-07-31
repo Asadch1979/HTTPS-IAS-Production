@@ -24,7 +24,7 @@ namespace AIS.Models
         public string ParaNo { get; set; }
         public string GistOfParas { get; set; }
         public string ParaStatus { get; set; } = string.Empty;
-        public int? Annex { get; set; }
+        public string Annex { get; set; }
         }
 
     public sealed class EntityShiftingHistoryPageModel

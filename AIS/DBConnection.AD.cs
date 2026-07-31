@@ -70,7 +70,7 @@ namespace AIS.Controllers
                     ParaNo = reader["PARA_NO"] == DBNull.Value ? null : reader["PARA_NO"].ToString(),
                     GistOfParas = reader["GIST_OF_PARAS"] == DBNull.Value ? null : reader["GIST_OF_PARAS"].ToString(),
                     ParaStatus = reader["PARA_STATUS"] == DBNull.Value ? string.Empty : reader["PARA_STATUS"].ToString(),
-                    Annex = reader["ANNEX"] == DBNull.Value ? (int?)null : Convert.ToInt32(reader["ANNEX"])
+                    Annex = reader["ANNEX"] == DBNull.Value ? string.Empty : reader["ANNEX"].ToString()
                     });
                 }
 
