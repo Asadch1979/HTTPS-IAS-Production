@@ -209,10 +209,16 @@
     }
     function finalCommentsButtonSave() {
         var svpComments = "";
+        var finalParaNo = ($('#finalNoInCommentsBox').val() || '').trim();
 
-        if ($('#finalNoInCommentsBox').val() == "") {
-            alert("Please enter Final Para No to proceed");
+        if (g_newStatusId == 8 && (!/^\d+$/.test(finalParaNo) || parseInt(finalParaNo, 10) <= 0)) {
+            alert("Final Para Number is required and must be greater than zero.");
             return;
+        }
+
+        if (g_newStatusId == 9) {
+            finalParaNo = null;
+            $('#finalNoInCommentsBox').val('');
         }
 
 
@@ -225,14 +231,13 @@
 
 
         $.ajax({
-            url: g_asiBaseURL + "/ApiCalls/update_observation_status",
+            url: g_asiBaseURL + "/ApiCalls/FinalizeOrSettleObservation",
             type: "POST",
             data: {
-                'OBS_ID': g_obsId,
-                'NEW_STATUS_ID': g_newStatusId,
-                'DRAFT_PARA_NO': $('#finalNoInCommentsBox').val(),
-                'RISK_ID': g_riskId,
-                'AUDITOR_COMMENT': svpComments
+                'ObservationId': g_obsId,
+                'NewStatusId': g_newStatusId,
+                'FinalParaNumber': finalParaNo,
+                'Remarks': svpComments
             },
             cache: false,
             success: function (data) {
@@ -250,7 +255,7 @@
         g_riskId = risk_id;
         $('#commentsBox').modal('show');
         if (g_newStatusId == 9) {
-            $('#finalNoInCommentsBox').val(0);
+            $('#finalNoInCommentsBox').val('');
             $('#finalNoInCommentsBox').attr("disabled", true);
 
         }

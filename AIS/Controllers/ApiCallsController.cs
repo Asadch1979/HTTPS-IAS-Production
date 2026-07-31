@@ -1518,48 +1518,61 @@ namespace AIS.Controllers
         [HttpPost]
         public IActionResult update_observation_status(UpdateObservationStatusRequest request)
             {
-            var finalParaNumber = request.FinalParaNumber;
-            if (request.NEW_STATUS_ID == 8
-                && !finalParaNumber.HasValue
-                && int.TryParse(request.DRAFT_PARA_NO?.Trim(), out var legacyFinalParaNumber))
-                {
-                finalParaNumber = legacyFinalParaNumber;
-                }
-
-            if (request.NEW_STATUS_ID == 8
-                && (!finalParaNumber.HasValue || finalParaNumber.Value <= 0))
-                {
-                return BadRequest(new
-                    {
-                    success = false,
-                    message = "Final Para Number is required and must be greater than zero."
-                    });
-                }
-
-            if (request.NEW_STATUS_ID == 9)
-                {
-                finalParaNumber = null;
-                }
-
-            if (request.NEW_STATUS_ID == 4 && request.RISK_ID != 3)
+            if (request.NEW_STATUS_ID != 4)
+                return BadRequest(new { Status = false, Message = "This legacy endpoint only accepts status 4." });
+            if (request.RISK_ID != 3)
                 {
                 return Ok(new { Status = false, Message = "Only Low Risk para can be settled by Team Lead" });
                 }
 
-            var response = dBConnection.UpdateFadAuditObservationStatus(
-                request.OBS_ID,
-                request.NEW_STATUS_ID,
-                request.DRAFT_PARA_NO,
-                finalParaNumber,
-                request.AUDITOR_COMMENT);
-            var status = !string.IsNullOrWhiteSpace(response)
-                && !response.Contains("authorized", StringComparison.OrdinalIgnoreCase)
-                && !response.Contains("required", StringComparison.OrdinalIgnoreCase)
-                && !response.Contains("unsupported", StringComparison.OrdinalIgnoreCase);
-
-            return Ok(new { Status = status, Message = response ?? string.Empty });
+            var response = dBConnection.UpdateAuditObservationStatus(request.OBS_ID, 4, null, request.AUDITOR_COMMENT);
+            return Ok(new { Status = !string.IsNullOrWhiteSpace(response), Message = response ?? string.Empty });
 
             }        [HttpPost]
+        public IActionResult AddObservationToDraft(AddObservationToDraftRequest request)
+            {
+            if (request.ObservationId <= 0)
+                return BadRequest(new { Status = false, Message = "Observation is required." });
+            if (string.IsNullOrWhiteSpace(request.DraftParaNumber))
+                return BadRequest(new { Status = false, Message = "Draft Para Number is required." });
+
+            var result = dBConnection.AddObservationToDraft(
+                request.ObservationId,
+                request.DraftParaNumber.Trim(),
+                request.Remarks);
+            return result.Success
+                ? Ok(new { Status = true, Message = result.Remarks })
+                : BadRequest(new { Status = false, Message = result.Remarks });
+            }
+
+        [HttpPost]
+        public IActionResult FinalizeOrSettleObservation(FinalizeOrSettleObservationRequest request)
+            {
+            if (request.ObservationId <= 0)
+                return BadRequest(new { Status = false, Message = "Observation is required." });
+            if (request.NewStatusId != 8 && request.NewStatusId != 9)
+                return BadRequest(new { Status = false, Message = "Only status 8 or 9 is supported." });
+            if (request.NewStatusId == 8
+                && (!request.FinalParaNumber.HasValue || request.FinalParaNumber.Value <= 0))
+                return BadRequest(new { Status = false, Message = "Final Para Number is required and must be greater than zero." });
+
+            var user = sessionHandler.GetUser();
+            if (user == null || (user.UserRoleID != 6 && user.UserRoleID != 7 && user.UserRoleID != 15))
+                return StatusCode(StatusCodes.Status403Forbidden,
+                    new { Status = false, Message = "Only Departmental Head is authorized to update this observation status." });
+
+            var finalParaNumber = request.NewStatusId == 9 ? null : request.FinalParaNumber;
+            var result = dBConnection.FinalizeOrSettleObservation(
+                request.ObservationId,
+                request.NewStatusId,
+                finalParaNumber,
+                request.Remarks);
+            return result.Success
+                ? Ok(new { Status = true, Message = result.Remarks })
+                : BadRequest(new { Status = false, Message = result.Remarks });
+            }
+
+        [HttpPost]
         public string drop_observation(int OBS_ID)
             {
             string response = "";

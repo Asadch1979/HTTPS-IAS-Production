@@ -459,14 +459,13 @@ function getPageData() {
 
 
         $.ajax({
-            url: g_asiBaseURL + "/ApiCalls/update_observation_status",
+            url: g_asiBaseURL + "/ApiCalls/FinalizeOrSettleObservation",
             type: "POST",
             data: {
-                'OBS_ID': g_obsId,
-                'NEW_STATUS_ID': g_newStatusId,
+                'ObservationId': g_obsId,
+                'NewStatusId': g_newStatusId,
                 'FinalParaNumber': finalParaNo,
-                'RISK_ID': g_riskId,
-                'AUDITOR_COMMENT': svpComments
+                'Remarks': svpComments
             },
             cache: false,
             success: function (data) {

@@ -453,9 +453,13 @@ function getPageData() {
             return;
         }
         $.ajax({
-            url: g_asiBaseURL + "/ApiCalls/update_observation_status",
+            url: g_asiBaseURL + (g_newStatusId == 5 ? "/ApiCalls/AddObservationToDraft" : "/ApiCalls/update_observation_status"),
             type: "POST",
-            data: {
+            data: g_newStatusId == 5 ? {
+                'ObservationId': g_obsId,
+                'DraftParaNumber': $('#draftNoInCommentsBox').val(),
+                'Remarks': $('#commentAreaInCommentsBox').val()
+            } : {
                 'OBS_ID': g_obsId,
                 'NEW_STATUS_ID': g_newStatusId,
                 'DRAFT_PARA_NO': $('#draftNoInCommentsBox').val(),

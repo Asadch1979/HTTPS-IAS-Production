@@ -1972,109 +1972,105 @@ namespace AIS.Controllers
             return resp;
             }
 
-        public string UpdateAuditObservationStatus(int OBS_ID, int NEW_STATUS_ID, string DRAFT_PARA_NO, string AUDITOR_COMMENT)
+        public ObservationStatusWorkflowResult AddObservationToDraft(int observationId, string draftParaNumber, string remarks)
             {
-            const int SettledByTeamLeadStatus = 4;
-            const int DraftReportStatus = 5;
-            const int FinalReportStatus = 8;
-            const int SettledInDiscussionStatus = 9;
+            if (observationId <= 0 || string.IsNullOrWhiteSpace(draftParaNumber))
+                return new ObservationStatusWorkflowResult { Remarks = "Draft Para Number is required." };
 
-            var sessionHandler = CreateSessionHandler();
-            var loggedInUser = sessionHandler.GetUser();
-            if (loggedInUser == null
-                || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
-                || string.IsNullOrWhiteSpace(loggedInUser.PPNumber)
-                || loggedInUser.UserRoleID <= 0)
-                {
-                return string.Empty;
-                }
+            var user = CreateSessionHandler().GetUser();
+            if (user == null || user.UserEntityID.GetValueOrDefault() <= 0
+                || string.IsNullOrWhiteSpace(user.PPNumber) || user.UserRoleID <= 0)
+                return new ObservationStatusWorkflowResult { Remarks = "User session is not available." };
 
-            var paraNumber = (DRAFT_PARA_NO ?? string.Empty).Trim();
-            if (NEW_STATUS_ID != SettledByTeamLeadStatus
-                && NEW_STATUS_ID != DraftReportStatus
-                && NEW_STATUS_ID != FinalReportStatus
-                && NEW_STATUS_ID != SettledInDiscussionStatus)
-                {
-                return "Unsupported observation status transition.";
-                }
-
-            if (NEW_STATUS_ID == DraftReportStatus && string.IsNullOrWhiteSpace(paraNumber))
-                {
-                return "Draft para number is required before adding para to draft report.";
-                }
-
-            if ((NEW_STATUS_ID == FinalReportStatus || NEW_STATUS_ID == SettledInDiscussionStatus)
-                && string.IsNullOrWhiteSpace(paraNumber))
-                {
-                return "Final para number is required before adding para to final report or settling in discussion.";
-                }
-
-            if ((NEW_STATUS_ID == FinalReportStatus || NEW_STATUS_ID == SettledInDiscussionStatus)
-                && loggedInUser.UserRoleID != 6
-                && loggedInUser.UserRoleID != 7
-                && loggedInUser.UserRoleID != 15)
-                {
-                return "Only Departmental Head is authorized to update this observation status.";
-                }
-
-            var remarks = NEW_STATUS_ID switch
-                {
-                SettledByTeamLeadStatus => "Settle",
-                DraftReportStatus => "Add to Draft Report",
-                FinalReportStatus => "Add to Final Report",
-                SettledInDiscussionStatus => "Para settle in discussion",
-                _ => string.Empty
-                };
-
-            var resp = string.Empty;
-            var statusUpdated = false;
-            using (var con = this.DatabaseConnection())
-            using (OracleCommand cmd = con.CreateCommand())
-                {
-                cmd.CommandText = "pkg_ar.P_UpdateAuditObservationStatus";
-                cmd.CommandType = CommandType.StoredProcedure;
-                cmd.BindByName = true;
-                GuardAgainstDynamicSql(cmd);
-                cmd.Parameters.Clear();
-                cmd.Parameters.Add("OBS_ID", OracleDbType.Int32).Value = OBS_ID;
-                cmd.Parameters.Add("NEW_STATUS_ID", OracleDbType.Int32).Value = NEW_STATUS_ID;
-                cmd.Parameters.Add("D_PARA_NO", OracleDbType.Varchar2).Value = paraNumber;
-                cmd.Parameters.Add("Remarks", OracleDbType.Varchar2).Value = remarks;
-                cmd.Parameters.Add("ENT_ID", OracleDbType.Int32).Value = loggedInUser.UserEntityID;
-                cmd.Parameters.Add("P_NO", OracleDbType.Int32).Value = loggedInUser.PPNumber;
-                cmd.Parameters.Add("R_ID", OracleDbType.Int32).Value = loggedInUser.UserRoleID;
-                cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
-
-                using (OracleDataReader rdr = cmd.ExecuteReader())
+            var result = ExecuteObservationStatusProcedure(
+                "pkg_ar.P_Add_Observation_To_Draft",
+                cmd =>
                     {
-                    while (rdr.Read())
-                        {
-                        resp = rdr["REMARKS"].ToString();
-                        statusUpdated = HasColumn(rdr, "REF")
-                            && string.Equals(rdr["REF"]?.ToString(), "1", StringComparison.OrdinalIgnoreCase);
-                        }
-                    }
+                    cmd.Parameters.Add("P_OBS_ID", OracleDbType.Int32).Value = observationId;
+                    cmd.Parameters.Add("P_DRAFT_PARA_NO", OracleDbType.Varchar2).Value = draftParaNumber.Trim();
+                    cmd.Parameters.Add("P_REMARKS", OracleDbType.Varchar2).Value = remarks ?? string.Empty;
+                    cmd.Parameters.Add("P_ENT_ID", OracleDbType.Int32).Value = user.UserEntityID;
+                    cmd.Parameters.Add("P_NO", OracleDbType.Int32).Value = user.PPNumber;
+                    cmd.Parameters.Add("P_R_ID", OracleDbType.Int32).Value = user.UserRoleID;
+                    });
 
-                if (!statusUpdated)
+            if (result.Success)
+                ExecuteObservationStatusFollowUp("pkg_ar.AUDITOR_RESPONSE", observationId, user.PPNumber, remarks, 5);
+            return result;
+            }
+
+        public ObservationStatusWorkflowResult FinalizeOrSettleObservation(int observationId, int newStatusId, int? finalParaNumber, string remarks)
+            {
+            if (observationId <= 0 || (newStatusId != 8 && newStatusId != 9))
+                return new ObservationStatusWorkflowResult { Remarks = "Only status 8 or 9 is supported." };
+            if (newStatusId == 8 && (!finalParaNumber.HasValue || finalParaNumber.Value <= 0))
+                return new ObservationStatusWorkflowResult { Remarks = "Final Para Number is required and must be greater than zero." };
+
+            var user = CreateSessionHandler().GetUser();
+            if (user == null || user.UserEntityID.GetValueOrDefault() <= 0
+                || string.IsNullOrWhiteSpace(user.PPNumber) || user.UserRoleID <= 0)
+                return new ObservationStatusWorkflowResult { Remarks = "User session is not available." };
+
+            if (user.UserRoleID != 6 && user.UserRoleID != 7 && user.UserRoleID != 15)
+                return new ObservationStatusWorkflowResult { Remarks = "Only Departmental Head is authorized to update this observation status." };
+
+            if (newStatusId == 9)
+                finalParaNumber = null;
+
+            var result = ExecuteObservationStatusProcedure(
+                "pkg_ar.P_Finalize_Or_Settle_Observation",
+                cmd =>
                     {
-                    return resp;
-                    }
+                    cmd.Parameters.Add("P_OBS_ID", OracleDbType.Int32).Value = observationId;
+                    cmd.Parameters.Add("P_NEW_STATUS_ID", OracleDbType.Int32).Value = newStatusId;
+                    cmd.Parameters.Add("P_FINAL_PARA_NO", OracleDbType.Varchar2).Value = finalParaNumber.HasValue
+                        ? finalParaNumber.Value
+                        : DBNull.Value;
+                    cmd.Parameters.Add("P_REMARKS", OracleDbType.Varchar2).Value = remarks ?? string.Empty;
+                    cmd.Parameters.Add("P_ENT_ID", OracleDbType.Int32).Value = user.UserEntityID;
+                    cmd.Parameters.Add("P_NO", OracleDbType.Int32).Value = user.PPNumber;
+                    cmd.Parameters.Add("P_R_ID", OracleDbType.Int32).Value = user.UserRoleID;
+                    });
 
-                cmd.Parameters.Clear();
-                cmd.CommandText = NEW_STATUS_ID == SettledByTeamLeadStatus || NEW_STATUS_ID == DraftReportStatus
-                    ? "pkg_ar.AUDITOR_RESPONSE"
-                    : "pkg_ar.AUDITOR_REPLY";
-                cmd.CommandType = CommandType.StoredProcedure;
-                cmd.BindByName = true;
-                GuardAgainstDynamicSql(cmd);
-                cmd.Parameters.Add("OBS_ID", OracleDbType.Int32).Value = OBS_ID;
-                cmd.Parameters.Add("PPNumber", OracleDbType.Int32).Value = loggedInUser.PPNumber;
-                cmd.Parameters.Add("AUDITOR_COMMENT", OracleDbType.Varchar2).Value = string.IsNullOrWhiteSpace(AUDITOR_COMMENT) ? remarks : AUDITOR_COMMENT;
-                cmd.Parameters.Add("P_status", OracleDbType.Int32).Value = NEW_STATUS_ID;
-                cmd.ExecuteNonQuery();
+            if (result.Success)
+                ExecuteObservationStatusFollowUp("pkg_ar.AUDITOR_REPLY", observationId, user.PPNumber, remarks, newStatusId);
+            return result;
+            }
+
+        private ObservationStatusWorkflowResult ExecuteObservationStatusProcedure(string procedureName, Action<OracleCommand> addParameters)
+            {
+            var result = new ObservationStatusWorkflowResult();
+            using var con = DatabaseConnection();
+            using var cmd = con.CreateCommand();
+            cmd.CommandText = procedureName;
+            cmd.CommandType = CommandType.StoredProcedure;
+            cmd.BindByName = true;
+            GuardAgainstDynamicSql(cmd);
+            addParameters(cmd);
+            cmd.Parameters.Add("IO_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+            using var reader = cmd.ExecuteReader();
+            if (reader.Read())
+                {
+                result.Reference = HasColumn(reader, "REF") ? reader["REF"]?.ToString() : string.Empty;
+                result.Remarks = HasColumn(reader, "REMARKS") ? reader["REMARKS"]?.ToString() : string.Empty;
+                result.Success = string.Equals(result.Reference, "1", StringComparison.OrdinalIgnoreCase);
                 }
+            return result;
+            }
 
-            return resp;
+        private void ExecuteObservationStatusFollowUp(string procedureName, int observationId, string ppNumber, string remarks, int statusId)
+            {
+            using var con = DatabaseConnection();
+            using var cmd = con.CreateCommand();
+            cmd.CommandText = procedureName;
+            cmd.CommandType = CommandType.StoredProcedure;
+            cmd.BindByName = true;
+            GuardAgainstDynamicSql(cmd);
+            cmd.Parameters.Add("OBS_ID", OracleDbType.Int32).Value = observationId;
+            cmd.Parameters.Add("PPNumber", OracleDbType.Int32).Value = ppNumber;
+            cmd.Parameters.Add("AUDITOR_COMMENT", OracleDbType.Varchar2).Value = remarks ?? string.Empty;
+            cmd.Parameters.Add("P_status", OracleDbType.Int32).Value = statusId;
+            cmd.ExecuteNonQuery();
             }
 
         public string UpdateAuditObservationStatusByHead(int OBS_ID, int NEW_STATUS_ID, string FINAL_PARA_NO, string AUDITOR_COMMENT)

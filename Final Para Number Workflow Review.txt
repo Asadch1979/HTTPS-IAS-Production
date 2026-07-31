@@ -1,0 +1,332 @@
+FINAL PARA NUMBER WORKFLOW REVIEW
+=================================
+
+Scope
+-----
+FieldAudit/BO_Dashboard, Step 1: Draft Report
+
+Review type: Source-code review only. No application code was modified and no commit was created.
+Inspected repository HEAD: 3e19841233c5e70af9ee9546c52e86c7b683435d
+
+1. FILES AND METHODS REVIEWED
+-----------------------------
+
+1. AIS/Views/FieldAudit/BO_Dashboard.cshtml
+   - Loads the Back Office dashboard JavaScript.
+
+2. AIS/wwwroot/js/fieldaudit-bo-dashboard.js
+   - scriptDependenciesByStep.DRAFT_REPORT
+   - Loads Views_Execution_draft_audit_report_branch.js for Step 1.
+
+3. AIS/Controllers/FieldAuditController.cs
+   - BO_Dashboard()
+   - LoadBackOfficeStep(...)
+   - Confirms DRAFT_REPORT renders _DraftReportPartial.cshtml.
+
+4. AIS/Views/FieldAudit/BO_Partials/_DraftReportPartial.cshtml
+   - Final Para Number input at approximately line 93.
+   - Add to Final Report and Settle buttons at approximately lines 234-235.
+
+5. AIS/wwwroot/js/csp/Views_Execution_draft_audit_report_branch.js
+   - finalCommentsButtonSave() at approximately line 438.
+   - updateObservationStatus(...) at approximately line 485.
+   - AJAX call to /ApiCalls/update_observation_status at approximately line 462.
+
+6. AIS/Models/UpdateObservationStatusRequest.cs
+   - UpdateObservationStatusRequest
+   - Nullable FinalParaNumber property at line 8.
+
+7. AIS/Controllers/ApiCallsController.cs
+   - update_observation_status(UpdateObservationStatusRequest request) at approximately line 1519.
+
+8. AIS/DBConnection.AR.cs
+   - UpdateAuditObservationStatus(...) at approximately line 1975.
+   - Existing calls to pkg_ar.P_UpdateAuditObservationStatus and AUDITOR_RESPONSE/AUDITOR_REPLY.
+
+9. AIS/DBConnection.FAD.cs
+   - UpdateFadAuditObservationStatus(...) at approximately line 14.
+   - This is the method currently called by ApiCallsController.
+
+10. AIS/Docs/Data_Structure/procedures.txt
+    - Existing Oracle procedure pkg_ar.P_UpdateAuditObservationStatus.
+    - Procedure body at approximately lines 38362-38610.
+    - Confirmed parameter name D_PARA_NO and status 8/9 update behavior.
+
+2. STEP-BY-STEP VALUE FLOW
+--------------------------
+
+A. Razor View
+
+_DraftReportPartial.cshtml renders finalNoInCommentsBox as type="number", min="1", step="1". The same comments modal is used for both status 8 (Add to Final Report) and status 9 (Settle).
+
+B. JavaScript
+
+updateObservationStatus(...) stores the requested status in g_newStatusId.
+
+- Status 8: finalNoInCommentsBox is cleared and enabled.
+- Status 9: finalNoInCommentsBox is cleared and disabled.
+
+finalCommentsButtonSave() reads the field into finalParaNo.
+
+- Status 8 is checked with a digits-only regular expression and parseInt(...), requiring a value greater than zero.
+- Status 9 explicitly sets finalParaNo = null and clears the input again.
+- AJAX submits the value under the field name FinalParaNumber.
+
+C. Request Model
+
+UpdateObservationStatusRequest.FinalParaNumber is int?, so an omitted/empty value can remain null. The model also contains DRAFT_PARA_NO for legacy status 4/5 callers.
+
+D. Controller
+
+ApiCallsController.update_observation_status reads request.FinalParaNumber.
+
+- For status 8 it optionally parses legacy DRAFT_PARA_NO, then rejects null or values <= 0 with HTTP 400.
+- For status 9 it forcibly assigns null.
+- It then calls dBConnection.UpdateFadAuditObservationStatus(...).
+
+Important: The controller does NOT call DBConnection.AR.cs.UpdateAuditObservationStatus(...). Therefore corrections made only in DBConnection.AR.cs do not govern this current endpoint.
+
+E. Current DBConnection method
+
+DBConnection.FAD.cs.UpdateFadAuditObservationStatus(...) receives int? finalParaNumber.
+
+- Status 8 is checked again for a positive value.
+- Status 9 forcibly changes the value to null.
+- Oracle parameter D_PARA_NO is assigned the positive final number for status 8 or DBNull.Value for status 9.
+- Status 4/5 uses draftParaNumber instead.
+
+F. Oracle call
+
+The method calls pkg_ar.P_UpdateAuditObservationStatus with BindByName = true. The C# parameter name D_PARA_NO exactly matches the existing procedure parameter.
+
+For the Departmental Head branch in the checked-in procedure body:
+
+- Status 8 assigns D_PARA_NO to T_AU_OBSERVATION.FINAL_PARA_NO.
+- Status 9 assigns D_PARA_NO to T_AU_OBSERVATION.FINAL_PARA_NO. Passing Oracle NULL therefore clears the existing Final Para Number.
+
+After a successful status update:
+
+- Status 4/5 calls pkg_ar.AUDITOR_RESPONSE.
+- Status 8/9 calls pkg_ar.AUDITOR_REPLY.
+
+This second-procedure selection matches the previous AR implementation.
+
+3. CONFIRMED CORRECT BEHAVIOR
+-----------------------------
+
+1. The Step 1 Razor input is numeric and declares a minimum of 1.
+
+2. The Step 1 JavaScript rejects blank, zero, negative, decimal, and non-numeric Final Para Numbers for status 8, using the requested message:
+   "Final Para Number is required and must be greater than zero."
+
+3. The request property FinalParaNumber is nullable (int?).
+
+4. The controller rejects direct status 8 requests when FinalParaNumber is missing or <= 0. Model binding also prevents non-numeric text from becoming a valid positive int?.
+
+5. Status 9 does not require a Final Para Number. The UI clears it, and the controller and FAD DB method both force it to null.
+
+6. DBConnection.FAD.cs uses DBNull.Value rather than 0 for a missing status 9 Final Para Number.
+
+7. cmd.BindByName = true is set for both the main procedure and the follow-up response/reply procedure.
+
+8. The main Oracle parameter name D_PARA_NO matches the existing pkg_ar.P_UpdateAuditObservationStatus signature.
+
+9. For an authorized Departmental Head reaching the expected Oracle branch, status 8 receives the positive Final Para Number and status 9 clears FINAL_PARA_NO through Oracle NULL.
+
+10. AUDITOR_RESPONSE remains selected for statuses 4 and 5; AUDITOR_REPLY remains selected for statuses 8 and 9.
+
+4. DEFECTS AND INCONSISTENCIES
+------------------------------
+
+ISSUE 1 - CRITICAL
+Corrected DBConnection.AR.cs method is bypassed by the active controller flow.
+
+Locations:
+- AIS/Controllers/ApiCallsController.cs, update_observation_status, approximately lines 1549-1555.
+- AIS/DBConnection.FAD.cs, UpdateFadAuditObservationStatus, approximately line 14.
+- AIS/DBConnection.AR.cs, UpdateAuditObservationStatus, approximately line 1975.
+
+Evidence:
+The controller calls UpdateFadAuditObservationStatus, not UpdateAuditObservationStatus. Consequently, validation and authorization corrections in DBConnection.AR.cs are not applied to this endpoint. Two implementations of the same business operation can now drift.
+
+Recommended correction:
+Use one canonical application/DB method. Route the endpoint through the corrected AR method, updating its typed signature if necessary, or move the complete corrected logic into the FAD method and remove/deprecate the duplicate. Do not maintain two independent implementations.
+
+ISSUE 2 - CRITICAL
+Role authorization for statuses 8 and 9 is missing from the active FAD method and controller.
+
+Locations:
+- AIS/Controllers/ApiCallsController.cs, update_observation_status, approximately lines 1519-1563.
+- AIS/DBConnection.FAD.cs, UpdateFadAuditObservationStatus, approximately lines 14-110.
+- Compare AIS/DBConnection.AR.cs, approximately lines 2009-2016, where roles 6, 7, and 15 are checked.
+
+Evidence:
+The active flow verifies only that a session user exists and has a positive role ID. It does not restrict statuses 8/9 to roles 6, 7, or 15. A direct request from another authenticated role can reach the Oracle procedure. The procedure has its own branch logic, but application authorization must not depend on inferred database branch behavior, and the team-lead branch can process status changes differently.
+
+Recommended correction:
+Apply the same explicit roles 6/7/15 authorization check in the canonical active method/controller before opening the database connection. Return an appropriate 403/validation response for unauthorized users.
+
+ISSUE 3 - HIGH
+Status 5 Draft Para Number is not required in the active controller or FAD method.
+
+Locations:
+- AIS/Controllers/ApiCallsController.cs, update_observation_status, approximately lines 1519-1563.
+- AIS/DBConnection.FAD.cs, UpdateFadAuditObservationStatus, approximately lines 14-72.
+- Compare AIS/DBConnection.AR.cs, approximately lines 1998-2002.
+
+Evidence:
+For status 5, null/blank DRAFT_PARA_NO is converted to DBNull.Value and sent to the procedure. The AR method contains the required status 5 check, but that method is bypassed.
+
+Recommended correction:
+Reject status 5 when DRAFT_PARA_NO is null, empty, or whitespace at the controller boundary and again in the canonical DB/application method. Retain the existing Draft Para field name for status 5.
+
+ISSUE 4 - HIGH
+The active method does not reject unsupported status transitions.
+
+Location:
+- AIS/DBConnection.FAD.cs, UpdateFadAuditObservationStatus, approximately lines 14-47.
+- AIS/Controllers/ApiCallsController.cs, update_observation_status, approximately lines 1519-1563.
+- Compare AIS/DBConnection.AR.cs, approximately lines 1988-1996.
+
+Evidence:
+The active controller/FAD method accepts status IDs other than 4, 5, 8, and 9 and calls the existing procedure with an empty remarks value. This is directly reachable by a crafted request.
+
+Recommended correction:
+Allow-list statuses 4, 5, 8, and 9 before any database call and reject every other value.
+
+ISSUE 5 - HIGH
+Status 9 can retain Final Para Number if an unauthorized/team-lead path reaches the alternate Oracle branch.
+
+Locations:
+- AIS/DBConnection.FAD.cs, missing role restriction at approximately lines 14-47.
+- AIS/Docs/Data_Structure/procedures.txt, pkg_ar.P_UpdateAuditObservationStatus team-lead branch at approximately lines 38480-38520.
+
+Evidence:
+In the Oracle procedure's R_D = 'Y' branch, status 9 updates DRAFT_PARA_NO and settlement fields but does not clear FINAL_PARA_NO. The expected Departmental Head branch does clear FINAL_PARA_NO because D_PARA_NO is NULL. Missing application role authorization makes the alternate behavior reachable and can violate the status 8-to-9 clearing rule.
+
+Recommended correction:
+Restore strict status 8/9 role authorization in the active application path. Additionally, confirm with the database owner whether the procedure should clear FINAL_PARA_NO for status 9 in every branch; that database change is outside this review's requested application-only scope.
+
+ISSUE 6 - MEDIUM
+One shared endpoint changed its contract while several other pages still call it with legacy fields.
+
+Locations:
+- AIS/Controllers/ApiCallsController.cs, update_observation_status, approximately line 1519.
+- AIS/Models/UpdateObservationStatusRequest.cs, lines 3-11.
+- Other callers found under AIS/wwwroot/js, including manageObservationBranchesReplica.js, Views_Execution_manage_observations_branches.js, Views_Execution_draft_audit_report.js, Views_Execution_manage_draft_report_paras.js, and Views_Execution_manage_draft_report_paras_branch.js.
+
+Evidence:
+The model provides compatibility through DRAFT_PARA_NO, and the controller parses that legacy field as the final number for status 8. This prevents an immediate status 8 break, but perpetuates a misleading Draft Para field being used as Final Para Number outside Step 1. It also makes the endpoint contract ambiguous.
+
+Recommended correction:
+Migrate every status 8 caller to FinalParaNumber and reserve DRAFT_PARA_NO exclusively for status 5. Remove the legacy status 8 fallback only after all callers are migrated and tested.
+
+ISSUE 7 - MEDIUM
+The controller's success result is inferred from response text rather than an explicit DB outcome.
+
+Location:
+- AIS/Controllers/ApiCallsController.cs, approximately lines 1556-1563.
+
+Evidence:
+The controller considers most non-empty messages successful unless they contain selected words. Authorization or procedure errors with different wording could be returned as HTTP 200 with Status=true.
+
+Recommended correction:
+Return a typed result from the canonical DB method containing an explicit success flag and message. Map authorization failures to 403, validation failures to 400, and procedure failures appropriately.
+
+ISSUE 8 - LOW
+The Razor label points to the comments textarea rather than the Final Para Number input.
+
+Location:
+- AIS/Views/FieldAudit/BO_Partials/_DraftReportPartial.cshtml, approximately line 92.
+
+Evidence:
+The Final Para Number label uses for="commentAreaInCommentsBox" instead of for="finalNoInCommentsBox". This is an accessibility/usability mismatch but does not change submitted data.
+
+Recommended correction:
+Change the label's for attribute to finalNoInCommentsBox.
+
+ISSUE 9 - LOW
+The Final Para Number field is disabled for status 9 rather than hidden.
+
+Location:
+- AIS/wwwroot/js/csp/Views_Execution_draft_audit_report_branch.js, updateObservationStatus, approximately lines 485-498.
+
+Evidence:
+The business instruction says to show and require the field for status 8. For status 9 the current field remains visible but disabled. The data behavior is safe because JavaScript, controller, and FAD method all clear/force null, but the visible disabled field can confuse users.
+
+Recommended correction:
+Hide the Final Para Number form group for status 9 and show it for status 8, while retaining controller-side null enforcement.
+
+5. BUSINESS-RULE ASSESSMENT
+---------------------------
+
+Status 5 Draft Para required: NOT SAFE. Active controller/FAD path does not enforce it.
+
+Status 8 Final Para required and > 0: CORRECT for the Step 1 UI and direct model-bound requests.
+
+Status 9 Final Para not required and passed NULL: CORRECT in the expected controller/FAD/Departmental Head path.
+
+Status 8 to 9 clears Final Para: CORRECT only in the expected Departmental Head Oracle branch; not guaranteed if the alternate team-lead branch is reached.
+
+Direct request validation: PARTIAL. Status 8 value validation exists, but role authorization, status 5 validation, and supported-status validation are missing.
+
+Correct stored-procedure parameter: CORRECT. D_PARA_NO matches and BindByName is true.
+
+Draft versus Final field naming: PARTIAL. Step 1 uses FinalParaNumber correctly, but legacy status 8 fallback still accepts DRAFT_PARA_NO.
+
+Missing value converted to 0: No conversion to 0 was found in the reviewed Step 1 active path. Status 9 is forced to null/DBNull.Value.
+
+Status 4 and 5 unaffected: Status 4 low-risk check and AUDITOR_RESPONSE selection remain. Status 5 is at risk because the AR validation is bypassed.
+
+6. TEST CASES TO PERFORM
+------------------------
+
+Front-end tests
+
+1. Status 8 with blank Final Para Number: confirm the exact validation message and no network request.
+2. Status 8 with 0: reject.
+3. Status 8 with -1: reject.
+4. Status 8 with alphabetic input: reject/browser blocks; confirm no request.
+5. Status 8 with decimal input: reject.
+6. Status 8 with a positive integer: submit successfully and display the procedure response.
+7. Status 9 after typing a Final Para Number in a previous modal operation: confirm the field is cleared and disabled, and request payload has no numeric Final Para Number.
+8. Reopen status 8 after status 9: confirm no previous number is retained.
+
+Controller/direct-request tests
+
+9. POST status 8 with FinalParaNumber omitted: expect HTTP 400 and the exact required message.
+10. POST status 8 with FinalParaNumber=null: expect HTTP 400.
+11. POST status 8 with FinalParaNumber=0: expect HTTP 400.
+12. POST status 8 with FinalParaNumber=-1: expect HTTP 400.
+13. POST status 8 with FinalParaNumber=1: expect the DB method to receive 1.
+14. POST status 9 with FinalParaNumber=25: confirm controller overwrites it with null.
+15. POST status 5 with blank DRAFT_PARA_NO: this should be rejected after correction; current review predicts it can reach Oracle as NULL.
+16. POST an unsupported status ID: this should be rejected after correction; current review predicts it can reach Oracle.
+17. POST status 8 and 9 as roles other than 6/7/15: expect rejection after correction; current active path lacks this application check.
+18. POST status 4 with non-low risk: confirm existing rejection remains.
+19. POST status 4 with low risk: confirm existing workflow and AUDITOR_RESPONSE remain.
+20. POST status 5 with a valid Draft Para Number: confirm D_PARA_NO receives the draft number and AUDITOR_RESPONSE runs.
+
+Database/integration tests
+
+21. Capture Oracle command parameters for status 8: D_PARA_NO must be the positive Final Para Number, with BindByName=true.
+22. Capture Oracle command parameters for status 9: D_PARA_NO.Value must be DBNull.Value, not 0 or empty string.
+23. Start with a database row at status 8 and FINAL_PARA_NO populated; move it to status 9 using an authorized role and verify FINAL_PARA_NO IS NULL afterward.
+24. Verify FINAL_PARA_ADDED_ON behavior for status 9 with the database owner; the current procedure sets it to SYSDATE even while clearing FINAL_PARA_NO.
+25. Confirm AUDITOR_REPLY is written for statuses 8/9 and AUDITOR_RESPONSE for statuses 4/5.
+26. Regression-test every other JavaScript caller of /ApiCalls/update_observation_status because the endpoint now binds a request model and retains a temporary legacy-field fallback.
+
+7. FINAL CONCLUSION
+-------------------
+
+THE WORKFLOW IS NOT SAFE TO DEPLOY IN ITS CURRENT FORM.
+
+The Step 1 status 8 value validation and expected status 9 null propagation are substantially correct. However, the active controller bypasses the corrected DBConnection.AR.cs method and instead calls a duplicate FAD implementation that omits critical role authorization, status 5 Draft Para validation, and supported-transition validation. The missing authorization also creates a path in which the Oracle procedure may settle an observation without clearing its existing Final Para Number.
+
+Deployment should be blocked until Critical and High findings are corrected and the direct-request, role, and database integration tests above pass. Medium issues should be resolved or explicitly accepted before release; Low issues can be scheduled but are straightforward to correct.
+
+Commit reference
+----------------
+
+No commit was created, per instruction. The review was performed against existing HEAD:
+3e19841233c5e70af9ee9546c52e86c7b683435d
