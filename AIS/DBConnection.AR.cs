@@ -1599,6 +1599,7 @@ namespace AIS.Controllers
                             ? Convert.ToInt64(rdr["REFERENCE_ID"])
                             : (long?)null;
                         chk.RESPONSIBLE_PPs = this.GetObservationResponsiblePPNOs(OBS_ID, chk.ENG_ID);
+                        chk.ATTACHED_EVIDENCES = this.GetRespondedObservationEvidences(OBS_ID);
                         list.Add(chk);
                         }
                     }

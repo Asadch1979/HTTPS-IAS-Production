@@ -242,8 +242,14 @@
             cache: false,
             success: function (data) {
                 showApiAlert(data);
-                onAlertCallback(reloadLocation);
-                $('#commentsBox').modal('hide');
+                if (data && (data.Status === true || data.status === true)) {
+                    onAlertCallback(reloadLocation);
+                    $('#commentsBox').modal('hide');
+                }
+            },
+            error: function (xhr) {
+                xhr.__iasSafetyHandled = true;
+                showApiAlertFromXhr(xhr, xhr.status, getErrorReferenceIdFromXhr(xhr), "Unable to update para status.");
             },
             dataType: "json",
         });

@@ -153,14 +153,15 @@
             },
             cache: false,
             success: function (data) {
-                if (data) {
-                    alert("Successfully done");
+                showApiAlert(data);
+                if (data && (data.Status === true || data.status === true)) {
                     onAlertCallback(reloadLocation);
-                } else {
-                    alert("Failed to update Observation status!! please try again");
-                    onAlertCallback(reloadLocation);
+                    $('#commentsBox').modal('hide');
                 }
-                $('#commentsBox').modal('hide');
+            },
+            error: function (xhr) {
+                xhr.__iasSafetyHandled = true;
+                showApiAlertFromXhr(xhr, xhr.status, getErrorReferenceIdFromXhr(xhr), "Unable to update observation status.");
             },
             dataType: "json",
         });

@@ -853,6 +853,10 @@ $(document).ready(function () {
             return;
         }
 
+        if (jqxhr.__iasSafetyHandled) {
+            return;
+        }
+
         var status = jqxhr.status;
         var errorRefId = getErrorReferenceIdFromXhr(jqxhr);
         var endpoint = settings && settings.url ? settings.url : '';

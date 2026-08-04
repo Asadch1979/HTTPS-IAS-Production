@@ -675,15 +675,16 @@ function getPageData() {
             },
             cache: false,
             success: function (data) {
-                if (data.Status == true) {
-                    showApiAlert(data);
+                showApiAlert(data);
+                if (data && (data.Status === true || data.status === true)) {
                     reloadCurrentStepLocally();
-                } else {
-                    alert("Failed!! please try again");
-                    reloadCurrentStepLocally();
+                    $('#commentsBox').modal('hide');
+                    $('#updateMemoModel').modal('hide');
                 }
-                $('#commentsBox').modal('hide');
-                $('#updateMemoModel').modal('hide');
+            },
+            error: function (xhr) {
+                xhr.__iasSafetyHandled = true;
+                showApiAlertFromXhr(xhr, xhr.status, getErrorReferenceIdFromXhr(xhr), "Unable to update observation status.");
             },
             dataType: "json",
         });

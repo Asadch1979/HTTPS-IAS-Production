@@ -470,12 +470,14 @@ function getPageData() {
             cache: false,
             success: function (data) {
                 showApiAlert(data);
-                onAlertCallback(reloadLocation);
-                $('#commentsBox').modal('hide');
+                if (data && (data.Status === true || data.status === true)) {
+                    onAlertCallback(reloadLocation);
+                    $('#commentsBox').modal('hide');
+                }
             },
             error: function (xhr) {
-                var response = xhr.responseJSON || {};
-                alert(response.message || "Unable to update para status.");
+                xhr.__iasSafetyHandled = true;
+                showApiAlertFromXhr(xhr, xhr.status, getErrorReferenceIdFromXhr(xhr), "Unable to update para status.");
             },
             dataType: "json",
         });
