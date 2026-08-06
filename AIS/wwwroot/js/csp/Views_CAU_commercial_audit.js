@@ -500,6 +500,14 @@ function initCommercialAuditPdpEntry() {
 }
 
 function initCommercialAuditPdpLinking() {
+    $("#pdpLinkingYear").off("change").on("change", function () {
+        commercialAuditPage.selectedPdpId = 0;
+        commercialAuditPage.selectedPdpSnapshot = null;
+        commercialAuditPage.selectedPdpMappings = [];
+        applyCommercialAuditPdpState();
+        refreshCommercialAuditPdpLinking();
+    });
+    $("#pdpLinkingSearch").off("input").on("input", refreshCommercialAuditPdpLinking);
     $("#btnSavePdpMappings").off("click").on("click", saveCommercialAuditPdpMappings);
     $("#tblCommercialPdp").off("click", ".btn-manage-pdp").on("click", ".btn-manage-pdp", function () {
         var rowData = $(this).data("row");
@@ -523,7 +531,7 @@ function loadCommercialAuditPdpOmLookup() {
         cache: false,
         success: function (data) {
             commercialAuditPage.omList = Array.isArray(data) ? data.map(normalizeCommercialOm) : [];
-            renderCommercialAuditPdpOmLookup(commercialAuditPage.omList, commercialAuditPage.selectedPdpMappings);
+            refreshCommercialAuditPdpLinking();
         },
         error: function (xhr) {
             commercialAuditPage.omList = [];
@@ -545,7 +553,7 @@ function loadCommercialAuditPdps(selectionHint) {
                 commercialAuditPage.selectedPdpId = resolveCommercialSelectionId(commercialAuditPage.pdpList, selectionHint, "PdpId", "PdpNo");
             }
 
-            renderCommercialAuditPdpTable(commercialAuditPage.pdpList);
+            refreshCommercialAuditPdpLinking();
 
             if (commercialAuditPage.selectedPdpId) {
                 var selected = findById(commercialAuditPage.pdpList, "PdpId", commercialAuditPage.selectedPdpId);
@@ -636,6 +644,19 @@ function renderCommercialAuditPdpOmLookup(omList, selectedMappings) {
     updateCommercialAuditPdpSelectedSummary();
 }
 
+function refreshCommercialAuditPdpLinking() {
+    if (!$("#pdpLinkingYear").length) {
+        return;
+    }
+
+    var year = $("#pdpLinkingYear").val();
+    var search = normalizeText($("#pdpLinkingSearch").val());
+    var pdps = filterCommercialAuditLinkingRecords(commercialAuditPage.pdpList, year, search, "AuditYearId", "AuditYearText");
+    var oms = filterCommercialAuditLinkingRecords(commercialAuditPage.omList, year, search, "AuditYearId", "AuditYearText");
+    renderCommercialAuditPdpTable(pdps);
+    renderCommercialAuditPdpOmLookup(oms, commercialAuditPage.selectedPdpMappings);
+}
+
 function updateCommercialAuditPdpSelectedSummary() {
     var selected = $(".commercial-pdp-om-checkbox:checked").length;
     $("#pdpSelectedSummary").text(selected > 0 ? selected + " OMs selected" : "No OMs selected");
@@ -685,7 +706,7 @@ function applyCommercialAuditPdpState() {
         $("#pdpSelectedPdpLabel").text(hasSelection && commercialAuditPage.selectedPdpSnapshot
             ? commercialAuditPage.selectedPdpSnapshot.PdpNo + " selected"
             : "No PDP selected");
-        renderCommercialAuditPdpOmLookup(commercialAuditPage.omList, hasSelection ? commercialAuditPage.selectedPdpMappings : []);
+        refreshCommercialAuditPdpLinking();
     }
 }
 
@@ -743,7 +764,7 @@ function saveCommercialAuditPdp() {
 function loadCommercialAuditPdpMappings(pdpId) {
     if (!pdpId) {
         commercialAuditPage.selectedPdpMappings = [];
-        renderCommercialAuditPdpOmLookup(commercialAuditPage.omList, []);
+        refreshCommercialAuditPdpLinking();
         return;
     }
 
@@ -754,26 +775,40 @@ function loadCommercialAuditPdpMappings(pdpId) {
         data: { pdp_id: pdpId },
         success: function (data) {
             commercialAuditPage.selectedPdpMappings = Array.isArray(data) ? data.map(normalizeCommercialPdpOmMapping) : [];
-            renderCommercialAuditPdpOmLookup(commercialAuditPage.omList, commercialAuditPage.selectedPdpMappings);
+            refreshCommercialAuditPdpLinking();
         },
         error: function (xhr) {
             commercialAuditPage.selectedPdpMappings = [];
-            renderCommercialAuditPdpOmLookup(commercialAuditPage.omList, []);
+            refreshCommercialAuditPdpLinking();
             showApiAlertFromXhr(xhr, xhr ? xhr.status : null, getErrorReferenceIdFromXhr(xhr), "Unable to load PDP OM mappings.");
         }
     });
 }
 
 function saveCommercialAuditPdpMappings() {
+    if (!$("#pdpLinkingYear").val()) {
+        alert("Year is required.");
+        return;
+    }
     if (!commercialAuditPage.selectedPdpId) {
         alert("Save or select a PDP first.");
         return;
     }
 
-    var omIds = $(".commercial-pdp-om-checkbox:checked").map(function () {
+    var visibleOmIds = $(".commercial-pdp-om-checkbox:checked").map(function () {
         return parseInt($(this).attr("data-om-id"), 10) || 0;
     }).get().filter(function (value) {
         return value > 0;
+    });
+    var visibleRecordIds = $(".commercial-pdp-om-checkbox").map(function () {
+        return parseInt($(this).attr("data-om-id"), 10) || 0;
+    }).get();
+    var omIds = (commercialAuditPage.selectedPdpMappings || []).map(function (item) {
+        return item.OmId;
+    }).filter(function (id) {
+        return visibleRecordIds.indexOf(id) < 0;
+    }).concat(visibleOmIds).filter(function (id, index, values) {
+        return id > 0 && values.indexOf(id) === index;
     });
 
     $.ajax({
@@ -801,6 +836,14 @@ function saveCommercialAuditPdpMappings() {
 }
 
 function initCommercialAuditArpseLinking() {
+    $("#arpseLinkingYear").off("change").on("change", function () {
+        commercialAuditPage.selectedArpseId = 0;
+        commercialAuditPage.selectedArpseSnapshot = null;
+        commercialAuditPage.selectedArpsePdpMappings = [];
+        applyCommercialAuditArpseLinkingState();
+        refreshCommercialAuditArpseLinking();
+    });
+    $("#arpseLinkingSearch").off("input").on("input", refreshCommercialAuditArpseLinking);
     $("#btnSaveArpsePdpMappings").off("click").on("click", saveCommercialAuditArpsePdpMappings);
     $("#tblCommercialArpsePdpRegister").off("click", ".btn-manage-arpse-pdp").on("click", ".btn-manage-arpse-pdp", function () {
         var rowData = $(this).data("row");
@@ -824,7 +867,7 @@ function loadCommercialAuditPdpLookupForArpse() {
         cache: false,
         success: function (data) {
             commercialAuditPage.pdpList = Array.isArray(data) ? data.map(normalizeCommercialPdp) : [];
-            renderCommercialAuditArpsePdpLookup(commercialAuditPage.pdpList, commercialAuditPage.selectedArpsePdpMappings);
+            refreshCommercialAuditArpseLinking();
         },
         error: function (xhr) {
             commercialAuditPage.pdpList = [];
@@ -837,7 +880,7 @@ function loadCommercialAuditPdpLookupForArpse() {
 function loadCommercialAuditArpsePdpMappings(arpseId) {
     if (!arpseId) {
         commercialAuditPage.selectedArpsePdpMappings = [];
-        renderCommercialAuditArpsePdpLookup(commercialAuditPage.pdpList, []);
+        refreshCommercialAuditArpseLinking();
         return;
     }
 
@@ -848,11 +891,11 @@ function loadCommercialAuditArpsePdpMappings(arpseId) {
         data: { arpse_id: arpseId },
         success: function (data) {
             commercialAuditPage.selectedArpsePdpMappings = Array.isArray(data) ? data.map(normalizeCommercialArpsePdpMapping) : [];
-            renderCommercialAuditArpsePdpLookup(commercialAuditPage.pdpList, commercialAuditPage.selectedArpsePdpMappings);
+            refreshCommercialAuditArpseLinking();
         },
         error: function (xhr) {
             commercialAuditPage.selectedArpsePdpMappings = [];
-            renderCommercialAuditArpsePdpLookup(commercialAuditPage.pdpList, []);
+            refreshCommercialAuditArpseLinking();
             showApiAlertFromXhr(xhr, xhr ? xhr.status : null, getErrorReferenceIdFromXhr(xhr), "Unable to load ARPSE PDP mappings.");
         }
     });
@@ -897,21 +940,71 @@ function renderCommercialAuditArpsePdpLookup(pdpList, selectedMappings) {
     updateCommercialAuditArpsePdpSelectedSummary();
 }
 
+function refreshCommercialAuditArpseLinking() {
+    if (!$("#arpseLinkingYear").length) {
+        return;
+    }
+
+    var year = $("#arpseLinkingYear").val();
+    var search = normalizeText($("#arpseLinkingSearch").val());
+    var headers = filterCommercialAuditLinkingRecords(commercialAuditPage.arpseList, year, search, "ArpseYearId", "ArpseYearText");
+    var pdps = filterCommercialAuditLinkingRecords(commercialAuditPage.pdpList, year, search, "AuditYearId", "AuditYearText");
+    renderCommercialAuditArpsePdpRegister(headers);
+    renderCommercialAuditArpsePdpLookup(pdps, commercialAuditPage.selectedArpsePdpMappings);
+}
+
+function filterCommercialAuditLinkingRecords(list, year, search, yearIdProperty, yearTextProperty) {
+    if (!year) {
+        return [];
+    }
+
+    return (list || []).filter(function (item) {
+        var yearId = String(item[yearIdProperty] || "");
+        var yearText = String(item[yearTextProperty] || "");
+        var matchesYear = yearId === String(year) || yearText.indexOf(String(year)) >= 0;
+        if (!matchesYear) {
+            return false;
+        }
+
+        if (!search) {
+            return true;
+        }
+
+        return normalizeText(Object.keys(item).map(function (key) {
+            return stripHtmlToText(item[key]);
+        }).join(" ")).indexOf(search) >= 0;
+    });
+}
+
 function updateCommercialAuditArpsePdpSelectedSummary() {
     var selected = $(".commercial-arpse-pdp-checkbox:checked").length;
     $("#arpsePdpSelectedSummary").text(selected > 0 ? selected + " PDPs selected" : "No PDPs selected");
 }
 
 function saveCommercialAuditArpsePdpMappings() {
+    if (!$("#arpseLinkingYear").val()) {
+        alert("Year is required.");
+        return;
+    }
     if (!commercialAuditPage.selectedArpseId) {
         alert("Save or select an ARPSE first.");
         return;
     }
 
-    var pdpIds = $(".commercial-arpse-pdp-checkbox:checked").map(function () {
+    var visiblePdpIds = $(".commercial-arpse-pdp-checkbox:checked").map(function () {
         return parseInt($(this).attr("data-pdp-id"), 10) || 0;
     }).get().filter(function (value) {
         return value > 0;
+    });
+    var visibleRecordIds = $(".commercial-arpse-pdp-checkbox").map(function () {
+        return parseInt($(this).attr("data-pdp-id"), 10) || 0;
+    }).get();
+    var pdpIds = (commercialAuditPage.selectedArpsePdpMappings || []).map(function (item) {
+        return item.PdpId;
+    }).filter(function (id) {
+        return visibleRecordIds.indexOf(id) < 0;
+    }).concat(visiblePdpIds).filter(function (id, index, values) {
+        return id > 0 && values.indexOf(id) === index;
     });
 
     $.ajax({
@@ -951,7 +1044,7 @@ function applyCommercialAuditArpseLinkingState() {
     $("#arpsePdpSelectedHeaderLabel").text(hasSelection && commercialAuditPage.selectedArpseSnapshot
         ? commercialAuditPage.selectedArpseSnapshot.ParaNo + " selected"
         : "No ARPSE selected");
-    renderCommercialAuditArpsePdpLookup(commercialAuditPage.pdpList, hasSelection ? commercialAuditPage.selectedArpsePdpMappings : []);
+    refreshCommercialAuditArpseLinking();
 }
 
 function initCommercialAuditArpseHeader() {
@@ -1030,7 +1123,11 @@ function loadCommercialAuditArpseHeaders(selectionHint) {
             }
 
             renderCommercialAuditArpseTable(commercialAuditPage.arpseList);
-            renderCommercialAuditArpsePdpRegister(commercialAuditPage.arpseList);
+            if ($("#arpseLinkingYear").length) {
+                refreshCommercialAuditArpseLinking();
+            } else {
+                renderCommercialAuditArpsePdpRegister(commercialAuditPage.arpseList);
+            }
 
             if (commercialAuditPage.selectedArpseId) {
                 var selected = findById(commercialAuditPage.arpseList, "ArpseId", commercialAuditPage.selectedArpseId);

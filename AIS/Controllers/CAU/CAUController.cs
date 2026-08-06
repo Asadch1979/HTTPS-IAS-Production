@@ -102,6 +102,7 @@ namespace AIS.Controllers
             ViewData["AuditYearList"] = dBConnection.GetInsYearsForCAU();
             ViewData["OmAuditYearList"] = GetOrderedOmAuditYears();
             ViewData["ArpseYearList"] = dBConnection.GetParaPrintingYearsForCAU();
+            ViewData["CommercialAuditLinkingYearList"] = dBConnection.GetARPSEYears();
             ViewData["WorkflowStages"] = new List<CommercialAuditWorkflowStage>
                 {
                 new CommercialAuditWorkflowStage { Key = "workflow", Title = "Workflow", Description = "Choose a stage and continue the Commercial Audit workflow." },
