@@ -13,6 +13,24 @@
             </button>
         </div>
         <div class="card-body">
+            <div class="row g-3 mb-4">
+                <div class="col-lg-4">
+                    <label for="arpseLinkingYear" class="form-label">Year <span class="text-danger">*</span></label>
+                    <select id="arpseLinkingYear" class="form-select" required>
+                        <option value="">-- Select Year --</option>
+                        @{ var isFirstArpseLinkingYear = true; }
+                        @foreach (var year in ((ViewData["CommercialAuditLinkingYearList"] as IEnumerable<AIS.Models.CAU.ARPSEYearDropdownVM>) ?? Enumerable.Empty<AIS.Models.CAU.ARPSEYearDropdownVM>()).OrderByDescending(item => item.ARPSEYear))
+                        {
+                            <option value="@year.ARPSEYear" selected="@(isFirstArpseLinkingYear ? "selected" : null)">@(string.IsNullOrWhiteSpace(year.DisplayText) ? year.ARPSEYear.ToString() : year.DisplayText)</option>
+                            isFirstArpseLinkingYear = false;
+                        }
+                    </select>
+                </div>
+                <div class="col-lg-8">
+                    <label for="arpseLinkingSearch" class="form-label">Search</label>
+                    <input id="arpseLinkingSearch" type="search" class="form-control" placeholder="Search ARPSE and PDP records..." autocomplete="off" />
+                </div>
+            </div>
             <div class="commercial-audit-section">
                 <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-2 mb-3">
                     <div>

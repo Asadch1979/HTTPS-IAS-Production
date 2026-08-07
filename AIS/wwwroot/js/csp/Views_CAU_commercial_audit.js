@@ -1060,6 +1060,11 @@ function initCommercialAuditArpseHeader() {
 }
 
 function initCommercialAuditArpseMonitoring() {
+    $("#arpseMonitoringYear").off("change").on("change", function () {
+        commercialAuditPage.selectedArpseId = 0;
+        commercialAuditPage.selectedArpseSnapshot = null;
+        refreshCommercialAuditArpseMonitoring();
+    });
     $("#btnSaveArpseDac").off("click").on("click", saveCommercialAuditArpseDacEntry);
     $("#btnCancelArpseDacEdit").off("click").on("click", resetCommercialAuditArpseDacForm);
     $("#btnSaveArpsePac").off("click").on("click", saveCommercialAuditArpsePacEntry);
@@ -1100,6 +1105,16 @@ function initCommercialAuditArpseMonitoring() {
     loadCommercialAuditArpseHeaders();
 }
 
+function refreshCommercialAuditArpseMonitoring() {
+    if (!$("#arpseMonitoringYear").length) {
+        return;
+    }
+
+    var year = $("#arpseMonitoringYear").val();
+    var headers = filterCommercialAuditLinkingRecords(commercialAuditPage.arpseList, year, "", "ArpseYearId", "ArpseYearText");
+    renderCommercialAuditArpseTable(headers);
+}
+
 function openCommercialAuditArpseFollowUpTab(arpseId) {
     var resolvedArpseId = parseInt(arpseId, 10) || 0;
     if (!resolvedArpseId) {
@@ -1122,7 +1137,11 @@ function loadCommercialAuditArpseHeaders(selectionHint) {
                 commercialAuditPage.selectedArpseId = resolveCommercialSelectionId(commercialAuditPage.arpseList, selectionHint, "ArpseId", "ParaNo");
             }
 
-            renderCommercialAuditArpseTable(commercialAuditPage.arpseList);
+            if ($("#arpseMonitoringYear").length) {
+                refreshCommercialAuditArpseMonitoring();
+            } else {
+                renderCommercialAuditArpseTable(commercialAuditPage.arpseList);
+            }
             if ($("#arpseLinkingYear").length) {
                 refreshCommercialAuditArpseLinking();
             } else {
