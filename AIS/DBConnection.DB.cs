@@ -4,11 +4,73 @@ using Oracle.ManagedDataAccess.Client;
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Globalization;
 
 namespace AIS.Controllers
     {
     public partial class DBConnection : Controller, IDBConnection
         {
+        public List<BACAnalysisModel> GetBACAnalysis(DateTime fromDate, DateTime toDate, int riskId)
+            {
+            var sessionHandler = CreateSessionHandler();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
+                || string.IsNullOrWhiteSpace(loggedInUser.PPNumber)
+                || loggedInUser.UserRoleID <= 0)
+                return new List<BACAnalysisModel>();
+
+            var results = new List<BACAnalysisModel>();
+            using (var con = this.DatabaseConnection())
+            using (OracleCommand cmd = con.CreateCommand())
+                {
+                cmd.CommandText = "PKG_BAC.P_GET_BAC_ANALYSIS";
+                cmd.CommandType = CommandType.StoredProcedure;
+                cmd.BindByName = true;
+                cmd.Parameters.Add("P_FROM_DATE", OracleDbType.Date).Value = fromDate.Date;
+                cmd.Parameters.Add("P_TO_DATE", OracleDbType.Date).Value = toDate.Date;
+                cmd.Parameters.Add("P_RISK_ID", OracleDbType.Int32).Value = riskId;
+                cmd.Parameters.Add("IO_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+
+                using (OracleDataReader rdr = cmd.ExecuteReader())
+                    {
+                    var columns = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                    for (var i = 0; i < rdr.FieldCount; i++)
+                        columns.Add(rdr.GetName(i));
+
+                    while (rdr.Read())
+                        results.Add(new BACAnalysisModel
+                            {
+                            PROCESS = ReadBACAnalysisText(rdr, columns, "HEADING"),
+                            ANNEXURE_CODE = ReadBACAnalysisText(rdr, columns, "CODE"),
+                            ANNEXURE = ReadBACAnalysisText(rdr, columns, "ANNEX"),
+                            ISSUES_IDENTIFIED = ReadBACAnalysisDecimal(rdr, columns, "TOTAL"),
+                            RECTIFIED = ReadBACAnalysisDecimal(rdr, columns, "RECTIFIED"),
+                            OPEN = ReadBACAnalysisDecimal(rdr, columns, "OPEN_ISSUE"),
+                            AFFECTED_ENTITIES = ReadBACAnalysisText(rdr, columns, "ENTITIES"),
+                            OPEN_ENTITIES = null,
+                            HAS_OPEN_ENTITIES_COLUMN = false,
+                            AMOUNT_INVOLVED = ReadBACAnalysisDecimal(rdr, columns, "AMOUNT")
+                            });
+                    }
+                }
+            return results;
+            }
+
+        private static string ReadBACAnalysisText(OracleDataReader reader, HashSet<string> columns, string column)
+            {
+            return columns.Contains(column) && reader[column] != DBNull.Value ? reader[column].ToString() : string.Empty;
+            }
+
+        private static decimal ReadBACAnalysisDecimal(OracleDataReader reader, HashSet<string> columns, string column)
+            {
+            if (!columns.Contains(column) || reader[column] == DBNull.Value)
+                return 0m;
+            return decimal.TryParse(reader[column].ToString(), NumberStyles.Any, CultureInfo.InvariantCulture, out var value)
+                ? value
+                : Convert.ToDecimal(reader[column]);
+            }
+
         public List<RiskProcessDefinition> GetFunctionalListForDashboard()
             {
             var sessionHandler = CreateSessionHandler();

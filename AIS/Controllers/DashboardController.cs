@@ -172,6 +172,19 @@ namespace AIS.Controllers
                 }
             }
 
+        public IActionResult bac_analysis()
+            {
+            ViewData["TopMenu"] = tm.GetTopMenus();
+            ViewData["TopMenuPages"] = tm.GetTopMenusPages();
+            if (!User.Identity.IsAuthenticated)
+                return RedirectToAction("Index", "Login");
+            if (!this.UserHasPagePermissionForCurrentAction(sessionHandler)) //MIGRATION_PERMISSION_CHECK (Controller)
+                return RedirectToAction("Index", "PageNotFound");
+
+            ViewData["RiskList"] = dBConnection.GetRisks();
+            return View();
+            }
+
         public IActionResult head_observation_risk_summary()
             {
             ViewData["TopMenu"] = tm.GetTopMenus();

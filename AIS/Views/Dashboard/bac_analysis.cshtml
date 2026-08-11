@@ -1,0 +1,56 @@
+@{
+    ViewData["Title"] = "BAC Analysis";
+    Layout = "_Layout";
+}
+
+<div class="container-fluid mt-3">
+    <h3 style="color: #be0e43;">BAC Analysis</h3>
+
+    <div class="card mt-3">
+        <div class="card-body">
+            <div id="bacAnalysisMessage" class="alert alert-danger d-none" role="alert"></div>
+            <div class="row g-3 align-items-end">
+                <div class="col-12 col-md-3">
+                    <label for="bacFromDate" class="form-label"><b>From Date</b></label>
+                    <input type="date" id="bacFromDate" class="form-control" required />
+                </div>
+                <div class="col-12 col-md-3">
+                    <label for="bacToDate" class="form-label"><b>To Date</b></label>
+                    <input type="date" id="bacToDate" class="form-control" required />
+                </div>
+                <div class="col-12 col-md-4">
+                    <label for="bacRisk" class="form-label"><b>Risk</b></label>
+                    <select id="bacRisk" class="form-control form-select">
+                        @if (ViewData["RiskList"] != null)
+                            {
+                            foreach (var item in (dynamic)ViewData["RiskList"])
+                                {
+                                <option value="@item.R_ID">@item.DESCRIPTION</option>
+                                }
+                            }
+                    </select>
+                </div>
+                <div class="col-12 col-md-2">
+                    <button type="button" id="bacSearch" class="btn btn-danger w-100">Search</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="table-responsive mt-3">
+        <table id="bacAnalysisTable" class="table table-hover table-bordered table-striped mb-0">
+            <thead style="background-color: #19875478 !important;">
+                <tr>
+                    <th>Process</th><th>Annexure Code</th><th>Annexure</th>
+                    <th class="text-end">Issues Identified</th><th class="text-end">Rectified</th><th class="text-end">Open</th>
+                    <th>Affected Entities</th><th class="bac-open-entities d-none">Open Entities</th>
+                    <th class="text-end">Amount Involved</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+            <tfoot class="fw-bold"></tfoot>
+        </table>
+    </div>
+</div>
+
+<script src="~/js/csp/Views_Dashboard_bac_analysis.js" asp-append-version="true"></script>

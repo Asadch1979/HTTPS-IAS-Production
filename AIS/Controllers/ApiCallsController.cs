@@ -3296,6 +3296,19 @@ namespace AIS.Controllers
             return dBConnection.GetBACCIAAnalysis(PROCESS_ID);
 
             }
+
+        [HttpPost]
+        public IActionResult get_bac_analysis_report(string FROM_DATE, string TO_DATE, int RISK_ID = 0)
+            {
+            if (!DateTime.TryParseExact(FROM_DATE, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var fromDate))
+                return BadRequest(new { message = "From Date is mandatory." });
+            if (!DateTime.TryParseExact(TO_DATE, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var toDate))
+                return BadRequest(new { message = "To Date is mandatory." });
+            if (fromDate > toDate)
+                return BadRequest(new { message = "From Date cannot be greater than To Date." });
+
+            return Ok(dBConnection.GetBACAnalysis(fromDate, toDate, RISK_ID));
+            }
         #endregion
         [HttpGet]
         [HttpPost]
