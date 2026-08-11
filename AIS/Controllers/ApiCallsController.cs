@@ -25,6 +25,7 @@ using Oracle.ManagedDataAccess.Client;
 using Oracle.ManagedDataAccess.Types;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.Data;
 using System.Diagnostics;
 using System.Globalization;
@@ -3308,6 +3309,51 @@ namespace AIS.Controllers
                 return BadRequest(new { message = "From Date cannot be greater than To Date." });
 
             return Ok(dBConnection.GetBACAnalysis(fromDate, toDate, RISK_ID));
+            }
+
+        [HttpPost]
+        public IActionResult get_bac_analysis_detail(string FROM_DATE, string TO_DATE, int ANNEX_ID, int RISK_ID = 0)
+            {
+            if (!DateTime.TryParseExact(FROM_DATE, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var fromDate))
+                return BadRequest(new { message = "From Date is mandatory." });
+            if (!DateTime.TryParseExact(TO_DATE, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var toDate))
+                return BadRequest(new { message = "To Date is mandatory." });
+            if (fromDate > toDate)
+                return BadRequest(new { message = "From Date cannot be greater than To Date." });
+            if (ANNEX_ID <= 0)
+                return BadRequest(new { message = "Annexure is required." });
+
+            return Ok(dBConnection.GetBACAnalysisDetail(fromDate, toDate, ANNEX_ID, RISK_ID));
+            }
+
+        [HttpPost]
+        public IActionResult get_bac_para_text(int OBSERVATION_ID)
+            {
+            if (OBSERVATION_ID <= 0)
+                return BadRequest(new { message = "Observation is required." });
+
+            var para = dBConnection.GetBACParaText(OBSERVATION_ID);
+            if (para == null)
+                return NotFound(new { message = "Para text was not found." });
+
+            var validationContext = new ValidationContext(para) { MemberName = nameof(BACParaTextModel.PARA_TEXT) };
+            Validator.TryValidateProperty(para.PARA_TEXT, validationContext, new List<ValidationResult>());
+            return Ok(para);
+            }
+
+        [HttpPost]
+        public IActionResult get_bac_dsa_details(int OBSERVATION_ID)
+            {
+            if (OBSERVATION_ID <= 0)
+                return BadRequest(new { message = "Observation is required." });
+
+            var details = dBConnection.GetBACDSADetails(OBSERVATION_ID);
+            foreach (var detail in details)
+                {
+                var validationContext = new ValidationContext(detail) { MemberName = nameof(BACDSADetailModel.DSA_TEXT) };
+                Validator.TryValidateProperty(detail.DSA_TEXT, validationContext, new List<ValidationResult>());
+                }
+            return Ok(details);
             }
         #endregion
         [HttpGet]

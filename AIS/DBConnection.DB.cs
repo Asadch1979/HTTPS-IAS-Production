@@ -41,18 +41,123 @@ namespace AIS.Controllers
                     while (rdr.Read())
                         results.Add(new BACAnalysisModel
                             {
+                            ID = Convert.ToInt32(ReadBACAnalysisDecimal(rdr, columns, "ID")),
+                            ANNEX_ID = Convert.ToInt32(ReadBACAnalysisDecimal(rdr, columns, "ANNEX_ID")),
                             PROCESS = ReadBACAnalysisText(rdr, columns, "HEADING"),
                             ANNEXURE_CODE = ReadBACAnalysisText(rdr, columns, "CODE"),
                             ANNEXURE = ReadBACAnalysisText(rdr, columns, "ANNEX"),
                             ISSUES_IDENTIFIED = ReadBACAnalysisDecimal(rdr, columns, "TOTAL"),
                             RECTIFIED = ReadBACAnalysisDecimal(rdr, columns, "RECTIFIED"),
                             OPEN = ReadBACAnalysisDecimal(rdr, columns, "OPEN_ISSUE"),
+                            DSA = ReadBACAnalysisDecimal(rdr, columns, "DSA"),
                             AFFECTED_ENTITIES = ReadBACAnalysisText(rdr, columns, "ENTITIES"),
                             OPEN_ENTITIES = null,
                             HAS_OPEN_ENTITIES_COLUMN = false,
                             AMOUNT_INVOLVED = ReadBACAnalysisDecimal(rdr, columns, "AMOUNT")
                             });
                     }
+                }
+            return results;
+            }
+
+        public List<BACAnalysisDetailModel> GetBACAnalysisDetail(DateTime fromDate, DateTime toDate, int annexId, int riskId)
+            {
+            var sessionHandler = CreateSessionHandler();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
+                || string.IsNullOrWhiteSpace(loggedInUser.PPNumber) || loggedInUser.UserRoleID <= 0)
+                return new List<BACAnalysisDetailModel>();
+
+            var results = new List<BACAnalysisDetailModel>();
+            using (var con = this.DatabaseConnection())
+            using (OracleCommand cmd = con.CreateCommand())
+                {
+                cmd.CommandText = "PKG_BAC.P_GET_BAC_ANALYSIS_DETAIL";
+                cmd.CommandType = CommandType.StoredProcedure;
+                cmd.BindByName = true;
+                cmd.Parameters.Add("P_FROM_DATE", OracleDbType.Date).Value = fromDate.Date;
+                cmd.Parameters.Add("P_TO_DATE", OracleDbType.Date).Value = toDate.Date;
+                cmd.Parameters.Add("P_ANNEX_ID", OracleDbType.Int32).Value = annexId;
+                cmd.Parameters.Add("P_RISK_ID", OracleDbType.Int32).Value = riskId;
+                cmd.Parameters.Add("IO_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+
+                using (OracleDataReader rdr = cmd.ExecuteReader())
+                    while (rdr.Read())
+                        results.Add(new BACAnalysisDetailModel
+                            {
+                            OBSERVATION_ID = Convert.ToInt32(rdr["OBSERVATION_ID"]),
+                            ENTITY_ID = Convert.ToInt32(rdr["ENTITY_ID"]),
+                            REPORTING_OFFICE = rdr["REPORTING_OFFICE"] == DBNull.Value ? string.Empty : rdr["REPORTING_OFFICE"].ToString(),
+                            ENTITY = rdr["ENTITY"] == DBNull.Value ? string.Empty : rdr["ENTITY"].ToString(),
+                            GIST = rdr["GIST"] == DBNull.Value ? string.Empty : rdr["GIST"].ToString(),
+                            NO_OF_INSTANCES = rdr["NO_OF_INSTANCES"] == DBNull.Value ? 0m : Convert.ToDecimal(rdr["NO_OF_INSTANCES"]),
+                            AMOUNT = rdr["AMOUNT"] == DBNull.Value ? 0m : Convert.ToDecimal(rdr["AMOUNT"]),
+                            PARA_STATUS = rdr["PARA_STATUS"] == DBNull.Value ? string.Empty : rdr["PARA_STATUS"].ToString(),
+                            ENTEREDDATE = rdr["ENTEREDDATE"] == DBNull.Value ? (DateTime?)null : Convert.ToDateTime(rdr["ENTEREDDATE"]),
+                            STELLED_ON = rdr["STELLED_ON"] == DBNull.Value ? (DateTime?)null : Convert.ToDateTime(rdr["STELLED_ON"]),
+                            STATUS = rdr["STATUS"] == DBNull.Value ? 0 : Convert.ToInt32(rdr["STATUS"]),
+                            DSA = rdr["DSA"] == DBNull.Value ? 0m : Convert.ToDecimal(rdr["DSA"])
+                            });
+                }
+            return results;
+            }
+
+        public BACParaTextModel GetBACParaText(int observationId)
+            {
+            var sessionHandler = CreateSessionHandler();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
+                || string.IsNullOrWhiteSpace(loggedInUser.PPNumber) || loggedInUser.UserRoleID <= 0)
+                return null;
+
+            using (var con = this.DatabaseConnection())
+            using (OracleCommand cmd = con.CreateCommand())
+                {
+                cmd.CommandText = "PKG_BAC.P_GET_BAC_PARA_TEXT";
+                cmd.CommandType = CommandType.StoredProcedure;
+                cmd.BindByName = true;
+                cmd.Parameters.Add("P_OBSERVATION_ID", OracleDbType.Int32).Value = observationId;
+                cmd.Parameters.Add("IO_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+                using (OracleDataReader rdr = cmd.ExecuteReader())
+                    {
+                    if (!rdr.Read())
+                        return null;
+                    return new BACParaTextModel
+                        {
+                        OBSERVATION_ID = Convert.ToInt32(rdr["OBSERVATION_ID"]),
+                        HEADING = rdr["HEADING"] == DBNull.Value ? string.Empty : rdr["HEADING"].ToString(),
+                        PARA_TEXT = rdr["PARA_TEXT"] == DBNull.Value ? string.Empty : rdr["PARA_TEXT"].ToString()
+                        };
+                    }
+                }
+            }
+
+        public List<BACDSADetailModel> GetBACDSADetails(int observationId)
+            {
+            var sessionHandler = CreateSessionHandler();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
+                || string.IsNullOrWhiteSpace(loggedInUser.PPNumber) || loggedInUser.UserRoleID <= 0)
+                return new List<BACDSADetailModel>();
+
+            var results = new List<BACDSADetailModel>();
+            using (var con = this.DatabaseConnection())
+            using (OracleCommand cmd = con.CreateCommand())
+                {
+                cmd.CommandText = "PKG_BAC.P_GET_DSA_DETAILS";
+                cmd.CommandType = CommandType.StoredProcedure;
+                cmd.BindByName = true;
+                cmd.Parameters.Add("P_OBSERVATION_ID", OracleDbType.Int32).Value = observationId;
+                cmd.Parameters.Add("IO_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+                using (OracleDataReader rdr = cmd.ExecuteReader())
+                    while (rdr.Read())
+                        results.Add(new BACDSADetailModel
+                            {
+                            OBSERVATION_ID = rdr["OBSERVATION_ID"] == DBNull.Value ? 0 : Convert.ToInt32(rdr["OBSERVATION_ID"]),
+                            PPNO = rdr["PPNO"] == DBNull.Value ? string.Empty : rdr["PPNO"].ToString(),
+                            EMP_NAME = rdr["EMP_NAME"] == DBNull.Value ? string.Empty : rdr["EMP_NAME"].ToString(),
+                            DSA_TEXT = rdr["DSA_TEXT"] == DBNull.Value ? string.Empty : rdr["DSA_TEXT"].ToString()
+                            });
                 }
             return results;
             }

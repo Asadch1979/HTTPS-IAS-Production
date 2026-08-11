@@ -87,8 +87,28 @@
                                    ENT_ID    in number,
                                    io_cursor OUT t_cursor);
 
-end PKG_BAC;
+  PROCEDURE P_GET_BAC_ANALYSIS(P_FROM_DATE IN DATE,
+                               P_TO_DATE   IN DATE,
+                               P_RISK_ID   IN NUMBER,
+                               IO_CURSOR   OUT T_CURSOR);
+                               
+PROCEDURE P_GET_BAC_ANALYSIS_DETAIL
+(
+    P_FROM_DATE IN DATE,
+    P_TO_DATE   IN DATE,
+    P_ANNEX_ID  IN NUMBER,
+    P_RISK_ID   IN NUMBER DEFAULT 0,
+    IO_CURSOR   OUT T_CURSOR
+);
 
+PROCEDURE P_GET_BAC_PARA_TEXT
+(
+    P_OBSERVATION_ID IN NUMBER,
+    IO_CURSOR        OUT T_CURSOR
+);                               
+
+end PKG_BAC;
+/
 create or replace package body PKG_BAC is
 
   procedure P_BAC_Meeting(Meeting_Number   in number,
@@ -98,9 +118,9 @@ create or replace package body PKG_BAC is
                           Bac_Scertery     in varchar2,
                           ppno             in number,
                           io_cursor        OUT t_cursor) is
-
+  
   begin
-
+  
     INSERT INTO t_Bac_Meetings
       (Id,
        Meeting_Number,
@@ -133,9 +153,9 @@ create or replace package body PKG_BAC is
                                   ppno                  in number,
                                   Status                in varchar2,
                                   io_cursor             OUT t_cursor) is
-
+  
   begin
-
+  
     INSERT INTO t_Bac_Meetings_Minutes
       (Id,
        Meeting_Number,
@@ -169,9 +189,9 @@ create or replace package body PKG_BAC is
                              ppno           in number,
                              Status         in varchar2,
                              io_cursor      OUT t_cursor) is
-
+  
   begin
-
+  
     /*    INSERT INTO t_Bac_Actionable      (Id,
        Meeting_Number,Item_Heading,
        Time_Line,
@@ -206,9 +226,9 @@ create or replace package body PKG_BAC is
                                        ppno        in number,
                                        Status      in varchar2,
                                        io_cursor   OUT t_cursor) is
-
+  
   begin
-
+  
     INSERT INTO T_BAC_ACTIONABLE_ASSIGN
       (ID,
        ITEMNUMBER,
@@ -218,7 +238,7 @@ create or replace package body PKG_BAC is
        ENTERED_BY,
        ENTERED_ON,
        STATUS)
-
+    
     VALUES
       ((select COALESCE(max(acc.ID) + 1, 1)
          from T_BAC_ACTIONABLE_ASSIGN_DEPT acc),
@@ -235,25 +255,25 @@ create or replace package body PKG_BAC is
   end P_Bac_Actionable_Assign_to;
 
   Procedure P_BAC_DIV(io_cursor OUT t_cursor) is
-
+  
   begin
     open io_cursor for
       select * from t_auditee_entities e where e.type_id = 3;
-
+  
   end P_BAC_DIV;
 
   Procedure P_BAC_DEPT(User_entityid in number, io_cursor OUT t_cursor) is
-
+  
   begin
     open io_cursor for
       select e.entity_id, e.c_name as dept_name
         from t_auditee_entities_maping e
        where e.parent_id = User_entityid;
-
+  
   end P_BAC_DEPT;
 
   procedure P_Bac_get_actionable_snap(io_cursor OUT t_cursor) is
-
+  
   begin
     open io_cursor for
       select Count(t.id) as total,
@@ -269,13 +289,13 @@ create or replace package body PKG_BAC is
                    else
                     0
                  end) un_Completed
-
+      
         from T_BAC_ACTIONABLE t;
-
+  
   end P_Bac_get_actionable_snap;
 
   procedure P_Bac_get_actionable_sum(io_cursor OUT t_cursor) is
-
+  
   begin
     open io_cursor for
       select T.MEETING_NUMBER,
@@ -286,18 +306,18 @@ create or replace package body PKG_BAC is
              S.RESPONSIBLE,
              S.RESPONSE,
              S.CIA_REMARKS
-
+      
         from V_GET_BAC_ACTIONABLE_SUMMARY t
        INNER JOIN T_BAC_ACTIONABLE_UPDATES S
           ON T.MEETING_NUMBER = S.MEETING
-
+      
        order by t.meeting_number;
-
+  
   end P_Bac_get_actionable_sum;
 
   procedure P_Bac_get_actionable(status    in varchar2,
                                  io_cursor OUT t_cursor) is
-
+  
   begin
     if (status = 'Completed') then
       open io_cursor for
@@ -338,9 +358,9 @@ create or replace package body PKG_BAC is
 
   procedure P_Bac_get_actionable_meetings(meeting   in number,
                                           io_cursor OUT t_cursor) is
-
+  
   begin
-
+  
     open io_cursor for
       select a.id,
              a.meeting_number,
@@ -362,7 +382,7 @@ create or replace package body PKG_BAC is
   procedure P_Bac_get_actionable_meetings_with_status(meeting   in number,
                                                       A_Status  in Varchar2,
                                                       io_cursor OUT t_cursor) is
-
+  
   begin
     if (A_Status = 'All') then
       open io_cursor for
@@ -420,18 +440,18 @@ create or replace package body PKG_BAC is
              and a.status != 'Completed';
       end if;
     end if;
-
+  
   end P_Bac_get_actionable_meetings_with_status;
 
   Procedure P_Bac_get_Actionable_assign_to_dept(User_entityid in number,
                                                 io_cursor     OUT t_cursor) is
-
+  
   begin
     open io_cursor for
       select *
         from T_BAC_ACTIONABLE_ASSIGN_DEPT S
        where s.dept_id = user_entityid;
-
+  
   END P_Bac_get_Actionable_assign_to_dept;
 
   Procedure P_Bac_Actionable_response(Item_Number in number,
@@ -441,9 +461,9 @@ create or replace package body PKG_BAC is
                                       ppno        in number,
                                       Status      in varchar2,
                                       io_cursor   OUT t_cursor) is
-
+  
   begin
-
+  
     INSERT INTO T_BAC_ACTIONABLE_RESPONSE
       (ID,
        ITEM_NUMBER,
@@ -453,7 +473,7 @@ create or replace package body PKG_BAC is
        ENTERED_BY,
        ENTERED_ON,
        STATUS)
-
+    
     VALUES
       ((select COALESCE(max(acc.ID) + 1, 1)
          from T_BAC_ACTIONABLE_RESPONSE acc),
@@ -471,7 +491,7 @@ create or replace package body PKG_BAC is
 
   Procedure P_Bac_Actionable_response_reviewer(User_entityid in number,
                                                io_cursor     OUT t_cursor) is
-
+  
   begin
     open io_cursor for
       select s.id,
@@ -486,21 +506,21 @@ create or replace package body PKG_BAC is
        inner join t_auditee_entities_maping p
           on s.dept_id = p.entity_id
        where p.parent_id = user_entityid;
-
+  
   END P_Bac_Actionable_response_reviewer;
 
   Procedure P_BAC_AGENDA(Meeting in number, io_cursor OUT t_cursor) is
-
+  
   begin
     open io_cursor for
       select e.id, e.meeting_no, e.memo_no, e.subject, e.remarks
         from T_BAC_MEETINGS_AGENDA e
        where e.meeting_no = meeting;
-
+  
   end P_BAC_AGENDA;
 
   Procedure P_CIA_ANALYSIS(io_cursor OUT t_cursor) is
-
+  
   begin
     open io_cursor for
       select E.ID, E.HEADING, E.AUDIT_COMMENTS, E.AUTOMATION, E.MONITORING
@@ -508,7 +528,7 @@ create or replace package body PKG_BAC is
   END P_CIA_ANALYSIS;
 
   Procedure P_CIA_ANALYSIS_DETAILS(a_id in number, io_cursor OUT t_cursor) is
-
+  
   begin
     if (a_id != 0) then
       open io_cursor for
@@ -582,7 +602,7 @@ create or replace package body PKG_BAC is
                                         ENT_ID    in number,
                                         P_NO      in number,
                                         io_cursor OUT t_cursor) is
-
+  
     V_F   number := 0;
     RR_ID number := 0;
   begin
@@ -591,7 +611,7 @@ create or replace package body PKG_BAC is
       into V_F
       from t_auditee_entities en
      where en.entity_id = ent_id;
-
+  
     open io_cursor for
       select gm.c_name as name,
              gm.auditedby as auditby_id,
@@ -600,18 +620,24 @@ create or replace package body PKG_BAC is
              o.audit_period,
              o.para_no,
              o.ind AS para_category,
-             (CASE WHEN O.IND = 'O' then o.old_para_id else o.new_para_id end) as  id
+             (CASE
+               WHEN O.IND = 'O' then
+                o.old_para_id
+               else
+                o.new_para_id
+             end) as id
         from T_AUDIT_CHECKLIST_ANNEXURE e
        inner join AIS_T_AU_POST_COMPLIANCE o
-          on o.annex = e.id and o.para_status = 8
+          on o.annex = e.id
+         and o.para_status = 8
        inner join t_auditee_entities_maping gm
-              on o.entity_id = gm.entity_id
-
+          on o.entity_id = gm.entity_id
+      
        where e.id = A_ID
          and gm.gm_office = case
                when RR_ID = 39 then
                 ENT_ID
-               when RR_ID in (1,5, 7,40,41) then
+               when RR_ID in (1, 5, 7, 40, 41) then
                 gm.gm_office
              end
        ORDER BY O.audit_period DESC;
@@ -620,7 +646,7 @@ create or replace package body PKG_BAC is
   Procedure P_CIA_ANALYSIS_DETAILS_PARA_TEXT(P_ID      in number,
                                              P_C       in varchar2,
                                              io_cursor OUT t_cursor) is
-
+  
   begin
     if (P_C = 'O') then
       open io_cursor for
@@ -639,14 +665,14 @@ create or replace package body PKG_BAC is
            where f.id = P_ID;
       end if;
     end if;
-
+  
   END P_CIA_ANALYSIS_DETAILS_PARA_TEXT;
 
   Procedure P_CIA_ANALYSIS_SUMMARY(A_ID      in number,
                                    R_ID      in number,
                                    ENT_ID    in number,
                                    io_cursor OUT t_cursor) is
-
+  
     V_F   number := 0;
     RR_ID number := 0;
   begin
@@ -655,41 +681,167 @@ create or replace package body PKG_BAC is
       into V_F
       from t_auditee_entities en
      where en.entity_id = ent_id;
-
+  
     open io_cursor for
       select m.p_name, et.name, o.audit_period, count(o.com_id) as para_no
         from T_AUDIT_CHECKLIST_ANNEXURE e
-
+      
        inner join ais_t_au_post_compliance o
-          on o.annex = e.id and o.para_status = 8
+          on o.annex = e.id
+         and o.para_status = 8
        inner join t_auditee_entities et
           on et.entity_id = o.entity_id
        inner join t_auditee_entities_maping m
           on m.entity_id = et.entity_id
-         --and m.p_name is not null
+      --and m.p_name is not null
        inner join t_auditee_entities_maping gm
-              on o.entity_id = gm.entity_id
-
+          on o.entity_id = gm.entity_id
+      
        where e.id = A_ID
          and gm.gm_office = case
                when RR_ID = 39 then
                 ENT_ID
-               when RR_ID in (1,5, 7,40,41) then
+               when RR_ID in (1, 5, 7, 40, 41) then
                 gm.gm_office
              end
        group by m.p_name, et.name, o.audit_period
        order by m.p_name, et.name, o.audit_period;
-
+  
   END P_CIA_ANALYSIS_SUMMARY;
 
   Procedure P_CIA_ANALYSIS_AUDIT_COMMENTS(a_id      in number,
                                           io_cursor OUT t_cursor) is
-
+  
   begin
     open io_cursor for
       select E.AUDIT_COMMENTS, E.AUTOMATION, E.MONITORING
         from T_AUDIT_CHECKLIST_ANNEXURE_PROCESS e
        where e.id = a_id;
   END P_CIA_ANALYSIS_AUDIT_COMMENTS;
+
+  PROCEDURE P_GET_BAC_ANALYSIS(P_FROM_DATE IN DATE,
+                               P_TO_DATE   IN DATE,
+                               P_RISK_ID   IN NUMBER,
+                               IO_CURSOR   OUT T_CURSOR) IS
+    V_TO_DATE DATE;
+  BEGIN
+  
+    /* Convert inclusive user To Date into exclusive upper boundary */
+    V_TO_DATE := TRUNC(P_TO_DATE) + 1;
+  
+    OPEN IO_CURSOR FOR
+    
+      SELECT process_id      AS id,
+             process_heading AS heading,
+             annex_code      AS code,
+             annex_heading   AS annex,
+             annex_id        as annex_id,
+             
+             /* Issues identified during selected period */
+             COUNT(*) AS total,
+             
+             /* Rectified by selected reporting date */
+             SUM(CASE
+                   WHEN stelled_on IS NOT NULL AND stelled_on < V_TO_DATE THEN
+                    1
+                   ELSE
+                    0
+                 END) AS rectified,
+             
+             /* Outstanding as at selected reporting date */
+             SUM(CASE
+                   WHEN stelled_on IS NULL OR stelled_on >= V_TO_DATE THEN
+                    1
+                   ELSE
+                    0
+                 END) AS open_issue,
+             
+             COUNT(DISTINCT entity_id) AS entities,
+             
+             /* Amount involved in observations outstanding
+             as at reporting date */
+             SUM(CASE
+                   WHEN stelled_on IS NULL OR stelled_on >= V_TO_DATE THEN
+                    amount_involved
+                   ELSE
+                    0
+                 END) AS amount
+      
+        FROM VW_AU_BAC_OBSERVATION_ANALYSIS
+      
+       WHERE entereddate >= TRUNC(P_FROM_DATE)
+         AND entereddate < V_TO_DATE
+         AND risk = P_RISK_ID
+         AND status IN (8, 9)
+      
+       GROUP BY process_id, process_heading, annex_code, annex_heading
+      
+       ORDER BY process_id, annex_code;
+  
+  END;
+
+  PROCEDURE P_GET_BAC_ANALYSIS_DETAIL(P_FROM_DATE IN DATE,
+                                      P_TO_DATE   IN DATE,
+                                      P_ANNEX_ID  IN NUMBER,
+                                      P_RISK_ID   IN NUMBER DEFAULT 0,
+                                      IO_CURSOR   OUT T_CURSOR) IS
+  BEGIN
+  
+    OPEN IO_CURSOR FOR
+    
+      SELECT o.id AS observation_id,
+             en.entity_id,
+             ent.p_name AS reporting_office,
+             ent.c_name AS entity,
+             t.headings AS gist,
+             NVL(TO_NUMBER(o.no_of_instances), 0) AS no_of_instances,
+             NVL(o.amount_involved, 0) AS amount,
+             o.entereddate,
+             o.stelled_on,
+             o.status
+      
+        FROM t_au_observation o
+      
+       INNER JOIN t_au_observation_text t
+          ON t.observatsion_id = o.id
+      
+       INNER JOIN t_au_plan_eng en
+          ON en.eng_id = o.engplanid
+      
+       INNER JOIN t_audit_checklist_annexure a
+          ON a.id = o.annex
+      
+       INNER JOIN t_auditee_entities_maping ent
+          ON ent.entity_id = en.entity_id
+      
+       WHERE o.entereddate >= TRUNC(P_FROM_DATE)
+            
+         AND o.entereddate < TRUNC(P_TO_DATE) + 1
+            
+         AND o.annex = P_ANNEX_ID
+            
+         AND o.status IN (8, 9)
+            
+         AND (NVL(P_RISK_ID, 0) = 0 OR a.risk = P_RISK_ID)
+      
+       ORDER BY ent.p_name, ent.c_name, o.id;
+  
+  END P_GET_BAC_ANALYSIS_DETAIL;
+
+  PROCEDURE P_GET_BAC_PARA_TEXT(P_OBSERVATION_ID IN NUMBER,
+                                IO_CURSOR        OUT T_CURSOR) IS
+  BEGIN
+  
+    OPEN IO_CURSOR FOR
+    
+      SELECT o.observatsion_id AS observation_id,
+             o.headings        AS heading,
+             o.text            AS para_text
+      
+        FROM t_au_observation_text o
+      
+       WHERE o.observatsion_id = P_OBSERVATION_ID;
+  
+  END P_GET_BAC_PARA_TEXT;
 
 end PKG_BAC;

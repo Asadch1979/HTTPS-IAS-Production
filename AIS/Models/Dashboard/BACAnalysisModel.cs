@@ -4,6 +4,8 @@ namespace AIS.Models
     {
     public class BACAnalysisModel
         {
+        public int ID { get; set; }
+        public int ANNEX_ID { get; set; }
         [PlainText]
         public string PROCESS { get; set; }
         [PlainText]
@@ -13,6 +15,7 @@ namespace AIS.Models
         public decimal ISSUES_IDENTIFIED { get; set; }
         public decimal RECTIFIED { get; set; }
         public decimal OPEN { get; set; }
+        public decimal DSA { get; set; }
         [PlainText]
         public string AFFECTED_ENTITIES { get; set; }
         [PlainText]

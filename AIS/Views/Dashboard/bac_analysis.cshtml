@@ -41,15 +41,85 @@
         <table id="bacAnalysisTable" class="table table-hover table-bordered table-striped mb-0">
             <thead style="background-color: #19875478 !important;">
                 <tr>
-                    <th>Process</th><th>Annexure Code</th><th>Annexure</th>
+                    <th>Sr. No.</th><th>Process</th><th>Annexure Code</th><th>Annexure</th>
                     <th class="text-end">Issues Identified</th><th class="text-end">Rectified</th><th class="text-end">Open</th>
-                    <th>Affected Entities</th><th class="bac-open-entities d-none">Open Entities</th>
-                    <th class="text-end">Amount Involved</th>
+                    <th>Affected Entities</th><th class="text-end">DSA</th>
+                    <th class="text-end">Amount Involved</th><th class="hide-export">Action</th>
                 </tr>
             </thead>
             <tbody></tbody>
             <tfoot class="fw-bold"></tfoot>
         </table>
+    </div>
+</div>
+
+<div id="bacDetailModal" class="modal fade" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <div><h5 id="bacDetailTitle" class="modal-title"></h5><div id="bacDetailPeriod" class="small"></div></div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="bacDetailMessage" class="alert alert-danger d-none"></div>
+                <div class="table-responsive">
+                    <table id="bacDetailTable" class="table table-hover table-bordered table-striped">
+                        <thead style="background-color: #19875478 !important;"><tr>
+                            <th>Sr. No.</th><th>Reporting Office</th><th>Entity</th><th>Gist</th>
+                            <th class="text-end">No. of Instances</th><th class="text-end">Amount</th><th>Status</th><th class="text-end">DSA</th>
+                            <th class="hide-export">View Para</th><th class="hide-export">View DSA</th>
+                        </tr></thead>
+                        <tbody></tbody><tfoot class="fw-bold"></tfoot>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="bacParaModal" class="modal fade" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 id="bacParaHeading" class="modal-title">Para Text</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body"><div id="bacParaMessage" class="alert alert-danger d-none"></div><div id="bacParaText"></div></div>
+        </div>
+    </div>
+</div>
+
+<div id="bacDsaModal" class="modal fade" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">DSA Details</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="bacDsaMessage" class="alert alert-danger d-none"></div>
+                <div class="table-responsive">
+                    <table id="bacDsaTable" class="table table-hover table-bordered table-striped">
+                        <thead style="background-color: #19875478 !important;"><tr>
+                            <th>Sr. No.</th><th>PP No.</th><th>Employee Name</th><th class="hide-export">View DSA</th>
+                        </tr></thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="bacDsaTextModal" class="modal fade" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 id="bacDsaTextHeading" class="modal-title">DSA</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body"><div id="bacDsaText"></div></div>
+        </div>
     </div>
 </div>
 
