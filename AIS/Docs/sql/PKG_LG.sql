@@ -419,11 +419,33 @@ create or replace package body PKG_LG is
                                 io_cursor OUT t_cursor) AS
   BEGIN
     OPEN io_cursor FOR
-      SELECT m.API_ID, m.API_PATH, m.HTTP_METHOD
+      SELECT DISTINCT m.API_ID, m.API_PATH, m.HTTP_METHOD
         FROM T_AU_ROLE_API_PERMISSION p
         JOIN T_AU_API_MASTER m
           ON m.API_ID = p.API_ID
-       WHERE p.ROLE_ID = R_ID
+       WHERE p.ROLE_ID IN
+             (SELECT R_ID FROM dual
+              UNION
+              SELECT CASE
+                       WHEN ae.type_id = 4 AND NVL(tm.isteamlead, 'N') = 'Y' THEN 10
+                       WHEN ae.type_id = 4 AND NVL(tm.isteamlead, 'N') = 'N' THEN 27
+                       WHEN ae.type_id = 9 AND NVL(tm.isteamlead, 'N') = 'Y' THEN 18
+                       WHEN ae.type_id = 9 AND NVL(tm.isteamlead, 'N') = 'N' THEN 28
+                     END
+                FROM t_au_audit_joining j
+                JOIN t_au_plan_eng pe
+                  ON pe.eng_id = j.eng_plan_id
+                JOIN t_auditee_entities ae
+                  ON ae.entity_id = pe.entity_id
+                JOIN t_au_audit_team_tasklist tl
+                  ON tl.eng_plan_id = j.eng_plan_id
+                 AND tl.teammember_ppno = j.team_mem_ppno
+                JOIN t_au_team_members tm
+                  ON tm.t_id = tl.team_id
+                 AND tm.member_ppno = tl.teammember_ppno
+               WHERE j.team_mem_ppno = P_NO
+                 AND j.status = 'I'
+                 AND tl.isactive = 'Y')
          AND p.IS_ACTIVE = 'Y'
          AND m.IS_ACTIVE = 'Y';
   END p_GetApiPermissions;
