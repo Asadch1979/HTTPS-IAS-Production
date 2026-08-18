@@ -1,14 +1,6 @@
 create or replace package PKG_FAD is
   TYPE t_cursor IS REF CURSOR;
 
-  PROCEDURE P_GET_FAD_ANNEXURE_CONFIG(IO_CURSOR OUT T_CURSOR);
-
-  PROCEDURE P_UPDATE_FAD_ANNEXURE_STATUS(
-    P_ANNEXURE_ID      IN NUMBER,
-    P_SHIFT_APPLICABLE IN VARCHAR2,
-    P_NO               IN NUMBER,
-    IO_CURSOR          OUT T_CURSOR);
-
   procedure P_GetRelationTypes(R_ID IN NUMBER, io_cursor OUT t_cursor);
 
   procedure P_GetReportingOffices(p_relation_id in number,
@@ -163,6 +155,21 @@ create or replace package PKG_FAD is
                                      active      in varchar2,
                                      io_cursor   OUT t_cursor);
 
+  procedure P_GET_SETTLED_PARA_ENTITIES(P_NO      in number,
+                                        ENT_ID    in number,
+                                        R_ID      in number,
+                                        io_cursor out t_cursor);
+
+  Procedure P_GET_SETTLED_PARA_DETAILS(P_NO       in number,
+                                       ENT_ID     in number,
+                                       R_ID       in number,
+                                       auditee_id in number,
+                                       io_cursor  OUT t_cursor);
+
+  Procedure P_GET_SETTLED_PARA_DETAILS_PARA_COMPLIANCE(refp      varchar2,
+                                                       obs_id    in number,
+                                                       io_cursor OUT t_cursor);
+
   Procedure P_get_auditee_reporting_fad(ENT_ID    in number,
                                         Type_id   in number,
                                         io_cursor OUT t_cursor);
@@ -304,31 +311,37 @@ create or replace package PKG_FAD is
   PROCEDURE P_GET_IAS_PARA_TEXT(P_COM_ID  IN NUMBER,
                                 IO_CURSOR OUT SYS_REFCURSOR);
 
-PROCEDURE P_GET_REFERENCE_MASTER_DETAIL(p_search_text           IN VARCHAR2 DEFAULT NULL,
+  PROCEDURE P_GET_REFERENCE_MASTER_DETAIL(p_search_text           IN VARCHAR2 DEFAULT NULL,
                                           p_reference_source_type IN VARCHAR2 DEFAULT NULL,
                                           p_ref_id                IN NUMBER DEFAULT NULL,
-                                          io_cursor                OUT SYS_REFCURSOR);
+                                          o_cursor                OUT SYS_REFCURSOR);
 
-  PROCEDURE P_GET_MANUAL_MASTER(io_cursor OUT SYS_REFCURSOR);
+  PROCEDURE P_GET_MANUAL_MASTER(o_cursor OUT SYS_REFCURSOR);
 
   PROCEDURE P_GET_MANUAL_SECTIONS(p_manual_id IN NUMBER,
-                                  io_cursor    OUT SYS_REFCURSOR);
+                                  o_cursor    OUT SYS_REFCURSOR);
 
   PROCEDURE P_GET_MANUAL_CHAPTERS(p_manual_id    IN NUMBER,
                                   p_section_text IN VARCHAR2,
-                                  io_cursor       OUT SYS_REFCURSOR);
+                                  o_cursor       OUT SYS_REFCURSOR);
 
   PROCEDURE P_GET_MANUAL_REFERENCE_GRID(p_manual_id    IN NUMBER,
                                         p_section_text IN VARCHAR2,
                                         p_chapter_no   IN VARCHAR2,
-                                        io_cursor       OUT SYS_REFCURSOR);
+                                        o_cursor       OUT SYS_REFCURSOR);
 
   PROCEDURE P_GET_REFERENCE_DETAIL_BY_ID(p_ref_id IN NUMBER,
-                                         io_cursor OUT SYS_REFCURSOR);
+                                         o_cursor OUT SYS_REFCURSOR);
+
+  PROCEDURE P_GET_FAD_ANNEXURE_CONFIG(IO_CURSOR OUT T_CURSOR);
+
+  PROCEDURE P_UPDATE_FAD_ANNEXURE_STATUS(P_ANNEXURE_ID      IN NUMBER,
+                                         P_SHIFT_APPLICABLE IN VARCHAR2,
+                                         P_NO               IN NUMBER,
+                                         IO_CURSOR          OUT T_CURSOR);
 
 end PKG_FAD;
 /
-
 create or replace package body PKG_FAD is
 
   procedure P_GetRelationTypes(R_ID IN NUMBER, io_cursor OUT t_cursor) is
@@ -1209,9 +1222,8 @@ create or replace package body PKG_FAD is
           on r.r_id = o.severity
         left join t_auditee_entities_maping_fad mp
           on mp.entity_id = eg.auditby_id
-       WHERE lg.status = 'P'
-         and e.auditby_id = UserEntityId
-         and lg.reviewed_by is not null;
+       WHERE e.auditby_id = UserEntityId
+         and lg.authorized_on is null;
   
   end P_GetnewParasForResponseAuthorize;
 
@@ -1974,7 +1986,87 @@ create or replace package body PKG_FAD is
   
   end p_recommend_sub_process;
 
- 
+  procedure P_GET_SETTLED_PARA_ENTITIES(P_NO      in number,
+                                        ENT_ID    in number,
+                                        R_ID      in number,
+                                        io_cursor out t_cursor) as
+  begin
+    If (R_ID in (1, 3, 5, 7, 11)) then
+      open io_cursor for
+        select distinct e.name, e.entity_id
+          from V_P_GET_SETTLED_PARA_DETAILS f
+         inner join t_auditee_entities e
+            on e.entity_id = f.auditedby
+        
+         where f.settled_on is not null; -- AND E.AUDITBY_ID = ENT_ID;
+    else
+      open io_cursor for
+        select distinct e.name, e.entity_id
+          from V_P_GET_SETTLED_PARA_DETAILS f
+         inner join t_auditee_entities e
+            on e.entity_id = f.entity_id
+         inner join t_auditee_entities_maping_fad fad
+            on fad.entity_id = F.AUDITEDBY
+         inner join T_AU_POST_COMPLIANCE_SETTLEMETMENT_HISTORY h
+            on h.entity_id = f.entity_id
+         where fad.ppno = P_NO
+           and h.reviewed_by is null;
+    end if;
+  end P_GET_SETTLED_PARA_ENTITIES;
+
+  Procedure P_GET_SETTLED_PARA_DETAILS(P_NO       in number,
+                                       ENT_ID     in number,
+                                       R_ID       in number,
+                                       auditee_id in number,
+                                       io_cursor  OUT t_cursor) is
+  
+  begin
+  
+    OPEN io_cursor for
+      select d.reporting_office,
+             d.Entity_name,
+             d.audit_period,
+             d.para_no,
+             d.settled_by,
+             d.settled_on,
+             d.risk,
+             d.para_category,
+             d.ref_p,
+             d.au_obs_id,
+             d.com_id,
+             d.compliance_cycle,
+             d.entity_id,
+             d.auditedby
+        from V_P_GET_SETTLED_PARA_DETAILS d
+       where d.entity_id = auditee_id
+          or d.auditedby = auditee_id
+       order by d.settled_on;
+  
+  end P_GET_SETTLED_PARA_DETAILS;
+
+  Procedure P_GET_SETTLED_PARA_DETAILS_PARA_COMPLIANCE(refp      varchar2,
+                                                       obs_id    in number,
+                                                       io_cursor OUT t_cursor) is
+  begin
+    OPEN io_cursor for
+      select h.comment_by_ppno attended_by,
+             d.description as designation,
+             emp.employeefirstname || '  ' || emp.employeelastname as emp_name,
+             h.comments remarks,
+             f.com_cycle as COMPLIANCE_CYCLE
+      
+        from ais_t_au_post_compliance_history h
+       inner join ais_t_au_post_compliance f
+          on f.com_id = h.com_id
+       inner join v_service_employeeinfo emp
+          on emp.ppno = h.comment_by_ppno
+       inner join t_groups d
+          on d.group_id = h.com_stage
+       where (f.com_id = refp or f.com_id = obs_id)
+       order by f.com_cycle, h.comment_on;
+  
+  end P_GET_SETTLED_PARA_DETAILS_PARA_COMPLIANCE;
+
   Procedure P_get_auditee_reporting_fad(ENT_ID    in number,
                                         Type_id   in number,
                                         io_cursor OUT t_cursor) is
@@ -3006,13 +3098,13 @@ create or replace package body PKG_FAD is
         FROM v_get_ias_para_text t
        WHERE COM_ID = P_COM_ID;
   END P_GET_IAS_PARA_TEXT;
-  
-   PROCEDURE P_GET_REFERENCE_MASTER_DETAIL(p_search_text           IN VARCHAR2 DEFAULT NULL,
+
+  PROCEDURE P_GET_REFERENCE_MASTER_DETAIL(p_search_text           IN VARCHAR2 DEFAULT NULL,
                                           p_reference_source_type IN VARCHAR2 DEFAULT NULL,
                                           p_ref_id                IN NUMBER DEFAULT NULL,
-                                          io_cursor                OUT SYS_REFCURSOR) IS
+                                          o_cursor                OUT SYS_REFCURSOR) IS
   BEGIN
-    OPEN io_cursor FOR
+    OPEN o_cursor FOR
       SELECT v.ref_id,
              v.reference_source_type,
              v.source_pk_id,
@@ -3062,10 +3154,9 @@ create or replace package body PKG_FAD is
                 v.title_or_heading;
   END P_GET_REFERENCE_MASTER_DETAIL;
 
-
- PROCEDURE P_GET_MANUAL_MASTER(io_cursor OUT SYS_REFCURSOR) IS
+  PROCEDURE P_GET_MANUAL_MASTER(o_cursor OUT SYS_REFCURSOR) IS
   BEGIN
-    OPEN io_cursor FOR
+    OPEN o_cursor FOR
       SELECT m.manual_id,
              m.manual_name,
              m.volume_name,
@@ -3081,9 +3172,9 @@ create or replace package body PKG_FAD is
   END P_GET_MANUAL_MASTER;
 
   PROCEDURE P_GET_MANUAL_SECTIONS(p_manual_id IN NUMBER,
-                                  io_cursor    OUT SYS_REFCURSOR) IS
+                                  o_cursor    OUT SYS_REFCURSOR) IS
   BEGIN
-    OPEN io_cursor FOR
+    OPEN o_cursor FOR
       SELECT DISTINCT m.section AS section_text
         FROM t_manual_index m
        WHERE m.manual_id = p_manual_id
@@ -3094,9 +3185,9 @@ create or replace package body PKG_FAD is
 
   PROCEDURE P_GET_MANUAL_CHAPTERS(p_manual_id    IN NUMBER,
                                   p_section_text IN VARCHAR2,
-                                  io_cursor       OUT SYS_REFCURSOR) IS
+                                  o_cursor       OUT SYS_REFCURSOR) IS
   BEGIN
-    OPEN io_cursor FOR
+    OPEN o_cursor FOR
       SELECT DISTINCT m.chapter_no
         FROM t_manual_index m
        WHERE m.manual_id = p_manual_id
@@ -3109,9 +3200,9 @@ create or replace package body PKG_FAD is
   PROCEDURE P_GET_MANUAL_REFERENCE_GRID(p_manual_id    IN NUMBER,
                                         p_section_text IN VARCHAR2,
                                         p_chapter_no   IN VARCHAR2,
-                                        io_cursor       OUT SYS_REFCURSOR) IS
+                                        o_cursor       OUT SYS_REFCURSOR) IS
   BEGIN
-    OPEN io_cursor FOR
+    OPEN o_cursor FOR
       SELECT v.ref_id,
              v.reference_source_type,
              v.source_pk_id,
@@ -3120,21 +3211,23 @@ create or replace package body PKG_FAD is
              v.chapter_no,
              v.sub_section_no,
              v.title_or_heading,
-             NVL(v.section_text, '-') || ' / ' || NVL(v.chapter_no, '-') ||
-             ' / ' || NVL(v.sub_section_no, '-') || ' / ' ||
-             NVL(v.title_or_heading, '-') AS display_text
+             NVL(TRIM(v.section_text), '-') || ' / ' ||
+             NVL(TRIM(v.chapter_no), '-') || ' / ' ||
+             NVL(TRIM(v.sub_section_no), '-') || ' / ' ||
+             NVL(TRIM(v.title_or_heading), '-') AS display_text
         FROM vw_reference_master_detail v
-       WHERE UPPER(v.reference_source_type) = 'MANUAL_INDEX'
+       WHERE TRIM(UPPER(v.reference_source_type)) = 'MANUAL_INDEX'
          AND v.manual_id = p_manual_id
-         AND NVL(v.section_text, '##') = NVL(p_section_text, '##')
-         AND NVL(v.chapter_no, '##') = NVL(p_chapter_no, '##')
+         AND NVL(TRIM(v.section_text), '##') =
+             NVL(TRIM(p_section_text), '##')
+         AND NVL(TRIM(v.chapter_no), '##') = NVL(TRIM(p_chapter_no), '##')
        ORDER BY v.sub_section_no, v.title_or_heading;
   END P_GET_MANUAL_REFERENCE_GRID;
 
   PROCEDURE P_GET_REFERENCE_DETAIL_BY_ID(p_ref_id IN NUMBER,
-                                         io_cursor OUT SYS_REFCURSOR) IS
+                                         o_cursor OUT SYS_REFCURSOR) IS
   BEGIN
-    OPEN io_cursor FOR
+    OPEN o_cursor FOR
       SELECT v.ref_id,
              v.reference_source_type,
              v.source_pk_id,
@@ -3148,7 +3241,8 @@ create or replace package body PKG_FAD is
              v.title_or_heading,
              CASE
                WHEN v.reference_source_type = 'MANUAL_INDEX' THEN
-                NVL(v.reference_Source, '-')||': '|| NVL(v.section_text, '-') || ' / ' || NVL(v.chapter_no, '-') ||
+                NVL(v.reference_Source, '-') || ': ' ||
+                NVL(v.section_text, '-') || ' / ' || NVL(v.chapter_no, '-') ||
                 ' / ' || NVL(v.sub_section_no, '-') || ' / ' ||
                 NVL(v.title_or_heading, '-')
                ELSE
@@ -3157,60 +3251,66 @@ create or replace package body PKG_FAD is
         FROM vw_reference_master_detail v
        WHERE v.ref_id = p_ref_id;
   END P_GET_REFERENCE_DETAIL_BY_ID;
+
   PROCEDURE P_GET_FAD_ANNEXURE_CONFIG(IO_CURSOR OUT T_CURSOR) IS
   BEGIN
     OPEN IO_CURSOR FOR
       SELECT C.ANNEXURE_ID,
-             A.CODE AS ANNEXURE_CODE,
-             A.HEADING AS DESCRIPTION,
+             A.CODE             AS ANNEXURE_CODE,
+             A.HEADING          AS DESCRIPTION,
              C.SHIFT_APPLICABLE,
              C.ACTIVE,
              C.UPDATED_BY,
              C.UPDATED_ON
         FROM T_AU_FAD_ANNEXURE_CONFIG C
-        JOIN T_AUDIT_CHECKLIST_ANNEXURE A ON A.ID = C.ANNEXURE_ID
+        JOIN T_AUDIT_CHECKLIST_ANNEXURE A
+          ON A.ID = C.ANNEXURE_ID
        ORDER BY C.ANNEXURE_ID;
   END P_GET_FAD_ANNEXURE_CONFIG;
 
-  PROCEDURE P_UPDATE_FAD_ANNEXURE_STATUS(
-    P_ANNEXURE_ID      IN NUMBER,
-    P_SHIFT_APPLICABLE IN VARCHAR2,
-    P_NO               IN NUMBER,
-    IO_CURSOR          OUT T_CURSOR) IS
+  PROCEDURE P_UPDATE_FAD_ANNEXURE_STATUS(P_ANNEXURE_ID      IN NUMBER,
+                                         P_SHIFT_APPLICABLE IN VARCHAR2,
+                                         P_NO               IN NUMBER,
+                                         IO_CURSOR          OUT T_CURSOR) IS
     V_ACTIVE T_AU_FAD_ANNEXURE_CONFIG.ACTIVE%TYPE;
   BEGIN
     IF P_ANNEXURE_ID IS NULL THEN
       RAISE_APPLICATION_ERROR(-20001, 'Annexure ID is required.');
     END IF;
-    IF UPPER(TRIM(P_SHIFT_APPLICABLE)) NOT IN ('Y', 'N')
-       OR P_SHIFT_APPLICABLE IS NULL THEN
-      RAISE_APPLICATION_ERROR(-20002, 'Shifting applicability must be Y or N.');
+    IF UPPER(TRIM(P_SHIFT_APPLICABLE)) NOT IN ('Y', 'N') OR
+       P_SHIFT_APPLICABLE IS NULL THEN
+      RAISE_APPLICATION_ERROR(-20002,
+                              'Shifting applicability must be Y or N.');
     END IF;
     IF P_NO IS NULL OR P_NO <= 0 THEN
-      RAISE_APPLICATION_ERROR(-20003, 'A valid logged-in user is required.');
+      RAISE_APPLICATION_ERROR(-20003,
+                              'A valid logged-in user is required.');
     END IF;
-
+  
     BEGIN
-      SELECT ACTIVE INTO V_ACTIVE
+      SELECT ACTIVE
+        INTO V_ACTIVE
         FROM T_AU_FAD_ANNEXURE_CONFIG
        WHERE ANNEXURE_ID = P_ANNEXURE_ID
-       FOR UPDATE;
+         FOR UPDATE;
     EXCEPTION
       WHEN NO_DATA_FOUND THEN
-        RAISE_APPLICATION_ERROR(-20004, 'Annexure configuration was not found.');
+        RAISE_APPLICATION_ERROR(-20004,
+                                'Annexure configuration was not found.');
     END;
-
+  
     IF V_ACTIVE <> 'Y' THEN
-      RAISE_APPLICATION_ERROR(-20005, 'Inactive Annexure configuration cannot be updated.');
+      RAISE_APPLICATION_ERROR(-20005,
+                              'Inactive Annexure configuration cannot be updated.');
     END IF;
-
+  
     UPDATE T_AU_FAD_ANNEXURE_CONFIG
        SET SHIFT_APPLICABLE = UPPER(TRIM(P_SHIFT_APPLICABLE)),
-           UPDATED_BY = P_NO,
-           UPDATED_ON = SYSDATE
+           UPDATED_BY       = P_NO,
+           UPDATED_ON       = SYSDATE
      WHERE ANNEXURE_ID = P_ANNEXURE_ID
        AND ACTIVE = 'Y';
-
+  
     COMMIT;
     OPEN IO_CURSOR FOR
       SELECT 'Y' AS SUCCESS,
@@ -3226,4 +3326,3 @@ create or replace package body PKG_FAD is
   END P_UPDATE_FAD_ANNEXURE_STATUS;
 
 end PKG_FAD;
-/
