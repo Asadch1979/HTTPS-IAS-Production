@@ -471,7 +471,7 @@
                                                  io_cursor OUT t_cursor);
 
 end PKG_HD;
-
+/
 create or replace package body PKG_HD is
 
   procedure P_GetFinalizedDraftObservations(ENGID     IN NUMBER,
@@ -518,87 +518,9 @@ create or replace package body PKG_HD is
                                                   P_NO      in number,
                                                   R_ID      in number,
                                                   io_cursor OUT t_cursor) is
-    O_F number := 0;
-    M_F number := 0;
-    Z_B number := 0;
-    B_N varchar2(100);
+
   begin
-    select '-' into B_N from dual;
   
-    P_add_activity_log(ENT_ID,
-                       R_ID,
-                       P_NO,
-                       79,
-                       'Viewed / Finalize Draft Observations of ' || B_N);
-  
-    select NVL(MAX(l.id), 0)
-      into Z_B
-      from t_au_activity_log l
-     where l.ppnum = P_NO;
-    update t_au_activity_log l set l.end_time = sysdate where l.id = Z_B;
-    commit;
-    insert into t_au_activity_log
-      (id,
-       entity_id,
-       role_id,
-       ppnum,
-       page_id,
-       action,
-       start_time,
-       seq,
-       unattend)
-    VALUES
-      ((select COALESCE(max(p.ID) + 1, 1) from t_au_activity_log p),
-       ENT_ID,
-       R_ID,
-       P_NO,
-       79,
-       'Viewed / Finalize Draft Observations of ' ||
-       (select bt.name
-          from t_auditee_entities bt
-         inner join t_au_plan_eng e
-            on bt.entity_id = e.entity_id
-         where e.eng_id = ENGID),
-       sysdate,
-       (select COALESCE(max(l.seq) + 1, 1)
-          from t_au_activity_log l
-         where l.id = Z_B
-           and l.ppnum = P_NO),
-       'Y');
-    commit;
-    select nvl(max(ob.id), 0)
-      into O_F
-      from t_au_observation ob
-     where ob.engplanid = engid
-       and ob.status > 4;
-    select nvl(min(ob.id), 0)
-      into M_F
-      from t_au_observation ob
-     where ob.engplanid = engid;
-  
-    if (O_F = 0) then
-      OPEN io_Cursor FOR
-        select 'B' as etype,
-               o.engplanid as eng_id,
-               0 as Process,
-               0 as Sub_process,
-               0 as Check_List_Detail,
-               0 as headings,
-               0 as PERIOD,
-               o.id as OBS_ID,
-               0 as ENTITY_NAME,
-               0 as MEMO_NO,
-               nvl(o.Draft_Para_No, 0) as DRAFT_PARA,
-               nvl(o.Final_Para_No, 0) as FINAL_PARA,
-               0 as OBS_RISK_ID,
-               0 as AUD_REPLY,
-               0 as OBS_RISK,
-               0 as OBS_STATUS_ID,
-               0 as OBS_STATUS
-          from t_au_observation o
-         where o.engplanid = engid
-           and o.id = M_F;
-    else
       OPEN io_Cursor FOR
         select 'B' as etype,
                o.engplanid as eng_id,
@@ -613,7 +535,7 @@ create or replace package body PKG_HD is
                nvl(o.Draft_Para_No, 0) as DRAFT_PARA,
                nvl(o.Final_Para_No, 0) as FINAL_PARA,
                o.severity as OBS_RISK_ID,
-               ar.reply as AUD_REPLY,
+                nvl(ar.reply,'') as AUD_REPLY,
                r.description as OBS_RISK,
                o.status as OBS_STATUS_ID,
                ost.Statusname as OBS_STATUS
@@ -639,9 +561,9 @@ create or replace package body PKG_HD is
           left join t_au_observations_auditor_response ar
             on ar.au_obs_id = o.id
          where o.engplanid = ENGID
-           and o.status not in (1, 2, 7, 23)
+           and o.status not in (1, 2,3, 7, 23)
          order by o.status;
-    end if;
+
   end P_GetFinalizedDraftObservationsbranch;
 
   procedure P_Finalise_para(engplan_id    in number,
@@ -743,15 +665,15 @@ create or replace package body PKG_HD is
      inner join t_auditee_entities_maping mm
         on mm.entity_id = ee.entity_id
      where (mm.parent_id = Entityid or mm.parent_code = Entityid);
-    if (N_F in (4, 5, 25)) then
+    if (N_F in (3,4, 5, 25)) then
       open io_cursor for
         select m.entity_id as branchentityid, m.c_name as branchname
           from v_get_parent_office m
          WHERE (m.parent_id = Entityid or m.parent_code = Entityid)
-           and m.relation_type_id in (4, 5)
+          -- and m.relation_type_id in (3,4, 5)
         -- and m.auditedby = ENT_ID
          order by m.c_name;
-    elsIF R_ID in (2, 7) then
+    elsIF R_ID in (2, 6, 7,9) then
       open io_cursor for
         select e.entity_id as branchentityid, e.name as branchname
           from t_auditee_entities_maping m
@@ -1621,6 +1543,7 @@ create or replace package body PKG_HD is
             on a.id = t.annex
          where t.para_status = 8
            and r.pp_no = p_no
+           and r.is_active = 'Y'
          order by t.audit_period;
     else
       open io_cursor for
@@ -1662,28 +1585,40 @@ create or replace package body PKG_HD is
   
     if (IND = 'O') then
       open io_cursor for
-        select ft.para_text
+        select ft.para_text,
+               nvl(br.reply,'') as auditee_reply,
+               '' as recommendation
           from t_au_old_paras_fad_text ft
          inner join t_au_old_paras_fad f
             on ft.ref_p = f.ref_p
          inner join ais_t_au_post_compliance c
             on f.id = c.old_para_id
+         left join ais_t_au_post_compliance_text br
+           on br.com_id = c.com_id and c.com_cycle = br.com_cycle
          where c.com_id = CM_ID;
     
     else
       if (IND = 'A') then
         open io_cursor for
-          select ot.text as para_text
+          select ot.text as para_text,
+                 e.reply as auditee_reply,
+                 r.recommendation
             from t_au_observation_text ot
            inner join ais_t_au_post_compliance c
               on c.new_para_id = ot.observatsion_id
              and c.ind = 'A'
+           inner join t_au_observations_auditee_response e
+             on e.au_obs_id = ot.observatsion_id
+           inner join t_au_observation_final_reccomendation r
+             on r.obs_id = e.au_obs_id
            where c.com_id = CM_ID;
       
       else
         if (IND = 'C') then
           open io_cursor for
-            select nt.text as para_text
+            select nt.text as para_text,
+                           'Legacy Para' as auditee_reply,
+               '' as recommendation
               from t_au_observation_old_cad_paras_text nt
              inner join ais_t_au_post_compliance c
                 on c.new_para_id = nt.observatsion_id
@@ -1727,8 +1662,12 @@ create or replace package body PKG_HD is
                                    io_cursor OUT t_cursor) as
   
     B_N varchar2(100);
+    P_N number;
   begin
-  
+    
+   Select nvl(max(o.final_para_no),0) into P_N from t_au_observation o 
+   where o.id = obsid;
+  if(P_N > 0) then
     select '-' into B_N from dual;
     P_add_activity_log(ENT_ID,
                        R_ID,
@@ -1798,25 +1737,48 @@ create or replace package body PKG_HD is
           from dual;
     
     end if;
+    
+    else
+      open io_cursor for
+        select 'First Update Final Para Number' as remarks
+          from dual;
+    
+    end if;
+    
   end P_audit_pre_Concluding;
 
   procedure P_get_audit_pre_Concluding_entities(userentityid in t_Au_Plan_Eng.Eng_Id%type,
                                                 io_cursor    OUT t_cursor) as
   begin
-  
-    open io_cursor for
-      select e.entity_id,
-             e.code,
-             eg.eng_id,
-             e.name || '  ( ' || eg.audit_startdate || ' to ' ||
-             eg.audit_enddate || ' )' as entity_name,
-             e.type_id
-        from t_au_plan_eng eg
-       inner join t_auditee_entities e
-          on e.entity_id = eg.entity_id
-         and eg.period_id > 1 ---change by ALI because period_id=2 hardcoded
-         and eg.status in (12) ---- between '5' and '12'
-         and eg.auditby_id = userentityid;
+    if (userentityid = 112242) then
+      open io_cursor for
+        select e.entity_id,
+               e.code,
+               eg.eng_id,
+               e.name || '  ( ' || eg.audit_startdate || ' to ' ||
+               eg.audit_enddate || ' )' as entity_name,
+               e.type_id
+          from t_au_plan_eng eg
+         inner join t_auditee_entities e
+            on e.entity_id = eg.entity_id
+           and eg.period_id > 1 ---change by ALI because period_id=2 hardcoded
+           and eg.status in (12) ---- between '5' and '12'
+           and eg.auditby_id = userentityid;
+    else
+      open io_cursor for
+        select e.entity_id,
+               e.code,
+               eg.eng_id,
+               e.name || '  ( ' || eg.audit_startdate || ' to ' ||
+               eg.audit_enddate || ' )' as entity_name,
+               e.type_id
+          from t_au_plan_eng eg
+         inner join t_auditee_entities e
+            on e.entity_id = eg.entity_id
+           and eg.period_id > 1 ---change by ALI because period_id=2 hardcoded
+           and eg.status in (12) ---- between '5' and '12'
+           and eg.auditby_id = userentityid;
+    end if;
   
   end P_get_audit_pre_Concluding_entities;
 
@@ -1830,51 +1792,7 @@ create or replace package body PKG_HD is
     D_F varchar2(50);
     B_N varchar2(100);
   begin
-    select '-' into B_N from dual;
-    P_add_activity_log(ENT_ID,
-                       R_ID,
-                       P_NO,
-                       181,
-                       'Viewed / Finalize Draft Observations of ' || B_N);
-  
-    select NVL(MAX(l.id), 0)
-      into E_F
-      from t_au_activity_log l
-     where l.ppnum = P_NO;
-  
-    update t_au_activity_log l set l.end_time = sysdate where l.id = E_F;
-    commit;
-  
-    insert into t_au_activity_log
-      (id,
-       entity_id,
-       role_id,
-       ppnum,
-       page_id,
-       action,
-       start_time,
-       seq,
-       unattend)
-    VALUES
-      ((select COALESCE(max(p.ID) + 1, 1) from t_au_activity_log p),
-       ENT_ID,
-       R_ID,
-       P_NO,
-       181,
-       'Get Entity Observation Details in Pre Concluding Audit of  ' ||
-       (select distinct t.name
-          from T_AU_PLAN_DISPLAY t
-         inner join t_au_plan_eng e
-            on e.entity_id = t.entity_id
-         where e.eng_id = engid),
-       sysdate,
-       (select COALESCE(max(l.seq) + 1, 1)
-          from t_au_activity_log l
-         where l.id = E_F
-           and l.ppnum = P_NO),
-       'Y');
-    commit;
-  
+     
     open io_cursor for
       select o.id,
              ot.headings,
@@ -1923,38 +1841,6 @@ create or replace package body PKG_HD is
                        P_NO,
                        79,
                        'Viewed / Finalize Draft Observations of ' || B_N);
-  
-    select NVL(MAX(l.id), 0)
-      into Z_R
-      from t_au_activity_log l
-     where l.ppnum = P_NO;
-    update t_au_activity_log l set l.end_time = sysdate where l.id = Z_R;
-    commit;
-    insert into t_au_activity_log
-      (id,
-       entity_id,
-       role_id,
-       ppnum,
-       page_id,
-       action,
-       start_time,
-       seq,
-       unattend)
-    VALUES
-      ((select COALESCE(max(p.ID) + 1, 1) from t_au_activity_log p),
-       ENT_ID,
-       R_ID,
-       P_NO,
-       157,
-       'Finalize Draft Audit Report FAD',
-       sysdate,
-       (select COALESCE(max(l.seq) + 1, 1)
-          from t_au_activity_log l
-         where l.id = Z_R
-           and l.ppnum = P_NO),
-       'Y');
-    commit;
-  
     select count(o.id)
       into N_F
       from t_au_observation o
@@ -2029,7 +1915,6 @@ create or replace package body PKG_HD is
              e.name || '  ( ' || eg.audit_startdate || ' to ' ||
              eg.audit_enddate || ' )' as entity_name,
              e.type_id
-             
         from t_au_plan_eng eg
        inner join t_auditee_entities e
           on e.entity_id = eg.entity_id
@@ -2055,8 +1940,9 @@ create or replace package body PKG_HD is
     v_com_id      ais_t_au_post_compliance.com_id%TYPE;
     V_ENTITY_TYPE number;
     V_KIP_EXIST   Varchar2(2);
+    
   begin
-  
+
     select '-' into B_N from dual;
   
     P_add_activity_log(ENT_ID,
@@ -2110,7 +1996,10 @@ create or replace package body PKG_HD is
        where eg.eng_id = engid;
     
       --STATUS 13 ENG WIll be allowed to Proceed for Concluding
-      IF (V_F = 13) then
+      if (V_F = 12) then
+        open io_cursor for
+          select 'Quality Review Pending' remarks from dual;
+      ELSIF (V_F = 13) then
         if (C_F != 0) then
           open io_cursor for
             select r.ref, r.remarks from t_au_remarks r where r.id = 19;
@@ -2654,7 +2543,7 @@ create or replace package body PKG_HD is
        where e.entity_id = ENG;
     end if;
   
-    if (R_ID in (41, 45, 1)) then
+    if (R_ID in (41, 45, 1,3)) then
       OPEN io_cursor FOR
         select c.ENTITY_ID,
                c.COM_ID,
@@ -3115,7 +3004,7 @@ create or replace package body PKG_HD is
              ar.recommendation,
              o.amount_involved,
              o.no_of_instances,
-             nvl(o.reference_id,0) as REFERENCE_ID,  
+             nvl(o.reference_id, 0) as REFERENCE_ID,
              (case
                when ds.id is null then
                 'N'
@@ -3165,22 +3054,22 @@ create or replace package body PKG_HD is
     --P_add_error_log('HD', 'P_audit_pre_Concluding', 'PP No was null', obid);
   
     open io_cursor for
-      select a.id              as annex_id,
+      select a.id as annex_id,
              p.t_id,
-             p.heading         as process,
+             p.heading as process,
              s.s_id,
-             s.heading         as sub_process,
-             d.id              as d_id,
-             d.heading         as check_list_detail,
+             s.heading as sub_process,
+             d.id as d_id,
+             d.heading as check_list_detail,
              o.severity,
              t.headings,
-             o.final_para_no,
+             nvl(o.final_para_no,0) as final_para_no,
              t.text,
              ae.reply,
              ar.recommendation,
-             hr.audit_reply    as head_recom,
+             hr.audit_reply as head_recom,
              fr.recommendation as qa_recom,
-             gg.gist           as qa_gist,
+             gg.gist as qa_gist,
              o.amount_involved,
              o.no_of_instances,
              o.engplanid,
@@ -3246,9 +3135,8 @@ create or replace package body PKG_HD is
              gg.gist           as qa_gist,
              o.amount_involved,
              o.no_of_instances,
-             O.ENGPLANID, 
-             null as REFERENCE_ID
-             
+             O.ENGPLANID,
+             null              as REFERENCE_ID
         from t_au_observation o
        inner join t_risk r
           on r.r_id = o.severity
@@ -3334,22 +3222,22 @@ create or replace package body PKG_HD is
        WHERE o.id = i_obid;
   END P_GET_PRECON_DISPLAY;
 
-  procedure P_audit_para_update_svz_az(OBID         in number,
-                                       ANXID        in number,
-                                       PROCID       in number,
-                                       SUB_PROCID   in number,
-                                       PROC_DETID   in number,
-                                       RISKID       in number,
-                                       FINAL_PARA   in number,
-                                       PARA_GIST    in varchar2,
-                                       TEXT_OF_PARA in clob,
-                                       AMOUNT_INV   in number,
-                                       NO_INST      in number,
+  procedure P_audit_para_update_svz_az(OBID           in number,
+                                       ANXID          in number,
+                                       PROCID         in number,
+                                       SUB_PROCID     in number,
+                                       PROC_DETID     in number,
+                                       RISKID         in number,
+                                       FINAL_PARA     in number,
+                                       PARA_GIST      in varchar2,
+                                       TEXT_OF_PARA   in clob,
+                                       AMOUNT_INV     in number,
+                                       NO_INST        in number,
                                        P_REFERENCE_ID in number,
-                                       P_NO         in number,
-                                       ENT_ID       in number,
-                                       R_ID         in number,
-                                       io_cursor    OUT t_cursor) as
+                                       P_NO           in number,
+                                       ENT_ID         in number,
+                                       R_ID           in number,
+                                       io_cursor      OUT t_cursor) as
     B_N varchar2(100);
   begin
   
@@ -3378,7 +3266,7 @@ create or replace package body PKG_HD is
              o.amount_involved    = AMOUNT_INV,
              o.no_of_instances    = NO_INST,
              o.final_para_no      = FINAL_PARA,
-             o.reference_id = P_REFERENCE_ID
+             o.reference_id       = P_REFERENCE_ID
        where o.id = OBID;
       commit;
     
@@ -4668,16 +4556,46 @@ create or replace package body PKG_HD is
        ORDER BY ACTION_ON ASC, ACTION_LOG_ID ASC;
   END;
 
-procedure P_get_BackOfficeDashboardEngagements(
-    ENT_ID    in number,
-    P_NO      in number,
-    R_ID      in number,
-    io_cursor OUT t_cursor
-) as
-begin
+  procedure P_get_BackOfficeDashboardEngagements(ENT_ID    in number,
+                                                 P_NO      in number,
+                                                 R_ID      in number,
+                                                 io_cursor OUT t_cursor) as
+  
+  begin
+  if(ENT_ID = 112243) then
+      open io_cursor for
+      select e.entity_id,
+             e.code,
+             eg.eng_id,
+             e.name || '  ( ' || eg.audit_startdate || ' to ' ||
+             eg.audit_enddate || ' )' as entity_name,
+             e.type_id,
+             eg.status as status_id,
 
-  open io_cursor for
-    select e.entity_id,
+           case 
+             when eg.status = 12 then 'Draft Report'
+             when eg.status = 13 then 'Issue Final Report'
+           end as status_name,
+
+           e.name || ' ( ' ||
+           to_char(eg.audit_startdate, 'DD-MON-YYYY') || ' to ' ||
+           to_char(eg.audit_enddate, 'DD-MON-YYYY') || ' ) - ' ||
+           case 
+             when eg.status = 12 then 'Draft Report'
+             when eg.status = 13 then 'Issue Final Report'
+           end as display_text
+        from t_au_plan_eng eg
+       inner join t_auditee_entities e
+          on e.entity_id = eg.entity_id
+       INNER JOIN T_AUDITEE_ENTITIES_MAPING_FAD F
+         ON F.ENTITY_ID = E.AUDITBY_ID
+       INNER JOIN T_AUDITEE_ENTITIES_MAPING M
+         ON M.ENTITY_ID = F.PARENT_ID
+          WHERE eg.status < 14
+                AND EG.PERIOD_ID > 4  ;
+  ELSIF (ent_id != 112243) THEN
+    open io_cursor for
+      select e.entity_id,
            e.code,
            eg.eng_id,
            e.name as entity_name,
@@ -4703,7 +4621,7 @@ begin
      where eg.status in (12, 13)
        and eg.auditby_id = ENT_ID
      order by e.name, eg.audit_startdate desc;
-
-end P_get_BackOfficeDashboardEngagements;
+   END IF;
+  end P_get_BackOfficeDashboardEngagements;
 
 end PKG_HD;

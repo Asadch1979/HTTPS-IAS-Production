@@ -33,7 +33,7 @@ create or replace package PKG_AD is
 
   Procedure P_Update_observation_no(m_no      in number,
                                     D_no      in number,
-                                    F_no      in number,
+                                    P_no      in number,
                                     obs_id    in number,
                                     io_cursor OUT t_cursor);
 
@@ -89,13 +89,13 @@ create or replace package PKG_AD is
 
   procedure P_GetRoleResponsibilities(io_cursor OUT t_cursor);
 
- procedure P_Group_Update(P_GROUPID           in t_groups.group_id%type,
+  procedure P_Group_Update(P_GROUPID           in t_groups.group_id%type,
                            P_GROUP_DESCRIPTION in t_groups.description%type,
                            P_GROUP_NAME        in t_groups.group_name%type,
                            P_ISACTIVE          in t_groups.status%type,
-                           ENT_ID            in number,
-                           P_NO              in number,
-                           R_ID              in number);
+                           ENT_ID              in number,
+                           P_NO                in number,
+                           R_ID                in number);
 
   procedure p_AddGroup(GROUP_DESCRIPTION in t_groups.description%type,
                        GROUP_NAME        in t_groups.group_name%type,
@@ -476,7 +476,7 @@ create or replace package PKG_AD is
 
   Procedure p_audit_observation_reversal(ENGID     in number,
                                          obs_id    in number,
-                                         S_ID      in number,                                         
+                                         S_ID      in number,
                                          P_NO      in number,
                                          io_cursor OUT t_cursor);
 
@@ -731,16 +731,6 @@ create or replace package PKG_AD is
                                   cir_date   in date,
                                   io_cursor  OUT t_cursor);
 
-  Procedure P_Add_Department_Entity_Shifting(Old_Ent_id in number,
-                                             new_ent_id in number,
-                                             P_NO       in number,
-                                             ENT_ID     in number,
-                                             R_ID       in number,
-                                             cir_no     in varchar2,
-                                             cir_attach in clob,
-                                             cir_date   in date,
-                                             io_cursor  OUT t_cursor);
-
   procedure P_get_roles_for_compliance_flow(ENT_ID    in number,
                                             P_NO      in number,
                                             R_ID      in number,
@@ -841,7 +831,7 @@ create or replace package PKG_AD is
 
   Procedure P_ADD_NEW_PAGE(M_ID        in number,
                            SM_ID       in number,
-                           P_NAME      in varchar2,                           
+                           P_NAME      in varchar2,
                            P_PAGE_KEY  in Varchar2,
                            P_PAGE_URL  in varchar2,
                            P_PATH      in varchar2,
@@ -952,7 +942,7 @@ create or replace package PKG_AD is
 
   Procedure P_Get_Audit_Manpower(P_NO      in number,
                                  R_ID      in number, /*
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     ENT_ID      in number,*/
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           ENT_ID      in number,*/
                                  io_cursor out t_cursor);
 
   PROCEDURE P_GET_PUBLIC_HOLIDAYS(p_year    IN NUMBER DEFAULT NULL,
@@ -981,7 +971,7 @@ create or replace package PKG_AD is
                                      o_result       OUT VARCHAR2);
 
   PROCEDURE P_GET_ROLE_DASHBOARD_PAGES(p_role_id IN NUMBER,
-                                       O_CURSOR   OUT SYS_REFCURSOR);
+                                       O_CURSOR  OUT SYS_REFCURSOR);
 
   PROCEDURE P_MAINT_ROLE_DASHBOARD_PAGE(P_ROLE_ID         IN NUMBER,
                                         P_PAGE_ID         IN NUMBER,
@@ -991,7 +981,7 @@ create or replace package PKG_AD is
                                         O_MESSAGE         OUT VARCHAR2);
 
   PROCEDURE P_GET_ROLE_DASHBOARD_CONFIG(p_role_id IN NUMBER,
-                                        O_CURSOR   OUT SYS_REFCURSOR);
+                                        O_CURSOR  OUT SYS_REFCURSOR);
 
   PROCEDURE P_GET_API_MASTER(O_CURSOR OUT SYS_REFCURSOR);
 
@@ -1024,7 +1014,7 @@ create or replace package PKG_AD is
                                 O_MESSAGE     OUT VARCHAR2);
 
   PROCEDURE P_GET_DASHBOARD_QUICK_LINKS(P_ROLE_ID IN NUMBER,
-                                        O_CURSOR   OUT SYS_REFCURSOR);
+                                        O_CURSOR  OUT SYS_REFCURSOR);
 
   PROCEDURE P_ADD_USER_ENTITY(p_user_id    IN NUMBER,
                               p_entity_id  IN NUMBER,
@@ -1049,9 +1039,35 @@ create or replace package PKG_AD is
                                  o_message    OUT VARCHAR2);
 
   PROCEDURE P_GET_USER_ENTITIES(p_user_id IN NUMBER,
-                                io_cursor  OUT SYS_REFCURSOR);
+                                io_cursor OUT SYS_REFCURSOR);
 
   Procedure P_GET_ALL_CONTROLLER(O_CURSOR OUT SYS_REFCURSOR);
+
+  PROCEDURE P_GET_HEAD_OBS_RISK_SUMMARY(P_ROLE_ID      IN NUMBER,
+                                        P_ENT_ID       IN NUMBER,
+                                        P_CYCLE_BUCKET IN VARCHAR2,
+                                        IO_CURSOR      OUT SYS_REFCURSOR);
+
+  Procedure P_Add_Department_Entity_Shifting(Old_Ent_id in number,
+                                             new_ent_id in number,
+                                             P_NO       in number,
+                                             ENT_ID     in number,
+                                             R_ID       in number,
+                                             cir_no     in varchar2,
+                                             cir_attach in clob,
+                                             cir_date   in date,
+                                             io_cursor  OUT t_cursor);
+
+  Procedure P_GET_HEAD_OBS_RISK_DETAILS(P_ROLE_ID       IN NUMBER,
+                                        P_ENT_ID        IN NUMBER,
+                                        P_DEPARTMENT_ID IN NUMBER,
+                                        P_CYCLE_BUCKET  IN VARCHAR2,
+                                        IO_CURSOR       OUT SYS_REFCURSOR);
+
+  PROCEDURE P_Get_Entity_Shifting_List(Io_Cursor OUT T_Cursor);
+
+  PROCEDURE P_Get_Entity_Shifting_Paras(P_Ref_Id  IN NUMBER,
+                                        Io_Cursor OUT T_Cursor);
 
 end PKG_AD;
 /
@@ -2157,9 +2173,10 @@ create or replace package body PKG_AD is
              NVL(F.AUDITED_BY_ENITITY, 0) AS AUDITED_BY_ENITITY
         from t_auditee_ent_types f
       
-       WHERE (R_ID IN (15, 16) AND F.AUDIT_TYPE = 'B')
+       WHERE (R_ID IN (5, 15, 16) AND F.AUDIT_TYPE = 'B')
           OR (R_ID in (6, 7, 11) AND f.audited_by_enitity = ENT_ID)
-          OR (R_ID = 1 and f.autid is not null)
+          OR (R_ID in (1,2) and f.autid is not null)
+          OR ((R_ID in  (11) and ENT_ID = 112243) AND F.AUDIT_TYPE = 'B')
        order by f.autid;
   end P_Get_Entity_type;
 
@@ -2192,7 +2209,7 @@ create or replace package body PKG_AD is
              t_auditee_ent_types    t,
              v_get_parent_office    r
        where t.autid = r.relation_type_id
-         and r.p_type_id = e.parent_entity_typeid
+         --and r.p_type_id = e.parent_entity_typeid
          and r.c_type_id = e.child_entity_typeid
          and r.relation_type_id = rid
          and r.parent_id is not null
@@ -2322,87 +2339,94 @@ create or replace package body PKG_AD is
                         t.description,
                         t.active           as ISACTIVE,
                         t.entity_id,
-                        e.relation_type_id
+                        '' AS relation_type_id
           from T_AUDITEE_ENTITIES t
          inner join v_get_parent_office e
             on t.entity_id = e.parent_id
-         where e.c_type_id in (6, 25)
+         inner join t_auditee_ent_types et
+            on e.c_type_id = et.autid
+         where et.audit_type = CASE
+                 WHEN r_id IN (1, 3) THEN
+                  et.audit_type
+                 ELSE
+                  'B'
+               END
            and t.code is not null
-         order by t.name asc;
-    elsif (R_ID in (6, 7, 9, 11, 35)) then
-      OPEN io_cursor FOR
-        select distinct m.parent_id   as entity_id,
-                        m.parent_id   as ZONEID,
-                        m.parent_code as zonecode,
-                        m.p_name      as name,
-                        m.p_name      as description,
-                        M.STATUS      as ISACTIVE
-        
-          from T_AUDITEE_ENTITIES t
-         inner join t_auditee_entities_maping m
-            on m.entity_id = t.entity_id
-         inner join t_auditee_ent_types ft
-            on ft.autid = t.type_id
-         where (R_ID IN (6, 7, 9) AND t.auditby_id = ENT_ID)
-            OR (R_ID IN (11, 35) AND ft.audit_type = 'B')
-         order by m.p_name asc;
-    elsif (R_ID in (15, 16, 2)) then
-      OPEN io_cursor FOR
-        select distinct m.parent_id as ZONEID,
-                        m.parent_id as zonecode,
-                        m.p_name as name,
-                        m.p_name as description,
-                        '' as ISACTIVE,
-                        m.parent_id as entity_id
-          from T_AUDITEE_ENTITIES t
-         inner join t_auditee_entities_maping m
-            on m.entity_id = t.entity_id
-         where m.auditedby = ENT_ID
-         order by m.p_name asc;
-    elsif (R_ID in (21)) then
-      OPEN io_cursor FOR
-        select distinct m.parent_id   as entity_id,
-                        m.parent_id   as ZONEID,
-                        m.parent_code as zonecode,
-                        m.p_name      as name,
-                        m.p_name      as description,
-                        M.STATUS      as ISACTIVE
-        
-          from T_AUDITEE_ENTITIES t
-         inner join t_auditee_entities_maping m
-            on m.entity_id = t.entity_id
-         where M.PARENT_ID = ENT_ID
-         order by m.p_name asc;
-    elsif (R_ID in (40)) then
-      OPEN io_cursor FOR
-        select distinct m.parent_id   as entity_id,
-                        m.parent_id   as ZONEID,
-                        m.parent_code as zonecode,
-                        m.p_name      as name,
-                        m.p_name      as description,
-                        M.STATUS      as ISACTIVE
-        
-          from T_AUDITEE_ENTITIES t
-         inner join t_auditee_entities_maping m
-            on m.entity_id = t.entity_id
-         inner join t_auditee_ent_types e
-            on e.autid = t.type_id
-         where e.controlling = ENT_ID
-         order by m.p_name asc;
-    else
-      OPEN io_cursor FOR
-        select t.code        as ZONEID,
-               t.code        as zonecode,
-               t.name,
-               t.description,
-               t.active      as ISACTIVE,
-               t.entity_id
-          from T_AUDITEE_ENTITIES t
-         where t.type_id = 5
-           and t.entity_id = ENT_ID
-         order by t.name asc;
-    end if;
-  
+         order by e.parent_id asc;
+    elsif (R_ID in (6, 7, 9, 11,35)) then
+        OPEN io_cursor FOR
+          select distinct m.parent_id   as entity_id,
+                          m.parent_id   as ZONEID,
+                          m.parent_code as zonecode,
+                          m.p_name      as name,
+                          m.p_name      as description,
+                          M.STATUS      as ISACTIVE
+          
+            from T_AUDITEE_ENTITIES t
+           inner join t_auditee_entities_maping m
+              on m.entity_id = t.entity_id
+           inner join t_auditee_ent_types ft
+              on ft.autid = t.type_id
+           where (R_ID IN (6,7, 9,40) AND t.auditby_id = ENT_ID)
+              OR (R_ID IN ( 11,35) AND ft.audit_type = 'B')
+           order by m.p_name asc;
+      elsif (R_ID in (15, 16, 2)) then
+          OPEN io_cursor FOR
+            select distinct m.parent_id as ZONEID,
+                            m.parent_id as zonecode,
+                            m.p_name as name,
+                            m.p_name as description,
+                            '' as ISACTIVE,
+                            m.parent_id as entity_id
+              from T_AUDITEE_ENTITIES t
+             inner join t_auditee_entities_maping m
+                on m.entity_id = t.entity_id
+             where m.auditedby = ENT_ID
+             order by m.p_name asc;
+        elsif (R_ID in (21)) then
+            OPEN io_cursor FOR
+              select distinct m.parent_id   as entity_id,
+                              m.parent_id   as ZONEID,
+                              m.parent_code as zonecode,
+                              m.p_name      as name,
+                              m.p_name      as description,
+                              M.STATUS      as ISACTIVE
+              
+                from T_AUDITEE_ENTITIES t
+               inner join t_auditee_entities_maping m
+                  on m.entity_id = t.entity_id
+               where M.PARENT_ID = ENT_ID
+               order by m.p_name asc;   
+       elsif (R_ID in (40)) then
+            OPEN io_cursor FOR
+              select distinct m.parent_id   as entity_id,
+                              m.parent_id   as ZONEID,
+                              m.parent_code as zonecode,
+                              m.p_name      as name,
+                              m.p_name      as description,
+                              M.STATUS      as ISACTIVE
+              
+                from T_AUDITEE_ENTITIES t
+               inner join t_auditee_entities_maping m
+                  on m.entity_id = t.entity_id
+                  inner join t_auditee_ent_types e
+                  on e.autid = t.type_id
+               where e.controlling = ENT_ID
+               order by m.p_name asc;          
+          else
+            OPEN io_cursor FOR
+              select t.code        as ZONEID,
+                     t.code        as zonecode,
+                     t.name,
+                     t.description,
+                     t.active      as ISACTIVE,
+                     t.entity_id
+                from T_AUDITEE_ENTITIES t
+               where t.type_id = 5
+                 and t.entity_id = ENT_ID
+               order by t.name asc;
+          end if;
+   
   end P_GetZonesForHoMointoring;
 
   procedure P_GetBranchSizes(io_cursor OUT t_cursor) as
@@ -2471,9 +2495,9 @@ create or replace package body PKG_AD is
           on s.entity_size = e.size_id
        WHERE e.type_id = TYPEID
          and e.auditby_id = case
-               when Ro_ID = 1 then
+               when Ro_ID in (1 , 5) then
                 e.auditby_id
-               when Ro_ID in (2, 5, 6, 7, 15, 16) then
+               when Ro_ID in (2, 5, 6, 7, 15, 16,11) then
                 ENT_ID
              end
          and not exists (select 'z'
@@ -2584,7 +2608,7 @@ create or replace package body PKG_AD is
           on s.entity_size = az.size_id
        where az.up_status = 'U'
          and az.auditby_id = case
-               when R_ID = 1 then
+               when R_ID in (1, 5) then
                 az.auditby_id
                else
                 E_ENTITY_ID
@@ -4475,7 +4499,7 @@ create or replace package body PKG_AD is
       select ep.id                   as plan_id,
              eng.ENG_ID,
              tm.t_name               as TEAM_NAME,
-             tm.t_id                 as TEAM_ID,
+             tm.id                   as TEAM_ID,
              eng.AUDIT_STARTDATE,
              eng.AUDIT_ENDDATE,
              eng.operation_startdate as OP_STARTDATE,
@@ -4511,14 +4535,12 @@ create or replace package body PKG_AD is
           from t_au_plan_eng_status s
          where s.id in (1, 2, 3, 4, 5, 7, 8, 9)
          order by s.id;
-    else
-      if (V_F > 10) then
-        open io_cursor for
-          select s.id, s.status
-            from t_au_plan_eng_status s
-           where s.id in (10, 11, 12, 13)
-           order by s.id;
-      end if;
+    elsif (V_F > 10) then
+      open io_cursor for
+        select s.id, s.status
+          from t_au_plan_eng_status s
+         where s.id in (10, 11, 12, 13)
+         order by s.id;
     end if;
   
   end p_get_audit_engagement_status;
@@ -4597,7 +4619,7 @@ create or replace package body PKG_AD is
       select o.id,
              ot.obs_id,
              o.memo_number   as memo_no,
-             O.DRAFT_PARA_NO,
+             o.draft_para_no,
              O.FINAL_PARA_NO,
              o.memo_date,
              e.name          as assigned_to,
@@ -6385,6 +6407,8 @@ create or replace package body PKG_AD is
     V_Shift_Count    NUMBER := 0;
     V_Shift_Ref_Id   NUMBER := 0;
     V_Observation_Id NUMBER := 0;
+    V_Config_Count   NUMBER := 0;
+  
   BEGIN
     ------------------------------------------------------------------
     -- Basic validation
@@ -6399,6 +6423,11 @@ create or replace package body PKG_AD is
                               'Old entity and new entity cannot be the same.');
     END IF;
   
+    IF P_No IS NULL OR P_No <= 0 THEN
+      RAISE_APPLICATION_ERROR(-20003,
+                              'A valid logged-in user is required.');
+    END IF;
+  
     ------------------------------------------------------------------
     -- Obtain old entity information
     ------------------------------------------------------------------
@@ -6409,7 +6438,7 @@ create or replace package body PKG_AD is
        WHERE E.Entity_Id = Old_Ent_Id;
     EXCEPTION
       WHEN NO_DATA_FOUND THEN
-        RAISE_APPLICATION_ERROR(-20003,
+        RAISE_APPLICATION_ERROR(-20004,
                                 'Old entity ID ' || Old_Ent_Id ||
                                 ' does not exist.');
     END;
@@ -6424,13 +6453,30 @@ create or replace package body PKG_AD is
        WHERE E.Entity_Id = New_Ent_Id;
     EXCEPTION
       WHEN NO_DATA_FOUND THEN
-        RAISE_APPLICATION_ERROR(-20004,
+        RAISE_APPLICATION_ERROR(-20005,
                                 'New entity ID ' || New_Ent_Id ||
                                 ' does not exist.');
     END;
   
     ------------------------------------------------------------------
-    -- Check whether this old entity has already been shifted
+    -- Validate Annexure configuration for branch shifting
+    ------------------------------------------------------------------
+    IF V_Old_Type_Id = 6 THEN
+    
+      SELECT COUNT(*)
+        INTO V_Config_Count
+        FROM T_Au_Fad_Annexure_Config C
+       WHERE C.Active = 'Y';
+    
+      IF V_Config_Count = 0 THEN
+        RAISE_APPLICATION_ERROR(-20006,
+                                'No active Annexure shifting configuration is available.');
+      END IF;
+    
+    END IF;
+  
+    ------------------------------------------------------------------
+    -- Check whether old entity has already been shifted
     ------------------------------------------------------------------
     SELECT COUNT(*)
       INTO V_Shift_Count
@@ -6449,7 +6495,8 @@ create or replace package body PKG_AD is
     ------------------------------------------------------------------
     -- Generate shifting reference ID
     --
-    -- A sequence should preferably be used instead of MAX + 1.
+    -- Existing MAX + 1 mechanism retained.
+    -- A database sequence should be introduced separately.
     ------------------------------------------------------------------
     SELECT NVL(MAX(S.Ref_Id), 0) + 1
       INTO V_Shift_Ref_Id
@@ -6461,9 +6508,9 @@ create or replace package body PKG_AD is
        New_Entity_Id,
        Circular_No,
        Circular_Date,
-       CIRCULAR,
-       ENTERED_By,
-       ENTERED_ON)
+       Circular,
+       Entered_By,
+       Entered_On)
     VALUES
       (V_Shift_Ref_Id,
        Old_Ent_Id,
@@ -6475,16 +6522,24 @@ create or replace package body PKG_AD is
        SYSDATE);
   
     ------------------------------------------------------------------
-    -- Record observation shifting history
-    --
-    -- ROW_NUMBER prevents the same ID from being assigned to every row.
+    -- Generate observation-shifting history IDs
     ------------------------------------------------------------------
     SELECT NVL(MAX(S.Id), 0)
       INTO V_Observation_Id
       FROM T_Au_Observation_Shifting S;
   
+    ------------------------------------------------------------------
+    -- Record observation shifting history
+    --
+    -- For branch entities:
+    --   Configured Y = shifted/open status 8
+    --   Configured N, inactive, missing or null = closed status 28
+    --
+    -- ENG_ID does not override Annexure configuration.
+    ------------------------------------------------------------------
     INSERT INTO T_Au_Observation_Shifting
       (Id,
+       Shift_Ref_Id,
        Old_Entity_Id,
        New_Entity_Id,
        Old_Para_Id,
@@ -6493,15 +6548,20 @@ create or replace package body PKG_AD is
        Para_Status,
        Annex)
       SELECT V_Observation_Id + ROW_NUMBER() OVER (ORDER BY F.Old_Para_Id, F.New_Paraid) AS Id,
-             Old_Ent_Id AS Old_Entity_Id,
-             New_Ent_Id AS New_Entity_Id,
+             V_Shift_Ref_Id,
+             Old_Ent_Id,
+             New_Ent_Id,
              F.Old_Para_Id,
              F.New_Paraid,
-             SYSDATE AS Shifting_Date,
+             SYSDATE,
+             
              CASE
-               WHEN T.Audit_Type = 'B' AND
-                    (NVL(F.Annex, -1) IN (1, 2, 3, 4, 5, 6, 11, 33, 69) OR
-                    NVL(F.Eng_Id, 0) > 1261) THEN
+               WHEN T.Audit_Type = 'B' AND EXISTS
+                (SELECT 1
+                       FROM T_Au_Fad_Annexure_Config C
+                      WHERE C.Annexure_Id = F.Annex
+                        AND C.Shift_Applicable = 'Y'
+                        AND C.Active = 'Y') THEN
                 8
              
                WHEN T.Audit_Type = 'B' THEN
@@ -6527,19 +6587,19 @@ create or replace package body PKG_AD is
      WHERE E.Entity_Id = Old_Ent_Id;
   
     ------------------------------------------------------------------
-    -- Remove old mapping
+    -- Remove old entity mapping
     ------------------------------------------------------------------
     DELETE FROM T_Auditee_Entities_Maping M WHERE M.Entity_Id = Old_Ent_Id;
   
     ------------------------------------------------------------------
-    -- Shift entity size records
+    -- Shift entity-size records
     ------------------------------------------------------------------
     UPDATE T_Auditee_Entities_Size S
        SET S.Entity_Id = New_Ent_Id
      WHERE S.Entity_Id = Old_Ent_Id;
   
     ------------------------------------------------------------------
-    -- Shift only the latest risk-period record
+    -- Shift latest risk-period record
     ------------------------------------------------------------------
     UPDATE T_Auditee_Entities_Risk R
        SET R.Entity_Id = New_Ent_Id
@@ -6555,29 +6615,44 @@ create or replace package body PKG_AD is
     IF V_Old_Type_Id = 6 THEN
     
       --------------------------------------------------------------
-      -- Move eligible observations to new entity
+      -- Move applicable current observations
+      --
+      -- ENGPLANID > 1261 identifies observations maintained in
+      -- T_AU_OBSERVATION.
       --------------------------------------------------------------
       UPDATE T_Au_Observation O
          SET O.Entity_Id = New_Ent_Id, O.Entity_Code = V_New_Entity_Code
        WHERE O.Entity_Id = Old_Ent_Id
          AND O.Status = 8
-         AND (NVL(O.Annex, -1) IN (1, 2, 3, 4, 5, 6, 11, 33, 69) OR
-             NVL(O.Engplanid, 0) > 1261);
+         AND NVL(O.Engplanid, 0) > 1261
+         AND EXISTS (SELECT 1
+                FROM T_Au_Fad_Annexure_Config C
+               WHERE C.Annexure_Id = O.Annex
+                 AND C.Shift_Applicable = 'Y'
+                 AND C.Active = 'Y');
     
       --------------------------------------------------------------
-      -- Close remaining observations
+      -- Close non-applicable current observations
       --
-      -- This includes ENGPLANID = 1261 and null values.
+      -- NOT EXISTS also covers:
+      --   Annexure marked N
+      --   inactive configuration
+      --   missing configuration
+      --   null Annexure
       --------------------------------------------------------------
       UPDATE T_Au_Observation O
          SET O.Status = 28
        WHERE O.Entity_Id = Old_Ent_Id
          AND O.Status = 8
-         AND NVL(O.Annex, -1) NOT IN (1, 2, 3, 4, 5, 6, 11, 33, 69)
-         AND NVL(O.Engplanid, 0) <= 1261;
+         AND NVL(O.Engplanid, 0) > 1261
+         AND NOT EXISTS (SELECT 1
+                FROM T_Au_Fad_Annexure_Config C
+               WHERE C.Annexure_Id = O.Annex
+                 AND C.Shift_Applicable = 'Y'
+                 AND C.Active = 'Y');
     
       --------------------------------------------------------------
-      -- Move eligible old FAD paras
+      -- Move applicable old FAD paras
       --------------------------------------------------------------
       UPDATE T_Au_Old_Paras_Fad F
          SET F.Entity_Id   = New_Ent_Id,
@@ -6585,16 +6660,24 @@ create or replace package body PKG_AD is
              F.Entity_Name = V_New_Entity_Name
        WHERE F.Entity_Id = Old_Ent_Id
          AND F.Para_Status = 8
-         AND NVL(F.Annex, -1) IN (1, 2, 3, 4, 5, 6, 11, 33, 69);
+         AND EXISTS (SELECT 1
+                FROM T_Au_Fad_Annexure_Config C
+               WHERE C.Annexure_Id = F.Annex
+                 AND C.Shift_Applicable = 'Y'
+                 AND C.Active = 'Y');
     
       --------------------------------------------------------------
-      -- Close remaining old FAD paras
+      -- Close non-applicable old FAD paras
       --------------------------------------------------------------
       UPDATE T_Au_Old_Paras_Fad F
          SET F.Para_Status = 28
        WHERE F.Entity_Id = Old_Ent_Id
          AND F.Para_Status = 8
-         AND NVL(F.Annex, -1) NOT IN (1, 2, 3, 4, 5, 6, 11, 33, 69);
+         AND NOT EXISTS (SELECT 1
+                FROM T_Au_Fad_Annexure_Config C
+               WHERE C.Annexure_Id = F.Annex
+                 AND C.Shift_Applicable = 'Y'
+                 AND C.Active = 'Y');
     
     ELSE
       --------------------------------------------------------------
@@ -6636,7 +6719,7 @@ create or replace package body PKG_AD is
     END LOOP;
   
     ------------------------------------------------------------------
-    -- Commit only after the complete shifting process succeeds
+    -- Commit complete shifting transaction
     ------------------------------------------------------------------
     COMMIT;
   
@@ -6649,15 +6732,21 @@ create or replace package body PKG_AD is
     WHEN DUP_VAL_ON_INDEX THEN
       ROLLBACK;
     
-      RAISE_APPLICATION_ERROR(-20005,
+      RAISE_APPLICATION_ERROR(-20007,
                               'Duplicate record encountered during entity shifting.');
     
     WHEN OTHERS THEN
       ROLLBACK;
     
-      RAISE_APPLICATION_ERROR(-20099,
-                              'Entity shifting failed: ' || SQLERRM);
+      IF SQLCODE BETWEEN - 20999 AND - 20000 THEN
+        RAISE;
+      ELSE
+        RAISE_APPLICATION_ERROR(-20099,
+                                'Entity shifting failed due to a database error.');
+      END IF;
+    
   END P_Add_Entity_Shifting;
+  
   procedure P_Shift_BR_to_islamic(Old_br    number,
                                   new_br    number,
                                   io_cursor OUT t_cursor) as
@@ -7938,7 +8027,7 @@ create or replace package body PKG_AD is
     open io_cursor for
     
       select r.id, r.description
-        from v_hr_rank r
+        from v_services__hrms_hr_rank r
       
       ;
   end P_get_hr_rank;
@@ -7949,7 +8038,7 @@ create or replace package body PKG_AD is
     open io_cursor for
     
       select *
-        from v_hr_rank r
+        from v_services__hrms_hr_rank r
       
       ;
   end P_get_certification;
@@ -7960,7 +8049,7 @@ create or replace package body PKG_AD is
     open io_cursor for
     
       select *
-        from v_hr_designations
+        from v_services__hrms_hr_designations
       
       ;
   end P_get_hr_designation;
@@ -7971,7 +8060,7 @@ create or replace package body PKG_AD is
     open io_cursor for
     
       select *
-        from v_HR_qualifications
+        from v_services__hrms_hr_qualifications
       
       ;
   end P_get_qualification;
@@ -7981,7 +8070,7 @@ create or replace package body PKG_AD is
   begin
     open io_cursor for
     
-      select * from v_HR_qualifications;
+      select * from v_services__hrms_hr_qualifications;
   
   end P_get_qualification_specialization;
 
@@ -8982,5 +9071,74 @@ create or replace package body PKG_AD is
        ORDER BY c.audit_period DESC, c.para_no, c.com_id;
   END P_GET_HEAD_OBS_RISK_DETAILS;
 
+  PROCEDURE P_Get_Entity_Shifting_List(Io_Cursor OUT T_Cursor) AS
+  BEGIN
+  
+    OPEN Io_Cursor FOR
+      SELECT T.Ref_Id,
+             
+             O.Entity_Id   AS Old_Ent_Id,
+             O.Code        AS Old_Ent_Code,
+             O.Description AS Old_Entity,
+             
+             N.Entity_Id   AS New_Ent_Id,
+             N.Code        AS New_Ent_Code,
+             N.Description AS New_Entity,
+             
+             T.Circular_No,
+             T.Circular_Date,
+             T.Entered_By,
+             T.Entered_On
+      
+        FROM T_Au_Entity_Shifting T
+      
+       INNER JOIN T_Auditee_Entities O
+          ON O.Entity_Id = T.Old_Entity_Id
+      
+       INNER JOIN T_Auditee_Entities N
+          ON N.Entity_Id = T.New_Entity_Id
+      
+       ORDER BY T.Entered_On DESC, T.Ref_Id DESC;
+  
+  END P_Get_Entity_Shifting_List;
+
+  PROCEDURE P_Get_Entity_Shifting_Paras(P_Ref_Id  IN NUMBER,
+                                        Io_Cursor OUT T_Cursor) AS
+  BEGIN
+  
+    IF P_Ref_Id IS NULL OR P_Ref_Id <= 0 THEN
+      RAISE_APPLICATION_ERROR(-20001,
+                              'A valid shifting reference ID is required.');
+    END IF;
+  
+    OPEN Io_Cursor FOR
+      SELECT C.Audit_Period,
+             C.Para_No,
+             C.Gist_Of_Paras,
+             
+             CASE
+               WHEN T.Para_Status = 8 THEN
+                'Open'
+               ELSE
+                'Closed'
+             END AS Para_Status,
+             
+             a.code as Annex
+      
+        FROM T_Au_Observation_Shifting T
+      
+       INNER JOIN Ais_T_Au_Post_Compliance C
+          ON C.Entity_Id = T.New_Entity_Id
+         AND (C.Old_Para_Id = T.Old_Para_Id OR
+             C.New_Para_Id = T.New_Para_Id)
+         left join t_audit_checklist_annexure a
+           on t.annex = a.id
+      
+       WHERE T.Shift_Ref_Id = P_Ref_Id
+       
+      
+       ORDER BY C.Audit_Period, C.Para_No;
+  
+  END P_Get_Entity_Shifting_Paras;
+
 end PKG_AD;
-/
