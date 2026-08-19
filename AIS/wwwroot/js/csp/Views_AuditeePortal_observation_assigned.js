@@ -129,6 +129,7 @@
 
         $('#viewMemoModel').on('hidden.bs.modal', resetAuditeeObservationReference);
         resetAuditeeObservationReference();
+        loadAllAssignedObservations();
     });
 
     function getFileExtension(file) {
@@ -221,49 +222,92 @@
 
 
     }
-    function getEntityObservation() {
+    function appendAssignedObservationRow(v) {
+        var memoDate = (v.memO_DATE || '').split(' ')[0];
+        var replyDate = (v.memO_REPLY_DATE || '').split(' ')[0];
+        var actionText = 'View';
+
+        if (v.caN_REPLY == 2) {
+            actionText = 'Update Reply';
+        } else if (v.caN_REPLY == 1 || v.editable == 1) {
+            actionText = 'Reply';
+        }
+
+        $('#manageObsPanel tbody').append(
+            '<tr id="assignedObRow_' + v.obS_ID + '">' +
+            '<td>' + (v.memO_NUMBER || '') + '</td>' +
+            '<td>' + (v.audiT_YEAR || '') + '</td>' +
+            '<td>' + (v.entitY_NAME || '') + '</td>' +
+            '<td class="text-center">' + memoDate + '</td>' +
+            '<td class="text-center">' + (v.gist || '') + '</td>' +
+            '<td class="text-center">' + replyDate + '</td>' +
+            '<td class="text-center">' + (v.status || '') + '</td>' +
+            '<td class="text-center"><a href="#" data-onclick="event.preventDefault();showMemo(' +
+            v.obS_ID + ',' + v.obS_TEXT_ID + ',' + v.responsE_ID +
+            ');" class="text-hover font-weight-bold text-success">' + actionText + '</a></td>' +
+            '</tr>');
+    }
+
+    function loadAllAssignedObservations() {
         $('#manageObsPanel tbody').empty();
-        if ($('#entitySelectField option:selected').val() != 0) {
-            g_entityIdSF = $('#entitySelectField option:selected').val();
-            $.ajax({
+        g_obsList = [];
+
+        var engagementIds = $('#entitySelectField option').map(function () {
+            return parseInt($(this).val() || 0, 10);
+        }).get().filter(function (engId, index, values) {
+            return engId > 0 && values.indexOf(engId) === index;
+        });
+
+        if (engagementIds.length === 0) {
+            $('#manageObsPanel tbody').append('<tr><td colspan="8" class="text-center text-muted">No assigned audit entity was found.</td></tr>');
+            return;
+        }
+
+        var requests = engagementIds.map(function (engId) {
+            return $.ajax({
                 url: g_asiBaseURL + "/ApiCalls/get_assigned_observation",
                 type: "POST",
                 data: {
-                    'ENG_ID': $('#entitySelectField option:selected').val()
+                    'ENG_ID': engId
                 },
                 cache: false,
                 success: function (data) {
-                    g_obsList = data;
-                    $.each(data, function (i, v) {
-                        v.memO_DATE = v.memO_DATE.split(' ')[0];
-                        v.memO_REPLY_DATE = v.memO_REPLY_DATE.split(' ')[0];
-                        if (v.caN_REPLY == 2)
-                            $('#manageObsPanel tbody').append('<tr id="assignedObRow_' + v.obS_ID + '"><td>' + v.memO_NUMBER + '</td><td>' + v.audiT_YEAR + '</td><td>' + v.entitY_NAME + '</td><td class="text-center">' + v.memO_DATE + '</td><td class="text-center">' + v.gist + '</td><td class="text-center">' + v.memO_REPLY_DATE + '</td><td class="text-center">' + v.status + '</td><td class="text-center"><a data-onclick="event.preventDefault();showMemo(' + v.obS_ID + ',' + v.obS_TEXT_ID + ',' + v.responsE_ID + ');" class="text-hover font-weight-bold text-success">Update Reply</a></td></tr>');
-                        else if (v.caN_REPLY == 1)
-                            $('#manageObsPanel tbody').append('<tr id="assignedObRow_' + v.obS_ID + '"><td>' + v.memO_NUMBER + '</td><td>' + v.audiT_YEAR + '</td><td>' + v.entitY_NAME + '</td><td class="text-center">' + v.memO_DATE + '</td><td class="text-center">' + v.gist + '</td><td class="text-center">' + v.memO_REPLY_DATE + '</td><td class="text-center">' + v.status + '</td><td class="text-center"><a data-onclick="event.preventDefault();showMemo(' + v.obS_ID + ',' + v.obS_TEXT_ID + ',' + v.responsE_ID + ');" class="text-hover font-weight-bold text-success">Reply</a></td></tr>');
-                        else if (v.editable == 1)
-                            $('#manageObsPanel tbody').append('<tr id="assignedObRow_' + v.obS_ID + '"><td>' + v.memO_NUMBER + '</td><td>' + v.audiT_YEAR + '</td><td>' + v.entitY_NAME + '</td><td class="text-center">' + v.memO_DATE + '</td><td class="text-center">' + v.gist + '</td><td class="text-center">' + v.memO_REPLY_DATE + '</td><td class="text-center">' + v.status + '</td><td class="text-center"><a data-onclick="event.preventDefault();showMemo(' + v.obS_ID + ',' + v.obS_TEXT_ID + ',' + v.responsE_ID + ');" class="text-hover font-weight-bold text-success">Reply</a></td></tr>');
-                        else
-                            $('#manageObsPanel tbody').append('<tr id="assignedObRow_' + v.obS_ID + '"><td>' + v.memO_NUMBER + '</td><td>' + v.audiT_YEAR + '</td><td>' + v.entitY_NAME + '</td><td class="text-center">' + v.memO_DATE + '</td><td class="text-center">' + v.gist + '</td><td class="text-center">' + v.memO_REPLY_DATE + '</td><td class="text-center">' + v.status + '</td><td class="text-center"><a data-onclick="event.preventDefault();showMemo(' + v.obS_ID + ',' + v.obS_TEXT_ID + ',' + v.responsE_ID + ');" class="text-hover font-weight-bold text-success">View</a></td></tr>');
-
+                    $.each(data || [], function (i, v) {
+                        v.assignedEngId = engId;
+                        g_obsList.push(v);
                     });
-
-                    setTimeout(function () {
-                        if (g_obsId != 0) {
-                            var rowpos = $('#assignedObRow_' + g_obsId).position();
-                            $('html').scrollTop(rowpos.top);
-                        }
-                    }, 200)
                 },
-                dataType: "json",
+                dataType: "json"
+            });
+        });
+
+        $.when.apply($, requests).always(function () {
+            $('#manageObsPanel tbody').empty();
+            if (g_obsList.length === 0) {
+                $('#manageObsPanel tbody').append('<tr><td colspan="8" class="text-center text-muted">No assigned observation was found.</td></tr>');
+                return;
+            }
+
+            $.each(g_obsList, function (i, v) {
+                appendAssignedObservationRow(v);
             });
 
-        }
+            if (g_obsId != 0) {
+                var rowpos = $('#assignedObRow_' + g_obsId).position();
+                if (rowpos) {
+                    $('html').scrollTop(rowpos.top);
+                }
+            }
+        });
+    }
+
+    function getEntityObservation() {
+        loadAllAssignedObservations();
     }
 
     function reloadLocation() {
         document.getElementById('aksfileupload').value = '';
-        getEntityObservation();
+        loadAllAssignedObservations();
     }
     function showMemo(obs_id, obs_text_id, resp_id) {
 
@@ -274,6 +318,7 @@
         g_respId = resp_id;
         $.each(g_obsList, function (i, v) {
             if (v.obS_ID == obs_id) {
+                g_entityIdSF = v.assignedEngId || 0;
                 gist = v.gist;
                 memo_number = v.memO_NUMBER;
                 canReply = v.caN_REPLY;

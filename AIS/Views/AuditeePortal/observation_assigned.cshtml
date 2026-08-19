@@ -28,13 +28,9 @@
         <h3 style="color: #be0e43">Assigned Observations</h3>
     </div>
     <div class="row col-md-12 mt-3">
-        <div class="col-md-2">
-            <label><b>Entity:</b></label>
-        </div>
-        <div class="col-md-10">
-            <input id="entityNameField" disabled="disabled" class="form-control ml-1 d-none" type="text" />
-            <select id="entitySelectField" data-onchange="getEntityObservation()" class="form-control form-select">
-                <option value="0" id="0">--Select Audit Entity--</option>
+        <div class="col-md-12">
+            <p class="text-muted mb-0">Observations/Memo of current audit are displayed below for reply.</p>
+            <select id="entitySelectField" class="d-none" aria-hidden="true" tabindex="-1">
                 @{
                     if (ViewData["EntitiesList"] != null)
                     {
@@ -44,7 +40,6 @@
                         }
                     }
                 }
-
             </select>
         </div>
     </div>
@@ -55,7 +50,7 @@
                 <tr>
                     <th class="col-md-auto text-center">Memo #</th>
                     <th class="col-md-auto text-center">Audit Year</th>
-                    <th class="col-md-auto text-center">Assigned to</th>
+                    <th class="col-md-auto text-center">Audit Entity</th>
                     <th class="col-md-auto text-center">Memo Date</th>
                     <th class="col-md-auto text-center">Gist  </th>
                     <th class="col-md-auto text-center">Reply Till  </th>
@@ -228,6 +223,6 @@
 </div>
 
 @section Scripts {
-    <script src="~/js/csp/Views_AuditeePortal_observation_assigned.js?v=2"></script>
+    <script src="~/js/csp/Views_AuditeePortal_observation_assigned.js?v=3"></script>
     <script src="~/js/responsibilitySection.js"></script>
 }

@@ -23,6 +23,10 @@ namespace AIS.Controllers
             var observation = GetManagedObservationsForBranches(engId, obsId).FirstOrDefault(item => item.OBS_ID == obsId)
                 ?? GetManagedObservationsForBranches(0, obsId).FirstOrDefault(item => item.OBS_ID == obsId);
 
+            // Management Audit observations do not always have a checklist annexure,
+            // so the branches query can legitimately return no row for them.
+            observation ??= GetManagedObservations(engId, obsId).FirstOrDefault(item => item.OBS_ID == obsId);
+
             return observation != null
                 && string.Equals((observation.OBS_STATUS ?? string.Empty).Trim(), "Submitted to Auditee", StringComparison.OrdinalIgnoreCase);
             }
@@ -33,7 +37,16 @@ namespace AIS.Controllers
             var engId = observationText?.ENG_ID ?? 0;
             var observation = GetManagedObservationsForBranches(engId, obsId).FirstOrDefault(item => item.OBS_ID == obsId)
                 ?? GetManagedObservationsForBranches(0, obsId).FirstOrDefault(item => item.OBS_ID == obsId);
+            var managementObservation = observation == null
+                ? GetManagedObservations(engId, obsId).FirstOrDefault(item => item.OBS_ID == obsId)
+                : null;
+            observation ??= managementObservation;
+
             var entityId = ParseNullableInt(observation?.ENTITY_ID);
+            if ((!entityId.HasValue || entityId.Value <= 0) && managementObservation != null && engId > 0)
+                {
+                entityId = GetJoiningDetails(engId)?.ENTITY_ID;
+                }
 
             return new ObservationSubmittedNotificationData
                 {

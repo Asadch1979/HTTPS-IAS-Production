@@ -28,24 +28,18 @@ namespace AIS
 
         public static async Task<bool> SendJoiningNotificationAsync(IConfiguration configuration, string engagementId, string toEmail, string ccEmail, string auditEntity, string teamLead, string teamMembers, IServiceProvider serviceProvider = null)
             {
-            string emailSubject = $"IAS~Notification: Audit Team has Joined for {auditEntity}";
-            string emailBody = $@"Dear Sir,
-
-This is to notify you that the audit team has officially joined for the audit of {auditEntity}.
-
-Please coordinate with the Audit Team for any necessary assistance during the audit process.
-
-Audit Team Details
-{teamLead}  {teamMembers}
-
-You must provide all information desired by the Audit Team during the course of Audit.
-
-Best Regards,
-Internal Audit System (IAS)
-";
+            string emailSubject = $"IAS Notification: Audit Team has Joined for {auditEntity}";
+            string emailBody = BuildHtmlBody(
+                "Audit Team has Joined",
+                $"The audit team has officially joined for the audit of {auditEntity}. Please coordinate with the Audit Team and provide all information requested during the course of the audit.",
+                BuildDetails(
+                    ("Entity", auditEntity),
+                    ("Team Lead", teamLead),
+                    ("Team Members", teamMembers),
+                    ("Status / Instructions", "The Audit Team has joined. Please provide the necessary assistance and all information requested during the audit process.")));
             LogNotification(nameof(SendJoiningNotificationAsync), toEmail, ccEmail, emailSubject, emailBody);
             EmailConfiguration econ = new EmailConfiguration(configuration, serviceProvider);
-            var result = await econ.SendAsync(CreateRequest("Audit", nameof(SendJoiningNotificationAsync), engagementId, toEmail, ccEmail, emailSubject, emailBody));
+            var result = await econ.SendAsync(CreateRequest("Audit", nameof(SendJoiningNotificationAsync), engagementId, toEmail, ccEmail, emailSubject, emailBody, true));
             return result.IsSuccess;
             }
 
@@ -132,7 +126,7 @@ Internal Audit System (IAS)
             return econ.Send(CreateRequest("Audit", nameof(NotifyParaStatus), paraNo, toEmail, ccCombined, subject, body)).IsSuccess;
             }
 
-        private static EmailMessageRequest CreateRequest(string module, string triggerPoint, string referenceId, string toEmail, string ccEmail, string subject, string body)
+        private static EmailMessageRequest CreateRequest(string module, string triggerPoint, string referenceId, string toEmail, string ccEmail, string subject, string body, bool isBodyHtml = false)
             {
             return new EmailMessageRequest
                 {
@@ -143,7 +137,7 @@ Internal Audit System (IAS)
                 CcRecipients = new[] { ccEmail },
                 Subject = subject,
                 Body = body,
-                IsBodyHtml = false
+                IsBodyHtml = isBodyHtml
                 };
             }
 
@@ -157,7 +151,7 @@ Internal Audit System (IAS)
                 data.EngagementId,
                 data.ToRecipients,
                 data.CcRecipients,
-                $"IAS Notification: Observation Submitted to Auditee - {reference}",
+                $"IAS Notification: Observation Submitted to Auditee - {reference}" ,
                 "Observation Submitted to Auditee",
                 $"An audit observation has been submitted to the auditee for review and response. The reference details are provided below for onward action.",
                 BuildDetails(
