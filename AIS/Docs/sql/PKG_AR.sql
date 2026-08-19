@@ -700,6 +700,32 @@ end PKG_AR;
 /
 create or replace package body PKG_AR is
 
+  C_STATUS_SUBMITTED      CONSTANT PLS_INTEGER := 2;
+  C_STATUS_DRAFT          CONSTANT PLS_INTEGER := 5;
+  C_STATUS_FINAL          CONSTANT PLS_INTEGER := 8;
+  C_STATUS_SETTLED        CONSTANT PLS_INTEGER := 9;
+  C_STATUS_DROPPED        CONSTANT PLS_INTEGER := 23;
+
+  /*
+    Observation entry dates are historical audit dates.  They are capped at
+    the verified engagement end date.  Workflow action dates (memo, draft,
+    final and settlement) deliberately continue to use SYSDATE.
+  */
+  function F_OBSERVATION_ENTRY_DATE(
+    P_AUDIT_ENDDATE in T_AU_PLAN_ENG.AUDIT_ENDDATE%type
+  ) return date is
+  begin
+    if P_AUDIT_ENDDATE is null then
+      raise_application_error(-20001,
+                              'Engagement audit end date is required before creating an observation.');
+    end if;
+
+    return case
+             when SYSDATE > P_AUDIT_ENDDATE then P_AUDIT_ENDDATE
+             else SYSDATE
+           end;
+  end F_OBSERVATION_ENTRY_DATE;
+
   Procedure P_GET_AR_DASHBOARD_DROPDOWN(P_ENG_ID  in number,
                                         P_P_NO    in number,
                                         P_R_ID    in number,
@@ -1496,14 +1522,14 @@ create or replace package body PKG_AR is
     R_F NUMBER := 0;
     E_F NUMBER := 0;
     S_F NUMBER := 0;
-    M_F NUMBER := 0;
     T_F NUMBER := 0;
     b_F number := 0;
     Z_B number := 0;
     OBS NUMBER := 0;
+    V_AUDIT_ENDDATE T_AU_PLAN_ENG.AUDIT_ENDDATE%type;
   begin
   
-    select max(o.ID + 1) INTO OBS from T_AU_OBSERVATION o;
+    select COALESCE(max(o.ID) + 1, 1) INTO OBS from T_AU_OBSERVATION o;
     select NVL(MAX(l.id), 0)
       into Z_B
       from t_au_activity_log l
@@ -1535,14 +1561,11 @@ create or replace package body PKG_AR is
        'Y');
     commit;
   
-    select COALESCE(max(ac.MEMO_NUMBER) + 1, 1)
-      INTO M_F
-      from T_AU_OBSERVATION ac
-     WHERE AC.ENGPLANID = PLANID;
-    SELECT E.ENTITY_ID
-      INTO E_F
+    SELECT E.ENTITY_ID, E.AUDIT_ENDDATE
+      INTO E_F, V_AUDIT_ENDDATE
       FROM T_AU_PLAN_ENG E
-     WHERE E.ENG_ID = PLANID;
+     WHERE E.ENG_ID = PLANID
+       FOR UPDATE;
     SELECT EE.TYPE_ID
       INTO T_F
       FROM T_AUDITEE_ENTITIES EE
@@ -1592,9 +1615,9 @@ create or replace package body PKG_AR is
          PLANID,
          STATUS,
          ENTEREDBY,
-         sysdate,
+         F_OBSERVATION_ENTRY_DATE(V_AUDIT_ENDDATE),
          B_F,
-         to_date(REPLYDATE, 'dd/mm/yyyy HH:MI:SS AM'),
+         REPLYDATE,
          Severity,
          V_F,
          R_F,
@@ -1607,7 +1630,6 @@ create or replace package body PKG_AR is
          P_REFERENCE_ID,
          AMOUNT_INV,
          NO_INST);
-      commit;
       INSERT INTO T_AU_OBSERVATION_TEXT
         (ID,
          OBSERVATSION_ID,
@@ -1656,9 +1678,9 @@ create or replace package body PKG_AR is
          PLANID,
          STATUS,
          ENTEREDBY,
-         sysdate,
+         F_OBSERVATION_ENTRY_DATE(V_AUDIT_ENDDATE),
          E_F,
-         to_date(REPLYDATE, 'dd/mm/yyyy HH:MI:SS AM'),
+         REPLYDATE,
          Severity,
          V_F,
          R_F,
@@ -1670,7 +1692,6 @@ create or replace package body PKG_AR is
          P_reference_id,
          AMOUNT_INV,
          NO_INST);
-      commit;
       INSERT INTO T_AU_OBSERVATION_TEXT
         (ID,
          OBSERVATSION_ID,
@@ -1688,7 +1709,7 @@ create or replace package body PKG_AR is
          ENTEREDBY,
          SYSDATE,
          PLANID,
-         M_F,
+         NULL,
          TITLE);
       commit;
     
@@ -1764,7 +1785,7 @@ create or replace package body PKG_AR is
       into vr1;
     Close v;
   
-    select max(o.ID + 1) into OBS from T_AU_OBSERVATION o;
+    select COALESCE(max(o.ID) + 1, 1) into OBS from T_AU_OBSERVATION o;
   
     if (vr1.ENTITY_ID is not null) then
       select NVL(MAX(l.id), 0)
@@ -1825,8 +1846,7 @@ create or replace package body PKG_AR is
                PLANID,
                STATUS,
                ENTEREDBY,
-               (CASE WHEN TRUNC(sysdate) < TRUNC(VR1.AUDIT_ENDDATE) THEN
-                SYSDATE ELSE vr1.AUDIT_ENDDATE end),
+               F_OBSERVATION_ENTRY_DATE(VR1.AUDIT_ENDDATE),
                vr1.entity_id,
                trunc(REPLYDATE),
                Severity,
@@ -1840,7 +1860,6 @@ create or replace package body PKG_AR is
                ANNEX_ID,
                P_REFERENCE_ID,
                AMOUNT_INV);
-            commit;
             INSERT INTO T_AU_OBSERVATION_TEXT
               (ID,
                OBSERVATSION_ID,
@@ -1858,7 +1877,6 @@ create or replace package body PKG_AR is
                SYSDATE,
                PLANID,
                TITLE);
-            commit;
             update t_auditee_checkklist t
                set t.status = 2, action = 'Y'
              where t.eng_id = PLANID
@@ -1901,8 +1919,7 @@ create or replace package body PKG_AR is
              PLANID,
              STATUS,
              ENTEREDBY,
-             (CASE WHEN TRUNC(sysdate) < TRUNC(VR1.AUDIT_ENDDATE) THEN
-              SYSDATE ELSE vr1.AUDIT_ENDDATE end),
+             F_OBSERVATION_ENTRY_DATE(VR1.AUDIT_ENDDATE),
              vr1.entity_id,
              trunc(REPLYDATE),
              Severity,
@@ -1915,7 +1932,6 @@ create or replace package body PKG_AR is
              NOINSTANCES,
              0,
              AMOUNT_INV);
-          commit;
           INSERT INTO T_AU_OBSERVATION_TEXT
             (ID,
              OBSERVATSION_ID,
@@ -2259,7 +2275,17 @@ create or replace package body PKG_AR is
   
     select m.role_id into V_F from t_user_maping m where m.ppno = p_no;
     if (T_L = 'Y') then
-      UPDATE t_au_observation SET STATUS = 23 WHERE ID = OBS_ID;
+      UPDATE t_au_observation
+         SET STATUS      = C_STATUS_DROPPED,
+             STELLED_ON  = NULL,
+             SETTLED_BY  = NULL
+       WHERE ID = OBS_ID
+         AND STATUS NOT IN (C_STATUS_FINAL, C_STATUS_SETTLED);
+
+      if SQL%ROWCOUNT = 0 then
+        raise_application_error(-20031,
+                                'Final or settled observations require the administrator reversal workflow.');
+      end if;
       COMMIT;
       open io_cursor for
         select r.ref, r.remarks from t_au_remarks r where r.id = 21;
@@ -2299,6 +2325,8 @@ create or replace package body PKG_AR is
   
     A_F number := 0;
     Z_B number := 0;
+    V_LOCKED_ENG_ID T_AU_PLAN_ENG.ENG_ID%type;
+    V_MEMO_NUMBER   T_AU_OBSERVATION.MEMO_NUMBER%type;
     cursor V is
       select o.id,
              o.engplanid,
@@ -2328,6 +2356,11 @@ create or replace package body PKG_AR is
     Fetch V
       into vr;
     Close v;
+
+    if vr.id is null then
+      raise_application_error(-20030,
+                              'Observation was not found or is not assigned to the current user.');
+    end if;
   
     select NVL(MAX(l.id), 0)
       into Z_B
@@ -2369,6 +2402,21 @@ create or replace package body PKG_AR is
      where o.id = OBS_ID;
     if (vr.Status = 1) then
       if (vr.Isteamlead = 'Y') then
+        /*
+          Serialize the engagement-scoped MAX + 1 memo allocation.  No memo
+          sequence or unique constraint exists in the verified schema.
+        */
+        select E.ENG_ID
+          into V_LOCKED_ENG_ID
+          from T_AU_PLAN_ENG E
+         where E.ENG_ID = vr.ENGPLANID
+           for update;
+
+        select NVL(max(O.MEMO_NUMBER), 0) + 1
+          into V_MEMO_NUMBER
+          from T_AU_OBSERVATION O
+         where O.ENGPLANID = vr.ENGPLANID;
+
         if (A_F = 0) then
           INSERT INTO T_AU_OBSERVATION_ASSIGNEDTO ot
             (ot.ID,
@@ -2387,13 +2435,12 @@ create or replace package body PKG_AR is
                    vr.text_id,
                    vr.ENTITY_ID,
                    P_NO,
-                   trunc(sysdate),
+                    sysdate,
                    sysdate,
                    'Y',
                    'N',
                    VR.ENGPLANID
               FROM dual;
-          commit;
         else
           INSERT INTO T_AU_OBSERVATION_ASSIGNEDTO ot
             (ot.ID,
@@ -2412,7 +2459,7 @@ create or replace package body PKG_AR is
                    TT.ID,
                    A_F,
                    O.ENTEREDBY,
-                   trunc(sysdate),
+                    sysdate,
                    sysdate,
                    'Y',
                    'N',
@@ -2421,21 +2468,17 @@ create or replace package body PKG_AR is
              INNER JOIN T_AU_OBSERVATION_TEXT TT
                 ON TT.OBSERVATSION_ID = O.ID
              WHERE O.ID = OBS_ID;
-          commit;
         end if;
       
         update t_au_observation t
-           set t.memo_date   = trunc(sysdate),
-               t.status      = 2,
-               T.MEMO_NUMBER =
-               (vr.max_num + 1)
+           set t.memo_date   = sysdate,
+               t.status      = C_STATUS_SUBMITTED,
+               T.MEMO_NUMBER = V_MEMO_NUMBER
          where t.id = OBS_ID
            and t.engplanid = vr.Engplanid;
-        commit;
       
         update t_au_observation_text Ot
-           set ot.memo_number =
-               (vr.max_num + 1)
+           set ot.memo_number = V_MEMO_NUMBER
          where ot.observatsion_id = OBS_ID
            and ot.eng_plan = vr.Engplanid;
         commit;
@@ -2639,13 +2682,23 @@ create or replace package body PKG_AR is
      WHERE o.id = OBS_ID;
   
     IF R_D = 'Y' THEN
+
+      IF NEW_STATUS_ID = C_STATUS_DRAFT AND TRIM(D_PARA_NO) IS NULL THEN
+        raise_application_error(-20032,
+                                'Draft Para Number is required for Draft Report status.');
+      END IF;
+
+      IF NEW_STATUS_ID = C_STATUS_DRAFT
+         AND NOT REGEXP_LIKE(TRIM(D_PARA_NO), '^[0-9]+$') THEN
+        raise_application_error(-20034,
+                                'Draft Para Number must contain digits only.');
+      END IF;
     
       UPDATE T_AU_OBSERVATIONS_AUDITEE_RESPONSE e
          SET e.REMARKS         = Remarks,
              E.LASTUPDATEDBY   = P_NO,
              E.LASTUPDATEDDATE = TRUNC(SYSDATE)
        WHERE e.AU_OBS_ID = OBS_ID;
-      COMMIT;
     
       /*
         Duplicate check for Draft Para No.
@@ -2671,16 +2724,26 @@ create or replace package body PKG_AR is
     
       UPDATE T_AU_OBSERVATION o
          SET o.status              = NEW_STATUS_ID,
-             o.Draft_Para_No       = D_PARA_NO,
-             o.Draft_Para_Added_On = SYSDATE,
+             o.Draft_Para_No       = CASE
+                                       WHEN NEW_STATUS_ID = C_STATUS_DRAFT THEN
+                                        TO_NUMBER(TRIM(D_PARA_NO))
+                                       ELSE
+                                        o.Draft_Para_No
+                                     END,
+             o.Draft_Para_Added_On = CASE
+                                       WHEN NEW_STATUS_ID = C_STATUS_DRAFT THEN
+                                        SYSDATE
+                                       ELSE
+                                        o.Draft_Para_Added_On
+                                     END,
              o.stelled_on = CASE
-                              WHEN NEW_STATUS_ID = 9 THEN
+                              WHEN NEW_STATUS_ID = C_STATUS_SETTLED THEN
                                SYSDATE
                               ELSE
                                NULL
                             END,
              o.settled_by = CASE
-                              WHEN NEW_STATUS_ID = 9 THEN
+                              WHEN NEW_STATUS_ID = C_STATUS_SETTLED THEN
                                P_NO
                               ELSE
                                NULL
@@ -2698,9 +2761,18 @@ create or replace package body PKG_AR is
                E.LASTUPDATEDBY   = P_NO,
                E.LASTUPDATEDDATE = TRUNC(SYSDATE)
          WHERE e.AU_OBS_ID = OBS_ID;
-        COMMIT;
       
-        IF NEW_STATUS_ID = 8 THEN
+        IF NEW_STATUS_ID = C_STATUS_FINAL THEN
+
+          IF TRIM(D_PARA_NO) IS NULL THEN
+            raise_application_error(-20033,
+                                    'Final Para Number is required for Final Report status.');
+          END IF;
+
+          IF NOT REGEXP_LIKE(TRIM(D_PARA_NO), '^[0-9]+$') THEN
+            raise_application_error(-20035,
+                                    'Final Para Number must contain digits only.');
+          END IF;
         
           /*
             Duplicate check for Final Para No.
@@ -2725,17 +2797,25 @@ create or replace package body PKG_AR is
           
           END IF;
         
-          UPDATE T_AU_OBSERVATION o
-             SET o.status              = NEW_STATUS_ID,
-                 o.final_para_no       = D_PARA_NO,
-                 o.final_para_added_on = SYSDATE
-           WHERE o.id = OBS_ID;
+           UPDATE T_AU_OBSERVATION o
+              SET o.status              = NEW_STATUS_ID,
+                  o.final_para_no       = TO_NUMBER(TRIM(D_PARA_NO)),
+                  o.final_para_added_on = SYSDATE,
+                  o.stelled_on          = NULL,
+                  o.settled_by          = NULL
+            WHERE o.id = OBS_ID;
         
           COMMIT;
         
         ELSE
         
-          IF NEW_STATUS_ID = 9 THEN
+          IF NEW_STATUS_ID = C_STATUS_SETTLED THEN
+
+            IF TRIM(D_PARA_NO) IS NOT NULL
+               AND NOT REGEXP_LIKE(TRIM(D_PARA_NO), '^[0-9]+$') THEN
+              raise_application_error(-20036,
+                                      'Final Para Number must contain digits only.');
+            END IF;
           
             /*
               Duplicate check for Final Para No.
@@ -2762,8 +2842,22 @@ create or replace package body PKG_AR is
           
             UPDATE T_AU_OBSERVATION o
                SET o.status              = NEW_STATUS_ID,
-                   o.final_para_no       = D_PARA_NO,
-                   o.final_para_added_on = SYSDATE,
+                   o.final_para_no       = CASE
+                                             WHEN o.final_para_no IS NOT NULL THEN
+                                              o.final_para_no
+                                             WHEN TRIM(D_PARA_NO) IS NOT NULL THEN
+                                              TO_NUMBER(TRIM(D_PARA_NO))
+                                             ELSE
+                                              NULL
+                                           END,
+                   o.final_para_added_on = CASE
+                                             WHEN o.final_para_added_on IS NOT NULL THEN
+                                              o.final_para_added_on
+                                             WHEN TRIM(D_PARA_NO) IS NOT NULL THEN
+                                              SYSDATE
+                                             ELSE
+                                              NULL
+                                           END,
                    o.stelled_on          = sysdate,
                    o.settled_by          = p_no
              WHERE o.id = OBS_ID;
@@ -7063,6 +7157,11 @@ create or replace package body PKG_AR is
     IF TRIM(P_DRAFT_PARA_NO) IS NULL THEN
       RAISE_APPLICATION_ERROR(-20002, 'Draft Para Number is required.');
     END IF;
+
+    IF NOT REGEXP_LIKE(TRIM(P_DRAFT_PARA_NO), '^[0-9]+$') THEN
+      RAISE_APPLICATION_ERROR(-20005,
+                              'Draft Para Number must contain digits only.');
+    END IF;
   
     SELECT O.ENGPLANID
       INTO V_ENGPLAN_ID
@@ -7106,8 +7205,8 @@ create or replace package body PKG_AR is
      WHERE E.AU_OBS_ID = P_OBS_ID;
   
     UPDATE T_AU_OBSERVATION O
-       SET O.STATUS              = 5,
-           O.DRAFT_PARA_NO       = TRIM(P_DRAFT_PARA_NO),
+       SET O.STATUS              = C_STATUS_DRAFT,
+           O.DRAFT_PARA_NO       = TO_NUMBER(TRIM(P_DRAFT_PARA_NO)),
            O.DRAFT_PARA_ADDED_ON = SYSDATE,
            O.STELLED_ON          = NULL,
            O.SETTLED_BY          = NULL
@@ -7143,7 +7242,7 @@ create or replace package body PKG_AR is
     V_ENGPLAN_ID NUMBER;
     V_DUP_COUNT  NUMBER := 0;
   BEGIN
-    IF P_NEW_STATUS_ID NOT IN (8, 9) THEN
+    IF P_NEW_STATUS_ID NOT IN (C_STATUS_FINAL, C_STATUS_SETTLED) THEN
       RAISE_APPLICATION_ERROR(-20010,
                               'Only Final Report or settlement status is allowed.');
     END IF;
@@ -7153,8 +7252,14 @@ create or replace package body PKG_AR is
                               'Only the Departmental Head is authorized.');
     END IF;
   
-    IF P_NEW_STATUS_ID = 8 AND TRIM(P_FINAL_PARA_NO) IS NULL THEN
+    IF P_NEW_STATUS_ID = C_STATUS_FINAL AND TRIM(P_FINAL_PARA_NO) IS NULL THEN
       RAISE_APPLICATION_ERROR(-20012, 'Final Para Number is required.');
+    END IF;
+
+    IF P_NEW_STATUS_ID = C_STATUS_FINAL
+       AND NOT REGEXP_LIKE(TRIM(P_FINAL_PARA_NO), '^[0-9]+$') THEN
+      RAISE_APPLICATION_ERROR(-20014,
+                              'Final Para Number must contain digits only.');
     END IF;
   
     SELECT O.ENGPLANID
@@ -7163,7 +7268,7 @@ create or replace package body PKG_AR is
      WHERE O.ID = P_OBS_ID
        FOR UPDATE;
   
-    IF P_NEW_STATUS_ID = 8 THEN
+    IF P_NEW_STATUS_ID = C_STATUS_FINAL THEN
       SELECT COUNT(*)
         INTO V_DUP_COUNT
         FROM T_AU_OBSERVATION O
@@ -7190,28 +7295,28 @@ create or replace package body PKG_AR is
        SET O.STATUS = P_NEW_STATUS_ID,
            
            O.FINAL_PARA_NO = CASE
-                               WHEN P_NEW_STATUS_ID = 8 THEN
-                                TRIM(P_FINAL_PARA_NO)
-                               ELSE
-                                NULL
-                             END,
+                                WHEN P_NEW_STATUS_ID = C_STATUS_FINAL THEN
+                                 TO_NUMBER(TRIM(P_FINAL_PARA_NO))
+                                WHEN P_NEW_STATUS_ID = C_STATUS_SETTLED THEN
+                                 O.FINAL_PARA_NO
+                              END,
            
            O.FINAL_PARA_ADDED_ON = CASE
-                                     WHEN P_NEW_STATUS_ID = 8 THEN
+                                     WHEN P_NEW_STATUS_ID = C_STATUS_FINAL THEN
                                       SYSDATE
-                                     ELSE
-                                      NULL
+                                     WHEN P_NEW_STATUS_ID = C_STATUS_SETTLED THEN
+                                      O.FINAL_PARA_ADDED_ON
                                    END,
            
            O.STELLED_ON = CASE
-                            WHEN P_NEW_STATUS_ID = 9 THEN
+                            WHEN P_NEW_STATUS_ID = C_STATUS_SETTLED THEN
                              SYSDATE
                             ELSE
                              NULL
                           END,
            
            O.SETTLED_BY = CASE
-                            WHEN P_NEW_STATUS_ID = 9 THEN
+                            WHEN P_NEW_STATUS_ID = C_STATUS_SETTLED THEN
                              P_NO
                             ELSE
                              NULL
@@ -7226,7 +7331,7 @@ create or replace package body PKG_AR is
     OPEN IO_CURSOR FOR
       SELECT '1' AS REF,
              CASE
-               WHEN P_NEW_STATUS_ID = 8 THEN
+               WHEN P_NEW_STATUS_ID = C_STATUS_FINAL THEN
                 'Observation added to Final Report successfully.'
                ELSE
                 'Observation settled successfully.'

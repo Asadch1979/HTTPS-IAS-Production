@@ -2514,6 +2514,13 @@ namespace AIS.Controllers
         [HttpPost]
         public string submit_post_audit_compliance_review(string OLD_PARA_ID, int NEW_PARA_ID, string INDICATOR, string COMPLIANCE, string COMMENTS, List<AuditeeResponseEvidenceModel> EVIDENCE_LIST)
             {
+            var remarksWithoutTags = RichTextTagRegex.Replace(COMMENTS ?? string.Empty, string.Empty);
+            var remarksText = (System.Net.WebUtility.HtmlDecode(remarksWithoutTags) ?? string.Empty).Replace('\u00A0', ' ');
+            if (remarksText.Length > 1000)
+                {
+                return "{\"Status\":false,\"Message\":\"Only 1000 characters are allowed in Remarks.\"}";
+                }
+
             string response = "";
             response = dBConnection.SubmitPostAuditComplianceReview(OLD_PARA_ID, NEW_PARA_ID, INDICATOR, COMPLIANCE, COMMENTS, EVIDENCE_LIST);
             return "{\"Status\":true,\"Message\":\"" + response + "\"}";

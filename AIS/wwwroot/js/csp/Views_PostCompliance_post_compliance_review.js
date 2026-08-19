@@ -9,6 +9,7 @@
     var g_allAttachedImages = [];
     var g_allowedFormats = ["pdf", "jpg", "jpeg", "png", "doc", "docx", "jpg", "csv", "xls", "xlsx"]; // allowed file formats
     var g_maxCycle = 0;
+    var g_complianceRemarksMaxLength = 1000;
 
 
     var btnClick = "review";
@@ -277,6 +278,10 @@
             return;
         }
 
+        if (!validateComplianceRemarksLength(true, commentsRemarks)) {
+            return;
+        }
+
         requestData = {
             'OLD_PARA_ID': g_oldParaId,
             'NEW_PARA_ID': g_newParaId,
@@ -306,6 +311,29 @@
             },
             dataType: "json",
         });
+    }
+
+    function getComplianceRemarksText(remarks) {
+        return $('<div>').html(remarks || '').text().replace(/\u00a0/g, ' ');
+    }
+
+    function validateComplianceRemarksLength(showAlert, remarks) {
+        var isReportingModal = $('#viewMemoReportingModel').hasClass('show');
+        var currentRemarks = remarks;
+        if (typeof currentRemarks === 'undefined') {
+            currentRemarks = isReportingModal
+                ? $('#viewMemo_compliance_rep').val()
+                : ($('#viewMemoModel .richText-editor').html() || $('#viewMemo_compliance').val());
+        }
+
+        var isValid = getComplianceRemarksText(currentRemarks).length <= g_complianceRemarksMaxLength;
+        var errorSelector = isReportingModal ? '#viewMemo_compliance_rep_error' : '#viewMemo_compliance_error';
+        $(errorSelector).toggleClass('d-none', isValid);
+
+        if (!isValid && showAlert) {
+            alert('Only 1000 characters are allowed in Remarks.');
+        }
+        return isValid;
     }
     function reloadLocation() {
 
