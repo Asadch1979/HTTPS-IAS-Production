@@ -46,87 +46,69 @@ namespace AIS
         public static bool SendPasswordResetSuccess(IConfiguration configuration, string userFullName, string ppNumber, string pass, string userEmail, string userCCEmail, IServiceProvider serviceProvider = null)
             {
             string subject = "IAS~ Password Reset Successful";
-            string body = $@"
-Dear {userFullName},
-
-Your password has been successfully reset. Please find your new login details below:
-
-Username: {ppNumber}
-Password: {pass}
-
-For security reasons, we recommend that you change this password immediately after logging in.
-
-If you did not request this password reset, please contact our support team immediately.
-
-Best Regards,
-
-Internal Audit System (IAS)
-";
+            string body = BuildHtmlBody(
+                "Password Reset Successful",
+                $"Dear {ChooseFirstNonEmpty(userFullName, "User")}, your password has been successfully reset. Please use the login details below and change this password immediately after logging in. If you did not request this reset, contact support immediately.",
+                BuildDetails(
+                    ("Username", ppNumber),
+                    ("Temporary Password", pass)));
             LogNotification(nameof(SendPasswordResetSuccess), userEmail, userCCEmail, subject, body);
             EmailConfiguration email = new EmailConfiguration(configuration, serviceProvider);
-            return email.Send(CreateRequest("Authentication", nameof(SendPasswordResetSuccess), ppNumber, userEmail, userCCEmail, subject, body)).IsSuccess;
+            return email.Send(CreateRequest("Authentication", nameof(SendPasswordResetSuccess), ppNumber, userEmail, userCCEmail, subject, body, true)).IsSuccess;
             }
 
         public static bool NotifyAuditSampleIssue(IConfiguration configuration, string engagementId, string toEmail, string ccEmail, IServiceProvider serviceProvider = null)
             {
             string subject = $"IAS~Notification: Issue in Audit Sample for Engagement ID: {engagementId}";
-            string body = @"
-Dear Sir,
-
-This is to notify you that the issue has been identified in Audit Sample Creation Please check and fix.
-
-Best Regards,
-Internal Audit System (IAS)
-";
+            string body = BuildHtmlBody(
+                "Issue in Audit Sample Creation",
+                "An issue was identified while creating the audit sample. Please review and resolve it.",
+                BuildDetails(("Engagement ID", engagementId)));
             LogNotification(nameof(NotifyAuditSampleIssue), toEmail, ccEmail, subject, body);
             EmailConfiguration econ = new EmailConfiguration(configuration, serviceProvider);
-            return econ.Send(CreateRequest("Sampling", nameof(NotifyAuditSampleIssue), engagementId, toEmail, ccEmail, subject, body)).IsSuccess;
+            return econ.Send(CreateRequest("Sampling", nameof(NotifyAuditSampleIssue), engagementId, toEmail, ccEmail, subject, body, true)).IsSuccess;
             }
 
         public static bool NotifyAuditExceptionIssue(IConfiguration configuration, string engagementId, string toEmail, string ccEmail, IServiceProvider serviceProvider = null)
             {
             string subject = $"IAS~Notification: Issue in Audit Exception for Engagement ID: {engagementId}";
-            string body = @"
- Dear Sir,
-
-This is to notify you that the issue has been identified while creating exception reports Please check and fix.
-
-Best Regards,
-Internal Audit System (IAS)
-                    ";
+            string body = BuildHtmlBody(
+                "Issue in Audit Exception Creation",
+                "An issue was identified while creating the audit exception report. Please review and resolve it.",
+                BuildDetails(("Engagement ID", engagementId)));
             LogNotification(nameof(NotifyAuditExceptionIssue), toEmail, ccEmail, subject, body);
             EmailConfiguration econ = new EmailConfiguration(configuration, serviceProvider);
-            return econ.Send(CreateRequest("Exception Monitoring", nameof(NotifyAuditExceptionIssue), engagementId, toEmail, ccEmail, subject, body)).IsSuccess;
+            return econ.Send(CreateRequest("Exception Monitoring", nameof(NotifyAuditExceptionIssue), engagementId, toEmail, ccEmail, subject, body, true)).IsSuccess;
             }
 
         public static bool NotifyAuditCriteriaSubmission(IConfiguration configuration, string toEmail, string ccEmail, string subject, string body, IServiceProvider serviceProvider = null)
             {
-            LogNotification(nameof(NotifyAuditCriteriaSubmission), toEmail, ccEmail, subject, body);
+            var htmlBody = BuildHtmlBody(
+                "Audit Criteria Submitted",
+                ChooseFirstNonEmpty(NormalizePlainText(body), "Audit criteria have been submitted for review."),
+                BuildDetails());
+            LogNotification(nameof(NotifyAuditCriteriaSubmission), toEmail, ccEmail, subject, htmlBody);
             EmailConfiguration email = new EmailConfiguration(configuration, serviceProvider);
-            return email.Send(CreateRequest("Planning", nameof(NotifyAuditCriteriaSubmission), string.Empty, toEmail, ccEmail, subject, body)).IsSuccess;
+            return email.Send(CreateRequest("Planning", nameof(NotifyAuditCriteriaSubmission), string.Empty, toEmail, ccEmail, subject, htmlBody, true)).IsSuccess;
             }
 
         public static bool NotifyParaStatus(IConfiguration configuration, string paraNo, string paraStatus, string paraGist, string toEmail, string ccEmail, string cc2Email, IServiceProvider serviceProvider = null)
             {
             string subject = $"IAS~Notification: Para No: {paraNo} is marked {paraStatus}";
-            string body = $@"
-Dear Sir,
-
-This is to notify you that Para No. {paraNo} has been marked as {paraStatus}.
-
-Gist of Para:
-{paraGist}
-
-Best Regards,
-Internal Audit System (IAS)
-            ";
+            string body = BuildHtmlBody(
+                "Audit Para Status Updated",
+                $"Para No. {paraNo} has been marked as {paraStatus}.",
+                BuildDetails(
+                    ("Para No.", paraNo),
+                    ("Status", paraStatus),
+                    ("Gist of Para", paraGist)));
             string ccCombined = string.Join(";", new[] { ccEmail, cc2Email }.Where(e => !string.IsNullOrWhiteSpace(e)));
             LogNotification(nameof(NotifyParaStatus), toEmail, ccCombined, subject, body);
             EmailConfiguration econ = new EmailConfiguration(configuration, serviceProvider);
-            return econ.Send(CreateRequest("Audit", nameof(NotifyParaStatus), paraNo, toEmail, ccCombined, subject, body)).IsSuccess;
+            return econ.Send(CreateRequest("Audit", nameof(NotifyParaStatus), paraNo, toEmail, ccCombined, subject, body, true)).IsSuccess;
             }
 
-        private static EmailMessageRequest CreateRequest(string module, string triggerPoint, string referenceId, string toEmail, string ccEmail, string subject, string body, bool isBodyHtml = false)
+        private static EmailMessageRequest CreateRequest(string module, string triggerPoint, string referenceId, string toEmail, string ccEmail, string subject, string body, bool isBodyHtml = true)
             {
             return new EmailMessageRequest
                 {

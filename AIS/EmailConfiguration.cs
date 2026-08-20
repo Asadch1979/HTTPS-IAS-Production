@@ -69,7 +69,7 @@ public class EmailConfiguration
             CcRecipients = new[] { cc },
             Subject = subj,
             Body = body,
-            IsBodyHtml = false
+            IsBodyHtml = true
             });
 
         return result.IsSuccess;
@@ -83,7 +83,7 @@ public class EmailConfiguration
             CcRecipients = new[] { cc },
             Subject = subj,
             Body = body,
-            IsBodyHtml = false
+            IsBodyHtml = true
             });
 
         return result.IsSuccess;

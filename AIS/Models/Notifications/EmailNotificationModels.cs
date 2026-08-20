@@ -9,7 +9,7 @@ namespace AIS.Models.Notifications
         public IEnumerable<string> CcRecipients { get; set; } = Array.Empty<string>();
         public string Subject { get; set; } = string.Empty;
         public string Body { get; set; } = string.Empty;
-        public bool IsBodyHtml { get; set; }
+        public bool IsBodyHtml { get; set; } = true;
         public IEnumerable<NotificationEmailAttachmentData> Attachments { get; set; } = Array.Empty<NotificationEmailAttachmentData>();
         public string Module { get; set; } = "Email";
         public string TriggerPoint { get; set; } = string.Empty;
