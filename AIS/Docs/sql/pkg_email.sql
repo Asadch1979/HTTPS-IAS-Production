@@ -1,468 +1,684 @@
-CREATE OR REPLACE PACKAGE pkg_email AS
-  /* Writer (upsert) routines */
-  PROCEDURE upsert_event(p_event_key    IN VARCHAR2,
-                         p_display_name IN VARCHAR2,
-                         p_description  IN VARCHAR2 DEFAULT NULL,
-                         p_is_enabled   IN NUMBER DEFAULT 1);
+CREATE OR REPLACE PACKAGE PKG_EMAIL AS
+  PROCEDURE LOG_TRIGGER_ATTEMPT(P_LOG_ID        OUT NUMBER,
+                                P_MODULE        IN VARCHAR2,
+                                P_TRIGGER_POINT IN VARCHAR2,
+                                P_REFERENCE_ID  IN VARCHAR2,
+                                P_TO_ADDRESS    IN VARCHAR2,
+                                P_CC_ADDRESS    IN VARCHAR2,
+                                P_EMAIL_SUBJECT IN VARCHAR2);
+  PROCEDURE COMPLETE_TRIGGER_ATTEMPT(P_LOG_ID        IN NUMBER,
+                                     P_STATUS        IN VARCHAR2,
+                                     P_ERROR_MESSAGE IN VARCHAR2,
+                                     P_IS_SENT       IN NUMBER);
 
-  PROCEDURE upsert_template(p_event_key    IN VARCHAR2,
-                            p_culture      IN VARCHAR2 DEFAULT 'en',
-                            p_subject_html IN CLOB,
-                            p_body_html    IN CLOB,
-                            p_updated_by   IN VARCHAR2 DEFAULT NULL);
+  PROCEDURE UPSERT_EVENT(P_EVENT_ID     IN OUT NUMBER,
+                         P_EVENT_KEY    IN VARCHAR2,
+                         P_DISPLAY_NAME IN VARCHAR2,
+                         P_DESCRIPTION  IN VARCHAR2,
+                         P_IS_ENABLED   IN NUMBER,
+                         P_USER         IN VARCHAR2);
+  PROCEDURE SET_EVENT_ENABLED(P_EVENT_ID   IN NUMBER,
+                              P_IS_ENABLED IN NUMBER,
+                              P_USER       IN VARCHAR2);
+  PROCEDURE GET_EVENTS(P_EVENT_ID IN NUMBER DEFAULT NULL,
+                       O_CUR      OUT SYS_REFCURSOR);
 
-  PROCEDURE upsert_rules(p_event_key    IN VARCHAR2,
-                         p_sendto_roles IN VARCHAR2 DEFAULT NULL,
-                         p_cc_roles     IN VARCHAR2 DEFAULT NULL,
-                         p_bcc_roles    IN VARCHAR2 DEFAULT NULL,
-                         p_sendto_users IN VARCHAR2 DEFAULT NULL,
-                         p_cc_users     IN VARCHAR2 DEFAULT NULL,
-                         p_bcc_users    IN VARCHAR2 DEFAULT NULL,
-                         p_is_active    IN NUMBER DEFAULT 1);
+  PROCEDURE UPSERT_TEMPLATE(P_TEMPLATE_ID        IN OUT NUMBER,
+                            P_EVENT_ID           IN NUMBER,
+                            P_TEMPLATE_NAME      IN VARCHAR2,
+                            P_CULTURE            IN VARCHAR2,
+                            P_SUBJECT_TEMPLATE   IN CLOB,
+                            P_BODY_HTML_TEMPLATE IN CLOB,
+                            P_IS_ACTIVE          IN NUMBER,
+                            P_USER               IN VARCHAR2);
+  PROCEDURE SET_ACTIVE_TEMPLATE(P_EVENT_ID    IN NUMBER,
+                                P_TEMPLATE_ID IN NUMBER,
+                                P_USER        IN VARCHAR2);
+  PROCEDURE GET_TEMPLATES(P_EVENT_ID    IN NUMBER DEFAULT NULL,
+                          P_TEMPLATE_ID IN NUMBER DEFAULT NULL,
+                          O_CUR         OUT SYS_REFCURSOR);
 
-  PROCEDURE add_or_replace_placeholder(p_event_key    IN VARCHAR2,
-                                       p_token        IN VARCHAR2,
-                                       p_resolver_key IN VARCHAR2,
-                                       p_sample_value IN CLOB DEFAULT NULL);
+  PROCEDURE UPSERT_RULE(P_RULE_ID        IN OUT NUMBER,
+                        P_EVENT_ID       IN NUMBER,
+                        P_TO_RECIPIENTS  IN VARCHAR2,
+                        P_CC_RECIPIENTS  IN VARCHAR2,
+                        P_BCC_RECIPIENTS IN VARCHAR2,
+                        P_IS_ACTIVE      IN NUMBER,
+                        P_USER           IN VARCHAR2);
+  PROCEDURE GET_RULES(P_EVENT_ID IN NUMBER DEFAULT NULL,
+                      O_CUR      OUT SYS_REFCURSOR);
 
-  PROCEDURE add_or_replace_attachment_source(p_event_key      IN VARCHAR2,
-                                             p_source_type    IN VARCHAR2,
-                                             p_source_ref     IN VARCHAR2,
-                                             p_file_name_pat  IN VARCHAR2 DEFAULT NULL,
-                                             p_as_inline_html IN NUMBER DEFAULT 0);
+  PROCEDURE UPSERT_PLACEHOLDER(P_PLACEHOLDER_ID IN OUT NUMBER,
+                               P_EVENT_ID       IN NUMBER,
+                               P_TOKEN          IN VARCHAR2,
+                               P_DISPLAY_NAME   IN VARCHAR2,
+                               P_TEST_VALUE     IN CLOB,
+                               P_IS_ACTIVE      IN NUMBER,
+                               P_USER           IN VARCHAR2);
+  PROCEDURE GET_PLACEHOLDERS(P_EVENT_ID IN NUMBER DEFAULT NULL,
+                             O_CUR      OUT SYS_REFCURSOR);
 
-  PROCEDURE log_email(p_event_key      IN VARCHAR2,
-                      p_correlation_id IN VARCHAR2,
-                      p_subject_sent   IN CLOB,
-                      p_body_sent      IN CLOB,
-                      p_to_csv         IN VARCHAR2,
-                      p_cc_csv         IN VARCHAR2 DEFAULT NULL,
-                      p_bcc_csv        IN VARCHAR2 DEFAULT NULL,
-                      p_status         IN VARCHAR2,
-                      p_error_message  IN CLOB DEFAULT NULL);
+  PROCEDURE UPSERT_ATTACHMENT(P_ATTACHMENT_ID     IN OUT NUMBER,
+                              P_EVENT_ID          IN NUMBER,
+                              P_ATTACHMENT_NAME   IN VARCHAR2,
+                              P_SOURCE_TYPE       IN VARCHAR2,
+                              P_SOURCE_REFERENCE  IN VARCHAR2,
+                              P_FILE_NAME_PATTERN IN VARCHAR2,
+                              P_IS_ACTIVE         IN NUMBER,
+                              P_USER              IN VARCHAR2);
+  PROCEDURE GET_ATTACHMENTS(P_EVENT_ID IN NUMBER DEFAULT NULL,
+                            O_CUR      OUT SYS_REFCURSOR);
 
-  /* Readers (return SYS_REFCURSOR) */
-  PROCEDURE get_events(p_event_key IN VARCHAR2 DEFAULT NULL,
-                       o_cur       OUT SYS_REFCURSOR);
-
-  PROCEDURE get_templates_by_event(p_event_key IN VARCHAR2,
-                                   o_cur       OUT SYS_REFCURSOR);
-
-  PROCEDURE get_rules_by_event(p_event_key IN VARCHAR2,
-                               o_cur       OUT SYS_REFCURSOR);
-
-  PROCEDURE get_placeholders_by_event(p_event_key IN VARCHAR2,
-                                      o_cur       OUT SYS_REFCURSOR);
-
-  PROCEDURE get_attachment_sources_by_event(p_event_key IN VARCHAR2,
-                                            o_cur       OUT SYS_REFCURSOR);
-
-  PROCEDURE get_email_log(p_event_key      IN VARCHAR2 DEFAULT NULL,
-                          p_from_utc       IN TIMESTAMP WITH TIME ZONE DEFAULT NULL,
-                          p_to_utc         IN TIMESTAMP WITH TIME ZONE DEFAULT NULL,
-                          p_status         IN VARCHAR2 DEFAULT NULL,
-                          p_email_contains IN VARCHAR2 DEFAULT NULL,
-                          o_cur            OUT SYS_REFCURSOR);
-
-  /* Seed helper (calls the upsert routines; no direct INSERTS) */
-  PROCEDURE seed_defaults;
-
-END pkg_email;
+  PROCEDURE CREATE_LOG(P_LOG_ID              OUT NUMBER,
+                       P_EVENT_KEY           IN VARCHAR2,
+                       P_TEMPLATE_ID         IN NUMBER,
+                       P_TEMPLATE_VERSION    IN NUMBER,
+                       P_SUBJECT_SENT        IN CLOB,
+                       P_BODY_SENT           IN CLOB,
+                       P_TO_RECIPIENTS       IN VARCHAR2,
+                       P_CC_RECIPIENTS       IN VARCHAR2,
+                       P_BCC_RECIPIENTS      IN VARCHAR2,
+                       P_ATTACHMENT_METADATA IN CLOB,
+                       P_STATUS              IN VARCHAR2,
+                       P_SMTP_RESPONSE       IN VARCHAR2,
+                       P_ATTEMPT_NUMBER      IN NUMBER,
+                       P_CALLING_COMPONENT   IN VARCHAR2,
+                       P_INITIATED_BY        IN VARCHAR2,
+                       P_CORRELATION_ID      IN VARCHAR2,
+                       P_REFERENCE_ID        IN VARCHAR2,
+                       P_FAILURE_DETAILS     IN CLOB);
+  PROCEDURE COMPLETE_LOG(P_LOG_ID          IN NUMBER,
+                         P_STATUS          IN VARCHAR2,
+                         P_SMTP_RESPONSE   IN VARCHAR2,
+                         P_FAILURE_DETAILS IN CLOB);
+  PROCEDURE GET_LOGS(P_LOG_ID         IN NUMBER DEFAULT NULL,
+                     P_FROM_UTC       IN TIMESTAMP WITH TIME ZONE DEFAULT NULL,
+                     P_TO_UTC         IN TIMESTAMP WITH TIME ZONE DEFAULT NULL,
+                     P_EVENT_KEY      IN VARCHAR2 DEFAULT NULL,
+                     P_STATUS         IN VARCHAR2 DEFAULT NULL,
+                     P_RECIPIENT      IN VARCHAR2 DEFAULT NULL,
+                     P_SUBJECT        IN VARCHAR2 DEFAULT NULL,
+                     P_CORRELATION_ID IN VARCHAR2 DEFAULT NULL,
+                     O_CUR            OUT SYS_REFCURSOR);
+END PKG_EMAIL;
 /
-CREATE OR REPLACE PACKAGE BODY pkg_email AS
-
-  /* Helper: fetch EventId by key (raises if missing when needed) */
-  FUNCTION get_event_id(p_event_key IN VARCHAR2, p_required IN NUMBER := 1)
-    RETURN NUMBER IS
-    v_id NUMBER;
+CREATE OR REPLACE PACKAGE BODY PKG_EMAIL AS
+  PROCEDURE LOG_TRIGGER_ATTEMPT(P_LOG_ID        OUT NUMBER,
+                                P_MODULE        IN VARCHAR2,
+                                P_TRIGGER_POINT IN VARCHAR2,
+                                P_REFERENCE_ID  IN VARCHAR2,
+                                P_TO_ADDRESS    IN VARCHAR2,
+                                P_CC_ADDRESS    IN VARCHAR2,
+                                P_EMAIL_SUBJECT IN VARCHAR2) IS
   BEGIN
-    SELECT EventId
-      INTO v_id
-      FROM NotificationEvents
-     WHERE EventKey = p_event_key;
-    RETURN v_id;
-  EXCEPTION
-    WHEN NO_DATA_FOUND THEN
-      IF p_required = 1 THEN
-        RAISE_APPLICATION_ERROR(-20001,
-                                'EventKey not found: ' || p_event_key);
-      ELSE
-        RETURN NULL;
-      END IF;
+    INSERT INTO T_AU_EMAIL_TRIGGER_LOG
+      (ID,
+       TRIGGER_DATE,
+       MODULE,
+       TRIGGER_POINT,
+       REFERENCE_ID,
+       TO_ADDRESS,
+       CC_ADDRESS,
+       EMAIL_SUBJECT,
+       STATUS)
+    VALUES
+      (SEQ_T_AU_EMAIL_TRIGGER_LOG.NEXTVAL,
+       SYSTIMESTAMP,
+       P_MODULE,
+       P_TRIGGER_POINT,
+       P_REFERENCE_ID,
+       P_TO_ADDRESS,
+       P_CC_ADDRESS,
+       P_EMAIL_SUBJECT,
+       'TRIGGERED')
+    RETURNING ID INTO P_LOG_ID;
+  END LOG_TRIGGER_ATTEMPT;
+
+  PROCEDURE COMPLETE_TRIGGER_ATTEMPT(P_LOG_ID        IN NUMBER,
+                                     P_STATUS        IN VARCHAR2,
+                                     P_ERROR_MESSAGE IN VARCHAR2,
+                                     P_IS_SENT       IN NUMBER) IS
+  BEGIN
+    UPDATE T_AU_EMAIL_TRIGGER_LOG
+       SET STATUS        = P_STATUS,
+           ERROR_MESSAGE = P_ERROR_MESSAGE,
+           SENT_ON       = CASE
+                             WHEN P_IS_SENT = 1 THEN
+                              SYSTIMESTAMP
+                             ELSE
+                              NULL
+                           END
+     WHERE ID = P_LOG_ID;
+  END COMPLETE_TRIGGER_ATTEMPT;
+
+  FUNCTION NORMALIZE_KEY(P_VALUE VARCHAR2) RETURN VARCHAR2 IS
+  BEGIN
+    RETURN UPPER(TRIM(P_VALUE));
   END;
 
-  /* ========== Writers ========== */
-
-  PROCEDURE upsert_event(p_event_key    IN VARCHAR2,
-                         p_display_name IN VARCHAR2,
-                         p_description  IN VARCHAR2,
-                         p_is_enabled   IN NUMBER) IS
+  PROCEDURE ASSERT_FLAG(P_VALUE NUMBER) IS
   BEGIN
-    MERGE INTO NotificationEvents t
-    USING (SELECT p_event_key AS EventKey FROM dual) s
-    ON (t.EventKey = s.EventKey)
+    IF NVL(P_VALUE, -1) NOT IN (0, 1) THEN
+      RAISE_APPLICATION_ERROR(-20010, 'Flag must be 0 or 1.');
+    END IF;
+  END;
+
+  PROCEDURE ASSERT_STATUS(P_STATUS VARCHAR2) IS
+  BEGIN
+    IF P_STATUS NOT IN ('PENDING',
+                        'SENT_TO_SMTP',
+                        'SEND_FAILED',
+                        'SKIPPED',
+                        'BOUNCED',
+                        'DELIVERED') THEN
+      RAISE_APPLICATION_ERROR(-20011, 'Invalid email status.');
+    END IF;
+  END;
+
+  PROCEDURE UPSERT_EVENT(P_EVENT_ID     IN OUT NUMBER,
+                         P_EVENT_KEY    IN VARCHAR2,
+                         P_DISPLAY_NAME IN VARCHAR2,
+                         P_DESCRIPTION  IN VARCHAR2,
+                         P_IS_ENABLED   IN NUMBER,
+                         P_USER         IN VARCHAR2) IS
+    V_KEY VARCHAR2(100);
+  BEGIN
+    ASSERT_FLAG(P_IS_ENABLED);
+    V_KEY := NORMALIZE_KEY(P_EVENT_KEY);
+    IF V_KEY IS NULL OR NOT REGEXP_LIKE(V_KEY, '^[A-Z0-9_]+$') THEN
+      RAISE_APPLICATION_ERROR(-20012, 'Invalid event key.');
+    END IF;
+    IF P_EVENT_ID IS NULL OR P_EVENT_ID = 0 THEN
+      INSERT INTO EM_EMAIL_EVENT
+        (EVENT_KEY, DISPLAY_NAME, DESCRIPTION, IS_ENABLED, CREATED_BY)
+      VALUES
+        (V_KEY, TRIM(P_DISPLAY_NAME), P_DESCRIPTION, P_IS_ENABLED, P_USER)
+      RETURNING EVENT_ID INTO P_EVENT_ID;
+    ELSE
+      UPDATE EM_EMAIL_EVENT
+         SET EVENT_KEY      = V_KEY,
+             DISPLAY_NAME   = TRIM(P_DISPLAY_NAME),
+             DESCRIPTION    = P_DESCRIPTION,
+             IS_ENABLED     = P_IS_ENABLED,
+             UPDATED_ON_UTC = SYSTIMESTAMP AT TIME ZONE 'UTC',
+             UPDATED_BY     = P_USER
+       WHERE EVENT_ID = P_EVENT_ID;
+      IF SQL%ROWCOUNT = 0 THEN
+        RAISE_APPLICATION_ERROR(-20013, 'Email event not found.');
+      END IF;
+    END IF;
+  END;
+
+  PROCEDURE SET_EVENT_ENABLED(P_EVENT_ID   IN NUMBER,
+                              P_IS_ENABLED IN NUMBER,
+                              P_USER       IN VARCHAR2) IS
+  BEGIN
+    ASSERT_FLAG(P_IS_ENABLED);
+    UPDATE EM_EMAIL_EVENT
+       SET IS_ENABLED     = P_IS_ENABLED,
+           UPDATED_ON_UTC = SYSTIMESTAMP AT TIME ZONE 'UTC',
+           UPDATED_BY     = P_USER
+     WHERE EVENT_ID = P_EVENT_ID;
+    IF SQL%ROWCOUNT = 0 THEN
+      RAISE_APPLICATION_ERROR(-20013, 'Email event not found.');
+    END IF;
+  END;
+
+  PROCEDURE GET_EVENTS(P_EVENT_ID IN NUMBER, O_CUR OUT SYS_REFCURSOR) IS
+  BEGIN
+    OPEN O_CUR FOR
+      SELECT E.EVENT_ID,
+             E.EVENT_KEY,
+             E.DISPLAY_NAME,
+             E.DESCRIPTION,
+             E.IS_ENABLED,
+             E.ACTIVE_TEMPLATE_ID,
+             T.TEMPLATE_NAME AS ACTIVE_TEMPLATE_NAME
+        FROM EM_EMAIL_EVENT E
+        LEFT JOIN EM_EMAIL_TEMPLATE T
+          ON T.TEMPLATE_ID = E.ACTIVE_TEMPLATE_ID
+       WHERE P_EVENT_ID IS NULL
+          OR E.EVENT_ID = P_EVENT_ID
+       ORDER BY E.DISPLAY_NAME;
+  END;
+
+  PROCEDURE UPSERT_TEMPLATE(P_TEMPLATE_ID        IN OUT NUMBER,
+                            P_EVENT_ID           IN NUMBER,
+                            P_TEMPLATE_NAME      IN VARCHAR2,
+                            P_CULTURE            IN VARCHAR2,
+                            P_SUBJECT_TEMPLATE   IN CLOB,
+                            P_BODY_HTML_TEMPLATE IN CLOB,
+                            P_IS_ACTIVE          IN NUMBER,
+                            P_USER               IN VARCHAR2) IS
+    V_VERSION NUMBER;
+    V_LOCK    NUMBER;
+  BEGIN
+    ASSERT_FLAG(P_IS_ACTIVE);
+    SELECT EVENT_ID
+      INTO V_LOCK
+      FROM EM_EMAIL_EVENT
+     WHERE EVENT_ID = P_EVENT_ID
+       FOR UPDATE;
+    IF P_TEMPLATE_ID IS NULL OR P_TEMPLATE_ID = 0 THEN
+      SELECT NVL(MAX(VERSION_NO), 0) + 1
+        INTO V_VERSION
+        FROM EM_EMAIL_TEMPLATE
+       WHERE EVENT_ID = P_EVENT_ID
+         AND TEMPLATE_NAME = TRIM(P_TEMPLATE_NAME)
+         AND CULTURE = NVL(TRIM(P_CULTURE), 'en');
+      INSERT INTO EM_EMAIL_TEMPLATE
+        (EVENT_ID,
+         TEMPLATE_NAME,
+         CULTURE,
+         SUBJECT_TEMPLATE,
+         BODY_HTML_TEMPLATE,
+         VERSION_NO,
+         IS_ACTIVE,
+         CREATED_BY)
+      VALUES
+        (P_EVENT_ID,
+         TRIM(P_TEMPLATE_NAME),
+         NVL(TRIM(P_CULTURE), 'en'),
+         P_SUBJECT_TEMPLATE,
+         P_BODY_HTML_TEMPLATE,
+         V_VERSION,
+         P_IS_ACTIVE,
+         P_USER)
+      RETURNING TEMPLATE_ID INTO P_TEMPLATE_ID;
+    ELSE
+      UPDATE EM_EMAIL_TEMPLATE
+         SET TEMPLATE_NAME      = TRIM(P_TEMPLATE_NAME),
+             CULTURE            = NVL(TRIM(P_CULTURE), 'en'),
+             SUBJECT_TEMPLATE   = P_SUBJECT_TEMPLATE,
+             BODY_HTML_TEMPLATE = P_BODY_HTML_TEMPLATE,
+             IS_ACTIVE          = P_IS_ACTIVE,
+             UPDATED_ON_UTC     = SYSTIMESTAMP AT TIME ZONE 'UTC',
+             UPDATED_BY         = P_USER
+       WHERE TEMPLATE_ID = P_TEMPLATE_ID
+         AND EVENT_ID = P_EVENT_ID;
+      IF SQL%ROWCOUNT = 0 THEN
+        RAISE_APPLICATION_ERROR(-20014, 'Email template not found.');
+      END IF;
+    END IF;
+  END;
+
+  PROCEDURE SET_ACTIVE_TEMPLATE(P_EVENT_ID    IN NUMBER,
+                                P_TEMPLATE_ID IN NUMBER,
+                                P_USER        IN VARCHAR2) IS
+    V_COUNT NUMBER;
+  BEGIN
+    SELECT COUNT(*)
+      INTO V_COUNT
+      FROM EM_EMAIL_TEMPLATE
+     WHERE TEMPLATE_ID = P_TEMPLATE_ID
+       AND EVENT_ID = P_EVENT_ID
+       AND IS_ACTIVE = 1;
+    IF V_COUNT = 0 THEN
+      RAISE_APPLICATION_ERROR(-20015,
+                              'Active template does not belong to event.');
+    END IF;
+    UPDATE EM_EMAIL_EVENT
+       SET ACTIVE_TEMPLATE_ID = P_TEMPLATE_ID,
+           UPDATED_ON_UTC     = SYSTIMESTAMP AT TIME ZONE 'UTC',
+           UPDATED_BY         = P_USER
+     WHERE EVENT_ID = P_EVENT_ID;
+  END;
+
+  PROCEDURE GET_TEMPLATES(P_EVENT_ID    IN NUMBER,
+                          P_TEMPLATE_ID IN NUMBER,
+                          O_CUR         OUT SYS_REFCURSOR) IS
+  BEGIN
+    OPEN O_CUR FOR
+      SELECT T.TEMPLATE_ID,
+             T.EVENT_ID,
+             T.TEMPLATE_NAME,
+             T.CULTURE,
+             T.SUBJECT_TEMPLATE,
+             T.BODY_HTML_TEMPLATE,
+             T.VERSION_NO,
+             T.IS_ACTIVE,
+             E.EVENT_KEY
+        FROM EM_EMAIL_TEMPLATE T
+        JOIN EM_EMAIL_EVENT E
+          ON E.EVENT_ID = T.EVENT_ID
+       WHERE (P_EVENT_ID IS NULL OR T.EVENT_ID = P_EVENT_ID)
+         AND (P_TEMPLATE_ID IS NULL OR T.TEMPLATE_ID = P_TEMPLATE_ID)
+       ORDER BY E.EVENT_KEY, T.TEMPLATE_NAME, T.VERSION_NO DESC;
+  END;
+
+  PROCEDURE UPSERT_RULE(P_RULE_ID        IN OUT NUMBER,
+                        P_EVENT_ID       IN NUMBER,
+                        P_TO_RECIPIENTS  IN VARCHAR2,
+                        P_CC_RECIPIENTS  IN VARCHAR2,
+                        P_BCC_RECIPIENTS IN VARCHAR2,
+                        P_IS_ACTIVE      IN NUMBER,
+                        P_USER           IN VARCHAR2) IS
+  BEGIN
+    ASSERT_FLAG(P_IS_ACTIVE);
+    MERGE INTO EM_EMAIL_RECIPIENT_RULE T
+    USING (SELECT P_EVENT_ID EVENT_ID FROM DUAL) S
+    ON (T.EVENT_ID = S.EVENT_ID)
     WHEN MATCHED THEN
       UPDATE
-         SET t.DisplayName = p_display_name,
-             t.Description = p_description,
-             t.IsEnabled   = NVL(p_is_enabled, 1)
+         SET T.TO_RECIPIENTS  = P_TO_RECIPIENTS,
+             T.CC_RECIPIENTS  = P_CC_RECIPIENTS,
+             T.BCC_RECIPIENTS = P_BCC_RECIPIENTS,
+             T.IS_ACTIVE      = P_IS_ACTIVE,
+             T.UPDATED_ON_UTC = SYSTIMESTAMP AT TIME ZONE 'UTC',
+             T.UPDATED_BY     = P_USER
     WHEN NOT MATCHED THEN
       INSERT
-        (EventKey, DisplayName, IsEnabled, Description)
+        (EVENT_ID,
+         TO_RECIPIENTS,
+         CC_RECIPIENTS,
+         BCC_RECIPIENTS,
+         IS_ACTIVE,
+         CREATED_BY)
       VALUES
-        (p_event_key, p_display_name, NVL(p_is_enabled, 1), p_description);
-  END upsert_event;
+        (P_EVENT_ID,
+         P_TO_RECIPIENTS,
+         P_CC_RECIPIENTS,
+         P_BCC_RECIPIENTS,
+         P_IS_ACTIVE,
+         P_USER);
+    SELECT RULE_ID
+      INTO P_RULE_ID
+      FROM EM_EMAIL_RECIPIENT_RULE
+     WHERE EVENT_ID = P_EVENT_ID;
+  END;
 
-  PROCEDURE upsert_template(p_event_key    IN VARCHAR2,
-                            p_culture      IN VARCHAR2,
-                            p_subject_html IN CLOB,
-                            p_body_html    IN CLOB,
-                            p_updated_by   IN VARCHAR2) IS
-    v_event_id NUMBER;
+  PROCEDURE GET_RULES(P_EVENT_ID IN NUMBER, O_CUR OUT SYS_REFCURSOR) IS
   BEGIN
-    v_event_id := get_event_id(p_event_key, 1);
-  
-    MERGE INTO EmailTemplates t
-    USING (SELECT v_event_id AS EventId, p_culture AS Culture FROM dual) s
-    ON (t.EventId = s.EventId AND t.Culture = s.Culture)
+    OPEN O_CUR FOR
+      SELECT R.RULE_ID,
+             R.EVENT_ID,
+             R.TO_RECIPIENTS,
+             R.CC_RECIPIENTS,
+             R.BCC_RECIPIENTS,
+             R.IS_ACTIVE,
+             E.EVENT_KEY
+        FROM EM_EMAIL_RECIPIENT_RULE R
+        JOIN EM_EMAIL_EVENT E
+          ON E.EVENT_ID = R.EVENT_ID
+       WHERE P_EVENT_ID IS NULL
+          OR R.EVENT_ID = P_EVENT_ID
+       ORDER BY E.EVENT_KEY;
+  END;
+
+  PROCEDURE UPSERT_PLACEHOLDER(P_PLACEHOLDER_ID IN OUT NUMBER,
+                               P_EVENT_ID       IN NUMBER,
+                               P_TOKEN          IN VARCHAR2,
+                               P_DISPLAY_NAME   IN VARCHAR2,
+                               P_TEST_VALUE     IN CLOB,
+                               P_IS_ACTIVE      IN NUMBER,
+                               P_USER           IN VARCHAR2) IS
+  BEGIN
+    ASSERT_FLAG(P_IS_ACTIVE);
+    IF NOT REGEXP_LIKE(TRIM(P_TOKEN), '^\{[A-Za-z0-9_.]+\}$') THEN
+      RAISE_APPLICATION_ERROR(-20016, 'Invalid placeholder token.');
+    END IF;
+    MERGE INTO EM_EMAIL_PLACEHOLDER T
+    USING (SELECT P_EVENT_ID EVENT_ID, TRIM(P_TOKEN) TOKEN FROM DUAL) S
+    ON (T.EVENT_ID = S.EVENT_ID AND T.TOKEN = S.TOKEN)
     WHEN MATCHED THEN
       UPDATE
-         SET t.SubjectHtml   = p_subject_html,
-             t.BodyHtml      = p_body_html,
-             t.LastUpdatedBy = p_updated_by,
-             t.LastUpdatedOn = SYSTIMESTAMP
+         SET T.DISPLAY_NAME   = TRIM(P_DISPLAY_NAME),
+             T.TEST_VALUE     = P_TEST_VALUE,
+             T.IS_ACTIVE      = P_IS_ACTIVE,
+             T.UPDATED_ON_UTC = SYSTIMESTAMP AT TIME ZONE 'UTC',
+             T.UPDATED_BY     = P_USER
     WHEN NOT MATCHED THEN
       INSERT
-        (EventId, Culture, SubjectHtml, BodyHtml, LastUpdatedBy)
+        (EVENT_ID, TOKEN, DISPLAY_NAME, TEST_VALUE, IS_ACTIVE, CREATED_BY)
       VALUES
-        (v_event_id, p_culture, p_subject_html, p_body_html, p_updated_by);
-  END upsert_template;
+        (P_EVENT_ID,
+         TRIM(P_TOKEN),
+         TRIM(P_DISPLAY_NAME),
+         P_TEST_VALUE,
+         P_IS_ACTIVE,
+         P_USER);
+    SELECT PLACEHOLDER_ID
+      INTO P_PLACEHOLDER_ID
+      FROM EM_EMAIL_PLACEHOLDER
+     WHERE EVENT_ID = P_EVENT_ID
+       AND TOKEN = TRIM(P_TOKEN);
+  END;
 
-  PROCEDURE upsert_rules(p_event_key    IN VARCHAR2,
-                         p_sendto_roles IN VARCHAR2,
-                         p_cc_roles     IN VARCHAR2,
-                         p_bcc_roles    IN VARCHAR2,
-                         p_sendto_users IN VARCHAR2,
-                         p_cc_users     IN VARCHAR2,
-                         p_bcc_users    IN VARCHAR2,
-                         p_is_active    IN NUMBER) IS
-    v_event_id NUMBER;
+  PROCEDURE GET_PLACEHOLDERS(P_EVENT_ID IN NUMBER, O_CUR OUT SYS_REFCURSOR) IS
   BEGIN
-    v_event_id := get_event_id(p_event_key, 1);
-  
-    MERGE INTO NotificationRules t
-    USING (SELECT v_event_id AS EventId FROM dual) s
-    ON (t.EventId = s.EventId)
-    WHEN MATCHED THEN
-      UPDATE
-         SET t.SendToRolesCsv = p_sendto_roles,
-             t.CcToRolesCsv   = p_cc_roles,
-             t.BccToRolesCsv  = p_bcc_roles,
-             t.SendToUsersCsv = p_sendto_users,
-             t.CcToUsersCsv   = p_cc_users,
-             t.BccToUsersCsv  = p_bcc_users,
-             t.IsActive       = NVL(p_is_active, 1)
-    WHEN NOT MATCHED THEN
-      INSERT
-        (EventId,
-         SendToRolesCsv,
-         CcToRolesCsv,
-         BccToRolesCsv,
-         SendToUsersCsv,
-         CcToUsersCsv,
-         BccToUsersCsv,
-         IsActive)
-      VALUES
-        (v_event_id,
-         p_sendto_roles,
-         p_cc_roles,
-         p_bcc_roles,
-         p_sendto_users,
-         p_cc_users,
-         p_bcc_users,
-         NVL(p_is_active, 1));
-  END upsert_rules;
+    OPEN O_CUR FOR
+      SELECT P.PLACEHOLDER_ID,
+             P.EVENT_ID,
+             P.TOKEN,
+             P.DISPLAY_NAME,
+             P.TEST_VALUE,
+             P.IS_ACTIVE,
+             E.EVENT_KEY
+        FROM EM_EMAIL_PLACEHOLDER P
+        JOIN EM_EMAIL_EVENT E
+          ON E.EVENT_ID = P.EVENT_ID
+       WHERE P_EVENT_ID IS NULL
+          OR P.EVENT_ID = P_EVENT_ID
+       ORDER BY E.EVENT_KEY, P.TOKEN;
+  END;
 
-  PROCEDURE add_or_replace_placeholder(p_event_key    IN VARCHAR2,
-                                       p_token        IN VARCHAR2,
-                                       p_resolver_key IN VARCHAR2,
-                                       p_sample_value IN CLOB) IS
-    v_event_id NUMBER;
+  PROCEDURE GET_ATTACHMENTS(P_EVENT_ID IN NUMBER, O_CUR OUT SYS_REFCURSOR) IS
   BEGIN
-    v_event_id := get_event_id(p_event_key, 1);
-  
-    MERGE INTO TemplatePlaceholders t
-    USING (SELECT v_event_id AS EventId, p_token AS Token FROM dual) s
-    ON (t.EventId = s.EventId AND t.Token = s.Token)
-    WHEN MATCHED THEN
-      UPDATE
-         SET t.ResolverKey = p_resolver_key, t.SampleValue = p_sample_value
-    WHEN NOT MATCHED THEN
-      INSERT
-        (EventId, Token, ResolverKey, SampleValue)
-      VALUES
-        (v_event_id, p_token, p_resolver_key, p_sample_value);
-  END add_or_replace_placeholder;
+    OPEN O_CUR FOR
+      SELECT ATTACHMENT_ID,
+             EVENT_ID,
+             ATTACHMENT_NAME,
+             SOURCE_TYPE,
+             SOURCE_REFERENCE,
+             FILE_NAME_PATTERN,
+             IS_ACTIVE
+        FROM EM_EMAIL_ATTACHMENT_DEF
+       WHERE P_EVENT_ID IS NULL
+          OR EVENT_ID = P_EVENT_ID
+       ORDER BY EVENT_ID, ATTACHMENT_NAME;
+  END;
 
-  PROCEDURE add_or_replace_attachment_source(p_event_key      IN VARCHAR2,
-                                             p_source_type    IN VARCHAR2,
-                                             p_source_ref     IN VARCHAR2,
-                                             p_file_name_pat  IN VARCHAR2,
-                                             p_as_inline_html IN NUMBER) IS
-    v_event_id NUMBER;
+  PROCEDURE UPSERT_ATTACHMENT(P_ATTACHMENT_ID     IN OUT NUMBER,
+                              P_EVENT_ID          IN NUMBER,
+                              P_ATTACHMENT_NAME   IN VARCHAR2,
+                              P_SOURCE_TYPE       IN VARCHAR2,
+                              P_SOURCE_REFERENCE  IN VARCHAR2,
+                              P_FILE_NAME_PATTERN IN VARCHAR2,
+                              P_IS_ACTIVE         IN NUMBER,
+                              P_USER              IN VARCHAR2) IS
   BEGIN
-    v_event_id := get_event_id(p_event_key, 1);
-  
-    MERGE INTO AttachmentSources t
-    USING (SELECT v_event_id    AS EventId,
-                  p_source_type AS SourceType,
-                  p_source_ref  AS SourceRef
-             FROM dual) s
-    ON (t.EventId = s.EventId AND t.SourceType = s.SourceType AND t.SourceRef = s.SourceRef)
-    WHEN MATCHED THEN
-      UPDATE
-         SET t.FileNamePattern = p_file_name_pat,
-             t.AsInlineHtml    = NVL(p_as_inline_html, 0)
-    WHEN NOT MATCHED THEN
-      INSERT
-        (EventId, SourceType, SourceRef, FileNamePattern, AsInlineHtml)
+    ASSERT_FLAG(P_IS_ACTIVE);
+    IF P_SOURCE_TYPE NOT IN ('NONE', 'STATIC', 'FUTURE_PROVIDER') THEN
+      RAISE_APPLICATION_ERROR(-20018, 'Invalid attachment source type.');
+    END IF;
+    IF P_ATTACHMENT_ID IS NULL OR P_ATTACHMENT_ID = 0 THEN
+      INSERT INTO EM_EMAIL_ATTACHMENT_DEF
+        (EVENT_ID,
+         ATTACHMENT_NAME,
+         SOURCE_TYPE,
+         SOURCE_REFERENCE,
+         FILE_NAME_PATTERN,
+         IS_ACTIVE,
+         CREATED_BY)
       VALUES
-        (v_event_id,
-         p_source_type,
-         p_source_ref,
-         p_file_name_pat,
-         NVL(p_as_inline_html, 0));
-  END add_or_replace_attachment_source;
+        (P_EVENT_ID,
+         TRIM(P_ATTACHMENT_NAME),
+         P_SOURCE_TYPE,
+         P_SOURCE_REFERENCE,
+         P_FILE_NAME_PATTERN,
+         P_IS_ACTIVE,
+         P_USER)
+      RETURNING ATTACHMENT_ID INTO P_ATTACHMENT_ID;
+    ELSE
+      UPDATE EM_EMAIL_ATTACHMENT_DEF
+         SET ATTACHMENT_NAME   = TRIM(P_ATTACHMENT_NAME),
+             SOURCE_TYPE       = P_SOURCE_TYPE,
+             SOURCE_REFERENCE  = P_SOURCE_REFERENCE,
+             FILE_NAME_PATTERN = P_FILE_NAME_PATTERN,
+             IS_ACTIVE         = P_IS_ACTIVE,
+             UPDATED_ON_UTC    = SYSTIMESTAMP AT TIME ZONE 'UTC',
+             UPDATED_BY        = P_USER
+       WHERE ATTACHMENT_ID = P_ATTACHMENT_ID
+         AND EVENT_ID = P_EVENT_ID;
+      IF SQL%ROWCOUNT = 0 THEN
+        RAISE_APPLICATION_ERROR(-20019, 'Attachment definition not found.');
+      END IF;
+    END IF;
+  END;
 
-  /* Autonomous logging so we capture failures even if caller rolls back */
-  PROCEDURE log_email(p_event_key      IN VARCHAR2,
-                      p_correlation_id IN VARCHAR2,
-                      p_subject_sent   IN CLOB,
-                      p_body_sent      IN CLOB,
-                      p_to_csv         IN VARCHAR2,
-                      p_cc_csv         IN VARCHAR2,
-                      p_bcc_csv        IN VARCHAR2,
-                      p_status         IN VARCHAR2,
-                      p_error_message  IN CLOB) IS
+  PROCEDURE CREATE_LOG(P_LOG_ID              OUT NUMBER,
+                       P_EVENT_KEY           IN VARCHAR2,
+                       P_TEMPLATE_ID         IN NUMBER,
+                       P_TEMPLATE_VERSION    IN NUMBER,
+                       P_SUBJECT_SENT        IN CLOB,
+                       P_BODY_SENT           IN CLOB,
+                       P_TO_RECIPIENTS       IN VARCHAR2,
+                       P_CC_RECIPIENTS       IN VARCHAR2,
+                       P_BCC_RECIPIENTS      IN VARCHAR2,
+                       P_ATTACHMENT_METADATA IN CLOB,
+                       P_STATUS              IN VARCHAR2,
+                       P_SMTP_RESPONSE       IN VARCHAR2,
+                       P_ATTEMPT_NUMBER      IN NUMBER,
+                       P_CALLING_COMPONENT   IN VARCHAR2,
+                       P_INITIATED_BY        IN VARCHAR2,
+                       P_CORRELATION_ID      IN VARCHAR2,
+                       P_REFERENCE_ID        IN VARCHAR2,
+                       P_FAILURE_DETAILS     IN CLOB) IS
     PRAGMA AUTONOMOUS_TRANSACTION;
+    V_EVENT_KEY VARCHAR2(100);
   BEGIN
-    INSERT INTO EmailLog
-      (EventKey,
-       CorrelationId,
-       SubjectSent,
-       BodySent,
-       ToCsv,
-       CcCsv,
-       BccCsv,
-       Status,
-       ErrorMessage,
-       SentOnUtc)
+    ASSERT_STATUS(P_STATUS);
+
+    V_EVENT_KEY := NORMALIZE_KEY(P_EVENT_KEY);
+
+    INSERT INTO EM_EMAIL_LOG
+      (EVENT_KEY,
+       TEMPLATE_ID,
+       TEMPLATE_VERSION,
+       SUBJECT_SENT,
+       BODY_SENT,
+       TO_RECIPIENTS,
+       CC_RECIPIENTS,
+       BCC_RECIPIENTS,
+       ATTACHMENT_METADATA,
+       STATUS,
+       SMTP_RESPONSE,
+       ATTEMPT_NUMBER,
+       CALLING_COMPONENT,
+       INITIATED_BY,
+       CORRELATION_ID,
+       REFERENCE_ID,
+       FAILURE_DETAILS)
     VALUES
-      (p_event_key,
-       p_correlation_id,
-       p_subject_sent,
-       p_body_sent,
-       p_to_csv,
-       p_cc_csv,
-       p_bcc_csv,
-       p_status,
-       p_error_message,
-       SYS_EXTRACT_UTC(SYSTIMESTAMP));
+      (V_EVENT_KEY,
+       P_TEMPLATE_ID,
+       P_TEMPLATE_VERSION,
+       P_SUBJECT_SENT,
+       P_BODY_SENT,
+       P_TO_RECIPIENTS,
+       P_CC_RECIPIENTS,
+       P_BCC_RECIPIENTS,
+       P_ATTACHMENT_METADATA,
+       P_STATUS,
+       P_SMTP_RESPONSE,
+       NVL(P_ATTEMPT_NUMBER, 1),
+       P_CALLING_COMPONENT,
+       P_INITIATED_BY,
+       P_CORRELATION_ID,
+       P_REFERENCE_ID,
+       P_FAILURE_DETAILS)
+    RETURNING LOG_ID INTO P_LOG_ID;
+
     COMMIT;
   EXCEPTION
     WHEN OTHERS THEN
-      -- Last resort: swallow logging errors (to not break caller)
       ROLLBACK;
-  END log_email;
+      RAISE;
+  END CREATE_LOG;
 
-  /* ========== Readers ========== */
-
-  PROCEDURE get_events(p_event_key IN VARCHAR2, o_cur OUT SYS_REFCURSOR) IS
+  PROCEDURE COMPLETE_LOG(P_LOG_ID          IN NUMBER,
+                         P_STATUS          IN VARCHAR2,
+                         P_SMTP_RESPONSE   IN VARCHAR2,
+                         P_FAILURE_DETAILS IN CLOB) IS
+    PRAGMA AUTONOMOUS_TRANSACTION;
   BEGIN
-    OPEN o_cur FOR
-      SELECT EventId, EventKey, DisplayName, IsEnabled, Description
-        FROM NotificationEvents
-       WHERE (p_event_key IS NULL OR EventKey = p_event_key)
-       ORDER BY DisplayName;
-  END get_events;
+    ASSERT_STATUS(P_STATUS);
+    UPDATE EM_EMAIL_LOG
+       SET STATUS              = P_STATUS,
+           SMTP_RESPONSE       = P_SMTP_RESPONSE,
+           FAILURE_DETAILS     = P_FAILURE_DETAILS,
+           SENT_TO_SMTP_ON_UTC = CASE
+                                   WHEN P_STATUS = 'SENT_TO_SMTP' THEN
+                                    SYSTIMESTAMP AT TIME ZONE 'UTC'
+                                   ELSE
+                                    NULL
+                                 END
+     WHERE LOG_ID = P_LOG_ID;
+    IF SQL%ROWCOUNT = 0 THEN
+      RAISE_APPLICATION_ERROR(-20017, 'Email log not found.');
+    END IF;
+    COMMIT;
+  EXCEPTION
+    WHEN OTHERS THEN
+      ROLLBACK;
+      RAISE;
+  END;
 
-  PROCEDURE get_templates_by_event(p_event_key IN VARCHAR2,
-                                   o_cur       OUT SYS_REFCURSOR) IS
-    v_event_id NUMBER;
+  PROCEDURE GET_LOGS(P_LOG_ID         IN NUMBER,
+                     P_FROM_UTC       IN TIMESTAMP WITH TIME ZONE,
+                     P_TO_UTC         IN TIMESTAMP WITH TIME ZONE,
+                     P_EVENT_KEY      IN VARCHAR2,
+                     P_STATUS         IN VARCHAR2,
+                     P_RECIPIENT      IN VARCHAR2,
+                     P_SUBJECT        IN VARCHAR2,
+                     P_CORRELATION_ID IN VARCHAR2,
+                     O_CUR            OUT SYS_REFCURSOR) IS
+    V_EVENT_KEY VARCHAR2(100);
   BEGIN
-    v_event_id := get_event_id(p_event_key, 1);
-    OPEN o_cur FOR
-      SELECT TemplateId,
-             EventId,
-             Culture,
-             SubjectHtml,
-             BodyHtml,
-             LastUpdatedBy,
-             LastUpdatedOn
-        FROM EmailTemplates
-       WHERE EventId = v_event_id
-       ORDER BY Culture;
-  END get_templates_by_event;
+    V_EVENT_KEY := CASE
+                     WHEN P_EVENT_KEY IS NULL THEN
+                      NULL
+                     ELSE
+                      NORMALIZE_KEY(P_EVENT_KEY)
+                   END;
+  
+    OPEN O_CUR FOR
+      SELECT LOG_ID,
+             EVENT_KEY,
+             TEMPLATE_ID,
+             TEMPLATE_VERSION,
+             SUBJECT_SENT,
+             BODY_SENT,
+             TO_RECIPIENTS,
+             CC_RECIPIENTS,
+             BCC_RECIPIENTS,
+             ATTACHMENT_METADATA,
+             ATTEMPTED_ON_UTC,
+             STATUS,
+             SMTP_RESPONSE,
+             ATTEMPT_NUMBER,
+             CALLING_COMPONENT,
+             INITIATED_BY,
+             CORRELATION_ID,
+             REFERENCE_ID,
+             SENT_TO_SMTP_ON_UTC,
+             FAILURE_DETAILS
+        FROM EM_EMAIL_LOG
+       WHERE (P_LOG_ID IS NULL OR LOG_ID = P_LOG_ID)
+         AND (P_FROM_UTC IS NULL OR ATTEMPTED_ON_UTC >= P_FROM_UTC)
+         AND (P_TO_UTC IS NULL OR ATTEMPTED_ON_UTC < P_TO_UTC)
+         AND (V_EVENT_KEY IS NULL OR EVENT_KEY = V_EVENT_KEY)
+         AND (P_STATUS IS NULL OR STATUS = P_STATUS)
+         AND (P_RECIPIENT IS NULL OR
+             INSTR(LOWER(NVL(TO_RECIPIENTS, '') || ';' ||
+                          NVL(CC_RECIPIENTS, '') || ';' ||
+                          NVL(BCC_RECIPIENTS, '')),
+                    LOWER(P_RECIPIENT)) > 0)
+         AND (P_SUBJECT IS NULL OR
+             DBMS_LOB.INSTR(LOWER(SUBJECT_SENT), LOWER(P_SUBJECT)) > 0)
+         AND (P_CORRELATION_ID IS NULL OR CORRELATION_ID = P_CORRELATION_ID OR
+             REFERENCE_ID = P_CORRELATION_ID)
+       ORDER BY ATTEMPTED_ON_UTC DESC, LOG_ID DESC;
+  END GET_LOGS;
 
-  PROCEDURE get_rules_by_event(p_event_key IN VARCHAR2,
-                               o_cur       OUT SYS_REFCURSOR) IS
-    v_event_id NUMBER;
-  BEGIN
-    v_event_id := get_event_id(p_event_key, 1);
-    OPEN o_cur FOR
-      SELECT RuleId,
-             EventId,
-             SendToRolesCsv,
-             CcToRolesCsv,
-             BccToRolesCsv,
-             SendToUsersCsv,
-             CcToUsersCsv,
-             BccToUsersCsv,
-             IsActive
-        FROM NotificationRules
-       WHERE EventId = v_event_id;
-  END get_rules_by_event;
-
-  PROCEDURE get_placeholders_by_event(p_event_key IN VARCHAR2,
-                                      o_cur       OUT SYS_REFCURSOR) IS
-    v_event_id NUMBER;
-  BEGIN
-    v_event_id := get_event_id(p_event_key, 1);
-    OPEN o_cur FOR
-      SELECT PlaceholderId, EventId, Token, ResolverKey, SampleValue
-        FROM TemplatePlaceholders
-       WHERE EventId = v_event_id
-       ORDER BY Token;
-  END get_placeholders_by_event;
-
-  PROCEDURE get_attachment_sources_by_event(p_event_key IN VARCHAR2,
-                                            o_cur       OUT SYS_REFCURSOR) IS
-    v_event_id NUMBER;
-  BEGIN
-    v_event_id := get_event_id(p_event_key, 1);
-    OPEN o_cur FOR
-      SELECT AttachmentId,
-             EventId,
-             SourceType,
-             SourceRef,
-             FileNamePattern,
-             AsInlineHtml
-        FROM AttachmentSources
-       WHERE EventId = v_event_id
-       ORDER BY AttachmentId;
-  END get_attachment_sources_by_event;
-
-  PROCEDURE get_email_log(p_event_key      IN VARCHAR2,
-                          p_from_utc       IN TIMESTAMP WITH TIME ZONE,
-                          p_to_utc         IN TIMESTAMP WITH TIME ZONE,
-                          p_status         IN VARCHAR2,
-                          p_email_contains IN VARCHAR2,
-                          o_cur            OUT SYS_REFCURSOR) IS
-  BEGIN
-    OPEN o_cur FOR
-      SELECT LogId,
-             EventKey,
-             CorrelationId,
-             SubjectSent,
-             BodySent,
-             ToCsv,
-             CcCsv,
-             BccCsv,
-             Status,
-             ErrorMessage,
-             SentOnUtc
-        FROM EmailLog
-       WHERE (p_event_key IS NULL OR EventKey = p_event_key)
-         AND (p_from_utc IS NULL OR SentOnUtc >= p_from_utc)
-         AND (p_to_utc IS NULL OR SentOnUtc < p_to_utc)
-         AND (p_status IS NULL OR Status = p_status)
-         AND (p_email_contains IS NULL OR
-             INSTR(ToCsv, p_email_contains) > 0 OR
-             INSTR(CcCsv, p_email_contains) > 0 OR
-             INSTR(BccCsv, p_email_contains) > 0)
-       ORDER BY SentOnUtc DESC, LogId DESC;
-  END get_email_log;
-
-  /* ========== Seed (via upserts) ========== */
-
-  PROCEDURE seed_defaults IS
-  BEGIN
-    -- Events
-    upsert_event('AUDIT_CONCLUDED',
-                 'Audit Concluded',
-                 'Fire when audit is marked concluded',
-                 1);
-    upsert_event('MEMO_SUBMITTED',
-                 'Memo Submitted',
-                 'When a memo is submitted',
-                 1);
-    upsert_event('MEMO_REPLIED',
-                 'Memo Replied',
-                 'When a reply is posted',
-                 1);
-    upsert_event('REPORT_ISSUED',
-                 'Report Issued',
-                 'When report is issued',
-                 1);
-    upsert_event('REMINDER_OUTSTANDING_PARAS',
-                 'Outstanding Paras Reminder',
-                 '15-day reminder',
-                 1);
-  
-    -- Templates
-    upsert_template(p_event_key    => 'REPORT_ISSUED',
-                    p_culture      => 'en',
-                    p_subject_html => 'Report issued for {Entity.Name} – {Audit.Period}',
-                    p_body_html    => '<p>Dear {ReportingOffice.Name},</p><p>The audit report for <strong>{Entity.Name}</strong> ({Entity.Code}) has been issued.</p>{Report.TableHtml}<p>Regards,<br/>Internal Audit</p>',
-                    p_updated_by   => 'seed');
-  
-    upsert_template(p_event_key    => 'AUDIT_CONCLUDED',
-                    p_culture      => 'en',
-                    p_subject_html => 'Audit concluded for {Entity.Name}',
-                    p_body_html    => '<p>Audit for <strong>{Entity.Name}</strong> has been concluded.</p><p>Audit Period: {Audit.Period}</p>',
-                    p_updated_by   => 'seed');
-  
-    -- Rules (examples)
-    upsert_rules(p_event_key    => 'REPORT_ISSUED',
-                 p_sendto_roles => 'Reporting_Office',
-                 p_cc_roles     => 'Auditor,Head_AZ',
-                 p_bcc_roles    => NULL,
-                 p_sendto_users => NULL,
-                 p_cc_users     => NULL,
-                 p_bcc_users    => NULL,
-                 p_is_active    => 1);
-  
-    upsert_rules(p_event_key    => 'AUDIT_CONCLUDED',
-                 p_sendto_roles => 'Auditee',
-                 p_cc_roles     => 'Auditor,Reporting_Office',
-                 p_bcc_roles    => NULL,
-                 p_sendto_users => NULL,
-                 p_cc_users     => NULL,
-                 p_bcc_users    => NULL,
-                 p_is_active    => 1);
-  
-    -- Placeholders
-    add_or_replace_placeholder(p_event_key    => 'REPORT_ISSUED',
-                               p_token        => '{Report.TableHtml}',
-                               p_resolver_key => 'ReportTableResolver',
-                               p_sample_value => '<table><tr><th>No</th><th>Title</th></tr><tr><td>1</td><td>Sample</td></tr></table>');
-  
-    add_or_replace_placeholder(p_event_key    => 'REPORT_ISSUED',
-                               p_token        => '{Entity.Name}',
-                               p_resolver_key => 'EntityResolver',
-                               p_sample_value => 'KANDH KOT');
-  
-    add_or_replace_placeholder(p_event_key    => 'MEMO_SUBMITTED',
-                               p_token        => '{Observation.Number}',
-                               p_resolver_key => 'ObservationResolver',
-                               p_sample_value => '20605');
-  
-    -- Inline table source (example)
-    add_or_replace_attachment_source(p_event_key      => 'REPORT_ISSUED',
-                                     p_source_type    => 'VIEW',
-                                     p_source_ref     => 'VW_AUDIT_PARAS_TABLE',
-                                     p_file_name_pat  => NULL,
-                                     p_as_inline_html => 1);
-  END seed_defaults;
-
-END pkg_email;
+END PKG_EMAIL;
