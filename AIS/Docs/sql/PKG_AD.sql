@@ -450,6 +450,12 @@ create or replace package PKG_AD is
                                          R_ID      in number,
                                          io_cursor OUT t_cursor);
 
+  procedure P_GetAuditTeamsForEngReversal(AuditedByDept IN NUMBER,
+                                           CurrentTeamID IN NUMBER,
+                                           P_NO          IN NUMBER,
+                                           R_ID          IN NUMBER,
+                                           io_cursor     OUT t_cursor);
+
   procedure p_audit_team_postchanges(ENGID     in number,
                                      PPNO      in number,
                                      Teamid    in number,
@@ -4399,6 +4405,25 @@ create or replace package body PKG_AD is
   
   end p_get_audit_team_postchanges;
 
+  procedure P_GetAuditTeamsForEngReversal(AuditedByDept IN NUMBER,
+                                           CurrentTeamID IN NUMBER,
+                                           P_NO          IN NUMBER,
+                                           R_ID          IN NUMBER,
+                                           io_cursor     OUT t_cursor) is
+  begin
+    open io_cursor for
+      select t.*, d.name as AUDIT_DEPARTMENT
+        from t_au_team_members t
+       inner join t_auditee_entities d
+          on d.entity_id = t.place_of_posting
+       where t.place_of_posting = AuditedByDept
+         and (t.status = 'Y' or t.t_id = CurrentTeamID)
+       order by case when t.t_id = CurrentTeamID then 0 else 1 end,
+                t.t_id,
+                t.isteamlead desc,
+                t.member_name;
+  end P_GetAuditTeamsForEngReversal;
+
   procedure p_audit_team_postchanges(ENGID     in number,
                                      PPNO      in number,
                                      Teamid    in number,
@@ -4498,8 +4523,8 @@ create or replace package body PKG_AD is
     open io_cursor for
       select ep.id                   as plan_id,
              eng.ENG_ID,
-             tm.t_name               as TEAM_NAME,
-             tm.id                   as TEAM_ID,
+             nvl(eng.team_name, tm.t_name) as TEAM_NAME,
+             eng.team_id             as TEAM_ID,
              eng.AUDIT_STARTDATE,
              eng.AUDIT_ENDDATE,
              eng.operation_startdate as OP_STARTDATE,
@@ -4515,8 +4540,9 @@ create or replace package body PKG_AD is
           on ep.id = eng.plan_id
        inner join t_au_plan_eng_status s
           on eng.status = s.id
-       inner join t_au_audit_teams tm
+        left join t_au_audit_teams tm
           on eng.eng_id = tm.eng_id
+         and eng.team_id = tm.team_id
       
        where eng.entity_id = ent_id
          and eng.status < 16;
@@ -4551,7 +4577,8 @@ create or replace package body PKG_AD is
                                         comments  in varchar2,
                                         P_NO      in number,
                                         io_cursor OUT t_cursor) is
-    v_f number := 0;
+    v_f             number := 0;
+    v_target_engid  number := engid;
   begin
   
     if (sid in (1)) then
@@ -4561,14 +4588,32 @@ create or replace package body PKG_AD is
        where e.eng_id = engid;
       update t_au_plan e set e.status = SID where e.id = p_ID;
       commit;
-      delete from t_au_plan_eng e where e.eng_id in (engid);
+    
+      delete from t_au_audit_teams tm where tm.eng_id in (engid);
       commit;
     
       delete from t_au_audit_team_tasklist t
        where t.eng_plan_id in (engid);
       commit;
     
-      delete from t_au_audit_teams tm where tm.eng_id in (engid);
+      Delete from t_au_sample_branch s where s.eng_id = engid;
+      commit;
+    
+      delete from t_exception_accounts_cust where eng_id = engid;
+    
+      delete from t_exception_accounts_txn where eng_id = engid;
+    
+      delete from t_exception_eng where eng_id = engid;
+    
+      delete from t_exception_eng_branches b
+       where b.engid = v_target_engid;
+    
+      delete from t_exception_accounts where eng_id = engid;
+    
+      delete from t_exception_accounts_data where eng_id = engid;
+      commit;
+    
+      delete from t_au_plan_eng e where e.eng_id in (engid);
       commit;
     
       insert into t_au_plan_eng_log
@@ -4737,18 +4782,27 @@ create or replace package body PKG_AD is
            WHERE O.ID = o_b;
           COMMIT;
         
-        ELSE
-          IF (S_ID = 5) then
-            delete from t_au_observations_auditor_reply rp
-             where rp.au_obs_id = O_B;
-            commit;
-            UPDATE T_AU_OBSERVATION O
-               SET O.FINAL_PARA_NO       = NULL,
-                   O.FINAL_PARA_ADDED_ON = NULL,
-                   o.status              = S_ID
-             WHERE O.ID = o_b;
-            COMMIT;
-          end if;
+          ELSE
+            IF (S_ID = 5) then
+              delete from t_au_observations_auditor_reply rp
+               where rp.au_obs_id = O_B;
+              commit;
+              UPDATE T_AU_OBSERVATION O
+                 SET O.FINAL_PARA_NO       = NULL,
+                     O.FINAL_PARA_ADDED_ON = NULL,
+                     O.STELLED_ON          = NULL,
+                     O.SETTLED_BY          = NULL,
+                     o.status              = S_ID
+               WHERE O.ID = o_b;
+              COMMIT;
+            ELSIF (S_ID = 8) THEN
+              UPDATE T_AU_OBSERVATION O
+                 SET O.STELLED_ON = NULL,
+                     O.SETTLED_BY = NULL,
+                     O.STATUS     = S_ID
+               WHERE O.ID = O_B;
+              COMMIT;
+            end if;
         end if;
       end if;
     end if;

@@ -15,8 +15,17 @@
 </div>
 
 <div class="row col-md-12 mt-3">
-    <label class="font-bold">Text keyword</label>
-    <input type="text" class="form-control" id="gistkeywordSearch" />
+    <div class="col-md-3 ps-0">
+        <label class="font-bold" for="paraSearchType">Search By</label>
+        <select class="form-control form-select" id="paraSearchType">
+            <option value="TEXT">Para Text</option>
+            <option value="TITLE">Title</option>
+        </select>
+    </div>
+    <div class="col-md-9 pe-0">
+        <label class="font-bold" for="gistkeywordSearch">Search keyword</label>
+        <input type="text" class="form-control" id="gistkeywordSearch" placeholder="Enter para text keyword" />
+    </div>
 </div>
 <div class="row col-md-12 mt-3">
     <button data-onclick="findParaByGistKeyword();" class="btn btn-danger col-md-2 offset-md-10">Search</button>
@@ -33,11 +42,11 @@
                 <th class="col-md-auto">Audit Period</th>
                 <th class="col-md-auto">Annexure</th>
                 <th class="col-md-auto">Para No.</th>
-                <th class="col-md-auto">Gist of Para</th>
+                <th class="col-md-auto">Title / Gist of Para</th>
                 <th class="col-md-auto">Para Text</th>
             </tr>
         </thead>
         <tbody></tbody>
     </table>
 </div>
-<script src="~/js/csp/Views_Reports_search_para_text_report.js?v=1"></script>
+<script src="~/js/csp/Views_Reports_search_para_text_report.js?v=2"></script>

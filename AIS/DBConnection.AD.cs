@@ -5163,6 +5163,54 @@ namespace AIS.Controllers
 
             }
 
+        public List<AuditTeamModel> GetAuditTeamsForEngagementReversal(int auditedByDept, int currentTeamId)
+            {
+            var sessionHandler = CreateSessionHandler();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
+                || string.IsNullOrWhiteSpace(loggedInUser.PPNumber)
+                || loggedInUser.UserRoleID <= 0)
+                {
+                return new List<AuditTeamModel>();
+                }
+
+            using var con = this.DatabaseConnection();
+            var teamList = new List<AuditTeamModel>();
+            using (OracleCommand cmd = con.CreateCommand())
+                {
+                cmd.CommandText = "pkg_ad.P_GetAuditTeamsForEngReversal";
+                cmd.CommandType = CommandType.StoredProcedure;
+                cmd.BindByName = true;
+                GuardAgainstDynamicSql(cmd);
+                cmd.Parameters.Clear();
+                cmd.Parameters.Add("AuditedByDept", OracleDbType.Int32).Value = auditedByDept;
+                cmd.Parameters.Add("CurrentTeamID", OracleDbType.Int32).Value = currentTeamId;
+                cmd.Parameters.Add("P_NO", OracleDbType.Int32).Value = loggedInUser.PPNumber;
+                cmd.Parameters.Add("R_ID", OracleDbType.Int32).Value = loggedInUser.UserRoleID;
+                cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+                using OracleDataReader rdr = cmd.ExecuteReader();
+                while (rdr.Read())
+                    {
+                    teamList.Add(new AuditTeamModel
+                        {
+                        ID = Convert.ToInt32(rdr["ID"]),
+                        T_ID = Convert.ToInt32(rdr["T_ID"]),
+                        CODE = rdr["T_CODE"].ToString(),
+                        NAME = rdr["TEAM_NAME"].ToString(),
+                        AUDIT_DEPARTMENT = Convert.ToInt32(rdr["PLACE_OF_POSTING"]),
+                        TEAMMEMBER_ID = Convert.ToInt32(rdr["MEMBER_PPNO"]),
+                        IS_TEAMLEAD = rdr["ISTEAMLEAD"].ToString(),
+                        PLACE_OF_POSTING = rdr["AUDIT_DEPARTMENT"].ToString(),
+                        EMPLOYEENAME = rdr["MEMBER_NAME"].ToString(),
+                        STATUS = rdr["STATUS"].ToString()
+                        });
+                    }
+                }
+
+            return teamList;
+            }
+
         public string SubmitNewTeamIdForPostChangesTeamEngReversal(int TEAM_ID, int ENG_ID, int AUDITED_BY_ID, string TEAM_NAME)
             {
 

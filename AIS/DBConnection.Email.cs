@@ -358,6 +358,35 @@ namespace AIS.Controllers
             return result;
             }
 
+        public List<EmailTriggerLog> GetEmailTriggerLogs(int maximumRows = 100)
+            {
+            var result = new List<EmailTriggerLog>();
+            using var con = DatabaseConnection();
+            using var cmd = con.CreateCommand();
+            cmd.CommandText = "PKG_EMAIL.GET_TRIGGER_LOGS";
+            cmd.CommandType = CommandType.StoredProcedure;
+            cmd.BindByName = true;
+            cmd.Parameters.Add("P_MAX_ROWS", OracleDbType.Int32).Value = Math.Max(1, Math.Min(maximumRows, 1000));
+            cmd.Parameters.Add("O_CUR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+            using var reader = cmd.ExecuteReader();
+            while (reader.Read())
+                {
+                result.Add(new EmailTriggerLog
+                    {
+                    LogId = Convert.ToInt64(reader["ID"]),
+                    TriggerDate = Convert.ToDateTime(reader["TRIGGER_DATE"]),
+                    Module = reader["MODULE"]?.ToString() ?? string.Empty,
+                    TriggerPoint = reader["TRIGGER_POINT"]?.ToString() ?? string.Empty,
+                    ReferenceId = reader["REFERENCE_ID"]?.ToString() ?? string.Empty,
+                    ToAddress = reader["TO_ADDRESS"]?.ToString() ?? string.Empty,
+                    Subject = reader["EMAIL_SUBJECT"]?.ToString() ?? string.Empty,
+                    Status = reader["STATUS"]?.ToString() ?? string.Empty,
+                    ErrorMessage = reader["ERROR_MESSAGE"]?.ToString() ?? string.Empty
+                    });
+                }
+            return result;
+            }
+
         private void ExecuteManagedEmailNonQuery(string procedure, params (string Name, OracleDbType Type, object Value)[] values)
             {
             using var con = DatabaseConnection();

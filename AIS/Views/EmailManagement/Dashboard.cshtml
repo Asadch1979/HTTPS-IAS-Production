@@ -11,10 +11,43 @@
         <div class="col-md-3"><div class="card"><div class="card-body"><div class="text-muted">Templates</div><h3>@Model.TemplateCount</h3></div></div></div>
         <div class="col-md-3"><div class="card"><div class="card-body"><div class="text-muted">Failures, last 30 days</div><h3>@Model.FailedAttemptCount</h3></div></div></div>
     </div>
-    <h4>Recent test-email attempts</h4>
+    @if (Model.EventCount == 0)
+    {
+        <div class="alert alert-info">No managed email events have been configured. <a asp-action="Events">Create the first event</a>.</div>
+    }
+    @if (ViewBag.TriggerLogWarning != null)
+    {
+        <div class="alert alert-warning">@ViewBag.TriggerLogWarning</div>
+    }
+    <div class="row g-3 mb-4">
+        <div class="col-md-6"><div class="card"><div class="card-body"><div class="text-muted">Application email attempts (latest 100)</div><h3>@Model.TriggerAttemptCount</h3></div></div></div>
+        <div class="col-md-6"><div class="card"><div class="card-body"><div class="text-muted">Application email issues (latest 100)</div><h3>@Model.TriggerFailureCount</h3></div></div></div>
+    </div>
+    <h4>Recent application email activity</h4>
+    <table class="table table-sm table-striped">
+        <thead><tr><th>Date</th><th>Module / event</th><th>Recipient</th><th>Subject</th><th>Status</th><th>Error</th></tr></thead>
+        <tbody>
+        @if (Model.RecentTriggerLogs.Count == 0)
+        {
+            <tr><td colspan="6" class="text-muted text-center py-3">No application email attempts have been recorded.</td></tr>
+        }
+        @foreach (var item in Model.RecentTriggerLogs)
+        {
+            <tr>
+                <td>@item.TriggerDate.ToString("u")</td><td>@item.Module / @item.TriggerPoint</td><td>@item.ToAddress</td>
+                <td>@item.Subject</td><td>@item.Status</td><td>@item.ErrorMessage</td>
+            </tr>
+        }
+        </tbody>
+    </table>
+    <h4>Recent managed test-email attempts</h4>
     <table class="table table-sm table-striped">
         <thead><tr><th>UTC date</th><th>Event</th><th>Subject</th><th>Status</th><th>Correlation</th></tr></thead>
         <tbody>
+        @if (Model.RecentLogs.Count == 0)
+        {
+            <tr><td colspan="5" class="text-muted text-center py-3">No managed test-email attempts have been recorded.</td></tr>
+        }
         @foreach (var item in Model.RecentLogs)
         {
             <tr>

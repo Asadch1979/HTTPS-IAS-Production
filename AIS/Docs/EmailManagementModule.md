@@ -15,9 +15,10 @@ It uses:
 - `PKG_EMAIL`
 - database objects prefixed with `EM_EMAIL_`
 
-It does not use or modify the behavior of `EmailConfiguration`,
-`EmailNotification`, `T_AU_EMAIL_QUEUE`, `T_AU_IID_EMAIL_QUEUE`,
-`T_AU_EMAIL_TRIGGER_LOG`, or `EMAILLOG`.
+It does not modify the behavior of `EmailConfiguration`, `EmailNotification`,
+`T_AU_EMAIL_QUEUE`, `T_AU_IID_EMAIL_QUEUE`, or `EMAILLOG`. The dashboard reads
+`T_AU_EMAIL_TRIGGER_LOG` to display existing application email activity; it does
+not update those records.
 
 ## Deployment
 
@@ -34,6 +35,10 @@ FROM user_errors
 WHERE name = 'PKG_EMAIL'
 ORDER BY sequence;
 ```
+
+The current `PKG_EMAIL` package also exposes `GET_TRIGGER_LOGS`, which supplies
+the dashboard's application-email activity table from `T_AU_EMAIL_TRIGGER_LOG`.
+Redeploy `Docs/sql/pkg_email.sql` when upgrading an existing installation.
 
 3. Supply the standalone SMTP secret through deployment configuration, normally
    `EmailManagement__Smtp__Password`. Do not store it in source control.

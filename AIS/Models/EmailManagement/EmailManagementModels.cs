@@ -188,6 +188,22 @@ namespace AIS.Models.EmailManagement
         public int TemplateCount { get; set; }
         public int FailedAttemptCount { get; set; }
         public List<EmailManagementLog> RecentLogs { get; set; } = new List<EmailManagementLog>();
+        public int TriggerAttemptCount { get; set; }
+        public int TriggerFailureCount { get; set; }
+        public List<EmailTriggerLog> RecentTriggerLogs { get; set; } = new List<EmailTriggerLog>();
+        }
+
+    public class EmailTriggerLog
+        {
+        public long LogId { get; set; }
+        public DateTime TriggerDate { get; set; }
+        public string Module { get; set; } = string.Empty;
+        public string TriggerPoint { get; set; } = string.Empty;
+        public string ReferenceId { get; set; } = string.Empty;
+        public string ToAddress { get; set; } = string.Empty;
+        public string Subject { get; set; } = string.Empty;
+        public string Status { get; set; } = string.Empty;
+        public string ErrorMessage { get; set; } = string.Empty;
         }
 
     public class EmailManagementSendResult

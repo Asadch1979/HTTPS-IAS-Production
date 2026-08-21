@@ -3,6 +3,7 @@ using AIS.Services.EmailManagement;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Linq;
 using System.Threading.Tasks;
@@ -16,15 +17,18 @@ namespace AIS.Controllers
         private readonly DBConnection _db;
         private readonly SessionHandler _session;
         private readonly IStandaloneEmailManagementService _service;
+        private readonly ILogger<EmailManagementController> _logger;
 
         public EmailManagementController(
             DBConnection db,
             SessionHandler session,
-            IStandaloneEmailManagementService service)
+            IStandaloneEmailManagementService service,
+            ILogger<EmailManagementController> logger)
             {
             _db = db;
             _session = session;
             _service = service;
+            _logger = logger;
             }
 
         [HttpGet("")]
@@ -40,13 +44,28 @@ namespace AIS.Controllers
                 FromDate = DateTime.UtcNow.AddDays(-30),
                 Status = EmailManagementStatuses.SendFailed
                 });
+            var triggerLogs = new System.Collections.Generic.List<EmailTriggerLog>();
+            try
+                {
+                triggerLogs = _db.GetEmailTriggerLogs(100);
+                }
+            catch (Exception ex)
+                {
+                _logger.LogError(ex, "Unable to load application email trigger activity for the Email Management dashboard.");
+                ViewBag.TriggerLogWarning = "Application email activity is unavailable. Deploy the latest PKG_EMAIL package and verify T_AU_EMAIL_TRIGGER_LOG.";
+                }
             return View(new EmailManagementDashboard
                 {
                 EventCount = events.Count,
                 EnabledEventCount = events.Count(item => item.IsEnabled),
                 TemplateCount = templates.Count,
                 FailedAttemptCount = logs.Count,
-                RecentLogs = _db.GetManagedEmailLogs().Take(10).ToList()
+                RecentLogs = _db.GetManagedEmailLogs().Take(10).ToList(),
+                TriggerAttemptCount = triggerLogs.Count,
+                TriggerFailureCount = triggerLogs.Count(item =>
+                    item.Status == "SMTP_FAILED" || item.Status == "FAILED" ||
+                    item.Status == "CONFIGURATION_MISSING" || item.Status == "RECIPIENT_MISSING"),
+                RecentTriggerLogs = triggerLogs.Take(10).ToList()
                 });
             }
 

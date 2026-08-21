@@ -3857,9 +3857,9 @@ namespace AIS.Controllers
 
         [HttpGet]
         [HttpPost]
-        public List<AuditTeamModel> get_team_memeber_details_for_post_changes_team_eng_reversal(int AUDITED_BY_DEPT)
+        public List<AuditTeamModel> get_team_memeber_details_for_post_changes_team_eng_reversal(int AUDITED_BY_DEPT, int CURRENT_TEAM_ID)
             {
-            return dBConnection.GetAuditTeams(0, AUDITED_BY_DEPT);
+            return dBConnection.GetAuditTeamsForEngagementReversal(AUDITED_BY_DEPT, CURRENT_TEAM_ID);
             }
 
         [HttpPost]
@@ -4766,9 +4766,10 @@ namespace AIS.Controllers
 
         [HttpGet]
         [HttpPost]
-        public List<ParaTextSearchModel> get_para_text_in_audit_report(string SEARCH_KEYWORD)
+        public List<ParaTextSearchModel> get_para_text_in_audit_report(string SEARCH_KEYWORD, string SEARCH_TYPE = "TEXT")
             {
-            return dBConnection.GetAuditParasByText(SEARCH_KEYWORD);
+            var searchType = string.Equals(SEARCH_TYPE, "TITLE", StringComparison.OrdinalIgnoreCase) ? "TITLE" : "TEXT";
+            return dBConnection.GetAuditParasByText(SEARCH_KEYWORD, searchType);
             }
         [HttpPost]
         public string regenerate_sample_of_loans(int ENG_ID, int LOAN_SAMPLE_ID)

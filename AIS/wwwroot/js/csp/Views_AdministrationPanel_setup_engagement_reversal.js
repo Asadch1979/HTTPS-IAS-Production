@@ -240,7 +240,8 @@
             url: g_asiBaseURL + "/ApiCalls/get_team_memeber_details_for_post_changes_team_eng_reversal",
             type: "POST",
             data: {
-                'AUDITED_BY_DEPT': audById
+                'AUDITED_BY_DEPT': audById,
+                'CURRENT_TEAM_ID': currentTeamId
             },
             cache: false,
             success: function (data) {

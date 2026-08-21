@@ -98,8 +98,9 @@
                                                 R_ID          in number,
                                                 io_cursor     OUT t_cursor);
 
-  Procedure P_GET_PARA_TEXT_WORDS_V2(T_TEXT    varchar2,
-                                     io_cursor OUT t_cursor);
+  Procedure P_GET_PARA_TEXT_WORDS_V2(T_TEXT       varchar2,
+                                     P_SEARCH_TYPE varchar2,
+                                     io_cursor    OUT t_cursor);
 
   Procedure P_GET_FAD_DESK_OFFICER_RPT_BY_PERIOD(startDate date,
                                                  endDate   date,
@@ -1975,8 +1976,9 @@ create or replace package body PKG_RPT is
     end if;
   end P_GET_GM_WISE_SERIOUS_PARAS_DETAILS;
 
-  Procedure P_GET_PARA_TEXT_WORDS_V2(T_TEXT    varchar2,
-                                     io_cursor OUT t_cursor) is
+  Procedure P_GET_PARA_TEXT_WORDS_V2(T_TEXT       varchar2,
+                                     P_SEARCH_TYPE varchar2,
+                                     io_cursor    OUT t_cursor) is
     v_1 varchar2(1000);
   
   begin
@@ -1997,7 +1999,10 @@ create or replace package body PKG_RPT is
           ON et.entity_id = t.audited_by
        INNER JOIN T_AUDITEE_ENTITIES_MAPING m
           ON m.entity_id = t.entity_id
-       WHERE CONTAINS(t.text, '%' || v_1 || '%') > 0
+       WHERE ((upper(trim(P_SEARCH_TYPE)) = 'TITLE' and
+               instr(lower(nvl(t.gist_of_paras, '')), v_1) > 0) or
+              (upper(trim(P_SEARCH_TYPE)) <> 'TITLE' and
+               CONTAINS(t.text, '%' || v_1 || '%') > 0))
             
          AND t.audit_period IN (2022, 2023, 2024)
          AND t.para_status = 8;

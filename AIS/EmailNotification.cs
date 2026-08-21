@@ -94,10 +94,10 @@ namespace AIS
 
         public static bool NotifyParaStatus(IConfiguration configuration, string paraNo, string paraStatus, string paraGist, string toEmail, string ccEmail, string cc2Email, IServiceProvider serviceProvider = null)
             {
-            string subject = $"IAS~Notification: Para No: {paraNo} is marked {paraStatus}";
+            string subject = $"IAS~Notification: Para No: {paraNo} is {paraStatus}";
             string body = BuildHtmlBody(
                 "Audit Para Status Updated",
-                $"Para No. {paraNo} has been marked as {paraStatus}.",
+                $"Para No. {paraNo} has been {paraStatus}.",
                 BuildDetails(
                     ("Para No.", paraNo),
                     ("Status", paraStatus),

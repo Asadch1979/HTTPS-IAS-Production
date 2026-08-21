@@ -1280,7 +1280,7 @@ namespace AIS.Controllers
 
 
 
-        public List<ParaTextSearchModel> GetAuditParasByText(string SEARCH_KEYWORD)
+        public List<ParaTextSearchModel> GetAuditParasByText(string SEARCH_KEYWORD, string SEARCH_TYPE = "TEXT")
             {
             var sessionHandler = CreateSessionHandler();
 
@@ -1303,6 +1303,7 @@ namespace AIS.Controllers
                     GuardAgainstDynamicSql(cmd);
                     cmd.Parameters.Clear();
                     cmd.Parameters.Add("T_TEXT", OracleDbType.Varchar2).Value = SEARCH_KEYWORD;
+                    cmd.Parameters.Add("P_SEARCH_TYPE", OracleDbType.Varchar2).Value = SEARCH_TYPE;
                     cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
                     using OracleDataReader rdr = cmd.ExecuteReader();
                     while (rdr.Read())

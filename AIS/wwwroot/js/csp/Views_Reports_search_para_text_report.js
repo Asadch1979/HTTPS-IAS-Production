@@ -1,14 +1,25 @@
         var g_cnic = 0;
-        $('#document').ready(function () {
-
+        $(document).ready(function () {
+            $('#paraSearchType').on('change', function () {
+                var searchByTitle = $(this).val() === 'TITLE';
+                $('#gistkeywordSearch').attr('placeholder', searchByTitle ? 'Enter title keyword' : 'Enter para text keyword');
+            });
         });
         function findParaByGistKeyword() {
-                    destroyDatatable('searchtextTable');
+            var keyword = $('#gistkeywordSearch').val().trim();
+            if (!keyword) {
+                alert('Please enter a search keyword.');
+                return;
+            }
+
+            destroyDatatable('searchtextTable');
+            $('#searchtextTable tbody').empty();
             $.ajax({
                     url: g_asiBaseURL + "/ApiCalls/get_para_text_in_audit_report",
                 type: "POST",
                 data: {
-                    'SEARCH_KEYWORD': $('#gistkeywordSearch').val(),
+                    'SEARCH_KEYWORD': keyword,
+                    'SEARCH_TYPE': $('#paraSearchType').val()
                 },
                 cache: false,
                 success: function (data) {
