@@ -1,0 +1,187 @@
+@startuml IAS_Formal_UML_Component_Diagram
+title IAS — Formal UML Component Diagram
+
+skinparam backgroundColor white
+skinparam shadowing false
+skinparam componentStyle uml2
+skinparam defaultFontName Arial
+skinparam defaultFontSize 10
+skinparam nodesep 22
+skinparam ranksep 28
+skinparam packageStyle rectangle
+skinparam ArrowColor #40566F
+skinparam ComponentBorderColor #40566F
+skinparam ComponentBackgroundColor #F8FAFD
+skinparam InterfaceBorderColor #40566F
+skinparam NodeBorderColor #40566F
+skinparam NodeBackgroundColor #EEF3F8
+skinparam DatabaseBorderColor #8A6425
+skinparam DatabaseBackgroundColor #FFF7E8
+skinparam NoteBorderColor #7B8798
+skinparam NoteBackgroundColor #FFFCEB
+skinparam footerFontSize 10
+skinparam footerFontColor #4A5568
+footer Derived from verified IAS source-code components and dependencies.
+
+top to bottom direction
+
+node "Client / User Browser" as BrowserNode <<device>> {
+  component "Browser UI" as BrowserUI <<client>>
+  component "Razor-rendered HTML" as HtmlUI <<presentation>>
+  component "jQuery 3.7.1 / AJAX" as Ajax <<frontend>>
+  component "Bootstrap" as Bootstrap <<frontend>>
+  component "External Frontend Libraries" as FrontendLibs <<library>>
+  note bottom of FrontendLibs
+    DataTables, Select2, TinyMCE,
+    CanvasJS, CryptoJS, JSZip,
+    rich-text/file/image upload libraries
+  end note
+}
+
+node "IIS Deployment" as IIS <<executionEnvironment>> {
+  component "HTTPS Binding / TLS" as TLS <<requires production verification>>
+  component "ASP.NET Core Module" as ANCM <<IIS module>>
+  note bottom of TLS
+    Binding, certificate, TLS versions/ciphers
+    require production verification.
+  end note
+}
+
+node "IAS ASP.NET Core MVC (.NET 8) Application" as IAS <<executionEnvironment>> {
+  component "Middleware Pipeline" as Middleware <<ASP.NET Core middleware>>
+  note bottom of Middleware
+    HTTPS redirection • HSTS • CSP
+    Rate limiting • Exception handling
+    Static files • Routing
+  end note
+
+  package "Authentication & Authorization" as AuthPkg {
+    component "Cookie Authentication" as CookieAuth <<authentication>>
+    component "Session Authorization Filter" as SessionAuth <<filter>>
+    component "Page-Key Permission Filter" as PageAuth <<authorization>>
+    component "Object-Scope Authorization Filter" as ObjectAuth <<authorization>>
+    interface "IAS.Auth cookie" as IAuthCookie
+    interface "IAS.Session cookie" as ISessionCookie
+  }
+
+  package "MVC / API Presentation" as Presentation {
+    component "MVC Controllers" as Controllers <<controller>>
+    component "ApiCallsController / JSON-AJAX Actions" as JsonApi <<controller>>
+    component "Razor Views" as Views <<Razor>>
+    interface "MVC routes" as IMvc
+    interface "JSON / AJAX endpoints" as IJson
+  }
+
+  package "Application Services / Filters / Validation" as AppPkg {
+    component "Application Services" as Services <<service>>
+    component "PDF Report Builders / Generators" as Pdf <<service>>
+    component "CSV / Excel Export Support" as Export <<service>>
+    component "Input Validation / Sanitization" as Validation <<validation>>
+    component "Permission / Page Resolution Services" as PermissionServices <<service>>
+    component "Exception / AJAX Error Handling" as ErrorHandling <<middleware>>
+  }
+
+  package "Session Handling" as SessionPkg {
+    component "SessionHandler" as SessionHandler <<session>>
+    component "SessionValidationMiddleware" as SessionValidation <<middleware>>
+    component "In-Memory Session / Token State" as SessionState <<process-local state>>
+    interface "Authenticated user context" as IUserContext
+  }
+
+  package "Data Access Layer" as DataPkg {
+    component "IDBConnection / DBConnection" as DBConnection <<data access>>
+    component "DBConnection.* Partial Classes" as DBPartials <<data access>>
+    component "Oracle.ManagedDataAccess.Core 23.5.1" as ODP <<library>>
+    component "OracleConnection / OracleCommand" as OracleClient <<database client>>
+    interface "Oracle stored-procedure / SQL calls" as IOracleCalls
+  }
+
+  component "Generated Outputs" as Outputs <<artifact>>
+  note bottom of Outputs
+    Razor HTML • JSON • PDF • CSV / Excel
+  end note
+}
+
+node "File Storage" as FileNode <<filesystem>> {
+  component "Evidence / Report Files" as Files <<storage>>
+  note bottom of Files
+    Verified locations under wwwroot include
+    evidence, report and upload directories.
+  end note
+}
+
+node "SMTP / Email Services" as SmtpNode <<external system>> {
+  component "SMTP Server" as SMTP <<requires production verification>>
+  note bottom of SMTP
+    Endpoint settings are present in source;
+    deployed server behavior requires verification.
+  end note
+}
+
+node "Oracle Database" as OracleNode <<database server>> {
+  database "Oracle Database" as OracleDB
+  component "Oracle Packages / Stored Procedures" as Packages <<PL/SQL>>
+  component "Oracle Tables / Views" as Tables <<database objects>>
+}
+
+BrowserUI --> TLS : HTTPS request
+TLS --> ANCM : forwards request
+ANCM --> Middleware : hosts in-process
+Middleware --> CookieAuth : authenticate
+Middleware --> SessionValidation : validate session
+CookieAuth - IAuthCookie
+SessionHandler - ISessionCookie
+CookieAuth --> SessionAuth
+SessionAuth --> PageAuth
+PageAuth --> ObjectAuth
+ObjectAuth --> Controllers : authorized MVC request
+ObjectAuth --> JsonApi : authorized AJAX request
+
+Controllers - IMvc
+JsonApi - IJson
+Controllers --> Views : selects / supplies model
+Views --> HtmlUI : renders response
+HtmlUI --> BrowserUI
+Ajax --> IJson : JSON requests
+Bootstrap --> BrowserUI
+FrontendLibs --> BrowserUI
+
+Controllers --> Services
+JsonApi --> Services
+Controllers --> Validation
+JsonApi --> Validation
+Services --> PermissionServices
+Controllers --> SessionHandler
+JsonApi --> SessionHandler
+SessionValidation --> SessionHandler
+SessionHandler - IUserContext
+SessionHandler --> SessionState
+ErrorHandling --> Controllers
+ErrorHandling --> JsonApi
+
+Services --> Pdf
+Services --> Export
+Pdf --> Outputs
+Export --> Outputs
+Views --> Outputs
+JsonApi --> Outputs
+Outputs --> BrowserUI : response / download
+
+Services --> DBConnection
+Controllers --> DBConnection
+JsonApi --> DBConnection
+DBConnection --> DBPartials
+DBPartials --> ODP
+ODP --> OracleClient
+OracleClient - IOracleCalls
+IOracleCalls --> Packages : stored procedures + bind parameters
+IOracleCalls --> Tables : verified parameterized text SQL
+Packages --> Tables
+Tables --> OracleDB
+
+Controllers --> Files : upload / retrieve / delete
+JsonApi --> Files : upload / retrieve
+Services --> Files : report/evidence access
+Services --> SMTP : SMTP email
+
+@enduml

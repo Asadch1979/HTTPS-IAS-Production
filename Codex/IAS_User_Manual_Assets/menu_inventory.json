@@ -1,0 +1,584 @@
+[
+  {
+    "links": [
+      {
+        "href": "/Dashboard/bac_analysis",
+        "text": "BAC Analysis FAD"
+      },
+      {
+        "href": "/Dashboard/head_observation_risk_summary",
+        "text": "Line Management"
+      }
+    ],
+    "menu": "Dashboard"
+  },
+  {
+    "links": [
+      {
+        "href": "/Planning/team_members",
+        "text": "Constitute Teams"
+      },
+      {
+        "href": "/Planning/audit_criteria",
+        "text": "Audit Criteria"
+      },
+      {
+        "href": "/Planning/refferedback_audit_criteria",
+        "text": "Reffered Back Audit Criteria"
+      },
+      {
+        "href": "/Planning/audit_criteria_approval",
+        "text": "Audit Criteria for Approval"
+      },
+      {
+        "href": "/Planning/post_changes_criteria",
+        "text": "Approved Criteria / Generate Plan"
+      },
+      {
+        "href": "/Planning/special_audit_criteria",
+        "text": "Special Audit Plan"
+      },
+      {
+        "href": "/Planning/special_audit_criteria_approval",
+        "text": "Special Audit Plan Approval"
+      }
+    ],
+    "menu": "Planning"
+  },
+  {
+    "links": [
+      {
+        "href": "/Planning/Planning",
+        "text": "Planning Dash Board"
+      },
+      {
+        "href": "/Engagement/eng_plan_list",
+        "text": "Engagement Plan List"
+      },
+      {
+        "href": "/Planning/tentative_audit_plan",
+        "text": "Tentative Audit Plan"
+      },
+      {
+        "href": "/HM/ManageSbpPassword",
+        "text": "Manage SBP Password"
+      },
+      {
+        "href": "/HM/SbpObservationRegister",
+        "text": "Sbp Observation Register"
+      },
+      {
+        "href": "/Engagement/eng_plan_ref_list",
+        "text": "Reffered Back Engagement Plans"
+      }
+    ],
+    "menu": "Engagement"
+  },
+  {
+    "links": [
+      {
+        "href": "/Execution/search_checklistdetails",
+        "text": "Search / Find Check List"
+      },
+      {
+        "href": "/Execution/manage_audit_paras",
+        "text": "Update Audit Paras"
+      },
+      {
+        "href": "/Execution/checklist_summary",
+        "text": "Summary of Checklist"
+      },
+      {
+        "href": "/Execution/manage_audit_paras_authorized",
+        "text": "Authorize Update Audit Paras"
+      },
+      {
+        "href": "/Execution/create_dsa",
+        "text": "Create DSA"
+      },
+      {
+        "href": "/Execution/list_dsa",
+        "text": "List Draft DSAs"
+      },
+      {
+        "href": "/Execution/auth_del_dup_para\t",
+        "text": "Authorize Delete Duplicate Para"
+      },
+      {
+        "href": "/Execution/auth_del_dup_para",
+        "text": "Authorize Delete Duplicate Para"
+      },
+      {
+        "href": "/Execution/pre_concluding_audit_ho",
+        "text": "Quality Review of HO Paras"
+      },
+      {
+        "href": "/Execution/observation_export_pdf",
+        "text": "Generate Observation PDF"
+      },
+      {
+        "href": "/Execution/manage_observations",
+        "text": "Manage Observations"
+      },
+      {
+        "href": "/Execution/manage_draft_report_paras",
+        "text": "Manage Draft Report Paras"
+      },
+      {
+        "href": "/Execution/pre_concluding_audit",
+        "text": "Quality Review of Audit Paras"
+      },
+      {
+        "href": "/Execution/draft_audit_report",
+        "text": "Finalize Draft Audit Report"
+      },
+      {
+        "href": "/Execution/Concluding_Closing_Audit",
+        "text": "Concluding Closing Audit"
+      }
+    ],
+    "menu": "Execution"
+  },
+  {
+    "links": [
+      {
+        "href": "/AuditeePortal/ccqs",
+        "text": "CCQs of Departments"
+      },
+      {
+        "href": "/AuditeePortal/observation_assigned",
+        "text": "Observation Assigned"
+      }
+    ],
+    "menu": "Auditee Portal"
+  },
+  {
+    "links": [
+      {
+        "href": "/PostCompliance/post_compliance",
+        "text": "Post Compliance"
+      },
+      {
+        "href": "/FAD/para_shifting",
+        "text": "Para Shifting"
+      },
+      {
+        "href": "/PostCompliance/post_compliance_review",
+        "text": "Post Compliance For Review"
+      },
+      {
+        "href": "/PostCompliance/post_compliance_ho_monitoring",
+        "text": "Monitoring of Settled Paras"
+      },
+      {
+        "href": "/PostCompliance/cau_post_compliance_to_branches",
+        "text": "CAU Paras Submission to Branch"
+      },
+      {
+        "href": "/PostCompliance/cau_post_compliance_to_branches_reply",
+        "text": "CAU Paras Branch Reply"
+      },
+      {
+        "href": "/PostCompliance/change_status_new_Para_reviewer",
+        "text": "Review Settle New/AIS Paras"
+      },
+      {
+        "href": "/PostCompliance/cau_post_compliance_to_branches_review",
+        "text": "Review of CAU Paras Branch Reply"
+      }
+    ],
+    "menu": "Post Compliance"
+  },
+  {
+    "links": [
+      {
+        "href": "/IID/IID_Dashboard",
+        "text": "IID Dashboard"
+      },
+      {
+        "href": "/IID/MonitoringDashboard",
+        "text": "Monitoring Dashboard"
+      },
+      {
+        "href": "/IID/SubmitComplaint",
+        "text": "Submit Complaint"
+      },
+      {
+        "href": "/iid/InitialAssessment",
+        "text": "Initial Assessment"
+      },
+      {
+        "href": "/iid/HeadReview",
+        "text": "Head Review"
+      },
+      {
+        "href": "/IID/InquiryReportReadOnly",
+        "text": "Inquiry Report PDF"
+      },
+      {
+        "href": "/iid/InvestigationPlan",
+        "text": "Investigation Plan"
+      },
+      {
+        "href": "/iid/PlanApproval",
+        "text": "Plan Approval"
+      },
+      {
+        "href": "/iid/InquiryReport",
+        "text": "Inquiry Report"
+      },
+      {
+        "href": "/IID/account_document",
+        "text": "account document"
+      },
+      {
+        "href": "/iid/Analysis",
+        "text": "Analysis"
+      },
+      {
+        "href": "/IID/account_transaction",
+        "text": "account transaction"
+      },
+      {
+        "href": "/IID/Exceptions_Reports",
+        "text": "Exceptions Reports"
+      },
+      {
+        "href": "/iid/FinalApproval",
+        "text": "Final Approval"
+      },
+      {
+        "href": "/IID/Account_exception",
+        "text": "Account exception"
+      },
+      {
+        "href": "/iid/CaseStudy",
+        "text": "Case Study"
+      },
+      {
+        "href": "/IID/loan_documents",
+        "text": "loan documents"
+      },
+      {
+        "href": "/IID/loan_transactions",
+        "text": "loan transactions"
+      },
+      {
+        "href": "/iid/Reports",
+        "text": "Reports"
+      },
+      {
+        "href": "/IID/TaskListIID",
+        "text": "TaskListIID"
+      }
+    ],
+    "menu": "I&ID"
+  },
+  {
+    "links": [
+      {
+        "href": "/Reports/monitoring_of_para_settlement",
+        "text": "Monitoring of Settlement of Para"
+      },
+      {
+        "href": "/Reports/search_para_text_report",
+        "text": "Search Text in Audit Paras"
+      },
+      {
+        "href": "/Reports/compliance_progress_report",
+        "text": "Compliance Progress Report"
+      },
+      {
+        "href": "/Reports/para_position",
+        "text": "Audit Cluster Wise Para Position"
+      },
+      {
+        "href": "/Reports/settled_paras_report",
+        "text": "Paras Settlement Report"
+      },
+      {
+        "href": "/Reports/gist_wise_report",
+        "text": "Gist Wise Report"
+      },
+      {
+        "href": "/Reports/FAD_Monthly_Review",
+        "text": "FAD Monthly Review"
+      },
+      {
+        "href": "/Reports/eng_plan_delay_analysis_report",
+        "text": "Engagment Plan Delay Analysis Report"
+      },
+      {
+        "href": "/Reports/join_comp_report",
+        "text": "Joining / Completion Report"
+      }
+    ],
+    "menu": "Reports"
+  },
+  {
+    "links": [
+      {
+        "href": "/Reports/consolidated_outstanding_paras_pdf",
+        "text": "Consolidated Outstanding Paras pdf"
+      },
+      {
+        "href": "/FAD/Quality_Assurance_checking",
+        "text": "Quality_Assurance_checking"
+      },
+      {
+        "href": "/FAD/Draft_report_Checking",
+        "text": "Draft_report_Checking"
+      },
+      {
+        "href": "/ManagementAudit/MA_Dashboard",
+        "text": "Management Auditor Dashboard"
+      },
+      {
+        "href": "/FieldAudit/BO_Dashboard",
+        "text": "Back Office Dashboard"
+      },
+      {
+        "href": "/FieldAudit/AR_Dashboard",
+        "text": "Field Auditor Dashboard"
+      },
+      {
+        "href": "/FieldAuditReport/FinalizeReport",
+        "text": "Finalize Report"
+      },
+      {
+        "href": "/Fad/observation_review",
+        "text": "FAD Reports"
+      },
+      {
+        "href": "/FieldAuditReport/ReportOverview",
+        "text": "Report Overview"
+      },
+      {
+        "href": "/FAD/ChangeParaStatus",
+        "text": "Para Status Change"
+      },
+      {
+        "href": "/FieldAuditReport/Engagements",
+        "text": "List of Pdf"
+      },
+      {
+        "href": "/MANReport/Home",
+        "text": "Management Audit Report"
+      },
+      {
+        "href": "/FadAnnexureConfiguration/AnnexureConfiguration",
+        "text": "Annexure Configuration"
+      },
+      {
+        "href": "/MANReport/Finalize",
+        "text": "Management Finalize Report"
+      }
+    ],
+    "menu": "FAD"
+  },
+  {
+    "links": [
+      {
+        "href": "/CAU/Workflow",
+        "text": "CAU WorkFlow"
+      },
+      {
+        "href": "/CAU/ARPSEYearWiseReport",
+        "text": "ARPSE Year Wise Report"
+      },
+      {
+        "href": "/CAU/ParaDetailedView",
+        "text": "Detailed Para View"
+      },
+      {
+        "href": "/CAU/ArpseFollowUp",
+        "text": "Arpse Follow Up"
+      }
+    ],
+    "menu": "CAU"
+  },
+  {
+    "links": [
+      {
+        "href": "/Sampling/ManageExceptionReportFormat",
+        "text": "Manage Exception Report Format"
+      },
+      {
+        "href": "/Sampling/add_report",
+        "text": "Add New Report"
+      },
+      {
+        "href": "/Sampling/sample_monitoring",
+        "text": "Monitoring of Samples"
+      },
+      {
+        "href": "/Sampling/ExceptionMonitoring",
+        "text": "Monitoring of Exception Reports"
+      }
+    ],
+    "menu": "Sampling"
+  },
+  {
+    "links": [
+      {
+        "href": "/Setup/Checklist_Dashboard",
+        "text": "Checklist Dashboard"
+      },
+      {
+        "href": "/AdministrationPanel/update_auditee_entities",
+        "text": "Update Audit Entities"
+      },
+      {
+        "href": "/AdministrationPanel/authorize_auditee_entities_update",
+        "text": "Authorize Update Audit Entities"
+      }
+    ],
+    "menu": "Setup"
+  },
+  {
+    "links": [
+      {
+        "href": "/AdministrationPanel/User_Dashboard",
+        "text": "User Dashboard"
+      },
+      {
+        "href": "/AdministrationPanel/Entity_Dashboard",
+        "text": "Entity Dashboard"
+      },
+      {
+        "href": "/AdministrationPanel/MasterAdminControlPanel",
+        "text": "Master Admin Control Panel"
+      },
+      {
+        "href": "/AdministrationPanel/Groups",
+        "text": "Groups"
+      },
+      {
+        "href": "/AdministrationPanel/ManagePublicHolidays",
+        "text": "Manage Public Holidays"
+      },
+      {
+        "href": "/AdministrationPanel/ais_post_compliance",
+        "text": "AIS Post Compliance"
+      },
+      {
+        "href": "/AdministrationPanel/dashboard_layout",
+        "text": "dashboard layout"
+      },
+      {
+        "href": "/AdministrationPanel/group_role_assignment",
+        "text": "Group Menu/Page Assignment"
+      },
+      {
+        "href": "/AdministrationPanel/menu_assignment",
+        "text": "Menu Assignment"
+      },
+      {
+        "href": "/AdministrationPanel/sub_menu_management",
+        "text": "Sub Menu Management"
+      },
+      {
+        "href": "/AdministrationPanel/api_master",
+        "text": "Master API"
+      },
+      {
+        "href": "/AdministrationPanel/catalog_uploads",
+        "text": "catalog_uploads"
+      },
+      {
+        "href": "/AdministrationPanel/pages_management",
+        "text": "Pages Management"
+      },
+      {
+        "href": "/AdministrationPanel/manage_user",
+        "text": "Manage Users"
+      },
+      {
+        "href": "/AdministrationPanel/audit_comp_management",
+        "text": "Manage Audit and Compliance Offices"
+      },
+      {
+        "href": "/AdministrationPanel/manage_user_rights",
+        "text": "Manage User Rights"
+      },
+      {
+        "href": "/AdministrationPanel/SystemLogs",
+        "text": "System Logs"
+      },
+      {
+        "href": "/AdministrationPanel/entity_addition",
+        "text": "Entity Addition"
+      },
+      {
+        "href": "/AdministrationPanel/entity_shifting",
+        "text": "Entity Shifting"
+      },
+      {
+        "href": "/AdministrationPanel/setup_engagement_reversal",
+        "text": "Engagement Reversal"
+      },
+      {
+        "href": "/AdministrationPanel/review_audit_checklist",
+        "text": "Review Audit Checklist"
+      },
+      {
+        "href": "/AdministrationPanel/authorize_audit_checklist",
+        "text": "Authorize Audit Checklist"
+      },
+      {
+        "href": "/AdministrationPanel/setup_auditee_entities",
+        "text": "Setup Auditee Entities"
+      },
+      {
+        "href": "/AdministrationPanel/EntityShiftingHistory",
+        "text": "Entity Shifting History"
+      },
+      {
+        "href": "/AdministrationPanel/ManageVersionHistory",
+        "text": "Manage Version History"
+      }
+    ],
+    "menu": "Admin"
+  },
+  {
+    "links": [
+      {
+        "href": "/EmailManagement/Dashboard",
+        "text": "Dashboard"
+      },
+      {
+        "href": "/EmailManagement/Events",
+        "text": "Events"
+      },
+      {
+        "href": "/EmailManagement/LogDetail",
+        "text": "LogDetail"
+      },
+      {
+        "href": "/EmailManagement/Logs",
+        "text": "Logs"
+      },
+      {
+        "href": "/EmailManagement/Placeholders",
+        "text": "Placeholders"
+      },
+      {
+        "href": "/EmailManagement/Preview",
+        "text": "Preview"
+      },
+      {
+        "href": "/EmailManagement/Rules",
+        "text": "Rules"
+      },
+      {
+        "href": "/EmailManagement/Templates",
+        "text": "Templates"
+      },
+      {
+        "href": "/EmailManagement/Test",
+        "text": "Test"
+      }
+    ],
+    "menu": "Email"
+  }
+]

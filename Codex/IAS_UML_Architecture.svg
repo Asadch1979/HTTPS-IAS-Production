@@ -1,0 +1,138 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1180" viewBox="0 0 1600 1180" role="img" aria-labelledby="title desc">
+  <title id="title">IAS Architecture</title>
+  <desc id="desc">Component and request-flow diagram for the IAS ASP.NET Core MVC application, IIS hosting, Oracle database, SMTP, frontend libraries, and file storage.</desc>
+  <defs>
+    <style>
+      text { font-family: "Segoe UI", Arial, sans-serif; fill: #172033; }
+      .title { font-size: 34px; font-weight: 700; }
+      .subtitle { font-size: 17px; fill: #536078; }
+      .group { fill: #f7f9fc; stroke: #8a9bb8; stroke-width: 2; rx: 16; }
+      .group-title { font-size: 22px; font-weight: 700; fill: #23456f; }
+      .box { fill: #ffffff; stroke: #54749b; stroke-width: 2; rx: 12; }
+      .security { fill: #edf7ef; stroke: #4d8b5c; }
+      .data { fill: #fff6e7; stroke: #af7a26; }
+      .external { fill: #f3edff; stroke: #7653a6; }
+      .node-title { font-size: 18px; font-weight: 700; }
+      .node-text { font-size: 14px; fill: #4f5b70; }
+      .edge { fill: none; stroke: #536a87; stroke-width: 2.2; marker-end: url(#arrow); }
+      .edge-label { font-size: 13px; fill: #40516a; paint-order: stroke; stroke: #ffffff; stroke-width: 5px; stroke-linejoin: round; }
+      .legend { font-size: 14px; fill: #536078; }
+    </style>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L0,6 L9,3 z" fill="#536a87"/>
+    </marker>
+  </defs>
+
+  <text x="800" y="48" text-anchor="middle" class="title">IAS Architecture</text>
+  <text x="800" y="76" text-anchor="middle" class="subtitle">Verified source-code component and request flow</text>
+
+  <rect x="50" y="120" width="260" height="120" class="box external"/>
+  <text x="180" y="154" text-anchor="middle" class="node-title">User Browser</text>
+  <text x="180" y="184" text-anchor="middle" class="node-text">Razor HTML • Bootstrap</text>
+  <text x="180" y="207" text-anchor="middle" class="node-text">jQuery • AJAX</text>
+
+  <rect x="370" y="105" width="860" height="155" class="group"/>
+  <text x="395" y="136" class="group-title">IIS Deployment</text>
+  <rect x="405" y="158" width="350" height="76" class="box"/>
+  <text x="580" y="187" text-anchor="middle" class="node-title">HTTPS / TLS Binding</text>
+  <text x="580" y="213" text-anchor="middle" class="node-text">Production verification required</text>
+  <rect x="815" y="158" width="380" height="76" class="box"/>
+  <text x="1005" y="187" text-anchor="middle" class="node-title">ASP.NET Core Module</text>
+  <text x="1005" y="213" text-anchor="middle" class="node-text">In-process hosting</text>
+
+  <rect x="80" y="315" width="1220" height="710" class="group"/>
+  <text x="105" y="350" class="group-title">IAS — ASP.NET Core MVC (.NET 8)</text>
+
+  <rect x="120" y="378" width="1140" height="82" class="box security"/>
+  <text x="690" y="407" text-anchor="middle" class="node-title">Middleware Pipeline</text>
+  <text x="690" y="434" text-anchor="middle" class="node-text">HTTPS/HSTS • CSP • Rate Limiting • Exception Handling • Routing</text>
+
+  <rect x="120" y="490" width="540" height="100" class="box security"/>
+  <text x="390" y="520" text-anchor="middle" class="node-title">Authentication &amp; Authorization</text>
+  <text x="390" y="547" text-anchor="middle" class="node-text">IAS.Auth cookie • IAS.Session</text>
+  <text x="390" y="571" text-anchor="middle" class="node-text">Page-key permissions • Object-scope filter</text>
+
+  <rect x="720" y="490" width="540" height="100" class="box security"/>
+  <text x="990" y="520" text-anchor="middle" class="node-title">SessionHandler</text>
+  <text x="990" y="547" text-anchor="middle" class="node-text">User • Role • Entity context</text>
+  <text x="990" y="571" text-anchor="middle" class="node-text">Session token and validation</text>
+
+  <rect x="120" y="625" width="330" height="130" class="box"/>
+  <text x="285" y="656" text-anchor="middle" class="node-title">MVC Controllers</text>
+  <text x="285" y="683" text-anchor="middle" class="node-text">Functional controllers</text>
+  <text x="285" y="707" text-anchor="middle" class="node-text">ApiCallsController</text>
+  <text x="285" y="731" text-anchor="middle" class="node-text">MVC routing and actions</text>
+
+  <rect x="515" y="625" width="330" height="130" class="box"/>
+  <text x="680" y="656" text-anchor="middle" class="node-title">Razor / JSON Layer</text>
+  <text x="680" y="683" text-anchor="middle" class="node-text">Razor Views</text>
+  <text x="680" y="707" text-anchor="middle" class="node-text">JSON / AJAX endpoints</text>
+  <text x="680" y="731" text-anchor="middle" class="node-text">HTML • JSON responses</text>
+
+  <rect x="910" y="625" width="350" height="130" class="box"/>
+  <text x="1085" y="656" text-anchor="middle" class="node-title">Services / Filters</text>
+  <text x="1085" y="683" text-anchor="middle" class="node-text">Permissions • Validation • Email</text>
+  <text x="1085" y="707" text-anchor="middle" class="node-text">PDF/report builders • Sanitizers</text>
+  <text x="1085" y="731" text-anchor="middle" class="node-text">Password and page services</text>
+
+  <rect x="120" y="800" width="500" height="160" class="box data"/>
+  <text x="370" y="832" text-anchor="middle" class="node-title">Data-Access Layer</text>
+  <text x="370" y="862" text-anchor="middle" class="node-text">DBConnection + DBConnection.* partial classes</text>
+  <text x="370" y="888" text-anchor="middle" class="node-text">Oracle.ManagedDataAccess.Core 23.5.1</text>
+  <text x="370" y="914" text-anchor="middle" class="node-text">OracleConnection • OracleCommand</text>
+  <text x="370" y="940" text-anchor="middle" class="node-text">Stored procedures • Bind variables • Transactions</text>
+
+  <rect x="690" y="800" width="260" height="160" class="box"/>
+  <text x="820" y="832" text-anchor="middle" class="node-title">Generated Outputs</text>
+  <text x="820" y="862" text-anchor="middle" class="node-text">PDF • CSV / Excel</text>
+  <text x="820" y="888" text-anchor="middle" class="node-text">Razor HTML • JSON</text>
+  <text x="820" y="914" text-anchor="middle" class="node-text">Email</text>
+
+  <rect x="1000" y="800" width="260" height="160" class="box"/>
+  <text x="1130" y="832" text-anchor="middle" class="node-title">File Storage</text>
+  <text x="1130" y="862" text-anchor="middle" class="node-text">Evidence uploads</text>
+  <text x="1130" y="888" text-anchor="middle" class="node-text">Audit reports</text>
+  <text x="1130" y="914" text-anchor="middle" class="node-text">Locations under wwwroot</text>
+
+  <rect x="1350" y="345" width="210" height="220" class="group"/>
+  <text x="1375" y="380" class="group-title">Oracle Database</text>
+  <rect x="1375" y="405" width="160" height="62" class="box data"/>
+  <text x="1455" y="432" text-anchor="middle" class="node-title">Packages</text>
+  <text x="1455" y="453" text-anchor="middle" class="node-text">Stored procedures</text>
+  <rect x="1375" y="485" width="160" height="55" class="box data"/>
+  <text x="1455" y="518" text-anchor="middle" class="node-title">Tables / Views</text>
+
+  <rect x="1350" y="635" width="210" height="95" class="box external"/>
+  <text x="1455" y="670" text-anchor="middle" class="node-title">SMTP Server</text>
+  <text x="1455" y="698" text-anchor="middle" class="node-text">Application email</text>
+
+  <rect x="1350" y="800" width="210" height="160" class="box external"/>
+  <text x="1455" y="833" text-anchor="middle" class="node-title">Frontend Libraries</text>
+  <text x="1455" y="862" text-anchor="middle" class="node-text">Bootstrap • jQuery</text>
+  <text x="1455" y="886" text-anchor="middle" class="node-text">DataTables • Select2</text>
+  <text x="1455" y="910" text-anchor="middle" class="node-text">TinyMCE • CanvasJS</text>
+  <text x="1455" y="934" text-anchor="middle" class="node-text">JSZip • CryptoJS</text>
+
+  <path d="M310 180 H405" class="edge"/>
+  <text x="357" y="166" text-anchor="middle" class="edge-label">HTTPS</text>
+  <path d="M755 196 H815" class="edge"/>
+  <path d="M1005 234 V378" class="edge"/>
+  <path d="M690 460 V490" class="edge"/>
+  <path d="M390 590 V625" class="edge"/>
+  <path d="M990 590 C990 610, 370 600, 320 625" class="edge"/>
+  <path d="M450 690 H515" class="edge"/>
+  <path d="M450 720 C620 780, 890 745, 950 720" class="edge"/>
+  <path d="M285 755 V800" class="edge"/>
+  <path d="M1085 755 C990 790, 650 775, 545 800" class="edge"/>
+  <path d="M620 880 H690" class="edge"/>
+  <path d="M450 915 C690 1010, 1000 1010, 1090 960" class="edge"/>
+  <path d="M620 840 C940 760, 1200 610, 1375 450" class="edge"/>
+  <text x="1010" y="702" text-anchor="middle" class="edge-label">Oracle calls</text>
+  <path d="M1260 675 C1320 675, 1320 680, 1350 680" class="edge"/>
+  <text x="1305" y="664" text-anchor="middle" class="edge-label">SMTP</text>
+  <path d="M1350 880 H1260" class="edge"/>
+  <path d="M515 650 C390 540, 200 420, 180 240" class="edge"/>
+  <text x="292" y="455" text-anchor="middle" class="edge-label">HTML / JSON</text>
+
+  
+</svg>

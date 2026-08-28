@@ -1,0 +1,15 @@
+Area,Role,Screen_or_Function,Coverage,Result,Evidence
+Authentication,Employee Para Check,Login,Tested,Blocked by missing context,Browser
+Authentication,SUPER USER,Login,Tested,Pass,Browser
+Home,SUPER USER,Dashboard and top-level modules,Baseline captured,Pass,Browser
+Authentication,ADMINS,Login,Tested,Pass,Browser
+Home,ADMINS,Dashboard and top-level modules,Baseline captured,Pass,Browser
+Authorization,All,Object scope filter,Reviewed,"Coverage gap: only user identifiers recognized",Source
+Security,All,Tracked configuration,Reviewed,"Non-empty secrets present",Source
+Authentication,All 35 supplied roles,Login/context/top-level modules,Tested,"34 successful; Employee Para Check blocked by missing context",Browser
+Post Compliance,HO COMPLAINCE MONITORING UNIT,Monitoring of Settled Paras month/year filters,Tested,"Filter works; one August 2026 record returned",Browser
+Post Compliance,HO COMPLAINCE MONITORING UNIT,Monitoring result data integrity,Tested,"Returned settled record has blank Para No.",Browser
+Post Compliance,HO COMPLAINCE MONITORING UNIT,Monitoring responsive layout,Tested,"Severe narrow-column wrapping and duplicated overflow in full-page view",Browser
+Planning,SUPER USER,Audit Period page/list,Tested,"Existing 2023-2026 periods visible; all displayed Completed",Browser
+Planning,SUPER USER,Audit Period mandatory fields,Tested,"Blank save blocked with Missing Mandatory fields",Browser
+Planning,SUPER USER,Audit Period date ordering,Tested safely,"Reversed dates accepted by controls; submission withheld because reviewed backend would persist invalid data",Browser+Source+Database code

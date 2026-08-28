@@ -50,13 +50,13 @@ namespace AIS.Services
                     _sessionHandler.CacheApiPermissions(apiPermissions);
                     if (!_sessionHandler.HasCachedApiPermissions())
                         {
-                        _logger.LogWarning("API permission map is missing from session for user {UserId}. API authorization will allow by default until cache is rebuilt.", user?.ID);
+                        _logger.LogWarning("API permission map is missing from session for user {UserId}. API authorization will deny access until cache is rebuilt.", user?.ID);
                         }
                     }
                 }
             catch (Exception ex)
                 {
-                _logger.LogWarning(ex, "Failed to rebuild permission cache for user {UserId}. Authorization will allow by default until cache is rebuilt.", user?.ID);
+                _logger.LogWarning(ex, "Failed to rebuild permission cache for user {UserId}. Authorization will deny access until cache is rebuilt.", user?.ID);
                 }
             }
 
@@ -77,7 +77,7 @@ namespace AIS.Services
                 }
             catch (Exception ex)
                 {
-                _logger.LogWarning(ex, "Failed to preload permissions for user {UserId}. Authorization will allow by default until cache is rebuilt.", user?.ID);
+                _logger.LogWarning(ex, "Failed to preload permissions for user {UserId}. Authorization will deny access until cache is rebuilt.", user?.ID);
                 }
             }
 

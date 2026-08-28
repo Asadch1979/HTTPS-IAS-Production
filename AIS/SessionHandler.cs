@@ -151,6 +151,10 @@ namespace AIS
             session.Remove("_sessionId");
             session.Remove(SessionKeys.AllowedViewIds);
             session.Remove(SessionKeys.AllowedApiPaths);
+            session.Remove(SessionKeys.PageId);
+            session.Remove(SessionKeys.ActiveEngagementId);
+            session.Remove(SessionKeys.SbpAccessGranted);
+            session.Remove(SessionKeys.SbpAccessGrantedAt);
             session.SetString(SessionKeys.User, serialized);
             session.SetInt32(SessionKeys.UserRole, user.UserRoleID);
             if (user.UserEntityID.HasValue)

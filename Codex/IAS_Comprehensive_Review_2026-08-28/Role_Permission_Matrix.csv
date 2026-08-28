@@ -1,0 +1,36 @@
+Role_ID,Role,PPNO,Entity_ID,Login,Context,Observed_Modules,View,Create,Edit,Submit,Approve,Return,Reject,Close,Settle,Administer,Evidence_Status
+0,Employee Para Check,704003,112254,Authenticated,Missing,"",Blocked,Blocked,Blocked,Blocked,Blocked,Blocked,Blocked,Blocked,Blocked,Blocked,BROWSER-VERIFIED
+1,SUPER USER,140066,112288,Successful,Applied,"Dashboard|Planning|Engagement|Execution|Auditee Portal|Post Compliance|I&ID|Reports|FAD|CAU|Sampling|Setup|Admin|Email",Pending,Pending,Pending,Pending,Pending,Pending,Pending,Pending,Pending,Pending,BROWSER-BASELINE
+2,ADMINS,139995,112248,Successful,Applied,"Dashboard|Engagement|Execution|Post Compliance|Reports|FAD|CAU|Setup|Admin",Pending,Pending,Pending,Pending,Pending,Pending,Pending,Pending,Pending,Pending,BROWSER-BASELINE
+3,CIA,124826,113068,Successful,Applied,"Dashboard|Risk|Planning|Engagement|Reports|Setup",Pending,Pending,Pending,Pending,Pending,Pending,Pending,Pending,Pending,Pending,BROWSER-BASELINE
+5,HEAD FAD,125588,112243,Successful,Applied,"Dashboard|Planning|Engagement|Execution|Post Compliance|Reports|FAD|CAU|Sampling|Setup",Pending,Pending,Pending,Pending,Pending,Pending,Pending,Pending,Pending,Pending,BROWSER-BASELINE
+6,HEAD CAD,111564,112242,Successful,Applied,"Dashboard|Risk|Planning|Engagement|Execution|Post Compliance|Reports|Sampling|Setup",Pending,Pending,Pending,Pending,Pending,Pending,Pending,Pending,Pending,Pending,BROWSER-BASELINE
+7,HEAD ISAD,146002,112248,Successful,Applied,"Dashboard|Risk|Planning|Engagement|Execution|Post Compliance|Reports|FAD|Sampling|Setup|Admin",Pending,Pending,Pending,Pending,Pending,Pending,Pending,Pending,Pending,Pending,BROWSER-BASELINE
+9,COMPLAINCE OFFICER,145415,112243,Successful,Applied,"Dashboard|Post Compliance|Reports|Sampling|Setup",Pending,Pending,Pending,Pending,Pending,Pending,Pending,Pending,Pending,Pending,BROWSER-BASELINE
+10,HO AUDITOR (Team Lead),140057,112242,Successful,Applied,"Risk|Execution|Post Compliance|FAD",Pending,Pending,Pending,Pending,Pending,Pending,Pending,Pending,Pending,Pending,BROWSER-BASELINE
+11,HO PLANNING & COORDINATION,146065,112243,Successful,Applied,"Dashboard|Planning|Engagement|Execution|Post Compliance|Reports|FAD|Sampling|Admin",Pending,Pending,Pending,Pending,Pending,Pending,Pending,Pending,Pending,Pending,BROWSER-BASELINE
+12,DEPT AUDITEE,145994,112257,Successful,Applied,"Dashboard|Auditee Portal|Post Compliance|Reports",Pending,Pending,Pending,Pending,Pending,Pending,Pending,Pending,Pending,Pending,BROWSER-BASELINE
+13,AUDITEE BRANCH,147525,113191,Successful,Applied,"Dashboard|Auditee Portal|Post Compliance|Reports",Pending,Pending,Pending,Pending,Pending,Pending,Pending,Pending,Pending,Pending,BROWSER-BASELINE
+14,DIV AUDITEE,704016,113068,Successful,Applied,"Dashboard|Reports",Pending,Pending,Pending,Pending,Pending,Pending,Pending,Pending,Pending,Pending,BROWSER-BASELINE
+15,SVP AUDIT ZONE,136427,112924,Successful,Applied,"Dashboard|Planning|Engagement|Execution|Post Compliance|Reports|FAD|Setup",Pending,Pending,Pending,Pending,Pending,Pending,Pending,Pending,Pending,Pending,BROWSER-BASELINE
+16,AZ IMPLEMENTATION UNIT,130665,112924,Successful,Applied,"Dashboard|Planning|Engagement|Execution|Post Compliance|Reports|FAD",Pending,Pending,Pending,Pending,Pending,Pending,Pending,Pending,Pending,Pending,BROWSER-BASELINE
+17,AZ PLANNING & COORDINATION,81952,112926,Successful,Applied,"Execution|Post Compliance|Reports",Pending,Pending,Pending,Pending,Pending,Pending,Pending,Pending,Pending,Pending,BROWSER-BASELINE
+18,BRANCH AUDITOR (Team Lead),146011,112931,Successful,Applied,"Execution|Post Compliance|FAD|Sampling",Pending,Pending,Pending,Pending,Pending,Pending,Pending,Pending,Pending,Pending,BROWSER-BASELINE
+21,REPORTING OFFICE AUDITEE,136695,112306,Successful,Applied,"Dashboard|Auditee Portal|Post Compliance|Reports",Pending,Pending,Pending,Pending,Pending,Pending,Pending,Pending,Pending,Pending,BROWSER-BASELINE
+23,REGIONAL HEAD,127592,112289,Successful,Applied,"Dashboard|Auditee Portal|Post Compliance",Pending,Pending,Pending,Pending,Pending,Pending,Pending,Pending,Pending,Pending,BROWSER-BASELINE
+25,Audit QA Unit,125454,113172,Successful,Applied,"Execution|Setup",Pending,Pending,Pending,Pending,Pending,Pending,Pending,Pending,Pending,Pending,BROWSER-BASELINE
+26,Shariah Audit Unit,132000,113171,Successful,Applied,"Risk|Planning|Engagement|Execution|Setup",Pending,Pending,Pending,Pending,Pending,Pending,Pending,Pending,Pending,Pending,BROWSER-BASELINE
+27,HO AUDITOR (Team Member),140021,112248,Successful,Applied,"Execution|Auditee Portal|Post Compliance",Pending,Pending,Pending,Pending,Pending,Pending,Pending,Pending,Pending,Pending,BROWSER-BASELINE
+28,BRANCH AUDITOR (Team Member),146056,112927,Successful,Applied,"Execution|Post Compliance|FAD",Pending,Pending,Pending,Pending,Pending,Pending,Pending,Pending,Pending,Pending,BROWSER-BASELINE
+29,Data Entry for Old Record,92878,112931,Successful,Applied,"Reports",Pending,Pending,Pending,Pending,Pending,Pending,Pending,Pending,Pending,Pending,BROWSER-BASELINE
+31,HO AUDITOR,113808,112239,Successful,Applied,"Dashboard",Pending,Pending,Pending,Pending,Pending,Pending,Pending,Pending,Pending,Pending,BROWSER-BASELINE
+33,Commercial Audit,145414,112243,Successful,Applied,"CAU",Pending,Pending,Pending,Pending,Pending,Pending,Pending,Pending,Pending,Pending,BROWSER-BASELINE
+35,Checklist Reviewer,147347,112243,Successful,Applied,"Dashboard|Reports|FAD|Sampling|Setup",Pending,Pending,Pending,Pending,Pending,Pending,Pending,Pending,Pending,Pending,BROWSER-BASELINE
+38,CCO,124172,112226,Successful,Applied,"Dashboard",Pending,Pending,Pending,Pending,Pending,Pending,Pending,Pending,Pending,Pending,BROWSER-BASELINE
+39,GENERAL MANAGER (GM),136641,112861,Successful,Applied,"Dashboard|Auditee Portal|Post Compliance|Reports",Pending,Pending,Pending,Pending,Pending,Pending,Pending,Pending,Pending,Pending,BROWSER-BASELINE
+40,HO Monitoring,132704,112247,Successful,Applied,"Dashboard|Auditee Portal|Post Compliance|Reports",Pending,Pending,Pending,Pending,Pending,Pending,Pending,Pending,Pending,Pending,BROWSER-BASELINE
+41,COMPLAINCE ADMIN,111751,112274,Successful,Applied,"Dashboard|Post Compliance|Reports|Setup|Admin",Pending,Pending,Pending,Pending,Pending,Pending,Pending,Pending,Pending,Pending,BROWSER-BASELINE
+42,Head I&I,145405,113191,Successful,Applied,"I&ID",Pending,Pending,Pending,Pending,Pending,Pending,Pending,Pending,Pending,Pending,BROWSER-BASELINE
+43,COMPLAINCE SETTLEMENT OFFICER,136614,112847,Successful,Applied,"Dashboard|Post Compliance|Reports",Pending,Pending,Pending,Pending,Pending,Pending,Pending,Pending,Pending,Pending,BROWSER-BASELINE
+44,INCHARGE COMPLAINCE UNIT,136463,112850,Successful,Applied,"Dashboard|Auditee Portal|Post Compliance|Reports",Pending,Pending,Pending,Pending,Pending,Pending,Pending,Pending,Pending,Pending,BROWSER-BASELINE
+45,HO COMPLAINCE MONITORING UNIT,112931,112274,Successful,Applied,"Post Compliance|Reports",Pending,Pending,Pending,Pending,Pending,Pending,Pending,Pending,Pending,Pending,BROWSER-BASELINE

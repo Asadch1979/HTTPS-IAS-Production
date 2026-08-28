@@ -1,0 +1,4 @@
+ID,Area,Current Situation,Proposed Improvement,Benefit,Priority,Complexity
+IMP-001,Testability,"Role coverage depends on manually maintained accounts and context assignments","Add an automated test-account health check covering active status, role, entity, zone, context and menu/API mappings","Prevents blocked QA runs and detects permission drift before release",High,Medium
+IMP-002,Audit evidence,"UI permissions and workflow states are difficult to export as a single baseline","Provide a read-only administrative permission/workflow diagnostic export","Faster audits, clearer segregation-of-duty review, and easier regression comparison",Medium,Medium
+

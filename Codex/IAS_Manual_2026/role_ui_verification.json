@@ -1,0 +1,904 @@
+[
+  {
+    "label": "Super User",
+    "url": "https://localhost:50853/Home/Index",
+    "title": "Home - IAS",
+    "menus": [
+      {
+        "href": null,
+        "text": ""
+      },
+      {
+        "href": null,
+        "text": "Dashboard +"
+      },
+      {
+        "href": null,
+        "text": "Planning +"
+      },
+      {
+        "href": null,
+        "text": "Engagement +"
+      },
+      {
+        "href": null,
+        "text": "Execution +"
+      },
+      {
+        "href": null,
+        "text": "Auditee Portal +"
+      },
+      {
+        "href": null,
+        "text": "Post Compliance +"
+      },
+      {
+        "href": null,
+        "text": "I&ID +"
+      },
+      {
+        "href": null,
+        "text": "Reports +"
+      },
+      {
+        "href": null,
+        "text": "FAD +"
+      },
+      {
+        "href": null,
+        "text": "CAU +"
+      },
+      {
+        "href": null,
+        "text": "Sampling +"
+      },
+      {
+        "href": null,
+        "text": "Setup +"
+      },
+      {
+        "href": null,
+        "text": "Admin +"
+      },
+      {
+        "href": null,
+        "text": "Email +"
+      },
+      {
+        "href": "/Login/Logout",
+        "text": "Logout"
+      }
+    ],
+    "links": [],
+    "snapshot": "- complementary:\n  - generic: IAS\n  - button \"Collapse\"\n  - searchbox \"Search menu...\"\n  - button \"Dashboard\":\n    - generic: Dashboard\n    - generic: +\n  - button \"Planning\":\n    - generic: Planning\n    - generic: +\n  - button \"Engagement\":\n    - generic: Engagement\n    - generic: +\n  - button \"Execution\":\n    - generic: Execution\n    - generic: +\n  - button \"Auditee Portal\":\n    - generic: Auditee Portal\n    - generic: +\n  - button \"Post Compliance\":\n    - generic: Post Compliance\n    - generic: +\n  - button \"I&ID\":\n    - generic: I&ID\n    - generic: +\n  - button \"Reports\":\n    - generic: Reports\n    - generic: +\n  - button \"FAD\":\n    - generic: FAD\n    - generic: +\n  - button \"CAU\":\n    - generic: CAU\n    - generic: +\n  - button \"Sampling\":\n    - generic: Sampling\n    - generic: +\n  - button \"Setup\":\n    - generic: Setup\n    - generic: +\n  - button \"Admin\":\n    - generic: Admin\n    - generic: +\n  - button \"Email\":\n    - generic: Email\n    - generic: +\n  - link \"Logout\":\n    - /url: /Login/Logout\n    - generic: Logout\n- banner:\n  - navigation:\n    - button \"\":\n      - generic: \n    - link \"ZTBL Internal Audit System\":\n      - /url: /Home/Index\n      - img \"ZTBL\"\n      - generic: Internal Audit System\n    - button:\n      - generic: \n- heading \"Welcome to IAS\" [level=1]\n- paragraph: Quick access to your modules, holidays, and updates.\n- generic: Friday, Aug 28, 2026\n- generic: \"Status: Secure\"\n- heading \"Quick Links\" [level=2]\n- generic: Based on your permitted pages. All\n- link \"Master Admin Control Panel Open module\":\n  - /url: /AdministrationPanel/MasterAdminControlPanel\n  - generic: Master Admin Control Panel\n  - generic: Open module\n- link \"Manage Users Open module\":\n  - /url: /AdministrationPanel/manage_user\n  - generic: Manage Users\n  - generic: Open module\n- link \"Field Auditor Dashboard Open module\":\n  - /url: /FieldAudit/AR_Dashboard\n  - generic: Field Auditor Dashboard\n  - generic: Open module\n- link \"User Dashboard Open module\":\n  - /url: /AdministrationPanel/User_Dashboard\n  - generic: User Dashboard\n  - generic: Open module\n- link \"Entity Dashboard Open module\":\n  - /url: /AdministrationPanel/Entity_Dashboard\n  - generic: Entity Dashboard\n  - generic: Open module\n- link \"Checklist Dashboard Open module\":\n  - /url: /Setup/Checklist_Dashboard\n  - generic: Checklist Dashboard\n  - generic: Open module\n- link \"Planning Dash Board Open module\":\n  - /url: /Planning/Planning\n  - generic: Planning Dash Board\n  - generic: Open module\n- link \"IID Dashboard Open module\":\n  - /url: /IID/IID_Dashboard\n  - generic: IID Dashboard\n  - generic: Open module\n- heading \"Announcements / Notifications\" [level=2]\n- generic: Message from IAS Team\n- list:\n  - paragraph: Welcome\n  - paragraph: Please enjoy New IAS system and in case you find any difficulty or error, please share the details like Page Name, Error Screen Shot along with a short brief of the issue.\n  - generic: Info\n- paragraph: August 2026\n- button \"Prev\"\n- button \"Today\"\n- button \"Next\"\n- generic: Sun\n- generic: Mon\n- generic: Tue\n- generic: Wed\n- generic: Thu\n- generic: Fri\n- generic: Sat\n- generic: \"26\"\n- generic: \"27\"\n- generic: \"28\"\n- generic: \"29\"\n- generic: \"30\"\n- generic: \"31\"\n- generic: \"1\"\n- generic: \"2\"\n- generic: \"3\"\n- generic: \"4\"\n- generic: \"5\"\n- generic: \"6\"\n- generic: \"7\"\n- generic: \"8\"\n- generic: \"9\"\n- generic: \"10\"\n- generic: \"11\"\n- generic: \"12\"\n- generic: \"13\"\n- generic: \"14\"\n- generic: \"15\"\n- generic: \"16\"\n- generic: \"17\"\n- generic: \"18\"\n- generic: \"19\"\n- generic: \"20\"\n- generic: \"21\"\n- generic: \"22\"\n- generic: \"23\"\n- generic: \"24\"\n- generic: \"25\"\n- generic: \"26\"\n- generic: \"27\"\n- generic: \"28\"\n- generic: \"29\"\n- generic: \"30\"\n- generic: \"31\"\n- generic: \"1\"\n- generic: \"2\"\n- generic: \"3\"\n- generic: \"4\"\n- generic: \"5\"\n- generic: Holidays are marked with an orange dot.\n- heading \"Public Holidays\" [level=2]\n- text: \"Year:\"\n- combobox:\n  - option \"2025\"\n  - option \"2026\" [selected]\n  - option \"2027\"\n- list\n- generic: No holidays found for the selected year.\n- contentinfo:\n  - text: © INTERNAL AUDIT (Developed By A.A.C)\n  - generic: \"Version No: 24.08.2026\"",
+    "menuInventory": [
+      {
+        "menu": "Dashboard",
+        "items": []
+      },
+      {
+        "menu": "Planning",
+        "items": []
+      },
+      {
+        "menu": "Engagement",
+        "items": []
+      },
+      {
+        "menu": "Execution",
+        "items": []
+      },
+      {
+        "menu": "Auditee Portal",
+        "items": []
+      },
+      {
+        "menu": "Post Compliance",
+        "items": []
+      },
+      {
+        "menu": "I&ID",
+        "items": []
+      },
+      {
+        "menu": "Reports",
+        "items": []
+      },
+      {
+        "menu": "FAD",
+        "items": []
+      },
+      {
+        "menu": "CAU",
+        "items": []
+      },
+      {
+        "menu": "Sampling",
+        "items": []
+      },
+      {
+        "menu": "Setup",
+        "items": []
+      },
+      {
+        "menu": "Admin",
+        "items": []
+      },
+      {
+        "menu": "Email",
+        "items": []
+      }
+    ]
+  },
+  {
+    "label": "Admin",
+    "url": "https://localhost:50853/Login/Index?ReturnUrl=%2FLogin",
+    "title": "Login (DEV) - IAS",
+    "menus": [
+      {
+        "href": null,
+        "text": ""
+      },
+      {
+        "href": null,
+        "text": "Dashboard +"
+      },
+      {
+        "href": null,
+        "text": "Engagement +"
+      },
+      {
+        "href": null,
+        "text": "Execution +"
+      },
+      {
+        "href": null,
+        "text": "Post Compliance +"
+      },
+      {
+        "href": null,
+        "text": "Reports +"
+      },
+      {
+        "href": null,
+        "text": "FAD +"
+      },
+      {
+        "href": null,
+        "text": "CAU +"
+      },
+      {
+        "href": null,
+        "text": "Setup +"
+      },
+      {
+        "href": null,
+        "text": "Admin +"
+      },
+      {
+        "href": "/Login/Logout",
+        "text": "Logout"
+      }
+    ],
+    "links": [],
+    "snapshot": "- document"
+  },
+  {
+    "label": "Admin",
+    "url": "https://localhost:50853/Login/Index?ReturnUrl=%2FLogin",
+    "title": "Login (DEV) - IAS",
+    "menus": [
+      {
+        "href": null,
+        "text": ""
+      },
+      {
+        "href": null,
+        "text": "Dashboard +"
+      },
+      {
+        "href": null,
+        "text": "Engagement +"
+      },
+      {
+        "href": null,
+        "text": "Execution +"
+      },
+      {
+        "href": null,
+        "text": "Post Compliance +"
+      },
+      {
+        "href": null,
+        "text": "Reports +"
+      },
+      {
+        "href": null,
+        "text": "FAD +"
+      },
+      {
+        "href": null,
+        "text": "CAU +"
+      },
+      {
+        "href": null,
+        "text": "Setup +"
+      },
+      {
+        "href": null,
+        "text": "Admin +"
+      },
+      {
+        "href": "/Login/Logout",
+        "text": "Logout"
+      }
+    ],
+    "links": [],
+    "snapshot": "- document"
+  },
+  {
+    "label": "Zonal Chief",
+    "url": "https://localhost:50853/Home/Index",
+    "title": "Home - IAS",
+    "menus": [
+      {
+        "href": null,
+        "text": ""
+      },
+      {
+        "href": null,
+        "text": "Dashboard +"
+      },
+      {
+        "href": null,
+        "text": "Auditee Portal +"
+      },
+      {
+        "href": null,
+        "text": "Post Compliance +"
+      },
+      {
+        "href": null,
+        "text": "Reports +"
+      },
+      {
+        "href": "/Login/Logout",
+        "text": "Logout"
+      }
+    ],
+    "links": [],
+    "snapshot": "- complementary:\n  - generic: IAS\n  - button \"Collapse\"\n  - searchbox \"Search menu...\"\n  - button \"Dashboard\":\n    - generic: Dashboard\n    - generic: +\n  - button \"Auditee Portal\":\n    - generic: Auditee Portal\n    - generic: +\n  - button \"Post Compliance\":\n    - generic: Post Compliance\n    - generic: +\n  - button \"Reports\":\n    - generic: Reports\n    - generic: +\n  - link \"Logout\":\n    - /url: /Login/Logout\n    - generic: Logout\n- banner:\n  - navigation:\n    - button \"\":\n      - generic: \n    - link \"ZTBL Internal Audit System\":\n      - /url: /Home/Index\n      - img \"ZTBL\"\n      - generic: Internal Audit System\n    - button:\n      - generic: \n- heading \"Welcome to IAS\" [level=1]\n- paragraph: Quick access to your modules, holidays, and updates.\n- generic: Friday, Aug 28, 2026\n- generic: \"Status: Secure\"\n- heading \"Quick Links\" [level=2]\n- generic: Based on your permitted pages. All\n- generic: No quick links available.\n- heading \"Announcements / Notifications\" [level=2]\n- generic: Message from IAS Team\n- list:\n  - paragraph: Welcome\n  - paragraph: Please enjoy New IAS system and in case you find any difficulty or error, please share the details like Page Name, Error Screen Shot along with a short brief of the issue.\n  - generic: Info\n- paragraph: August 2026\n- button \"Prev\"\n- button \"Today\"\n- button \"Next\"\n- generic: Sun\n- generic: Mon\n- generic: Tue\n- generic: Wed\n- generic: Thu\n- generic: Fri\n- generic: Sat\n- generic: \"26\"\n- generic: \"27\"\n- generic: \"28\"\n- generic: \"29\"\n- generic: \"30\"\n- generic: \"31\"\n- generic: \"1\"\n- generic: \"2\"\n- generic: \"3\"\n- generic: \"4\"\n- generic: \"5\"\n- generic: \"6\"\n- generic: \"7\"\n- generic: \"8\"\n- generic: \"9\"\n- generic: \"10\"\n- generic: \"11\"\n- generic: \"12\"\n- generic: \"13\"\n- generic: \"14\"\n- generic: \"15\"\n- generic: \"16\"\n- generic: \"17\"\n- generic: \"18\"\n- generic: \"19\"\n- generic: \"20\"\n- generic: \"21\"\n- generic: \"22\"\n- generic: \"23\"\n- generic: \"24\"\n- generic: \"25\"\n- generic: \"26\"\n- generic: \"27\"\n- generic: \"28\"\n- generic: \"29\"\n- generic: \"30\"\n- generic: \"31\"\n- generic: \"1\"\n- generic: \"2\"\n- generic: \"3\"\n- generic: \"4\"\n- generic: \"5\"\n- generic: Holidays are marked with an orange dot.\n- heading \"Public Holidays\" [level=2]\n- text: \"Year:\"\n- combobox:\n  - option \"2025\"\n  - option \"2026\" [selected]\n  - option \"2027\"\n- list\n- generic: No holidays found for the selected year.\n- contentinfo:\n  - text: © INTERNAL AUDIT (Developed By A.A.C)\n  - generic: \"Version No: 24.08.2026\""
+  },
+  {
+    "label": "Head FAD",
+    "url": "https://localhost:50853/Home/Index",
+    "title": "Home - IAS",
+    "menus": [
+      {
+        "href": null,
+        "text": ""
+      },
+      {
+        "href": null,
+        "text": "Dashboard +"
+      },
+      {
+        "href": null,
+        "text": "Planning +"
+      },
+      {
+        "href": null,
+        "text": "Engagement +"
+      },
+      {
+        "href": null,
+        "text": "Execution +"
+      },
+      {
+        "href": null,
+        "text": "Post Compliance +"
+      },
+      {
+        "href": null,
+        "text": "Reports +"
+      },
+      {
+        "href": null,
+        "text": "FAD +"
+      },
+      {
+        "href": null,
+        "text": "CAU +"
+      },
+      {
+        "href": null,
+        "text": "Sampling +"
+      },
+      {
+        "href": null,
+        "text": "Setup +"
+      },
+      {
+        "href": "/Login/Logout",
+        "text": "Logout"
+      }
+    ],
+    "links": [],
+    "snapshot": "- complementary:\n  - generic: IAS\n  - button \"Collapse\"\n  - searchbox \"Search menu...\"\n  - button \"Dashboard\":\n    - generic: Dashboard\n    - generic: +\n  - button \"Planning\":\n    - generic: Planning\n    - generic: +\n  - button \"Engagement\":\n    - generic: Engagement\n    - generic: +\n  - button \"Execution\":\n    - generic: Execution\n    - generic: +\n  - button \"Post Compliance\":\n    - generic: Post Compliance\n    - generic: +\n  - button \"Reports\":\n    - generic: Reports\n    - generic: +\n  - button \"FAD\":\n    - generic: FAD\n    - generic: +\n  - button \"CAU\":\n    - generic: CAU\n    - generic: +\n  - button \"Sampling\":\n    - generic: Sampling\n    - generic: +\n  - button \"Setup\":\n    - generic: Setup\n    - generic: +\n  - link \"Logout\":\n    - /url: /Login/Logout\n    - generic: Logout\n- banner:\n  - navigation:\n    - button \"\":\n      - generic: \n    - link \"ZTBL Internal Audit System\":\n      - /url: /Home/Index\n      - img \"ZTBL\"\n      - generic: Internal Audit System\n    - button:\n      - generic: \n- heading \"Welcome to IAS\" [level=1]\n- paragraph: Quick access to your modules, holidays, and updates.\n- generic: Friday, Aug 28, 2026\n- generic: \"Status: Secure\"\n- heading \"Quick Links\" [level=2]\n- generic: Based on your permitted pages. All\n- generic: No quick links available.\n- heading \"Announcements / Notifications\" [level=2]\n- generic: Message from IAS Team\n- list:\n  - paragraph: Welcome\n  - paragraph: Please enjoy New IAS system and in case you find any difficulty or error, please share the details like Page Name, Error Screen Shot along with a short brief of the issue.\n  - generic: Info\n- paragraph: August 2026\n- button \"Prev\"\n- button \"Today\"\n- button \"Next\"\n- generic: Sun\n- generic: Mon\n- generic: Tue\n- generic: Wed\n- generic: Thu\n- generic: Fri\n- generic: Sat\n- generic: \"26\"\n- generic: \"27\"\n- generic: \"28\"\n- generic: \"29\"\n- generic: \"30\"\n- generic: \"31\"\n- generic: \"1\"\n- generic: \"2\"\n- generic: \"3\"\n- generic: \"4\"\n- generic: \"5\"\n- generic: \"6\"\n- generic: \"7\"\n- generic: \"8\"\n- generic: \"9\"\n- generic: \"10\"\n- generic: \"11\"\n- generic: \"12\"\n- generic: \"13\"\n- generic: \"14\"\n- generic: \"15\"\n- generic: \"16\"\n- generic: \"17\"\n- generic: \"18\"\n- generic: \"19\"\n- generic: \"20\"\n- generic: \"21\"\n- generic: \"22\"\n- generic: \"23\"\n- generic: \"24\"\n- generic: \"25\"\n- generic: \"26\"\n- generic: \"27\"\n- generic: \"28\"\n- generic: \"29\"\n- generic: \"30\"\n- generic: \"31\"\n- generic: \"1\"\n- generic: \"2\"\n- generic: \"3\"\n- generic: \"4\"\n- generic: \"5\"\n- generic: Holidays are marked with an orange dot.\n- heading \"Public Holidays\" [level=2]\n- text: \"Year:\"\n- combobox:\n  - option \"2025\"\n  - option \"2026\" [selected]\n  - option \"2027\"\n- list\n- generic: No holidays found for the selected year.\n- contentinfo:\n  - text: © INTERNAL AUDIT (Developed By A.A.C)\n  - generic: \"Version No: 24.08.2026\""
+  },
+  {
+    "label": "Head CAD",
+    "url": "https://localhost:50853/Home/Index",
+    "title": "Home - IAS",
+    "menus": [
+      {
+        "href": null,
+        "text": ""
+      },
+      {
+        "href": null,
+        "text": "Dashboard +"
+      },
+      {
+        "href": null,
+        "text": "Risk +"
+      },
+      {
+        "href": null,
+        "text": "Planning +"
+      },
+      {
+        "href": null,
+        "text": "Engagement +"
+      },
+      {
+        "href": null,
+        "text": "Execution +"
+      },
+      {
+        "href": null,
+        "text": "Post Compliance +"
+      },
+      {
+        "href": null,
+        "text": "Reports +"
+      },
+      {
+        "href": null,
+        "text": "Sampling +"
+      },
+      {
+        "href": null,
+        "text": "Setup +"
+      },
+      {
+        "href": "/Login/Logout",
+        "text": "Logout"
+      }
+    ],
+    "links": [],
+    "snapshot": "- complementary:\n  - generic: IAS\n  - button \"Collapse\"\n  - searchbox \"Search menu...\"\n  - button \"Dashboard\":\n    - generic: Dashboard\n    - generic: +\n  - button \"Risk\":\n    - generic: Risk\n    - generic: +\n  - button \"Planning\":\n    - generic: Planning\n    - generic: +\n  - button \"Engagement\":\n    - generic: Engagement\n    - generic: +\n  - button \"Execution\":\n    - generic: Execution\n    - generic: +\n  - button \"Post Compliance\":\n    - generic: Post Compliance\n    - generic: +\n  - button \"Reports\":\n    - generic: Reports\n    - generic: +\n  - button \"Sampling\":\n    - generic: Sampling\n    - generic: +\n  - button \"Setup\":\n    - generic: Setup\n    - generic: +\n  - link \"Logout\":\n    - /url: /Login/Logout\n    - generic: Logout\n- banner:\n  - navigation:\n    - button \"\":\n      - generic: \n    - link \"ZTBL Internal Audit System\":\n      - /url: /Home/Index\n      - img \"ZTBL\"\n      - generic: Internal Audit System\n    - button:\n      - generic: \n- heading \"Welcome to IAS\" [level=1]\n- paragraph: Quick access to your modules, holidays, and updates.\n- generic: Friday, Aug 28, 2026\n- generic: \"Status: Secure\"\n- heading \"Quick Links\" [level=2]\n- generic: Based on your permitted pages. All\n- generic: No quick links available.\n- heading \"Announcements / Notifications\" [level=2]\n- generic: Message from IAS Team\n- list:\n  - paragraph: Welcome\n  - paragraph: Please enjoy New IAS system and in case you find any difficulty or error, please share the details like Page Name, Error Screen Shot along with a short brief of the issue.\n  - generic: Info\n- paragraph: August 2026\n- button \"Prev\"\n- button \"Today\"\n- button \"Next\"\n- generic: Sun\n- generic: Mon\n- generic: Tue\n- generic: Wed\n- generic: Thu\n- generic: Fri\n- generic: Sat\n- generic: \"26\"\n- generic: \"27\"\n- generic: \"28\"\n- generic: \"29\"\n- generic: \"30\"\n- generic: \"31\"\n- generic: \"1\"\n- generic: \"2\"\n- generic: \"3\"\n- generic: \"4\"\n- generic: \"5\"\n- generic: \"6\"\n- generic: \"7\"\n- generic: \"8\"\n- generic: \"9\"\n- generic: \"10\"\n- generic: \"11\"\n- generic: \"12\"\n- generic: \"13\"\n- generic: \"14\"\n- generic: \"15\"\n- generic: \"16\"\n- generic: \"17\"\n- generic: \"18\"\n- generic: \"19\"\n- generic: \"20\"\n- generic: \"21\"\n- generic: \"22\"\n- generic: \"23\"\n- generic: \"24\"\n- generic: \"25\"\n- generic: \"26\"\n- generic: \"27\"\n- generic: \"28\"\n- generic: \"29\"\n- generic: \"30\"\n- generic: \"31\"\n- generic: \"1\"\n- generic: \"2\"\n- generic: \"3\"\n- generic: \"4\"\n- generic: \"5\"\n- generic: Holidays are marked with an orange dot.\n- heading \"Public Holidays\" [level=2]\n- text: \"Year:\"\n- combobox:\n  - option \"2025\"\n  - option \"2026\" [selected]\n  - option \"2027\"\n- list\n- generic: No holidays found for the selected year.\n- contentinfo:\n  - text: © INTERNAL AUDIT (Developed By A.A.C)\n  - generic: \"Version No: 24.08.2026\""
+  },
+  {
+    "label": "Head ISAD",
+    "url": "https://localhost:50853/Home/Index",
+    "title": "Home - IAS",
+    "menus": [
+      {
+        "href": null,
+        "text": ""
+      },
+      {
+        "href": null,
+        "text": "Dashboard +"
+      },
+      {
+        "href": null,
+        "text": "Risk +"
+      },
+      {
+        "href": null,
+        "text": "Planning +"
+      },
+      {
+        "href": null,
+        "text": "Engagement +"
+      },
+      {
+        "href": null,
+        "text": "Execution +"
+      },
+      {
+        "href": null,
+        "text": "Post Compliance +"
+      },
+      {
+        "href": null,
+        "text": "Reports +"
+      },
+      {
+        "href": null,
+        "text": "FAD +"
+      },
+      {
+        "href": null,
+        "text": "Sampling +"
+      },
+      {
+        "href": null,
+        "text": "Setup +"
+      },
+      {
+        "href": null,
+        "text": "Admin +"
+      },
+      {
+        "href": "/Login/Logout",
+        "text": "Logout"
+      }
+    ],
+    "links": [],
+    "snapshot": "- complementary:\n  - generic: IAS\n  - button \"Collapse\"\n  - searchbox \"Search menu...\"\n  - button \"Dashboard\":\n    - generic: Dashboard\n    - generic: +\n  - button \"Risk\":\n    - generic: Risk\n    - generic: +\n  - button \"Planning\":\n    - generic: Planning\n    - generic: +\n  - button \"Engagement\":\n    - generic: Engagement\n    - generic: +\n  - button \"Execution\":\n    - generic: Execution\n    - generic: +\n  - button \"Post Compliance\":\n    - generic: Post Compliance\n    - generic: +\n  - button \"Reports\":\n    - generic: Reports\n    - generic: +\n  - button \"FAD\":\n    - generic: FAD\n    - generic: +\n  - button \"Sampling\":\n    - generic: Sampling\n    - generic: +\n  - button \"Setup\":\n    - generic: Setup\n    - generic: +\n  - button \"Admin\":\n    - generic: Admin\n    - generic: +\n  - link \"Logout\":\n    - /url: /Login/Logout\n    - generic: Logout\n- banner:\n  - navigation:\n    - button \"\":\n      - generic: \n    - link \"ZTBL Internal Audit System\":\n      - /url: /Home/Index\n      - img \"ZTBL\"\n      - generic: Internal Audit System\n    - button:\n      - generic: \n- heading \"Welcome to IAS\" [level=1]\n- paragraph: Quick access to your modules, holidays, and updates.\n- generic: Friday, Aug 28, 2026\n- generic: \"Status: Secure\"\n- heading \"Quick Links\" [level=2]\n- generic: Based on your permitted pages. All\n- link \"Planning Dash Board Open module\":\n  - /url: /Planning/Planning\n  - generic: Planning Dash Board\n  - generic: Open module\n- link \"Management Auditor Dashboard Open module\":\n  - /url: /ManagementAudit/MA_Dashboard\n  - generic: Management Auditor Dashboard\n  - generic: Open module\n- link \"Back Office Dashboard Open module\":\n  - /url: /FieldAudit/BO_Dashboard\n  - generic: Back Office Dashboard\n  - generic: Open module\n- heading \"Announcements / Notifications\" [level=2]\n- generic: Message from IAS Team\n- list:\n  - paragraph: Welcome\n  - paragraph: Please enjoy New IAS system and in case you find any difficulty or error, please share the details like Page Name, Error Screen Shot along with a short brief of the issue.\n  - generic: Info\n- paragraph: August 2026\n- button \"Prev\"\n- button \"Today\"\n- button \"Next\"\n- generic: Sun\n- generic: Mon\n- generic: Tue\n- generic: Wed\n- generic: Thu\n- generic: Fri\n- generic: Sat\n- generic: \"26\"\n- generic: \"27\"\n- generic: \"28\"\n- generic: \"29\"\n- generic: \"30\"\n- generic: \"31\"\n- generic: \"1\"\n- generic: \"2\"\n- generic: \"3\"\n- generic: \"4\"\n- generic: \"5\"\n- generic: \"6\"\n- generic: \"7\"\n- generic: \"8\"\n- generic: \"9\"\n- generic: \"10\"\n- generic: \"11\"\n- generic: \"12\"\n- generic: \"13\"\n- generic: \"14\"\n- generic: \"15\"\n- generic: \"16\"\n- generic: \"17\"\n- generic: \"18\"\n- generic: \"19\"\n- generic: \"20\"\n- generic: \"21\"\n- generic: \"22\"\n- generic: \"23\"\n- generic: \"24\"\n- generic: \"25\"\n- generic: \"26\"\n- generic: \"27\"\n- generic: \"28\"\n- generic: \"29\"\n- generic: \"30\"\n- generic: \"31\"\n- generic: \"1\"\n- generic: \"2\"\n- generic: \"3\"\n- generic: \"4\"\n- generic: \"5\"\n- generic: Holidays are marked with an orange dot.\n- heading \"Public Holidays\" [level=2]\n- text: \"Year:\"\n- combobox:\n  - option \"2025\"\n  - option \"2026\" [selected]\n  - option \"2027\"\n- list\n- generic: No holidays found for the selected year.\n- contentinfo:\n  - text: © INTERNAL AUDIT (Developed By A.A.C)\n  - generic: \"Version No: 24.08.2026\""
+  },
+  {
+    "label": "HO Auditor (Team Lead)",
+    "url": "https://localhost:50853/Home/Index",
+    "title": "Home - IAS",
+    "menus": [
+      {
+        "href": null,
+        "text": ""
+      },
+      {
+        "href": null,
+        "text": "Risk +"
+      },
+      {
+        "href": null,
+        "text": "Execution +"
+      },
+      {
+        "href": null,
+        "text": "Post Compliance +"
+      },
+      {
+        "href": null,
+        "text": "FAD +"
+      },
+      {
+        "href": "/Login/Logout",
+        "text": "Logout"
+      }
+    ],
+    "links": [],
+    "snapshot": "- complementary:\n  - generic: IAS\n  - button \"Collapse\"\n  - searchbox \"Search menu...\"\n  - button \"Risk\":\n    - generic: Risk\n    - generic: +\n  - button \"Execution\":\n    - generic: Execution\n    - generic: +\n  - button \"Post Compliance\":\n    - generic: Post Compliance\n    - generic: +\n  - button \"FAD\":\n    - generic: FAD\n    - generic: +\n  - link \"Logout\":\n    - /url: /Login/Logout\n    - generic: Logout\n- banner:\n  - navigation:\n    - button \"\":\n      - generic: \n    - link \"ZTBL Internal Audit System\":\n      - /url: /Home/Index\n      - img \"ZTBL\"\n      - generic: Internal Audit System\n    - button:\n      - generic: \n- heading \"Welcome to IAS\" [level=1]\n- paragraph: Quick access to your modules, holidays, and updates.\n- generic: Friday, Aug 28, 2026\n- generic: \"Status: Secure\"\n- heading \"Quick Links\" [level=2]\n- generic: Based on your permitted pages. All\n- link \"Management Auditor Dashboard Open module\":\n  - /url: /ManagementAudit/MA_Dashboard\n  - generic: Management Auditor Dashboard\n  - generic: Open module\n- heading \"Announcements / Notifications\" [level=2]\n- generic: Message from IAS Team\n- list:\n  - paragraph: Welcome\n  - paragraph: Please enjoy New IAS system and in case you find any difficulty or error, please share the details like Page Name, Error Screen Shot along with a short brief of the issue.\n  - generic: Info\n- paragraph: August 2026\n- button \"Prev\"\n- button \"Today\"\n- button \"Next\"\n- generic: Sun\n- generic: Mon\n- generic: Tue\n- generic: Wed\n- generic: Thu\n- generic: Fri\n- generic: Sat\n- generic: \"26\"\n- generic: \"27\"\n- generic: \"28\"\n- generic: \"29\"\n- generic: \"30\"\n- generic: \"31\"\n- generic: \"1\"\n- generic: \"2\"\n- generic: \"3\"\n- generic: \"4\"\n- generic: \"5\"\n- generic: \"6\"\n- generic: \"7\"\n- generic: \"8\"\n- generic: \"9\"\n- generic: \"10\"\n- generic: \"11\"\n- generic: \"12\"\n- generic: \"13\"\n- generic: \"14\"\n- generic: \"15\"\n- generic: \"16\"\n- generic: \"17\"\n- generic: \"18\"\n- generic: \"19\"\n- generic: \"20\"\n- generic: \"21\"\n- generic: \"22\"\n- generic: \"23\"\n- generic: \"24\"\n- generic: \"25\"\n- generic: \"26\"\n- generic: \"27\"\n- generic: \"28\"\n- generic: \"29\"\n- generic: \"30\"\n- generic: \"31\"\n- generic: \"1\"\n- generic: \"2\"\n- generic: \"3\"\n- generic: \"4\"\n- generic: \"5\"\n- generic: Holidays are marked with an orange dot.\n- heading \"Public Holidays\" [level=2]\n- text: \"Year:\"\n- combobox:\n  - option \"2025\"\n  - option \"2026\" [selected]\n  - option \"2027\"\n- list\n- generic: No holidays found for the selected year.\n- contentinfo:\n  - text: © INTERNAL AUDIT (Developed By A.A.C)\n  - generic: \"Version No: 24.08.2026\""
+  },
+  {
+    "label": "HO Planning & Coordination",
+    "url": "https://localhost:50853/Home/Index",
+    "title": "Home - IAS",
+    "menus": [
+      {
+        "href": null,
+        "text": ""
+      },
+      {
+        "href": null,
+        "text": "Dashboard +"
+      },
+      {
+        "href": null,
+        "text": "Planning +"
+      },
+      {
+        "href": null,
+        "text": "Engagement +"
+      },
+      {
+        "href": null,
+        "text": "Execution +"
+      },
+      {
+        "href": null,
+        "text": "Post Compliance +"
+      },
+      {
+        "href": null,
+        "text": "Reports +"
+      },
+      {
+        "href": null,
+        "text": "FAD +"
+      },
+      {
+        "href": null,
+        "text": "Sampling +"
+      },
+      {
+        "href": null,
+        "text": "Admin +"
+      },
+      {
+        "href": "/Login/Logout",
+        "text": "Logout"
+      }
+    ],
+    "links": [],
+    "snapshot": "- complementary:\n  - generic: IAS\n  - button \"Collapse\"\n  - searchbox \"Search menu...\"\n  - button \"Dashboard\":\n    - generic: Dashboard\n    - generic: +\n  - button \"Planning\":\n    - generic: Planning\n    - generic: +\n  - button \"Engagement\":\n    - generic: Engagement\n    - generic: +\n  - button \"Execution\":\n    - generic: Execution\n    - generic: +\n  - button \"Post Compliance\":\n    - generic: Post Compliance\n    - generic: +\n  - button \"Reports\":\n    - generic: Reports\n    - generic: +\n  - button \"FAD\":\n    - generic: FAD\n    - generic: +\n  - button \"Sampling\":\n    - generic: Sampling\n    - generic: +\n  - button \"Admin\":\n    - generic: Admin\n    - generic: +\n  - link \"Logout\":\n    - /url: /Login/Logout\n    - generic: Logout\n- banner:\n  - navigation:\n    - button \"\":\n      - generic: \n    - link \"ZTBL Internal Audit System\":\n      - /url: /Home/Index\n      - img \"ZTBL\"\n      - generic: Internal Audit System\n    - button:\n      - generic: \n- heading \"Welcome to IAS\" [level=1]\n- paragraph: Quick access to your modules, holidays, and updates.\n- generic: Friday, Aug 28, 2026\n- generic: \"Status: Secure\"\n- heading \"Quick Links\" [level=2]\n- generic: Based on your permitted pages. All\n- link \"Planning Dash Board Open module\":\n  - /url: /Planning/Planning\n  - generic: Planning Dash Board\n  - generic: Open module\n- link \"Field Audit Paras Desk Open module\":\n  - /url: /FAD/Fad_Desk_rpt\n  - generic: Field Audit Paras Desk\n  - generic: Open module\n- heading \"Announcements / Notifications\" [level=2]\n- generic: Message from IAS Team\n- list:\n  - paragraph: Welcome\n  - paragraph: Please enjoy New IAS system and in case you find any difficulty or error, please share the details like Page Name, Error Screen Shot along with a short brief of the issue.\n  - generic: Info\n- paragraph: August 2026\n- button \"Prev\"\n- button \"Today\"\n- button \"Next\"\n- generic: Sun\n- generic: Mon\n- generic: Tue\n- generic: Wed\n- generic: Thu\n- generic: Fri\n- generic: Sat\n- generic: \"26\"\n- generic: \"27\"\n- generic: \"28\"\n- generic: \"29\"\n- generic: \"30\"\n- generic: \"31\"\n- generic: \"1\"\n- generic: \"2\"\n- generic: \"3\"\n- generic: \"4\"\n- generic: \"5\"\n- generic: \"6\"\n- generic: \"7\"\n- generic: \"8\"\n- generic: \"9\"\n- generic: \"10\"\n- generic: \"11\"\n- generic: \"12\"\n- generic: \"13\"\n- generic: \"14\"\n- generic: \"15\"\n- generic: \"16\"\n- generic: \"17\"\n- generic: \"18\"\n- generic: \"19\"\n- generic: \"20\"\n- generic: \"21\"\n- generic: \"22\"\n- generic: \"23\"\n- generic: \"24\"\n- generic: \"25\"\n- generic: \"26\"\n- generic: \"27\"\n- generic: \"28\"\n- generic: \"29\"\n- generic: \"30\"\n- generic: \"31\"\n- generic: \"1\"\n- generic: \"2\"\n- generic: \"3\"\n- generic: \"4\"\n- generic: \"5\"\n- generic: Holidays are marked with an orange dot.\n- heading \"Public Holidays\" [level=2]\n- text: \"Year:\"\n- combobox:\n  - option \"2025\"\n  - option \"2026\" [selected]\n  - option \"2027\"\n- list\n- generic: No holidays found for the selected year.\n- contentinfo:\n  - text: © INTERNAL AUDIT (Developed By A.A.C)\n  - generic: \"Version No: 24.08.2026\""
+  },
+  {
+    "label": "Dept Auditee",
+    "url": "https://localhost:50853/Home/Index",
+    "title": "Home - IAS",
+    "menus": [
+      {
+        "href": null,
+        "text": ""
+      },
+      {
+        "href": null,
+        "text": "Dashboard +"
+      },
+      {
+        "href": null,
+        "text": "Auditee Portal +"
+      },
+      {
+        "href": null,
+        "text": "Post Compliance +"
+      },
+      {
+        "href": null,
+        "text": "Reports +"
+      },
+      {
+        "href": "/Login/Logout",
+        "text": "Logout"
+      }
+    ],
+    "links": [],
+    "snapshot": "- complementary:\n  - generic: IAS\n  - button \"Collapse\"\n  - searchbox \"Search menu...\"\n  - button \"Dashboard\":\n    - generic: Dashboard\n    - generic: +\n  - button \"Auditee Portal\":\n    - generic: Auditee Portal\n    - generic: +\n  - button \"Post Compliance\":\n    - generic: Post Compliance\n    - generic: +\n  - button \"Reports\":\n    - generic: Reports\n    - generic: +\n  - link \"Logout\":\n    - /url: /Login/Logout\n    - generic: Logout\n- banner:\n  - navigation:\n    - button \"\":\n      - generic: \n    - link \"ZTBL Internal Audit System\":\n      - /url: /Home/Index\n      - img \"ZTBL\"\n      - generic: Internal Audit System\n    - button:\n      - generic: \n- heading \"Welcome to IAS\" [level=1]\n- paragraph: Quick access to your modules, holidays, and updates.\n- generic: Friday, Aug 28, 2026\n- generic: \"Status: Secure\"\n- heading \"Quick Links\" [level=2]\n- generic: Based on your permitted pages. All\n- generic: No quick links available.\n- heading \"Announcements / Notifications\" [level=2]\n- generic: Message from IAS Team\n- list:\n  - paragraph: Welcome\n  - paragraph: Please enjoy New IAS system and in case you find any difficulty or error, please share the details like Page Name, Error Screen Shot along with a short brief of the issue.\n  - generic: Info\n- paragraph: August 2026\n- button \"Prev\"\n- button \"Today\"\n- button \"Next\"\n- generic: Sun\n- generic: Mon\n- generic: Tue\n- generic: Wed\n- generic: Thu\n- generic: Fri\n- generic: Sat\n- generic: \"26\"\n- generic: \"27\"\n- generic: \"28\"\n- generic: \"29\"\n- generic: \"30\"\n- generic: \"31\"\n- generic: \"1\"\n- generic: \"2\"\n- generic: \"3\"\n- generic: \"4\"\n- generic: \"5\"\n- generic: \"6\"\n- generic: \"7\"\n- generic: \"8\"\n- generic: \"9\"\n- generic: \"10\"\n- generic: \"11\"\n- generic: \"12\"\n- generic: \"13\"\n- generic: \"14\"\n- generic: \"15\"\n- generic: \"16\"\n- generic: \"17\"\n- generic: \"18\"\n- generic: \"19\"\n- generic: \"20\"\n- generic: \"21\"\n- generic: \"22\"\n- generic: \"23\"\n- generic: \"24\"\n- generic: \"25\"\n- generic: \"26\"\n- generic: \"27\"\n- generic: \"28\"\n- generic: \"29\"\n- generic: \"30\"\n- generic: \"31\"\n- generic: \"1\"\n- generic: \"2\"\n- generic: \"3\"\n- generic: \"4\"\n- generic: \"5\"\n- generic: Holidays are marked with an orange dot.\n- heading \"Public Holidays\" [level=2]\n- text: \"Year:\"\n- combobox:\n  - option \"2025\"\n  - option \"2026\" [selected]\n  - option \"2027\"\n- list\n- generic: No holidays found for the selected year.\n- contentinfo:\n  - text: © INTERNAL AUDIT (Developed By A.A.C)\n  - generic: \"Version No: 24.08.2026\""
+  },
+  {
+    "label": "Auditee Branch",
+    "url": "https://localhost:50853/Home/Index",
+    "title": "Home - IAS",
+    "menus": [
+      {
+        "href": null,
+        "text": ""
+      },
+      {
+        "href": null,
+        "text": "Dashboard +"
+      },
+      {
+        "href": null,
+        "text": "Auditee Portal +"
+      },
+      {
+        "href": null,
+        "text": "Post Compliance +"
+      },
+      {
+        "href": null,
+        "text": "Reports +"
+      },
+      {
+        "href": "/Login/Logout",
+        "text": "Logout"
+      }
+    ],
+    "links": [],
+    "snapshot": "- complementary:\n  - generic: IAS\n  - button \"Collapse\"\n  - searchbox \"Search menu...\"\n  - button \"Dashboard\":\n    - generic: Dashboard\n    - generic: +\n  - button \"Auditee Portal\":\n    - generic: Auditee Portal\n    - generic: +\n  - button \"Post Compliance\":\n    - generic: Post Compliance\n    - generic: +\n  - button \"Reports\":\n    - generic: Reports\n    - generic: +\n  - link \"Logout\":\n    - /url: /Login/Logout\n    - generic: Logout\n- banner:\n  - navigation:\n    - button \"\":\n      - generic: \n    - link \"ZTBL Internal Audit System\":\n      - /url: /Home/Index\n      - img \"ZTBL\"\n      - generic: Internal Audit System\n    - button:\n      - generic: \n- heading \"Welcome to IAS\" [level=1]\n- paragraph: Quick access to your modules, holidays, and updates.\n- generic: Friday, Aug 28, 2026\n- generic: \"Status: Secure\"\n- heading \"Quick Links\" [level=2]\n- generic: Based on your permitted pages. All\n- generic: No quick links available.\n- heading \"Announcements / Notifications\" [level=2]\n- generic: Message from IAS Team\n- list:\n  - paragraph: Welcome\n  - paragraph: Please enjoy New IAS system and in case you find any difficulty or error, please share the details like Page Name, Error Screen Shot along with a short brief of the issue.\n  - generic: Info\n- paragraph: August 2026\n- button \"Prev\"\n- button \"Today\"\n- button \"Next\"\n- generic: Sun\n- generic: Mon\n- generic: Tue\n- generic: Wed\n- generic: Thu\n- generic: Fri\n- generic: Sat\n- generic: \"26\"\n- generic: \"27\"\n- generic: \"28\"\n- generic: \"29\"\n- generic: \"30\"\n- generic: \"31\"\n- generic: \"1\"\n- generic: \"2\"\n- generic: \"3\"\n- generic: \"4\"\n- generic: \"5\"\n- generic: \"6\"\n- generic: \"7\"\n- generic: \"8\"\n- generic: \"9\"\n- generic: \"10\"\n- generic: \"11\"\n- generic: \"12\"\n- generic: \"13\"\n- generic: \"14\"\n- generic: \"15\"\n- generic: \"16\"\n- generic: \"17\"\n- generic: \"18\"\n- generic: \"19\"\n- generic: \"20\"\n- generic: \"21\"\n- generic: \"22\"\n- generic: \"23\"\n- generic: \"24\"\n- generic: \"25\"\n- generic: \"26\"\n- generic: \"27\"\n- generic: \"28\"\n- generic: \"29\"\n- generic: \"30\"\n- generic: \"31\"\n- generic: \"1\"\n- generic: \"2\"\n- generic: \"3\"\n- generic: \"4\"\n- generic: \"5\"\n- generic: Holidays are marked with an orange dot.\n- heading \"Public Holidays\" [level=2]\n- text: \"Year:\"\n- combobox:\n  - option \"2025\"\n  - option \"2026\" [selected]\n  - option \"2027\"\n- list\n- generic: No holidays found for the selected year.\n- contentinfo:\n  - text: © INTERNAL AUDIT (Developed By A.A.C)\n  - generic: \"Version No: 24.08.2026\""
+  },
+  {
+    "label": "Div Auditee",
+    "url": "https://localhost:50853/Home/Index",
+    "title": "Home - IAS",
+    "menus": [
+      {
+        "href": null,
+        "text": ""
+      },
+      {
+        "href": null,
+        "text": "Dashboard +"
+      },
+      {
+        "href": null,
+        "text": "Auditee Portal +"
+      },
+      {
+        "href": null,
+        "text": "Post Compliance +"
+      },
+      {
+        "href": null,
+        "text": "Reports +"
+      },
+      {
+        "href": "/Login/Logout",
+        "text": "Logout"
+      }
+    ],
+    "links": [],
+    "snapshot": "- complementary:\n  - generic: IAS\n  - button \"Collapse\"\n  - searchbox \"Search menu...\"\n  - button \"Dashboard\":\n    - generic: Dashboard\n    - generic: +\n  - button \"Auditee Portal\":\n    - generic: Auditee Portal\n    - generic: +\n  - button \"Post Compliance\":\n    - generic: Post Compliance\n    - generic: +\n  - button \"Reports\":\n    - generic: Reports\n    - generic: +\n  - link \"Logout\":\n    - /url: /Login/Logout\n    - generic: Logout\n- banner:\n  - navigation:\n    - button \"\":\n      - generic: \n    - link \"ZTBL Internal Audit System\":\n      - /url: /Home/Index\n      - img \"ZTBL\"\n      - generic: Internal Audit System\n    - button:\n      - generic: \n- heading \"Welcome to IAS\" [level=1]\n- paragraph: Quick access to your modules, holidays, and updates.\n- generic: Friday, Aug 28, 2026\n- generic: \"Status: Secure\"\n- heading \"Quick Links\" [level=2]\n- generic: Based on your permitted pages. All\n- generic: No quick links available.\n- heading \"Announcements / Notifications\" [level=2]\n- generic: Message from IAS Team\n- list:\n  - paragraph: Welcome\n  - paragraph: Please enjoy New IAS system and in case you find any difficulty or error, please share the details like Page Name, Error Screen Shot along with a short brief of the issue.\n  - generic: Info\n- paragraph: August 2026\n- button \"Prev\"\n- button \"Today\"\n- button \"Next\"\n- generic: Sun\n- generic: Mon\n- generic: Tue\n- generic: Wed\n- generic: Thu\n- generic: Fri\n- generic: Sat\n- generic: \"26\"\n- generic: \"27\"\n- generic: \"28\"\n- generic: \"29\"\n- generic: \"30\"\n- generic: \"31\"\n- generic: \"1\"\n- generic: \"2\"\n- generic: \"3\"\n- generic: \"4\"\n- generic: \"5\"\n- generic: \"6\"\n- generic: \"7\"\n- generic: \"8\"\n- generic: \"9\"\n- generic: \"10\"\n- generic: \"11\"\n- generic: \"12\"\n- generic: \"13\"\n- generic: \"14\"\n- generic: \"15\"\n- generic: \"16\"\n- generic: \"17\"\n- generic: \"18\"\n- generic: \"19\"\n- generic: \"20\"\n- generic: \"21\"\n- generic: \"22\"\n- generic: \"23\"\n- generic: \"24\"\n- generic: \"25\"\n- generic: \"26\"\n- generic: \"27\"\n- generic: \"28\"\n- generic: \"29\"\n- generic: \"30\"\n- generic: \"31\"\n- generic: \"1\"\n- generic: \"2\"\n- generic: \"3\"\n- generic: \"4\"\n- generic: \"5\"\n- generic: Holidays are marked with an orange dot.\n- heading \"Public Holidays\" [level=2]\n- text: \"Year:\"\n- combobox:\n  - option \"2025\"\n  - option \"2026\" [selected]\n  - option \"2027\"\n- list\n- generic: No holidays found for the selected year.\n- contentinfo:\n  - text: © INTERNAL AUDIT (Developed By A.A.C)\n  - generic: \"Version No: 24.08.2026\""
+  },
+  {
+    "label": "SVP Audit Zone",
+    "url": "https://localhost:50853/Home/Index",
+    "title": "Home - IAS",
+    "menus": [
+      {
+        "href": null,
+        "text": ""
+      },
+      {
+        "href": null,
+        "text": "Dashboard +"
+      },
+      {
+        "href": null,
+        "text": "Planning +"
+      },
+      {
+        "href": null,
+        "text": "Engagement +"
+      },
+      {
+        "href": null,
+        "text": "Execution +"
+      },
+      {
+        "href": null,
+        "text": "Post Compliance +"
+      },
+      {
+        "href": null,
+        "text": "Reports +"
+      },
+      {
+        "href": null,
+        "text": "FAD +"
+      },
+      {
+        "href": null,
+        "text": "Setup +"
+      },
+      {
+        "href": "/Login/Logout",
+        "text": "Logout"
+      }
+    ],
+    "links": [],
+    "snapshot": "- complementary:\n  - generic: IAS\n  - button \"Collapse\"\n  - searchbox \"Search menu...\"\n  - button \"Dashboard\":\n    - generic: Dashboard\n    - generic: +\n  - button \"Planning\":\n    - generic: Planning\n    - generic: +\n  - button \"Engagement\":\n    - generic: Engagement\n    - generic: +\n  - button \"Execution\":\n    - generic: Execution\n    - generic: +\n  - button \"Post Compliance\":\n    - generic: Post Compliance\n    - generic: +\n  - button \"Reports\":\n    - generic: Reports\n    - generic: +\n  - button \"FAD\":\n    - generic: FAD\n    - generic: +\n  - button \"Setup\":\n    - generic: Setup\n    - generic: +\n  - link \"Logout\":\n    - /url: /Login/Logout\n    - generic: Logout\n- banner:\n  - navigation:\n    - button \"\":\n      - generic: \n    - link \"ZTBL Internal Audit System\":\n      - /url: /Home/Index\n      - img \"ZTBL\"\n      - generic: Internal Audit System\n    - button:\n      - generic: \n- heading \"Welcome to IAS\" [level=1]\n- paragraph: Quick access to your modules, holidays, and updates.\n- generic: Friday, Aug 28, 2026\n- generic: \"Status: Secure\"\n- heading \"Quick Links\" [level=2]\n- generic: Based on your permitted pages. All\n- link \"Back Office Dashboard Open module\":\n  - /url: /FieldAudit/BO_Dashboard\n  - generic: Back Office Dashboard\n  - generic: Open module\n- heading \"Announcements / Notifications\" [level=2]\n- generic: Message from IAS Team\n- list:\n  - paragraph: Welcome\n  - paragraph: Please enjoy New IAS system and in case you find any difficulty or error, please share the details like Page Name, Error Screen Shot along with a short brief of the issue.\n  - generic: Info\n- paragraph: August 2026\n- button \"Prev\"\n- button \"Today\"\n- button \"Next\"\n- generic: Sun\n- generic: Mon\n- generic: Tue\n- generic: Wed\n- generic: Thu\n- generic: Fri\n- generic: Sat\n- generic: \"26\"\n- generic: \"27\"\n- generic: \"28\"\n- generic: \"29\"\n- generic: \"30\"\n- generic: \"31\"\n- generic: \"1\"\n- generic: \"2\"\n- generic: \"3\"\n- generic: \"4\"\n- generic: \"5\"\n- generic: \"6\"\n- generic: \"7\"\n- generic: \"8\"\n- generic: \"9\"\n- generic: \"10\"\n- generic: \"11\"\n- generic: \"12\"\n- generic: \"13\"\n- generic: \"14\"\n- generic: \"15\"\n- generic: \"16\"\n- generic: \"17\"\n- generic: \"18\"\n- generic: \"19\"\n- generic: \"20\"\n- generic: \"21\"\n- generic: \"22\"\n- generic: \"23\"\n- generic: \"24\"\n- generic: \"25\"\n- generic: \"26\"\n- generic: \"27\"\n- generic: \"28\"\n- generic: \"29\"\n- generic: \"30\"\n- generic: \"31\"\n- generic: \"1\"\n- generic: \"2\"\n- generic: \"3\"\n- generic: \"4\"\n- generic: \"5\"\n- generic: Holidays are marked with an orange dot.\n- heading \"Public Holidays\" [level=2]\n- text: \"Year:\"\n- combobox:\n  - option \"2025\"\n  - option \"2026\" [selected]\n  - option \"2027\"\n- list\n- generic: No holidays found for the selected year.\n- contentinfo:\n  - text: © INTERNAL AUDIT (Developed By A.A.C)\n  - generic: \"Version No: 24.08.2026\""
+  },
+  {
+    "label": "AZ Implementation Unit",
+    "url": "https://localhost:50853/Home/Index",
+    "title": "Home - IAS",
+    "menus": [
+      {
+        "href": null,
+        "text": ""
+      },
+      {
+        "href": null,
+        "text": "Dashboard +"
+      },
+      {
+        "href": null,
+        "text": "Planning +"
+      },
+      {
+        "href": null,
+        "text": "Engagement +"
+      },
+      {
+        "href": null,
+        "text": "Execution +"
+      },
+      {
+        "href": null,
+        "text": "Post Compliance +"
+      },
+      {
+        "href": null,
+        "text": "Reports +"
+      },
+      {
+        "href": null,
+        "text": "FAD +"
+      },
+      {
+        "href": "/Login/Logout",
+        "text": "Logout"
+      }
+    ],
+    "links": [],
+    "snapshot": "- complementary:\n  - generic: IAS\n  - button \"Collapse\"\n  - searchbox \"Search menu...\"\n  - button \"Dashboard\":\n    - generic: Dashboard\n    - generic: +\n  - button \"Planning\":\n    - generic: Planning\n    - generic: +\n  - button \"Engagement\":\n    - generic: Engagement\n    - generic: +\n  - button \"Execution\":\n    - generic: Execution\n    - generic: +\n  - button \"Post Compliance\":\n    - generic: Post Compliance\n    - generic: +\n  - button \"Reports\":\n    - generic: Reports\n    - generic: +\n  - button \"FAD\":\n    - generic: FAD\n    - generic: +\n  - link \"Logout\":\n    - /url: /Login/Logout\n    - generic: Logout\n- banner:\n  - navigation:\n    - button \"\":\n      - generic: \n    - link \"ZTBL Internal Audit System\":\n      - /url: /Home/Index\n      - img \"ZTBL\"\n      - generic: Internal Audit System\n    - button:\n      - generic: \n- heading \"Welcome to IAS\" [level=1]\n- paragraph: Quick access to your modules, holidays, and updates.\n- generic: Friday, Aug 28, 2026\n- generic: \"Status: Secure\"\n- heading \"Quick Links\" [level=2]\n- generic: Based on your permitted pages. All\n- link \"Back Office Dashboard Open module\":\n  - /url: /FieldAudit/BO_Dashboard\n  - generic: Back Office Dashboard\n  - generic: Open module\n- heading \"Announcements / Notifications\" [level=2]\n- generic: Message from IAS Team\n- list:\n  - paragraph: Welcome\n  - paragraph: Please enjoy New IAS system and in case you find any difficulty or error, please share the details like Page Name, Error Screen Shot along with a short brief of the issue.\n  - generic: Info\n- paragraph: August 2026\n- button \"Prev\"\n- button \"Today\"\n- button \"Next\"\n- generic: Sun\n- generic: Mon\n- generic: Tue\n- generic: Wed\n- generic: Thu\n- generic: Fri\n- generic: Sat\n- generic: \"26\"\n- generic: \"27\"\n- generic: \"28\"\n- generic: \"29\"\n- generic: \"30\"\n- generic: \"31\"\n- generic: \"1\"\n- generic: \"2\"\n- generic: \"3\"\n- generic: \"4\"\n- generic: \"5\"\n- generic: \"6\"\n- generic: \"7\"\n- generic: \"8\"\n- generic: \"9\"\n- generic: \"10\"\n- generic: \"11\"\n- generic: \"12\"\n- generic: \"13\"\n- generic: \"14\"\n- generic: \"15\"\n- generic: \"16\"\n- generic: \"17\"\n- generic: \"18\"\n- generic: \"19\"\n- generic: \"20\"\n- generic: \"21\"\n- generic: \"22\"\n- generic: \"23\"\n- generic: \"24\"\n- generic: \"25\"\n- generic: \"26\"\n- generic: \"27\"\n- generic: \"28\"\n- generic: \"29\"\n- generic: \"30\"\n- generic: \"31\"\n- generic: \"1\"\n- generic: \"2\"\n- generic: \"3\"\n- generic: \"4\"\n- generic: \"5\"\n- generic: Holidays are marked with an orange dot.\n- heading \"Public Holidays\" [level=2]\n- text: \"Year:\"\n- combobox:\n  - option \"2025\"\n  - option \"2026\" [selected]\n  - option \"2027\"\n- list\n- generic: No holidays found for the selected year.\n- contentinfo:\n  - text: © INTERNAL AUDIT (Developed By A.A.C)\n  - generic: \"Version No: 24.08.2026\""
+  },
+  {
+    "label": "AZ Planning & Coordination",
+    "url": "https://localhost:50853/Home/Index",
+    "title": "Home - IAS",
+    "menus": [
+      {
+        "href": null,
+        "text": ""
+      },
+      {
+        "href": null,
+        "text": "Execution +"
+      },
+      {
+        "href": null,
+        "text": "Post Compliance +"
+      },
+      {
+        "href": null,
+        "text": "Reports +"
+      },
+      {
+        "href": "/Login/Logout",
+        "text": "Logout"
+      }
+    ],
+    "links": [],
+    "snapshot": "- complementary:\n  - generic: IAS\n  - button \"Collapse\"\n  - searchbox \"Search menu...\"\n  - button \"Execution\":\n    - generic: Execution\n    - generic: +\n  - button \"Post Compliance\":\n    - generic: Post Compliance\n    - generic: +\n  - button \"Reports\":\n    - generic: Reports\n    - generic: +\n  - link \"Logout\":\n    - /url: /Login/Logout\n    - generic: Logout\n- banner:\n  - navigation:\n    - button \"\":\n      - generic: \n    - link \"ZTBL Internal Audit System\":\n      - /url: /Home/Index\n      - img \"ZTBL\"\n      - generic: Internal Audit System\n    - button:\n      - generic: \n- heading \"Welcome to IAS\" [level=1]\n- paragraph: Quick access to your modules, holidays, and updates.\n- generic: Friday, Aug 28, 2026\n- generic: \"Status: Secure\"\n- heading \"Quick Links\" [level=2]\n- generic: Based on your permitted pages. All\n- generic: No quick links available.\n- heading \"Announcements / Notifications\" [level=2]\n- generic: Message from IAS Team\n- list:\n  - paragraph: Welcome\n  - paragraph: Please enjoy New IAS system and in case you find any difficulty or error, please share the details like Page Name, Error Screen Shot along with a short brief of the issue.\n  - generic: Info\n- paragraph: August 2026\n- button \"Prev\"\n- button \"Today\"\n- button \"Next\"\n- generic: Sun\n- generic: Mon\n- generic: Tue\n- generic: Wed\n- generic: Thu\n- generic: Fri\n- generic: Sat\n- generic: \"26\"\n- generic: \"27\"\n- generic: \"28\"\n- generic: \"29\"\n- generic: \"30\"\n- generic: \"31\"\n- generic: \"1\"\n- generic: \"2\"\n- generic: \"3\"\n- generic: \"4\"\n- generic: \"5\"\n- generic: \"6\"\n- generic: \"7\"\n- generic: \"8\"\n- generic: \"9\"\n- generic: \"10\"\n- generic: \"11\"\n- generic: \"12\"\n- generic: \"13\"\n- generic: \"14\"\n- generic: \"15\"\n- generic: \"16\"\n- generic: \"17\"\n- generic: \"18\"\n- generic: \"19\"\n- generic: \"20\"\n- generic: \"21\"\n- generic: \"22\"\n- generic: \"23\"\n- generic: \"24\"\n- generic: \"25\"\n- generic: \"26\"\n- generic: \"27\"\n- generic: \"28\"\n- generic: \"29\"\n- generic: \"30\"\n- generic: \"31\"\n- generic: \"1\"\n- generic: \"2\"\n- generic: \"3\"\n- generic: \"4\"\n- generic: \"5\"\n- generic: Holidays are marked with an orange dot.\n- heading \"Public Holidays\" [level=2]\n- text: \"Year:\"\n- combobox:\n  - option \"2025\"\n  - option \"2026\" [selected]\n  - option \"2027\"\n- list\n- generic: No holidays found for the selected year.\n- contentinfo:\n  - text: © INTERNAL AUDIT (Developed By A.A.C)\n  - generic: \"Version No: 24.08.2026\""
+  },
+  {
+    "label": "Branch Auditor (Team Lead)",
+    "url": "https://localhost:50853/Home/Index",
+    "title": "Home - IAS",
+    "menus": [
+      {
+        "href": null,
+        "text": ""
+      },
+      {
+        "href": null,
+        "text": "Execution +"
+      },
+      {
+        "href": null,
+        "text": "Post Compliance +"
+      },
+      {
+        "href": null,
+        "text": "FAD +"
+      },
+      {
+        "href": null,
+        "text": "Sampling +"
+      },
+      {
+        "href": "/Login/Logout",
+        "text": "Logout"
+      }
+    ],
+    "links": [],
+    "snapshot": "- complementary:\n  - generic: IAS\n  - button \"Collapse\"\n  - searchbox \"Search menu...\"\n  - button \"Execution\":\n    - generic: Execution\n    - generic: +\n  - button \"Post Compliance\":\n    - generic: Post Compliance\n    - generic: +\n  - button \"FAD\":\n    - generic: FAD\n    - generic: +\n  - button \"Sampling\":\n    - generic: Sampling\n    - generic: +\n  - link \"Logout\":\n    - /url: /Login/Logout\n    - generic: Logout\n- banner:\n  - navigation:\n    - button \"\":\n      - generic: \n    - link \"ZTBL Internal Audit System\":\n      - /url: /Home/Index\n      - img \"ZTBL\"\n      - generic: Internal Audit System\n    - button:\n      - generic: \n- heading \"Welcome to IAS\" [level=1]\n- paragraph: Quick access to your modules, holidays, and updates.\n- generic: Friday, Aug 28, 2026\n- generic: \"Status: Secure\"\n- heading \"Quick Links\" [level=2]\n- generic: Based on your permitted pages. All\n- link \"Field Auditor Dashboard Open module\":\n  - /url: /FieldAudit/AR_Dashboard\n  - generic: Field Auditor Dashboard\n  - generic: Open module\n- heading \"Announcements / Notifications\" [level=2]\n- generic: Message from IAS Team\n- list:\n  - paragraph: Welcome\n  - paragraph: Please enjoy New IAS system and in case you find any difficulty or error, please share the details like Page Name, Error Screen Shot along with a short brief of the issue.\n  - generic: Info\n- paragraph: August 2026\n- button \"Prev\"\n- button \"Today\"\n- button \"Next\"\n- generic: Sun\n- generic: Mon\n- generic: Tue\n- generic: Wed\n- generic: Thu\n- generic: Fri\n- generic: Sat\n- generic: \"26\"\n- generic: \"27\"\n- generic: \"28\"\n- generic: \"29\"\n- generic: \"30\"\n- generic: \"31\"\n- generic: \"1\"\n- generic: \"2\"\n- generic: \"3\"\n- generic: \"4\"\n- generic: \"5\"\n- generic: \"6\"\n- generic: \"7\"\n- generic: \"8\"\n- generic: \"9\"\n- generic: \"10\"\n- generic: \"11\"\n- generic: \"12\"\n- generic: \"13\"\n- generic: \"14\"\n- generic: \"15\"\n- generic: \"16\"\n- generic: \"17\"\n- generic: \"18\"\n- generic: \"19\"\n- generic: \"20\"\n- generic: \"21\"\n- generic: \"22\"\n- generic: \"23\"\n- generic: \"24\"\n- generic: \"25\"\n- generic: \"26\"\n- generic: \"27\"\n- generic: \"28\"\n- generic: \"29\"\n- generic: \"30\"\n- generic: \"31\"\n- generic: \"1\"\n- generic: \"2\"\n- generic: \"3\"\n- generic: \"4\"\n- generic: \"5\"\n- generic: Holidays are marked with an orange dot.\n- heading \"Public Holidays\" [level=2]\n- text: \"Year:\"\n- combobox:\n  - option \"2025\"\n  - option \"2026\" [selected]\n  - option \"2027\"\n- list\n- generic: No holidays found for the selected year.\n- contentinfo:\n  - text: © INTERNAL AUDIT (Developed By A.A.C)\n  - generic: \"Version No: 24.08.2026\""
+  },
+  {
+    "label": "Audit QA Unit",
+    "url": "https://localhost:50853/Home/Index",
+    "title": "Home - IAS",
+    "menus": [
+      {
+        "href": null,
+        "text": ""
+      },
+      {
+        "href": null,
+        "text": "Execution +"
+      },
+      {
+        "href": null,
+        "text": "Setup +"
+      },
+      {
+        "href": "/Login/Logout",
+        "text": "Logout"
+      }
+    ],
+    "links": [],
+    "snapshot": "- complementary:\n  - generic: IAS\n  - button \"Collapse\"\n  - searchbox \"Search menu...\"\n  - button \"Execution\":\n    - generic: Execution\n    - generic: +\n  - button \"Setup\":\n    - generic: Setup\n    - generic: +\n  - link \"Logout\":\n    - /url: /Login/Logout\n    - generic: Logout\n- banner:\n  - navigation:\n    - button \"\":\n      - generic: \n    - link \"ZTBL Internal Audit System\":\n      - /url: /Home/Index\n      - img \"ZTBL\"\n      - generic: Internal Audit System\n    - button:\n      - generic: \n- heading \"Welcome to IAS\" [level=1]\n- paragraph: Quick access to your modules, holidays, and updates.\n- generic: Friday, Aug 28, 2026\n- generic: \"Status: Secure\"\n- heading \"Quick Links\" [level=2]\n- generic: Based on your permitted pages. All\n- generic: No quick links available.\n- heading \"Announcements / Notifications\" [level=2]\n- generic: Message from IAS Team\n- list:\n  - paragraph: Welcome\n  - paragraph: Please enjoy New IAS system and in case you find any difficulty or error, please share the details like Page Name, Error Screen Shot along with a short brief of the issue.\n  - generic: Info\n- paragraph: August 2026\n- button \"Prev\"\n- button \"Today\"\n- button \"Next\"\n- generic: Sun\n- generic: Mon\n- generic: Tue\n- generic: Wed\n- generic: Thu\n- generic: Fri\n- generic: Sat\n- generic: \"26\"\n- generic: \"27\"\n- generic: \"28\"\n- generic: \"29\"\n- generic: \"30\"\n- generic: \"31\"\n- generic: \"1\"\n- generic: \"2\"\n- generic: \"3\"\n- generic: \"4\"\n- generic: \"5\"\n- generic: \"6\"\n- generic: \"7\"\n- generic: \"8\"\n- generic: \"9\"\n- generic: \"10\"\n- generic: \"11\"\n- generic: \"12\"\n- generic: \"13\"\n- generic: \"14\"\n- generic: \"15\"\n- generic: \"16\"\n- generic: \"17\"\n- generic: \"18\"\n- generic: \"19\"\n- generic: \"20\"\n- generic: \"21\"\n- generic: \"22\"\n- generic: \"23\"\n- generic: \"24\"\n- generic: \"25\"\n- generic: \"26\"\n- generic: \"27\"\n- generic: \"28\"\n- generic: \"29\"\n- generic: \"30\"\n- generic: \"31\"\n- generic: \"1\"\n- generic: \"2\"\n- generic: \"3\"\n- generic: \"4\"\n- generic: \"5\"\n- generic: Holidays are marked with an orange dot.\n- heading \"Public Holidays\" [level=2]\n- text: \"Year:\"\n- combobox:\n  - option \"2025\"\n  - option \"2026\" [selected]\n  - option \"2027\"\n- list\n- generic: No holidays found for the selected year.\n- contentinfo:\n  - text: © INTERNAL AUDIT (Developed By A.A.C)\n  - generic: \"Version No: 24.08.2026\""
+  },
+  {
+    "label": "Shariah Audit Unit",
+    "url": "https://localhost:50853/Home/Index",
+    "title": "Home - IAS",
+    "menus": [
+      {
+        "href": null,
+        "text": ""
+      },
+      {
+        "href": null,
+        "text": "Risk +"
+      },
+      {
+        "href": null,
+        "text": "Planning +"
+      },
+      {
+        "href": null,
+        "text": "Engagement +"
+      },
+      {
+        "href": null,
+        "text": "Execution +"
+      },
+      {
+        "href": null,
+        "text": "Setup +"
+      },
+      {
+        "href": "/Login/Logout",
+        "text": "Logout"
+      }
+    ],
+    "links": [],
+    "snapshot": "- complementary:\n  - generic: IAS\n  - button \"Collapse\"\n  - searchbox \"Search menu...\"\n  - button \"Risk\":\n    - generic: Risk\n    - generic: +\n  - button \"Planning\":\n    - generic: Planning\n    - generic: +\n  - button \"Engagement\":\n    - generic: Engagement\n    - generic: +\n  - button \"Execution\":\n    - generic: Execution\n    - generic: +\n  - button \"Setup\":\n    - generic: Setup\n    - generic: +\n  - link \"Logout\":\n    - /url: /Login/Logout\n    - generic: Logout\n- banner:\n  - navigation:\n    - button \"\":\n      - generic: \n    - link \"ZTBL Internal Audit System\":\n      - /url: /Home/Index\n      - img \"ZTBL\"\n      - generic: Internal Audit System\n    - button:\n      - generic: \n- heading \"Welcome to IAS\" [level=1]\n- paragraph: Quick access to your modules, holidays, and updates.\n- generic: Friday, Aug 28, 2026\n- generic: \"Status: Secure\"\n- heading \"Quick Links\" [level=2]\n- generic: Based on your permitted pages. All\n- generic: No quick links available.\n- heading \"Announcements / Notifications\" [level=2]\n- generic: Message from IAS Team\n- list:\n  - paragraph: Welcome\n  - paragraph: Please enjoy New IAS system and in case you find any difficulty or error, please share the details like Page Name, Error Screen Shot along with a short brief of the issue.\n  - generic: Info\n- paragraph: August 2026\n- button \"Prev\"\n- button \"Today\"\n- button \"Next\"\n- generic: Sun\n- generic: Mon\n- generic: Tue\n- generic: Wed\n- generic: Thu\n- generic: Fri\n- generic: Sat\n- generic: \"26\"\n- generic: \"27\"\n- generic: \"28\"\n- generic: \"29\"\n- generic: \"30\"\n- generic: \"31\"\n- generic: \"1\"\n- generic: \"2\"\n- generic: \"3\"\n- generic: \"4\"\n- generic: \"5\"\n- generic: \"6\"\n- generic: \"7\"\n- generic: \"8\"\n- generic: \"9\"\n- generic: \"10\"\n- generic: \"11\"\n- generic: \"12\"\n- generic: \"13\"\n- generic: \"14\"\n- generic: \"15\"\n- generic: \"16\"\n- generic: \"17\"\n- generic: \"18\"\n- generic: \"19\"\n- generic: \"20\"\n- generic: \"21\"\n- generic: \"22\"\n- generic: \"23\"\n- generic: \"24\"\n- generic: \"25\"\n- generic: \"26\"\n- generic: \"27\"\n- generic: \"28\"\n- generic: \"29\"\n- generic: \"30\"\n- generic: \"31\"\n- generic: \"1\"\n- generic: \"2\"\n- generic: \"3\"\n- generic: \"4\"\n- generic: \"5\"\n- generic: Holidays are marked with an orange dot.\n- heading \"Public Holidays\" [level=2]\n- text: \"Year:\"\n- combobox:\n  - option \"2025\"\n  - option \"2026\" [selected]\n  - option \"2027\"\n- list\n- generic: No holidays found for the selected year.\n- contentinfo:\n  - text: © INTERNAL AUDIT (Developed By A.A.C)\n  - generic: \"Version No: 24.08.2026\""
+  },
+  {
+    "label": "HO Auditor (Team Member)",
+    "url": "https://localhost:50853/Home/Index",
+    "title": "Home - IAS",
+    "menus": [
+      {
+        "href": null,
+        "text": ""
+      },
+      {
+        "href": null,
+        "text": "Execution +"
+      },
+      {
+        "href": null,
+        "text": "Auditee Portal +"
+      },
+      {
+        "href": null,
+        "text": "Post Compliance +"
+      },
+      {
+        "href": "/Login/Logout",
+        "text": "Logout"
+      }
+    ],
+    "links": [],
+    "snapshot": "- complementary:\n  - generic: IAS\n  - button \"Collapse\"\n  - searchbox \"Search menu...\"\n  - button \"Execution\":\n    - generic: Execution\n    - generic: +\n  - button \"Auditee Portal\":\n    - generic: Auditee Portal\n    - generic: +\n  - button \"Post Compliance\":\n    - generic: Post Compliance\n    - generic: +\n  - link \"Logout\":\n    - /url: /Login/Logout\n    - generic: Logout\n- banner:\n  - navigation:\n    - button \"\":\n      - generic: \n    - link \"ZTBL Internal Audit System\":\n      - /url: /Home/Index\n      - img \"ZTBL\"\n      - generic: Internal Audit System\n    - button:\n      - generic: \n- heading \"Welcome to IAS\" [level=1]\n- paragraph: Quick access to your modules, holidays, and updates.\n- generic: Friday, Aug 28, 2026\n- generic: \"Status: Secure\"\n- heading \"Quick Links\" [level=2]\n- generic: Based on your permitted pages. All\n- generic: No quick links available.\n- heading \"Announcements / Notifications\" [level=2]\n- generic: Message from IAS Team\n- list:\n  - paragraph: Welcome\n  - paragraph: Please enjoy New IAS system and in case you find any difficulty or error, please share the details like Page Name, Error Screen Shot along with a short brief of the issue.\n  - generic: Info\n- paragraph: August 2026\n- button \"Prev\"\n- button \"Today\"\n- button \"Next\"\n- generic: Sun\n- generic: Mon\n- generic: Tue\n- generic: Wed\n- generic: Thu\n- generic: Fri\n- generic: Sat\n- generic: \"26\"\n- generic: \"27\"\n- generic: \"28\"\n- generic: \"29\"\n- generic: \"30\"\n- generic: \"31\"\n- generic: \"1\"\n- generic: \"2\"\n- generic: \"3\"\n- generic: \"4\"\n- generic: \"5\"\n- generic: \"6\"\n- generic: \"7\"\n- generic: \"8\"\n- generic: \"9\"\n- generic: \"10\"\n- generic: \"11\"\n- generic: \"12\"\n- generic: \"13\"\n- generic: \"14\"\n- generic: \"15\"\n- generic: \"16\"\n- generic: \"17\"\n- generic: \"18\"\n- generic: \"19\"\n- generic: \"20\"\n- generic: \"21\"\n- generic: \"22\"\n- generic: \"23\"\n- generic: \"24\"\n- generic: \"25\"\n- generic: \"26\"\n- generic: \"27\"\n- generic: \"28\"\n- generic: \"29\"\n- generic: \"30\"\n- generic: \"31\"\n- generic: \"1\"\n- generic: \"2\"\n- generic: \"3\"\n- generic: \"4\"\n- generic: \"5\"\n- generic: Holidays are marked with an orange dot.\n- heading \"Public Holidays\" [level=2]\n- text: \"Year:\"\n- combobox:\n  - option \"2025\"\n  - option \"2026\" [selected]\n  - option \"2027\"\n- list\n- generic: No holidays found for the selected year.\n- contentinfo:\n  - text: © INTERNAL AUDIT (Developed By A.A.C)\n  - generic: \"Version No: 24.08.2026\""
+  },
+  {
+    "label": "Branch Auditor (Team Member)",
+    "url": "https://localhost:50853/Home/Index",
+    "title": "Home - IAS",
+    "menus": [
+      {
+        "href": null,
+        "text": ""
+      },
+      {
+        "href": null,
+        "text": "Execution +"
+      },
+      {
+        "href": null,
+        "text": "Post Compliance +"
+      },
+      {
+        "href": null,
+        "text": "FAD +"
+      },
+      {
+        "href": "/Login/Logout",
+        "text": "Logout"
+      }
+    ],
+    "links": [],
+    "snapshot": "- complementary:\n  - generic: IAS\n  - button \"Collapse\"\n  - searchbox \"Search menu...\"\n  - button \"Execution\":\n    - generic: Execution\n    - generic: +\n  - button \"Post Compliance\":\n    - generic: Post Compliance\n    - generic: +\n  - button \"FAD\":\n    - generic: FAD\n    - generic: +\n  - link \"Logout\":\n    - /url: /Login/Logout\n    - generic: Logout\n- banner:\n  - navigation:\n    - button \"\":\n      - generic: \n    - link \"ZTBL Internal Audit System\":\n      - /url: /Home/Index\n      - img \"ZTBL\"\n      - generic: Internal Audit System\n    - button:\n      - generic: \n- heading \"Welcome to IAS\" [level=1]\n- paragraph: Quick access to your modules, holidays, and updates.\n- generic: Friday, Aug 28, 2026\n- generic: \"Status: Secure\"\n- heading \"Quick Links\" [level=2]\n- generic: Based on your permitted pages. All\n- link \"Field Auditor Dashboard Open module\":\n  - /url: /FieldAudit/AR_Dashboard\n  - generic: Field Auditor Dashboard\n  - generic: Open module\n- heading \"Announcements / Notifications\" [level=2]\n- generic: Message from IAS Team\n- list:\n  - paragraph: Welcome\n  - paragraph: Please enjoy New IAS system and in case you find any difficulty or error, please share the details like Page Name, Error Screen Shot along with a short brief of the issue.\n  - generic: Info\n- paragraph: August 2026\n- button \"Prev\"\n- button \"Today\"\n- button \"Next\"\n- generic: Sun\n- generic: Mon\n- generic: Tue\n- generic: Wed\n- generic: Thu\n- generic: Fri\n- generic: Sat\n- generic: \"26\"\n- generic: \"27\"\n- generic: \"28\"\n- generic: \"29\"\n- generic: \"30\"\n- generic: \"31\"\n- generic: \"1\"\n- generic: \"2\"\n- generic: \"3\"\n- generic: \"4\"\n- generic: \"5\"\n- generic: \"6\"\n- generic: \"7\"\n- generic: \"8\"\n- generic: \"9\"\n- generic: \"10\"\n- generic: \"11\"\n- generic: \"12\"\n- generic: \"13\"\n- generic: \"14\"\n- generic: \"15\"\n- generic: \"16\"\n- generic: \"17\"\n- generic: \"18\"\n- generic: \"19\"\n- generic: \"20\"\n- generic: \"21\"\n- generic: \"22\"\n- generic: \"23\"\n- generic: \"24\"\n- generic: \"25\"\n- generic: \"26\"\n- generic: \"27\"\n- generic: \"28\"\n- generic: \"29\"\n- generic: \"30\"\n- generic: \"31\"\n- generic: \"1\"\n- generic: \"2\"\n- generic: \"3\"\n- generic: \"4\"\n- generic: \"5\"\n- generic: Holidays are marked with an orange dot.\n- heading \"Public Holidays\" [level=2]\n- text: \"Year:\"\n- combobox:\n  - option \"2025\"\n  - option \"2026\" [selected]\n  - option \"2027\"\n- list\n- generic: No holidays found for the selected year.\n- contentinfo:\n  - text: © INTERNAL AUDIT (Developed By A.A.C)\n  - generic: \"Version No: 24.08.2026\""
+  }
+]

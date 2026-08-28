@@ -100,6 +100,18 @@
                 }, true);
             }
 
+            // Logout must not be affected by sidebar collapse, delegated navigation,
+            // or page-specific click handlers. Always perform a normal top-level GET
+            // to the server logout endpoint so authentication and session state are
+            // cleared by LoginController.Logout.
+            document.querySelectorAll('a.ias-logout-link, a#logout_action_url').forEach(function(link){
+                link.addEventListener('click', function(event){
+                    event.preventDefault();
+                    event.stopImmediatePropagation();
+                    window.location.assign(link.href);
+                });
+            });
+
             // Mobile open/close
             var toggleBtn = document.getElementById('iasSidebarToggleBtn');
             var backdrop = document.getElementById('iasSidebarBackdrop');

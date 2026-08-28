@@ -1,0 +1,3 @@
+Step,Role,PPNO,Entity,Screen,Action,Record_ID,Status_Before,Status_After,Result
+1,SUPER USER,140066,112288,Planning / Audit Period,Open creation screen,,No 2027 test period,Prepared valid record,"PASS - form opened and values accepted; save awaiting action-time confirmation"
+

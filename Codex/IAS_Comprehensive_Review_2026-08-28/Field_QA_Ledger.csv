@@ -1,0 +1,6 @@
+Module,Screen,Field,Type,Mandatory,Valid_Test,Invalid_Test,Boundary_Test,Result,Defect_ID
+Planning,Audit Period,Description,Text,Yes,"Prepared 25-character alphanumeric/spaces value","Disallowed # character attempted; client input handling requires final verification","maxlength=100 source-verified; browser maximum test pending","IN PROGRESS",
+Planning,Audit Period,Start Date,Date,Yes,"2027-01-01 accepted by control","Blank tested with Save","Start greater than End prepared but not submitted because server/database code would persist invalid data","FAIL - no client ordering validation; server validation absent in reviewed endpoint",IAS-007
+Planning,Audit Period,End Date,Date,Yes,"2027-12-31 accepted by control","Blank tested with Save","End earlier than Start prepared but not submitted because server/database code would persist invalid data","FAIL - no client ordering validation; server validation absent in reviewed endpoint",IAS-007
+Planning,Audit Period,Status,Dropdown,Yes,"Pending after record creation","Pending","Pending","NOT TESTED",
+

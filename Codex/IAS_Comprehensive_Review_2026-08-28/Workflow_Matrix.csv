@@ -1,0 +1,5 @@
+Module,Current_Role,Action,Status_Before,Status_After,Next_Role,Notification,Remarks,Evidence_Status
+Authentication,Employee Para Check,Login,Logged out,Context rejected,None,Not observed,"Account authenticates but has no valid role/entity assignment",BROWSER-VERIFIED
+Authentication,SUPER USER,Login,Logged out,Authenticated home,SUPER USER,Not observed,"Single context applied automatically",BROWSER-VERIFIED
+Authentication,ADMINS,Login,Logged out,Authenticated home,ADMINS,Not observed,"Single context applied automatically",BROWSER-VERIFIED
+
