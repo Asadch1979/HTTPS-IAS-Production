@@ -1,0 +1,110 @@
+Module,ScreenOrFile,Endpoint,Method,CallType,Line
+HM / SBP Observation,AIS/Views/HM/SbpObservationRegister.cshtml,/ApiCalls/Authenticate,POST,fetch,443
+HM / SBP Observation,AIS/Views/HM/SbpObservationRegister.cshtml,/ApiCalls/GetRequests,GET,$.get,662
+HM / SBP Observation,AIS/Views/HM/SbpObservationRegister.cshtml,/ApiCalls/GetSbpObservationRegister,GET,literal,851
+HM / SBP Observation,AIS/Views/HM/SbpObservationRegister.cshtml,/ApiCalls/UpdateSbpObservation,POST,literal,1281
+HM / SBP Observation,AIS/Views/HM/SbpObservationRegister.cshtml,/ApiCalls/InsertSbpObservation,POST,literal,1281
+HM / SBP Observation,AIS/Views/HM/SbpObservationRegister.cshtml,/ApiCalls/UpdateSbpObservationResponse,POST,literal,1451
+HM / SBP Observation,AIS/Views/HM/SbpObservationRegister.cshtml,/ApiCalls/InsertSbpObservationResponse,POST,literal,1451
+HM / SBP Observation,AIS/Views/HM/SbpObservationRegister.cshtml,/ApiCalls/RequestDeleteObservation,POST,$.ajax,1533
+HM / SBP Observation,AIS/Views/HM/SbpObservationRegister.cshtml,/ApiCalls/RequestDeleteResponse,POST,$.ajax,1564
+HM / SBP Observation,AIS/Views/HM/SbpObservationRegister.cshtml,/ApiCalls/ApproveRequest,POST,$.ajax,1590
+HM / SBP Observation,AIS/Views/HM/SbpObservationRegister.cshtml,/ApiCalls/RejectRequest,POST,$.ajax,1622
+HM / SBP Observation,AIS/Views/HM/SbpObservationRegister.cshtml,/ApiCalls/RequestReverse,POST,$.ajax,1653
+HM / SBP Observation,AIS/Views/HM/SbpObservationRegister.cshtml,/ApiCalls/GetSbpObservationHistory,GET,literal,1671
+IID,AIS/Views/IID/FFR_PART1.cshtml,/ApiCalls/get_ho_unit_types,POST,$.post,305
+IID,AIS/Views/IID/FFR_PART1.cshtml,/ApiCalls/get_ho_units,POST,$.post,324
+Execution (Responsibility),AIS/wwwroot/js/responsibilitySection.js,/ApiCalls/GetResponsiblePPNOforoldPara,POST,$.ajax,141
+Execution (Responsibility),AIS/wwwroot/js/responsibilitySection.js,/ApiCalls/get_responsible_by_pp,POST,$.ajax,198
+Execution (Responsibility),AIS/wwwroot/js/responsibilitySection.js,/ApiCalls/get_responsible_by_lc,POST,$.ajax,238
+Execution (Responsibility),AIS/wwwroot/js/responsibilitySection.js,/ApiCalls/add_responsible_for_old_paras,POST,literal,342
+Execution (Responsibility),AIS/wwwroot/js/responsibilitySection.js,/ApiCalls/delete_responsible_from_observation,POST,literal,357
+Execution (References),AIS/wwwroot/js/referenceSection.js,/ApiCalls/GetParaReferenceData,GET,$.get,39
+Execution (References),AIS/wwwroot/js/referenceSection.js,/ApiCalls/SearchReferences,POST,$.post,47
+Execution (References),AIS/wwwroot/js/referenceSection.js,/ApiCalls/GetReferenceDetail,GET,$.get,91
+Execution (References),AIS/wwwroot/js/referenceSection.js,/ApiCalls/SaveParaReferences,POST,$.ajax,144
+Field Audit,AIS/wwwroot/js/fieldaudit-bo-dashboard.js,/ApiCalls/GetBackOfficeDashboardEngagements,GET,fetch,111
+IID,AIS/wwwroot/js/iid/inquiryReportReadOnly.js,/ApiCalls/GetIidInquiryReportReadOnlyData,POST,$.ajax,203
+IID,AIS/wwwroot/js/iid/inquiryReportReadOnly.js,/ApiCalls/GetComplaintsDropdown,POST,$.post,220
+IID,AIS/wwwroot/js/iid/inquiryReportApi.js,/ApiCalls/GetIidInqAccusations,GET,literal,18
+IID,AIS/wwwroot/js/iid/inquiryReportApi.js,/ApiCalls/AddIidInqAccusation,POST,literal,19
+IID,AIS/wwwroot/js/iid/inquiryReportApi.js,/ApiCalls/UpdateIidInqAccusation,POST,literal,20
+IID,AIS/wwwroot/js/iid/inquiryReportApi.js,/ApiCalls/DeleteIidInqAccusation,POST,literal,21
+IID,AIS/wwwroot/js/iid/inquiryReportApi.js,/ApiCalls/GetIidInqAccusedList,GET,literal,23
+IID,AIS/wwwroot/js/iid/inquiryReportApi.js,/ApiCalls/GetIidInqAccusedListByComplaintId,GET,literal,25
+IID,AIS/wwwroot/js/iid/inquiryReportApi.js,/ApiCalls/GetIidStatementRegisterByComplaintId,GET,literal,26
+IID,AIS/wwwroot/js/iid/inquiryReportApi.js,/ApiCalls/SaveIidStatementRegisterRow,POST,literal,27
+IID,AIS/wwwroot/js/iid/inquiryReportApi.js,/ApiCalls/AddIidInqAccused,POST,literal,28
+IID,AIS/wwwroot/js/iid/inquiryReportApi.js,/ApiCalls/UpdateIidInqAccused,POST,literal,29
+IID,AIS/wwwroot/js/iid/inquiryReportApi.js,/ApiCalls/DeleteIidInqAccused,POST,literal,30
+IID,AIS/wwwroot/js/iid/inquiryReportApi.js,/ApiCalls/GetIidInqRecords,GET,literal,32
+IID,AIS/wwwroot/js/iid/inquiryReportApi.js,/ApiCalls/AddIidInqRecord,POST,literal,33
+IID,AIS/wwwroot/js/iid/inquiryReportApi.js,/ApiCalls/UpdateIidInqRecord,POST,literal,34
+IID,AIS/wwwroot/js/iid/inquiryReportApi.js,/ApiCalls/DeleteIidInqRecord,POST,literal,35
+IID,AIS/wwwroot/js/iid/inquiryReportApi.js,/ApiCalls/GetIidInqStatements,GET,literal,37
+IID,AIS/wwwroot/js/iid/inquiryReportApi.js,/ApiCalls/AddIidInqStatement,POST,literal,38
+IID,AIS/wwwroot/js/iid/inquiryReportApi.js,/ApiCalls/UpdateIidInqStatement,POST,literal,39
+IID,AIS/wwwroot/js/iid/inquiryReportApi.js,/ApiCalls/DeleteIidInqStatement,POST,literal,40
+IID,AIS/wwwroot/js/iid/inquiryReportApi.js,/ApiCalls/GetIidEmployeeInfo,GET,literal,42
+IID,AIS/wwwroot/js/iid/inquiryReportApi.js,/ApiCalls/GetIidInqEvidenceFiles,GET,literal,44
+IID,AIS/wwwroot/js/iid/inquiryReportApi.js,/ApiCalls/AddIidInqEvidenceFile,POST,literal,45
+IID,AIS/wwwroot/js/iid/inquiryReportApi.js,/ApiCalls/DeleteIidInqEvidenceFile,POST,literal,46
+IID,AIS/wwwroot/js/iid/inquiryReportApi.js,/ApiCalls/GetIidInqFindingsRecomm,GET,literal,48
+IID,AIS/wwwroot/js/iid/inquiryReportApi.js,/ApiCalls/SaveIidInqFindingsRecomm,POST,literal,49
+IID,AIS/wwwroot/js/iid/inquiryReportApi.js,/ApiCalls/GetIidAccusationsForFindings,GET,literal,50
+IID,AIS/wwwroot/js/iid/inquiryReportApi.js,/ApiCalls/GetIidFindingsRecommByAccusation,GET,literal,51
+IID,AIS/wwwroot/js/iid/inquiryReportApi.js,/ApiCalls/SaveIidFindingsRecommByAccusation,POST,literal,52
+IID,AIS/wwwroot/js/iid/inquiryReportApi.js,/ApiCalls/GetIidFindingsRecommStatus,GET,literal,53
+IID,AIS/wwwroot/js/iid/inquiryReportApi.js,/ApiCalls/GetIidInqViolations,GET,literal,55
+IID,AIS/wwwroot/js/iid/inquiryReportApi.js,/ApiCalls/AddIidInqViolation,POST,literal,56
+IID,AIS/wwwroot/js/iid/inquiryReportApi.js,/ApiCalls/UpdateIidInqViolation,POST,literal,57
+IID,AIS/wwwroot/js/iid/inquiryReportApi.js,/ApiCalls/DeleteIidInqViolation,POST,literal,58
+IID,AIS/wwwroot/js/iid/inquiryReportApi.js,/ApiCalls/GetIidInqDsa,GET,literal,60
+IID,AIS/wwwroot/js/iid/inquiryReportApi.js,/ApiCalls/AddIidInqDsa,POST,literal,61
+IID,AIS/wwwroot/js/iid/inquiryReportApi.js,/ApiCalls/UpdateIidInqDsa,POST,literal,62
+IID,AIS/wwwroot/js/iid/inquiryReportApi.js,/ApiCalls/DeleteIidInqDsa,POST,literal,63
+IID,AIS/wwwroot/js/csp/Views_IID_CaseStudy.js,/ApiCalls/GetComplaint,POST,$.ajax,27
+IID,AIS/wwwroot/js/csp/Views_IID_CaseStudy.js,/ApiCalls/AddCaseStudy,POST,$.ajax,69
+IID,AIS/wwwroot/js/csp/Views_IID_TaskListIID.js,/ApiCalls/GetIidTaskList,GET,$.get,56
+Reports,AIS/wwwroot/js/csp/Views_Reports_emp_info.js,/ApiCalls/GetAuditTeams,POST,$.ajax,61
+Reports,AIS/wwwroot/js/csp/Views_Reports_emp_info.js,/ApiCalls/GetZoneBranches,POST,$.ajax,92
+Reports,AIS/wwwroot/js/csp/Views_Reports_emp_info.js,/ApiCalls/GetDivDepartments,POST,$.ajax,121
+Reports,AIS/wwwroot/js/csp/Views_Reports_emp_info.js,/ApiCalls/AddAuditPlan,POST,$.ajax,213
+Planning,AIS/wwwroot/js/csp/Views_Planning_audit_criteria_approval.js,/ApiCalls/ReferredBackAuditCriteria,POST,$.ajax,59
+Planning,AIS/wwwroot/js/csp/Views_Planning_audit_criteria_approval.js,/ApiCalls/AuthorizeAuditCriteria,POST,$.ajax,94
+Administration Panel,AIS/wwwroot/js/csp/Views_AdministrationPanel_ManageVersionHistory.js,/ApiCalls/AddVersionHistory,POST,literal,24
+Administration Panel,AIS/wwwroot/js/csp/Views_AdministrationPanel_ManageVersionHistory.js,/ApiCalls/UpdateVersionHistory,POST,literal,50
+Administration Panel,AIS/wwwroot/js/csp/Views_AdministrationPanel_manage_user.js,/ApiCalls/FindUsers,POST,$.ajax,157
+Reports,AIS/wwwroot/js/csp/Views_Reports_department_performance.js,/ApiCalls/get_audit_zones,GET,$.ajax,51
+Reports,AIS/wwwroot/js/csp/Views_Reports_department_performance.js,/ApiCalls/get_department_performance_summary_and_detail,GET,literal,143
+Reports,AIS/wwwroot/js/csp/Views_Reports_department_performance.js,/ApiCalls/get_auditor_performance,GET,literal,146
+Reports,AIS/wwwroot/js/csp/Views_Reports_department_performance.js,/ApiCalls/get_department_performance_by_zone,GET,literal,149
+IID,AIS/wwwroot/js/csp/Views_IID_HeadReview.js,/ApiCalls/GetIiUnits,GET,$.get,23
+IID,AIS/wwwroot/js/csp/Views_IID_HeadReview.js,/ApiCalls/AddHeadReview,POST,$.post,95
+Planning,AIS/wwwroot/js/csp/Views_Planning_refferedback_audit_criteria.js,/ApiCalls/UpdateAuditCriteria,POST,$.ajax,80
+Sampling,AIS/wwwroot/js/csp/Views_Sampling_ManageExceptionReportFormat.js,/ApiCalls/update_exception_report_format,POST,literal,126
+Sampling,AIS/wwwroot/js/csp/Views_Sampling_ManageExceptionReportFormat.js,/ApiCalls/save_exception_report_format,POST,$.ajax,127
+Planning,AIS/wwwroot/js/csp/Views_Planning_team_members.js,/ApiCalls/AddAuditTeam,POST,$.ajax,85
+Planning,AIS/wwwroot/js/csp/Views_Planning_team_members.js,/ApiCalls/DeleteAuditTeam,POST,$.ajax,102
+Engagement,AIS/wwwroot/js/csp/Views_Engagement_eng_plan_ref_list.js,/ApiCalls/rerecommend_engagement_plan,POST,$.ajax,119
+IID,AIS/wwwroot/js/csp/Views_IID_InquiryReport.js,/ApiCalls/FinalizeIidInquiryReport,POST,$.ajax,1193
+Administration Panel,AIS/wwwroot/js/csp/Views_AdministrationPanel_ManagePublicHolidays.js,/ApiCalls/get_all_public_holidays,POST,$.ajax,3
+Administration Panel,AIS/wwwroot/js/csp/Views_AdministrationPanel_ManagePublicHolidays.js,/ApiCalls/add_public_holiday,POST,$.ajax,39
+Engagement,AIS/wwwroot/js/csp/Views_Engagement_ccqs.js,/ApiCalls/GetAuditTeam,POST,$.ajax,19
+IID,AIS/wwwroot/js/csp/Views_IID_SubmitComplaint.js,/ApiCalls/SubmitComplaint,POST,$.ajax,202
+IID,AIS/wwwroot/js/csp/Views_IID_Reports.js,/ApiCalls/GetReports,POST,$.ajax,128
+Planning,AIS/wwwroot/js/csp/Views_Planning_tentative_engagement_plan.js,/ApiCalls/GetOperationalStartDate,POST,$.ajax,154
+Planning,AIS/wwwroot/js/csp/Views_Planning_tentative_engagement_plan.js,/ApiCalls/AddEngagementPlan,POST,$.ajax,250
+IID,AIS/wwwroot/js/csp/Views_IID_InvestigationPlan.js,/ApiCalls/GetLatestPlanByComplaintId,POST,$.ajax,58
+IID,AIS/wwwroot/js/csp/Views_IID_InvestigationPlan.js,/ApiCalls/AddInvestigationPlan,POST,$.ajax,125
+IID,AIS/wwwroot/js/csp/Views_IID_InitialAssessment.js,/ApiCalls/AddAssessment,POST,$.ajax,84
+Planning,AIS/wwwroot/js/csp/Views_Planning_staff_position.js,/ApiCalls/GetAuditEmployees,POST,$.ajax,35
+Planning,AIS/wwwroot/js/csp/Views_Planning_post_changes_criteria.js,/ApiCalls/PostChangesAuditCriteria,POST,$.ajax,87
+Planning,AIS/wwwroot/js/csp/Views_Planning_post_changes_criteria.js,/ApiCalls/GeneratePlanAuditCriteria,POST,$.ajax,105
+HM / SBP Observation,AIS/wwwroot/js/csp/Views_HM_ManageSbpPassword.js,/ApiCalls/UpdateSbpObservationPassword,POST,literal,28
+IID,AIS/wwwroot/js/csp/Views_IID_FinalApproval.js,/ApiCalls/GetInquiryReportFiles,POST,$.ajax,26
+IID,AIS/wwwroot/js/csp/Views_IID_FinalApproval.js,/ApiCalls/GetLatestInquiryReportByComplaintId,POST,$.ajax,81
+IID,AIS/wwwroot/js/csp/Views_IID_FinalApproval.js,/ApiCalls/AddFinalApproval,POST,$.ajax,137
+IID,AIS/wwwroot/js/csp/Views_IID_Analysis.js,/ApiCalls/AddAnalysis,POST,$.ajax,153
+IID,AIS/wwwroot/js/csp/Views_IID_PlanApproval.js,/ApiCalls/GetIidPlanDetails,GET,$.get,59
+IID,AIS/wwwroot/js/csp/Views_IID_PlanApproval.js,/ApiCalls/AddPlanApproval,POST,$.post,124
