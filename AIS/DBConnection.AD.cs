@@ -5439,6 +5439,47 @@ namespace AIS.Controllers
 
             }
 
+        public EngagementEntityShiftResponseModel ShiftEngagementEntity(int ENG_ID, int NEW_ENTITY_ID, string REASON)
+            {
+            var response = new EngagementEntityShiftResponseModel { Status = false, Remarks = "Unable to shift engagement entity." };
+            var sessionHandler = CreateSessionHandler();
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null
+                || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
+                || string.IsNullOrWhiteSpace(loggedInUser.PPNumber)
+                || loggedInUser.UserRoleID <= 0)
+                {
+                response.Remarks = "Your session has expired. Please sign in again.";
+                return response;
+                }
+
+            using var con = this.DatabaseConnection();
+            using (OracleCommand cmd = con.CreateCommand())
+                {
+                cmd.CommandText = "pkg_ad.P_SHIFT_ENGAGEMENT_ENTITY";
+                cmd.CommandType = CommandType.StoredProcedure;
+                cmd.BindByName = true;
+                GuardAgainstDynamicSql(cmd);
+                cmd.Parameters.Clear();
+                cmd.Parameters.Add("P_ENG_ID", OracleDbType.Int32).Value = ENG_ID;
+                cmd.Parameters.Add("P_NEW_ENTITY_ID", OracleDbType.Int32).Value = NEW_ENTITY_ID;
+                cmd.Parameters.Add("P_PPNO", OracleDbType.Int32).Value = loggedInUser.PPNumber;
+                cmd.Parameters.Add("P_ROLE_ID", OracleDbType.Int32).Value = loggedInUser.UserRoleID;
+                cmd.Parameters.Add("P_REASON", OracleDbType.Varchar2).Value = REASON;
+                cmd.Parameters.Add("IO_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+                using OracleDataReader rdr = cmd.ExecuteReader();
+                if (rdr.Read())
+                    {
+                    response.Status = string.Equals(rdr["STATUS"].ToString(), "TRUE", StringComparison.OrdinalIgnoreCase)
+                        || string.Equals(rdr["STATUS"].ToString(), "Y", StringComparison.OrdinalIgnoreCase)
+                        || string.Equals(rdr["STATUS"].ToString(), "1", StringComparison.OrdinalIgnoreCase);
+                    response.Remarks = rdr["REMARKS"].ToString();
+                    }
+                }
+
+            return response;
+            }
+
         public List<HRDesignationWiseRoleModel> GetHRDesignationWiseRoles()
             {
 

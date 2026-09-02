@@ -1509,7 +1509,8 @@ namespace AIS.Controllers
                 CreateDashboardStep(4, "SETUP_AUDITEE_ENTITIES", "Setup Auditee Entities", "/AdministrationPanel/setup_auditee_entities", "~/Views/AdministrationPanel/DashboardPartials/_SetupAuditeeEntities.cshtml"),
                 CreateDashboardStep(5, "UPDATE_AUDITEE_ENTITIES", "Update Auditee Entities", "/AdministrationPanel/update_auditee_entities", "~/Views/AdministrationPanel/DashboardPartials/_UpdateAuditeeEntities.cshtml"),
                 CreateDashboardStep(6, "AUTHORIZE_AUDITEE_ENTITIES_UPDATE", "Authorize Auditee Entities Update", "/AdministrationPanel/authorize_auditee_entities_update", "~/Views/AdministrationPanel/DashboardPartials/_AuthorizeAuditeeEntitiesUpdate.cshtml"),
-                CreateDashboardStep(7, "SETUP_ENGAGEMENT_REVERSAL", "Setup Engagement Reversal", "/AdministrationPanel/setup_engagement_reversal", "~/Views/AdministrationPanel/setup_engagement_reversal.cshtml")
+                CreateDashboardStep(7, "SETUP_ENGAGEMENT_REVERSAL", "Setup Engagement Reversal", "/AdministrationPanel/setup_engagement_reversal", "~/Views/AdministrationPanel/setup_engagement_reversal.cshtml"),
+                CreateDashboardStep(8, "ENGAGEMENT_SHIFTING", "Engagement Shifting", "/AdministrationPanel/setup_engagement_reversal", "~/Views/AdministrationPanel/DashboardPartials/_EngagementShifting.cshtml")
                 };
             }
 
@@ -1603,9 +1604,36 @@ namespace AIS.Controllers
                     ViewData["Userrelationship"] = dBConnection.Getrealtionshiptype(pageId);
                     ViewData["statusList"] = dBConnection.GetObservationReversalStatus();
                     break;
+                case "ENGAGEMENT_SHIFTING":
+                    ViewData["IsDashboardPartial"] = true;
+                    ViewData["Userrelationship"] = dBConnection.Getrealtionshiptype(pageId);
+                    break;
                 default:
                     break;
                 }
+            }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public IActionResult ShiftEngagementEntity(EngagementEntityShiftRequestModel request)
+            {
+            if (!User.Identity.IsAuthenticated || !sessionHandler.TryGetUser(out var user) || user == null)
+                {
+                return Unauthorized(new { Status = false, Message = "Your session has expired. Please sign in again." });
+                }
+
+            if (!HasPageAccess(user, "/AdministrationPanel/setup_engagement_reversal"))
+                {
+                return Forbid();
+                }
+
+            if (request == null || request.EngagementId <= 0 || request.NewEntityId <= 0 || string.IsNullOrWhiteSpace(request.Reason))
+                {
+                return BadRequest(new { Status = false, Message = "Engagement, destination entity and reason are required." });
+                }
+
+            var response = dBConnection.ShiftEngagementEntity(request.EngagementId, request.NewEntityId, request.Reason);
+            return Ok(new { Status = response.Status, Message = response.Remarks });
             }
 
         [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]

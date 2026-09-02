@@ -1,3 +1,27 @@
+CREATE TABLE T_AU_ENG_ENTITY_SHIFT_HIST
+(
+  ID                         NUMBER PRIMARY KEY,
+  ENG_ID                     NUMBER NOT NULL,
+  OLD_ENTITY_ID              NUMBER NOT NULL,
+  NEW_ENTITY_ID              NUMBER NOT NULL,
+  REASON                     VARCHAR2(1000) NOT NULL,
+  PPNO                       NUMBER NOT NULL,
+  ROLE_ID                    NUMBER NOT NULL,
+  SHIFTED_ON                 DATE DEFAULT SYSDATE NOT NULL,
+  PLAN_ENG_ROWS              NUMBER DEFAULT 0 NOT NULL,
+  OBSERVATION_ROWS           NUMBER DEFAULT 0 NOT NULL,
+  AIS_OBSERVATION_ROWS       NUMBER DEFAULT 0 NOT NULL,
+  OBS_ASSIGNEDTO_ROWS        NUMBER DEFAULT 0 NOT NULL,
+  TEAM_TASKLIST_ROWS         NUMBER DEFAULT 0 NOT NULL,
+  DSA_ROWS                   NUMBER DEFAULT 0 NOT NULL,
+  OBSERVATION_MAN_ROWS       NUMBER DEFAULT 0 NOT NULL,
+  BRANCH_RISK_RATING_ROWS    NUMBER DEFAULT 0 NOT NULL,
+  COSO_RATING_DEPT_ROWS      NUMBER DEFAULT 0 NOT NULL,
+  RISK_BRANCH_WISE_ROWS      NUMBER DEFAULT 0 NOT NULL
+);
+
+CREATE SEQUENCE SEQ_AU_ENG_ENTITY_SHIFT_HIST START WITH 1 INCREMENT BY 1 NOCACHE;
+
 create or replace package PKG_AD is
 
   TYPE t_cursor IS REF CURSOR;
@@ -475,6 +499,13 @@ create or replace package PKG_AD is
                                         comments  in varchar2,
                                         P_NO      in number,
                                         io_cursor OUT t_cursor);
+
+  procedure P_SHIFT_ENGAGEMENT_ENTITY(P_ENG_ID        IN NUMBER,
+                                      P_NEW_ENTITY_ID IN NUMBER,
+                                      P_PPNO          IN NUMBER,
+                                      P_ROLE_ID       IN NUMBER,
+                                      P_REASON        IN VARCHAR2,
+                                      IO_CURSOR       OUT T_CURSOR);
 
   procedure p_get_audit_observtion_status(io_cursor OUT t_cursor);
 
@@ -4646,6 +4677,156 @@ create or replace package body PKG_AD is
       select 'Audit Engagement has been reversed' as remarks from dual;
   
   end p_audit_engagement_reversal;
+
+  procedure P_SHIFT_ENGAGEMENT_ENTITY(P_ENG_ID        IN NUMBER,
+                                      P_NEW_ENTITY_ID IN NUMBER,
+                                      P_PPNO          IN NUMBER,
+                                      P_ROLE_ID       IN NUMBER,
+                                      P_REASON        IN VARCHAR2,
+                                      IO_CURSOR       OUT T_CURSOR) is
+    V_OLD_ENTITY_ID           NUMBER;
+    V_STATUS_ID               NUMBER;
+    V_DEST_COUNT              NUMBER := 0;
+    V_REPORT_COUNT            NUMBER := 0;
+    V_PLAN_ENG_ROWS           NUMBER := 0;
+    V_OBSERVATION_ROWS        NUMBER := 0;
+    V_AIS_OBSERVATION_ROWS    NUMBER := 0;
+    V_OBS_ASSIGNEDTO_ROWS     NUMBER := 0;
+    V_TEAM_TASKLIST_ROWS      NUMBER := 0;
+    V_DSA_ROWS                NUMBER := 0;
+    V_OBSERVATION_MAN_ROWS    NUMBER := 0;
+    V_BRANCH_RISK_ROWS        NUMBER := 0;
+    V_COSO_RATING_ROWS        NUMBER := 0;
+    V_RISK_BRANCH_ROWS        NUMBER := 0;
+  begin
+    if P_ROLE_ID not in (1) then
+      open IO_CURSOR for
+        select 'FALSE' as status,
+               'Unauthorized: engagement entity shifting is restricted to authorized administrators.' as remarks
+          from dual;
+      return;
+    end if;
+
+    if P_REASON is null or length(trim(P_REASON)) = 0 then
+      open IO_CURSOR for
+        select 'FALSE' as status, 'Reason / remarks are mandatory.' as remarks
+          from dual;
+      return;
+    end if;
+
+    begin
+      select ENG.ENTITY_ID, ENG.STATUS
+        into V_OLD_ENTITY_ID, V_STATUS_ID
+        from T_AU_PLAN_ENG ENG
+       where ENG.ENG_ID = P_ENG_ID
+       for update;
+    exception
+      when NO_DATA_FOUND then
+        open IO_CURSOR for
+          select 'FALSE' as status, 'Invalid Engagement ID.' as remarks
+            from dual;
+        return;
+    end;
+
+    select count(*)
+      into V_DEST_COUNT
+      from T_AUDITEE_ENTITIES E
+     where E.ENTITY_ID = P_NEW_ENTITY_ID
+       and nvl(E.ACTIVE, 'Y') = 'Y';
+
+    if V_DEST_COUNT = 0 then
+      open IO_CURSOR for
+        select 'FALSE' as status, 'Invalid or inactive destination Entity ID.' as remarks
+          from dual;
+      return;
+    end if;
+
+    if V_OLD_ENTITY_ID = P_NEW_ENTITY_ID then
+      open IO_CURSOR for
+        select 'FALSE' as status, 'Destination entity cannot be the current entity.' as remarks
+          from dual;
+      return;
+    end if;
+
+    select (select count(*) from T_FRPT_REPORT_META where ENG_ID = P_ENG_ID) +
+           (select count(*) from T_FRPT_KPI_SNAPSHOT where ENG_ID = P_ENG_ID) +
+           (select count(*) from T_FRPT_NPL_SNAPSHOT where ENG_ID = P_ENG_ID) +
+           (select count(*) from T_FRPT_OVERALL_CONCLUSION where ENG_ID = P_ENG_ID) +
+           (select count(*) from T_FRPT_PDF_STATISTICS where ENG_ID = P_ENG_ID) +
+           (select count(*) from T_FRPT_STAFF_SNAPSHOT where ENG_ID = P_ENG_ID)
+      into V_REPORT_COUNT
+      from dual;
+
+    if V_STATUS_ID >= 14 or V_REPORT_COUNT > 0 then
+      open IO_CURSOR for
+        select 'FALSE' as status,
+               'Finalized, closed or report-issued engagements cannot be shifted.' as remarks
+          from dual;
+      return;
+    end if;
+
+    update T_AU_PLAN_ENG
+       set ENTITY_ID = P_NEW_ENTITY_ID, LASTUPDATEDBY = P_PPNO, LASTUPDATEDDATE = sysdate
+     where ENG_ID = P_ENG_ID;
+    V_PLAN_ENG_ROWS := sql%rowcount;
+
+    update T_AU_OBSERVATION set ENTITY_ID = P_NEW_ENTITY_ID where ENGPLANID = P_ENG_ID;
+    V_OBSERVATION_ROWS := sql%rowcount;
+
+    update AIS_T_AU_OBSERVATION set ENTITY_ID = P_NEW_ENTITY_ID where ENGPLANID = P_ENG_ID;
+    V_AIS_OBSERVATION_ROWS := sql%rowcount;
+
+    update T_AU_OBSERVATION_ASSIGNEDTO set ENTITY_ID = P_NEW_ENTITY_ID where ENG_ID = P_ENG_ID;
+    V_OBS_ASSIGNEDTO_ROWS := sql%rowcount;
+
+    update T_AU_AUDIT_TEAM_TASKLIST set ENTITY_ID = P_NEW_ENTITY_ID where ENG_PLAN_ID = P_ENG_ID;
+    V_TEAM_TASKLIST_ROWS := sql%rowcount;
+
+    update T_AU_DSA set ENTITY_ID = P_NEW_ENTITY_ID where ENG_ID = P_ENG_ID;
+    V_DSA_ROWS := sql%rowcount;
+
+    update T_AU_OBSERVATION_MAN set ENTITY_ID = P_NEW_ENTITY_ID where ENG_ID = P_ENG_ID;
+    V_OBSERVATION_MAN_ROWS := sql%rowcount;
+
+    update T_BRANCH_RISK_RATING set ENTITY_ID = P_NEW_ENTITY_ID where ENG_ID = P_ENG_ID;
+    V_BRANCH_RISK_ROWS := sql%rowcount;
+
+    update T_COSO_RATING_DEPARTMENT set ENTITY_ID = P_NEW_ENTITY_ID where ENG_ID = P_ENG_ID;
+    V_COSO_RATING_ROWS := sql%rowcount;
+
+    update T_RISK_BRANCH_WISE set ENTITY_ID = P_NEW_ENTITY_ID where ENG_ID = P_ENG_ID;
+    V_RISK_BRANCH_ROWS := sql%rowcount;
+
+    if V_PLAN_ENG_ROWS <> 1 then
+      raise_application_error(-20041, 'Engagement shift failed: engagement master row was not updated exactly once.');
+    end if;
+
+    insert into T_AU_ENG_ENTITY_SHIFT_HIST
+      (ID, ENG_ID, OLD_ENTITY_ID, NEW_ENTITY_ID, REASON, PPNO, ROLE_ID, SHIFTED_ON,
+       PLAN_ENG_ROWS, OBSERVATION_ROWS, AIS_OBSERVATION_ROWS, OBS_ASSIGNEDTO_ROWS,
+       TEAM_TASKLIST_ROWS, DSA_ROWS, OBSERVATION_MAN_ROWS, BRANCH_RISK_RATING_ROWS,
+       COSO_RATING_DEPT_ROWS, RISK_BRANCH_WISE_ROWS)
+    values
+      (SEQ_AU_ENG_ENTITY_SHIFT_HIST.nextval, P_ENG_ID, V_OLD_ENTITY_ID, P_NEW_ENTITY_ID,
+       trim(P_REASON), P_PPNO, P_ROLE_ID, sysdate, V_PLAN_ENG_ROWS, V_OBSERVATION_ROWS,
+       V_AIS_OBSERVATION_ROWS, V_OBS_ASSIGNEDTO_ROWS, V_TEAM_TASKLIST_ROWS, V_DSA_ROWS,
+       V_OBSERVATION_MAN_ROWS, V_BRANCH_RISK_ROWS, V_COSO_RATING_ROWS, V_RISK_BRANCH_ROWS);
+
+    commit;
+
+    open IO_CURSOR for
+      select 'TRUE' as status,
+             'Engagement ' || P_ENG_ID || ' shifted from Entity ' || V_OLD_ENTITY_ID ||
+             ' to Entity ' || P_NEW_ENTITY_ID || '.' as remarks
+        from dual;
+  exception
+    when others then
+      rollback;
+      open IO_CURSOR for
+        select 'FALSE' as status,
+               'Engagement entity shift failed: ' || substr(sqlerrm, 1, 900) as remarks
+          from dual;
+  end P_SHIFT_ENGAGEMENT_ENTITY;
 
   procedure p_get_audit_observtion_status(io_cursor OUT t_cursor) is
   

@@ -1,0 +1,111 @@
+@{
+    Layout = null;
+}
+
+<div class="row col-md-12 mt-3">
+    <h3 style="display:block;color:#be0e43">Engagement Shifting</h3>
+</div>
+
+<form id="engagementShiftCsrfForm" method="post">
+    @Html.AntiForgeryToken()
+</form>
+
+<div class="row col-md-12 mt-1">
+    <div class="col-md-2">
+        <label>Relationship Type</label>
+    </div>
+    <div class="col-md-10">
+        <select id="engShiftRelationshipField" data-onchange="engShiftGetRelation();" class="form-control form-select">
+            <option id="0" value="0" selected="selected">--Select Relationship Type--</option>
+            @{
+                if (ViewData["Userrelationship"] != null)
+                {
+                    foreach (var item in (dynamic)(ViewData["Userrelationship"]))
+                    {
+                        <option value="@item.ENTITY_REALTION_ID" id="@item.ENTITY_REALTION_ID">@item.FIELD_NAME</option>
+                    }
+                }
+            }
+        </select>
+    </div>
+</div>
+
+<div class="row col-md-12 mt-1">
+    <div class="col-md-2">
+        <label>Controlling/Reporting Office</label>
+    </div>
+    <div class="col-md-4">
+        <select id="engShiftControllingOffice" data-onchange="engShiftGetPosting();" class="form-control form-select">
+            <option id="0" value="0" selected="selected">--Select Controlling/Reporting Office--</option>
+        </select>
+    </div>
+    <div class="col-md-2">
+        <label>Current Entity</label>
+    </div>
+    <div class="col-md-4">
+        <select id="engShiftCurrentEntity" data-onchange="engShiftGetEngagements();" class="form-control form-select">
+            <option id="0" value="0" selected="selected">--Select Current Entity--</option>
+        </select>
+    </div>
+</div>
+
+<div class="row col-md-12 mt-3">
+    <table id="engagementShiftListPanel" class="table table-bordered table mb-0 mt-3 bg-white table-hover table-striped">
+        <thead>
+            <tr style="background-color:#19875478 !important;">
+                <th>Sr No.</th>
+                <th>Engagement ID</th>
+                <th>Team Name</th>
+                <th>Audit Start Date</th>
+                <th>Audit End Date</th>
+                <th>Operational Start Date</th>
+                <th>Operational End Date</th>
+                <th>Status</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+</div>
+
+<div id="engagementShiftModal" class="modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-xl" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">Shift Engagement Entity</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div id="engagementShiftMessage" class="alert d-none"></div>
+                <div class="row col-md-12">
+                    <div class="col-md-3"><label>Engagement ID</label><div id="engShiftEngId" class="form-control"></div></div>
+                    <div class="col-md-3"><label>Audit Period</label><div id="engShiftAuditPeriod" class="form-control"></div></div>
+                    <div class="col-md-3"><label>Current Entity</label><div id="engShiftOldEntity" class="form-control"></div></div>
+                    <div class="col-md-3"><label>Status</label><div id="engShiftStatus" class="form-control"></div></div>
+                </div>
+                <div class="row col-md-12 mt-3">
+                    <div class="col-md-12"><label>Team Lead / Audit Team</label><div id="engShiftTeam" class="form-control"></div></div>
+                </div>
+                <div class="row col-md-12 mt-3">
+                    <div class="col-md-4">
+                        <label>Destination Entity</label>
+                        <select id="engShiftNewEntity" class="form-control form-select"></select>
+                    </div>
+                    <div class="col-md-8">
+                        <label>Reason / Remarks</label>
+                        <textarea id="engShiftReason" rows="3" class="form-control"></textarea>
+                    </div>
+                </div>
+                <div id="engShiftConfirmText" class="alert alert-warning mt-3 d-none"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button data-onclick="engShiftConfirm();" type="button" class="btn btn-danger">Confirm Shift</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="~/js/csp/Views_AdministrationPanel_engagement_shifting.js?v=1"></script>
