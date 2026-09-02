@@ -696,6 +696,21 @@
                                              P_R_ID          IN NUMBER,
                                              IO_CURSOR       OUT T_CURSOR);
 
+ PROCEDURE P_Get_Memo_Draft_Update_Obs(P_ENG_ID  IN NUMBER,
+                                        P_P_NO    IN NUMBER,
+                                        P_R_ID    IN NUMBER,
+                                        IO_CURSOR OUT SYS_REFCURSOR);
+
+  PROCEDURE P_Update_Memo_Draft_Para_No(P_ENG_ID        IN NUMBER,
+                                        P_OBS_ID        IN NUMBER,
+                                        P_MEMO_NO       IN VARCHAR2,
+                                        P_DRAFT_PARA_NO IN VARCHAR2,
+                                        P_P_NO          IN NUMBER,
+                                        P_R_ID          IN NUMBER,
+                                        P_STATUS  OUT NUMBER,
+                                        P_REMARKS OUT VARCHAR2);
+
+
 end PKG_AR;
 /
 create or replace package body PKG_AR is
@@ -7352,5 +7367,312 @@ create or replace package body PKG_AR is
       ROLLBACK;
       RAISE;
   END P_Finalize_Or_Settle_Observation;
+
+    /* ============================================================
+  2. LOAD OBSERVATIONS FOR MEMO / DRAFT PARA UPDATE
+  ============================================================ */
+
+  PROCEDURE P_Get_Memo_Draft_Update_Obs(P_ENG_ID  IN NUMBER,
+                                        P_P_NO    IN NUMBER,
+                                        P_R_ID    IN NUMBER,
+                                        IO_CURSOR OUT SYS_REFCURSOR) IS
+    V_IS_TEAM_LEAD VARCHAR2(1);
+  BEGIN
+  
+    SELECT NVL(MAX(M.ISTEAMLEAD), 'N')
+      INTO V_IS_TEAM_LEAD
+      FROM T_AU_TEAM_MEMBERS M
+      JOIN T_AU_AUDIT_TEAM_TASKLIST T
+        ON T.TEAM_ID = M.T_ID
+       AND T.TEAMMEMBER_PPNO = M.MEMBER_PPNO
+     WHERE M.MEMBER_PPNO = P_P_NO
+       AND T.ENG_PLAN_ID = P_ENG_ID;
+  
+    IF V_IS_TEAM_LEAD <> 'Y' THEN
+      OPEN IO_CURSOR FOR
+        SELECT CAST(NULL AS NUMBER) AS ENG_ID,
+               CAST(NULL AS NUMBER) AS OBS_ID,
+               CAST(NULL AS NUMBER) AS MEMO_NO,
+               CAST(NULL AS NUMBER) AS DRAFT_PARA_NO,
+               CAST(NULL AS VARCHAR2(500)) AS OBS_TITLE,
+               CAST(NULL AS VARCHAR2(500)) AS ENTITY_NAME,
+               CAST(NULL AS NUMBER) AS STATUS_ID,
+               CAST(NULL AS VARCHAR2(100)) AS STATUS_NAME,
+               CAST(NULL AS NUMBER) AS IS_FINALIZED
+          FROM DUAL
+         WHERE 1 = 0;
+    
+      RETURN;
+    END IF;
+  
+    OPEN IO_CURSOR FOR
+    
+      SELECT O.ENGPLANID ENG_ID,
+             O.ID OBS_ID,
+             O.Memo_Number MEMO_NO,
+             O.DRAFT_PARA_NO,
+             T.HEADINGS OBS_TITLE,
+             
+             E.name ENTITY_NAME,
+             
+             O.Status STATUS_ID,
+             
+             S.STATUSNAME STATUS_NAME,
+             
+             CASE
+               WHEN O.STATUS = C_STATUS_FINAL OR O.FINAL_PARA_NO IS NOT NULL THEN
+                1
+               ELSE
+                0
+             END AS IS_FINALIZED
+      
+        FROM t_au_observation O
+       INNER JOIN t_au_observation_text T
+          ON T.OBSERVATSION_ID = O.ID
+      
+        LEFT JOIN t_auditee_entities E
+          ON E.ENTITY_ID = O.ENTITY_ID
+      
+        LEFT JOIN t_au_observation_status S
+          ON s.statusid = O.STATUS
+      
+       WHERE o.engplanid = P_ENG_ID
+         AND O.DRAFT_PARA_NO IS NOT NULL
+         AND O.STATUS <> C_STATUS_FINAL
+         AND O.FINAL_PARA_NO IS NULL
+       ORDER BY NVL(o.memo_number, 0), NVL(O.DRAFT_PARA_NO, 0), O.ID;
+  
+  EXCEPTION
+    WHEN OTHERS THEN
+      RAISE;
+  END P_Get_Memo_Draft_Update_Obs;
+
+  /* ============================================================
+  3. UPDATE MEMO NUMBER / DRAFT PARA NUMBER
+  ============================================================ */
+
+  PROCEDURE P_Update_Memo_Draft_Para_No(P_ENG_ID        IN NUMBER,
+                                        P_OBS_ID        IN NUMBER,
+                                        P_MEMO_NO       IN VARCHAR2,
+                                        P_DRAFT_PARA_NO IN VARCHAR2,
+                                        P_P_NO          IN NUMBER,
+                                        P_R_ID          IN NUMBER,
+                                        
+                                        P_STATUS  OUT NUMBER,
+                                        P_REMARKS OUT VARCHAR2) IS
+    V_ACCESS_COUNT    NUMBER := 0;
+    V_DUPLICATE_COUNT NUMBER := 0;
+  
+    V_STATUS_ID NUMBER;
+    V_FINAL_PARA_NO NUMBER;
+  
+    V_OLD_MEMO_NO       VARCHAR2(100);
+    V_OLD_DRAFT_PARA_NO VARCHAR2(100);
+  
+    V_IS_FINALIZED NUMBER := 0;
+  
+  BEGIN
+  
+    P_STATUS  := 0;
+    P_REMARKS := NULL;
+  
+    /* --------------------------------------------------------
+    Basic validation
+    -------------------------------------------------------- */
+  
+    IF P_ENG_ID IS NULL OR P_ENG_ID <= 0 THEN
+      P_REMARKS := 'Invalid engagement.';
+      RETURN;
+    END IF;
+  
+    IF P_OBS_ID IS NULL OR P_OBS_ID <= 0 THEN
+      P_REMARKS := 'Invalid observation.';
+      RETURN;
+    END IF;
+  
+    IF TRIM(P_MEMO_NO) IS NULL THEN
+      P_REMARKS := 'Memo Number is required.';
+      RETURN;
+    END IF;
+  
+    IF TRIM(P_DRAFT_PARA_NO) IS NULL THEN
+      P_REMARKS := 'Draft Para Number is required.';
+      RETURN;
+    END IF;
+
+    IF NOT REGEXP_LIKE(TRIM(P_MEMO_NO), '^[0-9]+$') THEN
+      P_REMARKS := 'Memo Number must contain digits only.';
+      RETURN;
+    END IF;
+
+    IF NOT REGEXP_LIKE(TRIM(P_DRAFT_PARA_NO), '^[0-9]+$') THEN
+      P_REMARKS := 'Draft Para Number must contain digits only.';
+      RETURN;
+    END IF;
+  
+    SELECT COUNT(*)
+      INTO V_ACCESS_COUNT
+      FROM T_AU_TEAM_MEMBERS M
+      JOIN T_AU_AUDIT_TEAM_TASKLIST T
+        ON T.TEAM_ID = M.T_ID
+       AND T.TEAMMEMBER_PPNO = M.MEMBER_PPNO
+     WHERE M.MEMBER_PPNO = P_P_NO
+       AND T.ENG_PLAN_ID = P_ENG_ID
+       AND M.ISTEAMLEAD = 'Y';
+  
+    IF V_ACCESS_COUNT = 0 THEN
+      P_REMARKS := 'You are not authorized to update this engagement.';
+      RETURN;
+    END IF;
+  
+    /* --------------------------------------------------------
+    Load observation and lock it while update is processed.
+    This prevents two simultaneous users from changing the
+    same observation.
+    -------------------------------------------------------- */
+  
+    BEGIN
+    
+      SELECT TO_CHAR(O.Memo_Number), TO_CHAR(O.DRAFT_PARA_NO), O.STATUS, O.FINAL_PARA_NO
+      
+        INTO V_OLD_MEMO_NO, V_OLD_DRAFT_PARA_NO, V_STATUS_ID, V_FINAL_PARA_NO
+      
+        FROM t_Au_OBSERVATION O
+      
+       WHERE O.ENGPLANID = P_ENG_ID
+         AND O.ID = P_OBS_ID
+      
+         FOR UPDATE;
+    
+    EXCEPTION
+      WHEN NO_DATA_FOUND THEN
+        P_REMARKS := 'Observation does not belong to the selected engagement.';
+        RETURN;
+    END;
+  
+    /* --------------------------------------------------------
+    Finalization validation
+    
+    -------------------------------------------------------- */
+  
+    IF V_STATUS_ID = C_STATUS_FINAL OR V_FINAL_PARA_NO IS NOT NULL THEN
+      V_IS_FINALIZED := 1;
+    END IF;
+  
+    IF V_IS_FINALIZED = 1 THEN
+      P_REMARKS := 'Memo Number and Draft Para Number cannot be changed after finalization.';
+      RETURN;
+    END IF;
+  
+    /* --------------------------------------------------------
+    Duplicate Draft Para Number validation
+    
+    The same Draft Para Number must not exist against
+    another observation within the same engagement.
+    -------------------------------------------------------- */
+  
+    SELECT COUNT(*)
+      INTO V_DUPLICATE_COUNT
+      FROM t_Au_OBSERVATION O
+     WHERE O.Engplanid = P_ENG_ID
+       AND O.ID <> P_OBS_ID
+       AND TRIM(TO_CHAR(O.DRAFT_PARA_NO)) = TRIM(P_DRAFT_PARA_NO);
+  
+    IF V_DUPLICATE_COUNT > 0 THEN
+      P_REMARKS := 'Draft Para Number already exists in this engagement.';
+      RETURN;
+    END IF;
+  
+    /* --------------------------------------------------------
+       Optional Memo Number duplicate validation
+    
+       Enable this only if Memo Number must also be unique.
+       --------------------------------------------------------
+    
+    SELECT COUNT(*)
+      INTO V_DUPLICATE_COUNT
+      FROM AR_OBSERVATIONS O
+     WHERE O.ENG_ID = P_ENG_ID
+       AND O.OBS_ID <> P_OBS_ID
+       AND TRIM(TO_CHAR(O.MEMO_NO))
+             = TRIM(P_MEMO_NO);
+    
+    IF V_DUPLICATE_COUNT > 0 THEN
+        P_REMARKS :=
+            'Memo Number already exists in this engagement.';
+        RETURN;
+    END IF;
+    
+    */
+  
+    /* --------------------------------------------------------
+    No actual change
+    -------------------------------------------------------- */
+  
+    IF NVL(TRIM(V_OLD_MEMO_NO), '#') = NVL(TRIM(P_MEMO_NO), '#') AND
+       NVL(TRIM(V_OLD_DRAFT_PARA_NO), '#') =
+       NVL(TRIM(P_DRAFT_PARA_NO), '#') THEN
+    
+      P_STATUS  := 1;
+      P_REMARKS := 'No change was required.';
+      RETURN;
+    
+    END IF;
+  
+    /* --------------------------------------------------------
+    Update observation
+    -------------------------------------------------------- */
+  
+    UPDATE t_AU_OBSERVATION o
+       SET o.memo_number = TO_NUMBER(TRIM(P_MEMO_NO)),
+           DRAFT_PARA_NO = TO_NUMBER(TRIM(P_DRAFT_PARA_NO))
+     WHERE o.engplanid = P_ENG_ID
+       AND o.ID = P_OBS_ID;  
+
+    INSERT INTO T_AU_MEMO_DRAFT_PARA_LOG
+      (ID,
+       ENG_ID,
+       OBS_ID,
+       PREVIOUS_MEMO_NO,
+       NEW_MEMO_NO,
+       PREVIOUS_DRAFT_PARA_NO,
+       NEW_DRAFT_PARA_NO,
+       UPDATED_BY_PPNO,
+       UPDATED_BY_ROLE_ID,
+       UPDATED_ON)
+    VALUES
+      (SEQ_AU_MEMO_DRAFT_PARA_LOG.NEXTVAL,
+       P_ENG_ID,
+       P_OBS_ID,
+       TO_NUMBER(V_OLD_MEMO_NO),
+       TO_NUMBER(TRIM(P_MEMO_NO)),
+       TO_NUMBER(V_OLD_DRAFT_PARA_NO),
+       TO_NUMBER(TRIM(P_DRAFT_PARA_NO)),
+       P_P_NO,
+       P_R_ID,
+       SYSDATE);
+  
+    P_STATUS  := 1;
+    P_REMARKS := 'Memo Number and Draft Para Number updated successfully.';
+    COMMIT;
+  
+  EXCEPTION
+  
+    WHEN DUP_VAL_ON_INDEX THEN
+      ROLLBACK;
+    
+      P_STATUS  := 0;
+      P_REMARKS := 'Memo Number or Draft Para Number already exists.';
+    
+    WHEN OTHERS THEN
+      ROLLBACK;
+    
+      P_STATUS  := 0;
+      P_REMARKS := 'Unable to update Memo Number and Draft Para Number: ' ||
+                   SQLERRM;
+    
+  END P_Update_Memo_Draft_Para_No;
+
+
 
 end PKG_AR;

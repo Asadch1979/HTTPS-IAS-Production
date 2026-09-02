@@ -232,6 +232,7 @@
             </div>
         </div>
     </div>
+</div>
 <script type="application/json" id="page-data">
 @Html.Raw(System.Text.Json.JsonSerializer.Serialize(new {
     AnnexList = ViewData["AnnexList"]
@@ -336,15 +337,9 @@
                 </form>
             </div>
             <div class="modal-footer">
-                <button id="addResponsibleButton" data-onclick="ProceedDeleteDuplicatePara();" type="button" class="btn btn-danger">Request Deletion</button>
+                <button id="requestDuplicateParaDeletionButton" data-onclick="ProceedDeleteDuplicatePara();" type="button" class="btn btn-danger">Request Deletion</button>
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
             </div>
         </div>
     </div>
 </div>
-
-<script type="application/json" id="page-data">
-@Html.Raw(System.Text.Json.JsonSerializer.Serialize(new {
-    AnnexList = ViewData["AnnexList"]
-}))
-</script>

@@ -1,0 +1,322 @@
+PARA NUMBER AND STATUS DEEP REVIEW
+==================================
+
+Commit reviewed
+---------------
+fa4225a46234612eab4b880bafa4ae2e9707f507 - Para Number and Status
+
+Review basis: the complete commit diff and repository HEAD (the reviewed commit is HEAD). This is a source review; no database was contacted. No application code was changed.
+
+
+1. FILES AND METHODS REVIEWED
+-----------------------------
+
+Controller and request contracts
+
+- AIS/Controllers/ApiCallsController.cs
+  - update_observation_status(UpdateObservationStatusRequest)
+  - AddObservationToDraft(AddObservationToDraftRequest)
+  - FinalizeOrSettleObservation(FinalizeOrSettleObservationRequest)
+- AIS/Models/UpdateObservationStatusRequest.cs
+  - legacy endpoint fields OBS_ID, NEW_STATUS_ID, DRAFT_PARA_NO, FinalParaNumber, RISK_ID and AUDITOR_COMMENT
+- AIS/Models/ObservationStatusWorkflowModels.cs
+  - AddObservationToDraftRequest
+  - FinalizeOrSettleObservationRequest
+  - ObservationStatusWorkflowResult
+
+DBConnection and Oracle command construction
+
+- AIS/DBConnection.AR.cs
+  - AddObservationToDraft
+  - FinalizeOrSettleObservation
+  - ExecuteObservationStatusProcedure
+  - ExecuteObservationStatusFollowUp
+  - UpdateAuditObservationStatusByHead
+  - unrelated overload UpdateAuditObservationStatus(ManageAuditParasModel), checked to distinguish it from the status workflow
+- AIS/DBConnection.Legacy.cs
+  - UpdateAuditObservationStatus(int, int, string, string)
+  - UpdateFadAuditObservationStatus
+- AIS/DBConnection.FAD.cs
+  - confirmed that UpdateFadAuditObservationStatus was removed from this file and moved to Legacy
+
+Oracle source material
+
+- AIS/Docs/sql/PKG_AR.sql
+- AIS/Docs/Data_Structure/procedures.txt
+- AIS/Docs/Data_Structure/Packages_for_Codex.txt
+  - pkg_ar.P_UpdateAuditObservationStatus
+  - pkg_ar.AUDITOR_RESPONSE
+  - pkg_ar.AUDITOR_REPLY
+  - searched for P_Add_Observation_To_Draft and P_Finalize_Or_Settle_Observation; neither new procedure is checked in
+
+Active status 8/9 Razor/JavaScript surfaces
+
+- AIS/Views/Execution/draft_audit_report.cshtml
+- AIS/Views/Execution/draft_audit_report_branch.cshtml
+- AIS/Views/FAD/Draft_report_Checking.cshtml
+- AIS/Views/FieldAudit/BO_Partials/_DraftReportPartial.cshtml
+- AIS/Views/FieldAudit/BO_Partials/_CheckingDraftReportPartial.cshtml
+- AIS/Views/ManagementAudit/MA_Partials/_DraftAuditReport.cshtml
+- AIS/wwwroot/js/csp/Views_Execution_draft_audit_report.js
+- AIS/wwwroot/js/csp/Views_Execution_draft_audit_report_branch.js
+- AIS/wwwroot/js/fieldaudit-bo-dashboard.js (loads the branch draft-report script in the BO workflow)
+
+Active status 4/5 Razor/JavaScript surfaces
+
+- AIS/Views/Execution/manage_draft_report_paras.cshtml
+- AIS/Views/Execution/manage_draft_report_paras_branch.cshtml
+- AIS/Views/Execution/manage_observations_branches.cshtml
+- AIS/Views/FieldAudit/_ManageObservationBranches.cshtml
+- AIS/Views/FieldAudit/BO_Dashboard.cshtml
+- AIS/wwwroot/js/csp/Views_Execution_manage_draft_report_paras.js
+- AIS/wwwroot/js/csp/Views_Execution_manage_draft_report_paras_branch.js
+- AIS/wwwroot/js/csp/Views_Execution_manage_observations_branches.js
+- AIS/wwwroot/js/fieldAudit/manageObservationBranchesReplica.js
+
+Additional endpoint callers inspected
+
+- AIS/wwwroot/js/csp/Views_Execution_manage_observations.js
+- AIS/wwwroot/js/Archive/Views_Execution_obs_management.js (archived/legacy asset)
+
+
+2. WHICH ACTION AND DB METHOD ARE ACTIVE
+----------------------------------------
+
+There is no longer one action for all four statuses.
+
+- Status 4: POST /ApiCalls/update_observation_status is active. It rejects every status except 4, retains the low-risk (RISK_ID == 3) rule, and calls DBConnection.Legacy.cs UpdateAuditObservationStatus(OBS_ID, 4, null, AUDITOR_COMMENT).
+- Status 5: POST /ApiCalls/AddObservationToDraft is active. It calls DBConnection.AR.cs AddObservationToDraft.
+- Status 8: POST /ApiCalls/FinalizeOrSettleObservation is active. It calls DBConnection.AR.cs FinalizeOrSettleObservation.
+- Status 9: the same FinalizeOrSettleObservation action and DB method are active.
+
+UpdateFadAuditObservationStatus is no longer called by any controller or other C# source. UpdateAuditObservationStatusByHead is also not called in the repository. They are legacy/dead compatibility implementations, not the active status 5/8/9 path.
+
+
+3. CURRENT FLOW BY STATUS
+-------------------------
+
+STATUS 4 - settled by Team Lead
+
+Razor/JavaScript:
+- Status 4 controls appear for low-risk observations in the manage-draft/manage-observation pages.
+- JavaScript posts OBS_ID, NEW_STATUS_ID=4, RISK_ID and AUDITOR_COMMENT to /ApiCalls/update_observation_status. Some shared functions also include DRAFT_PARA_NO, but it is not used for status 4.
+
+Controller/request/DB:
+- UpdateObservationStatusRequest binds the legacy request.
+- update_observation_status rejects non-4 statuses and returns the existing low-risk business response when RISK_ID != 3.
+- It calls the legacy UpdateAuditObservationStatus with para number null.
+- The legacy method calls pkg_ar.P_UpdateAuditObservationStatus with D_PARA_NO as an empty string (Oracle normally treats empty VARCHAR2 as NULL).
+- Only when the main cursor returns REF = "1" does it call pkg_ar.AUDITOR_RESPONSE with status 4.
+
+Assessment: the routing and follow-up choice are unaffected by the new APIs. The endpoint still trusts client-supplied RISK_ID; the database procedure must remain the authoritative transition check.
+
+STATUS 5 - add observation to Draft
+
+Razor/JavaScript:
+- Active callers require the Draft Para Number input and send it as DraftParaNumber, not as a final-number field.
+- They post ObservationId, DraftParaNumber and Remarks to /ApiCalls/AddObservationToDraft.
+
+Controller/request/DB:
+- AddObservationToDraftRequest has the correct dedicated DraftParaNumber property.
+- The controller rejects invalid observation IDs and blank Draft Para Numbers.
+- DBConnection.AR.cs validates again, trims the value, and sends it as P_DRAFT_PARA_NO to pkg_ar.P_Add_Observation_To_Draft.
+- Other parameters are P_OBS_ID, P_REMARKS, P_ENT_ID, P_NO, P_R_ID and IO_CURSOR.
+- Success is explicitly REF == "1". Only then is pkg_ar.AUDITOR_RESPONSE executed with status 5.
+
+Assessment: the application sends the Draft Para Number through the correct dedicated name. The checked-in repository does not contain the Oracle procedure specification/body, so its signature, authorization, status update, data-column mapping and success cursor cannot be independently confirmed.
+
+STATUS 8 - add observation to Final Report
+
+Razor/JavaScript:
+- The draft-report views expose Add to Final Report.
+- Both active scripts read the Final Para Number input, require a positive integer, and post it as FinalParaNumber to /ApiCalls/FinalizeOrSettleObservation.
+
+Controller/request/DB:
+- FinalizeOrSettleObservationRequest uses nullable int FinalParaNumber.
+- The controller allow-lists only 8/9; for 8 it requires FinalParaNumber > 0.
+- The controller enforces roles 6, 7 or 15 and otherwise returns HTTP 403.
+- DBConnection.AR.cs independently repeats status, positive-number and roles 6/7/15 validation.
+- It sends the value as P_FINAL_PARA_NO to pkg_ar.P_Finalize_Or_Settle_Observation.
+- Only REF == "1" triggers pkg_ar.AUDITOR_REPLY with status 8.
+
+Assessment: no active caller sends status 8 Final Para Number through DRAFT_PARA_NO. The application contract is correct. The new Oracle procedure is absent from checked-in database sources, so the actual database mapping to FINAL_PARA_NO is not verifiable here.
+
+STATUS 9 - settle in discussion
+
+Razor/JavaScript:
+- The scripts clear/disable the Final Para Number for status 9 and explicitly submit FinalParaNumber = null.
+
+Controller/request/DB:
+- The controller force-sets finalParaNumber to null even if a crafted request supplies a value.
+- Roles 6, 7 and 15 are enforced in both controller and DB method.
+- DBConnection.AR.cs force-sets it to null again and assigns DBNull.Value to P_FINAL_PARA_NO.
+- Only REF == "1" triggers pkg_ar.AUDITOR_REPLY with status 9.
+
+Assessment: application-side NULL propagation is correct and defensive. Whether the new procedure actually clears FINAL_PARA_NO cannot be confirmed without its deployed/checked-in definition.
+
+
+4. ALL CALLERS OF /ApiCalls/update_observation_status
+-----------------------------------------------------
+
+1. AIS/wwwroot/js/fieldAudit/manageObservationBranchesReplica.js
+   Active shared branch-management asset. Status 5 is diverted to AddObservationToDraft; its else branch calls the legacy endpoint, currently for status 4.
+
+2. AIS/wwwroot/js/csp/Views_Execution_manage_observations_branches.js
+   Active execution branch-management asset. Status 5 is diverted to AddObservationToDraft; status 4 uses the legacy endpoint.
+
+3. AIS/wwwroot/js/csp/Views_Execution_manage_draft_report_paras.js
+   Active. Status 5 uses AddObservationToDraft; status 4 uses the legacy endpoint.
+
+4. AIS/wwwroot/js/csp/Views_Execution_manage_draft_report_paras_branch.js
+   Active. Status 5 uses AddObservationToDraft; status 4 uses the legacy endpoint.
+
+5. AIS/wwwroot/js/csp/Views_Execution_manage_observations.js
+   Legacy-style caller that posts status/risk/comment without a para field. Its UI path is for status 4; the endpoint now rejects anything else.
+
+6. AIS/wwwroot/js/Archive/Views_Execution_obs_management.js
+   Archived asset. It calls the legacy endpoint with status/risk/comment. If accidentally loaded for a non-4 transition, it now receives HTTP 400.
+
+No current status 8/9 script calls /ApiCalls/update_observation_status. Both current draft-report scripts call FinalizeOrSettleObservation and use FinalParaNumber.
+
+
+5. DEFECTS, CONFLICTS AND RISK
+------------------------------
+
+ISSUE 1 - CRITICAL - New Oracle procedures are not present in repository database sources
+
+The C# code calls pkg_ar.P_Add_Observation_To_Draft and pkg_ar.P_Finalize_Or_Settle_Observation, but neither name exists in PKG_AR.sql, procedures.txt or Packages_for_Codex.txt. Therefore source review cannot prove that production has these procedures, that parameter names/types match, that roles and allowed source statuses are checked, that status 5 writes DRAFT_PARA_NO, that status 8 writes FINAL_PARA_NO, that status 9 clears it, or that the cursor returns REF/REMARKS. An absent or mismatched deployed procedure causes runtime Oracle errors; a semantically different procedure causes data corruption.
+
+ISSUE 2 - HIGH - Main update and follow-up are not atomic
+
+ExecuteObservationStatusProcedure and ExecuteObservationStatusFollowUp open separate connections. The main procedure may commit (legacy package procedures commonly commit internally), then the follow-up may fail. The method throws after the status has already changed, and the controller returns an error even though the primary change succeeded. The requirement "follow-up only after main success" is met, but all-or-nothing consistency is not. Confirm whether the new main procedures themselves record the response/reply; if not, use one transaction/connection where Oracle procedure transaction behavior permits it, or explicitly define/reconcile partial-success behavior.
+
+ISSUE 3 - HIGH - Legacy status method conflicts with the new status 9 contract
+
+DBConnection.Legacy.cs UpdateAuditObservationStatus requires a nonblank para number for both status 8 and status 9. Its wrapper UpdateFadAuditObservationStatus deliberately passes null for status 9, so that wrapper can never execute a status 9 update: it returns "Final para number is required...". This directly conflicts with the new rule that status 9 sends Final Para Number as NULL. It is not on the active route today, but it is a dangerous duplicate and can regress behavior if reused.
+
+ISSUE 4 - HIGH - Legacy method still contains a second implementation for statuses 5, 8 and 9
+
+Although marked Obsolete, UpdateAuditObservationStatus still allow-lists and implements all 4/5/8/9 transitions via P_UpdateAuditObservationStatus. The new actions implement 5 and 8/9 through different procedures. Thus there are two executable business implementations with different validation and parameter semantics. Obsolete is a compiler warning, not a runtime barrier. The safest boundary is to make the legacy endpoint/method status-4-only or split a status-4-named method, and prevent new code from reaching legacy 5/8/9 logic.
+
+ISSUE 5 - MEDIUM - UpdateAuditObservationStatusByHead has misleading final/draft mapping
+
+UpdateAuditObservationStatusByHead accepts a parameter named FINAL_PARA_NO and passes it positionally into the legacy method's DRAFT_PARA_NO parameter. No repository caller was found, so it is currently dead, but it is exactly the kind of compatibility method that can send a Final Para Number through DRAFT_PARA_NO and violates the desired unambiguous contract if revived.
+
+ISSUE 6 - MEDIUM - Status 4 authorization/risk input is partly client-derived
+
+The controller checks request.RISK_ID == 3, which a direct caller can forge. The legacy Oracle procedure also has user/team logic, but the application check alone is not an authorization boundary. Confirm the stored procedure validates the observation's persisted risk and caller eligibility. This behavior predates the new split and is not introduced into statuses 5/8/9.
+
+ISSUE 7 - MEDIUM - New status 5 endpoint has no explicit controller role policy
+
+AddObservationToDraft checks only that a valid session exists; unlike 8/9, it does not constrain role IDs in C#. This may be intentional because status 5 historically belonged to Team Lead logic. It must be verified against the intended role matrix and enforced by P_Add_Observation_To_Draft using persisted audit-team membership. The new procedure body is unavailable, so authorization cannot be confirmed.
+
+ISSUE 8 - MEDIUM - API responses are inconsistent across the split
+
+The legacy status-4 endpoint returns HTTP 200 with Status=false for the low-risk rejection and derives success from nonblank response text. The new endpoints return HTTP 400 for a procedure REF other than 1. Some JavaScript success callbacks assume different response shapes/semantics. This is not presently a para-number mix-up, but it complicates caller migration and failure handling.
+
+ISSUE 9 - LOW - Parameter type mismatch should be confirmed
+
+P_FINAL_PARA_NO is created as OracleDbType.Varchar2 even though the request is int?. This may match the unpublished procedure, but if the Oracle formal is NUMBER the application should bind Int32/Decimal. BindByName prevents positional mix-ups but not type/size conversion issues.
+
+ISSUE 10 - LOW - Legacy names remain in status-4 payloads
+
+Several shared JavaScript else branches still send DRAFT_PARA_NO even for status 4. The active controller ignores it and passes null, so no Final Para Number is misrouted. Removing the unused field later would clarify the contract but is not required for correctness.
+
+
+6. CONFIRMATION MATRIX
+----------------------
+
+- Which API action is active: confirmed separately by status in section 2.
+- Which DB method is called: confirmed separately by status in section 2.
+- All callers of /ApiCalls/update_observation_status: listed in section 4.
+- Status 5 uses Draft Para Number: confirmed in Razor/JS/request/C# Oracle parameter construction; Oracle body not available.
+- Status 8 uses Final Para Number: confirmed in Razor/JS/request/C# Oracle parameter construction; Oracle body not available.
+- Status 9 sends Final Para Number as NULL: confirmed through JS, controller and DB command (DBNull.Value); Oracle body not available.
+- Status 4 remains unaffected: confirmed for route, low-risk check, legacy main procedure and AUDITOR_RESPONSE mapping. Existing trust in client RISK_ID remains.
+- Roles 6, 7 and 15 for statuses 8/9: enforced twice, in controller and DBConnection.AR.cs.
+- Unsupported statuses rejected: legacy endpoint accepts only 4; AddObservationToDraft has no status input and semantically represents only 5; FinalizeOrSettleObservation accepts only 8/9. The active public routes therefore reject unsupported status use.
+- AUDITOR_RESPONSE for 4/5: confirmed in application command selection.
+- AUDITOR_REPLY for 8/9: confirmed in application command selection.
+- Follow-up only after main success: confirmed; both new and legacy paths require REF == "1" before the follow-up.
+- No duplicate conflicting implementation: NOT confirmed; the executable legacy 5/8/9 implementation conflicts, especially for status 9.
+- No caller sends Final Para Number through DRAFT_PARA_NO: confirmed for all active callers. The dead UpdateAuditObservationStatusByHead compatibility method still maps a FINAL_PARA_NO-named argument into the legacy DRAFT_PARA_NO parameter and should be removed/contained.
+
+
+7. PROPOSED REFACTORING ASSESSMENT
+----------------------------------
+
+Moving legacy methods into DBConnection.Legacy.cs is a sound organizational step, and the commit has done that mechanically. It is not sufficient as an isolation boundary because partial-class methods remain equally callable and the legacy method still implements statuses 5/8/9.
+
+The safest design is separate typed APIs and DB methods for the two new procedures, as introduced:
+
+- AddObservationToDraft -> P_Add_Observation_To_Draft (status 5 only; DraftParaNumber only)
+- FinalizeOrSettleObservation -> P_Finalize_Or_Settle_Observation (status 8/9 only; FinalParaNumber, forced NULL for 9)
+
+Keep only the actual status-4 compatibility operation in DBConnection.Legacy.cs until all status-4 callers can be intentionally migrated. Remove or make unreachable the legacy 5/8/9 branches, UpdateFadAuditObservationStatus and UpdateAuditObservationStatusByHead. Do not keep two status-update engines behind Obsolete warnings.
+
+Before connection, the two new Oracle procedures must be checked in (package specification and body), reviewed against the exact parameter list, and deployed in an ordered database migration. Their procedures must enforce source-state eligibility and authorization using persisted data, not trust only P_R_ID/P_ENT_ID supplied by the application.
+
+
+8. RECOMMENDED IMPLEMENTATION SEQUENCE
+--------------------------------------
+
+1. Obtain and check in the exact pkg_ar specification/body for P_Add_Observation_To_Draft and P_Finalize_Or_Settle_Observation. Verify parameter names/types, REF/REMARKS cursor contract, commits/rollbacks, status-source rules, duplicate para handling and authorization.
+2. Database-test the procedures directly: status 5 writes only Draft Para Number; status 8 requires/writes Final Para Number; status 9 writes NULL/clears Final Para Number; unsupported statuses and unauthorized users fail without mutation.
+3. Decide transaction ownership for AUDITOR_RESPONSE/AUDITOR_REPLY. Ensure a follow-up failure cannot produce a misleading rollback/error response after a committed main update, or implement explicit reconciliation/idempotency.
+4. Retain the dedicated request models and actions. Align OracleDbType for P_FINAL_PARA_NO with the actual formal type and normalize API error/status responses.
+5. Reduce DBConnection.Legacy.cs to status 4 only (or introduce an explicitly named SettleLowRiskObservation legacy method). Remove the legacy status 5/8/9 branches and the unused wrappers after confirming no external compiled consumer depends on them.
+6. Regression-test every caller listed in section 4 plus every status 8/9 Razor surface. Include direct crafted requests, roles 6/7/15 and disallowed roles, stale status transitions, duplicate Draft/Final Para Numbers and Oracle follow-up failure.
+7. Deploy database package changes before or atomically with the application build. Monitor Oracle errors and partial status/reply records.
+
+
+9. EXACT FILES TO MODIFY BEFORE IMPLEMENTATION IS COMPLETE
+----------------------------------------------------------
+
+Required application files
+
+- AIS/Controllers/ApiCallsController.cs
+  Finalize error semantics/authorization policy and keep the three routes strictly separated.
+- AIS/Models/ObservationStatusWorkflowModels.cs
+  Retain the dedicated contracts; add validation annotations only if that is the project's chosen boundary strategy.
+- AIS/DBConnection.AR.cs
+  Keep the two new canonical DB methods; align Oracle types and transaction/follow-up behavior to the reviewed procedure contracts.
+- AIS/DBConnection.Legacy.cs
+  Restrict to status 4 and remove/disable conflicting 5/8/9 code and dead wrappers.
+- AIS/Models/UpdateObservationStatusRequest.cs
+  Remove FinalParaNumber and eventually DRAFT_PARA_NO from the status-4-only legacy request once all legacy callers are normalized.
+
+Required database source/deployment files
+
+- AIS/Docs/sql/PKG_AR.sql
+  Add the authoritative package specification and bodies for P_Add_Observation_To_Draft and P_Finalize_Or_Settle_Observation (or add a dedicated versioned migration file and update this canonical snapshot).
+- AIS/Docs/Data_Structure/procedures.txt
+- AIS/Docs/Data_Structure/Packages_for_Codex.txt
+  Regenerate/update these database snapshots so review and deployment sources agree. If these files are generated documentation rather than deployment sources, the actual versioned Oracle migration/package file is additionally required.
+
+Callers to retain and regression-test; application modification is not presently required because their payload split is correct
+
+- AIS/wwwroot/js/csp/Views_Execution_draft_audit_report.js
+- AIS/wwwroot/js/csp/Views_Execution_draft_audit_report_branch.js
+- AIS/wwwroot/js/csp/Views_Execution_manage_draft_report_paras.js
+- AIS/wwwroot/js/csp/Views_Execution_manage_draft_report_paras_branch.js
+- AIS/wwwroot/js/csp/Views_Execution_manage_observations_branches.js
+- AIS/wwwroot/js/fieldAudit/manageObservationBranchesReplica.js
+- AIS/wwwroot/js/csp/Views_Execution_manage_observations.js
+- Their Razor views listed in section 1, including BO/FAD/ManagementAudit partials that reuse the scripts.
+
+Optional cleanup file
+
+- AIS/wwwroot/js/Archive/Views_Execution_obs_management.js
+  Leave archived or update/remove only under the repository's archive policy; it is not an active implementation dependency.
+
+DBConnection.FAD.cs does not require further workflow logic. The commit correctly removed the duplicate method from it. It should not receive either new procedure implementation.
+
+
+10. FINAL CONCLUSION
+--------------------
+
+The application-side split is directionally correct and materially safer than one ambiguous endpoint: status 5 has a DraftParaNumber-only API, statuses 8/9 have a FinalParaNumber-only API, status 9 is forced to DBNull.Value, roles 6/7/15 are enforced for 8/9, unsupported active-route statuses are rejected, status 4 stays on its prior procedure, and follow-ups run only after REF == "1".
+
+The new procedures cannot yet be declared safe to connect or deploy. The repository contains calls to them but no reviewable Oracle definitions, and the main/follow-up operations use separate connections without an atomicity contract. In addition, DBConnection.Legacy.cs retains a conflicting executable implementation for statuses 5/8/9; its status 9 wrapper is internally impossible because it supplies NULL to a method that rejects NULL.
+
+Safe connection is conditional on: (1) checking in and reviewing the exact new Oracle procedure definitions, (2) passing direct database/integration tests for Draft/Final/NULL and authorization rules, (3) defining follow-up failure/transaction behavior, and (4) reducing the legacy implementation to status 4 only. Until those conditions are met, deployment risk is HIGH and the database connection should be treated as not yet approved.

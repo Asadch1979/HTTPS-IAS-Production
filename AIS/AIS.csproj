@@ -6,7 +6,7 @@
     <AspNetCoreHostingModel>InProcess</AspNetCoreHostingModel>
     <NoWin32Manifest>true</NoWin32Manifest>
     <Platforms>AnyCPU;x64</Platforms>
-  </PropertyGroup>
+  </PropertyGroup> 
 
   <ItemGroup>
     <None Remove="Views\Planning\special_audit_criteria.cshtml~RF117b2e7.TMP" />

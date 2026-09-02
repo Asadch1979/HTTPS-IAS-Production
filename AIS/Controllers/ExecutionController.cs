@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.Extensions.Logging;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using AIS.Services;
 
 namespace AIS.Controllers
@@ -257,6 +258,38 @@ namespace AIS.Controllers
                     return View();
                 }
             }
+
+        public IActionResult update_memo_draft_para_no(int engId = 0)
+            {
+            ViewData["TopMenu"] = tm.GetTopMenus();
+            ViewData["TopMenuPages"] = tm.GetTopMenusPages();
+            ViewData["HideTopHeader"] = false;
+
+            if (!User.Identity.IsAuthenticated)
+                {
+                return RedirectToAction("Index", "Login");
+                }
+
+            var loggedInUser = sessionHandler.GetUser();
+            if (loggedInUser == null)
+                {
+                return RedirectToAction("Index", "Login");
+                }
+
+            if (!this.UserHasPagePermissionForCurrentAction(sessionHandler))
+                {
+                return RedirectToAction("Index", "PageNotFound");
+                }
+
+            var engagements = dBConnection.GetArDashboardDropdownOptions()
+                .Where(item => string.Equals((item.IsTeamLead ?? string.Empty).Trim(), "Y", System.StringComparison.OrdinalIgnoreCase))
+                .ToList();
+
+            ViewData["Engagements"] = engagements;
+            ViewData["SelectedEngagementId"] = engagements.Any(item => item.EngagementId == engId) ? engId : 0;
+            return View();
+            }
+
         public IActionResult manage_audit_paras_authorized(int engId = 0)
             {
             ViewData["TopMenu"] = tm.GetTopMenus();

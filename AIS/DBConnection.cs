@@ -1356,13 +1356,13 @@ namespace AIS.Controllers
                     menuPage.Id = Convert.ToInt32(rdr["ID"]);
                     menuPage.Menu_Id = Convert.ToInt32(rdr["MENU_ID"]);
                     menuPage.PageId = Convert.ToInt32(rdr["PAGE_ID"]);
-                    menuPage.Page_Name = rdr["PAGE_NAME"].ToString();
+                    menuPage.Page_Name = NormalizeMenuDisplayName(rdr["PAGE_NAME"].ToString());
                     menuPage.Page_Path = rdr["PAGE_PATH"].ToString();
                     menuPage.Page_Order = Convert.ToInt32(rdr["PAGE_ORDER"]);
                     menuPage.Status = rdr["STATUS"].ToString();
-                    menuPage.Sub_Menu = rdr["Sub_Menu"].ToString();
-                    menuPage.Sub_Menu_Id = rdr["Sub_Menu_Id"].ToString();
-                    menuPage.Sub_Menu_Name = rdr["Sub_Menu_Name"].ToString();
+                    menuPage.Sub_Menu = rdr["Sub_Menu"].ToString()?.Trim();
+                    menuPage.Sub_Menu_Id = rdr["Sub_Menu_Id"].ToString()?.Trim();
+                    menuPage.Sub_Menu_Name = NormalizeMenuDisplayName(rdr["Sub_Menu_Name"].ToString());
                     menuPage.Status = rdr["STATUS"].ToString();
                     menuPage.Page_Key= rdr["PAGE_KEY"].ToString();
                     if (rdr["HIDE_MENU"].ToString() != null && rdr["HIDE_MENU"].ToString() != "")
@@ -1370,11 +1370,39 @@ namespace AIS.Controllers
                     modelList.Add(menuPage);
                     }
                 }
+            modelList = modelList
+                .Where(page => page != null && !string.IsNullOrWhiteSpace(page.Page_Path))
+                .GroupBy(page => page.Page_Path.Trim(), StringComparer.OrdinalIgnoreCase)
+                .Select(group => group
+                    .OrderByDescending(page => string.Equals(page.Page_Path, page.Page_Path.Trim(), StringComparison.Ordinal))
+                    .ThenBy(page => page.Id)
+                    .First())
+                .ToList();
+
+            foreach (var page in modelList)
+                {
+                page.Page_Path = page.Page_Path.Trim().TrimStart('/');
+                page.Page_Name = NormalizeMenuDisplayName(page.Page_Name);
+                page.Sub_Menu_Name = NormalizeMenuDisplayName(page.Sub_Menu_Name);
+                }
+
             MoveSettledParaMonitoringReportMenu(modelList);
             //AppendFieldAuditReportMenuPages(modelList);
-            AppendFrptPdfEngagementMenu(modelList, user);
             return modelList;
             }      
+
+        private static string NormalizeMenuDisplayName(string value)
+            {
+            if (string.IsNullOrWhiteSpace(value))
+                {
+                return string.Empty;
+                }
+
+            return value.Trim()
+                .Replace("Reffered Back", "Referred Back", StringComparison.OrdinalIgnoreCase)
+                .Replace("Engagment", "Engagement", StringComparison.OrdinalIgnoreCase)
+                .Replace("Quality_Assurance_checking", "Quality Assurance Checking", StringComparison.OrdinalIgnoreCase);
+            }
 
         private void MoveSettledParaMonitoringReportMenu(List<MenuPagesModel> modelList)
             {
@@ -1406,53 +1434,6 @@ namespace AIS.Controllers
             reportPage.Sub_Menu_Name = string.Empty;
             }
 
-        private void AppendFrptPdfEngagementMenu(List<MenuPagesModel> modelList, SessionUser user)
-            {
-            if (modelList == null || user == null)
-                {
-                return;
-                }
-
-            var allowedRoles = new HashSet<int> { 1, 2, 15, 16 };
-            if (!allowedRoles.Contains(user.UserRoleID))
-                {
-                return;
-                }
-
-            if (modelList.Any(item =>
-                string.Equals(item.Page_Path, "FieldAuditReport/Engagements", StringComparison.OrdinalIgnoreCase)))
-                {
-                return;
-                }
-
-            var menus = GetTopMenus();
-            var targetMenu = menus.FirstOrDefault(menu =>
-                string.Equals(menu.Menu_Name, "Administration", StringComparison.OrdinalIgnoreCase))
-                ?? menus.FirstOrDefault(menu =>
-                    string.Equals(menu.Menu_Name, "Reports", StringComparison.OrdinalIgnoreCase))
-                ?? menus.FirstOrDefault();
-
-            if (targetMenu == null)
-                {
-                return;
-                }
-
-            modelList.Add(new MenuPagesModel
-                {
-                Menu_Id = targetMenu.Menu_Id,
-                Page_Name = "FRPT PDF Engagements",
-                Page_Path = "FieldAuditReport/Engagements",
-                Page_Order = 999,
-                Page_URL = string.Empty,
-                Status = "A",
-                Sub_Menu = string.Empty,
-                Sub_Menu_Id = string.Empty,
-                Sub_Menu_Name = string.Empty,
-                Page_Key = "FRPT_PDF_ENGAGEMENTS",
-                Hide_Menu = 0
-                });
-            }
-          
         public List<ApiPermissionModel> GetApiPermissions(SessionUser user)
             {
             if (user == null)

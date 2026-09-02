@@ -2000,6 +2000,83 @@ namespace AIS.Controllers
             return result;
             }
 
+        public List<MemoDraftParaUpdateRow> GetMemoDraftParaUpdateObservations(int engagementId)
+            {
+            var rows = new List<MemoDraftParaUpdateRow>();
+            if (engagementId <= 0)
+                return rows;
+
+            var user = CreateSessionHandler().GetUser();
+            if (user == null || string.IsNullOrWhiteSpace(user.PPNumber) || user.UserRoleID <= 0)
+                return rows;
+
+            using var con = DatabaseConnection();
+            using var cmd = con.CreateCommand();
+            cmd.CommandText = "pkg_ar.P_Get_Memo_Draft_Update_Obs";
+            cmd.CommandType = CommandType.StoredProcedure;
+            cmd.BindByName = true;
+            GuardAgainstDynamicSql(cmd);
+            cmd.Parameters.Add("P_ENG_ID", OracleDbType.Int32).Value = engagementId;
+            cmd.Parameters.Add("P_P_NO", OracleDbType.Int32).Value = user.PPNumber;
+            cmd.Parameters.Add("P_R_ID", OracleDbType.Int32).Value = user.UserRoleID;
+            cmd.Parameters.Add("IO_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+
+            using var reader = cmd.ExecuteReader();
+            while (reader.Read())
+                {
+                rows.Add(new MemoDraftParaUpdateRow
+                    {
+                    EngagementId = HasColumn(reader, "ENG_ID") && reader["ENG_ID"] != DBNull.Value ? Convert.ToInt32(reader["ENG_ID"]) : engagementId,
+                    ObservationId = reader["OBS_ID"] == DBNull.Value ? 0 : Convert.ToInt32(reader["OBS_ID"]),
+                    MemoNumber = HasColumn(reader, "MEMO_NO") && reader["MEMO_NO"] != DBNull.Value ? Convert.ToInt32(reader["MEMO_NO"]) : 0,
+                    DraftParaNumber = HasColumn(reader, "DRAFT_PARA_NO") && reader["DRAFT_PARA_NO"] != DBNull.Value ? Convert.ToInt32(reader["DRAFT_PARA_NO"]) : 0,
+                    ObservationTitle = HasColumn(reader, "OBS_TITLE") ? reader["OBS_TITLE"]?.ToString() : string.Empty,
+                    EntityName = HasColumn(reader, "ENTITY_NAME") ? reader["ENTITY_NAME"]?.ToString() : string.Empty,
+                    StatusId = HasColumn(reader, "STATUS_ID") && reader["STATUS_ID"] != DBNull.Value ? Convert.ToInt32(reader["STATUS_ID"]) : 0,
+                    StatusName = HasColumn(reader, "STATUS_NAME") ? reader["STATUS_NAME"]?.ToString() : string.Empty,
+                    IsFinalized = HasColumn(reader, "IS_FINALIZED") && reader["IS_FINALIZED"] != DBNull.Value && Convert.ToInt32(reader["IS_FINALIZED"]) == 1
+                    });
+                }
+
+            return rows;
+            }
+
+        public ObservationStatusWorkflowResult UpdateMemoDraftParaNo(int engagementId, int observationId, string memoNumber, string draftParaNumber)
+            {
+            if (engagementId <= 0 || observationId <= 0)
+                return new ObservationStatusWorkflowResult { Remarks = "Engagement and observation are required." };
+            if (string.IsNullOrWhiteSpace(memoNumber) || string.IsNullOrWhiteSpace(draftParaNumber))
+                return new ObservationStatusWorkflowResult { Remarks = "Memo Number and Draft Para Number are required." };
+
+            var user = CreateSessionHandler().GetUser();
+            if (user == null || string.IsNullOrWhiteSpace(user.PPNumber) || user.UserRoleID <= 0)
+                return new ObservationStatusWorkflowResult { Remarks = "User session is not available." };
+
+            using var con = DatabaseConnection();
+            using var cmd = con.CreateCommand();
+            cmd.CommandText = "pkg_ar.P_Update_Memo_Draft_Para_No";
+            cmd.CommandType = CommandType.StoredProcedure;
+            cmd.BindByName = true;
+            GuardAgainstDynamicSql(cmd);
+            cmd.Parameters.Add("P_ENG_ID", OracleDbType.Int32).Value = engagementId;
+            cmd.Parameters.Add("P_OBS_ID", OracleDbType.Int32).Value = observationId;
+            cmd.Parameters.Add("P_MEMO_NO", OracleDbType.Varchar2).Value = memoNumber.Trim();
+            cmd.Parameters.Add("P_DRAFT_PARA_NO", OracleDbType.Varchar2).Value = draftParaNumber.Trim();
+            cmd.Parameters.Add("P_P_NO", OracleDbType.Int32).Value = user.PPNumber;
+            cmd.Parameters.Add("P_R_ID", OracleDbType.Int32).Value = user.UserRoleID;
+            cmd.Parameters.Add("P_STATUS", OracleDbType.Int32).Direction = ParameterDirection.Output;
+            cmd.Parameters.Add("P_REMARKS", OracleDbType.Varchar2, 4000).Direction = ParameterDirection.Output;
+            cmd.ExecuteNonQuery();
+
+            var statusValue = cmd.Parameters["P_STATUS"].Value?.ToString();
+            return new ObservationStatusWorkflowResult
+                {
+                Reference = statusValue,
+                Success = string.Equals(statusValue, "1", StringComparison.OrdinalIgnoreCase),
+                Remarks = CleanDbMessage(cmd.Parameters["P_REMARKS"].Value?.ToString())
+                };
+            }
+
         public ObservationStatusWorkflowResult FinalizeOrSettleObservation(int observationId, int newStatusId, int? finalParaNumber, string remarks)
             {
             if (observationId <= 0 || (newStatusId != 8 && newStatusId != 9))

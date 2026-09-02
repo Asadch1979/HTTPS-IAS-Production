@@ -1573,6 +1573,46 @@ namespace AIS.Controllers
                 : BadRequest(new { Status = false, Message = result.Remarks });
             }
 
+        [HttpGet]
+        [HttpPost]
+        public IActionResult get_memo_draft_para_update_observations(int ENG_ID)
+            {
+            if (ENG_ID <= 0)
+                return BadRequest(new { Status = false, Message = "Engagement is required." });
+
+            var user = sessionHandler.GetUser();
+            if (user == null)
+                return StatusCode(StatusCodes.Status401Unauthorized, new { Status = false, Message = "User session is not available." });
+
+            var engagement = dBConnection.GetArDashboardDropdownOptions(ENG_ID)
+                .FirstOrDefault(item => item.EngagementId == ENG_ID);
+            if (engagement == null)
+                return StatusCode(StatusCodes.Status403Forbidden, new { Status = false, Message = "Selected engagement is not accessible." });
+            if (!string.Equals((engagement.IsTeamLead ?? string.Empty).Trim(), "Y", StringComparison.OrdinalIgnoreCase))
+                return StatusCode(StatusCodes.Status403Forbidden, new { Status = false, Message = "Only the assigned Team Lead can update Memo and Draft Para numbers." });
+
+            return Ok(dBConnection.GetMemoDraftParaUpdateObservations(ENG_ID));
+            }
+
+        [HttpPost]
+        public IActionResult update_memo_draft_para_no(UpdateMemoDraftParaRequest request)
+            {
+            if (!ModelState.IsValid)
+                return BadRequest(new { Status = false, Message = "Memo Number and Draft Para Number are required and must contain digits only." });
+            if (request.EngagementId <= 0 || request.ObservationId <= 0)
+                return BadRequest(new { Status = false, Message = "Engagement and observation are required." });
+
+            var result = dBConnection.UpdateMemoDraftParaNo(
+                request.EngagementId,
+                request.ObservationId,
+                request.MemoNumber,
+                request.DraftParaNumber);
+
+            return result.Success
+                ? Ok(new { Status = true, Message = result.Remarks })
+                : BadRequest(new { Status = false, Message = result.Remarks });
+            }
+
         [HttpPost]
         public string drop_observation(int OBS_ID)
             {
@@ -4296,9 +4336,18 @@ namespace AIS.Controllers
             return archiveDbConnection.GetDuplicateParasForAuthorization();
             }
         [HttpPost]
-        public string request_delete_duplicate_para(int NEW_PARA_ID = 0, int OLD_PARA_ID = 0, string INDICATOR = "", string REMARKS = "")
+        public IActionResult request_delete_duplicate_para(int NEW_PARA_ID = 0, int OLD_PARA_ID = 0, string INDICATOR = "", string REMARKS = "")
             {
-            return "{\"Status\":true,\"Message\":\"" + dBConnection.RequestDeleteDuplicatePara(NEW_PARA_ID, OLD_PARA_ID, INDICATOR, REMARKS) + "\"}";
+            if (string.IsNullOrWhiteSpace(INDICATOR) || (NEW_PARA_ID <= 0 && OLD_PARA_ID <= 0))
+                {
+                return BadRequest(new { Status = false, Message = "Duplicate para details are missing. Please refresh the list and try again." });
+                }
+
+            return Json(new
+                {
+                Status = true,
+                Message = dBConnection.RequestDeleteDuplicatePara(NEW_PARA_ID, OLD_PARA_ID, INDICATOR, REMARKS)
+                });
             }
         [HttpPost]
         public string reject_delete_duplicate_para(int D_ID = 0)

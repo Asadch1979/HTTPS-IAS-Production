@@ -1,0 +1,54 @@
+@using AIS.Models.FieldAuditWorkflow
+@{
+    ViewData["Title"] = "Update Memo / Draft Para No.";
+    Layout = "_Layout";
+    var engagements = ViewData["Engagements"] as List<FieldAuditEngagementOptionModel> ?? new List<FieldAuditEngagementOptionModel>();
+    var selectedEngagementId = ViewData["SelectedEngagementId"] as int? ?? 0;
+}
+
+<div class="row">
+    <div class="col-md-12 mt-3">
+        <h3 style="display:block;color:#be0e43">Update Memo / Draft Para No.</h3>
+    </div>
+    <div class="row col-md-12 mt-3">
+        <div class="col-md-2">
+            <label for="memoDraftEngagementSelect"><b>Engagement:</b></label>
+        </div>
+        <div class="col-md-10">
+            <select id="memoDraftEngagementSelect" class="form-control form-select">
+                <option value="0">--Select Engagement--</option>
+                @foreach (var engagement in engagements)
+                {
+                    var optionText = string.IsNullOrWhiteSpace(engagement.Display) ? engagement.Label : engagement.Display;
+                    if (selectedEngagementId == engagement.EngagementId)
+                    {
+                        <option value="@engagement.EngagementId" selected>@optionText</option>
+                    }
+                    else
+                    {
+                        <option value="@engagement.EngagementId">@optionText</option>
+                    }
+                }
+            </select>
+            <small class="text-muted">Engagements are loaded from the same AR Dashboard source and limited to Team Lead assignments.</small>
+        </div>
+    </div>
+    <div class="row col-md-12 mt-3">
+        <table id="memoDraftUpdatePanel" class="table table-hover table-bordered table-striped">
+            <thead style="background-color:#19875478 !important;">
+                <tr>
+                    <th>Para Title / Observation Title</th>
+                    <th>Current Status</th>
+                    <th>Existing Memo Number</th>
+                    <th>New Memo Number</th>
+                    <th>Existing Draft Para Number</th>
+                    <th>New Draft Para Number</th>
+                    <th class="text-center">Action</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+</div>
+
+<script src="~/js/csp/Views_Execution_update_memo_draft_para_no.js?v=1"></script>

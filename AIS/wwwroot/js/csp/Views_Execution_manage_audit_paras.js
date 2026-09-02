@@ -177,7 +177,8 @@ function getPageData() {
                     success: function (data) {
                         g_allObs = data;
                         $.each(data, function (i, v) {
-                            var row = '<tr index="' + i + '"><td class="text-center">' + (i + 1) + '</td><td class="text-center">' + v.audiT_PERIOD + '</td><td>' + v.parA_NO + '</td><td>' + v.annex + '</td><td>' + v.obS_RISK + '</td><td>' + v.obS_GIST + '</td><td class="text-center"><a data-onclick="event.preventDefault();ObservationViewerPanel(\'' + i + '\')" href="#" class="text-hover">Update Para Details</a></td><td class="text-center"><a data-onclick="event.preventDefault();DeleteDuplicatePara(\'' + v.neW_PARA_ID + '\',\'' + v.olD_PARA_ID + '\', \'' + v.p_TYPE_IND + '\')" href="#" class="text-hover">Delete Duplicate Para</a></td>';
+                            var comId = v.coM_ID || v.COM_ID || v.com_id || 0;
+                            var row = '<tr index="' + i + '"><td class="text-center">' + (i + 1) + '</td><td class="text-center">' + v.audiT_PERIOD + '</td><td>' + v.parA_NO + '</td><td>' + v.annex + '</td><td>' + v.obS_RISK + '</td><td>' + v.obS_GIST + '</td><td class="text-center"><a data-onclick="event.preventDefault();ObservationViewerPanel(\'' + i + '\')" href="#" class="text-hover">Update Para Details</a></td><td class="text-center"><a data-onclick="event.preventDefault();DeleteDuplicatePara(\'' + comId + '\')" href="#" class="text-hover">Delete Duplicate Para</a></td>';
                             if($('#userGroupField').val()==1)
                                 row += '<td><input type="checkbox" class="selectedParasToShift"/></td>';
                             row += '</tr>';
@@ -300,21 +301,43 @@ function getPageData() {
         }
 
 
-        function DeleteDuplicatePara(np_id, op_id, ind) {
-              g_np_id = np_id;
-                g_op_id = op_id;
-                g_ind = ind;
-                $('#DuplicateParaModel').modal('show');
+        function DeleteDuplicatePara(comId) {
+              g_com_id = parseInt(comId, 10) || 0;
+                if (g_com_id <= 0) {
+                    alert("Duplicate para details are missing. Please refresh the list and try again.");
+                    return false;
+                }
 
-
+                $.ajax({
+                    url: g_asiBaseURL + "/ApiCalls/get_observations_details_for_manage_paras",
+                    type: "POST",
+                    data: { 'COM_ID': g_com_id },
+                    cache: false,
+                    success: function (v) {
+                        g_np_id = parseInt(v.neW_PARA_ID || v.NEW_PARA_ID || v.new_para_id, 10) || 0;
+                        g_op_id = parseInt(v.olD_PARA_ID || v.OLD_PARA_ID || v.old_para_id, 10) || 0;
+                        g_ind = $.trim(v.indicator || v.INDICATOR || "");
+                        $('#textarea_justification').val('');
+                        $('#DuplicateParaModel').modal('show');
+                    },
+                    error: function (xhr) {
+                        console.log("get_observations_details_for_manage_paras failed", xhr.responseText);
+                        alert("Unable to load duplicate para details. Please try again.");
+                    },
+                    dataType: "json"
+                });
         }
 
         function ProceedDeleteDuplicatePara() {
+            if (!g_ind || (g_np_id <= 0 && g_op_id <= 0)) {
+                alert("Duplicate para details are missing. Please refresh the list and try again.");
+                return false;
+            }
+
               $.ajax({
                 url: g_asiBaseURL + "/ApiCalls/request_delete_duplicate_para",
                 type: "POST",
                 data: {
-                    'COM_ID': g_com_id,
                     'NEW_PARA_ID': g_np_id,
                     'OLD_PARA_ID': g_op_id,
                     'INDICATOR': g_ind,
