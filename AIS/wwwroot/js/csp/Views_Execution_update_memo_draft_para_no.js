@@ -23,6 +23,10 @@ function normalizeNumber(value) {
     return $.trim((value || '').toString());
 }
 
+function getMemoDraftRequestToken() {
+    return $('#memoDraftCsrfForm input[name="__RequestVerificationToken"]').val() || '';
+}
+
 function loadMemoDraftRows() {
     var engagementId = parseInt($('#memoDraftEngagementSelect').val(), 10) || 0;
     $('#memoDraftUpdatePanel tbody').empty();
@@ -121,6 +125,7 @@ function saveMemoDraftRow(obsId) {
     $.ajax({
         url: g_asiBaseURL + '/ApiCalls/update_memo_draft_para_no',
         type: 'POST',
+        headers: { 'RequestVerificationToken': getMemoDraftRequestToken() },
         data: {
             EngagementId: engagementId,
             ObservationId: obsId,

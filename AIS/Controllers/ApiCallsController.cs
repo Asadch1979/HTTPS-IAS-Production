@@ -1573,7 +1573,6 @@ namespace AIS.Controllers
                 : BadRequest(new { Status = false, Message = result.Remarks });
             }
 
-        [HttpGet]
         [HttpPost]
         public IActionResult get_memo_draft_para_update_observations(int ENG_ID)
             {
@@ -1595,6 +1594,7 @@ namespace AIS.Controllers
             }
 
         [HttpPost]
+        [ValidateAntiForgeryToken]
         public IActionResult update_memo_draft_para_no(UpdateMemoDraftParaRequest request)
             {
             if (!ModelState.IsValid)

@@ -6,6 +6,8 @@
     var selectedEngagementId = ViewData["SelectedEngagementId"] as int? ?? 0;
 }
 
+<form id="memoDraftCsrfForm" class="d-none">@Html.AntiForgeryToken()</form>
+
 <div class="row">
     <div class="col-md-12 mt-3">
         <h3 style="display:block;color:#be0e43">Update Memo / Draft Para No.</h3>
