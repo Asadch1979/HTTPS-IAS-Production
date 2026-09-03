@@ -6,6 +6,7 @@
 }
 
 <div class="container-fluid">
+    @Html.AntiForgeryToken()
     <div class="row mb-3">
         <div class="col-12 d-flex justify-content-between align-items-center">
             <h2>@Model.ErrorReference</h2>
@@ -87,7 +88,12 @@
         if (!confirm('Mark this system error as resolved?')) {
             return;
         }
-        $.post('@Url.Action("ResolveSystemError", "AdministrationPanel")', { errorId: '@Model.ErrorId', remarks: remarks })
+        $.ajax({
+            url: '@Url.Action("ResolveSystemError", "AdministrationPanel")',
+            type: 'POST',
+            headers: { 'RequestVerificationToken': $('input[name="__RequestVerificationToken"]').val() },
+            data: { errorId: '@Model.ErrorId', remarks: remarks }
+        })
             .done(function () {
                 $('#resolveMessage').removeClass('text-danger').addClass('text-success').text('Resolved.');
                 window.location.reload();

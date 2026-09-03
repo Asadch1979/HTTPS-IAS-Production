@@ -4,7 +4,6 @@ using Oracle.ManagedDataAccess.Types;
 using System;
 using System.Collections.Generic;
 using System.Data;
-using System.Linq;
 
 namespace AIS.Controllers
     {
@@ -83,6 +82,20 @@ namespace AIS.Controllers
             cmd.Parameters.Add("P_ERROR_ID", OracleDbType.Int64).Value = errorId;
             cmd.Parameters.Add("P_EMAIL_SENT", OracleDbType.Int32).Value = emailSent ? 1 : 0;
             cmd.ExecuteNonQuery();
+            }
+
+        public bool TryClaimSystemErrorEmail(long errorId)
+            {
+            using var con = DatabaseConnection(requireActiveSession: false);
+            using var cmd = con.CreateCommand();
+            cmd.CommandText = "PKG_LG.CLAIM_SYSTEM_ERROR_EMAIL";
+            cmd.CommandType = CommandType.StoredProcedure;
+            cmd.BindByName = true;
+            cmd.Parameters.Add("P_ERROR_ID", OracleDbType.Int64).Value = errorId;
+            var claimed = cmd.Parameters.Add("O_CLAIMED", OracleDbType.Int32);
+            claimed.Direction = ParameterDirection.Output;
+            cmd.ExecuteNonQuery();
+            return ToInt(claimed.Value) == 1;
             }
 
         public SystemErrorNotificationRecipients GetSystemErrorNotificationRecipients()

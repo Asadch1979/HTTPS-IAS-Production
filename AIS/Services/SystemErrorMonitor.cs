@@ -82,11 +82,48 @@ namespace AIS.Services
 
             if (!record.EmailAlreadySent)
                 {
-                var sent = await SendFirstOccurrenceEmailAsync(db, record, exception, errorContext, errorCode, message);
-                db.MarkSystemErrorEmailStatus(record.ErrorId, sent);
+                await TrySendClaimedNotificationAsync(db, record, exception, errorContext, errorCode, message);
                 }
 
             return record;
+            }
+
+        private async Task TrySendClaimedNotificationAsync(DBConnection db, SystemErrorRecord record, Exception exception, SystemErrorContext errorContext, string errorCode, string message)
+            {
+            var claimed = false;
+            try
+                {
+                claimed = db.TryClaimSystemErrorEmail(record.ErrorId);
+                }
+            catch (Exception claimException)
+                {
+                _logger.LogError(claimException, "System error monitor could not claim notification for {ErrorReference}.", record.ErrorReference);
+                return;
+                }
+
+            if (!claimed)
+                {
+                return;
+                }
+
+            var sent = false;
+            try
+                {
+                sent = await SendFirstOccurrenceEmailAsync(db, record, exception, errorContext, errorCode, message);
+                }
+            catch (Exception emailException)
+                {
+                _logger.LogError(emailException, "System error monitor could not send notification for {ErrorReference}.", record.ErrorReference);
+                }
+
+            try
+                {
+                db.MarkSystemErrorEmailStatus(record.ErrorId, sent);
+                }
+            catch (Exception statusException)
+                {
+                _logger.LogError(statusException, "System error monitor could not update notification status for {ErrorReference}.", record.ErrorReference);
+                }
             }
 
         public Task<SystemErrorRecord> ReportStatusCodeAsync(HttpContext context, int statusCode)

@@ -1,3 +1,4 @@
+using AIS.Models;
 using AIS.Services;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
@@ -23,7 +24,7 @@ namespace AIS.Middleware
             try
                 {
                 await _next(context);
-                if (!context.Response.HasStarted && context.Response.StatusCode >= StatusCodes.Status500InternalServerError)
+                if (context.Response.StatusCode >= StatusCodes.Status500InternalServerError)
                     {
                     var record = await monitor.ReportStatusCodeAsync(context, context.Response.StatusCode);
                     _logger.LogError("HTTP {StatusCode} system error persisted as {Reference}.", context.Response.StatusCode, record.ErrorReference);
@@ -31,8 +32,17 @@ namespace AIS.Middleware
                 }
             catch (Exception ex)
                 {
-                var record = await monitor.ReportAsync(ex, context);
-                _logger.LogError(ex, "Unhandled system error persisted as {Reference}.", record.ErrorReference);
+                SystemErrorRecord record = null;
+                try
+                    {
+                    record = await monitor.ReportAsync(ex, context);
+                    }
+                catch (Exception monitorException)
+                    {
+                    _logger.LogError(monitorException, "System error monitoring failed while preserving original exception.");
+                    }
+
+                _logger.LogError(ex, "Unhandled system error persisted as {Reference}.", record?.ErrorReference ?? "IAS-ERR-UNKNOWN");
 
                 if (context.Response.HasStarted)
                     {
@@ -49,7 +59,7 @@ namespace AIS.Middleware
                         {
                         error = "server_error",
                         message = SystemErrorMonitor.BuildSafeUserMessage(record),
-                        reference = record.ErrorReference
+                        reference = record?.ErrorReference ?? "IAS-ERR-UNKNOWN"
                         });
                     await context.Response.WriteAsync(payload);
                     return;

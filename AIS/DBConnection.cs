@@ -35,17 +35,9 @@ namespace AIS.Controllers
         private static readonly ConcurrentDictionary<string, int> SessionTokenIndex = new ConcurrentDictionary<string, int>();
         private static readonly ConcurrentDictionary<int, string> UserSessionIndex = new ConcurrentDictionary<int, string>();
 
-        [Obsolete]
-        private readonly IHostingEnvironment _env;
+        private readonly IWebHostEnvironment _env;
 
-        [Obsolete]
-        public DBConnection(IHttpContextAccessor httpContextAccessor, IHostingEnvironment env, IConfiguration configuration, SessionHandler sessionHandler, SecurityTokenService tokenService, LoginAttemptTracker loginAttemptTracker)
-              : this(httpContextAccessor, configuration, sessionHandler, tokenService, loginAttemptTracker)
-            {
-            _env = env;
-            }
-
-        public DBConnection(IHttpContextAccessor httpContextAccessor, IConfiguration configuration, SessionHandler sessionHandler, SecurityTokenService tokenService, LoginAttemptTracker loginAttemptTracker, AIS.Services.IClientIpResolver clientIpResolver = null)
+        public DBConnection(IHttpContextAccessor httpContextAccessor, IWebHostEnvironment env, IConfiguration configuration, SessionHandler sessionHandler, SecurityTokenService tokenService, LoginAttemptTracker loginAttemptTracker, AIS.Services.IClientIpResolver clientIpResolver)
             {
             if (httpContextAccessor == null)
                 throw new ArgumentNullException(nameof(httpContextAccessor));
@@ -61,6 +53,7 @@ namespace AIS.Controllers
 
             _session = session;
             _httpCon = httpContextAccessor;
+            _env = env;
             _configuration = configuration;
             _clientIpResolver = clientIpResolver;
             this.sessionHandler = sessionHandler;
@@ -69,10 +62,11 @@ namespace AIS.Controllers
             _cauKey = ResolveCauKey();
             }
 
-        private DBConnection(ISession session, IHttpContextAccessor httpContextAccessor, IConfiguration configuration, SessionHandler sessionHandler, SecurityTokenService tokenService, LoginAttemptTracker loginAttemptTracker, AIS.Services.IClientIpResolver clientIpResolver = null)
+        private DBConnection(ISession session, IHttpContextAccessor httpContextAccessor, IWebHostEnvironment env, IConfiguration configuration, SessionHandler sessionHandler, SecurityTokenService tokenService, LoginAttemptTracker loginAttemptTracker, AIS.Services.IClientIpResolver clientIpResolver)
             {
             _session = session ?? throw new ArgumentNullException(nameof(session));
             _httpCon = httpContextAccessor ?? throw new ArgumentNullException(nameof(httpContextAccessor));
+            _env = env;
             _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
             _clientIpResolver = clientIpResolver;
             this.sessionHandler = sessionHandler ?? throw new ArgumentNullException(nameof(sessionHandler));
@@ -92,7 +86,7 @@ namespace AIS.Controllers
             return cauKey;
             }
 
-        public static DBConnection CreateFromHttpContext(IHttpContextAccessor httpContextAccessor, IConfiguration configuration, SessionHandler sessionHandler, SecurityTokenService tokenService, LoginAttemptTracker loginAttemptTracker = null)
+        public static DBConnection CreateFromHttpContext(IHttpContextAccessor httpContextAccessor, IConfiguration configuration, SessionHandler sessionHandler, SecurityTokenService tokenService, LoginAttemptTracker loginAttemptTracker = null, AIS.Services.IClientIpResolver clientIpResolver = null, IWebHostEnvironment env = null)
             {
             if (httpContextAccessor == null)
                 throw new ArgumentNullException(nameof(httpContextAccessor));
@@ -106,7 +100,10 @@ namespace AIS.Controllers
             var context = httpContextAccessor.HttpContext ?? throw new InvalidOperationException("HTTP context is not available.");
             var session = context.Session ?? throw new InvalidOperationException("Session has not been configured for the current context.");
 
-            return new DBConnection(session, httpContextAccessor, configuration, sessionHandler, tokenService, loginAttemptTracker);
+            clientIpResolver ??= context.RequestServices.GetService(typeof(AIS.Services.IClientIpResolver)) as AIS.Services.IClientIpResolver;
+            env ??= context.RequestServices.GetService(typeof(IWebHostEnvironment)) as IWebHostEnvironment;
+
+            return new DBConnection(session, httpContextAccessor, env, configuration, sessionHandler, tokenService, loginAttemptTracker, clientIpResolver);
             }
 
         protected SessionHandler CreateSessionHandler()
@@ -125,7 +122,7 @@ namespace AIS.Controllers
             if (session == null)
                 throw new InvalidOperationException("Session has not been provided to the database connection.");
 
-            return new DBConnection(session, _httpCon, _configuration, sessionHandler, _tokenService, _loginAttemptTracker, _clientIpResolver);
+            return new DBConnection(session, _httpCon, _env, _configuration, sessionHandler, _tokenService, _loginAttemptTracker, _clientIpResolver);
             }
 
         private static string ReadFirstAvailableString(IDataRecord reader, params string[] preferredColumns)

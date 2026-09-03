@@ -1446,7 +1446,7 @@ namespace AIS.Controllers
             }
 
         [HttpPost]
-        [IgnoreAntiforgeryToken]
+        [ValidateAntiForgeryToken]
         public IActionResult ResolveSystemError(long errorId, string remarks)
             {
             if (!User.Identity.IsAuthenticated)
@@ -1513,13 +1513,39 @@ namespace AIS.Controllers
             filter.Status = string.IsNullOrWhiteSpace(filter.Status) ? "OPEN" : filter.Status.Trim().ToUpperInvariant();
             if (!filter.FromDate.HasValue && !filter.ToDate.HasValue)
                 {
-                filter.FromDate = DateTime.UtcNow.Date;
-                filter.ToDate = filter.FromDate.Value.AddDays(1).AddTicks(-1);
+                var today = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, GetBusinessTimeZone()).Date;
+                ApplyBusinessDateRange(filter, today, today);
                 }
             else
                 {
-                filter.FromDate = filter.FromDate?.Date;
-                filter.ToDate = filter.ToDate?.Date.AddDays(1).AddTicks(-1);
+                ApplyBusinessDateRange(filter, filter.FromDate?.Date, filter.ToDate?.Date);
+                }
+            }
+
+        private static void ApplyBusinessDateRange(SystemErrorFilter filter, DateTime? fromLocalDate, DateTime? toLocalDate)
+            {
+            var businessTimeZone = GetBusinessTimeZone();
+            filter.FromDate = fromLocalDate.HasValue
+                ? TimeZoneInfo.ConvertTimeToUtc(DateTime.SpecifyKind(fromLocalDate.Value.Date, DateTimeKind.Unspecified), businessTimeZone)
+                : null;
+            filter.ToDate = toLocalDate.HasValue
+                ? TimeZoneInfo.ConvertTimeToUtc(DateTime.SpecifyKind(toLocalDate.Value.Date.AddDays(1), DateTimeKind.Unspecified), businessTimeZone).AddTicks(-1)
+                : null;
+            }
+
+        private static TimeZoneInfo GetBusinessTimeZone()
+            {
+            try
+                {
+                return TimeZoneInfo.FindSystemTimeZoneById("Pakistan Standard Time");
+                }
+            catch (TimeZoneNotFoundException)
+                {
+                return TimeZoneInfo.FindSystemTimeZoneById("Asia/Karachi");
+                }
+            catch (InvalidTimeZoneException)
+                {
+                return TimeZoneInfo.FindSystemTimeZoneById("Asia/Karachi");
                 }
             }
 
