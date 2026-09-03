@@ -17,8 +17,6 @@ namespace AIS
         {
         private const string NotificationHeader = "Internal Audit System (IAS)";
         private const string StandardFooter = "This is a system-generated notification from Internal Audit System (IAS). Please do not reply to this email unless required under official process.";
-        private static readonly string[] SystemErrorToRecipients = new[] { "asma.latif@ztbl.com.pk", "arslan.139986@ztbl.com.pk" };
-        private static readonly string[] SystemErrorCcRecipients = new[] { "svp.isad@ztbl.com.pk" };
         private static readonly Regex HtmlTagRegex = new Regex("<.*?>", RegexOptions.Compiled | RegexOptions.Singleline);
         private static readonly Regex WhitespaceRegex = new Regex("\\s+", RegexOptions.Compiled);
 
@@ -234,17 +232,32 @@ namespace AIS
             string errorSubject,
             string errorNature,
             IEnumerable<KeyValuePair<string, string>> details,
-            IServiceProvider serviceProvider = null)
+            IServiceProvider serviceProvider = null,
+            IEnumerable<string> toRecipients = null,
+            IEnumerable<string> ccRecipients = null)
             {
             var nature = ChooseFirstNonEmpty(errorNature, "System error");
-            var subjectDetail = LimitText(ChooseFirstNonEmpty(errorSubject, nature), 140);
-            var subject = $"IAS System Error - {subjectDetail}";
+            var subject = LimitText(ChooseFirstNonEmpty(errorSubject, $"IAS Error Alert - Application - {referenceId}", nature), 180);
+            if (toRecipients == null && serviceProvider != null)
+                {
+                try
+                    {
+                    var configuredRecipients = serviceProvider.GetService<DBConnection>()?.GetSystemErrorNotificationRecipients();
+                    toRecipients = configuredRecipients?.ToRecipients;
+                    ccRecipients ??= configuredRecipients?.CcRecipients;
+                    }
+                catch (Exception ex)
+                    {
+                    LogNotificationStatus(serviceProvider, null, "Warning", nameof(SendSystemErrorAlertAsync), "Unable to load system error recipients.", ex.Message);
+                    }
+                }
+
             return SendHtmlNotificationAsync(
                 configuration,
                 ChooseFirstNonEmpty(triggerName, nameof(SendSystemErrorAlertAsync)),
                 null,
-                SystemErrorToRecipients,
-                SystemErrorCcRecipients,
+                toRecipients ?? Array.Empty<string>(),
+                ccRecipients ?? Array.Empty<string>(),
                 subject,
                 "System Error",
                 $"Nature of error: {nature}",

@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
@@ -16,20 +15,15 @@ namespace AIS.Middleware
         {
         private const string ErrorReferenceHeader = "X-Error-Reference-Id";
         private const string ModelErrorsItemKey = "AjaxModelErrors";
-        private static readonly TimeSpan EmailDedupWindow = TimeSpan.FromMinutes(10);
-        private static readonly ConcurrentDictionary<string, DateTimeOffset> RecentEmailCache = new ConcurrentDictionary<string, DateTimeOffset>();
         private readonly RequestDelegate _next;
         private readonly ILogger<AjaxErrorNotificationMiddleware> _logger;
-        private readonly IConfiguration _configuration;
 
         public AjaxErrorNotificationMiddleware(
             RequestDelegate next,
-            ILogger<AjaxErrorNotificationMiddleware> logger,
-            IConfiguration configuration)
+            ILogger<AjaxErrorNotificationMiddleware> logger)
             {
             _next = next;
             _logger = logger;
-            _configuration = configuration;
             }
 
         public async Task InvokeAsync(HttpContext context)
@@ -85,7 +79,7 @@ namespace AIS.Middleware
                 modelErrors,
                 exceptionSummary);
 
-            await SendEmailIfAllowedAsync(context, errorReferenceId, statusCode, endpointPath, actionName, userLabel, contentType, modelErrors, exceptionSummary);
+            await Task.CompletedTask;
             }
 
         private static bool ShouldHandle(HttpRequest request)
@@ -189,70 +183,5 @@ namespace AIS.Middleware
             return exception.GetBaseException().Message;
             }
 
-        private async Task SendEmailIfAllowedAsync(
-            HttpContext context,
-            string errorReferenceId,
-            int statusCode,
-            string endpoint,
-            string actionName,
-            string userLabel,
-            string contentType,
-            IReadOnlyDictionary<string, string[]> modelErrors,
-            string exceptionSummary)
-            {
-            var dedupKey = $"{statusCode}:{endpoint}:{userLabel}";
-            var now = DateTimeOffset.UtcNow;
-            if (RecentEmailCache.TryGetValue(dedupKey, out var lastSent) && now - lastSent < EmailDedupWindow)
-                {
-                _logger.LogInformation("AJAX error email suppressed for RefId={RefId} (dedup key {Key}).", errorReferenceId, dedupKey);
-                return;
-                }
-
-            RecentEmailCache[dedupKey] = now;
-
-            var validationErrors = new StringBuilder();
-            if (modelErrors != null && modelErrors.Count > 0)
-                {
-                foreach (var entry in modelErrors)
-                    {
-                    var joined = entry.Value != null ? string.Join("; ", entry.Value) : string.Empty;
-                    validationErrors.AppendLine($"{entry.Key}: {joined}");
-                    }
-                }
-
-            try
-                {
-                var errorNature = !string.IsNullOrWhiteSpace(exceptionSummary)
-                    ? exceptionSummary
-                    : $"HTTP {statusCode} returned for AJAX/API request.";
-                var result = await AIS.EmailNotification.SendSystemErrorAlertAsync(
-                    _configuration,
-                    nameof(AjaxErrorNotificationMiddleware),
-                    errorReferenceId,
-                    $"AJAX/API HTTP {statusCode}",
-                    errorNature,
-                    new[]
-                        {
-                        new KeyValuePair<string, string>("Reference", errorReferenceId),
-                        new KeyValuePair<string, string>("Status", statusCode.ToString()),
-                        new KeyValuePair<string, string>("Endpoint", endpoint),
-                        new KeyValuePair<string, string>("Action", actionName),
-                        new KeyValuePair<string, string>("User", userLabel),
-                        new KeyValuePair<string, string>("Time UTC", now.ToString("u")),
-                        new KeyValuePair<string, string>("Content-Type", contentType),
-                        new KeyValuePair<string, string>("Validation Errors", validationErrors.ToString()),
-                        new KeyValuePair<string, string>("Exception", exceptionSummary)
-                        },
-                    context?.RequestServices);
-                if (!result)
-                    {
-                    _logger.LogError("AJAX error notification email failed for RefId={RefId}.", errorReferenceId);
-                    }
-                }
-            catch (Exception ex)
-                {
-                _logger.LogError(ex, "Failed to send AJAX error notification email for RefId={RefId}.", errorReferenceId);
-                }
-            }
         }
     }

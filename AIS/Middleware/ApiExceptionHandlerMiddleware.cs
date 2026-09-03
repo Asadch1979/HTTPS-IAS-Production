@@ -1,5 +1,4 @@
 using System;
-using System.Text.Json;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
@@ -30,35 +29,11 @@ namespace AIS.Middleware
             {
                 if (LoginRedirectHelper.IsApiRequest(context.Request))
                 {
-                    if (context.Response.HasStarted)
-                    {
-                        _logger.LogError(ex, "Failed to write API error because the response has already started.");
-                        throw;
-                    }
-
-                    await WriteApiErrorAsync(context, ex);
-                    return;
+                    _logger.LogDebug(ex, "Passing API exception to global system error middleware.");
                 }
 
                 throw;
             }
-        }
-
-        private async Task WriteApiErrorAsync(HttpContext context, Exception ex)
-        {
-            _logger.LogError(ex, "Unhandled exception for {Path}.", context.Request.Path);
-
-            context.Response.Clear();
-            context.Response.StatusCode = StatusCodes.Status500InternalServerError;
-            context.Response.ContentType = "application/json";
-
-            var payload = JsonSerializer.Serialize(new
-            {
-                error = "server_error",
-                message = "An unexpected error occurred. Please try again later."
-            });
-
-            await context.Response.WriteAsync(payload);
         }
     }
 }

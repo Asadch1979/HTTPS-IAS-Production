@@ -75,6 +75,7 @@ namespace AIS
             services.AddScoped<IDBConnection, DBConnection>();
             services.AddScoped<DBConnection>();
             services.AddScoped<IStandaloneEmailManagementService, StandaloneEmailManagementService>();
+            services.AddScoped<SystemErrorMonitor>();
             services.AddScoped<DBConnectionArchive>();
             services.AddScoped<IStaticAssetVersionTokenProvider, StaticAssetVersionTokenProvider>();
             services.AddScoped<FieldAuditReportPdfBuilder>();
@@ -297,6 +298,7 @@ namespace AIS
                 {
                 app.UseMiddleware<SoftSessionGateMiddleware>();
                 }
+            app.UseMiddleware<SystemErrorNotificationMiddleware>();
             app.UseMiddleware<AjaxErrorNotificationMiddleware>();
             app.UseMiddleware<SessionExceptionHandlingMiddleware>();
             app.UseAuthentication();
