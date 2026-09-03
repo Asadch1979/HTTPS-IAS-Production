@@ -318,7 +318,9 @@ namespace AIS
 
         private static string ResolveClientPartition(HttpContext context, string policyName)
             {
-            var ip = context?.Connection?.RemoteIpAddress?.ToString() ?? "unknown";
+            var ip = context?.RequestServices?.GetService<IClientIpResolver>()?.GetClientIp(context)
+                ?? context?.Connection?.RemoteIpAddress?.ToString()
+                ?? "unknown";
             return $"{policyName}:{ip}";
             }
 
