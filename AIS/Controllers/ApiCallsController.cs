@@ -24,6 +24,7 @@ using Microsoft.Extensions.Logging;
 using Oracle.ManagedDataAccess.Client;
 using Oracle.ManagedDataAccess.Types;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Data;
@@ -31,7 +32,10 @@ using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Net;
+using System.Security.Cryptography;
 using System.Text;
+using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using ServicesCsvSanitizer = AIS.Services.CsvSanitizer;
@@ -53,11 +57,13 @@ namespace AIS.Controllers
         private readonly SecurityTokenService _tokenService;
         private readonly PasswordPolicyValidator _passwordPolicyValidator;
         private readonly IStaticAssetVersionTokenProvider _staticAssetVersionTokenProvider;
+        private static readonly ConcurrentDictionary<string, Queue<DateTime>> PostAuditComplianceSuspiciousFailures = new ConcurrentDictionary<string, Queue<DateTime>>(StringComparer.OrdinalIgnoreCase);
         private static readonly Regex AlphaNumericWithSpacesRegex = new Regex("^[A-Za-z0-9 &]+$", RegexOptions.Compiled);
         private static readonly Regex ExceptionReportTextRegex = new Regex("^[A-Za-z0-9 &,?]+$", RegexOptions.Compiled);
         private static readonly Regex ObservationHeadingRegex = new Regex("^[A-Za-z0-9 &,?]+$", RegexOptions.Compiled);
         private static readonly Regex RichTextTagRegex = new Regex("<.*?>", RegexOptions.Compiled | RegexOptions.Singleline);
         private const string ObservationHeadingValidationMessage = "Observation Heading/Title can contain only alphabets, numbers, space, &, ?, and comma.";
+        private const string PostAuditComplianceEndpoint = "/ApiCalls/submit_post_audit_compliance";
 
         public ApiCallsController(
             ILogger<ApiCallsController> logger,
@@ -2544,10 +2550,248 @@ namespace AIS.Controllers
             return dBConnection.GetOldParasBranchComplianceTextForHeadAZ(PID, REF_P, OBS_ID, PARA_CATEGORY, REPLY_DATE);
             }
 
+        private string BuildPostAuditComplianceSecurityEvent(
+            string eventType,
+            string result,
+            string validationFailureReason,
+            SessionUser user,
+            PostAuditComplianceSecuritySnapshot snapshot,
+            int submittedComId,
+            string submittedOldParaId,
+            int submittedNewParaId,
+            string submittedIndicator,
+            string dbMessage,
+            string traceId)
+            {
+            var request = HttpContext?.Request;
+            var payload = new
+                {
+                EventId = Guid.NewGuid().ToString("N"),
+                CreatedOn = DateTime.UtcNow.ToString("O", CultureInfo.InvariantCulture),
+                TraceId = traceId,
+                Event = eventType,
+                Api = PostAuditComplianceEndpoint,
+                M = request?.Method,
+                Ip = HttpContext?.Connection?.RemoteIpAddress?.ToString(),
+                Ua = LimitForLog(request?.Headers["User-Agent"].ToString(), 120),
+                User = new
+                    {
+                    Id = user?.ID,
+                    PPNO = user?.PPNumber,
+                    Role = user?.UserRoleID,
+                    Ent = user?.UserEntityID,
+                    Ctx = user?.UserContextAssignmentId
+                    },
+                Sub = new
+                    {
+                    Com = submittedComId,
+                    Old = submittedOldParaId,
+                    New = submittedNewParaId,
+                    Ind = submittedIndicator,
+                    R_ID = user?.UserRoleID,
+                    Ent = user?.UserEntityID
+                    },
+                Exp = snapshot == null ? null : new
+                    {
+                    Com = snapshot.COM_ID,
+                    Old = snapshot.OLD_PARA_ID,
+                    New = snapshot.NEW_PARA_ID,
+                    snapshot.IND,
+                    Ent = snapshot.ENTITY_ID,
+                    Stage = snapshot.COM_STAGE,
+                    Status = snapshot.COM_STATUS,
+                    Cycle = snapshot.COM_CYCLE,
+                    Next = snapshot.NEXT_R_ID,
+                    Prev = snapshot.PER_R_ID,
+                    Para = snapshot.PARA_NO
+                    },
+                Result = result,
+                Db = LimitForLog(dbMessage, 120),
+                Reason = LimitForLog(validationFailureReason, 180),
+                Hash = ComputePostAuditComplianceRequestHash(user, submittedComId, submittedOldParaId, submittedNewParaId, submittedIndicator, traceId)
+                };
+
+            return LimitForLog(JsonSerializer.Serialize(payload), 1000);
+            }
+
+        private static string LimitForLog(string value, int maxLength)
+            {
+            if (string.IsNullOrEmpty(value) || value.Length <= maxLength)
+                {
+                return value ?? string.Empty;
+                }
+
+            return value.Substring(0, maxLength);
+            }
+
+        private static string ComputePostAuditComplianceRequestHash(SessionUser user, int submittedComId, string oldParaId, int newParaId, string indicator, string traceId)
+            {
+            var source = string.Join("|",
+                user?.PPNumber ?? string.Empty,
+                user?.UserRoleID.ToString(CultureInfo.InvariantCulture) ?? string.Empty,
+                user?.UserEntityID?.ToString(CultureInfo.InvariantCulture) ?? string.Empty,
+                submittedComId.ToString(CultureInfo.InvariantCulture),
+                oldParaId ?? string.Empty,
+                newParaId.ToString(CultureInfo.InvariantCulture),
+                indicator ?? string.Empty,
+                traceId ?? string.Empty);
+            using var sha = SHA256.Create();
+            return Convert.ToHexString(sha.ComputeHash(Encoding.UTF8.GetBytes(source)));
+            }
+
+        private void LogPostAuditComplianceSecurityEvent(
+            string eventType,
+            string result,
+            string validationFailureReason,
+            SessionUser user,
+            PostAuditComplianceSecuritySnapshot snapshot,
+            int submittedComId,
+            string submittedOldParaId,
+            int submittedNewParaId,
+            string submittedIndicator,
+            string dbMessage,
+            string traceId)
+            {
+            try
+                {
+                var payload = BuildPostAuditComplianceSecurityEvent(eventType, result, validationFailureReason, user, snapshot, submittedComId, submittedOldParaId, submittedNewParaId, submittedIndicator, dbMessage, traceId);
+                var entityId = user?.UserEntityID.GetValueOrDefault() ?? 0;
+                var roleId = user?.UserRoleID ?? 0;
+                var ppNo = int.TryParse(user?.PPNumber, out var parsedPpNo) ? parsedPpNo : 0;
+                dBConnection.AddActivityLog(entityId, roleId, ppNo, 255, payload, "Y");
+                }
+            catch (Exception ex)
+                {
+                _logger.LogWarning(ex, "Failed to write Post Audit Compliance security event {EventType} for trace {TraceId}.", eventType, traceId);
+                }
+            }
+
+        private async Task MaybeSendPostAuditComplianceAlertAsync(
+            string eventType,
+            string validationFailureReason,
+            SessionUser user,
+            PostAuditComplianceSecuritySnapshot snapshot,
+            int submittedComId,
+            string submittedOldParaId,
+            int submittedNewParaId,
+            string traceId)
+            {
+            var highRisk = string.Equals(eventType, "ENTITY_MISMATCH", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(eventType, "PARA_ENTITY_MISMATCH", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(eventType, "PPNO_CONTEXT_MISMATCH", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(eventType, "ROLE_39_ATTEMPT", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(eventType, "REQUEST_PARAMETER_TAMPERING", StringComparison.OrdinalIgnoreCase);
+
+            var thresholdReached = TrackPostAuditComplianceSuspiciousFailure(user?.PPNumber ?? "anonymous");
+            if (!highRisk && !thresholdReached)
+                {
+                return;
+                }
+
+            await EmailNotification.SendSystemErrorAlertAsync(
+                _configuration,
+                "PostAuditComplianceSecurityAlert",
+                traceId,
+                $"Post Audit Compliance {eventType}",
+                validationFailureReason,
+                new[]
+                    {
+                    new KeyValuePair<string, string>("User / PPNO", $"{user?.Name} / {user?.PPNumber}"),
+                    new KeyValuePair<string, string>("Role", user?.UserRoleID.ToString()),
+                    new KeyValuePair<string, string>("Entity", user?.UserEntityID.ToString()),
+                    new KeyValuePair<string, string>("COM_ID / Para", $"{submittedComId} / {snapshot?.PARA_NO}"),
+                    new KeyValuePair<string, string>("Event Type", eventType),
+                    new KeyValuePair<string, string>("Time UTC", DateTime.UtcNow.ToString("O")),
+                    new KeyValuePair<string, string>("IP", HttpContext?.Connection?.RemoteIpAddress?.ToString()),
+                    new KeyValuePair<string, string>("Expected Context", $"Role={snapshot?.COM_STAGE}; Entity={snapshot?.ENTITY_ID}; OldPara={snapshot?.OLD_PARA_ID}; NewPara={snapshot?.NEW_PARA_ID}"),
+                    new KeyValuePair<string, string>("Actual Context", $"Role={user?.UserRoleID}; Entity={user?.UserEntityID}; OldPara={submittedOldParaId}; NewPara={submittedNewParaId}"),
+                    new KeyValuePair<string, string>("Trace ID", traceId),
+                    new KeyValuePair<string, string>("Result", "Blocked"),
+                    new KeyValuePair<string, string>("Reason", validationFailureReason)
+                    },
+                HttpContext?.RequestServices);
+            }
+
+        private static bool TrackPostAuditComplianceSuspiciousFailure(string ppNo)
+            {
+            var now = DateTime.UtcNow;
+            var queue = PostAuditComplianceSuspiciousFailures.GetOrAdd(ppNo, _ => new Queue<DateTime>());
+            lock (queue)
+                {
+                while (queue.Count > 0 && now - queue.Peek() > TimeSpan.FromMinutes(10))
+                    {
+                    queue.Dequeue();
+                    }
+
+                queue.Enqueue(now);
+                return queue.Count >= 3;
+                }
+            }
+
+        private string ValidatePostAuditComplianceSubmission(
+            SessionUser user,
+            PostAuditComplianceSecuritySnapshot snapshot,
+            int submittedComId,
+            string submittedOldParaId,
+            int submittedNewParaId,
+            string submittedIndicator,
+            out string eventType)
+            {
+            eventType = "POST_AUDIT_COMPLIANCE_SUBMISSION";
+            if (user == null)
+                {
+                eventType = "UNAUTHORIZED_API_CALL";
+                return "Authenticated session is missing.";
+                }
+
+            if (submittedComId <= 0 || snapshot == null)
+                {
+                eventType = "INVALID_COM_ID";
+                return "COM_ID does not resolve to an active Post Audit Compliance row.";
+                }
+
+            if (snapshot.NEW_PARA_ID.GetValueOrDefault() != submittedNewParaId)
+                {
+                eventType = "REQUEST_PARAMETER_TAMPERING";
+                return $"Submitted NEW_PARA_ID {submittedNewParaId} does not match COM_ID {submittedComId} NEW_PARA_ID {snapshot.NEW_PARA_ID.GetValueOrDefault()}.";
+                }
+
+            if (snapshot.OLD_PARA_ID.HasValue && !string.IsNullOrWhiteSpace(submittedOldParaId) && snapshot.OLD_PARA_ID.Value.ToString(CultureInfo.InvariantCulture) != submittedOldParaId.Trim())
+                {
+                eventType = "REQUEST_PARAMETER_TAMPERING";
+                return $"Submitted OLD_PARA_ID {submittedOldParaId} does not match COM_ID {submittedComId} OLD_PARA_ID {snapshot.OLD_PARA_ID.Value}.";
+                }
+
+            if (user.UserRoleID != snapshot.COM_STAGE.GetValueOrDefault() && user.UserRoleID != 39)
+                {
+                eventType = "ROLE_STAGE_MISMATCH";
+                return $"Session role {user.UserRoleID} does not match current COM_STAGE {snapshot.COM_STAGE.GetValueOrDefault()}.";
+                }
+
+            return string.Empty;
+            }
+
         [HttpPost]
         public async Task<string> submit_post_audit_compliance(string OLD_PARA_ID, int NEW_PARA_ID, string INDICATOR, string COMPLIANCE, string COMMENTS, List<AuditeeResponseEvidenceModel> EVIDENCE_LIST, string SUBFOLDER)
             {
+            var traceId = HttpContext?.TraceIdentifier ?? Guid.NewGuid().ToString("N");
+            var user = sessionHandler.GetUser();
+            var submittedComId = int.TryParse(SUBFOLDER, out var parsedComId) ? parsedComId : 0;
+            var snapshot = dBConnection.GetPostAuditComplianceSecuritySnapshot(submittedComId);
+            var validationFailure = ValidatePostAuditComplianceSubmission(user, snapshot, submittedComId, OLD_PARA_ID, NEW_PARA_ID, INDICATOR, out var eventType);
+            if (!string.IsNullOrWhiteSpace(validationFailure))
+                {
+                LogPostAuditComplianceSecurityEvent(eventType, "Blocked", validationFailure, user, snapshot, submittedComId, OLD_PARA_ID, NEW_PARA_ID, INDICATOR, string.Empty, traceId);
+                await MaybeSendPostAuditComplianceAlertAsync(eventType, validationFailure, user, snapshot, submittedComId, OLD_PARA_ID, NEW_PARA_ID, traceId);
+                return "{\"Status\":false,\"Message\":\"Your login context is not authorized for this compliance. Please refresh, select the correct role/entity, and try again.\"}";
+                }
+
+            LogPostAuditComplianceSecurityEvent("POST_AUDIT_COMPLIANCE_SUBMISSION", "Allowed", string.Empty, user, snapshot, submittedComId, OLD_PARA_ID, NEW_PARA_ID, INDICATOR, string.Empty, traceId);
             string response = await dBConnection.SubmitPostAuditCompliance(OLD_PARA_ID, NEW_PARA_ID, INDICATOR, COMPLIANCE, COMMENTS, EVIDENCE_LIST, SUBFOLDER);
+            var resultEvent = response?.IndexOf("Submitted", StringComparison.OrdinalIgnoreCase) >= 0
+                ? "POST_AUDIT_COMPLIANCE_SUBMITTED"
+                : "DUPLICATE_SUBMISSION_ATTEMPT";
+            LogPostAuditComplianceSecurityEvent(resultEvent, "Completed", string.Empty, user, snapshot, submittedComId, OLD_PARA_ID, NEW_PARA_ID, INDICATOR, response, traceId);
             return "{\"Status\":true,\"Message\":\"" + response + "\"}";
             }
 

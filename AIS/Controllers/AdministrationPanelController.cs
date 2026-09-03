@@ -1615,6 +1615,28 @@ namespace AIS.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        public IActionResult GetShiftableEngagements(int ENTITY_ID = 0)
+            {
+            if (!User.Identity.IsAuthenticated || !sessionHandler.TryGetUser(out var user) || user == null)
+                {
+                return Unauthorized();
+                }
+
+            if (!HasPageAccess(user, "/AdministrationPanel/setup_engagement_reversal"))
+                {
+                return Forbid();
+                }
+
+            if (ENTITY_ID <= 0)
+                {
+                return Ok(new List<ObservationReversalModel>());
+                }
+
+            return Ok(dBConnection.GetShiftableEngagementDetails(ENTITY_ID));
+            }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
         public IActionResult ShiftEngagementEntity(EngagementEntityShiftRequestModel request)
             {
             if (!User.Identity.IsAuthenticated || !sessionHandler.TryGetUser(out var user) || user == null)

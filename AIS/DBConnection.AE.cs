@@ -1175,6 +1175,75 @@ namespace AIS.Controllers
             return chk;
             }
 
+        public PostAuditComplianceSecuritySnapshot GetPostAuditComplianceSecuritySnapshot(int comId)
+            {
+            if (comId <= 0)
+                {
+                return null;
+                }
+
+            using var con = this.DatabaseConnection();
+            using OracleCommand cmd = con.CreateCommand();
+            cmd.CommandText = "pkg_ae.p_GetPostAuditComplianceSecuritySnapshot";
+            cmd.CommandType = CommandType.StoredProcedure;
+            cmd.BindByName = true;
+            GuardAgainstDynamicSql(cmd);
+            cmd.Parameters.Clear();
+            cmd.Parameters.Add("CM_ID", OracleDbType.Int32).Value = comId;
+            cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+            using OracleDataReader rdr = cmd.ExecuteReader();
+            if (!rdr.Read())
+                {
+                return null;
+                }
+
+            return new PostAuditComplianceSecuritySnapshot
+                {
+                COM_ID = ReadInt(rdr, "COM_ID"),
+                ENTITY_ID = ReadNullableInt(rdr, "ENTITY_ID"),
+                ENTITY_NAME = rdr["NAME"]?.ToString(),
+                AUDIT_PERIOD = rdr["AUDIT_PERIOD"]?.ToString(),
+                PARA_NO = rdr["PARA_NO"]?.ToString(),
+                NEW_PARA_ID = ReadNullableInt(rdr, "NEW_PARAID"),
+                OLD_PARA_ID = ReadNullableInt(rdr, "OLD_PARA_ID"),
+                COM_STAGE = ReadNullableInt(rdr, "COM_STAGE"),
+                COM_STATUS = ReadNullableInt(rdr, "COM_STATUS"),
+                COM_CYCLE = ReadNullableInt(rdr, "COM_CYCLE"),
+                NEXT_R_ID = ReadNullableInt(rdr, "NEXT_R_ID"),
+                PER_R_ID = ReadNullableInt(rdr, "PER_R_ID"),
+                IND = rdr["IND"]?.ToString(),
+                REC_FROM = rdr["REC_FROM"]?.ToString()
+                };
+            }
+
+        public bool HasActiveUserContextAssignment(int ppNo, int entityId, int roleId, int? userContextAssignmentId)
+            {
+            if (ppNo <= 0 || entityId <= 0 || roleId <= 0)
+                {
+                return false;
+                }
+
+            using var con = this.DatabaseConnection();
+            using OracleCommand cmd = con.CreateCommand();
+            cmd.CommandText = "pkg_ae.P_HasActiveUserContextAssignment";
+            cmd.CommandType = CommandType.StoredProcedure;
+            cmd.BindByName = true;
+            GuardAgainstDynamicSql(cmd);
+            cmd.Parameters.Clear();
+            cmd.Parameters.Add("P_NO", OracleDbType.Int32).Value = ppNo;
+            cmd.Parameters.Add("ENT_ID", OracleDbType.Int32).Value = entityId;
+            cmd.Parameters.Add("R_ID", OracleDbType.Int32).Value = roleId;
+            cmd.Parameters.Add("USER_CON_ID", OracleDbType.Int32).Value = userContextAssignmentId.GetValueOrDefault();
+            cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+            using OracleDataReader rdr = cmd.ExecuteReader();
+            if (!rdr.Read())
+                {
+                return false;
+                }
+
+            return Convert.ToInt32(rdr[0]) > 0;
+            }
+
         public async Task<string> SubmitPostAuditCompliance(string OLD_PARA_ID, int NEW_PARA_ID, string INDICATOR, string COMPLIANCE, string COMMENTS, List<AuditeeResponseEvidenceModel> EVIDENCE_LIST, string SUBFOLDER)
             {
 

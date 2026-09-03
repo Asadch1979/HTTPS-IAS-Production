@@ -17,6 +17,8 @@ namespace AIS
         {
         private const string NotificationHeader = "Internal Audit System (IAS)";
         private const string StandardFooter = "This is a system-generated notification from Internal Audit System (IAS). Please do not reply to this email unless required under official process.";
+        private static readonly string[] SystemErrorToRecipients = new[] { "asma.latif@ztbl.com.pk", "arslan.139986@ztbl.com.pk" };
+        private static readonly string[] SystemErrorCcRecipients = new[] { "svp.isad@ztbl.com.pk" };
         private static readonly Regex HtmlTagRegex = new Regex("<.*?>", RegexOptions.Compiled | RegexOptions.Singleline);
         private static readonly Regex WhitespaceRegex = new Regex("\\s+", RegexOptions.Compiled);
 
@@ -223,6 +225,31 @@ namespace AIS
                     ("Issued On", FormatDate(data.FinalizedOn))),
                 serviceProvider,
                 new[] { attachment });
+            }
+
+        public static Task<bool> SendSystemErrorAlertAsync(
+            IConfiguration configuration,
+            string triggerName,
+            string referenceId,
+            string errorSubject,
+            string errorNature,
+            IEnumerable<KeyValuePair<string, string>> details,
+            IServiceProvider serviceProvider = null)
+            {
+            var nature = ChooseFirstNonEmpty(errorNature, "System error");
+            var subjectDetail = LimitText(ChooseFirstNonEmpty(errorSubject, nature), 140);
+            var subject = $"IAS System Error - {subjectDetail}";
+            return SendHtmlNotificationAsync(
+                configuration,
+                ChooseFirstNonEmpty(triggerName, nameof(SendSystemErrorAlertAsync)),
+                null,
+                SystemErrorToRecipients,
+                SystemErrorCcRecipients,
+                subject,
+                "System Error",
+                $"Nature of error: {nature}",
+                details ?? BuildDetails(),
+                serviceProvider);
             }
 
         private static async Task<bool> SendHtmlNotificationAsync(

@@ -242,10 +242,7 @@
     }
 
         .aks-file-upload-image img.png {
-            background: url("background.png");
-            background-size: cover;
-            background-repeat: no-repeat;
-            background-position: center;
+            background: transparent;
         }
 
 .aks-file-upload-preview.aks-no-preview {

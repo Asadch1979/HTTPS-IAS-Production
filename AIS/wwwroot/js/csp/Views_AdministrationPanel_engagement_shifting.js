@@ -59,8 +59,9 @@ function engShiftGetPosting(userEntityId) {
 function engShiftGetEngagements() {
     $('#engagementShiftListPanel tbody').empty();
     $.ajax({
-        url: g_asiBaseURL + "/ApiCalls/get_engagements_details_for_status_reversal",
+        url: g_asiBaseURL + "/AdministrationPanel/GetShiftableEngagements",
         type: "POST",
+        headers: { 'RequestVerificationToken': engShiftToken() },
         data: { 'ENTITY_ID': $('#engShiftCurrentEntity option:selected').val() },
         cache: false,
         success: function (data) {
@@ -82,6 +83,9 @@ function engShiftOpen(encodedItem) {
     $('#engagementShiftMessage').addClass('d-none').text('');
     $('#engShiftConfirmText').addClass('d-none').text('');
     $('#engShiftReason').val('');
+    $('#engShiftDestRelationshipField').val('0');
+    $('#engShiftDestControllingOffice').empty().append('<option id="0" value="0" selected="selected">--Select Destination Controlling/Reporting Office--</option>');
+    $('#engShiftNewEntity').empty().append('<option value="0">--Select Destination Entity--</option>');
     $('#engShiftEngId').text(g_engShiftSelected.enG_ID || '');
     $('#engShiftAuditPeriod').text((g_engShiftSelected.oP_START_DATE || '').split(' ')[0] + ' to ' + (g_engShiftSelected.oP_END_DATE || '').split(' ')[0]);
     $('#engShiftOldEntity').text($('#engShiftCurrentEntity option:selected').text());
@@ -89,12 +93,49 @@ function engShiftOpen(encodedItem) {
     $('#engShiftTeam').text(g_engShiftSelected.teaM_NAME || '');
     engShiftLoadTeam(g_engShiftSelected.auditeD_BY_ID, g_engShiftSelected.teaM_ID);
 
-    $('#engShiftNewEntity').empty().append('<option value="0">--Select Destination Entity--</option>');
-    $('#engShiftCurrentEntity option').each(function () {
-        if ($(this).val() !== '0' && Number($(this).val()) !== Number(g_engShiftSelected.entitY_ID))
-            $('#engShiftNewEntity').append('<option value="' + $(this).val() + '">' + engShiftText($(this).text()) + '</option>');
-    });
     $('#engagementShiftModal').modal('show');
+}
+
+function engShiftGetDestRelation(parentEntityId, userEntityId) {
+    $('#engShiftDestControllingOffice').empty();
+    $('#engShiftNewEntity').empty().append('<option value="0">--Select Destination Entity--</option>');
+    $.ajax({
+        url: g_asiBaseURL + "/ApiCalls/getparentrel",
+        type: "POST",
+        data: { 'ENTITY_REALTION_ID': $('#engShiftDestRelationshipField option:selected').val() },
+        cache: false,
+        success: function (data) {
+            $('#engShiftDestControllingOffice').append('<option id="0" value="0">--Select Destination Controlling/Reporting Office--</option>');
+            $.each(data, function (index, item) {
+                var selected = item.entitY_ID == parentEntityId ? 'selected="selected"' : '';
+                $('#engShiftDestControllingOffice').append('<option ' + selected + ' value="' + item.entitY_ID + '" id="' + item.entitY_REALTION_ID + '">' + engShiftText(item.description) + '</option>');
+            });
+            if (userEntityId)
+                engShiftGetDestPosting(userEntityId);
+        },
+        dataType: "json"
+    });
+}
+
+function engShiftGetDestPosting(userEntityId) {
+    $('#engShiftNewEntity').empty();
+    $.ajax({
+        url: g_asiBaseURL + "/ApiCalls/getpostplace",
+        type: "POST",
+        data: { 'E_R_ID': $('#engShiftDestControllingOffice option:selected').val() },
+        cache: false,
+        success: function (data) {
+            $('#engShiftNewEntity').append('<option id="0" value="0" selected="selected">--Select Destination Entity--</option>');
+            $.each(data, function (index, item) {
+                if (Number(item.entitY_ID) === Number(g_engShiftSelected && g_engShiftSelected.entitY_ID))
+                    return;
+
+                var selected = item.entitY_ID == userEntityId ? 'selected="selected"' : '';
+                $('#engShiftNewEntity').append('<option ' + selected + ' value="' + item.entitY_ID + '" id="' + item.entitY_ID + '">' + engShiftText(item.c_NAME) + '</option>');
+            });
+        },
+        dataType: "json"
+    });
 }
 
 function engShiftLoadTeam(auditedById, teamId) {

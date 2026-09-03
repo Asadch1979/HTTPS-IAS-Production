@@ -1,26 +1,57 @@
-CREATE TABLE T_AU_ENG_ENTITY_SHIFT_HIST
-(
-  ID                         NUMBER PRIMARY KEY,
-  ENG_ID                     NUMBER NOT NULL,
-  OLD_ENTITY_ID              NUMBER NOT NULL,
-  NEW_ENTITY_ID              NUMBER NOT NULL,
-  REASON                     VARCHAR2(1000) NOT NULL,
-  PPNO                       NUMBER NOT NULL,
-  ROLE_ID                    NUMBER NOT NULL,
-  SHIFTED_ON                 DATE DEFAULT SYSDATE NOT NULL,
-  PLAN_ENG_ROWS              NUMBER DEFAULT 0 NOT NULL,
-  OBSERVATION_ROWS           NUMBER DEFAULT 0 NOT NULL,
-  AIS_OBSERVATION_ROWS       NUMBER DEFAULT 0 NOT NULL,
-  OBS_ASSIGNEDTO_ROWS        NUMBER DEFAULT 0 NOT NULL,
-  TEAM_TASKLIST_ROWS         NUMBER DEFAULT 0 NOT NULL,
-  DSA_ROWS                   NUMBER DEFAULT 0 NOT NULL,
-  OBSERVATION_MAN_ROWS       NUMBER DEFAULT 0 NOT NULL,
-  BRANCH_RISK_RATING_ROWS    NUMBER DEFAULT 0 NOT NULL,
-  COSO_RATING_DEPT_ROWS      NUMBER DEFAULT 0 NOT NULL,
-  RISK_BRANCH_WISE_ROWS      NUMBER DEFAULT 0 NOT NULL
-);
+DECLARE
+  V_COUNT NUMBER := 0;
+BEGIN
+  SELECT COUNT(*)
+    INTO V_COUNT
+    FROM USER_TABLES
+   WHERE TABLE_NAME = 'T_AU_ENG_ENTITY_SHIFT_HIST';
 
-CREATE SEQUENCE SEQ_AU_ENG_ENTITY_SHIFT_HIST START WITH 1 INCREMENT BY 1 NOCACHE;
+  IF V_COUNT = 0 THEN
+    EXECUTE IMMEDIATE '
+      CREATE TABLE T_AU_ENG_ENTITY_SHIFT_HIST
+      (
+        ID                   NUMBER PRIMARY KEY,
+        ENG_ID               NUMBER NOT NULL,
+        OLD_ENTITY_ID        NUMBER NOT NULL,
+        NEW_ENTITY_ID        NUMBER NOT NULL,
+        REASON               VARCHAR2(1000) NOT NULL,
+        PPNO                 NUMBER NOT NULL,
+        ROLE_ID              NUMBER NOT NULL,
+        SHIFTED_ON           DATE DEFAULT SYSDATE NOT NULL,
+        PLAN_ENG_ROWS        NUMBER DEFAULT 0 NOT NULL,
+        OBSERVATION_ROWS     NUMBER DEFAULT 0 NOT NULL,
+        AIS_OBSERVATION_ROWS NUMBER DEFAULT 0 NOT NULL,
+        OBS_ASSIGNEDTO_ROWS  NUMBER DEFAULT 0 NOT NULL,
+        TEAM_TASKLIST_ROWS   NUMBER DEFAULT 0 NOT NULL
+      )';
+  END IF;
+
+  FOR C IN (SELECT COLUMN_NAME
+              FROM USER_TAB_COLUMNS
+             WHERE TABLE_NAME = 'T_AU_ENG_ENTITY_SHIFT_HIST'
+               AND COLUMN_NAME IN ('DSA_ROWS',
+                                   'OBSERVATION_MAN_ROWS',
+                                   'BRANCH_RISK_RATING_ROWS',
+                                   'COSO_RATING_DEPT_ROWS',
+                                   'RISK_BRANCH_WISE_ROWS')) LOOP
+    EXECUTE IMMEDIATE 'ALTER TABLE T_AU_ENG_ENTITY_SHIFT_HIST DROP COLUMN ' || C.COLUMN_NAME;
+  END LOOP;
+END;
+/
+
+DECLARE
+  V_COUNT NUMBER := 0;
+BEGIN
+  SELECT COUNT(*)
+    INTO V_COUNT
+    FROM USER_SEQUENCES
+   WHERE SEQUENCE_NAME = 'SEQ_AU_ENG_ENTITY_SHIFT_HIST';
+
+  IF V_COUNT = 0 THEN
+    EXECUTE IMMEDIATE 'CREATE SEQUENCE SEQ_AU_ENG_ENTITY_SHIFT_HIST START WITH 1 INCREMENT BY 1 NOCACHE';
+  END IF;
+END;
+/
 
 create or replace package PKG_AD is
 
@@ -489,6 +520,9 @@ create or replace package PKG_AD is
 
   procedure p_get_audit_engagement(ent_id    in number,
                                    io_cursor OUT t_cursor);
+
+  procedure P_GET_SHIFTABLE_AUDIT_ENGAGEMENT(ENT_ID    IN NUMBER,
+                                             IO_CURSOR OUT T_CURSOR);
 
   procedure p_get_audit_engagement_status(engid     in number,
                                           io_cursor OUT t_cursor);
@@ -4580,6 +4614,37 @@ create or replace package body PKG_AD is
   
   end p_get_audit_engagement;
 
+  procedure P_GET_SHIFTABLE_AUDIT_ENGAGEMENT(ENT_ID    IN NUMBER,
+                                             IO_CURSOR OUT T_CURSOR) is
+  begin
+    open IO_CURSOR for
+      select ep.id                         as plan_id,
+             eng.ENG_ID,
+             nvl(eng.team_name, tm.t_name) as TEAM_NAME,
+             eng.team_id                   as TEAM_ID,
+             eng.AUDIT_STARTDATE,
+             eng.AUDIT_ENDDATE,
+             eng.operation_startdate       as OP_STARTDATE,
+             eng.operation_enddate         as OP_ENDDATE,
+             eng.ENTITY_ID,
+             eng.Auditby_Id,
+             s.id                          as status_id,
+             s.status
+        from T_AU_PLAN_ENG eng
+       inner join T_AU_PERIOD p
+          on eng.period_id = p.auditperiodid
+        left join T_AU_PLAN ep
+          on ep.id = eng.plan_id
+       inner join T_AU_PLAN_ENG_STATUS s
+          on eng.status = s.id
+        left join T_AU_AUDIT_TEAMS tm
+          on eng.eng_id = tm.eng_id
+         and eng.team_id = tm.team_id
+       where eng.entity_id = ENT_ID
+         and not exists
+       (select 1 from T_FRPT_REPORT_META frm where frm.eng_id = eng.eng_id);
+  end P_GET_SHIFTABLE_AUDIT_ENGAGEMENT;
+
   procedure p_get_audit_engagement_status(engid     in number,
                                           io_cursor OUT t_cursor) is
     V_F number := 0;
@@ -4685,7 +4750,6 @@ create or replace package body PKG_AD is
                                       P_REASON        IN VARCHAR2,
                                       IO_CURSOR       OUT T_CURSOR) is
     V_OLD_ENTITY_ID           NUMBER;
-    V_STATUS_ID               NUMBER;
     V_DEST_COUNT              NUMBER := 0;
     V_REPORT_COUNT            NUMBER := 0;
     V_PLAN_ENG_ROWS           NUMBER := 0;
@@ -4693,11 +4757,6 @@ create or replace package body PKG_AD is
     V_AIS_OBSERVATION_ROWS    NUMBER := 0;
     V_OBS_ASSIGNEDTO_ROWS     NUMBER := 0;
     V_TEAM_TASKLIST_ROWS      NUMBER := 0;
-    V_DSA_ROWS                NUMBER := 0;
-    V_OBSERVATION_MAN_ROWS    NUMBER := 0;
-    V_BRANCH_RISK_ROWS        NUMBER := 0;
-    V_COSO_RATING_ROWS        NUMBER := 0;
-    V_RISK_BRANCH_ROWS        NUMBER := 0;
   begin
     if P_ROLE_ID not in (1) then
       open IO_CURSOR for
@@ -4715,8 +4774,8 @@ create or replace package body PKG_AD is
     end if;
 
     begin
-      select ENG.ENTITY_ID, ENG.STATUS
-        into V_OLD_ENTITY_ID, V_STATUS_ID
+      select ENG.ENTITY_ID
+        into V_OLD_ENTITY_ID
         from T_AU_PLAN_ENG ENG
        where ENG.ENG_ID = P_ENG_ID
        for update;
@@ -4748,19 +4807,15 @@ create or replace package body PKG_AD is
       return;
     end if;
 
-    select (select count(*) from T_FRPT_REPORT_META where ENG_ID = P_ENG_ID) +
-           (select count(*) from T_FRPT_KPI_SNAPSHOT where ENG_ID = P_ENG_ID) +
-           (select count(*) from T_FRPT_NPL_SNAPSHOT where ENG_ID = P_ENG_ID) +
-           (select count(*) from T_FRPT_OVERALL_CONCLUSION where ENG_ID = P_ENG_ID) +
-           (select count(*) from T_FRPT_PDF_STATISTICS where ENG_ID = P_ENG_ID) +
-           (select count(*) from T_FRPT_STAFF_SNAPSHOT where ENG_ID = P_ENG_ID)
+    select count(*)
       into V_REPORT_COUNT
-      from dual;
+      from T_FRPT_REPORT_META
+     where ENG_ID = P_ENG_ID;
 
-    if V_STATUS_ID >= 14 or V_REPORT_COUNT > 0 then
+    if V_REPORT_COUNT > 0 then
       open IO_CURSOR for
         select 'FALSE' as status,
-               'Finalized, closed or report-issued engagements cannot be shifted.' as remarks
+               'Final Report has already been issued. Engagement cannot be shifted.' as remarks
           from dual;
       return;
     end if;
@@ -4782,21 +4837,6 @@ create or replace package body PKG_AD is
     update T_AU_AUDIT_TEAM_TASKLIST set ENTITY_ID = P_NEW_ENTITY_ID where ENG_PLAN_ID = P_ENG_ID;
     V_TEAM_TASKLIST_ROWS := sql%rowcount;
 
-    update T_AU_DSA set ENTITY_ID = P_NEW_ENTITY_ID where ENG_ID = P_ENG_ID;
-    V_DSA_ROWS := sql%rowcount;
-
-    update T_AU_OBSERVATION_MAN set ENTITY_ID = P_NEW_ENTITY_ID where ENG_ID = P_ENG_ID;
-    V_OBSERVATION_MAN_ROWS := sql%rowcount;
-
-    update T_BRANCH_RISK_RATING set ENTITY_ID = P_NEW_ENTITY_ID where ENG_ID = P_ENG_ID;
-    V_BRANCH_RISK_ROWS := sql%rowcount;
-
-    update T_COSO_RATING_DEPARTMENT set ENTITY_ID = P_NEW_ENTITY_ID where ENG_ID = P_ENG_ID;
-    V_COSO_RATING_ROWS := sql%rowcount;
-
-    update T_RISK_BRANCH_WISE set ENTITY_ID = P_NEW_ENTITY_ID where ENG_ID = P_ENG_ID;
-    V_RISK_BRANCH_ROWS := sql%rowcount;
-
     if V_PLAN_ENG_ROWS <> 1 then
       raise_application_error(-20041, 'Engagement shift failed: engagement master row was not updated exactly once.');
     end if;
@@ -4804,13 +4844,11 @@ create or replace package body PKG_AD is
     insert into T_AU_ENG_ENTITY_SHIFT_HIST
       (ID, ENG_ID, OLD_ENTITY_ID, NEW_ENTITY_ID, REASON, PPNO, ROLE_ID, SHIFTED_ON,
        PLAN_ENG_ROWS, OBSERVATION_ROWS, AIS_OBSERVATION_ROWS, OBS_ASSIGNEDTO_ROWS,
-       TEAM_TASKLIST_ROWS, DSA_ROWS, OBSERVATION_MAN_ROWS, BRANCH_RISK_RATING_ROWS,
-       COSO_RATING_DEPT_ROWS, RISK_BRANCH_WISE_ROWS)
+       TEAM_TASKLIST_ROWS)
     values
       (SEQ_AU_ENG_ENTITY_SHIFT_HIST.nextval, P_ENG_ID, V_OLD_ENTITY_ID, P_NEW_ENTITY_ID,
        trim(P_REASON), P_PPNO, P_ROLE_ID, sysdate, V_PLAN_ENG_ROWS, V_OBSERVATION_ROWS,
-       V_AIS_OBSERVATION_ROWS, V_OBS_ASSIGNEDTO_ROWS, V_TEAM_TASKLIST_ROWS, V_DSA_ROWS,
-       V_OBSERVATION_MAN_ROWS, V_BRANCH_RISK_ROWS, V_COSO_RATING_ROWS, V_RISK_BRANCH_ROWS);
+       V_AIS_OBSERVATION_ROWS, V_OBS_ASSIGNEDTO_ROWS, V_TEAM_TASKLIST_ROWS);
 
     commit;
 

@@ -3481,6 +3481,41 @@ namespace AIS.Controllers
             return resp;
             }
 
+        public List<ObservationReversalModel> GetShiftableEngagementDetails(int ENTITY_ID = 0)
+            {
+            List<ObservationReversalModel> resp = new List<ObservationReversalModel>();
+            using var con = this.DatabaseConnection();
+            using (OracleCommand cmd = con.CreateCommand())
+                {
+                cmd.CommandText = "pkg_ad.P_GET_SHIFTABLE_AUDIT_ENGAGEMENT";
+                cmd.CommandType = CommandType.StoredProcedure;
+                cmd.BindByName = true;
+                GuardAgainstDynamicSql(cmd);
+                cmd.Parameters.Clear();
+                cmd.Parameters.Add("ENT_ID", OracleDbType.Int32).Value = ENTITY_ID;
+                cmd.Parameters.Add("IO_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+                using OracleDataReader rdr = cmd.ExecuteReader();
+                while (rdr.Read())
+                    {
+                    ObservationReversalModel os = new ObservationReversalModel();
+                    os.PLAN_ID = rdr["plan_id"].ToString();
+                    os.ENG_ID = rdr["ENG_ID"].ToString();
+                    os.TEAM_NAME = rdr["TEAM_NAME"].ToString();
+                    os.TEAM_ID = rdr["TEAM_ID"].ToString();
+                    os.AUDIT_START_DATE = rdr["AUDIT_STARTDATE"].ToString();
+                    os.AUDIT_END_DATE = rdr["AUDIT_ENDDATE"].ToString();
+                    os.OP_START_DATE = rdr["OP_STARTDATE"].ToString();
+                    os.OP_END_DATE = rdr["OP_ENDDATE"].ToString();
+                    os.ENTITY_ID = rdr["ENTITY_ID"].ToString();
+                    os.AUDITED_BY_ID = rdr["Auditby_Id"].ToString();
+                    os.STATUS_ID = rdr["STATUS_ID"].ToString();
+                    os.STATUS = rdr["STATUS"].ToString();
+                    resp.Add(os);
+                    }
+                }
+            return resp;
+            }
+
         public List<EngagementObservationsForStatusReversalModel> GetObservationDetailsForStatusReversal(int ENG_ID = 0)
             {
             List<EngagementObservationsForStatusReversalModel> resp = new List<EngagementObservationsForStatusReversalModel>();

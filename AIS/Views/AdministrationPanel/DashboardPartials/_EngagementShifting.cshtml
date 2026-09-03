@@ -90,10 +90,33 @@
                 </div>
                 <div class="row col-md-12 mt-3">
                     <div class="col-md-4">
+                        <label>Destination Relationship Type</label>
+                        <select id="engShiftDestRelationshipField" data-onchange="engShiftGetDestRelation();" class="form-control form-select">
+                            <option id="0" value="0" selected="selected">--Select Destination Relationship Type--</option>
+                            @{
+                                if (ViewData["Userrelationship"] != null)
+                                {
+                                    foreach (var item in (dynamic)(ViewData["Userrelationship"]))
+                                    {
+                                        <option value="@item.ENTITY_REALTION_ID" id="@item.ENTITY_REALTION_ID">@item.FIELD_NAME</option>
+                                    }
+                                }
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label>Destination Controlling / Reporting Office</label>
+                        <select id="engShiftDestControllingOffice" data-onchange="engShiftGetDestPosting();" class="form-control form-select">
+                            <option id="0" value="0" selected="selected">--Select Destination Controlling/Reporting Office--</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
                         <label>Destination Entity</label>
                         <select id="engShiftNewEntity" class="form-control form-select"></select>
                     </div>
-                    <div class="col-md-8">
+                </div>
+                <div class="row col-md-12 mt-3">
+                    <div class="col-md-12">
                         <label>Reason / Remarks</label>
                         <textarea id="engShiftReason" rows="3" class="form-control"></textarea>
                     </div>

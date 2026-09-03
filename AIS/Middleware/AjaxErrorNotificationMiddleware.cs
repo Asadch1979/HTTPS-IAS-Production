@@ -210,46 +210,43 @@ namespace AIS.Middleware
 
             RecentEmailCache[dedupKey] = now;
 
-            var bodyBuilder = new StringBuilder();
-            bodyBuilder.AppendLine("AJAX error detected.");
-            bodyBuilder.AppendLine($"Reference: {errorReferenceId}");
-            bodyBuilder.AppendLine($"Status: {statusCode}");
-            bodyBuilder.AppendLine($"Endpoint: {endpoint}");
-            bodyBuilder.AppendLine($"Action: {actionName}");
-            bodyBuilder.AppendLine($"User: {userLabel}");
-            bodyBuilder.AppendLine($"Time (UTC): {now:u}");
-            bodyBuilder.AppendLine($"Content-Type: {contentType}");
-
+            var validationErrors = new StringBuilder();
             if (modelErrors != null && modelErrors.Count > 0)
                 {
-                bodyBuilder.AppendLine("Validation errors:");
                 foreach (var entry in modelErrors)
                     {
                     var joined = entry.Value != null ? string.Join("; ", entry.Value) : string.Empty;
-                    bodyBuilder.AppendLine($"- {entry.Key}: {joined}");
+                    validationErrors.AppendLine($"{entry.Key}: {joined}");
                     }
-                }
-
-            if (!string.IsNullOrWhiteSpace(exceptionSummary))
-                {
-                bodyBuilder.AppendLine($"Exception: {exceptionSummary}");
                 }
 
             try
                 {
-                var email = new EmailConfiguration(_configuration, context?.RequestServices);
-                var result = email.Send(new AIS.Models.Notifications.EmailMessageRequest
+                var errorNature = !string.IsNullOrWhiteSpace(exceptionSummary)
+                    ? exceptionSummary
+                    : $"HTTP {statusCode} returned for AJAX/API request.";
+                var result = await AIS.EmailNotification.SendSystemErrorAlertAsync(
+                    _configuration,
+                    nameof(AjaxErrorNotificationMiddleware),
+                    errorReferenceId,
+                    $"AJAX/API HTTP {statusCode}",
+                    errorNature,
+                    new[]
+                        {
+                        new KeyValuePair<string, string>("Reference", errorReferenceId),
+                        new KeyValuePair<string, string>("Status", statusCode.ToString()),
+                        new KeyValuePair<string, string>("Endpoint", endpoint),
+                        new KeyValuePair<string, string>("Action", actionName),
+                        new KeyValuePair<string, string>("User", userLabel),
+                        new KeyValuePair<string, string>("Time UTC", now.ToString("u")),
+                        new KeyValuePair<string, string>("Content-Type", contentType),
+                        new KeyValuePair<string, string>("Validation Errors", validationErrors.ToString()),
+                        new KeyValuePair<string, string>("Exception", exceptionSummary)
+                        },
+                    context?.RequestServices);
+                if (!result)
                     {
-                    Module = "Application",
-                    TriggerPoint = nameof(AjaxErrorNotificationMiddleware),
-                    ReferenceId = errorReferenceId,
-                    ToRecipients = new[] { _configuration["AjaxErrorNotification:To"] },
-                    Subject = $"IAS AJAX Error {statusCode} ({errorReferenceId})",
-                    Body = bodyBuilder.ToString()
-                    });
-                if (!result.IsSuccess)
-                    {
-                    _logger.LogError("AJAX error notification email failed for RefId={RefId}. Status={Status}; Error={Error}", errorReferenceId, result.Status, result.ErrorMessage);
+                    _logger.LogError("AJAX error notification email failed for RefId={RefId}.", errorReferenceId);
                     }
                 }
             catch (Exception ex)
