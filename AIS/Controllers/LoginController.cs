@@ -104,6 +104,7 @@ namespace AIS.Controllers
         public async Task<IActionResult> DoLogin([FromForm, Bind(Prefix = "login")] LoginPostModel login)
         {
             var loginModel = BuildLoginModel(login);
+            LogClientIpTrace("DoLogin");
             _logger.LogDebug("DoLogin received for PPNumber {PPNumber}.", login?.PPNumber);
             _logger.LogDebug("Encrypted password length for PPNumber {PPNumber}: {PasswordLength}.", login?.PPNumber, login?.Password?.Length ?? 0);
 
@@ -363,6 +364,7 @@ namespace AIS.Controllers
         public async Task<IActionResult> ResetPassword([FromForm] ResetPasswordPostModel model)
         {
             var maskedIdentifier = MaskIdentifier(model?.PPNumber);
+            LogClientIpTrace("ResetPassword");
             _logger.LogInformation("Password reset request received for PP {MaskedIdentifier} from {RemoteIp}.", maskedIdentifier, GetRemoteIpAddress());
 
             var genericResponse = BuildResetPasswordResponse();
@@ -598,6 +600,23 @@ namespace AIS.Controllers
         {
             return _clientIpResolver?.GetClientIp(HttpContext) ?? HttpContext?.Connection?.RemoteIpAddress?.ToString() ?? "unknown";
         }
+
+        private void LogClientIpTrace(string operation)
+            {
+            var request = HttpContext?.Request;
+            var connection = HttpContext?.Connection;
+            _logger.LogInformation(
+                "IAS client IP trace for {Operation}: RemoteIpAddress={RemoteIpAddress}; LocalIpAddress={LocalIpAddress}; XForwardedFor={XForwardedFor}; XRealIP={XRealIP}; Forwarded={Forwarded}; Host={Host}; Scheme={Scheme}; ResolvedClientIp={ResolvedClientIp}.",
+                operation,
+                connection?.RemoteIpAddress?.ToString() ?? string.Empty,
+                connection?.LocalIpAddress?.ToString() ?? string.Empty,
+                request?.Headers["X-Forwarded-For"].ToString() ?? string.Empty,
+                request?.Headers["X-Real-IP"].ToString() ?? string.Empty,
+                request?.Headers["Forwarded"].ToString() ?? string.Empty,
+                request?.Host.ToString() ?? string.Empty,
+                request?.Scheme ?? string.Empty,
+                GetRemoteIpAddress());
+            }
 
         private object BuildLoginResponse(UserModel user, bool forcePwdChange = false, string redirectUrl = null, bool? requiresContextSelection = null)
         {
