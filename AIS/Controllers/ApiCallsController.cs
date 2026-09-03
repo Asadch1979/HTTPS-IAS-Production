@@ -20,6 +20,7 @@ using Microsoft.AspNetCore.Mvc.Controllers;
 using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Oracle.ManagedDataAccess.Client;
 using Oracle.ManagedDataAccess.Types;
@@ -2572,7 +2573,7 @@ namespace AIS.Controllers
                 Event = eventType,
                 Api = PostAuditComplianceEndpoint,
                 M = request?.Method,
-                Ip = HttpContext?.Connection?.RemoteIpAddress?.ToString(),
+                Ip = HttpContext?.RequestServices?.GetService<IClientIpResolver>()?.GetClientIp(HttpContext) ?? HttpContext?.Connection?.RemoteIpAddress?.ToString(),
                 Ua = LimitForLog(request?.Headers["User-Agent"].ToString(), 120),
                 User = new
                     {
@@ -2702,7 +2703,7 @@ namespace AIS.Controllers
                     new KeyValuePair<string, string>("COM_ID / Para", $"{submittedComId} / {snapshot?.PARA_NO}"),
                     new KeyValuePair<string, string>("Event Type", eventType),
                     new KeyValuePair<string, string>("Time UTC", DateTime.UtcNow.ToString("O")),
-                    new KeyValuePair<string, string>("IP", HttpContext?.Connection?.RemoteIpAddress?.ToString()),
+                    new KeyValuePair<string, string>("IP", HttpContext?.RequestServices?.GetService<IClientIpResolver>()?.GetClientIp(HttpContext) ?? HttpContext?.Connection?.RemoteIpAddress?.ToString()),
                     new KeyValuePair<string, string>("Expected Context", $"Role={snapshot?.COM_STAGE}; Entity={snapshot?.ENTITY_ID}; OldPara={snapshot?.OLD_PARA_ID}; NewPara={snapshot?.NEW_PARA_ID}"),
                     new KeyValuePair<string, string>("Actual Context", $"Role={user?.UserRoleID}; Entity={user?.UserEntityID}; OldPara={submittedOldParaId}; NewPara={submittedNewParaId}"),
                     new KeyValuePair<string, string>("Trace ID", traceId),

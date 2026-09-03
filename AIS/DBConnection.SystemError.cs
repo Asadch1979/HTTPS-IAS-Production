@@ -4,6 +4,7 @@ using Oracle.ManagedDataAccess.Types;
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Linq;
 
 namespace AIS.Controllers
     {
@@ -114,6 +115,183 @@ namespace AIS.Controllers
                 }
 
             return recipients;
+            }
+
+        public List<SystemErrorSummaryModel> GetSystemErrors(SystemErrorFilter filter)
+            {
+            filter ??= new SystemErrorFilter();
+            var result = new List<SystemErrorSummaryModel>();
+            using var con = DatabaseConnection(requireActiveSession: false);
+            using var cmd = con.CreateCommand();
+            cmd.CommandText = "PKG_LG.GET_SYSTEM_ERRORS";
+            cmd.CommandType = CommandType.StoredProcedure;
+            cmd.BindByName = true;
+            AddSystemErrorFilterParameters(cmd, filter);
+            cmd.Parameters.Add("O_CUR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+            using var reader = cmd.ExecuteReader();
+            while (reader.Read())
+                {
+                result.Add(MapSystemErrorSummary(reader));
+                }
+
+            return result;
+            }
+
+        public SystemErrorDetailModel GetSystemErrorDetail(long errorId)
+            {
+            using var con = DatabaseConnection(requireActiveSession: false);
+            using var cmd = con.CreateCommand();
+            cmd.CommandText = "PKG_LG.GET_SYSTEM_ERROR_DETAIL";
+            cmd.CommandType = CommandType.StoredProcedure;
+            cmd.BindByName = true;
+            cmd.Parameters.Add("P_ERROR_ID", OracleDbType.Int64).Value = errorId;
+            cmd.Parameters.Add("O_MASTER", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+            cmd.Parameters.Add("O_HISTORY", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+            cmd.Parameters.Add("O_STATUS_HISTORY", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+            using var reader = cmd.ExecuteReader();
+            var detail = new SystemErrorDetailModel();
+            if (reader.Read())
+                {
+                var summary = MapSystemErrorSummary(reader);
+                detail.ErrorId = summary.ErrorId;
+                detail.ErrorReference = summary.ErrorReference;
+                detail.ResolutionStatus = summary.ResolutionStatus;
+                detail.FirstOccurrenceUtc = summary.FirstOccurrenceUtc;
+                detail.LastOccurrenceUtc = summary.LastOccurrenceUtc;
+                detail.OccurrenceCount = summary.OccurrenceCount;
+                detail.Module = summary.Module;
+                detail.Controller = summary.Controller;
+                detail.Action = summary.Action;
+                detail.ApiPath = summary.ApiPath;
+                detail.Ppno = summary.Ppno;
+                detail.Role = summary.Role;
+                detail.Entity = summary.Entity;
+                detail.ErrorType = summary.ErrorType;
+                detail.ErrorCode = summary.ErrorCode;
+                detail.StoredProcedure = summary.StoredProcedure;
+                detail.ClientIp = summary.ClientIp;
+                detail.ResolvedBy = summary.ResolvedBy;
+                detail.ResolvedOnUtc = summary.ResolvedOnUtc;
+                detail.ResolutionRemarks = summary.ResolutionRemarks;
+                detail.ErrorMessage = GetString(reader, "ERROR_MESSAGE");
+                detail.TechnicalDetails = GetString(reader, "TECHNICAL_DETAILS");
+                detail.EmailSent = string.Equals(GetString(reader, "EMAIL_SENT"), "Y", StringComparison.OrdinalIgnoreCase);
+                detail.EmailSentUtc = GetNullableDateTime(reader, "EMAIL_SENT_UTC");
+                }
+
+            if (reader.NextResult())
+                {
+                while (reader.Read())
+                    {
+                    detail.History.Add(new SystemErrorHistoryModel
+                        {
+                        HistoryId = GetLong(reader, "HISTORY_ID"),
+                        OccurredOnUtc = GetDateTime(reader, "OCCURRED_ON_UTC"),
+                        TraceId = GetString(reader, "TRACE_ID"),
+                        IpAddress = GetString(reader, "IP_ADDRESS"),
+                        UserAgent = GetString(reader, "USER_AGENT"),
+                        Ppno = GetString(reader, "PPNO"),
+                        Role = GetString(reader, "ROLE_NAME"),
+                        Entity = GetString(reader, "ENTITY_NAME"),
+                        ApiPath = GetString(reader, "API_PATH"),
+                        ErrorMessage = GetString(reader, "ERROR_MESSAGE")
+                        });
+                    }
+                }
+
+            if (reader.NextResult())
+                {
+                while (reader.Read())
+                    {
+                    detail.StatusHistory.Add(new SystemErrorStatusHistoryModel
+                        {
+                        ChangedOnUtc = GetDateTime(reader, "CHANGED_ON_UTC"),
+                        OldStatus = GetString(reader, "OLD_STATUS"),
+                        NewStatus = GetString(reader, "NEW_STATUS"),
+                        ChangedByPpno = GetString(reader, "CHANGED_BY_PPNO"),
+                        Remarks = GetString(reader, "REMARKS")
+                        });
+                    }
+                }
+
+            return detail;
+            }
+
+        public void ResolveSystemError(long errorId, string resolvedByPpno, string remarks)
+            {
+            using var con = DatabaseConnection(requireActiveSession: false);
+            using var cmd = con.CreateCommand();
+            cmd.CommandText = "PKG_LG.RESOLVE_SYSTEM_ERROR";
+            cmd.CommandType = CommandType.StoredProcedure;
+            cmd.BindByName = true;
+            cmd.Parameters.Add("P_ERROR_ID", OracleDbType.Int64).Value = errorId;
+            cmd.Parameters.Add("P_RESOLVED_BY_PPNO", OracleDbType.Varchar2).Value = DbValue(resolvedByPpno, 50);
+            cmd.Parameters.Add("P_REMARKS", OracleDbType.Varchar2).Value = DbValue(remarks, 1000);
+            cmd.ExecuteNonQuery();
+            }
+
+        private static void AddSystemErrorFilterParameters(OracleCommand cmd, SystemErrorFilter filter)
+            {
+            cmd.Parameters.Add("P_STATUS", OracleDbType.Varchar2).Value = DbValue(filter.Status, 30);
+            cmd.Parameters.Add("P_FROM_DATE", OracleDbType.TimeStamp).Value = filter.FromDate ?? (object)DBNull.Value;
+            cmd.Parameters.Add("P_TO_DATE", OracleDbType.TimeStamp).Value = filter.ToDate ?? (object)DBNull.Value;
+            cmd.Parameters.Add("P_ERROR_REFERENCE", OracleDbType.Varchar2).Value = DbValue(filter.ErrorReference, 50);
+            cmd.Parameters.Add("P_MODULE", OracleDbType.Varchar2).Value = DbValue(filter.Module, 100);
+            cmd.Parameters.Add("P_USER_PPNO", OracleDbType.Varchar2).Value = DbValue(filter.UserPpno, 50);
+            cmd.Parameters.Add("P_ENTITY", OracleDbType.Varchar2).Value = DbValue(filter.Entity, 300);
+            cmd.Parameters.Add("P_ERROR_TYPE_CODE", OracleDbType.Varchar2).Value = DbValue(filter.ErrorTypeOrCode, 300);
+            }
+
+        private static SystemErrorSummaryModel MapSystemErrorSummary(OracleDataReader reader)
+            {
+            return new SystemErrorSummaryModel
+                {
+                ErrorId = GetLong(reader, "ERROR_ID"),
+                ErrorReference = GetString(reader, "ERROR_REFERENCE"),
+                ResolutionStatus = GetString(reader, "RESOLUTION_STATUS"),
+                FirstOccurrenceUtc = GetDateTime(reader, "FIRST_OCCURRENCE_UTC"),
+                LastOccurrenceUtc = GetDateTime(reader, "LAST_OCCURRENCE_UTC"),
+                OccurrenceCount = GetInt(reader, "OCCURRENCE_COUNT"),
+                Module = GetString(reader, "MODULE"),
+                Controller = GetString(reader, "CONTROLLER"),
+                Action = GetString(reader, "ACTION"),
+                ApiPath = GetString(reader, "API_PATH"),
+                Ppno = GetString(reader, "PPNO"),
+                Role = GetString(reader, "ROLE_NAME"),
+                Entity = GetString(reader, "ENTITY_NAME"),
+                ErrorType = GetString(reader, "ERROR_TYPE"),
+                ErrorCode = GetString(reader, "ERROR_CODE"),
+                StoredProcedure = GetString(reader, "STORED_PROCEDURE"),
+                ClientIp = GetString(reader, "LAST_IP_ADDRESS"),
+                ResolvedBy = GetString(reader, "RESOLVED_BY"),
+                ResolvedOnUtc = GetNullableDateTime(reader, "RESOLVED_ON_UTC"),
+                ResolutionRemarks = GetString(reader, "RESOLUTION_REMARKS")
+                };
+            }
+
+        private static string GetString(OracleDataReader reader, string column)
+            {
+            return reader[column] == DBNull.Value ? string.Empty : reader[column]?.ToString() ?? string.Empty;
+            }
+
+        private static int GetInt(OracleDataReader reader, string column)
+            {
+            return reader[column] == DBNull.Value ? 0 : Convert.ToInt32(reader[column]);
+            }
+
+        private static long GetLong(OracleDataReader reader, string column)
+            {
+            return reader[column] == DBNull.Value ? 0 : Convert.ToInt64(reader[column]);
+            }
+
+        private static DateTime GetDateTime(OracleDataReader reader, string column)
+            {
+            return reader[column] == DBNull.Value ? DateTime.MinValue : Convert.ToDateTime(reader[column]);
+            }
+
+        private static DateTime? GetNullableDateTime(OracleDataReader reader, string column)
+            {
+            return reader[column] == DBNull.Value ? null : Convert.ToDateTime(reader[column]);
             }
 
         private static long ToLong(object value)

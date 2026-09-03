@@ -20,12 +20,14 @@ namespace AIS
         private readonly JsonSerializerOptions _serializerOptions;
         private readonly LocalIPAddress _ipAddressProvider = new LocalIPAddress();
         private readonly AIS.Security.Cryptography.SecurityTokenService _tokenService;
+        private readonly AIS.Services.IClientIpResolver _clientIpResolver;
 
-        public SessionHandler(IHttpContextAccessor httpContextAccessor, IConfiguration configuration, AIS.Security.Cryptography.SecurityTokenService tokenService)
+        public SessionHandler(IHttpContextAccessor httpContextAccessor, IConfiguration configuration, AIS.Security.Cryptography.SecurityTokenService tokenService, AIS.Services.IClientIpResolver clientIpResolver = null)
             {
             _httpContextAccessor = httpContextAccessor;
             _configurationRoot = configuration;
             _tokenService = tokenService;
+            _clientIpResolver = clientIpResolver;
             _serializerOptions = CreateSerializerOptions();
             }
 
@@ -136,7 +138,7 @@ namespace AIS
             user.SessionId = session.Id;
             if (string.IsNullOrWhiteSpace(user.IPAddress))
                 {
-                user.IPAddress = _ipAddressProvider.GetLocalIpAddress();
+                user.IPAddress = _clientIpResolver?.GetClientIp(HttpContext) ?? HttpContext?.Connection?.RemoteIpAddress?.ToString();
                 }
             if (string.IsNullOrWhiteSpace(user.MACAddress))
                 {

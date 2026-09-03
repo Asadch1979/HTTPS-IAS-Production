@@ -13,6 +13,7 @@ using System.Diagnostics;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.Extensions.DependencyInjection;
 using System.Collections.Generic;
 using System.Security.Claims;
 using System.Threading.Tasks;
@@ -234,7 +235,7 @@ namespace AIS.Controllers
                 dBConnection.CreateSession(
                     sessionToken,
                     ppNumber,
-                    HttpContext.Connection.RemoteIpAddress?.ToString(),
+                    HttpContext.RequestServices.GetService<IClientIpResolver>()?.GetClientIp(HttpContext) ?? HttpContext.Connection.RemoteIpAddress?.ToString(),
                     Request.Headers["User-Agent"].ToString());
 
                 Response.Cookies.Append("IAS_SESSION", sessionToken, new CookieOptions

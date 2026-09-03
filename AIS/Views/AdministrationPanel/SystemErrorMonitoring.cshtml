@@ -1,0 +1,151 @@
+@{
+    ViewData["Title"] = "System Error Monitoring";
+    Layout = "_Layout";
+}
+
+<div class="container-fluid">
+    <div class="row mb-3">
+        <div class="col-12">
+            <h2>System Error Monitoring</h2>
+        </div>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-2 mb-3">
+                    <label for="errorStatus">Status</label>
+                    <select id="errorStatus" class="form-control">
+                        <option value="OPEN" selected>Unresolved</option>
+                        <option value="RESOLVED">Resolved</option>
+                        <option value="ALL">All</option>
+                    </select>
+                </div>
+                <div class="col-md-2 mb-3">
+                    <label for="errorFromDate">From</label>
+                    <input id="errorFromDate" type="date" class="form-control" />
+                </div>
+                <div class="col-md-2 mb-3">
+                    <label for="errorToDate">To</label>
+                    <input id="errorToDate" type="date" class="form-control" />
+                </div>
+                <div class="col-md-2 mb-3">
+                    <label for="errorReference">Reference</label>
+                    <input id="errorReference" class="form-control" />
+                </div>
+                <div class="col-md-2 mb-3">
+                    <label for="errorModule">Module</label>
+                    <input id="errorModule" class="form-control" />
+                </div>
+                <div class="col-md-2 mb-3">
+                    <label for="errorUser">User / PPNO</label>
+                    <input id="errorUser" class="form-control" />
+                </div>
+                <div class="col-md-2 mb-3">
+                    <label for="errorEntity">Entity</label>
+                    <input id="errorEntity" class="form-control" />
+                </div>
+                <div class="col-md-2 mb-3">
+                    <label for="errorTypeCode">Type / Code</label>
+                    <input id="errorTypeCode" class="form-control" />
+                </div>
+                <div class="col-md-2 mb-3 d-flex align-items-end">
+                    <button id="loadSystemErrors" type="button" class="btn btn-primary w-100">Load</button>
+                </div>
+                <div class="col-md-2 mb-3 d-flex align-items-end">
+                    <button id="exportSystemErrors" type="button" class="btn btn-outline-success w-100">Export to Excel</button>
+                </div>
+            </div>
+            <div id="systemErrorMessage" class="text-danger"></div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-body table-responsive">
+            <table class="table table-bordered table-striped" id="systemErrorsTable">
+                <thead>
+                    <tr>
+                        <th>Error Reference</th>
+                        <th>Status</th>
+                        <th>First Occurrence</th>
+                        <th>Last Occurrence</th>
+                        <th>Count</th>
+                        <th>Module / Page</th>
+                        <th>User / PPNO</th>
+                        <th>Entity</th>
+                        <th>Error Type / Code</th>
+                        <th>Client IP</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+    (function () {
+        function today() {
+            return new Date().toISOString().slice(0, 10);
+        }
+
+        function filters() {
+            return {
+                status: document.getElementById('errorStatus').value,
+                fromDate: document.getElementById('errorFromDate').value,
+                toDate: document.getElementById('errorToDate').value,
+                errorReference: document.getElementById('errorReference').value,
+                module: document.getElementById('errorModule').value,
+                userPpno: document.getElementById('errorUser').value,
+                entity: document.getElementById('errorEntity').value,
+                errorTypeOrCode: document.getElementById('errorTypeCode').value
+            };
+        }
+
+        function encode(value) {
+            return $('<div/>').text(value || '').html();
+        }
+
+        function loadErrors() {
+            $('#systemErrorMessage').text('');
+            $.ajax({
+                url: '@Url.Action("GetSystemErrors", "AdministrationPanel")',
+                method: 'POST',
+                data: filters(),
+                success: function (response) {
+                    var rows = response && response.data ? response.data : [];
+                    var body = $('#systemErrorsTable tbody');
+                    body.empty();
+                    rows.forEach(function (row) {
+                        body.append('<tr>'
+                            + '<td>' + encode(row.errorReference || row.ErrorReference) + '</td>'
+                            + '<td>' + encode(row.resolutionStatus || row.ResolutionStatus) + '</td>'
+                            + '<td>' + encode(row.firstOccurrenceUtc || row.FirstOccurrenceUtc) + '</td>'
+                            + '<td>' + encode(row.lastOccurrenceUtc || row.LastOccurrenceUtc) + '</td>'
+                            + '<td>' + encode(row.occurrenceCount || row.OccurrenceCount) + '</td>'
+                            + '<td>' + encode((row.module || row.Module || '') + ' / ' + (row.controller || row.Controller || '') + '.' + (row.action || row.Action || '')) + '</td>'
+                            + '<td>' + encode(row.ppno || row.Ppno) + '</td>'
+                            + '<td>' + encode(row.entity || row.Entity) + '</td>'
+                            + '<td>' + encode((row.errorType || row.ErrorType || '') + ' / ' + (row.errorCode || row.ErrorCode || '')) + '</td>'
+                            + '<td>' + encode(row.clientIp || row.ClientIp) + '</td>'
+                            + '<td><a class="btn btn-sm btn-outline-primary" href="@Url.Action("SystemErrorDetail", "AdministrationPanel")?id=' + encode(row.errorId || row.ErrorId) + '">Open</a></td>'
+                            + '</tr>');
+                    });
+                },
+                error: function () {
+                    $('#systemErrorMessage').text('Unable to load system errors.');
+                }
+            });
+        }
+
+        document.getElementById('errorFromDate').value = today();
+        document.getElementById('errorToDate').value = today();
+        $('#loadSystemErrors').on('click', loadErrors);
+        $('#exportSystemErrors').on('click', function () {
+            var query = $.param(filters());
+            window.location = '@Url.Action("ExportSystemErrors", "AdministrationPanel")' + '?' + query;
+        });
+        loadErrors();
+    })();
+</script>

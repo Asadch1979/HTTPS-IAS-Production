@@ -37,8 +37,9 @@ namespace AIS.Controllers
         private readonly LoginViewResolver _loginViewResolver;
         private readonly PasswordChangeTokenService _passwordChangeTokenService;
         private readonly PasswordChangeStateStore _passwordChangeStateStore;
+        private readonly IClientIpResolver _clientIpResolver;
 
-        public LoginController(ILogger<LoginController> logger, SessionHandler sessionHandler, DBConnection dbConnection, IConfiguration configuration, LoginAttemptTracker loginAttemptTracker, PasswordPolicyValidator passwordPolicyValidator, SecurityTokenService tokenService, IPermissionService permissionService, LoginViewResolver loginViewResolver, PasswordChangeTokenService passwordChangeTokenService, PasswordChangeStateStore passwordChangeStateStore)
+        public LoginController(ILogger<LoginController> logger, SessionHandler sessionHandler, DBConnection dbConnection, IConfiguration configuration, LoginAttemptTracker loginAttemptTracker, PasswordPolicyValidator passwordPolicyValidator, SecurityTokenService tokenService, IPermissionService permissionService, LoginViewResolver loginViewResolver, PasswordChangeTokenService passwordChangeTokenService, PasswordChangeStateStore passwordChangeStateStore, IClientIpResolver clientIpResolver)
             {
             _logger = logger;
             this.sessionHandler = sessionHandler;
@@ -51,6 +52,7 @@ namespace AIS.Controllers
             _loginViewResolver = loginViewResolver;
             _passwordChangeTokenService = passwordChangeTokenService;
             _passwordChangeStateStore = passwordChangeStateStore;
+            _clientIpResolver = clientIpResolver;
             }
 
         public IActionResult Index()
@@ -361,7 +363,7 @@ namespace AIS.Controllers
         public async Task<IActionResult> ResetPassword([FromForm] ResetPasswordPostModel model)
         {
             var maskedIdentifier = MaskIdentifier(model?.PPNumber);
-            _logger.LogInformation("Password reset request received for PP {MaskedIdentifier} from {RemoteIp}.", maskedIdentifier, HttpContext.Connection.RemoteIpAddress?.ToString());
+            _logger.LogInformation("Password reset request received for PP {MaskedIdentifier} from {RemoteIp}.", maskedIdentifier, GetRemoteIpAddress());
 
             var genericResponse = BuildResetPasswordResponse();
 
@@ -594,7 +596,7 @@ namespace AIS.Controllers
 
         private string GetRemoteIpAddress()
         {
-            return HttpContext?.Connection?.RemoteIpAddress?.ToString() ?? "unknown";
+            return _clientIpResolver?.GetClientIp(HttpContext) ?? HttpContext?.Connection?.RemoteIpAddress?.ToString() ?? "unknown";
         }
 
         private object BuildLoginResponse(UserModel user, bool forcePwdChange = false, string redirectUrl = null, bool? requiresContextSelection = null)
@@ -809,7 +811,7 @@ namespace AIS.Controllers
             dBConnection.CreateSession(
                 sessionToken,
                 ppNumber,
-                HttpContext.Connection.RemoteIpAddress?.ToString(),
+                _clientIpResolver.GetClientIp(HttpContext),
                 Request.Headers["User-Agent"].ToString());
 
             Response.Cookies.Append("IAS_SESSION", sessionToken, new CookieOptions

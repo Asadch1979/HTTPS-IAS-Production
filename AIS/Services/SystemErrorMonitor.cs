@@ -26,19 +26,22 @@ namespace AIS.Services
         private readonly IHttpContextAccessor _httpContextAccessor;
         private readonly IServiceProvider _serviceProvider;
         private readonly ILogger<SystemErrorMonitor> _logger;
+        private readonly IClientIpResolver _clientIpResolver;
 
         public SystemErrorMonitor(
             IConfiguration configuration,
             IHostEnvironment environment,
             IHttpContextAccessor httpContextAccessor,
             IServiceProvider serviceProvider,
-            ILogger<SystemErrorMonitor> logger)
+            ILogger<SystemErrorMonitor> logger,
+            IClientIpResolver clientIpResolver)
             {
             _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
             _environment = environment;
             _httpContextAccessor = httpContextAccessor;
             _serviceProvider = serviceProvider;
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            _clientIpResolver = clientIpResolver;
             }
 
         public async Task<SystemErrorRecord> ReportAsync(Exception exception, HttpContext context = null, string module = null, string storedProcedure = null)
@@ -53,7 +56,7 @@ namespace AIS.Services
             var fingerprint = BuildFingerprint(exception, errorContext);
             var technicalDetails = BuildTechnicalDetails(exception, errorContext);
             var errorCode = ResolveErrorCode(exception);
-            var message = exception.GetBaseException().Message;
+            var message = RedactSensitiveValues(exception.GetBaseException().Message);
 
             var db = _serviceProvider.GetService<DBConnection>();
             if (db == null)
@@ -77,13 +80,20 @@ namespace AIS.Services
                     };
                 }
 
-            if (record.IsFirstOccurrence && !record.EmailAlreadySent)
+            if (!record.EmailAlreadySent)
                 {
                 var sent = await SendFirstOccurrenceEmailAsync(db, record, exception, errorContext, errorCode, message);
                 db.MarkSystemErrorEmailStatus(record.ErrorId, sent);
                 }
 
             return record;
+            }
+
+        public Task<SystemErrorRecord> ReportStatusCodeAsync(HttpContext context, int statusCode)
+            {
+            var path = context?.Request?.Path.Value ?? string.Empty;
+            var ex = new InvalidOperationException($"HTTP {statusCode} response completed without an exception for {path}.");
+            return ReportAsync(ex, context, "HTTP", null);
             }
 
         public static string BuildSafeUserMessage(SystemErrorRecord record)
@@ -119,7 +129,7 @@ namespace AIS.Services
                 PageId = sessionHandler?.GetPageId() > 0 ? sessionHandler.GetPageId() : null,
                 EngagementId = engagementId,
                 TraceId = context?.TraceIdentifier ?? string.Empty,
-                IpAddress = context?.Connection?.RemoteIpAddress?.ToString() ?? string.Empty,
+                IpAddress = _clientIpResolver?.GetClientIp(context) ?? context?.Connection?.RemoteIpAddress?.ToString() ?? string.Empty,
                 UserAgent = context?.Request?.Headers["User-Agent"].ToString() ?? string.Empty,
                 EnvironmentName = _environment?.EnvironmentName ?? _configuration["ASPNETCORE_ENVIRONMENT"] ?? string.Empty,
                 OccurredOnUtc = DateTime.UtcNow
@@ -238,7 +248,9 @@ namespace AIS.Services
                 return string.Empty;
                 }
 
-            return Regex.Replace(value, @"(?i)(password|token|cookie|connection\s*string|pwd|userid|user\s*id)\s*=\s*[^;\r\n]+", "$1=[REDACTED]");
+            var redacted = Regex.Replace(value, @"(?i)(authorization|bearer|api[-_ ]?key|client[-_ ]?secret|secret|password|token|cookie|connection\s*string|pwd|userid|user\s*id)\s*[:=]\s*[^;\r\n]+", "$1=[REDACTED]");
+            redacted = Regex.Replace(redacted, @"(?i)bearer\s+[a-z0-9._~+/=-]+", "Bearer [REDACTED]");
+            return redacted;
             }
 
         private static string ChooseFirst(params string[] values)

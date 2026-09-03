@@ -23,6 +23,11 @@ namespace AIS.Middleware
             try
                 {
                 await _next(context);
+                if (!context.Response.HasStarted && context.Response.StatusCode >= StatusCodes.Status500InternalServerError)
+                    {
+                    var record = await monitor.ReportStatusCodeAsync(context, context.Response.StatusCode);
+                    _logger.LogError("HTTP {StatusCode} system error persisted as {Reference}.", context.Response.StatusCode, record.ErrorReference);
+                    }
                 }
             catch (Exception ex)
                 {

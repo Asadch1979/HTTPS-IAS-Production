@@ -22,6 +22,7 @@ using System;
 using Microsoft.Extensions.Logging;
 using System.Text.Json.Serialization;
 using AIS.Utilities.Json;
+using System.Net;
 
 namespace AIS
     {
@@ -76,6 +77,7 @@ namespace AIS
             services.AddScoped<DBConnection>();
             services.AddScoped<IStandaloneEmailManagementService, StandaloneEmailManagementService>();
             services.AddScoped<SystemErrorMonitor>();
+            services.AddSingleton<IClientIpResolver, ClientIpResolver>();
             services.AddScoped<DBConnectionArchive>();
             services.AddScoped<IStaticAssetVersionTokenProvider, StaticAssetVersionTokenProvider>();
             services.AddScoped<FieldAuditReportPdfBuilder>();
@@ -241,8 +243,7 @@ namespace AIS
             services.Configure<ForwardedHeadersOptions>(options =>
             {
                 options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
-                options.KnownNetworks.Clear();
-                options.KnownProxies.Clear();
+                AddKnownForwardedHeaderProxies(options, Configuration);
             });
             }
 
@@ -319,6 +320,26 @@ namespace AIS
             {
             var ip = context?.Connection?.RemoteIpAddress?.ToString() ?? "unknown";
             return $"{policyName}:{ip}";
+            }
+
+        private static void AddKnownForwardedHeaderProxies(ForwardedHeadersOptions options, IConfiguration configuration)
+            {
+            foreach (var proxy in configuration.GetSection("ForwardedHeaders:KnownProxies").Get<string[]>() ?? Array.Empty<string>())
+                {
+                if (IPAddress.TryParse(proxy, out var address))
+                    {
+                    options.KnownProxies.Add(address);
+                    }
+                }
+
+            foreach (var network in configuration.GetSection("ForwardedHeaders:KnownNetworks").Get<string[]>() ?? Array.Empty<string>())
+                {
+                var parts = (network ?? string.Empty).Split('/', 2);
+                if (parts.Length == 2 && IPAddress.TryParse(parts[0], out var prefix) && int.TryParse(parts[1], out var prefixLength))
+                    {
+                    options.KnownNetworks.Add(new Microsoft.AspNetCore.HttpOverrides.IPNetwork(prefix, prefixLength));
+                    }
+                }
             }
 
         }

@@ -1,4 +1,5 @@
 using AIS.Models.Security;
+using AIS.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
@@ -19,12 +20,14 @@ namespace AIS.Controllers
         private readonly DBConnection _dbConnection;
         private readonly SessionHandler _sessionHandler;
         private readonly ILogger<SecurityController> _logger;
+        private readonly IClientIpResolver _clientIpResolver;
 
-        public SecurityController(DBConnection dbConnection, SessionHandler sessionHandler, ILogger<SecurityController> logger)
+        public SecurityController(DBConnection dbConnection, SessionHandler sessionHandler, ILogger<SecurityController> logger, IClientIpResolver clientIpResolver)
         {
             _dbConnection = dbConnection;
             _sessionHandler = sessionHandler;
             _logger = logger;
+            _clientIpResolver = clientIpResolver;
         }
 
         [HttpPost("csp-report")]
@@ -41,7 +44,7 @@ namespace AIS.Controllers
                 var dto = BuildViolationDto(rawJson);
                 dto.RawJson = rawJson;
                 dto.UserAgent = Request.Headers["User-Agent"].FirstOrDefault();
-                dto.ClientIp = GetClientIp();
+                dto.ClientIp = _clientIpResolver.GetClientIp(HttpContext);
 
                 long? createdByPpNo = ResolveCreatedByPpNo();
                 _dbConnection.SaveCspViolation(dto, createdByPpNo);
@@ -69,17 +72,6 @@ namespace AIS.Controllers
             }
 
             return null;
-        }
-
-        private string GetClientIp()
-        {
-            var forwardedFor = Request.Headers["X-Forwarded-For"].FirstOrDefault();
-            if (!string.IsNullOrWhiteSpace(forwardedFor))
-            {
-                return forwardedFor.Split(',').FirstOrDefault()?.Trim();
-            }
-
-            return HttpContext.Connection.RemoteIpAddress?.ToString();
         }
 
         private static CspViolationDto BuildViolationDto(string rawJson)

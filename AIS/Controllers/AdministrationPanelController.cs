@@ -10,6 +10,8 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
+using System.Net;
+using System.Text;
 using System.Threading.Tasks;
 using AIS.Services;
 
@@ -1388,6 +1390,103 @@ namespace AIS.Controllers
                 });
             }
 
+        public IActionResult SystemErrorMonitoring()
+            {
+            ViewData["TopMenu"] = tm.GetTopMenus();
+            ViewData["TopMenuPages"] = tm.GetTopMenusPages();
+
+            if (!User.Identity.IsAuthenticated)
+                {
+                return RedirectToAction("Index", "Login");
+                }
+
+            if (!this.UserHasPagePermissionForCurrentAction(sessionHandler))
+                {
+                return RedirectToAction("Index", "PageNotFound");
+                }
+
+            return View();
+            }
+
+        [HttpPost]
+        [IgnoreAntiforgeryToken]
+        public IActionResult GetSystemErrors(SystemErrorFilter filter)
+            {
+            if (!User.Identity.IsAuthenticated)
+                {
+                return Unauthorized();
+                }
+
+            if (!this.UserHasPagePermissionForCurrentAction(sessionHandler))
+                {
+                return Forbid();
+                }
+
+            NormalizeSystemErrorFilter(filter);
+            return Json(new { status = true, data = dBConnection.GetSystemErrors(filter) });
+            }
+
+        [HttpGet]
+        public IActionResult SystemErrorDetail(long id)
+            {
+            ViewData["TopMenu"] = tm.GetTopMenus();
+            ViewData["TopMenuPages"] = tm.GetTopMenusPages();
+
+            if (!User.Identity.IsAuthenticated)
+                {
+                return RedirectToAction("Index", "Login");
+                }
+
+            if (!this.UserHasPagePermissionForCurrentAction(sessionHandler))
+                {
+                return RedirectToAction("Index", "PageNotFound");
+                }
+
+            return View(dBConnection.GetSystemErrorDetail(id));
+            }
+
+        [HttpPost]
+        [IgnoreAntiforgeryToken]
+        public IActionResult ResolveSystemError(long errorId, string remarks)
+            {
+            if (!User.Identity.IsAuthenticated)
+                {
+                return Unauthorized();
+                }
+
+            if (!this.UserHasPagePermissionForCurrentAction(sessionHandler) || !sessionHandler.IsSuperUser())
+                {
+                return Forbid();
+                }
+
+            if (string.IsNullOrWhiteSpace(remarks))
+                {
+                return BadRequest(new { status = false, message = "Resolution remarks are required." });
+                }
+
+            var user = sessionHandler.GetUser();
+            dBConnection.ResolveSystemError(errorId, user?.PPNumber, remarks.Trim());
+            return Json(new { status = true, message = "Error marked as resolved." });
+            }
+
+        [HttpGet]
+        public IActionResult ExportSystemErrors(SystemErrorFilter filter)
+            {
+            if (!User.Identity.IsAuthenticated)
+                {
+                return Unauthorized();
+                }
+
+            if (!this.UserHasPagePermissionForCurrentAction(sessionHandler))
+                {
+                return Forbid();
+                }
+
+            NormalizeSystemErrorFilter(filter);
+            var bytes = Encoding.UTF8.GetBytes(BuildSystemErrorExcelXml(dBConnection.GetSystemErrors(filter)));
+            return File(bytes, "application/vnd.ms-excel", $"IAS-System-Errors-{DateTime.UtcNow:yyyyMMddHHmmss}.xls");
+            }
+
         private DateTime? ParseSystemLogDateTime(string value)
             {
             if (string.IsNullOrWhiteSpace(value))
@@ -1402,6 +1501,54 @@ namespace AIS.Controllers
 
             _logger.LogWarning("Failed to parse system log datetime value: {Value}", value);
             return null;
+            }
+
+        private static void NormalizeSystemErrorFilter(SystemErrorFilter filter)
+            {
+            if (filter == null)
+                {
+                return;
+                }
+
+            filter.Status = string.IsNullOrWhiteSpace(filter.Status) ? "OPEN" : filter.Status.Trim().ToUpperInvariant();
+            if (!filter.FromDate.HasValue && !filter.ToDate.HasValue)
+                {
+                filter.FromDate = DateTime.UtcNow.Date;
+                filter.ToDate = filter.FromDate.Value.AddDays(1).AddTicks(-1);
+                }
+            else
+                {
+                filter.FromDate = filter.FromDate?.Date;
+                filter.ToDate = filter.ToDate?.Date.AddDays(1).AddTicks(-1);
+                }
+            }
+
+        private static string BuildSystemErrorExcelXml(IEnumerable<SystemErrorSummaryModel> rows)
+            {
+            var builder = new StringBuilder();
+            builder.AppendLine("<?xml version=\"1.0\"?>");
+            builder.AppendLine("<?mso-application progid=\"Excel.Sheet\"?>");
+            builder.AppendLine("<Workbook xmlns=\"urn:schemas-microsoft-com:office:spreadsheet\" xmlns:ss=\"urn:schemas-microsoft-com:office:spreadsheet\"><Worksheet ss:Name=\"System Errors\"><Table>");
+            AppendExcelRow(builder, "Error Reference", "Status", "Module", "Controller / Action / API", "Error Type / Code", "Stored Procedure", "PPNO", "Role", "Entity", "Client IP", "First Occurrence", "Last Occurrence", "Occurrence Count", "Resolved By", "Resolved On", "Resolution Remarks");
+            foreach (var row in rows ?? Enumerable.Empty<SystemErrorSummaryModel>())
+                {
+                AppendExcelRow(builder, row.ErrorReference, row.ResolutionStatus, row.Module, $"{row.Controller} / {row.Action} / {row.ApiPath}", $"{row.ErrorType} / {row.ErrorCode}", row.StoredProcedure, row.Ppno, row.Role, row.Entity, row.ClientIp, row.FirstOccurrenceUtc.ToString("u", CultureInfo.InvariantCulture), row.LastOccurrenceUtc.ToString("u", CultureInfo.InvariantCulture), row.OccurrenceCount.ToString(CultureInfo.InvariantCulture), row.ResolvedBy, row.ResolvedOnUtc?.ToString("u", CultureInfo.InvariantCulture), row.ResolutionRemarks);
+                }
+
+            builder.AppendLine("</Table></Worksheet></Workbook>");
+            return builder.ToString();
+            }
+
+        private static void AppendExcelRow(StringBuilder builder, params string[] cells)
+            {
+            builder.AppendLine("<Row>");
+            foreach (var cell in cells ?? Array.Empty<string>())
+                {
+                builder.Append("<Cell><Data ss:Type=\"String\">");
+                builder.Append(WebUtility.HtmlEncode(cell ?? string.Empty));
+                builder.AppendLine("</Data></Cell>");
+                }
+            builder.AppendLine("</Row>");
             }
 
         private void PopulateDashboardChrome()

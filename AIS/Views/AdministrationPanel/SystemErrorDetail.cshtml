@@ -1,0 +1,99 @@
+@model AIS.Models.SystemErrorDetailModel
+@{
+    ViewData["Title"] = "System Error Detail";
+    Layout = "_Layout";
+    var isSuperUser = Context.RequestServices.GetService(typeof(AIS.SessionHandler)) is AIS.SessionHandler sh && sh.IsSuperUser();
+}
+
+<div class="container-fluid">
+    <div class="row mb-3">
+        <div class="col-12 d-flex justify-content-between align-items-center">
+            <h2>@Model.ErrorReference</h2>
+            <a class="btn btn-outline-secondary" href="@Url.Action("SystemErrorMonitoring", "AdministrationPanel")">Back</a>
+        </div>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-body">
+            <dl class="row">
+                <dt class="col-sm-3">Status</dt><dd class="col-sm-9">@Model.ResolutionStatus</dd>
+                <dt class="col-sm-3">Module</dt><dd class="col-sm-9">@Model.Module</dd>
+                <dt class="col-sm-3">Controller / Action / API</dt><dd class="col-sm-9">@Model.Controller / @Model.Action / @Model.ApiPath</dd>
+                <dt class="col-sm-3">Error Type / Code</dt><dd class="col-sm-9">@Model.ErrorType / @Model.ErrorCode</dd>
+                <dt class="col-sm-3">Stored Procedure</dt><dd class="col-sm-9">@Model.StoredProcedure</dd>
+                <dt class="col-sm-3">User / PPNO</dt><dd class="col-sm-9">@Model.Ppno</dd>
+                <dt class="col-sm-3">Role</dt><dd class="col-sm-9">@Model.Role</dd>
+                <dt class="col-sm-3">Entity</dt><dd class="col-sm-9">@Model.Entity</dd>
+                <dt class="col-sm-3">Client IP</dt><dd class="col-sm-9">@Model.ClientIp</dd>
+                <dt class="col-sm-3">First / Last</dt><dd class="col-sm-9">@Model.FirstOccurrenceUtc.ToString("u") / @Model.LastOccurrenceUtc.ToString("u")</dd>
+                <dt class="col-sm-3">Occurrence Count</dt><dd class="col-sm-9">@Model.OccurrenceCount</dd>
+                <dt class="col-sm-3">Email Sent</dt><dd class="col-sm-9">@(Model.EmailSent ? "Yes" : "No") @Model.EmailSentUtc?.ToString("u")</dd>
+                <dt class="col-sm-3">Message</dt><dd class="col-sm-9"><pre class="mb-0">@Model.ErrorMessage</pre></dd>
+                <dt class="col-sm-3">Technical Details</dt><dd class="col-sm-9"><pre class="mb-0">@Model.TechnicalDetails</pre></dd>
+            </dl>
+        </div>
+    </div>
+
+    @if (isSuperUser && !string.Equals(Model.ResolutionStatus, "RESOLVED", StringComparison.OrdinalIgnoreCase))
+    {
+        <div class="card mb-4">
+            <div class="card-body">
+                <h5>Resolve Error</h5>
+                <textarea id="resolutionRemarks" class="form-control mb-3" rows="3" placeholder="Technical team resolution remarks"></textarea>
+                <button id="resolveSystemError" type="button" class="btn btn-success">Mark Resolved</button>
+                <span id="resolveMessage" class="ml-2"></span>
+            </div>
+        </div>
+    }
+
+    <div class="card mb-4">
+        <div class="card-body table-responsive">
+            <h5>Occurrence History</h5>
+            <table class="table table-bordered table-striped">
+                <thead><tr><th>Occurred</th><th>Trace ID</th><th>Client IP</th><th>User</th><th>Role</th><th>Entity</th><th>API</th><th>Message</th></tr></thead>
+                <tbody>
+                    @foreach (var item in Model.History)
+                    {
+                        <tr><td>@item.OccurredOnUtc.ToString("u")</td><td>@item.TraceId</td><td>@item.IpAddress</td><td>@item.Ppno</td><td>@item.Role</td><td>@item.Entity</td><td>@item.ApiPath</td><td>@item.ErrorMessage</td></tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-body table-responsive">
+            <h5>Status Change History</h5>
+            <table class="table table-bordered table-striped">
+                <thead><tr><th>Changed</th><th>Old</th><th>New</th><th>By</th><th>Remarks</th></tr></thead>
+                <tbody>
+                    @foreach (var item in Model.StatusHistory)
+                    {
+                        <tr><td>@item.ChangedOnUtc.ToString("u")</td><td>@item.OldStatus</td><td>@item.NewStatus</td><td>@item.ChangedByPpno</td><td>@item.Remarks</td></tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+    $('#resolveSystemError').on('click', function () {
+        var remarks = $('#resolutionRemarks').val();
+        if (!remarks || !remarks.trim()) {
+            $('#resolveMessage').removeClass('text-success').addClass('text-danger').text('Resolution remarks are required.');
+            return;
+        }
+        if (!confirm('Mark this system error as resolved?')) {
+            return;
+        }
+        $.post('@Url.Action("ResolveSystemError", "AdministrationPanel")', { errorId: '@Model.ErrorId', remarks: remarks })
+            .done(function () {
+                $('#resolveMessage').removeClass('text-danger').addClass('text-success').text('Resolved.');
+                window.location.reload();
+            })
+            .fail(function () {
+                $('#resolveMessage').removeClass('text-success').addClass('text-danger').text('Unable to resolve error.');
+            });
+    });
+</script>

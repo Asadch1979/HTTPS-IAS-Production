@@ -30,6 +30,7 @@ namespace AIS.Controllers
         private readonly ISession _session;
         private readonly IHttpContextAccessor _httpCon;
         private readonly IConfiguration _configuration;
+        private readonly AIS.Services.IClientIpResolver _clientIpResolver;
         private readonly string _cauKey;
         private static readonly ConcurrentDictionary<string, int> SessionTokenIndex = new ConcurrentDictionary<string, int>();
         private static readonly ConcurrentDictionary<int, string> UserSessionIndex = new ConcurrentDictionary<int, string>();
@@ -44,7 +45,7 @@ namespace AIS.Controllers
             _env = env;
             }
 
-        public DBConnection(IHttpContextAccessor httpContextAccessor, IConfiguration configuration, SessionHandler sessionHandler, SecurityTokenService tokenService, LoginAttemptTracker loginAttemptTracker)
+        public DBConnection(IHttpContextAccessor httpContextAccessor, IConfiguration configuration, SessionHandler sessionHandler, SecurityTokenService tokenService, LoginAttemptTracker loginAttemptTracker, AIS.Services.IClientIpResolver clientIpResolver = null)
             {
             if (httpContextAccessor == null)
                 throw new ArgumentNullException(nameof(httpContextAccessor));
@@ -61,17 +62,19 @@ namespace AIS.Controllers
             _session = session;
             _httpCon = httpContextAccessor;
             _configuration = configuration;
+            _clientIpResolver = clientIpResolver;
             this.sessionHandler = sessionHandler;
             _tokenService = tokenService;
             _loginAttemptTracker = loginAttemptTracker;
             _cauKey = ResolveCauKey();
             }
 
-        private DBConnection(ISession session, IHttpContextAccessor httpContextAccessor, IConfiguration configuration, SessionHandler sessionHandler, SecurityTokenService tokenService, LoginAttemptTracker loginAttemptTracker)
+        private DBConnection(ISession session, IHttpContextAccessor httpContextAccessor, IConfiguration configuration, SessionHandler sessionHandler, SecurityTokenService tokenService, LoginAttemptTracker loginAttemptTracker, AIS.Services.IClientIpResolver clientIpResolver = null)
             {
             _session = session ?? throw new ArgumentNullException(nameof(session));
             _httpCon = httpContextAccessor ?? throw new ArgumentNullException(nameof(httpContextAccessor));
             _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
+            _clientIpResolver = clientIpResolver;
             this.sessionHandler = sessionHandler ?? throw new ArgumentNullException(nameof(sessionHandler));
             _tokenService = tokenService ?? throw new ArgumentNullException(nameof(tokenService));
             _loginAttemptTracker = loginAttemptTracker;
@@ -122,7 +125,7 @@ namespace AIS.Controllers
             if (session == null)
                 throw new InvalidOperationException("Session has not been provided to the database connection.");
 
-            return new DBConnection(session, _httpCon, _configuration, sessionHandler, _tokenService, _loginAttemptTracker);
+            return new DBConnection(session, _httpCon, _configuration, sessionHandler, _tokenService, _loginAttemptTracker, _clientIpResolver);
             }
 
         private static string ReadFirstAvailableString(IDataRecord reader, params string[] preferredColumns)
@@ -312,7 +315,7 @@ namespace AIS.Controllers
 
         private string GetRemoteIpAddress()
             {
-            return _httpCon?.HttpContext?.Connection?.RemoteIpAddress?.ToString() ?? "unknown";
+            return _clientIpResolver?.GetClientIp(_httpCon?.HttpContext) ?? _httpCon?.HttpContext?.Connection?.RemoteIpAddress?.ToString() ?? "unknown";
             }
         public bool DisposeLoginSession()
             {
@@ -560,7 +563,7 @@ namespace AIS.Controllers
                     cmd.Parameters.Clear();
                     cmd.Parameters.Add("PPNumber", OracleDbType.Int32).Value = user.PPNumber;
                     cmd.Parameters.Add("UserRoleID", OracleDbType.Int32).Value = user.UserRoleID;
-                    cmd.Parameters.Add("LocalIpAddress", OracleDbType.Varchar2).Value = iPAddress.GetLocalIpAddress();
+                    cmd.Parameters.Add("LocalIpAddress", OracleDbType.Varchar2).Value = GetRemoteIpAddress();
                     cmd.Parameters.Add("SessionId", OracleDbType.Varchar2).Value = sessionUser.SessionId;
                     cmd.Parameters.Add("UserLocationType", OracleDbType.Varchar2).Value = user.UserLocationType;
                     cmd.Parameters.Add("MACAddress", OracleDbType.Varchar2).Value = iPAddress.GetMACAddress();
