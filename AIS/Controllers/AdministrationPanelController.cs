@@ -1,5 +1,6 @@
 using System;
 using AIS.Models;
+using AIS.Filters;
 using AIS.Models.Requests;
 using AIS.Models.WorkflowDashboard;
 using AIS.Security.PasswordPolicy;
@@ -1810,6 +1811,7 @@ namespace AIS.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [ApplicationAudit("Engagement Entity Shift", "Administration", "PKG_AD", "P_SHIFT_ENGAGEMENT_ENTITY", ActionCategory = "SHIFT", EngagementId = "request.EngagementId", ObjectType = "ENGAGEMENT", ObjectId = "request.EngagementId")]
         public IActionResult ShiftEngagementEntity(EngagementEntityShiftRequestModel request)
             {
             if (!User.Identity.IsAuthenticated || !sessionHandler.TryGetUser(out var user) || user == null)

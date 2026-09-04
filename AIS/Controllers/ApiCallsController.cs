@@ -1,5 +1,6 @@
 ﻿using AIS.Exceptions;
 using AIS.Models;
+using AIS.Filters;
 using AIS.Models.AIS.Models;
 using AIS.Models.AIS.Models.Execution;
 using AIS.Models.CAU;
@@ -1289,6 +1290,7 @@ namespace AIS.Controllers
 
         [HttpPost]
         [Consumes("application/json")]
+        [ApplicationAudit("Audit Observation Save", "Audit Execution", "PKG_AR", "P_SAVEOBSERVATION", ActionCategory = "SAVE", EngagementId = "request.ENG_ID", ObjectType = "OBSERVATION", RequireNonEmpty = "request.LIST_OBS")]
         public IActionResult save_observations([FromBody] SaveObservationRequest request)
             {
             if (!ModelState.IsValid)
@@ -1423,6 +1425,7 @@ namespace AIS.Controllers
 
         [HttpPost]
         [Consumes("application/json")]
+        [ApplicationAudit("Audit Observation Save (CAU)", "Audit Execution", "PKG_AR", "P_SAVEAUDITOBSERVATIONCAD", ActionCategory = "SAVE", EngagementId = "request.ENG_ID", ObjectType = "OBSERVATION", RequireNonEmpty = "request.LIST_OBS")]
         public IActionResult save_observations_cau(
      [FromBody] SaveObservationCauRequest request)
             {
@@ -1524,6 +1527,7 @@ namespace AIS.Controllers
             return System.Text.Json.JsonSerializer.Serialize(new { Status = true, Message = response });
             }
         [HttpPost]
+        [ApplicationAudit("Audit Observation Status Update", "Audit Execution", "PKG_AR", "P_UPDATEOBSERVATIONSTATUS", ActionCategory = "UPDATE", ParaId = "request.OBS_ID", ObjectType = "OBSERVATION", ObjectId = "request.OBS_ID")]
         public IActionResult update_observation_status(UpdateObservationStatusRequest request)
             {
             if (request.NEW_STATUS_ID != 4)
@@ -1621,6 +1625,7 @@ namespace AIS.Controllers
             }
 
         [HttpPost]
+        [ApplicationAudit("Observation Drop", "Audit Execution", "PKG_AR", "P_DROPOBSERVATION", ActionCategory = "DROP", ParaId = "OBS_ID", ObjectType = "OBSERVATION", ObjectId = "OBS_ID")]
         public string drop_observation(int OBS_ID)
             {
             string response = "";
@@ -1629,6 +1634,7 @@ namespace AIS.Controllers
 
             }
         [HttpPost]
+        [ApplicationAudit("Observation Submit to Auditee", "Audit Execution", "PKG_AR", "P_SUBMITOBSERVATIONTOAUDITEE", ActionCategory = "SUBMIT", ParaId = "OBS_ID", ObjectType = "OBSERVATION", ObjectId = "OBS_ID")]
         public async Task<string> submit_observation_to_auditee(int OBS_ID)
             {
             string response = "";
@@ -2773,6 +2779,7 @@ namespace AIS.Controllers
             }
 
         [HttpPost]
+        [ApplicationAudit("Post Audit Compliance Submit", "Post Audit Compliance", "PKG_AE", "P_SUBMITPOSTAUDITCOMPLIANCE", ActionCategory = "SUBMIT", OldParaId = "OLD_PARA_ID", NewParaId = "NEW_PARA_ID", ObjectType = "PARA")]
         public async Task<string> submit_post_audit_compliance(string OLD_PARA_ID, int NEW_PARA_ID, string INDICATOR, string COMPLIANCE, string COMMENTS, List<AuditeeResponseEvidenceModel> EVIDENCE_LIST, string SUBFOLDER)
             {
             var traceId = HttpContext?.TraceIdentifier ?? Guid.NewGuid().ToString("N");
@@ -2797,6 +2804,7 @@ namespace AIS.Controllers
             }
 
         [HttpPost]
+        [ApplicationAudit("Post Audit Compliance Review", "Post Audit Compliance", "PKG_AE", "P_SUBMITPOSTAUDITCOMPLIANCE_REVIEW", ActionCategory = "REVIEW", OldParaId = "OLD_PARA_ID", NewParaId = "NEW_PARA_ID", ObjectType = "PARA")]
         public string submit_post_audit_compliance_review(string OLD_PARA_ID, int NEW_PARA_ID, string INDICATOR, string COMPLIANCE, string COMMENTS, List<AuditeeResponseEvidenceModel> EVIDENCE_LIST)
             {
             var remarksWithoutTags = RichTextTagRegex.Replace(COMMENTS ?? string.Empty, string.Empty);
@@ -2876,6 +2884,7 @@ namespace AIS.Controllers
             }
 
         [HttpPost]
+        [ApplicationAudit("Para Settlement Submit", "Para Settlement", "PKG_HD", "P_ADDFINALSETTLEMENT", ActionCategory = "SETTLEMENT", ParaId = "PARA_ID", ObjectType = "PARA", ObjectId = "PARA_ID")]
         public string submit_old_para_compliance_head_status(int PARA_ID, string REMARKS, int NEW_STATUS, string PARA_REF, string PARA_INDICATOR, string PARA_CATEGORY, int AU_OBS_ID, string SEQUENCE, string AUDITED_BY, string ENTITY_ID)
             {
             string response = "";
@@ -4109,12 +4118,14 @@ namespace AIS.Controllers
             return dBConnection.GetParentChildEntities(P_TYPE_ID, C_TYPE_ID);
             }
         [HttpPost]
+        [ApplicationAudit("Entity Shift", "Administration", "PKG_AD", "P_ADD_ENTITY_SHIFTING", ActionCategory = "SHIFT", ObjectType = "ENTITY", ObjectId = "FROM_ENT_ID")]
         public string submit_entity_shifting_from_admin_panel(string FROM_ENT_ID, string TO_ENT_ID, string CIR_REF, DateTime CIR_DATE, string CIR)
             {
             return "{\"Status\":true,\"Message\":\"" + dBConnection.SubmitEntityShiftingFromAdminPanel(FROM_ENT_ID, TO_ENT_ID, CIR_REF, CIR_DATE, CIR) + "\"}";
             }
 
         [HttpPost]
+        [ApplicationAudit("Department Entity Shift", "Administration", "PKG_AD", "P_ADD_DEPARTMENT_ENTITY_SHIFTING", ActionCategory = "SHIFT", ObjectType = "ENTITY", ObjectId = "FROM_ENT_ID")]
         public string submit_department_entity_shifting_from_admin_panel(string FROM_ENT_ID, string TO_ENT_ID, string CIR_REF, DateTime CIR_DATE, string CIR)
             {
             return "{\"Status\":true,\"Message\":\"" + dBConnection.SubmitDepartmentEntityShiftingFromAdminPanel(FROM_ENT_ID, TO_ENT_ID, CIR_REF, CIR_DATE, CIR) + "\"}";

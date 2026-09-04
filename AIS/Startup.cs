@@ -77,6 +77,7 @@ namespace AIS
             services.AddScoped<DBConnection>();
             services.AddScoped<IStandaloneEmailManagementService, StandaloneEmailManagementService>();
             services.AddScoped<SystemErrorMonitor>();
+            services.AddScoped<IApplicationAuditLogger, ApplicationAuditLogger>();
             services.AddSingleton<IClientIpResolver, ClientIpResolver>();
             services.AddScoped<DBConnectionArchive>();
             services.AddScoped<IStaticAssetVersionTokenProvider, StaticAssetVersionTokenProvider>();
