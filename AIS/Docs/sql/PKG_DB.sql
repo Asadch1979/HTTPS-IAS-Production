@@ -156,7 +156,7 @@
                                  io_cursor OUT t_cursor);
 
 end PKG_DB;
-
+/
 create or replace package body PKG_DB is
 
   procedure P_Getrealtionshiptype(UserRoleid IN NUMBER,
@@ -185,7 +185,7 @@ create or replace package body PKG_DB is
              and f.id in (1, 2)
            order by f.id;
       else
-        if (UserRoleid in (1, 3, 5, 6, 7)) then
+        if (UserRoleid in (1, 3, 5, 6, 7,11)) then
           open io_cursor for
             select f.entity_realtion_id,
                    f.parent_name || '   TO   ' || f.chlid_name as field_name
@@ -1773,64 +1773,81 @@ create or replace package body PKG_DB is
   
   end p_get_dashborad_scorecard;
 
-  Procedure P_Functional_ANALYSIS_DETAILS(R_ID       in number,
-                                          ENT_ID     in number,
-                                          P_REF_DATE in date,
-                                          io_cursor  OUT t_cursor) is
-  
-  begin
-    if (R_id in (1, 2, 3, 5, 7, 41,11)) then
-      open io_cursor for
-        SELECT 
-    a.id,
-    a.e_heading AS heading,               
-    a.code || '  ' || a.a_heading AS annex,
-    a.audit_comments,
+PROCEDURE P_Functional_ANALYSIS_DETAILS(
+    R_ID       IN NUMBER,
+    ENT_ID     IN NUMBER,
+    P_REF_DATE IN DATE,
+    io_cursor  OUT t_cursor
+) IS
 
-    COUNT(CASE
-            WHEN trunc(para_added_on) <= P_REF_DATE
-             AND (trunc(setteled_on) IS NULL OR trunc(setteled_on) > P_REF_DATE)
-            THEN 1
-          END) AS total,               
+    V_REF_DATE    DATE := TRUNC(P_REF_DATE);
+    V_YEAR_START  DATE := TRUNC(P_REF_DATE, 'YYYY');
 
-    NVL(SUM(CASE
-              WHEN EXTRACT(YEAR FROM para_added_on) < EXTRACT(YEAR FROM P_REF_DATE)
-               AND (trunc(setteled_on) IS NULL OR trunc(setteled_on) > P_REF_DATE)
-              THEN 1
-            END), 0) AS old_total,
+BEGIN
 
-    NVL(SUM(CASE
-              WHEN trunc(para_added_on) BETWEEN 
-                   TO_DATE('01-Jan-' || TO_CHAR(P_REF_DATE,'YYYY'),'DD-MON-YYYY')
-                   AND P_REF_DATE
-               AND (trunc(setteled_on) IS NULL OR trunc(setteled_on) > P_REF_DATE)
-              THEN 1
-            END), 0) AS new_total,
+    IF R_ID IN (1, 2, 3, 5, 7, 11, 41) THEN
 
-    NVL(SUM(CASE
-              WHEN risk = 1
-               AND trunc(para_added_on) <= P_REF_DATE
-               AND (trunc(setteled_on) IS NULL OR trunc(setteled_on) > P_REF_DATE)
-              THEN 1
-            END), 0) AS R1,
+        OPEN io_cursor FOR
+            SELECT 
+                   a.id,
+                   a.e_heading AS heading,               
+                   a.code || '  ' || a.a_heading AS annex,
+                   a.audit_comments,
 
-    NVL(SUM(CASE
-              WHEN risk = 2
-               AND trunc(para_added_on) <= P_REF_DATE
-               AND (trunc(setteled_on) IS NULL OR trunc(setteled_on) > P_REF_DATE)
-              THEN 1
-            END), 0) AS R2,
+                   COUNT(CASE
+                           WHEN TRUNC(a.para_added_on) <= V_REF_DATE
+                            AND (a.setteled_on IS NULL OR TRUNC(a.setteled_on) > V_REF_DATE)
+                           THEN 1
+                         END) AS total,               
 
-    NVL(SUM(CASE
-              WHEN risk = 3
-               AND trunc(para_added_on) <= P_REF_DATE
-               AND (trunc(setteled_on) IS NULL OR trunc(setteled_on) > P_REF_DATE)
-              THEN 1
-            END), 0) AS R3
+                   NVL(SUM(CASE
+                             WHEN TRUNC(a.para_added_on) < V_YEAR_START
+                              AND (a.setteled_on IS NULL OR TRUNC(a.setteled_on) > V_REF_DATE)
+                             THEN 1
+                           END), 0) AS old_total,
 
-FROM VW_AU_POST_COMPLIANCE_FULL a
-GROUP BY a.id, a.e_heading, a.code, a.a_heading, a.audit_comments
-ORDER BY a.id;
+                   NVL(SUM(CASE
+                             WHEN TRUNC(a.para_added_on) BETWEEN V_YEAR_START AND V_REF_DATE
+                              AND (a.setteled_on IS NULL OR TRUNC(a.setteled_on) > V_REF_DATE)
+                             THEN 1
+                           END), 0) AS new_total,
+
+                   NVL(SUM(CASE
+                             WHEN a.risk = 1
+                              AND TRUNC(a.para_added_on) <= V_REF_DATE
+                              AND (a.setteled_on IS NULL OR TRUNC(a.setteled_on) > V_REF_DATE)
+                             THEN 1
+                           END), 0) AS R1,
+
+                   NVL(SUM(CASE
+                             WHEN a.risk = 2
+                              AND TRUNC(a.para_added_on) <= V_REF_DATE
+                              AND (a.setteled_on IS NULL OR TRUNC(a.setteled_on) > V_REF_DATE)
+                             THEN 1
+                           END), 0) AS R2,
+
+                   NVL(SUM(CASE
+                             WHEN a.risk = 3
+                              AND TRUNC(a.para_added_on) <= V_REF_DATE
+                              AND (a.setteled_on IS NULL OR TRUNC(a.setteled_on) > V_REF_DATE)
+                             THEN 1
+                           END), 0) AS R3
+
+            FROM VW_AU_POST_COMPLIANCE_FULL a
+
+            WHERE (
+                      R_ID NOT IN (2, 6, 7)
+                   OR a.audited_by = ENT_ID
+                  )
+
+            GROUP BY 
+                   a.id, 
+                   a.e_heading, 
+                   a.code, 
+                   a.a_heading, 
+                   a.audit_comments
+
+            ORDER BY a.id;
 
     
     else
@@ -1966,8 +1983,7 @@ ORDER BY a.id;
                         s.R2,
                         s.R3
           from v_p_functional_entity_wise_analysis s;
-    else
-      if (R_id in (9)) then
+    elsif (R_id in (6,9)) then
         open io_cursor for
           select distinct s.entity_id,
                           s.parent_id,
@@ -1979,12 +1995,12 @@ ORDER BY a.id;
                           s.R1,
                           s.R2,
                           s.R3
-            from v_p_functional_entity_wise_analysis s
+            from v_p_functional_entity_wise_analysis_man s
            inner join t_auditee_entities e
               on s.entity_id = e.entity_id
-           where e.auditby_id = ENT_ID;
-      else
-        if (R_id in (4)) then
+           where e.auditby_id = ENT_ID
+           order by s.reporting_office;
+      elsif (R_id in (4)) then
           open io_cursor for
             select distinct s.entity_id,
                             s.parent_id,
@@ -1998,8 +2014,7 @@ ORDER BY a.id;
                             s.R3
               from v_p_functional_entity_wise_analysis s
              where s.relation_type_id in (22, 5, 20);
-        else
-          if (R_id in (39)) then
+        elsif (R_id in (39)) then
             open io_cursor for
               select distinct s.entity_id,
                               s.parent_id,
@@ -2018,8 +2033,7 @@ ORDER BY a.id;
                where s.relation_type_id in (5, 23, 20)
                  and m.GM_ID = ENT_ID
                order by s.parent_id desc;
-          else
-            if (R_id in (14, 21)) then
+          elsif (R_id in (14, 21)) then
               open io_cursor for
                 select distinct s.entity_id,
                                 s.parent_id,
@@ -2036,8 +2050,7 @@ ORDER BY a.id;
                     on M.ENTITY_ID = S.entity_id
                  where M.PARENT_ID = ENT_ID
                  order by s.parent_id desc;
-            else
-              if (R_id in (40) and ent_id = 112247) then
+            elsif (R_id in (40) and ent_id = 112247) then
                 open io_cursor for
                   select distinct s.entity_id,
                                   s.parent_id,
@@ -2052,8 +2065,7 @@ ORDER BY a.id;
                     from v_p_functional_entity_wise_analysis_ops s
                    where s.c_type_id = 5
                    order by s.parent_id desc;
-              else
-                if (R_id in (40) and ent_id != 112247) then
+              elsif (R_id in (40) and ent_id != 112247) then
                   open io_cursor for
                     select distinct s.entity_id,
                                     s.parent_id,
@@ -2071,15 +2083,12 @@ ORDER BY a.id;
                               25
                              WHEN ENT_ID = 112277 then
                               28
+                             WHEN ENT_ID = 112261 THEN
+                               s.c_type_id
                            end
-                     order by s.parent_id desc;
+                     order by s.total desc;
                 end if;
-              end if;
-            end if;
-          end if;
-        end if;
-      end if;
-    end if;
+              
   END P_Functional_ENTITY_WISE_ANALYSIS;
 
   Procedure P_Functional_ENTITY_WISE_Paras(R_ID      in number,
@@ -2088,8 +2097,8 @@ ORDER BY a.id;
                                            io_cursor OUT t_cursor) is
     E_ID number := 0;
   begin
-    select u.entity_id into E_ID from t_user u where u.ppno = P_NO;
-    if (R_id in (40) and E_ID = 112247) then
+ select u.entity_id into E_ID from t_user u where u.ppno = P_NO;
+    if (R_id in (40) and E_ID in (112247,112261)) then
       open io_cursor for
         select distinct o.entity_id,
                         o.name,
@@ -2105,8 +2114,7 @@ ORDER BY a.id;
          inner join t_auditee_entities_maping m
             on (m.parent_id = o.entity_id or m.entity_id = o.entity_id)
          where m.parent_id = ENT_ID;
-    else
-      IF (R_ID in (14)) then
+    elsIF (R_ID in (14)) then
         open io_cursor for
           select distinct o.entity_id,
                           o.name,
@@ -2122,7 +2130,23 @@ ORDER BY a.id;
            inner join t_auditee_entities_maping m
               on (m.parent_id = o.entity_id or m.entity_id = o.entity_id)
            where m.parent_id = ENT_ID;
-      else
+      elsif (E_ID in (112242,112248)) then
+        open io_cursor for
+          select distinct o.entity_id,
+                          o.name,
+                          o.audit_period,
+                          o.ref_p,
+                          o.au_obs_id,
+                          o.para_no,
+                          o.gist_of_paras,
+                          o.risk,
+                          o.para_category,
+                          o.com_id
+            from v_dash_borad_para_deatils_man o
+           inner join t_auditee_entities_maping e
+              on e.entity_id = o.entity_id
+           where o.entity_id = ENT_ID;
+       else
         open io_cursor for
           select distinct o.entity_id,
                           o.name,
@@ -2139,7 +2163,6 @@ ORDER BY a.id;
               on e.entity_id = o.entity_id
            where e.entity_id = ENT_ID;
       end if;
-    end if;
   END P_Functional_ENTITY_WISE_Paras;
 
   Procedure P_Functional_Reporting_office_WISE_ANALYSIS(R_ID      in number,

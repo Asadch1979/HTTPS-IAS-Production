@@ -7674,5 +7674,4 @@ create or replace package body PKG_AR is
   END P_Update_Memo_Draft_Para_No;
 
 
-
 end PKG_AR;

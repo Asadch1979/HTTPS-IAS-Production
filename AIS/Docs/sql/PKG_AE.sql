@@ -224,6 +224,15 @@
                                                     R_ID      in number,
                                                     io_cursor OUT t_cursor);
 
+  Procedure p_GetPostAuditComplianceSecuritySnapshot(CM_ID     in number,
+                                                     io_cursor OUT t_cursor);
+
+  Procedure P_HasActiveUserContextAssignment(P_NO        in number,
+                                             ENT_ID      in number,
+                                             R_ID        in number,
+                                             USER_CON_ID in number,
+                                             io_cursor   OUT t_cursor);                                                     
+
 end PKG_AE;
 
 create or replace package body PKG_AE is
@@ -496,7 +505,8 @@ create or replace package body PKG_AE is
     OPEN io_Cursor FOR
       select ot.text, o.reference_id
         from T_AU_OBSERVATION_TEXT ot
-        inner join t_au_observation o on o.id = ot.observatsion_id
+       inner join t_au_observation o
+          on o.id = ot.observatsion_id
        where ot.OBSERVATSION_ID = OBS_ID;
   
   end P_GetObservationText;
@@ -1003,6 +1013,7 @@ create or replace package body PKG_AE is
                C.C_STATUS_UP,
                C.C_STATUS_DOWN,
                c.IND,
+               c.Rsk as Risk,
                c.com_id,
                C.AUDIT_PERIOD,
                C.START_DATE || ' - ' || C.END_DATE AS AUDIT_DATE
@@ -1031,6 +1042,7 @@ create or replace package body PKG_AE is
                C.C_STATUS_UP,
                C.C_STATUS_DOWN,
                c.IND,
+               c.Rsk as Risk,
                c.com_id,
                C.AUDIT_PERIOD,
                C.START_DATE || ' - ' || C.END_DATE AS AUDIT_DATE
@@ -1083,10 +1095,11 @@ create or replace package body PKG_AE is
                  c.REC_FROM,
                  C.NEXT_R_ID,
                  C.PER_R_ID,
-                 c.rsk,
                  C.C_STATUS_UP,
                  C.C_STATUS_DOWN,
                  c.IND,
+                 c.Rsk,
+                 c.Rsk as Risk,
                  c.com_id,
                  C.START_DATE AS AUDIT_START_DATE,
                  C.END_DATE AS AUDIT_END_DATE,
@@ -1115,10 +1128,11 @@ create or replace package body PKG_AE is
                    c.REC_FROM,
                    C.NEXT_R_ID,
                    C.PER_R_ID,
-                   c.rsk,
                    C.C_STATUS_UP,
                    C.C_STATUS_DOWN,
                    c.IND,
+                   c.Rsk,
+                   c.Rsk as Risk,
                    c.com_id,
                    C.START_DATE AS AUDIT_START_DATE,
                    C.END_DATE AS AUDIT_END_DATE,
@@ -1157,7 +1171,8 @@ create or replace package body PKG_AE is
                    C.C_STATUS_UP,
                    C.C_STATUS_DOWN,
                    c.IND,
-                   c.rsk,
+                   c.Rsk,
+                   c.Rsk as Risk,
                    c.com_id,
                    C.START_DATE AS AUDIT_START_DATE,
                    C.END_DATE AS AUDIT_END_DATE,
@@ -1333,8 +1348,8 @@ create or replace package body PKG_AE is
     select NVL(max(cad.para_id), 0)
       into C_F
       from t_au_observation_old_cad_paras cad
-     where cad.para_id = new_id
-       and cad.entity_id = ENT_ID;
+     where cad.para_id = new_id;
+    --and cad.entity_id = ENT_ID;
     select (case
              when et.audit_type = 'B' then
               'A'
@@ -1535,271 +1550,431 @@ create or replace package body PKG_AE is
   
   end P_SubmitPostAuditCompliance_Evidence;
 
-  Procedure P_SubmitPostAuditCompliance_Review(Old_id     number,
-                                               new_id     number,
-                                               ENT_ID     number,
-                                               P_NO       number,
-                                               R_ID       number,
-                                               A_COMMENTS varchar2,
-                                               P_IND      varchar2,
-                                               io_cursor  OUT t_cursor) as
-    P_F varchar2(50);
-    cursor V is
-      select C.AUDIT_PERIOD,
-             c.name,
+  PROCEDURE P_SubmitPostAuditCompliance_Review(Old_id     NUMBER,
+                                               new_id     NUMBER,
+                                               ENT_ID     NUMBER,
+                                               P_NO       NUMBER,
+                                               R_ID       NUMBER,
+                                               A_COMMENTS VARCHAR2,
+                                               P_IND      VARCHAR2,
+                                               io_cursor  OUT t_cursor) AS
+  
+    ------------------------------------------------------------------
+    -- Local variables
+    ------------------------------------------------------------------
+    P_F VARCHAR2(50);
+    N_F NUMBER := 0;
+    Z_B NUMBER := 0;
+    C_F NUMBER := 0;
+  
+    v_current_stage NUMBER;
+    v_savepoint_set BOOLEAN := FALSE;
+  
+    ------------------------------------------------------------------
+    -- Compliance cursor
+    ------------------------------------------------------------------
+    CURSOR V IS
+      SELECT C.AUDIT_PERIOD,
+             C.NAME,
              C.PARA_NO,
              C.NEW_PARAID,
              C.OLD_PARA_ID,
              C.GIST_OF_PARAS,
              C.AUDITBY_ID,
-             c.REC_FROM,
+             C.REC_FROM,
              ET.EMAIL_ADDRESS AS TO_EMAIL,
              AD.EMAIL_ADDRESS AS CC_EMAIL,
-             MT.EMAIL_ADDRESS as CC_EMAIL2,
-             (case
-               when P_IND = 'U' then
+             MT.EMAIL_ADDRESS AS CC_EMAIL2,
+             
+             CASE
+               WHEN P_IND = 'U' THEN
                 C.NEXT_R_ID
-               else
+               ELSE
                 C.PER_R_ID
-             end) as role_id,
-             (case
-               when P_IND = 'U' then
+             END AS ROLE_ID,
+             
+             CASE
+               WHEN P_IND = 'U' THEN
                 C.C_STATUS_UP
-               else
+               ELSE
                 C.C_STATUS_DOWN
-             end) as status_id,
-             c.IND,
-             c.com_stage,
-             c.com_CYCLE,
-             c.com_id as comid,
+             END AS STATUS_ID,
+             
+             C.IND,
+             C.COM_STAGE,
+             C.COM_CYCLE,
+             C.COM_ID AS COMID,
              C.START_DATE || ' - ' || C.END_DATE AS AUDIT_DATE
+      
         FROM V_GET_AIS_POST_COMPLIANCE C
-       inner join t_auditee_entities_maping m
-          on m.entity_id = c.entity_id
+      
+       INNER JOIN T_AUDITEE_ENTITIES_MAPING M
+          ON M.ENTITY_ID = C.ENTITY_ID
+      
        INNER JOIN T_AUDITEE_ENTITIES ET
           ON ET.ENTITY_ID = M.ENTITY_ID
        INNER JOIN T_AUDITEE_ENTITIES MT
           ON MT.ENTITY_ID = M.PARENT_ID
        INNER JOIN T_AUDITEE_ENTITIES AD
           ON AD.ENTITY_ID = ET.AUDITBY_ID
-        left join t_auditee_entities_maping_com e
-          on e.com_key = c.com_key
-       where (C.OLD_PARA_ID = Old_id or
-             (C.NEW_PARAID = new_id and c.IND = P_F));
+      
+        LEFT JOIN T_AUDITEE_ENTITIES_MAPING_COM E
+          ON E.COM_KEY = C.COM_KEY
+      
+       WHERE C.OLD_PARA_ID = Old_id
+          OR (C.NEW_PARAID = new_id AND C.IND = P_F);
   
-    Vr1 V%rowtype;
-    N_F number := 0;
-    Z_B number := 0;
-    C_F number := 0;
-  begin
-    select NVL(max(cad.para_id), 0)
-      into C_F
-      from t_au_observation_old_cad_paras cad
-     where cad.para_id = new_id
-       and cad.audited_by = ENT_ID;
-    select (case
-             when et.audit_type = 'B' then
+    Vr1 V%ROWTYPE;
+  
+  BEGIN
+  
+    ------------------------------------------------------------------
+    -- 1. Determine whether para belongs to normal observation
+    --    or old CAD para
+    ------------------------------------------------------------------
+    SELECT NVL(MAX(CAD.PARA_ID), 0)
+      INTO C_F
+      FROM T_AU_OBSERVATION_OLD_CAD_PARAS CAD
+     WHERE CAD.PARA_ID = new_id
+       AND CAD.AUDITED_BY = ENT_ID;
+  
+    SELECT CASE
+             WHEN ET.AUDIT_TYPE = 'B' THEN
               'A'
-             else
-              (case
-                when C_F != 0 then
+             ELSE
+              CASE
+                WHEN C_F <> 0 THEN
                  'C'
-                else
+                ELSE
                  'A'
-              end)
-           end)
-      into P_F
-      from t_auditee_entities en
-     inner join t_auditee_ent_types et
-        on en.type_id = et.autid
-     where en.entity_id = ENT_ID;
+              END
+           END
+      INTO P_F
+      FROM T_AUDITEE_ENTITIES EN
+     INNER JOIN T_AUDITEE_ENT_TYPES ET
+        ON EN.TYPE_ID = ET.AUTID
+     WHERE EN.ENTITY_ID = ENT_ID;
   
-    Open V;
-    Fetch V
-      into vr1;
-    Close v;
+    ------------------------------------------------------------------
+    -- 2. Fetch compliance record
+    ------------------------------------------------------------------
+    OPEN V;
   
-    If (R_ID = vr1.com_stage) then
-    select NVL(max(m.ppno), 0)
-      into N_F
-      from t_user u
-     inner join t_user_context_assignment m
-        on m.ppno = u.ppno
-     where m.ppno = P_NO
-       and m.entity_id = ent_id
-       and m.role_id = R_ID
-         and R_ID != 13;
+    FETCH V
+      INTO Vr1;
+  
+    IF V%NOTFOUND THEN
     
-      if (N_F != 0) then
-        select NVL(MAX(l.id), 0)
-          into Z_B
-          from t_au_activity_log l
-         where l.ppnum = P_NO;
-        update t_au_activity_log l
-           set l.end_time = sysdate
-         where l.id = Z_B;
-        commit;
+      CLOSE V;
+    
+      OPEN io_cursor FOR
+        SELECT 'Compliance record not found. Please refresh and try again.' AS remarks,
+               '' AS para_no,
+               '' AS para_status,
+               '' AS GIST_OF_PARAS,
+               '' AS TO_EMAIL,
+               '' AS CC_EMAIL,
+               '' AS CC_EMAIL2
+          FROM DUAL;
+    
+      RETURN;
+    
+    END IF;
+  
+    CLOSE V;
+  
+    ------------------------------------------------------------------
+    -- 3. Validate user/context before starting transaction
+    ------------------------------------------------------------------
+    SELECT NVL(MAX(M.PPNO), 0)
+      INTO N_F
+      FROM T_USER U
+     INNER JOIN T_USER_CONTEXT_ASSIGNMENT M
+        ON M.PPNO = U.PPNO
+     WHERE M.PPNO = P_NO
+       AND M.ENTITY_ID = ENT_ID
+       AND M.ROLE_ID = R_ID
+       AND R_ID <> 13;
+  
+    IF N_F = 0 THEN
+    
+      OPEN io_cursor FOR
+        SELECT 'Sorry you connection is lost, logout and login again' AS remarks,
+               Vr1.PARA_NO AS PARA_NO,
+               '' AS para_status,
+               '' AS GIST_OF_PARAS,
+               '' AS TO_EMAIL,
+               '' AS CC_EMAIL,
+               '' AS CC_EMAIL2
+          FROM DUAL;
+    
+      RETURN;
+    
+    END IF;
+  
+    ------------------------------------------------------------------
+    -- 4. Start protected transaction
+    ------------------------------------------------------------------
+    SAVEPOINT SP_POST_COMPLIANCE;
+  
+    v_savepoint_set := TRUE;
+  
+    ------------------------------------------------------------------
+    -- 5. Lock only this compliance record.
+    --
+    -- Prevents two users from moving the same para simultaneously.
+    -- Other COM_IDs remain available to other users.
+    ------------------------------------------------------------------
+    SELECT C.COM_STAGE
+      INTO v_current_stage
+      FROM AIS_T_AU_POST_COMPLIANCE C
+     WHERE C.COM_ID = Vr1.COMID
+       FOR UPDATE;
+  
+    ------------------------------------------------------------------
+    -- 6. Revalidate stage AFTER locking the row
+    ------------------------------------------------------------------
+    IF R_ID <> v_current_stage THEN
+    
+      ROLLBACK TO SP_POST_COMPLIANCE;
+    
+      OPEN io_cursor FOR
+        SELECT 'Compliance Already Submitted, If the para no ' ||
+               Vr1.PARA_NO ||
+               ' still showing on the grid, Contact on  051-2002110' AS remarks,
+               '' AS PARA_NO,
+               '' AS para_status,
+               '' AS GIST_OF_PARAS,
+               '' AS TO_EMAIL,
+               '' AS CC_EMAIL,
+               '' AS CC_EMAIL2
+          FROM DUAL;
+    
+      RETURN;
+    
+    END IF;
+  
+    ------------------------------------------------------------------
+    -- 7. Close previous activity
+    ------------------------------------------------------------------
+    SELECT NVL(MAX(L.ID), 0)
+      INTO Z_B
+      FROM T_AU_ACTIVITY_LOG L
+     WHERE L.PPNUM = P_NO;
+  
+    UPDATE T_AU_ACTIVITY_LOG L SET L.END_TIME = SYSDATE WHERE L.ID = Z_B;
+  
+    ------------------------------------------------------------------
+    -- 8. Insert new activity log
+    --
+    -- Existing MAX(ID)+1 mechanism deliberately retained.
+    ------------------------------------------------------------------
+    INSERT INTO T_AU_ACTIVITY_LOG
+      (ID,
+       ENTITY_ID,
+       ROLE_ID,
+       PPNUM,
+       PAGE_ID,
+       ACTION,
+       START_TIME,
+       SEQ,
+       UNATTEND)
+    VALUES
+      ((SELECT COALESCE(MAX(P.ID) + 1, 1) FROM T_AU_ACTIVITY_LOG P),
+       
+       ENT_ID,
+       R_ID,
+       P_NO,
+       12345,
+       
+       (Vr1.OLD_PARA_ID || 'Para Old id - ' || ' - Para new id - ' ||
+       Vr1.NEW_PARAID || ' -Status next ' || Vr1.STATUS_ID ||
+       ' Role Next ' || Vr1.ROLE_ID),
+       
+       SYSDATE,
+       
+       (SELECT COALESCE(MAX(L.SEQ) + 1, 1)
+          FROM T_AU_ACTIVITY_LOG L
+         WHERE L.ID = Z_B
+           AND L.PPNUM = P_NO),
+       
+       'Y');
+  
+    ------------------------------------------------------------------
+    -- 9. Insert compliance history FIRST
+    --
+    -- If A_COMMENTS exceeds the database column capacity, the insert
+    -- will fail here and the para will NOT move to the next stage.
+    ------------------------------------------------------------------
+    INSERT INTO AIS_T_AU_POST_COMPLIANCE_HISTORY
+      (HIST_ID,
+       COM_ID,
+       COM_CYCLE,
+       COM_STATUS,
+       COM_STAGE,
+       COMMENT_BY_ROLE,
+       COMMENT_BY_PPNO,
+       COMMENT_ON,
+       COMMENTS,
+       COM_FLOW)
+    VALUES
+      (SEQ_POST_COMPLIANCE_HISTORY.NEXTVAL,
+       Vr1.COMID,
+       Vr1.COM_CYCLE,
+       Vr1.STATUS_ID,
+       R_ID,
+       
+       (SELECT G.GROUP_NAME FROM T_GROUPS G WHERE G.GROUP_ID = R_ID),
+       
+       P_NO,
+       SYSDATE,
+       A_COMMENTS,
+       'Y');
+  
+    ------------------------------------------------------------------
+    -- 10. Settlement
+    ------------------------------------------------------------------
+    IF Vr1.STATUS_ID = 16 AND R_ID IN (6, 7, 44, 41) THEN
+    
+      --------------------------------------------------------------
+      -- Update post-compliance master
+      --------------------------------------------------------------
+      UPDATE AIS_T_AU_POST_COMPLIANCE C
+         SET C.COM_CYCLE   = Vr1.COM_CYCLE,
+             C.COM_STAGE   = Vr1.ROLE_ID,
+             C.COM_STATUS  = Vr1.STATUS_ID,
+             C.PARA_STATUS = 9,
+             C.SETTELED_ON = SYSDATE,
+             C.SETTELED_BY = P_NO
+       WHERE C.COM_ID = Vr1.COMID;
+    
+      --------------------------------------------------------------
+      -- Update originating para according to para type
+      --------------------------------------------------------------
+      CASE Vr1.IND
       
-        insert into t_au_activity_log
-          (id,
-           entity_id,
-           role_id,
-           ppnum,
-           page_id,
-           action,
-           start_time,
-           seq,
-           unattend)
-        VALUES
-          ((select COALESCE(max(p.ID) + 1, 1) from t_au_activity_log p),
-           ENT_ID,
-           R_ID,
-           P_NO,
-           12345,
-           (vr1.old_para_id || 'Para Old id - ' || ' - Para new id - ' ||
-           vr1.new_paraid || ' -Status next ' || Vr1.Status_Id ||
-           ' Role Next ' || vr1.role_id),
-           sysdate,
-           (select COALESCE(max(l.seq) + 1, 1)
-              from t_au_activity_log l
-             where l.id = Z_B
-               and l.ppnum = P_NO),
-           'Y');
-        commit;
-      
-        if (vr1.status_id = 16 AND R_ID in (6, 7, 44, 41)) then
-          update AIS_T_AU_POST_COMPLIANCE c
-             set c.com_cycle   = vr1.com_cycle,
-                 c.com_stage   = vr1.role_id,
-                 c.com_status  = vr1.status_id,
-                 c.para_status = 9,
-                 c.setteled_on = sysdate,
-                 c.setteled_by = P_NO
-           where c.com_id = vr1.comid;
-          commit;
-          if (vr1.ind = 'A') then
-            update t_au_observation o
-               set o.status     = 9,
-                   o.stelled_on = sysdate,
-                   o.settled_by = p_no
-             where o.id = new_id;
-            COMMIT;
-          ELSE
-            IF (vr1.ind = 'O') THEN
-              UPDATE T_AU_OLD_PARAS_FAD FD
-                 SET FD.PARA_STATUS    = 6,
-                     fd.settled_by     = P_NO,
-                     fd.parasetteledon = sysdate
-               WHERE FD.ID = Old_id;
-              COMMIT;
-            ELSE
-              IF (vr1.ind = 'C') THEN
-                UPDATE T_AU_OBSERVATION_OLD_CAD_PARAS cd
-                   SET cd.para_status = 9,
-                       cd.setteled_by = P_NO,
-                       cd.setteled_on = sysdate
-                 WHERE cd.para_id = new_id;
-                COMMIT;
-              END IF;
-            END IF;
-          end if;
+      ----------------------------------------------------------
+      -- Current observation
+      ----------------------------------------------------------
+        WHEN 'A' THEN
         
-        else
-          update AIS_T_AU_POST_COMPLIANCE c
-             set c.com_cycle  = vr1.com_cycle,
-                 c.com_stage  = vr1.role_id,
-                 c.com_status = vr1.status_id
-           where c.com_id = vr1.comid;
-          commit;
-        end if;
-      
-        insert into AIS_T_AU_POST_COMPLIANCE_HISTORY
-          (HIST_ID,
-           COM_ID,
-           COM_CYCLE,
-           COM_STATUS,
-           COM_STAGE,
-           COMMENT_BY_ROLE,
-           COMMENT_BY_PPNO,
-           COMMENT_ON,
-           COMMENTS,
-           COM_FLOW)
-        values
-          ((select COALESCE(max(ct.HIST_ID) + 1, 1)
-             From AIS_T_AU_POST_COMPLIANCE_HISTORY ct),
-           vr1.comid,
-           vr1.com_cycle,
-           vr1.status_id,
-           R_ID,
-           (select g.group_name from t_groups g where g.group_id = R_ID),
-           P_NO,
-           sysdate,
-           A_COMMENTS,
-           'Y');
-        commit;
-        IF (vr1.status_id = 16) THEN
-          open io_cursor for
-            select 'Para no ' || vr1.para_no ||
-                   ' is marked as settled, Please inform the auditee ' as remarks,
-                   VR1.PARA_NO as para_no,
-                   'Settled' as para_status,
-                   vr1.gist_of_paras as GIST_OF_PARAS,
-                   vr1.to_email as TO_EMAIL,
-                   vr1.cc_email as CC_EMAIL,
-                   '' as CC_EMAIL2
-              from dual;
+          UPDATE T_AU_OBSERVATION O
+             SET O.STATUS = 9, O.STELLED_ON = SYSDATE, O.SETTLED_BY = P_NO
+           WHERE O.ID = new_id;
+        
+      ----------------------------------------------------------
+      -- Old FAD para
+      ----------------------------------------------------------
+        WHEN 'O' THEN
+        
+          UPDATE T_AU_OLD_PARAS_FAD FD
+             SET FD.PARA_STATUS    = 6,
+                 FD.SETTLED_BY     = P_NO,
+                 FD.PARASETTELEDON = SYSDATE
+           WHERE FD.ID = Old_id;
+        
+      ----------------------------------------------------------
+      -- Old CAD para
+      ----------------------------------------------------------
+        WHEN 'C' THEN
+        
+          UPDATE T_AU_OBSERVATION_OLD_CAD_PARAS CD
+             SET CD.PARA_STATUS = 9,
+                 CD.SETTELED_BY = P_NO,
+                 CD.SETTELED_ON = SYSDATE
+           WHERE CD.PARA_ID = new_id;
+        
+      ----------------------------------------------------------
+      -- No originating table update required
+      ----------------------------------------------------------
         ELSE
-          if (P_IND = 'U') then
-            open io_cursor for
-              select 'Complaince Forwarded' as remarks,
-                     vr1.para_no as para_no,
-                     '' as para_status,
-                     '' as GIST_OF_PARAS,
-                     '' as TO_EMAIL,
-                     '' as CC_EMAIL,
-                     '' as CC_EMAIL2
-                from dual;
-          else
-            open io_cursor for
-              select 'Complaince Rejected/Referred Back' as remarks,
-                     VR1.PARA_NO as para_no,
-                     'Rejected/Referred Back' as para_status,
-                     '' as GIST_OF_PARAS,
-                     '' as TO_EMAIL,
-                     '' as CC_EMAIL,
-                     '' as CC_EMAIL2
-                from dual;
-          
-          END IF;
-        END IF;
-      else
-        open io_cursor for
-          select 'Sorry you connection is lost, logout and login again' as remarks,
-                 vr1.para_no as PARA_NO,
-                 '' as para_status,
-                 '' as GIST_OF_PARAS,
-                 '' as TO_EMAIL,
-                 '' as CC_EMAIL,
-                 '' as CC_EMAIL2
-            from dual;
-      end if;
+          NULL;
+        
+      END CASE;
     
-    else
-      open io_cursor for
-        select 'Compliance Already Submitted, If the para no ' ||
-               vr1.para_no ||
-               ' still showing on the grid, Contact on  051-2002110' as remarks,
-               '' as PARA_NO,
-               '' as para_status,
-               '' as GIST_OF_PARAS,
-               '' as TO_EMAIL,
-               '' as CC_EMAIL,
-               '' as CC_EMAIL2
-          from dual;
-    end if;
+    ELSE
+    
+      ----------------------------------------------------------------
+      -- 11. Normal forwarding / referring back
+      ----------------------------------------------------------------
+      UPDATE AIS_T_AU_POST_COMPLIANCE C
+         SET C.COM_CYCLE  = Vr1.COM_CYCLE,
+             C.COM_STAGE  = Vr1.ROLE_ID,
+             C.COM_STATUS = Vr1.STATUS_ID
+       WHERE C.COM_ID = Vr1.COMID;
+    
+    END IF;
   
-  end P_SubmitPostAuditCompliance_REview;
-
+    ------------------------------------------------------------------
+    -- 12. Entire business transaction succeeded
+    ------------------------------------------------------------------
+    COMMIT;
+  
+    v_savepoint_set := FALSE;
+  
+    ------------------------------------------------------------------
+    -- 13. Return response to application
+    ------------------------------------------------------------------
+    IF Vr1.STATUS_ID = 16 THEN
+    
+      OPEN io_cursor FOR
+        SELECT 'Para no ' || Vr1.PARA_NO ||
+               ' is marked as settled, Please inform the auditee ' AS remarks,
+               
+               Vr1.PARA_NO AS para_no,
+               'Settled' AS para_status,
+               Vr1.GIST_OF_PARAS AS GIST_OF_PARAS,
+               Vr1.TO_EMAIL AS TO_EMAIL,
+               Vr1.CC_EMAIL AS CC_EMAIL,
+               '' AS CC_EMAIL2
+        
+          FROM DUAL;
+    
+    ELSE
+    
+      IF P_IND = 'U' THEN
+      
+        OPEN io_cursor FOR
+          SELECT 'Complaince Forwarded' AS remarks,
+                 Vr1.PARA_NO AS para_no,
+                 '' AS para_status,
+                 '' AS GIST_OF_PARAS,
+                 '' AS TO_EMAIL,
+                 '' AS CC_EMAIL,
+                 '' AS CC_EMAIL2
+            FROM DUAL;
+      
+      ELSE
+      
+        OPEN io_cursor FOR
+          SELECT 'Complaince Rejected/Referred Back' AS remarks,
+                 Vr1.PARA_NO AS para_no,
+                 'Rejected/Referred Back' AS para_status,
+                 '' AS GIST_OF_PARAS,
+                 '' AS TO_EMAIL,
+                 '' AS CC_EMAIL,
+                 '' AS CC_EMAIL2
+            FROM DUAL;
+      
+      END IF;
+    
+    END IF;
+  
+  EXCEPTION
+  
+    ------------------------------------------------------------------
+    -- Any failure in history/workflow/settlement means the complete
+    -- submission is rolled back.
+    ------------------------------------------------------------------
+    WHEN OTHERS THEN
+    
+      IF v_savepoint_set THEN
+        ROLLBACK TO SP_POST_COMPLIANCE;
+      END IF;
+    
+      RAISE;
+    
+  END P_SubmitPostAuditCompliance_Review;
   procedure P_GetPostAuditCompliance_Evidence(TEXT_ID   in varchar2,
                                               io_cursor OUT t_cursor) as
   
@@ -2219,7 +2394,7 @@ create or replace package body PKG_AE is
     select NVL(max(u.ppno), 0)
       into N_F
       from t_user u
-     inner join t_user_maping m
+     inner join t_user_context_assignment m
         on m.ppno = u.ppno
      where u.ppno = P_NO
        and u.entity_id = ENT_ID
@@ -2388,4 +2563,45 @@ create or replace package body PKG_AE is
   
   end P_GetParasForComplianceByCAU_FOR_REVIEW;
 
+  Procedure p_GetPostAuditComplianceSecuritySnapshot(CM_ID     in number,
+                                                     io_cursor OUT t_cursor) as
+  
+  begin
+    OPEN io_cursor FOR
+    
+      select C.COM_ID,
+             C.ENTITY_ID,
+             C.NAME,
+             C.AUDIT_PERIOD,
+             C.PARA_NO,
+             C.NEW_PARAID,
+             C.OLD_PARA_ID,
+             C.COM_STAGE,
+             C.COM_STATUS,
+             C.COM_CYCLE,
+             C.NEXT_R_ID,
+             C.PER_R_ID,
+             C.IND,
+             C.REC_FROM
+        from V_GET_AIS_POST_COMPLIANCE C
+       where C.COM_ID = CM_ID;
+  end;
+
+  Procedure P_HasActiveUserContextAssignment(P_NO        in number,
+                                             ENT_ID      in number,
+                                             R_ID        in number,
+                                             USER_CON_ID in number,
+                                             io_cursor   OUT t_cursor) as
+  
+  begin
+    OPEN io_cursor FOR
+    
+      select count(1)
+        from T_USER_CONTEXT_ASSIGNMENT uca
+       where uca.PPNO = P_NO
+         and uca.ENTITY_ID = ENT_ID
+         and uca.ROLE_ID = R_ID
+         and uca.IS_ACTIVE = 'Y';
+  
+  end;
 end PKG_AE;

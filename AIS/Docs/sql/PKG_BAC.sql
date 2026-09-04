@@ -91,21 +91,18 @@
                                P_TO_DATE   IN DATE,
                                P_RISK_ID   IN NUMBER,
                                IO_CURSOR   OUT T_CURSOR);
-                               
-PROCEDURE P_GET_BAC_ANALYSIS_DETAIL
-(
-    P_FROM_DATE IN DATE,
-    P_TO_DATE   IN DATE,
-    P_ANNEX_ID  IN NUMBER,
-    P_RISK_ID   IN NUMBER DEFAULT 0,
-    IO_CURSOR   OUT T_CURSOR
-);
 
-PROCEDURE P_GET_BAC_PARA_TEXT
-(
-    P_OBSERVATION_ID IN NUMBER,
-    IO_CURSOR        OUT T_CURSOR
-);                               
+  PROCEDURE P_GET_BAC_ANALYSIS_DETAIL(P_FROM_DATE IN DATE,
+                                      P_TO_DATE   IN DATE,
+                                      P_ANNEX_ID  IN NUMBER,
+                                      P_RISK_ID   IN NUMBER DEFAULT 0,
+                                      IO_CURSOR   OUT T_CURSOR);
+
+  PROCEDURE P_GET_BAC_PARA_TEXT(P_OBSERVATION_ID IN NUMBER,
+                                IO_CURSOR        OUT T_CURSOR);
+                                
+ PROCEDURE P_GET_DSA_DETAILS(P_OBSERVATION_ID IN NUMBER,
+                              IO_CURSOR        OUT T_CURSOR);                                
 
 end PKG_BAC;
 /
@@ -737,6 +734,8 @@ create or replace package body PKG_BAC is
              annex_heading   AS annex,
              annex_id        as annex_id,
              
+             Sum(dsa) AS dsa,
+             
              /* Issues identified during selected period */
              COUNT(*) AS total,
              
@@ -774,7 +773,11 @@ create or replace package body PKG_BAC is
          AND risk = P_RISK_ID
          AND status IN (8, 9)
       
-       GROUP BY process_id, process_heading, annex_code, annex_heading
+       GROUP BY process_id,
+                process_heading,
+                annex_code,
+                annex_heading,
+                annex_id
       
        ORDER BY process_id, annex_code;
   
@@ -796,9 +799,16 @@ create or replace package body PKG_BAC is
              t.headings AS gist,
              NVL(TO_NUMBER(o.no_of_instances), 0) AS no_of_instances,
              NVL(o.amount_involved, 0) AS amount,
+             case
+               when o.status = 9 then
+                'Settled'
+               else
+                'Open'
+             end as para_status,
              o.entereddate,
              o.stelled_on,
-             o.status
+             o.status,
+             NVL(d.dsa, 0) AS dsa
       
         FROM t_au_observation o
       
@@ -813,6 +823,11 @@ create or replace package body PKG_BAC is
       
        INNER JOIN t_auditee_entities_maping ent
           ON ent.entity_id = en.entity_id
+      
+        LEFT JOIN (SELECT obs_id, COUNT(ppno) AS dsa
+                     FROM t_au_dsa
+                    GROUP BY obs_id) d
+          ON d.obs_id = o.id
       
        WHERE o.entereddate >= TRUNC(P_FROM_DATE)
             
@@ -844,4 +859,31 @@ create or replace package body PKG_BAC is
   
   END P_GET_BAC_PARA_TEXT;
 
+  PROCEDURE P_GET_DSA_DETAILS(P_OBSERVATION_ID IN NUMBER,
+                              IO_CURSOR        OUT T_CURSOR) IS
+  BEGIN
+  
+    OPEN IO_CURSOR FOR
+    
+SELECT
+    d.obs_id AS observation_id,
+    d.ppno AS ppno,
+    e.employeefirstname || ' ' ||
+    e.employeelastname AS emp_name,
+    t.dsa_body AS dsa_text
+
+FROM t_au_dsa d
+
+INNER JOIN v_service_employeeinfo e
+    ON e.ppno = d.ppno
+
+INNER JOIN t_au_dsa_text t
+    ON t.dsa_id = d.id
+       WHERE d.obs_id = P_OBSERVATION_ID
+      
+       ORDER BY d.ppno;
+  
+  END P_GET_DSA_DETAILS;
+
 end PKG_BAC;
+

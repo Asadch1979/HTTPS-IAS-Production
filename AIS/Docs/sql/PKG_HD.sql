@@ -518,9 +518,45 @@ create or replace package body PKG_HD is
                                                   P_NO      in number,
                                                   R_ID      in number,
                                                   io_cursor OUT t_cursor) is
-
+    O_F number := 0;
+    M_F number := 0;
+    Z_B number := 0;
+    B_N varchar2(100);
   begin
+    
+    select nvl(max(ob.id), 0)
+      into O_F
+      from t_au_observation ob
+     where ob.engplanid = engid
+       and ob.status > 5;
+    select nvl(min(ob.id), 0)
+      into M_F
+      from t_au_observation ob
+     where ob.engplanid = engid;
   
+    if (O_F = 0) then
+      OPEN io_Cursor FOR
+        select 'B' as etype,
+               o.engplanid as eng_id,
+               0 as Process,
+               0 as Sub_process,
+               0 as Check_List_Detail,
+               0 as headings,
+               0 as PERIOD,
+               o.id as OBS_ID,
+               0 as ENTITY_NAME,
+               0 as MEMO_NO,
+               nvl(o.Draft_Para_No, 0) as DRAFT_PARA,
+               nvl(o.Final_Para_No, 0) as FINAL_PARA,
+               0 as OBS_RISK_ID,
+               0 as AUD_REPLY,
+               0 as OBS_RISK,
+               0 as OBS_STATUS_ID,
+               0 as OBS_STATUS
+          from t_au_observation o
+         where o.engplanid = engid
+           and o.id = M_F;
+    else
       OPEN io_Cursor FOR
         select 'B' as etype,
                o.engplanid as eng_id,
@@ -563,7 +599,7 @@ create or replace package body PKG_HD is
          where o.engplanid = ENGID
            and o.status not in (1, 2,3, 7, 23)
          order by o.status;
-
+    end if;
   end P_GetFinalizedDraftObservationsbranch;
 
   procedure P_Finalise_para(engplan_id    in number,
@@ -670,7 +706,7 @@ create or replace package body PKG_HD is
         select m.entity_id as branchentityid, m.c_name as branchname
           from v_get_parent_office m
          WHERE (m.parent_id = Entityid or m.parent_code = Entityid)
-          -- and m.relation_type_id in (3,4, 5)
+           and m.relation_type_id in (4, 5)
         -- and m.auditedby = ENT_ID
          order by m.c_name;
     elsIF R_ID in (2, 6, 7,9) then
@@ -1051,11 +1087,7 @@ create or replace package body PKG_HD is
     Z_R number := 0;
   begin
   
-    P_add_activity_log(ENT_ID,
-                       R_ID,
-                       P_NO,
-                       79,
-                       'Viewed / Finalize Draft Observations of ' || OBS_ID);
+   
   
     select NVL(MAX(l.id), 0)
       into Z_R

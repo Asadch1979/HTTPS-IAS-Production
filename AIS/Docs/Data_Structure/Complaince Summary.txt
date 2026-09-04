@@ -1,0 +1,170 @@
+create or replace view v_rpt_db_p_compaince_summary_region_total as
+select  m.autid as Region_id, m.entitytypedesc as Region, m.audited_by_enitity as GM_ID,
+    sum(case when f.para_status = 8 then 1 else 0 end) as Total_para,
+       sum(case when f.com_cycle != 0 and f.para_status = 8 then 1 else 0 end) as Total_Comp,
+              sum(case when f.com_stage = 21 and f.entity_type_id in (6,28) and f.para_status = 8  then 1 else 0 end )  as AT_reporting,
+              sum(case when f.com_stage in (2,43,44) and f.para_status = 8 then 1 else 0 end ) as Under_consideration,
+       sum (case when f.com_status in (12,15,18) and f.para_status = 8 then 1 else 0 end) as Rejected,
+       sum (case when f.com_status = 16 and f.para_status != 8 then 1 else 0 end) as settled
+
+  from AIS_T_AU_POST_COMPLIANCE f
+      inner join t_auditee_ent_types m
+      on f.entity_type_id = m.autid
+      --where exists (select 'z' from ais_t_au_post_compliance_history h where h.com_id = f.com_id and trunc(h.comment_on) > '26-Jun-2024')
+       group by m.autid, m.entitytypedesc, m.audited_by_enitity
+       order by m.autid
+;
+
+create or replace view v_rpt_db_p_compaince_details_branch as
+select  e.entity_id as Region_id, e.name as Region, e.auditby_id as GM_ID,
+        m.autid,
+        (select count(c.com_id)  from AIS_T_AU_POST_COMPLIANCE c where c.entity_id = e.entity_id and c.para_status = 8) as Total_para,
+       sum(case when f.com_cycle != 0  and f.para_status = 8 then 1 else 0 end) as Total_Comp,
+              sum(case when f.com_stage = 21  and f.entity_type_id in (6,28) and f.para_status = 8 then 1 else 0 end )  as AT_reporting,
+              sum(case when f.com_stage in (2,43,44) and f.para_status = 8 then 1 else 0 end ) as Under_consideration,
+       sum (case when f.com_status in (12,15,18) and f.para_status = 8 then 1 else 0 end) as Rejected,
+       sum (case when f.com_status = 16 and f.para_status != 8 then 1 else 0 end) as settled
+
+  from AIS_T_AU_POST_COMPLIANCE f
+      inner join t_auditee_ent_types m
+      on f.entity_type_id = m.autid
+      inner join t_auditee_entities e
+      on f.entity_id = e.entity_id
+--where exists (select 'z' from ais_t_au_post_compliance_history h where h.com_id = f.com_id and trunc(h.comment_on) > '26-Jun-2024')
+
+       group by e.entity_id, e.name, e.auditby_id, m.autid
+       order by m.autid
+;
+
+create or replace view v_rpt_db_p_compaince_details as
+select  e.entity_id as Region_id, e.name as Region, e.auditby_id as GM_ID,
+        m.autid,
+        sum(case when f.para_status = 8 then 1 else 0 end ) as Total_para,
+       sum(case when f.com_cycle != 0 and f.para_status = 8 then 1 else 0 end) as Total_Comp,
+              sum(case when f.com_stage = 21 and f.entity_type_id in (6,28) and f.para_status = 8 then 1 else 0 end )  as AT_reporting,
+              sum(case when f.com_stage in (43,44,2,6,7,9) and f.para_status = 8 then 1 else 0 end ) as Under_consideration,
+       sum (case when f.com_status in (12,15,18) and f.para_status = 8 then 1 else 0 end) as Rejected,
+       sum (case when f.com_status = 16 and f.para_status != 8 then 1 else 0 end) as settled
+
+  from AIS_T_AU_POST_COMPLIANCE f
+      inner join t_auditee_ent_types m
+      on f.entity_type_id = m.autid
+      inner join t_auditee_entities e
+      on f.entity_id = e.entity_id
+       group by e.entity_id, e.name, e.auditby_id, m.autid
+       order by m.autid;
+-- Create table
+create table AIS_T_AU_POST_COMPLIANCE
+(
+  com_id                     NUMBER not null,
+  old_para_id                NUMBER,
+  new_para_id                NUMBER,
+  audit_period               VARCHAR2(500),
+  entity_id                  NUMBER,
+  entity_code                NUMBER,
+  audited_by                 NUMBER,
+  entity_type_id             NUMBER,
+  com_cycle                  NUMBER,
+  com_status                 NUMBER,
+  com_stage                  NUMBER,
+  para_status                NUMBER,
+  para_no                    VARCHAR2(500),
+  gist_of_paras              VARCHAR2(4000),
+  setteled_on                DATE,
+  setteled_by                NUMBER,
+  ind                        VARCHAR2(500),
+  para_added_on              DATE,
+  cau_status                 NUMBER,
+  cau_assigned_ent_id        NUMBER,
+  br_response_by             NUMBER,
+  br_response_on             DATE,
+  cau_assigned_by            NUMBER,
+  cau_assigned_on            DATE,
+  settlement_com_reviewed_by NUMBER,
+  settlement_com_reviewed_on DATE,
+  risk                       NUMBER,
+  annex                      NUMBER,
+  no_of_instances            NUMBER,
+  annex_ref_id               NUMBER,
+  amount                     VARCHAR2(200),
+  reference_reviewed         NUMBER(1) default 0
+)
+tablespace MISC
+  pctfree 10
+  initrans 1
+  maxtrans 255
+  storage
+  (
+    initial 64K
+    next 1M
+    minextents 1
+    maxextents unlimited
+  );
+-- Create/Recreate primary, unique and foreign key constraints 
+alter table AIS_T_AU_POST_COMPLIANCE
+  add constraint PK_AU_POST_COMPLIANCE primary key (COM_ID)
+  using index 
+  tablespace MISC
+  pctfree 10
+  initrans 2
+  maxtrans 255
+  storage
+  (
+    initial 64K
+    next 1M
+    minextents 1
+    maxextents unlimited
+  );
+-- Grant/Revoke object privileges 
+grant select on AIS_T_AU_POST_COMPLIANCE to BRCRO;
+
+----
+   	ROLE_ID	GROUP_ID	DESCRIPTION	GROUP_NAME	STATUS
+2	0	0	Employee Para Check	Employee Para Check	Y
+5	1	1	ADMINISTRATION	SUPER USER	Y
+6	2	2	ADMIN USERS FOR FIELD AUDIT	ADMINS	Y
+7	3	3	CHIEF INTERNAL AUDITOR	CIA	Y
+8	4	4	Group Heads	GROUP HEAD	Y
+9	5	5	HEAD FIELD AUDIT DEPARTMENT	HEAD FAD	Y
+10	6	6	HEAD MANAGEMENT AUDIT DEPARTMENT	HEAD MAN	Y
+11	7	7	HEAD INFORMATION SYSTEM AUDIT DEPARTMENT	HEAD ISAD	Y
+12	8	8	HEAD INQUIRY DEPARTMENT	HEAD IID	Y
+13	9	9	HEAD OFFICE COMPLAINCE OFFICER 	COMPLAINCE OFFICER	Y
+14	10	10	HEAD OFFICE AUDITOR	HO AUDITOR (Team Lead)	Y
+15	11	11	PLANNING & COORDINATION UNIT, HEAD OFFICE	HO PLANNING & COORDINATION	Y
+16	12	12	DEPARMENT AUDITEE	DEPT AUDITEE	Y
+17	13	13	AUDITEE BRANCH MANAGER	AUDITEE BRANCH	Y
+18	14	14	DIV AUDITEE	DIV AUDITEE	Y
+19	15	15	SVP AUDIT ZONE	SVP AUDIT ZONE	Y
+20	16	16	AUDIT ZONE IMPLEMENTATION UNIT	AZ IMPLEMENTATION UNIT	Y
+21	17	17	PLANNING & COORDINATION UNIT AZ	AZ PLANNING & COORDINATION	Y
+22	18	18	FIELD AUDITOR  (Team Lead)	BRANCH AUDITOR (Team Lead)	Y
+23	19	19	INCHARGE INQUIRY AND INSPECTION UNIT	INCHARGE IIU	Y
+24	20	20	HEAD OFFICE UNIT AUDITOR	HO UNIT AUDITOR	I
+25	21	21	Auditee Reporting Office 	REPORTING OFFICE AUDITEE	Y
+26	22	22	INQUIRY OFFICER, IID UNIT	INQUIRY OFFICER	Y
+27	23	23	FAD PLANNING N QUALITY ASSURANCE	FAD PLANNING N QUALITY ASSURANCE	Y
+28	24	24	ZONE AUDITEE	ZONE AUDITEE	Y
+30	25	25	Audit Quality Assurance Unit 	Audit QA Unit 	Y
+31	26	26	Shariah Audit Unit	Shariah Audit Unit	Y
+1	27	27	HO AUDITOR (Team Member)	HO AUDITOR (Team Member)	Y
+29	28	28	BRANCH AUDITOR (Team Member)	BRANCH AUDITOR (Team Member)	Y
+3	29	29	Data Entry of Old Audit Paras	Data Entry for Old Record	Y
+4	30	30	HR NDC 	HR NDC	Y
+32	31	31	Management / IS Auditor	HO AUDITOR	Y
+33	32	32	Login AIS	Login	Y
+34	33	33	Commercial Audit	Commercial Audit	Y
+38	34	34	Checklist Maker	Checklist Maker	Y
+39	35	35	Checklist Reviewer	Checklist Reviewer	Y
+40	36	36	Desk Office FAD	Desk Office FAD	Y
+35	37	37	Board Audit Committee	Cheif Compliance Officer	Y
+36	38	38	 Chief Compliance Officer CCO	CCO	Y
+37	39	39	GENERAL MANAGER (GM)	GENERAL MANAGER (GM)	Y
+41	40	40	Head Office Mointoring	HO Mointoring	Y
+42	41	41	COMPLAINCE DIVISION ADMIN	COMPLAINCE ADMIN	Y
+44	42	42	IID DATA ANALYSIS	IID DATA ANALYSIS	Y
+43	43	43	COMPLIANCE SETTLEMENT OFFICER OF COMPLIANCE DIVISION	COMPLAINCE SETTLEMENT OFFICER	Y
+45	44	44	INCHARGE COMPLAINCE UNIT	INCHARGE COMPLAINCE UNIT	Y
+46	45	45	HO COMPLAINCE MONITORING UNIT	HO COMPLAINCE MONITORING UNIT	Y
+47	46	46	Head Office Units	H.O Unit Auditee	Y
+48	47	47	Divisional Head Audit	Divisional Head Audit	Y

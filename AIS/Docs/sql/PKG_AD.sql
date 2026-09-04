@@ -1,58 +1,3 @@
-DECLARE
-  V_COUNT NUMBER := 0;
-BEGIN
-  SELECT COUNT(*)
-    INTO V_COUNT
-    FROM USER_TABLES
-   WHERE TABLE_NAME = 'T_AU_ENG_ENTITY_SHIFT_HIST';
-
-  IF V_COUNT = 0 THEN
-    EXECUTE IMMEDIATE '
-      CREATE TABLE T_AU_ENG_ENTITY_SHIFT_HIST
-      (
-        ID                   NUMBER PRIMARY KEY,
-        ENG_ID               NUMBER NOT NULL,
-        OLD_ENTITY_ID        NUMBER NOT NULL,
-        NEW_ENTITY_ID        NUMBER NOT NULL,
-        REASON               VARCHAR2(1000) NOT NULL,
-        PPNO                 NUMBER NOT NULL,
-        ROLE_ID              NUMBER NOT NULL,
-        SHIFTED_ON           DATE DEFAULT SYSDATE NOT NULL,
-        PLAN_ENG_ROWS        NUMBER DEFAULT 0 NOT NULL,
-        OBSERVATION_ROWS     NUMBER DEFAULT 0 NOT NULL,
-        AIS_OBSERVATION_ROWS NUMBER DEFAULT 0 NOT NULL,
-        OBS_ASSIGNEDTO_ROWS  NUMBER DEFAULT 0 NOT NULL,
-        TEAM_TASKLIST_ROWS   NUMBER DEFAULT 0 NOT NULL
-      )';
-  END IF;
-
-  FOR C IN (SELECT COLUMN_NAME
-              FROM USER_TAB_COLUMNS
-             WHERE TABLE_NAME = 'T_AU_ENG_ENTITY_SHIFT_HIST'
-               AND COLUMN_NAME IN ('DSA_ROWS',
-                                   'OBSERVATION_MAN_ROWS',
-                                   'BRANCH_RISK_RATING_ROWS',
-                                   'COSO_RATING_DEPT_ROWS',
-                                   'RISK_BRANCH_WISE_ROWS')) LOOP
-    EXECUTE IMMEDIATE 'ALTER TABLE T_AU_ENG_ENTITY_SHIFT_HIST DROP COLUMN ' || C.COLUMN_NAME;
-  END LOOP;
-END;
-/
-
-DECLARE
-  V_COUNT NUMBER := 0;
-BEGIN
-  SELECT COUNT(*)
-    INTO V_COUNT
-    FROM USER_SEQUENCES
-   WHERE SEQUENCE_NAME = 'SEQ_AU_ENG_ENTITY_SHIFT_HIST';
-
-  IF V_COUNT = 0 THEN
-    EXECUTE IMMEDIATE 'CREATE SEQUENCE SEQ_AU_ENG_ENTITY_SHIFT_HIST START WITH 1 INCREMENT BY 1 NOCACHE';
-  END IF;
-END;
-/
-
 create or replace package PKG_AD is
 
   TYPE t_cursor IS REF CURSOR;
@@ -4641,8 +4586,7 @@ create or replace package body PKG_AD is
           on eng.eng_id = tm.eng_id
          and eng.team_id = tm.team_id
        where eng.entity_id = ENT_ID
-         and not exists
-       (select 1 from T_FRPT_REPORT_META frm where frm.eng_id = eng.eng_id);
+         and eng.status < 14;
   end P_GET_SHIFTABLE_AUDIT_ENGAGEMENT;
 
   procedure p_get_audit_engagement_status(engid     in number,
@@ -4774,8 +4718,8 @@ create or replace package body PKG_AD is
     end if;
 
     begin
-      select ENG.ENTITY_ID
-        into V_OLD_ENTITY_ID
+      select ENG.ENTITY_ID, ENG.STATUS
+          into V_OLD_ENTITY_ID, V_STATUS_ID
         from T_AU_PLAN_ENG ENG
        where ENG.ENG_ID = P_ENG_ID
        for update;
@@ -4812,10 +4756,10 @@ create or replace package body PKG_AD is
       from T_FRPT_REPORT_META
      where ENG_ID = P_ENG_ID;
 
-    if V_REPORT_COUNT > 0 then
+    if V_STATUS_ID >= 14 or V_REPORT_COUNT > 0 then
       open IO_CURSOR for
         select 'FALSE' as status,
-               'Final Report has already been issued. Engagement cannot be shifted.' as remarks
+               'Finalized, closed or report-issued engagements cannot be shifted.' as remarks
           from dual;
       return;
     end if;
@@ -4862,7 +4806,7 @@ create or replace package body PKG_AD is
       rollback;
       open IO_CURSOR for
         select 'FALSE' as status,
-               'Engagement entity shift failed: ' || substr(sqlerrm, 1, 900) as remarks
+               'Engagement entity shift failed: ' as remarks
           from dual;
   end P_SHIFT_ENGAGEMENT_ENTITY;
 

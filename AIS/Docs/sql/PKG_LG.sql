@@ -106,34 +106,33 @@
                            p_eng_id     IN NUMBER DEFAULT NULL,
                            io_cursor     OUT SYS_REFCURSOR);
 
-  PROCEDURE REGISTER_SYSTEM_ERROR(
-      P_FINGERPRINT             IN  VARCHAR2,
-      P_ERROR_TYPE              IN  VARCHAR2,
-      P_ERROR_CODE              IN  VARCHAR2,
-      P_MODULE                  IN  VARCHAR2,
-      P_CONTROLLER              IN  VARCHAR2,
-      P_ACTION                  IN  VARCHAR2,
-      P_API_PATH                IN  VARCHAR2,
-      P_STORED_PROCEDURE        IN  VARCHAR2,
-      P_PPNO                    IN  VARCHAR2,
-      P_ROLE_NAME               IN  VARCHAR2,
-      P_ENTITY_NAME             IN  VARCHAR2,
-      P_PAGE_ID                 IN  NUMBER,
-      P_ENG_ID                  IN  NUMBER,
-      P_PARA_ID                 IN  NUMBER,
-      P_COM_ID                  IN  NUMBER,
-      P_TRACE_ID                IN  VARCHAR2,
-      P_IP_ADDRESS              IN  VARCHAR2,
-      P_USER_AGENT              IN  VARCHAR2,
-      P_ERROR_MESSAGE           IN  CLOB,
-      P_TECHNICAL_DETAILS       IN  CLOB,
-      O_ERROR_ID                OUT NUMBER,
-      O_ERROR_REFERENCE         OUT VARCHAR2,
-      O_IS_FIRST_OCCURRENCE     OUT NUMBER,
-      O_FIRST_OCCURRENCE_UTC    OUT TIMESTAMP,
-      O_LAST_OCCURRENCE_UTC     OUT TIMESTAMP,
-      O_OCCURRENCE_COUNT        OUT NUMBER,
-      O_EMAIL_ALREADY_SENT      OUT NUMBER);
+  PROCEDURE REGISTER_SYSTEM_ERROR(P_FINGERPRINT          IN VARCHAR2,
+                                  P_ERROR_TYPE           IN VARCHAR2,
+                                  P_ERROR_CODE           IN VARCHAR2,
+                                  P_MODULE               IN VARCHAR2,
+                                  P_CONTROLLER           IN VARCHAR2,
+                                  P_ACTION               IN VARCHAR2,
+                                  P_API_PATH             IN VARCHAR2,
+                                  P_STORED_PROCEDURE     IN VARCHAR2,
+                                  P_PPNO                 IN VARCHAR2,
+                                  P_ROLE_NAME            IN VARCHAR2,
+                                  P_ENTITY_NAME          IN VARCHAR2,
+                                  P_PAGE_ID              IN NUMBER,
+                                  P_ENG_ID               IN NUMBER,
+                                  P_PARA_ID              IN NUMBER,
+                                  P_COM_ID               IN NUMBER,
+                                  P_TRACE_ID             IN VARCHAR2,
+                                  P_IP_ADDRESS           IN VARCHAR2,
+                                  P_USER_AGENT           IN VARCHAR2,
+                                  P_ERROR_MESSAGE        IN CLOB,
+                                  P_TECHNICAL_DETAILS    IN CLOB,
+                                  O_ERROR_ID             OUT NUMBER,
+                                  O_ERROR_REFERENCE      OUT VARCHAR2,
+                                  O_IS_FIRST_OCCURRENCE  OUT NUMBER,
+                                  O_FIRST_OCCURRENCE_UTC OUT TIMESTAMP,
+                                  O_LAST_OCCURRENCE_UTC  OUT TIMESTAMP,
+                                  O_OCCURRENCE_COUNT     OUT NUMBER,
+                                  O_EMAIL_ALREADY_SENT   OUT NUMBER);
 
   PROCEDURE CLAIM_SYSTEM_ERROR_EMAIL(P_ERROR_ID IN NUMBER, O_CLAIMED OUT NUMBER);
 
@@ -141,30 +140,27 @@
 
   PROCEDURE GET_SYSTEM_ERROR_RECIPIENTS(O_CUR OUT SYS_REFCURSOR);
 
-  PROCEDURE GET_SYSTEM_ERRORS(
-      P_STATUS          IN  VARCHAR2,
-      P_FROM_DATE       IN  TIMESTAMP,
-      P_TO_DATE         IN  TIMESTAMP,
-      P_ERROR_REFERENCE IN  VARCHAR2,
-      P_MODULE          IN  VARCHAR2,
-      P_USER_PPNO       IN  VARCHAR2,
-      P_ENTITY          IN  VARCHAR2,
-      P_ERROR_TYPE_CODE IN  VARCHAR2,
-      O_CUR             OUT SYS_REFCURSOR);
+  PROCEDURE GET_SYSTEM_ERRORS(P_STATUS          IN VARCHAR2,
+                              P_FROM_DATE       IN TIMESTAMP,
+                              P_TO_DATE         IN TIMESTAMP,
+                              P_ERROR_REFERENCE IN VARCHAR2,
+                              P_MODULE          IN VARCHAR2,
+                              P_USER_PPNO       IN VARCHAR2,
+                              P_ENTITY          IN VARCHAR2,
+                              P_ERROR_TYPE_CODE IN VARCHAR2,
+                              O_CUR             OUT SYS_REFCURSOR);
 
-  PROCEDURE GET_SYSTEM_ERROR_DETAIL(
-      P_ERROR_ID         IN  NUMBER,
-      O_MASTER           OUT SYS_REFCURSOR,
-      O_HISTORY          OUT SYS_REFCURSOR,
-      O_STATUS_HISTORY   OUT SYS_REFCURSOR);
+  PROCEDURE GET_SYSTEM_ERROR_DETAIL(P_ERROR_ID       IN NUMBER,
+                                    O_MASTER         OUT SYS_REFCURSOR,
+                                    O_HISTORY        OUT SYS_REFCURSOR,
+                                    O_STATUS_HISTORY OUT SYS_REFCURSOR);
 
-  PROCEDURE RESOLVE_SYSTEM_ERROR(
-      P_ERROR_ID          IN NUMBER,
-      P_RESOLVED_BY_PPNO  IN VARCHAR2,
-      P_REMARKS           IN VARCHAR2);
+  PROCEDURE RESOLVE_SYSTEM_ERROR(P_ERROR_ID         IN NUMBER,
+                                 P_RESOLVED_BY_PPNO IN VARCHAR2,
+                                 P_REMARKS          IN VARCHAR2);
 
 end PKG_LG;
-
+/
 create or replace package body PKG_LG is
 
   procedure p_get_user(PPNumber  in t_user.ppno%type,
@@ -475,36 +471,67 @@ create or replace package body PKG_LG is
                                 R_ID      IN NUMBER,
                                 io_cursor OUT t_cursor) AS
   BEGIN
-    OPEN io_cursor FOR
-      SELECT DISTINCT m.API_ID, m.API_PATH, m.HTTP_METHOD
-        FROM T_AU_ROLE_API_PERMISSION p
-        JOIN T_AU_API_MASTER m
-          ON m.API_ID = p.API_ID
-       WHERE p.ROLE_ID IN
-             (SELECT R_ID FROM dual
-              UNION
-              SELECT CASE
-                       WHEN ae.type_id = 4 AND NVL(tm.isteamlead, 'N') = 'Y' THEN 10
-                       WHEN ae.type_id = 4 AND NVL(tm.isteamlead, 'N') = 'N' THEN 27
-                       WHEN ae.type_id = 9 AND NVL(tm.isteamlead, 'N') = 'Y' THEN 18
-                       WHEN ae.type_id = 9 AND NVL(tm.isteamlead, 'N') = 'N' THEN 28
-                     END
-                FROM t_au_audit_joining j
-                JOIN t_au_plan_eng pe
-                  ON pe.eng_id = j.eng_plan_id
-                JOIN t_auditee_entities ae
-                  ON ae.entity_id = pe.entity_id
-                JOIN t_au_audit_team_tasklist tl
-                  ON tl.eng_plan_id = j.eng_plan_id
-                 AND tl.teammember_ppno = j.team_mem_ppno
-                JOIN t_au_team_members tm
-                  ON tm.t_id = tl.team_id
-                 AND tm.member_ppno = tl.teammember_ppno
-               WHERE j.team_mem_ppno = P_NO
-                 AND j.status = 'I'
-                 AND tl.isactive = 'Y')
-         AND p.IS_ACTIVE = 'Y'
-         AND m.IS_ACTIVE = 'Y';
+  
+    -- Field Audit roles only
+    IF R_ID IN (10, 27, 18, 28) THEN
+    
+      OPEN io_cursor FOR
+        SELECT DISTINCT m.API_ID, m.API_PATH, m.HTTP_METHOD
+          FROM T_AU_ROLE_API_PERMISSION p
+          JOIN T_AU_API_MASTER m
+            ON m.API_ID = p.API_ID
+         WHERE p.ROLE_ID IN (SELECT R_ID
+                               FROM dual
+                             
+                             UNION
+                             
+                             SELECT CASE
+                                      WHEN et.audit_type = 'D' AND
+                                           NVL(tm.isteamlead, 'N') = 'Y' THEN
+                                       10
+                                      WHEN et.audit_type = 'D' AND
+                                           NVL(tm.isteamlead, 'N') = 'N' THEN
+                                       27
+                                      WHEN et.audit_type = 'B' AND
+                                           NVL(tm.isteamlead, 'N') = 'Y' THEN
+                                       18
+                                      WHEN et.audit_type = 'B' AND
+                                           NVL(tm.isteamlead, 'N') = 'N' THEN
+                                       28
+                                    END
+                               FROM t_au_audit_joining j
+                               JOIN t_au_plan_eng pe
+                                 ON pe.eng_id = j.eng_plan_id
+                               JOIN t_auditee_entities ae
+                                 ON ae.entity_id = pe.entity_id
+                               JOIN t_auditee_ent_types et
+                                 ON ae.type_id = et.autid
+                               JOIN t_au_audit_team_tasklist tl
+                                 ON tl.eng_plan_id = j.eng_plan_id
+                                AND tl.teammember_ppno = j.team_mem_ppno
+                               JOIN t_au_team_members tm
+                                 ON tm.t_id = tl.team_id
+                                AND tm.member_ppno = tl.teammember_ppno
+                              WHERE j.team_mem_ppno = P_NO
+                                AND j.status = 'I'
+                                AND tl.isactive = 'Y')
+           AND p.IS_ACTIVE = 'Y'
+           AND m.IS_ACTIVE = 'Y';
+    
+    ELSE
+    
+      -- Existing IAS behaviour remains completely unchanged
+      OPEN io_cursor FOR
+        SELECT m.API_ID, m.API_PATH, m.HTTP_METHOD
+          FROM T_AU_ROLE_API_PERMISSION p
+          JOIN T_AU_API_MASTER m
+            ON m.API_ID = p.API_ID
+         WHERE p.ROLE_ID = R_ID
+           AND p.IS_ACTIVE = 'Y'
+           AND m.IS_ACTIVE = 'Y';
+    
+    END IF;
+  
   END p_GetApiPermissions;
 
   PROCEDURE P_GET_ENG_PAGE_PERMISSIONS_BY_PPNO(P_PP_NO   IN NUMBER,
@@ -683,7 +710,7 @@ create or replace package body PKG_LG is
                            p_module     IN VARCHAR2 DEFAULT NULL,
                            p_user_ppno  IN NUMBER DEFAULT NULL,
                            p_eng_id     IN NUMBER DEFAULT NULL,
-                           io_cursor     OUT SYS_REFCURSOR) IS
+                           io_cursor    OUT SYS_REFCURSOR) IS
   BEGIN
     OPEN io_cursor FOR
       SELECT LOG_ID,
@@ -707,51 +734,89 @@ create or replace package body PKG_LG is
        ORDER BY LOG_TIME DESC;
   END P_GET_SYS_LOGS;
 
-  PROCEDURE REGISTER_SYSTEM_ERROR(
-      P_FINGERPRINT             IN  VARCHAR2,
-      P_ERROR_TYPE              IN  VARCHAR2,
-      P_ERROR_CODE              IN  VARCHAR2,
-      P_MODULE                  IN  VARCHAR2,
-      P_CONTROLLER              IN  VARCHAR2,
-      P_ACTION                  IN  VARCHAR2,
-      P_API_PATH                IN  VARCHAR2,
-      P_STORED_PROCEDURE        IN  VARCHAR2,
-      P_PPNO                    IN  VARCHAR2,
-      P_ROLE_NAME               IN  VARCHAR2,
-      P_ENTITY_NAME             IN  VARCHAR2,
-      P_PAGE_ID                 IN  NUMBER,
-      P_ENG_ID                  IN  NUMBER,
-      P_PARA_ID                 IN  NUMBER,
-      P_COM_ID                  IN  NUMBER,
-      P_TRACE_ID                IN  VARCHAR2,
-      P_IP_ADDRESS              IN  VARCHAR2,
-      P_USER_AGENT              IN  VARCHAR2,
-      P_ERROR_MESSAGE           IN  CLOB,
-      P_TECHNICAL_DETAILS       IN  CLOB,
-      O_ERROR_ID                OUT NUMBER,
-      O_ERROR_REFERENCE         OUT VARCHAR2,
-      O_IS_FIRST_OCCURRENCE     OUT NUMBER,
-      O_FIRST_OCCURRENCE_UTC    OUT TIMESTAMP,
-      O_LAST_OCCURRENCE_UTC     OUT TIMESTAMP,
-      O_OCCURRENCE_COUNT        OUT NUMBER,
-      O_EMAIL_ALREADY_SENT      OUT NUMBER) IS
+  PROCEDURE REGISTER_SYSTEM_ERROR(P_FINGERPRINT          IN VARCHAR2,
+                                  P_ERROR_TYPE           IN VARCHAR2,
+                                  P_ERROR_CODE           IN VARCHAR2,
+                                  P_MODULE               IN VARCHAR2,
+                                  P_CONTROLLER           IN VARCHAR2,
+                                  P_ACTION               IN VARCHAR2,
+                                  P_API_PATH             IN VARCHAR2,
+                                  P_STORED_PROCEDURE     IN VARCHAR2,
+                                  P_PPNO                 IN VARCHAR2,
+                                  P_ROLE_NAME            IN VARCHAR2,
+                                  P_ENTITY_NAME          IN VARCHAR2,
+                                  P_PAGE_ID              IN NUMBER,
+                                  P_ENG_ID               IN NUMBER,
+                                  P_PARA_ID              IN NUMBER,
+                                  P_COM_ID               IN NUMBER,
+                                  P_TRACE_ID             IN VARCHAR2,
+                                  P_IP_ADDRESS           IN VARCHAR2,
+                                  P_USER_AGENT           IN VARCHAR2,
+                                  P_ERROR_MESSAGE        IN CLOB,
+                                  P_TECHNICAL_DETAILS    IN CLOB,
+                                  O_ERROR_ID             OUT NUMBER,
+                                  O_ERROR_REFERENCE      OUT VARCHAR2,
+                                  O_IS_FIRST_OCCURRENCE  OUT NUMBER,
+                                  O_FIRST_OCCURRENCE_UTC OUT TIMESTAMP,
+                                  O_LAST_OCCURRENCE_UTC  OUT TIMESTAMP,
+                                  O_OCCURRENCE_COUNT     OUT NUMBER,
+                                  O_EMAIL_ALREADY_SENT   OUT NUMBER) IS
     PRAGMA AUTONOMOUS_TRANSACTION;
-    v_now TIMESTAMP := SYS_EXTRACT_UTC(SYSTIMESTAMP);
+    v_now          TIMESTAMP := SYS_EXTRACT_UTC(SYSTIMESTAMP);
     v_was_resolved NUMBER := 0;
   BEGIN
     BEGIN
       INSERT INTO T_AU_SYSTEM_ERROR_MASTER
-        (FINGERPRINT, ERROR_REFERENCE, ERROR_TYPE, ERROR_CODE, MODULE, CONTROLLER, ACTION, API_PATH,
-         STORED_PROCEDURE, PPNO, ROLE_NAME, ENTITY_NAME, PAGE_ID, ENG_ID, PARA_ID, COM_ID,
-         FIRST_OCCURRENCE_UTC, LAST_OCCURRENCE_UTC, OCCURRENCE_COUNT, LAST_TRACE_ID, LAST_IP_ADDRESS,
-         ERROR_MESSAGE, TECHNICAL_DETAILS)
+        (FINGERPRINT,
+         ERROR_REFERENCE,
+         ERROR_TYPE,
+         ERROR_CODE,
+         MODULE,
+         CONTROLLER,
+         ACTION,
+         API_PATH,
+         STORED_PROCEDURE,
+         PPNO,
+         ROLE_NAME,
+         ENTITY_NAME,
+         PAGE_ID,
+         ENG_ID,
+         PARA_ID,
+         COM_ID,
+         FIRST_OCCURRENCE_UTC,
+         LAST_OCCURRENCE_UTC,
+         OCCURRENCE_COUNT,
+         LAST_TRACE_ID,
+         LAST_IP_ADDRESS,
+         ERROR_MESSAGE,
+         TECHNICAL_DETAILS)
       VALUES
-        (P_FINGERPRINT, 'IAS-ERR-' || SUBSTR(RAWTOHEX(SYS_GUID()), 1, 12), P_ERROR_TYPE, P_ERROR_CODE, P_MODULE, P_CONTROLLER, P_ACTION, P_API_PATH,
-         P_STORED_PROCEDURE, P_PPNO, P_ROLE_NAME, P_ENTITY_NAME, P_PAGE_ID, P_ENG_ID, P_PARA_ID, P_COM_ID,
-         v_now, v_now, 1, P_TRACE_ID, P_IP_ADDRESS, P_ERROR_MESSAGE, P_TECHNICAL_DETAILS)
-      RETURNING ERROR_ID, FIRST_OCCURRENCE_UTC, LAST_OCCURRENCE_UTC, OCCURRENCE_COUNT, DECODE(EMAIL_SENT, 'Y', 1, 0)
-        INTO O_ERROR_ID, O_FIRST_OCCURRENCE_UTC, O_LAST_OCCURRENCE_UTC, O_OCCURRENCE_COUNT, O_EMAIL_ALREADY_SENT;
-
+        (P_FINGERPRINT,
+         'IAS-ERR-' || SUBSTR(RAWTOHEX(SYS_GUID()), 1, 12),
+         P_ERROR_TYPE,
+         P_ERROR_CODE,
+         P_MODULE,
+         P_CONTROLLER,
+         P_ACTION,
+         P_API_PATH,
+         P_STORED_PROCEDURE,
+         P_PPNO,
+         P_ROLE_NAME,
+         P_ENTITY_NAME,
+         P_PAGE_ID,
+         P_ENG_ID,
+         P_PARA_ID,
+         P_COM_ID,
+         v_now,
+         v_now,
+         1,
+         P_TRACE_ID,
+         P_IP_ADDRESS,
+         P_ERROR_MESSAGE,
+         P_TECHNICAL_DETAILS)
+      RETURNING ERROR_ID, FIRST_OCCURRENCE_UTC, LAST_OCCURRENCE_UTC, OCCURRENCE_COUNT, DECODE
+        (EMAIL_SENT, 'Y', 1, 0) INTO O_ERROR_ID, O_FIRST_OCCURRENCE_UTC, O_LAST_OCCURRENCE_UTC, O_OCCURRENCE_COUNT, O_EMAIL_ALREADY_SENT;
+    
       O_ERROR_REFERENCE := 'IAS-ERR-' || LPAD(O_ERROR_ID, 5, '0');
       UPDATE T_AU_SYSTEM_ERROR_MASTER
          SET ERROR_REFERENCE = O_ERROR_REFERENCE
@@ -759,43 +824,85 @@ create or replace package body PKG_LG is
       O_IS_FIRST_OCCURRENCE := 1;
     EXCEPTION
       WHEN DUP_VAL_ON_INDEX THEN
-        SELECT CASE WHEN RESOLUTION_STATUS = 'RESOLVED' THEN 1 ELSE 0 END
+        SELECT CASE
+                 WHEN RESOLUTION_STATUS = 'RESOLVED' THEN
+                  1
+                 ELSE
+                  0
+               END
           INTO v_was_resolved
           FROM T_AU_SYSTEM_ERROR_MASTER
          WHERE FINGERPRINT = P_FINGERPRINT;
-
         UPDATE T_AU_SYSTEM_ERROR_MASTER
            SET LAST_OCCURRENCE_UTC = v_now,
-               OCCURRENCE_COUNT = OCCURRENCE_COUNT + 1,
-               LAST_TRACE_ID = P_TRACE_ID,
-               LAST_IP_ADDRESS = P_IP_ADDRESS,
-               ERROR_MESSAGE = P_ERROR_MESSAGE,
-               TECHNICAL_DETAILS = P_TECHNICAL_DETAILS,
-               EMAIL_SENT = CASE WHEN RESOLUTION_STATUS = 'RESOLVED' THEN 'N' ELSE EMAIL_SENT END,
-               EMAIL_SENT_UTC = CASE WHEN RESOLUTION_STATUS = 'RESOLVED' THEN NULL ELSE EMAIL_SENT_UTC END,
-               RESOLUTION_STATUS = CASE WHEN RESOLUTION_STATUS = 'RESOLVED' THEN 'OPEN' ELSE RESOLUTION_STATUS END,
-               RESOLVED_BY = CASE WHEN RESOLUTION_STATUS = 'RESOLVED' THEN NULL ELSE RESOLVED_BY END,
-               RESOLVED_ON_UTC = CASE WHEN RESOLUTION_STATUS = 'RESOLVED' THEN NULL ELSE RESOLVED_ON_UTC END,
-               RESOLUTION_REMARKS = CASE WHEN RESOLUTION_STATUS = 'RESOLVED' THEN NULL ELSE RESOLUTION_REMARKS END
+               OCCURRENCE_COUNT    = OCCURRENCE_COUNT + 1,
+               LAST_TRACE_ID       = P_TRACE_ID,
+               LAST_IP_ADDRESS     = P_IP_ADDRESS,
+               ERROR_MESSAGE       = P_ERROR_MESSAGE,
+               TECHNICAL_DETAILS   = P_TECHNICAL_DETAILS,
+               EMAIL_SENT = CASE
+                              WHEN RESOLUTION_STATUS = 'RESOLVED' THEN
+                               'N'
+                              ELSE
+                               EMAIL_SENT
+                            END,
+               EMAIL_SENT_UTC = CASE
+                                  WHEN RESOLUTION_STATUS = 'RESOLVED' THEN
+                                   NULL
+                                  ELSE
+                                   EMAIL_SENT_UTC
+                                END,
+               RESOLUTION_STATUS = CASE
+                                     WHEN RESOLUTION_STATUS = 'RESOLVED' THEN
+                                      'OPEN'
+                                     ELSE
+                                      RESOLUTION_STATUS
+                                   END
          WHERE FINGERPRINT = P_FINGERPRINT
          RETURNING ERROR_ID, ERROR_REFERENCE, FIRST_OCCURRENCE_UTC, LAST_OCCURRENCE_UTC, OCCURRENCE_COUNT, DECODE(EMAIL_SENT, 'Y', 1, 0)
            INTO O_ERROR_ID, O_ERROR_REFERENCE, O_FIRST_OCCURRENCE_UTC, O_LAST_OCCURRENCE_UTC, O_OCCURRENCE_COUNT, O_EMAIL_ALREADY_SENT;
         O_IS_FIRST_OCCURRENCE := 0;
-
+        
         INSERT INTO T_AU_SYSTEM_ERROR_STATUS_HISTORY
           (ERROR_ID, OLD_STATUS, NEW_STATUS, CHANGED_BY_PPNO, REMARKS)
         SELECT O_ERROR_ID, 'RESOLVED', 'OPEN', P_PPNO, 'Fingerprint recurred after resolution; reopened automatically.'
           FROM dual
          WHERE v_was_resolved = 1;
     END;
-
+  
     INSERT INTO T_AU_SYSTEM_ERROR_HISTORY
-      (ERROR_ID, OCCURRED_ON_UTC, TRACE_ID, IP_ADDRESS, USER_AGENT, PPNO, ROLE_NAME, ENTITY_NAME,
-       PAGE_ID, ENG_ID, PARA_ID, COM_ID, API_PATH, ERROR_MESSAGE, TECHNICAL_DETAILS)
+      (ERROR_ID,
+       OCCURRED_ON_UTC,
+       TRACE_ID,
+       IP_ADDRESS,
+       USER_AGENT,
+       PPNO,
+       ROLE_NAME,
+       ENTITY_NAME,
+       PAGE_ID,
+       ENG_ID,
+       PARA_ID,
+       COM_ID,
+       API_PATH,
+       ERROR_MESSAGE,
+       TECHNICAL_DETAILS)
     VALUES
-      (O_ERROR_ID, v_now, P_TRACE_ID, P_IP_ADDRESS, P_USER_AGENT, P_PPNO, P_ROLE_NAME, P_ENTITY_NAME,
-       P_PAGE_ID, P_ENG_ID, P_PARA_ID, P_COM_ID, P_API_PATH, P_ERROR_MESSAGE, P_TECHNICAL_DETAILS);
-
+      (O_ERROR_ID,
+       v_now,
+       P_TRACE_ID,
+       P_IP_ADDRESS,
+       P_USER_AGENT,
+       P_PPNO,
+       P_ROLE_NAME,
+       P_ENTITY_NAME,
+       P_PAGE_ID,
+       P_ENG_ID,
+       P_PARA_ID,
+       P_COM_ID,
+       P_API_PATH,
+       P_ERROR_MESSAGE,
+       P_TECHNICAL_DETAILS);
+  
     COMMIT;
   EXCEPTION
     WHEN OTHERS THEN
@@ -803,31 +910,25 @@ create or replace package body PKG_LG is
       RAISE;
   END REGISTER_SYSTEM_ERROR;
 
-  PROCEDURE CLAIM_SYSTEM_ERROR_EMAIL(P_ERROR_ID IN NUMBER, O_CLAIMED OUT NUMBER) IS
+  PROCEDURE MARK_SYSTEM_ERROR_EMAIL(P_ERROR_ID   IN NUMBER,
+                                    P_EMAIL_SENT IN NUMBER) IS
     PRAGMA AUTONOMOUS_TRANSACTION;
   BEGIN
     UPDATE T_AU_SYSTEM_ERROR_MASTER
-       SET EMAIL_SENT = 'P'
-     WHERE ERROR_ID = P_ERROR_ID
-       AND EMAIL_SENT = 'N'
-       AND RESOLUTION_STATUS = 'OPEN';
-
-    O_CLAIMED := SQL%ROWCOUNT;
-    COMMIT;
-  EXCEPTION
-    WHEN OTHERS THEN
-      ROLLBACK;
-      RAISE;
-  END CLAIM_SYSTEM_ERROR_EMAIL;
-
-  PROCEDURE MARK_SYSTEM_ERROR_EMAIL(P_ERROR_ID IN NUMBER, P_EMAIL_SENT IN NUMBER) IS
-    PRAGMA AUTONOMOUS_TRANSACTION;
-  BEGIN
-    UPDATE T_AU_SYSTEM_ERROR_MASTER
-       SET EMAIL_SENT = CASE WHEN P_EMAIL_SENT = 1 THEN 'Y' ELSE 'N' END,
-           EMAIL_SENT_UTC = CASE WHEN P_EMAIL_SENT = 1 THEN SYS_EXTRACT_UTC(SYSTIMESTAMP) ELSE NULL END
+       SET EMAIL_SENT = CASE
+                          WHEN P_EMAIL_SENT = 1 THEN
+                           'Y'
+                          ELSE
+                           'N'
+                        END,
+           EMAIL_SENT_UTC = CASE
+                              WHEN P_EMAIL_SENT = 1 THEN
+                               SYS_EXTRACT_UTC(SYSTIMESTAMP)
+                              ELSE
+                               EMAIL_SENT_UTC
+                            END
      WHERE ERROR_ID = P_ERROR_ID;
-
+  
     COMMIT;
   EXCEPTION
     WHEN OTHERS THEN
@@ -844,7 +945,7 @@ create or replace package body PKG_LG is
        ORDER BY SORT_ORDER, RECIPIENT_ID;
   END GET_SYSTEM_ERROR_RECIPIENTS;
 
-  PROCEDURE GET_SYSTEM_ERRORS(
+ PROCEDURE GET_SYSTEM_ERRORS(
       P_STATUS          IN  VARCHAR2,
       P_FROM_DATE       IN  TIMESTAMP,
       P_TO_DATE         IN  TIMESTAMP,
@@ -938,3 +1039,4 @@ create or replace package body PKG_LG is
   END RESOLVE_SYSTEM_ERROR;
 
 end PKG_LG;
+
