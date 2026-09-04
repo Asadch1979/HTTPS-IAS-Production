@@ -1,4 +1,4 @@
-﻿create or replace package PKG_AE is
+create or replace package PKG_AE is
   TYPE t_cursor IS REF CURSOR;
 
   procedure P_GetAuditeeAssignedEntities(ENTITID   in number,
@@ -469,37 +469,7 @@ create or replace package body PKG_AE is
     Z_B number := 0;
   begin
   
-    select NVL(MAX(l.id), 0)
-      into Z_B
-      from t_au_activity_log l
-     where l.ppnum = P_NO;
-    update t_au_activity_log l set l.end_time = sysdate where l.id = Z_B;
     commit;
-    insert into t_au_activity_log
-      (id,
-       entity_id,
-       role_id,
-       au_obs_id,
-       ppnum,
-       page_id,
-       action,
-       start_time,
-       seq,
-       unattend)
-    VALUES
-      ((select COALESCE(max(p.ID) + 1, 1) from t_au_activity_log p),
-       ENT_ID,
-       R_ID,
-       OBS_ID,
-       P_NO,
-       45,
-       'Checked/Reviewed Observation Text',
-       sysdate,
-       (select COALESCE(max(l.seq) + 1, 1)
-          from t_au_activity_log l
-         where l.id = Z_B
-           and l.ppnum = P_NO),
-       'Y');
     commit;
   
     OPEN io_Cursor FOR
@@ -526,37 +496,7 @@ create or replace package body PKG_AE is
     Already_Replied number := 0;
   begin
   
-    select NVL(MAX(l.id), 0)
-      into Z_B
-      from t_au_activity_log l
-     where l.ppnum = P_NO;
-    update t_au_activity_log l set l.end_time = sysdate where l.id = Z_B;
     commit;
-    insert into t_au_activity_log
-      (id,
-       entity_id,
-       role_id,
-       au_obs_id,
-       ppnum,
-       page_id,
-       action,
-       start_time,
-       seq,
-       unattend)
-    VALUES
-      ((select COALESCE(max(p.ID) + 1, 1) from t_au_activity_log p),
-       ENT_ID,
-       R_ID,
-       AUOBSID,
-       P_NO,
-       51,
-       'Submitted Response of Outstanding Observation',
-       sysdate,
-       (select COALESCE(max(l.seq) + 1, 1)
-          from t_au_activity_log l
-         where l.id = Z_B
-           and l.ppnum = P_NO),
-       'Y');
     commit;
   
     select NVL(MAX(l.id), 0)
@@ -691,35 +631,7 @@ create or replace package body PKG_AE is
     Z_R number := 0;
   begin
   
-    select NVL(MAX(l.id), 0)
-      into Z_R
-      from t_au_activity_log l
-     where l.ppnum = P_NO;
-    update t_au_activity_log l set l.end_time = sysdate where l.id = Z_R;
     commit;
-    insert into t_au_activity_log
-      (id,
-       entity_id,
-       role_id,
-       ppnum,
-       page_id,
-       action,
-       start_time,
-       seq,
-       unattend)
-    VALUES
-      ((select COALESCE(max(p.ID) + 1, 1) from t_au_activity_log p),
-       ENT_ID,
-       R_ID,
-       P_NO,
-       171,
-       'Get Para for update',
-       sysdate,
-       (select COALESCE(max(l.seq) + 1, 1)
-          from t_au_activity_log l
-         where l.id = Z_R
-           and l.ppnum = P_NO),
-       'Y');
     commit;
   
     OPEN io_cursor FOR
@@ -814,35 +726,7 @@ create or replace package body PKG_AE is
     Z_B number := 0;
   begin
   
-    select NVL(MAX(l.id), 0)
-      into Z_B
-      from t_au_activity_log l
-     where l.ppnum = P_NO;
-    update t_au_activity_log l set l.end_time = sysdate where l.id = Z_B;
     commit;
-    insert into t_au_activity_log
-      (id,
-       entity_id,
-       role_id,
-       ppnum,
-       page_id,
-       action,
-       start_time,
-       seq,
-       unattend)
-    VALUES
-      ((select COALESCE(max(p.ID) + 1, 1) from t_au_activity_log p),
-       ENT_ID,
-       R_ID,
-       P_NO,
-       52,
-       'Auditee Old Paras Entities',
-       sysdate,
-       (select COALESCE(max(l.seq) + 1, 1)
-          from t_au_activity_log l
-         where l.id = Z_B
-           and l.ppnum = P_NO),
-       'Y');
     commit;
   
     OPEN io_cursor FOR
@@ -861,35 +745,7 @@ create or replace package body PKG_AE is
     Z_B number := 0;
   begin
   
-    select NVL(MAX(l.id), 0)
-      into Z_B
-      from t_au_activity_log l
-     where l.ppnum = P_NO;
-    update t_au_activity_log l set l.end_time = sysdate where l.id = Z_B;
     commit;
-    insert into t_au_activity_log
-      (id,
-       entity_id,
-       role_id,
-       ppnum,
-       page_id,
-       action,
-       start_time,
-       seq,
-       unattend)
-    VALUES
-      ((select COALESCE(max(p.ID) + 1, 1) from t_au_activity_log p),
-       ENT_ID,
-       R_ID,
-       P_NO,
-       52,
-       'Get / View Auditee Old Paras',
-       sysdate,
-       (select COALESCE(max(l.seq) + 1, 1)
-          from t_au_activity_log l
-         where l.id = Z_B
-           and l.ppnum = P_NO),
-       'Y');
     commit;
     OPEN io_cursor FOR
       select e.name as ENTITY_NAME,
@@ -1382,39 +1238,8 @@ create or replace package body PKG_AE is
          and m.role_id = R_ID;
     
       if (N_F != 0) then
-        select NVL(MAX(l.id), 0)
-          into Z_B
-          from t_au_activity_log l
-         where l.ppnum = P_NO;
-        update t_au_activity_log l
-           set l.end_time = sysdate
-         where l.id = Z_B;
         commit;
       
-        insert into t_au_activity_log
-          (id,
-           entity_id,
-           role_id,
-           ppnum,
-           page_id,
-           action,
-           start_time,
-           seq,
-           unattend)
-        VALUES
-          ((select COALESCE(max(p.ID) + 1, 1) from t_au_activity_log p),
-           ENT_ID,
-           R_ID,
-           P_NO,
-           vr1.com_id,
-           (vr1.old_para_id || 'Para Old id - ' || ' - Para new id - ' ||
-           vr1.new_paraid || ' - Role Status next ' || vr1.next_r_id),
-           sysdate,
-           (select COALESCE(max(l.seq) + 1, 1)
-              from t_au_activity_log l
-             where l.id = Z_B
-               and l.ppnum = P_NO),
-           'Y');
         commit;
       
         update AIS_T_AU_POST_COMPLIANCE c
@@ -1756,55 +1581,6 @@ create or replace package body PKG_AE is
   
     ------------------------------------------------------------------
     -- 7. Close previous activity
-    ------------------------------------------------------------------
-    SELECT NVL(MAX(L.ID), 0)
-      INTO Z_B
-      FROM T_AU_ACTIVITY_LOG L
-     WHERE L.PPNUM = P_NO;
-  
-    UPDATE T_AU_ACTIVITY_LOG L SET L.END_TIME = SYSDATE WHERE L.ID = Z_B;
-  
-    ------------------------------------------------------------------
-    -- 8. Insert new activity log
-    --
-    -- Existing MAX(ID)+1 mechanism deliberately retained.
-    ------------------------------------------------------------------
-    INSERT INTO T_AU_ACTIVITY_LOG
-      (ID,
-       ENTITY_ID,
-       ROLE_ID,
-       PPNUM,
-       PAGE_ID,
-       ACTION,
-       START_TIME,
-       SEQ,
-       UNATTEND)
-    VALUES
-      ((SELECT COALESCE(MAX(P.ID) + 1, 1) FROM T_AU_ACTIVITY_LOG P),
-       
-       ENT_ID,
-       R_ID,
-       P_NO,
-       12345,
-       
-       (Vr1.OLD_PARA_ID || 'Para Old id - ' || ' - Para new id - ' ||
-       Vr1.NEW_PARAID || ' -Status next ' || Vr1.STATUS_ID ||
-       ' Role Next ' || Vr1.ROLE_ID),
-       
-       SYSDATE,
-       
-       (SELECT COALESCE(MAX(L.SEQ) + 1, 1)
-          FROM T_AU_ACTIVITY_LOG L
-         WHERE L.ID = Z_B
-           AND L.PPNUM = P_NO),
-       
-       'Y');
-  
-    ------------------------------------------------------------------
-    -- 9. Insert compliance history FIRST
-    --
-    -- If A_COMMENTS exceeds the database column capacity, the insert
-    -- will fail here and the para will NOT move to the next stage.
     ------------------------------------------------------------------
     INSERT INTO AIS_T_AU_POST_COMPLIANCE_HISTORY
       (HIST_ID,
@@ -2238,38 +2014,8 @@ create or replace package body PKG_AE is
          and m.role_id = R_ID;
     
       if (N_F != 0) then
-        select NVL(MAX(l.id), 0)
-          into Z_B
-          from t_au_activity_log l
-         where l.ppnum = P_NO;
-        update t_au_activity_log l
-           set l.end_time = sysdate
-         where l.id = Z_B;
         commit;
       
-        /*      insert into t_au_activity_log
-          (id,
-           entity_id,
-           role_id,
-           ppnum,
-           page_id,
-           action,
-           start_time,
-           seq,
-           unattend)
-        VALUES
-          ((select COALESCE(max(p.ID) + 1, 1) from t_au_activity_log p),
-           ENT_ID,
-           R_ID,
-           P_NO,
-           C_ID,
-           'Response submitted to CAU',
-           sysdate,
-           (select COALESCE(max(l.seq) + 1, 1)
-              from t_au_activity_log l
-             where l.id = Z_B
-               and l.ppnum = P_NO),
-           'Y');
         commit;*/
       
         update AIS_T_AU_POST_COMPLIANCE c
@@ -2401,36 +2147,8 @@ create or replace package body PKG_AE is
        and m.role_id = R_ID;
   
     if (N_F != 0) then
-      select NVL(MAX(l.id), 0)
-        into Z_B
-        from t_au_activity_log l
-       where l.ppnum = P_NO;
-      update t_au_activity_log l set l.end_time = sysdate where l.id = Z_B;
       commit;
     
-      insert into t_au_activity_log
-        (id,
-         entity_id,
-         role_id,
-         ppnum,
-         page_id,
-         action,
-         start_time,
-         seq,
-         unattend)
-      VALUES
-        ((select COALESCE(max(p.ID) + 1, 1) from t_au_activity_log p),
-         ENT_ID,
-         R_ID,
-         P_NO,
-         C_ID,
-         'Response submitted to CAU',
-         sysdate,
-         (select COALESCE(max(l.seq) + 1, 1)
-            from t_au_activity_log l
-           where l.id = Z_B
-             and l.ppnum = P_NO),
-         'Y');
       commit;
     
       update AIS_T_AU_POST_COMPLIANCE c

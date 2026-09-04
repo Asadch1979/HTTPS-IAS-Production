@@ -1,4 +1,4 @@
-﻿create or replace package PKG_AR is
+create or replace package PKG_AR is
   TYPE t_cursor IS REF CURSOR;
 
   TYPE t_num_list IS TABLE OF NUMBER;
@@ -1018,58 +1018,9 @@ create or replace package body PKG_AR is
       v_remarks := 'Please close/Exit the pending audit in your task list';
       GOTO open_cursor;
     END IF;
-  
-    -----------------------------------------------------------------------
-    -- 3) Close previous activity log
-    -----------------------------------------------------------------------
-    SELECT NVL(MAX(id), 0)
-      INTO v_prev_log_id
-      FROM t_au_activity_log
-     WHERE ppnum = P_NO;
-  
     IF v_prev_log_id > 0 THEN
-      UPDATE t_au_activity_log
-         SET end_time = SYSDATE
-       WHERE id = v_prev_log_id;
+      NULL;
     END IF;
-  
-    -----------------------------------------------------------------------
-    -- 4) Insert new activity log
-    -----------------------------------------------------------------------
-    SELECT SEQ_T_AU_ACTIVITY_LOG.NEXTVAL INTO v_new_log_id FROM dual;
-  
-    INSERT INTO t_au_activity_log
-      (id,
-       entity_id,
-       role_id,
-       ppnum,
-       page_id,
-       action,
-       start_time,
-       seq,
-       unattend)
-    VALUES
-      (v_new_log_id,
-       ENT_ID,
-       R_ID,
-       P_NO,
-       c_page_id,
-       'Submit Joining in ' ||
-       (SELECT bt.name
-          FROM t_auditee_entities bt
-          JOIN t_au_plan_eng e
-            ON e.entity_id = bt.entity_id
-         WHERE e.eng_id = ENGID),
-       SYSDATE,
-       NVL((SELECT MAX(seq) + 1
-             FROM t_au_activity_log
-            WHERE id = v_prev_log_id),
-           1),
-       'Y');
-  
-    -----------------------------------------------------------------------
-    -- 5) Update joining & tasklist
-    -----------------------------------------------------------------------
     /*    UPDATE t_au_audit_joining
       SET status = 'P'
     WHERE team_mem_ppno = P_NO
@@ -1526,35 +1477,7 @@ create or replace package body PKG_AR is
   begin
   
     SELECT SEQ_T_AU_OBSERVATION.NEXTVAL INTO OBS FROM DUAL;
-    select NVL(MAX(l.id), 0)
-      into Z_B
-      from t_au_activity_log l
-     where l.ppnum = P_NO;
-    update t_au_activity_log l set l.end_time = sysdate where l.id = Z_B;
     commit;
-    insert into t_au_activity_log
-      (id,
-       entity_id,
-       role_id,
-       ppnum,
-       page_id,
-       action,
-       start_time,
-       seq,
-       unattend)
-    VALUES
-      ((select COALESCE(max(p.ID) + 1, 1) from t_au_activity_log p),
-       ENT_ID,
-       R_ID,
-       P_NO,
-       142,
-       OBS || ' Observation Saved',
-       sysdate,
-       (select COALESCE(max(l.seq) + 1, 1)
-          from t_au_activity_log l
-         where l.id = Z_B
-           and l.ppnum = P_NO),
-       'Y');
     commit;
   
     SELECT E.ENTITY_ID, E.AUDIT_ENDDATE
@@ -1808,35 +1731,7 @@ create or replace package body PKG_AR is
     SELECT SEQ_T_AU_OBSERVATION.NEXTVAL INTO OBS FROM DUAL;
   
     if (vr1.ENTITY_ID is not null) then
-      select NVL(MAX(l.id), 0)
-        into Z_B
-        from t_au_activity_log l
-       where l.ppnum = P_NO;
-      update t_au_activity_log l set l.end_time = sysdate where l.id = Z_B;
       commit;
-      insert into t_au_activity_log
-        (id,
-         entity_id,
-         role_id,
-         ppnum,
-         page_id,
-         action,
-         start_time,
-         seq,
-         unattend)
-      VALUES
-        ((select COALESCE(max(p.ID) + 1, 1) from t_au_activity_log p),
-         ENT_ID,
-         R_ID,
-         P_NO,
-         142,
-         obs || ' Observation Saved',
-         sysdate,
-         (select COALESCE(max(l.seq) + 1, 1)
-            from t_au_activity_log l
-           where l.id = Z_B
-             and l.ppnum = P_NO),
-         'Y');
       commit;
     
       if (Severity != 0 and Severity is not null) then
@@ -2159,35 +2054,7 @@ create or replace package body PKG_AR is
     Z_B number := 0;
   begin
   
-    select NVL(MAX(l.id), 0)
-      into Z_B
-      from t_au_activity_log l
-     where l.ppnum = P_NO;
-    update t_au_activity_log l set l.end_time = sysdate where l.id = Z_B;
     commit;
-    insert into t_au_activity_log
-      (id,
-       entity_id,
-       role_id,
-       ppnum,
-       page_id,
-       action,
-       start_time,
-       seq,
-       unattend)
-    VALUES
-      ((select COALESCE(max(p.ID) + 1, 1) from t_au_activity_log p),
-       ENT_ID,
-       R_ID,
-       P_NO,
-       79,
-       OBS_ID || ' Observation Text and Checklist Updated',
-       sysdate,
-       (select COALESCE(max(l.seq) + 1, 1)
-          from t_au_activity_log l
-         where l.id = Z_B
-           and l.ppnum = P_NO),
-       'Y');
     commit;
   
     select NVL(max(t.id), 0)
@@ -2252,35 +2119,7 @@ create or replace package body PKG_AR is
     Z_B number := 0;
   begin
   
-    select NVL(MAX(l.id), 0)
-      into Z_B
-      from t_au_activity_log l
-     where l.ppnum = P_NO;
-    update t_au_activity_log l set l.end_time = sysdate where l.id = Z_B;
     commit;
-    insert into t_au_activity_log
-      (id,
-       entity_id,
-       role_id,
-       ppnum,
-       page_id,
-       action,
-       start_time,
-       seq,
-       unattend)
-    VALUES
-      ((select COALESCE(max(p.ID) + 1, 1) from t_au_activity_log p),
-       ENT_ID,
-       R_ID,
-       P_NO,
-       51,
-       OBS_ID || ' Observation Dropped',
-       sysdate,
-       (select COALESCE(max(l.seq) + 1, 1)
-          from t_au_activity_log l
-         where l.id = Z_B
-           and l.ppnum = P_NO),
-       'Y');
     commit;
   
     select nvl(max(tm.isteamlead), 'N')
@@ -2382,36 +2221,7 @@ create or replace package body PKG_AR is
                               'Observation was not found or is not assigned to the current user.');
     end if;
   
-    select NVL(MAX(l.id), 0)
-      into Z_B
-      from t_au_activity_log l
-     where l.ppnum = P_NO;
-    update t_au_activity_log l set l.end_time = sysdate where l.id = Z_B;
     commit;
-    insert into t_au_activity_log
-      (id,
-       entity_id,
-       role_id,
-       ppnum,
-       page_id,
-       action,
-       start_time,
-       seq,
-       unattend)
-    VALUES
-      ((select COALESCE(max(p.ID) + 1, 1) from t_au_activity_log p),
-       ENT_ID,
-       R_ID,
-       P_NO,
-       79,
-       'Observation ' || VR.ID || ' is submitted to ' || vr.entity_id ||
-       ' Auditee',
-       sysdate,
-       (select COALESCE(max(l.seq) + 1, 1)
-          from t_au_activity_log l
-         where l.id = Z_B
-           and l.ppnum = P_NO),
-       'Y');
     commit;
   
     select NVL(max(s.parent_enititid), 0)
@@ -2647,42 +2457,10 @@ create or replace package body PKG_AR is
   
   BEGIN
   
-    SELECT NVL(MAX(l.id), 0)
-      INTO Z_B
-      FROM t_au_activity_log l
-     WHERE l.ppnum = P_NO;
   
-    UPDATE t_au_activity_log l SET l.end_time = SYSDATE WHERE l.id = Z_B;
   
     COMMIT;
   
-    INSERT INTO t_au_activity_log
-      (id,
-       entity_id,
-       role_id,
-       au_obs_id,
-       obs_status,
-       ppnum,
-       page_id,
-       action,
-       start_time,
-       seq,
-       unattend)
-    VALUES
-      ((select COALESCE(max(p.ID) + 1, 1) from t_au_activity_log p),
-       ENT_ID,
-       R_ID,
-       OBS_ID,
-       NEW_STATUS_ID,
-       P_NO,
-       79,
-       OBS_ID || ' Observation Status Marked as ' || NEW_STATUS_ID,
-       sysdate,
-       (select COALESCE(max(l.seq) + 1, 1)
-          from t_au_activity_log l
-         where l.id = Z_B
-           and l.ppnum = P_NO),
-       'Y');
     commit;
   
     select nvl(max(m.isteamlead), 'O')

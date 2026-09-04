@@ -1,4 +1,4 @@
-﻿create or replace package PKG_HD is
+create or replace package PKG_HD is
 
   TYPE t_cursor IS REF CURSOR;
 
@@ -1089,35 +1089,7 @@ create or replace package body PKG_HD is
   
    
   
-    select NVL(MAX(l.id), 0)
-      into Z_R
-      from t_au_activity_log l
-     where l.ppnum = P_NO;
-    update t_au_activity_log l set l.end_time = sysdate where l.id = Z_R;
     commit;
-    insert into t_au_activity_log
-      (id,
-       entity_id,
-       role_id,
-       ppnum,
-       page_id,
-       action,
-       start_time,
-       seq,
-       unattend)
-    VALUES
-      ((select COALESCE(max(p.ID) + 1, 1) from t_au_activity_log p),
-       ENT_ID,
-       R_ID,
-       P_NO,
-       222,
-       'Para Marked as settled in AIS',
-       sysdate,
-       (select COALESCE(max(l.seq) + 1, 1)
-          from t_au_activity_log l
-         where l.id = Z_R
-           and l.ppnum = P_NO),
-       'Y');
     commit;
   
     select nvl(max(l.id), 0)
@@ -1187,11 +1159,6 @@ create or replace package body PKG_HD is
     Z_R number := 0;
   begin
   
-    P_add_activity_log(ENT_ID,
-                       R_ID,
-                       P_NO,
-                       221,
-                       'Change Status Request For ' || obsid);
   
     select obsid into O_B from dual;
     if ind = 'A' then
@@ -1547,11 +1514,6 @@ create or replace package body PKG_HD is
   
   begin
   
-    P_add_activity_log(ENT_ID,
-                       R_ID,
-                       P_NO,
-                       79,
-                       'Para checked by ' || P_NO || ' for NDC of ' || PPNO);
   
     if (R_ID = 0) then
       open io_cursor for
@@ -1701,11 +1663,6 @@ create or replace package body PKG_HD is
    where o.id = obsid;
   if(P_N > 0) then
     select '-' into B_N from dual;
-    P_add_activity_log(ENT_ID,
-                       R_ID,
-                       P_NO,
-                       181,
-                       'Viewed / Finalize Draft Observations of ' || B_N);
   
     update t_au_observation_text ot
        set ot.headings = gist
@@ -1868,11 +1825,6 @@ create or replace package body PKG_HD is
   begin
   
     select '-' into B_N from dual;
-    P_add_activity_log(ENT_ID,
-                       R_ID,
-                       P_NO,
-                       79,
-                       'Viewed / Finalize Draft Observations of ' || B_N);
     select count(o.id)
       into N_F
       from t_au_observation o
@@ -1977,11 +1929,6 @@ create or replace package body PKG_HD is
 
     select '-' into B_N from dual;
   
-    P_add_activity_log(ENT_ID,
-                       R_ID,
-                       P_NO,
-                       79,
-                       'Viewed / Finalize Draft Observations of ' || B_N);
     V_ENTITY_TYPE := pkg_FRPT.F_GET_ENTITY_TYPE_ID(engid);
   
     SELECT COUNT(*)
@@ -2735,11 +2682,6 @@ create or replace package body PKG_HD is
     Z_B number := 0;
   begin
     select '-' into B_N from dual;
-    P_add_activity_log(ENT_ID,
-                       R_ID,
-                       P_NO,
-                       79,
-                       'Viewed / Finalize Draft Observations of ' || B_N);
   
     Open V;
     Fetch V
@@ -2801,11 +2743,6 @@ create or replace package body PKG_HD is
     B_N varchar2(100);
   begin
     select '-' into B_N from dual;
-    P_add_activity_log(ENT_ID,
-                       R_ID,
-                       P_NO,
-                       79,
-                       'Viewed / Finalize Draft Observations of ' || B_N);
   
     open io_cursor for
       select e.entity_id, e.name
@@ -2824,11 +2761,6 @@ create or replace package body PKG_HD is
   begin
   
     select '-' into B_N from dual;
-    P_add_activity_log(ENT_ID,
-                       R_ID,
-                       P_NO,
-                       79,
-                       'Viewed / Finalize Draft Observations of ' || B_N);
   
     open io_cursor for
       select d.d_id,
@@ -2883,11 +2815,6 @@ create or replace package body PKG_HD is
   begin
   
     select '-' into B_N from dual;
-    P_add_activity_log(ENT_ID,
-                       R_ID,
-                       P_NO,
-                       79,
-                       'Viewed / Finalize Draft Observations of ' || B_N);
   
     Open V;
     Fetch V
@@ -2945,11 +2872,6 @@ create or replace package body PKG_HD is
   begin
   
     select '-' into B_N from dual;
-    P_add_activity_log(ENT_ID,
-                       R_ID,
-                       P_NO,
-                       79,
-                       'Viewed / Finalize Draft Observations of ' || B_N);
   
     update T_AU_DUPLICATE_PARAS d
        set d.authorized_status = 'R',
@@ -2974,11 +2896,6 @@ create or replace package body PKG_HD is
   begin
   
     select '-' into B_N from dual;
-    P_add_activity_log(ENT_ID,
-                       R_ID,
-                       P_NO,
-                       79,
-                       'Viewed / Finalize Draft Observations of ' || B_N);
   
     open io_cursor for
       select c.id              as control_violation,
@@ -3015,11 +2932,6 @@ create or replace package body PKG_HD is
   begin
   
     select '-' into B_N from dual;
-    P_add_activity_log(ENT_ID,
-                       R_ID,
-                       P_NO,
-                       79,
-                       'Viewed / Finalize Draft Observations of ' || B_N);
   
     P_add_error_log('HD', 'P_audit_pre_Concluding', 'PP No was null', obid);
     commit;
@@ -3077,11 +2989,6 @@ create or replace package body PKG_HD is
   begin
   
     select '-' into B_N from dual;
-    P_add_activity_log(ENT_ID,
-                       R_ID,
-                       P_NO,
-                       79,
-                       'Viewed / Finalize Draft Observations of ' || B_N);
   
     --P_add_error_log('HD', 'P_audit_pre_Concluding', 'PP No was null', obid);
   
@@ -3144,11 +3051,6 @@ create or replace package body PKG_HD is
   begin
   
     select '-' into B_N from dual;
-    P_add_activity_log(ENT_ID,
-                       R_ID,
-                       P_NO,
-                       79,
-                       'Viewed / Finalize Draft Observations of ' || B_N);
   
     P_add_error_log('HD', 'P_audit_pre_Concluding', 'PP No was null', obid);
   
@@ -3194,14 +3096,6 @@ create or replace package body PKG_HD is
                                  i_ent_id  IN NUMBER,
                                  io_cursor OUT t_cursor) AS
   BEGIN
-    -- Better activity log message
-    P_add_activity_log(i_ent_id,
-                       i_r_id,
-                       i_p_no,
-                       79,
-                       'Viewed Pre-Concluding details for Observation ID ' ||
-                       i_obid);
-  
     OPEN io_cursor FOR
     
       SELECT a.id              AS annex_id,
@@ -3274,11 +3168,6 @@ create or replace package body PKG_HD is
   begin
   
     select '-' into B_N from dual;
-    P_add_activity_log(ENT_ID,
-                       R_ID,
-                       P_NO,
-                       79,
-                       'Viewed / Finalize Draft Observations of ' || B_N);
   
     if (SUB_PROCID = 0) then
       open io_cursor for
@@ -3334,11 +3223,6 @@ create or replace package body PKG_HD is
   begin
   
     select '-' into B_N from dual;
-    P_add_activity_log(ENT_ID,
-                       R_ID,
-                       P_NO,
-                       79,
-                       'Viewed / Finalize Draft Observations of ' || B_N);
   
     update t_au_observation o
        set o.severity        = RISKID,
@@ -3376,11 +3260,6 @@ create or replace package body PKG_HD is
   BEGIN
   
     select '-' into B_N from dual;
-    P_add_activity_log(ENT_ID,
-                       R_ID,
-                       P_NO,
-                       79,
-                       'Viewed / Finalize Draft Observations of ' || B_N);
   
     SELECT DBMS_LOB. GETLENGTH(arep) into D_clob FROM dual;
     if (D_CLOB > 1) then
@@ -3438,11 +3317,6 @@ create or replace package body PKG_HD is
   BEGIN
   
     select '-' into B_N from dual;
-    P_add_activity_log(ENT_ID,
-                       R_ID,
-                       P_NO,
-                       79,
-                       'Viewed / Finalize Draft Observations of ' || B_N);
   
     OPEN IO_CURSOR FOR
     
@@ -3471,11 +3345,6 @@ create or replace package body PKG_HD is
   BEGIN
   
     select '-' into B_N from dual;
-    P_add_activity_log(ENT_ID,
-                       R_ID,
-                       P_NO,
-                       79,
-                       'Viewed / Finalize Draft Observations of ' || B_N);
   
     OPEN IO_CURSOR FOR
     
@@ -3497,11 +3366,6 @@ create or replace package body PKG_HD is
   BEGIN
   
     select '-' into B_N from dual;
-    P_add_activity_log(ENT_ID,
-                       R_ID,
-                       P_NO,
-                       79,
-                       'Viewed / Finalize Draft Observations of ' || B_N);
   
     OPEN IO_CURSOR FOR
     
@@ -3580,11 +3444,6 @@ create or replace package body PKG_HD is
         RETURN;
     END;
   
-    P_add_activity_log(ENT_ID,
-                       R_ID,
-                       P_NO,
-                       79,
-                       'Para Submitted for Status Change for ' || C_ID);
   
     IF (M_F = NewStatus) THEN
       OPEN io_cursor FOR
@@ -3702,12 +3561,6 @@ create or replace package body PKG_HD is
     P_F VARCHAR2(50);
   BEGIN
     -- Log the activity
-    P_add_activity_log(ENT_ID,
-                       R_ID,
-                       P_NO,
-                       79,
-                       'Authorize of Status Change of com_id ' || C_ID ||
-                       ' as ' || Action_IND);
   
     IF Action_IND = 'A' THEN
       -- "A" should mean Authorized; adjust if otherwise

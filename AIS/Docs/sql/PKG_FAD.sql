@@ -1267,12 +1267,6 @@ create or replace package body PKG_FAD is
     end;
   
     -- Log the authorization action
-    P_add_activity_log(ENT_ID,
-                       R_ID,
-                       P_NO,
-                       169,
-                       'Authorize the Status Change of Legacy Paras of ' ||
-                       au_obs_id || RefP || ' is ' || Action_IND);
   
     -- For 'O' (Old/Other) Action_IND
     if (Action_IND = 'A' and IND = 'O') then
@@ -1427,12 +1421,6 @@ create or replace package body PKG_FAD is
     P_F varchar2(10);
   begin
   
-    P_add_activity_log(ENT_ID,
-                       R_ID,
-                       P_NO,
-                       79,
-                       'Authorize new Observations of ' || obsid || ' as ' ||
-                       indicator);
   
     IF (indicator != 'R') then
       select NVL(max(e.id), 0)
@@ -1551,35 +1539,7 @@ create or replace package body PKG_FAD is
     E_F number := 0;
   begin
   
-    select NVL(MAX(l.id), 0)
-      into E_F
-      from t_au_activity_log l
-     where l.ppnum = P_NO;
-    update t_au_activity_log l set l.end_time = sysdate where l.id = E_F;
     commit;
-    insert into t_au_activity_log
-      (id,
-       entity_id,
-       role_id,
-       ppnum,
-       page_id,
-       action,
-       start_time,
-       seq,
-       unattend)
-    VALUES
-      ((select COALESCE(max(p.ID) + 1, 1) from t_au_activity_log p),
-       ENT_ID,
-       R_ID,
-       P_NO,
-       212,
-       'Get Proc Owner For Check list Detail',
-       sysdate,
-       (select COALESCE(max(l.seq) + 1, 1)
-          from t_au_activity_log l
-         where l.id = E_F
-           and l.ppnum = P_NO),
-       'Y');
     commit;
   
     OPEN io_Cursor FOR
@@ -1599,35 +1559,7 @@ create or replace package body PKG_FAD is
     E_F number := 0;
   begin
   
-    select NVL(MAX(l.id), 0)
-      into E_F
-      from t_au_activity_log l
-     where l.ppnum = P_NO;
-    update t_au_activity_log l set l.end_time = sysdate where l.id = E_F;
     commit;
-    insert into t_au_activity_log
-      (id,
-       entity_id,
-       role_id,
-       ppnum,
-       page_id,
-       action,
-       start_time,
-       seq,
-       unattend)
-    VALUES
-      ((select COALESCE(max(p.ID) + 1, 1) from t_au_activity_log p),
-       ENT_ID,
-       R_ID,
-       P_NO,
-       204,
-       'Get Role Responsible For Checklist Detail',
-       sysdate,
-       (select COALESCE(max(l.seq) + 1, 1)
-          from t_au_activity_log l
-         where l.id = E_F
-           and l.ppnum = P_NO),
-       'Y');
     commit;
   
     OPEN io_Cursor FOR

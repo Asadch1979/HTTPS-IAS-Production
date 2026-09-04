@@ -3237,35 +3237,7 @@ create or replace package body PKG_AD is
     Z_B number := 0;
   begin
   
-    select NVL(MAX(l.id), 0)
-      into Z_B
-      from t_au_activity_log l
-     where l.ppnum = P_NO;
-    update t_au_activity_log l set l.end_time = sysdate where l.id = Z_B;
     commit;
-    insert into t_au_activity_log
-      (id,
-       entity_id,
-       role_id,
-       ppnum,
-       page_id,
-       action,
-       start_time,
-       seq,
-       unattend)
-    VALUES
-      ((select COALESCE(max(p.ID) + 1, 1) from t_au_activity_log p),
-       ENT_ID,
-       R_ID,
-       P_NO,
-       212,
-       P_NAME || '  New Process Added',
-       sysdate,
-       (select COALESCE(max(l.seq) + 1, 1)
-          from t_au_activity_log l
-         where l.id = Z_B
-           and l.ppnum = P_NO),
-       'Y');
     commit;
   
     insert into t_audit_checklist
@@ -3295,35 +3267,7 @@ create or replace package body PKG_AD is
     Z_B number := 0;
   begin
   
-    select NVL(MAX(l.id), 0)
-      into Z_B
-      from t_au_activity_log l
-     where l.ppnum = P_NO;
-    update t_au_activity_log l set l.end_time = sysdate where l.id = Z_B;
     commit;
-    insert into t_au_activity_log
-      (id,
-       entity_id,
-       role_id,
-       ppnum,
-       page_id,
-       action,
-       start_time,
-       seq,
-       unattend)
-    VALUES
-      ((select COALESCE(max(p.ID) + 1, 1) from t_au_activity_log p),
-       ENT_ID,
-       R_ID,
-       P_NO,
-       212,
-       tid || ' ' || p_name || ' Updated',
-       sysdate,
-       (select COALESCE(max(l.seq) + 1, 1)
-          from t_au_activity_log l
-         where l.id = Z_B
-           and l.ppnum = P_NO),
-       'Y');
     commit;
   
     update t_audit_checklist s
@@ -3349,35 +3293,7 @@ create or replace package body PKG_AD is
     E_F number := 0;
   begin
   
-    select NVL(MAX(l.id), 0)
-      into E_F
-      from t_au_activity_log l
-     where l.ppnum = P_NO;
-    update t_au_activity_log l set l.end_time = sysdate where l.id = E_F;
     commit;
-    insert into t_au_activity_log
-      (id,
-       entity_id,
-       role_id,
-       ppnum,
-       page_id,
-       action,
-       start_time,
-       seq,
-       unattend)
-    VALUES
-      ((select COALESCE(max(p.ID) + 1, 1) from t_au_activity_log p),
-       ENT_ID,
-       R_ID,
-       P_NO,
-       214,
-       p_ID || ' ' || TITLE || ' Updated',
-       sysdate,
-       (select COALESCE(max(l.seq) + 1, 1)
-          from t_au_activity_log l
-         where l.id = E_F
-           and l.ppnum = P_NO),
-       'Y');
     commit;
   
     insert into T_AUDIT_CHECKLIST_SUB_CHANGE
@@ -3465,35 +3381,7 @@ create or replace package body PKG_AD is
     Z_B number := 0;
   begin
   
-    select NVL(MAX(l.id), 0)
-      into Z_B
-      from t_au_activity_log l
-     where l.ppnum = P_NO;
-    update t_au_activity_log l set l.end_time = sysdate where l.id = Z_B;
     commit;
-    insert into t_au_activity_log
-      (id,
-       entity_id,
-       role_id,
-       ppnum,
-       page_id,
-       action,
-       start_time,
-       seq,
-       unattend)
-    VALUES
-      ((select COALESCE(max(p.ID) + 1, 1) from t_au_activity_log p),
-       ENT_ID,
-       R_ID,
-       P_NO,
-       203,
-       SID || ' ' || TITLE || ' Updated',
-       sysdate,
-       (select COALESCE(max(l.seq) + 1, 1)
-          from t_au_activity_log l
-         where l.id = Z_B
-           and l.ppnum = P_NO),
-       'Y');
     commit;
   
     update T_AUDIT_CHECKLIST_SUB_CHANGE p
@@ -3685,35 +3573,7 @@ create or replace package body PKG_AD is
     Z_B number := 0;
   begin
     if (P_NO is not null) then
-      select NVL(MAX(l.id), 0)
-        into Z_B
-        from t_au_activity_log l
-       where l.ppnum = P_NO;
-      update t_au_activity_log l set l.end_time = sysdate where l.id = Z_B;
       commit;
-      insert into t_au_activity_log
-        (id,
-         entity_id,
-         role_id,
-         ppnum,
-         page_id,
-         action,
-         start_time,
-         seq,
-         unattend)
-      VALUES
-        ((select COALESCE(max(p.ID) + 1, 1) from t_au_activity_log p),
-         ENT_ID,
-         R_ID,
-         P_NO,
-         204,
-         DESCRIPTION || ' Added as New Check List',
-         sysdate,
-         (select COALESCE(max(l.seq) + 1, 1)
-            from t_au_activity_log l
-           where l.id = Z_B
-             and l.ppnum = P_NO),
-         'Y');
       commit;
     
       insert into t_audit_checklist_details_change
@@ -3809,35 +3669,7 @@ create or replace package body PKG_AD is
     Z_B number := 0;
   begin
   
-    select NVL(MAX(l.id), 0)
-      into Z_B
-      from t_au_activity_log l
-     where l.ppnum = P_NO;
-    update t_au_activity_log l set l.end_time = sysdate where l.id = Z_B;
     commit;
-    insert into t_au_activity_log
-      (id,
-       entity_id,
-       role_id,
-       ppnum,
-       page_id,
-       action,
-       start_time,
-       seq,
-       unattend)
-    VALUES
-      ((select COALESCE(max(p.ID) + 1, 1) from t_au_activity_log p),
-       ENT_ID,
-       R_ID,
-       P_NO,
-       204,
-       DID || ' Check List has been updated by ' || P_NO,
-       sysdate,
-       (select COALESCE(max(l.seq) + 1, 1)
-          from t_au_activity_log l
-         where l.id = Z_B
-           and l.ppnum = P_NO),
-       'Y');
     commit;
   
     update T_AUDIT_CHECKLIST_DETAILS_CHANGE p
@@ -3928,35 +3760,7 @@ create or replace package body PKG_AD is
      WHERE tm.id = t_id;
     commit;
   
-    select NVL(MAX(l.id), 0)
-      into E_F
-      from t_au_activity_log l
-     where l.ppnum = P_NO;
-    update t_au_activity_log l set l.end_time = sysdate where l.id = E_F;
     commit;
-    insert into t_au_activity_log
-      (id,
-       entity_id,
-       role_id,
-       ppnum,
-       page_id,
-       action,
-       start_time,
-       seq,
-       unattend)
-    VALUES
-      ((select COALESCE(max(p.ID) + 1, 1) from t_au_activity_log p),
-       ENT_ID,
-       R_ID,
-       P_NO,
-       206,
-       'Checklist ' || T_ID || ' is recommend by' || P_NO,
-       sysdate,
-       (select COALESCE(max(l.seq) + 1, 1)
-          from t_au_activity_log l
-         where l.id = E_F
-           and l.ppnum = P_NO),
-       'Y');
     commit;
   
     insert into t_audit_checklist_details_log p
@@ -3985,35 +3789,7 @@ create or replace package body PKG_AD is
     E_F number := 0;
   begin
   
-    select NVL(MAX(l.id), 0)
-      into E_F
-      from t_au_activity_log l
-     where l.ppnum = P_NO;
-    update t_au_activity_log l set l.end_time = sysdate where l.id = E_F;
     commit;
-    insert into t_au_activity_log
-      (id,
-       entity_id,
-       role_id,
-       ppnum,
-       page_id,
-       action,
-       start_time,
-       seq,
-       unattend)
-    VALUES
-      ((select COALESCE(max(p.ID) + 1, 1) from t_au_activity_log p),
-       ENT_ID,
-       R_ID,
-       P_NO,
-       204,
-       'Check list ' || T_ID || ' is reffered Back By Authorizer',
-       sysdate,
-       (select COALESCE(max(l.seq) + 1, 1)
-          from t_au_activity_log l
-         where l.id = E_F
-           and l.ppnum = P_NO),
-       'Y');
     commit;
   
     update t_audit_checklist_details_change tm
@@ -4082,35 +3858,7 @@ create or replace package body PKG_AD is
     E_F number := 0;
   begin
   
-    select NVL(MAX(l.id), 0)
-      into E_F
-      from t_au_activity_log l
-     where l.ppnum = P_NO;
-    update t_au_activity_log l set l.end_time = sysdate where l.id = E_F;
     commit;
-    insert into t_au_activity_log
-      (id,
-       entity_id,
-       role_id,
-       ppnum,
-       page_id,
-       action,
-       start_time,
-       seq,
-       unattend)
-    VALUES
-      ((select COALESCE(max(p.ID) + 1, 1) from t_au_activity_log p),
-       ENT_ID,
-       R_ID,
-       P_NO,
-       214,
-       SID || ' Sub Process is Auhtorized by ' || P_NO,
-       sysdate,
-       (select COALESCE(max(l.seq) + 1, 1)
-          from t_au_activity_log l
-         where l.id = E_F
-           and l.ppnum = P_NO),
-       'Y');
     commit;
   
     select SID into V_F from dual;
@@ -4171,35 +3919,7 @@ create or replace package body PKG_AD is
     E_F number := 0;
   begin
   
-    select NVL(MAX(l.id), 0)
-      into E_F
-      from t_au_activity_log l
-     where l.ppnum = P_NO;
-    update t_au_activity_log l set l.end_time = sysdate where l.id = E_F;
     commit;
-    insert into t_au_activity_log
-      (id,
-       entity_id,
-       role_id,
-       ppnum,
-       page_id,
-       action,
-       start_time,
-       seq,
-       unattend)
-    VALUES
-      ((select COALESCE(max(p.ID) + 1, 1) from t_au_activity_log p),
-       ENT_ID,
-       R_ID,
-       P_NO,
-       213,
-       T_ID || ' is Reffered Back By Authorizer',
-       sysdate,
-       (select COALESCE(max(l.seq) + 1, 1)
-          from t_au_activity_log l
-         where l.id = E_F
-           and l.ppnum = P_NO),
-       'Y');
     commit;
   
     update t_audit_checklist_details_change t
@@ -4233,35 +3953,7 @@ create or replace package body PKG_AD is
     E_F number := 0;
   
   begin
-    select NVL(MAX(l.id), 0)
-      into E_F
-      from t_au_activity_log l
-     where l.ppnum = P_NO;
-    update t_au_activity_log l set l.end_time = sysdate where l.id = E_F;
     commit;
-    insert into t_au_activity_log
-      (id,
-       entity_id,
-       role_id,
-       ppnum,
-       page_id,
-       action,
-       start_time,
-       seq,
-       unattend)
-    VALUES
-      ((select COALESCE(max(p.ID) + 1, 1) from t_au_activity_log p),
-       ENT_ID,
-       R_ID,
-       P_NO,
-       31,
-       T_ID || ' has been Authorized',
-       sysdate,
-       (select COALESCE(max(l.seq) + 1, 1)
-          from t_au_activity_log l
-         where l.id = E_F
-           and l.ppnum = P_NO),
-       'Y');
     commit;
   
     select NVL(dd.s_id, 0)

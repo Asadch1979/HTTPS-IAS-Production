@@ -1,4 +1,4 @@
-﻿create or replace package PKG_DB is
+create or replace package PKG_DB is
   TYPE t_cursor IS REF CURSOR;
 
   procedure P_Getrealtionshiptype(UserRoleid IN NUMBER,
@@ -752,35 +752,7 @@ create or replace package body PKG_DB is
     E_F number := 0;
   begin
   
-    select NVL(MAX(l.id), 0)
-      into E_F
-      from t_au_activity_log l
-     where l.ppnum = P_NO;
-    update t_au_activity_log l set l.end_time = sysdate where l.id = E_F;
     commit;
-    insert into t_au_activity_log
-      (id,
-       entity_id,
-       role_id,
-       ppnum,
-       page_id,
-       action,
-       start_time,
-       seq,
-       unattend)
-    VALUES
-      ((select COALESCE(max(p.ID) + 1, 1) from t_au_activity_log p),
-       ENT_ID,
-       R_ID,
-       P_NO,
-       125,
-       'Get Functional List For Dashboard',
-       sysdate,
-       (select COALESCE(max(l.seq) + 1, 1)
-          from t_au_activity_log l
-         where l.id = E_F
-           and l.ppnum = P_NO),
-       'Y');
     commit;
   
     open io_cursor for
@@ -808,35 +780,7 @@ create or replace package body PKG_DB is
     E_F number := 0;
   begin
   
-    select NVL(MAX(l.id), 0)
-      into E_F
-      from t_au_activity_log l
-     where l.ppnum = P_NO;
-    update t_au_activity_log l set l.end_time = sysdate where l.id = E_F;
     commit;
-    insert into t_au_activity_log
-      (id,
-       entity_id,
-       role_id,
-       ppnum,
-       page_id,
-       action,
-       start_time,
-       seq,
-       unattend)
-    VALUES
-      ((select COALESCE(max(p.ID) + 1, 1) from t_au_activity_log p),
-       ENT_ID,
-       R_ID,
-       P_NO,
-       199,
-       'Get Violation List For Dashboard',
-       sysdate,
-       (select COALESCE(max(l.seq) + 1, 1)
-          from t_au_activity_log l
-         where l.id = E_F
-           and l.ppnum = P_NO),
-       'Y');
     commit;
   
     open io_cursor for
@@ -866,35 +810,7 @@ create or replace package body PKG_DB is
     E_F number := 0;
   begin
   
-    select NVL(MAX(l.id), 0)
-      into E_F
-      from t_au_activity_log l
-     where l.ppnum = P_NO;
-    update t_au_activity_log l set l.end_time = sysdate where l.id = E_F;
     commit;
-    insert into t_au_activity_log
-      (id,
-       entity_id,
-       role_id,
-       ppnum,
-       page_id,
-       action,
-       start_time,
-       seq,
-       unattend)
-    VALUES
-      ((select COALESCE(max(p.ID) + 1, 1) from t_au_activity_log p),
-       ENT_ID,
-       R_ID,
-       P_NO,
-       199,
-       'Get Violation List For Dashboard with Process',
-       sysdate,
-       (select COALESCE(max(l.seq) + 1, 1)
-          from t_au_activity_log l
-         where l.id = E_F
-           and l.ppnum = P_NO),
-       'Y');
     commit;
   
     open io_cursor for
@@ -2718,4 +2634,3 @@ BEGIN
   END P_COMPLIANCE_SUMMARY;
 
 end PKG_DB;
-
