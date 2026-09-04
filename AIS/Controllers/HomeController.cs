@@ -32,8 +32,9 @@ namespace AIS.Controllers
         private readonly PasswordChangeTokenService _passwordChangeTokenService;
         private readonly PasswordChangeStateStore _passwordChangeStateStore;
         private readonly AIS.Security.Cryptography.SecurityTokenService _tokenService;
+        private readonly IApplicationAuditLogger _applicationAuditLogger;
 
-        public HomeController(ILogger<HomeController> logger, SessionHandler _sessionHandler, DBConnection _dbCon, TopMenus _tpMenu, IPermissionService permissionService, PasswordPolicyValidator passwordPolicyValidator, PasswordChangeTokenService passwordChangeTokenService, PasswordChangeStateStore passwordChangeStateStore, AIS.Security.Cryptography.SecurityTokenService tokenService)
+        public HomeController(ILogger<HomeController> logger, SessionHandler _sessionHandler, DBConnection _dbCon, TopMenus _tpMenu, IPermissionService permissionService, PasswordPolicyValidator passwordPolicyValidator, PasswordChangeTokenService passwordChangeTokenService, PasswordChangeStateStore passwordChangeStateStore, AIS.Security.Cryptography.SecurityTokenService tokenService, IApplicationAuditLogger applicationAuditLogger)
             {
             _logger = logger;
             sessionHandler = _sessionHandler;
@@ -44,6 +45,7 @@ namespace AIS.Controllers
             _passwordChangeTokenService = passwordChangeTokenService;
             _passwordChangeStateStore = passwordChangeStateStore;
             _tokenService = tokenService;
+            _applicationAuditLogger = applicationAuditLogger;
             }
         public IActionResult Index()
             {
@@ -80,7 +82,7 @@ namespace AIS.Controllers
         [HttpPost]
         [EnableRateLimiting("ChangePasswordPolicy")]
         [AllowAnonymous]
-        public IActionResult DoChangePassword(string Password, string NewPassword, string ConfirmPassword)
+        public async Task<IActionResult> DoChangePassword(string Password, string NewPassword, string ConfirmPassword)
             {
             try
                 {
@@ -119,6 +121,20 @@ namespace AIS.Controllers
                     return Json(new { Status = false, Success = false, Message = "Unable to change password. Please try again." });
                     }
 
+                await _applicationAuditLogger.LogSuccessAsync(new ApplicationAuditEvent
+                    {
+                    EventType = "BUSINESS_ACTION",
+                    ActionName = "PASSWORD_CHANGED",
+                    ActionCategory = "AUTHENTICATION",
+                    ModuleName = "Security",
+                    DbPackageName = "pkg_lg",
+                    DbProcedureName = "P_ChangePassword",
+                    ActorPpno = tokenInfo?.PPNumber,
+                    ActorRoleId = changeState.User?.UserRoleID,
+                    ActorEntityId = changeState.User?.UserEntityID,
+                    ResultCode = "SUCCESS",
+                    ResultMessage = "Password changed successfully"
+                    });
                 ExpirePasswordChangeToken(token);
                 return Json(new
                     {

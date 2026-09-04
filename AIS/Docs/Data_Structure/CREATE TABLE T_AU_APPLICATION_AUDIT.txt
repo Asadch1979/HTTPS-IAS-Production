@@ -234,5 +234,5 @@ BEGIN
 EXCEPTION
     WHEN OTHERS THEN
         ROLLBACK;
-        NULL; -- logging must never break the business transaction
-END P_LOG_APPLICATION_ACTIVITY;   
+        RAISE; -- ApplicationAuditLogger catches/reports this; business result remains successful
+END P_LOG_APPLICATION_ACTIVITY;

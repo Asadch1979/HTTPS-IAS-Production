@@ -18,5 +18,10 @@ namespace AIS.Models
         public string ResultCode { get; set; }
         public string ResultMessage { get; set; }
         public string Details { get; set; }
+        public string ActorPpno { get; set; }
+        public int? ActorRoleId { get; set; }
+        public int? ActorGroupId { get; set; }
+        public int? ActorEntityId { get; set; }
+        public int? ActorUserContextId { get; set; }
         }
     }

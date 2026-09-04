@@ -32,8 +32,12 @@ namespace AIS.Filters
         public string ComId { get; set; }
         public string ObjectType { get; set; }
         public string ObjectId { get; set; }
+        public string ObjectIdItem { get; set; }
         public string Details { get; set; }
         public string RequireNonEmpty { get; set; }
+        public string SuccessMessageContains { get; set; }
+        public string FailureMessageContains { get; set; }
+        public bool RequireResultMessage { get; set; }
         }
 
     public sealed class ApplicationAuditActionFilter : IAsyncActionFilter
@@ -68,6 +72,14 @@ namespace AIS.Filters
                 return;
             if (!string.IsNullOrWhiteSpace(attribute.RequireNonEmpty) && IsEmpty(ResolveValue(context.ActionArguments, attribute.RequireNonEmpty)))
                 return;
+            if (attribute.RequireResultMessage && string.IsNullOrWhiteSpace(message))
+                return;
+            if (!string.IsNullOrWhiteSpace(attribute.SuccessMessageContains)
+                && !ContainsAny(message, attribute.SuccessMessageContains))
+                return;
+            if (!string.IsNullOrWhiteSpace(attribute.FailureMessageContains)
+                && ContainsAny(message, attribute.FailureMessageContains))
+                return;
 
             await _auditLogger.LogSuccessAsync(new ApplicationAuditEvent
                 {
@@ -83,7 +95,9 @@ namespace AIS.Filters
                 NewParaId = ResolveLong(context.ActionArguments, attribute.NewParaId),
                 ComId = ResolveLong(context.ActionArguments, attribute.ComId),
                 ObjectType = attribute.ObjectType,
-                ObjectId = ResolveValue(context.ActionArguments, attribute.ObjectId)?.ToString(),
+                ObjectId = !string.IsNullOrWhiteSpace(attribute.ObjectIdItem)
+                    ? context.HttpContext.Items[attribute.ObjectIdItem]?.ToString()
+                    : ResolveValue(context.ActionArguments, attribute.ObjectId)?.ToString(),
                 ResultCode = code,
                 ResultMessage = message,
                 Details = ApplicationAuditLogger.Truncate(attribute.Details, 4000)
@@ -176,6 +190,14 @@ namespace AIS.Filters
             if (value == null) return true;
             if (value is string text) return string.IsNullOrWhiteSpace(text);
             if (value is ICollection collection) return collection.Count == 0;
+            return false;
+            }
+
+        private static bool ContainsAny(string value, string alternatives)
+            {
+            if (string.IsNullOrWhiteSpace(value)) return false;
+            foreach (var alternative in alternatives.Split('|', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+                if (value.Contains(alternative, StringComparison.OrdinalIgnoreCase)) return true;
             return false;
             }
         }

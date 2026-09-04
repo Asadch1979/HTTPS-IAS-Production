@@ -609,7 +609,11 @@ namespace AIS.Controllers
             }
 
         public string SaveAuditObservation(ObservationModel ob)
+            => SaveAuditObservation(ob, out _);
+
+        public string SaveAuditObservation(ObservationModel ob, out int addedObservationId)
             {
+            addedObservationId = 0;
             int addedObsId = 0;
             string returnResp = "";
             bool proceed = false;
@@ -761,11 +765,16 @@ namespace AIS.Controllers
                     }
                 }
 
-            return returnResp;
+            addedObservationId = proceed ? addedObsId : 0;
+            return proceed ? returnResp : string.Empty;
             }
 
         public string SaveAuditObservationCAU(ObservationModel ob)
+            => SaveAuditObservationCAU(ob, out _);
+
+        public string SaveAuditObservationCAU(ObservationModel ob, out int addedObservationId)
             {
+            addedObservationId = 0;
 
             int addedObsId = 0;
             string returnResp = "";
@@ -865,7 +874,8 @@ namespace AIS.Controllers
 
 
                 }
-            return returnResp;
+            addedObservationId = proceed ? addedObsId : 0;
+            return proceed ? returnResp : string.Empty;
             }
 
         public bool SetEngIdOnHold()
@@ -1918,6 +1928,7 @@ namespace AIS.Controllers
                 return string.Empty;
                 }            using var con = this.DatabaseConnection();
 
+            var succeeded = false;
             using (OracleCommand cmd = con.CreateCommand())
                 {
                 cmd.CommandText = "pkg_ar.P_DropAuditObservation";
@@ -1933,10 +1944,11 @@ namespace AIS.Controllers
                 using OracleDataReader rdr = cmd.ExecuteReader();
                 while (rdr.Read())
                     {
+                    succeeded = HasColumn(rdr, "REF") && string.Equals(rdr["REF"]?.ToString(), "1", StringComparison.OrdinalIgnoreCase);
                     resp = rdr["REMARKS"].ToString();
                     }
                 }
-            return resp;
+            return succeeded ? resp : string.Empty;
             }
 
         public string SubmitAuditObservationToAuditee(int OBS_ID = 0)
@@ -1952,6 +1964,7 @@ namespace AIS.Controllers
                 return string.Empty;
                 }            using var con = this.DatabaseConnection();
 
+            var succeeded = false;
             using (OracleCommand cmd = con.CreateCommand())
                 {
                 cmd.CommandText = "pkg_ar.P_SubmitAuditObservationToAuditee";
@@ -1967,10 +1980,11 @@ namespace AIS.Controllers
                 using OracleDataReader rdr = cmd.ExecuteReader();
                 while (rdr.Read())
                     {
+                    succeeded = HasColumn(rdr, "REF") && string.Equals(rdr["REF"]?.ToString(), "1", StringComparison.OrdinalIgnoreCase);
                     resp = rdr["REMARKS"].ToString();
                     }
                 }
-            return resp;
+            return succeeded ? resp : string.Empty;
             }
 
         public ObservationStatusWorkflowResult AddObservationToDraft(int observationId, string draftParaNumber, string remarks)

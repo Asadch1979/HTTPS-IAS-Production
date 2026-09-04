@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using AIS.Models;
+using AIS.Filters;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 
@@ -69,6 +70,7 @@ namespace AIS.Controllers
             }
 
         [HttpPost("Save")]
+        [ApplicationAudit("API_PERMISSION_CHANGED", "ADMINISTRATION", "PKG_AD", "P_MAINT_API_MASTER", ObjectType = "API_PERMISSION", ObjectId = "request.ApiId")]
         public IActionResult Save([FromBody] ApiMasterSaveRequest request)
             {
             if (!User.Identity.IsAuthenticated)

@@ -56,11 +56,11 @@ namespace AIS.Services
 
                 _db.LogApplicationActivity(auditEvent, new ApplicationAuditContext
                     {
-                    Ppno = user?.PPNumber,
-                    RoleId = Positive(user?.UserRoleID),
-                    GroupId = Positive(user?.UserGroupID),
-                    EntityId = Positive(user?.UserEntityID),
-                    UserContextId = Positive(user?.UserContextAssignmentId),
+                    Ppno = FirstNonEmpty(auditEvent.ActorPpno, user?.PPNumber),
+                    RoleId = Positive(auditEvent.ActorRoleId) ?? Positive(user?.UserRoleID),
+                    GroupId = Positive(auditEvent.ActorGroupId) ?? Positive(user?.UserGroupID),
+                    EntityId = Positive(auditEvent.ActorEntityId) ?? Positive(user?.UserEntityID),
+                    UserContextId = Positive(auditEvent.ActorUserContextId) ?? Positive(user?.UserContextAssignmentId),
                     SessionId = FirstNonEmpty(user?.SessionId, context?.Session?.Id),
                     PageId = Positive(context?.Session?.GetInt32(SessionKeys.PageId)),
                     ControllerName = descriptor?.ControllerName ?? context?.Request?.RouteValues["controller"]?.ToString(),
