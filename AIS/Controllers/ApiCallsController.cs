@@ -1290,7 +1290,7 @@ namespace AIS.Controllers
 
         [HttpPost]
         [Consumes("application/json")]
-        [ApplicationAudit("OBSERVATION_CREATED", "AUDIT_EXECUTION", "pkg_ar", "P_SaveAuditObservation", EngagementId = "request.ENG_ID", ObjectType = "OBSERVATION", ObjectIdItem = "ApplicationAudit.ObjectIds", RequireNonEmpty = "request.LIST_OBS")]
+        [ApplicationAudit("OBSERVATION_CREATED", "AUDIT_EXECUTION", "Execution", "pkg_ar", "P_SaveAuditObservation", EngagementId = "request.ENG_ID", ObjectType = "OBSERVATION", ObjectIdItem = "ApplicationAudit.ObjectIds", RequireNonEmpty = "request.LIST_OBS")]
         public IActionResult save_observations([FromBody] SaveObservationRequest request)
             {
             if (!ModelState.IsValid)
@@ -1433,7 +1433,7 @@ namespace AIS.Controllers
 
         [HttpPost]
         [Consumes("application/json")]
-        [ApplicationAudit("OBSERVATION_CREATED", "AUDIT_EXECUTION", "pkg_ar", "P_SaveAuditObservationCAD", EngagementId = "request.ENG_ID", ObjectType = "OBSERVATION", ObjectIdItem = "ApplicationAudit.ObjectIds", RequireNonEmpty = "request.LIST_OBS")]
+        [ApplicationAudit("OBSERVATION_CREATED", "AUDIT_EXECUTION", "Execution", "pkg_ar", "P_SaveAuditObservationCAD", EngagementId = "request.ENG_ID", ObjectType = "OBSERVATION", ObjectIdItem = "ApplicationAudit.ObjectIds", RequireNonEmpty = "request.LIST_OBS")]
         public IActionResult save_observations_cau(
      [FromBody] SaveObservationCauRequest request)
             {
@@ -1526,7 +1526,7 @@ namespace AIS.Controllers
             return await dBConnection.ResponseAuditObservation(or, SUBFOLDER);
             }
         [HttpPost]
-        [ApplicationAudit("OBSERVATION_UPDATED", "AUDIT_EXECUTION", "pkg_ar", "P_UpdateObservation", ObjectType = "OBSERVATION", ObjectId = "OBS_ID", RequireResultMessage = true)]
+        [ApplicationAudit("OBSERVATION_UPDATED", "AUDIT_EXECUTION", "Execution", "pkg_ar", "P_UpdateObservation", ObjectType = "OBSERVATION", ObjectId = "OBS_ID", RequireResultMessage = true)]
         public string update_observation_text(int OBS_ID, string OBS_TEXT, int PROCESS_ID = 0, int SUBPROCESS_ID = 0, int CHECKLIST_ID = 0, string OBS_TITLE = "", int RISK_ID = 0, int ANNEXURE_ID = 0, long? REFERENCE_ID = null)
             {
             if (!IsValidObservationHeading(OBS_TITLE))
@@ -1544,7 +1544,7 @@ namespace AIS.Controllers
             return System.Text.Json.JsonSerializer.Serialize(new { Status = !string.IsNullOrWhiteSpace(response), Message = response });
             }
         [HttpPost]
-        [ApplicationAudit("OBSERVATION_STATUS_CHANGED", "AUDIT_EXECUTION", "pkg_ar", "P_UpdateAuditObservationStatus", ObjectType = "OBSERVATION", ObjectId = "request.OBS_ID")]
+        [ApplicationAudit("OBSERVATION_STATUS_CHANGED", "AUDIT_EXECUTION", "Execution", "pkg_ar", "P_UpdateAuditObservationStatus", ObjectType = "OBSERVATION", ObjectId = "request.OBS_ID")]
         public IActionResult update_observation_status(UpdateObservationStatusRequest request)
             {
             if (request.NEW_STATUS_ID != 4)
@@ -1558,7 +1558,7 @@ namespace AIS.Controllers
             return Ok(new { Status = !string.IsNullOrWhiteSpace(response), Message = response ?? string.Empty });
 
             }        [HttpPost]
-        [ApplicationAudit("OBSERVATION_ADDED_TO_DRAFT_REPORT", "AUDIT_REPORT", "pkg_ar", "P_Add_Observation_To_Draft", ObjectType = "OBSERVATION", ObjectId = "request.ObservationId")]
+        [ApplicationAudit("OBSERVATION_ADDED_TO_DRAFT_REPORT", "AUDIT_REPORT", "Reporting", "pkg_ar", "P_Add_Observation_To_Draft", ObjectType = "OBSERVATION", ObjectId = "request.ObservationId")]
         public IActionResult AddObservationToDraft(AddObservationToDraftRequest request)
             {
             if (request.ObservationId <= 0)
@@ -1576,7 +1576,7 @@ namespace AIS.Controllers
             }
 
         [HttpPost]
-        [ApplicationAudit("OBSERVATION_FINALIZED_OR_SETTLED", "AUDIT_EXECUTION", "pkg_ar", "P_Finalize_Or_Settle_Observation", ObjectType = "OBSERVATION", ObjectId = "request.ObservationId")]
+        [ApplicationAudit("OBSERVATION_FINALIZED_OR_SETTLED", "AUDIT_EXECUTION", "Execution", "pkg_ar", "P_Finalize_Or_Settle_Observation", ObjectType = "OBSERVATION", ObjectId = "request.ObservationId")]
         public IActionResult FinalizeOrSettleObservation(FinalizeOrSettleObservationRequest request)
             {
             if (request.ObservationId <= 0)
@@ -1625,7 +1625,7 @@ namespace AIS.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        [ApplicationAudit("DRAFT_PARA_NUMBER_CHANGED", "AUDIT_REPORT", "pkg_ar", "P_Update_Memo_Draft_Para_No", EngagementId = "request.EngagementId", ObjectType = "OBSERVATION", ObjectId = "request.ObservationId")]
+        [ApplicationAudit("DRAFT_PARA_NUMBER_CHANGED", "AUDIT_REPORT", "Reporting", "pkg_ar", "P_Update_Memo_Draft_Para_No", EngagementId = "request.EngagementId", ObjectType = "OBSERVATION", ObjectId = "request.ObservationId")]
         public IActionResult update_memo_draft_para_no(UpdateMemoDraftParaRequest request)
             {
             if (!ModelState.IsValid)
@@ -1645,7 +1645,7 @@ namespace AIS.Controllers
             }
 
         [HttpPost]
-        [ApplicationAudit("OBSERVATION_DROPPED", "AUDIT_EXECUTION", "pkg_ar", "P_DropAuditObservation", ObjectType = "OBSERVATION", ObjectId = "OBS_ID")]
+        [ApplicationAudit("OBSERVATION_DROPPED", "AUDIT_EXECUTION", "Execution", "pkg_ar", "P_DropAuditObservation", ObjectType = "OBSERVATION", ObjectId = "OBS_ID")]
         public IActionResult drop_observation(int OBS_ID)
             {
             var response = dBConnection.DropAuditObservation(OBS_ID);
@@ -1655,7 +1655,7 @@ namespace AIS.Controllers
 
             }
         [HttpPost]
-        [ApplicationAudit("OBSERVATION_SUBMITTED_TO_AUDITEE", "AUDIT_EXECUTION", "pkg_ar", "P_SubmitAuditObservationToAuditee", ObjectType = "OBSERVATION", ObjectId = "OBS_ID")]
+        [ApplicationAudit("OBSERVATION_SUBMITTED_TO_AUDITEE", "AUDIT_EXECUTION", "Execution", "pkg_ar", "P_SubmitAuditObservationToAuditee", ObjectType = "OBSERVATION", ObjectId = "OBS_ID")]
         public async Task<IActionResult> submit_observation_to_auditee(int OBS_ID)
             {
             string response = "";
@@ -2802,7 +2802,7 @@ namespace AIS.Controllers
             }
 
         [HttpPost]
-        [ApplicationAudit("POST_AUDIT_COMPLIANCE_SUBMITTED", "COMPLIANCE", "pkg_ae", "P_SubmitPostAuditCompliance", OldParaId = "OLD_PARA_ID", NewParaId = "NEW_PARA_ID", ComId = "SUBFOLDER", ObjectType = "COMPLIANCE", ObjectId = "SUBFOLDER", SuccessMessageContains = "Submitted")]
+        [ApplicationAudit("POST_AUDIT_COMPLIANCE_SUBMITTED", "COMPLIANCE", "Post Audit Compliance", "pkg_ae", "P_SubmitPostAuditCompliance", OldParaId = "OLD_PARA_ID", NewParaId = "NEW_PARA_ID", ComId = "SUBFOLDER", ObjectType = "COMPLIANCE", ObjectId = "SUBFOLDER", SuccessMessageContains = "Submitted")]
         public async Task<string> submit_post_audit_compliance(string OLD_PARA_ID, int NEW_PARA_ID, string INDICATOR, string COMPLIANCE, string COMMENTS, List<AuditeeResponseEvidenceModel> EVIDENCE_LIST, string SUBFOLDER)
             {
             var traceId = HttpContext?.TraceIdentifier ?? Guid.NewGuid().ToString("N");
@@ -2827,7 +2827,7 @@ namespace AIS.Controllers
             }
 
         [HttpPost]
-        [ApplicationAudit("POST_AUDIT_COMPLIANCE_REVIEWED", "COMPLIANCE", "pkg_ae", "P_SubmitPostAuditCompliance_Review", OldParaId = "OLD_PARA_ID", NewParaId = "NEW_PARA_ID", ObjectType = "COMPLIANCE", SuccessMessageContains = "settled|Forwarded|Rejected/Referred Back")]
+        [ApplicationAudit("POST_AUDIT_COMPLIANCE_REVIEWED", "COMPLIANCE", "Post Audit Compliance", "pkg_ae", "P_SubmitPostAuditCompliance_Review", OldParaId = "OLD_PARA_ID", NewParaId = "NEW_PARA_ID", ObjectType = "COMPLIANCE", SuccessMessageContains = "settled|Forwarded|Rejected/Referred Back")]
         public string submit_post_audit_compliance_review(string OLD_PARA_ID, int NEW_PARA_ID, string INDICATOR, string COMPLIANCE, string COMMENTS, List<AuditeeResponseEvidenceModel> EVIDENCE_LIST)
             {
             var remarksWithoutTags = RichTextTagRegex.Replace(COMMENTS ?? string.Empty, string.Empty);
@@ -2907,7 +2907,7 @@ namespace AIS.Controllers
             }
 
         [HttpPost]
-        [ApplicationAudit("PARA_SETTLEMENT_SUBMITTED", "COMPLIANCE", "pkg_hd", "P_AddFinalsettlement", ParaId = "PARA_ID", ObjectType = "PARA", ObjectId = "PARA_ID", RequireResultMessage = true)]
+        [ApplicationAudit("PARA_SETTLEMENT_SUBMITTED", "COMPLIANCE", "Post Audit Compliance", "pkg_hd", "P_AddFinalsettlement", ParaId = "PARA_ID", ObjectType = "PARA", ObjectId = "PARA_ID", RequireResultMessage = true)]
         public string submit_old_para_compliance_head_status(int PARA_ID, string REMARKS, int NEW_STATUS, string PARA_REF, string PARA_INDICATOR, string PARA_CATEGORY, int AU_OBS_ID, string SEQUENCE, string AUDITED_BY, string ENTITY_ID)
             {
             string response = "";
@@ -4141,14 +4141,14 @@ namespace AIS.Controllers
             return dBConnection.GetParentChildEntities(P_TYPE_ID, C_TYPE_ID);
             }
         [HttpPost]
-        [ApplicationAudit("ENTITY_SHIFTED", "ADMINISTRATION", "pkg_ad", "P_Add_Entity_shifting", ObjectType = "ENTITY", ObjectId = "FROM_ENT_ID", RequireResultMessage = true)]
+        [ApplicationAudit("ENTITY_SHIFTED", "ADMINISTRATION", "Administration", "pkg_ad", "P_Add_Entity_shifting", ObjectType = "ENTITY", ObjectId = "FROM_ENT_ID", RequireResultMessage = true)]
         public string submit_entity_shifting_from_admin_panel(string FROM_ENT_ID, string TO_ENT_ID, string CIR_REF, DateTime CIR_DATE, string CIR)
             {
             return "{\"Status\":true,\"Message\":\"" + dBConnection.SubmitEntityShiftingFromAdminPanel(FROM_ENT_ID, TO_ENT_ID, CIR_REF, CIR_DATE, CIR) + "\"}";
             }
 
         [HttpPost]
-        [ApplicationAudit("DEPARTMENT_ENTITY_SHIFTED", "ADMINISTRATION", "pkg_ad", "P_Add_Department_Entity_Shifting", ObjectType = "ENTITY", ObjectId = "FROM_ENT_ID", RequireResultMessage = true, FailureMessageContains = "Invalid")]
+        [ApplicationAudit("DEPARTMENT_ENTITY_SHIFTED", "ADMINISTRATION", "Administration", "pkg_ad", "P_Add_Department_Entity_Shifting", ObjectType = "ENTITY", ObjectId = "FROM_ENT_ID", RequireResultMessage = true, FailureMessageContains = "Invalid")]
         public string submit_department_entity_shifting_from_admin_panel(string FROM_ENT_ID, string TO_ENT_ID, string CIR_REF, DateTime CIR_DATE, string CIR)
             {
             return "{\"Status\":true,\"Message\":\"" + dBConnection.SubmitDepartmentEntityShiftingFromAdminPanel(FROM_ENT_ID, TO_ENT_ID, CIR_REF, CIR_DATE, CIR) + "\"}";

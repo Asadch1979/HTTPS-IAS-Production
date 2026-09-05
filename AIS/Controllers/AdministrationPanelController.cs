@@ -1811,7 +1811,7 @@ namespace AIS.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        [ApplicationAudit("ENGAGEMENT_ENTITY_SHIFTED", "ADMINISTRATION", "pkg_ad", "P_SHIFT_ENGAGEMENT_ENTITY", EngagementId = "request.EngagementId", ObjectType = "ENGAGEMENT", ObjectId = "request.EngagementId")]
+        [ApplicationAudit("ENGAGEMENT_ENTITY_SHIFTED", "ADMINISTRATION", "Administration", "pkg_ad", "P_SHIFT_ENGAGEMENT_ENTITY", EngagementId = "request.EngagementId", ObjectType = "ENGAGEMENT", ObjectId = "request.EngagementId")]
         public IActionResult ShiftEngagementEntity(EngagementEntityShiftRequestModel request)
             {
             if (!User.Identity.IsAuthenticated || !sessionHandler.TryGetUser(out var user) || user == null)

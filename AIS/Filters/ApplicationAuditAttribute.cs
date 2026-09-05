@@ -17,14 +17,23 @@ namespace AIS.Filters
     [AttributeUsage(AttributeTargets.Method, AllowMultiple = false)]
     public sealed class ApplicationAuditAttribute : TypeFilterAttribute
         {
-        public ApplicationAuditAttribute(string actionName, string moduleName, string dbPackageName, string dbProcedureName)
+        private static readonly HashSet<string> ApprovedCategories = new(StringComparer.Ordinal)
+            {
+            "AUTHENTICATION", "AUDIT_PLANNING", "AUDIT_EXECUTION", "CHECKLIST", "COMPLIANCE",
+            "AUDIT_REPORT", "ANNEXURE", "ADMINISTRATION", "FILES_EVIDENCE", "INQUIRY_COMPLAINT", "EXPORT"
+            };
+
+        public ApplicationAuditAttribute(string actionName, string actionCategory, string moduleName,
+            string dbPackageName, string dbProcedureName)
             : base(typeof(ApplicationAuditActionFilter))
             {
-            Arguments = new object[] { actionName, moduleName, dbPackageName, dbProcedureName };
+            if (string.IsNullOrWhiteSpace(actionName)) throw new ArgumentException("Audit action name is required.", nameof(actionName));
+            if (!ApprovedCategories.Contains(actionCategory)) throw new ArgumentException($"Unsupported audit category: {actionCategory}", nameof(actionCategory));
+            if (string.IsNullOrWhiteSpace(moduleName)) throw new ArgumentException("Audit module name is required.", nameof(moduleName));
+            Arguments = new object[] { actionName, actionCategory, moduleName, dbPackageName, dbProcedureName };
             }
 
         public string EventType { get; set; } = "BUSINESS_ACTION";
-        public string ActionCategory { get; set; }
         public string EngagementId { get; set; }
         public string ParaId { get; set; }
         public string OldParaId { get; set; }
@@ -44,15 +53,17 @@ namespace AIS.Filters
         {
         private readonly IApplicationAuditLogger _auditLogger;
         private readonly string _actionName;
+        private readonly string _actionCategory;
         private readonly string _moduleName;
         private readonly string _dbPackageName;
         private readonly string _dbProcedureName;
 
         public ApplicationAuditActionFilter(IApplicationAuditLogger auditLogger, string actionName,
-            string moduleName, string dbPackageName, string dbProcedureName)
+            string actionCategory, string moduleName, string dbPackageName, string dbProcedureName)
             {
             _auditLogger = auditLogger;
             _actionName = actionName;
+            _actionCategory = actionCategory;
             _moduleName = moduleName;
             _dbPackageName = dbPackageName;
             _dbProcedureName = dbProcedureName;
@@ -85,7 +96,7 @@ namespace AIS.Filters
                 {
                 EventType = attribute.EventType,
                 ActionName = _actionName,
-                ActionCategory = attribute.ActionCategory,
+                ActionCategory = _actionCategory,
                 ModuleName = _moduleName,
                 DbPackageName = _dbPackageName,
                 DbProcedureName = _dbProcedureName,

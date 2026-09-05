@@ -70,7 +70,7 @@ namespace AIS.Controllers
             }
 
         [HttpPost("Save")]
-        [ApplicationAudit("API_PERMISSION_CHANGED", "ADMINISTRATION", "PKG_AD", "P_MAINT_API_MASTER", ObjectType = "API_PERMISSION", ObjectId = "request.ApiId")]
+        [ApplicationAudit("API_PERMISSION_CHANGED", "ADMINISTRATION", "Administration", "PKG_AD", "P_MAINT_API_MASTER", ObjectType = "API_PERMISSION", ObjectId = "request.ApiId")]
         public IActionResult Save([FromBody] ApiMasterSaveRequest request)
             {
             if (!User.Identity.IsAuthenticated)
