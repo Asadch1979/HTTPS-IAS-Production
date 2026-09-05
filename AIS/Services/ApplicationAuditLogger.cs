@@ -61,7 +61,7 @@ namespace AIS.Services
                     GroupId = Positive(auditEvent.ActorGroupId) ?? Positive(user?.UserGroupID),
                     EntityId = Positive(auditEvent.ActorEntityId) ?? Positive(user?.UserEntityID),
                     UserContextId = Positive(auditEvent.ActorUserContextId) ?? Positive(user?.UserContextAssignmentId),
-                    SessionId = FirstNonEmpty(user?.SessionId, context?.Session?.Id),
+                    SessionId = FirstNonEmpty(auditEvent.ActorSessionId, user?.SessionId, context?.Session?.Id),
                     PageId = Positive(context?.Session?.GetInt32(SessionKeys.PageId)),
                     ControllerName = descriptor?.ControllerName ?? context?.Request?.RouteValues["controller"]?.ToString(),
                     ControllerAction = descriptor?.ActionName ?? context?.Request?.RouteValues["action"]?.ToString(),

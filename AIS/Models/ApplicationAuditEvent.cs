@@ -23,5 +23,6 @@ namespace AIS.Models
         public int? ActorGroupId { get; set; }
         public int? ActorEntityId { get; set; }
         public int? ActorUserContextId { get; set; }
+        public string ActorSessionId { get; set; }
         }
     }

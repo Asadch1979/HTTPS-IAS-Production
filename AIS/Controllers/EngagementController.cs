@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using AIS.Services;
+using AIS.Filters;
 namespace AIS.Controllers
     {
 
@@ -156,6 +157,7 @@ namespace AIS.Controllers
                 }
             }
         [HttpPost]
+        [ApplicationAudit("AUDIT_CRITERIA_CREATED", "AUDIT_PLANNING", "AUDIT_CRITERIA", "PKG_PG", "P_ADDAUDITCRITERIA", ObjectType = "AUDIT_CRITERIA")]
         public IActionResult add_audit_criteria(List<List<String>> CRITERIA_LIST)
             {
             var response = new AuditCriteriaSaveResponseModel();
@@ -230,6 +232,7 @@ namespace AIS.Controllers
                 }
             }
         [HttpPost]
+        [ApplicationAudit("AUDITEE_ENTITY_CREATED", "AUDIT_PLANNING", "AUDIT_UNIVERSE", "PKG_AD", "P_ADDAUDITENTITY", ObjectType = "AUDITEE_ENTITY")]
         public AuditEntitiesModel add_auditee_entity(AuditEntitiesModel am)
             {
             am.AUTID = 0;

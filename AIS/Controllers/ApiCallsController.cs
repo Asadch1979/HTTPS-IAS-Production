@@ -576,6 +576,7 @@ namespace AIS.Controllers
             }
 
         [HttpPost]
+        [ApplicationAudit("ENGAGEMENT_PLAN_CREATED", "AUDIT_PLANNING", "ENGAGEMENT_PLANNING", "PKG_PG", "P_ADDAUDITENGAGEMENTPLAN", EngagementId = "eng.ENG_ID", ObjectType = "ENGAGEMENT_PLAN", ObjectId = "eng.ENG_ID")]
         public async Task<IActionResult> AddEngagementPlan([FromForm] AuditEngagementPlanModel eng)
             {
             var unauthorized = EnsureAuthenticatedSession();
@@ -598,10 +599,13 @@ namespace AIS.Controllers
                 await EmailNotification.SendAuditTaskAssignedAsync(_configuration, notificationData, HttpContext?.RequestServices);
                 }
 
-            return Ok(result);
+            return string.Equals(result?.IS_SUCCESS, "Yes", StringComparison.OrdinalIgnoreCase)
+                ? Ok(result)
+                : BadRequest(result);
             }
 
         [HttpPost]
+        [ApplicationAudit("AUDIT_TEAM_CREATED", "AUDIT_PLANNING", "AUDIT_TEAM", "PKG_PG", "P_ADDAUDITTEAM", ObjectType = "AUDIT_TEAM")]
         public IActionResult AddAuditTeam([FromForm] List<AddAuditTeamModel> AUDIT_TEAM)
             {
             var unauthorized = EnsureAuthenticatedSession();
@@ -654,7 +658,10 @@ namespace AIS.Controllers
                 responses.Add(dBConnection.AddAuditTeam(ateam));
                 }
 
-            return Ok(new { Status = true });
+            var saved = responses.Count == AUDIT_TEAM.Count && responses.All(response => !string.IsNullOrWhiteSpace(response));
+            return saved
+                ? Ok(new { Status = true, Message = "Audit team saved successfully." })
+                : BadRequest(new { Status = false, Message = "Oracle did not confirm every audit-team member save." });
             }
 
         private static bool ContainsHtmlEncodedPayload(string value)
@@ -677,6 +684,7 @@ namespace AIS.Controllers
             }
 
         [HttpPost]
+        [ApplicationAudit("AUDIT_TEAM_DELETED", "AUDIT_PLANNING", "AUDIT_TEAM", "PKG_PG", "P_DELETEAUDITTEAM", ObjectType = "AUDIT_TEAM", ObjectId = "T_CODE")]
         public IActionResult DeleteAuditTeam([FromForm] string T_CODE)
             {
             var unauthorized = EnsureAuthenticatedSession();
@@ -2352,6 +2360,7 @@ namespace AIS.Controllers
             return dBConnection.GetchildpostingForParaPositionReport(E_R_ID);
             }
         [HttpPost]
+        [ApplicationAudit("ENGAGEMENT_PLAN_APPROVED", "AUDIT_PLANNING", "ENGAGEMENT_PLANNING", "PKG_PG", "P_APPROVEAUDITENGAGEMENTPLAN", EngagementId = "ENG_ID", ObjectType = "ENGAGEMENT", ObjectId = "ENG_ID")]
         public bool approve_engagement_plan(int ENG_ID)
             {
             return dBConnection.ApproveAuditEngagementPlan(ENG_ID);
@@ -2365,6 +2374,7 @@ namespace AIS.Controllers
             }
 
         [HttpPost]
+        [ApplicationAudit("ENGAGEMENT_PLAN_REFERRED_BACK", "AUDIT_PLANNING", "ENGAGEMENT_PLANNING", "PKG_PG", "P_REFFEREDBACKAUDITENGAGEMENTPLAN", EngagementId = "ENG_ID", ObjectType = "ENGAGEMENT", ObjectId = "ENG_ID")]
         public bool reject_engagement_plan(int ENG_ID, string COMMENTS)
             {
             return dBConnection.RefferedBackAuditEngagementPlan(ENG_ID, COMMENTS);
@@ -4182,6 +4192,7 @@ namespace AIS.Controllers
             }
 
         [HttpPost]
+        [ApplicationAudit("ENGAGEMENT_TEAM_CHANGED", "AUDIT_PLANNING", "ENGAGEMENT_PLANNING", "PKG_AD", "P_AUDIT_TEAM_POSTCHANGES", EngagementId = "ENG_ID", ObjectType = "AUDIT_TEAM", ObjectId = "TEAM_ID", RequireResultMessage = true)]
         public string submit_new_team_id_for_post_changes_team_eng_reversal(int TEAM_ID, int ENG_ID, int AUDITED_BY_ID, string TEAM_NAME)
             {
             return "{\"Status\":true,\"Message\":\"" + dBConnection.SubmitNewTeamIdForPostChangesTeamEngReversal(TEAM_ID, ENG_ID, AUDITED_BY_ID, TEAM_NAME) + "\"}";
@@ -4211,6 +4222,7 @@ namespace AIS.Controllers
             return "{\"Status\":true,\"Message\":\"" + dBConnection.UpdateObservationNumbersForStatusReversal(onum) + "\"}";
             }
         [HttpPost]
+        [ApplicationAudit("ENGAGEMENT_DATES_CHANGED", "AUDIT_PLANNING", "ENGAGEMENT_PLANNING", "PKG_AD", "P_UPDATE_ENG_DATE", EngagementId = "ENG_ID", ObjectType = "ENGAGEMENT", ObjectId = "ENG_ID", RequireResultMessage = true)]
         public string update_engagement_dates_for_status_reversal(int ENG_ID, DateTime START_DATE, DateTime END_DATE)
             {
             return "{\"Status\":true,\"Message\":\"" + dBConnection.UpdateEngagementDatesForStatusReversal(ENG_ID, START_DATE, END_DATE) + "\"}";
@@ -4578,30 +4590,35 @@ namespace AIS.Controllers
             return dBConnection.GetSaveSpecialAuditPlan();
             }
         [HttpPost]
+        [ApplicationAudit("SPECIAL_AUDIT_PLAN_SAVED", "AUDIT_PLANNING", "SPECIAL_AUDIT", "PKG_PG", "P_ADD_SPECIAL_AUDIT_PLAN", ObjectType = "SPECIAL_AUDIT_PLAN", ObjectId = "PLAN_ID")]
         public IActionResult add_special_audit_plan(string NATURE, string PERIOD, string ENTITY_ID, string NO_DAYS, string PLAN_ID, string INDICATOR)
             {
             var response = dBConnection.AddSpecialAuditPlan(NATURE, PERIOD, ENTITY_ID, NO_DAYS, PLAN_ID, INDICATOR);
             return LegacyMessageResponse(response, "Special audit plan saved successfully.");
             }
         [HttpPost]
+        [ApplicationAudit("SPECIAL_AUDIT_PLAN_DELETED", "AUDIT_PLANNING", "SPECIAL_AUDIT", "PKG_PG", "P_UPDATE_SPECIAL_AUDIT", ObjectType = "SPECIAL_AUDIT_PLAN", ObjectId = "PLAN_ID")]
         public IActionResult delete_special_audit_plan(string PLAN_ID, string INDICATOR)
             {
             var response = dBConnection.DeleteSpecialAuditPlan(PLAN_ID, INDICATOR);
             return LegacyMessageResponse(response, "Special audit plan deleted successfully.");
             }
         [HttpPost]
+        [ApplicationAudit("SPECIAL_AUDIT_PLAN_SUBMITTED", "AUDIT_PLANNING", "SPECIAL_AUDIT", "PKG_PG", "P_UPDATE_SPECIAL_AUDIT", ObjectType = "SPECIAL_AUDIT_PLAN", ObjectId = "PLAN_ID")]
         public IActionResult submit_special_audit_plan(string PLAN_ID, string INDICATOR)
             {
             var response = dBConnection.SubmitSpecialAuditPlan(PLAN_ID, INDICATOR);
             return LegacyMessageResponse(response, "Special audit plan submitted successfully.");
             }
         [HttpPost]
+        [ApplicationAudit("SPECIAL_AUDIT_PLAN_REFERRED_BACK", "AUDIT_PLANNING", "SPECIAL_AUDIT", "PKG_PG", "P_UPDATE_SPECIAL_AUDIT", ObjectType = "SPECIAL_AUDIT_PLAN", ObjectId = "PLAN_ID")]
         public IActionResult referred_back_special_audit_plan(string PLAN_ID, string INDICATOR)
             {
             var response = dBConnection.SubmitSpecialAuditPlan(PLAN_ID, INDICATOR);
             return LegacyMessageResponse(response, "Special audit plan referred back successfully.");
             }
         [HttpPost]
+        [ApplicationAudit("SPECIAL_AUDIT_PLAN_APPROVED", "AUDIT_PLANNING", "SPECIAL_AUDIT", "PKG_PG", "P_UPDATE_SPECIAL_AUDIT", ObjectType = "SPECIAL_AUDIT_PLAN", ObjectId = "PLAN_ID")]
         public IActionResult approve_special_audit_plan(string PLAN_ID, string INDICATOR)
             {
             var response = dBConnection.SubmitSpecialAuditPlan(PLAN_ID, INDICATOR);
@@ -4926,11 +4943,14 @@ namespace AIS.Controllers
             }
 
         [HttpPost]
+        [ApplicationAudit("ENGAGEMENT_SAMPLE_CREATED", "AUDIT_PLANNING", "SAMPLING", "PKG_SM", "P_ADD_SAMPLE_DATA", EngagementId = "ENG_ID", ObjectType = "ENGAGEMENT", ObjectId = "ENG_ID", RequireResultMessage = true)]
         public string create_engagement_sample_data(int ENG_ID)
             {
             return "{\"Status\":true,\"Message\":\"" + dBConnection.CreateSampleDataAfterEngagementApproval(ENG_ID) + "\"}";
             }
 
+        [HttpPost]
+        [ApplicationAudit("ENGAGEMENT_EXCEPTION_DATA_CREATED", "AUDIT_PLANNING", "EXCEPTION_MONITORING", "PKG_SM", "P_ADD_EXCEPTION_DATA", EngagementId = "ENG_ID", ObjectType = "ENGAGEMENT", ObjectId = "ENG_ID", RequireResultMessage = true)]
         public string create_engagement_Exception_data(int ENG_ID)
             {
             return "{\"Status\":true,\"Message\":\"" + dBConnection.CreateExceptionDataAfterEngagementApproval(ENG_ID) + "\"}";
@@ -5353,6 +5373,7 @@ namespace AIS.Controllers
             }
 
         [HttpPost]
+        [ApplicationAudit("INVESTIGATION_PLAN_CREATED", "AUDIT_PLANNING", "INQUIRY_INVESTIGATION", "PKG_INQ", "ADD_INV_PLAN", ObjectType = "COMPLAINT", ObjectId = "model.ComplaintId")]
         public IActionResult AddInvestigationPlan([FromBody] AIS.Models.IID.InvestigationPlanModel model)
             {
             try
@@ -5371,6 +5392,7 @@ namespace AIS.Controllers
             }
 
         [HttpPost]
+        [ApplicationAudit("INVESTIGATION_PLAN_DECIDED", "AUDIT_PLANNING", "INQUIRY_INVESTIGATION", "PKG_INQ", "ADD_PLAN_APPROVAL", ObjectType = "INVESTIGATION_PLAN", ObjectId = "model.PlanId")]
         public IActionResult AddPlanApproval([FromForm] AIS.Models.IID.PlanApprovalModel model)
             {
             try

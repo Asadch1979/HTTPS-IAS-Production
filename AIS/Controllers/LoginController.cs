@@ -38,8 +38,9 @@ namespace AIS.Controllers
         private readonly PasswordChangeTokenService _passwordChangeTokenService;
         private readonly PasswordChangeStateStore _passwordChangeStateStore;
         private readonly IClientIpResolver _clientIpResolver;
+        private readonly IApplicationAuditLogger _applicationAuditLogger;
 
-        public LoginController(ILogger<LoginController> logger, SessionHandler sessionHandler, DBConnection dbConnection, IConfiguration configuration, LoginAttemptTracker loginAttemptTracker, PasswordPolicyValidator passwordPolicyValidator, SecurityTokenService tokenService, IPermissionService permissionService, LoginViewResolver loginViewResolver, PasswordChangeTokenService passwordChangeTokenService, PasswordChangeStateStore passwordChangeStateStore, IClientIpResolver clientIpResolver)
+        public LoginController(ILogger<LoginController> logger, SessionHandler sessionHandler, DBConnection dbConnection, IConfiguration configuration, LoginAttemptTracker loginAttemptTracker, PasswordPolicyValidator passwordPolicyValidator, SecurityTokenService tokenService, IPermissionService permissionService, LoginViewResolver loginViewResolver, PasswordChangeTokenService passwordChangeTokenService, PasswordChangeStateStore passwordChangeStateStore, IClientIpResolver clientIpResolver, IApplicationAuditLogger applicationAuditLogger)
             {
             _logger = logger;
             this.sessionHandler = sessionHandler;
@@ -53,6 +54,7 @@ namespace AIS.Controllers
             _passwordChangeTokenService = passwordChangeTokenService;
             _passwordChangeStateStore = passwordChangeStateStore;
             _clientIpResolver = clientIpResolver;
+            _applicationAuditLogger = applicationAuditLogger;
             }
 
         public IActionResult Index()
@@ -62,6 +64,7 @@ namespace AIS.Controllers
 
         public async Task<IActionResult> Logout()
         {
+            var auditUser = sessionHandler.GetUser();
             ResetLoginAttemptsForCurrentUser();
             var token = Request.Cookies["IAS_SESSION"];
             if (!string.IsNullOrWhiteSpace(token))
@@ -69,13 +72,37 @@ namespace AIS.Controllers
                 dBConnection.InvalidateSession(token);
             }
 
+            var sessionEnded = false;
             try
             {
-                dBConnection.DisposeLoginSession();
+                sessionEnded = dBConnection.DisposeLoginSession();
             }
             catch (Exception ex)
             {
                 _logger.LogWarning(ex, "Error while disposing login session during logout.");
+            }
+
+            if (sessionEnded)
+            {
+                await _applicationAuditLogger.LogSuccessAsync(new ApplicationAuditEvent
+                {
+                    EventType = "SECURITY",
+                    ActionName = "LOGOUT_SUCCESS",
+                    ActionCategory = "AUTHENTICATION",
+                    ModuleName = "ACCESS_CONTROL",
+                    DbPackageName = "PKG_LG",
+                    DbProcedureName = "SESSION_END",
+                    ObjectType = "USER_SESSION",
+                    ObjectId = auditUser?.SessionId,
+                    ResultCode = "SUCCESS",
+                    ResultMessage = "User session ended successfully.",
+                    ActorPpno = auditUser?.PPNumber,
+                    ActorRoleId = auditUser?.UserRoleID,
+                    ActorGroupId = auditUser?.UserGroupID,
+                    ActorEntityId = auditUser?.UserEntityID,
+                    ActorUserContextId = auditUser?.UserContextAssignmentId,
+                    ActorSessionId = auditUser?.SessionId
+                });
             }
 
             await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
@@ -378,6 +405,24 @@ namespace AIS.Controllers
                     maskedIdentifier,
                     resetResult?.AccountFound ?? false,
                     resetResult?.EmailSent ?? false);
+                if (resetResult?.PasswordReset == true)
+                {
+                    await _applicationAuditLogger.LogSuccessAsync(new ApplicationAuditEvent
+                    {
+                        EventType = "SECURITY",
+                        ActionName = "PASSWORD_RESET",
+                        ActionCategory = "AUTHENTICATION",
+                        ModuleName = "ACCESS_CONTROL",
+                        DbPackageName = "PKG_AD",
+                        DbProcedureName = "RESET_USER_PASSWORD",
+                        ObjectType = "USER",
+                        ObjectId = model?.PPNumber,
+                        ResultCode = "SUCCESS",
+                        ResultMessage = "Password reset completed successfully.",
+                        Details = $"Temporary password email delivered: {(resetResult.EmailSent ? "Y" : "N")}",
+                        ActorPpno = model?.PPNumber
+                    });
+                }
             }
             catch (DatabaseUnavailableException ex)
             {
@@ -816,6 +861,25 @@ namespace AIS.Controllers
             IssueApplicationSession(user);
             SetMustChangePasswordFlag(user);
             await SignInUserAsync(sessionUser);
+            await _applicationAuditLogger.LogSuccessAsync(new ApplicationAuditEvent
+            {
+                EventType = "SECURITY",
+                ActionName = "LOGIN_SUCCESS",
+                ActionCategory = "AUTHENTICATION",
+                ModuleName = "ACCESS_CONTROL",
+                DbPackageName = "PKG_LG",
+                DbProcedureName = "USER_SESSION",
+                ObjectType = "USER_SESSION",
+                ObjectId = sessionUser.SessionId,
+                ResultCode = "SUCCESS",
+                ResultMessage = "User authenticated and application session created successfully.",
+                ActorPpno = sessionUser.PPNumber,
+                ActorRoleId = sessionUser.UserRoleID,
+                ActorGroupId = sessionUser.UserGroupID,
+                ActorEntityId = sessionUser.UserEntityID,
+                ActorUserContextId = sessionUser.UserContextAssignmentId,
+                ActorSessionId = sessionUser.SessionId
+            });
         }
 
         private void IssueApplicationSession(UserModel user)

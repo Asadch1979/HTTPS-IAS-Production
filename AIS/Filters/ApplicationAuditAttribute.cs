@@ -145,6 +145,8 @@ namespace AIS.Filters
                 {
                 var json = value is string text ? text : JsonSerializer.Serialize(value);
                 using var document = JsonDocument.Parse(json);
+                if (document.RootElement.ValueKind == JsonValueKind.False) return false;
+                if (document.RootElement.ValueKind == JsonValueKind.True) return true;
                 if (document.RootElement.ValueKind == JsonValueKind.Object)
                     {
                     if (TryProperty(document.RootElement, "status", out var statusValue))
@@ -153,6 +155,8 @@ namespace AIS.Filters
                         if (statusValue.ValueKind == JsonValueKind.String && !IsSuccessText(statusValue.GetString())) return false;
                         }
                     if (TryProperty(document.RootElement, "success", out var successValue) && successValue.ValueKind == JsonValueKind.False)
+                        return false;
+                    if (TryProperty(document.RootElement, "ok", out var okValue) && okValue.ValueKind == JsonValueKind.False)
                         return false;
                     if (TryProperty(document.RootElement, "resultCode", out var codeValue)) code = Scalar(codeValue);
                     if (TryProperty(document.RootElement, "message", out var messageValue)) message = Scalar(messageValue);
