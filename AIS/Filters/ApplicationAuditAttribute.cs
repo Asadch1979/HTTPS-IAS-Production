@@ -35,6 +35,7 @@ namespace AIS.Filters
 
         public string EventType { get; set; } = "BUSINESS_ACTION";
         public string EngagementId { get; set; }
+        public string EngagementIdItem { get; set; }
         public string ParaId { get; set; }
         public string OldParaId { get; set; }
         public string NewParaId { get; set; }
@@ -44,6 +45,7 @@ namespace AIS.Filters
         public string ObjectIdItem { get; set; }
         public string Details { get; set; }
         public string RequireNonEmpty { get; set; }
+        public string RequireItem { get; set; }
         public string SuccessMessageContains { get; set; }
         public string FailureMessageContains { get; set; }
         public bool RequireResultMessage { get; set; }
@@ -83,6 +85,8 @@ namespace AIS.Filters
                 return;
             if (!string.IsNullOrWhiteSpace(attribute.RequireNonEmpty) && IsEmpty(ResolveValue(context.ActionArguments, attribute.RequireNonEmpty)))
                 return;
+            if (!string.IsNullOrWhiteSpace(attribute.RequireItem) && !context.HttpContext.Items.ContainsKey(attribute.RequireItem))
+                return;
             if (attribute.RequireResultMessage && string.IsNullOrWhiteSpace(message))
                 return;
             if (!string.IsNullOrWhiteSpace(attribute.SuccessMessageContains)
@@ -100,7 +104,9 @@ namespace AIS.Filters
                 ModuleName = _moduleName,
                 DbPackageName = _dbPackageName,
                 DbProcedureName = _dbProcedureName,
-                EngagementId = ResolveLong(context.ActionArguments, attribute.EngagementId),
+                EngagementId = !string.IsNullOrWhiteSpace(attribute.EngagementIdItem)
+                    ? ParsePositiveLong(context.HttpContext.Items[attribute.EngagementIdItem])
+                    : ResolveLong(context.ActionArguments, attribute.EngagementId),
                 ParaId = ResolveLong(context.ActionArguments, attribute.ParaId),
                 OldParaId = ResolveLong(context.ActionArguments, attribute.OldParaId),
                 NewParaId = ResolveLong(context.ActionArguments, attribute.NewParaId),
@@ -170,10 +176,17 @@ namespace AIS.Filters
                 }
             }
 
-        private static bool IsSuccessText(string value) => !string.IsNullOrWhiteSpace(value)
-            && (value.Contains("\"Status\":true", StringComparison.OrdinalIgnoreCase)
+        private static bool IsSuccessText(string value)
+            {
+            if (string.IsNullOrWhiteSpace(value)
+                || ContainsAny(value, "fail|error|invalid|denied|not permitted|unsuccessful"))
+                return false;
+            return value.Contains("\"Status\":true", StringComparison.OrdinalIgnoreCase)
                 || value.Equals("OK", StringComparison.OrdinalIgnoreCase)
-                || value.Equals("SUCCESS", StringComparison.OrdinalIgnoreCase));
+                || value.Equals("SUCCESS", StringComparison.OrdinalIgnoreCase)
+                || value.Contains("successfully", StringComparison.OrdinalIgnoreCase)
+                || value.Contains("successful", StringComparison.OrdinalIgnoreCase);
+            }
 
         private static bool TryProperty(JsonElement element, string name, out JsonElement value)
             {
@@ -187,6 +200,9 @@ namespace AIS.Filters
 
         private static long? ResolveLong(IDictionary<string, object> args, string path)
             => long.TryParse(ResolveValue(args, path)?.ToString(), NumberStyles.Integer, CultureInfo.InvariantCulture, out var number) && number > 0 ? number : null;
+
+        private static long? ParsePositiveLong(object value)
+            => long.TryParse(value?.ToString(), NumberStyles.Integer, CultureInfo.InvariantCulture, out var number) && number > 0 ? number : null;
 
         private static object ResolveValue(IDictionary<string, object> args, string path)
             {
@@ -205,6 +221,8 @@ namespace AIS.Filters
             if (value == null) return true;
             if (value is string text) return string.IsNullOrWhiteSpace(text);
             if (value is ICollection collection) return collection.Count == 0;
+            if (value is byte or short or int or long or float or double or decimal)
+                return Convert.ToDecimal(value, CultureInfo.InvariantCulture) <= 0;
             return false;
             }
 

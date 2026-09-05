@@ -271,6 +271,7 @@ namespace AIS.Controllers
             }
 
         [HttpPost("DeleteSummaryPdf")]
+        [AIS.Filters.ApplicationAudit("CIA_SUMMARY_PDF_DELETED", "COMPLIANCE", "OUTSTANDING PARAS PDF", "PKG_CIA_SUMMARY_PDF", "P_DELETE_CIA_SUMMARY_PDF", ObjectType = "CIA_SUMMARY_PDF", ObjectId = "request.PdfId")]
         public IActionResult DeleteSummaryPdf([FromBody] OutstandingParasSummaryPdfDeleteRequest request)
             {
             try
@@ -304,6 +305,7 @@ namespace AIS.Controllers
             }
 
         [HttpPost("ExportSelectedSummaryPdfsZip")]
+        [AIS.Filters.ApplicationAudit("CIA_SUMMARY_PDFS_EXPORTED", "COMPLIANCE", "OUTSTANDING PARAS PDF", "PKG_CIA_SUMMARY_PDF", "P_DOWNLOAD_CIA_SUMMARY_PDF", ObjectType = "CIA_SUMMARY_PDF_COLLECTION", RequireNonEmpty = "request.PdfIds")]
         public async Task<IActionResult> ExportSelectedSummaryPdfsZip([FromBody] OutstandingParasSummaryPdfZipExportRequest request)
             {
             var stopwatch = Stopwatch.StartNew();

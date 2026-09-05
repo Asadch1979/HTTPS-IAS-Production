@@ -260,14 +260,21 @@ namespace AIS
 
             app.UseForwardedHeaders();
 
-            app.UseHsts();
-            logger.LogInformation("HSTS is enabled for this deployment.");
+            if (!env.IsDevelopment())
+                {
+                app.UseHsts();
+                app.UseHttpsRedirection();
+                logger.LogInformation("HSTS and HTTPS redirection are enabled for this deployment.");
+                }
+            else
+                {
+                logger.LogInformation("Development HTTP endpoint is enabled for local browser testing.");
+                }
             logger.LogInformation("SMTP configuration loaded. Host={Host}; Port={Port}; From={From}.",
                 Configuration["Email:Host"],
                 Configuration.GetValue<int?>("Email:Port") ?? 587,
                 Configuration["Email:From"]);
 
-            app.UseHttpsRedirection();
             app.UseMiddleware<CspReportOnlyMiddleware>();
 
             app.Use(async (context, next) =>

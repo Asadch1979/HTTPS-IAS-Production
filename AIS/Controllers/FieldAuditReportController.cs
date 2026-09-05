@@ -279,6 +279,7 @@ namespace AIS.Controllers
             }
 
         [HttpPost]
+        [AIS.Filters.ApplicationAudit("FIELD_AUDIT_STAFF_SNAPSHOT_SAVED", "AUDIT_REPORT", "FIELD AUDIT REPORT", "PKG_FRPT", "P_SAVE_STAFF_SNAPSHOT", EngagementId = "engId", ObjectType = "ENGAGEMENT", ObjectId = "engId", RequireResultMessage = true)]
         public IActionResult SaveStaffSnapshotRows(int engId, [FromBody] List<StaffSnapshotRowModel> rows)
             {
             var redirect = EnsureAuthorized();
@@ -338,6 +339,7 @@ namespace AIS.Controllers
             }
 
         [HttpPost]
+        [AIS.Filters.ApplicationAudit("FIELD_AUDIT_NPL_SNAPSHOT_SAVED", "AUDIT_REPORT", "FIELD AUDIT REPORT", "PKG_FRPT", "P_SAVE_NPL_SNAPSHOT", EngagementId = "engId", ObjectType = "ENGAGEMENT", ObjectId = "engId", RequireResultMessage = true)]
         public IActionResult SaveNplSnapshotRows(int engId, [FromBody] List<NplSnapshotRowModel> rows)
             {
             var redirect = EnsureAuthorized();
@@ -398,6 +400,7 @@ namespace AIS.Controllers
             }
 
         [HttpPost]
+        [AIS.Filters.ApplicationAudit("FIELD_AUDIT_KPI_SNAPSHOT_SAVED", "AUDIT_REPORT", "FIELD AUDIT REPORT", "PKG_FRPT", "P_SAVE_KPI_SNAPSHOT", EngagementId = "engId", ObjectType = "ENGAGEMENT", ObjectId = "engId", RequireResultMessage = true)]
         public IActionResult SaveKpiSnapshotRows(int engId, [FromBody] List<KpiSnapshotRowModel> rows)
             {
             var redirect = EnsureAuthorized();
@@ -461,6 +464,7 @@ namespace AIS.Controllers
             }
 
         [HttpPost]
+        [AIS.Filters.ApplicationAudit("FIELD_AUDIT_PDF_STATISTICS_SAVED", "AUDIT_REPORT", "FIELD AUDIT REPORT", "PKG_FRPT", "P_SAVE_PDF_STATISTICS", EngagementId = "request.EngId", ObjectType = "ENGAGEMENT", ObjectId = "request.EngId", RequireResultMessage = true)]
         public IActionResult SavePdfStatistics([FromBody] FieldAuditPdfStatisticsSaveRequest request)
             {
             var redirect = EnsureAuthorized();
@@ -523,6 +527,7 @@ namespace AIS.Controllers
             }
 
         [HttpPost]
+        [AIS.Filters.ApplicationAudit("FIELD_AUDIT_INCOME_LEAKAGE_SAVED", "AUDIT_REPORT", "FIELD AUDIT REPORT", "PKG_FRPT", "P_SAVE_INCOME_LEAKAGE", EngagementId = "request.EngId", ObjectType = "ENGAGEMENT", ObjectId = "request.EngId", RequireResultMessage = true)]
         public IActionResult SaveIncomeLeakage([FromBody] FieldAuditIncomeLeakageSaveRequest request)
             {
             var redirect = EnsureAuthorized();
@@ -594,6 +599,7 @@ namespace AIS.Controllers
             }
 
         [HttpPost]
+        [AIS.Filters.ApplicationAudit("FIELD_AUDIT_OVERALL_CONCLUSION_SAVED", "AUDIT_REPORT", "FIELD AUDIT REPORT", "PKG_FRPT", "P_SAVE_OVERALL_CONCLUSION", EngagementId = "request.EngId", ObjectType = "ENGAGEMENT", ObjectId = "request.EngId", RequireResultMessage = true)]
         public IActionResult SaveOverallConclusion([FromBody] FieldAuditOverallConclusionSaveRequest request)
             {
             var redirect = EnsureAuthorized();
@@ -619,6 +625,7 @@ namespace AIS.Controllers
             }
 
         [HttpPost]
+        [AIS.Filters.ApplicationAudit("FIELD_AUDIT_INPUTS_SAVED", "AUDIT_REPORT", "FIELD AUDIT REPORT", "PKG_FRPT", "P_SAVE_TEXT_BLOCK", EngagementIdItem = "ApplicationAudit.EngagementId", ObjectType = "ENGAGEMENT", ObjectIdItem = "ApplicationAudit.EngagementId", RequireItem = "ApplicationAudit.EngagementId")]
         public IActionResult SaveFieldAuditInputs(FieldAuditInputSectionViewModel model, string submitAction, string returnAction)
             {
             var redirect = EnsureAuthorized();
@@ -656,6 +663,7 @@ namespace AIS.Controllers
                 TempData["FieldAuditReportMessage"] = "Section saved successfully.";
                 }
 
+            HttpContext.Items["ApplicationAudit.EngagementId"] = engId;
             return RedirectToAction(NormalizeReturnAction(returnAction));
             }
 
@@ -697,6 +705,7 @@ namespace AIS.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [AIS.Filters.ApplicationAudit("FIELD_AUDIT_REPORT_FINALIZED", "AUDIT_REPORT", "FIELD AUDIT REPORT", "PKG_FRPT", "P_FINALIZE_REPORT", EngagementIdItem = "ApplicationAudit.EngagementId", ObjectType = "ENGAGEMENT", ObjectIdItem = "ApplicationAudit.EngagementId", RequireItem = "ApplicationAudit.EngagementId", RequireResultMessage = true)]
         public async Task<IActionResult> FinalizeReport(FinalizeReportViewModel model)
             {
             try
@@ -720,6 +729,7 @@ namespace AIS.Controllers
                 var result = _dbConnection.FinalizeFieldAuditReport(engId);
                 if (result.IsFinalized)
                     {
+                    HttpContext.Items["ApplicationAudit.EngagementId"] = engId;
                     var notificationData = _dbConnection.GetFinalReportIssuedNotificationData(engId);
                     NotificationEmailAttachmentData attachment = null;
                     var pdfDocument = await _pdfGenerator.GenerateAsync(engId);
@@ -777,6 +787,7 @@ namespace AIS.Controllers
             }
 
         [HttpPost]
+        [AIS.Filters.ApplicationAudit("FIELD_AUDIT_NARRATIVE_PARA_SAVED", "COMPLIANCE", "FIELD AUDIT REPORT", "PKG_FRPT", "P_SAVE_NARRATIVE_PARA", EngagementIdItem = "ApplicationAudit.EngagementId", ParaId = "request.ParaId", ObjectType = "PARA", ObjectId = "request.ParaId", RequireResultMessage = true)]
         public IActionResult SaveNarrativePara(FieldAuditParaNarrativeSaveRequest request)
             {
             var redirect = EnsureAuthorized();
@@ -831,6 +842,7 @@ namespace AIS.Controllers
                 return BadRequest(new { Status = false, Message = result.Message });
                 }
 
+            HttpContext.Items["ApplicationAudit.EngagementId"] = engId;
             return Ok(new { Status = true, Message = result.Message });
             }
 

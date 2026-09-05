@@ -976,6 +976,7 @@ namespace AIS.Controllers
             }
         [HttpPost]
         [IgnoreAntiforgeryToken]
+        [AIS.Filters.ApplicationAudit("ADD_GROUP_ITEM_ASSIGNMENT", "ADMINISTRATION", "ADMINISTRATION", "PKG_AD", "P_ADDGROUPMENUITEMSASSIGNMENT", ObjectType = "ADD_GROUP_ITEM_ASSIGNMENT")]
         public GroupMenuItemMapping add_group_item_assignment([FromForm] GroupMenuItemMapping gItemMap)
             {
             if (gItemMap?.UNLINK_MENU_ITEM_IDs != null && gItemMap.UNLINK_MENU_ITEM_IDs.Count > 0)
@@ -997,6 +998,7 @@ namespace AIS.Controllers
             }
         [HttpPost]
         [IgnoreAntiforgeryToken]
+        [AIS.Filters.ApplicationAudit("GROUP_ADD", "ADMINISTRATION", "ADMINISTRATION", "PKG_AD", "P_ADDGROUP", ObjectType = "GROUP_ADD")]
         public GroupModel group_add([FromForm] GroupPostModel grp)
             {
             if (grp == null)
@@ -1361,6 +1363,7 @@ namespace AIS.Controllers
 
         [HttpPost]
         [IgnoreAntiforgeryToken]
+        [AIS.Filters.ApplicationAudit("DELETE_SYSTEM_LOGS", "ADMINISTRATION", "ADMINISTRATION", "PKG_LG", "P_DELETE_SYS_LOGS", ObjectType = "DELETESYSTEMLOGS")]
         public IActionResult DeleteSystemLogs(string cutoffTime)
             {
             if (!User.Identity.IsAuthenticated)

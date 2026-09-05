@@ -386,6 +386,7 @@ namespace AIS.Controllers
             }
 
         [HttpPost]
+        [ApplicationAudit("AUDIT_CRITERIA_POST_CHANGE", "AUDIT_EXECUTION", "AUDIT_CRITERIA", "PKG_PG", "P_UPDATEAUDITCRITERIA", ObjectType = "AUDIT_CRITERIA")]
         public IActionResult PostChangesAuditCriteria([FromForm] List<string> CRITERIA_LIST)
             {
             var unauthorized = EnsureAuthenticatedSession();
@@ -412,11 +413,12 @@ namespace AIS.Controllers
                     APPROVAL_STATUS = 6
                 };
 
-            dBConnection.UpdateAuditCriteria(model, CRITERIA_LIST[8]);
-            return Ok(new { Status = true });
+            var updated = dBConnection.UpdateAuditCriteria(model, CRITERIA_LIST[8]);
+            return updated ? Ok(new { Status = true }) : BadRequest(new { Status = false, Message = "Oracle did not confirm the criteria update." });
             }
 
         [HttpPost]
+        [ApplicationAudit("AUDIT_CRITERIA_UPDATED", "AUDIT_EXECUTION", "AUDIT_CRITERIA", "PKG_PG", "P_UPDATEAUDITCRITERIA", ObjectType = "AUDIT_CRITERIA")]
         public IActionResult UpdateAuditCriteria([FromForm] List<string> CRITERIA_LIST)
             {
             var unauthorized = EnsureAuthenticatedSession();
@@ -443,11 +445,12 @@ namespace AIS.Controllers
                     APPROVAL_STATUS = 3
                 };
 
-            dBConnection.UpdateAuditCriteria(model, CRITERIA_LIST[8]);
-            return Ok(new { Status = true });
+            var updated = dBConnection.UpdateAuditCriteria(model, CRITERIA_LIST[8]);
+            return updated ? Ok(new { Status = true }) : BadRequest(new { Status = false, Message = "Oracle did not confirm the criteria update." });
             }
 
         [HttpPost]
+        [ApplicationAudit("AUDIT_CRITERIA_REFERRED_BACK", "AUDIT_EXECUTION", "AUDIT_CRITERIA", "PKG_PG", "P_SETAUDITCRITERIASTATUSREFERREDBACK", ObjectType = "AUDIT_CRITERIA", RequireNonEmpty = "DATALIST")]
         public IActionResult ReferredBackAuditCriteria([FromForm] List<CriteriaIDComment> DATALIST)
             {
             var unauthorized = EnsureAuthenticatedSession();
@@ -456,18 +459,22 @@ namespace AIS.Controllers
                 return unauthorized;
                 }
 
-            if (DATALIST != null && DATALIST.Count > 0)
+            if (DATALIST == null || DATALIST.Count == 0)
+                return BadRequest(new { Status = false, Message = "No criteria received." });
+            var allUpdated = true;
+            if (DATALIST.Count > 0)
                 {
                 foreach (var criteria in DATALIST)
                     {
-                    dBConnection.SetAuditCriteriaStatusReferredBack(criteria.ID.GetValueOrDefault(), criteria.COMMENT);
+                    allUpdated &= dBConnection.SetAuditCriteriaStatusReferredBack(criteria.ID.GetValueOrDefault(), criteria.COMMENT);
                     }
                 }
 
-            return Ok(true);
+            return allUpdated ? Ok(new { Status = true }) : BadRequest(new { Status = false, Message = "Oracle did not confirm every referral." });
             }
 
         [HttpPost]
+        [ApplicationAudit("AUDIT_CRITERIA_APPROVED", "AUDIT_EXECUTION", "AUDIT_CRITERIA", "PKG_PG", "P_SETAUDITCRITERIASTATUSAPPROVE", ObjectType = "AUDIT_CRITERIA", RequireNonEmpty = "datalist")]
         public IActionResult AuthorizeAuditCriteria([FromBody] List<CriteriaIDComment> datalist)
             {
             var unauthorized = EnsureAuthenticatedSession();
@@ -484,7 +491,9 @@ namespace AIS.Controllers
                 if (id <= 0)
                     return BadRequest(new { status = false, message = "Invalid Criteria ID received." });
 
-                dBConnection.SetAuditCriteriaStatusApprove(id, comment);
+                var response = dBConnection.SetAuditCriteriaStatusApprove(id, comment);
+                if (string.IsNullOrWhiteSpace(response))
+                    return BadRequest(new { status = false, message = "Oracle did not confirm every approval." });
                 }
 
             return Ok(new { status = true });
@@ -710,6 +719,7 @@ namespace AIS.Controllers
             }
 
         [HttpPost]
+        [AIS.Filters.ApplicationAudit("BRANCH_ADD", "ADMINISTRATION", "ADMINISTRATION", "", "", ObjectType = "BRANCH_ADD")]
         public BranchModel branch_add(BranchModel br)
             {
             if (br.ISACTIVE == "Active")
@@ -725,6 +735,7 @@ namespace AIS.Controllers
             }
 
         [HttpPost]
+        [AIS.Filters.ApplicationAudit("ADD_CONTROL_VIOLATION", "ADMINISTRATION", "ADMINISTRATION", "", "", ObjectType = "ADD_CONTROL_VIOLATION")]
         public ControlViolationsModel add_control_violation(ControlViolationsModel cv)
             {
             return dBConnection.AddControlViolation(cv);
@@ -757,6 +768,7 @@ namespace AIS.Controllers
             return dBConnection.GetSubEntities(div_id, dept_id);
             }
         [HttpPost]
+        [AIS.Filters.ApplicationAudit("ADD_SUB_ENTITY", "ADMINISTRATION", "ADMINISTRATION", "PKG_AD", "P_ADDSUBENTITY", ObjectType = "ADD_SUB_ENTITY")]
         public SubEntitiesModel add_sub_entity(SubEntitiesModel entity)
             {
             if (entity.STATUS == "Active")
@@ -791,28 +803,33 @@ namespace AIS.Controllers
             return dBConnection.GetChecklistComparisonDetailByIdForRefferedBack(CHECKLIST_DETAIL_ID);
             }
         [HttpPost]
+        [AIS.Filters.ApplicationAudit("PROCESS_ADD", "ADMINISTRATION", "ADMINISTRATION", "PKG_AD", "P_AUDIT_CHECKLIST", ObjectType = "PROCESS_ADD")]
         public RiskProcessDefinition process_add(RiskProcessDefinition proc)
             {
             return dBConnection.AddRiskProcess(proc);
             }
         [HttpPost]
+        [AIS.Filters.ApplicationAudit("SUB_PROCESS_ADD", "ADMINISTRATION", "ADMINISTRATION", "PKG_AD", "P_AUDIT_CHECKLIST_SUB", ObjectType = "SUB_PROCESS_ADD")]
         public RiskProcessDetails sub_process_add(RiskProcessDetails subProc)
             {
             return dBConnection.AddRiskSubProcess(subProc);
             }
         [HttpPost]
+        [AIS.Filters.ApplicationAudit("SUB_PROCESS_TRANSACTION_ADD", "ADMINISTRATION", "ADMINISTRATION", "PKG_AD", "P_AUDIT_CHECKLIST_DETAIL", ObjectType = "SUB_PROCESS_TRANSACTION_ADD")]
         public RiskProcessTransactions sub_process_transaction_add(RiskProcessTransactions tran)
             {
             return dBConnection.AddRiskSubProcessTransaction(tran);
             }
 
         [HttpPost]
+        [AIS.Filters.ApplicationAudit("AUTHORIZE_SUB_PROCESS_BY_AUTHORIZER", "ADMINISTRATION", "ADMINISTRATION", "PKG_AD", "P_APPROVED_SUB_PROCESS_BY_AUTHORIZER", ObjectType = "AUTHORIZE_SUB_PROCESS_BY_AUTHORIZER", ObjectId = "T_ID", RequireResultMessage = true)]
         public string authorize_sub_process_by_authorizer(int T_ID, string COMMENTS)
             {
             return "{\"Status\":true,\"Message\":\"" + dBConnection.AuthorizeSubProcessByAuthorizer(T_ID, COMMENTS) + "\"}";
 
             }
         [HttpPost]
+        [AIS.Filters.ApplicationAudit("REFFERED_BACK_SUB_PROCESS_BY_AUTHORIZER", "ADMINISTRATION", "ADMINISTRATION", "PKG_AD", "P_REFFEREDBACK_SUB_CHECKLIST_BY_REVIEWER", ObjectType = "REFFERED_BACK_SUB_PROCESS_BY_AUTHORIZER", ObjectId = "T_ID", RequireResultMessage = true)]
         public string reffered_back_sub_process_by_authorizer(int T_ID, string COMMENTS)
             {
             return "{\"Status\":true,\"Message\":\"" + dBConnection.RefferedBackSubProcessByAuthorizer(T_ID, COMMENTS) + "\"}";
@@ -832,12 +849,14 @@ namespace AIS.Controllers
             return "{\"Status\":true,\"Message\":\"" + dBConnection.RefferedBackProcessTransactionByReviewer(T_ID, COMMENTS) + "\"}";
             }
         [HttpPost]
+        [AIS.Filters.ApplicationAudit("AUTHORIZE_PROCESS_TRANSACTION_BY_AUTHORIZER", "ADMINISTRATION", "ADMINISTRATION", "PKG_AD", "P_APPROVE_CHECKLIST_BY_AUTHORIZER", ObjectType = "AUTHORIZE_PROCESS_TRANSACTION_BY_AUTHORIZER", ObjectId = "T_ID", RequireResultMessage = true)]
         public string authorize_process_transaction_by_authorizer(int T_ID, string COMMENTS)
             {
             return "{\"Status\":true,\"Message\":\"" + dBConnection.AuthorizeProcessTransactionByAuthorizer(T_ID, COMMENTS) + "\"}";
 
             }
         [HttpPost]
+        [AIS.Filters.ApplicationAudit("REFFERED_BACK_PROCESS_TRANSACTION_BY_AUTHORIZER", "ADMINISTRATION", "ADMINISTRATION", "PKG_AD", "P_REFFEREDBACK_CHECKLIST_BY_AUTHORIZER", ObjectType = "REFFERED_BACK_PROCESS_TRANSACTION_BY_AUTHORIZER", ObjectId = "T_ID", RequireResultMessage = true)]
         public string reffered_back_process_transaction_by_authorizer(int T_ID, string COMMENTS)
             {
             return "{\"Status\":true,\"Message\":\"" + dBConnection.RefferedBackProcessTransactionByAuthorizer(T_ID, COMMENTS) + "\"}";
@@ -1717,6 +1736,7 @@ namespace AIS.Controllers
             }
         [HttpPost]
         [IgnoreAntiforgeryToken]
+        [ApplicationAudit("MANAGED_AUDIT_PARA_UPDATED", "COMPLIANCE", "PARA MANAGEMENT", "PKG_AR", "P_UPDATEAUDITOBSERVATIONSTATUS", ParaId = "req.NEW_PARA_ID", OldParaId = "req.OLD_PARA_ID", NewParaId = "req.NEW_PARA_ID", ComId = "req.COM_ID", ObjectType = "PARA", ObjectId = "req.COM_ID", RequireResultMessage = true)]
         public IActionResult update_para_for_manage_audit_paras(
             [FromBody] UpdateAuditParaRequest req)
             {
@@ -1745,6 +1765,7 @@ namespace AIS.Controllers
 
         [HttpGet]
         [HttpPost]
+        [ApplicationAudit("MANAGED_AUDIT_PARA_REFERRED_BACK", "COMPLIANCE", "PARA MANAGEMENT", "PKG_AR", "P_AUTHORIZE_UPDATE_AUDIT_PARAS", ParaId = "pm.NEW_PARA_ID", OldParaId = "pm.OLD_PARA_ID", NewParaId = "pm.NEW_PARA_ID", ComId = "pm.COM_ID", ObjectType = "PARA", ObjectId = "pm.COM_ID", RequireResultMessage = true)]
         public string referredback_para_for_manage_audit_paras(ManageAuditParasModel pm)
             {
             string response = "";
@@ -1753,6 +1774,7 @@ namespace AIS.Controllers
             }
 
         [HttpPost]
+        [ApplicationAudit("MANAGED_AUDIT_PARA_AUTHORIZED", "COMPLIANCE", "PARA MANAGEMENT", "PKG_AR", "P_AUTHORIZE_UPDATE_AUDIT_PARAS", ParaId = "pm.NEW_PARA_ID", OldParaId = "pm.OLD_PARA_ID", NewParaId = "pm.NEW_PARA_ID", ComId = "pm.COM_ID", ObjectType = "PARA", ObjectId = "pm.COM_ID", RequireResultMessage = true)]
         public string authorize_para_for_manage_audit_paras(ManageAuditParasModel pm)
             {
             string response = "";
@@ -1807,6 +1829,7 @@ namespace AIS.Controllers
             return dBConnection.GetObservationPdfData(OBS_ID);
             }
         [HttpPost]
+        [ApplicationAudit("OBSERVATION_GIST_RECOMMENDATION_UPDATED", "AUDIT_EXECUTION", "OBSERVATION", "PKG_HD", "P_ADD_OBSERVATION_GIST_RECOMMENDATION", ObjectType = "OBSERVATION", ObjectId = "model.OBS_ID", RequireResultMessage = true)]
         public string add_observation_gist_and_recommendation(ObservationGistRecommendationModel model)
             {
             if (!ModelState.IsValid)
@@ -1853,6 +1876,7 @@ namespace AIS.Controllers
             return dBConnection.GetClosingDraftTeamDetails(ENG_ID);
             }
         [HttpPost]
+        [ApplicationAudit("DRAFT_AUDIT_CLOSED", "AUDIT_EXECUTION", "DRAFT_AUDIT", "PKG_AR", "P_CLOSEAUDIT", EngagementId = "ENG_ID", ObjectType = "ENGAGEMENT", ObjectId = "ENG_ID", RequireResultMessage = true)]
         public object close_draft_audit(int ENG_ID)
             {
             string response = "";
@@ -1904,6 +1928,7 @@ namespace AIS.Controllers
             return dBConnection.GetExpectedCountOfAuditEntitiesOnCriteria(CRITERIA_ID);
             }
         [HttpPost]
+        [AIS.Filters.ApplicationAudit("DELETE_PENDING_CRITERIA", "ADMINISTRATION", "ADMINISTRATION", "PKG_PG", "P_DELETEPENDINGCRITERIA", ObjectType = "DELETEPENDINGCRITERIA")]
         public bool DeletePendingCriteria(int CID = 0)
             {
             return dBConnection.DeletePendingCriteria(CID);
@@ -1931,11 +1956,13 @@ namespace AIS.Controllers
             }
 
         [HttpPost]
+        [ApplicationAudit("AUDITEE_ENTITY_UPDATED", "AUDIT_EXECUTION", "AUDIT_UNIVERSE", "PKG_AD", "P_UPDATE_ENTITIES", ObjectType = "AUDITEE_ENTITY", RequireResultMessage = true)]
         public string UpdateAuditeeEntity(AuditeeEntityUpdateModel ENTITY_MODEL, string IND)
             {
             return "{\"Status\":true,\"Message\":\"" + dBConnection.UpdateAuditeeEntity(ENTITY_MODEL, IND) + "\"}";
             }
         [HttpPost]
+        [ApplicationAudit("AUDIT_CRITERIA_SUBMITTED", "AUDIT_EXECUTION", "AUDIT_CRITERIA", "PKG_PG", "P_SUBMITAUDITCRITERIAFORAPPROVAL", ObjectType = "AUDIT_PERIOD", ObjectId = "PERIOD_ID")]
         public bool submit_audit_criterias(int PERIOD_ID)
             {
             return dBConnection.SubmitAuditCriteriaForApproval(PERIOD_ID);
@@ -1955,6 +1982,7 @@ namespace AIS.Controllers
             }
 
         [HttpPost]
+        [ApplicationAudit("COMMERCIAL_AUDIT_OM_SAVED", "AUDIT_EXECUTION", "COMMERCIAL_AUDIT", "PKG_COMMERCIAL_AUDIT", "P_SAVE_OM", ObjectType = "COMMERCIAL_AUDIT_OM", ObjectId = "model.OmId")]
         public IActionResult save_commercial_audit_om([FromBody] CommercialAuditOmModel model)
             {
             return ExecuteCommercialAuditRequest(() =>
@@ -1993,6 +2021,7 @@ namespace AIS.Controllers
             }
 
         [HttpPost]
+        [ApplicationAudit("COMMERCIAL_AUDIT_PDP_SAVED", "AUDIT_EXECUTION", "COMMERCIAL_AUDIT", "PKG_COMMERCIAL_AUDIT", "P_SAVE_PDP", ObjectType = "COMMERCIAL_AUDIT_PDP", ObjectId = "model.PdpId")]
         public IActionResult save_commercial_audit_pdp([FromBody] CommercialAuditPdpModel model)
             {
             return ExecuteCommercialAuditRequest(() =>
@@ -2018,6 +2047,7 @@ namespace AIS.Controllers
             }
 
         [HttpPost]
+        [ApplicationAudit("COMMERCIAL_AUDIT_PDP_OM_MAPPING_SAVED", "AUDIT_EXECUTION", "COMMERCIAL_AUDIT", "PKG_COMMERCIAL_AUDIT", "P_SAVE_PDP_OM_MAP", ObjectType = "COMMERCIAL_AUDIT_PDP", ObjectId = "model.PdpId")]
         public IActionResult save_commercial_audit_pdp_om_mapping([FromBody] CommercialAuditPdpOmMappingSaveRequest model)
             {
             return ExecuteCommercialAuditRequest(() =>
@@ -2043,6 +2073,7 @@ namespace AIS.Controllers
             }
 
         [HttpPost]
+        [ApplicationAudit("COMMERCIAL_AUDIT_ARPSE_SAVED", "AUDIT_EXECUTION", "COMMERCIAL_AUDIT", "PKG_COMMERCIAL_AUDIT", "P_SAVE_ARPSE", ObjectType = "COMMERCIAL_AUDIT_ARPSE", ObjectId = "model.ArpseId")]
         public IActionResult save_commercial_audit_arpse_header([FromBody] CommercialAuditArpseHeaderModel model)
             {
             return ExecuteCommercialAuditRequest(() =>
@@ -2068,6 +2099,7 @@ namespace AIS.Controllers
             }
 
         [HttpPost]
+        [ApplicationAudit("COMMERCIAL_AUDIT_ARPSE_PDP_MAPPING_SAVED", "AUDIT_EXECUTION", "COMMERCIAL_AUDIT", "PKG_COMMERCIAL_AUDIT", "P_SAVE_ARPSE_PDP_MAP", ObjectType = "COMMERCIAL_AUDIT_ARPSE", ObjectId = "model.ArpseId")]
         public IActionResult save_commercial_audit_arpse_pdp_mapping([FromBody] CommercialAuditArpsePdpMappingSaveRequest model)
             {
             return ExecuteCommercialAuditRequest(() =>
@@ -2093,6 +2125,7 @@ namespace AIS.Controllers
             }
 
         [HttpPost]
+        [ApplicationAudit("COMMERCIAL_AUDIT_ARPSE_DAC_SAVED", "AUDIT_EXECUTION", "COMMERCIAL_AUDIT", "PKG_COMMERCIAL_AUDIT", "P_SAVE_ARPSE_DAC", ObjectType = "COMMERCIAL_AUDIT_ARPSE", ObjectId = "model.ArpseId")]
         public IActionResult save_commercial_audit_arpse_dac_entry([FromBody] CommercialAuditArpseDacEntryModel model)
             {
             return ExecuteCommercialAuditRequest(() =>
@@ -2118,6 +2151,7 @@ namespace AIS.Controllers
             }
 
         [HttpPost]
+        [ApplicationAudit("COMMERCIAL_AUDIT_ARPSE_PAC_SAVED", "AUDIT_EXECUTION", "COMMERCIAL_AUDIT", "PKG_COMMERCIAL_AUDIT", "P_SAVE_ARPSE_PAC", ObjectType = "COMMERCIAL_AUDIT_ARPSE", ObjectId = "model.ArpseId")]
         public IActionResult save_commercial_audit_arpse_pac_entry([FromBody] CommercialAuditArpsePacEntryModel model)
             {
             return ExecuteCommercialAuditRequest(() =>
@@ -2218,6 +2252,7 @@ namespace AIS.Controllers
 
             }
         [HttpPost]
+        [AIS.Filters.ApplicationAudit("UPDATE_CCQ", "ADMINISTRATION", "ADMINISTRATION", "PKG_PG", "P_UPDATECCQ", ObjectType = "UPDATE_CCQ")]
         public bool update_ccq(AuditCCQModel ccq)
             {
             return dBConnection.UpdateCCQ(ccq);
@@ -2292,11 +2327,13 @@ namespace AIS.Controllers
             return dBConnection.GetOutstandingParas(ENTITY_ID);
             }
         [HttpPost]
+        [ApplicationAudit("LEGACY_PARA_OBSERVATION_ADDED", "COMPLIANCE", "LEGACY PARA", "PKG_HD", "P_ADDOLDPARAS", ParaId = "ob.ID", ObjectType = "LEGACY_PARA", ObjectId = "ob.ID")]
         public bool add_legacy_para_observation_text(OldParasModel ob)
             {
             return dBConnection.AddOldParas(ob);
             }
         [HttpPost]
+        [ApplicationAudit("LEGACY_PARA_REPLY_ADDED", "COMPLIANCE", "LEGACY PARA", "PKG_AE", "P_ADDOLDPARASREPLY", ParaId = "ID", ObjectType = "LEGACY_PARA", ObjectId = "ID")]
         public bool add_legacy_para_reply(int ID, string REPLY)
             {
             return dBConnection.AddOldParasReply(ID, REPLY);
@@ -2307,6 +2344,7 @@ namespace AIS.Controllers
             return dBConnection.UpdateOldParasStatus(ID, NEW_STATUS);
             }
         [HttpPost]
+        [ApplicationAudit("LEGACY_PARA_CAD_REPLY_ADDED", "COMPLIANCE", "LEGACY PARA", "PKG_AE", "P_UPDATEOLDPARAMANAGEMENT", ParaId = "ID", ObjectType = "LEGACY_PARA", ObjectId = "ID", RequireResultMessage = true)]
         public string add_legacy_para_cad_reply(int ID, int V_CAT_ID, int V_CAT_NATURE_ID, int RISK_ID, string REPLY)
             {
             string response = "";
@@ -2315,6 +2353,7 @@ namespace AIS.Controllers
 
             }
         [HttpPost]
+        [ApplicationAudit("LEGACY_PARA_CAD_COMPLIANCE_ADDED", "COMPLIANCE", "LEGACY PARA", "PKG_AE", "P_UPDATEAUDITEEOLDPARASRESPONSE", ObjectType = "LEGACY_PARA_COMPLIANCE", RequireNonEmpty = "COMPLIANCE_LIST", RequireResultMessage = true)]
         public string add_legacy_para_cad_compliance(List<OldParaComplianceModel> COMPLIANCE_LIST)
             {
             string response = "";
@@ -2866,6 +2905,7 @@ namespace AIS.Controllers
             }
 
         [HttpPost]
+        [ApplicationAudit("LEGACY_PARA_COMPLIANCE_REVIEWED", "COMPLIANCE", "POST AUDIT COMPLIANCE", "PKG_AE", "P_ADDOLDPARASREVIEWER", ParaId = "Para_ID", ObjectType = "LEGACY_PARA", ObjectId = "Para_ID", RequireResultMessage = true)]
         public string AddOldParasComplianceReviewer(string Para_ID, string PARA_CAT, string REPLY, string r_status, string OBS_ID, int PARENT_ID, string SEQUENCE, string AUDITED_BY)
             {
             string response = "";
@@ -2894,6 +2934,7 @@ namespace AIS.Controllers
             }
 
         [HttpPost]
+        [ApplicationAudit("LEGACY_PARA_COMPLIANCE_SUBMITTED", "COMPLIANCE", "POST AUDIT COMPLIANCE", "PKG_HD", "P_ADDOLDPARASIMPREMARKS", ParaId = "OBS_ID", ObjectType = "LEGACY_PARA", ObjectId = "OBS_ID", RequireResultMessage = true)]
         public string submit_old_para_br_compliance_status(string OBS_ID, string REFID, string REMARKS, int NEW_STATUS, string PARA_CAT, string SETTLE_INDICATOR, string SEQUENCE, string AUDITED_BY)
             {
             string response = "";
@@ -2902,6 +2943,7 @@ namespace AIS.Controllers
             }
 
         [HttpPost]
+        [ApplicationAudit("LEGACY_PARA_PARTIAL_SETTLEMENT_SUBMITTED", "COMPLIANCE", "POST AUDIT COMPLIANCE", "PKG_HD", "P_ADDOLDPARASIMPREMARKS_PARTIAL_COMP", ParaId = "OBS_ID", ObjectType = "LEGACY_PARA", ObjectId = "OBS_ID", RequireResultMessage = true)]
         public string submit_old_para_br_compliance_status_partially_settle(string OBS_ID, string REFID, string REMARKS, int NEW_STATUS, string PARA_CAT, string SETTLE_INDICATOR, List<ObservationResponsiblePPNOModel> RESPONSIBLES_ARR, string SEQUENCE, string AUDITED_BY, string PARA_TEXT)
             {
             string response = "";
@@ -3025,6 +3067,7 @@ namespace AIS.Controllers
             return "{\"Status\":true,\"Message\":\"" + response + "\"}";
             }
         [HttpPost]
+        [ApplicationAudit("OLD_PARA_STATUS_CHANGE_REQUESTED", "COMPLIANCE", "PARA STATUS", "PKG_HD", "P_CHANGESTATUSREQUESTFORSETTLEDPARA", ParaId = "OBS_ID", ObjectType = "OLD_PARA", ObjectId = "OBS_ID", RequireResultMessage = true)]
         public string Add_Old_Para_Change_status(string REFID, string OBS_ID, string INDICATOR, int NEW_STATUS, string REMARKS)
             {
             string response = "";
@@ -3032,6 +3075,7 @@ namespace AIS.Controllers
             return "{\"Status\":true,\"Message\":\"" + response + "\"}";
             }
         [HttpPost]
+        [ApplicationAudit("OLD_PARA_STATUS_CHANGE_REVIEWED", "COMPLIANCE", "PARA STATUS", "PKG_HD", "P_CHANGESTATUSREQUESTFORSETTLEDPARA_NEW_REVIEWER", ObjectType = "OLD_PARA_STATUS_REQUEST", ObjectId = "REFID", RequireResultMessage = true)]
         public string Add_Old_Para_Change_status_Review(string REFID, string IND, string REMARKS, string Action_IND)
             {
             string response = "";
@@ -3039,6 +3083,7 @@ namespace AIS.Controllers
             return "{\"Status\":true,\"Message\":\"" + response + "\"}";
             }
         [HttpPost]
+        [ApplicationAudit("OLD_PARA_STATUS_CHANGE_AUTHORIZED", "COMPLIANCE", "PARA STATUS", "PKG_FAD", "P_AUTHORIZECHANGESTATUSREQUESTFORSETTLEDPARA_NEW", ObjectType = "OLD_PARA_STATUS_REQUEST", ObjectId = "REFID", RequireResultMessage = true)]
         public string Add_Old_Para_Change_status_Authorize(string REFID, string IND, int NEW_STATUS, string REMARKS, string Action_IND)
             {
             string response = "";
@@ -3047,6 +3092,7 @@ namespace AIS.Controllers
             }
 
         [HttpPost]
+        [ApplicationAudit("NEW_PARA_STATUS_CHANGE_REQUESTED", "COMPLIANCE", "PARA STATUS", "PKG_HD", "P_CHANGESTATUSREQUESTFORSETTLEDPARA_NEW", ObjectType = "PARA_STATUS_REQUEST", ObjectId = "REFID", RequireResultMessage = true)]
         public string Add_New_Para_Change_status_Request(string REFID, int NEW_STATUS, string REMARKS)
             {
             string response = "";
@@ -3056,6 +3102,7 @@ namespace AIS.Controllers
 
         [HttpPost]
 
+        [ApplicationAudit("PARA_STATUS_CHANGE_REQUESTED", "COMPLIANCE", "PARA STATUS", "PKG_HD", "P_ADD_PARAS_FOR_STATUS_CHANGE", ComId = "COM_ID", ObjectType = "PARA", ObjectId = "COM_ID", RequireResultMessage = true)]
         public string Add_Para_Change_status_Request(string COM_ID, int NEW_STATUS, string REMARKS, string IND, string Action_IND)
             {
             string response = "";
@@ -3064,6 +3111,7 @@ namespace AIS.Controllers
             }
 
         [HttpPost]
+        [ApplicationAudit("OLD_PARA_STATUS_CHANGE_AUTHORIZATION_RECORDED", "COMPLIANCE", "PARA STATUS", "PKG_FAD", "P_AUTHORIZECHANGESTATUSREQUESTFORSETTLEDPARA", ParaId = "OBS_ID", ObjectType = "OLD_PARA", ObjectId = "OBS_ID", RequireResultMessage = true)]
         public string Add_Authorization_Old_Para_Change_status(string REFID, string OBS_ID, string IND, string Action_IND)
             {
             string response = "";
@@ -3092,6 +3140,7 @@ namespace AIS.Controllers
             }
 
         [HttpPost]
+        [ApplicationAudit("PARA_STATUS_CHANGE_AUTHORIZED", "COMPLIANCE", "PARA STATUS", "PKG_HD", "P_AUTHORIZE_PARAS_FOR_STATUS", ParaId = "NEW_PARA_ID", OldParaId = "OLD_PARA_ID", NewParaId = "NEW_PARA_ID", ComId = "COM_ID", ObjectType = "PARA", ObjectId = "COM_ID", RequireResultMessage = true)]
         public string authorize_para_change_status(string COM_ID, int NEW_PARA_ID, int OLD_PARA_ID, string REMARKS, string IND, string Action_IND)
             {
             string response = "";
@@ -3106,6 +3155,7 @@ namespace AIS.Controllers
             }
 
         [HttpPost]
+        [AIS.Filters.ApplicationAudit("SUBMIT_PRE_CONCLUDING", "ADMINISTRATION", "ADMINISTRATION", "PKG_HD", "P_AUDIT_PRE_SUBMISSION", EngagementId = "ENG_ID", ObjectType = "SUBMIT_PRE_CONCLUDING", RequireResultMessage = true)]
         public string submit_pre_concluding(int ENG_ID)
             {
             string response = "";
@@ -3113,6 +3163,7 @@ namespace AIS.Controllers
             return "{\"Status\":true,\"Message\":\"" + response + "\"}";
             }
         [HttpPost]
+        [ApplicationAudit("AUDIT_PARA_FINALIZATION_UPDATED", "COMPLIANCE", "PARA FINALIZATION", "PKG_HD", "P_AUDIT_PARA_UPDATE_SVZ_AZ", ParaId = "OBS_ID", ObjectType = "PARA", ObjectId = "OBS_ID", RequireResultMessage = true)]
         public string update_audit_para_for_finalization(int OBS_ID, string ANNEX_ID, string PROCESS_ID, int SUB_PROCESS_ID, int PROCESS_DETAIL_ID, int RISK_ID, int FINAL_PARA_NO, string GIST_OF_PARA, string TEXT_PARA, string AMOUNT_INV, string NO_INST, long? REFERENCE_ID = null)
             {
             string response = "";
@@ -3121,6 +3172,7 @@ namespace AIS.Controllers
             }
 
         [HttpPost]
+        [ApplicationAudit("AUDIT_PARA_FINALIZATION_HO_UPDATED", "COMPLIANCE", "PARA FINALIZATION", "PKG_HD", "P_AUDIT_PARA_UPDATE_HEAD_DEPT", ParaId = "OBS_ID", ObjectType = "PARA", ObjectId = "OBS_ID", RequireResultMessage = true)]
         public string update_audit_para_for_finalization_ho(int OBS_ID, string VIOLATION_ID, int VIOLATION_NATURE_ID, int RISK_ID, string GIST_OF_PARA, string TEXT_PARA)
             {
             string response = "";
@@ -3152,6 +3204,7 @@ namespace AIS.Controllers
             return dBConnection.GetLegacyParasForUpdateFAD(ENTITY_ID, PARA_REF, PARA_ID);
             }
         [HttpPost]
+        [ApplicationAudit("LEGACY_PARA_UPDATED", "COMPLIANCE", "LEGACY PARA", "PKG_AR", "P_UPDATE_LEGACY_PARA_TEXT", ParaId = "LEGACY_PARA.NEW_PARA_ID", OldParaId = "LEGACY_PARA.OLD_PARA_ID", NewParaId = "LEGACY_PARA.NEW_PARA_ID", ComId = "LEGACY_PARA.COM_ID", ObjectType = "LEGACY_PARA", RequireResultMessage = true)]
         public string update_legacy_para_with_responsibilities(AddLegacyParaModel LEGACY_PARA)
             {
             return "{\"Status\":true,\"Message\":\"" + dBConnection.UpdateLegacyParasWithResponsibility(LEGACY_PARA) + "\"}";
@@ -3159,6 +3212,7 @@ namespace AIS.Controllers
             }
 
         [HttpPost]
+        [ApplicationAudit("LEGACY_PARA_GIST_NUMBER_UPDATED", "COMPLIANCE", "LEGACY PARA", "PKG_AR", "P_UPDATE_LEGACY_PARA_GIST", ObjectType = "LEGACY_PARA", ObjectId = "PARA_REF", RequireResultMessage = true)]
         public string update_legacy_para_gist_paraNo(string PARA_REF, string PARA_NO, string GIST_OF_PARA)
             {
             return "{\"Status\":true,\"Message\":\"" + dBConnection.UpdateLegacyParaGistParaNo(PARA_REF, PARA_NO, GIST_OF_PARA) + "\"}";
@@ -3166,6 +3220,7 @@ namespace AIS.Controllers
             }
         //
         [HttpPost]
+        [ApplicationAudit("LEGACY_PARA_RESPONSIBILITY_DELETED", "COMPLIANCE", "LEGACY PARA", "PKG_AR", "P_DELETE_PARA_RESPONSIBILITY", ParaId = "P_ID", ObjectType = "LEGACY_PARA", ObjectId = "P_ID", RequireResultMessage = true)]
         public string delete_responsibility_of_legacy_para(string REF_P, int P_ID, int PP_NO)
             {
             return "{\"Status\":true,\"Message\":\"" + dBConnection.DeleteResponsibilityOfLegacyParas(REF_P, P_ID, PP_NO) + "\"}";
@@ -3173,6 +3228,7 @@ namespace AIS.Controllers
             }
 
         [HttpPost]
+        [ApplicationAudit("LEGACY_PARA_RESPONSIBILITY_ADDED", "COMPLIANCE", "LEGACY PARA", "PKG_AR", "P_ADD_PARA_RESPONSIBILITY", ParaId = "P_ID", ObjectType = "LEGACY_PARA", ObjectId = "P_ID", RequireResultMessage = true)]
         public string add_responsibility_to_legacy_para(ObservationResponsiblePPNOModel RESP_PP, string REF_P, int P_ID)
             {
             return "{\"Status\":true,\"Message\":\"" + dBConnection.AddResponsibilityToLegacyParas(RESP_PP, REF_P, P_ID) + "\"}";
@@ -3180,6 +3236,7 @@ namespace AIS.Controllers
             }
 
         [HttpPost]
+        [ApplicationAudit("LEGACY_PARA_RESPONSIBILITY_FAD_ADDED", "COMPLIANCE", "LEGACY PARA", "PKG_FAD", "P_ADD_PARA_RESPONSIBILITY", ParaId = "P_ID", ObjectType = "LEGACY_PARA", ObjectId = "P_ID", RequireResultMessage = true)]
         public string add_responsibility_to_legacy_para_fad(ObservationResponsiblePPNOModel RESP_PP, string REF_P, int P_ID)
             {
             return "{\"Status\":true,\"Message\":\"" + dBConnection.AddResponsibilityToLegacyParasFAD(RESP_PP, REF_P, P_ID) + "\"}";
@@ -3187,6 +3244,7 @@ namespace AIS.Controllers
             }
 
         [HttpPost]
+        [ApplicationAudit("LEGACY_PARA_NO_CHANGE_AZ_RECORDED", "COMPLIANCE", "LEGACY PARA", "PKG_AR", "P_NO_UPDATE_LEGACY_PARA_TEXT", ParaId = "LEGACY_PARA.NEW_PARA_ID", ComId = "LEGACY_PARA.COM_ID", ObjectType = "LEGACY_PARA", RequireResultMessage = true)]
         public string update_legacy_para_with_responsibilities_no_changes_AZ(AddLegacyParaModel LEGACY_PARA)
             {
             return "{\"Status\":true,\"Message\":\"" + dBConnection.UpdateLegacyParasWithResponsibilityNoChangesAZ(LEGACY_PARA) + "\"}";
@@ -3194,6 +3252,7 @@ namespace AIS.Controllers
             }
 
         [HttpPost]
+        [ApplicationAudit("LEGACY_PARA_NO_CHANGE_REVIEWED", "COMPLIANCE", "LEGACY PARA", "PKG_FAD", "P_REVIEWED_LEGACY_PARA", ParaId = "LEGACY_PARA.NEW_PARA_ID", ComId = "LEGACY_PARA.COM_ID", ObjectType = "LEGACY_PARA", RequireResultMessage = true)]
         public string update_legacy_para_with_responsibilities_no_changes(AddLegacyParaModel LEGACY_PARA)
             {
             return "{\"Status\":true,\"Message\":\"" + dBConnection.UpdateLegacyParasWithResponsibilityNoChanges(LEGACY_PARA) + "\"}";
@@ -3209,6 +3268,7 @@ namespace AIS.Controllers
             }
 
         [HttpPost]
+        [ApplicationAudit("LEGACY_PARA_FAD_UPDATED", "COMPLIANCE", "LEGACY PARA", "PKG_FAD", "P_UPDATE_LEGACY_PARA_TEXT", ParaId = "LEGACY_PARA.NEW_PARA_ID", OldParaId = "LEGACY_PARA.OLD_PARA_ID", NewParaId = "LEGACY_PARA.NEW_PARA_ID", ComId = "LEGACY_PARA.COM_ID", ObjectType = "LEGACY_PARA", RequireResultMessage = true)]
         public string update_legacy_para_with_responsibilities_FAD(AddLegacyParaModel LEGACY_PARA)
             {
             return "{\"Status\":true,\"Message\":\"" + dBConnection.UpdateLegacyParasWithResponsibilityFAD(LEGACY_PARA) + "\"}";
@@ -3217,6 +3277,7 @@ namespace AIS.Controllers
 
 
         [HttpPost]
+        [ApplicationAudit("LEGACY_PARA_RESPONSIBILITY_FAD_DELETED", "COMPLIANCE", "LEGACY PARA", "PKG_FAD", "P_DELETE_PARA_RESPONSIBILITY", ParaId = "PARA_ID", ObjectType = "LEGACY_PARA", ObjectId = "PARA_ID", RequireResultMessage = true)]
         public string delete_legacy_para_responsibility(string PARA_REF, int PARA_ID, int PP_NO)
             {
             return "{\"Status\":true,\"Message\":\"" + dBConnection.DeleteLegacyParaResponsibility(PARA_REF, PARA_ID, PP_NO) + "\"}";
@@ -3230,12 +3291,14 @@ namespace AIS.Controllers
             }
 
         [HttpPost]
+        [ApplicationAudit("LEGACY_PARA_ADDED", "COMPLIANCE", "LEGACY PARA", "PKG_HD", "P_ADD_LEGACY_PARA", ObjectType = "LEGACY_PARA", RequireResultMessage = true)]
         public string add_new_legacy_para(AddNewLegacyParaModel LEGACY_PARA)
             {
             return "{\"Status\":true,\"Message\":\"" + archiveDbConnection.AddNewLegacyPara(LEGACY_PARA) + "\"}";
             }
 
         [HttpPost]
+        [ApplicationAudit("LEGACY_PARA_REFERRED_BACK", "COMPLIANCE", "LEGACY PARA", "PKG_FAD", "P_REFERBACK_LEGACY_PARA", ParaId = "PARA_ID", ObjectType = "LEGACY_PARA", ObjectId = "PARA_ID", RequireResultMessage = true)]
         public string refer_back_legacy_para_to_az(string PARA_REF, int PARA_ID)
             {
             return "{\"Status\":true,\"Message\":\"" + dBConnection.ReferBackLegacyPara(PARA_REF, PARA_ID) + "\"}";
@@ -3256,17 +3319,20 @@ namespace AIS.Controllers
             }
 
         [HttpPost]
+        [ApplicationAudit("LEGACY_PARA_ADDITION_AUTHORIZED", "COMPLIANCE", "LEGACY PARA", "PKG_HD", "P_AUTHORIZE_LEGACY_PARA_ADDITION", ObjectType = "LEGACY_PARA", ObjectId = "PARA_REF", RequireResultMessage = true)]
         public string Authorize_Legacy_Para_addition(string PARA_REF)
             {
             return "{\"Status\":true,\"Message\":\"" + archiveDbConnection.AuthorizeLegacyParaAddition(PARA_REF) + "\"}";
             }
         [HttpPost]
+        [ApplicationAudit("LEGACY_PARA_GIST_NUMBER_AUTHORIZED", "COMPLIANCE", "LEGACY PARA", "PKG_AR", "P_AUTHORIZE_PARA_GIST", ObjectType = "LEGACY_PARA", ObjectId = "PARA_REF", RequireResultMessage = true)]
         public string Authorize_Legacy_Para_Gist_ParaNo(string PARA_REF, string GIST_OF_PARA, string PARA_NO)
             {
             return "{\"Status\":true,\"Message\":\"" + archiveDbConnection.AuthorizeLegacyParaGistParaNoUpdate(PARA_REF, GIST_OF_PARA, PARA_NO) + "\"}";
             }
 
         [HttpPost]
+        [ApplicationAudit("LEGACY_PARA_ADDITION_REQUEST_DELETED", "COMPLIANCE", "LEGACY PARA", "PKG_HD", "P_REFERREDBACK_DEL_PARA", ObjectType = "LEGACY_PARA", ObjectId = "PARA_REF", RequireResultMessage = true)]
         public string Delete_Legacy_Para_addition_request(string PARA_REF)
             {
             return "{\"Status\":true,\"Message\":\"" + archiveDbConnection.DeleteLegacyParaAdditionRequest(PARA_REF) + "\"}";
@@ -3280,11 +3346,13 @@ namespace AIS.Controllers
             }
 
         [HttpPost]
+        [ApplicationAudit("LEGACY_PARA_SETTLED_HO", "COMPLIANCE", "PARA SETTLEMENT", "PKG_AR", "P_SETTEL_LEGACY_PARA_HO", ObjectType = "LEGACY_PARA", ObjectId = "PARA_REF", RequireResultMessage = true)]
         public string settle_legacy_para_HO(int NEW_STATUS, string PARA_REF, string SETTLEMENT_NOTES)
             {
             return "{\"Status\":true,\"Message\":\"" + dBConnection.SettleLegacyParaHO(NEW_STATUS, PARA_REF, SETTLEMENT_NOTES) + "\"}";
             }
         [HttpPost]
+        [ApplicationAudit("LEGACY_PARA_DELETED_HO", "COMPLIANCE", "LEGACY PARA", "PKG_AR", "P_DELETE_LEGACY_PARA_HO", ObjectType = "LEGACY_PARA", ObjectId = "PARA_REF", RequireResultMessage = true)]
         public string delete_legacy_para_HO(string PARA_REF)
             {
             return "{\"Status\":true,\"Message\":\"" + dBConnection.DeleteLegacyParaHO(PARA_REF) + "\"}";
@@ -3352,11 +3420,13 @@ namespace AIS.Controllers
             return dBConnection.GetAuditSubChecklist(PROCESS_ID);
             }
         [HttpPost]
+        [ApplicationAudit("AUDIT_SUB_CHECKLIST_CREATED", "CHECKLIST", "CHECKLIST_SETUP", "PKG_AD", "P_AUDIT_CHECKLIST_SUB", ObjectType = "AUDIT_CHECKLIST", ObjectId = "PROCESS_ID", RequireResultMessage = true)]
         public string add_audit_sub_checklist(int PROCESS_ID = 0, int ENTITY_TYPE_ID = 0, string HEADING = "", string RISK_SEQUENCE = "", string RISK_WEIGHTAGE = "")
             {
             return "{\"Status\":true,\"Message\":\"" + dBConnection.AddAuditSubChecklist(PROCESS_ID, ENTITY_TYPE_ID, HEADING, RISK_SEQUENCE, RISK_WEIGHTAGE) + "\"}";
             }
         [HttpPost]
+        [ApplicationAudit("AUDIT_SUB_CHECKLIST_UPDATED", "CHECKLIST", "CHECKLIST_SETUP", "PKG_AD", "P_AUDIT_CHECKLIST_SUB_UPDATE", ObjectType = "AUDIT_SUB_CHECKLIST", ObjectId = "SUB_PROCESS_ID", RequireResultMessage = true)]
         public string update_audit_sub_checklist(int PROCESS_ID = 0, int OLD_PROCESS_ID = 0, int SUB_PROCESS_ID = 0, string HEADING = "", int ENTITY_TYPE_ID = 0, string RISK_SEQUENCE = "", string RISK_WEIGHTAGE = "")
             {
             return "{\"Status\":true,\"Message\":\"" + dBConnection.UpdateAuditSubChecklist(PROCESS_ID, OLD_PROCESS_ID, SUB_PROCESS_ID, HEADING, ENTITY_TYPE_ID, RISK_SEQUENCE, RISK_WEIGHTAGE) + "\"}";
@@ -3396,11 +3466,13 @@ namespace AIS.Controllers
             }
 
         [HttpPost]
+        [ApplicationAudit("AUDIT_CHECKLIST_DETAIL_CREATED", "CHECKLIST", "CHECKLIST_SETUP", "PKG_AD", "P_AUDIT_CHECKLIST_DETAIL", ObjectType = "AUDIT_SUB_CHECKLIST", ObjectId = "SUB_PROCESS_ID", RequireResultMessage = true)]
         public string add_audit_checklist_detail(int PROCESS_ID = 0, int SUB_PROCESS_ID = 0, string HEADING = "", int V_ID = 0, int CONTROL_ID = 0, int ROLE_ID = 0, int RISK_ID = 0, string ANNEX_CODE = "")
             {
             return "{\"Status\":true,\"Message\":\"" + dBConnection.AddAuditChecklistDetail(PROCESS_ID, SUB_PROCESS_ID, HEADING, V_ID, CONTROL_ID, ROLE_ID, RISK_ID, ANNEX_CODE) + "\"}";
             }
         [HttpPost]
+        [ApplicationAudit("AUDIT_CHECKLIST_DETAIL_UPDATED", "CHECKLIST", "CHECKLIST_SETUP", "PKG_AD", "AUDIT_CHECKLIST_DETAIL_UPDATE", ObjectType = "AUDIT_CHECKLIST_DETAIL", ObjectId = "PROCESS_DETAIL_ID", RequireResultMessage = true)]
         public string update_audit_checklist_detail(int PROCESS_DETAIL_ID = 0, int PROCESS_ID = 0, int SUB_PROCESS_ID = 0, string HEADING = "", int V_ID = 0, int CONTROL_ID = 0, int ROLE_ID = 0, int RISK_ID = 0, string ANNEX_CODE = "")
             {
             return "{\"Status\":true,\"Message\":\"" + dBConnection.UpdateAuditChecklistDetail(PROCESS_DETAIL_ID, PROCESS_ID, SUB_PROCESS_ID, HEADING, V_ID, CONTROL_ID, ROLE_ID, RISK_ID, ANNEX_CODE) + "\"}";
@@ -3415,12 +3487,14 @@ namespace AIS.Controllers
             }
 
         [HttpPost]
+        [ApplicationAudit("AUDIT_CHECKLIST_CREATED", "CHECKLIST", "CHECKLIST_SETUP", "PKG_AD", "P_AUDIT_CHECKLIST", ObjectType = "AUDIT_CHECKLIST", RequireResultMessage = true)]
         public string add_audit_checklist(string HEADING = "", int ENTITY_TYPE_ID = 0, string RISK_SEQUENCE = "", string RISK_WEIGHTAGE = "")
             {
             return "{\"Status\":true,\"Message\":\"" + dBConnection.AddAuditChecklist(HEADING, ENTITY_TYPE_ID, RISK_SEQUENCE, RISK_WEIGHTAGE) + "\"}";
             }
 
         [HttpPost]
+        [ApplicationAudit("AUDIT_CHECKLIST_UPDATED", "CHECKLIST", "CHECKLIST_SETUP", "PKG_AD", "P_AUDIT_CHECKLIST_UPDATE", ObjectType = "AUDIT_CHECKLIST", ObjectId = "PROCESS_ID", RequireResultMessage = true)]
         public string update_audit_checklist(int PROCESS_ID = 0, string HEADING = "", string ACTIVE = "", string RISK_SEQUENCE = "", string RISK_WEIGHTAGE = "")
             {
             return "{\"Status\":true,\"Message\":\"" + dBConnection.UpdateAuditChecklist(PROCESS_ID, HEADING, ACTIVE, RISK_SEQUENCE, RISK_WEIGHTAGE) + "\"}";
@@ -3573,6 +3647,7 @@ namespace AIS.Controllers
 
             }
         [HttpPost]
+        [AIS.Filters.ApplicationAudit("ADD_NEW_USER", "ADMINISTRATION", "ADMINISTRATION", "", "", ObjectType = "ADD_NEW_USER", RequireResultMessage = true)]
         public string add_new_user(FindUserModel user)
             {
             return "{\"Status\":true,\"Message\":\"" + dBConnection.AddNewUser(user) + "\"}";
@@ -3781,6 +3856,7 @@ namespace AIS.Controllers
             return dBConnection.GetAllParasForAnnexureAssignment(ENTITY_ID);
             }
         [HttpPost]
+        [ApplicationAudit("ANNEXURE_ASSIGNED_TO_PARA", "COMPLIANCE", "PARA MANAGEMENT", "PKG_FAD", "P_UPDATE_PARAS_ANNEX_FAD", ParaId = "OBS_ID", ObjectType = "PARA", ObjectId = "OBS_ID", RequireResultMessage = true)]
         public string assign_annexure_with_para(string OBS_ID, string REF_P, string ANNEX_ID, string PARA_CATEGORY)
             {
             return "{\"Status\":true,\"Message\":\"" + dBConnection.AssignAnnexureWithPara(OBS_ID, REF_P, ANNEX_ID, PARA_CATEGORY) + "\"}";
@@ -3817,6 +3893,7 @@ namespace AIS.Controllers
             }
 
         [HttpPost]
+        [ApplicationAudit("AIS_POST_COMPLIANCE_UPDATED", "COMPLIANCE", "POST AUDIT COMPLIANCE", "PKG_AD", "P_UPDATE_PARA_AIS_POST_COMPLIANCE", ParaId = "model.PARA_ID", ComId = "model.COM_ID", ObjectType = "PARA", RequireResultMessage = true)]
         public string update_ais_post_compliance(AISPostComplianceModel model)
             {
             return "{\"Status\":true,\"Message\":\"" + dBConnection.UpdateAisPostCompliance(model) + "\"}";
@@ -3859,6 +3936,7 @@ namespace AIS.Controllers
             return dBConnection.GetDuplicateChecklistsCount(PROCESS_ID);
             }
         [HttpPost]
+        [AIS.Filters.ApplicationAudit("AUTHORIZE_MERGE_DUPLICATE_PROCESS", "ADMINISTRATION", "ADMINISTRATION", "PKG_AD", "P_AUTHORIZE_MERGER_CHECKLIST", ObjectType = "AUTHORIZE_MERGE_DUPLICATE_PROCESS", RequireResultMessage = true, RequireNonEmpty = "AUTH_P_IDS")]
         public string authorize_merge_duplicate_process(int PROCESS_ID, List<int> AUTH_P_IDS)
             {
             string resp = "";
@@ -3870,6 +3948,7 @@ namespace AIS.Controllers
 
             }
         [HttpPost]
+        [AIS.Filters.ApplicationAudit("AUTHORIZE_MERGE_DUPLICATE_SUB_PROCESS", "ADMINISTRATION", "ADMINISTRATION", "PKG_AD", "P_AUTHORIZE_MERGER_CHECKLIST_SUB", ObjectType = "AUTHORIZE_MERGE_DUPLICATE_SUB_PROCESS", RequireResultMessage = true, RequireNonEmpty = "AUTH_S_P_IDS")]
         public string authorize_merge_duplicate_sub_process(int SUB_PROCESS_ID, List<int> AUTH_S_P_IDS)
             {
             string resp = "";
@@ -3881,12 +3960,14 @@ namespace AIS.Controllers
 
             }
         [HttpPost]
+        [ApplicationAudit("DUPLICATE_CHECKLIST_MERGE_AUTHORIZED", "CHECKLIST", "CHECKLIST_ADMINISTRATION", "PKG_AD", "P_AUTHORIZE_DUPLICATE_CHECKLIST_DETAILS", ObjectType = "AUDIT_CHECKLIST", ObjectId = "PROCESS_ID", RequireResultMessage = true)]
         public string authorize_merge_duplicate_checklists(int PROCESS_ID)
             {
             return "{\"Status\":true,\"Message\":\"" + dBConnection.AuthorizeMergeDuplicateChecklists(PROCESS_ID) + "\"}";
             }
 
         [HttpPost]
+        [ApplicationAudit("PARAS_SHIFTED_TO_ENTITY", "COMPLIANCE", "PARA SHIFTING", "PKG_FAD", "P_PARA_SHIFTING", ObjectType = "ENTITY", ObjectId = "NEW_ENT_ID", RequireNonEmpty = "OBS_IDS", RequireResultMessage = true)]
         public string Para_Shifted_To(List<int> OBS_IDS, int NEW_ENT_ID, int OLD_ENT_ID, List<string> P_INDS)
             {
             string resp = "";
@@ -3931,6 +4012,7 @@ namespace AIS.Controllers
             }
 
         [HttpPost]
+        [AIS.Filters.ApplicationAudit("UPDATE_AIS_ENTITY_FOR_ADMIN_PANEL_ENTITY_ADDITION", "ADMINISTRATION", "ADMINISTRATION", "PKG_AD", "P_UPDATEENTITIEES", ObjectType = "UPDATE_AIS_ENTITY_FOR_ADMIN_PANEL_ENTITY_ADDITION", ObjectId = "ENTITY_ID", RequireResultMessage = true)]
         public string update_ais_entity_for_admin_panel_entity_addition(string ENTITY_ID, string ENTITY_NAME, string ENTITY_CODE, string AUDITABLE, string AUDIT_BY_ID, string ENTITY_TYPE_ID, string ENT_DESC, string STATUS)
             {
             return "{\"Status\":true,\"Message\":\"" + dBConnection.UpdateAISEntityForAdminPanelEntityAddition(ENTITY_ID, ENTITY_NAME, ENTITY_CODE, AUDITABLE, AUDIT_BY_ID, ENTITY_TYPE_ID, ENT_DESC, STATUS) + "\"}";
@@ -3938,6 +4020,7 @@ namespace AIS.Controllers
             }
 
         [HttpPost]
+        [AIS.Filters.ApplicationAudit("ADD_AIS_ENTITY_FOR_ADMIN_PANEL_ENTITY_ADDITION", "ADMINISTRATION", "ADMINISTRATION", "PKG_AD", "P_INSERTENTITIEES", ObjectType = "ADD_AIS_ENTITY_FOR_ADMIN_PANEL_ENTITY_ADDITION", RequireResultMessage = true)]
         public string add_ais_entity_for_admin_panel_entity_addition(string ENTITY_NAME, string ENTITY_CODE, string AUDITABLE, string AUDIT_BY_ID, string ENTITY_TYPE_ID, string ENT_DESC, string STATUS)
             {
             return "{\"Status\":true,\"Message\":\"" + dBConnection.AddAISEntityForAdminPanelEntityAddition(ENTITY_NAME, ENTITY_CODE, AUDITABLE, AUDIT_BY_ID, ENTITY_TYPE_ID, ENT_DESC, STATUS) + "\"}";
@@ -3953,6 +4036,7 @@ namespace AIS.Controllers
             }
 
         [HttpPost]
+        [AIS.Filters.ApplicationAudit("ADD_AIS_ENTITY_MAPPING_FOR_ADMIN_PANEL_ENTITY_ADDITION", "ADMINISTRATION", "ADMINISTRATION", "PKG_AD", "P_ADD_ENTITIES_MAPPING", ObjectType = "ADD_AIS_ENTITY_MAPPING_FOR_ADMIN_PANEL_ENTITY_ADDITION", ObjectId = "ENTITY_ID", RequireResultMessage = true)]
         public string add_ais_entity_mapping_for_admin_panel_entity_addition(string P_ENTITY_ID, string ENTITY_ID, string RELATION_TYPE_ID)
             {
             return "{\"Status\":true,\"Message\":\"" + dBConnection.AddAISEntityMappingForAdminPanelEntityAddition(P_ENTITY_ID, ENTITY_ID, RELATION_TYPE_ID) + "\"}";
@@ -3960,6 +4044,7 @@ namespace AIS.Controllers
             }
 
         [HttpPost]
+        [AIS.Filters.ApplicationAudit("UPDATE_AIS_ENTITY_MAPPING_FOR_ADMIN_PANEL_ENTITY_ADDITION", "ADMINISTRATION", "ADMINISTRATION", "PKG_AD", "P_UPDATE_ENTITIES_MAPPING", ObjectType = "UPDATE_AIS_ENTITY_MAPPING_FOR_ADMIN_PANEL_ENTITY_ADDITION", ObjectId = "ENTITY_ID", RequireResultMessage = true)]
         public string update_ais_entity_mapping_for_admin_panel_entity_addition(string P_ENTITY_ID, string ENTITY_ID, string RELATION_TYPE_ID)
             {
             return "{\"Status\":true,\"Message\":\"" + dBConnection.UpdateAISEntityMappingForAdminPanelEntityAddition(P_ENTITY_ID, ENTITY_ID, RELATION_TYPE_ID) + "\"}";
@@ -3976,6 +4061,7 @@ namespace AIS.Controllers
             }
 
         [HttpPost]
+        [AIS.Filters.ApplicationAudit("ADD_WORKING_PAPER_LOAN_CASES", "ADMINISTRATION", "ADMINISTRATION", "PKG_AR", "P_ADDLOANCASEFILE", EngagementId = "ENGID", ObjectType = "ADD_WORKING_PAPER_LOAN_CASES", RequireResultMessage = true)]
         public string Add_Working_Paper_Loan_Cases(string ENGID, string LCNUMBER, string LCAMOUNT, DateTime DISBDATE, string LCAT, string OBS, string PARA_NO)
             {
             return "{\"Status\":true,\"Message\":\"" + dBConnection.AddWorkingPaperLoanCases(ENGID, LCNUMBER, LCAMOUNT, DISBDATE, LCAT, OBS, PARA_NO) + "\"}";
@@ -3991,6 +4077,7 @@ namespace AIS.Controllers
             }
 
         [HttpPost]
+        [AIS.Filters.ApplicationAudit("ADD_WORKING_PAPER_VOUCHER_CHECKING", "ADMINISTRATION", "ADMINISTRATION", "PKG_AR", "P_ADDVOUCHERCHECKING", EngagementId = "ENGID", ObjectType = "ADD_WORKING_PAPER_VOUCHER_CHECKING", RequireResultMessage = true)]
         public string Add_Working_Paper_Voucher_Checking(string ENGID, string VNUMBER, string OBS, string PARA_NO)
             {
             return "{\"Status\":true,\"Message\":\"" + dBConnection.AddWorkingVoucherChecking(ENGID, VNUMBER, OBS, PARA_NO) + "\"}";
@@ -4005,6 +4092,7 @@ namespace AIS.Controllers
             }
 
         [HttpPost]
+        [AIS.Filters.ApplicationAudit("ADD_WORKING_PAPER_ACCOUNT_OPENING", "ADMINISTRATION", "ADMINISTRATION", "PKG_AR", "P_ADDACCOUNTOPENINGDETAILS", EngagementId = "ENGID", ObjectType = "ADD_WORKING_PAPER_ACCOUNT_OPENING", RequireResultMessage = true)]
         public string Add_Working_Paper_Account_Opening(string ENGID, string VNUMBER, string ANATURE, string OBS, string PARA_NO)
             {
             return "{\"Status\":true,\"Message\":\"" + dBConnection.AddWorkingAccountOpening(ENGID, VNUMBER, ANATURE, OBS, PARA_NO) + "\"}";
@@ -4020,6 +4108,7 @@ namespace AIS.Controllers
             }
 
         [HttpPost]
+        [AIS.Filters.ApplicationAudit("ADD_WORKING_PAPER_FIXED_ASSETS", "ADMINISTRATION", "ADMINISTRATION", "PKG_AR", "P_ADDFIXEDASSETSDETAILS", EngagementId = "ENGID", ObjectType = "ADD_WORKING_PAPER_FIXED_ASSETS", RequireResultMessage = true)]
         public string Add_Working_Paper_Fixed_Assets(string ENGID, string A_NAME, string PHY_EX, string FAR, string DIFF, string REM)
             {
             return "{\"Status\":true,\"Message\":\"" + dBConnection.AddWorkingFixedAssets(ENGID, A_NAME, PHY_EX, FAR, DIFF, REM) + "\"}";
@@ -4035,6 +4124,7 @@ namespace AIS.Controllers
             }
 
         [HttpPost]
+        [AIS.Filters.ApplicationAudit("ADD_WORKING_PAPER_CASH_COUNTER", "ADMINISTRATION", "ADMINISTRATION", "PKG_AR", "P_ADDCASHCOUNTERDETAILS", EngagementId = "ENGID", ObjectType = "ADD_WORKING_PAPER_CASH_COUNTER", RequireResultMessage = true)]
         public string Add_Working_Paper_Cash_Counter(string ENGID, string DVAULT, string NOVAULT, string TOTVAULT, string DSR, string NOSR, string TOTSR, string DIFF)
             {
             return "{\"Status\":true,\"Message\":\"" + dBConnection.AddWorkingCashCounter(ENGID, DVAULT, NOVAULT, TOTVAULT, DSR, NOSR, TOTSR, DIFF) + "\"}";
@@ -4042,6 +4132,7 @@ namespace AIS.Controllers
             }
 
         [HttpPost]
+        [AIS.Filters.ApplicationAudit("UPDATE_NEW_USER_ADMIN_PANEL", "ADMINISTRATION", "ADMINISTRATION", "PKG_AD", "P_UPDATE_NEW_USER", ObjectType = "UPDATE_NEW_USER_ADMIN_PANEL", RequireResultMessage = true, RequireNonEmpty = "PPNOArr")]
         public string update_new_user_admin_panel(List<int> PPNOArr)
             {
             string resp = "";
@@ -4122,6 +4213,7 @@ namespace AIS.Controllers
             }
 
         [HttpPost]
+        [AIS.Filters.ApplicationAudit("UPDATE_ENTITY_TYPES", "ADMINISTRATION", "ADMINISTRATION", "PKG_AD", "P_UPDATE_ENTITIES_TYPES", ObjectType = "UPDATE_ENTITY_TYPES", RequireResultMessage = true)]
         public string update_entity_types(AuditEntitiesModel ENTITY_MODEL)
             {
             return "{\"Status\":true,\"Message\":\"" + dBConnection.UpdateEntityTypes(ENTITY_MODEL) + "\"}";
@@ -4165,12 +4257,14 @@ namespace AIS.Controllers
             }
 
         [HttpPost]
+        [AIS.Filters.ApplicationAudit("SUBMIT_ENTITY_CONV_TO_ISLAMIC_FROM_ADMIN_PANEL", "ADMINISTRATION", "ADMINISTRATION", "PKG_AD", "P_SHIFT_BR_TO_ISLAMIC", ObjectType = "SUBMIT_ENTITY_CONV_TO_ISLAMIC_FROM_ADMIN_PANEL", RequireResultMessage = true)]
         public string submit_entity_conv_to_islamic_from_admin_panel(string FROM_ENT_ID, string TO_ENT_ID)
             {
             return "{\"Status\":true,\"Message\":\"" + dBConnection.SubmitEntityConvToIslamicFromAdminPanel(FROM_ENT_ID, TO_ENT_ID) + "\"}";
             }
 
         [HttpPost]
+        [ApplicationAudit("COMPLIANCE_FLOW_SAVED", "COMPLIANCE", "COMPLIANCE SETUP", "PKG_AD", "P_ADD_UPDATE_COMPLIANCE_FLOW", ObjectType = "COMPLIANCE_FLOW", ObjectId = "ID", RequireResultMessage = true)]
         public string add_compliance_flow(string ID, string ENTITY_TYPE_ID, string GROUP_ID, string PREV_GROUP_ID, string NEXT_GROUP_ID, string COMP_UP_STATUS, string COMP_DOWN_STATUS)
             {
             return "{\"Status\":true,\"Message\":\"" + dBConnection.AddComplianceFlow(ID, ENTITY_TYPE_ID, GROUP_ID, PREV_GROUP_ID, NEXT_GROUP_ID, COMP_UP_STATUS, COMP_DOWN_STATUS) + "\"}";
@@ -4217,6 +4311,7 @@ namespace AIS.Controllers
             }
 
         [HttpPost]
+        [ApplicationAudit("OBSERVATION_NUMBER_UPDATED", "AUDIT_EXECUTION", "OBSERVATION", "PKG_AD", "P_UPDATE_OBSERVATION_NO", ObjectType = "OBSERVATION", RequireResultMessage = true)]
         public string update_observation_numbers_for_status_reversal(ObservationNumbersModel onum)
             {
             return "{\"Status\":true,\"Message\":\"" + dBConnection.UpdateObservationNumbersForStatusReversal(onum) + "\"}";
@@ -4235,12 +4330,14 @@ namespace AIS.Controllers
             }
 
         [HttpPost]
+        [AIS.Filters.ApplicationAudit("ADD_HR_DESIGNATION_WISE_ROLE_ASSIGNMENT", "ADMINISTRATION", "ADMINISTRATION", "PKG_AD", "P_ADD_HR_DESIGNATION_RIGHT", ObjectType = "ADD_HR_DESIGNATION_WISE_ROLE_ASSIGNMENT", ObjectId = "ASSIGNMENT_ID", RequireResultMessage = true)]
         public string add_hr_designation_wise_role_assignment(int ASSIGNMENT_ID, int DESIGNATION_ID, int GROUP_ID, string SUB_ENTITY_NAME)
             {
             return "{\"Status\":true,\"Message\":\"" + dBConnection.AddHRDesignationWiseRoleAssignment(ASSIGNMENT_ID, DESIGNATION_ID, GROUP_ID, SUB_ENTITY_NAME) + "\"}";
             }
 
         [HttpPost]
+        [AIS.Filters.ApplicationAudit("UPDATE_HR_DESIGNATION_WISE_ROLE_ASSIGNMENT", "ADMINISTRATION", "ADMINISTRATION", "PKG_AD", "P_UPDATE_HR_DESIGNATION_RIGHT", ObjectType = "UPDATE_HR_DESIGNATION_WISE_ROLE_ASSIGNMENT", ObjectId = "ASSIGNMENT_ID", RequireResultMessage = true)]
         public string update_hr_designation_wise_role_assignment(int ASSIGNMENT_ID, int DESIGNATION_ID, int GROUP_ID, string SUB_ENTITY_NAME)
             {
             return "{\"Status\":true,\"Message\":\"" + dBConnection.UpdateHRDesignationWiseRoleAssignment(ASSIGNMENT_ID, DESIGNATION_ID, GROUP_ID, SUB_ENTITY_NAME) + "\"}";
@@ -4254,11 +4351,13 @@ namespace AIS.Controllers
             }
 
         [HttpPost]
+        [AIS.Filters.ApplicationAudit("ADD_MANAGE_OBSERVATITON_STATUS", "ADMINISTRATION", "ADMINISTRATION", "PKG_AD", "P_ADD_OBS_STATUS", ObjectType = "ADD_MANAGE_OBSERVATITON_STATUS", RequireResultMessage = true)]
         public string add_manage_observatiton_status(ManageObservationModel OBS_STATUS_MODEL)
             {
             return "{\"Status\":true,\"Message\":\"" + dBConnection.AddManageObservationStatus(OBS_STATUS_MODEL) + "\"}";
             }
         [HttpPost]
+        [AIS.Filters.ApplicationAudit("UPDATE_MANAGE_OBSERVATITON_STATUS", "ADMINISTRATION", "ADMINISTRATION", "PKG_AD", "P_UPDATE_OBS_STATUS", ObjectType = "UPDATE_MANAGE_OBSERVATITON_STATUS", RequireResultMessage = true)]
         public string update_manage_observatiton_status(ManageObservationModel OBS_STATUS_MODEL)
             {
             return "{\"Status\":true,\"Message\":\"" + dBConnection.UpdateManageObservationStatus(OBS_STATUS_MODEL) + "\"}";
@@ -4269,11 +4368,14 @@ namespace AIS.Controllers
             {
             return dBConnection.GetManageEntityAuditDept();
             }
+        [HttpPost]
+        [ApplicationAudit("ENTITY_AUDIT_DEPARTMENT_ADDED", "AUDIT_EXECUTION", "AUDIT_UNIVERSE", "PKG_AD", "P_ADD_ENTITIES_AUDIT_DEPARTMENT", ObjectType = "ENTITY_AUDIT_DEPARTMENT", ObjectId = "ENT_AUD_DEPT_MODEL.ENT_ID", RequireResultMessage = true)]
         public string add_manage_entities_audit_department(ManageEntAuditDeptModel ENT_AUD_DEPT_MODEL)
             {
             return "{\"Status\":true,\"Message\":\"" + dBConnection.AddManageEntityAuditDepartment(ENT_AUD_DEPT_MODEL) + "\"}";
             }
         [HttpPost]
+        [ApplicationAudit("ENTITY_AUDIT_DEPARTMENT_UPDATED", "AUDIT_EXECUTION", "AUDIT_UNIVERSE", "PKG_AD", "P_UPDATE_ENTITIES_AUDIT_DEPARTMENT", ObjectType = "ENTITY_AUDIT_DEPARTMENT", ObjectId = "ENT_AUD_DEPT_MODEL.ENT_ID", RequireResultMessage = true)]
         public string update_manage_entities_audit_department(ManageEntAuditDeptModel ENT_AUD_DEPT_MODEL)
             {
             return "{\"Status\":true,\"Message\":\"" + dBConnection.UpdateEntityAuditDepartment(ENT_AUD_DEPT_MODEL) + "\"}";
@@ -4295,6 +4397,7 @@ namespace AIS.Controllers
             }
 
         [HttpPost]
+        [ApplicationAudit("AUDIT_PERIOD_CREATED", "AUDIT_EXECUTION", "AUDIT_PERIOD", "PKG_PG", "P_ADDAUDITPERIOD", ObjectType = "AUDIT_PERIOD", RequireResultMessage = true)]
         public string add_audit_period(AddAuditPeriodModel auditPeriod)
             {
             if (!ModelState.IsValid)
@@ -4311,6 +4414,7 @@ namespace AIS.Controllers
             }
 
         [HttpPost]
+        [ApplicationAudit("AUDIT_PERIOD_UPDATED", "AUDIT_EXECUTION", "AUDIT_PERIOD", "PKG_PG", "P_UPDATE_AUDITPERIOD", ObjectType = "AUDIT_PERIOD", ObjectId = "auditPeriod.ID", RequireResultMessage = true)]
         public string update_audit_period(AuditPeriodModel auditPeriod)
             {
             return "{\"Status\":true,\"Message\":\"" + dBConnection.UpdateAuditPeriod(auditPeriod) + "\"}";
@@ -4323,11 +4427,13 @@ namespace AIS.Controllers
             }
 
         [HttpPost]
+        [AIS.Filters.ApplicationAudit("ADD_SUB_MENU_FOR_ADMIN_PANEL", "ADMINISTRATION", "ADMINISTRATION", "PKG_AD", "P_ADD_NEW_SUB_MENU", ObjectType = "ADD_SUB_MENU_FOR_ADMIN_PANEL", RequireResultMessage = true)]
         public string add_sub_menu_for_admin_panel(SubMenuModel sm)
             {
             return "{\"Status\":true,\"Message\":\"" + dBConnection.AddSubMenuForAdminPanel(sm) + "\"}";
             }
         [HttpPost]
+        [AIS.Filters.ApplicationAudit("UPDATE_SUB_MENU_FOR_ADMIN_PANEL", "ADMINISTRATION", "ADMINISTRATION", "PKG_AD", "P_UPDATE_SUB_MENU", ObjectType = "UPDATE_SUB_MENU_FOR_ADMIN_PANEL", RequireResultMessage = true)]
         public string update_sub_menu_for_admin_panel(SubMenuModel sm)
             {
             return "{\"Status\":true,\"Message\":\"" + dBConnection.UpdateSubMenuForAdminPanel(sm) + "\"}";
@@ -4339,6 +4445,7 @@ namespace AIS.Controllers
             return dBConnection.GetMenuPagesForAdminPanel(M_ID, SM_ID);
             }
         [HttpPost]
+        [AIS.Filters.ApplicationAudit("ADD_MENU_PAGE_FOR_ADMIN_PANEL", "ADMINISTRATION", "ADMINISTRATION", "PKG_AD", "P_ADD_NEW_PAGE", ObjectType = "ADD_MENU_PAGE_FOR_ADMIN_PANEL", RequireResultMessage = true)]
         public string add_menu_page_for_admin_panel(
             int M_ID = 0,
             int SM_ID = 0,
@@ -4353,6 +4460,7 @@ namespace AIS.Controllers
             return "{\"Status\":true,\"Message\":\"" + dBConnection.AddMenuPageForAdminPanel(M_ID, SM_ID, P_NAME, P_KEY, P_URL, P_PATH, P_ORDER, P_STATUS, P_HIDE_MENU) + "\"}";
             }
         [HttpPost]
+        [AIS.Filters.ApplicationAudit("UPDATE_MENU_PAGE_FOR_ADMIN_PANEL", "ADMINISTRATION", "ADMINISTRATION", "PKG_AD", "P_UPDATE_PAGE", ObjectType = "UPDATE_MENU_PAGE_FOR_ADMIN_PANEL", RequireResultMessage = true)]
         public string update_menu_page_for_admin_panel(
             int P_ID = 0,
             int M_ID = 0,
@@ -4393,6 +4501,7 @@ namespace AIS.Controllers
             }
 
         [HttpPost]
+        [ApplicationAudit("COMPLIANCE_OFFICE_UPDATED", "COMPLIANCE", "COMPLIANCE SETUP", "PKG_AD", "P_UPDATE_ENTITY_COMP", ComId = "COMP_ID", ObjectType = "AUDIT", ObjectId = "AUD_ID", RequireNonEmpty = "ENT_ID_ARR", RequireResultMessage = true)]
         public string update_compliance_office(List<int> ENT_ID_ARR, int AUD_ID, string COMP_ID)
             {
             string res = "";
@@ -4421,6 +4530,7 @@ namespace AIS.Controllers
             }
 
         [HttpPost]
+        [ApplicationAudit("ANNEXURE_ADDED", "ANNEXURE", "ANNEXURE SETUP", "PKG_AD", "P_ADD_ANNEXURE", ObjectType = "ANNEXURE", RequireResultMessage = true)]
         public string add_annexure(string ANNEX_CODE = "", int PROCESS_ID = 0, int FUNCTION_OWNER_ID = 0, int FUNCTION_ID_1 = 0, int FUNCTION_ID_2 = 0, string HEADING = "", int RISK_ID = 0, string MAX_NUMBER = "", string GRAVITY = "", string WEIGHTAGE = "")
             {
             if (!System.Text.RegularExpressions.Regex.IsMatch(ANNEX_CODE ?? string.Empty, @"^[A-Za-z0-9&]+$") ||
@@ -4431,6 +4541,7 @@ namespace AIS.Controllers
             return "{\"Status\":true,\"Message\":\"" + dBConnection.AddAnnexure(ANNEX_CODE, HEADING, PROCESS_ID, FUNCTION_OWNER_ID, FUNCTION_ID_1, FUNCTION_ID_2, RISK_ID, MAX_NUMBER, GRAVITY, WEIGHTAGE) + "\"}";
             }
         [HttpPost]
+        [ApplicationAudit("ANNEXURE_UPDATED", "ANNEXURE", "ANNEXURE SETUP", "PKG_AD", "P_UPDATE_ANNEXURE", ObjectType = "ANNEXURE", ObjectId = "ANNEX_ID", RequireResultMessage = true)]
         public string update_annexure(int ANNEX_ID = 0, int PROCESS_ID = 0, int FUNCTION_OWNER_ID = 0, int FUNCTION_ID_1 = 0, int FUNCTION_ID_2 = 0, string HEADING = "", int RISK_ID = 0, string MAX_NUMBER = "", string GRAVITY = "", string WEIGHTAGE = "")
             {
             if (!System.Text.RegularExpressions.Regex.IsMatch(HEADING ?? string.Empty, @"^[A-Za-z0-9 &]+$"))
@@ -4486,11 +4597,13 @@ namespace AIS.Controllers
             return dBConnection.GetComplianceProgressReportDetails(ROLE_TYPE, PP_NO);
             }
         [HttpPost]
+        [ApplicationAudit("COMPLIANCE_HIERARCHY_ADDED", "COMPLIANCE", "COMPLIANCE SETUP", "PKG_AD", "P_ADD_COM_OFFICER", ObjectType = "ENTITY", ObjectId = "ENTITY_ID", RequireResultMessage = true)]
         public string add_compliance_hierarchy(int ENTITY_ID, string REVIEWER_PP, string AUTHORIZER_PP)
             {
             return "{\"Status\":true,\"Message\":\"" + dBConnection.AddComplianceHierarchy(ENTITY_ID, REVIEWER_PP, AUTHORIZER_PP) + "\"}";
             }
         [HttpPost]
+        [ApplicationAudit("COMPLIANCE_HIERARCHY_UPDATED", "COMPLIANCE", "COMPLIANCE SETUP", "PKG_AD", "P_UPDATE_COM_OFFICER", ObjectType = "ENTITY", ObjectId = "ENTITY_ID", RequireResultMessage = true)]
         public string update_compliance_hierarchy(int ENTITY_ID, string REVIEWER_PP, string AUTHORIZER_PP, string COMPLIANCE_KEY)
             {
             return "{\"Status\":true,\"Message\":\"" + dBConnection.UpdateComplianceHierarchy(ENTITY_ID, REVIEWER_PP, AUTHORIZER_PP, COMPLIANCE_KEY) + "\"}";
@@ -4535,6 +4648,7 @@ namespace AIS.Controllers
             return dBConnection.GetChildRelationshipForCAU(E_R_ID);
             }
         [HttpPost]
+        [ApplicationAudit("CAU_PARA_SUBMITTED_TO_BRANCH", "COMPLIANCE", "POST AUDIT COMPLIANCE", "PKG_AE", "P_FORWARD_CAU_PARA_TO_BRANCH", ComId = "COM_ID", ObjectType = "PARA", ObjectId = "COM_ID", RequireResultMessage = true)]
         public string submit_cau_para_to_branch(string COM_ID, string BR_ENT_ID, string CAU_COMMENTS)
             {
             return "{\"Status\":true,\"Message\":\"" + dBConnection.SubmitCAUParaToBranch(COM_ID, BR_ENT_ID, CAU_COMMENTS) + "\"}";
@@ -4552,6 +4666,7 @@ namespace AIS.Controllers
             return dBConnection.GetCAUParasForPostComplianceSubmittedToBranch();
             }
         [HttpPost]
+        [ApplicationAudit("CAU_PARA_SUBMITTED_BY_BRANCH", "COMPLIANCE", "POST AUDIT COMPLIANCE", "PKG_AE", "P_SUBMITPOSTAUDITCOMPLIANCE_BY_BRANCH", ComId = "COM_ID", ObjectType = "PARA", ObjectId = "COM_ID", RequireResultMessage = true)]
         public async Task<string> submit_cau_para_by_branch(string COM_ID, string TEXT_ID, string BR_COMMENTS)
             {
             return "{\"Status\":true,\"Message\":\"" + await dBConnection.SubmitCAUParaByBranch(COM_ID, TEXT_ID, BR_COMMENTS) + "\"}";
@@ -4632,6 +4747,7 @@ namespace AIS.Controllers
             return archiveDbConnection.GetDuplicateParasForAuthorization();
             }
         [HttpPost]
+        [ApplicationAudit("DUPLICATE_PARA_DELETE_REQUESTED", "COMPLIANCE", "PARA MANAGEMENT", "PKG_HD", "P_ADD_DUPLICATE_PARAS", ParaId = "NEW_PARA_ID", OldParaId = "OLD_PARA_ID", NewParaId = "NEW_PARA_ID", ObjectType = "PARA", RequireResultMessage = true)]
         public IActionResult request_delete_duplicate_para(int NEW_PARA_ID = 0, int OLD_PARA_ID = 0, string INDICATOR = "", string REMARKS = "")
             {
             if (string.IsNullOrWhiteSpace(INDICATOR) || (NEW_PARA_ID <= 0 && OLD_PARA_ID <= 0))
@@ -4646,11 +4762,13 @@ namespace AIS.Controllers
                 });
             }
         [HttpPost]
+        [ApplicationAudit("DUPLICATE_PARA_DELETE_REJECTED", "COMPLIANCE", "PARA MANAGEMENT", "PKG_HD", "P_REJECT_DUPLICATE_PARAS", ObjectType = "DUPLICATE_PARA_REQUEST", ObjectId = "D_ID", RequireResultMessage = true)]
         public string reject_delete_duplicate_para(int D_ID = 0)
             {
             return "{\"Status\":true,\"Message\":\"" + archiveDbConnection.RejectDeleteDuplicatePara(D_ID) + "\"}";
             }
         [HttpPost]
+        [ApplicationAudit("DUPLICATE_PARA_DELETE_AUTHORIZED", "COMPLIANCE", "PARA MANAGEMENT", "PKG_HD", "P_AUTH_DUPLICATE_PARAS", ObjectType = "DUPLICATE_PARA_REQUEST", ObjectId = "D_ID", RequireResultMessage = true)]
         public string authorize_delete_duplicate_para(int D_ID = 0)
             {
             return "{\"Status\":true,\"Message\":\"" + archiveDbConnection.AuthDeleteDuplicatePara(D_ID) + "\"}";
@@ -4669,6 +4787,7 @@ namespace AIS.Controllers
             return dBConnection.GetSeriousFraudulentObsGMDetails(INDICATOR, PARENT_ENT_ID, ANNEX_IND);
             }
         [HttpPost]
+        [ApplicationAudit("OBSERVATION_RESPONSIBLE_ADDED", "AUDIT_EXECUTION", "OBSERVATION", "PKG_AR", "P_ADD_RESPONSIBILITY", EngagementId = "model.ENG_ID", ParaId = "model.NEW_PARA_ID", ComId = "model.COM_ID", ObjectType = "OBSERVATION_RESPONSIBILITY", ObjectId = "model.NEW_PARA_ID", RequireResultMessage = true)]
         public IActionResult add_responsible_to_observation(ObservationResponsiblePPNOModel model)
             {
             var result = dBConnection.AddResponsiblePersonsToObservation(
@@ -4683,6 +4802,7 @@ namespace AIS.Controllers
             }
 
         [HttpPost]
+        [ApplicationAudit("OBSERVATION_RESPONSIBLE_DELETED", "AUDIT_EXECUTION", "OBSERVATION", "PKG_AR", "P_DELETE_RESPONSIBILITY", EngagementId = "model.ENG_ID", ParaId = "model.NEW_PARA_ID", OldParaId = "model.OLD_PARA_ID", ObjectType = "OBSERVATION_RESPONSIBILITY", RequireResultMessage = true)]
         public IActionResult delete_responsible_from_observation(ObservationResponsiblePPNOModel model)
             {
             var paraId = model.NEW_PARA_ID ?? model.OLD_PARA_ID ?? 0;
@@ -4694,12 +4814,14 @@ namespace AIS.Controllers
             }
 
         [HttpPost]
+        [ApplicationAudit("OLD_PARA_RESPONSIBILITY_ADDED", "COMPLIANCE", "LEGACY PARA", "PKG_AR", "P_RESPONIBILITYFOROLDPARA", ParaId = "model.NEW_PARA_ID", OldParaId = "model.OLD_PARA_ID", ComId = "model.COM_ID", ObjectType = "PARA", RequireResultMessage = true)]
         public IActionResult add_responsible_for_old_paras([FromQuery] string IND_Action, [FromBody] ObservationResponsiblePPNOModel model)
             {
             var result = dBConnection.AddResponsibilityforoldparas(model.COM_ID.GetValueOrDefault(), model, IND_Action);
             return Json(new { Message = result });
             }
         [HttpPost]
+        [ApplicationAudit("DSA_SUBMITTED_TO_AUDITEE", "AUDIT_EXECUTION", "DRAFT_AUDIT", "PKG_AR", "P_DRAFT_DSA", EngagementId = "ENG_ID", ObjectType = "OBSERVATION", ObjectId = "OBS_ID", RequireResultMessage = true)]
         public string submit_dsa_to_auditee(int ENTITY_ID, int OBS_ID, int ENG_ID, List<RespDSAModel> RespDSAModel)
             {
             string out_resp = "";
@@ -4725,6 +4847,7 @@ namespace AIS.Controllers
         [HttpPost]
 
         //SVP AZ ACTION
+        [AIS.Filters.ApplicationAudit("SUBMIT_DSA_TO_HEAD_FAD", "ADMINISTRATION", "ADMINISTRATION", "PKG_AR", "P_SUBMIT_DSA_TO_HEAD_FAD", ObjectType = "SUBMIT_DSA_TO_HEAD_FAD", ObjectId = "DSA_ID", RequireResultMessage = true)]
         public string submit_dsa_to_head_fad(int DSA_ID)
             {
             return "{\"Status\":true,\"Message\":\"" + dBConnection.SubmitDSAToHeadFAD(DSA_ID) + "\"}";
@@ -4733,6 +4856,7 @@ namespace AIS.Controllers
         [HttpPost]
 
         //SVP AZ ACTION
+        [AIS.Filters.ApplicationAudit("UPDATE_DSA_HEADING", "ADMINISTRATION", "ADMINISTRATION", "PKG_AR", "P_UPDATE_DSA_HEADING", ObjectType = "UPDATE_DSA_HEADING", ObjectId = "DSA_ID", RequireResultMessage = true)]
         public string update_dsa_heading(int DSA_ID, string DSA_HEADING)
             {
             return "{\"Status\":true,\"Message\":\"" + dBConnection.UpdateDSAHeading(DSA_ID, DSA_HEADING) + "\"}";
@@ -4747,6 +4871,7 @@ namespace AIS.Controllers
 
             }
         [HttpPost]
+        [AIS.Filters.ApplicationAudit("SUBMIT_DSA_TO_DPD", "ADMINISTRATION", "ADMINISTRATION", "PKG_AR", "P_SUBMIT_DSA_BY_HEAD_FAD_TO_DPD", ObjectType = "SUBMIT_DSA_TO_DPD", ObjectId = "DSA_ID", RequireResultMessage = true)]
         public string submit_dsa_to_dpd(int DSA_ID)
             {
             return "{\"Status\":true,\"Message\":\"" + dBConnection.SubmitDSAToDPD(DSA_ID) + "\"}";
@@ -4858,12 +4983,14 @@ namespace AIS.Controllers
             }
 
         [HttpPost]
+        [AIS.Filters.ApplicationAudit("UPDATE_GM_OFFICE", "ADMINISTRATION", "ADMINISTRATION", "PKG_AD", "P_UPDATE_GM_OFFICE_RELATIONSHIP", ObjectType = "UPDATE_GM_OFFICE", ObjectId = "ENTITY_ID", RequireResultMessage = true)]
         public string update_gm_office(int GM_OFF_ID, int ENTITY_ID)
             {
             return "{\"Status\":true,\"Message\":\"" + dBConnection.UpdateGMOffice(GM_OFF_ID, ENTITY_ID) + "\"}";
 
             }
         [HttpPost]
+        [ApplicationAudit("REPORTING_LINE_UPDATED", "AUDIT_REPORT", "REPORTING SETUP", "PKG_AD", "P_UPDATE_RPT_OFFICE_RELATIONSHIP", ObjectType = "ENTITY", ObjectId = "ENTITY_ID", RequireResultMessage = true)]
         public string update_reporting_line(int REP_OFF_ID, int ENTITY_ID)
             {
             return "{\"Status\":true,\"Message\":\"" + dBConnection.UpdateReportingLine(REP_OFF_ID, ENTITY_ID) + "\"}";
@@ -4871,6 +4998,7 @@ namespace AIS.Controllers
             }
 
         [HttpPost]
+        [ApplicationAudit("GM_REPORTING_LINE_OFFICES_UPDATED", "AUDIT_REPORT", "REPORTING SETUP", "PKG_AD", "P_UPDATE_GM_REPORTING_LINE", ObjectType = "REPORTING_LINE", ObjectId = "REP_OFF_ID", RequireNonEmpty = "ENT_ID_ARR", RequireResultMessage = true)]
         public string update_gm_reporting_line_office(List<int> ENT_ID_ARR, int GM_OFF_ID, int REP_OFF_ID)
             {
             string res = "";
@@ -4886,6 +5014,7 @@ namespace AIS.Controllers
             }
 
         [HttpPost]
+        [ApplicationAudit("AUDIT_REPORT_UPLOADED", "AUDIT_REPORT", "AUDIT REPORT", "PKG_HD", "P_UPLOAD_AUDIT_REPORT", EngagementId = "ENG_ID", ObjectType = "ENGAGEMENT", ObjectId = "ENG_ID", RequireResultMessage = true)]
         public async Task<string> upload_audit_report(int ENG_ID)
             {
             string response = await dBConnection.UploadAuditReport(ENG_ID);
@@ -5015,6 +5144,7 @@ namespace AIS.Controllers
             }
 
         [HttpPost]
+        [ApplicationAudit("EXCEPTION_REPORT_FORMAT_SAVED", "AUDIT_REPORT", "EXCEPTION REPORT", "PKG_SM", "P_INSERT_EXCEPTION_REPORT_FORMAT", ObjectType = "EXCEPTION_REPORT_FORMAT")]
         public IActionResult save_exception_report_format([FromBody] ExceptionReportFormatModel model)
             {
             var validationResult = ValidateExceptionReportFormat(model);
@@ -5028,6 +5158,7 @@ namespace AIS.Controllers
             }
 
         [HttpPost]
+        [ApplicationAudit("EXCEPTION_REPORT_FORMAT_UPDATED", "AUDIT_REPORT", "EXCEPTION REPORT", "PKG_SM", "P_UPDATE_EXCEPTION_REPORT_FORMAT", ObjectType = "EXCEPTION_REPORT_FORMAT")]
         public IActionResult update_exception_report_format([FromBody] ExceptionReportFormatModel model)
             {
             var validationResult = ValidateExceptionReportFormat(model);
@@ -5069,6 +5200,7 @@ namespace AIS.Controllers
             }
 
         [HttpPost]
+        [ApplicationAudit("EXCEPTION_ACCOUNT_REPORT_ADDED", "AUDIT_REPORT", "EXCEPTION REPORT", "PKG_SM", "P_ADD_NEW_EXP_REPORT", ObjectType = "REPORT", ObjectId = "REPORT_ID", RequireResultMessage = true)]
         public IActionResult add_exception_account_report(string IND = "", int REPORT_ID = 0, string REPORT_TITLE = "", string DESCRIPTION = "", string TYPE = "", int LOAN_STATUS_ID = 0)
             {
             REPORT_TITLE = REPORT_TITLE?.Trim();
@@ -5141,6 +5273,7 @@ namespace AIS.Controllers
             }
 
         [HttpPost]
+        [ApplicationAudit("AUDIT_EMPLOYEE_UPDATED", "AUDIT_EXECUTION", "FAD_RESOURCES", "PKG_AD", "P_UPDATE_AUDIT_EMP", ObjectType = "AUDIT_EMPLOYEE", ObjectId = "model.ID", RequireResultMessage = true)]
         public string update_audit_emp(FADAuditEmpModel model)
             {
             return "{\"Status\":true,\"Message\":\"" + dBConnection.UpdateAuditEmployee(model) + "\"}";
@@ -5154,6 +5287,7 @@ namespace AIS.Controllers
             }
 
         [HttpPost]
+        [ApplicationAudit("AUDIT_MANPOWER_UPDATED", "AUDIT_EXECUTION", "FAD_RESOURCES", "PKG_AD", "P_UPDATE_AUDIT_MANPOWER", ObjectType = "AUDIT_MANPOWER", ObjectId = "model.ID", RequireResultMessage = true)]
         public string update_audit_manpower(FADAuditManpowerModel model)
             {
             return "{\"Status\":true,\"Message\":\"" + dBConnection.UpdateAuditManpower(model) + "\"}";
@@ -5167,6 +5301,7 @@ namespace AIS.Controllers
             }
 
         [HttpPost]
+        [ApplicationAudit("AUDIT_BUDGET_UPDATED", "AUDIT_EXECUTION", "FAD_RESOURCES", "PKG_AD", "P_UPDATE_AUDIT_BUDGET", ObjectType = "AUDIT_BUDGET", ObjectId = "model.ID", RequireResultMessage = true)]
         public string update_audit_budget(FADAuditBudgetModel model)
             {
             return "{\"Status\":true,\"Message\":\"" + dBConnection.UpdateAuditBudget(model) + "\"}";
@@ -5224,6 +5359,7 @@ namespace AIS.Controllers
         // ----- I&ID Inquiry API endpoints -----
 
         [HttpPost]
+        [ApplicationAudit("SUBMIT_COMPLAINT", "INQUIRY_COMPLAINT", "IID INQUIRY", "PKG_RPT", "R_GET_RBH_LIST", ObjectType = "IID_INQUIRY", ObjectId = "model.ComplaintId", RequireResultMessage = true)]
         public IActionResult SubmitComplaint([FromForm] AIS.Models.IID.ComplaintModel model)
             {
             try
@@ -5308,6 +5444,7 @@ namespace AIS.Controllers
             }
 
         [HttpPost]
+        [AIS.Filters.ApplicationAudit("ADD_ASSESSMENT", "ADMINISTRATION", "ADMINISTRATION", "PKG_INQ", "ADD_ASSESSMENT", ObjectType = "ADDASSESSMENT", ObjectId = "model.ComplaintId")]
         public IActionResult AddAssessment([FromBody] AIS.Models.IID.InitialAssessmentModel model)
             {
             try
@@ -5335,6 +5472,7 @@ namespace AIS.Controllers
 
         [HttpPost]
       //  [Consumes("application/x-www-form-urlencoded")]
+        [AIS.Filters.ApplicationAudit("ADD_HEAD_REVIEW", "ADMINISTRATION", "ADMINISTRATION", "PKG_INQ", "ADD_HEAD_REVIEW", ObjectType = "ADDHEADREVIEW", ObjectId = "model.ComplaintId")]
         public async Task<IActionResult> AddHeadReview([FromForm] HeadReviewModel model)
             {
             try
@@ -5426,6 +5564,7 @@ namespace AIS.Controllers
             }
 
         [HttpPost]
+        [ApplicationAudit("INQUIRY_REPORT_ADDED", "AUDIT_REPORT", "INQUIRY REPORT", "PKG_INQ", "ADD_INQUIRY_REPORT", ObjectType = "COMPLAINT", ObjectId = "model.ComplaintId")]
         public IActionResult AddInquiryReport([FromForm] AIS.Models.IID.InquiryReportModel model)
             {
             try
@@ -5495,6 +5634,7 @@ namespace AIS.Controllers
             }
 
         [HttpPost]
+        [AIS.Filters.ApplicationAudit("ADD_ANALYSIS", "ADMINISTRATION", "ADMINISTRATION", "PKG_INQ", "ADD_ANALYSIS", ObjectType = "ADDANALYSIS", ObjectId = "model.ReportId")]
         public IActionResult AddAnalysis([FromBody] AIS.Models.IID.AnalysisModel model)
             {
             try
@@ -5513,6 +5653,7 @@ namespace AIS.Controllers
             }
 
         [HttpPost]
+        [AIS.Filters.ApplicationAudit("ADD_FINAL_APPROVAL", "ADMINISTRATION", "ADMINISTRATION", "PKG_INQ", "P_ENQUEUE_EMAIL", ObjectType = "ADDFINALAPPROVAL", ObjectId = "model.ReportId")]
         public IActionResult AddFinalApproval([FromBody] AIS.Models.IID.FinalApprovalModel model)
             {
             try
@@ -5546,6 +5687,7 @@ namespace AIS.Controllers
             }
 
         [HttpPost]
+        [ApplicationAudit("IID_REPORT_FINALIZED", "AUDIT_REPORT", "INQUIRY REPORT", "PKG_INQ", "P_FINALIZE_IID_REPORT", ObjectType = "REPORT", ObjectId = "model.ReportId")]
         public IActionResult FinalizeIidReport([FromBody] AIS.Models.IID.FinalApprovalModel model)
             {
             try
@@ -5606,6 +5748,7 @@ namespace AIS.Controllers
             }
 
         [HttpPost]
+        [AIS.Filters.ApplicationAudit("ADD_CASE_STUDY", "ADMINISTRATION", "ADMINISTRATION", "PKG_INQ", "ADD_CASE_STUDY", ObjectType = "ADDCASESTUDY", ObjectId = "model.ComplaintId")]
         public IActionResult AddCaseStudy([FromBody] AIS.Models.IID.CaseStudyModel model)
             {
             try
@@ -5659,6 +5802,7 @@ namespace AIS.Controllers
             }
 
         [HttpPost]
+        [ApplicationAudit("IID_EXCEPTION_REPORT_FORMAT_SAVED", "AUDIT_REPORT", "IID EXCEPTION REPORT", "PKG_ISM", "P_INSERT_EXCEPTION_REPORT_FORMAT", ObjectType = "EXCEPTION_REPORT_FORMAT")]
         public IActionResult save_iid_exception_report_format([FromBody] ExceptionReportFormatModel model)
             {
             var validationResult = ValidateExceptionReportFormat(model);
@@ -5672,6 +5816,7 @@ namespace AIS.Controllers
             }
 
         [HttpPost]
+        [ApplicationAudit("IID_EXCEPTION_REPORT_FORMAT_UPDATED", "AUDIT_REPORT", "IID EXCEPTION REPORT", "PKG_ISM", "P_UPDATE_EXCEPTION_REPORT_FORMAT", ObjectType = "EXCEPTION_REPORT_FORMAT")]
         public IActionResult update_iid_exception_report_format([FromBody] ExceptionReportFormatModel model)
             {
             var validationResult = ValidateExceptionReportFormat(model);
@@ -5685,6 +5830,7 @@ namespace AIS.Controllers
             }
 
         [HttpPost]
+        [ApplicationAudit("IID_EXCEPTION_ACCOUNT_REPORT_ADDED", "AUDIT_REPORT", "IID EXCEPTION REPORT", "PKG_ISM", "P_ADD_NEW_EXP_REPORT", ObjectType = "REPORT", ObjectId = "REPORT_ID", RequireResultMessage = true)]
         public IActionResult add_iid_exception_account_report(string IND = "", int REPORT_ID = 0, string REPORT_TITLE = "", string DESCRIPTION = "", string TYPE = "", int LOAN_STATUS_ID = 0)
             {
             REPORT_TITLE = REPORT_TITLE?.Trim();
@@ -6000,6 +6146,7 @@ namespace AIS.Controllers
             }
 
         [HttpPost]
+        [ApplicationAudit("ADD_IID_INQ_ACCUSATION", "INQUIRY_COMPLAINT", "IID INQUIRY", "PKG_INQ", "P_ADD_INQ_ACCUSATION", ObjectType = "IID_INQUIRY", ObjectId = "model.ComplaintId", RequireResultMessage = true)]
         public IActionResult AddIidInqAccusation([FromBody] AIS.Models.IID.InquiryReport.IidInqAccusationRow model)
             {
             try
@@ -6014,6 +6161,7 @@ namespace AIS.Controllers
             }
 
         [HttpPost]
+        [ApplicationAudit("UPDATE_IID_INQ_ACCUSATION", "INQUIRY_COMPLAINT", "IID INQUIRY", "PKG_INQ", "P_UPDATE_INQ_ACCUSATION", ObjectType = "IID_INQUIRY", ObjectId = "model.ComplaintId", RequireResultMessage = true)]
         public IActionResult UpdateIidInqAccusation([FromBody] AIS.Models.IID.InquiryReport.IidInqAccusationRow model)
             {
             try
@@ -6028,6 +6176,7 @@ namespace AIS.Controllers
             }
 
         [HttpPost]
+        [ApplicationAudit("DELETE_IID_INQ_ACCUSATION", "INQUIRY_COMPLAINT", "IID INQUIRY", "PKG_INQ", "P_DELETE_INQ_ACCUSATION", ObjectType = "IID_INQUIRY", ObjectId = "request.Id", RequireResultMessage = true)]
         public IActionResult DeleteIidInqAccusation([FromBody] AIS.Models.IID.InquiryReport.IidInqDeleteRequest request)
             {
             try
@@ -6079,6 +6228,7 @@ namespace AIS.Controllers
             }
 
         [HttpPost]
+        [ApplicationAudit("ADD_IID_INQ_ACCUSED", "INQUIRY_COMPLAINT", "IID INQUIRY", "PKG_INQ", "P_ADD_INQ_ACCUSED", ObjectType = "IID_INQUIRY", ObjectId = "model.ComplaintId", RequireResultMessage = true)]
         public IActionResult AddIidInqAccused([FromBody] AIS.Models.IID.InquiryReport.IidInqAccusedRow model)
             {
             try
@@ -6093,6 +6243,7 @@ namespace AIS.Controllers
             }
 
         [HttpPost]
+        [ApplicationAudit("UPDATE_IID_INQ_ACCUSED", "INQUIRY_COMPLAINT", "IID INQUIRY", "PKG_INQ", "P_UPDATE_INQ_ACCUSED", ObjectType = "IID_INQUIRY", ObjectId = "model.ComplaintId", RequireResultMessage = true)]
         public IActionResult UpdateIidInqAccused([FromBody] AIS.Models.IID.InquiryReport.IidInqAccusedRow model)
             {
             try
@@ -6107,6 +6258,7 @@ namespace AIS.Controllers
             }
 
         [HttpPost]
+        [ApplicationAudit("DELETE_IID_INQ_ACCUSED", "INQUIRY_COMPLAINT", "IID INQUIRY", "PKG_INQ", "P_DELETE_INQ_ACCUSED", ObjectType = "IID_INQUIRY", ObjectId = "request.Id", RequireResultMessage = true)]
         public IActionResult DeleteIidInqAccused([FromBody] AIS.Models.IID.InquiryReport.IidInqDeleteRequest request)
             {
             try
@@ -6135,6 +6287,7 @@ namespace AIS.Controllers
             }
 
         [HttpPost]
+        [ApplicationAudit("ADD_IID_INQ_RECORD", "INQUIRY_COMPLAINT", "IID INQUIRY", "PKG_INQ", "P_ADD_INQ_RECORD", ObjectType = "IID_INQUIRY", ObjectId = "model.ComplaintId", RequireResultMessage = true)]
         public IActionResult AddIidInqRecord([FromBody] AIS.Models.IID.InquiryReport.IidInqRecordRow model)
             {
             try
@@ -6149,6 +6302,7 @@ namespace AIS.Controllers
             }
 
         [HttpPost]
+        [ApplicationAudit("UPDATE_IID_INQ_RECORD", "INQUIRY_COMPLAINT", "IID INQUIRY", "PKG_INQ", "P_UPDATE_INQ_RECORD", ObjectType = "IID_INQUIRY", ObjectId = "model.ComplaintId", RequireResultMessage = true)]
         public IActionResult UpdateIidInqRecord([FromBody] AIS.Models.IID.InquiryReport.IidInqRecordRow model)
             {
             try
@@ -6163,6 +6317,7 @@ namespace AIS.Controllers
             }
 
         [HttpPost]
+        [ApplicationAudit("DELETE_IID_INQ_RECORD", "INQUIRY_COMPLAINT", "IID INQUIRY", "PKG_INQ", "P_DELETE_INQ_RECORD", ObjectType = "IID_INQUIRY", ObjectId = "request.Id", RequireResultMessage = true)]
         public IActionResult DeleteIidInqRecord([FromBody] AIS.Models.IID.InquiryReport.IidInqDeleteRequest request)
             {
             try
@@ -6191,6 +6346,7 @@ namespace AIS.Controllers
             }
 
         [HttpPost]
+        [ApplicationAudit("ADD_IID_INQ_PROCEEDING", "INQUIRY_COMPLAINT", "IID INQUIRY", "PKG_INQ", "P_SAVE_INQ_PROCEEDING", ObjectType = "IID_INQUIRY", ObjectId = "model.ComplaintId", RequireResultMessage = true)]
         public IActionResult AddIidInqProceeding([FromBody] AIS.Models.IID.InquiryReport.IidInqProceedingRow model)
             {
             try
@@ -6205,6 +6361,7 @@ namespace AIS.Controllers
             }
 
         [HttpPost]
+        [ApplicationAudit("UPDATE_IID_INQ_PROCEEDING", "INQUIRY_COMPLAINT", "IID INQUIRY", "PKG_INQ", "P_SAVE_INQ_PROCEEDING", ObjectType = "IID_INQUIRY", ObjectId = "model.ComplaintId", RequireResultMessage = true)]
         public IActionResult UpdateIidInqProceeding([FromBody] AIS.Models.IID.InquiryReport.IidInqProceedingRow model)
             {
             try
@@ -6224,6 +6381,7 @@ namespace AIS.Controllers
             }
 
         [HttpPost]
+        [ApplicationAudit("DELETE_IID_INQ_PROCEEDING", "INQUIRY_COMPLAINT", "IID INQUIRY", "PKG_INQ", "P_DELETE_INQ_PROCEEDING", ObjectType = "IID_INQUIRY", ObjectId = "request.Id", RequireResultMessage = true)]
         public IActionResult DeleteIidInqProceeding([FromBody] AIS.Models.IID.InquiryReport.IidInqDeleteRequest request)
             {
             try
@@ -6252,6 +6410,7 @@ namespace AIS.Controllers
             }
 
         [HttpPost]
+        [ApplicationAudit("ADD_IID_INQ_STATEMENT", "INQUIRY_COMPLAINT", "IID INQUIRY", "PKG_INQ", "P_ADD_INQ_STATEMENT", ObjectType = "IID_INQUIRY", ObjectId = "model.ComplaintId", RequireResultMessage = true)]
         public IActionResult AddIidInqStatement([FromBody] AIS.Models.IID.InquiryReport.IidInqStatementRow model)
             {
             try
@@ -6266,6 +6425,7 @@ namespace AIS.Controllers
             }
 
         [HttpPost]
+        [ApplicationAudit("UPDATE_IID_INQ_STATEMENT", "INQUIRY_COMPLAINT", "IID INQUIRY", "PKG_INQ", "P_ADD_INQ_STATEMENT", ObjectType = "IID_INQUIRY", ObjectId = "model.ComplaintId", RequireResultMessage = true)]
         public IActionResult UpdateIidInqStatement([FromBody] AIS.Models.IID.InquiryReport.IidInqStatementRow model)
             {
             try
@@ -6323,6 +6483,7 @@ namespace AIS.Controllers
             }
 
         [HttpPost]
+        [ApplicationAudit("DELETE_IID_INQ_STATEMENT", "INQUIRY_COMPLAINT", "IID INQUIRY", "PKG_INQ", "P_DELETE_INQ_STATEMENT", ObjectType = "IID_INQUIRY", ObjectId = "request.Id", RequireResultMessage = true)]
         public IActionResult DeleteIidInqStatement([FromBody] AIS.Models.IID.InquiryReport.IidInqDeleteRequest request)
             {
             try
@@ -6372,6 +6533,7 @@ namespace AIS.Controllers
             }
 
         [HttpPost]
+        [ApplicationAudit("IID_INQUIRY_EVIDENCE_STEP_SAVED", "FILES_EVIDENCE", "IID EVIDENCE", "PKG_INQ", "P_SAVE_INQ_EVIDENCE_STEP", ObjectType = "COMPLAINT", ObjectId = "model.ComplaintId", RequireResultMessage = true)]
         public IActionResult SaveIidInqEvidenceStep([FromBody] AIS.Models.IID.InquiryReport.IidInqEvidenceStepModel model)
             {
             try
@@ -6391,6 +6553,7 @@ namespace AIS.Controllers
             }
 
         [HttpPost]
+        [ApplicationAudit("IID_INQUIRY_EVIDENCE_FILE_ADDED", "FILES_EVIDENCE", "IID EVIDENCE", "PKG_INQ", "P_ADD_INQ_EVIDENCE_FILE", ObjectType = "COMPLAINT", ObjectId = "model.ComplaintId", RequireResultMessage = true)]
         public IActionResult AddIidInqEvidenceFile([FromForm] AIS.Models.IID.InquiryReport.IidInqEvidenceFileRow model)
             {
             try
@@ -6424,6 +6587,7 @@ namespace AIS.Controllers
             }
 
         [HttpPost]
+        [ApplicationAudit("IID_INQUIRY_EVIDENCE_FILE_DELETED", "FILES_EVIDENCE", "IID EVIDENCE", "PKG_INQ", "P_DELETE_INQ_EVIDENCE_FILE", ObjectType = "EVIDENCE_FILE", ObjectId = "request.Id", RequireResultMessage = true)]
         public IActionResult DeleteIidInqEvidenceFile([FromBody] AIS.Models.IID.InquiryReport.IidInqDeleteRequest request)
             {
             try
@@ -6459,6 +6623,7 @@ namespace AIS.Controllers
             }
 
         [HttpPost]
+        [ApplicationAudit("SAVE_IID_INQ_FINDINGS_RECOMM", "INQUIRY_COMPLAINT", "IID INQUIRY", "PKG_INQ", "P_SUBMIT_COMPLAINT", ObjectType = "IID_INQUIRY", ObjectId = "model.ComplaintId", RequireResultMessage = true)]
         public IActionResult SaveIidInqFindingsRecomm([FromBody] AIS.Models.IID.InquiryReport.IidInqFindingsRecommRow model)
             {
             try
@@ -6522,6 +6687,7 @@ namespace AIS.Controllers
             }
 
         [HttpPost]
+        [ApplicationAudit("SAVE_IID_FINDINGS_RECOMM_BY_ACCUSATION", "INQUIRY_COMPLAINT", "IID INQUIRY", "PKG_INQ", "SAVE_INQ_FINDINGS_RECOMM", ObjectType = "IID_INQUIRY", ObjectId = "request.AccusationId", RequireResultMessage = true)]
         public IActionResult SaveIidFindingsRecommByAccusation([FromBody] AIS.Models.IID.InquiryReport.FindingsRecommRequest request)
             {
             try
@@ -6584,6 +6750,7 @@ namespace AIS.Controllers
             }
 
         [HttpPost]
+        [ApplicationAudit("ADD_IID_INQ_VIOLATION", "INQUIRY_COMPLAINT", "IID INQUIRY", "PKG_INQ", "P_ADD_INQ_VIOLATION", ObjectType = "IID_INQUIRY", ObjectId = "model.ComplaintId", RequireResultMessage = true)]
         public IActionResult AddIidInqViolation([FromBody] AIS.Models.IID.InquiryReport.IidInqViolationRow model)
             {
             try
@@ -6598,6 +6765,7 @@ namespace AIS.Controllers
             }
 
         [HttpPost]
+        [ApplicationAudit("UPDATE_IID_INQ_VIOLATION", "INQUIRY_COMPLAINT", "IID INQUIRY", "PKG_INQ", "P_UPDATE_INQ_VIOLATION", ObjectType = "IID_INQUIRY", ObjectId = "model.ComplaintId", RequireResultMessage = true)]
         public IActionResult UpdateIidInqViolation([FromBody] AIS.Models.IID.InquiryReport.IidInqViolationRow model)
             {
             try
@@ -6612,6 +6780,7 @@ namespace AIS.Controllers
             }
 
         [HttpPost]
+        [ApplicationAudit("DELETE_IID_INQ_VIOLATION", "INQUIRY_COMPLAINT", "IID INQUIRY", "PKG_INQ", "P_DELETE_INQ_VIOLATION", ObjectType = "IID_INQUIRY", ObjectId = "request.Id", RequireResultMessage = true)]
         public IActionResult DeleteIidInqViolation([FromBody] AIS.Models.IID.InquiryReport.IidInqDeleteRequest request)
             {
             try
@@ -6640,6 +6809,7 @@ namespace AIS.Controllers
             }
 
         [HttpPost]
+        [ApplicationAudit("ADD_IID_INQ_DSA", "INQUIRY_COMPLAINT", "IID INQUIRY", "PKG_INQ", "P_ADD_INQ_DSA", ObjectType = "IID_INQUIRY", ObjectId = "model.ComplaintId", RequireResultMessage = true)]
         public IActionResult AddIidInqDsa([FromBody] AIS.Models.IID.InquiryReport.IidInqDsaRow model)
             {
             try
@@ -6654,6 +6824,7 @@ namespace AIS.Controllers
             }
 
         [HttpPost]
+        [ApplicationAudit("UPDATE_IID_INQ_DSA", "INQUIRY_COMPLAINT", "IID INQUIRY", "PKG_INQ", "P_UPDATE_INQ_DSA", ObjectType = "IID_INQUIRY", ObjectId = "model.ComplaintId", RequireResultMessage = true)]
         public IActionResult UpdateIidInqDsa([FromBody] AIS.Models.IID.InquiryReport.IidInqDsaRow model)
             {
             try
@@ -6668,6 +6839,7 @@ namespace AIS.Controllers
             }
 
         [HttpPost]
+        [ApplicationAudit("DELETE_IID_INQ_DSA", "INQUIRY_COMPLAINT", "IID INQUIRY", "PKG_INQ", "P_DELETE_INQ_DSA", ObjectType = "IID_INQUIRY", ObjectId = "request.Id", RequireResultMessage = true)]
         public IActionResult DeleteIidInqDsa([FromBody] AIS.Models.IID.InquiryReport.IidInqDeleteRequest request)
             {
             try
@@ -6713,6 +6885,7 @@ namespace AIS.Controllers
             }
 
         [HttpPost]
+        [ApplicationAudit("IID_INQUIRY_REPORT_FINALIZED", "AUDIT_REPORT", "INQUIRY REPORT", "PKG_INQ", "P_FINALIZE_IID_INQUIRY_REPORT", ObjectType = "COMPLAINT", ObjectId = "request.ComplaintId", RequireResultMessage = true)]
         public IActionResult FinalizeIidInquiryReport([FromBody] AIS.Models.IID.InquiryReport.IidInqComplaintRequest request)
             {
             try
@@ -6739,6 +6912,7 @@ namespace AIS.Controllers
             }
 
         [HttpPost]
+        [ApplicationAudit("IID_INQUIRY_REPORT_SUBMITTED_FOR_ANALYSIS", "AUDIT_REPORT", "INQUIRY REPORT", "PKG_INQ", "P_SUBMIT_IID_INQUIRY_REPORT", ObjectType = "COMPLAINT", ObjectId = "request.ComplaintId", RequireResultMessage = true)]
         public IActionResult SubmitIidInquiryReportForAnalysis([FromBody] AIS.Models.IID.InquiryReport.IidInqComplaintRequest request)
             {
             try
@@ -6846,6 +7020,7 @@ namespace AIS.Controllers
 
 
         [HttpPost]
+        [AIS.Filters.ApplicationAudit("ADD_PUBLIC_HOLIDAY", "ADMINISTRATION", "ADMINISTRATION", "PKG_AD", "P_INSERT_PUBLIC_HOLIDAY", ObjectType = "ADD_PUBLIC_HOLIDAY")]
         public PublicHolidayModel add_public_holiday([FromBody] PublicHolidayModel model)
             {
             return dBConnection.AddPublicHoliday(model);
@@ -6895,6 +7070,7 @@ namespace AIS.Controllers
             }
 
         [HttpPost]
+        [ApplicationAudit("PARA_REFERENCES_SAVED", "COMPLIANCE", "PARA MANAGEMENT", "PKG_AR", "P_SAVE_PARA_REFERENCES", ComId = "model.ComId", ObjectType = "PARA", ObjectId = "model.ComId")]
         public string SaveParaReferences([FromBody] SaveParaReferencesRequestModel model)
             {
             return dBConnection.SaveParaReferences(model.ComId.GetValueOrDefault(), model.References);
@@ -7090,6 +7266,7 @@ namespace AIS.Controllers
             }
 
         [HttpPost]
+        [AIS.Filters.ApplicationAudit("ADD_VERSION_HISTORY", "ADMINISTRATION", "ADMINISTRATION", "PKG_AD", "P_ADD_VERSION_HISTORY", ObjectType = "ADDVERSIONHISTORY", RequireResultMessage = true)]
         public string AddVersionHistory([FromBody] VersionHistoryModel model)
             {
             var result = dBConnection.AddVersionHistory(model);
@@ -7098,6 +7275,7 @@ namespace AIS.Controllers
             }
 
         [HttpPost]
+        [AIS.Filters.ApplicationAudit("UPDATE_VERSION_HISTORY", "ADMINISTRATION", "ADMINISTRATION", "PKG_AD", "P_UPDATE_VERSION_HISTORY", ObjectType = "UPDATEVERSIONHISTORY", RequireResultMessage = true)]
         public string UpdateVersionHistory([FromBody] VersionHistoryModel model)
             {
             var result = dBConnection.UpdateVersionHistory(model);
@@ -7114,6 +7292,7 @@ namespace AIS.Controllers
             }
 
         [HttpPost]
+        [ApplicationAudit("PARA_STATUS_CHANGE_REQUEST_ADDED", "COMPLIANCE", "PARA STATUS", "PKG_FAD", "P_ADD_PARA_STATUS_CHANGE", ComId = "comId", ObjectType = "PARA", ObjectId = "comId", RequireResultMessage = true)]
         public IActionResult ADD_PARA_STATUS_CHANGE_REQUEST(int comId, int newStatus, string makerRemarks)
             {
             var user = sessionHandler.GetUser();
@@ -7136,6 +7315,7 @@ namespace AIS.Controllers
             }
 
         [HttpPost]
+        [ApplicationAudit("PARA_STATUS_CHANGE_REQUEST_AUTHORIZED", "COMPLIANCE", "PARA STATUS", "PKG_FAD", "P_AUTHORIZE_PARA_STATUS_CHANGE", ObjectType = "PARA_STATUS_LOG", ObjectId = "logId", RequireResultMessage = true)]
         public IActionResult AUTHORIZE_PARA_STATUS_CHANGE_REQUEST(int logId, string action, string authRemarks)
             {
             var user = sessionHandler.GetUser();

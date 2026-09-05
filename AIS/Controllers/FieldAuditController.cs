@@ -438,6 +438,7 @@ namespace AIS.Controllers
 
         [HttpPost]
         [IgnoreAntiforgeryToken]
+        [AIS.Filters.ApplicationAudit("JOINING_REPORT_SUBMITTED", "AUDIT_EXECUTION", "FIELD_AUDIT", "PKG_AR", "P_ADDJOININGREPORT", EngagementId = "model.ENG_PLAN_ID", ObjectType = "ENGAGEMENT", ObjectId = "model.ENG_PLAN_ID", RequireResultMessage = true)]
         public IActionResult SubmitJoin([FromForm] AddJoiningPostModel model)
             {
             if (!User.Identity.IsAuthenticated)

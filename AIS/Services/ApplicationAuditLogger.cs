@@ -72,7 +72,9 @@ namespace AIS.Services
                     UserAgent = Truncate(request?.Headers.UserAgent.ToString(), 1000),
                     TraceId = traceId,
                     RequestId = requestId,
-                    DurationMs = Math.Max(0, durationMs)
+                    // Oracle/application actions completing in less than one millisecond are recorded
+                    // with the measurable lower bound instead of being indistinguishable from missing data.
+                    DurationMs = Math.Max(1, durationMs)
                     });
                 }
             catch (Exception ex)

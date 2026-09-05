@@ -158,6 +158,7 @@ namespace AIS.Controllers
                 }
             }
         [HttpPost]
+        [AIS.Filters.ApplicationAudit("UPLOADED_FILE_DELETED", "FILES_EVIDENCE", "FILE MANAGEMENT", "", "", ObjectType = "UPLOADED_FILE", ObjectId = "fileName", RequireResultMessage = true)]
         public IActionResult DeleteFile(string subFolder, string fileName)
             {
             try

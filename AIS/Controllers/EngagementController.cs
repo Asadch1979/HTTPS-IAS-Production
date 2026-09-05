@@ -431,6 +431,7 @@ namespace AIS.Controllers
 
         [HttpPost]
         [IgnoreAntiforgeryToken]
+        [AIS.Filters.ApplicationAudit("JOINING_REPORT_ADDED", "AUDIT_REPORT", "JOINING REPORT", "PKG_AR", "P_ADDJOININGREPORT", EngagementId = "jm.ENG_PLAN_ID", ObjectType = "ENGAGEMENT", ObjectId = "jm.ENG_PLAN_ID", RequireResultMessage = true)]
         public IActionResult add_joining_report([FromForm] AddJoiningPostModel jm)
             {
             if (jm == null || !jm.ENG_PLAN_ID.HasValue || !jm.TEAM_MEM_PPNO.HasValue)

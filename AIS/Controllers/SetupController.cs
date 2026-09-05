@@ -498,6 +498,7 @@ namespace AIS.Controllers
             return View();
             }
         [HttpPost]
+        [AIS.Filters.ApplicationAudit("BRANCH_ADD", "ADMINISTRATION", "ADMINISTRATION", "", "", ObjectType = "BRANCH_ADD")]
         public BranchModel branch_add(BranchModel br)
             {
             if (br.ISACTIVE == "Active")
@@ -640,6 +641,7 @@ namespace AIS.Controllers
                 }
             }
         [HttpPost]
+        [AIS.Filters.ApplicationAudit("ADD_CONTROL_VIOLATION", "ADMINISTRATION", "ADMINISTRATION", "", "", ObjectType = "ADD_CONTROL_VIOLATION")]
         public ControlViolationsModel add_control_violation(ControlViolationsModel cv)
             {
             return dBConnection.AddControlViolation(cv);
@@ -656,6 +658,7 @@ namespace AIS.Controllers
             return dBConnection.GetSubEntities(div_id, dept_id);
             }
         [HttpPost]
+        [AIS.Filters.ApplicationAudit("ADD_SUB_ENTITY", "ADMINISTRATION", "ADMINISTRATION", "PKG_AD", "P_ADDSUBENTITY", ObjectType = "ADD_SUB_ENTITY")]
         public SubEntitiesModel add_sub_entity(SubEntitiesModel entity)
             {
             if (entity.STATUS == "Active")
@@ -678,16 +681,19 @@ namespace AIS.Controllers
             return dBConnection.GetRiskProcessTransactions(ProcessDetailId, transactionId);
             }
         [HttpPost]
+        [AIS.Filters.ApplicationAudit("PROCESS_ADD", "ADMINISTRATION", "ADMINISTRATION", "PKG_AD", "P_AUDIT_CHECKLIST", ObjectType = "PROCESS_ADD")]
         public RiskProcessDefinition process_add(RiskProcessDefinition proc)
             {
             return dBConnection.AddRiskProcess(proc);
             }
         [HttpPost]
+        [AIS.Filters.ApplicationAudit("SUB_PROCESS_ADD", "ADMINISTRATION", "ADMINISTRATION", "PKG_AD", "P_AUDIT_CHECKLIST_SUB", ObjectType = "SUB_PROCESS_ADD")]
         public RiskProcessDetails sub_process_add(RiskProcessDetails subProc)
             {
             return dBConnection.AddRiskSubProcess(subProc);
             }
         [HttpPost]
+        [AIS.Filters.ApplicationAudit("SUB_PROCESS_TRANSACTION_ADD", "ADMINISTRATION", "ADMINISTRATION", "PKG_AD", "P_AUDIT_CHECKLIST_DETAIL", ObjectType = "SUB_PROCESS_TRANSACTION_ADD")]
         public RiskProcessTransactions sub_process_transaction_add(RiskProcessTransactions tran)
             {
             return dBConnection.AddRiskSubProcessTransaction(tran);
@@ -705,12 +711,14 @@ namespace AIS.Controllers
 
             }
         [HttpPost]
+        [AIS.Filters.ApplicationAudit("AUTHORIZE_PROCESS_TRANSACTION_BY_AUTHORIZER", "ADMINISTRATION", "ADMINISTRATION", "PKG_AD", "P_APPROVE_CHECKLIST_BY_AUTHORIZER", ObjectType = "AUTHORIZE_PROCESS_TRANSACTION_BY_AUTHORIZER", ObjectId = "T_ID", RequireResultMessage = true)]
         public string authorize_process_transaction_by_authorizer(int T_ID, string COMMENTS)
             {
             return "{\"Status\":true,\"Message\":\"" + dBConnection.AuthorizeProcessTransactionByAuthorizer(T_ID, COMMENTS) + "\"}";
 
             }
         [HttpPost]
+        [AIS.Filters.ApplicationAudit("REFFERED_BACK_PROCESS_TRANSACTION_BY_AUTHORIZER", "ADMINISTRATION", "ADMINISTRATION", "PKG_AD", "P_REFFEREDBACK_CHECKLIST_BY_AUTHORIZER", ObjectType = "REFFERED_BACK_PROCESS_TRANSACTION_BY_AUTHORIZER", ObjectId = "T_ID", RequireResultMessage = true)]
         public string reffered_back_process_transaction_by_authorizer(int T_ID, string COMMENTS)
             {
             return "{\"Status\":true,\"Message\":\"" + dBConnection.RefferedBackProcessTransactionByAuthorizer(T_ID, COMMENTS) + "\"}";

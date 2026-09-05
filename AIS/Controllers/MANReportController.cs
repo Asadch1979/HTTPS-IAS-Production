@@ -287,6 +287,7 @@ namespace AIS.Controllers
             }
 
         [HttpPost("SaveStaffSnapshotRows")]
+        [AIS.Filters.ApplicationAudit("MANAGEMENT_REPORT_STAFF_SNAPSHOT_SAVED", "AUDIT_REPORT", "MANAGEMENT AUDIT REPORT", "PKG_FRPT", "P_SAVE_STAFF_SNAPSHOT", EngagementId = "engId", ObjectType = "ENGAGEMENT", ObjectId = "engId", RequireResultMessage = true)]
         public IActionResult SaveStaffSnapshotRows(int engId, [FromBody] List<StaffSnapshotRowModel> rows)
             {
             var redirect = EnsureAuthorized();
@@ -433,6 +434,7 @@ namespace AIS.Controllers
 
         [HttpPost("Finalize")]
         [ValidateAntiForgeryToken]
+        [AIS.Filters.ApplicationAudit("MANAGEMENT_AUDIT_REPORT_FINALIZED", "AUDIT_REPORT", "MANAGEMENT AUDIT REPORT", "PKG_FRPT", "P_FINALIZE_REPORT", EngagementIdItem = "ApplicationAudit.EngagementId", ObjectType = "ENGAGEMENT", ObjectIdItem = "ApplicationAudit.EngagementId", RequireItem = "ApplicationAudit.EngagementId")]
         public IActionResult Finalize(ManagementReportFinalizeViewModel model)
             {
             var redirect = EnsureAuthorized();
@@ -461,6 +463,10 @@ namespace AIS.Controllers
 
             var finalizeResult = _dbConnection.FinalizeFieldAuditReport(engId);
             TempData["ManReportMessage"] = finalizeResult?.Message ?? string.Empty;
+            if (finalizeResult?.IsFinalized == true)
+                {
+                HttpContext.Items["ApplicationAudit.EngagementId"] = engId;
+                }
             return RedirectToAction(nameof(Finalize));
             }
 

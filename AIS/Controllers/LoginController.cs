@@ -64,6 +64,7 @@ namespace AIS.Controllers
 
         public async Task<IActionResult> Logout()
         {
+            var auditStopwatch = Stopwatch.StartNew();
             var auditUser = sessionHandler.GetUser();
             ResetLoginAttemptsForCurrentUser();
             var token = Request.Cookies["IAS_SESSION"];
@@ -84,6 +85,7 @@ namespace AIS.Controllers
 
             if (sessionEnded)
             {
+                auditStopwatch.Stop();
                 await _applicationAuditLogger.LogSuccessAsync(new ApplicationAuditEvent
                 {
                     EventType = "SECURITY",
@@ -102,7 +104,7 @@ namespace AIS.Controllers
                     ActorEntityId = auditUser?.UserEntityID,
                     ActorUserContextId = auditUser?.UserContextAssignmentId,
                     ActorSessionId = auditUser?.SessionId
-                });
+                }, auditStopwatch.ElapsedMilliseconds);
             }
 
             await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
@@ -390,6 +392,7 @@ namespace AIS.Controllers
         [EnableRateLimiting("ForgotPasswordPolicy")]
         public async Task<IActionResult> ResetPassword([FromForm] ResetPasswordPostModel model)
         {
+            var auditStopwatch = Stopwatch.StartNew();
             var maskedIdentifier = MaskIdentifier(model?.PPNumber);
             LogClientIpTrace("ResetPassword");
             _logger.LogInformation("Password reset request received for PP {MaskedIdentifier} from {RemoteIp}.", maskedIdentifier, GetRemoteIpAddress());
@@ -407,6 +410,7 @@ namespace AIS.Controllers
                     resetResult?.EmailSent ?? false);
                 if (resetResult?.PasswordReset == true)
                 {
+                    auditStopwatch.Stop();
                     await _applicationAuditLogger.LogSuccessAsync(new ApplicationAuditEvent
                     {
                         EventType = "SECURITY",
@@ -421,7 +425,7 @@ namespace AIS.Controllers
                         ResultMessage = "Password reset completed successfully.",
                         Details = $"Temporary password email delivered: {(resetResult.EmailSent ? "Y" : "N")}",
                         ActorPpno = model?.PPNumber
-                    });
+                    }, auditStopwatch.ElapsedMilliseconds);
                 }
             }
             catch (DatabaseUnavailableException ex)
@@ -857,10 +861,12 @@ namespace AIS.Controllers
 
         private async Task CompleteAuthenticatedLoginAsync(UserModel user)
         {
+            var auditStopwatch = Stopwatch.StartNew();
             var sessionUser = dBConnection.CreateLoginSession(user);
             IssueApplicationSession(user);
             SetMustChangePasswordFlag(user);
             await SignInUserAsync(sessionUser);
+            auditStopwatch.Stop();
             await _applicationAuditLogger.LogSuccessAsync(new ApplicationAuditEvent
             {
                 EventType = "SECURITY",
@@ -879,7 +885,7 @@ namespace AIS.Controllers
                 ActorEntityId = sessionUser.UserEntityID,
                 ActorUserContextId = sessionUser.UserContextAssignmentId,
                 ActorSessionId = sessionUser.SessionId
-            });
+            }, auditStopwatch.ElapsedMilliseconds);
         }
 
         private void IssueApplicationSession(UserModel user)
