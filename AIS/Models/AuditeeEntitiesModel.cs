@@ -52,6 +52,9 @@ namespace AIS.Models
         public int? ENG_ID { get; set; }
 
         [PlainText]
+        public string IS_TEAM_LEAD { get; set; }
+
+        [PlainText]
         public string COM_BY { get; set; }
         }
     }

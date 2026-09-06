@@ -15,6 +15,11 @@
     function isCurrentEngagementTeamLead() {
         var teamLeadField = document.getElementById('maIsTeamLeadField');
         var value = teamLeadField && teamLeadField.value ? teamLeadField.value.toString().trim().toUpperCase() : '';
+        if (!value) {
+            var entityField = document.getElementById('entitySelectField');
+            var selectedOption = entityField && entityField.options ? entityField.options[entityField.selectedIndex] : null;
+            value = ((selectedOption && selectedOption.getAttribute('data-is-team-lead')) || 'N').trim().toUpperCase();
+        }
         return value === 'Y' || value === 'YES' || value === 'TRUE' || value === '1';
     }
 

@@ -336,7 +336,18 @@ namespace AIS.Controllers
             ViewData["TopMenu"] = tm.GetTopMenus();
             ViewData["TopMenuPages"] = tm.GetTopMenusPages();
             ViewData["RiskList"] = dBConnection.GetRisks();
-            ViewData["EntitiesList"] = dBConnection.GetObservationEntitiesForManageObservations();
+            var observationEntities = dBConnection.GetObservationEntitiesForManageObservations();
+            var engagementAccess = dBConnection.GetArDashboardDropdownOptions()
+                .GroupBy(item => item.EngagementId)
+                .ToDictionary(group => group.Key, group => group.First().IsTeamLead ?? "N");
+            foreach (var entity in observationEntities)
+                {
+                entity.IS_TEAM_LEAD = entity.ENG_ID.HasValue
+                    && engagementAccess.TryGetValue(entity.ENG_ID.Value, out var isTeamLead)
+                        ? isTeamLead
+                        : "N";
+                }
+            ViewData["EntitiesList"] = observationEntities;
             ViewData["ManageObservations"] = "";
             if (!User.Identity.IsAuthenticated)
                 {

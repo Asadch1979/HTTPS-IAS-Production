@@ -1554,12 +1554,16 @@ namespace AIS.Controllers
             }
         [HttpPost]
         [ApplicationAudit("OBSERVATION_UPDATED", "AUDIT_EXECUTION", "Execution", "pkg_ar", "P_UpdateObservation", ObjectType = "OBSERVATION", ObjectId = "OBS_ID", RequireResultMessage = true)]
-        public string update_observation_text(int OBS_ID, string OBS_TEXT, int PROCESS_ID = 0, int SUBPROCESS_ID = 0, int CHECKLIST_ID = 0, string OBS_TITLE = "", int RISK_ID = 0, int ANNEXURE_ID = 0, long? REFERENCE_ID = null)
+        public IActionResult update_observation_text(int OBS_ID, string OBS_TEXT, int PROCESS_ID = 0, int SUBPROCESS_ID = 0, int CHECKLIST_ID = 0, string OBS_TITLE = "", int RISK_ID = 0, int ANNEXURE_ID = 0, long? REFERENCE_ID = null)
             {
+            if (!IsAssignedTeamLeadForObservation(OBS_ID))
+                return StatusCode(StatusCodes.Status403Forbidden,
+                    new { Status = false, Message = "Only the assigned Team Lead can edit this observation." });
+
             if (!IsValidObservationHeading(OBS_TITLE))
                 {
                 _logger.LogWarning("Observation heading validation failed for update_observation_text. OBS_ID: {ObsId}", OBS_ID);
-                return System.Text.Json.JsonSerializer.Serialize(new
+                return BadRequest(new
                     {
                     Status = false,
                     Message = ObservationHeadingValidationMessage
@@ -1568,7 +1572,9 @@ namespace AIS.Controllers
 
             string response = "";
             response = dBConnection.UpdateAuditObservationText(OBS_ID, OBS_TEXT, PROCESS_ID, SUBPROCESS_ID, CHECKLIST_ID, OBS_TITLE.Trim(), RISK_ID, ANNEXURE_ID, REFERENCE_ID);
-            return System.Text.Json.JsonSerializer.Serialize(new { Status = !string.IsNullOrWhiteSpace(response), Message = response });
+            return !string.IsNullOrWhiteSpace(response)
+                ? Ok(new { Status = true, Message = response })
+                : BadRequest(new { Status = false, Message = "Observation could not be updated." });
             }
         [HttpPost]
         [ApplicationAudit("OBSERVATION_STATUS_CHANGED", "AUDIT_EXECUTION", "Execution", "pkg_ar", "P_UpdateAuditObservationStatus", ObjectType = "OBSERVATION", ObjectId = "request.OBS_ID")]
@@ -1675,6 +1681,10 @@ namespace AIS.Controllers
         [ApplicationAudit("OBSERVATION_DROPPED", "AUDIT_EXECUTION", "Execution", "pkg_ar", "P_DropAuditObservation", ObjectType = "OBSERVATION", ObjectId = "OBS_ID")]
         public IActionResult drop_observation(int OBS_ID)
             {
+            if (!IsAssignedTeamLeadForObservation(OBS_ID))
+                return StatusCode(StatusCodes.Status403Forbidden,
+                    new { Status = false, Message = "Only the assigned Team Lead can drop this observation." });
+
             var response = dBConnection.DropAuditObservation(OBS_ID);
             return !string.IsNullOrWhiteSpace(response)
                 ? Ok(new { Status = true, Message = response })
@@ -1685,6 +1695,10 @@ namespace AIS.Controllers
         [ApplicationAudit("OBSERVATION_SUBMITTED_TO_AUDITEE", "AUDIT_EXECUTION", "Execution", "pkg_ar", "P_SubmitAuditObservationToAuditee", ObjectType = "OBSERVATION", ObjectId = "OBS_ID")]
         public async Task<IActionResult> submit_observation_to_auditee(int OBS_ID)
             {
+            if (!IsAssignedTeamLeadForObservation(OBS_ID))
+                return StatusCode(StatusCodes.Status403Forbidden,
+                    new { Status = false, Message = "Only the assigned Team Lead can submit this observation to the auditee." });
+
             string response = "";
             response = dBConnection.SubmitAuditObservationToAuditee(OBS_ID);
             if (dBConnection.IsObservationSubmittedToAuditee(OBS_ID))
@@ -1697,6 +1711,24 @@ namespace AIS.Controllers
                 ? Ok(new { Status = true, Message = response })
                 : BadRequest(new { Status = false, Message = "Observation was not submitted." });
 
+            }
+
+        private bool IsAssignedTeamLeadForObservation(int observationId)
+            {
+            if (observationId <= 0 || sessionHandler.GetUser() == null)
+                return false;
+
+            foreach (var engagement in dBConnection.GetArDashboardDropdownOptions())
+                {
+                if (!string.Equals((engagement.IsTeamLead ?? string.Empty).Trim(), "Y", StringComparison.OrdinalIgnoreCase))
+                    continue;
+
+                if (dBConnection.GetManagedObservations(engagement.EngagementId, observationId)
+                    .Any(observation => observation.OBS_ID == observationId))
+                    return true;
+                }
+
+            return false;
             }
         [HttpGet]
         [HttpPost]

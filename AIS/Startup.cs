@@ -59,7 +59,10 @@ namespace AIS
         public void ConfigureServices(IServiceCollection services)
             {
             ValidateRequiredConfigurationValues();
-            var cookieSecurePolicy = CookieSecurePolicy.Always;
+            var environmentName = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT");
+            var allowLocalHttp = string.Equals(environmentName, Environments.Development, StringComparison.OrdinalIgnoreCase)
+                || string.Equals(environmentName, "UAT", StringComparison.OrdinalIgnoreCase);
+            var cookieSecurePolicy = allowLocalHttp ? CookieSecurePolicy.SameAsRequest : CookieSecurePolicy.Always;
 
             services.AddDistributedMemoryCache();
             services.AddMemoryCache();
@@ -260,7 +263,9 @@ namespace AIS
 
             app.UseForwardedHeaders();
 
-            if (!env.IsDevelopment())
+            var allowLocalHttp = env.IsDevelopment()
+                || string.Equals(env.EnvironmentName, "UAT", StringComparison.OrdinalIgnoreCase);
+            if (!allowLocalHttp)
                 {
                 app.UseHsts();
                 app.UseHttpsRedirection();
@@ -268,7 +273,7 @@ namespace AIS
                 }
             else
                 {
-                logger.LogInformation("Development HTTP endpoint is enabled for local browser testing.");
+                logger.LogInformation("{EnvironmentName} HTTP endpoint is enabled for local browser testing.", env.EnvironmentName);
                 }
             logger.LogInformation("SMTP configuration loaded. Host={Host}; Port={Port}; From={From}.",
                 Configuration["Email:Host"],

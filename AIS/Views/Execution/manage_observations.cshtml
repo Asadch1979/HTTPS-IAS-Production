@@ -36,7 +36,7 @@
                     {
                         foreach (var item in (dynamic)(ViewData["EntitiesList"]))
                         {
-                            <option value="@item.ENG_ID" id="@item.ENG_ID">@item.NAME</option>
+                            <option value="@item.ENG_ID" id="@item.ENG_ID" data-is-team-lead="@item.IS_TEAM_LEAD">@item.NAME</option>
                         }
                     }
                 }

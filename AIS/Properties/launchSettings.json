@@ -7,7 +7,16 @@
         "ASPNETCORE_ENVIRONMENT": "Development",
         "ASPNETCORE_HOSTINGSTARTUPASSEMBLIES": ""
       },
-      "applicationUrl": "https://localhost:50853;http://localhost:50854"
+      "applicationUrl": "http://localhost:50852"
+    },
+    "AIS-UAT": {
+      "commandName": "Project",
+      "launchBrowser": true,
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "UAT",
+        "ASPNETCORE_HOSTINGSTARTUPASSEMBLIES": ""
+      },
+      "applicationUrl": "http://localhost:50852"
     }
   }
 }
