@@ -350,6 +350,11 @@ namespace AIS.Controllers
                 }
 
             value = parsedValue.Value;
+            if (value <= 0)
+                {
+                validationMessage = $"{fieldName} must be greater than zero.";
+                return false;
+                }
             return true;
             }
 

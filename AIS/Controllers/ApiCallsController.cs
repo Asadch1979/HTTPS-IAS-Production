@@ -604,6 +604,17 @@ namespace AIS.Controllers
             var result = dBConnection.AddAuditEngagementPlan(eng);
             if (string.Equals(result?.IS_SUCCESS, "Yes", StringComparison.OrdinalIgnoreCase))
                 {
+                if (result.ENG_ID.GetValueOrDefault() <= 0)
+                    {
+                    result.ENG_ID = dBConnection.GetAuditEngagementPlans()
+                        .Where(item => item.ENTITY_ID == result.ENTITY_ID
+                            && string.Equals(item.TEAM_NAME, result.TEAM_NAME, StringComparison.OrdinalIgnoreCase))
+                        .Select(item => item.ENG_ID)
+                        .Where(id => id.HasValue)
+                        .OrderByDescending(id => id.Value)
+                        .FirstOrDefault();
+                    }
+
                 var notificationData = dBConnection.GetAuditTaskAssignedNotificationData(result);
                 await EmailNotification.SendAuditTaskAssignedAsync(_configuration, notificationData, HttpContext?.RequestServices);
                 }
@@ -2452,6 +2463,7 @@ namespace AIS.Controllers
             }
 
         [HttpPost]
+        [ApplicationAudit("ENGAGEMENT_PLAN_RESUBMITTED", "AUDIT_PLANNING", "ENGAGEMENT_PLANNING", "PKG_PG", "P_RERECOMMENDAUDITENGAGEMENTPLAN", EngagementId = "ENG_ID", ObjectType = "ENGAGEMENT", ObjectId = "ENG_ID", RequireResultMessage = true)]
         public string rerecommend_engagement_plan(int ENG_ID, int PLAN_ID, int ENTITY_ID, DateTime OP_START_DATE, DateTime OP_END_DATE, DateTime START_DATE, DateTime END_DATE, int TEAM_ID, string COMMENTS)
             {
             string response = "";
