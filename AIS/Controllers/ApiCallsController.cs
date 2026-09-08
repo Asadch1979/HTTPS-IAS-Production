@@ -1706,10 +1706,6 @@ namespace AIS.Controllers
         [ApplicationAudit("OBSERVATION_SUBMITTED_TO_AUDITEE", "AUDIT_EXECUTION", "Execution", "pkg_ar", "P_SubmitAuditObservationToAuditee", ObjectType = "OBSERVATION", ObjectId = "OBS_ID")]
         public async Task<IActionResult> submit_observation_to_auditee(int OBS_ID)
             {
-            if (!IsAssignedTeamLeadForObservation(OBS_ID))
-                return StatusCode(StatusCodes.Status403Forbidden,
-                    new { Status = false, Message = "Only the assigned Team Lead can submit this observation to the auditee." });
-
             string response = "";
             response = dBConnection.SubmitAuditObservationToAuditee(OBS_ID);
             if (dBConnection.IsObservationSubmittedToAuditee(OBS_ID))
