@@ -16,7 +16,7 @@
         "ASPNETCORE_ENVIRONMENT": "UAT",
         "ASPNETCORE_HOSTINGSTARTUPASSEMBLIES": ""
       },
-      "applicationUrl": "http://localhost:50852"
+      "applicationUrl": "https://localhost:44352;http://localhost:50852"
     }
   }
 }

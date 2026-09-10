@@ -61,7 +61,7 @@ namespace AIS
             ValidateRequiredConfigurationValues();
             var environmentName = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT");
             var allowLocalHttp = string.Equals(environmentName, Environments.Development, StringComparison.OrdinalIgnoreCase)
-                || string.Equals(environmentName, "UAT", StringComparison.OrdinalIgnoreCase);
+                && Configuration.GetValue<bool>("Security:AllowLocalHttp");
             var cookieSecurePolicy = allowLocalHttp ? CookieSecurePolicy.SameAsRequest : CookieSecurePolicy.Always;
 
             services.AddDistributedMemoryCache();
@@ -264,7 +264,7 @@ namespace AIS
             app.UseForwardedHeaders();
 
             var allowLocalHttp = env.IsDevelopment()
-                || string.Equals(env.EnvironmentName, "UAT", StringComparison.OrdinalIgnoreCase);
+                && Configuration.GetValue<bool>("Security:AllowLocalHttp");
             if (!allowLocalHttp)
                 {
                 app.UseHsts();

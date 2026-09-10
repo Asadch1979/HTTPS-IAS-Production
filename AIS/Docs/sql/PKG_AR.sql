@@ -944,6 +944,7 @@ create or replace package body PKG_AR is
     -- Constants
     -----------------------------------------------------------------------
     c_page_id CONSTANT NUMBER := 19;
+    c_joining_submitted_status CONSTANT NUMBER := 2;
   
     -----------------------------------------------------------------------
     -- Local variables (business)
@@ -958,7 +959,6 @@ create or replace package body PKG_AR is
     v_pending_cnt     NUMBER := 0;
     v_existing_join   NUMBER := 0;
     v_is_special_type NUMBER := 0;
-    v_next_status     NUMBER;
   
     v_email_to       VARCHAR2(320);
     v_email_cc       VARCHAR2(320);
@@ -1057,14 +1057,8 @@ create or replace package body PKG_AR is
          'I');
     END IF;
   
-    SELECT NVL(MAX(status_id), 0) + 1
-      INTO v_next_status
-      FROM t_au_audit_team_tasklist
-     WHERE eng_plan_id = ENGID
-       AND teammember_ppno = P_NO;
-  
     UPDATE t_au_audit_team_tasklist
-       SET status_id = v_next_status
+       SET status_id = c_joining_submitted_status
      WHERE eng_plan_id = ENGID
        AND teammember_ppno = P_NO;
   

@@ -2500,23 +2500,23 @@ namespace AIS.Controllers
             }
 
         [HttpPost]
-        public bool addinpectioncriteria(string fquat = "", string squat = "", string tquat = "", string frquat = "")
+        public IActionResult addinpectioncriteria(string fquat = "", string squat = "", string tquat = "", string frquat = "")
             {
-            return true;// dBConnection.AddInspectionCriteria(fquat, squat, tquat, frquat);
+            return StatusCode(StatusCodes.Status410Gone, new { Status = false, Message = "Legacy inspection criteria endpoint is no longer supported." });
             }
 
         [HttpPost]
 
-        public bool add_inspection_team(int teamid = 0, string tname = "", int pop = 0)
+        public IActionResult add_inspection_team(int teamid = 0, string tname = "", int pop = 0)
             {
-            return true;// dBConnection.AddInspectionTeam(teamid, tname, pop);
+            return StatusCode(StatusCodes.Status410Gone, new { Status = false, Message = "Legacy inspection team endpoint is no longer supported." });
             }
 
         [HttpPost]
 
-        public bool Join_inspection_team(int e_id = 0, int t_m_ppno = 0, int e_b = 0)
+        public IActionResult Join_inspection_team(int e_id = 0, int t_m_ppno = 0, int e_b = 0)
             {
-            return true;// dBConnection.InspectionTeamJoining(e_id, t_m_ppno, e_b);
+            return StatusCode(StatusCodes.Status410Gone, new { Status = false, Message = "Legacy inspection team joining endpoint is no longer supported." });
             }
 
         [HttpGet]
