@@ -15856,6 +15856,7 @@ create or replace package body PKG_AIS is
     T_F number := 0;
     V_F NUMBER := 0;
     A_F NUMBER := 0;
+    C_JOINING_SUBMITTED_STATUS CONSTANT NUMBER := 3;
   
     C_F date;
   begin
@@ -15906,11 +15907,7 @@ create or replace package body PKG_AIS is
          'I');
       COMMIT;
       UPDATE T_AU_AUDIT_TEAM_TASKLIST t
-         SET t.STATUS_ID =
-             (select COALESCE(acc.STATUS_ID + 1, 1)
-                from T_AU_AUDIT_TEAM_TASKLIST acc
-               WHERE acc.ENG_PLAN_ID = ENGID
-                 and acc.TEAMMEMBER_PPNO = PPNO)
+         SET t.STATUS_ID = C_JOINING_SUBMITTED_STATUS
        WHERE t.ENG_PLAN_ID = ENGID
          and t.TEAMMEMBER_PPNO = PPNO;
       COMMIT;
@@ -15954,22 +15951,14 @@ create or replace package body PKG_AIS is
            'I');
         COMMIT;
         UPDATE T_AU_AUDIT_TEAM_TASKLIST t
-           SET t.STATUS_ID =
-               (select COALESCE(acc.STATUS_ID + 1, 1)
-                  from T_AU_AUDIT_TEAM_TASKLIST acc
-                 WHERE acc.ENG_PLAN_ID = ENGID
-                   and acc.TEAMMEMBER_PPNO = PPNO)
+           SET t.STATUS_ID = C_JOINING_SUBMITTED_STATUS
          WHERE t.ENG_PLAN_ID = ENGID
            and t.TEAMMEMBER_PPNO = PPNO;
         COMMIT;
       
       else
         UPDATE T_AU_AUDIT_TEAM_TASKLIST t
-           SET t.STATUS_ID =
-               (select COALESCE(acc.STATUS_ID + 1, 1)
-                  from T_AU_AUDIT_TEAM_TASKLIST acc
-                 WHERE acc.ENG_PLAN_ID = ENGID
-                   and acc.TEAMMEMBER_PPNO = PPNO)
+           SET t.STATUS_ID = C_JOINING_SUBMITTED_STATUS
          WHERE t.ENG_PLAN_ID = ENGID
            and t.TEAMMEMBER_PPNO = PPNO;
         COMMIT;
@@ -20721,6 +20710,7 @@ create or replace package body PKG_AR is
     -- Constants
     -----------------------------------------------------------------------
     c_page_id CONSTANT NUMBER := 19;
+    c_joining_submitted_status CONSTANT NUMBER := 3;
   
     -----------------------------------------------------------------------
     -- Local variables (business)
@@ -20735,7 +20725,6 @@ create or replace package body PKG_AR is
     v_pending_cnt     NUMBER := 0;
     v_existing_join   NUMBER := 0;
     v_is_special_type NUMBER := 0;
-    v_next_status     NUMBER;
   
     v_email_to       VARCHAR2(320);
     v_email_cc       VARCHAR2(320);
@@ -20834,14 +20823,8 @@ create or replace package body PKG_AR is
          'I');
     END IF;
   
-    SELECT NVL(MAX(status_id), 0) + 1
-      INTO v_next_status
-      FROM t_au_audit_team_tasklist
-     WHERE eng_plan_id = ENGID
-       AND teammember_ppno = P_NO;
-  
     UPDATE t_au_audit_team_tasklist
-       SET status_id = v_next_status
+       SET status_id = c_joining_submitted_status
      WHERE eng_plan_id = ENGID
        AND teammember_ppno = P_NO;
   
