@@ -15856,8 +15856,7 @@ create or replace package body PKG_AIS is
     T_F number := 0;
     V_F NUMBER := 0;
     A_F NUMBER := 0;
-    C_JOINING_SUBMITTED_STATUS CONSTANT NUMBER := 2;
-  
+    C_JOINING_SUBMITTED_STATUS CONSTANT NUMBER := 2;  
     C_F date;
   begin
     SELECT COUNT(M.T_ID)

@@ -944,8 +944,7 @@ create or replace package body PKG_AR is
     -- Constants
     -----------------------------------------------------------------------
     c_page_id CONSTANT NUMBER := 19;
-    c_joining_submitted_status CONSTANT NUMBER := 2;
-  
+    c_joining_submitted_status CONSTANT NUMBER := 2;  
     -----------------------------------------------------------------------
     -- Local variables (business)
     -----------------------------------------------------------------------
