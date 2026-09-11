@@ -261,3 +261,659 @@ Inventory of endpoints referenced by JavaScript clients (Ajax/fetch). These rout
 - /UploadFile/UploadFiles
 - /UploadFile/UploadFilesCAU
 - /login/logout
+
+## APICalls to be added
+- Module: HM / SBP Observation
+  - Screen/View: `AIS/Views/HM/SbpObservationRegister.cshtml`
+  - File(s): `AIS/Views/HM/SbpObservationRegister.cshtml`
+  - Endpoint: `/ApiCalls/Authenticate`
+  - Method: POST
+  - Purpose: Authenticate. Key usage: `AIS/Views/HM/SbpObservationRegister.cshtml`, `AIS/Views/HM/SbpObservationRegister.cshtml`.
+- Module: HM / SBP Observation
+  - Screen/View: `AIS/Views/HM/SbpObservationRegister.cshtml`
+  - File(s): `AIS/Views/HM/SbpObservationRegister.cshtml`
+  - Endpoint: `/ApiCalls/GetRequests`
+  - Method: GET
+  - Purpose: GetRequests.
+- Module: HM / SBP Observation
+  - Screen/View: `AIS/Views/HM/SbpObservationRegister.cshtml`
+  - File(s): `AIS/Views/HM/SbpObservationRegister.cshtml`
+  - Endpoint: `/ApiCalls/GetSbpObservationRegister`
+  - Method: GET
+  - Purpose: GetSbpObservationRegister.
+- Module: HM / SBP Observation
+  - Screen/View: `AIS/Views/HM/SbpObservationRegister.cshtml`
+  - File(s): `AIS/Views/HM/SbpObservationRegister.cshtml`
+  - Endpoint: `/ApiCalls/UpdateSbpObservation`
+  - Method: POST
+  - Purpose: UpdateSbpObservation.
+- Module: HM / SBP Observation
+  - Screen/View: `AIS/Views/HM/SbpObservationRegister.cshtml`
+  - File(s): `AIS/Views/HM/SbpObservationRegister.cshtml`
+  - Endpoint: `/ApiCalls/InsertSbpObservation`
+  - Method: POST
+  - Purpose: InsertSbpObservation.
+- Module: HM / SBP Observation
+  - Screen/View: `AIS/Views/HM/SbpObservationRegister.cshtml`
+  - File(s): `AIS/Views/HM/SbpObservationRegister.cshtml`
+  - Endpoint: `/ApiCalls/UpdateSbpObservationResponse`
+  - Method: POST
+  - Purpose: UpdateSbpObservationResponse. Key usage: `AIS/Views/HM/SbpObservationRegister.cshtml`, `AIS/wwwroot/js/csp/Views_HM_SbpObservationHistory.js`.
+- Module: HM / SBP Observation
+  - Screen/View: `AIS/Views/HM/SbpObservationRegister.cshtml`
+  - File(s): `AIS/Views/HM/SbpObservationRegister.cshtml`
+  - Endpoint: `/ApiCalls/InsertSbpObservationResponse`
+  - Method: POST
+  - Purpose: InsertSbpObservationResponse.
+- Module: HM / SBP Observation
+  - Screen/View: `AIS/Views/HM/SbpObservationRegister.cshtml`
+  - File(s): `AIS/Views/HM/SbpObservationRegister.cshtml`
+  - Endpoint: `/ApiCalls/RequestDeleteObservation`
+  - Method: POST
+  - Purpose: RequestDeleteObservation.
+- Module: HM / SBP Observation
+  - Screen/View: `AIS/Views/HM/SbpObservationRegister.cshtml`
+  - File(s): `AIS/Views/HM/SbpObservationRegister.cshtml`
+  - Endpoint: `/ApiCalls/RequestDeleteResponse`
+  - Method: POST
+  - Purpose: RequestDeleteResponse.
+- Module: HM / SBP Observation
+  - Screen/View: `AIS/Views/HM/SbpObservationRegister.cshtml`
+  - File(s): `AIS/Views/HM/SbpObservationRegister.cshtml`
+  - Endpoint: `/ApiCalls/ApproveRequest`
+  - Method: POST
+  - Purpose: ApproveRequest.
+- Module: HM / SBP Observation
+  - Screen/View: `AIS/Views/HM/SbpObservationRegister.cshtml`
+  - File(s): `AIS/Views/HM/SbpObservationRegister.cshtml`
+  - Endpoint: `/ApiCalls/RejectRequest`
+  - Method: POST
+  - Purpose: RejectRequest.
+- Module: HM / SBP Observation
+  - Screen/View: `AIS/Views/HM/SbpObservationRegister.cshtml`
+  - File(s): `AIS/Views/HM/SbpObservationRegister.cshtml`
+  - Endpoint: `/ApiCalls/RequestReverse`
+  - Method: POST
+  - Purpose: RequestReverse.
+- Module: HM / SBP Observation
+  - Screen/View: `AIS/Views/HM/SbpObservationRegister.cshtml`
+  - File(s): `AIS/Views/HM/SbpObservationRegister.cshtml`
+  - Endpoint: `/ApiCalls/GetSbpObservationHistory`
+  - Method: GET
+  - Purpose: GetSbpObservationHistory. Key usage: `AIS/Views/HM/SbpObservationRegister.cshtml`, `AIS/wwwroot/js/csp/Views_HM_SbpObservationHistory.js`.
+- Module: IID
+  - Screen/View: `AIS/Views/IID/FFR_PART1.cshtml`
+  - File(s): `AIS/Views/IID/FFR_PART1.cshtml`
+  - Endpoint: `/ApiCalls/get_ho_unit_types`
+  - Method: POST
+  - Purpose: get ho unit types. Key usage: `AIS/Views/IID/FFR_PART1.cshtml`, `AIS/wwwroot/js/csp/Views_IID_SubmitComplaint.js`.
+- Module: IID
+  - Screen/View: `AIS/Views/IID/FFR_PART1.cshtml`
+  - File(s): `AIS/Views/IID/FFR_PART1.cshtml`
+  - Endpoint: `/ApiCalls/get_ho_units`
+  - Method: POST
+  - Purpose: get ho units. Key usage: `AIS/Views/IID/FFR_PART1.cshtml`, `AIS/wwwroot/js/csp/Views_IID_SubmitComplaint.js`.
+- Module: Execution (Responsibility)
+  - Screen/View: `AIS/wwwroot/js/responsibilitySection.js`
+  - File(s): `AIS/wwwroot/js/responsibilitySection.js`
+  - Endpoint: `/ApiCalls/GetResponsiblePPNOforoldPara`
+  - Method: POST
+  - Purpose: GetResponsiblePPNOforoldPara. Key usage: `AIS/wwwroot/js/responsibilitySection.js`, `AIS/wwwroot/js/responsibilitySectionUpdate.js`.
+- Module: Execution (Responsibility)
+  - Screen/View: `AIS/wwwroot/js/responsibilitySection.js`
+  - File(s): `AIS/wwwroot/js/responsibilitySection.js`
+  - Endpoint: `/ApiCalls/get_responsible_by_pp`
+  - Method: POST
+  - Purpose: get responsible by pp. Key usage: `AIS/wwwroot/js/responsibilitySection.js`, `AIS/wwwroot/js/responsibilitySectionUpdate.js`.
+- Module: Execution (Responsibility)
+  - Screen/View: `AIS/wwwroot/js/responsibilitySection.js`
+  - File(s): `AIS/wwwroot/js/responsibilitySection.js`
+  - Endpoint: `/ApiCalls/get_responsible_by_lc`
+  - Method: POST
+  - Purpose: get responsible by lc. Key usage: `AIS/wwwroot/js/responsibilitySection.js`, `AIS/wwwroot/js/responsibilitySectionUpdate.js`.
+- Module: Execution (Responsibility)
+  - Screen/View: `AIS/wwwroot/js/responsibilitySection.js`
+  - File(s): `AIS/wwwroot/js/responsibilitySection.js`
+  - Endpoint: `/ApiCalls/add_responsible_for_old_paras`
+  - Method: POST
+  - Purpose: add responsible for old paras. Key usage: `AIS/wwwroot/js/responsibilitySection.js`, `AIS/wwwroot/js/responsibilitySection.js`.
+- Module: Execution (Responsibility)
+  - Screen/View: `AIS/wwwroot/js/responsibilitySection.js`
+  - File(s): `AIS/wwwroot/js/responsibilitySection.js`
+  - Endpoint: `/ApiCalls/delete_responsible_from_observation`
+  - Method: POST
+  - Purpose: delete responsible from observation. Key usage: `AIS/wwwroot/js/responsibilitySection.js`, `AIS/wwwroot/js/responsibilitySectionUpdate.js`.
+- Module: Execution (References)
+  - Screen/View: `AIS/wwwroot/js/referenceSection.js`
+  - File(s): `AIS/wwwroot/js/referenceSection.js`
+  - Endpoint: `/ApiCalls/GetParaReferenceData`
+  - Method: GET
+  - Purpose: GetParaReferenceData.
+- Module: Execution (References)
+  - Screen/View: `AIS/wwwroot/js/referenceSection.js`
+  - File(s): `AIS/wwwroot/js/referenceSection.js`
+  - Endpoint: `/ApiCalls/SearchReferences`
+  - Method: POST
+  - Purpose: SearchReferences.
+- Module: Execution (References)
+  - Screen/View: `AIS/wwwroot/js/referenceSection.js`
+  - File(s): `AIS/wwwroot/js/referenceSection.js`
+  - Endpoint: `/ApiCalls/GetReferenceDetail`
+  - Method: GET
+  - Purpose: GetReferenceDetail.
+- Module: Execution (References)
+  - Screen/View: `AIS/wwwroot/js/referenceSection.js`
+  - File(s): `AIS/wwwroot/js/referenceSection.js`
+  - Endpoint: `/ApiCalls/SaveParaReferences`
+  - Method: POST
+  - Purpose: SaveParaReferences.
+- Module: Field Audit
+  - Screen/View: `AIS/wwwroot/js/fieldaudit-bo-dashboard.js`
+  - File(s): `AIS/wwwroot/js/fieldaudit-bo-dashboard.js`
+  - Endpoint: `/ApiCalls/GetBackOfficeDashboardEngagements`
+  - Method: GET
+  - Purpose: GetBackOfficeDashboardEngagements.
+- Module: IID
+  - Screen/View: `AIS/wwwroot/js/iid/inquiryReportReadOnly.js`
+  - File(s): `AIS/wwwroot/js/iid/inquiryReportReadOnly.js`
+  - Endpoint: `/ApiCalls/GetIidInquiryReportReadOnlyData`
+  - Method: POST
+  - Purpose: GetIidInquiryReportReadOnlyData.
+- Module: IID
+  - Screen/View: `AIS/wwwroot/js/iid/inquiryReportReadOnly.js`
+  - File(s): `AIS/wwwroot/js/iid/inquiryReportReadOnly.js`
+  - Endpoint: `/ApiCalls/GetComplaintsDropdown`
+  - Method: POST
+  - Purpose: GetComplaintsDropdown. Key usage: `AIS/wwwroot/js/iid/inquiryReportReadOnly.js`, `AIS/wwwroot/js/csp/Views_IID_CaseStudy.js`.
+- Module: IID
+  - Screen/View: `AIS/wwwroot/js/iid/inquiryReportApi.js`
+  - File(s): `AIS/wwwroot/js/iid/inquiryReportApi.js`
+  - Endpoint: `/ApiCalls/GetIidInqAccusations`
+  - Method: GET
+  - Purpose: GetIidInqAccusations.
+- Module: IID
+  - Screen/View: `AIS/wwwroot/js/iid/inquiryReportApi.js`
+  - File(s): `AIS/wwwroot/js/iid/inquiryReportApi.js`
+  - Endpoint: `/ApiCalls/AddIidInqAccusation`
+  - Method: POST
+  - Purpose: AddIidInqAccusation.
+- Module: IID
+  - Screen/View: `AIS/wwwroot/js/iid/inquiryReportApi.js`
+  - File(s): `AIS/wwwroot/js/iid/inquiryReportApi.js`
+  - Endpoint: `/ApiCalls/UpdateIidInqAccusation`
+  - Method: POST
+  - Purpose: UpdateIidInqAccusation.
+- Module: IID
+  - Screen/View: `AIS/wwwroot/js/iid/inquiryReportApi.js`
+  - File(s): `AIS/wwwroot/js/iid/inquiryReportApi.js`
+  - Endpoint: `/ApiCalls/DeleteIidInqAccusation`
+  - Method: POST
+  - Purpose: DeleteIidInqAccusation.
+- Module: IID
+  - Screen/View: `AIS/wwwroot/js/iid/inquiryReportApi.js`
+  - File(s): `AIS/wwwroot/js/iid/inquiryReportApi.js`
+  - Endpoint: `/ApiCalls/GetIidInqAccusedList`
+  - Method: GET
+  - Purpose: GetIidInqAccusedList.
+- Module: IID
+  - Screen/View: `AIS/wwwroot/js/iid/inquiryReportApi.js`
+  - File(s): `AIS/wwwroot/js/iid/inquiryReportApi.js`
+  - Endpoint: `/ApiCalls/GetIidInqAccusedListByComplaintId`
+  - Method: GET
+  - Purpose: GetIidInqAccusedListByComplaintId.
+- Module: IID
+  - Screen/View: `AIS/wwwroot/js/iid/inquiryReportApi.js`
+  - File(s): `AIS/wwwroot/js/iid/inquiryReportApi.js`
+  - Endpoint: `/ApiCalls/GetIidStatementRegisterByComplaintId`
+  - Method: GET
+  - Purpose: GetIidStatementRegisterByComplaintId.
+- Module: IID
+  - Screen/View: `AIS/wwwroot/js/iid/inquiryReportApi.js`
+  - File(s): `AIS/wwwroot/js/iid/inquiryReportApi.js`
+  - Endpoint: `/ApiCalls/SaveIidStatementRegisterRow`
+  - Method: POST
+  - Purpose: SaveIidStatementRegisterRow.
+- Module: IID
+  - Screen/View: `AIS/wwwroot/js/iid/inquiryReportApi.js`
+  - File(s): `AIS/wwwroot/js/iid/inquiryReportApi.js`
+  - Endpoint: `/ApiCalls/AddIidInqAccused`
+  - Method: POST
+  - Purpose: AddIidInqAccused.
+- Module: IID
+  - Screen/View: `AIS/wwwroot/js/iid/inquiryReportApi.js`
+  - File(s): `AIS/wwwroot/js/iid/inquiryReportApi.js`
+  - Endpoint: `/ApiCalls/UpdateIidInqAccused`
+  - Method: POST
+  - Purpose: UpdateIidInqAccused.
+- Module: IID
+  - Screen/View: `AIS/wwwroot/js/iid/inquiryReportApi.js`
+  - File(s): `AIS/wwwroot/js/iid/inquiryReportApi.js`
+  - Endpoint: `/ApiCalls/DeleteIidInqAccused`
+  - Method: POST
+  - Purpose: DeleteIidInqAccused.
+- Module: IID
+  - Screen/View: `AIS/wwwroot/js/iid/inquiryReportApi.js`
+  - File(s): `AIS/wwwroot/js/iid/inquiryReportApi.js`
+  - Endpoint: `/ApiCalls/GetIidInqRecords`
+  - Method: GET
+  - Purpose: GetIidInqRecords.
+- Module: IID
+  - Screen/View: `AIS/wwwroot/js/iid/inquiryReportApi.js`
+  - File(s): `AIS/wwwroot/js/iid/inquiryReportApi.js`
+  - Endpoint: `/ApiCalls/AddIidInqRecord`
+  - Method: POST
+  - Purpose: AddIidInqRecord.
+- Module: IID
+  - Screen/View: `AIS/wwwroot/js/iid/inquiryReportApi.js`
+  - File(s): `AIS/wwwroot/js/iid/inquiryReportApi.js`
+  - Endpoint: `/ApiCalls/UpdateIidInqRecord`
+  - Method: POST
+  - Purpose: UpdateIidInqRecord.
+- Module: IID
+  - Screen/View: `AIS/wwwroot/js/iid/inquiryReportApi.js`
+  - File(s): `AIS/wwwroot/js/iid/inquiryReportApi.js`
+  - Endpoint: `/ApiCalls/DeleteIidInqRecord`
+  - Method: POST
+  - Purpose: DeleteIidInqRecord.
+- Module: IID
+  - Screen/View: `AIS/wwwroot/js/iid/inquiryReportApi.js`
+  - File(s): `AIS/wwwroot/js/iid/inquiryReportApi.js`
+  - Endpoint: `/ApiCalls/GetIidInqStatements`
+  - Method: GET
+  - Purpose: GetIidInqStatements.
+- Module: IID
+  - Screen/View: `AIS/wwwroot/js/iid/inquiryReportApi.js`
+  - File(s): `AIS/wwwroot/js/iid/inquiryReportApi.js`
+  - Endpoint: `/ApiCalls/AddIidInqStatement`
+  - Method: POST
+  - Purpose: AddIidInqStatement.
+- Module: IID
+  - Screen/View: `AIS/wwwroot/js/iid/inquiryReportApi.js`
+  - File(s): `AIS/wwwroot/js/iid/inquiryReportApi.js`
+  - Endpoint: `/ApiCalls/UpdateIidInqStatement`
+  - Method: POST
+  - Purpose: UpdateIidInqStatement.
+- Module: IID
+  - Screen/View: `AIS/wwwroot/js/iid/inquiryReportApi.js`
+  - File(s): `AIS/wwwroot/js/iid/inquiryReportApi.js`
+  - Endpoint: `/ApiCalls/DeleteIidInqStatement`
+  - Method: POST
+  - Purpose: DeleteIidInqStatement.
+- Module: IID
+  - Screen/View: `AIS/wwwroot/js/iid/inquiryReportApi.js`
+  - File(s): `AIS/wwwroot/js/iid/inquiryReportApi.js`
+  - Endpoint: `/ApiCalls/GetIidEmployeeInfo`
+  - Method: GET
+  - Purpose: GetIidEmployeeInfo.
+- Module: IID
+  - Screen/View: `AIS/wwwroot/js/iid/inquiryReportApi.js`
+  - File(s): `AIS/wwwroot/js/iid/inquiryReportApi.js`
+  - Endpoint: `/ApiCalls/GetIidInqEvidenceFiles`
+  - Method: GET
+  - Purpose: GetIidInqEvidenceFiles.
+- Module: IID
+  - Screen/View: `AIS/wwwroot/js/iid/inquiryReportApi.js`
+  - File(s): `AIS/wwwroot/js/iid/inquiryReportApi.js`
+  - Endpoint: `/ApiCalls/AddIidInqEvidenceFile`
+  - Method: POST
+  - Purpose: AddIidInqEvidenceFile.
+- Module: IID
+  - Screen/View: `AIS/wwwroot/js/iid/inquiryReportApi.js`
+  - File(s): `AIS/wwwroot/js/iid/inquiryReportApi.js`
+  - Endpoint: `/ApiCalls/DeleteIidInqEvidenceFile`
+  - Method: POST
+  - Purpose: DeleteIidInqEvidenceFile.
+- Module: IID
+  - Screen/View: `AIS/wwwroot/js/iid/inquiryReportApi.js`
+  - File(s): `AIS/wwwroot/js/iid/inquiryReportApi.js`
+  - Endpoint: `/ApiCalls/GetIidInqFindingsRecomm`
+  - Method: GET
+  - Purpose: GetIidInqFindingsRecomm.
+- Module: IID
+  - Screen/View: `AIS/wwwroot/js/iid/inquiryReportApi.js`
+  - File(s): `AIS/wwwroot/js/iid/inquiryReportApi.js`
+  - Endpoint: `/ApiCalls/SaveIidInqFindingsRecomm`
+  - Method: POST
+  - Purpose: SaveIidInqFindingsRecomm.
+- Module: IID
+  - Screen/View: `AIS/wwwroot/js/iid/inquiryReportApi.js`
+  - File(s): `AIS/wwwroot/js/iid/inquiryReportApi.js`
+  - Endpoint: `/ApiCalls/GetIidAccusationsForFindings`
+  - Method: GET
+  - Purpose: GetIidAccusationsForFindings.
+- Module: IID
+  - Screen/View: `AIS/wwwroot/js/iid/inquiryReportApi.js`
+  - File(s): `AIS/wwwroot/js/iid/inquiryReportApi.js`
+  - Endpoint: `/ApiCalls/GetIidFindingsRecommByAccusation`
+  - Method: GET
+  - Purpose: GetIidFindingsRecommByAccusation.
+- Module: IID
+  - Screen/View: `AIS/wwwroot/js/iid/inquiryReportApi.js`
+  - File(s): `AIS/wwwroot/js/iid/inquiryReportApi.js`
+  - Endpoint: `/ApiCalls/SaveIidFindingsRecommByAccusation`
+  - Method: POST
+  - Purpose: SaveIidFindingsRecommByAccusation.
+- Module: IID
+  - Screen/View: `AIS/wwwroot/js/iid/inquiryReportApi.js`
+  - File(s): `AIS/wwwroot/js/iid/inquiryReportApi.js`
+  - Endpoint: `/ApiCalls/GetIidFindingsRecommStatus`
+  - Method: GET
+  - Purpose: GetIidFindingsRecommStatus.
+- Module: IID
+  - Screen/View: `AIS/wwwroot/js/iid/inquiryReportApi.js`
+  - File(s): `AIS/wwwroot/js/iid/inquiryReportApi.js`
+  - Endpoint: `/ApiCalls/GetIidInqViolations`
+  - Method: GET
+  - Purpose: GetIidInqViolations.
+- Module: IID
+  - Screen/View: `AIS/wwwroot/js/iid/inquiryReportApi.js`
+  - File(s): `AIS/wwwroot/js/iid/inquiryReportApi.js`
+  - Endpoint: `/ApiCalls/AddIidInqViolation`
+  - Method: POST
+  - Purpose: AddIidInqViolation.
+- Module: IID
+  - Screen/View: `AIS/wwwroot/js/iid/inquiryReportApi.js`
+  - File(s): `AIS/wwwroot/js/iid/inquiryReportApi.js`
+  - Endpoint: `/ApiCalls/UpdateIidInqViolation`
+  - Method: POST
+  - Purpose: UpdateIidInqViolation.
+- Module: IID
+  - Screen/View: `AIS/wwwroot/js/iid/inquiryReportApi.js`
+  - File(s): `AIS/wwwroot/js/iid/inquiryReportApi.js`
+  - Endpoint: `/ApiCalls/DeleteIidInqViolation`
+  - Method: POST
+  - Purpose: DeleteIidInqViolation.
+- Module: IID
+  - Screen/View: `AIS/wwwroot/js/iid/inquiryReportApi.js`
+  - File(s): `AIS/wwwroot/js/iid/inquiryReportApi.js`
+  - Endpoint: `/ApiCalls/GetIidInqDsa`
+  - Method: GET
+  - Purpose: GetIidInqDsa.
+- Module: IID
+  - Screen/View: `AIS/wwwroot/js/iid/inquiryReportApi.js`
+  - File(s): `AIS/wwwroot/js/iid/inquiryReportApi.js`
+  - Endpoint: `/ApiCalls/AddIidInqDsa`
+  - Method: POST
+  - Purpose: AddIidInqDsa.
+- Module: IID
+  - Screen/View: `AIS/wwwroot/js/iid/inquiryReportApi.js`
+  - File(s): `AIS/wwwroot/js/iid/inquiryReportApi.js`
+  - Endpoint: `/ApiCalls/UpdateIidInqDsa`
+  - Method: POST
+  - Purpose: UpdateIidInqDsa.
+- Module: IID
+  - Screen/View: `AIS/wwwroot/js/iid/inquiryReportApi.js`
+  - File(s): `AIS/wwwroot/js/iid/inquiryReportApi.js`
+  - Endpoint: `/ApiCalls/DeleteIidInqDsa`
+  - Method: POST
+  - Purpose: DeleteIidInqDsa.
+- Module: IID
+  - Screen/View: `AIS/wwwroot/js/csp/Views_IID_CaseStudy.js`
+  - File(s): `AIS/wwwroot/js/csp/Views_IID_CaseStudy.js`
+  - Endpoint: `/ApiCalls/GetComplaint`
+  - Method: POST
+  - Purpose: GetComplaint. Key usage: `AIS/wwwroot/js/csp/Views_IID_CaseStudy.js`, `AIS/wwwroot/js/csp/Views_IID_HeadReview.js`.
+- Module: IID
+  - Screen/View: `AIS/wwwroot/js/csp/Views_IID_CaseStudy.js`
+  - File(s): `AIS/wwwroot/js/csp/Views_IID_CaseStudy.js`
+  - Endpoint: `/ApiCalls/AddCaseStudy`
+  - Method: POST
+  - Purpose: AddCaseStudy.
+- Module: IID
+  - Screen/View: `AIS/wwwroot/js/csp/Views_IID_TaskListIID.js`
+  - File(s): `AIS/wwwroot/js/csp/Views_IID_TaskListIID.js`
+  - Endpoint: `/ApiCalls/GetIidTaskList`
+  - Method: GET
+  - Purpose: GetIidTaskList.
+- Module: Reports
+  - Screen/View: `AIS/wwwroot/js/csp/Views_Reports_emp_info.js`
+  - File(s): `AIS/wwwroot/js/csp/Views_Reports_emp_info.js`
+  - Endpoint: `/ApiCalls/GetAuditTeams`
+  - Method: POST
+  - Purpose: GetAuditTeams. Key usage: `AIS/wwwroot/js/csp/Views_Reports_emp_info.js`, `AIS/wwwroot/js/csp/Views_Execution_engagement_plan.js`.
+- Module: Reports
+  - Screen/View: `AIS/wwwroot/js/csp/Views_Reports_emp_info.js`
+  - File(s): `AIS/wwwroot/js/csp/Views_Reports_emp_info.js`
+  - Endpoint: `/ApiCalls/GetZoneBranches`
+  - Method: POST
+  - Purpose: GetZoneBranches. Key usage: `AIS/wwwroot/js/csp/Views_Reports_emp_info.js`, `AIS/wwwroot/js/csp/Views_Execution_engagement_plan.js`.
+- Module: Reports
+  - Screen/View: `AIS/wwwroot/js/csp/Views_Reports_emp_info.js`
+  - File(s): `AIS/wwwroot/js/csp/Views_Reports_emp_info.js`
+  - Endpoint: `/ApiCalls/GetDivDepartments`
+  - Method: POST
+  - Purpose: GetDivDepartments. Key usage: `AIS/wwwroot/js/csp/Views_Reports_emp_info.js`, `AIS/wwwroot/js/csp/Views_Execution_engagement_plan.js`.
+- Module: Reports
+  - Screen/View: `AIS/wwwroot/js/csp/Views_Reports_emp_info.js`
+  - File(s): `AIS/wwwroot/js/csp/Views_Reports_emp_info.js`
+  - Endpoint: `/ApiCalls/AddAuditPlan`
+  - Method: POST
+  - Purpose: AddAuditPlan. Key usage: `AIS/wwwroot/js/csp/Views_Reports_emp_info.js`, `AIS/wwwroot/js/csp/Views_Execution_engagement_plan.js`.
+- Module: Planning
+  - Screen/View: `AIS/wwwroot/js/csp/Views_Planning_audit_criteria_approval.js`
+  - File(s): `AIS/wwwroot/js/csp/Views_Planning_audit_criteria_approval.js`
+  - Endpoint: `/ApiCalls/ReferredBackAuditCriteria`
+  - Method: POST
+  - Purpose: ReferredBackAuditCriteria.
+- Module: Planning
+  - Screen/View: `AIS/wwwroot/js/csp/Views_Planning_audit_criteria_approval.js`
+  - File(s): `AIS/wwwroot/js/csp/Views_Planning_audit_criteria_approval.js`
+  - Endpoint: `/ApiCalls/AuthorizeAuditCriteria`
+  - Method: POST
+  - Purpose: AuthorizeAuditCriteria.
+- Module: Administration Panel
+  - Screen/View: `AIS/wwwroot/js/csp/Views_AdministrationPanel_ManageVersionHistory.js`
+  - File(s): `AIS/wwwroot/js/csp/Views_AdministrationPanel_ManageVersionHistory.js`
+  - Endpoint: `/ApiCalls/AddVersionHistory`
+  - Method: POST
+  - Purpose: AddVersionHistory.
+- Module: Administration Panel
+  - Screen/View: `AIS/wwwroot/js/csp/Views_AdministrationPanel_ManageVersionHistory.js`
+  - File(s): `AIS/wwwroot/js/csp/Views_AdministrationPanel_ManageVersionHistory.js`
+  - Endpoint: `/ApiCalls/UpdateVersionHistory`
+  - Method: POST
+  - Purpose: UpdateVersionHistory.
+- Module: Administration Panel
+  - Screen/View: `AIS/wwwroot/js/csp/Views_AdministrationPanel_manage_user.js`
+  - File(s): `AIS/wwwroot/js/csp/Views_AdministrationPanel_manage_user.js`
+  - Endpoint: `/ApiCalls/FindUsers`
+  - Method: POST
+  - Purpose: FindUsers.
+- Module: Reports
+  - Screen/View: `AIS/wwwroot/js/csp/Views_Reports_department_performance.js`
+  - File(s): `AIS/wwwroot/js/csp/Views_Reports_department_performance.js`
+  - Endpoint: `/ApiCalls/get_audit_zones`
+  - Method: GET
+  - Purpose: get audit zones.
+- Module: Reports
+  - Screen/View: `AIS/wwwroot/js/csp/Views_Reports_department_performance.js`
+  - File(s): `AIS/wwwroot/js/csp/Views_Reports_department_performance.js`
+  - Endpoint: `/ApiCalls/get_department_performance_summary_and_detail`
+  - Method: GET
+  - Purpose: get department performance summary and detail.
+- Module: Reports
+  - Screen/View: `AIS/wwwroot/js/csp/Views_Reports_department_performance.js`
+  - File(s): `AIS/wwwroot/js/csp/Views_Reports_department_performance.js`
+  - Endpoint: `/ApiCalls/get_auditor_performance`
+  - Method: GET
+  - Purpose: get auditor performance.
+- Module: Reports
+  - Screen/View: `AIS/wwwroot/js/csp/Views_Reports_department_performance.js`
+  - File(s): `AIS/wwwroot/js/csp/Views_Reports_department_performance.js`
+  - Endpoint: `/ApiCalls/get_department_performance_by_zone`
+  - Method: GET
+  - Purpose: get department performance by zone.
+- Module: IID
+  - Screen/View: `AIS/wwwroot/js/csp/Views_IID_HeadReview.js`
+  - File(s): `AIS/wwwroot/js/csp/Views_IID_HeadReview.js`
+  - Endpoint: `/ApiCalls/GetIiUnits`
+  - Method: GET
+  - Purpose: GetIiUnits. Key usage: `AIS/wwwroot/js/csp/Views_IID_HeadReview.js`, `AIS/wwwroot/js/csp/Views_IID_InitialAssessment.js`.
+- Module: IID
+  - Screen/View: `AIS/wwwroot/js/csp/Views_IID_HeadReview.js`
+  - File(s): `AIS/wwwroot/js/csp/Views_IID_HeadReview.js`
+  - Endpoint: `/ApiCalls/AddHeadReview`
+  - Method: POST
+  - Purpose: AddHeadReview.
+- Module: Planning
+  - Screen/View: `AIS/wwwroot/js/csp/Views_Planning_refferedback_audit_criteria.js`
+  - File(s): `AIS/wwwroot/js/csp/Views_Planning_refferedback_audit_criteria.js`
+  - Endpoint: `/ApiCalls/UpdateAuditCriteria`
+  - Method: POST
+  - Purpose: UpdateAuditCriteria.
+- Module: Sampling
+  - Screen/View: `AIS/wwwroot/js/csp/Views_Sampling_ManageExceptionReportFormat.js`
+  - File(s): `AIS/wwwroot/js/csp/Views_Sampling_ManageExceptionReportFormat.js`
+  - Endpoint: `/ApiCalls/update_exception_report_format`
+  - Method: POST
+  - Purpose: update exception report format.
+- Module: Sampling
+  - Screen/View: `AIS/wwwroot/js/csp/Views_Sampling_ManageExceptionReportFormat.js`
+  - File(s): `AIS/wwwroot/js/csp/Views_Sampling_ManageExceptionReportFormat.js`
+  - Endpoint: `/ApiCalls/save_exception_report_format`
+  - Method: POST
+  - Purpose: save exception report format.
+- Module: Planning
+  - Screen/View: `AIS/wwwroot/js/csp/Views_Planning_team_members.js`
+  - File(s): `AIS/wwwroot/js/csp/Views_Planning_team_members.js`
+  - Endpoint: `/ApiCalls/AddAuditTeam`
+  - Method: POST
+  - Purpose: AddAuditTeam.
+- Module: Planning
+  - Screen/View: `AIS/wwwroot/js/csp/Views_Planning_team_members.js`
+  - File(s): `AIS/wwwroot/js/csp/Views_Planning_team_members.js`
+  - Endpoint: `/ApiCalls/DeleteAuditTeam`
+  - Method: POST
+  - Purpose: DeleteAuditTeam. Key usage: `AIS/wwwroot/js/csp/Views_Planning_team_members.js`, `AIS/wwwroot/js/csp/Views_Engagement_ccqs.js`.
+- Module: Engagement
+  - Screen/View: `AIS/wwwroot/js/csp/Views_Engagement_eng_plan_ref_list.js`
+  - File(s): `AIS/wwwroot/js/csp/Views_Engagement_eng_plan_ref_list.js`
+  - Endpoint: `/ApiCalls/rerecommend_engagement_plan`
+  - Method: POST
+  - Purpose: rerecommend engagement plan.
+- Module: IID
+  - Screen/View: `AIS/wwwroot/js/csp/Views_IID_InquiryReport.js`
+  - File(s): `AIS/wwwroot/js/csp/Views_IID_InquiryReport.js`
+  - Endpoint: `/ApiCalls/FinalizeIidInquiryReport`
+  - Method: POST
+  - Purpose: FinalizeIidInquiryReport.
+- Module: Administration Panel
+  - Screen/View: `AIS/wwwroot/js/csp/Views_AdministrationPanel_ManagePublicHolidays.js`
+  - File(s): `AIS/wwwroot/js/csp/Views_AdministrationPanel_ManagePublicHolidays.js`
+  - Endpoint: `/ApiCalls/get_all_public_holidays`
+  - Method: POST
+  - Purpose: get all public holidays. Key usage: `AIS/wwwroot/js/csp/Views_AdministrationPanel_ManagePublicHolidays.js`, `AIS/wwwroot/js/csp/Views_Planning_tentative_engagement_plan.js`.
+- Module: Administration Panel
+  - Screen/View: `AIS/wwwroot/js/csp/Views_AdministrationPanel_ManagePublicHolidays.js`
+  - File(s): `AIS/wwwroot/js/csp/Views_AdministrationPanel_ManagePublicHolidays.js`
+  - Endpoint: `/ApiCalls/add_public_holiday`
+  - Method: POST
+  - Purpose: add public holiday.
+- Module: Engagement
+  - Screen/View: `AIS/wwwroot/js/csp/Views_Engagement_ccqs.js`
+  - File(s): `AIS/wwwroot/js/csp/Views_Engagement_ccqs.js`
+  - Endpoint: `/ApiCalls/GetAuditTeam`
+  - Method: POST
+  - Purpose: GetAuditTeam. Key usage: `AIS/wwwroot/js/csp/Views_Engagement_ccqs.js`, `AIS/wwwroot/js/csp/Views_Planning_tentative_engagement_plan.js`.
+- Module: IID
+  - Screen/View: `AIS/wwwroot/js/csp/Views_IID_SubmitComplaint.js`
+  - File(s): `AIS/wwwroot/js/csp/Views_IID_SubmitComplaint.js`
+  - Endpoint: `/ApiCalls/SubmitComplaint`
+  - Method: POST
+  - Purpose: SubmitComplaint.
+- Module: IID
+  - Screen/View: `AIS/wwwroot/js/csp/Views_IID_Reports.js`
+  - File(s): `AIS/wwwroot/js/csp/Views_IID_Reports.js`
+  - Endpoint: `/ApiCalls/GetReports`
+  - Method: POST
+  - Purpose: GetReports.
+- Module: Planning
+  - Screen/View: `AIS/wwwroot/js/csp/Views_Planning_tentative_engagement_plan.js`
+  - File(s): `AIS/wwwroot/js/csp/Views_Planning_tentative_engagement_plan.js`
+  - Endpoint: `/ApiCalls/GetOperationalStartDate`
+  - Method: POST
+  - Purpose: GetOperationalStartDate.
+- Module: Planning
+  - Screen/View: `AIS/wwwroot/js/csp/Views_Planning_tentative_engagement_plan.js`
+  - File(s): `AIS/wwwroot/js/csp/Views_Planning_tentative_engagement_plan.js`
+  - Endpoint: `/ApiCalls/AddEngagementPlan`
+  - Method: POST
+  - Purpose: AddEngagementPlan.
+- Module: IID
+  - Screen/View: `AIS/wwwroot/js/csp/Views_IID_InvestigationPlan.js`
+  - File(s): `AIS/wwwroot/js/csp/Views_IID_InvestigationPlan.js`
+  - Endpoint: `/ApiCalls/GetLatestPlanByComplaintId`
+  - Method: POST
+  - Purpose: GetLatestPlanByComplaintId.
+- Module: IID
+  - Screen/View: `AIS/wwwroot/js/csp/Views_IID_InvestigationPlan.js`
+  - File(s): `AIS/wwwroot/js/csp/Views_IID_InvestigationPlan.js`
+  - Endpoint: `/ApiCalls/AddInvestigationPlan`
+  - Method: POST
+  - Purpose: AddInvestigationPlan.
+- Module: IID
+  - Screen/View: `AIS/wwwroot/js/csp/Views_IID_InitialAssessment.js`
+  - File(s): `AIS/wwwroot/js/csp/Views_IID_InitialAssessment.js`
+  - Endpoint: `/ApiCalls/AddAssessment`
+  - Method: POST
+  - Purpose: AddAssessment.
+- Module: Planning
+  - Screen/View: `AIS/wwwroot/js/csp/Views_Planning_staff_position.js`
+  - File(s): `AIS/wwwroot/js/csp/Views_Planning_staff_position.js`
+  - Endpoint: `/ApiCalls/GetAuditEmployees`
+  - Method: POST
+  - Purpose: GetAuditEmployees.
+- Module: Planning
+  - Screen/View: `AIS/wwwroot/js/csp/Views_Planning_post_changes_criteria.js`
+  - File(s): `AIS/wwwroot/js/csp/Views_Planning_post_changes_criteria.js`
+  - Endpoint: `/ApiCalls/PostChangesAuditCriteria`
+  - Method: POST
+  - Purpose: PostChangesAuditCriteria.
+- Module: Planning
+  - Screen/View: `AIS/wwwroot/js/csp/Views_Planning_post_changes_criteria.js`
+  - File(s): `AIS/wwwroot/js/csp/Views_Planning_post_changes_criteria.js`
+  - Endpoint: `/ApiCalls/GeneratePlanAuditCriteria`
+  - Method: POST
+  - Purpose: GeneratePlanAuditCriteria.
+- Module: HM / SBP Observation
+  - Screen/View: `AIS/wwwroot/js/csp/Views_HM_ManageSbpPassword.js`
+  - File(s): `AIS/wwwroot/js/csp/Views_HM_ManageSbpPassword.js`
+  - Endpoint: `/ApiCalls/UpdateSbpObservationPassword`
+  - Method: POST
+  - Purpose: UpdateSbpObservationPassword.
+- Module: IID
+  - Screen/View: `AIS/wwwroot/js/csp/Views_IID_FinalApproval.js`
+  - File(s): `AIS/wwwroot/js/csp/Views_IID_FinalApproval.js`
+  - Endpoint: `/ApiCalls/GetInquiryReportFiles`
+  - Method: POST
+  - Purpose: GetInquiryReportFiles. Key usage: `AIS/wwwroot/js/csp/Views_IID_FinalApproval.js`, `AIS/wwwroot/js/csp/Views_IID_Analysis.js`.
+- Module: IID
+  - Screen/View: `AIS/wwwroot/js/csp/Views_IID_FinalApproval.js`
+  - File(s): `AIS/wwwroot/js/csp/Views_IID_FinalApproval.js`
+  - Endpoint: `/ApiCalls/GetLatestInquiryReportByComplaintId`
+  - Method: POST
+  - Purpose: GetLatestInquiryReportByComplaintId. Key usage: `AIS/wwwroot/js/csp/Views_IID_FinalApproval.js`, `AIS/wwwroot/js/csp/Views_IID_Analysis.js`.
+- Module: IID
+  - Screen/View: `AIS/wwwroot/js/csp/Views_IID_FinalApproval.js`
+  - File(s): `AIS/wwwroot/js/csp/Views_IID_FinalApproval.js`
+  - Endpoint: `/ApiCalls/AddFinalApproval`
+  - Method: POST
+  - Purpose: AddFinalApproval.
+- Module: IID
+  - Screen/View: `AIS/wwwroot/js/csp/Views_IID_Analysis.js`
+  - File(s): `AIS/wwwroot/js/csp/Views_IID_Analysis.js`
+  - Endpoint: `/ApiCalls/AddAnalysis`
+  - Method: POST
+  - Purpose: AddAnalysis.
+- Module: IID
+  - Screen/View: `AIS/wwwroot/js/csp/Views_IID_PlanApproval.js`
+  - File(s): `AIS/wwwroot/js/csp/Views_IID_PlanApproval.js`
+  - Endpoint: `/ApiCalls/GetIidPlanDetails`
+  - Method: GET
+  - Purpose: GetIidPlanDetails.
+- Module: IID
+  - Screen/View: `AIS/wwwroot/js/csp/Views_IID_PlanApproval.js`
+  - File(s): `AIS/wwwroot/js/csp/Views_IID_PlanApproval.js`
+  - Endpoint: `/ApiCalls/AddPlanApproval`
+  - Method: POST
+  - Purpose: AddPlanApproval.
