@@ -472,7 +472,11 @@ namespace AIS.Controllers
         private void PopulateLoginViewData(string statusMessage, string errorMessage)
         {
             var requestBasePath = HttpContext?.Request?.PathBase.Value ?? string.Empty;
-            var configuredBaseUrl = _configuration["BaseURL"] ?? string.Empty;
+            var configuredBaseUrl = _configuration["BaseURL"];
+            if (string.IsNullOrWhiteSpace(configuredBaseUrl))
+            {
+                configuredBaseUrl = _configuration["Security:BaseURL"] ?? string.Empty;
+            }
             var baseUrl = !string.IsNullOrWhiteSpace(requestBasePath)
                 ? requestBasePath
                 : configuredBaseUrl;

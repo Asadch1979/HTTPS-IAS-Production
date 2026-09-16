@@ -3,7 +3,16 @@
 @inject Microsoft.Extensions.Configuration.IConfiguration Configuration
 @inject AIS.SessionHandler SessionHandler
 @{
-    var baseUrl = ViewBag.BaseURL as string ?? Configuration["BaseURL"] ?? Context.Request.PathBase.Value ?? string.Empty;
+    var baseUrl = ViewBag.BaseURL as string
+        ?? Context.Request.PathBase.Value
+        ?? Configuration["BaseURL"]
+        ?? Configuration["Security:BaseURL"]
+        ?? string.Empty;
+    if (!string.IsNullOrWhiteSpace(baseUrl) && !baseUrl.StartsWith("/"))
+    {
+        baseUrl = "/" + baseUrl;
+    }
+    baseUrl = baseUrl?.TrimEnd('/') ?? string.Empty;
 
     var nonce = Context.Items["CSPNonce"]?.ToString();
     var sessionUser = SessionHandler?.GetUser();
@@ -726,7 +735,7 @@
             <footer class="ias-footer">
                 <div class="text-center">
                     &copy; INTERNAL AUDIT (Developed By A.A.C)
-                    <span class="ms-2"><i class="footer-version">Version No: 3.09.2026</i></span>
+                    <span class="ms-2"><i class="footer-version">Version No: 9.09.2026</i></span>
                 </div>
             </footer>
         </div>

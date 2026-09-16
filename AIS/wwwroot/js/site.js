@@ -1,6 +1,12 @@
 ﻿
 var metaBase = document.querySelector('meta[name="base-url"]');
-var g_asiBaseURL = metaBase ? metaBase.getAttribute('content') : "";
+var g_asiBaseURL = metaBase ? (metaBase.getAttribute('content') || '') : "";
+g_asiBaseURL = g_asiBaseURL.trim();
+if (g_asiBaseURL && g_asiBaseURL.charAt(0) !== '/') {
+    g_asiBaseURL = '/' + g_asiBaseURL;
+}
+g_asiBaseURL = g_asiBaseURL.replace(/\/+$/, '');
+window.g_asiBaseURL = g_asiBaseURL;
 var g_secretKey="";
 var activeRequests = 0;
 var accessDeniedNoticeVisible = false;

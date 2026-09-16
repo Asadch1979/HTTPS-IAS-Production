@@ -1139,8 +1139,8 @@ namespace AIS.Controllers
                 cmd.BindByName = true;
                 GuardAgainstDynamicSql(cmd);
                 cmd.Parameters.Clear();
-                cmd.Parameters.Add("e_id", OracleDbType.Varchar2).Value = loggedInUser.UserEntityID;
-                cmd.Parameters.Add("r_id", OracleDbType.Varchar2).Value = loggedInUser.UserGroupID;
+                cmd.Parameters.Add("e_id", OracleDbType.Int32).Value = loggedInUser.UserEntityID;
+                cmd.Parameters.Add("r_id", OracleDbType.Int32).Value = loggedInUser.UserRoleID;
                 cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
                 using OracleDataReader rdr = cmd.ExecuteReader();
                 while (rdr.Read())
@@ -1175,9 +1175,9 @@ namespace AIS.Controllers
                 cmd.BindByName = true;
                 GuardAgainstDynamicSql(cmd);
                 cmd.Parameters.Clear();
-                cmd.Parameters.Add("R_ID", OracleDbType.Varchar2).Value = loggedInUser.UserRoleID;
-                cmd.Parameters.Add("ENT_ID", OracleDbType.Varchar2).Value = ENTITY_ID;
-                cmd.Parameters.Add("P_NO", OracleDbType.Varchar2).Value = loggedInUser.PPNumber;
+                cmd.Parameters.Add("R_ID", OracleDbType.Int32).Value = loggedInUser.UserRoleID;
+                cmd.Parameters.Add("ENT_ID", OracleDbType.Int32).Value = ENTITY_ID;
+                cmd.Parameters.Add("P_NO", OracleDbType.Int32).Value = loggedInUser.PPNumber;
                 cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
                 using OracleDataReader rdr = cmd.ExecuteReader();
                 while (rdr.Read())
@@ -1220,9 +1220,9 @@ namespace AIS.Controllers
                 cmd.BindByName = true;
                 GuardAgainstDynamicSql(cmd);
                 cmd.Parameters.Clear();
-                cmd.Parameters.Add("a_id", OracleDbType.Varchar2).Value = ANNEX_ID;
-                cmd.Parameters.Add("r_id", OracleDbType.Varchar2).Value = loggedInUser.UserGroupID;
-                cmd.Parameters.Add("ent_id", OracleDbType.Varchar2).Value = ENTITY_ID;
+                cmd.Parameters.Add("a_id", OracleDbType.Int32).Value = ANNEX_ID;
+                cmd.Parameters.Add("r_id", OracleDbType.Int32).Value = loggedInUser.UserRoleID;
+                cmd.Parameters.Add("ent_id", OracleDbType.Int32).Value = ENTITY_ID;
                 cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
                 using OracleDataReader rdr = cmd.ExecuteReader();
                 while (rdr.Read())
@@ -1262,7 +1262,7 @@ namespace AIS.Controllers
                 cmd.BindByName = true;
                 GuardAgainstDynamicSql(cmd);
                 cmd.Parameters.Clear();
-                cmd.Parameters.Add("p_id", OracleDbType.Varchar2).Value = PARA_ID;
+                cmd.Parameters.Add("p_id", OracleDbType.Int32).Value = PARA_ID;
                 cmd.Parameters.Add("p_c", OracleDbType.Varchar2).Value = PARA_CATEGORY;
                 cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
                 using OracleDataReader rdr = cmd.ExecuteReader();
@@ -1295,9 +1295,9 @@ namespace AIS.Controllers
                 cmd.BindByName = true;
                 GuardAgainstDynamicSql(cmd);
                 cmd.Parameters.Clear();
-                cmd.Parameters.Add("a_id", OracleDbType.Varchar2).Value = PROCESS_ID;
-                cmd.Parameters.Add("r_id", OracleDbType.Varchar2).Value = loggedInUser.UserGroupID;
-                cmd.Parameters.Add("ent_id", OracleDbType.Varchar2).Value = loggedInUser.UserEntityID;
+                cmd.Parameters.Add("a_id", OracleDbType.Int32).Value = PROCESS_ID;
+                cmd.Parameters.Add("r_id", OracleDbType.Int32).Value = loggedInUser.UserRoleID;
+                cmd.Parameters.Add("ent_id", OracleDbType.Int32).Value = loggedInUser.UserEntityID;
                 cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
                 using OracleDataReader rdr = cmd.ExecuteReader();
                 while (rdr.Read())
@@ -1335,9 +1335,9 @@ namespace AIS.Controllers
                 cmd.BindByName = true;
                 GuardAgainstDynamicSql(cmd);
                 cmd.Parameters.Clear();
-                cmd.Parameters.Add("a_id", OracleDbType.Varchar2).Value = PROCESS_ID;
-                cmd.Parameters.Add("r_id", OracleDbType.Varchar2).Value = loggedInUser.UserGroupID;
-                cmd.Parameters.Add("ent_id", OracleDbType.Varchar2).Value = loggedInUser.UserEntityID;
+                cmd.Parameters.Add("a_id", OracleDbType.Int32).Value = PROCESS_ID;
+                cmd.Parameters.Add("r_id", OracleDbType.Int32).Value = loggedInUser.UserRoleID;
+                cmd.Parameters.Add("ent_id", OracleDbType.Int32).Value = loggedInUser.UserEntityID;
                 cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
                 using OracleDataReader rdr = cmd.ExecuteReader();
                 while (rdr.Read())

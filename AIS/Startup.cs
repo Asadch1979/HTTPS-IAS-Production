@@ -62,6 +62,7 @@ namespace AIS
             var environmentName = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT");
             var allowLocalHttp = string.Equals(environmentName, Environments.Development, StringComparison.OrdinalIgnoreCase)
                 && Configuration.GetValue<bool>("Security:AllowLocalHttp");
+            var baseUrl = ResolveBaseUrl(Configuration);
             var cookieSecurePolicy = allowLocalHttp ? CookieSecurePolicy.SameAsRequest : CookieSecurePolicy.Always;
 
             services.AddDistributedMemoryCache();
@@ -142,10 +143,10 @@ namespace AIS
                 options.Cookie.SecurePolicy = cookieSecurePolicy;
                 options.Cookie.HttpOnly = true;
                 options.Cookie.SameSite = SameSiteMode.Lax;
-                options.Cookie.Path = string.IsNullOrWhiteSpace(Configuration["BaseURL"]) ? "/" : Configuration["BaseURL"];
-                options.LoginPath = (Configuration["BaseURL"] ?? string.Empty) + "/Login/Index";
-                options.LogoutPath = (Configuration["BaseURL"] ?? string.Empty) + "/Login/Logout";
-                options.AccessDeniedPath = (Configuration["BaseURL"] ?? string.Empty) + "/Login/Index";
+                options.Cookie.Path = string.IsNullOrWhiteSpace(baseUrl) ? "/" : baseUrl;
+                options.LoginPath = baseUrl + "/Login/Index";
+                options.LogoutPath = baseUrl + "/Login/Logout";
+                options.AccessDeniedPath = baseUrl + "/Login/Index";
                 options.SlidingExpiration = true;
                 options.ExpireTimeSpan = TimeSpan.FromMinutes(30);
             });
@@ -155,7 +156,7 @@ namespace AIS
                 options.Cookie.HttpOnly = true;
                 options.Cookie.SecurePolicy = cookieSecurePolicy;
                 options.Cookie.SameSite = SameSiteMode.Lax;
-                options.Cookie.Path = string.IsNullOrWhiteSpace(Configuration["BaseURL"]) ? "/" : Configuration["BaseURL"];
+                options.Cookie.Path = string.IsNullOrWhiteSpace(baseUrl) ? "/" : baseUrl;
                 options.ExpireTimeSpan = TimeSpan.FromMinutes(30);
                 options.SlidingExpiration = true;
             });
@@ -256,7 +257,7 @@ namespace AIS
             ValidateRequiredConfigurationValues();
             _ = loginViewResolver ?? throw new ArgumentNullException(nameof(loginViewResolver));
 
-            var baseUrl = Configuration["BaseURL"] ?? string.Empty;
+            var baseUrl = ResolveBaseUrl(Configuration);
             app.UsePathBase(baseUrl);
 
             app.UseMiddleware<ApiExceptionHandlerMiddleware>();
@@ -335,6 +336,28 @@ namespace AIS
                 ?? context?.Connection?.RemoteIpAddress?.ToString()
                 ?? "unknown";
             return $"{policyName}:{ip}";
+            }
+
+        private static string ResolveBaseUrl(IConfiguration configuration)
+            {
+            var baseUrl = configuration["BaseURL"];
+            if (string.IsNullOrWhiteSpace(baseUrl))
+                {
+                baseUrl = configuration["Security:BaseURL"];
+                }
+
+            if (string.IsNullOrWhiteSpace(baseUrl))
+                {
+                return string.Empty;
+                }
+
+            baseUrl = baseUrl.Trim();
+            if (!baseUrl.StartsWith("/", StringComparison.Ordinal))
+                {
+                baseUrl = "/" + baseUrl;
+                }
+
+            return baseUrl.TrimEnd('/');
             }
 
         private static void AddKnownForwardedHeaderProxies(ForwardedHeadersOptions options, IConfiguration configuration)

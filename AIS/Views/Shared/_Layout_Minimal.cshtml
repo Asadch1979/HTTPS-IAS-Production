@@ -1,6 +1,15 @@
 @inject Microsoft.Extensions.Configuration.IConfiguration Configuration
 @{
-    var baseUrl = ViewBag.BaseURL as string ?? Configuration["BaseURL"] ?? Context.Request.PathBase.Value ?? string.Empty;
+    var baseUrl = ViewBag.BaseURL as string
+        ?? Context.Request.PathBase.Value
+        ?? Configuration["BaseURL"]
+        ?? Configuration["Security:BaseURL"]
+        ?? string.Empty;
+    if (!string.IsNullOrWhiteSpace(baseUrl) && !baseUrl.StartsWith("/"))
+    {
+        baseUrl = "/" + baseUrl;
+    }
+    baseUrl = baseUrl?.TrimEnd('/') ?? string.Empty;
     var year = DateTime.Now.Year;
 }
 <!DOCTYPE html>
