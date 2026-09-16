@@ -388,12 +388,12 @@ function getPageData() {
                         if (v.violation == null && v.nature == null) {
                             isbranch = true;
                         }
-                        if (v.obS_STATUS_ID == 5)
-                            $('#manageObsPanel tbody').append('<tr id="' + v.obS_ID + '"><td class="text-center">' + v.memO_NO + '</td><td class="text-center">' + v.drafT_PARA_NO + '</td><td class="text-center">' + v.finaL_PARA_NO + '</td><td class="branchfield">' + v.heading + '</td><td>' + v.obS_RISK + '</td><td>' + v.obS_STATUS + '</td><td><a href="#" data-onclick="viewObservationDetails(' + v.obS_ID + ', '+v.obS_STATUS_ID+');" class="text-hover text-success ml-5px"><small>View Details</small></a></td></tr>');
-                            //$('#manageObsPanel tbody').append('<tr id="' + v.obS_ID + '"><td class="text-center">' + v.memO_NO + '</td><td class="text-center">' + v.drafT_PARA_NO + '</td><td class="text-center">' + v.finaL_PARA_NO + '</td><td class="branchfield">' + v.process + '</td><td class="branchfield">' + v.suB_PROCESS + '</td><td class="branchfield">' + v.checklist_Details + '</td><td class="branchfield">' + v.heading + '</td><td class="text-center"><a data-onclick="event.preventDefault();ViewObservation(' + v.obS_ID + ');" href="#" class="text-primary">View Observation</a></td><td class="obs_reply"><a data-onclick="ViewObservationResponse(' + v.obS_ID + ');" href="#" class="text-primary">View Response</a></td><td>' + v.auD_REPLY + '</td><td>' + v.heaD_REPLY + '</td><td>' + v.obS_RISK + '</td><td>' + v.obS_STATUS + '</td><td class="text-center"><a href="#" data-onclick="updateObservationStatus(' + v.obS_ID + ', 9,' + v.obS_RISK_ID + ');" class="text-hover text-danger mr-5px"><small>Settle</small></a></td><td><a href="#" data-onclick="updateObservationStatus(' + v.obS_ID + ',8,' + v.obS_RISK_ID + ');" class="text-hover text-primary ml-5px"><small>Add to Final Report</small></a></td></tr>');
-                        else
-                            $('#manageObsPanel tbody').append('<tr id="' + v.obS_ID + '"><td class="text-center">' + v.memO_NO + '</td><td class="text-center">' + v.drafT_PARA_NO + '</td><td class="text-center">' + v.finaL_PARA_NO + '</td><td class="branchfield">' + v.heading + '</td><td>' + v.obS_RISK + '</td><td>' + v.obS_STATUS + '</td><td><a href="#" data-onclick="viewObservationDetails(' + v.obS_ID + ', '+v.obS_STATUS_ID+');" class="text-hover text-success ml-5px"><small>View Details</small></a></td></tr>');
-                            //$('#manageObsPanel tbody').append('<tr id="' + v.obS_ID + '"><td class="text-center">' + v.memO_NO + '</td><td class="text-center">' + v.drafT_PARA_NO + '</td><td class="text-center">' + v.finaL_PARA_NO + '</td><td class="branchfield">' + v.process + '</td><td class="branchfield">' + v.suB_PROCESS + '</td><td class="branchfield">' + v.checklist_Details + '</td><td class="branchfield">' + v.heading + '</td><td class="text-center"><a data-onclick="event.preventDefault();ViewObservation(' + v.obS_ID + ');" href="#" class="text-primary">View Observation</a></td><td class="obs_reply"><a data-onclick="ViewObservationResponse(' + v.obS_ID + ');" href="#" class="text-primary">View Response</a></td><td>' + v.auD_REPLY + '</td><td>' + v.heaD_REPLY + '</td><td>' + v.obS_RISK + '</td><td>' + v.obS_STATUS + '</td><td></td><td></td></tr>');
+                        var actionLinks = '<a href="#" data-onclick="viewObservationDetails(' + v.obS_ID + ', ' + v.obS_STATUS_ID + ');" class="text-hover text-success ml-5px"><small>View Details</small></a>';
+                        if (!g_boDraftReadOnlyMode && v.obS_STATUS_ID == 5) {
+                            actionLinks += ' <span class="text-muted mx-1">|</span> <a href="#" data-onclick="updateObservationStatus(' + v.obS_ID + ', 8, ' + v.obS_RISK_ID + ');" class="text-hover text-primary ml-5px"><small>Add to Final Report</small></a>';
+                            actionLinks += ' <span class="text-muted mx-1">|</span> <a href="#" data-onclick="updateObservationStatus(' + v.obS_ID + ', 9, ' + v.obS_RISK_ID + ');" class="text-hover text-danger ml-5px"><small>Settle</small></a>';
+                        }
+                        $('#manageObsPanel tbody').append('<tr id="' + v.obS_ID + '"><td class="text-center">' + v.memO_NO + '</td><td class="text-center">' + v.drafT_PARA_NO + '</td><td class="text-center">' + v.finaL_PARA_NO + '</td><td class="branchfield">' + v.heading + '</td><td>' + v.obS_RISK + '</td><td>' + v.obS_STATUS + '</td><td>' + actionLinks + '</td></tr>');
 
                     });
 
@@ -514,6 +514,13 @@ function getPageData() {
             dataType: "json",
         });
     }
+    function applyDraftActionVisibility(statusId, dsaIssued) {
+        var canUpdateDraft = !g_boDraftReadOnlyMode && parseInt(statusId || 0, 10) === 5;
+        $('#update_audit_obs_button').toggleClass("d-none", !canUpdateDraft);
+        $('#un_settle_audit_obs_button').toggleClass("d-none", !canUpdateDraft);
+        $('#dsa_audit_obs_button').toggleClass("d-none", !canUpdateDraft);
+        $('#settle_audit_obs_button').toggleClass("d-none", !canUpdateDraft || dsaIssued === "Y");
+    }
     function viewObservationDetails(obsId,status_id){
         g_obsId=obsId;
         g_statusId = status_id;
@@ -522,18 +529,7 @@ function getPageData() {
         });
         $('#viewMemoDetailsModel').modal('show');
 
-        if(g_boDraftReadOnlyMode || status_id !=5){
-            $('#update_audit_obs_button').addClass("d-none");
-            $('#un_settle_audit_obs_button').addClass("d-none");
-            $('#settle_audit_obs_button').addClass("d-none");
-            $('#dsa_audit_obs_button').addClass("d-none");
-
-        }else{
-            $('#update_audit_obs_button').removeClass("d-none");
-            $('#un_settle_audit_obs_button').removeClass("d-none");
-            $('#settle_audit_obs_button').removeClass("d-none");
-            $('#dsa_audit_obs_button').removeClass("d-none");
-        }
+        applyDraftActionVisibility(status_id, "N");
 
          $('#viewMemo_heading_ObSent').val('');
          setDraftMemoContent('');
@@ -560,11 +556,7 @@ function getPageData() {
             cache: false,
             success: function (data) {
 
-                if(data.dsA_ISSUED=="Y"){
-                     $('#settle_audit_obs_button').addClass("d-none");
-                }else{
-                        $('#settle_audit_obs_button').removeClass("d-none");
-                }
+         applyDraftActionVisibility(g_statusId, data.dsA_ISSUED);
          $('#viewMemo_heading_ObSent').val(data.heading);
          setDraftMemoContent(data.observatioN_TEXT);
          $('#viewMemo_response_ObSent').html(data.auditeE_REPLY);

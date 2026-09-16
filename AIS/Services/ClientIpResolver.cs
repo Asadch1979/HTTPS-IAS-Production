@@ -60,9 +60,10 @@ namespace AIS.Services
                 }
 
             var xForwardedFor = request.Headers["X-Forwarded-For"].ToString();
-            foreach (var forwardedValue in xForwardedFor.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+            var forwardedChain = xForwardedFor.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            for (var index = forwardedChain.Length - 1; index >= 0; index--)
                 {
-                var parsed = ParseForwardedIp(forwardedValue);
+                var parsed = ParseForwardedIp(forwardedChain[index]);
                 if (parsed != null)
                     {
                     return FormatIpAddress(parsed);
@@ -97,6 +98,11 @@ namespace AIS.Services
 
         private bool IsTrustedProxy(IPAddress ip)
             {
+            if (IPAddress.IsLoopback(ip))
+                {
+                return true;
+                }
+
             foreach (var proxy in _configuration.GetSection("ForwardedHeaders:KnownProxies").Get<string[]>() ?? Array.Empty<string>())
                 {
                 if (IPAddress.TryParse(proxy, out var knownProxy) && NormalizeIpAddress(knownProxy).Equals(ip))

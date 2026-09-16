@@ -282,6 +282,7 @@ namespace AIS.Services
             var fieldAuditPages = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase)
                 {
                 ["/FieldAuditReport/ReportOverview"] = 970101,
+                ["/FieldAudit/OpenAuditReport"] = 970101,
                 ["/FieldAuditReport/NarrativeSections"] = 970102,
                 ["/FieldAuditReport/KpiSnapshot"] = 970103,
                 ["/FieldAuditReport/NplSnapshot"] = 970104,

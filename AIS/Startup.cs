@@ -248,6 +248,9 @@ namespace AIS
             services.Configure<ForwardedHeadersOptions>(options =>
             {
                 options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+                options.ForwardLimit = 1;
+                options.KnownProxies.Add(IPAddress.Loopback);
+                options.KnownProxies.Add(IPAddress.IPv6Loopback);
                 AddKnownForwardedHeaderProxies(options, Configuration);
             });
             }
@@ -276,10 +279,12 @@ namespace AIS
                 {
                 logger.LogInformation("{EnvironmentName} HTTP endpoint is enabled for local browser testing.", env.EnvironmentName);
                 }
-            logger.LogInformation("SMTP configuration loaded. Host={Host}; Port={Port}; From={From}.",
-                Configuration["Email:Host"],
-                Configuration.GetValue<int?>("Email:Port") ?? 587,
-                Configuration["Email:From"]);
+            var emailCredentials = new EmailCredentails(Configuration).GetEmailCredentails();
+            logger.LogInformation("SMTP configuration loaded. Host={Host}; Port={Port}; From={From}; Status={Status}.",
+                emailCredentials.IsConfigured ? emailCredentials.Host : Configuration["Email:Host"],
+                emailCredentials.Port,
+                emailCredentials.IsConfigured ? emailCredentials.EMAIL : Configuration["Email:From"],
+                emailCredentials.StatusMessage);
 
             app.UseMiddleware<CspReportOnlyMiddleware>();
 

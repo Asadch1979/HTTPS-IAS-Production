@@ -7,7 +7,7 @@
         "ASPNETCORE_ENVIRONMENT": "Development",
         "ASPNETCORE_HOSTINGSTARTUPASSEMBLIES": ""
       },
-      "applicationUrl": "http://localhost:50852"
+      "applicationUrl": "https://localhost:50853;http://localhost:50852"
     }
   }
 }

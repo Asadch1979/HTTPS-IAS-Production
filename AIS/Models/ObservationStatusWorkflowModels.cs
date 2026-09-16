@@ -5,6 +5,9 @@ namespace AIS.Models
         public int ObservationId { get; set; }
         public string DraftParaNumber { get; set; }
         public string Remarks { get; set; }
+        public int OBS_ID { get; set; }
+        public string DRAFT_PARA_NO { get; set; }
+        public string AUDITOR_COMMENT { get; set; }
         }
 
     public sealed class FinalizeOrSettleObservationRequest

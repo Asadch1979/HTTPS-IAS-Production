@@ -1605,18 +1605,31 @@ namespace AIS.Controllers
         [ApplicationAudit("OBSERVATION_ADDED_TO_DRAFT_REPORT", "AUDIT_REPORT", "Reporting", "pkg_ar", "P_Add_Observation_To_Draft", ObjectType = "OBSERVATION", ObjectId = "request.ObservationId")]
         public IActionResult AddObservationToDraft(AddObservationToDraftRequest request)
             {
-            if (request.ObservationId <= 0)
+            var observationId = request.ObservationId > 0 ? request.ObservationId : request.OBS_ID;
+            var draftParaNumber = !string.IsNullOrWhiteSpace(request.DraftParaNumber)
+                ? request.DraftParaNumber
+                : request.DRAFT_PARA_NO;
+            var remarks = !string.IsNullOrWhiteSpace(request.Remarks)
+                ? request.Remarks
+                : request.AUDITOR_COMMENT;
+            request.ObservationId = observationId;
+            request.DraftParaNumber = draftParaNumber;
+            request.Remarks = remarks;
+
+            if (observationId <= 0)
                 return BadRequest(new { Status = false, Message = "Observation is required." });
-            if (string.IsNullOrWhiteSpace(request.DraftParaNumber))
+            if (string.IsNullOrWhiteSpace(draftParaNumber))
                 return BadRequest(new { Status = false, Message = "Draft Para Number is required." });
+            if (!Regex.IsMatch(draftParaNumber.Trim(), @"^\d+$"))
+                return BadRequest(new { Status = false, Message = "Draft Para Number must contain digits only." });
 
             var result = dBConnection.AddObservationToDraft(
-                request.ObservationId,
-                request.DraftParaNumber.Trim(),
-                request.Remarks);
+                observationId,
+                draftParaNumber.Trim(),
+                remarks);
             return result.Success
                 ? Ok(new { Status = true, Message = result.Remarks })
-                : BadRequest(new { Status = false, Message = result.Remarks });
+                : Ok(new { Status = false, Message = result.Remarks });
             }
 
         [HttpPost]
@@ -1710,8 +1723,15 @@ namespace AIS.Controllers
             response = dBConnection.SubmitAuditObservationToAuditee(OBS_ID);
             if (dBConnection.IsObservationSubmittedToAuditee(OBS_ID))
                 {
-                var notificationData = dBConnection.GetObservationSubmittedNotificationData(OBS_ID);
-                await EmailNotification.SendObservationSubmittedToAuditeeAsync(_configuration, notificationData, HttpContext?.RequestServices);
+                try
+                    {
+                    var notificationData = dBConnection.GetObservationSubmittedNotificationData(OBS_ID);
+                    await EmailNotification.SendObservationSubmittedToAuditeeAsync(_configuration, notificationData, HttpContext?.RequestServices);
+                    }
+                catch (Exception ex)
+                    {
+                    _logger.LogWarning(ex, "Observation {ObservationId} was submitted, but auditee notification could not be sent.", OBS_ID);
+                    }
                 }
 
             return !string.IsNullOrWhiteSpace(response)

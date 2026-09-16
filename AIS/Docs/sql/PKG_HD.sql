@@ -518,46 +518,8 @@ create or replace package body PKG_HD is
                                                   P_NO      in number,
                                                   R_ID      in number,
                                                   io_cursor OUT t_cursor) is
-    O_F number := 0;
-    M_F number := 0;
-    Z_B number := 0;
-    B_N varchar2(100);
   begin
-    
-    select nvl(max(ob.id), 0)
-      into O_F
-      from t_au_observation ob
-     where ob.engplanid = engid
-       and ob.status > 5;
-    select nvl(min(ob.id), 0)
-      into M_F
-      from t_au_observation ob
-     where ob.engplanid = engid;
-  
-    if (O_F = 0) then
-      OPEN io_Cursor FOR
-        select 'B' as etype,
-               o.engplanid as eng_id,
-               0 as Process,
-               0 as Sub_process,
-               0 as Check_List_Detail,
-               0 as headings,
-               0 as PERIOD,
-               o.id as OBS_ID,
-               0 as ENTITY_NAME,
-               0 as MEMO_NO,
-               nvl(o.Draft_Para_No, 0) as DRAFT_PARA,
-               nvl(o.Final_Para_No, 0) as FINAL_PARA,
-               0 as OBS_RISK_ID,
-               0 as AUD_REPLY,
-               0 as OBS_RISK,
-               0 as OBS_STATUS_ID,
-               0 as OBS_STATUS
-          from t_au_observation o
-         where o.engplanid = engid
-           and o.id = M_F;
-    else
-      OPEN io_Cursor FOR
+    OPEN io_Cursor FOR
         select 'B' as etype,
                o.engplanid as eng_id,
                ch.heading as Process,
@@ -598,8 +560,7 @@ create or replace package body PKG_HD is
             on ar.au_obs_id = o.id
          where o.engplanid = ENGID
            and o.status not in (1, 2,3, 7, 23)
-         order by o.status;
-    end if;
+         order by o.status, o.final_para_no, o.draft_para_no, o.memo_number, o.id;
   end P_GetFinalizedDraftObservationsbranch;
 
   procedure P_Finalise_para(engplan_id    in number,
