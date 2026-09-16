@@ -578,9 +578,10 @@ namespace AIS.Controllers
         private PlanningWorkflowViewModel BuildPlanningWorkflowViewModel(SessionUser user, string requestedStepCode, int? contextId, int? contextSecondaryId)
             {
             var workflowSteps = BuildPlanningWorkflowSteps();
+            var hasDashboardAccess = HasPageAccess(user, "/Planning/Planning");
             foreach (var step in workflowSteps)
                 {
-                step.IsVisible = step.RequiredPermissionPageId > 0 && _permissionService.HasViewPermission(user, step.RequiredPermissionPageId);
+                step.IsVisible = hasDashboardAccess;
                 step.IsEnabled = step.IsVisible;
                 step.IsSaved = step.IsVisible;
                 step.IsCompleted = false;

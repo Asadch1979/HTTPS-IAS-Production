@@ -17,6 +17,51 @@
         stepHost.setAttribute('data-step-code', stepCode || '');
     }
 
+    function getAppBaseUrl() {
+        var base = (window.g_asiBaseURL || '').toString().trim();
+        if (!base) {
+            var meta = document.querySelector('meta[name="base-url"]');
+            base = meta ? (meta.getAttribute('content') || '') : '';
+        }
+
+        if (!base || base === '/') {
+            return '';
+        }
+
+        if (base.charAt(0) !== '/') {
+            base = '/' + base;
+        }
+
+        return base.replace(/\/+$/, '');
+    }
+
+    function resolveAppUrl(url) {
+        var value = (url || '').toString().trim();
+        var base = getAppBaseUrl();
+
+        if (!value) {
+            return base || '';
+        }
+
+        if (/^https?:\/\//i.test(value)) {
+            return value;
+        }
+
+        if (value.indexOf('~/') === 0) {
+            value = value.substring(1);
+        }
+
+        if (value.charAt(0) === '/') {
+            if (base && value !== base && value.indexOf(base + '/') !== 0) {
+                return base + value;
+            }
+
+            return value;
+        }
+
+        return (base ? base + '/' : '/') + value.replace(/^\/+/, '');
+    }
+
     function updateStepCounter(stepNo) {
         if (!stepCounter) {
             return;
@@ -59,7 +104,7 @@
 
         stepHost.innerHTML = '<div class="alert alert-secondary mb-0">Loading workflow content...</div>';
 
-        var loadUrl = stepHost.getAttribute('data-load-url') || '/Planning/LoadPlanningStep';
+        var loadUrl = resolveAppUrl(stepHost.getAttribute('data-load-url') || '/Planning/LoadPlanningStep');
         var query = new URLSearchParams();
         query.append('stepCode', stepCode);
 
@@ -128,7 +173,7 @@
 
 
     function loadChildStep(stepKey, childKey, options) {
-        var loadUrl = '/Planning/LoadPlanningChildStep';
+        var loadUrl = resolveAppUrl('/Planning/LoadPlanningChildStep');
         var query = new URLSearchParams();
         query.append('stepKey', stepKey || '');
         query.append('childKey', childKey || '');
@@ -212,7 +257,7 @@
     }
 
     function loadSubChildStep(stepKey, childKey, actionKey, options) {
-        var loadUrl = '/Planning/LoadPlanningSubChildStep';
+        var loadUrl = resolveAppUrl('/Planning/LoadPlanningSubChildStep');
         var query = new URLSearchParams();
         query.append('stepKey', stepKey || '');
         query.append('childKey', childKey || '');

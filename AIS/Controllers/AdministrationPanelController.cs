@@ -1591,20 +1591,21 @@ namespace AIS.Controllers
         private WorkflowDashboardViewModel BuildUserDashboardViewModel(SessionUser user, string requestedStepKey)
             {
             var steps = BuildUserDashboardSteps();
-            return BuildDashboardViewModel(user, "USER_ACCESS_ADMIN", "User & Access Administration Workspace", requestedStepKey, steps);
+            return BuildDashboardViewModel(user, "USER_ACCESS_ADMIN", "User & Access Administration Workspace", "/AdministrationPanel/User_Dashboard", requestedStepKey, steps);
             }
 
         private WorkflowDashboardViewModel BuildEntityDashboardViewModel(SessionUser user, string requestedStepKey)
             {
             var steps = BuildEntityDashboardSteps();
-            return BuildDashboardViewModel(user, "ENTITY_GOVERNANCE", "Entity Governance Workspace", requestedStepKey, steps);
+            return BuildDashboardViewModel(user, "ENTITY_GOVERNANCE", "Entity Governance Workspace", "/AdministrationPanel/Entity_Dashboard", requestedStepKey, steps);
             }
 
-        private WorkflowDashboardViewModel BuildDashboardViewModel(SessionUser user, string dashboardKey, string dashboardTitle, string requestedStepKey, List<WorkflowDashboardStepModel> steps)
+        private WorkflowDashboardViewModel BuildDashboardViewModel(SessionUser user, string dashboardKey, string dashboardTitle, string dashboardPath, string requestedStepKey, List<WorkflowDashboardStepModel> steps)
             {
+            var hasDashboardAccess = HasPageAccess(user, dashboardPath);
             foreach (var step in steps)
                 {
-                step.IsVisible = step.RequiredPermissionPageId > 0 && _permissionService.HasViewPermission(user, step.RequiredPermissionPageId);
+                step.IsVisible = hasDashboardAccess;
                 step.IsEnabled = step.IsVisible;
                 step.IsCompleted = false;
                 step.IsSaved = true;
