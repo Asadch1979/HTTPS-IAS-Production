@@ -71,7 +71,7 @@ namespace AIS.Controllers
                 return RedirectToAction("Index", "Login");
             }
 
-            var model = BuildWorkflowViewModel(user, stepCode, engId);
+            var model = BuildWorkflowViewModel(user, stepCode, engId, autoSelectDefaultSelection: true);
             return View("~/Views/ManagementAudit/MA_Dashboard.cshtml", model);
         }
 
@@ -244,7 +244,7 @@ namespace AIS.Controllers
             return RedirectToAction("Home", "MANReport");
         }
 
-        private FieldAuditWorkflowViewModel BuildWorkflowViewModel(SessionUser user, string requestedStepCode, int? engId)
+        private FieldAuditWorkflowViewModel BuildWorkflowViewModel(SessionUser user, string requestedStepCode, int? engId, bool autoSelectDefaultSelection = false)
         {
             var engagementOptions = _dbConnection.GetArDashboardDropdownOptions()
                 .Where(item => item.EngagementId > 0)
@@ -253,9 +253,8 @@ namespace AIS.Controllers
                 .OrderBy(item => item.Label)
                 .ToList();
 
-            var selectedEngagementId = engId.GetValueOrDefault() > 0 && engagementOptions.Any(item => item.EngagementId == engId.Value)
-                ? engId
-                : (int?)null;
+            var selectedEngagementId = ResolveSelectedEngagementId(engagementOptions, engId, autoSelectDefaultSelection);
+            _sessionHandler.SetActiveEngagementId(selectedEngagementId);
 
             var workflowSteps = BuildWorkflowSteps();
             var selectedId = selectedEngagementId.GetValueOrDefault();
@@ -316,6 +315,27 @@ namespace AIS.Controllers
                 .GroupBy(item => item.EngagementId)
                 .Select(group => group.First())
                 .FirstOrDefault(item => item.EngagementId == engId);
+        }
+
+        private static int? ResolveSelectedEngagementId(IReadOnlyCollection<FieldAuditEngagementOptionModel> engagementOptions, int? requestedEngagementId, bool autoSelectDefaultSelection)
+        {
+            if (requestedEngagementId.GetValueOrDefault() > 0 && engagementOptions.Any(item => item.EngagementId == requestedEngagementId.Value))
+            {
+                return requestedEngagementId.Value;
+            }
+
+            if (!autoSelectDefaultSelection)
+            {
+                return null;
+            }
+
+            var activeEngagement = engagementOptions.FirstOrDefault(item => item.StatusId == 2);
+            if (activeEngagement != null)
+            {
+                return activeEngagement.EngagementId;
+            }
+
+            return engagementOptions.FirstOrDefault()?.EngagementId;
         }
 
         private bool IsJoinAlreadySubmitted(int engId)

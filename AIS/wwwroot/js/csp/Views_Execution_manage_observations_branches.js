@@ -33,6 +33,7 @@ function getPageData() {
     var g_dsa = "";
     var g_tablePage = 0;
     var g_scrollPos = 0;
+    var OBSERVATION_HEADING_VALIDATION_MESSAGE = 'Observation Heading/Title can contain only alphabets, numbers, space, &, ?, comma, and brackets ().';
     function getManageReferenceContainerSelector() {
         return '#updateMemoModel #boObservationReferenceSection';
     }
@@ -156,6 +157,9 @@ function getPageData() {
             alert('Observation is not selected.');
             return;
         }
+        if (!validateManageObservationHeading()) {
+            return;
+        }
 
         return $.ajax({
             url: g_asiBaseURL + "/ApiCalls/update_observation_text",
@@ -188,6 +192,16 @@ function getPageData() {
             videoEmbed: false,
             urls: false
         });
+        if (window.CommonValidation && CommonValidation.attachAlnumOnly) {
+            CommonValidation.attachAlnumOnly('#updateMemo_heading', {
+                allowAmp: true,
+                allowQuestion: true,
+                allowComma: true,
+                allowSpace: true,
+                allowParentheses: true,
+                maxLen: 200
+            });
+        }
         $('#updateMemo_annex').on('change', updateRiskDisplay);
         const engId = parseInt($('#engIdHidden').val() || 0);
         respSectionUpdate = initResponsibilitySection({
@@ -625,6 +639,10 @@ function getPageData() {
     function finalUpdateMemoContent(obs_id) {
         preserveTablePosition();
         g_obsId = obs_id;
+        if (!validateManageObservationHeading()) {
+            return;
+        }
+
         $.ajax({
             url: g_asiBaseURL + "/ApiCalls/update_observation_text",
             type: "POST",
@@ -633,11 +651,38 @@ function getPageData() {
             success: function (data) {
                 commitManageObservationReference();
                 showApiAlert(data);
-                onAlertCallback(reloadLocation);
+                onAlertCallback(function () {
+                    $('#updateMemoModel').modal('hide');
+                    reloadLocation();
+                });
             },
             dataType: "json",
         });
 
+    }
+    function validateManageObservationHeading() {
+        if (window.CommonValidation && CommonValidation.isAlnumOk) {
+            var isValid = CommonValidation.isAlnumOk('#updateMemo_heading', {
+                allowAmp: true,
+                allowQuestion: true,
+                allowComma: true,
+                allowSpace: true,
+                allowParentheses: true,
+                required: true,
+                rejectInvalid: true
+            });
+            if (!isValid) {
+                alert(OBSERVATION_HEADING_VALIDATION_MESSAGE);
+            }
+            return isValid;
+        }
+
+        var value = ($('#updateMemo_heading').val() || '').trim();
+        var isFallbackValid = /^[A-Za-z0-9 &,?()]+$/.test(value);
+        if (!isFallbackValid) {
+            alert(OBSERVATION_HEADING_VALIDATION_MESSAGE);
+        }
+        return isFallbackValid;
     }
     function openResponsiblePPs() {
         $('#ResponsiblePPModel').modal('show');

@@ -49,6 +49,23 @@
             videoEmbed: false,
             urls: false
         });
+        $('#replyrichTextWrapper')
+            .off('paste.auditeeReplyImageGuard')
+            .on('paste.auditeeReplyImageGuard', '.richText-editor, #viewMemo_reply', function (event) {
+                var clipboard = event.originalEvent && event.originalEvent.clipboardData;
+                if (!clipboard || !clipboard.items) {
+                    return;
+                }
+
+                for (var index = 0; index < clipboard.items.length; index++) {
+                    var item = clipboard.items[index];
+                    if (item && item.type && item.type.indexOf('image/') === 0) {
+                        event.preventDefault();
+                        alert('Screenshots cannot be pasted in Reply. Please attach screenshots through Evidences.');
+                        return false;
+                    }
+                }
+            });
 
         respSection = initResponsibilitySection({
             tableSelector: '#viewMemo_respPP_ObSent',
@@ -440,7 +457,13 @@
     }
     function replyMemo() {
         g_allAttachedImages = [];
-        var replyTxt = ($('#viewMemo_reply').val()).length;
+        var replyHtml = getAuditeeReplyHtml();
+        if (containsEmbeddedImage(replyHtml)) {
+            alert('Screenshots pasted in Reply cannot be saved. Please remove the pasted image and attach screenshots through Evidences.');
+            return false;
+        }
+
+        var replyTxt = $.trim($('<div>').html(replyHtml).text()).length;
         if (replyTxt > 0) {
             $.ajax({
                 url: g_asiBaseURL + "/ApiCalls/reply_observation",
@@ -448,14 +471,22 @@
                 data: {
                     'AU_OBS_ID': g_obsId,
                     'OBS_TEXT_ID': g_obsTextId,
-                    'REPLY': $('#viewMemo_reply').val(),
+                    'REPLY': replyHtml,
                     'EVIDENCE_LIST': g_allAttachedImages,
                     'SUBFOLDER': g_entityIdSF
                 },
                 cache: false,
                 success: function (data) {
+                    if (data !== true) {
+                        alert("Reply could not be saved. Please try again.");
+                        return;
+                    }
+
                     alert("Reply sent successfuly");
-                    onAlertCallback(reloadLocation);
+                    onAlertCallback(function () {
+                        $('#viewMemoModel').modal('hide');
+                        reloadLocation();
+                    });
 
                 },
                 dataType: "json",
@@ -465,6 +496,20 @@
             return false;
         }
 
+    }
+
+    function getAuditeeReplyHtml() {
+        var $editor = $('#replyrichTextWrapper .richText-editor').first();
+        if ($editor.length) {
+            return $editor.html() || '';
+        }
+
+        return $('#viewMemo_reply').val() || '';
+    }
+
+    function containsEmbeddedImage(html) {
+        var value = (html || '').toString();
+        return /<img\b/i.test(value) || /data:image\//i.test(value);
     }
 
     function clearEvidencesLog() {

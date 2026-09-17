@@ -479,9 +479,9 @@ create or replace package body PKG_HD is
                                             P_NO      in number,
                                             R_ID      in number,
                                             io_cursor OUT t_cursor) is
-  
+
   begin
-  
+
     OPEN io_Cursor FOR
       select ot.headings as Title,
              o.ID as OBS_ID,
@@ -494,7 +494,7 @@ create or replace package body PKG_HD is
              ost.Statusname as OBS_STATUS,
              p.description as period,
              et.name as entity_name
-      
+
         from t_au_observation o
        inner join t_au_observation_text ot
           on o.id = ot.observatsion_id
@@ -510,7 +510,7 @@ create or replace package body PKG_HD is
           on et.entity_id = e.entity_id
        where o.engplanid = ENGID
        order by o.status, o.final_para_no, o.memo_number;
-  
+
   end P_GetFinalizedDraftObservations;
 
   procedure P_GetFinalizedDraftObservationsbranch(ENGID     IN NUMBER,
@@ -571,12 +571,12 @@ create or replace package body PKG_HD is
                             para_no       in number,
                             PP_NO         IN NUMBER,
                             io_cursor     OUT t_cursor) is
-  
+
     S_Z number := 0;
     P_O number := 0;
     B_N varchar2(100);
   begin
-  
+
     select NVL(max(p.id), 0)
       into P_O
       from t_audit_para p
@@ -588,7 +588,7 @@ create or replace package body PKG_HD is
         from t_user_maping mp
        where mp.ppno = PP_NO;
       if (S_Z = 15) then
-      
+
         UPDATE T_AU_OBSERVATION o
            SET o.status = NEW_STATUS_ID
          WHERE o.id = OBS_ID;
@@ -613,7 +613,7 @@ create or replace package body PKG_HD is
            PP_NO,
            sysdate);
         commit;
-      
+
         open io_cursor for
           select '1' as ref, r.statusname as remarks
             from t_au_observation_status r
@@ -622,7 +622,7 @@ create or replace package body PKG_HD is
         open io_cursor for
           select r.ref, r.remarks from t_au_remarks r where r.id = 22;
       end if;
-    
+
     else
       P_add_error_log('HD',
                       'P_audit_pre_Concluding',
@@ -633,7 +633,7 @@ create or replace package body PKG_HD is
         select '1' as ref,
                'Please contact system Administrator as para already finalized' as remarks
           from dual;
-    
+
     end if;
   end P_Finalise_para;
 
@@ -646,12 +646,12 @@ create or replace package body PKG_HD is
     A_D number := 0;
     B_N varchar2(100);
   begin
-  
+
     select nvl(max(name), 'Unknown')
       into B_N
       from t_auditee_entities
      where entity_id = Entityid;
-  
+
     select nvl(max(e.type_id), 0)
       into N_F
       from t_auditee_entities e
@@ -678,7 +678,7 @@ create or replace package body PKG_HD is
             on e.entity_id = m.entity_id
          WHERE m.parent_id = Entityid
            and e.auditby_id = ENT_ID;
-    
+
     else
       open io_cursor for
         select e.entity_id as branchentityid, e.name as branchname
@@ -690,16 +690,16 @@ create or replace package body PKG_HD is
            and m.relation_type_id in (4, 5)
          order by m.c_name;
     end if;
-  
+
   end P_GetOldParasEntityid;
 
   procedure P_GetOldParas(Entityid in number, io_cursor OUT t_cursor) is
-  
+
     v_count number := 0;
     B_N     varchar2(100);
-  
+
   begin
-  
+
     open io_cursor for
       select f.id,
              f.ref_p,
@@ -740,39 +740,39 @@ create or replace package body PKG_HD is
                 from t_au_old_paras_fad_text nt
                where f.ref_p = nt.ref_p)
        order by f.audit_period desc, ID;
-  
+
   end P_GetOldParas;
 
   procedure P_GetOldSettledParas(Entityid  in number,
                                  io_cursor OUT t_cursor) is
-  
+
     B_N varchar2(100);
   begin
-  
+
     select nvl(max(entity_name), 'Unknown')
       into B_N
       from t_au_old_paras_fad
      where audited_by = Entityid;
-  
+
     P_add_error_log('HD',
                     'P_audit_pre_Concluding',
                     'PP No was null',
                     Entityid);
-  
+
     open io_cursor for
       select f.*
         from t_au_old_paras_fad f
        WHERE f.audited_by = Entityid
          and f.para_status in (6)
        order by f.audit_period desc, ID;
-  
+
   end P_GetOldSettledParas;
 
   procedure P_Get_All_Paras_Monitoring(Entityid  in number,
                                        io_cursor OUT t_cursor) is
-  
+
   begin
-  
+
     open io_cursor for
       select f.old_para_id OLD_PARA_ID,
              case
@@ -796,40 +796,40 @@ create or replace package body PKG_HD is
        WHERE f.entity_id = Entityid
          and f.para_status = 8
        order by f.audit_period;
-  
+
   end P_Get_All_Paras_Monitoring;
 
   procedure P_GetOldParastext(para_ref in varchar2, io_cursor OUT t_cursor) is
-  
+
   begin
-  
+
     open io_cursor for
       select ot.*
         from t_au_old_paras_fad_text ot
        WHERE ot.ref_p = para_ref;
-  
+
   end P_GetOldParastext;
 
   procedure P_GetnewParastext(obs_id in number, io_cursor OUT t_cursor) is
   begin
-  
+
     P_add_error_log('HD',
                     'P_audit_pre_Concluding',
                     'PP No was null',
                     obs_id);
-  
+
     open io_cursor for
       select ot.text, ot.headings
         from t_au_observation_text ot
        WHERE ot.observatsion_id = obs_id;
-  
+
   end P_GetnewParastext;
 
   procedure P_GetEntitiesFornewPara(entityId  in number,
                                     io_cursor out t_cursor) as
   begin
     if (entityId in (112242, 112248, 112243)) then
-    
+
       open io_cursor for
         select e.name || ' ( ' || eg.audit_startdate || ' from ' ||
                eg.audit_enddate || ' )' as name,
@@ -849,16 +849,16 @@ create or replace package body PKG_HD is
                eg.audit_enddate || ' )' as name,
                e.entity_id,
                eg.eng_id
-        
+
           from t_au_plan_eng eg
          inner join t_auditee_entities e
             on e.entity_id = eg.entity_id
            and eg.period_id > 1
          where e.auditby_id = entityId
          order by e.name;
-    
+
     end if;
-  
+
   end P_GetEntitiesFornewPara;
 
   procedure P_GetOldParasForResponse(UserEntityID in number,
@@ -866,7 +866,7 @@ create or replace package body PKG_HD is
                                      R_ID         in number,
                                      io_cursor    OUT t_cursor) is
   begin
-  
+
     if (R_ID in (15, 16)) then
       open io_cursor for
         SELECT f.id,
@@ -924,7 +924,7 @@ create or replace package body PKG_HD is
                    and lg.authorized_by is null)
          order by f.para_id;
     end if;
-  
+
   end P_GetOldParasForResponse;
 
   procedure P_GetnewParasForResponse(UserEntityID in number,
@@ -949,7 +949,7 @@ create or replace package body PKG_HD is
                 (case
                   when s.statusid in (9, 6) then
                    'Settled'
-                
+
                 end)
              end) as para_status
         FROM t_au_observation o
@@ -968,7 +968,7 @@ create or replace package body PKG_HD is
          and f.ind = 'A'
       -- and f.para_status = 8
        WHERE eg.eng_id = entityId
-            
+
          and eg.period_id > 1
          and not exists (select 'z'
                 from T_AU_new_PARAS_STATUS_CHANGE_LOG lg
@@ -980,7 +980,7 @@ create or replace package body PKG_HD is
                                               io_cursor    OUT t_cursor) is
   begin
     open io_cursor for
-    
+
       SELECT o.id,
              e.entity_id,
              eg.entity_code,
@@ -1024,16 +1024,16 @@ create or replace package body PKG_HD is
   procedure P_UpdateOldParasFadsettleunsettle(PPNO       in number,
                                               PID        IN NUMBER,
                                               NEW_STATUS in number) as
-  
+
   begin
-  
+
     UPDATE T_AU_OLD_PARAS_FAD al
        SET al.Para_Status         = NEW_STATUS,
            al.parastatusupdatedby = PPNO,
            al.parasetteledon      = sysdate
      WHERE al.ID = PID;
     commit;
-  
+
   end P_UpdateOldParasFadsettleunsettle;
 
   procedure P_ChangeStatusRequestForSettledPara_new(obs_id    in number,
@@ -1047,12 +1047,12 @@ create or replace package body PKG_HD is
     S_F number := 0;
     Z_R number := 0;
   begin
-  
-   
-  
+
+
+
     commit;
     commit;
-  
+
     select nvl(max(l.id), 0)
       into S_F
       from T_AU_new_PARAS_STATUS_CHANGE_LOG l
@@ -1061,7 +1061,7 @@ create or replace package body PKG_HD is
       open io_cursor for
         select 'Request for updation in Para Status already exist, One para is allowed only once. Please contact System Administrator' as remark
           from dual;
-    
+
     else
       select fd.para_status
         into M_F
@@ -1093,17 +1093,17 @@ create or replace package body PKG_HD is
            (SELECT COALESCE(max(ul.sequence) + 1, 1)
               FROM T_AU_new_PARAS_STATUS_CHANGE_LOG ul));
         COMMIT;
-      
+
         P_add_error_log('HD',
                         'P_audit_pre_Concluding',
                         'PP No was null',
                         obs_id);
         commit;
-      
+
         open io_cursor for
           select 'Request for updation in Para Status submitted to Reviewer' as remark
             from dual;
-      
+
       end if;
     end if;
   end P_ChangeStatusRequestForSettledPara_new;
@@ -1119,8 +1119,8 @@ create or replace package body PKG_HD is
     O_B number := 0;
     Z_R number := 0;
   begin
-  
-  
+
+
     select obsid into O_B from dual;
     if ind = 'A' then
       update T_AU_new_PARAS_STATUS_CHANGE_LOG ls
@@ -1130,24 +1130,24 @@ create or replace package body PKG_HD is
              ls.ind               = P_IND
        where ls.au_obs_id = O_B;
       COMMIT;
-    
+
     elsif ind = 'R' then
       delete from T_AU_new_PARAS_STATUS_CHANGE_LOG l
        where l.au_obs_id = O_B
          and l.ind = P_IND;
       commit;
     end if;
-  
+
     P_add_error_log('HD',
                     'P_audit_pre_Concluding',
                     'PP No was null',
                     obsid);
     commit;
-  
+
     open io_cursor for
       select ' Request for updation in Para Status submitted to Authorizer' as remark
         from dual;
-  
+
   end P_ChangeStatusRequestForSettledPara_new_reviewer;
 
   procedure P_ChangeStatusRequestForSettledPara(RefP      in varchar2,
@@ -1161,7 +1161,7 @@ create or replace package body PKG_HD is
     S_F number := 0;
     B_N varchar2(100);
   begin
-  
+
     if (PPNO is not null) then
       select nvl(max(l.id), 0)
         into S_F
@@ -1250,7 +1250,7 @@ create or replace package body PKG_HD is
                     FROM T_AU_OLD_PARAS_FAD_STATUS_CHANGE_LOG ul),
                  au_obs_id);
               COMMIT;
-            
+
               open io_cursor for
                 select 'Request for updation in Para Status submitted to Departmental Head' as remark
                   from dual;
@@ -1263,7 +1263,7 @@ create or replace package body PKG_HD is
         select 'Session Expired, Logout and login again' as remark
           from dual;
     end if;
-  
+
   end P_ChangeStatusRequestForSettledPara;
 
   procedure P_AddOldParas(PROCESS       in number,
@@ -1272,10 +1272,10 @@ create or replace package body PKG_HD is
                           PPNO          in number,
                           PID           IN NUMBER,
                           REPLYTEXT     in clob) as
-  
+
     B_N varchar2(100);
   begin
-  
+
     UPDATE T_AU_OLD_PARAS_FAD al
        SET al.PROCESS_DETAIL = PROCESSDETAIL,
            al.STATUS         = 1,
@@ -1283,18 +1283,18 @@ create or replace package body PKG_HD is
            al.ENTERED_ON     = sysdate
      WHERE al.ID = PID;
     commit;
-  
+
     UPDATE T_AU_OLD_PARAS_FAD_TEXT FD
        SET FD.PARA_TEXT = REPLYTEXT
      WHERE FD.ID = PID;
     COMMIT;
-  
+
   end P_AddOldParas;
   -- Ali & Asfand
   procedure p_get_para_responsibles(paraRef   in number,
                                     P_C       in varchar2,
                                     io_cursor OUT t_cursor) as
-  
+
   begin
     if (P_C = 'O') then
       open io_cursor for
@@ -1347,19 +1347,19 @@ create or replace package body PKG_HD is
            order by e.sequence;
       end if;
     end if;
-  
+
   end P_get_para_evidences;
 
   PROCEDURE P_Branch_risk_rating_model(ENGID     in number,
                                        Entityid  in number,
                                        io_cursor OUT t_cursor) is
-  
+
   begin
-  
+
     DELETE FROM T_RISK_BRANCH_WISE;
     DELETE FROM T_BRANCH_RISK_RATING;
     COMMIT;
-  
+
     INSERT INTO T_RISK_BRANCH_WISE
       (AUDIT_PERIOD,
        ENG_ID,
@@ -1369,7 +1369,7 @@ create or replace package body PKG_HD is
        MAX_NUMBER,
        WEIGHTAGE_AVERAGE,
        GRAVITY_RISK)
-    
+
       SELECT P.AUDITPERIODID,
              E.ENG_ID,
              e.entity_id,
@@ -1378,12 +1378,12 @@ create or replace package body PKG_HD is
              rs.max_number,
              rs.weightage as Weighted_Average,
              RS.GRAVITY
-      
+
         FROM T_AU_PERIOD P, T_AU_PLAN_ENG E, T_R_SUB_GROUP RS
        where p.auditperiodid = e.period_id
          and e.eng_id = ENGID;
     commit;
-  
+
     update T_RISK_BRANCH_WISE ts
        set ts.number_of_observations =
            (select count(os.id)
@@ -1395,19 +1395,19 @@ create or replace package body PKG_HD is
                and d.v_id = ts.s_gr_id
                and os.status = 8);
     commit;
-  
+
     update T_RISK_BRANCH_WISE t
        set t.risk_based_marks =
            (t.number_of_observations * T.GRAVITY_RISK)
      where t.entity_id = Entityid;
     commit;
-  
+
     update T_RISK_BRANCH_WISE t
        set t.weighted_average_marks =
            (t.number_of_observations * T.GRAVITY_RISK)
      where t.entity_id = Entityid;
     commit;
-  
+
     update T_RISK_BRANCH_WISE t
        set t.final_marks = (case
                              when t.weighted_average_marks > t.max_number then
@@ -1417,10 +1417,10 @@ create or replace package body PKG_HD is
                            end)
      where t.entity_id = Entityid;
     commit;
-  
+
     INSERT INTO T_BRANCH_RISK_RATING
       (AUDIT_PERIOD_ID, Entity_id, RISK_RATING)
-    
+
       SELECT BB.AUDIT_PERIOD, bb.entity_id, SUM(BB.FINAL_MARKS)
         FROM T_RISK_BRANCH_WISE BB
        where bb.eng_id = engid
@@ -1433,16 +1433,16 @@ create or replace package body PKG_HD is
               from T_COSO_RATING r
              where b.risk_rating between (r.range_start) and (r.range_end));
     commit;
-  
+
     open io_cursor for
       select * from T_RISK_BRANCH_WISE b where b.eng_id = ENGID;
-  
+
   end P_Branch_risk_rating_model;
 
   PROCEDURE P_GET_Branch_risk_rating_model(ENGID     in number,
                                            Entityid  in number,
                                            io_cursor OUT t_cursor) is
-  
+
   begin
     open io_cursor for
       select r.description            as Mian_Areas,
@@ -1454,17 +1454,17 @@ create or replace package body PKG_HD is
              o.risk_based_marks,
              o.weighted_average_marks,
              o.final_marks
-      
+
         FROM T_R_SUB_GROUP RS
        INNER JOIN T_R_GROUP R
           ON R.GR_ID = RS.GR_ID
        inner join T_RISK_BRANCH_WISE O
           on o.gr_id = r.gr_id
          and o.s_gr_id = rs.s_gr_id
-      
+
        where o.eng_id = ENGID
          and o.entity_id = Entityid;
-  
+
   end P_GET_Branch_risk_rating_model;
 
   Procedure p_ppno_para(P_NO      in number,
@@ -1472,10 +1472,10 @@ create or replace package body PKG_HD is
                         ENT_ID    in number,
                         PPNO      in number,
                         io_cursor OUT t_cursor) is
-  
+
   begin
-  
-  
+
+
     if (R_ID = 0) then
       open io_cursor for
         select t.com_id,
@@ -1525,19 +1525,19 @@ create or replace package body PKG_HD is
            and r.is_active = 'Y'
          order by t.audit_period;
     end if;
-  
+
   end p_ppno_para;
 
   procedure P_GET_ALL_PARA_TEXT(CM_ID in number, io_cursor OUT t_cursor) is
     IND    varchar2(2);
     OBS_ID number := 0;
   begin
-  
+
     select c.ind
       into IND
       from ais_t_au_post_compliance c
      where c.com_id = CM_ID;
-  
+
     if (IND = 'O') then
       open io_cursor for
         select ft.para_text,
@@ -1551,7 +1551,7 @@ create or replace package body PKG_HD is
          left join ais_t_au_post_compliance_text br
            on br.com_id = c.com_id and c.com_cycle = br.com_cycle
          where c.com_id = CM_ID;
-    
+
     else
       if (IND = 'A') then
         open io_cursor for
@@ -1567,7 +1567,7 @@ create or replace package body PKG_HD is
            inner join t_au_observation_final_reccomendation r
              on r.obs_id = e.au_obs_id
            where c.com_id = CM_ID;
-      
+
       else
         if (IND = 'C') then
           open io_cursor for
@@ -1579,7 +1579,7 @@ create or replace package body PKG_HD is
                 on c.new_para_id = nt.observatsion_id
                and c.ind = 'C'
              where c.com_id = CM_ID;
-        
+
         else
           OBS_ID := CM_ID;
           P_add_error_log('HD',
@@ -1597,11 +1597,11 @@ create or replace package body PKG_HD is
                         P_NO      in number,
                         R_ID      in number,
                         io_cursor OUT t_cursor) is
-  
+
     E_F number := 0;
-  
+
   begin
-  
+
     open io_cursor for
       select distinct f.p_no as PPNO, f.EMPLOYEE_NAME
         from V_HR_EMPLOYEE_INFO_PPNO_NDC f
@@ -1615,22 +1615,22 @@ create or replace package body PKG_HD is
                                    P_NO      in number,
                                    R_ID      in number,
                                    io_cursor OUT t_cursor) as
-  
+
     B_N varchar2(100);
     P_N number;
   begin
-    
-   Select nvl(max(o.final_para_no),0) into P_N from t_au_observation o 
+
+   Select nvl(max(o.final_para_no),0) into P_N from t_au_observation o
    where o.id = obsid;
   if(P_N > 0) then
     select '-' into B_N from dual;
-  
+
     update t_au_observation_text ot
        set ot.headings = gist
      where ot.observatsion_id = obsid;
     commit;
     if (P_NO is not null) then
-    
+
       MERGE INTO t_au_observation_gist g
       USING (SELECT obsid AS obs_id, gist AS gist, P_NO AS entered_by
                FROM dual) src
@@ -1649,9 +1649,9 @@ create or replace package body PKG_HD is
            src.gist,
            src.entered_by,
            sysdate);
-    
+
       commit;
-    
+
       MERGE INTO t_au_observation_final_reccomendation t
       USING (SELECT obsid AS obs_id FROM dual) s
       ON (t.obs_id = s.obs_id)
@@ -1671,11 +1671,11 @@ create or replace package body PKG_HD is
            P_NO,
            sysdate);
       commit;
-    
+
       open io_cursor for
         select 'Gist & Recommendation added sucessfuly' as remarks
           from dual;
-    
+
     else
       P_add_error_log('HD',
                       'P_audit_pre_Concluding',
@@ -1685,16 +1685,16 @@ create or replace package body PKG_HD is
       open io_cursor for
         select 'system error, Logout and Login again.' as remarks
           from dual;
-    
+
     end if;
-    
+
     else
       open io_cursor for
         select 'First Update Final Para Number' as remarks
           from dual;
-    
+
     end if;
-    
+
   end P_audit_pre_Concluding;
 
   procedure P_get_audit_pre_Concluding_entities(userentityid in t_Au_Plan_Eng.Eng_Id%type,
@@ -1729,7 +1729,7 @@ create or replace package body PKG_HD is
            and eg.status in (12) ---- between '5' and '12'
            and eg.auditby_id = userentityid;
     end if;
-  
+
   end P_get_audit_pre_Concluding_entities;
 
   procedure P_get_audit_pre_Concluding(engid     in number,
@@ -1737,12 +1737,12 @@ create or replace package body PKG_HD is
                                        P_NO      in number,
                                        R_ID      in number,
                                        io_cursor OUT t_cursor) as
-  
+
     E_F number := 0;
     D_F varchar2(50);
     B_N varchar2(100);
   begin
-     
+
     open io_cursor for
       select o.id,
              ot.headings,
@@ -1769,7 +1769,7 @@ create or replace package body PKG_HD is
        where o.engplanid = engid
          and o.status in (4, 8)
        ORDER BY O.FINAL_PARA_NO;
-  
+
   end P_get_audit_pre_Concluding;
 
   procedure P_audit_pre_submission(engid     in t_Au_Plan_Eng.Eng_Id%type,
@@ -1784,7 +1784,7 @@ create or replace package body PKG_HD is
     Z_R number := 0;
     B_N varchar2(100);
   begin
-  
+
     select '-' into B_N from dual;
     select count(o.id)
       into N_F
@@ -1797,7 +1797,7 @@ create or replace package body PKG_HD is
         from t_au_plan_eng e
        where e.eng_id = engid
          and e.status between 5 and 12;
-    
+
       if (S_F != 0) then
         select count(g.id)
           into G_F
@@ -1811,7 +1811,7 @@ create or replace package body PKG_HD is
           from t_au_observation o
          where o.engplanid = engid
            and o.status = 8;
-      
+
         if (G_F = O_F) then
           update t_au_plan_eng e set e.status = 13 where e.eng_id = engid;
           commit;
@@ -1843,16 +1843,16 @@ create or replace package body PKG_HD is
         select 'Paras/Observation needed to be Marked settled/add to final' as remarks
           from dual;
     end if;
-  
+
   end P_audit_pre_submission;
 
   procedure P_get_audit_Concluding_entities(ENT_ID    in number,
                                             P_NO      in number,
                                             R_ID      in number,
                                             io_cursor OUT t_cursor) as
-  
+
   begin
-  
+
     open io_cursor for
       select e.entity_id,
              e.code,
@@ -1865,14 +1865,14 @@ create or replace package body PKG_HD is
           on e.entity_id = eg.entity_id
          and eg.status = 13
          and eg.auditby_id = ENT_ID;
-  
+
   end P_get_audit_Concluding_entities;
 
   procedure P_audit_Concluding(engid  in t_Au_Plan_Eng.Eng_Id%type,
                                ENT_ID in number,
                                P_NO   in number,
                                R_ID   in number,
-                               
+
                                io_cursor OUT t_cursor) as
     V_F           number := 0;
     C_F           number := 0;
@@ -1885,13 +1885,13 @@ create or replace package body PKG_HD is
     v_com_id      ais_t_au_post_compliance.com_id%TYPE;
     V_ENTITY_TYPE number;
     V_KIP_EXIST   Varchar2(2);
-    
+
   begin
 
     select '-' into B_N from dual;
-  
+
     V_ENTITY_TYPE := pkg_FRPT.F_GET_ENTITY_TYPE_ID(engid);
-  
+
     SELECT COUNT(*)
       INTO R_F
       FROM T_FRPT_REPORT_META M
@@ -1917,10 +1917,10 @@ create or replace package body PKG_HD is
     else
       V_KIP_EXIST := 'Y';
     end if;
-  
+
     IF ((V_ENTITY_TYPE = 6 AND R_F > 0 AND V_KIP_EXIST = 'Y') OR
        (V_ENTITY_TYPE <> 6)) then
-    
+
       select NVL(MAX(e.entity_type), 0)
         into T_Y
         from t_au_plan_eng e
@@ -1934,7 +1934,7 @@ create or replace package body PKG_HD is
         into V_F
         from t_au_plan_eng eg
        where eg.eng_id = engid;
-    
+
       --STATUS 13 ENG WIll be allowed to Proceed for Concluding
       if (V_F = 12) then
         open io_cursor for
@@ -1944,7 +1944,7 @@ create or replace package body PKG_HD is
           open io_cursor for
             select r.ref, r.remarks from t_au_remarks r where r.id = 19;
         else
-        
+
           for ee in (select o.id,
                             p.description as audit_period,
                             e.entity_id,
@@ -1983,7 +1983,7 @@ create or replace package body PKG_HD is
                               else
                                to_char(o.amount_involved, 'FM9999999990.00')
                             end as amount_involved_txt
-                     
+
                        from t_au_observation o
                       inner join t_au_plan_eng ep
                          on ep.eng_id = o.engplanid
@@ -2003,11 +2003,11 @@ create or replace package body PKG_HD is
                               where cc.new_para_id = o.id
                                 and cc.ind = 'A'
                                 and cc.old_para_id is null)) loop
-          
+
             SELECT COALESCE(MAX(p.com_id) + 1, 1)
               INTO v_com_id
               FROM ais_t_au_post_compliance p;
-          
+
             insert into ais_t_au_post_compliance
               (com_id,
                old_para_id,
@@ -2109,12 +2109,12 @@ create or replace package body PKG_HD is
              set j.status = 'C'
            where j.eng_plan_id = engid;
           commit;
-        
+
           update T_AU_AUDIT_TEAM_TASKLIST t
              set t.status_id = 6
            where t.eng_plan_id = engid;
           commit;
-        
+
           update t_au_plan_eng ep
              set ep.status = 14, ep.lastupdateddate = sysdate
            where ep.eng_id = engid;
@@ -2149,7 +2149,7 @@ create or replace package body PKG_HD is
                                    io_cursor OUT t_cursor) is
   begin
     if (ppno is not null) then
-    
+
       update t_au_old_paras_fad o
          set o.fad_reviewed_by = ppno,
              o.update_status   = 3,
@@ -2175,7 +2175,7 @@ create or replace package body PKG_HD is
         select 'Your session has been expired, Logout and Login again.' as remarks
           from dual;
     end if;
-  
+
   end P_reviewed_legacy_Para;
 
   procedure P_GetAuditEntitiestype(ENTITYID  IN NUMBER,
@@ -2294,7 +2294,7 @@ create or replace package body PKG_HD is
            ppno,
            sysdate);
         COMMIT;
-      
+
         OPEN io_cursor FOR
           SELECT 'Para added in legacy list and submitted to Incharge Audit Zone for Authorization' as remarks
             from dual;
@@ -2320,7 +2320,7 @@ create or replace package body PKG_HD is
   procedure P_Get_legacy_Para_to_authorize(ENTITYID  IN NUMBER,
                                            io_cursor OUT t_cursor) as
   begin
-  
+
     if (ENTITYID in (112242, 112248)) then
       open io_cursor for
         SELECT f.para_id as ref_p,
@@ -2333,13 +2333,13 @@ create or replace package body PKG_HD is
                '' as annexure,
                '' as amount_involved,
                '' as vol_i_ii
-        
+
           FROM T_AU_OBSERVATION_OLD_CAD_PARAS f
          inner join t_auditee_entities e
             on e.entity_id = f.entity_id
          where f.para_status is null
            and f.audited_by = ENTITYID;
-    
+
     else
       OPEN io_cursor FOR
         SELECT f.ref_p,
@@ -2413,13 +2413,13 @@ create or replace package body PKG_HD is
                                    io_cursor OUT t_cursor) as
   begin
     if (ppno is not null) then
-    
+
       delete from T_AU_OBSERVATION_OLD_CAD_PARAS t where t.para_id = refp;
       commit;
-    
+
       -- delete from t_au_old_paras_fad t where t.ref_p = refp;
       -- commit;
-    
+
       open io_cursor for
         select 'Para Deleted' as remarks from dual;
     else
@@ -2444,7 +2444,7 @@ create or replace package body PKG_HD is
                              para_no   in number,
                              io_cursor OUT t_cursor) as
   begin
-  
+
     update t_au_observation o
        set o.final_para_no = para_no
      where o.id = obs_id;
@@ -2466,9 +2466,9 @@ create or replace package body PKG_HD is
     ENT_TYPE number := 0;
     S_Date   date;
     E_Date   date;
-  
+
   begin
-  
+
     SELECT '01-' || MON || '-' || Yr into S_Date from dual;
     SELECT LAST_DAY(S_DATE) into E_Date from dual;
     select max(nvl(t.entity_id, 0))
@@ -2482,7 +2482,7 @@ create or replace package body PKG_HD is
         from t_auditee_entities e
        where e.entity_id = ENG;
     end if;
-  
+
     if (R_ID in (41, 45, 1,3)) then
       OPEN io_cursor FOR
         select c.ENTITY_ID,
@@ -2566,7 +2566,7 @@ create or replace package body PKG_HD is
                and trunc(c.STELLED_ON) between S_Date and E_Date
              order by C.audit_period desc, C.para_no asc;
         else
-        
+
           OPEN io_cursor FOR
             select c.ENTITY_ID,
                    c.COM_ID,
@@ -2596,7 +2596,7 @@ create or replace package body PKG_HD is
         end if;
       end if;
     end if;
-  
+
   end P_GetSettledParasForReview;
 
   procedure P_ADD_DUPLICATE_PARAS(o_para_id in number,
@@ -2632,23 +2632,23 @@ create or replace package body PKG_HD is
              f.gist_of_paras,
              f.last_updated_on,
              f.last_update_by
-      
+
         from t_au_observation_fad f
        inner join t_auditee_entities e
           on e.entity_id = f.entity_id
        WHERE f.IND = P_IND
          and (f.old_para_id = o_para_id or f.new_paraid = n_para_id);
-  
+
     vr1 V%rowtype;
     Z_B number := 0;
   begin
     select '-' into B_N from dual;
-  
+
     Open V;
     Fetch V
       into vr1;
     Close v;
-  
+
     insert into T_AU_DUPLICATE_PARAS
       (D_ID,
        OLD_PARA_ID,
@@ -2690,11 +2690,11 @@ create or replace package body PKG_HD is
        P_NO,
        sysdate);
     commit;
-  
+
     open io_cursor for
       select 'Para marked as duplicated, and forwarded for authorization' as remarks
         from dual;
-  
+
   end P_ADD_DUPLICATE_PARAS;
 
   procedure P_GET_DUPLICATE_PARAS_ENT_FOR_AUTH(P_NO      in number,
@@ -2704,14 +2704,14 @@ create or replace package body PKG_HD is
     B_N varchar2(100);
   begin
     select '-' into B_N from dual;
-  
+
     open io_cursor for
       select e.entity_id, e.name
         from t_auditee_entities e
        where e.entity_id in (select distinct d.entity_id
                                from T_AU_DUPLICATE_PARAS d
                               where d.authorized_on is null);
-  
+
   end P_GET_DUPLICATE_PARAS_ENT_FOR_AUTH;
 
   procedure P_GET_DUPLICATE_PARAS_FOR_AUTH(P_NO      in number,
@@ -2720,9 +2720,9 @@ create or replace package body PKG_HD is
                                            io_cursor OUT t_cursor) as
     B_N varchar2(100);
   begin
-  
+
     select '-' into B_N from dual;
-  
+
     open io_cursor for
       select d.d_id,
              d.old_para_id,
@@ -2750,7 +2750,7 @@ create or replace package body PKG_HD is
        inner join t_auditee_entities e
           on d.entity_id = e.entity_id
        where d.authorized_status = 'N';
-  
+
   end P_GET_DUPLICATE_PARAS_FOR_AUTH;
 
   procedure P_AUTH_DUPLICATE_PARAS(DID       in number,
@@ -2767,28 +2767,28 @@ create or replace package body PKG_HD is
              d.entity_code,
              d.audited_by,
              d.ind
-      
+
         from T_AU_DUPLICATE_PARAS d
        where d.d_id = DID;
-  
+
     vr1 V%rowtype;
     Z_B number := 0;
   begin
-  
+
     select '-' into B_N from dual;
-  
+
     Open V;
     Fetch V
       into vr1;
     Close v;
-  
+
     update T_AU_DUPLICATE_PARAS d
        set d.authorized_status = 'Y',
            d.authorized_by     = P_NO,
            d.authorized_on     = sysdate
      where d.d_id = DID;
     commit;
-  
+
     if (VR1.IND = 'O') then
       update t_au_old_paras_fad fd
          set fd.para_status = 28
@@ -2816,11 +2816,11 @@ create or replace package body PKG_HD is
        and (ca.old_para_id = vr1.o_para_id or
            ca.new_para_id = vr1.n_para_id);
     commit;
-  
+
     open io_cursor for
       select 'Authorization of Duplicate request succesfully completed' as remarks
         from dual;
-  
+
   end P_AUTH_DUPLICATE_PARAS;
 
   procedure P_REJECT_DUPLICATE_PARAS(DID       in number,
@@ -2828,12 +2828,12 @@ create or replace package body PKG_HD is
                                      ENT_ID    in number,
                                      R_ID      in number,
                                      io_cursor OUT t_cursor) as
-  
+
     B_N varchar2(100);
   begin
-  
+
     select '-' into B_N from dual;
-  
+
     update T_AU_DUPLICATE_PARAS d
        set d.authorized_status = 'R',
            d.authorized_by     = P_NO,
@@ -2843,7 +2843,7 @@ create or replace package body PKG_HD is
     open io_cursor for
       select 'Deletion of Duplicate para request rejected successfully' as remarks
         from dual;
-  
+
   end P_REJECT_DUPLICATE_PARAS;
 
   Procedure P_GET_OBSERVATION_DETAILS_FROM_ID_HO(obid      number,
@@ -2851,13 +2851,13 @@ create or replace package body PKG_HD is
                                                  R_ID      NUMBER,
                                                  ENT_ID    NUMBER,
                                                  io_cursor Out t_cursor) as
-  
+
     B_N varchar2(100);
-  
+
   begin
-  
+
     select '-' into B_N from dual;
-  
+
     open io_cursor for
       select c.id              as control_violation,
              sb.id             as nature_id,
@@ -2887,16 +2887,16 @@ create or replace package body PKG_HD is
                                               R_ID      NUMBER,
                                               ENT_ID    NUMBER,
                                               io_cursor Out t_cursor) as
-  
+
     B_N varchar2(100);
-  
+
   begin
-  
+
     select '-' into B_N from dual;
-  
+
     P_add_error_log('HD', 'P_audit_pre_Concluding', 'PP No was null', obid);
     commit;
-  
+
     open io_cursor for
       select a.id as annex_id,
              p.t_id,
@@ -2944,15 +2944,15 @@ create or replace package body PKG_HD is
                                                       R_ID      NUMBER,
                                                       ENT_ID    NUMBER,
                                                       io_cursor Out t_cursor) as
-  
+
     B_N varchar2(100);
-  
+
   begin
-  
+
     select '-' into B_N from dual;
-  
+
     --P_add_error_log('HD', 'P_audit_pre_Concluding', 'PP No was null', obid);
-  
+
     open io_cursor for
       select a.id as annex_id,
              p.t_id,
@@ -2997,7 +2997,7 @@ create or replace package body PKG_HD is
           on fr.obs_id = o.id
         left join t_au_observation_gist gg
           on gg.obs_id = o.id
-      
+
        where o.id = obid;
   END P_GET_OBSERVATION_DETAILS_FROM_ID_PRE_CON;
 
@@ -3006,15 +3006,15 @@ create or replace package body PKG_HD is
                                                          R_ID      NUMBER,
                                                          ENT_ID    NUMBER,
                                                          io_cursor Out t_cursor) as
-  
+
     B_N varchar2(100);
-  
+
   begin
-  
+
     select '-' into B_N from dual;
-  
+
     P_add_error_log('HD', 'P_audit_pre_Concluding', 'PP No was null', obid);
-  
+
     open io_cursor for
       select 0                 as annex_id,
              o.v_cat_id        as t_id,
@@ -3047,7 +3047,7 @@ create or replace package body PKG_HD is
           on fr.obs_id = o.id
         left join t_au_observation_gist gg
           on gg.obs_id = o.id
-      
+
        where o.id = obid;
   END P_GET_OBSERVATION_DETAILS_FROM_ID_PRE_CON_HO;
 
@@ -3058,7 +3058,7 @@ create or replace package body PKG_HD is
                                  io_cursor OUT t_cursor) AS
   BEGIN
     OPEN io_cursor FOR
-    
+
       SELECT a.id              AS annex_id,
              p.t_id,
              p.heading         AS process,
@@ -3093,19 +3093,19 @@ create or replace package body PKG_HD is
           ON t.observatsion_id = o.id
         join t_au_observations_auditee_response ae
           ON ae.au_obs_id = o.id
-      
+
         JOIN t_au_observations_auditor_recommendation ar
           ON ar.au_obs_id = o.id
-      
+
         JOIN t_au_observations_auditor_reply hr
           ON hr.au_obs_id = o.id
-      
+
         JOIN t_au_observation_final_reccomendation fr
           ON fr.obs_id = o.id
-      
+
         LEFT JOIN t_au_observation_gist gg
           ON gg.obs_id = o.id
-      
+
        WHERE o.id = i_obid;
   END P_GET_PRECON_DISPLAY;
 
@@ -3127,14 +3127,14 @@ create or replace package body PKG_HD is
                                        io_cursor      OUT t_cursor) as
     B_N varchar2(100);
   begin
-  
+
     select '-' into B_N from dual;
-  
+
     if (SUB_PROCID = 0) then
       open io_cursor for
         select 'Select Sub Process to proceed' as remarks from dual;
     end if;
-  
+
     if (PROC_DETID = 0) then
       open io_cursor for
         select 'Select Checklist Detail to proceed' as remarks from dual;
@@ -3151,7 +3151,7 @@ create or replace package body PKG_HD is
              o.reference_id       = P_REFERENCE_ID
        where o.id = OBID;
       commit;
-    
+
       update t_au_observation_text t
          set t.text = TEXT_OF_PARA, t.headings = PARA_GIST
        where t.observatsion_id = OBID;
@@ -3161,13 +3161,13 @@ create or replace package body PKG_HD is
                       'PP No was null',
                       OBID);
       commit;
-    
+
       open io_cursor for
         select 'Paras details have been updated successfully' as remarks
           from dual;
-    
+
     end if;
-  
+
   end P_audit_para_update_svz_az;
 
   procedure P_audit_para_update_head_dept(OBID         in number,
@@ -3182,29 +3182,29 @@ create or replace package body PKG_HD is
                                           io_cursor    OUT t_cursor) as
     B_N varchar2(100);
   begin
-  
+
     select '-' into B_N from dual;
-  
+
     update t_au_observation o
        set o.severity        = RISKID,
            o.v_cat_id        = V_ID,
            o.v_cat_nature_id = V_NATUREID
-    
+
      where o.id = OBID;
     commit;
-  
+
     update t_au_observation_text t
        set t.text = TEXT_OF_PARA, t.headings = PARA_GIST
      where t.observatsion_id = OBID;
     commit;
-  
+
     P_add_error_log('HD', 'P_audit_pre_Concluding', 'PP No was null', OBID);
     commit;
-  
+
     open io_cursor for
       select 'Paras details have been updated successfully' as remarks
         from dual;
-  
+
   end P_audit_para_update_head_dept;
   Procedure P_UPLOAD_AUDIT_REPORT(ENGID     number,
                                   AREP      clob,
@@ -3219,16 +3219,16 @@ create or replace package body PKG_HD is
     error1   varchar2(2);
     B_N      varchar2(100);
   BEGIN
-  
+
     select '-' into B_N from dual;
-  
+
     SELECT DBMS_LOB. GETLENGTH(arep) into D_clob FROM dual;
     if (D_CLOB > 1) then
       SELECT COUNT(*)
         INTO v_exists
         FROM t_audit_reports
        WHERE eng_id = ENGID;
-    
+
       IF v_exists > 0 THEN
         UPDATE t_audit_reports
            SET audit_report = AREP,
@@ -3237,28 +3237,28 @@ create or replace package body PKG_HD is
                added_on     = CURRENT_TIMESTAMP,
                added_by     = P_NO
          WHERE eng_id = ENGID;
-      
+
         COMMIT;
-      
+
         -- Return a success message for the update
         OPEN IO_CURSOR FOR
           SELECT 'Audit report updated successfully for eng_id: ' || ENGID AS remarks,
                  'Y' as error1
             FROM DUAL;
-      
+
       ELSE
         INSERT INTO t_audit_reports
           (eng_id, audit_report, DOC_TYPE, DOC_NAME, added_by, added_on)
         VALUES
           (ENGID, AREP, REP_TYPE, REP_NAME, P_NO, CURRENT_TIMESTAMP);
-      
+
         COMMIT;
-      
+
         OPEN IO_CURSOR FOR
           SELECT 'Audit report inserted successfully  eng_id: ' || ENGID AS remarks,
                  'Y' as error1
             FROM DUAL;
-      
+
       END IF;
     else
       OPEN IO_CURSOR FOR
@@ -3266,7 +3266,7 @@ create or replace package body PKG_HD is
                'N' as error1
           FROM DUAL;
     end if;
-  
+
   end P_UPLOAD_AUDIT_REPORT;
 
   Procedure P_GET_FINAL_AUDIT_REPORT(ENGID     number,
@@ -3276,11 +3276,11 @@ create or replace package body PKG_HD is
                                      io_cursor out t_cursor) as
     B_N varchar2(100);
   BEGIN
-  
+
     select '-' into B_N from dual;
-  
+
     OPEN IO_CURSOR FOR
-    
+
       select t.id,
              t.eng_id,
              p.description as audit_period,
@@ -3294,7 +3294,7 @@ create or replace package body PKG_HD is
        inner join t_auditee_entities et
           on et.entity_id = e.entity_id
        where e.auditby_id = ENT_ID;
-  
+
   end P_GET_FINAL_AUDIT_REPORT;
 
   Procedure P_GET_AUDIT_REPORT_CONTENT(FILE_ID   number,
@@ -3304,16 +3304,16 @@ create or replace package body PKG_HD is
                                        io_cursor out t_cursor) as
     B_N varchar2(100);
   BEGIN
-  
+
     select '-' into B_N from dual;
-  
+
     OPEN IO_CURSOR FOR
-    
+
       select t.id, t.audit_report as FILE_DATA, t.doc_type, t.doc_name
-      
+
         from t_audit_reports t
        where t.id = FILE_ID;
-  
+
   end P_GET_AUDIT_REPORT_CONTENT;
 
   Procedure P_GET_CHECK_AUDIT_REPORT_UPLOADED(ENGID     number,
@@ -3321,22 +3321,22 @@ create or replace package body PKG_HD is
                                               R_ID      number,
                                               ENT_ID    number,
                                               io_cursor out t_cursor) as
-  
+
     B_N varchar2(100);
-  
+
   BEGIN
-  
+
     select '-' into B_N from dual;
-  
+
     OPEN IO_CURSOR FOR
-    
+
       SELECT NVL(MIN(t.id), 0) AS id,
              NVL(MIN(t.doc_type), '') as doc_type,
              NVL(MIN(t.doc_name), '') as doc_name
-      
+
         from t_audit_reports t
        where t.eng_id = ENGID;
-  
+
   end P_GET_CHECK_AUDIT_REPORT_UPLOADED;
 
   procedure P_Get_Paras_For_Status_Change(ENT_ID    in number,
@@ -3404,8 +3404,8 @@ create or replace package body PKG_HD is
             FROM dual;
         RETURN;
     END;
-  
-  
+
+
     IF (M_F = NewStatus) THEN
       OPEN io_cursor FOR
         SELECT 'Same status Para cannot be submitted' AS remark FROM dual;
@@ -3417,14 +3417,14 @@ create or replace package body PKG_HD is
        WHERE COM_ID = C_ID
          AND NEW_STATUS = NewStatus
          AND STATUS = 'P'; -- Only check pending requests
-    
+
       IF v_exists > 0 THEN
         OPEN io_cursor FOR
           SELECT 'Duplicate request already exists for this Para and status.' AS remark
             FROM dual;
         RETURN;
       END IF;
-    
+
       INSERT INTO T_AU_PARAS_STATUS_CHANGE_LOG
         (COM_ID,
          NEW_PARA_ID,
@@ -3450,17 +3450,17 @@ create or replace package body PKG_HD is
          Action_IND,
          'P');
       COMMIT;
-    
+
       P_add_error_log('HD',
                       'P_audit_pre_Concluding',
                       'PP No was null',
                       C_ID);
-    
+
       OPEN io_cursor FOR
         SELECT 'Request for updation in Para Status submitted for Authorization' AS remark
           FROM dual;
     END IF;
-  
+
   EXCEPTION
     WHEN OTHERS THEN
       OPEN io_cursor FOR
@@ -3522,7 +3522,7 @@ create or replace package body PKG_HD is
     P_F VARCHAR2(50);
   BEGIN
     -- Log the activity
-  
+
     IF Action_IND = 'A' THEN
       -- "A" should mean Authorized; adjust if otherwise
       BEGIN
@@ -3538,7 +3538,7 @@ create or replace package body PKG_HD is
               FROM dual;
           RETURN;
       END;
-    
+
       -- Update PARA STATUS for all relevant tables
       IF S_F != 8 THEN
         -- 8 = "Settled" status (confirm your mapping)
@@ -3561,13 +3561,13 @@ create or replace package body PKG_HD is
                  ca.setteled_on = SYSDATE
            WHERE para_id = N_PARA_ID;
         END IF;
-      
+
         UPDATE ais_t_au_post_compliance c
            SET c.para_status = S_F,
                c.setteled_on = SYSDATE,
                c.setteled_by = P_NO
          WHERE com_id = C_ID;
-      
+
       ELSE
         -- Unsettled
         IF IND = 'A' THEN
@@ -3585,19 +3585,19 @@ create or replace package body PKG_HD is
              SET para_status = S_F, setteled_by = NULL, setteled_on = NULL
            WHERE para_id = N_PARA_ID;
         END IF;
-      
+
         UPDATE ais_t_au_post_compliance
            SET para_status = S_F, setteled_on = NULL, setteled_by = NULL
          WHERE com_id = C_ID;
       END IF;
-    
+
       -- Output the status
       IF S_F = 8 THEN
         S_T := 'Un-Settled';
       ELSE
         S_T := 'Settled';
       END IF;
-    
+
       -- Para identifier for message
       select ca.para_no
         into P_F
@@ -3612,7 +3612,7 @@ create or replace package body PKG_HD is
        WHERE l.com_id = C_ID
          AND l.status = 'P';
       COMMIT;
-    
+
       OPEN io_cursor FOR
         SELECT 'Para number ' || P_F || ' has been marked as ' || S_T AS Remark
           FROM dual;
@@ -3632,7 +3632,7 @@ create or replace package body PKG_HD is
         SELECT 'Para Rejected' AS Remark FROM dual;
       RETURN;
     END IF;
-  
+
   EXCEPTION
     WHEN OTHERS THEN
       OPEN io_cursor FOR
@@ -3737,7 +3737,7 @@ create or replace package body PKG_HD is
                              FROM T_HD_SBP_OBS_RESPONSE r1)
                     WHERE rn = 1) r
           ON r.para_id = o.para_id
-      
+
        WHERE o.observation_type = p_observation_type
          and o.is_active = 'Y'
        ORDER BY o.para_id;
@@ -3783,7 +3783,7 @@ create or replace package body PKG_HD is
       FROM T_HD_SBP_SECURE_ACCESS
      WHERE ACCESS_KEY = p_input_key
        AND ACTIVE_FLAG = 'Y';
-  
+
     IF l_count > 0 THEN
       p_is_valid := 'Y';
     ELSE
@@ -3804,18 +3804,18 @@ create or replace package body PKG_HD is
     -- default
     p_success := 'N';
     p_message := NULL;
-  
+
     -- role guard
     IF R_ID NOT IN (1, 6) THEN
       p_message := 'You cannot rest password';
       RETURN;
     END IF;
-  
+
     -- deactivate current active key(s)
     UPDATE T_HD_SBP_SECURE_ACCESS
        SET ACTIVE_FLAG = 'N'
      WHERE ACTIVE_FLAG = 'Y';
-  
+
     -- insert new active key (store lowercase for consistency)
     INSERT INTO T_HD_SBP_SECURE_ACCESS
       (ACCESS_KEY, ACTIVE_FLAG, UPDATED_BY, UPDATED_ON)
@@ -3845,17 +3845,17 @@ create or replace package body PKG_HD is
   BEGIN
     p_success := 'N';
     p_message := NULL;
-  
+
     SELECT COUNT(*)
       INTO v_exists
       FROM T_HD_SBP_OBSERVATION
      WHERE PARA_ID = p_para_id;
-  
+
     IF v_exists = 0 THEN
       p_message := 'Observation not found for Para_Id ' || p_para_id;
       RETURN;
     END IF;
-  
+
     UPDATE T_HD_SBP_OBSERVATION
        SET REF_NO             = p_ref_no,
            FUNCTION_NAME      = p_function_name,
@@ -3866,14 +3866,14 @@ create or replace package body PKG_HD is
            UPDATED_BY         = PPNumber,
            UPDATED_ON         = SYSDATE
      WHERE PARA_ID = p_para_id;
-  
+
     IF SQL%ROWCOUNT > 0 THEN
       p_success := 'Y';
       p_message := 'Observation updated successfully.';
     ELSE
       p_message := 'No rows were updated.';
     END IF;
-  
+
   EXCEPTION
     WHEN OTHERS THEN
       p_success := 'N';
@@ -3901,18 +3901,18 @@ create or replace package body PKG_HD is
   BEGIN
     p_success := 'N';
     p_message := NULL;
-  
+
     -- Safety check: PARA_ID must exist
     SELECT COUNT(*)
       INTO v_exists
       FROM T_HD_SBP_OBSERVATION
      WHERE PARA_ID = p_para_id;
-  
+
     IF v_exists = 0 THEN
       p_message := 'Invalid PARA_ID: Observation does not exist.';
       RETURN;
     END IF;
-  
+
     -- Check if response exists for given response_id
     IF p_response_id IS NOT NULL THEN
       SELECT COUNT(*)
@@ -3923,7 +3923,7 @@ create or replace package body PKG_HD is
     ELSE
       v_exists := 0;
     END IF;
-  
+
     -- Update existing response if found
     IF v_exists > 0 THEN
       UPDATE T_HD_SBP_OBS_RESPONSE
@@ -3934,12 +3934,12 @@ create or replace package body PKG_HD is
              ENTERED_BY        = p_user,
              ENTERED_ON        = SYSDATE
        WHERE RESPONSE_ID = p_response_id;
-    
+
       p_success := 'Y';
       p_message := 'Response updated successfully.';
       RETURN;
     END IF;
-  
+
     -- Otherwise insert new response
     INSERT INTO T_HD_SBP_OBS_RESPONSE
       (PARA_ID,
@@ -3959,10 +3959,10 @@ create or replace package body PKG_HD is
        p_iad_validation,
        p_user,
        SYSDATE);
-  
+
     p_success := 'Y';
     p_message := 'New response inserted successfully.';
-  
+
   EXCEPTION
     WHEN OTHERS THEN
       p_success := 'N';
@@ -4019,7 +4019,7 @@ create or replace package body PKG_HD is
       INTO v_json
       FROM T_HD_SBP_OBSERVATION o
      WHERE o.PARA_ID = p_para_id;
-  
+
     RETURN v_json;
   EXCEPTION
     WHEN NO_DATA_FOUND THEN
@@ -4044,7 +4044,7 @@ create or replace package body PKG_HD is
       INTO v_json
       FROM T_HD_SBP_OBS_RESPONSE r
      WHERE r.RESPONSE_ID = p_response_id;
-  
+
     RETURN v_json;
   EXCEPTION
     WHEN NO_DATA_FOUND THEN
@@ -4071,7 +4071,7 @@ create or replace package body PKG_HD is
        AND ENTITY = p_entity
        AND NVL(PARA_ID, -1) = NVL(p_para_id, -1)
        AND NVL(RESPONSE_ID, -1) = NVL(p_response_id, -1);
-  
+
     IF v_cnt > 0 THEN
       RAISE_APPLICATION_ERROR(-20001,
                               'A pending request already exists for this item.');
@@ -4096,7 +4096,7 @@ create or replace package body PKG_HD is
       FROM T_HD_ACTION_REQUEST
      WHERE REQUEST_ID = p_request_id
        FOR UPDATE;
-  
+
     IF v_type = 'DELETE' AND v_entity = 'OBSERVATION' THEN
       UPDATE T_HD_SBP_OBSERVATION
          SET IS_ACTIVE  = 'N',
@@ -4104,7 +4104,7 @@ create or replace package body PKG_HD is
              DELETED_ON = SYSDATE
        WHERE PARA_ID = v_para_id
          AND IS_ACTIVE = 'Y';
-    
+
     ELSIF v_type = 'DELETE' AND v_entity = 'RESPONSE' THEN
       UPDATE T_HD_SBP_OBS_RESPONSE
          SET IS_ACTIVE  = 'N',
@@ -4112,23 +4112,23 @@ create or replace package body PKG_HD is
              DELETED_ON = SYSDATE
        WHERE RESPONSE_ID = v_response_id
          AND IS_ACTIVE = 'Y';
-    
+
     ELSIF v_type = 'REVERSE' AND v_entity = 'OBSERVATION' THEN
       -- Reactivate observation using last snapshot fields (minimal restore)
       UPDATE T_HD_SBP_OBSERVATION
          SET IS_ACTIVE = 'Y', DELETED_BY = NULL, DELETED_ON = NULL
        WHERE PARA_ID = v_para_id;
-    
+
     ELSIF v_type = 'REVERSE' AND v_entity = 'RESPONSE' THEN
       UPDATE T_HD_SBP_OBS_RESPONSE
          SET IS_ACTIVE = 'Y', DELETED_BY = NULL, DELETED_ON = NULL
        WHERE RESPONSE_ID = v_response_id;
-    
+
     ELSE
       RAISE_APPLICATION_ERROR(-20002,
                               'Unsupported request type or entity.');
     END IF;
-  
+
     write_log(p_request_id, 'APPLIED', 0, 'Change applied to target rows');
   END;
 
@@ -4145,20 +4145,20 @@ create or replace package body PKG_HD is
   BEGIN
     o_request_id := NULL;
     o_msg        := NULL;
-  
+
     SELECT COUNT(*)
       INTO v_exists
       FROM T_HD_SBP_OBSERVATION
      WHERE PARA_ID = p_para_id
        AND IS_ACTIVE = 'Y';
-  
+
     IF v_exists = 0 THEN
       o_msg := 'Observation not found or already inactive';
       RETURN;
     END IF;
-  
+
     ensure_no_pending_duplicate('OBSERVATION', p_para_id, NULL);
-  
+
     o_request_id := SEQ_HD_ACTION_REQUEST.NEXTVAL;
     INSERT INTO T_HD_ACTION_REQUEST
       (REQUEST_ID,
@@ -4178,12 +4178,12 @@ create or replace package body PKG_HD is
        p_ppnumber,
        SYSDATE,
        'PENDING');
-  
+
     v_snap := snapshot_observation(p_para_id);
     IF v_snap IS NOT NULL THEN
       save_snapshot(o_request_id, v_snap);
     END IF;
-  
+
     write_log(o_request_id,
               'REQUESTED',
               p_ppnumber,
@@ -4201,20 +4201,20 @@ create or replace package body PKG_HD is
   BEGIN
     o_request_id := NULL;
     o_msg        := NULL;
-  
+
     SELECT COUNT(*)
       INTO v_exists
       FROM T_HD_SBP_OBS_RESPONSE
      WHERE RESPONSE_ID = p_response_id
        AND IS_ACTIVE = 'Y';
-  
+
     IF v_exists = 0 THEN
       o_msg := 'Response not found or already inactive';
       RETURN;
     END IF;
-  
+
     ensure_no_pending_duplicate('RESPONSE', NULL, p_response_id);
-  
+
     o_request_id := SEQ_HD_ACTION_REQUEST.NEXTVAL;
     INSERT INTO T_HD_ACTION_REQUEST
       (REQUEST_ID,
@@ -4234,12 +4234,12 @@ create or replace package body PKG_HD is
        p_ppnumber,
        SYSDATE,
        'PENDING');
-  
+
     v_snap := snapshot_response(p_response_id);
     IF v_snap IS NOT NULL THEN
       save_snapshot(o_request_id, v_snap);
     END IF;
-  
+
     write_log(o_request_id,
               'REQUESTED',
               p_ppnumber,
@@ -4256,17 +4256,17 @@ create or replace package body PKG_HD is
   BEGIN
     o_request_id := NULL;
     o_msg        := NULL;
-  
+
     SELECT *
       INTO v_row
       FROM T_HD_ACTION_REQUEST
      WHERE REQUEST_ID = p_request_id_to_reverse;
-  
+
     IF v_row.STATUS <> 'APPROVED' THEN
       o_msg := 'Only approved requests can be reversed';
       RETURN;
     END IF;
-  
+
     -- Create a new REVERSE request
     o_request_id := SEQ_HD_ACTION_REQUEST.NEXTVAL;
     INSERT INTO T_HD_ACTION_REQUEST
@@ -4291,14 +4291,14 @@ create or replace package body PKG_HD is
        SYSDATE,
        'PENDING',
        v_row.REQUEST_ID);
-  
+
     -- Snapshot is optional for reverse, but we keep it for traceability
     IF v_row.ENTITY = 'OBSERVATION' AND v_row.PARA_ID IS NOT NULL THEN
       save_snapshot(o_request_id, snapshot_observation(v_row.PARA_ID));
     ELSIF v_row.ENTITY = 'RESPONSE' AND v_row.RESPONSE_ID IS NOT NULL THEN
       save_snapshot(o_request_id, snapshot_response(v_row.RESPONSE_ID));
     END IF;
-  
+
     write_log(o_request_id, 'REQUESTED', p_ppnumber, 'Reverse requested');
     o_msg := 'Reverse request submitted';
   END;
@@ -4312,34 +4312,34 @@ create or replace package body PKG_HD is
     v_req T_HD_ACTION_REQUEST%ROWTYPE;
   BEGIN
     o_msg := NULL;
-  
+
     SELECT *
       INTO v_req
       FROM T_HD_ACTION_REQUEST
      WHERE REQUEST_ID = p_request_id
        FOR UPDATE;
-  
+
     IF v_req.STATUS <> 'PENDING' THEN
       o_msg := 'Request is not pending';
       RETURN;
     END IF;
-  
+
     IF v_req.REQUESTED_BY = p_approver_pp THEN
       o_msg := 'Maker and checker must be different';
       RETURN;
     END IF;
-  
+
     UPDATE T_HD_ACTION_REQUEST
        SET STATUS      = 'APPROVED',
            APPROVED_BY = p_approver_pp,
            APPROVED_ON = SYSDATE
      WHERE REQUEST_ID = p_request_id;
-  
+
     write_log(p_request_id, 'APPROVED', p_approver_pp, 'Approved');
-  
+
     -- Apply change
     apply_request(p_request_id);
-  
+
     o_msg := 'Request approved and applied';
   END;
 
@@ -4350,24 +4350,24 @@ create or replace package body PKG_HD is
     v_req T_HD_ACTION_REQUEST%ROWTYPE;
   BEGIN
     o_msg := NULL;
-  
+
     SELECT *
       INTO v_req
       FROM T_HD_ACTION_REQUEST
      WHERE REQUEST_ID = p_request_id
        FOR UPDATE;
-  
+
     IF v_req.STATUS <> 'PENDING' THEN
       o_msg := 'Request is not pending';
       RETURN;
     END IF;
-  
+
     UPDATE T_HD_ACTION_REQUEST
        SET STATUS      = 'REJECTED',
            REJECTED_BY = p_approver_pp,
            REJECTED_ON = SYSDATE
      WHERE REQUEST_ID = p_request_id;
-  
+
     write_log(p_request_id,
               'REJECTED',
               p_approver_pp,
@@ -4406,7 +4406,7 @@ create or replace package body PKG_HD is
                                                  P_NO      in number,
                                                  R_ID      in number,
                                                  io_cursor OUT t_cursor) as
-  
+
   begin
   if(ENT_ID = 112243) then
       open io_cursor for
@@ -4418,7 +4418,7 @@ create or replace package body PKG_HD is
              e.type_id,
              eg.status as status_id,
 
-           case 
+           case
              when eg.status = 12 then 'Draft Report'
              when eg.status = 13 then 'Issue Final Report'
            end as status_name,
@@ -4426,7 +4426,7 @@ create or replace package body PKG_HD is
            e.name || ' ( ' ||
            to_char(eg.audit_startdate, 'DD-MON-YYYY') || ' to ' ||
            to_char(eg.audit_enddate, 'DD-MON-YYYY') || ' ) - ' ||
-           case 
+           case
              when eg.status = 12 then 'Draft Report'
              when eg.status = 13 then 'Issue Final Report'
            end as display_text
@@ -4448,7 +4448,7 @@ create or replace package body PKG_HD is
            e.type_id,
            eg.status as status_id,
 
-           case 
+           case
              when eg.status = 12 then 'Draft Report'
              when eg.status = 13 then 'Issue Final Report'
            end as status_name,
@@ -4456,7 +4456,7 @@ create or replace package body PKG_HD is
            e.name || ' ( ' ||
            to_char(eg.audit_startdate, 'DD-MON-YYYY') || ' to ' ||
            to_char(eg.audit_enddate, 'DD-MON-YYYY') || ' ) - ' ||
-           case 
+           case
              when eg.status = 12 then 'Draft Report'
              when eg.status = 13 then 'Issue Final Report'
            end as display_text

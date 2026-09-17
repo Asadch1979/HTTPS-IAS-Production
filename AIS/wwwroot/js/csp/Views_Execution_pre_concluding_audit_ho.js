@@ -53,6 +53,7 @@
                  else{
                      $('#preConcludingActionHandler').addClass("d-none");
                  }
+                 restorePreConcludingPosition();
              },
              dataType: "json",
          });
@@ -296,7 +297,21 @@
 
       function reloadModel(){
           getEntityObservations();
-          viewObservationDetails(g_obsId);
+          $('#viewMemoDetailsModel').modal('hide');
+      }
+
+      function restorePreConcludingPosition() {
+          if (!g_obsId) {
+              return;
+          }
+
+          var $row = $('#checklistDetailsPanel tbody a').filter(function () {
+              return ($(this).attr('data-onclick') || '').indexOf('viewObservationDetails(' + g_obsId + ',') >= 0;
+          }).closest('tr').first();
+
+          if ($row.length && $row.position()) {
+              $('html').scrollTop($row.position().top);
+          }
       }
      function saveObservationGistandRecommendation(){
 

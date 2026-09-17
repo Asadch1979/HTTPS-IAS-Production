@@ -233,7 +233,7 @@ namespace AIS.Controllers
             List<ManageObservations> list = new List<ManageObservations>();
             using (OracleCommand cmd = con.CreateCommand())
                 {
-                cmd.CommandText = "pkg_hd.P_GetFinalizedDraftObservationsbranch";
+                cmd.CommandText = "pkg_hd.P_GetFinalizedDraftObservations";
                 cmd.CommandType = CommandType.StoredProcedure;
                 cmd.BindByName = true;
                 GuardAgainstDynamicSql(cmd);
@@ -244,30 +244,56 @@ namespace AIS.Controllers
                 cmd.Parameters.Add("R_ID", OracleDbType.Int32).Value = loggedInUser.UserRoleID;
                 cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
                 using OracleDataReader rdr = cmd.ExecuteReader();
+                bool HasReaderColumn(IDataRecord reader, string columnName)
+                    {
+                    for (var index = 0; index < reader.FieldCount; index++)
+                        {
+                        if (string.Equals(reader.GetName(index), columnName, StringComparison.OrdinalIgnoreCase))
+                            {
+                            return true;
+                            }
+                        }
+
+                    return false;
+                    }
+
+                string ReadString(IDataRecord reader, string columnName)
+                    {
+                    return HasReaderColumn(reader, columnName) && reader[columnName] != DBNull.Value
+                        ? reader[columnName]?.ToString() ?? string.Empty
+                        : string.Empty;
+                    }
+
+                int ReadIntOrZero(IDataRecord reader, string columnName)
+                    {
+                    return HasReaderColumn(reader, columnName) && reader[columnName] != DBNull.Value && !string.IsNullOrWhiteSpace(reader[columnName]?.ToString())
+                        ? Convert.ToInt32(reader[columnName])
+                        : 0;
+                    }
+
                 while (rdr.Read())
                     {
                     ManageObservations chk = new ManageObservations();
-                    chk.OBS_ID = Convert.ToInt32(rdr["OBS_ID"]);
-                    chk.OBS_RISK_ID = Convert.ToInt32(rdr["OBS_RISK_ID"]);
-                    chk.OBS_STATUS_ID = Convert.ToInt32(rdr["OBS_STATUS_ID"]);
-                    if (rdr["MEMO_NO"].ToString() != null && rdr["MEMO_NO"].ToString() != "")
-                        chk.MEMO_NO = Convert.ToInt32(rdr["MEMO_NO"]);
-                    if (rdr["DRAFT_PARA"].ToString() != null && rdr["DRAFT_PARA"].ToString() != "")
-                        chk.DRAFT_PARA_NO = Convert.ToInt32(rdr["DRAFT_PARA"]);
-                    if (rdr["FINAL_PARA"].ToString() != null && rdr["FINAL_PARA"].ToString() != "")
-                        chk.FINAL_PARA_NO = Convert.ToInt32(rdr["FINAL_PARA"]);
+                    chk.OBS_ID = ReadIntOrZero(rdr, "OBS_ID");
+                    chk.OBS_RISK_ID = ReadIntOrZero(rdr, "OBS_RISK_ID");
+                    chk.OBS_STATUS_ID = ReadIntOrZero(rdr, "OBS_STATUS_ID");
+                    chk.MEMO_NO = ReadIntOrZero(rdr, "MEMO_NO");
+                    chk.DRAFT_PARA_NO = ReadIntOrZero(rdr, "DRAFT_PARA");
+                    chk.FINAL_PARA_NO = ReadIntOrZero(rdr, "FINAL_PARA");
 
-                    chk.PROCESS = rdr["PROCESS"].ToString();
-                    chk.SUB_PROCESS = rdr["SUB_PROCESS"].ToString();
-                    chk.Checklist_Details = rdr["CHECK_LIST_DETAIL"].ToString();
-                    chk.HEADING = rdr["HEADINGS"].ToString();
+                    chk.PROCESS = ReadString(rdr, "PROCESS");
+                    chk.SUB_PROCESS = ReadString(rdr, "SUB_PROCESS");
+                    chk.Checklist_Details = ReadString(rdr, "CHECK_LIST_DETAIL");
+                    chk.HEADING = !string.IsNullOrWhiteSpace(ReadString(rdr, "HEADINGS"))
+                        ? ReadString(rdr, "HEADINGS")
+                        : ReadString(rdr, "TITLE");
 
                     chk.AUD_REPLY = this.GetLatestAuditorResponse(chk.OBS_ID);
                     chk.HEAD_REPLY = this.GetLatestDepartmentalHeadResponse(chk.OBS_ID);
-                    chk.ENTITY_NAME = rdr["ENTITY_NAME"].ToString();
-                    chk.OBS_STATUS = rdr["OBS_STATUS"].ToString();
-                    chk.OBS_RISK = rdr["OBS_RISK"].ToString();
-                    chk.PERIOD = rdr["PERIOD"].ToString();
+                    chk.ENTITY_NAME = ReadString(rdr, "ENTITY_NAME");
+                    chk.OBS_STATUS = ReadString(rdr, "OBS_STATUS");
+                    chk.OBS_RISK = ReadString(rdr, "OBS_RISK");
+                    chk.PERIOD = ReadString(rdr, "PERIOD");
                     // chk.RESPONSIBLE_PPs = this.GetObservationResponsiblePPNOs(chk.OBS_ID);
                     list.Add(chk);
 

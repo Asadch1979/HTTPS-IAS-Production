@@ -172,7 +172,7 @@
                     </div>
                     <div class="form-group mb-3">
                         <label for="updateMemo_heading" class="font-weight-bold">Title / Heading <small class="text-muted">(A-Z, 0-9, space, &amp;, ?)</small></label>
-                        <input type="text" id="updateMemo_heading" class="form-control alnum-only" placeholder="Title / Heading (Alphabets, numbers, spaces, ampersand (&amp;), comma (,), and question mark (?) only)" data-allow-space="true" data-allow-amp="true" maxlength="200" title="Enter only Alphabets (A-Z), numbers (0-9), spaces, ampersand (&amp;), comma (,), and question mark (?)" />
+                        <input type="text" id="updateMemo_heading" class="form-control alnum-only" placeholder="Title / Heading (Alphabets, numbers, spaces, ampersand (&amp;), comma (,), question mark (?), and brackets () only)" data-allow-space="true" data-allow-amp="true" data-allow-parentheses="true" maxlength="200" title="Enter only Alphabets (A-Z), numbers (0-9), spaces, ampersand (&amp;), comma (,), question mark (?), and brackets ()" />
                     </div>
                     <div class="form-group mb-3">
                         <label for="updateMemoContent" class="font-weight-bold">Memo</label>
@@ -382,6 +382,6 @@
 }))
 </script>
 @section Scripts {
-    <script src="~/js/csp/Views_Execution_manage_observations_branches.js?v=3"></script>
+    <script src="~/js/csp/Views_Execution_manage_observations_branches.js?v=4"></script>
     <script src="~/js/responsibilitySectionUpdate.js"></script>
 }

@@ -33,7 +33,7 @@ function getPageData() {
     var g_dsa = "";
     var g_tablePage = 0;
     var g_scrollPos = 0;
-    var OBSERVATION_HEADING_VALIDATION_MESSAGE = 'Observation Heading/Title can contain only alphabets, numbers, space, &, ?, and comma.';
+    var OBSERVATION_HEADING_VALIDATION_MESSAGE = 'Observation Heading/Title can contain only alphabets, numbers, space, &, ?, comma, and brackets ().';
 
     function escapeHtml(value) {
         return $('<div>').text(value || '').html();
@@ -68,6 +68,7 @@ function getPageData() {
                 allowQuestion: true,
                 allowComma: true,
                 allowSpace: true,
+                allowParentheses: true,
                 required: true,
                 rejectInvalid: true
             });
@@ -88,6 +89,7 @@ function getPageData() {
                 allowQuestion: true,
                 allowComma: true,
                 allowSpace: true,
+                allowParentheses: true,
                 maxLen: 200
             });
             return;
@@ -884,7 +886,10 @@ function getPageData() {
                     window.commitObservationReferenceSelection('#updateObservationReferenceSection');
                 }
                 showApiAlert(data);
-                reloadCurrentStepLocally();
+                onAlertCallback(function () {
+                    $('#updateMemoModel').modal('hide');
+                    reloadCurrentStepLocally();
+                });
             },
             dataType: "json",
         });

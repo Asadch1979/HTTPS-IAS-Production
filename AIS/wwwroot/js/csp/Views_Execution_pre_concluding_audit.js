@@ -362,6 +362,7 @@ function getPageData() {
                  else{
                      $('#preConcludingActionHandler').addClass("d-none");
                  }
+                 restorePreConcludingPosition();
              },
              dataType: "json",
          });
@@ -713,7 +714,21 @@ function getPageData() {
 
       function reloadModel(){
           getEntityObservations();
-          viewObservationDetails(g_obsId, $('#checklistDetailsPanel tbody tr#obs_' + g_obsId + ' .preconcludingStatusField').text());
+          $('#viewMemoDetailsModel').modal('hide');
+      }
+
+      function restorePreConcludingPosition() {
+          if (!g_obsId) {
+              return;
+          }
+
+          var $row = $('#checklistDetailsPanel tbody a').filter(function () {
+              return ($(this).attr('data-onclick') || '').indexOf('viewObservationDetails(' + g_obsId + ',') >= 0;
+          }).closest('tr').first();
+
+          if ($row.length && $row.position()) {
+              $('html').scrollTop($row.position().top);
+          }
       }
      function saveObservationGistandRecommendation(){
 

@@ -1,6 +1,6 @@
 (function () {
-  function getAllowedChars({ allowAmp = true, allowQuestion = true, allowComma = true, allowSpace = true } = {}) {
-    return `A-Za-z0-9${allowSpace ? " " : ""}${allowComma ? "," : ""}${allowAmp ? "&" : ""}${allowQuestion ? "\\?" : ""}`;
+  function getAllowedChars({ allowAmp = true, allowQuestion = true, allowComma = true, allowSpace = true, allowParentheses = false } = {}) {
+    return `A-Za-z0-9${allowSpace ? " " : ""}${allowComma ? "," : ""}${allowAmp ? "&" : ""}${allowQuestion ? "\\?" : ""}${allowParentheses ? "\\(\\)" : ""}`;
   }
 
   function buildRegex(options = {}) {
@@ -56,18 +56,20 @@
     return sanitizedText === text;
   }
 
-  function attachAlnumOnly(selector, { allowAmp = true, allowQuestion = true, allowComma = true, allowSpace = true, maxLen = null } = {}) {
+  function attachAlnumOnly(selector, { allowAmp = true, allowQuestion = true, allowComma = true, allowSpace = true, allowParentheses = false, maxLen = null } = {}) {
     document.querySelectorAll(selector).forEach(el => {
       const elementAllowAmp = readBooleanData(el, "allowAmp", allowAmp);
       const elementAllowQuestion = readBooleanData(el, "allowQuestion", allowQuestion);
       const elementAllowComma = readBooleanData(el, "allowComma", allowComma);
       const elementAllowSpace = readBooleanData(el, "allowSpace", allowSpace);
+      const elementAllowParentheses = readBooleanData(el, "allowParentheses", allowParentheses);
       const elementMaxLen = el.dataset.maxlen ? parseInt(el.dataset.maxlen, 10) : maxLen;
       const options = {
         allowAmp: elementAllowAmp,
         allowQuestion: elementAllowQuestion,
         allowComma: elementAllowComma,
-        allowSpace: elementAllowSpace
+        allowSpace: elementAllowSpace,
+        allowParentheses: elementAllowParentheses
       };
       const regex = buildRegex(options);
       const invalidCharPattern = new RegExp(`[^${getAllowedChars(options)}]+`);
@@ -165,11 +167,11 @@
     });
   }
 
-  function isAlnumOk(selector, { allowAmp = true, allowQuestion = true, allowComma = true, allowSpace = true, required = false, rejectInvalid = false } = {}) {
+  function isAlnumOk(selector, { allowAmp = true, allowQuestion = true, allowComma = true, allowSpace = true, allowParentheses = false, required = false, rejectInvalid = false } = {}) {
     const el = document.querySelector(selector);
     if (!el) return true;
 
-    const options = { allowAmp, allowQuestion, allowComma, allowSpace };
+    const options = { allowAmp, allowQuestion, allowComma, allowSpace, allowParentheses };
     const regex = buildRegex(options);
     const rawVal = el.value || "";
     const value = sanitizeAlnum(rawVal, options);

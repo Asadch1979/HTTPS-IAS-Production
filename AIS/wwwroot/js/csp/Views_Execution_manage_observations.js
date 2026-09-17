@@ -2,6 +2,7 @@
     var g_newStatusId = 0;
     var g_riskId = 0;
     var g_currentStatus = 0;
+    var OBSERVATION_HEADING_VALIDATION_MESSAGE = 'Observation Heading/Title can contain only alphabets, numbers, space, &, ?, comma, and brackets ().';
     function getSelectedEngagementId() {
         var entityField = document.getElementById('entitySelectField');
         if (entityField && entityField.value) {
@@ -35,6 +36,16 @@
             videoEmbed: false,
             urls: false
         });
+        if (window.CommonValidation && CommonValidation.attachAlnumOnly) {
+            CommonValidation.attachAlnumOnly('#updateMemo_heading', {
+                allowAmp: true,
+                allowQuestion: true,
+                allowComma: true,
+                allowSpace: true,
+                allowParentheses: true,
+                maxLen: 200
+            });
+        }
 
     });
     function reloadLocation() {
@@ -355,6 +366,10 @@
         }
 
         g_obsId = obs_id;
+        if (!validateManageObservationHeading()) {
+            return;
+        }
+
         $.ajax({
             url: g_asiBaseURL + "/ApiCalls/get_dept_observation_text",
             type: "POST",
@@ -393,9 +408,36 @@
             cache: false,
             success: function (data) {
                 showApiAlert(data);
-                onAlertCallback(reloadLocation);
+                onAlertCallback(function () {
+                    $('#updateMemoModel').modal('hide');
+                    reloadLocation();
+                });
             },
             dataType: "json",
         });
 
+    }
+    function validateManageObservationHeading() {
+        if (window.CommonValidation && CommonValidation.isAlnumOk) {
+            var isValid = CommonValidation.isAlnumOk('#updateMemo_heading', {
+                allowAmp: true,
+                allowQuestion: true,
+                allowComma: true,
+                allowSpace: true,
+                allowParentheses: true,
+                required: true,
+                rejectInvalid: true
+            });
+            if (!isValid) {
+                alert(OBSERVATION_HEADING_VALIDATION_MESSAGE);
+            }
+            return isValid;
+        }
+
+        var value = ($('#updateMemo_heading').val() || '').trim();
+        var isFallbackValid = /^[A-Za-z0-9 &,?()]+$/.test(value);
+        if (!isFallbackValid) {
+            alert(OBSERVATION_HEADING_VALIDATION_MESSAGE);
+        }
+        return isFallbackValid;
     }

@@ -24,7 +24,7 @@ window.addEventListener("unhandledrejection", function (e) {
     var g_selectedRiskId = 0;
     const pageData = getPageData();
     var g_annexList = pageData.AnnexList || [];
-    var OBSERVATION_HEADING_VALIDATION_MESSAGE = 'Observation Heading/Title can contain only alphabets, numbers, space, &, ?, and comma.';
+    var OBSERVATION_HEADING_VALIDATION_MESSAGE = 'Observation Heading/Title can contain only alphabets, numbers, space, &, ?, comma, and brackets ().';
 
     function escapeHtml(value) {
         return $('<div>').text(value || '').html();
@@ -73,6 +73,7 @@ window.addEventListener("unhandledrejection", function (e) {
                 allowQuestion: true,
                 allowComma: true,
                 allowSpace: true,
+                allowParentheses: true,
                 required: true,
                 rejectInvalid: true
             });
@@ -93,6 +94,7 @@ window.addEventListener("unhandledrejection", function (e) {
                 allowQuestion: true,
                 allowComma: true,
                 allowSpace: true,
+                allowParentheses: true,
                 maxLen: 500
             });
             return;
@@ -462,11 +464,14 @@ window.addEventListener("unhandledrejection", function (e) {
             success: function (data) {
                 $('#submitCAUobBtn').attr('disabled', false);
                 showApiAlert(data);
-                if (window.fieldAuditDashboard && typeof window.fieldAuditDashboard.reloadCurrentStepContent === 'function') {
-                    window.fieldAuditDashboard.reloadCurrentStepContent();
-                    return;
-                }
-                resetObservationSection();
+                onAlertCallback(function () {
+                    if (window.fieldAuditDashboard && typeof window.fieldAuditDashboard.reloadCurrentStepContent === 'function') {
+                        window.fieldAuditDashboard.reloadCurrentStepContent();
+                        return;
+                    }
+
+                    resetObservationSection();
+                });
             },
             dataType: "json",
         });

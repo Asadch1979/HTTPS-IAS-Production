@@ -62,9 +62,9 @@ namespace AIS.Controllers
         private static readonly ConcurrentDictionary<string, Queue<DateTime>> PostAuditComplianceSuspiciousFailures = new ConcurrentDictionary<string, Queue<DateTime>>(StringComparer.OrdinalIgnoreCase);
         private static readonly Regex AlphaNumericWithSpacesRegex = new Regex("^[A-Za-z0-9 &]+$", RegexOptions.Compiled);
         private static readonly Regex ExceptionReportTextRegex = new Regex("^[A-Za-z0-9 &,?]+$", RegexOptions.Compiled);
-        private static readonly Regex ObservationHeadingRegex = new Regex("^[A-Za-z0-9 &,?]+$", RegexOptions.Compiled);
+        private static readonly Regex ObservationHeadingRegex = new Regex("^[A-Za-z0-9 &,?()]+$", RegexOptions.Compiled);
         private static readonly Regex RichTextTagRegex = new Regex("<.*?>", RegexOptions.Compiled | RegexOptions.Singleline);
-        private const string ObservationHeadingValidationMessage = "Observation Heading/Title can contain only alphabets, numbers, space, &, ?, and comma.";
+        private const string ObservationHeadingValidationMessage = "Observation Heading/Title can contain only alphabets, numbers, space, &, ?, comma, and brackets ().";
         private const string PostAuditComplianceEndpoint = "/ApiCalls/submit_post_audit_compliance";
 
         public ApiCallsController(
