@@ -23,17 +23,4 @@ namespace AIS.Models
         public List<AuditeeResponseEvidenceModel> EVIDENCE_LIST { get; set; }
 
         }
-
-    public class AuditeeReplySaveResult
-        {
-        public bool Success { get; set; }
-        public string Message { get; set; }
-        public int ObservationId { get; set; }
-        public int EngagementId { get; set; }
-        public int PreviousStatus { get; set; }
-        public int NewStatus { get; set; }
-        public int ResponseId { get; set; }
-        public bool ReplyPersisted { get; set; }
-        public bool StatusPersisted { get; set; }
-        }
     }
