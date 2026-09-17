@@ -40,7 +40,7 @@ namespace AIS.Controllers
             AddAuditParameter(cmd, "P_COM_ID", OracleDbType.Int64, e.ComId);
             AddAuditParameter(cmd, "P_OBJECT_TYPE", OracleDbType.Varchar2, V(e.ObjectType, 100));
             AddAuditParameter(cmd, "P_OBJECT_ID", OracleDbType.Varchar2, V(e.ObjectId, 100));
-            AddAuditParameter(cmd, "P_RESULT_STATUS", OracleDbType.Varchar2, "SUCCESS");
+            AddAuditParameter(cmd, "P_RESULT_STATUS", OracleDbType.Varchar2, V(e.ResultStatus ?? "SUCCESS", 30));
             AddAuditParameter(cmd, "P_RESULT_CODE", OracleDbType.Varchar2, V(e.ResultCode, 100));
             AddAuditParameter(cmd, "P_RESULT_MESSAGE", OracleDbType.Varchar2, V(e.ResultMessage, 1000));
             AddAuditParameter(cmd, "P_CLIENT_IP_ADDRESS", OracleDbType.Varchar2, V(c.ClientIp, 100));

@@ -43,12 +43,15 @@ namespace AIS.Filters
         public string ObjectType { get; set; }
         public string ObjectId { get; set; }
         public string ObjectIdItem { get; set; }
+        public string ActionNameItem { get; set; }
         public string Details { get; set; }
+        public string DetailsItem { get; set; }
         public string RequireNonEmpty { get; set; }
         public string RequireItem { get; set; }
         public string SuccessMessageContains { get; set; }
         public string FailureMessageContains { get; set; }
         public bool RequireResultMessage { get; set; }
+        public bool LogFailures { get; set; }
         }
 
     public sealed class ApplicationAuditActionFilter : IAsyncActionFilter
@@ -76,13 +79,27 @@ namespace AIS.Filters
             var stopwatch = Stopwatch.StartNew();
             var executed = await next();
             stopwatch.Stop();
-            if (executed.Exception != null || !IsConfirmedSuccess(executed.Result, context.HttpContext.Response.StatusCode, out var code, out var message))
-                return;
 
             var metadata = context.ActionDescriptor.EndpointMetadata;
             var attribute = FindAttribute(metadata);
             if (attribute == null)
                 return;
+
+            string code = null;
+            string message = null;
+            var succeeded = executed.Exception == null
+                && IsConfirmedSuccess(executed.Result, context.HttpContext.Response.StatusCode, out code, out message);
+            if (!succeeded && !attribute.LogFailures)
+                return;
+
+            if (!succeeded)
+                {
+                code = context.HttpContext.Response.StatusCode > 0
+                    ? context.HttpContext.Response.StatusCode.ToString(CultureInfo.InvariantCulture)
+                    : "FAILED";
+                message = executed.Exception?.GetBaseException().Message ?? ResolveFailureMessage(executed.Result);
+                }
+
             if (!string.IsNullOrWhiteSpace(attribute.RequireNonEmpty) && IsEmpty(ResolveValue(context.ActionArguments, attribute.RequireNonEmpty)))
                 return;
             if (!string.IsNullOrWhiteSpace(attribute.RequireItem) && !context.HttpContext.Items.ContainsKey(attribute.RequireItem))
@@ -99,7 +116,9 @@ namespace AIS.Filters
             await _auditLogger.LogSuccessAsync(new ApplicationAuditEvent
                 {
                 EventType = attribute.EventType,
-                ActionName = _actionName,
+                ActionName = !string.IsNullOrWhiteSpace(attribute.ActionNameItem)
+                    ? context.HttpContext.Items[attribute.ActionNameItem]?.ToString() ?? _actionName
+                    : _actionName,
                 ActionCategory = _actionCategory,
                 ModuleName = _moduleName,
                 DbPackageName = _dbPackageName,
@@ -115,10 +134,44 @@ namespace AIS.Filters
                 ObjectId = !string.IsNullOrWhiteSpace(attribute.ObjectIdItem)
                     ? context.HttpContext.Items[attribute.ObjectIdItem]?.ToString()
                     : ResolveValue(context.ActionArguments, attribute.ObjectId)?.ToString(),
+                ResultStatus = succeeded ? "SUCCESS" : "FAILURE",
                 ResultCode = code,
                 ResultMessage = message,
-                Details = ApplicationAuditLogger.Truncate(attribute.Details, 4000)
+                Details = ApplicationAuditLogger.Truncate(
+                    !string.IsNullOrWhiteSpace(attribute.DetailsItem)
+                        ? context.HttpContext.Items[attribute.DetailsItem]?.ToString()
+                        : attribute.Details,
+                    4000)
                 }, stopwatch.ElapsedMilliseconds);
+            }
+
+        private static string ResolveFailureMessage(IActionResult result)
+            {
+            object value = result switch
+                {
+                ObjectResult objectResult => objectResult.Value,
+                JsonResult jsonResult => jsonResult.Value,
+                _ => null
+                };
+
+            if (value == null)
+                return result is ObjectResult objectStatus && objectStatus.StatusCode.HasValue
+                    ? $"HTTP {objectStatus.StatusCode.Value}"
+                    : "Action returned an unsuccessful result.";
+
+            try
+                {
+                var json = value is string text ? text : JsonSerializer.Serialize(value);
+                using var document = JsonDocument.Parse(json);
+                if (document.RootElement.ValueKind == JsonValueKind.Object
+                    && TryProperty(document.RootElement, "message", out var messageValue))
+                    return Scalar(messageValue);
+                return document.RootElement.ToString();
+                }
+            catch (JsonException)
+                {
+                return value.ToString();
+                }
             }
 
         private static ApplicationAuditAttribute FindAttribute(IList<object> metadata)

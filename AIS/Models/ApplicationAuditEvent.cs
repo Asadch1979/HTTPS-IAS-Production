@@ -16,6 +16,7 @@ namespace AIS.Models
         public string ObjectType { get; set; }
         public string ObjectId { get; set; }
         public string ResultCode { get; set; }
+        public string ResultStatus { get; set; }
         public string ResultMessage { get; set; }
         public string Details { get; set; }
         public string ActorPpno { get; set; }

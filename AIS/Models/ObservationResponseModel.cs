@@ -23,4 +23,13 @@ namespace AIS.Models
         public List<AuditeeResponseEvidenceModel> EVIDENCE_LIST { get; set; }
 
         }
+
+    public sealed class AuditeeReplyAuditSnapshot
+        {
+        public int ObservationId { get; set; }
+        public int EngagementId { get; set; }
+        public int StatusId { get; set; }
+        public string StatusName { get; set; }
+        public bool HasReply { get; set; }
+        }
     }

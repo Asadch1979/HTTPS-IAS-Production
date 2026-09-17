@@ -489,6 +489,11 @@
                     });
 
                 },
+                error: function (xhr) {
+                    xhr.__iasSafetyHandled = true;
+                    var message = xhr.responseJSON && (xhr.responseJSON.Message || xhr.responseJSON.detail || xhr.responseJSON.title);
+                    alert(message || "Reply could not be saved. Please try again.");
+                },
                 dataType: "json",
             });
         } else {
