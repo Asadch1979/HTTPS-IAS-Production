@@ -4,7 +4,7 @@
 
 @{
     ViewData["Title"] = "Quality Assurance of Audit Para HO";
-    Layout = "_Layout";
+    Layout = ViewData["SuppressLayout"] as bool? == true ? null : "_Layout";
 }
 
 <div class="row mt-3">

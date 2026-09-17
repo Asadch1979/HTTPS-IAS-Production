@@ -93,7 +93,7 @@
             '/js/csp/Views_Execution_draft_audit_report_branch.js?v=5'
         ],
         DRAFT_REPORT_HO: [
-            '/js/csp/Views_Execution_draft_audit_report.js?v=2'
+            '/js/csp/Views_Execution_draft_audit_report.js?v=4'
         ],
         CHECKING_DRAFT_REPORT: [
             '/js/responsibilitySection.js',
@@ -106,7 +106,7 @@
             '/js/csp/Views_Execution_pre_concluding_audit.js?v=3'
         ],
         QUALITY_REVIEW_HO: [
-            '/js/csp/Views_Execution_pre_concluding_audit_ho.js?v=1'
+            '/js/csp/Views_Execution_pre_concluding_audit_ho.js?v=2'
         ],
         CHECKING_QUALITY_REVIEW: [
             '/js/responsibilitySection.js',
@@ -348,9 +348,13 @@
 
     function initializeDraftHoStep(engId, readOnly) {
         assignEngagementToPartial(engId);
+        if (typeof window.fieldAuditBoLoadDraftReportHo !== 'function') {
+            throw new Error('Missing BO initializer: fieldAuditBoLoadDraftReportHo');
+        }
         if (typeof window.getEntityObservation !== 'function') {
             throw new Error('Missing BO initializer: getEntityObservation');
         }
+        window.fieldAuditBoLoadDraftReportHo();
         window.getEntityObservation();
         applyReadOnlyMode(readOnly);
     }

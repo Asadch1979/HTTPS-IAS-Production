@@ -231,15 +231,16 @@ create or replace package PKG_AE is
                                              ENT_ID      in number,
                                              R_ID        in number,
                                              USER_CON_ID in number,
-                                             io_cursor   OUT t_cursor);                                                     
+                                             io_cursor   OUT t_cursor);
 
 end PKG_AE;
-
+/
 create or replace package body PKG_AE is
+
 
   procedure P_GetAuditeeAssignedEntities(ENTITID   in number,
                                          io_cursor OUT t_cursor) is
-  
+
   begin
     if (ENTITID is not null) then
       open io_cursor for
@@ -282,14 +283,14 @@ create or replace package body PKG_AE is
   end P_GetAuditeeAssignedEntities;
 
   procedure p_GetCOSORisks(io_cursor OUT t_cursor) is
-  
+
   begin
     open io_cursor for
       select * from T_COSO_RISK R order by R.R_ID;
   end p_GetCOSORisks;
 
   procedure P_GetCCQsEntities(PPNO in number, io_cursor OUT t_cursor) is
-  
+
   begin
     if (PPNO is not null) then
       open io_cursor for
@@ -315,7 +316,7 @@ create or replace package body PKG_AE is
                                       ENGID     in number,
                                       io_cursor OUT t_cursor) is
   begin
-  
+
     OPEN io_Cursor FOR
       select o.id as OBS_ID,
              ot.id as OBS_TEXT_ID,
@@ -339,7 +340,7 @@ create or replace package body PKG_AE is
                   else
                    0
                 end)
-             
+
              end) as canreply,
              (case
                when o.status < 8 and o.status != 23 then
@@ -374,7 +375,7 @@ create or replace package body PKG_AE is
   procedure P_GetObservationResponsible(OBSID     in number,
                                         E_ID      in number,
                                         io_cursor OUT t_cursor) is
-  
+
   begin
     OPEN io_Cursor FOR
       select ot.resp_row_id,
@@ -388,12 +389,12 @@ create or replace package body PKG_AE is
        inner join v_service_employeeinfo em
           on em.PPNO = ot.pp_no
        where ot.au_obs_id = OBSID;
-  
+
   end P_GetObservationResponsible;
 
   procedure p_GetAssignedObservationstext(OBSID     in number,
                                           io_cursor OUT t_cursor) is
-  
+
   begin
     OPEN io_Cursor FOR
       select O.MEMO_NUMBER AS MEMO_NUMBER,
@@ -410,12 +411,12 @@ create or replace package body PKG_AE is
           on ob.au_obs_id = o.id
        WHERE o.id = OBSID
        order by t.OBS_ID asc;
-  
+
   end p_GetAssignedObservationstext;
 
   procedure P_GetAssignedObservationsForBranch(entityid  in number,
                                                io_cursor OUT t_cursor) is
-  
+
   begin
     OPEN io_Cursor FOR
       select vc.v_name              as Violation,
@@ -454,10 +455,10 @@ create or replace package body PKG_AE is
           on pe.auditperiodid = ep.period_id
         left join t_au_observations_auditee_response ob
           on ob.au_obs_id = o.id
-      
+
        WHERE o.entity_id = entityid
        order by t.OBS_ID asc;
-  
+
   end P_GetAssignedObservationsForBranch;
 
   procedure P_GetObservationText(OBS_ID    in number,
@@ -465,20 +466,20 @@ create or replace package body PKG_AE is
                                  P_NO      in number,
                                  R_ID      in number,
                                  io_cursor OUT t_cursor) is
-  
+
     Z_B number := 0;
   begin
-  
+
     commit;
     commit;
-  
+
     OPEN io_Cursor FOR
       select ot.text, o.reference_id
         from T_AU_OBSERVATION_TEXT ot
        inner join t_au_observation o
           on o.id = ot.observatsion_id
        where ot.OBSERVATSION_ID = OBS_ID;
-  
+
   end P_GetObservationText;
 
   procedure P_AUDITEE_OBSERVATION_RESPONSE(AUOBSID   IN number,
@@ -495,10 +496,10 @@ create or replace package body PKG_AE is
     Z_B             number := 0;
     Already_Replied number := 0;
   begin
-  
+
     commit;
     commit;
-  
+
     select NVL(MAX(l.id), 0)
       into Already_Replied
       from t_au_observations_auditee_response l
@@ -525,9 +526,9 @@ create or replace package body PKG_AE is
          REPLYROLE,
          REMARKS,
          SUBMITTED);
-    
+
       commit;
-    
+
       UPDATE T_AU_OBSERVATION_ASSIGNEDTO
          SET REPLIED = 'Y'
        WHERE OBS_ID = AUOBSID
@@ -538,7 +539,7 @@ create or replace package body PKG_AE is
              T.LASTREPLYBY     = REPLIEDBY,
              t.MEMO_REPLY_DATE = trunc(SYSDATE)
        WHERE ID = AUOBSID;
-    
+
     ELSE
       UPDATE T_AU_OBSERVATIONS_AUDITEE_RESPONSE AR
          SET AR.REPLY       = REPLYDATA,
@@ -547,13 +548,13 @@ create or replace package body PKG_AE is
        WHERE AR.AU_OBS_ID = AUOBSID;
       commit;
     END IF;
-  
+
     open io_cursor for
       select r.au_obs_id as ob_id, r.id as resp_id
         from T_AU_OBSERVATIONS_AUDITEE_RESPONSE r
        where r.au_obs_id = AUOBSID;
     commit;
-  
+
   end P_AUDITEE_OBSERVATION_RESPONSE;
 
   procedure P_AUDITEE_OBSERVATION_RESPONSE_evidences(respid    in t_au_observations_auditee_evidences.respid%type,
@@ -566,7 +567,7 @@ create or replace package body PKG_AE is
                                                      sequence  IN t_au_observations_auditee_evidences.sequence%type,
                                                      text_id   in t_au_observations_auditee_evidences.text_id%type) is
   begin
-  
+
     insert into t_au_observations_auditee_evidences
       (id,
        file_name,
@@ -595,12 +596,12 @@ create or replace package body PKG_AE is
        text_id,
        respid);
     commit;
-  
+
   end P_AUDITEE_OBSERVATION_RESPONSE_evidences;
   -- Ali & Asfand from here
   procedure P_GetAuditeeOldParasFAD(EntityID  in number,
                                     io_cursor OUT t_cursor) as
-  
+
   begin
     OPEN io_cursor FOR
       select f.audit_period,
@@ -614,12 +615,12 @@ create or replace package body PKG_AE is
              f.amount,
              f.para_category,
              f.audited_by
-      
+
         from v_get_P_GetAuditeeOldParasFAD f
        where f.ENTITY_ID = EntityID
        order by f.audit_period, f.para_no;
     --and f.c_status ;
-  
+
   end P_GetAuditeeOldParasFAD;
   -- auditee portal field
 
@@ -627,13 +628,13 @@ create or replace package body PKG_AE is
                                     P_NO      in number,
                                     R_ID      in number,
                                     io_cursor OUT t_cursor) as
-  
+
     Z_R number := 0;
   begin
-  
+
     commit;
     commit;
-  
+
     OPEN io_cursor FOR
       select f.audit_period,
              e.name,
@@ -650,16 +651,16 @@ create or replace package body PKG_AE is
         left join v_get_P_GetAuditeeOldParasFAD_ref fd
           on fd.ref_p = f.ref_p --and fd.c_status IN (12)
        WHERE fd.audited_by = ENT_ID
-      
+
        order by f.audit_period, e.name, f.para_no;
-  
+
   end P_GetAuditeeAllParasFAD;
 
   procedure P_UpdateOldParasStatus(PPNO       in number,
                                    PID        IN varchar2,
                                    NEW_STATUS in number) as
   begin
-  
+
     UPDATE T_AU_OLD_PARAS_FAD al
        SET al.Para_Status = NEW_STATUS, al.parastatusupdatedby = PPNO
      WHERE al.ref_p = PID;
@@ -673,7 +674,7 @@ create or replace package body PKG_AE is
                                       ParaText     in clob,
                                       CREATEDBY    IN NUMBER,
                                       io_cursor    OUT t_cursor) is
-  
+
   begin
     If (VCATID is null or VCATNATUREID is null or RISKID is null) then
       open io_cursor for
@@ -698,7 +699,7 @@ create or replace package body PKG_AE is
          CREATEDBY,
          sysdate);
       commit;
-    
+
       open io_cursor for
         select r.ref, r.remarks from t_au_remarks r where r.id = 15;
     end if;
@@ -706,7 +707,7 @@ create or replace package body PKG_AE is
 
   procedure P_GetAuditeeOldParasentities(EntityID  in number,
                                          io_cursor OUT t_cursor) as
-  
+
   begin
     OPEN io_cursor FOR
       select distinct e.entity_id, e.name
@@ -715,36 +716,36 @@ create or replace package body PKG_AE is
           on s.entity_id = e.entity_id
       --   WHERE e.entity_id = EntityID
        order by e.name;
-  
+
   end P_GetAuditeeOldParasentities;
 
   procedure P_GetAuditeeOldParasentitiesFAD(ENT_ID    in number,
                                             P_NO      in number,
                                             R_ID      in number,
                                             io_cursor OUT t_cursor) as
-  
+
     Z_B number := 0;
   begin
-  
+
     commit;
     commit;
-  
+
     OPEN io_cursor FOR
       select distinct s.entity_id, s.name
         from v_get_P_GetAuditeeOldParasentitiesFAD s
        WHERE s.entity_id = ENT_ID
        order by s.name;
-  
+
   end P_GetAuditeeOldParasentitiesFAD;
 
   procedure P_GetAuditeeOldParas(ENT_ID    in number,
                                  P_NO      in number,
                                  R_ID      in number,
                                  io_cursor OUT t_cursor) as
-  
+
     Z_B number := 0;
   begin
-  
+
     commit;
     commit;
     OPEN io_cursor FOR
@@ -775,19 +776,19 @@ create or replace package body PKG_AE is
        WHERE e.entity_id = ENT_ID
          and s.status = 2
        order by s.Entity_Name, s.para_no;
-  
+
   end P_GetAuditeeOldParas;
 
   procedure P_GetAuditeeOldParastext(paraid    in number,
                                      io_cursor OUT t_cursor) as
-  
+
   begin
     OPEN io_cursor FOR
       select t.*
         from t_au_observation_old_cad_paras_text t
        where t.observatsion_id = paraid
        order by t.id;
-  
+
   end P_GetAuditeeOldParastext;
 
   Procedure P_UpdateAuditeeOldParasresponse(Paraid    in number,
@@ -831,12 +832,12 @@ create or replace package body PKG_AE is
     commit;
     open io_cursor for
       select r.ref, r.remarks from t_au_remarks r where r.id = 15;
-  
+
   end P_UpdateAuditeeOldParasresponse;
 
   Procedure P_SubmitAuditeeOldParasresponse(Paraid    in number,
                                             io_cursor OUT t_cursor) is
-  
+
   begin
     update T_AU_OBSERVATION_OLD_CAD_PARAS_Response t
        set t.status = 2
@@ -844,14 +845,14 @@ create or replace package body PKG_AE is
     commit;
     open io_cursor for
       select r.ref, r.remarks from t_au_remarks r where r.id = 15;
-  
+
   end P_SubmitAuditeeOldParasresponse;
 
   procedure P_GetParasForComplianceByAuditee(P_NO      in number,
                                              ENT_ID    in number,
                                              R_ID      in number,
                                              io_cursor OUT t_cursor) as
-  
+
   begin
     if (ENT_ID in (113176, 113182)) then
       OPEN io_cursor FOR
@@ -924,19 +925,19 @@ create or replace package body PKG_AE is
                                           ENT_ID    in number,
                                           R_ID      in number,
                                           io_cursor OUT t_cursor) as
-  
+
     N_F number := 0;
   begin
-  
+
     select NVL(max(m.ppno), 0)
       into N_F
       from t_user_context_assignment m
-        
+
      where m.ppno = P_NO
        and m.entity_id = ent_id
        and m.role_id = R_ID
        and R_ID != 13;
-  
+
     if (N_F != 0) then
       IF (R_ID in (41)) then
         OPEN io_cursor FOR
@@ -968,9 +969,9 @@ create or replace package body PKG_AE is
              and c.com_status != 16
           -- and trunc(c.STELLED_ON) between '01-Jan-2025' and '31-Dec-25'
            order by c.audit_period desc, c.para_no asc;
-      
+
       else
-      
+
         IF (R_ID in (43, 44)) then
           OPEN io_cursor FOR
             select C.AUDIT_PERIOD,
@@ -1010,7 +1011,7 @@ create or replace package body PKG_AE is
                and c.com_stage = R_ID
                and c.com_status != 16
              order by c.audit_period desc, c.para_no asc;
-        
+
         else
           OPEN io_cursor FOR
             select C.AUDIT_PERIOD,
@@ -1051,19 +1052,19 @@ create or replace package body PKG_AE is
         end if;
       end if;
     else
-    
+
       open io_cursor for
         select 'System Issue, Please contact System Administrator on 051-2002110' as remarks
           from dual;
     end if;
-  
+
   end P_GetParasForCompliancereview;
 
   procedure P_GetParasForComplianceByAuditee_text(Old_id    in number,
                                                   new_id    in number,
                                                   IND       in varchar2,
                                                   io_cursor OUT t_cursor) as
-  
+
   begin
     if (IND = 'O') then
       OPEN io_cursor FOR
@@ -1091,12 +1092,12 @@ create or replace package body PKG_AE is
         end if;
       end if;
     end if;
-  
+
   end P_GetParasForComplianceByAuditee_text;
 
   procedure P_GetParasForCompliancehistory(comp_id   in number,
                                            io_cursor OUT t_cursor) as
-  
+
   begin
     OPEN io_cursor FOR
       select f.hist_id,
@@ -1110,13 +1111,13 @@ create or replace package body PKG_AE is
              f.comment_on,
              f.comments,
              f.com_flow
-      
+
         from AIS_T_AU_POST_COMPLIANCE_HISTORY f
         left join v_service_employeeinfo e
           on e.ppno = f.comment_by_PPNO
        where f.com_id = comp_id
        order by f.com_cycle, f.comment_on, f.comment_on asc;
-  
+
   end P_GetParasForCompliancehistory;
 
   procedure P_GetParasForComplianceforhistory(c_cycle   in number,
@@ -1167,7 +1168,7 @@ create or replace package body PKG_AE is
                                         P_IND       varchar2,
                                         io_cursor   OUT t_cursor) as
     P_F varchar2(50);
- 
+
     cursor V is
       select C.AUDIT_PERIOD,
              c.name,
@@ -1193,7 +1194,7 @@ create or replace package body PKG_AE is
           on e.com_key = c.com_key
        where (C.OLD_PARA_ID = Old_id or
              (C.NEW_PARAID = new_id and c.IND = P_F));
-  
+
     Vr1 V%rowtype;
     V_F number := 0;
      text_id number;
@@ -1222,49 +1223,49 @@ create or replace package body PKG_AE is
      inner join t_auditee_ent_types et
         on en.type_id = et.autid
      where en.entity_id = ENT_ID;
-  
+
     Open V;
     Fetch V
       into vr1;
     Close v;
-  
+
     IF ((R_ID = vr1.com_stage) OR (R_ID IN (39))) THEN
       select NVL(max(m.ppno), 0)
         into N_F
        from t_user_context_assignment m
-          
+
        where m.ppno = P_NO
          and m.entity_id = ENT_ID
          and m.role_id = R_ID;
-    
+
       if (N_F != 0) then
         commit;
-      
+
         commit;
-      
+
         update AIS_T_AU_POST_COMPLIANCE c
            set c.com_cycle  = vr1.com_cycle + 1,
                c.com_stage  = vr1.next_r_id,
                c.com_status = 10
          where c.com_id = vr1.com_id;
         commit;
-      
+
         update AIS_T_AU_POST_COMPLIANCE_text t
            set t.status = 'N'
          where t.com_id = vr1.com_id
            and t.com_cycle = vr1.com_cycle;
         commit;
-      
+
         select max(ts.c_txt_id + 1)
           into V_F
           from AIS_T_AU_POST_COMPLIANCE_text ts;
-      
+
         insert into AIS_T_AU_POST_COMPLIANCE_text
           (c_Txt_Id, Com_Id, Reply, Com_Cycle, Status)
         values
           (V_F, vr1.com_id, Auditee_COM, vr1.com_cycle + 1, 'Y');
         commit;
-      
+
         insert into AIS_T_AU_POST_COMPLIANCE_HISTORY
           (HIST_ID,
            COM_ID,
@@ -1289,25 +1290,25 @@ create or replace package body PKG_AE is
            'Compliance Submitted',
            'Y');
         commit;
-      
+
         open io_cursor for
           select 'Complaince Submitted' as remarks, V_F as text_id
             from dual;
-      
+
       else
         open io_cursor for
           select 'Sorry you connection is lost, logout and login again' as remarks,
                  0 as text_id
             from dual;
       end if;
-    
+
     else
       open io_cursor for
         select 'Compliance Already Submitted, If you face the same issue, Contact on  051-2002110' as remarks,
                0 as text_id
           from dual;
     end if;
-  
+
   end P_SubmitPostAuditCompliance;
 
   procedure P_SubmitPostAuditCompliance_Evidence(TEXT_ID  in varchar2,
@@ -1317,7 +1318,7 @@ create or replace package body PKG_AE is
                                                  filetype in varchar2,
                                                  filedata IN clob,
                                                  seq_id   IN number) as
-  
+
     C_M          NUMBER;
     PREV_TEXT_ID NUMBER;
   BEGIN
@@ -1326,14 +1327,14 @@ create or replace package body PKG_AE is
       INTO C_M
       FROM ais_t_au_post_compliance_text t
      WHERE t.c_txt_id = TEXT_ID;
-  
+
     -- Find the immediately previous text_id for the same comp_id
     SELECT MAX(c_txt_id)
       INTO PREV_TEXT_ID
       FROM ais_t_au_post_compliance_text
      WHERE com_id = C_M
        AND c_txt_id < TEXT_ID;
-  
+
     insert into AIS_T_AU_POST_COMPLIANCE_EVIDENCE_archive
       select *
         from ais_t_au_post_compliance_evidence c
@@ -1346,7 +1347,7 @@ create or replace package body PKG_AE is
        WHERE textid = PREV_TEXT_ID;
       commit;
     END IF;
-  
+
     insert into ais_t_au_post_compliance_evidence
       (id,
        file_name,
@@ -1358,7 +1359,7 @@ create or replace package body PKG_AE is
        sequence,
        description,
        COMP_ID)
-    
+
     VALUES
       ((select COALESCE(max(ac.ID) + 1, 1)
          from ais_t_au_post_compliance_evidence ac),
@@ -1372,7 +1373,7 @@ create or replace package body PKG_AE is
        filetype,
        C_M);
     commit;
-  
+
   end P_SubmitPostAuditCompliance_Evidence;
 
   PROCEDURE P_SubmitPostAuditCompliance_Review(Old_id     NUMBER,
@@ -1383,7 +1384,7 @@ create or replace package body PKG_AE is
                                                A_COMMENTS VARCHAR2,
                                                P_IND      VARCHAR2,
                                                io_cursor  OUT t_cursor) AS
-  
+
     ------------------------------------------------------------------
     -- Local variables
     ------------------------------------------------------------------
@@ -1391,10 +1392,10 @@ create or replace package body PKG_AE is
     N_F NUMBER := 0;
     Z_B NUMBER := 0;
     C_F NUMBER := 0;
-  
+
     v_current_stage NUMBER;
     v_savepoint_set BOOLEAN := FALSE;
-  
+
     ------------------------------------------------------------------
     -- Compliance cursor
     ------------------------------------------------------------------
@@ -1410,49 +1411,49 @@ create or replace package body PKG_AE is
              ET.EMAIL_ADDRESS AS TO_EMAIL,
              AD.EMAIL_ADDRESS AS CC_EMAIL,
              MT.EMAIL_ADDRESS AS CC_EMAIL2,
-             
+
              CASE
                WHEN P_IND = 'U' THEN
                 C.NEXT_R_ID
                ELSE
                 C.PER_R_ID
              END AS ROLE_ID,
-             
+
              CASE
                WHEN P_IND = 'U' THEN
                 C.C_STATUS_UP
                ELSE
                 C.C_STATUS_DOWN
              END AS STATUS_ID,
-             
+
              C.IND,
              C.COM_STAGE,
              C.COM_CYCLE,
              C.COM_ID AS COMID,
              C.START_DATE || ' - ' || C.END_DATE AS AUDIT_DATE
-      
+
         FROM V_GET_AIS_POST_COMPLIANCE C
-      
+
        INNER JOIN T_AUDITEE_ENTITIES_MAPING M
           ON M.ENTITY_ID = C.ENTITY_ID
-      
+
        INNER JOIN T_AUDITEE_ENTITIES ET
           ON ET.ENTITY_ID = M.ENTITY_ID
        INNER JOIN T_AUDITEE_ENTITIES MT
           ON MT.ENTITY_ID = M.PARENT_ID
        INNER JOIN T_AUDITEE_ENTITIES AD
           ON AD.ENTITY_ID = ET.AUDITBY_ID
-      
+
         LEFT JOIN T_AUDITEE_ENTITIES_MAPING_COM E
           ON E.COM_KEY = C.COM_KEY
-      
+
        WHERE C.OLD_PARA_ID = Old_id
           OR (C.NEW_PARAID = new_id AND C.IND = P_F);
-  
+
     Vr1 V%ROWTYPE;
-  
+
   BEGIN
-  
+
     ------------------------------------------------------------------
     -- 1. Determine whether para belongs to normal observation
     --    or old CAD para
@@ -1462,7 +1463,7 @@ create or replace package body PKG_AE is
       FROM T_AU_OBSERVATION_OLD_CAD_PARAS CAD
      WHERE CAD.PARA_ID = new_id
        AND CAD.AUDITED_BY = ENT_ID;
-  
+
     SELECT CASE
              WHEN ET.AUDIT_TYPE = 'B' THEN
               'A'
@@ -1479,19 +1480,19 @@ create or replace package body PKG_AE is
      INNER JOIN T_AUDITEE_ENT_TYPES ET
         ON EN.TYPE_ID = ET.AUTID
      WHERE EN.ENTITY_ID = ENT_ID;
-  
+
     ------------------------------------------------------------------
     -- 2. Fetch compliance record
     ------------------------------------------------------------------
     OPEN V;
-  
+
     FETCH V
       INTO Vr1;
-  
+
     IF V%NOTFOUND THEN
-    
+
       CLOSE V;
-    
+
       OPEN io_cursor FOR
         SELECT 'Compliance record not found. Please refresh and try again.' AS remarks,
                '' AS para_no,
@@ -1501,13 +1502,13 @@ create or replace package body PKG_AE is
                '' AS CC_EMAIL,
                '' AS CC_EMAIL2
           FROM DUAL;
-    
+
       RETURN;
-    
+
     END IF;
-  
+
     CLOSE V;
-  
+
     ------------------------------------------------------------------
     -- 3. Validate user/context before starting transaction
     ------------------------------------------------------------------
@@ -1520,9 +1521,9 @@ create or replace package body PKG_AE is
        AND M.ENTITY_ID = ENT_ID
        AND M.ROLE_ID = R_ID
        AND R_ID <> 13;
-  
+
     IF N_F = 0 THEN
-    
+
       OPEN io_cursor FOR
         SELECT 'Sorry you connection is lost, logout and login again' AS remarks,
                Vr1.PARA_NO AS PARA_NO,
@@ -1532,18 +1533,18 @@ create or replace package body PKG_AE is
                '' AS CC_EMAIL,
                '' AS CC_EMAIL2
           FROM DUAL;
-    
+
       RETURN;
-    
+
     END IF;
-  
+
     ------------------------------------------------------------------
     -- 4. Start protected transaction
     ------------------------------------------------------------------
     SAVEPOINT SP_POST_COMPLIANCE;
-  
+
     v_savepoint_set := TRUE;
-  
+
     ------------------------------------------------------------------
     -- 5. Lock only this compliance record.
     --
@@ -1555,14 +1556,14 @@ create or replace package body PKG_AE is
       FROM AIS_T_AU_POST_COMPLIANCE C
      WHERE C.COM_ID = Vr1.COMID
        FOR UPDATE;
-  
+
     ------------------------------------------------------------------
     -- 6. Revalidate stage AFTER locking the row
     ------------------------------------------------------------------
     IF R_ID <> v_current_stage THEN
-    
+
       ROLLBACK TO SP_POST_COMPLIANCE;
-    
+
       OPEN io_cursor FOR
         SELECT 'Compliance Already Submitted, If the para no ' ||
                Vr1.PARA_NO ||
@@ -1574,11 +1575,11 @@ create or replace package body PKG_AE is
                '' AS CC_EMAIL,
                '' AS CC_EMAIL2
           FROM DUAL;
-    
+
       RETURN;
-    
+
     END IF;
-  
+
     ------------------------------------------------------------------
     -- 7. Close previous activity
     ------------------------------------------------------------------
@@ -1599,19 +1600,19 @@ create or replace package body PKG_AE is
        Vr1.COM_CYCLE,
        Vr1.STATUS_ID,
        R_ID,
-       
+
        (SELECT G.GROUP_NAME FROM T_GROUPS G WHERE G.GROUP_ID = R_ID),
-       
+
        P_NO,
        SYSDATE,
        A_COMMENTS,
        'Y');
-  
+
     ------------------------------------------------------------------
     -- 10. Settlement
     ------------------------------------------------------------------
     IF Vr1.STATUS_ID = 16 AND R_ID IN (6, 7, 44, 41) THEN
-    
+
       --------------------------------------------------------------
       -- Update post-compliance master
       --------------------------------------------------------------
@@ -1623,53 +1624,53 @@ create or replace package body PKG_AE is
              C.SETTELED_ON = SYSDATE,
              C.SETTELED_BY = P_NO
        WHERE C.COM_ID = Vr1.COMID;
-    
+
       --------------------------------------------------------------
       -- Update originating para according to para type
       --------------------------------------------------------------
       CASE Vr1.IND
-      
+
       ----------------------------------------------------------
       -- Current observation
       ----------------------------------------------------------
         WHEN 'A' THEN
-        
+
           UPDATE T_AU_OBSERVATION O
              SET O.STATUS = 9, O.STELLED_ON = SYSDATE, O.SETTLED_BY = P_NO
            WHERE O.ID = new_id;
-        
+
       ----------------------------------------------------------
       -- Old FAD para
       ----------------------------------------------------------
         WHEN 'O' THEN
-        
+
           UPDATE T_AU_OLD_PARAS_FAD FD
              SET FD.PARA_STATUS    = 6,
                  FD.SETTLED_BY     = P_NO,
                  FD.PARASETTELEDON = SYSDATE
            WHERE FD.ID = Old_id;
-        
+
       ----------------------------------------------------------
       -- Old CAD para
       ----------------------------------------------------------
         WHEN 'C' THEN
-        
+
           UPDATE T_AU_OBSERVATION_OLD_CAD_PARAS CD
              SET CD.PARA_STATUS = 9,
                  CD.SETTELED_BY = P_NO,
                  CD.SETTELED_ON = SYSDATE
            WHERE CD.PARA_ID = new_id;
-        
+
       ----------------------------------------------------------
       -- No originating table update required
       ----------------------------------------------------------
         ELSE
           NULL;
-        
+
       END CASE;
-    
+
     ELSE
-    
+
       ----------------------------------------------------------------
       -- 11. Normal forwarding / referring back
       ----------------------------------------------------------------
@@ -1678,38 +1679,38 @@ create or replace package body PKG_AE is
              C.COM_STAGE  = Vr1.ROLE_ID,
              C.COM_STATUS = Vr1.STATUS_ID
        WHERE C.COM_ID = Vr1.COMID;
-    
+
     END IF;
-  
+
     ------------------------------------------------------------------
     -- 12. Entire business transaction succeeded
     ------------------------------------------------------------------
     COMMIT;
-  
+
     v_savepoint_set := FALSE;
-  
+
     ------------------------------------------------------------------
     -- 13. Return response to application
     ------------------------------------------------------------------
     IF Vr1.STATUS_ID = 16 THEN
-    
+
       OPEN io_cursor FOR
         SELECT 'Para no ' || Vr1.PARA_NO ||
                ' is marked as settled, Please inform the auditee ' AS remarks,
-               
+
                Vr1.PARA_NO AS para_no,
                'Settled' AS para_status,
                Vr1.GIST_OF_PARAS AS GIST_OF_PARAS,
                Vr1.TO_EMAIL AS TO_EMAIL,
                Vr1.CC_EMAIL AS CC_EMAIL,
                '' AS CC_EMAIL2
-        
+
           FROM DUAL;
-    
+
     ELSE
-    
+
       IF P_IND = 'U' THEN
-      
+
         OPEN io_cursor FOR
           SELECT 'Complaince Forwarded' AS remarks,
                  Vr1.PARA_NO AS para_no,
@@ -1719,9 +1720,9 @@ create or replace package body PKG_AE is
                  '' AS CC_EMAIL,
                  '' AS CC_EMAIL2
             FROM DUAL;
-      
+
       ELSE
-      
+
         OPEN io_cursor FOR
           SELECT 'Complaince Rejected/Referred Back' AS remarks,
                  Vr1.PARA_NO AS para_no,
@@ -1731,29 +1732,29 @@ create or replace package body PKG_AE is
                  '' AS CC_EMAIL,
                  '' AS CC_EMAIL2
             FROM DUAL;
-      
+
       END IF;
-    
+
     END IF;
-  
+
   EXCEPTION
-  
+
     ------------------------------------------------------------------
     -- Any failure in history/workflow/settlement means the complete
     -- submission is rolled back.
     ------------------------------------------------------------------
     WHEN OTHERS THEN
-    
+
       IF v_savepoint_set THEN
         ROLLBACK TO SP_POST_COMPLIANCE;
       END IF;
-    
+
       RAISE;
-    
+
   END P_SubmitPostAuditCompliance_Review;
   procedure P_GetPostAuditCompliance_Evidence(TEXT_ID   in varchar2,
                                               io_cursor OUT t_cursor) as
-  
+
   begin
     OPEN io_cursor FOR
       select id,
@@ -1769,14 +1770,14 @@ create or replace package body PKG_AE is
         from ais_t_au_post_compliance_evidence
        where textid = TEXT_ID
        order by sequence asc;
-  
+
     commit;
-  
+
   end P_GetPostAuditCompliance_Evidence;
 
   procedure P_GetPostAuditCompliance_Evidence_FileData(FILE_ID   in varchar2,
                                                        io_cursor OUT t_cursor) as
-  
+
   begin
     OPEN io_cursor FOR
       select id,
@@ -1791,9 +1792,9 @@ create or replace package body PKG_AE is
              COMP_ID
         from ais_t_au_post_compliance_evidence
        where id = FILE_ID;
-  
+
     commit;
-  
+
   end P_GetPostAuditCompliance_Evidence_FileData;
 
   procedure P_GetComplianceByAuditee(EntityID  in number,
@@ -1801,7 +1802,7 @@ create or replace package body PKG_AE is
                                      R_ID      in number,
                                      ENT_ID    in Number,
                                      io_cursor OUT t_cursor) as
-  
+
   begin
     OPEN io_cursor FOR
       select f.audit_period,
@@ -1828,14 +1829,14 @@ create or replace package body PKG_AE is
        where f.ENTITY_ID = EntityID
          and f.com_stage = R_ID
        order by f.audit_period desc;
-  
+
   end P_GetComplianceByAuditee;
 
   procedure p_GetParaComplianceResponsible(Old_id    in number,
                                            new_id    in number,
                                            IND       in varchar2,
                                            io_cursor OUT t_cursor) as
-  
+
   begin
     if (IND = 'O') then
       open io_cursor for
@@ -1873,7 +1874,7 @@ create or replace package body PKG_AE is
                                      io_cursor    OUT t_cursor) is
   begin
     open io_cursor for
-    
+
       SELECT f.*,
              c.heading   as Process_Des,
              cc.heading  as Sub_process_Des,
@@ -1894,7 +1895,7 @@ create or replace package body PKG_AE is
                                          ENT_ID    in number,
                                          R_ID      in number,
                                          io_cursor OUT t_cursor) as
-  
+
   begin
     OPEN io_cursor FOR
       select c.com_id,
@@ -1915,11 +1916,11 @@ create or replace package body PKG_AE is
          and c.para_status = 8
          and c.cau_status is null
        order by C.audit_period desc, C.para_no asc;
-  
+
   end P_GetParasForComplianceByCAU;
 
   procedure P_GetrealtionshiptypeforCAU(io_cursor OUT t_cursor) is
-  
+
   begin
     open io_cursor for
       select f.entity_realtion_id,
@@ -1934,7 +1935,7 @@ create or replace package body PKG_AE is
   procedure P_GetparentrepofficeforCAU(rid       in number,
                                        ENT_ID    in number,
                                        io_cursor OUT t_cursor) is
-  
+
     A_F number := 0;
     N_F number := 0;
   begin
@@ -1969,7 +1970,7 @@ create or replace package body PKG_AE is
 
   procedure P_GetchildpostingforCAU(P_ENT_ID  in number,
                                     io_cursor OUT t_cursor) is
-  
+
   begin
     open io_cursor for
       select distinct (r.c_name),
@@ -1979,7 +1980,7 @@ create or replace package body PKG_AE is
                       r.c_type_id as typeid,
                       R.COMPLICE_BY,
                       R.AUDIT_BY
-      
+
         from v_get_parent_office r
        inner join t_auditee_ent_types t
           on t.autid = r.relation_type_id
@@ -2012,12 +2013,12 @@ create or replace package body PKG_AE is
        where u.ppno = P_NO
          and u.entity_id = ENT_ID
          and m.role_id = R_ID;
-    
+
       if (N_F != 0) then
         commit;
-      
-        commit;*/
-      
+
+
+
         update AIS_T_AU_POST_COMPLIANCE c
            set c.cau_status          = 1,
                c.cau_assigned_by     = P_NO,
@@ -2025,12 +2026,12 @@ create or replace package body PKG_AE is
                c.cau_assigned_ent_id = B_ENT_ID
          where c.com_id = c_id;
         commit;
-      
+
         select nvl(max(c.c_txt_id), 0)
           into T_F
           from AIS_T_AU_POST_COMPLIANCE_text_CAU c
          where c.com_id = C_ID;
-      
+
         if (T_F = 0) then
           insert into AIS_T_AU_POST_COMPLIANCE_text_CAU
             (c_Txt_Id, Com_ID, Cau_Instructions, Status)
@@ -2058,14 +2059,14 @@ create or replace package body PKG_AE is
       open io_cursor for
         select 'Sorry this facility is only for CAU' as remarks from dual;
     end if;
-  
+
   end P_FORWARD_CAU_PARA_TO_BRANCH;
 
   procedure P_GetParasForComplianceByCAU_BY_BRANCH(P_NO      in number,
                                                    ENT_ID    in number,
                                                    R_ID      in number,
                                                    io_cursor OUT t_cursor) as
-  
+
   begin
     OPEN io_cursor FOR
       select c.com_id,
@@ -2086,7 +2087,7 @@ create or replace package body PKG_AE is
          and c.cau_assigned_ent_id = ENT_ID
          and c.cau_status = 1
        order by C.audit_period desc, C.para_no asc;
-  
+
   end P_GetParasForComplianceByCAU_BY_BRANCH;
 
   procedure P_GetParasForCompliance_CAU_para_text(c_id      number,
@@ -2122,7 +2123,7 @@ create or replace package body PKG_AE is
             on p.new_para_id = pt.observatsion_id
          where p.com_id = C_ID;
     end if;
-  
+
   end P_GetParasForCompliance_CAU_para_text;
 
   Procedure P_SubmitPostAuditCompliance_BY_BRANCH(C_ID        number,
@@ -2136,7 +2137,7 @@ create or replace package body PKG_AE is
     N_F number := 0;
     Z_B number := 0;
   begin
-  
+
     select NVL(max(u.ppno), 0)
       into N_F
       from t_user u
@@ -2145,28 +2146,28 @@ create or replace package body PKG_AE is
      where u.ppno = P_NO
        and u.entity_id = ENT_ID
        and m.role_id = R_ID;
-  
+
     if (N_F != 0) then
       commit;
-    
+
       commit;
-    
+
       update AIS_T_AU_POST_COMPLIANCE c
          set c.cau_status     = 2,
              c.br_response_by = P_NO,
              c.br_response_on = sysdate
        where c.com_id = c_id;
       commit;
-    
+
       Update AIS_T_AU_POST_COMPLIANCE_text_CAU c
          set c.reply = Auditee_COM, c.status = 'R'
        where c.com_id = C_ID
          and c.c_txt_id = T_ID;
       commit;
-    
+
       open io_cursor for
         select 'Complaince Submitted to CAU' as remarks from dual;
-    
+
     else
       open io_cursor for
         select 'Sorry you connection is lost, logout and login again' as remarks
@@ -2181,7 +2182,7 @@ create or replace package body PKG_AE is
                                                            filetype in varchar2,
                                                            filedata IN clob,
                                                            seq_id   IN number) as
-  
+
   begin
     insert into ais_t_au_post_compliance_evidence_cau
       (id,
@@ -2194,7 +2195,7 @@ create or replace package body PKG_AE is
        sequence,
        description,
        COMP_ID)
-    
+
     VALUES
       ((select COALESCE(max(ac.ID) + 1, 1)
          from ais_t_au_post_compliance_evidence_cau ac),
@@ -2210,11 +2211,11 @@ create or replace package body PKG_AE is
           from ais_t_au_post_compliance_text t
          where t.c_txt_id = TEXT_ID));
     commit;
-  
+
   end P_SubmitPostAuditCompliance_Evidence_By_BRANCH;
   procedure P_GetAllCompliance_Evidence_CAU(TEXT_ID   in varchar2,
                                             io_cursor OUT t_cursor) as
-  
+
   begin
     OPEN io_cursor FOR
       select id,
@@ -2229,13 +2230,13 @@ create or replace package body PKG_AE is
              COMP_ID
         from ais_t_au_post_compliance_evidence_cau
        where textid = TEXT_ID;
-  
+
     commit;
-  
+
   end P_GetAllCompliance_Evidence_CAU;
   procedure P_GetPostAuditCompliance_Evidence_FileData_CAU(FILE_ID   in varchar2,
                                                            io_cursor OUT t_cursor) as
-  
+
   begin
     OPEN io_cursor FOR
       select id,
@@ -2250,16 +2251,16 @@ create or replace package body PKG_AE is
              COMP_ID
         from ais_t_au_post_compliance_evidence_cau
        where id = FILE_ID;
-  
+
     commit;
-  
+
   end P_GetPostAuditCompliance_Evidence_FileData_CAU;
 
   procedure P_GetParasForComplianceByCAU_FOR_REVIEW(P_NO      in number,
                                                     ENT_ID    in number,
                                                     R_ID      in number,
                                                     io_cursor OUT t_cursor) as
-  
+
   begin
     OPEN io_cursor FOR
       select c.com_id,
@@ -2278,15 +2279,15 @@ create or replace package body PKG_AE is
          and c.para_status = 8
          and c.cau_status = 2
        order by C.audit_period desc, C.para_no asc;
-  
+
   end P_GetParasForComplianceByCAU_FOR_REVIEW;
 
   Procedure p_GetPostAuditComplianceSecuritySnapshot(CM_ID     in number,
                                                      io_cursor OUT t_cursor) as
-  
+
   begin
     OPEN io_cursor FOR
-    
+
       select C.COM_ID,
              C.ENTITY_ID,
              C.NAME,
@@ -2310,16 +2311,17 @@ create or replace package body PKG_AE is
                                              R_ID        in number,
                                              USER_CON_ID in number,
                                              io_cursor   OUT t_cursor) as
-  
+
   begin
     OPEN io_cursor FOR
-    
+
       select count(1)
         from T_USER_CONTEXT_ASSIGNMENT uca
        where uca.PPNO = P_NO
          and uca.ENTITY_ID = ENT_ID
          and uca.ROLE_ID = R_ID
          and uca.IS_ACTIVE = 'Y';
-  
+
   end;
 end PKG_AE;
+/

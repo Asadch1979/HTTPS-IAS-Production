@@ -243,14 +243,23 @@
         return blob;
     }
     function finalCommentsButtonSave() {
+        if (g_newStatusId == 5 && !$.trim($('#draftNoInCommentsBox').val())) {
+            alert("Please enter Draft Para No to proceed");
+            return;
+        }
         if ($('#commentAreaInCommentsBox').val() == "") {
             alert("Auditor Comments are Mandatory");
             return;
         }
         $.ajax({
-            url: g_asiBaseURL + "/ApiCalls/update_observation_status",
+            url: g_asiBaseURL + (g_newStatusId == 5 ? "/ApiCalls/AddObservationToDraft" : "/ApiCalls/update_observation_status"),
             type: "POST",
-            data: {
+            data: g_newStatusId == 5 ? {
+                'EngagementId': getSelectedEngagementId(),
+                'ObservationId': g_obsId,
+                'DraftParaNumber': $('#draftNoInCommentsBox').val(),
+                'Remarks': $('#commentAreaInCommentsBox').val()
+            } : {
                 'OBS_ID': g_obsId,
                 'NEW_STATUS_ID': g_newStatusId,
                 'RISK_ID': g_riskId,
@@ -259,7 +268,17 @@
             cache: false,
             success: function (data) {
                 showApiAlert(data);
-                onAlertCallback(reloadLocation);
+                if (data && (data.Status === true || data.status === true)) {
+                    onAlertCallback(function () {
+                        $('#commentsBox').modal('hide');
+                        $('#updateMemoModel').modal('hide');
+                        reloadLocation();
+                    });
+                }
+            },
+            error: function (xhr) {
+                xhr.__iasSafetyHandled = true;
+                showApiAlertFromXhr(xhr, xhr.status, getErrorReferenceIdFromXhr(xhr), "Unable to update observation status.");
             },
             dataType: "json",
         });
@@ -272,8 +291,19 @@
         g_obsId = obs_id;
         g_newStatusId = new_status_id;
         g_riskId = risk_id;
-        $('#commentsBox').modal('show');
+        $('#draftNoCommentsGroup').toggleClass('d-none', new_status_id != 5);
+        $('#draftNoInCommentsBox').val('');
         $('#commentAreaInCommentsBox').val('');
+
+        if (new_status_id == 5 && $('#updateMemoModel').hasClass('show')) {
+            $('#updateMemoModel').one('hidden.bs.modal', function () {
+                $('#commentsBox').modal('show');
+            });
+            $('#updateMemoModel').modal('hide');
+            return;
+        }
+
+        $('#commentsBox').modal('show');
     }
     function dropObservation(obs_id, new_status_id, risk_id) {
         if (!isCurrentEngagementTeamLead()) {
@@ -342,7 +372,7 @@
                     var canManageObservation = isCurrentEngagementTeamLead();
                     $.each(data, function (i, v) {
                         $('#auditPeriodNameField').val(v.period);
-                        var editAction = canManageObservation ? '<a data-onclick="ObservationUpdatePanel(' + v.obS_ID + ')" href="#" class="text-hover">Edit Memo</a>' : '';
+                        var editAction = canManageObservation ? '<a data-onclick="ObservationUpdatePanel(' + v.obS_ID + ',' + v.obS_STATUS_ID + ',' + v.obS_RISK_ID + ')" href="#" class="text-hover">Edit Memo</a>' : '';
                         $('#manageObsPanel tbody').append(' <tr id="' + v.obS_ID + '"><td class="text-center">' + v.memO_NO + '</td><td>' + v.heading + '</td><td>' + v.violation + '</td><td>' + v.obS_RISK + '</td><td>' + v.obS_STATUS + '</td><td class="text-center"><a data-onclick="event.preventDefault();ObservationViewerPanel(' + v.obS_ID + ',' + v.obS_STATUS_ID + ', ' + v.obS_RISK_ID + ')" href="#" class="text-hover">View Memo</a></td><td class="text-center">' + editAction + '</td></tr>');
                     });
                     setTimeout(function () {
@@ -360,16 +390,14 @@
         }
     }
 
-    function ObservationUpdatePanel(obs_id) {
+    function ObservationUpdatePanel(obs_id, status_id, risk_id) {
         if (!isCurrentEngagementTeamLead()) {
             return;
         }
 
         g_obsId = obs_id;
-        if (!validateManageObservationHeading()) {
-            return;
-        }
-
+        g_currentStatus = status_id;
+        g_riskId = risk_id;
         $.ajax({
             url: g_asiBaseURL + "/ApiCalls/get_dept_observation_text",
             type: "POST",
@@ -383,6 +411,7 @@
                 $('#updateMemo_heading').val(data[0].heading);
                 $('#updateMemo_risk').val(data[0].obS_RISK_ID);
                 $('#updateMemo_instances').val(data[0].nO_OF_INSTANCES);
+                $('#addDraftButton_update').toggleClass('d-none', g_currentStatus != 3);
             },
             dataType: "json",
         });
@@ -395,6 +424,9 @@
         }
 
         g_obsId = obs_id;
+        if (!validateManageObservationHeading()) {
+            return;
+        }
         $.ajax({
             url: g_asiBaseURL + "/ApiCalls/update_observation_text",
             type: "POST",
@@ -408,10 +440,16 @@
             cache: false,
             success: function (data) {
                 showApiAlert(data);
-                onAlertCallback(function () {
-                    $('#updateMemoModel').modal('hide');
-                    reloadLocation();
-                });
+                if (data && (data.Status === true || data.status === true)) {
+                    onAlertCallback(function () {
+                        $('#updateMemoModel').modal('hide');
+                        reloadLocation();
+                    });
+                }
+            },
+            error: function (xhr) {
+                xhr.__iasSafetyHandled = true;
+                showApiAlertFromXhr(xhr, xhr.status, getErrorReferenceIdFromXhr(xhr), "Unable to update the observation.");
             },
             dataType: "json",
         });

@@ -15,6 +15,24 @@
           });
      });
 
+     function setPreConHoMemoContent(html) {
+          var content = html || '';
+          $('#viewMemo_memo_ObSent').val(content).trigger('change');
+          var $editor = $('#viewMemoDetailsModel .richText-editor').first();
+          if ($editor.length) {
+              $editor.html(content);
+          }
+      }
+
+      function getPreConHoMemoContent() {
+          var $editor = $('#viewMemoDetailsModel .richText-editor').first();
+          if ($editor.length) {
+              return $editor.html();
+          }
+
+          return $('#viewMemo_memo_ObSent').val();
+      }
+
      function getEntityObservations() {
           var flag = 0;
          if($('#entitySelectField').val()==0){
@@ -77,7 +95,7 @@
           }
 
            $('#viewMemo_heading_ObSent').val('');
-           $('#viewMemo_memo_ObSent').val('').trigger('change');
+           setPreConHoMemoContent('');
            $('#viewMemo_response_ObSent').html('');
            $('#viewMemo_aud_reply_ObSent').html('');
            $('#viewMemo_head_reply_ObSent').html('');
@@ -100,7 +118,7 @@
               cache: false,
               success: function (data) {
            $('#viewMemo_heading_ObSent').val(data.heading);
-           $('#viewMemo_memo_ObSent').val(data.observatioN_TEXT).trigger('change');
+           setPreConHoMemoContent(data.observatioN_TEXT);
            $('#viewMemo_response_ObSent').html(data.auditeE_REPLY);
            ViewAuditeeAttachedEvidences();
            $('#viewMemo_aud_reply_ObSent').html(data.auditoR_RECOM);
@@ -282,7 +300,7 @@
                 'VIOLATION_NATURE_ID': $('#viewMemo_subprocess_ObSent').val(),
                 'RISK_ID': $('#viewMemo_risk_ObSent').val(),
                 'GIST_OF_PARA': $('#viewMemo_heading_ObSent').val(),
-                'TEXT_PARA': $('#viewMemo_memo_ObSent').val()
+                'TEXT_PARA': getPreConHoMemoContent()
 
             },
             cache: false,

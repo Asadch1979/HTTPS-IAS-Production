@@ -4,24 +4,57 @@
     var g_obsList = [];
      var g_procId = 0;
     var g_subProcId=0;
-    $(document).ready(function () {
-        $('#entitySelectField').select2();
+    function initializeDraftHoReportUi() {
+        if (!$('#viewMemoDetailsModel').length) {
+            return;
+        }
+
+        if ($('#entitySelectField').length && !$('#entitySelectField').hasClass('select2-hidden-accessible')) {
+            $('#entitySelectField').select2();
+        }
         var entName = $('#manageObsPanel tbody .entity_name_field:first').text();
         $('#entityNameField').val(entName);
         var periodName = $('#manageObsPanel tbody .period_name_field:first').text();
         $('#auditPeriodNameField').val(periodName);
 
-           $('#viewMemo_memo_ObSent').richText({
+        if (!document.querySelector('#viewMemoDetailsModel .richText-editor')) {
+            $('#viewMemo_memo_ObSent').richText({
             imageUpload: false,
             fileUpload: false,
             videoEmbed: false,
             urls: false
-        });
+            });
+        }
+    }
 
+    window.fieldAuditBoLoadDraftReportHo = function () {
+        initializeDraftHoReportUi();
+    };
+
+    $(document).ready(function () {
+        initializeDraftHoReportUi();
     });
 
     function reloadLocation() {
         getEntityObservation();
+    }
+
+    function setDraftHoMemoContent(html) {
+        var content = html || '';
+        $('#viewMemo_memo_ObSent').val(content).trigger('change');
+        var $editor = $('#viewMemoDetailsModel .richText-editor').first();
+        if ($editor.length) {
+            $editor.html(content);
+        }
+    }
+
+    function getDraftHoMemoContent() {
+        var $editor = $('#viewMemoDetailsModel .richText-editor').first();
+        if ($editor.length) {
+            return $editor.html();
+        }
+
+        return $('#viewMemo_memo_ObSent').val();
     }
 
 
@@ -153,7 +186,7 @@
         }
 
          $('#viewMemo_heading_ObSent').val('');
-         $('#viewMemo_memo_ObSent').val('').trigger('change');
+         setDraftHoMemoContent('');
          $('#viewMemo_response_ObSent').html('');
          $('#viewMemo_aud_reply_ObSent').html('');
          $('#viewMemo_head_reply_ObSent').html('');
@@ -169,7 +202,7 @@
             cache: false,
             success: function (data) {
          $('#viewMemo_heading_ObSent').val(data.heading);
-         $('#viewMemo_memo_ObSent').val(data.observatioN_TEXT).trigger('change');
+         setDraftHoMemoContent(data.observatioN_TEXT);
          $('#viewMemo_response_ObSent').html(data.auditeE_REPLY);
          ViewAuditeeAttachedEvidences();
          $('#viewMemo_aud_reply_ObSent').html(data.auditoR_RECOM);
@@ -360,7 +393,7 @@
                 'VIOLATION_NATURE_ID': $('#viewMemo_subprocess_ObSent').val(),
                 'RISK_ID': $('#viewMemo_risk_ObSent').val(),
                 'GIST_OF_PARA': $('#viewMemo_heading_ObSent').val(),
-                'TEXT_PARA': $('#viewMemo_memo_ObSent').val()
+                'TEXT_PARA': getDraftHoMemoContent()
 
             },
             cache: false,

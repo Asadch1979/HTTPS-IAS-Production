@@ -2,6 +2,7 @@ namespace AIS.Models
     {
     public sealed class AddObservationToDraftRequest
         {
+        public int EngagementId { get; set; }
         public int ObservationId { get; set; }
         public string DraftParaNumber { get; set; }
         public string Remarks { get; set; }
