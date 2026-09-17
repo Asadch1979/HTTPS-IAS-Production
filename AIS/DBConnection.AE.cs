@@ -1,5 +1,6 @@
 using AIS.Models;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 using Oracle.ManagedDataAccess.Client;
 using System;
 using System.Collections.Generic;
@@ -407,10 +408,15 @@ namespace AIS.Controllers
             return list;
             }
 
-        public async Task<bool> ResponseAuditObservation(ObservationResponseModel ob, string SUBFOLDER)
+        public async Task<AuditeeReplySaveResult> ResponseAuditObservation(ObservationResponseModel ob, string SUBFOLDER)
             {
-            int AUD_RESP_ID = 0;
-            List<AuditeeResponseEvidenceModel> EVIDENCE_LIST = new List<AuditeeResponseEvidenceModel>();
+            const int repliedStatus = 3;
+            var result = new AuditeeReplySaveResult
+                {
+                ObservationId = ob?.AU_OBS_ID.GetValueOrDefault() ?? 0,
+                Message = "Reply could not be saved."
+                };
+            var logger = _httpCon.HttpContext?.RequestServices.GetService(typeof(ILogger<DBConnection>)) as ILogger<DBConnection>;
             var sessionHandler = CreateSessionHandler();
             var loggedInUser = sessionHandler.GetUser();
             if (loggedInUser == null
@@ -418,19 +424,61 @@ namespace AIS.Controllers
                 || string.IsNullOrWhiteSpace(loggedInUser.PPNumber)
                 || loggedInUser.UserRoleID <= 0)
                 {
-                return false;
-                }            using var con = this.DatabaseConnection();
+                result.Message = "Your session is no longer valid. Please sign in again.";
+                logger?.LogWarning("Auditee reply database execution rejected because the session is invalid. OBS_ID: {ObsId}, Result: false", result.ObservationId);
+                return result;
+                }
+
+            List<AuditeeResponseEvidenceModel> evidenceList;
+            try
+                {
+                evidenceList = await GetAttachedAuditeeEvidencesFromDirectory(SUBFOLDER) ?? new List<AuditeeResponseEvidenceModel>();
+                }
+            catch (Exception ex)
+                {
+                result.Message = $"Reply could not be saved because the evidence files could not be read: {ex.Message}";
+                logger?.LogError(ex, "Auditee reply evidence loading failed. OBS_ID: {ObsId}, Result: false", result.ObservationId);
+                return result;
+                }
+
+            using var con = this.DatabaseConnection();
+            using var transaction = con.BeginTransaction();
 
             ob.REPLIEDBY = Convert.ToInt32(loggedInUser.PPNumber);
             ob.REPLIEDDATE = System.DateTime.Now;
             ob.REMARKS = "";
             ob.SUBMITTED = "Y";
             ob.REPLY_ROLE = 0;
-            using (OracleCommand cmd = con.CreateCommand())
+            try
                 {
+                using OracleCommand cmd = con.CreateCommand();
+                cmd.Transaction = transaction;
+                cmd.BindByName = true;
+
+                cmd.CommandText = "SELECT ENGPLANID, STATUS FROM T_AU_OBSERVATION WHERE ID = :OBS_ID FOR UPDATE";
+                cmd.CommandType = CommandType.Text;
+                cmd.Parameters.Add("OBS_ID", OracleDbType.Int32).Value = result.ObservationId;
+                using (var stateReader = cmd.ExecuteReader())
+                    {
+                    if (!stateReader.Read())
+                        {
+                        throw new InvalidOperationException("The observation was not found.");
+                        }
+
+                    result.EngagementId = Convert.ToInt32(stateReader["ENGPLANID"]);
+                    result.PreviousStatus = Convert.ToInt32(stateReader["STATUS"]);
+                    }
+
+                logger?.LogInformation(
+                    "Auditee reply database execution started. OBS_ID: {ObsId}, ENG_ID: {EngId}, PreviousStatus: {PreviousStatus}, NewStatus: {NewStatus}, EvidenceCount: {EvidenceCount}",
+                    result.ObservationId,
+                    result.EngagementId,
+                    result.PreviousStatus,
+                    repliedStatus,
+                    evidenceList.Count);
+
                 cmd.CommandText = "pkg_ae.P_AUDITEE_OBSERVATION_RESPONSE";
                 cmd.CommandType = CommandType.StoredProcedure;
-                cmd.BindByName = true;
                 GuardAgainstDynamicSql(cmd);
                 cmd.Parameters.Clear();
                 cmd.Parameters.Add("AUOBSID", OracleDbType.Int32).Value = ob.AU_OBS_ID ?? (object)DBNull.Value;
@@ -444,54 +492,120 @@ namespace AIS.Controllers
                 cmd.Parameters.Add("P_NO", OracleDbType.Int32).Value = loggedInUser.PPNumber;
                 cmd.Parameters.Add("R_ID", OracleDbType.Int32).Value = loggedInUser.UserRoleID;
                 cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
-                using OracleDataReader rdr = cmd.ExecuteReader();
-                while (rdr.Read())
+                using (OracleDataReader rdr = cmd.ExecuteReader())
                     {
-                    AUD_RESP_ID = Convert.ToInt32(rdr["RESP_ID"]);
-                    }
-
-                EVIDENCE_LIST = await this.GetAttachedAuditeeEvidencesFromDirectory(SUBFOLDER);
-                int index = 1;
-                if (EVIDENCE_LIST != null)
-                    {
-                    if (EVIDENCE_LIST.Count > 0)
+                    while (rdr.Read())
                         {
-                        foreach (var item in EVIDENCE_LIST)
-                            {
-                            if (!item.LENGTH.HasValue && item.IMAGE_LENGTH.HasValue)
-                                {
-                                item.LENGTH = Convert.ToInt32(item.IMAGE_LENGTH.Value);
-                                }
-                            if (!item.LENGTH.HasValue)
-                                {
-                                continue;
-                                }
-                            string fileName = item.FILE_NAME;
-                            cmd.CommandText = "pkg_ae.P_AUDITEE_OBSERVATION_RESPONSE_EVIDENCES";
-                            cmd.CommandType = CommandType.StoredProcedure;
-                            cmd.BindByName = true;
-                            GuardAgainstDynamicSql(cmd);
-                            cmd.Parameters.Clear();
-                            cmd.Parameters.Add("RESPID", OracleDbType.Int32).Value = AUD_RESP_ID;
-                            cmd.Parameters.Add("AUOBSID", OracleDbType.Int32).Value = ob.AU_OBS_ID ?? (object)DBNull.Value;
-                            cmd.Parameters.Add("FILENAME", OracleDbType.Varchar2).Value = fileName;
-                            cmd.Parameters.Add("FILETYPE", OracleDbType.Varchar2).Value = item.IMAGE_TYPE;
-                            cmd.Parameters.Add("LENGTH", OracleDbType.Int32).Value = item.LENGTH;
-                            cmd.Parameters.Add("ENTEREDBY", OracleDbType.Int32).Value = loggedInUser.PPNumber;
-                            cmd.Parameters.Add("FILEDATA", OracleDbType.Clob).Value = item.IMAGE_DATA;
-                            cmd.Parameters.Add("SEQUENCE", OracleDbType.Int32).Value = (index);
-                            cmd.Parameters.Add("TEXT_ID", OracleDbType.Int32).Value = ob.OBS_TEXT_ID ?? (object)DBNull.Value;
-                            cmd.ExecuteNonQuery();
-                            index++;
-
-
-                            }
+                        result.ResponseId = Convert.ToInt32(rdr["RESP_ID"]);
                         }
                     }
 
-                this.DeleteSubFolderDirectoryInAuditeeEvidenceFromServer(SUBFOLDER);
+                if (result.ResponseId <= 0)
+                    {
+                    throw new InvalidOperationException("The database did not return a saved response ID.");
+                    }
+
+                int index = 1;
+                if (evidenceList.Count > 0)
+                    {
+                    foreach (var item in evidenceList)
+                        {
+                        if (!item.LENGTH.HasValue && item.IMAGE_LENGTH.HasValue)
+                            {
+                            item.LENGTH = Convert.ToInt32(item.IMAGE_LENGTH.Value);
+                            }
+                        if (!item.LENGTH.HasValue)
+                            {
+                            continue;
+                            }
+
+                        cmd.CommandText = "pkg_ae.P_AUDITEE_OBSERVATION_RESPONSE_EVIDENCES";
+                        cmd.CommandType = CommandType.StoredProcedure;
+                        GuardAgainstDynamicSql(cmd);
+                        cmd.Parameters.Clear();
+                        cmd.Parameters.Add("RESPID", OracleDbType.Int32).Value = result.ResponseId;
+                        cmd.Parameters.Add("AUOBSID", OracleDbType.Int32).Value = ob.AU_OBS_ID ?? (object)DBNull.Value;
+                        cmd.Parameters.Add("FILENAME", OracleDbType.Varchar2).Value = item.FILE_NAME;
+                        cmd.Parameters.Add("FILETYPE", OracleDbType.Varchar2).Value = item.IMAGE_TYPE;
+                        cmd.Parameters.Add("LENGTH", OracleDbType.Int32).Value = item.LENGTH;
+                        cmd.Parameters.Add("ENTEREDBY", OracleDbType.Int32).Value = loggedInUser.PPNumber;
+                        cmd.Parameters.Add("FILEDATA", OracleDbType.Clob).Value = item.IMAGE_DATA;
+                        cmd.Parameters.Add("SEQUENCE", OracleDbType.Int32).Value = index;
+                        cmd.Parameters.Add("TEXT_ID", OracleDbType.Int32).Value = ob.OBS_TEXT_ID ?? (object)DBNull.Value;
+                        cmd.ExecuteNonQuery();
+                        index++;
+                        }
+                    }
+
+                cmd.CommandText = @"SELECT o.STATUS, r.ID, r.REPLY
+                                      FROM T_AU_OBSERVATION o
+                                      JOIN T_AU_OBSERVATIONS_AUDITEE_RESPONSE r ON r.AU_OBS_ID = o.ID
+                                     WHERE o.ID = :OBS_ID
+                                       AND r.ID = (SELECT MAX(r2.ID)
+                                                     FROM T_AU_OBSERVATIONS_AUDITEE_RESPONSE r2
+                                                    WHERE r2.AU_OBS_ID = o.ID)";
+                cmd.CommandType = CommandType.Text;
+                cmd.Parameters.Clear();
+                cmd.Parameters.Add("OBS_ID", OracleDbType.Int32).Value = result.ObservationId;
+                using (var verifyReader = cmd.ExecuteReader())
+                    {
+                    if (verifyReader.Read())
+                        {
+                        result.NewStatus = Convert.ToInt32(verifyReader["STATUS"]);
+                        result.ResponseId = Convert.ToInt32(verifyReader["ID"]);
+                        var replyOrdinal = verifyReader.GetOrdinal("REPLY");
+                        var persistedReply = verifyReader.IsDBNull(replyOrdinal)
+                            ? string.Empty
+                            : verifyReader.GetString(replyOrdinal);
+                        result.ReplyPersisted = string.Equals(persistedReply, ob.REPLY ?? string.Empty, StringComparison.Ordinal);
+                        result.StatusPersisted = result.NewStatus == repliedStatus;
+                        }
+                    }
+
+                logger?.LogInformation(
+                    "Auditee reply status verification completed. OBS_ID: {ObsId}, ENG_ID: {EngId}, PreviousStatus: {PreviousStatus}, NewStatus: {NewStatus}, ReplyPersisted: {ReplyPersisted}, StatusPersisted: {StatusPersisted}, Result: {Result}",
+                    result.ObservationId,
+                    result.EngagementId,
+                    result.PreviousStatus,
+                    result.NewStatus,
+                    result.ReplyPersisted,
+                    result.StatusPersisted,
+                    result.ReplyPersisted && result.StatusPersisted);
+
+                if (!result.ReplyPersisted || !result.StatusPersisted)
+                    {
+                    throw new InvalidOperationException($"Database verification failed. Reply persisted: {result.ReplyPersisted}; status persisted: {result.StatusPersisted}; expected status: {repliedStatus}; actual status: {result.NewStatus}.");
+                    }
+
+                transaction.Commit();
+                result.Success = true;
+                result.Message = "Reply saved successfully and observation status updated.";
+                DeleteSubFolderDirectoryInAuditeeEvidenceFromServer(SUBFOLDER);
+                return result;
                 }
-            return true;
+            catch (Exception ex)
+                {
+                try
+                    {
+                    transaction.Rollback();
+                    }
+                catch (Exception rollbackException)
+                    {
+                    logger?.LogError(rollbackException, "Auditee reply transaction rollback failed. OBS_ID: {ObsId}, ENG_ID: {EngId}", result.ObservationId, result.EngagementId);
+                    }
+
+                result.Success = false;
+                result.Message = $"Reply could not be saved: {ex.Message}";
+                logger?.LogError(
+                    ex,
+                    "Auditee reply database execution failed. OBS_ID: {ObsId}, ENG_ID: {EngId}, PreviousStatus: {PreviousStatus}, NewStatus: {NewStatus}, Result: false, Error: {Error}",
+                    result.ObservationId,
+                    result.EngagementId,
+                    result.PreviousStatus,
+                    result.NewStatus,
+                    ex.Message);
+                return result;
+                }
             }
 
         public List<AuditeeOldParasModel> GetAuditeeOldParasEntities()

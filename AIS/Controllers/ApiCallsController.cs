@@ -1559,9 +1559,54 @@ namespace AIS.Controllers
             }
 
         [HttpPost]
-        public async Task<bool> reply_observation([FromForm] ObservationResponseModel or, [FromForm] string SUBFOLDER)
+        public async Task<IActionResult> reply_observation([FromForm] ObservationResponseModel or, [FromForm] string SUBFOLDER, [FromForm] int ENG_ID = 0)
             {
-            return await dBConnection.ResponseAuditObservation(or, SUBFOLDER);
+            var observationId = or?.AU_OBS_ID.GetValueOrDefault() ?? 0;
+            _logger.LogInformation(
+                "Auditee reply submission received. OBS_ID: {ObsId}, ENG_ID: {EngId}, OBS_TEXT_ID: {ObsTextId}, ReplyLength: {ReplyLength}",
+                observationId,
+                ENG_ID,
+                or?.OBS_TEXT_ID,
+                or?.REPLY?.Length ?? 0);
+
+            if (or == null || observationId <= 0 || or.OBS_TEXT_ID.GetValueOrDefault() <= 0 || string.IsNullOrWhiteSpace(or.REPLY))
+                {
+                _logger.LogWarning("Auditee reply submission rejected as invalid. OBS_ID: {ObsId}", observationId);
+                return BadRequest(new { Status = false, Message = "A valid observation and reply are required." });
+                }
+
+            AuditeeReplySaveResult result;
+            try
+                {
+                result = await dBConnection.ResponseAuditObservation(or, SUBFOLDER);
+                }
+            catch (Exception ex)
+                {
+                _logger.LogError(
+                    ex,
+                    "Auditee reply API execution failed. OBS_ID: {ObsId}, ENG_ID: {EngId}, Result: false, Error: {Error}",
+                    observationId,
+                    ENG_ID,
+                    ex.Message);
+                return StatusCode(StatusCodes.Status500InternalServerError,
+                    new { Status = false, Message = $"Reply could not be saved: {ex.Message}" });
+                }
+
+            _logger.Log(
+                result.Success ? LogLevel.Information : LogLevel.Error,
+                "Auditee reply API result. OBS_ID: {ObsId}, ENG_ID: {EngId}, PreviousStatus: {PreviousStatus}, NewStatus: {NewStatus}, ReplyPersisted: {ReplyPersisted}, StatusPersisted: {StatusPersisted}, Result: {Result}, Error: {Error}",
+                result.ObservationId,
+                result.EngagementId,
+                result.PreviousStatus,
+                result.NewStatus,
+                result.ReplyPersisted,
+                result.StatusPersisted,
+                result.Success,
+                result.Success ? string.Empty : result.Message);
+
+            return result.Success
+                ? Ok(new { Status = true, Message = result.Message, Data = result })
+                : StatusCode(StatusCodes.Status500InternalServerError, new { Status = false, Message = result.Message, Data = result });
             }
         [HttpPost]
         [ApplicationAudit("OBSERVATION_UPDATED", "AUDIT_EXECUTION", "Execution", "pkg_ar", "P_UpdateObservation", ObjectType = "OBSERVATION", ObjectId = "OBS_ID", RequireResultMessage = true)]

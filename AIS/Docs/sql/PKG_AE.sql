@@ -495,10 +495,7 @@ create or replace package body PKG_AE is
     Z_B             number := 0;
     Already_Replied number := 0;
   begin
-  
-    commit;
-    commit;
-  
+
     select NVL(MAX(l.id), 0)
       into Already_Replied
       from t_au_observations_auditee_response l
@@ -525,34 +522,34 @@ create or replace package body PKG_AE is
          REPLYROLE,
          REMARKS,
          SUBMITTED);
-    
-      commit;
-    
-      UPDATE T_AU_OBSERVATION_ASSIGNEDTO
-         SET REPLIED = 'Y'
-       WHERE OBS_ID = AUOBSID
-         and OBS_TEXT_ID = OBSTEXTID;
-      commit;
-      UPDATE t_au_observation T
-         SET t.STATUS          = 3,
-             T.LASTREPLYBY     = REPLIEDBY,
-             t.MEMO_REPLY_DATE = trunc(SYSDATE)
-       WHERE ID = AUOBSID;
-    
     ELSE
       UPDATE T_AU_OBSERVATIONS_AUDITEE_RESPONSE AR
          SET AR.REPLY       = REPLYDATA,
              AR.REPLIEDBY   = REPLIEDBY,
-             AR.REPLIEDDATE = trunc(SYSDATE)
+             AR.REPLIEDDATE = trunc(SYSDATE),
+             AR.OBS_TEXT_ID = OBSTEXTID,
+             AR.SUBMITTED   = SUBMITTED
        WHERE AR.AU_OBS_ID = AUOBSID;
-      commit;
     END IF;
+
+    UPDATE T_AU_OBSERVATION_ASSIGNEDTO
+       SET REPLIED = 'Y'
+     WHERE OBS_ID = AUOBSID
+       and OBS_TEXT_ID = OBSTEXTID;
+
+    UPDATE t_au_observation T
+       SET t.STATUS          = 3,
+           T.LASTREPLYBY     = REPLIEDBY,
+           t.MEMO_REPLY_DATE = trunc(SYSDATE)
+     WHERE ID = AUOBSID;
   
     open io_cursor for
       select r.au_obs_id as ob_id, r.id as resp_id
         from T_AU_OBSERVATIONS_AUDITEE_RESPONSE r
-       where r.au_obs_id = AUOBSID;
-    commit;
+       where r.au_obs_id = AUOBSID
+         and r.id = (select max(r2.id)
+                       from T_AU_OBSERVATIONS_AUDITEE_RESPONSE r2
+                      where r2.au_obs_id = AUOBSID);
   
   end P_AUDITEE_OBSERVATION_RESPONSE;
 
@@ -594,8 +591,6 @@ create or replace package body PKG_AE is
        'Y',
        text_id,
        respid);
-    commit;
-  
   end P_AUDITEE_OBSERVATION_RESPONSE_evidences;
   -- Ali & Asfand from here
   procedure P_GetAuditeeOldParasFAD(EntityID  in number,

@@ -49,24 +49,6 @@
             videoEmbed: false,
             urls: false
         });
-        $('#replyrichTextWrapper')
-            .off('paste.auditeeReplyImageGuard')
-            .on('paste.auditeeReplyImageGuard', '.richText-editor, #viewMemo_reply', function (event) {
-                var clipboard = event.originalEvent && event.originalEvent.clipboardData;
-                if (!clipboard || !clipboard.items) {
-                    return;
-                }
-
-                for (var index = 0; index < clipboard.items.length; index++) {
-                    var item = clipboard.items[index];
-                    if (item && item.type && item.type.indexOf('image/') === 0) {
-                        event.preventDefault();
-                        alert('Screenshots cannot be pasted in Reply. Please attach screenshots through Evidences.');
-                        return false;
-                    }
-                }
-            });
-
         respSection = initResponsibilitySection({
             tableSelector: '#viewMemo_respPP_ObSent',
             readOnly: true,
@@ -367,7 +349,7 @@
                     $('#replyButton_memoReply').removeClass('d-none');
                     $('#viewMemo_responded').parent().addClass('d-none');
                     $('#replyrichTextWrapper').removeClass('d-none');
-                    $('#viewMemo_reply').val(data[1]).trigger('change');
+                    setAuditeeReplyHtml(data[1]);
                     $('#evidenceViewer').removeClass('d-none');
                     $('#evidenceUploader').removeClass('d-none');
                 }
@@ -375,7 +357,7 @@
                     $('#replyButton_memoReply').removeClass('d-none');
                     $('#viewMemo_responded').parent().addClass('d-none');
                     $('#replyrichTextWrapper').removeClass('d-none');
-                    $('#viewMemo_reply').val(data[1]).trigger('change');
+                    setAuditeeReplyHtml(data[1]);
                     $('#evidenceViewer').addClass('d-none');
                     $('#evidenceUploader').removeClass('d-none');
                 }
@@ -473,21 +455,29 @@
                     'OBS_TEXT_ID': g_obsTextId,
                     'REPLY': replyHtml,
                     'EVIDENCE_LIST': g_allAttachedImages,
-                    'SUBFOLDER': g_entityIdSF
+                    'SUBFOLDER': g_entityIdSF,
+                    'ENG_ID': g_entityIdSF
                 },
                 cache: false,
                 success: function (data) {
-                    if (data !== true) {
-                        alert("Reply could not be saved. Please try again.");
+                    if (!data || data.Status !== true) {
+                        alert((data && data.Message) || "Reply could not be saved. Please try again.");
                         return;
                     }
 
-                    alert("Reply sent successfuly");
+                    alert(data.Message || "Reply sent successfully");
                     onAlertCallback(function () {
                         $('#viewMemoModel').modal('hide');
                         reloadLocation();
                     });
 
+                },
+                error: function (xhr) {
+                    xhr.__iasSafetyHandled = true;
+                    var message = xhr.responseJSON && xhr.responseJSON.Message
+                        ? xhr.responseJSON.Message
+                        : "Reply could not be saved. Please try again.";
+                    alert(message);
                 },
                 dataType: "json",
             });
@@ -499,17 +489,36 @@
     }
 
     function getAuditeeReplyHtml() {
-        var $editor = $('#replyrichTextWrapper .richText-editor').first();
+        var $textarea = $('#viewMemo_reply');
+        var $editor = $textarea.closest('.richText').find('.richText-editor').first();
         if ($editor.length) {
-            return $editor.html() || '';
+            var content = $editor.html() || '';
+            $textarea.val(content);
+            return content;
         }
 
-        return $('#viewMemo_reply').val() || '';
+        return $textarea.val() || '';
+    }
+
+    function setAuditeeReplyHtml(html) {
+        var content = typeof html === 'string' ? html : '';
+        var $textarea = $('#viewMemo_reply');
+        var $editor = $textarea.closest('.richText').find('.richText-editor').first();
+
+        $textarea.val(content);
+        if ($editor.length) {
+            $editor.html(content);
+        }
     }
 
     function containsEmbeddedImage(html) {
-        var value = (html || '').toString();
-        return /<img\b/i.test(value) || /data:image\//i.test(value);
+        var template = document.createElement('template');
+        template.innerHTML = (html || '').toString();
+
+        return Array.prototype.some.call(template.content.querySelectorAll('img'), function (image) {
+            var source = (image.getAttribute('src') || '').trim();
+            return /^data:image\//i.test(source) || /^blob:/i.test(source);
+        });
     }
 
     function clearEvidencesLog() {
