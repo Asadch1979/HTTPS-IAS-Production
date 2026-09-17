@@ -1,5 +1,6 @@
     var g_obsId = 0;
     var g_obsTextId = 0;
+    var g_respId = 0;
     var g_obsList = [];
     var g_imgFiles = null;
     var g_imgLoader = null;
@@ -469,6 +470,7 @@
                 url: g_asiBaseURL + "/ApiCalls/reply_observation",
                 type: "POST",
                 data: {
+                    'ID': g_respId,
                     'AU_OBS_ID': g_obsId,
                     'OBS_TEXT_ID': g_obsTextId,
                     'REPLY': replyHtml,

@@ -496,40 +496,6 @@ namespace AIS.Controllers
             return true;
             }
 
-        public AuditeeReplyAuditSnapshot GetAuditeeReplyAuditSnapshot(int observationId)
-            {
-            if (observationId <= 0)
-                return null;
-
-            using var con = DatabaseConnection();
-            using var cmd = con.CreateCommand();
-            cmd.CommandText = @"SELECT o.ID,
-                                       o.ENGPLANID,
-                                       o.STATUS,
-                                       s.STATUSNAME,
-                                       (SELECT COUNT(1)
-                                          FROM T_AU_OBSERVATIONS_AUDITEE_RESPONSE r
-                                         WHERE r.AU_OBS_ID = o.ID) AS RESPONSE_COUNT
-                                  FROM T_AU_OBSERVATION o
-                                  JOIN T_AU_OBSERVATION_STATUS s ON s.STATUSID = o.STATUS
-                                 WHERE o.ID = :OBS_ID";
-            cmd.CommandType = CommandType.Text;
-            cmd.BindByName = true;
-            cmd.Parameters.Add("OBS_ID", OracleDbType.Int32).Value = observationId;
-            using var reader = cmd.ExecuteReader();
-            if (!reader.Read())
-                return null;
-
-            return new AuditeeReplyAuditSnapshot
-                {
-                ObservationId = Convert.ToInt32(reader["ID"]),
-                EngagementId = Convert.ToInt32(reader["ENGPLANID"]),
-                StatusId = Convert.ToInt32(reader["STATUS"]),
-                StatusName = reader["STATUSNAME"]?.ToString(),
-                HasReply = Convert.ToInt32(reader["RESPONSE_COUNT"]) > 0
-                };
-            }
-
         public List<AuditeeOldParasModel> GetAuditeeOldParasEntities()
             {
             var sessionHandler = CreateSessionHandler();

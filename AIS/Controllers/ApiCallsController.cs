@@ -1569,50 +1569,24 @@ namespace AIS.Controllers
         public async Task<bool> reply_observation([FromForm] ObservationResponseModel or, [FromForm] string SUBFOLDER)
             {
             var observationId = or?.AU_OBS_ID.GetValueOrDefault() ?? 0;
-            var before = TryGetAuditeeReplyAuditSnapshot(observationId);
-            HttpContext.Items["ApplicationAudit.AuditeeReplyAction"] = before?.HasReply == true
+            var engagementId = int.TryParse(SUBFOLDER, NumberStyles.Integer, CultureInfo.InvariantCulture, out var parsedEngagementId)
+                && parsedEngagementId > 0
+                ? parsedEngagementId
+                : (int?)null;
+
+            HttpContext.Items["ApplicationAudit.AuditeeReplyAction"] = or?.ID.GetValueOrDefault() > 0
                 ? "AUDITEE_REPLY_UPDATED"
                 : "AUDITEE_REPLY_SUBMITTED";
-            if (before?.EngagementId > 0)
-                HttpContext.Items["ApplicationAudit.AuditeeReplyEngagementId"] = before.EngagementId;
+            if (engagementId.HasValue)
+                HttpContext.Items["ApplicationAudit.AuditeeReplyEngagementId"] = engagementId.Value;
+            HttpContext.Items["ApplicationAudit.AuditeeReplyDetails"] = JsonSerializer.Serialize(new
+                {
+                ObservationId = observationId,
+                EngagementId = engagementId,
+                ResponseId = or?.ID
+                });
 
-            var succeeded = false;
-            try
-                {
-                succeeded = await dBConnection.ResponseAuditObservation(or, SUBFOLDER);
-                return succeeded;
-                }
-            finally
-                {
-                var after = TryGetAuditeeReplyAuditSnapshot(observationId);
-                if (after?.EngagementId > 0)
-                    HttpContext.Items["ApplicationAudit.AuditeeReplyEngagementId"] = after.EngagementId;
-
-                HttpContext.Items["ApplicationAudit.AuditeeReplyDetails"] = JsonSerializer.Serialize(new
-                    {
-                    ObservationId = observationId,
-                    EngagementId = after?.EngagementId ?? before?.EngagementId,
-                    PreviousStatusId = before?.StatusId,
-                    PreviousStatus = before?.StatusName,
-                    NewStatusId = after?.StatusId,
-                    NewStatus = after?.StatusName,
-                    StatusTransitionOccurred = before != null && after != null && before.StatusId != after.StatusId,
-                    Result = succeeded
-                    });
-                }
-            }
-
-        private AuditeeReplyAuditSnapshot TryGetAuditeeReplyAuditSnapshot(int observationId)
-            {
-            try
-                {
-                return dBConnection.GetAuditeeReplyAuditSnapshot(observationId);
-                }
-            catch (Exception ex)
-                {
-                _logger.LogError(ex, "Could not read auditee reply audit context for OBS_ID {ObsId}.", observationId);
-                return null;
-                }
+            return await dBConnection.ResponseAuditObservation(or, SUBFOLDER);
             }
         [HttpPost]
         [ApplicationAudit("OBSERVATION_UPDATED", "AUDIT_EXECUTION", "Execution", "pkg_ar", "P_UpdateObservation", ObjectType = "OBSERVATION", ObjectId = "OBS_ID", RequireResultMessage = true)]
