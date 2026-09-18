@@ -68,6 +68,7 @@
             formData.append('subfolder', g_comId);
             const maxSizeInBytes = g_maxEvidenceBytes;
             const selectedFiles = Array.from(files);
+            const selectedFileNames = selectedFiles.map((file) => file.name);
             const acceptedFiles = [];
             const validationMessages = [];
 
@@ -92,17 +93,20 @@
 
             const aggregateSize = acceptedFiles.reduce((total, file) => total + file.size, 0);
             if (validationMessages.length > 0) {
+                removeFailedPreviews(selectedFileNames);
                 alert(validationMessages.join("\n"));
                 return;
             }
 
             if (aggregateSize > g_maxEvidenceBytes) {
+                removeFailedPreviews(selectedFileNames);
                 alert(g_totalEvidenceSizeError);
                 return;
             }
 
             const uploadStatus = await getEvidenceUploadStatus();
             if (!uploadStatus || uploadStatus.success !== true) {
+                removeFailedPreviews(selectedFileNames);
                 alert(uploadStatus && uploadStatus.message ? uploadStatus.message : "Unable to validate current evidence size.");
                 return;
             }
@@ -110,14 +114,22 @@
             const existingSizeBytes = parseInt(uploadStatus.existingSizeBytes || 0, 10);
             const maxTotalBytes = parseInt(uploadStatus.maxTotalBytes || g_maxEvidenceBytes, 10);
             if (existingSizeBytes + aggregateSize > maxTotalBytes) {
+                removeFailedPreviews(selectedFileNames);
                 alert(g_totalEvidenceSizeError);
                 return;
             }
 
             if (acceptedFiles.length > 0) {
                 acceptedFiles.forEach((file) => formData.append('files', file));
-                await uploadFiles(formData);
+                const uploaded = await uploadFiles(formData);
+                if (!uploaded) {
+                    removeFailedPreviews(selectedFileNames);
+                }
             }
+        }
+
+        function removeFailedPreviews(fileNames) {
+            $("aks-file-upload").trigger("aksFileUploadRemove", [fileNames]);
         }
 
 
@@ -132,7 +144,8 @@
                 });
             } catch (error) {
                 console.error("Error validating evidence upload size:", error);
-                return error && error.responseJSON ? error.responseJSON : null;
+                const messages = getUploadErrorMessages(error);
+                return messages.length > 0 ? { success: false, message: messages.join("\n") } : null;
             }
         }
 
@@ -149,7 +162,7 @@
 
                 if (!response || response.success !== true) {
                     alert(response && response.message ? response.message : "Files could not be uploaded.");
-                    return;
+                    return false;
                 }
 
                 alert(response.message || "Files uploaded successfully!");
@@ -159,30 +172,46 @@
                     deleteFileFromServer(filename);
                 });
 
+                return true;
+
             } catch (error) {
                 console.error("Error uploading files:", error);
-                const response = error && error.responseJSON;
-                const messages = [];
-
-                if (response && response.message) {
-                    messages.push(response.message);
-                }
-
-                if (response && response.errors) {
-                    Object.keys(response.errors).forEach((field) => {
-                        const fieldErrors = Array.isArray(response.errors[field])
-                            ? response.errors[field]
-                            : [response.errors[field]];
-                        fieldErrors.forEach((message) => {
-                            if (message) {
-                                messages.push(message);
-                            }
-                        });
-                    });
-                }
-
+                const messages = getUploadErrorMessages(error);
                 alert(messages.length > 0 ? messages.join("\n") : "Error uploading files. Please try again.");
+                return false;
             }
+        }
+
+        function getUploadErrorMessages(error) {
+            var response = error && error.responseJSON;
+            if (!response && error && error.responseText) {
+                try {
+                    response = JSON.parse(error.responseText);
+                } catch (parseError) {
+                    var responseText = error.responseText.trim();
+                    return responseText && responseText.indexOf('<') !== 0 ? [responseText] : [];
+                }
+            }
+
+            var messages = [];
+            if (response && response.message) {
+                messages.push(response.message);
+            }
+
+            if (response && response.errors) {
+                Object.keys(response.errors).forEach((field) => {
+                    const fieldErrors = Array.isArray(response.errors[field])
+                        ? response.errors[field]
+                        : [response.errors[field]];
+                    fieldErrors.forEach((message) => {
+                        if (message) {
+                            messages.push(message);
+                        }
+                    });
+                });
+            }
+
+            return messages;
         }
     });
 

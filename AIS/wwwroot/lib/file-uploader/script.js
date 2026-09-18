@@ -363,6 +363,9 @@
                             dataDifferent["file-" + fileName].height = image.naturalHeight;
                         };
                         reader.onload = function (e) {
+                            if (!dataDifferent["file-" + fileName]) {
+                                return;
+                            }
                             dataDifferent["file-" + fileName].base64 = e.target.result;
                             var imagehtml =
                                 '<div data-file="' +
@@ -465,6 +468,15 @@
                     dataRemove(deleteBtn);
                 });
             }
+            aks.on("aksFileUploadRemove", function (event, fileNames) {
+                var names = Array.isArray(fileNames) ? fileNames : [fileNames];
+                names.forEach(function (fileName) {
+                    aks.find(".aks-file-upload-preview").filter(function () {
+                        return $(this).attr("data-file") === fileName;
+                    }).remove();
+                    dataRemove(fileName);
+                });
+            });
             function ajaxUpload() {
                 $(".aks-file-upload-btn").click(function () {
                     var uploadBtn = $(this).data("upload");
