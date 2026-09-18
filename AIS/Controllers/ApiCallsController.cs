@@ -1648,31 +1648,6 @@ namespace AIS.Controllers
             if (!Regex.IsMatch(draftParaNumber.Trim(), @"^\d+$"))
                 return BadRequest(new { Status = false, Message = "Draft Para Number must contain digits only." });
 
-            if (request.EngagementId > 0)
-                {
-                var engagement = dBConnection.GetArDashboardDropdownOptions(request.EngagementId)
-                    .FirstOrDefault(item => item.EngagementId == request.EngagementId);
-                if (engagement == null)
-                    return StatusCode(StatusCodes.Status403Forbidden,
-                        new { Status = false, Message = "Selected engagement is not accessible." });
-                if (!string.Equals((engagement.IsTeamLead ?? string.Empty).Trim(), "Y", StringComparison.OrdinalIgnoreCase))
-                    return StatusCode(StatusCodes.Status403Forbidden,
-                        new { Status = false, Message = "Only the assigned Team Lead can add an observation to the Draft Report." });
-
-                var observation = dBConnection.GetManagedObservations(request.EngagementId, observationId)
-                    .FirstOrDefault(item => item.OBS_ID == observationId);
-                if (observation == null)
-                    return StatusCode(StatusCodes.Status403Forbidden,
-                        new { Status = false, Message = "The selected observation does not belong to this engagement." });
-                if (observation.OBS_STATUS_ID != 3)
-                    return BadRequest(new { Status = false, Message = "Only replied observations can be added to the Draft Report." });
-                }
-            else if (!IsAssignedTeamLeadForObservation(observationId))
-                {
-                return StatusCode(StatusCodes.Status403Forbidden,
-                    new { Status = false, Message = "Only the assigned Team Lead can add an observation to the Draft Report." });
-                }
-
             var result = dBConnection.AddObservationToDraft(
                 observationId,
                 draftParaNumber.Trim(),
