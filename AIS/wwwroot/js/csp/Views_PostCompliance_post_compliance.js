@@ -52,6 +52,12 @@
 
         var fileInput = document.getElementById('aksfileupload');
 
+        $('#complianceEvidenceList').on('click', '.compliance-evidence-delete', async function () {
+            const fileName = $(this).attr('data-file-name');
+            await deleteEvidenceFile(fileName);
+        });
+        $(document).on('complianceEvidenceRefresh', refreshEvidenceList);
+
         fileInput.addEventListener('change', function () {
             if (this.files.length > 0) {
                 $("#wait").css("display", "block"); // Show loader
@@ -94,12 +100,14 @@
             const aggregateSize = acceptedFiles.reduce((total, file) => total + file.size, 0);
             if (validationMessages.length > 0) {
                 removeFailedPreviews(selectedFileNames);
+                await refreshEvidenceList();
                 alert(validationMessages.join("\n"));
                 return;
             }
 
             if (aggregateSize > g_maxEvidenceBytes) {
                 removeFailedPreviews(selectedFileNames);
+                await refreshEvidenceList();
                 alert(g_totalEvidenceSizeError);
                 return;
             }
@@ -107,6 +115,7 @@
             const uploadStatus = await getEvidenceUploadStatus();
             if (!uploadStatus || uploadStatus.success !== true) {
                 removeFailedPreviews(selectedFileNames);
+                await refreshEvidenceList();
                 alert(uploadStatus && uploadStatus.message ? uploadStatus.message : "Unable to validate current evidence size.");
                 return;
             }
@@ -115,6 +124,7 @@
             const maxTotalBytes = parseInt(uploadStatus.maxTotalBytes || g_maxEvidenceBytes, 10);
             if (existingSizeBytes + aggregateSize > maxTotalBytes) {
                 removeFailedPreviews(selectedFileNames);
+                await refreshEvidenceList();
                 alert(g_totalEvidenceSizeError);
                 return;
             }
@@ -125,11 +135,91 @@
                 if (!uploaded) {
                     removeFailedPreviews(selectedFileNames);
                 }
+                resetUploadPreviews();
+                await refreshEvidenceList();
             }
         }
 
         function removeFailedPreviews(fileNames) {
             $("aks-file-upload").trigger("aksFileUploadRemove", [fileNames]);
+        }
+
+        function resetUploadPreviews() {
+            $("aks-file-upload").trigger("aksFileUploadReset");
+            document.getElementById('aksfileupload').value = '';
+        }
+
+        async function refreshEvidenceList() {
+            const $list = $('#complianceEvidenceList');
+            if (!g_comId) {
+                $list.empty();
+                return null;
+            }
+
+            try {
+                const response = await $.ajax({
+                    url: g_asiBaseURL + "/UploadFile/GetComplianceEvidenceFiles",
+                    type: 'POST',
+                    data: { subfolder: g_comId }
+                });
+
+                $list.empty();
+                const files = response && Array.isArray(response.files) ? response.files : [];
+                if (files.length === 0) {
+                    $list.append($('<div>').addClass('text-muted').text('No evidence files uploaded.'));
+                } else {
+                    files.forEach((file) => {
+                        const $row = $('<div>').addClass('evidence-link');
+                        const extension = file.fileName.split('.').pop().toLowerCase();
+                        $row.append($('<i>').addClass(getIconClass(extension) + ' evidence-icon'));
+                        $row.append($('<span>').addClass('flex-grow-1').text(file.fileName + ' (' + formatFileSize(file.sizeBytes) + ')'));
+                        $row.append($('<button>', { type: 'button' })
+                            .addClass('btn btn-sm btn-outline-danger compliance-evidence-delete')
+                            .attr('data-file-name', file.fileName)
+                            .text('Delete'));
+                        $list.append($row);
+                    });
+                }
+
+                const totalSize = parseInt(response.totalSizeBytes || 0, 10);
+                $list.append($('<div>').addClass('small text-muted mt-1').text('Total: ' + formatFileSize(totalSize) + ' of 10 MB'));
+                return response;
+            } catch (error) {
+                console.error('Error loading compliance evidence:', error);
+                const messages = getUploadErrorMessages(error);
+                $list.empty().append($('<div>').addClass('text-danger').text(messages[0] || 'Unable to load evidence files.'));
+                return null;
+            }
+        }
+
+        async function deleteEvidenceFile(fileName) {
+            try {
+                const response = await $.ajax({
+                    url: g_asiBaseURL + "/UploadFile/DeleteFile",
+                    type: 'POST',
+                    data: { subFolder: g_comId, fileName: fileName }
+                });
+
+                if (!response || response.success !== true) {
+                    alert(response && response.message ? response.message : 'Evidence file could not be deleted.');
+                    return;
+                }
+
+                alert(response.message || 'File deleted successfully.');
+                await refreshEvidenceList();
+            } catch (error) {
+                console.error('Error deleting compliance evidence:', error);
+                const messages = getUploadErrorMessages(error);
+                alert(messages.length > 0 ? messages.join("\n") : 'Evidence file could not be deleted.');
+                await refreshEvidenceList();
+            }
+        }
+
+        function formatFileSize(bytes) {
+            const size = parseInt(bytes || 0, 10);
+            if (size < 1024) return size + ' bytes';
+            if (size < 1024 * 1024) return (size / 1024).toFixed(1) + ' KB';
+            return (size / (1024 * 1024)).toFixed(2) + ' MB';
         }
 
 
@@ -166,11 +256,6 @@
                 }
 
                 alert(response.message || "Files uploaded successfully!");
-
-                $(".aks-file-upload .aks-file-upload-delete").on("click", function (e) {
-                    var filename = $(this).attr("data-delete");
-                    deleteFileFromServer(filename);
-                });
 
                 return true;
 
@@ -420,7 +505,8 @@
         window.location.reload();
     }
     function clearEvidencesLog() {
-        $('.aks-file-upload-delete').click();
+        $("aks-file-upload").trigger("aksFileUploadReset");
+        $('#complianceEvidenceList').empty();
         $('.aks-file-upload-error').remove();
         document.getElementById('aksfileupload').value = '';
     }
@@ -438,10 +524,11 @@
 
                 if (cycle == "0") {
                     $('#submitComplianceMemoModel').modal('show');
-                    
-                    $('.aks-file-upload-delete').click();
+
+                    $("aks-file-upload").trigger("aksFileUploadReset");
                     $('.aks-file-upload-error').remove();
                     document.getElementById('aksfileupload').value = '';
+                    $(document).trigger('complianceEvidenceRefresh');
 
                     $('#viewMemo_memoNumber_sc').val(g_memoNo);
                     $('#viewMemo_paraGist_sc').val(data.gisT_OF_PARA);

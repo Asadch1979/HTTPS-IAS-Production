@@ -21,6 +21,7 @@ namespace AIS.Controllers
         {
         private readonly ILogger<UploadFileController> _logger;
         private readonly IConfiguration _configuration;
+        private readonly DBConnection _dbConnection;
         private readonly string _uploadPath;
         private readonly string _uploadReportPath;
         private readonly string _uploadPathAuditee;
@@ -42,10 +43,11 @@ namespace AIS.Controllers
             ".xlsx"
             };
 
-        public UploadFileController(ILogger<UploadFileController> logger, IConfiguration configuration)
+        public UploadFileController(ILogger<UploadFileController> logger, IConfiguration configuration, DBConnection dbConnection)
             {
             _logger = logger;
             _configuration = configuration;
+            _dbConnection = dbConnection;
             // Set the directory path where files will be uploaded
             _uploadPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/PostCompliance_Evidences");
             _uploadReportPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/Audit_Report");
@@ -70,7 +72,11 @@ namespace AIS.Controllers
 
             try
                 {
-                var uploadPath = Path.Combine(_uploadPath, request.Subfolder);
+                if (!TryGetAuthorizedComplianceEvidencePath(request.Subfolder, out var uploadPath))
+                    {
+                    return Forbid();
+                    }
+
                 var validationResult = ValidateComplianceEvidenceUpload(request, uploadPath);
                 if (validationResult != null)
                     {
@@ -105,13 +111,42 @@ namespace AIS.Controllers
         [HttpPost]
         public IActionResult GetComplianceEvidenceUploadStatus(string subfolder)
             {
-            var uploadPath = Path.Combine(_uploadPath, subfolder ?? string.Empty);
+            if (!TryGetAuthorizedComplianceEvidencePath(subfolder, out var uploadPath))
+                {
+                return Forbid();
+                }
+
             var existingSizeBytes = GetDirectoryFileSize(uploadPath);
             return Json(new
                 {
                 success = true,
                 maxTotalBytes = ComplianceEvidenceSizeLimitBytes,
                 existingSizeBytes
+                });
+            }
+
+        [HttpPost]
+        public IActionResult GetComplianceEvidenceFiles(string subfolder)
+            {
+            if (!TryGetAuthorizedComplianceEvidencePath(subfolder, out var folderPath))
+                {
+                return Forbid();
+                }
+
+            var fileInfos = Directory.Exists(folderPath)
+                ? Directory.EnumerateFiles(folderPath)
+                    .Select(filePath => new FileInfo(filePath))
+                    .OrderBy(file => file.Name, StringComparer.OrdinalIgnoreCase)
+                    .ToList()
+                : new List<FileInfo>();
+            var files = fileInfos.Select(file => new { fileName = file.Name, sizeBytes = file.Length });
+
+            return Json(new
+                {
+                success = true,
+                files,
+                totalSizeBytes = fileInfos.Sum(file => file.Length),
+                maxTotalBytes = ComplianceEvidenceSizeLimitBytes
                 });
             }
 
@@ -197,18 +232,26 @@ namespace AIS.Controllers
             {
             try
                 {
-                var uploadPath = Path.Combine(_uploadPath, subFolder);
-                var filePath = Path.Combine(uploadPath, fileName);
+                if (!TryGetAuthorizedComplianceEvidencePath(subFolder, out var uploadPath))
+                    {
+                    return Forbid();
+                    }
+
+                var safeFileName = Path.GetFileName(fileName);
+                if (string.IsNullOrWhiteSpace(safeFileName) || !string.Equals(safeFileName, fileName, StringComparison.Ordinal))
+                    {
+                    return BadRequest(new { success = false, message = "Invalid evidence file name." });
+                    }
+
+                var filePath = Path.Combine(uploadPath, safeFileName);
                 if (System.IO.File.Exists(filePath))
                     {
                     System.IO.File.Delete(filePath);
-                    // Optionally, delete file metadata from the database
-                    // Example: dBConnection.DeleteFileMetadata(fileName);
-                    return Json(new { success = true, Message = "File deleted successfully." });
+                    return Json(new { success = true, message = "File deleted successfully." });
                     }
                 else
                     {
-                    return Json(new { success = false, Message = "" });
+                    return NotFound(new { success = false, message = "Evidence file was not found." });
                     }
                 }
             catch (Exception ex)
@@ -484,6 +527,25 @@ namespace AIS.Controllers
                 }
 
             return null;
+            }
+
+        private bool TryGetAuthorizedComplianceEvidencePath(string subfolder, out string uploadPath)
+            {
+            uploadPath = string.Empty;
+            if (!int.TryParse(subfolder, out var complianceId) || complianceId <= 0)
+                {
+                return false;
+                }
+
+            var isAuthorized = _dbConnection.GetParasForComplianceByAuditee()
+                .Any(compliance => string.Equals(compliance.COM_ID, complianceId.ToString(), StringComparison.Ordinal));
+            if (!isAuthorized)
+                {
+                return false;
+                }
+
+            uploadPath = Path.Combine(_uploadPath, complianceId.ToString());
+            return true;
             }
 
         private static long GetDirectoryFileSize(string folderPath)

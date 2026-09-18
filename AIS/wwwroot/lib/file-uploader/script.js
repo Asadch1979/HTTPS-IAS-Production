@@ -477,6 +477,13 @@
                     dataRemove(fileName);
                 });
             });
+            aks.on("aksFileUploadReset", function () {
+                aks.find(".aks-file-upload-preview").remove();
+                Object.keys(data).forEach(function (key) { delete data[key]; });
+                Object.keys(dataDifferent).forEach(function (key) { delete dataDifferent[key]; });
+                formData = new FormData();
+                isfileUploadInput();
+            });
             function ajaxUpload() {
                 $(".aks-file-upload-btn").click(function () {
                     var uploadBtn = $(this).data("upload");
