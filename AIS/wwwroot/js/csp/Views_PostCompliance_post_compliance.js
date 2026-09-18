@@ -10,9 +10,10 @@
 
 
     var btnClick = "own";
-    var g_allowLimit = '12'; // Maximum file size in MB
+    var g_allowLimit = '10'; // Maximum file size in MB
     var g_maxUploadFiles = 100;
-    var g_maxUploadRequestBytes = 100 * 1024 * 1024;
+    var g_maxEvidenceBytes = 10 * 1024 * 1024;
+    var g_totalEvidenceSizeError = "Total evidence size cannot exceed 10 MB. Please remove unnecessary files or compress your documents.";
 
     function getDisplayParaRisk(value) {
         var risk = (value || '').toString().trim().toLowerCase();
@@ -65,7 +66,7 @@
         async function processFiles(files) {
             const formData = new FormData();
             formData.append('subfolder', g_comId);
-            const maxSizeInBytes = parseInt(g_allowLimit) * 1024 * 1024;
+            const maxSizeInBytes = g_maxEvidenceBytes;
             const selectedFiles = Array.from(files);
             const acceptedFiles = [];
             const validationMessages = [];
@@ -74,7 +75,7 @@
                 validationMessages.push("A maximum of " + g_maxUploadFiles + " files can be uploaded at once.");
             }
 
-            selectedFiles.slice(0, g_maxUploadFiles).forEach((file) => {
+            selectedFiles.forEach((file) => {
                 const extension = getFileExtension(file);
                 if (!g_allowedFormats.includes(extension)) {
                     validationMessages.push(file.name + ": disallowed file format.");
@@ -82,7 +83,7 @@
                 }
 
                 if (file.size > maxSizeInBytes) {
-                    validationMessages.push(file.name + ": maximum file size is " + g_allowLimit + " MB.");
+                    validationMessages.push(g_totalEvidenceSizeError);
                     return;
                 }
 
@@ -90,13 +91,27 @@
             });
 
             const aggregateSize = acceptedFiles.reduce((total, file) => total + file.size, 0);
-            if (aggregateSize > g_maxUploadRequestBytes) {
-                alert("The total upload size cannot exceed 100 MB.");
+            if (validationMessages.length > 0) {
+                alert(validationMessages.join("\n"));
                 return;
             }
 
-            if (validationMessages.length > 0) {
-                alert(validationMessages.join("\n"));
+            if (aggregateSize > g_maxEvidenceBytes) {
+                alert(g_totalEvidenceSizeError);
+                return;
+            }
+
+            const uploadStatus = await getEvidenceUploadStatus();
+            if (!uploadStatus || uploadStatus.success !== true) {
+                alert(uploadStatus && uploadStatus.message ? uploadStatus.message : "Unable to validate current evidence size.");
+                return;
+            }
+
+            const existingSizeBytes = parseInt(uploadStatus.existingSizeBytes || 0, 10);
+            const maxTotalBytes = parseInt(uploadStatus.maxTotalBytes || g_maxEvidenceBytes, 10);
+            if (existingSizeBytes + aggregateSize > maxTotalBytes) {
+                alert(g_totalEvidenceSizeError);
+                return;
             }
 
             if (acceptedFiles.length > 0) {
@@ -105,6 +120,21 @@
             }
         }
 
+
+        async function getEvidenceUploadStatus() {
+            try {
+                return await $.ajax({
+                    url: g_asiBaseURL + "/UploadFile/GetComplianceEvidenceUploadStatus",
+                    type: 'POST',
+                    data: {
+                        subfolder: g_comId
+                    }
+                });
+            } catch (error) {
+                console.error("Error validating evidence upload size:", error);
+                return error && error.responseJSON ? error.responseJSON : null;
+            }
+        }
 
 
         async function uploadFiles(formData) {

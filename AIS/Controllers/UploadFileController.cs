@@ -10,6 +10,7 @@ using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace AIS.Controllers
@@ -24,6 +25,22 @@ namespace AIS.Controllers
         private readonly string _uploadReportPath;
         private readonly string _uploadPathAuditee;
         private readonly string _uploadPathCAU;
+        private const long ComplianceEvidenceSizeLimitBytes = 10 * 1024 * 1024;
+        private const int ComplianceEvidenceFileLimit = 100;
+        private const string ComplianceEvidenceSizeLimitMessage = "Total evidence size cannot exceed 10 MB. Please remove unnecessary files or compress your documents.";
+        private static readonly HashSet<string> ComplianceEvidenceAllowedExtensions = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+            {
+            ".pdf",
+            ".zip",
+            ".jpg",
+            ".jpeg",
+            ".png",
+            ".doc",
+            ".docx",
+            ".csv",
+            ".xls",
+            ".xlsx"
+            };
 
         public UploadFileController(ILogger<UploadFileController> logger, IConfiguration configuration)
             {
@@ -54,10 +71,13 @@ namespace AIS.Controllers
             try
                 {
                 var uploadPath = Path.Combine(_uploadPath, request.Subfolder);
-                if (!Directory.Exists(uploadPath))
+                var validationResult = ValidateComplianceEvidenceUpload(request, uploadPath);
+                if (validationResult != null)
                     {
-                    Directory.CreateDirectory(uploadPath);
+                    return validationResult;
                     }
+
+                Directory.CreateDirectory(uploadPath);
 
                 foreach (var file in request.Files)
                     {
@@ -81,6 +101,20 @@ namespace AIS.Controllers
                 return Json(new { success = false, message = ex.Message });
                 }
             }
+
+        [HttpPost]
+        public IActionResult GetComplianceEvidenceUploadStatus(string subfolder)
+            {
+            var uploadPath = Path.Combine(_uploadPath, subfolder ?? string.Empty);
+            var existingSizeBytes = GetDirectoryFileSize(uploadPath);
+            return Json(new
+                {
+                success = true,
+                maxTotalBytes = ComplianceEvidenceSizeLimitBytes,
+                existingSizeBytes
+                });
+            }
+
         [HttpPost]
         public async Task<IActionResult> UploadAuditeeEvideces([FromForm] FileUploadRequest request)
             {
@@ -396,6 +430,72 @@ namespace AIS.Controllers
         public IActionResult Error()
             {
             return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
+            }
+
+        private IActionResult ValidateComplianceEvidenceUpload(FileUploadRequest request, string uploadPath)
+            {
+            if (request.Files.Count > ComplianceEvidenceFileLimit)
+                {
+                return BadRequest(new { success = false, message = $"A maximum of {ComplianceEvidenceFileLimit} files can be uploaded at once." });
+                }
+
+            var selectedNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var file in request.Files)
+                {
+                if (file == null || file.Length <= 0)
+                    {
+                    continue;
+                    }
+
+                var fileName = Path.GetFileName(file.FileName);
+                if (string.IsNullOrWhiteSpace(fileName))
+                    {
+                    return BadRequest(new { success = false, message = "Invalid file name." });
+                    }
+
+                if (!selectedNames.Add(fileName))
+                    {
+                    return BadRequest(new { success = false, message = $"Duplicate file selected: {fileName}." });
+                    }
+
+                var extension = Path.GetExtension(fileName);
+                if (!ComplianceEvidenceAllowedExtensions.Contains(extension))
+                    {
+                    return BadRequest(new { success = false, message = $"{fileName}: disallowed file format." });
+                    }
+
+                if (file.Length > ComplianceEvidenceSizeLimitBytes)
+                    {
+                    return BadRequest(new { success = false, message = ComplianceEvidenceSizeLimitMessage });
+                    }
+
+                var existingFilePath = Path.Combine(uploadPath, fileName);
+                if (System.IO.File.Exists(existingFilePath))
+                    {
+                    return BadRequest(new { success = false, message = $"File already uploaded: {fileName}." });
+                    }
+                }
+
+            var selectedSizeBytes = request.Files.Where(file => file != null && file.Length > 0).Sum(file => file.Length);
+            var existingSizeBytes = GetDirectoryFileSize(uploadPath);
+            if (existingSizeBytes + selectedSizeBytes > ComplianceEvidenceSizeLimitBytes)
+                {
+                return BadRequest(new { success = false, message = ComplianceEvidenceSizeLimitMessage });
+                }
+
+            return null;
+            }
+
+        private static long GetDirectoryFileSize(string folderPath)
+            {
+            if (string.IsNullOrWhiteSpace(folderPath) || !Directory.Exists(folderPath))
+                {
+                return 0;
+                }
+
+            return Directory.EnumerateFiles(folderPath)
+                .Select(filePath => new FileInfo(filePath).Length)
+                .Sum();
             }
         }
 
