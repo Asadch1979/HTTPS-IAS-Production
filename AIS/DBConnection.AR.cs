@@ -3716,7 +3716,7 @@ namespace AIS.Controllers
                 cmd.Parameters.Add("CVAL", OracleDbType.Varchar2).Value = NOVAULT;
                 cmd.Parameters.Add("AVAL", OracleDbType.Varchar2).Value = TOTVAULT;
                 cmd.Parameters.Add("DSR", OracleDbType.Varchar2).Value = DSR;
-                cmd.Parameters.Add("DSR", OracleDbType.Varchar2).Value = NOSR;
+                cmd.Parameters.Add("CSR", OracleDbType.Varchar2).Value = NOSR;
                 cmd.Parameters.Add("ASR", OracleDbType.Varchar2).Value = TOTSR;
                 cmd.Parameters.Add("DIFF", OracleDbType.Varchar2).Value = DIFF;
                 cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
