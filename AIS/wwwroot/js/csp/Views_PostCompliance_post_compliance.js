@@ -6,11 +6,13 @@
     var g_obsList = [];
     var fileInput = null;
     var g_allAttachedImages = [];
-    var g_allowedFormats = ["pdf", "jpg", "jpeg", "png", "doc", "docx", "jpg", "csv", "xls", "xlsx"]; // allowed file formats
+    var g_allowedFormats = ["pdf", "zip", "jpg", "jpeg", "png", "doc", "docx", "csv", "xls", "xlsx"]; // allowed file formats
 
 
     var btnClick = "own";
     var g_allowLimit = '12'; // Maximum file size in MB
+    var g_maxUploadFiles = 100;
+    var g_maxUploadRequestBytes = 100 * 1024 * 1024;
 
     function getDisplayParaRisk(value) {
         var risk = (value || '').toString().trim().toLowerCase();
@@ -38,7 +40,7 @@
             dragDrop: false, // Enable drag & drop upload
             maxSize: g_allowLimit + " MB", // Maximum uploaded file size
             multiple: true, // Allow multiple file uploads
-            maxFile: 100, // Maximum number of uploaded files
+            maxFile: g_maxUploadFiles, // Maximum number of uploaded files
             maxFileError: "File exceeds upload limit. - Max limit:", // Error message for exceeding file count
             maxSizeError: "File exceeds size. - Max limit:", // Error message for exceeding file size
             fileTypeError: "Disallowed file format.", // Error message for disallowed file format
@@ -63,21 +65,43 @@
         async function processFiles(files) {
             const formData = new FormData();
             formData.append('subfolder', g_comId);
-
-            // Convert MB to bytes
             const maxSizeInBytes = parseInt(g_allowLimit) * 1024 * 1024;
-            let hasFiles = false; // Flag to check if any valid files were added
+            const selectedFiles = Array.from(files);
+            const acceptedFiles = [];
+            const validationMessages = [];
 
-            Array.from(files).forEach((file, index) => {
-                if (file.size <= maxSizeInBytes) {
-                    formData.append('files', file);
-                    hasFiles = true; // Set flag to true if a file is valid
+            if (selectedFiles.length > g_maxUploadFiles) {
+                validationMessages.push("A maximum of " + g_maxUploadFiles + " files can be uploaded at once.");
+            }
+
+            selectedFiles.slice(0, g_maxUploadFiles).forEach((file) => {
+                const extension = getFileExtension(file);
+                if (!g_allowedFormats.includes(extension)) {
+                    validationMessages.push(file.name + ": disallowed file format.");
+                    return;
                 }
+
+                if (file.size > maxSizeInBytes) {
+                    validationMessages.push(file.name + ": maximum file size is " + g_allowLimit + " MB.");
+                    return;
+                }
+
+                acceptedFiles.push(file);
             });
 
-            // Call uploadFiles only if there are valid files
-            if (hasFiles) {
-                uploadFiles(formData);
+            const aggregateSize = acceptedFiles.reduce((total, file) => total + file.size, 0);
+            if (aggregateSize > g_maxUploadRequestBytes) {
+                alert("The total upload size cannot exceed 100 MB.");
+                return;
+            }
+
+            if (validationMessages.length > 0) {
+                alert(validationMessages.join("\n"));
+            }
+
+            if (acceptedFiles.length > 0) {
+                acceptedFiles.forEach((file) => formData.append('files', file));
+                await uploadFiles(formData);
             }
         }
 
@@ -92,7 +116,13 @@
                     processData: false,
                     contentType: false
                 });
-                alert("Files uploaded successfully!");
+
+                if (!response || response.success !== true) {
+                    alert(response && response.message ? response.message : "Files could not be uploaded.");
+                    return;
+                }
+
+                alert(response.message || "Files uploaded successfully!");
 
                 $(".aks-file-upload .aks-file-upload-delete").on("click", function (e) {
                     var filename = $(this).attr("data-delete");
@@ -101,7 +131,27 @@
 
             } catch (error) {
                 console.error("Error uploading files:", error);
-                alert("Error uploading files. Please try again."); // Use custom alert
+                const response = error && error.responseJSON;
+                const messages = [];
+
+                if (response && response.message) {
+                    messages.push(response.message);
+                }
+
+                if (response && response.errors) {
+                    Object.keys(response.errors).forEach((field) => {
+                        const fieldErrors = Array.isArray(response.errors[field])
+                            ? response.errors[field]
+                            : [response.errors[field]];
+                        fieldErrors.forEach((message) => {
+                            if (message) {
+                                messages.push(message);
+                            }
+                        });
+                    });
+                }
+
+                alert(messages.length > 0 ? messages.join("\n") : "Error uploading files. Please try again.");
             }
         }
     });

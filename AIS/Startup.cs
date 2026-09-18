@@ -12,6 +12,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.HttpOverrides;
+using Microsoft.AspNetCore.HttpsPolicy;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.Extensions.Configuration;
@@ -253,6 +254,11 @@ namespace AIS
                 options.KnownProxies.Add(IPAddress.IPv6Loopback);
                 AddKnownForwardedHeaderProxies(options, Configuration);
             });
+
+            services.Configure<HttpsRedirectionOptions>(options =>
+            {
+                options.HttpsPort = ResolveHttpsPort(Configuration);
+            });
             }
 
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env, ILogger<Startup> logger, LoginViewResolver loginViewResolver)
@@ -273,7 +279,7 @@ namespace AIS
                 {
                 app.UseHsts();
                 app.UseHttpsRedirection();
-                logger.LogInformation("HSTS and HTTPS redirection are enabled for this deployment.");
+                logger.LogInformation("HSTS and HTTPS redirection are enabled for this deployment. HttpsPort={HttpsPort}.", ResolveHttpsPort(Configuration));
                 }
             else
                 {
@@ -363,6 +369,14 @@ namespace AIS
                 }
 
             return baseUrl.TrimEnd('/');
+            }
+
+        private static int ResolveHttpsPort(IConfiguration configuration)
+            {
+            var configuredPort = configuration.GetValue<int?>("Security:HttpsPort")
+                ?? configuration.GetValue<int?>("Https:Port");
+
+            return configuredPort.GetValueOrDefault(443);
             }
 
         private static void AddKnownForwardedHeaderProxies(ForwardedHeadersOptions options, IConfiguration configuration)
