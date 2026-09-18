@@ -1,0 +1,100 @@
+@{
+    ViewData["Title"] = "Working Papers";
+    Layout = "_Layout";
+    var engagementId = (long)(ViewData["EngagementId"] ?? 0L);
+    var paperType = Convert.ToString(ViewData["PaperType"]);
+}
+
+<link rel="stylesheet" href="~/css/working-papers-v2.css" />
+<form id="wpCsrf" class="d-none">@Html.AntiForgeryToken()</form>
+
+<main id="wpWorkspace" class="wp-workspace" data-engagement-id="@engagementId" data-paper-type="@paperType">
+    <header class="wp-header">
+        <div>
+            <nav aria-label="Breadcrumb" class="wp-breadcrumb">Engagement @engagementId / Working Papers</nav>
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+                <h1 id="wpTitle">Working Paper</h1>
+                <span id="wpStatus" class="wp-status">Loading</span>
+            </div>
+            <div id="wpMeta" class="wp-meta"></div>
+        </div>
+        <div class="wp-header-actions">
+            <button id="wpValidate" type="button" class="btn btn-outline-secondary">Validate</button>
+            <button id="wpWorkflow" type="button" class="btn btn-primary d-none"></button>
+        </div>
+    </header>
+
+    <div id="wpAlert" class="alert d-none" role="alert"></div>
+
+    <div class="wp-shell">
+        <aside class="wp-paper-nav" aria-label="Working paper types">
+            <a data-paper="LCF">Loan Case File</a>
+            <a data-paper="VCH">Voucher Checking</a>
+            <a data-paper="AOF">Account Opening</a>
+            <a data-paper="FAS">Fixed Assets</a>
+            <a data-paper="CCT">Cash Count</a>
+        </aside>
+
+        <section class="wp-main">
+            <nav class="wp-tabs" role="tablist">
+                <button data-tab="plan" class="active">Plan</button>
+                <button data-tab="test-sheet">Test Sheet</button>
+                <button data-tab="evidence">Evidence</button>
+                <button data-tab="exceptions">Exceptions</button>
+                <button data-tab="conclusion">Conclusion</button>
+                <button data-tab="review">Review</button>
+                <button data-tab="history">History</button>
+                <button data-tab="legacy">Legacy</button>
+            </nav>
+
+            <section id="tab-plan" class="wp-panel active">
+                <div class="wp-section-heading"><div><h2>Audit plan</h2><p>Define the objective, assessed risks, controls, scope, population and sample.</p></div><button id="savePlan" class="btn btn-primary" type="button">Save draft</button></div>
+                <div class="wp-form-grid">
+                    <label class="span-2">Objectives<textarea id="planObjectives" rows="3"></textarea></label>
+                    <label class="span-2">Risks<textarea id="planRisks" rows="3"></textarea></label>
+                    <label class="span-2">Expected controls<textarea id="planControls" rows="3"></textarea></label>
+                    <label class="span-2">Scope<textarea id="planScope" rows="3"></textarea></label>
+                    <label>Population source<input id="populationSource" type="text" /></label>
+                    <label>Population as of<input id="populationAsOf" type="date" /></label>
+                    <label>Population count<input id="populationCount" type="number" min="0" /></label>
+                    <label>Population value<input id="populationValue" type="number" min="0" step="0.01" /></label>
+                    <label>Currency<input id="planCurrency" type="text" maxlength="3" /></label>
+                    <label>Sampling method<select id="samplingMethod"><option value="">Select</option><option>Random</option><option>Systematic</option><option>Monetary Unit</option><option>Judgmental</option><option>Stratified</option><option>100 Percent</option></select></label>
+                    <label>Sample size<input id="sampleSize" type="number" min="1" /></label>
+                    <label>Audit program reference<input id="auditProgramReference" type="text" /></label>
+                    <label class="span-2">Sampling rationale<textarea id="samplingRationale" rows="3"></textarea></label>
+                </div>
+            </section>
+
+            <section id="tab-test-sheet" class="wp-panel">
+                <div class="wp-section-heading"><div><h2>Test sheet</h2><p id="testSheetDescription"></p></div><button id="addItem" class="btn btn-primary" type="button">Add test item</button></div>
+                <div class="table-responsive"><table class="table wp-table"><thead id="itemHead"></thead><tbody id="itemBody"></tbody></table></div>
+                <div id="itemEditor" class="wp-editor d-none">
+                    <div class="wp-section-heading"><h3 id="itemEditorTitle">Test item</h3><button id="closeItem" type="button" class="btn btn-sm btn-outline-secondary">Close</button></div>
+                    <div id="specializedFields" class="wp-form-grid"></div>
+                    <div class="wp-form-grid mt-3">
+                        <label>Result<select id="itemResult"><option value="PENDING">Pending</option><option value="PASS">Pass</option><option value="EXCEPTION">Exception</option><option value="NOT_APPLICABLE">Not applicable</option><option value="NOT_TESTED">Not tested</option></select></label>
+                        <label class="span-2">Auditor comment<textarea id="itemComment" rows="2"></textarea></label>
+                    </div>
+                    <button id="saveItem" type="button" class="btn btn-primary mt-3">Save item</button>
+                </div>
+            </section>
+
+            <section id="tab-evidence" class="wp-panel"><div class="wp-section-heading"><div><h2>Supporting evidence</h2><p>Link an existing authorized IAS evidence record. Files are not duplicated.</p></div><button id="addEvidence" class="btn btn-primary" type="button">Link evidence</button></div><div id="evidenceList" class="wp-list"></div></section>
+            <section id="tab-exceptions" class="wp-panel"><div class="wp-section-heading"><div><h2>Exceptions and observations</h2><p>Document criteria, condition, cause, impact and risk, then link the IAS observation ID.</p></div><button id="addException" class="btn btn-primary" type="button">Add exception</button></div><div id="exceptionList" class="wp-list"></div></section>
+
+            <section id="tab-conclusion" class="wp-panel">
+                <div class="wp-section-heading"><div><h2>Audit conclusion</h2><p id="conclusionMetrics"></p></div><button id="saveConclusion" class="btn btn-primary" type="button">Save draft</button></div>
+                <div class="wp-form-grid"><label>Objective assessment<select id="objectiveAssessment"><option value="PENDING">Pending</option><option value="ACHIEVED">Achieved</option><option value="PARTLY_ACHIEVED">Partly achieved</option><option value="NOT_ACHIEVED">Not achieved</option></select></label><label>Residual risk<select id="residualRisk"><option value="">Select</option><option>Low</option><option>Medium</option><option>High</option><option>Critical</option></select></label><label class="span-2">Unresolved issues<textarea id="unresolvedIssues" rows="3"></textarea></label><label class="span-2">Overall conclusion<textarea id="overallConclusion" rows="5"></textarea></label></div>
+            </section>
+
+            <section id="tab-review" class="wp-panel"><div class="wp-section-heading"><div><h2>Supervisory review</h2><p>Review notes remain open until the reviewer accepts the response.</p></div><button id="addReviewNote" class="btn btn-primary" type="button">Add review note</button></div><div id="reviewList" class="wp-list"></div></section>
+            <section id="tab-history" class="wp-panel"><div class="wp-section-heading"><div><h2>History and sign-offs</h2><p>Immutable workflow and editing events for this working paper.</p></div></div><div id="historyList" class="wp-timeline"></div></section>
+            <section id="tab-legacy" class="wp-panel"><div class="wp-section-heading"><div><h2>Legacy records</h2><p>Read-only historical values. They are not treated as redesigned test results or sign-offs.</p></div></div><div id="legacyList" class="wp-list"></div></section>
+        </section>
+    </div>
+</main>
+
+<div id="wpDialog" class="modal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-lg"><div class="modal-content"><div class="modal-header"><h2 id="dialogTitle" class="modal-title fs-5"></h2><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button></div><div id="dialogBody" class="modal-body"></div><div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button><button id="dialogSave" type="button" class="btn btn-primary">Save</button></div></div></div></div>
+
+<script src="~/js/working-papers-v2.js"></script>
