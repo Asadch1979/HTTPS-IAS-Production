@@ -213,7 +213,7 @@ namespace AIS
                     }));
 
                 options.AddPolicy("FileTransferPolicy", context => RateLimitPartition.GetFixedWindowLimiter(
-                    ResolveClientPartition(context, "file"),
+                    ResolveFileTransferPartition(context),
                     _ => new FixedWindowRateLimiterOptions
                     {
                         PermitLimit = 10,
@@ -347,6 +347,14 @@ namespace AIS
                 ?? context?.Connection?.RemoteIpAddress?.ToString()
                 ?? "unknown";
             return $"{policyName}:{ip}";
+            }
+
+        private static string ResolveFileTransferPartition(HttpContext context)
+            {
+            var userId = context?.User?.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            return !string.IsNullOrWhiteSpace(userId)
+                ? $"file:user:{userId}"
+                : ResolveClientPartition(context, "file");
             }
 
         private static string ResolveBaseUrl(IConfiguration configuration)

@@ -109,6 +109,7 @@ namespace AIS.Controllers
             }
 
         [HttpPost]
+        [DisableRateLimiting]
         public IActionResult GetComplianceEvidenceUploadStatus(string subfolder)
             {
             if (!TryGetAuthorizedComplianceEvidencePath(subfolder, out var uploadPath))
@@ -126,6 +127,7 @@ namespace AIS.Controllers
             }
 
         [HttpPost]
+        [DisableRateLimiting]
         public IActionResult GetComplianceEvidenceFiles(string subfolder)
             {
             if (!TryGetAuthorizedComplianceEvidencePath(subfolder, out var folderPath))
