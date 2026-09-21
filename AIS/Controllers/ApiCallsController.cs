@@ -1592,10 +1592,6 @@ namespace AIS.Controllers
         [ApplicationAudit("OBSERVATION_UPDATED", "AUDIT_EXECUTION", "Execution", "pkg_ar", "P_UpdateObservation", ObjectType = "OBSERVATION", ObjectId = "OBS_ID", RequireResultMessage = true)]
         public IActionResult update_observation_text(int OBS_ID, string OBS_TEXT, int PROCESS_ID = 0, int SUBPROCESS_ID = 0, int CHECKLIST_ID = 0, string OBS_TITLE = "", int RISK_ID = 0, int ANNEXURE_ID = 0, long? REFERENCE_ID = null)
             {
-            if (!IsAssignedTeamLeadForObservation(OBS_ID))
-                return StatusCode(StatusCodes.Status403Forbidden,
-                    new { Status = false, Message = "Only the assigned Team Lead can edit this observation." });
-
             if (!IsValidObservationHeading(OBS_TITLE))
                 {
                 _logger.LogWarning("Observation heading validation failed for update_observation_text. OBS_ID: {ObsId}", OBS_ID);
@@ -1730,10 +1726,6 @@ namespace AIS.Controllers
         [ApplicationAudit("OBSERVATION_DROPPED", "AUDIT_EXECUTION", "Execution", "pkg_ar", "P_DropAuditObservation", ObjectType = "OBSERVATION", ObjectId = "OBS_ID")]
         public IActionResult drop_observation(int OBS_ID)
             {
-            if (!IsAssignedTeamLeadForObservation(OBS_ID))
-                return StatusCode(StatusCodes.Status403Forbidden,
-                    new { Status = false, Message = "Only the assigned Team Lead can drop this observation." });
-
             var response = dBConnection.DropAuditObservation(OBS_ID);
             return !string.IsNullOrWhiteSpace(response)
                 ? Ok(new { Status = true, Message = response })
@@ -1765,23 +1757,6 @@ namespace AIS.Controllers
 
             }
 
-        private bool IsAssignedTeamLeadForObservation(int observationId)
-            {
-            if (observationId <= 0 || sessionHandler.GetUser() == null)
-                return false;
-
-            foreach (var engagement in dBConnection.GetArDashboardDropdownOptions())
-                {
-                if (!string.Equals((engagement.IsTeamLead ?? string.Empty).Trim(), "Y", StringComparison.OrdinalIgnoreCase))
-                    continue;
-
-                if (dBConnection.GetManagedObservations(engagement.EngagementId, observationId)
-                    .Any(observation => observation.OBS_ID == observationId))
-                    return true;
-                }
-
-            return false;
-            }
         [HttpGet]
         [HttpPost]
         public List<ManageAuditParasModel> get_observations_for_manage_paras(int ENTITY_ID = 0, int OBS_ID = 0)
