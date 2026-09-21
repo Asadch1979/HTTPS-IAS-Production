@@ -95,6 +95,7 @@ namespace AIS.Controllers
                 cmd.Parameters.Add("P_OWNER_PPNO", OracleDbType.Varchar2, 30).Value = (object)model.OwnerPpno ?? DBNull.Value;
                 cmd.Parameters.Add("P_DUE_DATE", OracleDbType.Date).Value = (object)model.DueDate ?? DBNull.Value;
                 cmd.Parameters.Add("P_OBSERVATION_ID", OracleDbType.Int64).Value = (object)model.ObservationId ?? DBNull.Value;
+                cmd.Parameters.Add("P_STATUS", OracleDbType.Varchar2, 20).Value = string.IsNullOrWhiteSpace(model.Status) ? "OPEN" : model.Status.ToUpperInvariant();
                 cmd.Parameters.Add("P_ROW_VERSION", OracleDbType.Int64).Value = model.RowVersion;
             });
 

@@ -11,6 +11,8 @@ create sequence SEQ_WP_HISTORY start with 1 increment by 1 nocache nocycle;
 
 create table T_WP_HEADER (
   WP_ID             number(19) not null,
+  ROOT_WP_ID        number(19) not null,
+  SUPERSEDES_WP_ID  number(19),
   ENG_ID            number(19) not null,
   ENTITY_ID         number(10) not null,
   PAPER_TYPE        varchar2(3 char) not null,
@@ -29,9 +31,15 @@ create table T_WP_HEADER (
   UPDATED_ON        timestamp default systimestamp not null,
   APPROVED_BY       varchar2(30 char),
   APPROVED_ON       timestamp,
+  PREPARED_BY       varchar2(30 char),
+  PREPARED_ON       timestamp,
+  REVIEWED_BY       varchar2(30 char),
+  REVIEWED_ON       timestamp,
   constraint PK_WP_HEADER primary key (WP_ID),
   constraint UQ_WP_HEADER_REF unique (REFERENCE_NO),
   constraint UQ_WP_HEADER_SCOPE unique (ENG_ID, ENTITY_ID, PAPER_TYPE, VERSION_NO),
+  constraint FK_WP_HEADER_ROOT foreign key (ROOT_WP_ID) references T_WP_HEADER(WP_ID),
+  constraint FK_WP_HEADER_SUPERSEDES foreign key (SUPERSEDES_WP_ID) references T_WP_HEADER(WP_ID),
   constraint CK_WP_HEADER_TYPE check (PAPER_TYPE in ('LCF','VCH','AOF','FAS','CCT')),
   constraint CK_WP_HEADER_STATUS check (STATUS in ('DRAFT','IN_REVIEW','RETURNED','REVIEWED','APPROVED')),
   constraint CK_WP_HEADER_PLAN_JSON check (PLAN_JSON is json),
@@ -137,6 +145,7 @@ create table T_WP_HISTORY (
 );
 
 create index IX_WP_HEADER_ENGAGEMENT on T_WP_HEADER(ENG_ID, ENTITY_ID, PAPER_TYPE, STATUS);
+create index IX_WP_HEADER_LINEAGE on T_WP_HEADER(ROOT_WP_ID, VERSION_NO);
 create index IX_WP_HEADER_REVIEWER on T_WP_HEADER(REVIEWER_PPNO, STATUS);
 create index IX_WP_ITEM_HEADER on T_WP_ITEM(WP_ID, RESULT);
 create index IX_WP_EXCEPTION_HEADER on T_WP_EXCEPTION(WP_ID, STATUS, RISK_RATING);

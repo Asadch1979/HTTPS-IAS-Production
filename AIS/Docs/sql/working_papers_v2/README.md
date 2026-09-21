@@ -8,6 +8,24 @@ Order:
 2. `002_create_working_paper_package.sql`
 3. `003_verify_working_paper_install.sql`
 
+For an environment where the original `935fc5d` foundation was already installed, run
+`004_upgrade_foundation_security_versioning.sql` instead of rerunning `001`; it adds lineage/sign-off
+columns and recompiles the corrected package. Then run `003` and treat compilation errors or missing
+dependencies as a release blocker.
+
 The scripts do not alter or delete any legacy `T_WORKING_PAPER_*` table. The package reads legacy rows for a read-only history panel and writes only to the new `T_WP_*` objects.
 
-Before production execution, confirm schema/tablespace standards, engagement authorization source, grants, backup/recovery, evidence identifier contract, observation identifier contract, retention policy and whether a separate approver is mandatory. The implemented default requires preparer/reviewer separation and permits the assigned reviewer to perform final approval; change that policy only through an approved design decision.
+Authorization is enforced in the package against `T_AU_PLAN_ENG` and active membership in
+`T_AU_AUDIT_TEAM_TASKLIST`; roles `1` and `2` retain the established privileged engagement-access
+override. The assigned reviewer must still be an active engagement-team member. The package repeats
+authorization for create, read and every write/workflow operation.
+
+Before production execution, confirm schema/tablespace standards, grants, backup/recovery, evidence
+identifier authorization, observation identifier authorization, retention policy and whether a separate
+approver is mandatory. The implemented interim policy requires preparer/reviewer separation and permits
+the assigned reviewer to perform final approval. Changing that policy requires an approved design decision.
+
+Submission and approval are blocked until planning, sampling, execution results, server calculations,
+item-level evidence, exception records/dispositions and conclusion fields are complete. Reopen is limited
+to privileged roles, requires a reason and creates a new editable row with cloned detail; the approved source
+row is never updated.
