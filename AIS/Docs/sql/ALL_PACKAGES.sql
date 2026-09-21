@@ -48092,6 +48092,9 @@ create or replace package PKG_LG is
                                   O_OCCURRENCE_COUNT     OUT NUMBER,
                                   O_EMAIL_ALREADY_SENT   OUT NUMBER);
 
+  PROCEDURE CLAIM_SYSTEM_ERROR_EMAIL(P_ERROR_ID IN NUMBER,
+                                     O_CLAIMED  OUT NUMBER);
+
   PROCEDURE MARK_SYSTEM_ERROR_EMAIL(P_ERROR_ID   IN NUMBER,
                                     P_EMAIL_SENT IN NUMBER);
 
@@ -48901,6 +48904,28 @@ create or replace package body PKG_LG is
       ROLLBACK;
       RAISE;
   END REGISTER_SYSTEM_ERROR;
+
+  PROCEDURE CLAIM_SYSTEM_ERROR_EMAIL(P_ERROR_ID IN NUMBER,
+                                     O_CLAIMED  OUT NUMBER) IS
+    PRAGMA AUTONOMOUS_TRANSACTION;
+  BEGIN
+    O_CLAIMED := 0;
+
+    UPDATE T_AU_SYSTEM_ERROR_MASTER
+       SET EMAIL_SENT = 'P'
+     WHERE ERROR_ID = P_ERROR_ID
+       AND NVL(EMAIL_SENT, 'N') = 'N';
+
+    IF SQL%ROWCOUNT = 1 THEN
+      O_CLAIMED := 1;
+    END IF;
+
+    COMMIT;
+  EXCEPTION
+    WHEN OTHERS THEN
+      ROLLBACK;
+      RAISE;
+  END CLAIM_SYSTEM_ERROR_EMAIL;
 
   PROCEDURE MARK_SYSTEM_ERROR_EMAIL(P_ERROR_ID   IN NUMBER,
                                     P_EMAIL_SENT IN NUMBER) IS
