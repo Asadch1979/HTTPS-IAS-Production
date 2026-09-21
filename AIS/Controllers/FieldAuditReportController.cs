@@ -47,6 +47,7 @@ namespace AIS.Controllers
                 return redirect;
                 }
 
+            ApplyActiveEngagementFromQuery();
             var selector = BuildEngagementSelector();
             ViewData["EngagementSelector"] = selector;
             if (!selector.HasActiveEngagement)
@@ -86,6 +87,7 @@ namespace AIS.Controllers
                 return redirect;
                 }
 
+            ApplyActiveEngagementFromQuery();
             var selector = BuildEngagementSelector();
             ViewData["EngagementSelector"] = selector;
             if (!selector.HasActiveEngagement)
@@ -133,6 +135,7 @@ namespace AIS.Controllers
                 return redirect;
                 }
 
+            ApplyActiveEngagementFromQuery();
             var selector = BuildEngagementSelector();
             ViewData["EngagementSelector"] = selector;
             if (!selector.HasActiveEngagement)
@@ -160,6 +163,7 @@ namespace AIS.Controllers
                 return redirect;
                 }
 
+            ApplyActiveEngagementFromQuery();
             var selector = BuildEngagementSelector();
             ViewData["EngagementSelector"] = selector;
             if (!selector.HasActiveEngagement)
@@ -187,6 +191,7 @@ namespace AIS.Controllers
                 return redirect;
                 }
 
+            ApplyActiveEngagementFromQuery();
             var selector = BuildEngagementSelector();
             ViewData["EngagementSelector"] = selector;
             if (!selector.HasActiveEngagement)
@@ -675,6 +680,7 @@ namespace AIS.Controllers
                 return redirect;
                 }
 
+            ApplyActiveEngagementFromQuery();
             var selector = BuildEngagementSelector();
             ViewData["EngagementSelector"] = selector;
             if (!selector.HasActiveEngagement)
@@ -881,6 +887,31 @@ namespace AIS.Controllers
         private bool TryResolveEngagementId(out int engId)
             {
             return _sessionHandler.TryGetActiveEngagementId(out engId);
+            }
+
+        private void ApplyActiveEngagementFromQuery()
+            {
+            var rawEngagementId = Request?.Query["engId"].ToString();
+            if (string.IsNullOrWhiteSpace(rawEngagementId))
+                {
+                return;
+                }
+
+            if (!int.TryParse(rawEngagementId, out var engagementId) || engagementId <= 0)
+                {
+                TempData["FieldAuditReportMessage"] = "Select a valid engagement to continue.";
+                _sessionHandler.ClearActiveEngagementId();
+                return;
+                }
+
+            if (!GetAuthorizedEngagementIds().Contains(engagementId))
+                {
+                TempData["FieldAuditReportMessage"] = "Select a valid engagement to continue.";
+                _sessionHandler.ClearActiveEngagementId();
+                return;
+                }
+
+            _sessionHandler.SetActiveEngagementId(engagementId);
             }
 
         private static bool IsManagementAudit(FieldAuditEngagementOptionModel selected)
