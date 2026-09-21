@@ -49,11 +49,31 @@
         try {
             const query = new URLSearchParams({ engId:String(state.engagementId), paperType:state.paperType });
             state.workspace = await api(`/WorkingPapers/api/workspace?${query}`, { method:'GET' });
+            await loadSummary();
             render();
         } catch (error) {
             state.workspace = emptyWorkspace(); render();
             notify('No redesigned paper exists yet. Create one after assigning an independent reviewer.', 'warning');
         } finally { setBusy(false); }
+    }
+
+    async function loadSummary() {
+        const papers = await api(`/WorkingPapers/api/summary?engId=${state.engagementId}`, { method:'GET' });
+        const host = byId('wpSummary');
+        if (!host) return;
+        host.replaceChildren();
+        papers.forEach(paper => {
+            const button = document.createElement('button');
+            button.type = 'button';
+            button.className = `wp-summary-item${paper.paperType === state.paperType ? ' active' : ''}`;
+            const title = document.createElement('strong'); title.textContent = paperNames[paper.paperType];
+            const status = document.createElement('span'); status.textContent = (paper.status || 'NOT_STARTED').replaceAll('_',' ');
+            const progress = document.createElement('progress'); progress.max = 100; progress.value = paper.progress || 0;
+            const percent = document.createElement('small'); percent.textContent = `${paper.progress || 0}% complete`;
+            button.append(title, status, progress, percent);
+            button.addEventListener('click', async () => { state.paperType = paper.paperType; root.dataset.paperType = paper.paperType; await load(); });
+            host.appendChild(button);
+        });
     }
 
     function emptyWorkspace() { return { workingPaperId:0, engagementId:state.engagementId, paperType:state.paperType, status:'NOT_CREATED', rowVersion:0, plan:{}, conclusion:{}, items:[], evidence:[], exceptions:[], reviewNotes:[], history:[], legacyRecords:[] }; }
@@ -140,7 +160,7 @@
     function addException(){const opts=(state.workspace.items||[]).map(x=>`<option value="${x.itemId}">${escapeText(x.itemReference)}</option>`).join('');showDialog('Add exception',`<div class="wp-form-grid"><label>Test item<select id="exItem">${opts}</select></label><label>Risk<select id="exRisk"><option>LOW</option><option>MEDIUM</option><option>HIGH</option><option>CRITICAL</option></select></label><label class="span-2">Criteria<textarea id="exCriteria"></textarea></label><label class="span-2">Condition<textarea id="exCondition"></textarea></label><label class="span-2">Cause<textarea id="exCause"></textarea></label><label class="span-2">Impact<textarea id="exImpact"></textarea></label><label>Owner PPNO<input id="exOwner"></label><label>Due date<input id="exDue" type="date"></label><label>Existing IAS observation ID<input id="exObs" type="number"></label></div>`,async()=>{try{await api('/WorkingPapers/api/exception',{method:'POST',body:JSON.stringify({workingPaperId:state.workspace.workingPaperId,itemId:Number(value('exItem')),criteria:value('exCriteria'),condition:value('exCondition'),cause:value('exCause'),impact:value('exImpact'),riskRating:value('exRisk'),ownerPpno:value('exOwner'),dueDate:value('exDue')||null,observationId:numberOrNull('exObs'),rowVersion:0})});dialog?.hide();await load();}catch(e){notify(e.message,'danger');}});}
     function addReviewNote(){showDialog('Add supervisory review note',`<div class="wp-form-grid"><label>Section<select id="rnSection"><option>Plan</option><option>Test Sheet</option><option>Evidence</option><option>Exceptions</option><option>Conclusion</option></select></label><label class="span-2">Review note<textarea id="rnText" rows="4"></textarea></label></div>`,async()=>{try{await api('/WorkingPapers/api/review-note',{method:'POST',body:JSON.stringify({workingPaperId:state.workspace.workingPaperId,sectionKey:value('rnSection'),noteText:value('rnText'),status:'OPEN'})});dialog?.hide();await load();}catch(e){notify(e.message,'danger');}});}
 
-    document.querySelectorAll('.wp-paper-nav a').forEach(a=>a.addEventListener('click',()=>{window.location.href=`${window.g_asiBaseURL||''}/WorkingPapers?engId=${state.engagementId}&paperType=${a.dataset.paper}`;}));
+    document.querySelectorAll('.wp-paper-nav a').forEach(a=>a.addEventListener('click',async()=>{state.paperType=a.dataset.paper;root.dataset.paperType=state.paperType;await load();}));
     document.querySelectorAll('.wp-tabs button').forEach(b=>b.addEventListener('click',()=>{document.querySelectorAll('.wp-tabs button,.wp-panel').forEach(x=>x.classList.remove('active'));b.classList.add('active');byId(`tab-${b.dataset.tab}`).classList.add('active');}));
     byId('savePlan').addEventListener('click',savePlan);byId('saveConclusion').addEventListener('click',saveConclusion);byId('addItem').addEventListener('click',()=>openItem(null));byId('saveItem').addEventListener('click',saveItem);byId('closeItem').addEventListener('click',()=>byId('itemEditor').classList.add('d-none'));byId('addEvidence').addEventListener('click',addEvidence);byId('addException').addEventListener('click',addException);byId('addReviewNote').addEventListener('click',addReviewNote);byId('wpValidate').addEventListener('click',validateWorkspace);byId('wpWorkflow').addEventListener('click',workflow);
     load();

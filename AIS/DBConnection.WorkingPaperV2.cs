@@ -161,7 +161,7 @@ namespace AIS.Controllers
 
         private static void AddContext(OracleCommand cmd, SessionUser user)
             {
-            cmd.Parameters.Add("P_ENTITY_ID", OracleDbType.Int32).Value = user.UserEntityID.Value;
+            cmd.Parameters.Add("P_AUDITOR_ENTITY_ID", OracleDbType.Int32).Value = user.UserEntityID.Value;
             cmd.Parameters.Add("P_ACTOR_PPNO", OracleDbType.Varchar2, 30).Value = user.PPNumber;
             cmd.Parameters.Add("P_ROLE_ID", OracleDbType.Int32).Value = user.UserRoleID;
             }

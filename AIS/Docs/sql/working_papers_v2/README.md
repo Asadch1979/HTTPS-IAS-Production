@@ -6,19 +6,25 @@ Order:
 
 1. `001_create_working_paper_objects.sql`
 2. `002_create_working_paper_package.sql`
-3. `003_verify_working_paper_install.sql`
+3. `005_integrate_ar_dashboard_context.sql`
+4. `003_verify_working_paper_install.sql`
 
 For an environment where the original `935fc5d` foundation was already installed, run
 `004_upgrade_foundation_security_versioning.sql` instead of rerunning `001`; it adds lineage/sign-off
-columns and recompiles the corrected package. Then run `003` and treat compilation errors or missing
-dependencies as a release blocker.
+columns and recompiles the corrected package. Then run `005` followed by `003`; treat compilation errors
+or missing dependencies as a release blocker.
+
+Run `005_integrate_ar_dashboard_context.sql` for both new and previously installed V2 schemas before
+verification. It repairs V2 header entity context from `T_AU_PLAN_ENG` and recompiles the package. It does
+not modify legacy working papers.
 
 The scripts do not alter or delete any legacy `T_WORKING_PAPER_*` table. The package reads legacy rows for a read-only history panel and writes only to the new `T_WP_*` objects.
 
-Authorization is enforced in the package against `T_AU_PLAN_ENG` and active membership in
-`T_AU_AUDIT_TEAM_TASKLIST`; roles `1` and `2` retain the established privileged engagement-access
-override. The assigned reviewer must still be an active engagement-team member. The package repeats
-authorization for create, read and every write/workflow operation.
+Authorization follows the AR Dashboard source: the actor must be assigned to the engagement in
+`T_AU_AUDIT_TEAM_TASKLIST`, and the engagement must be in the dashboard's eligible plan-status range.
+The assigned reviewer must also be an engagement-team member. The package repeats authorization for
+create, read and every write/workflow operation. `P_AUDITOR_ENTITY_ID` records authenticated auditor
+context; `T_WP_HEADER.ENTITY_ID` stores the audited entity derived from `T_AU_PLAN_ENG`.
 
 Before production execution, confirm schema/tablespace standards, grants, backup/recovery, evidence
 identifier authorization, observation identifier authorization, retention policy and whether a separate

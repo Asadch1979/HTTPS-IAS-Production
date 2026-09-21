@@ -45,6 +45,11 @@ from user_dependencies
 where name='PKG_WORKING_PAPER'
 order by referenced_type, referenced_name;
 
+-- Must return no rows: V2 ENTITY_ID is the audited entity, not the auditor's posting entity.
+select H.WP_ID,H.ENG_ID,H.ENTITY_ID stored_audited_entity,E.ENTITY_ID engagement_audited_entity
+from T_WP_HEADER H join T_AU_PLAN_ENG E on E.ENG_ID=H.ENG_ID
+where H.ENTITY_ID<>E.ENTITY_ID;
+
 -- Must return five unchanged legacy table names when they exist in the deployment schema.
 select table_name
 from user_tables

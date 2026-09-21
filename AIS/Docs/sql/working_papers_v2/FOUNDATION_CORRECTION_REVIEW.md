@@ -25,9 +25,10 @@ source remains linked through `ROOT_WP_ID` and `SUPERSEDES_WP_ID` and remains re
 
 ## C# to Oracle alignment
 
-All procedures begin with the common inputs `P_ENTITY_ID NUMBER IN`, `P_ACTOR_PPNO VARCHAR2 IN`, and
-`P_ROLE_ID NUMBER IN`; `DBConnection.WorkingPaperV2.AddContext` supplies those exact names and compatible
-ODP.NET types. Procedure-specific mappings are:
+All procedures begin with the common inputs `P_AUDITOR_ENTITY_ID NUMBER IN`, `P_ACTOR_PPNO VARCHAR2 IN`,
+and `P_ROLE_ID NUMBER IN`; `DBConnection.WorkingPaperV2.AddContext` supplies those exact names and compatible
+ODP.NET types. The auditor entity is context only; the working-paper `ENTITY_ID` is the audited entity derived
+from the engagement. Procedure-specific mappings are:
 
 | C# method | Oracle procedure | Inputs after context | Output |
 |---|---|---|---|

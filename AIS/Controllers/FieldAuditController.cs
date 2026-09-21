@@ -4,6 +4,7 @@ using AIS.Models.Requests;
 using AIS.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Configuration;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -34,6 +35,7 @@ namespace AIS.Controllers
         private readonly IPermissionService _permissionService;
         private readonly IPageIdResolver _pageIdResolver;
         private readonly FieldAuditDashboardProgressStore _progressStore;
+        private readonly IConfiguration _configuration;
 
         public FieldAuditController(
             ILogger<FieldAuditController> logger,
@@ -42,7 +44,8 @@ namespace AIS.Controllers
             TopMenus topMenus,
             IPermissionService permissionService,
             IPageIdResolver pageIdResolver,
-            FieldAuditDashboardProgressStore progressStore)
+            FieldAuditDashboardProgressStore progressStore,
+            IConfiguration configuration)
             {
             _logger = logger;
             _sessionHandler = sessionHandler;
@@ -51,6 +54,7 @@ namespace AIS.Controllers
             _permissionService = permissionService;
             _pageIdResolver = pageIdResolver;
             _progressStore = progressStore;
+            _configuration = configuration;
             }
 
         [HttpGet]
@@ -541,6 +545,13 @@ namespace AIS.Controllers
                 case "EXCEPTION_REPORT":
                     return PartialView("~/Views/FieldAudit/_Exception.cshtml", new FieldAuditGridReplicaViewModel { EngagementId = engId });
                 case "WORKING_PAPER":
+                    if (_configuration.GetValue<bool>("WorkingPapersV2:Enabled"))
+                        {
+                        ViewData["EngagementId"] = (long)engId;
+                        ViewData["PaperType"] = "LCF";
+                        ViewData["Embedded"] = true;
+                        return PartialView("~/Views/WorkingPapers/Index.cshtml");
+                        }
                     return PartialView("~/Views/FieldAudit/_WPaper.cshtml", new FieldAuditGridReplicaViewModel { EngagementId = engId });
                 case "MEMO_CREATION":
                     var observationModel = BuildObservationReplicaViewModel(engId);

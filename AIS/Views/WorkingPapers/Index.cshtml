@@ -1,6 +1,6 @@
 @{
     ViewData["Title"] = "Working Papers";
-    Layout = "_Layout";
+    Layout = (ViewData["Embedded"] as bool?) == true ? null : "_Layout";
     var engagementId = (long)(ViewData["EngagementId"] ?? 0L);
     var paperType = Convert.ToString(ViewData["PaperType"]);
 }
@@ -9,9 +9,13 @@
 <form id="wpCsrf" class="d-none">@Html.AntiForgeryToken()</form>
 
 <main id="wpWorkspace" class="wp-workspace" data-engagement-id="@engagementId" data-paper-type="@paperType">
+    <section class="wp-overview" aria-labelledby="wpOverviewTitle">
+        <div class="wp-section-heading"><div><h2 id="wpOverviewTitle">Engagement working papers</h2><p>Current status and completion across the five redesigned papers.</p></div></div>
+        <div id="wpSummary" class="wp-summary-grid" aria-live="polite"></div>
+    </section>
     <header class="wp-header">
         <div>
-            <nav aria-label="Breadcrumb" class="wp-breadcrumb">Engagement @engagementId / Working Papers</nav>
+            <nav aria-label="Breadcrumb" class="wp-breadcrumb">AR Dashboard / Engagement @engagementId / Working Papers</nav>
             <div class="d-flex align-items-center gap-2 flex-wrap">
                 <h1 id="wpTitle">Working Paper</h1>
                 <span id="wpStatus" class="wp-status">Loading</span>

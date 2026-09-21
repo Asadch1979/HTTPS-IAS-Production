@@ -2,29 +2,29 @@
 
 create or replace package PKG_WORKING_PAPER as
   type T_CURSOR is ref cursor;
-  procedure P_CREATE(P_ENTITY_ID number, P_ACTOR_PPNO varchar2, P_ROLE_ID number,
+  procedure P_CREATE(P_AUDITOR_ENTITY_ID number, P_ACTOR_PPNO varchar2, P_ROLE_ID number,
     P_ENG_ID number, P_PAPER_TYPE varchar2, P_REVIEWER_PPNO varchar2, P_DUE_DATE date, O_RESULT out T_CURSOR);
-  procedure P_GET_WORKSPACE(P_ENTITY_ID number, P_ACTOR_PPNO varchar2, P_ROLE_ID number,
+  procedure P_GET_WORKSPACE(P_AUDITOR_ENTITY_ID number, P_ACTOR_PPNO varchar2, P_ROLE_ID number,
     P_WP_ID number, P_ENG_ID number, P_PAPER_TYPE varchar2, O_HEADER out T_CURSOR, O_ITEMS out T_CURSOR,
     O_EVIDENCE out T_CURSOR, O_EXCEPTIONS out T_CURSOR, O_NOTES out T_CURSOR, O_HISTORY out T_CURSOR, O_LEGACY out T_CURSOR);
-  procedure P_SAVE_PLAN(P_ENTITY_ID number, P_ACTOR_PPNO varchar2, P_ROLE_ID number,
+  procedure P_SAVE_PLAN(P_AUDITOR_ENTITY_ID number, P_ACTOR_PPNO varchar2, P_ROLE_ID number,
     P_WP_ID number, P_ROW_VERSION number, P_PLAN_JSON clob, O_RESULT out T_CURSOR);
-  procedure P_SAVE_ITEM(P_ENTITY_ID number, P_ACTOR_PPNO varchar2, P_ROLE_ID number,
+  procedure P_SAVE_ITEM(P_AUDITOR_ENTITY_ID number, P_ACTOR_PPNO varchar2, P_ROLE_ID number,
     P_WP_ID number, P_ITEM_ID number, P_ITEM_REF varchar2, P_DETAILS_JSON clob, P_CALC_JSON clob,
     P_RESULT varchar2, P_COMMENT varchar2, P_ROW_VERSION number, O_RESULT out T_CURSOR);
-  procedure P_LINK_EVIDENCE(P_ENTITY_ID number, P_ACTOR_PPNO varchar2, P_ROLE_ID number,
+  procedure P_LINK_EVIDENCE(P_AUDITOR_ENTITY_ID number, P_ACTOR_PPNO varchar2, P_ROLE_ID number,
     P_WP_ID number, P_ITEM_ID number, P_EXCEPTION_ID number, P_EXISTING_EVIDENCE_ID varchar2,
     P_TITLE varchar2, P_EVIDENCE_TYPE varchar2, P_SOURCE varchar2, P_EVIDENCE_DATE date, O_RESULT out T_CURSOR);
-  procedure P_SAVE_EXCEPTION(P_ENTITY_ID number, P_ACTOR_PPNO varchar2, P_ROLE_ID number,
+  procedure P_SAVE_EXCEPTION(P_AUDITOR_ENTITY_ID number, P_ACTOR_PPNO varchar2, P_ROLE_ID number,
     P_WP_ID number, P_EXCEPTION_ID number, P_ITEM_ID number, P_CRITERIA varchar2, P_CONDITION varchar2,
     P_CAUSE varchar2, P_IMPACT varchar2, P_RISK varchar2, P_OWNER_PPNO varchar2, P_DUE_DATE date,
     P_OBSERVATION_ID number, P_STATUS varchar2, P_ROW_VERSION number, O_RESULT out T_CURSOR);
-  procedure P_SAVE_CONCLUSION(P_ENTITY_ID number, P_ACTOR_PPNO varchar2, P_ROLE_ID number,
+  procedure P_SAVE_CONCLUSION(P_AUDITOR_ENTITY_ID number, P_ACTOR_PPNO varchar2, P_ROLE_ID number,
     P_WP_ID number, P_ROW_VERSION number, P_CONCLUSION_JSON clob, O_RESULT out T_CURSOR);
-  procedure P_SAVE_REVIEW_NOTE(P_ENTITY_ID number, P_ACTOR_PPNO varchar2, P_ROLE_ID number,
+  procedure P_SAVE_REVIEW_NOTE(P_AUDITOR_ENTITY_ID number, P_ACTOR_PPNO varchar2, P_ROLE_ID number,
     P_WP_ID number, P_NOTE_ID number, P_SECTION_KEY varchar2, P_NOTE_TEXT varchar2,
     P_RESPONSE_TEXT varchar2, P_STATUS varchar2, O_RESULT out T_CURSOR);
-  procedure P_WORKFLOW(P_ENTITY_ID number, P_ACTOR_PPNO varchar2, P_ROLE_ID number,
+  procedure P_WORKFLOW(P_AUDITOR_ENTITY_ID number, P_ACTOR_PPNO varchar2, P_ROLE_ID number,
     P_WP_ID number, P_ACTION varchar2, P_REMARKS varchar2, P_ROW_VERSION number, O_RESULT out T_CURSOR);
 end PKG_WORKING_PAPER;
 /
@@ -72,17 +72,14 @@ create or replace package body PKG_WORKING_PAPER as
     values(SEQ_WP_HISTORY.nextval,P_WP_ID,P_ACTION,P_ACTOR,P_ROLE,substr(P_DETAILS,1,4000),P_ROW_VERSION);
   end;
 
-  procedure ASSERT_ENGAGEMENT_ACCESS(P_ENG_ID number, P_ENTITY_ID number, P_ACTOR varchar2, P_ROLE_ID number) is
+  procedure ASSERT_ENGAGEMENT_ACCESS(P_ENG_ID number, P_AUDITOR_ENTITY_ID number, P_ACTOR varchar2, P_ROLE_ID number) is
     V_ENTITY number; V_COUNT number;
   begin
     select ENTITY_ID into V_ENTITY from T_AU_PLAN_ENG where ENG_ID=P_ENG_ID;
-    if V_ENTITY<>P_ENTITY_ID then raise_application_error(-20020,'Engagement not found or access denied.'); end if;
-    if nvl(P_ROLE_ID,-1) not in (1,2) then
-      select count(*) into V_COUNT from T_AU_AUDIT_TEAM_TASKLIST
-       where ENG_PLAN_ID=P_ENG_ID and to_char(TEAMMEMBER_PPNO)=trim(P_ACTOR)
-         and nvl(to_char(ISACTIVE),'1') in ('1','Y');
-      if V_COUNT=0 then raise_application_error(-20020,'Engagement not found or access denied.'); end if;
-    end if;
+    if P_AUDITOR_ENTITY_ID is null or P_ROLE_ID is null then raise_application_error(-20020,'Auditor context is missing.'); end if;
+    select count(*) into V_COUNT from T_AU_AUDIT_TEAM_TASKLIST T join T_AU_PLAN_ENG E on E.ENG_ID=T.ENG_PLAN_ID
+     where T.ENG_PLAN_ID=P_ENG_ID and to_char(T.TEAMMEMBER_PPNO)=trim(P_ACTOR) and E.STATUS between 4 and 12;
+    if V_COUNT=0 then raise_application_error(-20020,'Engagement not found or access denied.'); end if;
   exception when no_data_found then raise_application_error(-20020,'Engagement not found or access denied.');
   end;
 
@@ -94,13 +91,15 @@ create or replace package body PKG_WORKING_PAPER as
     if V_COUNT=0 then raise_application_error(-20022,'Reviewer is not an active engagement-team member.'); end if;
   end;
 
-  procedure ASSERT_ACCESS(P_WP_ID number, P_ENTITY_ID number, P_ACTOR varchar2, P_ROLE_ID number, P_MODE varchar2,
+  procedure ASSERT_ACCESS(P_WP_ID number, P_AUDITOR_ENTITY_ID number, P_ACTOR varchar2, P_ROLE_ID number, P_MODE varchar2,
     O_STATUS out varchar2, O_CURRENT out number, O_PREPARER out varchar2, O_REVIEWER out varchar2) is
-    V_STATUS T_WP_HEADER.STATUS%type; V_ENG_ID number; V_ROLE_ID number:=P_ROLE_ID;
+    V_STATUS T_WP_HEADER.STATUS%type; V_ENG_ID number; V_ROLE_ID number:=P_ROLE_ID; V_AUDITED_ENTITY number; V_HEADER_ENTITY number;
   begin
-    select STATUS,ROW_VERSION,PREPARER_PPNO,REVIEWER_PPNO,ENG_ID into V_STATUS,O_CURRENT,O_PREPARER,O_REVIEWER,V_ENG_ID
-      from T_WP_HEADER where WP_ID=P_WP_ID and ENTITY_ID=P_ENTITY_ID for update;
-    ASSERT_ENGAGEMENT_ACCESS(V_ENG_ID,P_ENTITY_ID,P_ACTOR,V_ROLE_ID);
+    select STATUS,ROW_VERSION,PREPARER_PPNO,REVIEWER_PPNO,ENG_ID,ENTITY_ID into V_STATUS,O_CURRENT,O_PREPARER,O_REVIEWER,V_ENG_ID,V_HEADER_ENTITY
+      from T_WP_HEADER where WP_ID=P_WP_ID for update;
+    ASSERT_ENGAGEMENT_ACCESS(V_ENG_ID,P_AUDITOR_ENTITY_ID,P_ACTOR,V_ROLE_ID);
+    select ENTITY_ID into V_AUDITED_ENTITY from T_AU_PLAN_ENG where ENG_ID=V_ENG_ID;
+    if V_AUDITED_ENTITY<>V_HEADER_ENTITY then raise_application_error(-20020,'Working paper audited-entity context is invalid.'); end if;
     O_STATUS:=V_STATUS;
     if P_MODE='EDIT' and (V_STATUS not in ('DRAFT','RETURNED') or O_PREPARER<>P_ACTOR) then
       raise_application_error(-20021,'Working paper is not editable by this user.');
@@ -110,35 +109,37 @@ create or replace package body PKG_WORKING_PAPER as
   exception when no_data_found then raise_application_error(-20020,'Working paper not found or access denied.');
   end;
 
-  procedure P_CREATE(P_ENTITY_ID number, P_ACTOR_PPNO varchar2, P_ROLE_ID number,
+  procedure P_CREATE(P_AUDITOR_ENTITY_ID number, P_ACTOR_PPNO varchar2, P_ROLE_ID number,
     P_ENG_ID number, P_PAPER_TYPE varchar2, P_REVIEWER_PPNO varchar2, P_DUE_DATE date, O_RESULT out T_CURSOR) is
-    V_ID number; V_REF varchar2(60);
+    V_ID number; V_REF varchar2(60); V_AUDITED_ENTITY number;
   begin
-    ASSERT_ENGAGEMENT_ACCESS(P_ENG_ID,P_ENTITY_ID,P_ACTOR_PPNO,P_ROLE_ID);
+    ASSERT_ENGAGEMENT_ACCESS(P_ENG_ID,P_AUDITOR_ENTITY_ID,P_ACTOR_PPNO,P_ROLE_ID);
     ASSERT_REVIEWER_ACCESS(P_ENG_ID,P_REVIEWER_PPNO);
+    select ENTITY_ID into V_AUDITED_ENTITY from T_AU_PLAN_ENG where ENG_ID=P_ENG_ID;
     if P_PAPER_TYPE not in ('LCF','VCH','AOF','FAS','CCT') then raise_application_error(-20001,'Invalid paper type.'); end if;
     if P_REVIEWER_PPNO=P_ACTOR_PPNO then raise_application_error(-20002,'Preparer and reviewer must be different.'); end if;
     V_ID:=SEQ_WP_HEADER.nextval;
     V_REF:=P_PAPER_TYPE||'-'||P_ENG_ID||'-'||to_char(V_ID,'FM000000');
     insert into T_WP_HEADER(WP_ID,ROOT_WP_ID,ENG_ID,ENTITY_ID,PAPER_TYPE,REFERENCE_NO,PREPARER_PPNO,REVIEWER_PPNO,DUE_DATE,
       PLAN_JSON,CONCLUSION_JSON,CREATED_BY,UPDATED_BY)
-    values(V_ID,V_ID,P_ENG_ID,P_ENTITY_ID,P_PAPER_TYPE,V_REF,P_ACTOR_PPNO,P_REVIEWER_PPNO,P_DUE_DATE,'{}','{}',P_ACTOR_PPNO,P_ACTOR_PPNO);
+    values(V_ID,V_ID,P_ENG_ID,V_AUDITED_ENTITY,P_PAPER_TYPE,V_REF,P_ACTOR_PPNO,P_REVIEWER_PPNO,P_DUE_DATE,'{}','{}',P_ACTOR_PPNO,P_ACTOR_PPNO);
     ADD_HISTORY(V_ID,'CREATED',P_ACTOR_PPNO,P_ROLE_ID,'Working paper created',1);
     commit; OPEN_RESULT(O_RESULT,'SUCCESS','Working paper created.',V_ID,V_ID,1);
   exception when dup_val_on_index then rollback; OPEN_RESULT(O_RESULT,'ERROR','A working paper already exists for this engagement and type.');
     when others then rollback; raise;
   end;
 
-  procedure P_GET_WORKSPACE(P_ENTITY_ID number, P_ACTOR_PPNO varchar2, P_ROLE_ID number,
+  procedure P_GET_WORKSPACE(P_AUDITOR_ENTITY_ID number, P_ACTOR_PPNO varchar2, P_ROLE_ID number,
     P_WP_ID number, P_ENG_ID number, P_PAPER_TYPE varchar2, O_HEADER out T_CURSOR, O_ITEMS out T_CURSOR,
     O_EVIDENCE out T_CURSOR, O_EXCEPTIONS out T_CURSOR, O_NOTES out T_CURSOR, O_HISTORY out T_CURSOR, O_LEGACY out T_CURSOR) is
-    V_ID number;
+    V_ID number; V_AUDITED_ENTITY number;
   begin
-    ASSERT_ENGAGEMENT_ACCESS(P_ENG_ID,P_ENTITY_ID,P_ACTOR_PPNO,P_ROLE_ID);
+    ASSERT_ENGAGEMENT_ACCESS(P_ENG_ID,P_AUDITOR_ENTITY_ID,P_ACTOR_PPNO,P_ROLE_ID);
+    select ENTITY_ID into V_AUDITED_ENTITY from T_AU_PLAN_ENG where ENG_ID=P_ENG_ID;
     if P_WP_ID is null then
-      select max(WP_ID) keep (dense_rank last order by VERSION_NO) into V_ID from T_WP_HEADER where ENTITY_ID=P_ENTITY_ID and ENG_ID=P_ENG_ID and PAPER_TYPE=P_PAPER_TYPE;
+      select max(WP_ID) keep (dense_rank last order by VERSION_NO) into V_ID from T_WP_HEADER where ENTITY_ID=V_AUDITED_ENTITY and ENG_ID=P_ENG_ID and PAPER_TYPE=P_PAPER_TYPE;
     else
-      select max(WP_ID) into V_ID from T_WP_HEADER where ENTITY_ID=P_ENTITY_ID and ENG_ID=P_ENG_ID and PAPER_TYPE=P_PAPER_TYPE and WP_ID=P_WP_ID;
+      select max(WP_ID) into V_ID from T_WP_HEADER where ENTITY_ID=V_AUDITED_ENTITY and ENG_ID=P_ENG_ID and PAPER_TYPE=P_PAPER_TYPE and WP_ID=P_WP_ID;
     end if;
     open O_HEADER for select WP_ID,ENG_ID,ENTITY_ID,PAPER_TYPE,REFERENCE_NO,VERSION_NO,STATUS,PREPARER_PPNO,REVIEWER_PPNO,
       DUE_DATE,PLAN_JSON,CONCLUSION_JSON,ROW_VERSION from T_WP_HEADER where WP_ID=V_ID;
@@ -179,16 +180,16 @@ create or replace package body PKG_WORKING_PAPER as
     open O_LEGACY for select null SOURCE_TABLE,null SOURCE_ID,null DISPLAY_REFERENCE,null LEGACY_VALUES_JSON from dual where 1=0;
   end;
 
-  procedure P_SAVE_PLAN(P_ENTITY_ID number,P_ACTOR_PPNO varchar2,P_ROLE_ID number,P_WP_ID number,P_ROW_VERSION number,P_PLAN_JSON clob,O_RESULT out T_CURSOR) is
+  procedure P_SAVE_PLAN(P_AUDITOR_ENTITY_ID number,P_ACTOR_PPNO varchar2,P_ROLE_ID number,P_WP_ID number,P_ROW_VERSION number,P_PLAN_JSON clob,O_RESULT out T_CURSOR) is
     S varchar2(20); V number; P varchar2(30); R varchar2(30);
-  begin ASSERT_ACCESS(P_WP_ID,P_ENTITY_ID,P_ACTOR_PPNO,P_ROLE_ID,'EDIT',S,V,P,R); if V<>P_ROW_VERSION then raise_application_error(-20023,'Working paper was changed by another user.'); end if;
+  begin ASSERT_ACCESS(P_WP_ID,P_AUDITOR_ENTITY_ID,P_ACTOR_PPNO,P_ROLE_ID,'EDIT',S,V,P,R); if V<>P_ROW_VERSION then raise_application_error(-20023,'Working paper was changed by another user.'); end if;
     update T_WP_HEADER set PLAN_JSON=P_PLAN_JSON,ROW_VERSION=ROW_VERSION+1,UPDATED_BY=P_ACTOR_PPNO,UPDATED_ON=systimestamp where WP_ID=P_WP_ID;
     ADD_HISTORY(P_WP_ID,'PLAN_SAVED',P_ACTOR_PPNO,P_ROLE_ID,'Plan updated',V+1); commit; OPEN_RESULT(O_RESULT,'SUCCESS','Plan saved.',P_WP_ID,P_WP_ID,V+1);
   exception when others then rollback; raise; end;
 
-  procedure P_SAVE_ITEM(P_ENTITY_ID number,P_ACTOR_PPNO varchar2,P_ROLE_ID number,P_WP_ID number,P_ITEM_ID number,P_ITEM_REF varchar2,P_DETAILS_JSON clob,P_CALC_JSON clob,P_RESULT varchar2,P_COMMENT varchar2,P_ROW_VERSION number,O_RESULT out T_CURSOR) is
+  procedure P_SAVE_ITEM(P_AUDITOR_ENTITY_ID number,P_ACTOR_PPNO varchar2,P_ROLE_ID number,P_WP_ID number,P_ITEM_ID number,P_ITEM_REF varchar2,P_DETAILS_JSON clob,P_CALC_JSON clob,P_RESULT varchar2,P_COMMENT varchar2,P_ROW_VERSION number,O_RESULT out T_CURSOR) is
     S varchar2(20); V number; P varchar2(30); R varchar2(30); I number; RV number;
-  begin ASSERT_ACCESS(P_WP_ID,P_ENTITY_ID,P_ACTOR_PPNO,P_ROLE_ID,'EDIT',S,V,P,R);
+  begin ASSERT_ACCESS(P_WP_ID,P_AUDITOR_ENTITY_ID,P_ACTOR_PPNO,P_ROLE_ID,'EDIT',S,V,P,R);
     if P_ITEM_ID is null then I:=SEQ_WP_ITEM.nextval; RV:=1; insert into T_WP_ITEM(ITEM_ID,WP_ID,ITEM_REFERENCE,DETAILS_JSON,CALCULATIONS_JSON,RESULT,AUDITOR_COMMENT,CREATED_BY,UPDATED_BY)
       values(I,P_WP_ID,P_ITEM_REF,P_DETAILS_JSON,P_CALC_JSON,P_RESULT,P_COMMENT,P_ACTOR_PPNO,P_ACTOR_PPNO);
     else update T_WP_ITEM set ITEM_REFERENCE=P_ITEM_REF,DETAILS_JSON=P_DETAILS_JSON,CALCULATIONS_JSON=P_CALC_JSON,RESULT=P_RESULT,AUDITOR_COMMENT=P_COMMENT,
@@ -198,9 +199,9 @@ create or replace package body PKG_WORKING_PAPER as
     ADD_HISTORY(P_WP_ID,'ITEM_SAVED',P_ACTOR_PPNO,P_ROLE_ID,'Item '||I,V+1); commit; OPEN_RESULT(O_RESULT,'SUCCESS','Test item saved.',P_WP_ID,I,RV);
   exception when others then rollback; raise; end;
 
-  procedure P_LINK_EVIDENCE(P_ENTITY_ID number,P_ACTOR_PPNO varchar2,P_ROLE_ID number,P_WP_ID number,P_ITEM_ID number,P_EXCEPTION_ID number,P_EXISTING_EVIDENCE_ID varchar2,P_TITLE varchar2,P_EVIDENCE_TYPE varchar2,P_SOURCE varchar2,P_EVIDENCE_DATE date,O_RESULT out T_CURSOR) is
+  procedure P_LINK_EVIDENCE(P_AUDITOR_ENTITY_ID number,P_ACTOR_PPNO varchar2,P_ROLE_ID number,P_WP_ID number,P_ITEM_ID number,P_EXCEPTION_ID number,P_EXISTING_EVIDENCE_ID varchar2,P_TITLE varchar2,P_EVIDENCE_TYPE varchar2,P_SOURCE varchar2,P_EVIDENCE_DATE date,O_RESULT out T_CURSOR) is
     S varchar2(20); V number; P varchar2(30); R varchar2(30); I number; C number;
-  begin ASSERT_ACCESS(P_WP_ID,P_ENTITY_ID,P_ACTOR_PPNO,P_ROLE_ID,'EDIT',S,V,P,R);
+  begin ASSERT_ACCESS(P_WP_ID,P_AUDITOR_ENTITY_ID,P_ACTOR_PPNO,P_ROLE_ID,'EDIT',S,V,P,R);
     if P_ITEM_ID is not null then select count(*) into C from T_WP_ITEM where ITEM_ID=P_ITEM_ID and WP_ID=P_WP_ID; if C=0 then raise_application_error(-20026,'Evidence item is outside this working paper.'); end if; end if;
     if P_EXCEPTION_ID is not null then select count(*) into C from T_WP_EXCEPTION where EXCEPTION_ID=P_EXCEPTION_ID and WP_ID=P_WP_ID; if C=0 then raise_application_error(-20027,'Evidence exception is outside this working paper.'); end if; end if;
     I:=SEQ_WP_EVIDENCE_LINK.nextval;
@@ -209,9 +210,9 @@ create or replace package body PKG_WORKING_PAPER as
     ADD_HISTORY(P_WP_ID,'EVIDENCE_LINKED',P_ACTOR_PPNO,P_ROLE_ID,'Evidence link '||I,V+1); commit; OPEN_RESULT(O_RESULT,'SUCCESS','Evidence linked.',P_WP_ID,I,V+1);
   exception when others then rollback; raise; end;
 
-  procedure P_SAVE_EXCEPTION(P_ENTITY_ID number,P_ACTOR_PPNO varchar2,P_ROLE_ID number,P_WP_ID number,P_EXCEPTION_ID number,P_ITEM_ID number,P_CRITERIA varchar2,P_CONDITION varchar2,P_CAUSE varchar2,P_IMPACT varchar2,P_RISK varchar2,P_OWNER_PPNO varchar2,P_DUE_DATE date,P_OBSERVATION_ID number,P_STATUS varchar2,P_ROW_VERSION number,O_RESULT out T_CURSOR) is
+  procedure P_SAVE_EXCEPTION(P_AUDITOR_ENTITY_ID number,P_ACTOR_PPNO varchar2,P_ROLE_ID number,P_WP_ID number,P_EXCEPTION_ID number,P_ITEM_ID number,P_CRITERIA varchar2,P_CONDITION varchar2,P_CAUSE varchar2,P_IMPACT varchar2,P_RISK varchar2,P_OWNER_PPNO varchar2,P_DUE_DATE date,P_OBSERVATION_ID number,P_STATUS varchar2,P_ROW_VERSION number,O_RESULT out T_CURSOR) is
     S varchar2(20); V number; P varchar2(30); R varchar2(30); I number; RV number; C number;
-  begin ASSERT_ACCESS(P_WP_ID,P_ENTITY_ID,P_ACTOR_PPNO,P_ROLE_ID,'EDIT',S,V,P,R);
+  begin ASSERT_ACCESS(P_WP_ID,P_AUDITOR_ENTITY_ID,P_ACTOR_PPNO,P_ROLE_ID,'EDIT',S,V,P,R);
     select count(*) into C from T_WP_ITEM where ITEM_ID=P_ITEM_ID and WP_ID=P_WP_ID;
     if C=0 then raise_application_error(-20028,'Exception item is outside this working paper.'); end if;
     if P_EXCEPTION_ID is null then I:=SEQ_WP_EXCEPTION.nextval; RV:=1; insert into T_WP_EXCEPTION(EXCEPTION_ID,WP_ID,ITEM_ID,CRITERIA,CONDITION,CAUSE,IMPACT,RISK_RATING,OWNER_PPNO,DUE_DATE,OBSERVATION_ID,STATUS,CREATED_BY,UPDATED_BY)
@@ -223,16 +224,16 @@ create or replace package body PKG_WORKING_PAPER as
     ADD_HISTORY(P_WP_ID,'EXCEPTION_SAVED',P_ACTOR_PPNO,P_ROLE_ID,'Exception '||I,V+1); commit; OPEN_RESULT(O_RESULT,'SUCCESS','Exception saved.',P_WP_ID,I,RV);
   exception when others then rollback; raise; end;
 
-  procedure P_SAVE_CONCLUSION(P_ENTITY_ID number,P_ACTOR_PPNO varchar2,P_ROLE_ID number,P_WP_ID number,P_ROW_VERSION number,P_CONCLUSION_JSON clob,O_RESULT out T_CURSOR) is
+  procedure P_SAVE_CONCLUSION(P_AUDITOR_ENTITY_ID number,P_ACTOR_PPNO varchar2,P_ROLE_ID number,P_WP_ID number,P_ROW_VERSION number,P_CONCLUSION_JSON clob,O_RESULT out T_CURSOR) is
     S varchar2(20); V number; P varchar2(30); R varchar2(30);
-  begin ASSERT_ACCESS(P_WP_ID,P_ENTITY_ID,P_ACTOR_PPNO,P_ROLE_ID,'EDIT',S,V,P,R); if V<>P_ROW_VERSION then raise_application_error(-20023,'Working paper was changed by another user.'); end if;
+  begin ASSERT_ACCESS(P_WP_ID,P_AUDITOR_ENTITY_ID,P_ACTOR_PPNO,P_ROLE_ID,'EDIT',S,V,P,R); if V<>P_ROW_VERSION then raise_application_error(-20023,'Working paper was changed by another user.'); end if;
     update T_WP_HEADER set CONCLUSION_JSON=P_CONCLUSION_JSON,ROW_VERSION=ROW_VERSION+1,UPDATED_BY=P_ACTOR_PPNO,UPDATED_ON=systimestamp where WP_ID=P_WP_ID;
     ADD_HISTORY(P_WP_ID,'CONCLUSION_SAVED',P_ACTOR_PPNO,P_ROLE_ID,'Conclusion updated',V+1); commit; OPEN_RESULT(O_RESULT,'SUCCESS','Conclusion saved.',P_WP_ID,P_WP_ID,V+1);
   exception when others then rollback; raise; end;
 
-  procedure P_SAVE_REVIEW_NOTE(P_ENTITY_ID number,P_ACTOR_PPNO varchar2,P_ROLE_ID number,P_WP_ID number,P_NOTE_ID number,P_SECTION_KEY varchar2,P_NOTE_TEXT varchar2,P_RESPONSE_TEXT varchar2,P_STATUS varchar2,O_RESULT out T_CURSOR) is
+  procedure P_SAVE_REVIEW_NOTE(P_AUDITOR_ENTITY_ID number,P_ACTOR_PPNO varchar2,P_ROLE_ID number,P_WP_ID number,P_NOTE_ID number,P_SECTION_KEY varchar2,P_NOTE_TEXT varchar2,P_RESPONSE_TEXT varchar2,P_STATUS varchar2,O_RESULT out T_CURSOR) is
     S varchar2(20); V number; P varchar2(30); R varchar2(30); I number; OLD_STATUS varchar2(20);
-  begin ASSERT_ACCESS(P_WP_ID,P_ENTITY_ID,P_ACTOR_PPNO,P_ROLE_ID,'ANY',S,V,P,R);
+  begin ASSERT_ACCESS(P_WP_ID,P_AUDITOR_ENTITY_ID,P_ACTOR_PPNO,P_ROLE_ID,'ANY',S,V,P,R);
     if S<>'IN_REVIEW' then raise_application_error(-20029,'Review notes may only change during review.'); end if;
     if P_NOTE_ID is null then
       if P_ACTOR_PPNO<>R then raise_application_error(-20022,'Only the assigned reviewer may create review notes.'); end if;
@@ -252,22 +253,22 @@ create or replace package body PKG_WORKING_PAPER as
     ADD_HISTORY(P_WP_ID,'REVIEW_NOTE_SAVED',P_ACTOR_PPNO,P_ROLE_ID,'Review note '||I,V+1); commit; OPEN_RESULT(O_RESULT,'SUCCESS','Review note saved.',P_WP_ID,I,V+1);
   exception when no_data_found then rollback; raise_application_error(-20040,'Review note not found or access denied.'); when others then rollback; raise; end;
 
-  procedure P_WORKFLOW(P_ENTITY_ID number,P_ACTOR_PPNO varchar2,P_ROLE_ID number,P_WP_ID number,P_ACTION varchar2,P_REMARKS varchar2,P_ROW_VERSION number,O_RESULT out T_CURSOR) is
+  procedure P_WORKFLOW(P_AUDITOR_ENTITY_ID number,P_ACTOR_PPNO varchar2,P_ROLE_ID number,P_WP_ID number,P_ACTION varchar2,P_REMARKS varchar2,P_ROW_VERSION number,O_RESULT out T_CURSOR) is
     S varchar2(20); V number; P varchar2(30); R varchar2(30); N varchar2(20); C number;
-    NEW_ID number; NEW_VER number; ROOT_ID number; ENG number; PT varchar2(3); REF varchar2(60); DUE date; PLAN clob; CONC clob; NI number; NX number;
+    NEW_ID number; NEW_VER number; ROOT_ID number; ENG number; AUDITED_ENTITY number; PT varchar2(3); REF varchar2(60); DUE date; PLAN clob; CONC clob; NI number; NX number;
     type T_ID_MAP is table of number index by varchar2(40); ITEM_MAP T_ID_MAP; EX_MAP T_ID_MAP;
-  begin ASSERT_ACCESS(P_WP_ID,P_ENTITY_ID,P_ACTOR_PPNO,P_ROLE_ID,'ANY',S,V,P,R); if V<>P_ROW_VERSION then raise_application_error(-20023,'Working paper was changed by another user.'); end if;
+  begin ASSERT_ACCESS(P_WP_ID,P_AUDITOR_ENTITY_ID,P_ACTOR_PPNO,P_ROLE_ID,'ANY',S,V,P,R); if V<>P_ROW_VERSION then raise_application_error(-20023,'Working paper was changed by another user.'); end if;
     if P_ACTION='SUBMIT' and S in ('DRAFT','RETURNED') and P_ACTOR_PPNO=P then ASSERT_COMPLETE(P_WP_ID); N:='IN_REVIEW';
     elsif P_ACTION='RETURN' and S='IN_REVIEW' and P_ACTOR_PPNO=R then if P_REMARKS is null then raise_application_error(-20041,'Return remarks are required.'); end if; N:='RETURNED';
     elsif P_ACTION='REVIEW' and S='IN_REVIEW' and P_ACTOR_PPNO=R then ASSERT_COMPLETE(P_WP_ID); select count(*) into C from T_WP_REVIEW_NOTE where WP_ID=P_WP_ID and STATUS<>'CLOSED'; if C>0 then raise_application_error(-20024,'Open review notes must be closed.'); end if; N:='REVIEWED';
     elsif P_ACTION='APPROVE' and S='REVIEWED' and P_ACTOR_PPNO=R then ASSERT_COMPLETE(P_WP_ID); select count(*) into C from T_WP_REVIEW_NOTE where WP_ID=P_WP_ID and STATUS<>'CLOSED'; if C>0 then raise_application_error(-20024,'Open review notes must be closed.'); end if; N:='APPROVED';
     elsif P_ACTION='REOPEN' and S='APPROVED' and P_ROLE_ID in (1,2) then
       if P_REMARKS is null then raise_application_error(-20042,'Reopen reason is required.'); end if;
-      select ROOT_WP_ID,ENG_ID,PAPER_TYPE,DUE_DATE,PLAN_JSON,CONCLUSION_JSON into ROOT_ID,ENG,PT,DUE,PLAN,CONC from T_WP_HEADER where WP_ID=P_WP_ID;
+      select ROOT_WP_ID,ENG_ID,ENTITY_ID,PAPER_TYPE,DUE_DATE,PLAN_JSON,CONCLUSION_JSON into ROOT_ID,ENG,AUDITED_ENTITY,PT,DUE,PLAN,CONC from T_WP_HEADER where WP_ID=P_WP_ID;
       select max(VERSION_NO)+1 into NEW_VER from T_WP_HEADER where ROOT_WP_ID=ROOT_ID;
       NEW_ID:=SEQ_WP_HEADER.nextval; REF:=PT||'-'||ENG||'-V'||NEW_VER||'-'||to_char(NEW_ID,'FM000000');
       insert into T_WP_HEADER(WP_ID,ROOT_WP_ID,SUPERSEDES_WP_ID,ENG_ID,ENTITY_ID,PAPER_TYPE,REFERENCE_NO,VERSION_NO,STATUS,PREPARER_PPNO,REVIEWER_PPNO,DUE_DATE,PLAN_JSON,CONCLUSION_JSON,CREATED_BY,UPDATED_BY)
-      values(NEW_ID,ROOT_ID,P_WP_ID,ENG,P_ENTITY_ID,PT,REF,NEW_VER,'RETURNED',P,R,DUE,PLAN,CONC,P_ACTOR_PPNO,P_ACTOR_PPNO);
+      values(NEW_ID,ROOT_ID,P_WP_ID,ENG,AUDITED_ENTITY,PT,REF,NEW_VER,'RETURNED',P,R,DUE,PLAN,CONC,P_ACTOR_PPNO,P_ACTOR_PPNO);
       for X in (select * from T_WP_ITEM where WP_ID=P_WP_ID order by ITEM_ID) loop NI:=SEQ_WP_ITEM.nextval; ITEM_MAP(to_char(X.ITEM_ID)):=NI;
         insert into T_WP_ITEM(ITEM_ID,WP_ID,ITEM_REFERENCE,DETAILS_JSON,CALCULATIONS_JSON,RESULT,AUDITOR_COMMENT,CREATED_BY,UPDATED_BY) values(NI,NEW_ID,X.ITEM_REFERENCE,X.DETAILS_JSON,X.CALCULATIONS_JSON,X.RESULT,X.AUDITOR_COMMENT,P_ACTOR_PPNO,P_ACTOR_PPNO); end loop;
       for X in (select * from T_WP_EXCEPTION where WP_ID=P_WP_ID order by EXCEPTION_ID) loop NX:=SEQ_WP_EXCEPTION.nextval; EX_MAP(to_char(X.EXCEPTION_ID)):=NX;
