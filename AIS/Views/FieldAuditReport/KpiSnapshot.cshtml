@@ -113,6 +113,9 @@
     <script>
         (() => {
             const engId = @Model.EngagementId;
+            const kpiRowsUrl = '@Url.Action("GetKpiSnapshotRows", "FieldAuditReport", new { engId = Model.EngagementId })';
+            const saveKpiRowsUrl = '@Url.Action("SaveKpiSnapshotRows", "FieldAuditReport", new { engId = Model.EngagementId })';
+            const kpiOptionsUrl = '@Url.Action("GetKpiOptions", "FieldAuditReport", new { engId = Model.EngagementId })';
             const entryTableBody = document.querySelector('#kpi-snapshot-entry-table tbody');
             const savedTableBody = document.querySelector('#kpi-snapshot-saved-table tbody');
             const addButton = document.getElementById('add-kpi-snapshot-row');
@@ -395,7 +398,7 @@
 
             const loadKpiRows = () => {
                 statusEl.textContent = 'Loading...';
-                fetch(`/FieldAuditReport/GetKpiSnapshotRows?engId=${engId}`)
+                fetch(kpiRowsUrl)
                     .then(response => response.json())
                     .then(data => {
                         const rows = data?.rows ?? [];
@@ -437,7 +440,7 @@
                 statusEl.textContent = 'Saving...';
                 const payloadRows = collectKpiRows();
                 console.log('KPI payload mapping check', payloadRows.map(row => ({ actualFigure: row.actualValue, targetFigure: row.targetValue })));
-                fetch(`/FieldAuditReport/SaveKpiSnapshotRows?engId=${engId}`, {
+                fetch(saveKpiRowsUrl, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
@@ -469,7 +472,7 @@
 
             addButton?.addEventListener('click', () => addRow());
             saveButton?.addEventListener('click', saveKpiRows);
-            fetch(`/FieldAuditReport/GetKpiOptions?engId=${engId}`)
+            fetch(kpiOptionsUrl)
                 .then(response => response.json())
                 .then(data => {
                     kpiOptions.length = 0;

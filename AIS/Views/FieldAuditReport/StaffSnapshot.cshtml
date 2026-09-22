@@ -107,6 +107,8 @@
             const form = document.querySelector('form[method="post"]');
             const engIdValue = @((engagementSelector?.ActiveEngagementId ?? 0));
             const engId = engIdValue > 0 ? engIdValue : null;
+            const staffRowsUrl = '@Url.Action("GetStaffSnapshotRows", "FieldAuditReport", new { engId = Model.EngagementId })';
+            const saveStaffRowsUrl = '@Url.Action("SaveStaffSnapshotRows", "FieldAuditReport", new { engId = Model.EngagementId })';
             const saveButton = document.getElementById('save-staff-snapshot');
             const statusEl = document.getElementById('staff-snapshot-status');
             const cancelButton = document.getElementById('cancel-staff-edit');
@@ -172,7 +174,7 @@
                     return;
                 }
                 statusEl.textContent = 'Loading...';
-                fetch(`/FieldAuditReport/GetStaffSnapshotRows?engId=${engId}`)
+                fetch(staffRowsUrl)
                     .then(response => response.json())
                     .then(data => {
                         const rows = data?.rows ?? [];
@@ -241,7 +243,7 @@
                     return;
                 }
                 statusEl.textContent = 'Saving...';
-                fetch(`/FieldAuditReport/SaveStaffSnapshotRows?engId=${engId}`, {
+                fetch(saveStaffRowsUrl, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',

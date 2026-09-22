@@ -113,6 +113,9 @@
     <script>
         const nplCategoryOptions = [];
         const nplCategoryLookup = new Map();
+        const nplRowsUrl = '@Url.Action("GetNplSnapshotRows", "FieldAuditReport", new { engId = Model.EngagementId })';
+        const saveNplRowsUrl = '@Url.Action("SaveNplSnapshotRows", "FieldAuditReport", new { engId = Model.EngagementId })';
+        const nplCategoryOptionsUrl = '@Url.Action("GetNplCategoryOptions", "FieldAuditReport", new { engId = Model.EngagementId })';
         const previewTable = document.getElementById('npl-preview-table');
         let savedRows = [];
         let isEditing = false;
@@ -288,7 +291,7 @@
             }
 
             statusEl.textContent = 'Loading...';
-                fetch(`/FieldAuditReport/GetNplSnapshotRows?engId=${engId}`)
+                fetch(nplRowsUrl)
                     .then(response => response.json())
                     .then(data => {
                         const rows = data?.rows ?? [];
@@ -459,7 +462,7 @@
             }
 
             statusEl.textContent = 'Saving...';
-            fetch(`/FieldAuditReport/SaveNplSnapshotRows?engId=${engId}`, {
+            fetch(saveNplRowsUrl, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -495,7 +498,7 @@
         document.getElementById('add-npl-snapshot-row')?.addEventListener('click', () => addNplRow());
         document.getElementById('save-npl-snapshot')?.addEventListener('click', saveNplRows);
         const engId = @Model.EngagementId;
-        fetch(`/FieldAuditReport/GetNplCategoryOptions?engId=${engId}`)
+        fetch(nplCategoryOptionsUrl)
             .then(response => response.json())
             .then(data => {
                 nplCategoryOptions.length = 0;

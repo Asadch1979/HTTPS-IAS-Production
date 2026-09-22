@@ -32,7 +32,9 @@
                                 <td>@(row.ReportStatus == "FINAL" ? "Finalized" : "In progress")</td>
                                 <td>
                                     <a class="btn btn-sm btn-primary" title="Generate Report"
-                                       href="/FieldAuditReport/GeneratePdf?engId=@row.EngId">
+                                       asp-controller="FieldAuditReportPdf"
+                                       asp-action="GeneratePdf"
+                                       asp-route-engId="@row.EngId">
                                         Generate Report
                                     </a>
                                 </td>
