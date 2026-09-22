@@ -1,0 +1,98 @@
+-- Allow the atomic N -> P -> Y/N system-error email claim lifecycle.
+-- Run as the IAS application schema owner before deploying the application.
+-- This script does not modify PKG_LG and does not disable the constraint.
+
+WHENEVER SQLERROR EXIT SQL.SQLCODE ROLLBACK
+SET SERVEROUTPUT ON
+
+DECLARE
+  v_table_name       USER_CONSTRAINTS.TABLE_NAME%TYPE;
+  v_named_count      PLS_INTEGER;
+  v_column_count     PLS_INTEGER;
+  v_invalid_count    PLS_INTEGER;
+  v_compatible_count PLS_INTEGER;
+BEGIN
+  SELECT COUNT(*), MAX(TABLE_NAME)
+    INTO v_named_count, v_table_name
+    FROM USER_CONSTRAINTS
+   WHERE CONSTRAINT_NAME = 'SYS_C001221586'
+     AND CONSTRAINT_TYPE = 'C';
+
+  SELECT COUNT(*)
+    INTO v_column_count
+    FROM USER_CONS_COLUMNS
+   WHERE CONSTRAINT_NAME = 'SYS_C001221586'
+     AND TABLE_NAME = 'T_AU_SYSTEM_ERROR_MASTER'
+     AND COLUMN_NAME = 'EMAIL_SENT';
+
+  IF v_named_count > 0
+     AND (v_table_name <> 'T_AU_SYSTEM_ERROR_MASTER' OR v_column_count <> 1) THEN
+    RAISE_APPLICATION_ERROR(-20001,
+      'SYS_C001221586 is not the expected EMAIL_SENT check constraint.');
+  END IF;
+
+  SELECT COUNT(*)
+    INTO v_invalid_count
+    FROM T_AU_SYSTEM_ERROR_MASTER
+   WHERE EMAIL_SENT IS NOT NULL
+     AND EMAIL_SENT NOT IN ('Y', 'N', 'P');
+
+  IF v_invalid_count > 0 THEN
+    RAISE_APPLICATION_ERROR(-20002,
+      'T_AU_SYSTEM_ERROR_MASTER contains unsupported EMAIL_SENT values.');
+  END IF;
+
+  FOR c IN (
+    SELECT DISTINCT uc.CONSTRAINT_NAME
+      FROM USER_CONSTRAINTS uc
+      JOIN USER_CONS_COLUMNS ucc
+        ON ucc.CONSTRAINT_NAME = uc.CONSTRAINT_NAME
+       AND ucc.TABLE_NAME = uc.TABLE_NAME
+     WHERE uc.TABLE_NAME = 'T_AU_SYSTEM_ERROR_MASTER'
+       AND uc.CONSTRAINT_TYPE = 'C'
+       AND ucc.COLUMN_NAME = 'EMAIL_SENT'
+       AND UPPER(uc.SEARCH_CONDITION_VC) LIKE '%EMAIL_SENT%'
+       AND UPPER(uc.SEARCH_CONDITION_VC) NOT LIKE '%''P''%'
+  ) LOOP
+    EXECUTE IMMEDIATE
+      'ALTER TABLE T_AU_SYSTEM_ERROR_MASTER DROP CONSTRAINT ' ||
+      DBMS_ASSERT.SIMPLE_SQL_NAME(c.CONSTRAINT_NAME);
+  END LOOP;
+
+  SELECT COUNT(*)
+    INTO v_compatible_count
+    FROM USER_CONSTRAINTS uc
+    JOIN USER_CONS_COLUMNS ucc
+      ON ucc.CONSTRAINT_NAME = uc.CONSTRAINT_NAME
+     AND ucc.TABLE_NAME = uc.TABLE_NAME
+   WHERE uc.TABLE_NAME = 'T_AU_SYSTEM_ERROR_MASTER'
+     AND uc.CONSTRAINT_TYPE = 'C'
+     AND ucc.COLUMN_NAME = 'EMAIL_SENT'
+     AND UPPER(uc.SEARCH_CONDITION_VC) LIKE '%''Y''%'
+     AND UPPER(uc.SEARCH_CONDITION_VC) LIKE '%''N''%'
+     AND UPPER(uc.SEARCH_CONDITION_VC) LIKE '%''P''%';
+
+  IF v_compatible_count = 0 THEN
+    EXECUTE IMMEDIATE q'[
+      ALTER TABLE T_AU_SYSTEM_ERROR_MASTER
+      ADD CONSTRAINT CK_AU_SYS_ERR_EMAIL_SENT
+      CHECK (EMAIL_SENT IN ('Y','N','P')) ENABLE VALIDATE]';
+  END IF;
+
+  DBMS_OUTPUT.PUT_LINE('EMAIL_SENT constraint supports Y, N and P.');
+END;
+/
+
+SELECT uc.CONSTRAINT_NAME,
+       uc.STATUS,
+       uc.VALIDATED,
+       uc.SEARCH_CONDITION_VC
+  FROM USER_CONSTRAINTS uc
+  JOIN USER_CONS_COLUMNS ucc
+    ON ucc.CONSTRAINT_NAME = uc.CONSTRAINT_NAME
+   AND ucc.TABLE_NAME = uc.TABLE_NAME
+ WHERE uc.TABLE_NAME = 'T_AU_SYSTEM_ERROR_MASTER'
+   AND uc.CONSTRAINT_TYPE = 'C'
+   AND ucc.COLUMN_NAME = 'EMAIL_SENT';
+
+EXIT SUCCESS

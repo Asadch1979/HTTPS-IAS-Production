@@ -213,4 +213,10 @@ namespace AIS.Models.FieldAuditReport
         public List<FieldAuditPdfStatisticsRowModel> StatisticsRows { get; set; } = new List<FieldAuditPdfStatisticsRowModel>();
         public FieldAuditReportOverviewModel Overview { get; set; } = new FieldAuditReportOverviewModel();
         }
+
+    public class FieldAuditInputSaveRequest
+        {
+        public string SectionCode { get; set; }
+        public Dictionary<string, string> Fields { get; set; } = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        }
     }

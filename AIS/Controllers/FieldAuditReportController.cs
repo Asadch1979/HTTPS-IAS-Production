@@ -632,7 +632,7 @@ namespace AIS.Controllers
 
         [HttpPost]
         [AIS.Filters.ApplicationAudit("FIELD_AUDIT_INPUTS_SAVED", "AUDIT_REPORT", "FIELD AUDIT REPORT", "PKG_FRPT", "P_SAVE_TEXT_BLOCK", EngagementIdItem = "ApplicationAudit.EngagementId", ObjectType = "ENGAGEMENT", ObjectIdItem = "ApplicationAudit.EngagementId", RequireItem = "ApplicationAudit.EngagementId")]
-        public IActionResult SaveFieldAuditInputs(FieldAuditInputSectionViewModel model, string submitAction, string returnAction)
+        public IActionResult SaveFieldAuditInputs(FieldAuditInputSaveRequest model, string submitAction, string returnAction)
             {
             var redirect = EnsureAuthorized();
             if (redirect != null)
