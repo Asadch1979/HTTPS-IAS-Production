@@ -14,6 +14,7 @@
         Url.Action("ClearEngagement", currentController) ?? $"/{currentController}/ClearEngagement",
         Context.Request.PathBase.Value);
     var returnUrl = $"{currentPageUrl}{Context.Request.QueryString}";
+    var clearReturnUrl = AIS.Utilities.ApplicationPathHelper.RemoveQueryParameter(returnUrl, "engId");
     var useFieldAuditReportQuerySelection = string.Equals(currentController, "FieldAuditReport", StringComparison.OrdinalIgnoreCase);
 }
 
@@ -79,7 +80,7 @@
                 {
                     <form method="post" action="@clearEngagementUrl" class="d-inline">
                         @Html.AntiForgeryToken()
-                        <input type="hidden" name="returnUrl" value="@returnUrl" />
+                        <input type="hidden" name="returnUrl" value="@clearReturnUrl" />
                         <button type="submit" class="btn btn-outline-danger"
                                 data-onclick="return confirm('Changing the engagement will clear the current Field Audit Report context. Do you want to continue?');">
                             Change Engagement

@@ -1,4 +1,8 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.WebUtilities;
 
 namespace AIS.Utilities
     {
@@ -40,6 +44,33 @@ namespace AIS.Utilities
                 }
 
             return normalizedPathBase + path + suffix;
+            }
+
+        public static string RemoveQueryParameter(string localUrl, string parameterName)
+            {
+            if (string.IsNullOrWhiteSpace(localUrl) || string.IsNullOrWhiteSpace(parameterName))
+                {
+                return localUrl;
+                }
+
+            var fragmentIndex = localUrl.IndexOf('#');
+            var valueWithoutFragment = fragmentIndex >= 0 ? localUrl.Substring(0, fragmentIndex) : localUrl;
+            var fragment = fragmentIndex >= 0 ? localUrl.Substring(fragmentIndex) : string.Empty;
+            var queryIndex = valueWithoutFragment.IndexOf('?');
+            if (queryIndex < 0)
+                {
+                return localUrl;
+                }
+
+            var path = valueWithoutFragment.Substring(0, queryIndex);
+            var query = valueWithoutFragment.Substring(queryIndex);
+            var preservedPairs = QueryHelpers.ParseQuery(query)
+                .Where(queryItem => !string.Equals(queryItem.Key, parameterName, StringComparison.OrdinalIgnoreCase))
+                .SelectMany(
+                    queryItem => queryItem.Value,
+                    (queryItem, value) => new KeyValuePair<string, string>(queryItem.Key, value));
+
+            return path + QueryString.Create(preservedPairs) + fragment;
             }
 
         private static int FindSuffixIndex(string url)
