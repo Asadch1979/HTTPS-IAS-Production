@@ -2,7 +2,6 @@ using AIS.Models.WorkingPaperV2;
 using AIS.Services.WorkingPaperV2;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Configuration;
 using System;
 using System.Linq;
 
@@ -15,13 +14,11 @@ namespace AIS.Controllers
         {
         private readonly DBConnection _db;
         private readonly TopMenus _menus;
-        private readonly IConfiguration _configuration;
 
-        public WorkingPapersController(SessionHandler sessionHandler, DBConnection db, TopMenus menus, IConfiguration configuration) : base(sessionHandler)
+        public WorkingPapersController(SessionHandler sessionHandler, DBConnection db, TopMenus menus) : base(sessionHandler)
             {
             _db = db;
             _menus = menus;
-            _configuration = configuration;
             }
 
         [HttpGet("")]
@@ -146,7 +143,7 @@ namespace AIS.Controllers
         private IActionResult Operation(WorkingPaperOperationResult result) =>
             result.Success ? Ok(result) : BadRequest(result);
 
-        private bool IsEnabled() => _configuration.GetValue<bool>("WorkingPapersV2:Enabled");
+        private static bool IsEnabled() => false;
 
         private bool HasDashboardAccess(long engagementId)
             {
