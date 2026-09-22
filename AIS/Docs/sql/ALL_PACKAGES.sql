@@ -52774,20 +52774,30 @@ create or replace package body PKG_RPT is
   
   end R_getauditeeParas;
 
-  procedure P_FAD_audit_Para_Reconciliation(P_NO      in number,
-                                            ENT_ID    in number,
-                                            R_ID      in number,
-                                            io_cursor OUT t_cursor) as
+   PROCEDURE P_FAD_audit_Para_Reconciliation(P_NO      IN NUMBER,
+                                            ENT_ID    IN NUMBER,
+                                            R_ID      IN NUMBER,
+                                            io_cursor OUT t_cursor) AS
+    T_F NUMBER := 0;
   
-    T_F number := 0;
-  begin
-    select e.type_id
-      into T_F
-      from t_auditee_entities e
-     where e.entity_id = ent_id;
-    if (T_F = 9) then
-      open io_cursor for
-        select r.name as Audit_zone,
+  BEGIN
+  
+    --------------------------------------------------------------------
+    -- 1. Determine the entity type.
+    --------------------------------------------------------------------
+    SELECT e.type_id
+      INTO T_F
+      FROM t_auditee_entities e
+     WHERE e.entity_id = ENT_ID;
+  
+    --------------------------------------------------------------------
+    -- 2. Entity Type 9: Audit Zone Reconciliation.
+    --------------------------------------------------------------------
+    IF T_F = 9 THEN
+    
+      OPEN io_cursor FOR
+      
+        SELECT r.name AS Audit_zone,
                r.entitytypedesc,
                r.Reporting_Office,
                r.Auditee,
@@ -52797,15 +52807,21 @@ create or replace package body PKG_RPT is
                r.Settled_Legacy,
                r.Settled_New_Paras,
                r.Un_Settled,
-               round(((r.Settled_Legacy + r.Settled_New_Paras) / r.Total) * 100) as percentage,
-               'Z' as ind,
-               sum(r.R1) as R1,
-               sum(r.R2) as R2,
-               sum(r.R3) as R3
-          from v_FAD_audit_Para_Reconciliation r
-         where r.az_id = ENT_ID
-           and r.Total > 0
-         group by r.name,
+               
+               ROUND(((r.Settled_Legacy + r.Settled_New_Paras) / r.Total) * 100) AS percentage,
+               
+               'Z' AS ind,
+               
+               SUM(r.R1) AS R1,
+               SUM(r.R2) AS R2,
+               SUM(r.R3) AS R3
+        
+          FROM v_FAD_audit_Para_Reconciliation r
+        
+         WHERE r.az_id = ENT_ID
+           AND r.Total > 0
+        
+         GROUP BY r.name,
                   r.entitytypedesc,
                   r.Reporting_Office,
                   r.Auditee,
@@ -52815,182 +52831,240 @@ create or replace package body PKG_RPT is
                   r.Settled_Legacy,
                   r.Settled_New_Paras,
                   r.Un_Settled
-         order by r.parent_id;
-    else
-      if (r_id in (1, 3)) then
-        open io_cursor for
-          select r.name as Audit_zone,
-                 r.auditby_id,
-                 '' as entitytypedesc,
-                 '' as Reporting_Office,
-                 '' as Auditee,
-                 sum(r.Open_balance) as Open_balance,
-                 sum(r.Added) as added,
-                 sum(r.Total) as total,
-                 sum(r.Settled_Legacy) as Settled_Legacy,
-                 sum(r.Settled_New_Paras) as Settled_New_Paras,
-                 sum(r.Un_Settled) as Un_Settled,
-                 round((sum(r.Settled_New_Paras) + sum(r.Settled_Legacy)) /
-                       (sum(r.Total)) * 100) as percentage,
-                 'A' as ind,
-                 sum(r.R1) as r1,
-                 sum(r.R2) as r2,
-                 sum(r.R3) as r3
-            from v_FAD_audit_Para_Reconciliation r
-           where r.Total > 0
-             and r.name is not null
-           group by r.name, r.auditby_id
-           order by r.auditby_id;
+        
+         ORDER BY MIN(r.parent_id);
+    
+      --------------------------------------------------------------------
+      -- 3. Roles 1 and 3: Consolidated Audit Reconciliation.
+      --------------------------------------------------------------------
+    ELSIF R_ID IN (1, 3) THEN
+    
+      OPEN io_cursor FOR
       
-      else
-        if (r_id in (6, 7, 9, 11)) then
-          open io_cursor for
-            select r.name as Audit_zone,
-                   r.auditby_id,
-                   r.entitytypedesc,
-                   r.Reporting_Office,
-                   r.Auditee,
-                   r.Open_balance,
-                   r.Added,
-                   r.Total,
-                   r.Settled_Legacy,
-                   r.Settled_New_Paras,
-                   r.Un_Settled,
-                   round(((r.Settled_Legacy + r.Settled_New_Paras) /
-                         r.Total) * 100) as percentage,
-                   'Z' as ind,
-                   sum(r.R1) as R1,
-                   sum(r.R2) as R2,
-                   sum(r.R3) as R3
-              from v_FAD_audit_Para_Reconciliation r
-             where r.auditby_id = ENT_ID
-               and r.Total > 0
-             group by r.name,
-                      r.entitytypedesc,
-                      r.Reporting_Office,
-                      r.Auditee,
-                      r.Open_balance,
-                      r.Added,
-                      r.Total,
-                      r.Settled_Legacy,
-                      r.Settled_New_Paras,
-                      r.Un_Settled
-             order by r.az_id, r.parent_id;
-        else
-          if (r_id in (5, 11)) then
-            open io_cursor for
-            
-              select r.name as Audit_zone,
-                     r.az_id,
-                     r.parent_id,
-                     r.entitytypedesc,
-                     r.Reporting_Office,
-                     r.Auditee,
-                     r.Open_balance,
-                     r.Added,
-                     r.Total,
-                     r.Settled_Legacy,
-                     r.Settled_New_Paras,
-                     r.Un_Settled,
-                     round(((r.Settled_Legacy + r.Settled_New_Paras) /
-                           r.Total) * 100) as percentage,
-                     'Z' as ind,
-                     sum(r.R1) as R1,
-                     sum(r.R2) as R2,
-                     sum(r.R3) as R3
-                from v_FAD_audit_Para_Reconciliation r
-               where r.auditby_id not in (112248, 112242)
-                 and r.Total > 0
-               group by r.name,
-                        r.entitytypedesc,
-                        r.az_id,
-                        r.parent_id,
-                        r.Reporting_Office,
-                        r.Auditee,
-                        r.Open_balance,
-                        r.Added,
-                        r.Total,
-                        r.Settled_Legacy,
-                        r.Settled_New_Paras,
-                        r.Un_Settled
-               order by r.az_id, r.parent_id;
-          else
-            if (ENT_ID = 112243) then
-              open io_cursor for
-                select r.name as Audit_zone,
-                       r.entitytypedesc,
-                       r.Reporting_Office,
-                       r.Auditee,
-                       r.Open_balance,
-                       r.Added,
-                       r.Total,
-                       r.Settled_Legacy,
-                       r.Settled_New_Paras,
-                       r.Un_Settled,
-                       round(((r.Settled_Legacy + r.Settled_New_Paras) /
-                             r.Total) * 100) as percentage,
-                       'F' as ind,
-                       sum(r.R1) as R1,
-                       sum(r.R2) as R2,
-                       sum(r.R3) as R3
-                  from v_FAD_audit_Para_Reconciliation r
-                 inner join t_auditee_entities_maping_fad f
-                    on f.entity_id = r.az_id
-                   and r.auditby_id not in (112248, 112242)
-                 where f.ppno = P_NO
-                   and r.Total > 0
-                 group by r.name,
-                          r.entitytypedesc,
-                          r.Reporting_Office,
-                          r.Auditee,
-                          r.Open_balance,
-                          r.Added,
-                          r.Total,
-                          r.Settled_Legacy,
-                          r.Settled_New_Paras,
-                          r.Un_Settled
-                 order by r.name, r.entitytypedesc, r.parent_id;
-            else
-              if (R_ID = 14) then
-                open io_cursor for
-                  select r.name as Audit_zone,
-                         r.entitytypedesc,
-                         r.Reporting_Office,
-                         r.Auditee,
-                         r.Open_balance,
-                         r.Added,
-                         r.Total,
-                         r.Settled_Legacy,
-                         r.Settled_New_Paras,
-                         r.Un_Settled,
-                         round(((r.Settled_Legacy + r.Settled_New_Paras) /
-                               r.Total) * 100) as percentage,
-                         'F' as ind,
-                         sum(r.R1) as R1,
-                         sum(r.R2) as R2,
-                         sum(r.R3) as R3
-                    from v_man_audit_para_reconciliation r
-                   where r.parent_id = ENT_ID
-                     and r.Total > 0
-                   group by r.name,
-                            r.entitytypedesc,
-                            r.Reporting_Office,
-                            r.Auditee,
-                            r.Open_balance,
-                            r.Added,
-                            r.Total,
-                            r.Settled_Legacy,
-                            r.Settled_New_Paras,
-                            r.Un_Settled
-                   order by r.name, r.entitytypedesc, r.parent_id;
-              
-              end if;
-            end if;
-          end if;
-        end if;
-      end if;
-    end if;
-  end P_FAD_audit_Para_Reconciliation;
+        SELECT r.name AS Audit_zone,
+               r.auditby_id,
+               
+               '' AS entitytypedesc,
+               '' AS Reporting_Office,
+               '' AS Auditee,
+               
+               SUM(r.Open_balance) AS Open_balance,
+               SUM(r.Added) AS added,
+               SUM(r.Total) AS total,
+               
+               SUM(r.Settled_Legacy) AS Settled_Legacy,
+               SUM(r.Settled_New_Paras) AS Settled_New_Paras,
+               SUM(r.Un_Settled) AS Un_Settled,
+               
+               ROUND((SUM(r.Settled_New_Paras) + SUM(r.Settled_Legacy)) /
+                     SUM(r.Total) * 100) AS percentage,
+               
+               'A' AS ind,
+               
+               SUM(r.R1) AS r1,
+               SUM(r.R2) AS r2,
+               SUM(r.R3) AS r3
+        
+          FROM v_FAD_audit_Para_Reconciliation r
+        
+         WHERE r.Total > 0
+           AND r.name IS NOT NULL
+        
+         GROUP BY r.name, r.auditby_id
+        
+         ORDER BY r.auditby_id;
+    
+      --------------------------------------------------------------------
+      -- 4. Roles 6, 7, 9 and 11: Entity-Specific Reconciliation.
+      --------------------------------------------------------------------
+    ELSIF R_ID IN (6, 7, 9, 11) THEN
+    
+      OPEN io_cursor FOR
+      
+        SELECT r.name AS Audit_zone,
+               r.auditby_id,
+               r.entitytypedesc,
+               r.Reporting_Office,
+               r.Auditee,
+               r.Open_balance,
+               r.Added,
+               r.Total,
+               r.Settled_Legacy,
+               r.Settled_New_Paras,
+               r.Un_Settled,
+               
+               ROUND(((r.Settled_Legacy + r.Settled_New_Paras) / r.Total) * 100) AS percentage,
+               
+               'Z' AS ind,
+               
+               SUM(r.R1) AS R1,
+               SUM(r.R2) AS R2,
+               SUM(r.R3) AS R3
+        
+          FROM v_FAD_audit_Para_Reconciliation r
+        
+         WHERE r.auditby_id = ENT_ID
+           AND r.Total > 0
+        
+         GROUP BY r.name,
+                  r.auditby_id,
+                  r.entitytypedesc,
+                  r.Reporting_Office,
+                  r.Auditee,
+                  r.Open_balance,
+                  r.Added,
+                  r.Total,
+                  r.Settled_Legacy,
+                  r.Settled_New_Paras,
+                  r.Un_Settled
+        
+         ORDER BY MIN(r.az_id), MIN(r.parent_id);
+    
+      --------------------------------------------------------------------
+      -- 5. Roles 5 and 11: Field Audit Reconciliation.
+      --    Note: R_ID = 11 is handled by the preceding condition.
+      --------------------------------------------------------------------
+    ELSIF R_ID IN (5, 11) THEN
+    
+      OPEN io_cursor FOR
+      
+        SELECT r.name AS Audit_zone,
+               r.az_id,
+               r.parent_id,
+               r.entitytypedesc,
+               r.Reporting_Office,
+               r.Auditee,
+               r.Open_balance,
+               r.Added,
+               r.Total,
+               r.Settled_Legacy,
+               r.Settled_New_Paras,
+               r.Un_Settled,
+               
+               ROUND(((r.Settled_Legacy + r.Settled_New_Paras) / r.Total) * 100) AS percentage,
+               
+               'Z' AS ind,
+               
+               SUM(r.R1) AS R1,
+               SUM(r.R2) AS R2,
+               SUM(r.R3) AS R3
+        
+          FROM v_FAD_audit_Para_Reconciliation r
+        
+         WHERE r.auditby_id NOT IN (112248, 112242)
+           AND r.Total > 0
+        
+         GROUP BY r.name,
+                  r.entitytypedesc,
+                  r.az_id,
+                  r.parent_id,
+                  r.Reporting_Office,
+                  r.Auditee,
+                  r.Open_balance,
+                  r.Added,
+                  r.Total,
+                  r.Settled_Legacy,
+                  r.Settled_New_Paras,
+                  r.Un_Settled
+        
+         ORDER BY r.az_id, r.parent_id;
+    
+      --------------------------------------------------------------------
+      -- 6. Special Entity 112243: FAD Mapping-Based Reconciliation.
+      --------------------------------------------------------------------
+    ELSIF ENT_ID = 112243 THEN
+    
+      OPEN io_cursor FOR
+      
+        SELECT r.name AS Audit_zone,
+               r.entitytypedesc,
+               r.Reporting_Office,
+               r.Auditee,
+               r.Open_balance,
+               r.Added,
+               r.Total,
+               r.Settled_Legacy,
+               r.Settled_New_Paras,
+               r.Un_Settled,
+               
+               ROUND(((r.Settled_Legacy + r.Settled_New_Paras) / r.Total) * 100) AS percentage,
+               
+               'F' AS ind,
+               
+               SUM(r.R1) AS R1,
+               SUM(r.R2) AS R2,
+               SUM(r.R3) AS R3
+        
+          FROM v_FAD_audit_Para_Reconciliation r
+        
+         INNER JOIN t_auditee_entities_maping_fad f
+            ON f.entity_id = r.az_id
+           AND r.auditby_id NOT IN (112248, 112242)
+        
+         WHERE f.ppno = P_NO
+           AND r.Total > 0
+        
+         GROUP BY r.name,
+                  r.entitytypedesc,
+                  r.Reporting_Office,
+                  r.Auditee,
+                  r.Open_balance,
+                  r.Added,
+                  r.Total,
+                  r.Settled_Legacy,
+                  r.Settled_New_Paras,
+                  r.Un_Settled
+        
+         ORDER BY r.name, r.entitytypedesc, MIN(r.parent_id);
+    
+      --------------------------------------------------------------------
+      -- 7. Role 14: Management Audit Reconciliation.
+      --------------------------------------------------------------------
+    ELSIF R_ID = 14 THEN
+    
+      OPEN io_cursor FOR
+      
+        SELECT r.name AS Audit_zone,
+               r.entitytypedesc,
+               r.Reporting_Office,
+               r.Auditee,
+               r.Open_balance,
+               r.Added,
+               r.Total,
+               r.Settled_Legacy,
+               r.Settled_New_Paras,
+               r.Un_Settled,
+               
+               ROUND(((r.Settled_Legacy + r.Settled_New_Paras) / r.Total) * 100) AS percentage,
+               
+               'F' AS ind,
+               
+               SUM(r.R1) AS R1,
+               SUM(r.R2) AS R2,
+               SUM(r.R3) AS R3
+        
+          FROM v_man_audit_para_reconciliation r
+        
+         WHERE r.parent_id = ENT_ID
+           AND r.Total > 0
+        
+         GROUP BY r.name,
+                  r.entitytypedesc,
+                  r.Reporting_Office,
+                  r.Auditee,
+                  r.Open_balance,
+                  r.Added,
+                  r.Total,
+                  r.Settled_Legacy,
+                  r.Settled_New_Paras,
+                  r.Un_Settled
+        
+         ORDER BY r.name, r.entitytypedesc, MIN(r.parent_id);
+    
+    END IF;
+  
+  END P_FAD_audit_Para_Reconciliation;
+
 
   procedure p_get_loan_status(io_cursor OUT t_cursor) is
   begin
