@@ -1,6 +1,7 @@
 using AIS.Models.FieldAuditReport;
 using AIS.Models.Notifications;
 using AIS.Services;
+using AIS.Utilities;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
@@ -1022,7 +1023,10 @@ namespace AIS.Controllers
             {
             if (!string.IsNullOrWhiteSpace(returnUrl) && Url.IsLocalUrl(returnUrl))
                 {
-                return Redirect(returnUrl);
+                var normalizedReturnUrl = ApplicationPathHelper.EnsurePathBase(
+                    returnUrl,
+                    Request.PathBase.Value);
+                return Redirect(normalizedReturnUrl);
                 }
 
             return RedirectToAction(fallbackAction);

@@ -1,8 +1,19 @@
 @model AIS.Models.FieldAuditReport.FieldAuditEngagementSelectorViewModel
 
 @{
-    var returnUrl = $"{Context.Request.Path}{Context.Request.QueryString}";
     var currentController = ViewContext.RouteData.Values["controller"]?.ToString() ?? string.Empty;
+    var currentAction = ViewContext.RouteData.Values["action"]?.ToString() ?? string.Empty;
+    var routedPageUrl = Url.Action(currentAction, currentController) ?? Context.Request.Path.Value;
+    var currentPageUrl = AIS.Utilities.ApplicationPathHelper.EnsurePathBase(
+        routedPageUrl,
+        Context.Request.PathBase.Value);
+    var setActiveEngagementUrl = AIS.Utilities.ApplicationPathHelper.EnsurePathBase(
+        Url.Action("SetActiveEngagement", currentController) ?? $"/{currentController}/SetActiveEngagement",
+        Context.Request.PathBase.Value);
+    var clearEngagementUrl = AIS.Utilities.ApplicationPathHelper.EnsurePathBase(
+        Url.Action("ClearEngagement", currentController) ?? $"/{currentController}/ClearEngagement",
+        Context.Request.PathBase.Value);
+    var returnUrl = $"{currentPageUrl}{Context.Request.QueryString}";
     var useFieldAuditReportQuerySelection = string.Equals(currentController, "FieldAuditReport", StringComparison.OrdinalIgnoreCase);
 }
 
@@ -21,7 +32,7 @@
                 {
                     @if (useFieldAuditReportQuerySelection)
                     {
-                        <form method="get" action="@Context.Request.Path" id="frptEngagementForm">
+                        <form method="get" action="@currentPageUrl" id="frptEngagementForm">
                             @foreach (var queryItem in Context.Request.Query)
                             {
                                 if (!string.Equals(queryItem.Key, "engId", StringComparison.OrdinalIgnoreCase))
@@ -46,7 +57,8 @@
                     }
                     else
                     {
-                        <form method="post" asp-action="SetActiveEngagement" id="frptEngagementForm">
+                        <form method="post" action="@setActiveEngagementUrl" id="frptEngagementForm">
+                            @Html.AntiForgeryToken()
                             <input type="hidden" name="returnUrl" value="@returnUrl" />
                             <select name="engagementId" class="form-select" data-onchange="return validateEngagementSelection(this);">
                                 <option value="0">--Select Engagement--</option>
@@ -65,7 +77,8 @@
             <div class="col-md-3 text-md-end">
                 @if (Model?.HasActiveEngagement ?? false)
                 {
-                    <form method="post" asp-action="ClearEngagement" class="d-inline">
+                    <form method="post" action="@clearEngagementUrl" class="d-inline">
+                        @Html.AntiForgeryToken()
                         <input type="hidden" name="returnUrl" value="@returnUrl" />
                         <button type="submit" class="btn btn-outline-danger"
                                 data-onclick="return confirm('Changing the engagement will clear the current Field Audit Report context. Do you want to continue?');">
