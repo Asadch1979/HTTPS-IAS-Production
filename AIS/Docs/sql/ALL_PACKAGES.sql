@@ -32814,7 +32814,7 @@ CREATE OR REPLACE PACKAGE PKG_EMAIL AS
                                      P_ERROR_MESSAGE IN VARCHAR2,
                                      P_IS_SENT       IN NUMBER);
   PROCEDURE GET_TRIGGER_LOGS(P_MAX_ROWS IN NUMBER DEFAULT 100,
-                             O_CUR     OUT SYS_REFCURSOR);                                     
+                             O_CUR      OUT SYS_REFCURSOR);
 
   PROCEDURE UPSERT_EVENT(P_EVENT_ID     IN OUT NUMBER,
                          P_EVENT_KEY    IN VARCHAR2,
@@ -32905,6 +32905,22 @@ CREATE OR REPLACE PACKAGE PKG_EMAIL AS
                      P_SUBJECT        IN VARCHAR2 DEFAULT NULL,
                      P_CORRELATION_ID IN VARCHAR2 DEFAULT NULL,
                      O_CUR            OUT SYS_REFCURSOR);
+
+  PROCEDURE P_ENQUEUE_EMAIL(P_EVENT_CODE IN VARCHAR2,
+                            P_REF_ID1    IN NUMBER,
+                            P_REF_ID2    IN NUMBER,
+                            P_MAIL_TO    IN VARCHAR2,
+                            P_MAIL_CC    IN VARCHAR2,
+                            P_SUBJECT    IN VARCHAR2,
+                            P_BODY       IN CLOB,
+                            O_EMAIL_ID   OUT NUMBER);
+  PROCEDURE P_GET_EMAIL_QUEUE(P_STATUS    IN VARCHAR2,
+                              P_FROM_DATE IN DATE,
+                              P_TO_DATE   IN DATE,
+                              IO_CURSOR   OUT SYS_REFCURSOR);
+  PROCEDURE P_MARK_EMAIL_SENT(P_EMAIL_ID IN NUMBER);
+  PROCEDURE P_MARK_EMAIL_FAILED(P_EMAIL_ID   IN NUMBER,
+                                P_ERROR_TEXT IN VARCHAR2);
 END PKG_EMAIL;
 /
 CREATE OR REPLACE PACKAGE BODY PKG_EMAIL AS
@@ -32947,12 +32963,12 @@ CREATE OR REPLACE PACKAGE BODY PKG_EMAIL AS
     UPDATE T_AU_EMAIL_TRIGGER_LOG
        SET STATUS        = P_STATUS,
            ERROR_MESSAGE = P_ERROR_MESSAGE,
-           SENT_ON       = CASE
-                             WHEN P_IS_SENT = 1 THEN
-                              SYSTIMESTAMP
-                             ELSE
-                              NULL
-                           END
+           SENT_ON = CASE
+                       WHEN P_IS_SENT = 1 THEN
+                        SYSTIMESTAMP
+                       ELSE
+                        NULL
+                     END
      WHERE ID = P_LOG_ID;
   END COMPLETE_TRIGGER_ATTEMPT;
 
@@ -32960,8 +32976,17 @@ CREATE OR REPLACE PACKAGE BODY PKG_EMAIL AS
   BEGIN
     OPEN O_CUR FOR
       SELECT *
-        FROM (SELECT ID, TRIGGER_DATE, MODULE, TRIGGER_POINT, REFERENCE_ID,
-                     TO_ADDRESS, CC_ADDRESS, EMAIL_SUBJECT, STATUS, ERROR_MESSAGE, SENT_ON
+        FROM (SELECT ID,
+                     TRIGGER_DATE,
+                     MODULE,
+                     TRIGGER_POINT,
+                     REFERENCE_ID,
+                     TO_ADDRESS,
+                     CC_ADDRESS,
+                     EMAIL_SUBJECT,
+                     STATUS,
+                     ERROR_MESSAGE,
+                     SENT_ON
                 FROM T_AU_EMAIL_TRIGGER_LOG
                ORDER BY TRIGGER_DATE DESC, ID DESC)
        WHERE ROWNUM <= LEAST(GREATEST(NVL(P_MAX_ROWS, 100), 1), 1000);
@@ -33364,9 +33389,9 @@ CREATE OR REPLACE PACKAGE BODY PKG_EMAIL AS
     V_EVENT_KEY VARCHAR2(100);
   BEGIN
     ASSERT_STATUS(P_STATUS);
-
+  
     V_EVENT_KEY := NORMALIZE_KEY(P_EVENT_KEY);
-
+  
     INSERT INTO EM_EMAIL_LOG
       (EVENT_KEY,
        TEMPLATE_ID,
@@ -33404,7 +33429,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_EMAIL AS
        P_REFERENCE_ID,
        P_FAILURE_DETAILS)
     RETURNING LOG_ID INTO P_LOG_ID;
-
+  
     COMMIT;
   EXCEPTION
     WHEN OTHERS THEN
@@ -33496,6 +33521,101 @@ CREATE OR REPLACE PACKAGE BODY PKG_EMAIL AS
              REFERENCE_ID = P_CORRELATION_ID)
        ORDER BY ATTEMPTED_ON_UTC DESC, LOG_ID DESC;
   END GET_LOGS;
+
+  PROCEDURE P_ENQUEUE_EMAIL(P_EVENT_CODE IN VARCHAR2,
+                            P_REF_ID1    IN NUMBER,
+                            P_REF_ID2    IN NUMBER,
+                            P_MAIL_TO    IN VARCHAR2,
+                            P_MAIL_CC    IN VARCHAR2,
+                            P_SUBJECT    IN VARCHAR2,
+                            P_BODY       IN CLOB,
+                            O_EMAIL_ID   OUT NUMBER) IS
+  BEGIN
+    SELECT SEQ_EMAIL_QUEUE_ID.NEXTVAL INTO O_EMAIL_ID FROM DUAL;
+    INSERT INTO T_EMAIL_QUEUE
+      (EMAIL_ID,
+       EVENT_CODE,
+       REF_ID1,
+       REF_ID2,
+       MAIL_TO,
+       MAIL_CC,
+       SUBJECT,
+       BODY,
+       STATUS,
+       CREATED_ON,
+       SENT_ON,
+       ERROR_TEXT,
+       RETRY_COUNT,
+       CREATED_BY)
+    VALUES
+      (O_EMAIL_ID,
+       TRIM(P_EVENT_CODE),
+       P_REF_ID1,
+       P_REF_ID2,
+       TRIM(P_MAIL_TO),
+       TRIM(P_MAIL_CC),
+       P_SUBJECT,
+       P_BODY,
+       'PENDING',
+       SYSDATE,
+       NULL,
+       NULL,
+       0,
+       NULL);
+  END P_ENQUEUE_EMAIL;
+
+  PROCEDURE P_GET_EMAIL_QUEUE(P_STATUS    IN VARCHAR2,
+                              P_FROM_DATE IN DATE,
+                              P_TO_DATE   IN DATE,
+                              IO_CURSOR   OUT SYS_REFCURSOR) IS
+  BEGIN
+    OPEN IO_CURSOR FOR
+      SELECT EMAIL_ID,
+             EVENT_CODE,
+             REF_ID1,
+             REF_ID2,
+             MAIL_TO,
+             MAIL_CC,
+             SUBJECT,
+             BODY,
+             STATUS,
+             CREATED_ON,
+             SENT_ON,
+             ERROR_TEXT
+        FROM T_EMAIL_QUEUE
+       WHERE (P_STATUS IS NULL OR UPPER(STATUS) = UPPER(TRIM(P_STATUS)))
+         AND (P_FROM_DATE IS NULL OR CREATED_ON >= TRUNC(P_FROM_DATE))
+         AND (P_TO_DATE IS NULL OR CREATED_ON < TRUNC(P_TO_DATE) + 1)
+       ORDER BY CASE UPPER(STATUS)
+                  WHEN 'PENDING' THEN
+                   1
+                  WHEN 'FAILED' THEN
+                   2
+                  WHEN 'SENT' THEN
+                   3
+                  ELSE
+                   4
+                END,
+                CREATED_ON,
+                EMAIL_ID;
+  END P_GET_EMAIL_QUEUE;
+
+  PROCEDURE P_MARK_EMAIL_SENT(P_EMAIL_ID IN NUMBER) IS
+  BEGIN
+    UPDATE T_EMAIL_QUEUE
+       SET STATUS = 'SENT', SENT_ON = SYSDATE, ERROR_TEXT = NULL
+     WHERE EMAIL_ID = P_EMAIL_ID;
+  END P_MARK_EMAIL_SENT;
+
+  PROCEDURE P_MARK_EMAIL_FAILED(P_EMAIL_ID   IN NUMBER,
+                                P_ERROR_TEXT IN VARCHAR2) IS
+  BEGIN
+    UPDATE T_EMAIL_QUEUE
+       SET STATUS      = 'FAILED',
+           ERROR_TEXT  = SUBSTR(P_ERROR_TEXT, 1, 2000),
+           RETRY_COUNT = NVL(RETRY_COUNT, 0) + 1
+     WHERE EMAIL_ID = P_EMAIL_ID;
+  END P_MARK_EMAIL_FAILED;
 
 END PKG_EMAIL;
 /
@@ -44809,25 +44929,6 @@ CREATE OR REPLACE PACKAGE PKG_INQ AS
   PROCEDURE P_FINALIZE_IID_INQUIRY_REPORT(P_COMPLAINT_ID IN NUMBER,
                                           P_UPDATED_BY   IN NUMBER);
 
-  PROCEDURE P_ENQUEUE_EMAIL(P_EVENT_CODE IN VARCHAR2,
-                            P_REF_ID1    IN NUMBER,
-                            P_REF_ID2    IN NUMBER,
-                            P_MAIL_TO    IN VARCHAR2,
-                            P_MAIL_CC    IN VARCHAR2,
-                            P_SUBJECT    IN VARCHAR2,
-                            P_BODY       IN CLOB,
-                            O_EMAIL_ID   OUT NUMBER);
-
-  PROCEDURE P_GET_EMAIL_QUEUE(P_STATUS    IN VARCHAR2,
-                              P_FROM_DATE IN DATE,
-                              P_TO_DATE   IN DATE,
-                              IO_CURSOR   OUT T_CURSOR);
-
-  PROCEDURE P_MARK_EMAIL_SENT(P_EMAIL_ID IN NUMBER);
-
-  PROCEDURE P_MARK_EMAIL_FAILED(P_EMAIL_ID   IN NUMBER,
-                                P_ERROR_TEXT IN VARCHAR2);
-
 END PKG_INQ;
 /
 CREATE OR REPLACE PACKAGE BODY PKG_INQ AS
@@ -44917,7 +45018,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_INQ AS
        P_SUBMITTED_BY_PP_NO,
        0,
        'Y',
-       1)
+       346)
     RETURNING COMPLAINT_ID INTO P_COMPLAINT_ID;
   
     V_COMPLAINT_NO := F_GEN_COMPLAINT_NO(P_COMPLAINT_ID);
@@ -45406,12 +45507,14 @@ CREATE OR REPLACE PACKAGE BODY PKG_INQ AS
           ON d.COMPLAINT_ID = h.COMPLAINT_ID
         LEFT JOIN T_AU_IID_COMPLAINANT c
           ON c.COMPLAINT_ID = h.COMPLAINT_ID
-       left join T_AU_IID_STATUS_MST s
+        left join T_AU_IID_STATUS_MST s
           on s.status_id = h.status_id
-       WHERE h.status_id = 
-             case when P_PAGE_ID = 420
-               then h.status_id else
-                 P_PAGE_ID end
+       WHERE h.status_id = case
+               when P_PAGE_ID = 420 then
+                h.status_id
+               else
+                P_PAGE_ID
+             end
        ORDER BY h.COMPLAINT_ID DESC;
   END GET_COMPLAINTS_DD;
 
@@ -47857,7 +47960,8 @@ CREATE OR REPLACE PACKAGE BODY PKG_INQ AS
     END IF;
   END P_FINALIZE_IID_INQUIRY_REPORT;
 
-  PROCEDURE P_ENQUEUE_EMAIL(P_EVENT_CODE IN VARCHAR2,
+  /* Generic email queue operations are owned by PKG_EMAIL. */
+  /* PROCEDURE P_ENQUEUE_EMAIL(P_EVENT_CODE IN VARCHAR2,
                             P_REF_ID1    IN NUMBER,
                             P_REF_ID2    IN NUMBER,
                             P_MAIL_TO    IN VARCHAR2,
@@ -47952,10 +48056,10 @@ CREATE OR REPLACE PACKAGE BODY PKG_INQ AS
            ERROR_TEXT  = SUBSTR(P_ERROR_TEXT, 1, 2000),
            RETRY_COUNT = NVL(RETRY_COUNT, 0) + 1
      WHERE EMAIL_ID = P_EMAIL_ID;
-  END P_MARK_EMAIL_FAILED;
+  END P_MARK_EMAIL_FAILED; */
 
 END PKG_INQ;
-/
+
 create or replace package PKG_LG is
 
   TYPE t_cursor IS REF CURSOR;

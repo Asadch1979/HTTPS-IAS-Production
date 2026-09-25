@@ -4256,7 +4256,7 @@ namespace AIS.Controllers
 
             return user.UserRoleID == 1
                 || user.UserRoleID == 3
-                || user.UserRoleID == 14;
+                || user.UserRoleID == 4;
             }
 
         [HttpGet]

@@ -258,7 +258,7 @@ create or replace package body PKG_AE is
             on e.period_id = p.auditperiodid
          inner join t_au_observation_assignedto ot
             on o.id = ot.obs_id
-         where p.status_id = 2
+         where p.auditperiodid > 3
            and (e.entity_id = ENTITID or ot.entity_id = ENTITID)
            and e.status < 14;
     else
@@ -277,7 +277,7 @@ create or replace package body PKG_AE is
             on e.period_id = p.auditperiodid
          inner join t_au_observation_assignedto ot
             on o.id = ot.obs_id
-         where p.status_id = 2
+         where p.auditperiodid > 3
            and e.status < 14;
     end if;
   end P_GetAuditeeAssignedEntities;
@@ -854,7 +854,7 @@ create or replace package body PKG_AE is
                                              io_cursor OUT t_cursor) as
 
   begin
-    if (ENT_ID in (113176, 113182)) then
+    if (ENT_ID in (113176)) then
       OPEN io_cursor FOR
         select C.AUDIT_PERIOD,
                c.name,
@@ -877,9 +877,8 @@ create or replace package body PKG_AE is
           FROM V_GET_AIS_POST_COMPLIANCE C
          inner join t_auditee_entities_maping m
             on m.entity_id = c.entity_id
-         where ((ENT_ID = 113176 AND
-               c.ENTITY_ID IN (113176, 113173, 112935, 112933)) OR
-               (ENT_ID = 113182 AND c.ENTITY_ID IN (113182, 113105)))
+         where (ENT_ID = 113176 AND
+               c.ENTITY_ID IN (113176, 113173, 112935, 112933) )
            and C.com_stage = R_ID
            and C.com_status != 16
          order by C.audit_period desc, C.para_no asc;
@@ -1396,6 +1395,7 @@ create or replace package body PKG_AE is
     v_current_stage NUMBER;
     v_savepoint_set BOOLEAN := FALSE;
     v_history_id NUMBER;
+    v_notification_email_id NUMBER;
 
     ------------------------------------------------------------------
     -- Compliance cursor
@@ -1711,7 +1711,7 @@ create or replace package body PKG_AE is
     v_savepoint_set := FALSE;
 
     ------------------------------------------------------------------
-    -- 14. Return response to application
+    -- 13. Return response to application
     ------------------------------------------------------------------
     IF Vr1.STATUS_ID = 16 THEN
 
@@ -2044,7 +2044,7 @@ create or replace package body PKG_AE is
       select NVL(max(u.ppno), 0)
         into N_F
         from t_user u
-       inner join t_user_maping m
+       inner join t_user_context_assignment m
           on m.ppno = u.ppno
        where u.ppno = P_NO
          and u.entity_id = ENT_ID

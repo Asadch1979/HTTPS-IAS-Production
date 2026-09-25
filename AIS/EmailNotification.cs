@@ -108,7 +108,7 @@ namespace AIS
             return econ.Send(CreateRequest("Audit", nameof(NotifyParaStatus), paraNo, toEmail, ccCombined, subject, body, true)).IsSuccess;
             }
 
-        public static bool NotifyManagementAuditParaStatus(IConfiguration configuration, string paraNo, string paraStatus, string auditYear, string risk, string paraGist, string rejectionReason, string toEmail, string ccEmail, string cc2Email, IServiceProvider serviceProvider = null)
+        public static bool NotifyManagementAuditParaStatus(IConfiguration configuration, string paraNo, string paraStatus, string auditYear, string risk, string paraGist, string rejectionReason, string toEmail, string ccEmail, string cc2Email, string rpt, string div, string dept, IServiceProvider serviceProvider = null)
             {
             string normalizedStatus = string.Equals(paraStatus, "Settled", StringComparison.OrdinalIgnoreCase) ? "Settled" : "Rejected";
             string subject = $"IAS Notification: Audit Para No. {paraNo} {normalizedStatus}";
@@ -116,6 +116,9 @@ namespace AIS
                 $"Audit Para No. {paraNo} {normalizedStatus}",
                 string.Empty,
                 BuildDetails(
+                    ("Report.", rpt),
+                    ("Division/Group", div),
+                    ("Auditee", dept),
                     ("Para No.", paraNo),
                     ("Audit Year", auditYear),
                     ("Risk", risk),

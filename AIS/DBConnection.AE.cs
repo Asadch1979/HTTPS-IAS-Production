@@ -1323,6 +1323,9 @@ namespace AIS.Controllers
             {
 
             string resp = "";
+            string rpt = "";
+            string dept = "";
+            string div = "";
             string to_email = "";
             string cc_email = "";
             string cc2_email = "";
@@ -1363,6 +1366,9 @@ namespace AIS.Controllers
                 while (rdr.Read())
                     {
                     resp = rdr["remarks"].ToString();
+                    rpt = rdr["report"].ToString();
+                    dept = rdr["DEPT"].ToString();
+                    div = rdr["DIV"].ToString();
                     para_no = rdr["PARA_NO"].ToString();
                     para_gist = rdr["GIST_OF_PARAS"].ToString();
                     to_email = rdr["TO_EMAIL"].ToString();
@@ -1381,7 +1387,7 @@ namespace AIS.Controllers
                 {
                 if (audited_by == 112242 || audited_by == 112248)
                     {
-                    EmailNotification.NotifyManagementAuditParaStatus(_configuration, para_no, para_status, audit_year, risk, para_gist, rejection_reason, to_email, cc_email, cc2_email, _httpCon?.HttpContext?.RequestServices);
+                    EmailNotification.NotifyManagementAuditParaStatus(_configuration, para_no, para_status, audit_year, risk, para_gist, rejection_reason, to_email, cc_email, cc2_email, rpt, div, dept, _httpCon?.HttpContext?.RequestServices);
                     }
                 else
                     {

@@ -510,7 +510,7 @@
                                           P_UPDATED_BY   IN NUMBER);
 
 END PKG_INQ;
-
+/
 CREATE OR REPLACE PACKAGE BODY PKG_INQ AS
 
   ------------------------------------------------------------------
@@ -1050,7 +1050,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_INQ AS
             ON d.COMPLAINT_ID = h.COMPLAINT_ID
          inner join t_au_iid_complainant c
             on c.complaint_id = d.complaint_id
-        -- WHERE h.SUBMITTED_BY_PP_NO = P_USER_ID
+         WHERE h.SUBMITTED_BY_PP_NO = P_USER_ID
          ORDER BY h.SUBMITTED_ON DESC;
     end if;
   END GET_COMPLAINTS;
