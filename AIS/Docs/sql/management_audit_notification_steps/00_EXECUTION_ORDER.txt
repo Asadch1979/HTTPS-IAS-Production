@@ -5,6 +5,8 @@ Do not execute the old all-in-one management_audit_notifications_complete_deploy
 
 The staged SQL files contain Oracle SQL/PLSQL only. They intentionally do not
 use PROMPT, DEFINE, SET, WHENEVER, @@ include statements, or GitHub diff markers.
+They are written for the current Oracle 18c environment and avoid 19c-only
+DISTINCT aggregation syntax.
 
 Execution order:
 01_preflight.sql

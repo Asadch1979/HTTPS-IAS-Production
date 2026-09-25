@@ -7,10 +7,10 @@ DECLARE
   V_COUNT NUMBER;
   V_NEXT_RUN TIMESTAMP WITH TIME ZONE;
 BEGIN
-  IF DBMS_DB_VERSION.VERSION < 19 THEN
+  IF DBMS_DB_VERSION.VERSION < 18 THEN
     RAISE_APPLICATION_ERROR(
       -20801,
-      'Oracle 19c or later is required by this deployment. Detected major version='||
+      'Oracle 18c or later is required by this deployment. Detected major version='||
       DBMS_DB_VERSION.VERSION||'.'
     );
   END IF;
