@@ -1,0 +1,433 @@
+/*
+Step 07B - Replace only PKG_IAS_NOTIFICATION package body.
+
+Use this file when the package specification is already VALID and only the
+PACKAGE BODY failed compilation.
+
+Oracle requires the complete package body to be replaced; individual packaged
+procedures cannot be replaced independently.
+
+This version is Oracle 18c compatible.
+*/
+CREATE OR REPLACE PACKAGE BODY PKG_IAS_NOTIFICATION AS
+  C_HEADER CONSTANT VARCHAR2(100) := 'Internal Audit System (IAS)';
+  C_FOOTER CONSTANT VARCHAR2(500) := 'This is a system-generated notification from Internal Audit System (IAS). Please do not reply unless required under official process.';
+
+  FUNCTION ESC(P_VALUE VARCHAR2) RETURN VARCHAR2 IS
+  BEGIN
+    RETURN REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(NVL(P_VALUE,''),'&','&amp;'),'<','&lt;'),'>','&gt;'),'"','&quot;'),'''','&#39;');
+  END;
+
+  FUNCTION ROW_HTML(P_LABEL VARCHAR2,P_VALUE VARCHAR2) RETURN CLOB IS
+  BEGIN
+    IF TRIM(P_VALUE) IS NULL THEN RETURN EMPTY_CLOB(); END IF;
+    RETURN TO_CLOB('<tr><td style="padding:12px 14px;border-bottom:1px solid #d9e2ec;font-size:13px;font-weight:bold;color:#102a43;vertical-align:top">')||
+      ESC(P_LABEL)||'</td><td style="padding:12px 14px;border-bottom:1px solid #d9e2ec;font-size:13px;color:#334e68;vertical-align:top">'||
+      REPLACE(ESC(P_VALUE),CHR(10),'<br />')||'</td></tr>';
+  END;
+
+  FUNCTION STANDARD_HTML(P_TITLE VARCHAR2,P_SUMMARY CLOB,P_ROWS CLOB) RETURN CLOB IS
+  BEGIN
+    RETURN TO_CLOB('<!DOCTYPE html><html><head><meta charset="utf-8" /></head><body style="margin:0;padding:0;background:#f4f6f8;font-family:Arial,Helvetica,sans-serif;color:#1f2933">')||
+      '<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#f4f6f8;padding:24px 0"><tr><td align="center"><table role="presentation" width="680" cellspacing="0" cellpadding="0" style="width:680px;max-width:680px;background:#fff;border-collapse:collapse;border:1px solid #d9e2ec">'||
+      '<tr><td style="padding:18px 28px;background:#173f5f;color:#fff;font-size:20px;font-weight:bold">'||ESC(C_HEADER)||'</td></tr>'||
+      '<tr><td style="padding:28px 28px 16px;font-size:24px;font-weight:bold;color:#102a43">'||ESC(P_TITLE)||'</td></tr>'||
+      CASE WHEN TRIM(DBMS_LOB.SUBSTR(P_SUMMARY,32767,1)) IS NOT NULL THEN
+        '<tr><td style="padding:0 28px 20px;font-size:15px;line-height:1.7;color:#334e68">'||ESC(DBMS_LOB.SUBSTR(P_SUMMARY,32767,1))||'</td></tr>' END||
+      CASE WHEN DBMS_LOB.GETLENGTH(NVL(P_ROWS,EMPTY_CLOB()))>0 THEN '<tr><td style="padding:0 28px 28px"><table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse:collapse;border:1px solid #d9e2ec">'||P_ROWS||'</table></td></tr>' END||
+      '<tr><td style="padding:18px 28px;background:#f8fafc;border-top:1px solid #d9e2ec;font-size:12px;line-height:1.6;color:#52606d">'||ESC(C_FOOTER)||'</td></tr></table></td></tr></table></body></html>';
+  END;
+
+  PROCEDURE ENQUEUE(P_CODE VARCHAR2,P_REF1 NUMBER,P_REF2 NUMBER,P_MAIL_TO VARCHAR2,P_MAIL_CC VARCHAR2,
+    P_REFERENCE VARCHAR2,P_STATUS VARCHAR2,P_ROWS CLOB,O_EMAIL_ID OUT NUMBER) IS
+    V_M IAS_NOTIFICATION_MASTER%ROWTYPE; V_SUBJECT VARCHAR2(1000); V_TITLE VARCHAR2(500); V_SUMMARY CLOB; V_BODY CLOB;
+  BEGIN
+    SELECT * INTO V_M FROM IAS_NOTIFICATION_MASTER WHERE NOTIFICATION_CODE=UPPER(TRIM(P_CODE));
+    IF V_M.IS_ACTIVE='N' THEN O_EMAIL_ID:=NULL; RETURN; END IF;
+    V_SUBJECT:=REPLACE(REPLACE(V_M.SUBJECT_TEMPLATE,'{REFERENCE}',NVL(P_REFERENCE,'')),'{STATUS}',NVL(P_STATUS,''));
+    V_TITLE:=REPLACE(REPLACE(V_M.TITLE_TEMPLATE,'{REFERENCE}',NVL(P_REFERENCE,'')),'{STATUS}',NVL(P_STATUS,''));
+    V_SUMMARY:=REPLACE(REPLACE(V_M.SUMMARY_TEMPLATE,'{REFERENCE}',NVL(P_REFERENCE,'')),'{STATUS}',NVL(P_STATUS,''));
+    V_BODY:=STANDARD_HTML(V_TITLE,V_SUMMARY,P_ROWS);
+    IF TRIM(P_MAIL_TO) IS NULL THEN RAISE_APPLICATION_ERROR(-20101,'No TO recipient for '||P_CODE); END IF;
+    PKG_INQ.P_ENQUEUE_EMAIL(P_CODE,P_REF1,P_REF2,P_MAIL_TO,P_MAIL_CC,V_SUBJECT,V_BODY,O_EMAIL_ID);
+  END;
+
+  PROCEDURE ENQUEUE_HTML(P_CODE VARCHAR2,P_REF1 NUMBER,P_REF2 NUMBER,P_MAIL_TO VARCHAR2,P_MAIL_CC VARCHAR2,
+    P_REFERENCE VARCHAR2,P_BODY CLOB,O_EMAIL_ID OUT NUMBER) IS
+    V_M IAS_NOTIFICATION_MASTER%ROWTYPE; V_SUBJECT VARCHAR2(1000);
+  BEGIN
+    SELECT * INTO V_M FROM IAS_NOTIFICATION_MASTER WHERE NOTIFICATION_CODE=UPPER(TRIM(P_CODE));
+    IF V_M.IS_ACTIVE='N' THEN O_EMAIL_ID:=NULL; RETURN; END IF;
+    V_SUBJECT:=REPLACE(V_M.SUBJECT_TEMPLATE,'{REFERENCE}',NVL(P_REFERENCE,''));
+    IF TRIM(P_MAIL_TO) IS NULL THEN RAISE_APPLICATION_ERROR(-20101,'No TO recipient for '||P_CODE); END IF;
+    PKG_INQ.P_ENQUEUE_EMAIL(P_CODE,P_REF1,P_REF2,P_MAIL_TO,P_MAIL_CC,V_SUBJECT,P_BODY,O_EMAIL_ID);
+  END;
+
+  PROCEDURE SEND_AUDIT_TEAM_ASSIGNED(P_ENG_ID NUMBER,P_MAIL_TO VARCHAR2,P_MAIL_CC VARCHAR2,P_REFERENCE VARCHAR2,P_ENTITY VARCHAR2,P_PERIOD VARCHAR2,P_TEAM VARCHAR2,O_EMAIL_ID OUT NUMBER) IS V CLOB;
+  BEGIN V:=ROW_HTML('Engagement',P_REFERENCE)||ROW_HTML('Entity',P_ENTITY)||ROW_HTML('Audit Period',P_PERIOD)||ROW_HTML('Team',P_TEAM);
+    ENQUEUE('AUDIT_TEAM_ASSIGNED',P_ENG_ID,NULL,P_MAIL_TO,P_MAIL_CC,P_REFERENCE,NULL,V,O_EMAIL_ID); END;
+
+  -- Called by PKG_AR.P_ADDJOININGREPORT with its existing output cursor values.
+  PROCEDURE SEND_AUDIT_TEAM_JOINED(P_ENG_ID NUMBER,P_MAIL_TO VARCHAR2,P_MAIL_CC VARCHAR2,P_ENTITY VARCHAR2,P_TEAM_LEAD VARCHAR2,P_TEAM_MEMBERS VARCHAR2,O_EMAIL_ID OUT NUMBER) IS V CLOB;
+  BEGIN V:=ROW_HTML('Entity',P_ENTITY)||ROW_HTML('Team Lead',P_TEAM_LEAD)||ROW_HTML('Team Members',P_TEAM_MEMBERS);
+    ENQUEUE('AUDIT_TEAM_JOINED',P_ENG_ID,NULL,P_MAIL_TO,P_MAIL_CC,P_ENTITY,NULL,V,O_EMAIL_ID); END;
+
+  PROCEDURE SEND_OBS_SUBMITTED_AUDITEE(P_ENG_ID NUMBER,P_OBS_ID NUMBER,P_MAIL_TO VARCHAR2,P_MAIL_CC VARCHAR2,P_REFERENCE VARCHAR2,P_ENTITY VARCHAR2,P_PERIOD VARCHAR2,P_HEADING VARCHAR2,P_SUMMARY CLOB,O_EMAIL_ID OUT NUMBER) IS V CLOB;
+  BEGIN V:=ROW_HTML('Reference',P_REFERENCE)||ROW_HTML('Entity',P_ENTITY)||ROW_HTML('Audit Period',P_PERIOD)||ROW_HTML('Observation Heading',P_HEADING)||ROW_HTML('Status','Submitted to Auditee')||ROW_HTML('Observation Summary',DBMS_LOB.SUBSTR(P_SUMMARY,500,1));
+    ENQUEUE('OBS_SUBMITTED_AUDITEE',P_ENG_ID,P_OBS_ID,P_MAIL_TO,P_MAIL_CC,P_REFERENCE,NULL,V,O_EMAIL_ID); END;
+
+  -- Call from PKG_AE.P_SUBMITPOSTAUDITCOMPLIANCE_REVIEW after successful status update.
+  -- V_GET_AIS_POST_COMPLIANCE supplies para/entity data; entity email resolution is
+  -- performed once here, not repeated in the workflow procedure.
+  PROCEDURE SEND_PARA_STATUS_UPDATED(P_COM_ID NUMBER,P_STATUS VARCHAR2,O_EMAIL_ID OUT NUMBER) IS
+    V_REF VARCHAR2(200); V_GIST VARCHAR2(4000); V_TO VARCHAR2(2000); V_CC VARCHAR2(2000); V_ROWS CLOB;
+  BEGIN
+    SELECT TO_CHAR(C.PARA_NO),C.GIST_OF_PARAS,C.TO_EMAIL,C.CC_EMAIL
+      INTO V_REF,V_GIST,V_TO,V_CC
+      FROM V_IAS_POST_COMPLIANCE_NOTIFY C
+     WHERE C.COM_ID=P_COM_ID;
+    V_ROWS:=ROW_HTML('Para No.',V_REF)||ROW_HTML('Status',P_STATUS)||ROW_HTML('Gist of Para',V_GIST);
+    ENQUEUE('PARA_STATUS_UPDATED',P_COM_ID,NULL,V_TO,V_CC,V_REF,P_STATUS,V_ROWS,O_EMAIL_ID);
+  END;
+
+  PROCEDURE SEND_MGMT_AUDIT_PARA_STATUS(P_COM_ID NUMBER,P_DECISION_HIST_ID NUMBER,
+    P_STATUS VARCHAR2,O_EMAIL_ID OUT NUMBER) IS
+    V_REF VARCHAR2(200); V_GIST VARCHAR2(4000); V_YEAR VARCHAR2(1000);
+    V_RISK VARCHAR2(200); V_AUDITBY NUMBER; V_TO VARCHAR2(2000); V_CC VARCHAR2(2000);
+    V_REASON VARCHAR2(1000); V_STATUS VARCHAR2(20); V_ROWS CLOB;
+  BEGIN
+    V_STATUS:=CASE WHEN UPPER(TRIM(P_STATUS))='SETTLED' THEN 'Settled'
+                   WHEN UPPER(TRIM(P_STATUS))='REJECTED' THEN 'Rejected' END;
+    IF V_STATUS IS NULL THEN RAISE_APPLICATION_ERROR(-20102,'Invalid Management Audit para status.'); END IF;
+    SELECT TO_CHAR(C.PARA_NO),C.GIST_OF_PARAS,C.AUDIT_PERIOD,C.RISK,C.AUDITBY_ID,
+           C.TO_EMAIL,C.CC_EMAIL
+      INTO V_REF,V_GIST,V_YEAR,V_RISK,V_AUDITBY,V_TO,V_CC
+      FROM V_IAS_POST_COMPLIANCE_NOTIFY C
+     WHERE C.COM_ID=P_COM_ID;
+    IF V_AUDITBY NOT IN (112242,112248) THEN
+      RAISE_APPLICATION_ERROR(-20103,'Management Audit notification requested for another audit area.');
+    END IF;
+    SELECT CASE WHEN V_STATUS='Rejected' THEN H.COMMENTS END
+      INTO V_REASON
+      FROM AIS_T_AU_POST_COMPLIANCE_HISTORY H
+     WHERE H.HIST_ID=P_DECISION_HIST_ID AND H.COM_ID=P_COM_ID;
+    V_ROWS:=ROW_HTML('Para No.',V_REF)||ROW_HTML('Audit Year',V_YEAR)||
+      ROW_HTML('Risk',V_RISK)||ROW_HTML('Status',V_STATUS)||ROW_HTML('Gist of Para',V_GIST)||
+      CASE WHEN V_STATUS='Rejected' THEN ROW_HTML('Reason for Rejection',NVL(V_REASON,'Not recorded')) ELSE EMPTY_CLOB() END;
+    ENQUEUE('MGMT_AUDIT_PARA_STATUS',P_COM_ID,P_DECISION_HIST_ID,V_TO,V_CC,V_REF,V_STATUS,V_ROWS,O_EMAIL_ID);
+  END;
+
+  PROCEDURE SEND_MGMT_AUDIT_WEEKLY(P_FROM_DATE DATE,P_TO_DATE DATE) IS
+    C_CODE CONSTANT VARCHAR2(50):='MGMT_AUDIT_WEEKLY_PARA_STATUS';
+    V_FROM DATE; V_TO_DATE DATE; V_SETTLED CLOB; V_REJECTED CLOB; V_BODY CLOB;
+    V_SN NUMBER; V_RN NUMBER; V_EMAIL_ID NUMBER; V_REF1 NUMBER; V_EXISTING NUMBER;
+    FUNCTION CELL(P_VALUE VARCHAR2,P_HEAD BOOLEAN DEFAULT FALSE) RETURN CLOB IS
+      V_TAG VARCHAR2(2):=CASE WHEN P_HEAD THEN 'th' ELSE 'td' END;
+      V_BG VARCHAR2(60):=CASE WHEN P_HEAD THEN 'background:#eef2f6;font-weight:bold;' ELSE '' END;
+    BEGIN RETURN TO_CLOB('<'||V_TAG||' style="padding:8px 10px;border-bottom:1px solid #d9e2ec;font-size:12px;color:#334e68;'||V_BG||'">')||ESC(P_VALUE)||'</'||V_TAG||'>'; END;
+    FUNCTION FMT(P_DATE DATE) RETURN VARCHAR2 IS BEGIN RETURN TO_CHAR(P_DATE,'DD-MON-YYYY'); END;
+  BEGIN
+    IF (P_FROM_DATE IS NULL AND P_TO_DATE IS NOT NULL) OR (P_FROM_DATE IS NOT NULL AND P_TO_DATE IS NULL) THEN
+      RAISE_APPLICATION_ERROR(-20104,'Supply both weekly reporting dates or neither.');
+    END IF;
+    V_FROM:=TRUNC(NVL(P_FROM_DATE,TRUNC(SYSDATE,'IW')-7));
+    V_TO_DATE:=TRUNC(NVL(P_TO_DATE,TRUNC(SYSDATE,'IW')-1));
+    IF V_TO_DATE<V_FROM THEN RAISE_APPLICATION_ERROR(-20105,'Invalid weekly reporting period.'); END IF;
+    V_REF1:=TO_NUMBER(TO_CHAR(V_FROM,'YYYYMMDD'));
+
+    FOR RCP IN (
+      SELECT M.DIVISION_ID,M.DIVISION_NAME,M.DIVISION_EMAIL MAIL_TO,
+             MAX(M.REPORTING_EMAIL) MAIL_CC
+        FROM AIS_T_AU_POST_COMPLIANCE PC
+        JOIN AIS_T_AU_POST_COMPLIANCE_HISTORY H ON H.COM_ID=PC.COM_ID
+        JOIN V_IAS_MGMT_AUDIT_NOTIFY_MAP M ON M.ENTITY_ID=PC.ENTITY_ID
+         AND M.DIVISION_ID IS NOT NULL AND TRIM(M.DIVISION_EMAIL) IS NOT NULL
+       WHERE PC.AUDITED_BY IN (112242,112248)
+         AND H.COM_STATUS IN (16,12,15,18)
+         AND H.COMMENT_ON>=V_FROM AND H.COMMENT_ON<V_TO_DATE+1
+       GROUP BY M.DIVISION_ID,M.DIVISION_NAME,M.DIVISION_EMAIL
+    ) LOOP
+      SELECT COUNT(*) INTO V_EXISTING FROM T_AU_IID_EMAIL_QUEUE Q
+       WHERE Q.EVENT_CODE=C_CODE AND Q.REF_ID1=V_REF1 AND Q.REF_ID2=RCP.DIVISION_ID;
+      IF V_EXISTING>0 THEN
+        CONTINUE;
+      END IF;
+      V_SETTLED:='<tr>'||CELL('Sr.',TRUE)||CELL('Entity',TRUE)||CELL('Audit Year',TRUE)||CELL('Para No.',TRUE)||
+        CELL('Title',TRUE)||CELL('Compliance Submitted On',TRUE)||CELL('Decision On',TRUE)||'</tr>';
+      V_REJECTED:='<tr>'||CELL('Sr.',TRUE)||CELL('Entity',TRUE)||CELL('Audit Year',TRUE)||CELL('Para No.',TRUE)||
+        CELL('Title',TRUE)||CELL('Compliance Submitted On',TRUE)||CELL('Decision On',TRUE)||CELL('Reason',TRUE)||'</tr>';
+      V_SN:=0; V_RN:=0;
+      FOR DCS IN (
+        SELECT E.NAME ENTITY_NAME,PC.AUDIT_PERIOD,PC.PARA_NO,PC.GIST_OF_PARAS TITLE,
+               (SELECT MAX(S.COMMENT_ON) FROM AIS_T_AU_POST_COMPLIANCE_HISTORY S
+                 WHERE S.COM_ID=H.COM_ID AND S.COM_CYCLE=H.COM_CYCLE AND S.COM_STATUS=10
+                   AND S.COMMENT_ON<=H.COMMENT_ON) SUBMITTED_ON,
+               H.COMMENT_ON DECISION_ON,H.COMMENTS REASON,H.COM_STATUS
+          FROM AIS_T_AU_POST_COMPLIANCE PC
+          JOIN AIS_T_AU_POST_COMPLIANCE_HISTORY H ON H.COM_ID=PC.COM_ID
+          JOIN T_AUDITEE_ENTITIES E ON E.ENTITY_ID=PC.ENTITY_ID
+          JOIN V_IAS_MGMT_AUDIT_NOTIFY_MAP M ON M.ENTITY_ID=PC.ENTITY_ID
+           AND M.DIVISION_ID IS NOT NULL AND TRIM(M.DIVISION_EMAIL) IS NOT NULL
+         WHERE PC.AUDITED_BY IN (112242,112248) AND M.DIVISION_ID=RCP.DIVISION_ID
+           AND H.COM_STATUS IN (16,12,15,18)
+           AND H.COMMENT_ON>=V_FROM AND H.COMMENT_ON<V_TO_DATE+1
+         ORDER BY H.COMMENT_ON,H.HIST_ID
+      ) LOOP
+        IF DCS.COM_STATUS=16 THEN
+          V_SN:=V_SN+1; V_SETTLED:=V_SETTLED||'<tr>'||CELL(TO_CHAR(V_SN))||CELL(DCS.ENTITY_NAME)||
+            CELL(DCS.AUDIT_PERIOD)||CELL(DCS.PARA_NO)||CELL(DCS.TITLE)||CELL(FMT(DCS.SUBMITTED_ON))||CELL(FMT(DCS.DECISION_ON))||'</tr>';
+        ELSE
+          V_RN:=V_RN+1; V_REJECTED:=V_REJECTED||'<tr>'||CELL(TO_CHAR(V_RN))||CELL(DCS.ENTITY_NAME)||
+            CELL(DCS.AUDIT_PERIOD)||CELL(DCS.PARA_NO)||CELL(DCS.TITLE)||CELL(FMT(DCS.SUBMITTED_ON))||CELL(FMT(DCS.DECISION_ON))||CELL(DCS.REASON)||'</tr>';
+        END IF;
+      END LOOP;
+      IF V_SN=0 AND V_RN=0 THEN CONTINUE; END IF;
+      IF V_SN=0 THEN V_SETTLED:=V_SETTLED||'<tr><td colspan="7" style="padding:10px">No settled paras.</td></tr>'; END IF;
+      IF V_RN=0 THEN V_REJECTED:=V_REJECTED||'<tr><td colspan="8" style="padding:10px">No rejected paras.</td></tr>'; END IF;
+      V_BODY:=TO_CLOB('<!DOCTYPE html><html><body style="margin:0;background:#f4f6f8;font-family:Arial;color:#1f2933"><table width="100%"><tr><td align="center"><table width="900" style="background:#fff;border-collapse:collapse"><tr><td style="padding:18px 28px;background:#173f5f;color:#fff;font-size:20px;font-weight:bold">Internal Audit System (IAS)</td></tr><tr><td style="padding:28px;font-size:22px;font-weight:bold">Weekly Management Audit Para Decisions</td></tr><tr><td style="padding:0 28px 18px">Reporting period: ')||ESC(FMT(V_FROM)||' to '||FMT(V_TO_DATE))||'<br>Division: '||ESC(RCP.DIVISION_NAME)||'</td></tr><tr><td style="padding:8px 28px;font-weight:bold">SETTLED PARAS</td></tr><tr><td style="padding:0 28px 18px"><table width="100%" style="border-collapse:collapse">'||V_SETTLED||'</table></td></tr><tr><td style="padding:8px 28px;font-weight:bold">REJECTED PARAS</td></tr><tr><td style="padding:0 28px 18px"><table width="100%" style="border-collapse:collapse">'||V_REJECTED||'</table></td></tr><tr><td style="padding:18px 28px;background:#f8fafc;font-size:12px">'||ESC(C_FOOTER)||'</td></tr></table></td></tr></table></body></html>';
+      ENQUEUE_HTML(C_CODE,V_REF1,RCP.DIVISION_ID,RCP.MAIL_TO,RCP.MAIL_CC,
+        FMT(V_FROM)||' to '||FMT(V_TO_DATE),V_BODY,V_EMAIL_ID);
+    END LOOP;
+  EXCEPTION WHEN OTHERS THEN
+    PKG_LG.LOG_ERROR('IAS_NOTIFICATION','DBMS_SCHEDULER','SEND_MGMT_AUDIT_WEEKLY',
+      'Weekly Management Audit notification failed',SQLERRM);
+    RAISE;
+  END;
+
+  PROCEDURE SEND_MGMT_AUDIT_MAPPING_EXCEPTIONS(P_REPORT_DATE DATE) IS
+    C_CODE CONSTANT VARCHAR2(50):='MGMT_AUDIT_MAPPING_EXCEPTION';
+    V_DATE DATE:=TRUNC(NVL(P_REPORT_DATE,SYSDATE)); V_REF1 NUMBER; V_ROWS CLOB;
+    V_BODY CLOB; V_EMAIL_ID NUMBER; V_COUNT NUMBER; V_EXISTING NUMBER; V_SN NUMBER;
+    FUNCTION CELL(P_VALUE VARCHAR2,P_HEAD BOOLEAN DEFAULT FALSE) RETURN CLOB IS
+      V_TAG VARCHAR2(2):=CASE WHEN P_HEAD THEN 'th' ELSE 'td' END;
+      V_BG VARCHAR2(60):=CASE WHEN P_HEAD THEN 'background:#eef2f6;font-weight:bold;' ELSE '' END;
+    BEGIN RETURN TO_CLOB('<'||V_TAG||' style="padding:8px 10px;border-bottom:1px solid #d9e2ec;font-size:12px;color:#334e68;'||V_BG||'">')||ESC(P_VALUE)||'</'||V_TAG||'>'; END;
+  BEGIN
+    V_REF1:=TO_NUMBER(TO_CHAR(V_DATE,'YYYYMMDD'));
+    FOR HD IN (
+      SELECT X.AUDITED_BY,H.NAME HEAD_NAME,H.EMAIL_ADDRESS MAIL_TO
+        FROM (SELECT 112242 AUDITED_BY FROM DUAL UNION ALL SELECT 112248 FROM DUAL) X
+        LEFT JOIN T_AUDITEE_ENTITIES H ON H.ENTITY_ID=X.AUDITED_BY
+    ) LOOP
+      SELECT COUNT(*) INTO V_COUNT FROM V_IAS_MGMT_AUDIT_NOTIFY_MAP M
+       WHERE M.AUDITED_BY=HD.AUDITED_BY AND M.MAPPING_READY='N';
+      IF V_COUNT=0 THEN CONTINUE; END IF;
+      IF TRIM(HD.MAIL_TO) IS NULL THEN
+        PKG_LG.LOG_ERROR('IAS_NOTIFICATION','DBMS_SCHEDULER','SEND_MGMT_AUDIT_MAPPING_EXCEPTIONS',
+          'Mapping exceptions exist but audit head email is missing','AUDITED_BY='||HD.AUDITED_BY);
+        CONTINUE;
+      END IF;
+      SELECT COUNT(*) INTO V_EXISTING FROM T_AU_IID_EMAIL_QUEUE Q
+       WHERE Q.EVENT_CODE=C_CODE AND Q.REF_ID1=V_REF1 AND Q.REF_ID2=HD.AUDITED_BY;
+      IF V_EXISTING>0 THEN CONTINUE; END IF;
+      V_ROWS:='<tr>'||CELL('Sr.',TRUE)||CELL('Entity',TRUE)||CELL('Entity ID',TRUE)||CELL('Audited By',TRUE)||
+        CELL('Divisional Office',TRUE)||CELL('Divisional Head Email',TRUE)||
+        CELL('Reporting Office / Group',TRUE)||CELL('Reporting Office / Group Email',TRUE)||
+        CELL('Missing / Required Action',TRUE)||'</tr>';
+      V_SN:=0;
+      FOR E IN (
+        SELECT * FROM V_IAS_MGMT_AUDIT_NOTIFY_MAP M
+         WHERE M.AUDITED_BY=HD.AUDITED_BY AND M.MAPPING_READY='N'
+         ORDER BY M.ENTITY_NAME,M.ENTITY_ID
+      ) LOOP
+        V_SN:=V_SN+1;
+        V_ROWS:=V_ROWS||'<tr>'||CELL(TO_CHAR(V_SN))||CELL(E.ENTITY_NAME)||CELL(TO_CHAR(E.ENTITY_ID))||
+          CELL(TO_CHAR(E.AUDITED_BY))||CELL(NVL(E.DIVISION_NAME,'Missing'))||CELL(NVL(E.DIVISION_EMAIL,'Missing'))||
+          CELL(NVL(E.REPORTING_NAME,'Missing'))||CELL(NVL(E.REPORTING_EMAIL,'Missing'))||
+          CELL(E.MISSING_REQUIRED_ACTION)||'</tr>';
+      END LOOP;
+      V_BODY:=TO_CLOB('<!DOCTYPE html><html><body style="margin:0;background:#f4f6f8;font-family:Arial;color:#1f2933"><table width="100%"><tr><td align="center"><table width="1100" style="background:#fff;border-collapse:collapse"><tr><td style="padding:18px 28px;background:#173f5f;color:#fff;font-size:20px;font-weight:bold">Internal Audit System (IAS)</td></tr><tr><td style="padding:28px;font-size:22px;font-weight:bold">Management Audit Entity Mapping Exceptions</td></tr><tr><td style="padding:0 28px 18px">Audit domain: ')||ESC(TO_CHAR(HD.AUDITED_BY)||' - '||NVL(HD.HEAD_NAME,'Unknown'))||'</td></tr><tr><td style="padding:0 28px 28px"><table width="100%" style="border-collapse:collapse">'||V_ROWS||'</table></td></tr><tr><td style="padding:18px 28px;background:#f8fafc;font-size:12px">'||ESC(C_FOOTER)||'</td></tr></table></td></tr></table></body></html>';
+      ENQUEUE_HTML(C_CODE,V_REF1,HD.AUDITED_BY,HD.MAIL_TO,NULL,TO_CHAR(HD.AUDITED_BY),V_BODY,V_EMAIL_ID);
+    END LOOP;
+  EXCEPTION WHEN OTHERS THEN
+    PKG_LG.LOG_ERROR('IAS_NOTIFICATION','DBMS_SCHEDULER','SEND_MGMT_AUDIT_MAPPING_EXCEPTIONS',
+      'Management Audit mapping exception notification failed',SQLERRM);
+    RAISE;
+  END;
+
+  PROCEDURE SEND_NOTIFICATION_HEALTH(P_REPORT_DATE DATE) IS
+    C_CODE CONSTANT VARCHAR2(50):='IAS_NOTIFICATION_HEALTH';
+    V_DATE DATE:=TRUNC(NVL(P_REPORT_DATE,SYSDATE)); V_REF1 NUMBER; V_EXISTING NUMBER;
+    V_TO VARCHAR2(4000); V_ROWS CLOB; V_SUMMARY CLOB; V_ERRORS CLOB; V_BODY CLOB;
+    V_EMAIL_ID NUMBER; V_PENDING NUMBER; V_FAILED NUMBER; V_RETRIES NUMBER; V_ERROR_ROWS NUMBER:=0;
+    V_OLDEST DATE; V_LAST_SENT DATE; V_OBJECTS VARCHAR2(4000); V_IMMEDIATE VARCHAR2(1000);
+    V_WEEKLY VARCHAR2(1000); V_MAPPING VARCHAR2(1000); V_HEALTH VARCHAR2(1000); V_CI VARCHAR2(500);
+    V_QUEUE_CONTRACT VARCHAR2(100); V_QUEUE_TYPE VARCHAR2(30); V_QUEUE_VALID NUMBER;
+    FUNCTION CELL(P_VALUE VARCHAR2,P_HEAD BOOLEAN DEFAULT FALSE) RETURN CLOB IS
+      V_TAG VARCHAR2(2):=CASE WHEN P_HEAD THEN 'th' ELSE 'td' END;
+      V_BG VARCHAR2(60):=CASE WHEN P_HEAD THEN 'background:#eef2f6;font-weight:bold;' ELSE '' END;
+    BEGIN RETURN TO_CLOB('<'||V_TAG||' style="padding:8px 10px;border-bottom:1px solid #d9e2ec;font-size:12px;color:#334e68;'||V_BG||'">')||ESC(P_VALUE)||'</'||V_TAG||'>'; END;
+    FUNCTION FMT(P_DATE DATE) RETURN VARCHAR2 IS BEGIN RETURN NVL(TO_CHAR(P_DATE,'DD-MON-YYYY HH24:MI:SS'),'None'); END;
+  BEGIN
+    V_REF1:=TO_NUMBER(TO_CHAR(V_DATE,'YYYYMMDD'));
+    SELECT COUNT(*) INTO V_EXISTING FROM T_AU_IID_EMAIL_QUEUE
+     WHERE EVENT_CODE=C_CODE AND REF_ID1=V_REF1;
+    IF V_EXISTING>0 THEN RETURN; END IF;
+
+    SELECT LISTAGG(X.EMAIL,';') WITHIN GROUP (ORDER BY X.EMAIL)
+      INTO V_TO
+      FROM
+      (
+        SELECT DISTINCT E.EMAIL
+          FROM T_USER_MAPING M
+          JOIN T_USER U ON U.USERID=M.USERID
+          JOIN V_SERVICE_EMPLOYEEINFO E ON E.PPNO=U.PPNO
+         WHERE M.ROLE_ID=1
+           AND NVL(U.ISACTIVE,'Y')='Y'
+           AND TRIM(E.EMAIL) IS NOT NULL
+      ) X;
+    IF TRIM(V_TO) IS NULL THEN RAISE_APPLICATION_ERROR(-20106,'No active Super Admin email recipient is configured.'); END IF;
+
+    SELECT SUM(CASE WHEN STATUS='PENDING' THEN 1 ELSE 0 END),
+           SUM(CASE WHEN STATUS='FAILED' THEN 1 ELSE 0 END),NVL(SUM(RETRY_COUNT),0),
+           MIN(CASE WHEN STATUS='PENDING' THEN CREATED_ON END),MAX(SENT_ON)
+      INTO V_PENDING,V_FAILED,V_RETRIES,V_OLDEST,V_LAST_SENT
+      FROM T_AU_IID_EMAIL_QUEUE;
+    SELECT LISTAGG(OBJECT_NAME||' ('||STATUS||')',', ') WITHIN GROUP (ORDER BY OBJECT_NAME)
+      INTO V_OBJECTS FROM USER_OBJECTS
+     WHERE OBJECT_NAME IN ('PKG_INQ','PKG_AE','PKG_IAS_NOTIFICATION','V_IAS_POST_COMPLIANCE_NOTIFY','V_IAS_MGMT_AUDIT_NOTIFY_MAP')
+       AND OBJECT_TYPE IN ('PACKAGE','PACKAGE BODY','VIEW');
+    SELECT NVL(MAX(DATA_TYPE),'MISSING') INTO V_QUEUE_TYPE
+      FROM USER_ARGUMENTS
+     WHERE PACKAGE_NAME='PKG_INQ' AND OBJECT_NAME='P_GET_EMAIL_QUEUE'
+       AND ARGUMENT_NAME='P_STATUS' AND DATA_LEVEL=0;
+    SELECT COUNT(*) INTO V_QUEUE_VALID FROM USER_OBJECTS
+     WHERE OBJECT_NAME='PKG_INQ' AND OBJECT_TYPE IN ('PACKAGE','PACKAGE BODY') AND STATUS='VALID';
+    V_QUEUE_CONTRACT:=V_QUEUE_TYPE||' / '||
+      CASE WHEN V_QUEUE_TYPE='VARCHAR2' AND V_QUEUE_VALID=2 THEN 'VALID' ELSE 'INVALID' END;
+    SELECT 'Generated='||COUNT(*)||', Sent='||SUM(CASE WHEN STATUS='SENT' THEN 1 ELSE 0 END)||
+           ', Pending='||SUM(CASE WHEN STATUS='PENDING' THEN 1 ELSE 0 END)||', Failed='||SUM(CASE WHEN STATUS='FAILED' THEN 1 ELSE 0 END)||
+           ', Last sent='||NVL(TO_CHAR(MAX(SENT_ON),'DD-MON-YYYY HH24:MI:SS'),'None')
+      INTO V_IMMEDIATE FROM T_AU_IID_EMAIL_QUEUE WHERE EVENT_CODE='MGMT_AUDIT_PARA_STATUS';
+    BEGIN
+      SELECT 'Enabled='||ENABLED||', State='||STATE||', Next run='||TO_CHAR(NEXT_RUN_DATE,'DD-MON-YYYY HH24:MI TZH:TZM')||
+             ', Failures='||FAILURE_COUNT
+        INTO V_WEEKLY FROM USER_SCHEDULER_JOBS WHERE JOB_NAME='JOB_MGMT_AUDIT_WEEKLY_NOTIFY';
+    EXCEPTION WHEN NO_DATA_FOUND THEN V_WEEKLY:='Job missing'; END;
+    BEGIN
+      SELECT 'Enabled='||ENABLED||', State='||STATE||', Next run='||TO_CHAR(NEXT_RUN_DATE,'DD-MON-YYYY HH24:MI TZH:TZM')||
+             ', Failures='||FAILURE_COUNT
+        INTO V_MAPPING FROM USER_SCHEDULER_JOBS WHERE JOB_NAME='JOB_MGMT_AUDIT_MAPPING_EXCEPT';
+    EXCEPTION WHEN NO_DATA_FOUND THEN V_MAPPING:='Job missing'; END;
+    BEGIN
+      SELECT 'Enabled='||ENABLED||', State='||STATE||', Next run='||TO_CHAR(NEXT_RUN_DATE,'DD-MON-YYYY HH24:MI TZH:TZM')||
+             ', Failures='||FAILURE_COUNT
+        INTO V_HEALTH FROM USER_SCHEDULER_JOBS WHERE JOB_NAME='JOB_IAS_NOTIFICATION_HEALTH';
+    EXCEPTION WHEN NO_DATA_FOUND THEN V_HEALTH:='Job missing'; END;
+    V_CI:='No authoritative runtime CI/CD integration is present; build and Oracle compilation are deployment-time controls.';
+
+    V_SUMMARY:=ROW_HTML('Email queue worker status / last successful processing',
+        'No authoritative worker heartbeat is instrumented; last successful queue send: '||FMT(V_LAST_SENT))||
+      ROW_HTML('Pending email count',TO_CHAR(NVL(V_PENDING,0)))||ROW_HTML('Failed email count',TO_CHAR(NVL(V_FAILED,0)))||
+      ROW_HTML('Retry status / retry count','Failed rows remain retryable in the existing queue; cumulative retry count: '||TO_CHAR(V_RETRIES))||
+      ROW_HTML('Oldest pending email',FMT(V_OLDEST))||ROW_HTML('Last successfully sent notification',FMT(V_LAST_SENT))||
+      ROW_HTML('Management Audit immediate notification status',V_IMMEDIATE)||
+      ROW_HTML('Management Audit weekly scheduler status and next run',V_WEEKLY)||
+      ROW_HTML('Mapping exception scheduler status and next run',V_MAPPING)||
+      ROW_HTML('Notification health scheduler status and next run',V_HEALTH)||
+      ROW_HTML('P_GET_EMAIL_QUEUE.P_STATUS contract',V_QUEUE_CONTRACT)||
+      ROW_HTML('Notification package/object validity',V_OBJECTS)||ROW_HTML('CI / build verification',V_CI);
+
+    V_ROWS:='<tr>'||CELL('Notification Type',TRUE)||CELL('Generated',TRUE)||CELL('Sent Successfully',TRUE)||
+      CELL('Pending',TRUE)||CELL('Failed',TRUE)||CELL('Retried Successfully',TRUE)||CELL('Last Successful Send',TRUE)||'</tr>';
+    FOR S IN (
+      SELECT X.EVENT_CODE,COUNT(Q.EMAIL_ID) GENERATED_COUNT,
+             SUM(CASE WHEN Q.STATUS='SENT' THEN 1 ELSE 0 END) SENT_OK,
+             SUM(CASE WHEN Q.STATUS='PENDING' THEN 1 ELSE 0 END) PENDING,
+             SUM(CASE WHEN Q.STATUS='FAILED' THEN 1 ELSE 0 END) FAILED,
+             SUM(CASE WHEN Q.STATUS='SENT' AND NVL(Q.RETRY_COUNT,0)>0 THEN 1 ELSE 0 END) RETRIED_OK,
+             MAX(Q.SENT_ON) LAST_SENT
+        FROM (SELECT 'MGMT_AUDIT_PARA_STATUS' EVENT_CODE FROM DUAL UNION ALL
+              SELECT 'MGMT_AUDIT_WEEKLY_PARA_STATUS' FROM DUAL UNION ALL
+              SELECT 'MGMT_AUDIT_MAPPING_EXCEPTION' FROM DUAL) X
+        LEFT JOIN T_AU_IID_EMAIL_QUEUE Q ON Q.EVENT_CODE=X.EVENT_CODE
+       GROUP BY X.EVENT_CODE ORDER BY X.EVENT_CODE
+    ) LOOP
+      V_ROWS:=V_ROWS||'<tr>'||CELL(S.EVENT_CODE)||CELL(TO_CHAR(S.GENERATED_COUNT))||CELL(TO_CHAR(S.SENT_OK))||
+        CELL(TO_CHAR(S.PENDING))||CELL(TO_CHAR(S.FAILED))||CELL(TO_CHAR(S.RETRIED_OK))||CELL(FMT(S.LAST_SENT))||'</tr>';
+    END LOOP;
+    V_ERRORS:='<tr>'||CELL('Reference',TRUE)||CELL('Notification Type',TRUE)||CELL('Created On',TRUE)||CELL('Retry Count',TRUE)||CELL('Error',TRUE)||'</tr>';
+    FOR E IN (SELECT * FROM (SELECT EMAIL_ID,EVENT_CODE,CREATED_ON,RETRY_COUNT,ERROR_TEXT FROM T_AU_IID_EMAIL_QUEUE
+                              WHERE STATUS='FAILED' ORDER BY CREATED_ON DESC) WHERE ROWNUM<=10) LOOP
+      V_ERROR_ROWS:=V_ERROR_ROWS+1;
+      V_ERRORS:=V_ERRORS||'<tr>'||CELL(TO_CHAR(E.EMAIL_ID))||CELL(E.EVENT_CODE)||CELL(FMT(E.CREATED_ON))||
+        CELL(TO_CHAR(E.RETRY_COUNT))||CELL(E.ERROR_TEXT)||'</tr>';
+    END LOOP;
+    FOR L IN (SELECT * FROM (SELECT LOG_TIME,ACTION,MESSAGE FROM T_SYS_LOG
+                              WHERE LOG_LEVEL='ERROR' AND
+                                (MODULE='IAS_NOTIFICATION' OR
+                                 (CONTROLLER='PKG_AE' AND ACTION='P_SUBMITPOSTAUDITCOMPLIANCE_REVIEW'
+                                  AND MESSAGE LIKE 'Management Audit para notification%'))
+                              ORDER BY LOG_TIME DESC) WHERE ROWNUM<=10) LOOP
+      V_ERROR_ROWS:=V_ERROR_ROWS+1;
+      V_ERRORS:=V_ERRORS||'<tr>'||CELL('System log')||CELL(L.ACTION)||CELL(TO_CHAR(L.LOG_TIME,'DD-MON-YYYY HH24:MI:SS'))||
+        CELL('-')||CELL(L.MESSAGE)||'</tr>';
+    END LOOP;
+    IF V_ERROR_ROWS=0 THEN V_ERRORS:=V_ERRORS||'<tr><td colspan="5" style="padding:10px">No notification processing errors recorded.</td></tr>'; END IF;
+    V_BODY:=TO_CLOB('<!DOCTYPE html><html><body style="margin:0;background:#f4f6f8;font-family:Arial;color:#1f2933"><table width="100%"><tr><td align="center"><table width="1000" style="background:#fff;border-collapse:collapse"><tr><td style="padding:18px 28px;background:#173f5f;color:#fff;font-size:20px;font-weight:bold">Internal Audit System (IAS)</td></tr><tr><td style="padding:28px;font-size:22px;font-weight:bold">IAS Notification Health Report</td></tr><tr><td style="padding:0 28px 20px"><table width="100%" style="border-collapse:collapse">')||V_SUMMARY||'</table></td></tr><tr><td style="padding:8px 28px;font-weight:bold">SUCCESSFUL DELIVERY SUMMARY</td></tr><tr><td style="padding:0 28px 20px"><table width="100%" style="border-collapse:collapse">'||V_ROWS||'</table></td></tr><tr><td style="padding:8px 28px;font-weight:bold">NOTIFICATION PROCESSING ERRORS</td></tr><tr><td style="padding:0 28px 28px"><table width="100%" style="border-collapse:collapse">'||V_ERRORS||'</table></td></tr><tr><td style="padding:18px 28px;background:#f8fafc;font-size:12px">'||ESC(C_FOOTER)||'</td></tr></table></td></tr></table></body></html>';
+    ENQUEUE_HTML(C_CODE,V_REF1,NULL,V_TO,NULL,TO_CHAR(V_DATE,'DD-MON-YYYY'),V_BODY,V_EMAIL_ID);
+  EXCEPTION WHEN OTHERS THEN
+    PKG_LG.LOG_ERROR('IAS_NOTIFICATION','DBMS_SCHEDULER','SEND_NOTIFICATION_HEALTH',
+      'IAS notification health report failed',SQLERRM);
+    RAISE;
+  END;
+
+  PROCEDURE SEND_FINAL_REPORT_ISSUED(P_ENG_ID NUMBER,P_MAIL_TO VARCHAR2,P_MAIL_CC VARCHAR2,P_REFERENCE VARCHAR2,P_ENTITY VARCHAR2,P_PERIOD VARCHAR2,P_VERSION VARCHAR2,O_EMAIL_ID OUT NUMBER) IS V CLOB;
+  BEGIN V:=ROW_HTML('Engagement',P_REFERENCE)||ROW_HTML('Entity',P_ENTITY)||ROW_HTML('Audit Period',P_PERIOD)||ROW_HTML('Report Version',P_VERSION);
+    ENQUEUE('FINAL_REPORT_ISSUED',P_ENG_ID,NULL,P_MAIL_TO,P_MAIL_CC,P_REFERENCE,NULL,V,O_EMAIL_ID); END;
+
+  PROCEDURE SEND_INQUIRY_ASSIGNED_UNIT(P_COMPLAINT_ID NUMBER,P_MAIL_TO VARCHAR2,P_MAIL_CC VARCHAR2,P_REFERENCE VARCHAR2,P_NATURE VARCHAR2,P_UNIT VARCHAR2,P_DUE_DATE VARCHAR2,P_DIRECTIONS CLOB,O_EMAIL_ID OUT NUMBER) IS V CLOB;
+  BEGIN V:=ROW_HTML('Inquiry Reference',P_REFERENCE)||ROW_HTML('Inquiry Nature',P_NATURE)||ROW_HTML('Assigned Unit',P_UNIT)||ROW_HTML('Due Date',P_DUE_DATE)||ROW_HTML('Directions',DBMS_LOB.SUBSTR(P_DIRECTIONS,500,1));
+    ENQUEUE('INQUIRY_ASSIGNED_UNIT',P_COMPLAINT_ID,NULL,P_MAIL_TO,P_MAIL_CC,P_REFERENCE,NULL,V,O_EMAIL_ID); END;
+
+  PROCEDURE SEND_PASSWORD_RESET_SUCCESS(P_PPNO NUMBER,P_TEMP_PASSWORD VARCHAR2,P_MAIL_CC VARCHAR2,O_EMAIL_ID OUT NUMBER) IS V_TO VARCHAR2(320); V_NAME VARCHAR2(300); V CLOB;
+  BEGIN
+    SELECT EMAIL,TRIM(EMPLOYEEFIRSTNAME||' '||EMPLOYEELASTNAME) INTO V_TO,V_NAME FROM V_SERVICE_EMPLOYEEINFO WHERE PPNO=P_PPNO;
+    V:=ROW_HTML('User',V_NAME)||ROW_HTML('Username',TO_CHAR(P_PPNO))||ROW_HTML('Temporary Password',P_TEMP_PASSWORD);
+    ENQUEUE('PASSWORD_RESET_SUCCESS',P_PPNO,NULL,V_TO,P_MAIL_CC,TO_CHAR(P_PPNO),NULL,V,O_EMAIL_ID);
+  END;
+
+  -- PKG_SM procedures already return EMAIL/EMAIL_CC; pass those values directly.
+  PROCEDURE SEND_AUDIT_SAMPLE_ISSUE(P_ENG_ID NUMBER,P_MAIL_TO VARCHAR2,P_MAIL_CC VARCHAR2,O_EMAIL_ID OUT NUMBER) IS V CLOB;
+  BEGIN V:=ROW_HTML('Engagement ID',TO_CHAR(P_ENG_ID)); ENQUEUE('AUDIT_SAMPLE_ISSUE',P_ENG_ID,NULL,P_MAIL_TO,P_MAIL_CC,TO_CHAR(P_ENG_ID),NULL,V,O_EMAIL_ID); END;
+  PROCEDURE SEND_AUDIT_EXCEPTION_ISSUE(P_ENG_ID NUMBER,P_MAIL_TO VARCHAR2,P_MAIL_CC VARCHAR2,O_EMAIL_ID OUT NUMBER) IS V CLOB;
+  BEGIN V:=ROW_HTML('Engagement ID',TO_CHAR(P_ENG_ID)); ENQUEUE('AUDIT_EXCEPTION_ISSUE',P_ENG_ID,NULL,P_MAIL_TO,P_MAIL_CC,TO_CHAR(P_ENG_ID),NULL,V,O_EMAIL_ID); END;
+
+  PROCEDURE SEND_AUDIT_CRITERIA_SUBMITTED(P_ENTITY_ID NUMBER,P_MAIL_TO VARCHAR2,P_MAIL_CC VARCHAR2,P_MESSAGE CLOB,O_EMAIL_ID OUT NUMBER) IS V CLOB;
+  BEGIN V:=ROW_HTML('Entity ID',TO_CHAR(P_ENTITY_ID))||ROW_HTML('Message',DBMS_LOB.SUBSTR(P_MESSAGE,2000,1)); ENQUEUE('AUDIT_CRITERIA_SUBMITTED',P_ENTITY_ID,NULL,P_MAIL_TO,P_MAIL_CC,TO_CHAR(P_ENTITY_ID),NULL,V,O_EMAIL_ID); END;
+
+  PROCEDURE SEND_AJAX_APPLICATION_ERROR(P_REFERENCE VARCHAR2,P_STATUS NUMBER,P_ENDPOINT VARCHAR2,P_ACTION VARCHAR2,P_USER_LABEL VARCHAR2,P_DETAILS CLOB,P_MAIL_TO VARCHAR2,O_EMAIL_ID OUT NUMBER) IS V CLOB;
+  BEGIN V:=ROW_HTML('Reference',P_REFERENCE)||ROW_HTML('Status',TO_CHAR(P_STATUS))||ROW_HTML('Endpoint',P_ENDPOINT)||ROW_HTML('Action',P_ACTION)||ROW_HTML('User',P_USER_LABEL)||ROW_HTML('Details',DBMS_LOB.SUBSTR(P_DETAILS,2000,1)); ENQUEUE('AJAX_APPLICATION_ERROR',NULL,NULL,P_MAIL_TO,NULL,P_REFERENCE,TO_CHAR(P_STATUS),V,O_EMAIL_ID); END;
+END PKG_IAS_NOTIFICATION;
+/
+
+DECLARE
+  V_SPEC_VALID NUMBER;
+  V_BODY_VALID NUMBER;
+  V_ERRORS NUMBER;
+BEGIN
+  SELECT COUNT(*) INTO V_SPEC_VALID
+    FROM USER_OBJECTS
+   WHERE OBJECT_NAME='PKG_IAS_NOTIFICATION'
+     AND OBJECT_TYPE='PACKAGE'
+     AND STATUS='VALID';
+
+  SELECT COUNT(*) INTO V_BODY_VALID
+    FROM USER_OBJECTS
+   WHERE OBJECT_NAME='PKG_IAS_NOTIFICATION'
+     AND OBJECT_TYPE='PACKAGE BODY'
+     AND STATUS='VALID';
+
+  SELECT COUNT(*) INTO V_ERRORS
+    FROM USER_ERRORS
+   WHERE NAME='PKG_IAS_NOTIFICATION';
+
+  IF V_SPEC_VALID<>1 OR V_BODY_VALID<>1 OR V_ERRORS>0 THEN
+    RAISE_APPLICATION_ERROR(
+      -20824,
+      'PKG_IAS_NOTIFICATION validation failed: spec_valid='||V_SPEC_VALID||
+      ', body_valid='||V_BODY_VALID||', errors='||V_ERRORS
+    );
+  END IF;
+END;
+/
