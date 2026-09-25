@@ -1396,13 +1396,13 @@ create or replace package body PKG_AE is
     v_current_stage NUMBER;
     v_savepoint_set BOOLEAN := FALSE;
     v_history_id NUMBER;
-    v_notification_email_id NUMBER;
 
     ------------------------------------------------------------------
     -- Compliance cursor
     ------------------------------------------------------------------
     CURSOR V IS
       SELECT C.AUDIT_PERIOD,
+             C.RSK AS RISK,
              C.NAME,
              C.PARA_NO,
              C.NEW_PARAID,
@@ -1502,7 +1502,12 @@ create or replace package body PKG_AE is
                '' AS GIST_OF_PARAS,
                '' AS TO_EMAIL,
                '' AS CC_EMAIL,
-               '' AS CC_EMAIL2
+               '' AS CC_EMAIL2,
+               NULL AS AUDITED_BY,
+               '' AS AUDIT_YEAR,
+               '' AS RISK,
+               '' AS REJECTION_REASON,
+               NULL AS DECISION_HISTORY_ID
           FROM DUAL;
 
       RETURN;
@@ -1533,7 +1538,12 @@ create or replace package body PKG_AE is
                '' AS GIST_OF_PARAS,
                '' AS TO_EMAIL,
                '' AS CC_EMAIL,
-               '' AS CC_EMAIL2
+               '' AS CC_EMAIL2,
+               Vr1.AUDITBY_ID AS AUDITED_BY,
+               Vr1.AUDIT_PERIOD AS AUDIT_YEAR,
+               Vr1.RISK AS RISK,
+               '' AS REJECTION_REASON,
+               NULL AS DECISION_HISTORY_ID
           FROM DUAL;
 
       RETURN;
@@ -1575,7 +1585,12 @@ create or replace package body PKG_AE is
                '' AS GIST_OF_PARAS,
                '' AS TO_EMAIL,
                '' AS CC_EMAIL,
-               '' AS CC_EMAIL2
+               '' AS CC_EMAIL2,
+               Vr1.AUDITBY_ID AS AUDITED_BY,
+               Vr1.AUDIT_PERIOD AS AUDIT_YEAR,
+               Vr1.RISK AS RISK,
+               '' AS REJECTION_REASON,
+               NULL AS DECISION_HISTORY_ID
           FROM DUAL;
 
       RETURN;
@@ -1696,37 +1711,6 @@ create or replace package body PKG_AE is
     v_savepoint_set := FALSE;
 
     ------------------------------------------------------------------
-    -- 13. Management Audit notifications use the central IAS queue.
-    --     This runs after the business commit and is isolated so an
-    --     enqueue failure cannot roll back the decision.
-    ------------------------------------------------------------------
-    IF Vr1.AUDITBY_ID IN (112242, 112248)
-       AND (Vr1.STATUS_ID = 16 OR P_IND <> 'U') THEN
-      SAVEPOINT SP_MGMT_AUDIT_NOTIFICATION;
-      BEGIN
-        PKG_IAS_NOTIFICATION.SEND_MGMT_AUDIT_PARA_STATUS(
-          Vr1.COMID,
-          v_history_id,
-          CASE WHEN Vr1.STATUS_ID = 16 THEN 'Settled' ELSE 'Rejected' END,
-          v_notification_email_id);
-        COMMIT;
-      EXCEPTION
-        WHEN OTHERS THEN
-          ROLLBACK TO SP_MGMT_AUDIT_NOTIFICATION;
-          PKG_LG.LOG_ERROR(
-            'COMPLIANCE',
-            'PKG_AE',
-            'P_SUBMITPOSTAUDITCOMPLIANCE_REVIEW',
-            'Management Audit para notification enqueue failed.',
-            'COM_ID=' || Vr1.COMID || '; HIST_ID=' || v_history_id ||
-            '; ERROR=' || SQLERRM,
-            NULL,
-            NULL,
-            P_NO);
-      END;
-    END IF;
-
-    ------------------------------------------------------------------
     -- 14. Return response to application
     ------------------------------------------------------------------
     IF Vr1.STATUS_ID = 16 THEN
@@ -1738,9 +1722,14 @@ create or replace package body PKG_AE is
                Vr1.PARA_NO AS para_no,
                'Settled' AS para_status,
                Vr1.GIST_OF_PARAS AS GIST_OF_PARAS,
-               CASE WHEN Vr1.AUDITBY_ID IN (112242, 112248) THEN '' ELSE Vr1.TO_EMAIL END AS TO_EMAIL,
-               CASE WHEN Vr1.AUDITBY_ID IN (112242, 112248) THEN '' ELSE Vr1.CC_EMAIL END AS CC_EMAIL,
-               CASE WHEN Vr1.AUDITBY_ID IN (112242, 112248) THEN '' ELSE Vr1.CC_EMAIL2 END AS CC_EMAIL2
+               Vr1.TO_EMAIL AS TO_EMAIL,
+               Vr1.CC_EMAIL AS CC_EMAIL,
+               Vr1.CC_EMAIL2 AS CC_EMAIL2,
+               Vr1.AUDITBY_ID AS AUDITED_BY,
+               Vr1.AUDIT_PERIOD AS AUDIT_YEAR,
+               Vr1.RISK AS RISK,
+               '' AS REJECTION_REASON,
+               v_history_id AS DECISION_HISTORY_ID
 
           FROM DUAL;
 
@@ -1755,7 +1744,12 @@ create or replace package body PKG_AE is
                  '' AS GIST_OF_PARAS,
                  '' AS TO_EMAIL,
                  '' AS CC_EMAIL,
-                 '' AS CC_EMAIL2
+                 '' AS CC_EMAIL2,
+                 Vr1.AUDITBY_ID AS AUDITED_BY,
+                 Vr1.AUDIT_PERIOD AS AUDIT_YEAR,
+                 Vr1.RISK AS RISK,
+                 '' AS REJECTION_REASON,
+                 v_history_id AS DECISION_HISTORY_ID
             FROM DUAL;
 
       ELSE
@@ -1763,11 +1757,16 @@ create or replace package body PKG_AE is
         OPEN io_cursor FOR
           SELECT 'Complaince Rejected/Referred Back' AS remarks,
                  Vr1.PARA_NO AS para_no,
-                 'Rejected/Referred Back' AS para_status,
-                 '' AS GIST_OF_PARAS,
-                 '' AS TO_EMAIL,
-                 '' AS CC_EMAIL,
-                 '' AS CC_EMAIL2
+                 CASE WHEN Vr1.AUDITBY_ID IN (112242, 112248) THEN 'Rejected' ELSE 'Rejected/Referred Back' END AS para_status,
+                 Vr1.GIST_OF_PARAS AS GIST_OF_PARAS,
+                 CASE WHEN Vr1.AUDITBY_ID IN (112242, 112248) THEN Vr1.TO_EMAIL ELSE '' END AS TO_EMAIL,
+                 CASE WHEN Vr1.AUDITBY_ID IN (112242, 112248) THEN Vr1.CC_EMAIL ELSE '' END AS CC_EMAIL,
+                 CASE WHEN Vr1.AUDITBY_ID IN (112242, 112248) THEN Vr1.CC_EMAIL2 ELSE '' END AS CC_EMAIL2,
+                 Vr1.AUDITBY_ID AS AUDITED_BY,
+                 Vr1.AUDIT_PERIOD AS AUDIT_YEAR,
+                 Vr1.RISK AS RISK,
+                 CASE WHEN Vr1.AUDITBY_ID IN (112242, 112248) THEN A_COMMENTS ELSE '' END AS REJECTION_REASON,
+                 v_history_id AS DECISION_HISTORY_ID
             FROM DUAL;
 
       END IF;

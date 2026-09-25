@@ -108,6 +108,37 @@ namespace AIS
             return econ.Send(CreateRequest("Audit", nameof(NotifyParaStatus), paraNo, toEmail, ccCombined, subject, body, true)).IsSuccess;
             }
 
+        public static bool NotifyManagementAuditParaStatus(IConfiguration configuration, string paraNo, string paraStatus, string auditYear, string risk, string paraGist, string rejectionReason, string toEmail, string ccEmail, string cc2Email, IServiceProvider serviceProvider = null)
+            {
+            string normalizedStatus = string.Equals(paraStatus, "Settled", StringComparison.OrdinalIgnoreCase) ? "Settled" : "Rejected";
+            string subject = $"IAS Notification: Audit Para No. {paraNo} {normalizedStatus}";
+            string body = BuildHtmlBody(
+                $"Audit Para No. {paraNo} {normalizedStatus}",
+                string.Empty,
+                BuildDetails(
+                    ("Para No.", paraNo),
+                    ("Audit Year", auditYear),
+                    ("Risk", risk),
+                    ("Status", normalizedStatus),
+                    ("Gist of Para", paraGist),
+                    ("Reason for Rejection", normalizedStatus == "Rejected" ? rejectionReason : string.Empty)));
+            string ccCombined = string.Join(";", new[] { ccEmail, cc2Email }.Where(e => !string.IsNullOrWhiteSpace(e)));
+
+            try
+                {
+                LogNotification(nameof(NotifyManagementAuditParaStatus), toEmail, ccCombined, subject, body);
+                EmailConfiguration email = new EmailConfiguration(configuration, serviceProvider);
+                var result = email.Send(CreateRequest("Audit", nameof(NotifyManagementAuditParaStatus), paraNo, toEmail, ccCombined, subject, body, true));
+                LogNotificationStatus(serviceProvider, null, result.IsSuccess ? "Info" : "Error", nameof(NotifyManagementAuditParaStatus), result.IsSuccess ? "Notification sent." : "Notification failed.", result.ErrorMessage);
+                return result.IsSuccess;
+                }
+            catch (Exception ex)
+                {
+                LogNotificationStatus(serviceProvider, null, "Error", nameof(NotifyManagementAuditParaStatus), "Notification failed with an unexpected error.", ex.ToString());
+                return false;
+                }
+            }
+
         private static EmailMessageRequest CreateRequest(string module, string triggerPoint, string referenceId, string toEmail, string ccEmail, string subject, string body, bool isBodyHtml = true)
             {
             return new EmailMessageRequest
@@ -329,7 +360,10 @@ namespace AIS
             builder.AppendLine("<table role=\"presentation\" width=\"680\" cellspacing=\"0\" cellpadding=\"0\" style=\"width:680px;max-width:680px;background-color:#ffffff;border-collapse:collapse;border:1px solid #d9e2ec;\">");
             builder.AppendLine($"<tr><td style=\"padding:18px 28px;background-color:#173f5f;color:#ffffff;font-size:20px;font-weight:bold;letter-spacing:0.2px;\">{Encode(NotificationHeader)}</td></tr>");
             builder.AppendLine($"<tr><td style=\"padding:28px 28px 16px 28px;font-size:24px;font-weight:bold;color:#102a43;\">{Encode(title)}</td></tr>");
-            builder.AppendLine($"<tr><td style=\"padding:0 28px 20px 28px;font-size:15px;line-height:1.7;color:#334e68;\">{Encode(summary)}</td></tr>");
+            if (!string.IsNullOrWhiteSpace(summary))
+                {
+                builder.AppendLine($"<tr><td style=\"padding:0 28px 20px 28px;font-size:15px;line-height:1.7;color:#334e68;\">{Encode(summary)}</td></tr>");
+                }
             if (detailRows.Count > 0)
                 {
                 builder.AppendLine("<tr><td style=\"padding:0 28px 28px 28px;\">");

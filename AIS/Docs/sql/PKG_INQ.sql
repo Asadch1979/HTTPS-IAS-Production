@@ -509,25 +509,6 @@
   PROCEDURE P_FINALIZE_IID_INQUIRY_REPORT(P_COMPLAINT_ID IN NUMBER,
                                           P_UPDATED_BY   IN NUMBER);
 
-  PROCEDURE P_ENQUEUE_EMAIL(P_EVENT_CODE IN VARCHAR2,
-                            P_REF_ID1    IN NUMBER,
-                            P_REF_ID2    IN NUMBER,
-                            P_MAIL_TO    IN VARCHAR2,
-                            P_MAIL_CC    IN VARCHAR2,
-                            P_SUBJECT    IN VARCHAR2,
-                            P_BODY       IN CLOB,
-                            O_EMAIL_ID   OUT NUMBER);
-
-  PROCEDURE P_GET_EMAIL_QUEUE(P_STATUS    IN VARCHAR2,
-                              P_FROM_DATE IN DATE,
-                              P_TO_DATE   IN DATE,
-                              IO_CURSOR   OUT T_CURSOR);
-
-  PROCEDURE P_MARK_EMAIL_SENT(P_EMAIL_ID IN NUMBER);
-
-  PROCEDURE P_MARK_EMAIL_FAILED(P_EMAIL_ID   IN NUMBER,
-                                P_ERROR_TEXT IN VARCHAR2);
-
 END PKG_INQ;
 
 CREATE OR REPLACE PACKAGE BODY PKG_INQ AS
@@ -3559,7 +3540,8 @@ CREATE OR REPLACE PACKAGE BODY PKG_INQ AS
     END IF;
   END P_FINALIZE_IID_INQUIRY_REPORT;
 
-  PROCEDURE P_ENQUEUE_EMAIL(P_EVENT_CODE IN VARCHAR2,
+  /* Generic email queue operations are owned by PKG_EMAIL. */
+  /* PROCEDURE P_ENQUEUE_EMAIL(P_EVENT_CODE IN VARCHAR2,
                             P_REF_ID1    IN NUMBER,
                             P_REF_ID2    IN NUMBER,
                             P_MAIL_TO    IN VARCHAR2,
@@ -3654,7 +3636,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_INQ AS
            ERROR_TEXT  = SUBSTR(P_ERROR_TEXT, 1, 2000),
            RETRY_COUNT = NVL(RETRY_COUNT, 0) + 1
      WHERE EMAIL_ID = P_EMAIL_ID;
-  END P_MARK_EMAIL_FAILED;
+  END P_MARK_EMAIL_FAILED; */
 
 END PKG_INQ;
 

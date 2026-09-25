@@ -1329,6 +1329,10 @@ namespace AIS.Controllers
             string para_no = "";
             string para_gist = "";
             string para_status = "";
+            string audit_year = "";
+            string risk = "";
+            string rejection_reason = "";
+            int audited_by = 0;
 
             var sessionHandler = CreateSessionHandler();
             var loggedInUser = sessionHandler.GetUser();
@@ -1365,13 +1369,24 @@ namespace AIS.Controllers
                     cc_email = rdr["CC_EMAIL"].ToString();
                     cc2_email = rdr["CC_EMAIL2"].ToString();
                     para_status = rdr["para_status"].ToString();
+                    audit_year = rdr["AUDIT_YEAR"].ToString();
+                    risk = rdr["RISK"].ToString();
+                    rejection_reason = rdr["REJECTION_REASON"].ToString();
+                    int.TryParse(rdr["AUDITED_BY"].ToString(), out audited_by);
 
 
                     }
                 }
             if (to_email != "")
                 {
-                EmailNotification.NotifyParaStatus(_configuration, para_no, para_status, para_gist, to_email, cc_email, cc2_email, _httpCon?.HttpContext?.RequestServices);
+                if (audited_by == 112242 || audited_by == 112248)
+                    {
+                    EmailNotification.NotifyManagementAuditParaStatus(_configuration, para_no, para_status, audit_year, risk, para_gist, rejection_reason, to_email, cc_email, cc2_email, _httpCon?.HttpContext?.RequestServices);
+                    }
+                else
+                    {
+                    EmailNotification.NotifyParaStatus(_configuration, para_no, para_status, para_gist, to_email, cc_email, cc2_email, _httpCon?.HttpContext?.RequestServices);
+                    }
                 }
 
             return resp;

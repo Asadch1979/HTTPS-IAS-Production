@@ -644,7 +644,7 @@ namespace AIS.Controllers
 
             using (OracleCommand cmd = con.CreateCommand())
                 {
-                cmd.CommandText = "PKG_INQ.P_ENQUEUE_EMAIL";
+                cmd.CommandText = "PKG_EMAIL.P_ENQUEUE_EMAIL";
                 cmd.CommandType = CommandType.StoredProcedure;
                 cmd.BindByName = true;
                 cmd.Parameters.Add("p_event_code", OracleDbType.Varchar2).Value = eventCode ?? string.Empty;
@@ -667,7 +667,7 @@ namespace AIS.Controllers
 
             using (OracleCommand cmd = con.CreateCommand())
                 {
-                cmd.CommandText = "PKG_INQ.P_GET_EMAIL_QUEUE";
+                cmd.CommandText = "PKG_EMAIL.P_GET_EMAIL_QUEUE";
                 cmd.CommandType = CommandType.StoredProcedure;
                 cmd.BindByName = true;
                 cmd.Parameters.Add("p_status", OracleDbType.Varchar2).Value = string.IsNullOrWhiteSpace(status) ? (object)DBNull.Value : status;
@@ -705,7 +705,7 @@ namespace AIS.Controllers
             using var con = this.DatabaseConnection();
             using (OracleCommand cmd = con.CreateCommand())
                 {
-                cmd.CommandText = "PKG_INQ.P_MARK_EMAIL_SENT";
+                cmd.CommandText = "PKG_EMAIL.P_MARK_EMAIL_SENT";
                 cmd.CommandType = CommandType.StoredProcedure;
                 cmd.BindByName = true;
                 cmd.Parameters.Add("p_email_id", OracleDbType.Int32).Value = emailId;
@@ -718,7 +718,7 @@ namespace AIS.Controllers
             using var con = this.DatabaseConnection();
             using (OracleCommand cmd = con.CreateCommand())
                 {
-                cmd.CommandText = "PKG_INQ.P_MARK_EMAIL_FAILED";
+                cmd.CommandText = "PKG_EMAIL.P_MARK_EMAIL_FAILED";
                 cmd.CommandType = CommandType.StoredProcedure;
                 cmd.BindByName = true;
                 cmd.Parameters.Add("p_email_id", OracleDbType.Int32).Value = emailId;
