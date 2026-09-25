@@ -170,26 +170,6 @@ namespace AIS.Controllers
 
             return string.Empty;
             }
-
-        private static string ReadOptionalString(IDataRecord reader, string columnName)
-            {
-            if (reader == null || string.IsNullOrWhiteSpace(columnName))
-                {
-                return string.Empty;
-                }
-
-            for (var i = 0; i < reader.FieldCount; i++)
-                {
-                if (!string.Equals(reader.GetName(i), columnName, StringComparison.OrdinalIgnoreCase))
-                    {
-                    continue;
-                    }
-
-                return reader.IsDBNull(i) ? string.Empty : reader.GetValue(i)?.ToString() ?? string.Empty;
-                }
-
-            return string.Empty;
-            }
         #region Database Connection
         private OracleConnection DatabaseConnection(bool requireActiveSession = true)
             {

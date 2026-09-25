@@ -92,37 +92,16 @@ namespace AIS
             return email.Send(CreateRequest("Planning", nameof(NotifyAuditCriteriaSubmission), string.Empty, toEmail, ccEmail, subject, htmlBody, true)).IsSuccess;
             }
 
-        public static bool NotifyParaStatus(IConfiguration configuration, string paraNo, string paraStatus, string paraGist, string toEmail, string ccEmail, string cc2Email, IServiceProvider serviceProvider = null, string auditYear = "", string risk = "", string rejectionReason = "", bool useManagementAuditFormat = false)
+        public static bool NotifyParaStatus(IConfiguration configuration, string paraNo, string paraStatus, string paraGist, string toEmail, string ccEmail, string cc2Email, IServiceProvider serviceProvider = null)
             {
-            string subject;
-            string body;
-            if (useManagementAuditFormat)
-                {
-                var normalizedStatus = NormalizeParaStatus(paraStatus);
-                var title = $"Audit Para No. {paraNo} {normalizedStatus}";
-                subject = $"IAS Notification: {title}";
-                body = BuildHtmlBody(
-                    title,
-                    "Please review the audit para status details below.",
-                    BuildDetails(
-                        ("Para No.", paraNo),
-                        ("Audit Year", auditYear),
-                        ("Risk", risk),
-                        ("Status", normalizedStatus),
-                        ("Gist of Para", paraGist),
-                        ("Reason for Rejection", rejectionReason)));
-                }
-            else
-                {
-                subject = $"IAS~Notification: Para No: {paraNo} is {paraStatus}";
-                body = BuildHtmlBody(
-                    "Audit Para Status Updated",
-                    $"Para No. {paraNo} has been {paraStatus}.",
-                    BuildDetails(
-                        ("Para No.", paraNo),
-                        ("Status", paraStatus),
-                        ("Gist of Para", paraGist)));
-                }
+            string subject = $"IAS~Notification: Para No: {paraNo} is {paraStatus}";
+            string body = BuildHtmlBody(
+                "Audit Para Status Updated",
+                $"Para No. {paraNo} has been {paraStatus}.",
+                BuildDetails(
+                    ("Para No.", paraNo),
+                    ("Status", paraStatus),
+                    ("Gist of Para", paraGist)));
             string ccCombined = string.Join(";", new[] { ccEmail, cc2Email }.Where(e => !string.IsNullOrWhiteSpace(e)));
             LogNotification(nameof(NotifyParaStatus), toEmail, ccCombined, subject, body);
             EmailConfiguration econ = new EmailConfiguration(configuration, serviceProvider);
@@ -460,22 +439,6 @@ namespace AIS
             var withoutHtml = HtmlTagRegex.Replace(value, " ");
             var decoded = WebUtility.HtmlDecode(withoutHtml);
             return WhitespaceRegex.Replace(decoded ?? string.Empty, " ").Trim();
-            }
-
-        private static string NormalizeParaStatus(string value)
-            {
-            var normalized = NormalizePlainText(value);
-            if (normalized.IndexOf("reject", StringComparison.OrdinalIgnoreCase) >= 0)
-                {
-                return "Rejected";
-                }
-
-            if (normalized.IndexOf("settle", StringComparison.OrdinalIgnoreCase) >= 0)
-                {
-                return "Settled";
-                }
-
-            return normalized;
             }
 
         private static string FormatDate(DateTime? value)
