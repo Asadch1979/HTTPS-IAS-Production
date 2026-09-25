@@ -1,15 +1,26 @@
--- Oracle 18c / SQL*Plus. Run during an application maintenance window.
--- Requires the previously deployed generic queue, mapping view and PKG_AE.
--- Back up PKG_IAS_NOTIFICATION before running; DDL commits implicitly.
-SET DEFINE OFF
-SET SQLBLANKLINES ON
-SET SERVEROUTPUT ON
-WHENEVER SQLERROR EXIT SQL.SQLCODE ROLLBACK
+/*
+Management Audit weekly notification database cutover (Oracle 18c compatible).
+
+Required deployment order:
+  1. Run this database script, then deploy the complete controlled
+     PKG_IAS_NOTIFICATION specification/body from
+     ias_notification_centralization.sql.
+  2. Deploy the ASP.NET application while ManagementAuditWeekly:Enabled=false.
+  3. After database and application validation, set
+     ManagementAuditWeekly:Enabled=true and restart the application.
+
+The application host must remain running for the configured weekly schedule.
+Do not run an older script that recreates JOB_MGMT_AUDIT_WEEKLY_NOTIFY.
+DDL commits implicitly; run during an application maintenance window.
+*/
 
 DECLARE
   N NUMBER;
 BEGIN
-  SELECT COUNT(*) INTO N FROM USER_TABLES WHERE TABLE_NAME='T_IAS_NOTIFY_EXECUTION';
+  SELECT COUNT(*) INTO N
+    FROM USER_TABLES
+   WHERE TABLE_NAME='T_IAS_NOTIFY_EXECUTION';
+
   IF N=0 THEN
     EXECUTE IMMEDIATE 'CREATE TABLE T_IAS_NOTIFY_EXECUTION (
       EXECUTION_KEY VARCHAR2(100 CHAR) PRIMARY KEY,
@@ -23,93 +34,116 @@ BEGIN
   END IF;
 END;
 /
--- This table is an execution ledger, not an email queue. RUNNING requests with
--- unknown outcomes require reconciliation with history/SMTP logs before reset.
 
--- Preserve suppression for previously generated weekly emails during cutover.
--- Pending/failed legacy queue entries must be reconciled before new execution.
+/*
+The table is an execution ledger, not an email queue. A RUNNING request with
+an unknown outcome must be reconciled against history and SMTP logs before it
+is reset.
+*/
 MERGE INTO T_IAS_NOTIFY_EXECUTION D
-USING (SELECT 'WEEKLY:'||TO_CHAR(REF_ID1,'FM00000000')||':'||TO_CHAR(REF_ID2,'TM9') K,
-              CASE WHEN MAX(CASE WHEN STATUS='SENT' THEN 1 ELSE 0 END)=1
-                   THEN 'COMPLETE' ELSE 'RUNNING' END S
-         FROM T_EMAIL_QUEUE WHERE EVENT_CODE='MGMT_AUDIT_WEEKLY_PARA_STATUS'
-           AND REF_ID1 IS NOT NULL AND REF_ID2 IS NOT NULL
-         GROUP BY REF_ID1,REF_ID2) Q
-ON (D.EXECUTION_KEY=Q.K)
-WHEN NOT MATCHED THEN INSERT (EXECUTION_KEY,FINGERPRINT,STATUS,RESPONSE)
- VALUES (Q.K,'WEEKLY',Q.S,'Legacy weekly queue record: reconcile with T_EMAIL_QUEUE before retry.');
+USING (
+  SELECT 'WEEKLY:'||TO_CHAR(REF_ID1,'FM00000000')||':'||TO_CHAR(REF_ID2,'TM9') EXECUTION_KEY,
+         CASE WHEN MAX(CASE WHEN STATUS='SENT' THEN 1 ELSE 0 END)=1
+              THEN 'COMPLETE' ELSE 'RUNNING' END STATUS
+    FROM T_EMAIL_QUEUE
+   WHERE EVENT_CODE='MGMT_AUDIT_WEEKLY_PARA_STATUS'
+     AND REF_ID1 IS NOT NULL
+     AND REF_ID2 IS NOT NULL
+   GROUP BY REF_ID1,REF_ID2
+) Q
+ON (D.EXECUTION_KEY=Q.EXECUTION_KEY)
+WHEN NOT MATCHED THEN INSERT
+  (EXECUTION_KEY,FINGERPRINT,STATUS,RESPONSE)
+VALUES
+  (Q.EXECUTION_KEY,'WEEKLY',Q.STATUS,
+   'Legacy weekly queue record: reconcile with T_EMAIL_QUEUE before retry.');
+
 COMMIT;
 
 CREATE OR REPLACE VIEW V_IAS_MGMT_WEEKLY_DATA AS
 SELECT H.HIST_ID,M.DIVISION_ID,M.DIVISION_NAME,M.DIVISION_EMAIL,M.REPORTING_EMAIL,
        E.NAME ENTITY_NAME,PC.AUDIT_PERIOD,PC.PARA_NO,PC.GIST_OF_PARAS TITLE,
-       (SELECT MAX(S.COMMENT_ON) FROM AIS_T_AU_POST_COMPLIANCE_HISTORY S
-         WHERE S.COM_ID=H.COM_ID AND S.COM_CYCLE=H.COM_CYCLE AND S.COM_STATUS=10
-           AND S.COMMENT_ON<=H.COMMENT_ON AND S.HIST_ID<H.HIST_ID) SUBMITTED_ON,
+       (SELECT MAX(S.COMMENT_ON)
+          FROM AIS_T_AU_POST_COMPLIANCE_HISTORY S
+         WHERE S.COM_ID=H.COM_ID
+           AND S.COM_CYCLE=H.COM_CYCLE
+           AND S.COM_STATUS=10
+           AND S.COMMENT_ON<=H.COMMENT_ON
+           AND S.HIST_ID<H.HIST_ID) SUBMITTED_ON,
        H.COMMENT_ON DECISION_ON,H.COMMENTS REASON,H.COM_STATUS
   FROM AIS_T_AU_POST_COMPLIANCE PC
   JOIN AIS_T_AU_POST_COMPLIANCE_HISTORY H ON H.COM_ID=PC.COM_ID
   JOIN T_AUDITEE_ENTITIES E ON E.ENTITY_ID=PC.ENTITY_ID
   JOIN V_IAS_MGMT_AUDIT_NOTIFY_MAP M ON M.ENTITY_ID=PC.ENTITY_ID
- WHERE PC.AUDITED_BY IN (112242,112248) AND H.COM_STATUS IN (16,12,15,18)
-   AND M.DIVISION_ID IS NOT NULL AND TRIM(M.DIVISION_EMAIL) IS NOT NULL;
+ WHERE PC.AUDITED_BY IN (112242,112248)
+   AND H.COM_STATUS IN (16,12,15,18)
+   AND M.DIVISION_ID IS NOT NULL
+   AND TRIM(M.DIVISION_EMAIL) IS NOT NULL;
 /
 
--- Stop every existing job invoking the retired weekly procedure. Other
--- notifications (mapping exceptions and health) retain their existing jobs.
+/* Retire every weekly Oracle job. Mapping and health jobs are unchanged. */
 BEGIN
-  FOR J IN (SELECT JOB_NAME FROM USER_SCHEDULER_JOBS
-             WHERE JOB_NAME='JOB_MGMT_AUDIT_WEEKLY_NOTIFY'
-                OR UPPER(JOB_ACTION) LIKE '%SEND_MGMT_AUDIT_WEEKLY%') LOOP
+  FOR J IN (
+    SELECT JOB_NAME
+      FROM USER_SCHEDULER_JOBS
+     WHERE JOB_NAME='JOB_MGMT_AUDIT_WEEKLY_NOTIFY'
+        OR UPPER(JOB_ACTION) LIKE '%SEND_MGMT_AUDIT_WEEKLY%'
+  ) LOOP
     DBMS_SCHEDULER.DROP_JOB(J.JOB_NAME,FORCE=>TRUE);
   END LOOP;
 END;
 /
 
--- Preserve the deployed package body, including site-specific fixes. Retire
--- only its weekly entry point, which prevents old callers enqueueing duplicates.
-DECLARE
-  SOURCE_BODY CLOB;
-  REPLACED_BODY CLOB;
-  FIRST_POS PLS_INTEGER;
-  NEXT_POS PLS_INTEGER;
-BEGIN
-  SOURCE_BODY:=DBMS_METADATA.GET_DDL('PACKAGE_BODY','PKG_IAS_NOTIFICATION',USER);
-  FIRST_POS:=REGEXP_INSTR(SOURCE_BODY,'PROCEDURE[[:space:]]+SEND_MGMT_AUDIT_WEEKLY[[:space:]]*\(',1,1,0,'i');
-  NEXT_POS:=REGEXP_INSTR(SOURCE_BODY,'PROCEDURE[[:space:]]+SEND_MGMT_AUDIT_MAPPING_EXCEPTIONS[[:space:]]*\(',1,1,0,'i');
-  IF FIRST_POS=0 OR NEXT_POS<=FIRST_POS THEN
-    RAISE_APPLICATION_ERROR(-20810,'Unexpected IAS package layout: review the deployed weekly procedure before cutover.');
-  END IF;
-  REPLACED_BODY:=SUBSTR(SOURCE_BODY,1,FIRST_POS-1)||TO_CLOB(
-    'PROCEDURE SEND_MGMT_AUDIT_WEEKLY(P_FROM_DATE DATE,P_TO_DATE DATE) IS
-     BEGIN RAISE_APPLICATION_ERROR(-20106,''Weekly notification delivery moved to ASP.NET.''); END;
-     ')||SUBSTR(SOURCE_BODY,NEXT_POS);
-  EXECUTE IMMEDIATE REPLACED_BODY;
-END;
-/
+UPDATE IAS_NOTIFICATION_MASTER
+   SET RELATED_PROCEDURE='ManagementAuditWeeklyService.RunPeriodAsync',
+       CALLING_PROCESS='ASP.NET BackgroundService',
+       DATA_SOURCE_NAME='V_IAS_MGMT_WEEKLY_DATA + T_IAS_NOTIFY_EXECUTION',
+       DELIVERY_MECHANISM='EmailNotification -> EmailConfiguration SMTP',
+       UPDATED_BY=USER,
+       UPDATED_ON=SYSTIMESTAMP
+ WHERE NOTIFICATION_CODE='MGMT_AUDIT_WEEKLY_PARA_STATUS';
 
 UPDATE IAS_NOTIFICATION_MASTER
- SET RELATED_PROCEDURE='ManagementAuditWeeklyService.RunPeriodAsync',
-     CALLING_PROCESS='ASP.NET BackgroundService',DELIVERY_MECHANISM='EmailNotification -> EmailConfiguration SMTP'
- WHERE NOTIFICATION_CODE='MGMT_AUDIT_WEEKLY_PARA_STATUS';
-UPDATE IAS_NOTIFICATION_MASTER
- SET RELATED_PROCEDURE='EmailNotification.NotifyManagementAuditParaStatus',
-     DELIVERY_MECHANISM='EmailConfiguration SMTP'
+   SET RELATED_PROCEDURE='EmailNotification.NotifyManagementAuditParaStatus',
+       DELIVERY_MECHANISM='EmailConfiguration SMTP',
+       UPDATED_BY=USER,
+       UPDATED_ON=SYSTIMESTAMP
  WHERE NOTIFICATION_CODE='MGMT_AUDIT_PARA_STATUS';
+
 COMMIT;
 
 DECLARE
-  N NUMBER;
+  INVALID_OBJECTS NUMBER;
+  WEEKLY_JOBS NUMBER;
 BEGIN
-  SELECT COUNT(*) INTO N FROM USER_OBJECTS WHERE OBJECT_NAME IN
-    ('V_IAS_MGMT_WEEKLY_DATA','PKG_IAS_NOTIFICATION') AND STATUS<>'VALID';
-  IF N>0 THEN RAISE_APPLICATION_ERROR(-20811,'Compilation failed; inspect USER_ERRORS.'); END IF;
+  SELECT COUNT(*) INTO INVALID_OBJECTS
+    FROM USER_OBJECTS
+   WHERE OBJECT_NAME IN ('V_IAS_MGMT_WEEKLY_DATA','T_IAS_NOTIFY_EXECUTION')
+     AND STATUS<>'VALID';
+
+  SELECT COUNT(*) INTO WEEKLY_JOBS
+    FROM USER_SCHEDULER_JOBS
+   WHERE JOB_NAME='JOB_MGMT_AUDIT_WEEKLY_NOTIFY'
+      OR UPPER(JOB_ACTION) LIKE '%SEND_MGMT_AUDIT_WEEKLY%';
+
+  IF INVALID_OBJECTS>0 THEN
+    RAISE_APPLICATION_ERROR(-20811,
+      'Management Audit weekly ledger/view validation failed; inspect USER_ERRORS.');
+  END IF;
+
+  IF WEEKLY_JOBS>0 THEN
+    RAISE_APPLICATION_ERROR(-20812,
+      'The retired Management Audit weekly Oracle Scheduler job still exists.');
+  END IF;
 END;
 /
-SELECT NAME,TYPE,LINE,TEXT FROM USER_ERRORS
- WHERE NAME IN ('V_IAS_MGMT_WEEKLY_DATA','PKG_IAS_NOTIFICATION') ORDER BY NAME,SEQUENCE;
-SELECT JOB_NAME,ENABLED FROM USER_SCHEDULER_JOBS WHERE JOB_NAME='JOB_MGMT_AUDIT_WEEKLY_NOTIFY';
-SELECT EXECUTION_KEY,STATUS,RETRY_COUNT,CREATED_ON,UPDATED_ON FROM T_IAS_NOTIFY_EXECUTION;
--- Next deploy the application and configure ManagementAuditWeekly:Enabled=true,
--- Day=Monday, Time=07:00, TimeZone=Asia/Karachi. Keep the ASP.NET host always on.
--- Do not re-run old Oracle scheduler installation scripts after this cutover.
+
+SELECT NAME,TYPE,LINE,POSITION,TEXT
+  FROM USER_ERRORS
+ WHERE NAME='V_IAS_MGMT_WEEKLY_DATA'
+ ORDER BY NAME,SEQUENCE;
+
+SELECT EXECUTION_KEY,STATUS,RETRY_COUNT,CREATED_ON,UPDATED_ON
+  FROM T_IAS_NOTIFY_EXECUTION
+ WHERE EXECUTION_KEY LIKE 'WEEKLY:%'
+ ORDER BY CREATED_ON DESC;

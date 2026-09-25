@@ -1,7 +1,10 @@
 /*
   IAS CENTRAL NOTIFICATION MANAGEMENT
   ===================================
-  Target: Oracle 19c+ / current IAS schema
+  Target: Oracle 18c+ / current IAS schema
+
+  Run management_audit_application_scheduler.sql first so the ASP.NET weekly
+  execution ledger and data view exist before this complete package compiles.
 
   Reviewed notification inventory and current caller/source
   ---------------------------------------------------------
@@ -28,15 +31,14 @@
   * PARA_STATUS_UPDATED reads V_GET_AIS_POST_COMPLIANCE once.  The workflow should
     call it with vr1.COMID after its existing update; it must remove the duplicate
     ET/AD/MT email joins from P_SUBMITPOSTAUDITCOMPLIANCE_REVIEW.
-  * Scheduled/background procedures use one HTML renderer and PKG_EMAIL.P_ENQUEUE_EMAIL
-    queue.  The current IAS queue worker remains the SMTP sender.  No COMMIT is
-    issued here, so notification enqueue participates in the caller transaction.
+  * Oracle-owned mapping/health procedures use one HTML renderer and
+    PKG_EMAIL.P_ENQUEUE_EMAIL. The weekly digest is retired here and delivered by
+    ManagementAuditWeeklyService through EmailNotification/EmailConfiguration.
+    No COMMIT is issued here, so queue writes participate in the caller transaction.
   * FINAL_REPORT_ISSUED queues the HTML message only.  The existing application
     remains responsible for attaching the generated PDF; no attachment workflow is
     changed by this script.
 */
-
-SET DEFINE OFF;
 
 --------------------------------------------------------------------------------
 -- 1. Notification master table
@@ -209,7 +211,7 @@ USING (
     'WORKFLOW','N','Friday exception report sent separately to the heads of 112242 and 112248 when mapping exceptions exist.' FROM DUAL UNION ALL
   SELECT 'IAS_NOTIFICATION_HEALTH','IAS Notification Health Report','Administration',
     'JOB_IAS_NOTIFICATION_HEALTH','PKG_IAS_NOTIFICATION.SEND_NOTIFICATION_HEALTH',
-    'T_EMAIL_QUEUE + USER_OBJECTS + USER_SCHEDULER_JOBS',
+    'T_EMAIL_QUEUE + T_IAS_NOTIFY_EXECUTION + USER_OBJECTS + USER_SCHEDULER_JOBS',
     'IAS Notification: Notification Health Report ({REFERENCE})',
     'IAS Notification Health Report','Operational control snapshot: {REFERENCE}',
     'TECHNICAL','N','Queue, delivery, scheduler, object-validity and error control report for Super Admin.' FROM DUAL UNION ALL
@@ -446,11 +448,17 @@ CREATE OR REPLACE PACKAGE BODY PKG_IAS_NOTIFICATION AS
      WHERE EVENT_CODE=C_CODE AND REF_ID1=V_REF1;
     IF V_EXISTING>0 THEN RETURN; END IF;
 
-    SELECT LISTAGG(DISTINCT E.EMAIL,';') WITHIN GROUP (ORDER BY E.EMAIL)
+    SELECT LISTAGG(X.EMAIL,';') WITHIN GROUP (ORDER BY X.EMAIL)
       INTO V_TO
-      FROM T_USER_MAPING M JOIN T_USER U ON U.USERID=M.USERID
-      JOIN V_SERVICE_EMPLOYEEINFO E ON E.PPNO=U.PPNO
-     WHERE M.ROLE_ID=1 AND NVL(U.ISACTIVE,'Y')='Y' AND TRIM(E.EMAIL) IS NOT NULL;
+      FROM (
+        SELECT DISTINCT E.EMAIL
+          FROM T_USER_MAPING M
+          JOIN T_USER U ON U.USERID=M.USERID
+          JOIN V_SERVICE_EMPLOYEEINFO E ON E.PPNO=U.PPNO
+         WHERE M.ROLE_ID=1
+           AND NVL(U.ISACTIVE,'Y')='Y'
+           AND TRIM(E.EMAIL) IS NOT NULL
+      ) X;
     IF TRIM(V_TO) IS NULL THEN RAISE_APPLICATION_ERROR(-20106,'No active Super Admin email recipient is configured.'); END IF;
 
     SELECT SUM(CASE WHEN STATUS='PENDING' THEN 1 ELSE 0 END),
@@ -460,17 +468,21 @@ CREATE OR REPLACE PACKAGE BODY PKG_IAS_NOTIFICATION AS
       FROM T_EMAIL_QUEUE;
     SELECT LISTAGG(OBJECT_NAME||' ('||STATUS||')',', ') WITHIN GROUP (ORDER BY OBJECT_NAME)
       INTO V_OBJECTS FROM USER_OBJECTS
-     WHERE OBJECT_NAME IN ('PKG_INQ','PKG_AE','PKG_IAS_NOTIFICATION','V_IAS_POST_COMPLIANCE_NOTIFY','V_IAS_MGMT_AUDIT_NOTIFY_MAP')
-       AND OBJECT_TYPE IN ('PACKAGE','PACKAGE BODY','VIEW');
+     WHERE OBJECT_NAME IN ('PKG_INQ','PKG_AE','PKG_IAS_NOTIFICATION','V_IAS_POST_COMPLIANCE_NOTIFY',
+                           'V_IAS_MGMT_AUDIT_NOTIFY_MAP','V_IAS_MGMT_WEEKLY_DATA','T_IAS_NOTIFY_EXECUTION')
+       AND OBJECT_TYPE IN ('PACKAGE','PACKAGE BODY','VIEW','TABLE');
     SELECT 'Generated='||COUNT(*)||', Sent='||SUM(CASE WHEN STATUS='SENT' THEN 1 ELSE 0 END)||
            ', Pending='||SUM(CASE WHEN STATUS='PENDING' THEN 1 ELSE 0 END)||', Failed='||SUM(CASE WHEN STATUS='FAILED' THEN 1 ELSE 0 END)||
            ', Last sent='||NVL(TO_CHAR(MAX(SENT_ON),'DD-MON-YYYY HH24:MI:SS'),'None')
       INTO V_IMMEDIATE FROM T_SYS_LOG WHERE ACTION_NAME='NotifyManagementAuditParaStatus';
-    BEGIN
-      SELECT 'Enabled='||ENABLED||', State='||STATE||', Next run='||TO_CHAR(NEXT_RUN_DATE,'DD-MON-YYYY HH24:MI TZH:TZM')||
-             ', Failures='||FAILURE_COUNT
-        INTO V_WEEKLY FROM USER_SCHEDULER_JOBS WHERE JOB_NAME='JOB_MGMT_AUDIT_WEEKLY_NOTIFY';
-    EXCEPTION WHEN NO_DATA_FOUND THEN V_WEEKLY:='Job missing'; END;
+    SELECT 'ASP.NET ledger: Complete='||NVL(SUM(CASE WHEN STATUS='COMPLETE' THEN 1 ELSE 0 END),0)||
+           ', Failed='||NVL(SUM(CASE WHEN STATUS='FAILED' THEN 1 ELSE 0 END),0)||
+           ', Running='||NVL(SUM(CASE WHEN STATUS='RUNNING' THEN 1 ELSE 0 END),0)||
+           ', Retries='||NVL(SUM(RETRY_COUNT),0)||
+           ', Last update='||NVL(TO_CHAR(MAX(NVL(UPDATED_ON,CREATED_ON)),'DD-MON-YYYY HH24:MI:SS TZH:TZM'),'None')
+      INTO V_WEEKLY
+      FROM T_IAS_NOTIFY_EXECUTION
+     WHERE EXECUTION_KEY LIKE 'WEEKLY:%';
     BEGIN
       SELECT 'Enabled='||ENABLED||', State='||STATE||', Next run='||TO_CHAR(NEXT_RUN_DATE,'DD-MON-YYYY HH24:MI TZH:TZM')||
              ', Failures='||FAILURE_COUNT
@@ -489,7 +501,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_IAS_NOTIFICATION AS
       ROW_HTML('Retry status / retry count','Failed rows remain retryable in the existing queue; cumulative retry count: '||TO_CHAR(V_RETRIES))||
       ROW_HTML('Oldest pending email',FMT(V_OLDEST))||ROW_HTML('Last successfully sent notification',FMT(V_LAST_SENT))||
       ROW_HTML('Management Audit immediate notification status',V_IMMEDIATE)||
-      ROW_HTML('Management Audit weekly scheduler status and next run',V_WEEKLY)||
+      ROW_HTML('Management Audit weekly ASP.NET execution status',V_WEEKLY)||
       ROW_HTML('Mapping exception scheduler status and next run',V_MAPPING)||
       ROW_HTML('Notification health scheduler status and next run',V_HEALTH)||
       ROW_HTML('Notification package/object validity',V_OBJECTS)||ROW_HTML('CI / build verification',V_CI);
@@ -504,7 +516,6 @@ CREATE OR REPLACE PACKAGE BODY PKG_IAS_NOTIFICATION AS
              SUM(CASE WHEN Q.STATUS='SENT' AND NVL(Q.RETRY_COUNT,0)>0 THEN 1 ELSE 0 END) RETRIED_OK,
              MAX(Q.SENT_ON) LAST_SENT
         FROM (SELECT 'MGMT_AUDIT_PARA_STATUS' EVENT_CODE FROM DUAL UNION ALL
-              SELECT 'MGMT_AUDIT_WEEKLY_PARA_STATUS' FROM DUAL UNION ALL
               SELECT 'MGMT_AUDIT_MAPPING_EXCEPTION' FROM DUAL) X
         LEFT JOIN T_EMAIL_QUEUE Q ON Q.EVENT_CODE=X.EVENT_CODE
        GROUP BY X.EVENT_CODE ORDER BY X.EVENT_CODE

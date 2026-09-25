@@ -13,8 +13,8 @@ USING (
     'Management Audit only (AUDITED_BY 112242/112248); queued after the decision commit.' DESCR FROM DUAL
   UNION ALL
   SELECT 'MGMT_AUDIT_WEEKLY_PARA_STATUS','Weekly Management Audit Para Decisions','Compliance',
-    'JOB_MGMT_AUDIT_WEEKLY_NOTIFY','PKG_IAS_NOTIFICATION.SEND_MGMT_AUDIT_WEEKLY',
-    'Decision history + V_IAS_MGMT_AUDIT_NOTIFY_MAP',
+    'ASP.NET BackgroundService','ManagementAuditWeeklyService.RunPeriodAsync',
+    'V_IAS_MGMT_WEEKLY_DATA + T_IAS_NOTIFY_EXECUTION',
     'IAS Notification: Weekly Management Audit Para Decisions ({REFERENCE})',
     'Weekly Management Audit Para Decisions','Reporting period: {REFERENCE}','WORKFLOW','N',
     'Previous Monday-Sunday digest, one queue item per concerned Divisional Head with valid reporting office/group in CC.' FROM DUAL
@@ -27,7 +27,7 @@ USING (
   UNION ALL
   SELECT 'IAS_NOTIFICATION_HEALTH','IAS Notification Health Report','Administration',
     'JOB_IAS_NOTIFICATION_HEALTH','PKG_IAS_NOTIFICATION.SEND_NOTIFICATION_HEALTH',
-    'T_AU_IID_EMAIL_QUEUE + USER_OBJECTS + USER_SCHEDULER_JOBS + USER_ARGUMENTS',
+    'T_AU_IID_EMAIL_QUEUE + T_IAS_NOTIFY_EXECUTION + USER_OBJECTS + USER_SCHEDULER_JOBS + USER_ARGUMENTS',
     'IAS Notification: Notification Health Report ({REFERENCE})','IAS Notification Health Report',
     'Operational control snapshot: {REFERENCE}','TECHNICAL','N',
     'Queue, delivery, retry, scheduler, P_GET_EMAIL_QUEUE contract, object-validity and processing-error report for Super Admin.' FROM DUAL

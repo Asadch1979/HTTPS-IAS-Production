@@ -1,6 +1,6 @@
 /*
 Step 02 - Safety gate.
-Disables only the three Management Audit notification jobs if they already exist.
+Drops the retired weekly job and disables the two remaining Oracle jobs.
 */
 /*
   Deployment safety gate:
@@ -12,11 +12,19 @@ DECLARE
   V_DISABLED NUMBER := 0;
 BEGIN
   FOR R IN (
-    SELECT JOB_NAME,ENABLED
+    SELECT JOB_NAME
       FROM USER_SCHEDULER_JOBS
+     WHERE JOB_NAME='JOB_MGMT_AUDIT_WEEKLY_NOTIFY'
+        OR UPPER(JOB_ACTION) LIKE '%SEND_MGMT_AUDIT_WEEKLY%'
+  ) LOOP
+    DBMS_SCHEDULER.DROP_JOB(R.JOB_NAME,FORCE=>TRUE);
+  END LOOP;
+
+  FOR R IN (
+    SELECT JOB_NAME,ENABLED
+     FROM USER_SCHEDULER_JOBS
      WHERE JOB_NAME IN
-       ('JOB_MGMT_AUDIT_WEEKLY_NOTIFY',
-        'JOB_MGMT_AUDIT_MAPPING_EXCEPT',
+       ('JOB_MGMT_AUDIT_MAPPING_EXCEPT',
         'JOB_IAS_NOTIFICATION_HEALTH')
   ) LOOP
     IF R.ENABLED='TRUE' THEN

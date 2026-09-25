@@ -5,6 +5,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.Text;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 
 void Check(bool condition, string label) { if (!condition) throw new Exception(label); Console.WriteLine("PASS: " + label); }
 string FindRepoRoot()
@@ -22,6 +23,38 @@ string FindRepoRoot()
 var reviewScript = File.ReadAllText(Path.Combine(FindRepoRoot(), "AIS", "wwwroot", "js", "csp", "Views_PostCompliance_post_compliance_review.js"));
 Check(reviewScript.Contains("if (g_reviewPending) return;") && reviewScript.Contains("reviewButtons.prop('disabled', true)") &&
       reviewScript.Contains("if (data && data.Status)"), "Repeated-click UI protection is present");
+
+var sqlRoot = Path.Combine(FindRepoRoot(), "AIS", "Docs", "sql");
+var notificationSql = Directory.GetFiles(sqlRoot, "*.sql", SearchOption.AllDirectories)
+    .Select(File.ReadAllText).ToArray();
+var allNotificationSql = string.Join("\n", notificationSql);
+Check(!Regex.IsMatch(allNotificationSql, @"LISTAGG\s*\(\s*DISTINCT", RegexOptions.IgnoreCase),
+    "Oracle 18c SQL contains no LISTAGG(DISTINCT ...)");
+Check(!Regex.IsMatch(allNotificationSql,
+        @"(?:UPSERT_JOB|UPSERT_JOB_DISABLED)\s*\(\s*'JOB_MGMT_AUDIT_WEEKLY_NOTIFY'|DBMS_SCHEDULER\.ENABLE\s*\(\s*'JOB_MGMT_AUDIT_WEEKLY_NOTIFY'",
+        RegexOptions.IgnoreCase),
+    "No SQL creates or enables the retired weekly Oracle job");
+
+var cutoverSql = File.ReadAllText(Path.Combine(sqlRoot, "management_audit_application_scheduler.sql"));
+Check(!Regex.IsMatch(cutoverSql, @"^\s*(?:SET|WHENEVER|PROMPT|SHOW\s+ERRORS|@@)\b",
+        RegexOptions.IgnoreCase | RegexOptions.Multiline),
+    "Weekly database cutover is plain Oracle SQL/PLSQL");
+Check(!cutoverSql.Contains("DBMS_METADATA", StringComparison.OrdinalIgnoreCase) &&
+      !cutoverSql.Contains("GET_DDL", StringComparison.OrdinalIgnoreCase),
+    "Weekly database cutover does not modify package source dynamically");
+var databaseStep = cutoverSql.IndexOf("Run this database script", StringComparison.Ordinal);
+var applicationStep = cutoverSql.IndexOf("Deploy the ASP.NET application", StringComparison.Ordinal);
+var enableStep = cutoverSql.IndexOf("ManagementAuditWeekly:Enabled=true", StringComparison.Ordinal);
+Check(databaseStep >= 0 && databaseStep < applicationStep && applicationStep < enableStep,
+    "Deployment order is database, application, then weekly enablement");
+
+var packageSql = File.ReadAllText(Path.Combine(sqlRoot, "ias_notification_centralization.sql"));
+Check(packageSql.Contains("CREATE OR REPLACE PACKAGE PKG_IAS_NOTIFICATION AS") &&
+      packageSql.Contains("CREATE OR REPLACE PACKAGE BODY PKG_IAS_NOTIFICATION AS") &&
+      packageSql.Contains("Weekly notification delivery moved to ASP.NET ManagementAuditWeeklyService.") &&
+      packageSql.Contains("Management Audit weekly ASP.NET execution status") &&
+      packageSql.Contains("FROM T_IAS_NOTIFY_EXECUTION"),
+    "Controlled complete package retires Oracle weekly delivery and reports ASP.NET execution");
 
 var monday = new DateTime(2026, 9, 28);
 Check(ManagementAuditWeeklyService.ReportingStart(monday.AddHours(6), DayOfWeek.Monday, TimeSpan.FromHours(7)) == null, "Not due before Monday 07:00");

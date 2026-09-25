@@ -1,16 +1,16 @@
 /*
-Step 12 - Create/update scheduler jobs in DISABLED state.
+Step 12 - Create/update the remaining Oracle scheduler jobs in DISABLED state.
 
-Change only these three constants if the approved schedule changes.
+The Management Audit weekly digest is owned by ManagementAuditWeeklyService;
+this script never creates JOB_MGMT_AUDIT_WEEKLY_NOTIFY.
+
+Change only these two constants if the approved schedule changes.
 Times are anchored to Asia/Karachi.
 
-Weekly digest: Monday 07:00
 Mapping exceptions: Friday 07:00
 Notification health: Daily 08:00
 */
 DECLARE
-  C_WEEKLY_SCHEDULE CONSTANT VARCHAR2(200) :=
-    'FREQ=WEEKLY;BYDAY=MON;BYHOUR=07;BYMINUTE=00;BYSECOND=00';
   C_MAPPING_SCHEDULE CONSTANT VARCHAR2(200) :=
     'FREQ=WEEKLY;BYDAY=FRI;BYHOUR=07;BYMINUTE=00;BYSECOND=00';
   C_HEALTH_SCHEDULE CONSTANT VARCHAR2(200) :=
@@ -64,13 +64,6 @@ DECLARE
   END;
 BEGIN
   UPSERT_JOB_DISABLED(
-    'JOB_MGMT_AUDIT_WEEKLY_NOTIFY',
-    'BEGIN PKG_IAS_NOTIFICATION.SEND_MGMT_AUDIT_WEEKLY; END;',
-    C_WEEKLY_SCHEDULE,
-    'Queues the previous Monday-Sunday digest separately for each Divisional Head.'
-  );
-
-  UPSERT_JOB_DISABLED(
     'JOB_MGMT_AUDIT_MAPPING_EXCEPT',
     'BEGIN PKG_IAS_NOTIFICATION.SEND_MGMT_AUDIT_MAPPING_EXCEPTIONS; END;',
     C_MAPPING_SCHEDULE,
@@ -92,13 +85,12 @@ BEGIN
   SELECT COUNT(*) INTO V_COUNT
     FROM USER_SCHEDULER_JOBS
    WHERE JOB_NAME IN
-     ('JOB_MGMT_AUDIT_WEEKLY_NOTIFY',
-      'JOB_MGMT_AUDIT_MAPPING_EXCEPT',
+     ('JOB_MGMT_AUDIT_MAPPING_EXCEPT',
       'JOB_IAS_NOTIFICATION_HEALTH')
      AND ENABLED='FALSE';
 
-  IF V_COUNT<>3 THEN
-    RAISE_APPLICATION_ERROR(-20833,'All three notification scheduler jobs must exist in DISABLED state.');
+  IF V_COUNT<>2 THEN
+    RAISE_APPLICATION_ERROR(-20833,'Both remaining notification scheduler jobs must exist in DISABLED state.');
   END IF;
 END;
 /
