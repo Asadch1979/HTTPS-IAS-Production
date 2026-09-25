@@ -2937,7 +2937,7 @@ namespace AIS.Controllers
 
         [HttpPost]
         [ApplicationAudit("POST_AUDIT_COMPLIANCE_REVIEWED", "COMPLIANCE", "Post Audit Compliance", "pkg_ae", "P_SubmitPostAuditCompliance_Review", OldParaId = "OLD_PARA_ID", NewParaId = "NEW_PARA_ID", ObjectType = "COMPLIANCE", SuccessMessageContains = "settled|Forwarded|Rejected/Referred Back")]
-        public string submit_post_audit_compliance_review(string OLD_PARA_ID, int NEW_PARA_ID, string INDICATOR, string COMPLIANCE, string COMMENTS, List<AuditeeResponseEvidenceModel> EVIDENCE_LIST)
+        public string submit_post_audit_compliance_review(string OLD_PARA_ID, int NEW_PARA_ID, string INDICATOR, string COMPLIANCE, string COMMENTS, List<AuditeeResponseEvidenceModel> EVIDENCE_LIST, string REQUEST_ID)
             {
             var remarksWithoutTags = RichTextTagRegex.Replace(COMMENTS ?? string.Empty, string.Empty);
             var remarksText = (System.Net.WebUtility.HtmlDecode(remarksWithoutTags) ?? string.Empty).Replace('\u00A0', ' ');
@@ -2946,9 +2946,12 @@ namespace AIS.Controllers
                 return "{\"Status\":false,\"Message\":\"Only 1000 characters are allowed in Remarks.\"}";
                 }
 
-            string response = "";
-            response = dBConnection.SubmitPostAuditComplianceReview(OLD_PARA_ID, NEW_PARA_ID, INDICATOR, COMPLIANCE, COMMENTS, EVIDENCE_LIST);
-            return "{\"Status\":true,\"Message\":\"" + response + "\"}";
+            if (!Guid.TryParse(REQUEST_ID, out var requestId))
+                return System.Text.Json.JsonSerializer.Serialize(new { Status = false, Message = "Refresh the review page before submitting." });
+            var store = HttpContext.RequestServices.GetRequiredService<AIS.Services.NotificationExecutionStore>();
+            var fingerprint = System.Text.Json.JsonSerializer.Serialize(new { OLD_PARA_ID, NEW_PARA_ID, INDICATOR, COMMENTS, User = HttpContext.Session.Id });
+            return store.ExecuteReview(requestId.ToString("N"), fingerprint, () =>
+                System.Text.Json.JsonSerializer.Serialize(new { Status = true, Message = dBConnection.SubmitPostAuditComplianceReview(OLD_PARA_ID, NEW_PARA_ID, INDICATOR, COMPLIANCE, COMMENTS, EVIDENCE_LIST) }));
             }
 
         [HttpGet]

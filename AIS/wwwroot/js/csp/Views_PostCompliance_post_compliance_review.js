@@ -10,7 +10,19 @@
     var g_allowedFormats = ["pdf", "jpg", "jpeg", "png", "doc", "docx", "jpg", "csv", "xls", "xlsx"]; // allowed file formats
     var g_maxCycle = 0;
     var g_complianceRemarksMaxLength = 1000;
+    var g_reviewPending = false;
+    var g_reviewRequestId = null;
 
+    function createReviewRequestId() {
+        if (window.crypto && crypto.randomUUID) {
+            return crypto.randomUUID();
+        }
+        return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+            var r = Math.random() * 16 | 0;
+            var v = c === 'x' ? r : (r & 0x3 | 0x8);
+            return v.toString(16);
+        });
+    }
 
     var btnClick = "review";
 
@@ -225,6 +237,7 @@
 
         g_newParaId = newParaId;
         g_oldParaId = oldParaId;
+        g_reviewRequestId = createReviewRequestId();
         g_prevRole = prevRole;
         g_nextRole = nextRole;
         g_comId = comID;
@@ -261,7 +274,10 @@
     }
 
     function PublishCompliance(ind) {
-
+        if (g_reviewPending) return;
+        if (!g_reviewRequestId) {
+            g_reviewRequestId = createReviewRequestId();
+        }
 
         var commentsRemarks = "";
         var evidenceList = [];
@@ -287,6 +303,7 @@
             'NEW_PARA_ID': g_newParaId,
             'INDICATOR': ind,
             'COMMENTS': commentsRemarks,
+            'REQUEST_ID': g_reviewRequestId,
         };
 
         $.each(evidenceList, function (index, item) {
@@ -300,6 +317,9 @@
         });
 
 
+        g_reviewPending = true;
+        var reviewButtons = $('#prevRoleButtonHandler, #nextRoleButtonHandler, #prevRoleButtonHandler_rep, #nextRoleButtonHandler_rep');
+        reviewButtons.prop('disabled', true);
         $.ajax({
             url: g_asiBaseURL + "/ApiCalls/submit_post_audit_compliance_review",
             type: "POST",
@@ -307,9 +327,18 @@
             cache: false,
             success: function (data) {
                 showApiAlert(data);
-                onAlertCallback(reloadLocation);
+                if (data && data.Status) {
+                    g_reviewRequestId = null;
+                    onAlertCallback(reloadLocation);
+                }
             },
             dataType: "json",
+            complete: function () {
+                if (g_reviewRequestId) {
+                    g_reviewPending = false;
+                    reviewButtons.prop('disabled', false);
+                }
+            },
         });
     }
 
@@ -340,6 +369,8 @@
         $('#viewParaComplianceModel').modal('hide');
         $('#viewMemoModel').modal('hide');
         $('#viewMemoReportingModel').modal('hide');
+        g_reviewPending = false;
+        g_reviewRequestId = null;
 
 
       

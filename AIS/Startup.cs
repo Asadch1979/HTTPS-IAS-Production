@@ -111,6 +111,8 @@ namespace AIS
             services.AddSingleton<PasswordChangeTokenService>();
             services.AddSingleton<PasswordChangeStateStore>();
             services.AddHostedService<PageIdRouteValidator>();
+            services.AddSingleton<NotificationExecutionStore>();
+            services.AddHostedService<ManagementAuditWeeklyService>();
             var mvcBuilder = services.AddControllersWithViews()
                 .AddJsonOptions(options =>
                 {

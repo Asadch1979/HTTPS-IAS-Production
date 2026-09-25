@@ -196,11 +196,11 @@ USING (
     'Audit Para No. {REFERENCE} {STATUS}',' ',
     'WORKFLOW','N','Management Audit only (AUDITED_BY 112242/112248); queued after the decision commit.' FROM DUAL UNION ALL
   SELECT 'MGMT_AUDIT_WEEKLY_PARA_STATUS','Weekly Management Audit Para Decisions','Compliance',
-    'JOB_MGMT_AUDIT_WEEKLY_NOTIFY','PKG_IAS_NOTIFICATION.SEND_MGMT_AUDIT_WEEKLY',
-    'Decision history + explicit DIV_OFFICE/B_GROUP entity mappings',
+    'ASP.NET BackgroundService','ManagementAuditWeeklyService.RunPeriodAsync',
+    'V_IAS_MGMT_WEEKLY_DATA + T_IAS_NOTIFY_EXECUTION',
     'IAS Notification: Weekly Management Audit Para Decisions ({REFERENCE})',
     'Weekly Management Audit Para Decisions','Reporting period: {REFERENCE}',
-    'WORKFLOW','N','Previous Monday-Sunday digest, one queue item per concerned Divisional Head with reporting office/group in CC.' FROM DUAL UNION ALL
+    'WORKFLOW','N','Previous Monday-Sunday digest sent by ASP.NET, one email per concerned Divisional Head with reporting office/group in CC.' FROM DUAL UNION ALL
   SELECT 'MGMT_AUDIT_MAPPING_EXCEPTION','Management Audit Entity Mapping Exceptions','Compliance',
     'JOB_MGMT_AUDIT_MAPPING_EXCEPT','PKG_IAS_NOTIFICATION.SEND_MGMT_AUDIT_MAPPING_EXCEPTIONS',
     'V_IAS_MGMT_AUDIT_NOTIFY_MAP',
@@ -373,80 +373,8 @@ CREATE OR REPLACE PACKAGE BODY PKG_IAS_NOTIFICATION AS
   END;
 
   PROCEDURE SEND_MGMT_AUDIT_WEEKLY(P_FROM_DATE DATE,P_TO_DATE DATE) IS
-    C_CODE CONSTANT VARCHAR2(50):='MGMT_AUDIT_WEEKLY_PARA_STATUS';
-    V_FROM DATE; V_TO_DATE DATE; V_SETTLED CLOB; V_REJECTED CLOB; V_BODY CLOB;
-    V_SN NUMBER; V_RN NUMBER; V_EMAIL_ID NUMBER; V_REF1 NUMBER; V_EXISTING NUMBER;
-    FUNCTION CELL(P_VALUE VARCHAR2,P_HEAD BOOLEAN DEFAULT FALSE) RETURN CLOB IS
-      V_TAG VARCHAR2(2):=CASE WHEN P_HEAD THEN 'th' ELSE 'td' END;
-      V_BG VARCHAR2(60):=CASE WHEN P_HEAD THEN 'background:#eef2f6;font-weight:bold;' ELSE '' END;
-    BEGIN RETURN TO_CLOB('<'||V_TAG||' style="padding:8px 10px;border-bottom:1px solid #d9e2ec;font-size:12px;color:#334e68;'||V_BG||'">')||ESC(P_VALUE)||'</'||V_TAG||'>'; END;
-    FUNCTION FMT(P_DATE DATE) RETURN VARCHAR2 IS BEGIN RETURN TO_CHAR(P_DATE,'DD-MON-YYYY'); END;
   BEGIN
-    IF (P_FROM_DATE IS NULL AND P_TO_DATE IS NOT NULL) OR (P_FROM_DATE IS NOT NULL AND P_TO_DATE IS NULL) THEN
-      RAISE_APPLICATION_ERROR(-20104,'Supply both weekly reporting dates or neither.');
-    END IF;
-    V_FROM:=TRUNC(NVL(P_FROM_DATE,TRUNC(SYSDATE,'IW')-7));
-    V_TO_DATE:=TRUNC(NVL(P_TO_DATE,TRUNC(SYSDATE,'IW')-1));
-    IF V_TO_DATE<V_FROM THEN RAISE_APPLICATION_ERROR(-20105,'Invalid weekly reporting period.'); END IF;
-    V_REF1:=TO_NUMBER(TO_CHAR(V_FROM,'YYYYMMDD'));
-
-    FOR RCP IN (
-      SELECT M.DIVISION_ID,M.DIVISION_NAME,M.DIVISION_EMAIL MAIL_TO,
-             LISTAGG(DISTINCT M.REPORTING_EMAIL,';') WITHIN GROUP (ORDER BY M.REPORTING_EMAIL) MAIL_CC
-        FROM AIS_T_AU_POST_COMPLIANCE PC
-        JOIN AIS_T_AU_POST_COMPLIANCE_HISTORY H ON H.COM_ID=PC.COM_ID
-        JOIN V_IAS_MGMT_AUDIT_NOTIFY_MAP M ON M.ENTITY_ID=PC.ENTITY_ID
-         AND M.DIVISION_ID IS NOT NULL AND TRIM(M.DIVISION_EMAIL) IS NOT NULL
-       WHERE PC.AUDITED_BY IN (112242,112248)
-         AND H.COM_STATUS IN (16,12,15,18)
-         AND H.COMMENT_ON>=V_FROM AND H.COMMENT_ON<V_TO_DATE+1
-       GROUP BY M.DIVISION_ID,M.DIVISION_NAME,M.DIVISION_EMAIL
-    ) LOOP
-      SELECT COUNT(*) INTO V_EXISTING FROM T_EMAIL_QUEUE Q
-       WHERE Q.EVENT_CODE=C_CODE AND Q.REF_ID1=V_REF1 AND Q.REF_ID2=RCP.DIVISION_ID;
-      IF V_EXISTING>0 THEN
-        CONTINUE;
-      END IF;
-      V_SETTLED:='<tr>'||CELL('Sr.',TRUE)||CELL('Entity',TRUE)||CELL('Audit Year',TRUE)||CELL('Para No.',TRUE)||
-        CELL('Title',TRUE)||CELL('Compliance Submitted On',TRUE)||CELL('Decision On',TRUE)||'</tr>';
-      V_REJECTED:='<tr>'||CELL('Sr.',TRUE)||CELL('Entity',TRUE)||CELL('Audit Year',TRUE)||CELL('Para No.',TRUE)||
-        CELL('Title',TRUE)||CELL('Compliance Submitted On',TRUE)||CELL('Decision On',TRUE)||CELL('Reason',TRUE)||'</tr>';
-      V_SN:=0; V_RN:=0;
-      FOR DCS IN (
-        SELECT E.NAME ENTITY_NAME,PC.AUDIT_PERIOD,PC.PARA_NO,PC.GIST_OF_PARAS TITLE,
-               (SELECT MAX(S.COMMENT_ON) FROM AIS_T_AU_POST_COMPLIANCE_HISTORY S
-                 WHERE S.COM_ID=H.COM_ID AND S.COM_CYCLE=H.COM_CYCLE AND S.COM_STATUS=10
-                   AND S.COMMENT_ON<=H.COMMENT_ON) SUBMITTED_ON,
-               H.COMMENT_ON DECISION_ON,H.COMMENTS REASON,H.COM_STATUS
-          FROM AIS_T_AU_POST_COMPLIANCE PC
-          JOIN AIS_T_AU_POST_COMPLIANCE_HISTORY H ON H.COM_ID=PC.COM_ID
-          JOIN T_AUDITEE_ENTITIES E ON E.ENTITY_ID=PC.ENTITY_ID
-          JOIN V_IAS_MGMT_AUDIT_NOTIFY_MAP M ON M.ENTITY_ID=PC.ENTITY_ID
-           AND M.DIVISION_ID IS NOT NULL AND TRIM(M.DIVISION_EMAIL) IS NOT NULL
-         WHERE PC.AUDITED_BY IN (112242,112248) AND M.DIVISION_ID=RCP.DIVISION_ID
-           AND H.COM_STATUS IN (16,12,15,18)
-           AND H.COMMENT_ON>=V_FROM AND H.COMMENT_ON<V_TO_DATE+1
-         ORDER BY H.COMMENT_ON,H.HIST_ID
-      ) LOOP
-        IF DCS.COM_STATUS=16 THEN
-          V_SN:=V_SN+1; V_SETTLED:=V_SETTLED||'<tr>'||CELL(TO_CHAR(V_SN))||CELL(DCS.ENTITY_NAME)||
-            CELL(DCS.AUDIT_PERIOD)||CELL(DCS.PARA_NO)||CELL(DCS.TITLE)||CELL(FMT(DCS.SUBMITTED_ON))||CELL(FMT(DCS.DECISION_ON))||'</tr>';
-        ELSE
-          V_RN:=V_RN+1; V_REJECTED:=V_REJECTED||'<tr>'||CELL(TO_CHAR(V_RN))||CELL(DCS.ENTITY_NAME)||
-            CELL(DCS.AUDIT_PERIOD)||CELL(DCS.PARA_NO)||CELL(DCS.TITLE)||CELL(FMT(DCS.SUBMITTED_ON))||CELL(FMT(DCS.DECISION_ON))||CELL(DCS.REASON)||'</tr>';
-        END IF;
-      END LOOP;
-      IF V_SN=0 AND V_RN=0 THEN CONTINUE; END IF;
-      IF V_SN=0 THEN V_SETTLED:=V_SETTLED||'<tr><td colspan="7" style="padding:10px">No settled paras.</td></tr>'; END IF;
-      IF V_RN=0 THEN V_REJECTED:=V_REJECTED||'<tr><td colspan="8" style="padding:10px">No rejected paras.</td></tr>'; END IF;
-      V_BODY:=TO_CLOB('<!DOCTYPE html><html><body style="margin:0;background:#f4f6f8;font-family:Arial;color:#1f2933"><table width="100%"><tr><td align="center"><table width="900" style="background:#fff;border-collapse:collapse"><tr><td style="padding:18px 28px;background:#173f5f;color:#fff;font-size:20px;font-weight:bold">Internal Audit System (IAS)</td></tr><tr><td style="padding:28px;font-size:22px;font-weight:bold">Weekly Management Audit Para Decisions</td></tr><tr><td style="padding:0 28px 18px">Reporting period: ')||ESC(FMT(V_FROM)||' to '||FMT(V_TO_DATE))||'<br>Division: '||ESC(RCP.DIVISION_NAME)||'</td></tr><tr><td style="padding:8px 28px;font-weight:bold">SETTLED PARAS</td></tr><tr><td style="padding:0 28px 18px"><table width="100%" style="border-collapse:collapse">'||V_SETTLED||'</table></td></tr><tr><td style="padding:8px 28px;font-weight:bold">REJECTED PARAS</td></tr><tr><td style="padding:0 28px 18px"><table width="100%" style="border-collapse:collapse">'||V_REJECTED||'</table></td></tr><tr><td style="padding:18px 28px;background:#f8fafc;font-size:12px">'||ESC(C_FOOTER)||'</td></tr></table></td></tr></table></body></html>';
-      ENQUEUE_HTML(C_CODE,V_REF1,RCP.DIVISION_ID,RCP.MAIL_TO,RCP.MAIL_CC,
-        FMT(V_FROM)||' to '||FMT(V_TO_DATE),V_BODY,V_EMAIL_ID);
-    END LOOP;
-  EXCEPTION WHEN OTHERS THEN
-    PKG_LG.LOG_ERROR('IAS_NOTIFICATION','DBMS_SCHEDULER','SEND_MGMT_AUDIT_WEEKLY',
-      'Weekly Management Audit notification failed',SQLERRM);
-    RAISE;
+    RAISE_APPLICATION_ERROR(-20106,'Weekly notification delivery moved to ASP.NET ManagementAuditWeeklyService.');
   END;
 
   PROCEDURE SEND_MGMT_AUDIT_MAPPING_EXCEPTIONS(P_REPORT_DATE DATE) IS

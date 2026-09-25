@@ -16,6 +16,39 @@ namespace AIS
     public static class EmailNotification
         {
         private const string NotificationHeader = "Internal Audit System (IAS)";
+        public static Task<EmailSendResult> SendManagementAuditWeeklyAsync(IConfiguration configuration,
+            DateTime start, IReadOnlyList<AIS.Services.ManagementAuditDecision> records)
+            {
+            if (records.Count == 0) throw new ArgumentException("Weekly notification requires decisions.", nameof(records));
+            var division = records[0];
+            if (records.Any(r => r.DivisionId != division.DivisionId || r.To != division.To))
+                throw new InvalidOperationException("Weekly notification must contain one Division and recipient.");
+            string Cell(string text) => "<td style=\"padding:8px;border:1px solid #d9e2ec\">" + WebUtility.HtmlEncode(text) + "</td>";
+            string Table(bool settled)
+                {
+                var html = new StringBuilder("<h3>" + (settled ? "SETTLED PARAS" : "REJECTED PARAS") + "</h3><table style=\"border-collapse:collapse;width:100%\"><tr>");
+                foreach (var label in new[] { "Sr.", "Entity", "Audit Year", "Para No.", "Title", "Compliance Submitted On", "Decision On" }) html.Append(Cell(label));
+                if (!settled) html.Append(Cell("Reason"));
+                html.Append("</tr>");
+                var number = 0;
+                foreach (var row in records.Where(r => r.Settled == settled))
+                    {
+                    html.Append("<tr>" + Cell((++number).ToString()) + Cell(row.Entity) + Cell(row.Year) + Cell(row.Para) + Cell(row.Title)
+                        + Cell(row.Submitted?.ToString("dd-MMM-yyyy", CultureInfo.InvariantCulture)) + Cell(row.Decision.ToString("dd-MMM-yyyy", CultureInfo.InvariantCulture)));
+                    if (!settled) html.Append(Cell(row.Reason));
+                    html.Append("</tr>");
+                    }
+                if (number == 0) html.Append("<tr><td colspan=\"" + (settled ? 7 : 8) + "\">No records.</td></tr>");
+                return html.Append("</table>").ToString();
+                }
+            var reporting = records.Select(r => r.Cc).Where(r => !string.IsNullOrWhiteSpace(r)).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+            var body = "<html><body style=\"font-family:Arial\"><h2 style=\"background:#173f5f;color:white;padding:18px\">" + NotificationHeader
+                + "</h2><h2>Weekly Management Audit Para Decisions</h2><p>" + WebUtility.HtmlEncode(division.Division)
+                + $" | {start:dd-MMM-yyyy} to {start.AddDays(6):dd-MMM-yyyy}</p>" + Table(true) + Table(false) + "<p>" + StandardFooter + "</p></body></html>";
+            return new EmailConfiguration(configuration).SendAsync(CreateRequest("Audit", "MGMT_AUDIT_WEEKLY_PARA_STATUS",
+                $"{start:yyyyMMdd}:{division.DivisionId}", division.To, string.Join(";", reporting),
+                $"IAS Notification: Weekly Management Audit Para Decisions {start:dd-MMM-yyyy} to {start.AddDays(6):dd-MMM-yyyy}", body));
+            }
         private const string StandardFooter = "This is a system-generated notification from Internal Audit System (IAS). Please do not reply to this email unless required under official process.";
         private static readonly Regex HtmlTagRegex = new Regex("<.*?>", RegexOptions.Compiled | RegexOptions.Singleline);
         private static readonly Regex WhitespaceRegex = new Regex("\\s+", RegexOptions.Compiled);
