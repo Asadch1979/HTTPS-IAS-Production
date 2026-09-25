@@ -1407,6 +1407,8 @@ create or replace package body PKG_AE is
              C.OLD_PARA_ID,
              C.GIST_OF_PARAS,
              C.AUDITBY_ID,
+             C.AUDIT_PERIOD AS AUDIT_YEAR,
+             NVL(R.DESCRIPTION, TO_CHAR(PC.RISK)) AS RISK,
              C.REC_FROM,
              ET.EMAIL_ADDRESS AS TO_EMAIL,
              AD.EMAIL_ADDRESS AS CC_EMAIL,
@@ -1432,7 +1434,13 @@ create or replace package body PKG_AE is
              C.COM_ID AS COMID,
              C.START_DATE || ' - ' || C.END_DATE AS AUDIT_DATE
 
-        FROM V_GET_AIS_POST_COMPLIANCE C
+       FROM V_GET_AIS_POST_COMPLIANCE C
+
+        LEFT JOIN AIS_T_AU_POST_COMPLIANCE PC
+          ON PC.COM_ID = C.COM_ID
+
+        LEFT JOIN T_RISK R
+          ON R.R_ID = PC.RISK
 
        INNER JOIN T_AUDITEE_ENTITIES_MAPING M
           ON M.ENTITY_ID = C.ENTITY_ID
@@ -1500,7 +1508,11 @@ create or replace package body PKG_AE is
                '' AS GIST_OF_PARAS,
                '' AS TO_EMAIL,
                '' AS CC_EMAIL,
-               '' AS CC_EMAIL2
+               '' AS CC_EMAIL2,
+               '' AS AUDIT_YEAR,
+               '' AS RISK,
+               '' AS REJECTION_REASON,
+               '' AS AUDITBY_ID
           FROM DUAL;
 
       RETURN;
@@ -1531,7 +1543,11 @@ create or replace package body PKG_AE is
                '' AS GIST_OF_PARAS,
                '' AS TO_EMAIL,
                '' AS CC_EMAIL,
-               '' AS CC_EMAIL2
+               '' AS CC_EMAIL2,
+               '' AS AUDIT_YEAR,
+               '' AS RISK,
+               '' AS REJECTION_REASON,
+               '' AS AUDITBY_ID
           FROM DUAL;
 
       RETURN;
@@ -1573,7 +1589,11 @@ create or replace package body PKG_AE is
                '' AS GIST_OF_PARAS,
                '' AS TO_EMAIL,
                '' AS CC_EMAIL,
-               '' AS CC_EMAIL2
+               '' AS CC_EMAIL2,
+               '' AS AUDIT_YEAR,
+               '' AS RISK,
+               '' AS REJECTION_REASON,
+               '' AS AUDITBY_ID
           FROM DUAL;
 
       RETURN;
@@ -1703,7 +1723,11 @@ create or replace package body PKG_AE is
                Vr1.GIST_OF_PARAS AS GIST_OF_PARAS,
                Vr1.TO_EMAIL AS TO_EMAIL,
                Vr1.CC_EMAIL AS CC_EMAIL,
-               '' AS CC_EMAIL2
+               '' AS CC_EMAIL2,
+               Vr1.AUDIT_YEAR AS AUDIT_YEAR,
+               Vr1.RISK AS RISK,
+               '' AS REJECTION_REASON,
+               TO_CHAR(Vr1.AUDITBY_ID) AS AUDITBY_ID
 
           FROM DUAL;
 
@@ -1718,7 +1742,11 @@ create or replace package body PKG_AE is
                  '' AS GIST_OF_PARAS,
                  '' AS TO_EMAIL,
                  '' AS CC_EMAIL,
-                 '' AS CC_EMAIL2
+                 '' AS CC_EMAIL2,
+                 '' AS AUDIT_YEAR,
+                 '' AS RISK,
+                 '' AS REJECTION_REASON,
+                 TO_CHAR(Vr1.AUDITBY_ID) AS AUDITBY_ID
             FROM DUAL;
 
       ELSE
@@ -1727,10 +1755,14 @@ create or replace package body PKG_AE is
           SELECT 'Complaince Rejected/Referred Back' AS remarks,
                  Vr1.PARA_NO AS para_no,
                  'Rejected/Referred Back' AS para_status,
-                 '' AS GIST_OF_PARAS,
-                 '' AS TO_EMAIL,
-                 '' AS CC_EMAIL,
-                 '' AS CC_EMAIL2
+                 CASE WHEN Vr1.AUDITBY_ID IN (112242, 112248) THEN Vr1.GIST_OF_PARAS ELSE '' END AS GIST_OF_PARAS,
+                 CASE WHEN Vr1.AUDITBY_ID IN (112242, 112248) THEN Vr1.TO_EMAIL ELSE '' END AS TO_EMAIL,
+                 CASE WHEN Vr1.AUDITBY_ID IN (112242, 112248) THEN Vr1.CC_EMAIL ELSE '' END AS CC_EMAIL,
+                 '' AS CC_EMAIL2,
+                 CASE WHEN Vr1.AUDITBY_ID IN (112242, 112248) THEN Vr1.AUDIT_YEAR ELSE '' END AS AUDIT_YEAR,
+                 CASE WHEN Vr1.AUDITBY_ID IN (112242, 112248) THEN Vr1.RISK ELSE '' END AS RISK,
+                 CASE WHEN Vr1.AUDITBY_ID IN (112242, 112248) THEN A_COMMENTS ELSE '' END AS REJECTION_REASON,
+                 TO_CHAR(Vr1.AUDITBY_ID) AS AUDITBY_ID
             FROM DUAL;
 
       END IF;
