@@ -125,6 +125,16 @@ Check(ManagementAuditWeeklyService.ReportingStart(monday.AddHours(6), DayOfWeek.
 Check(ManagementAuditWeeklyService.ReportingStart(monday.AddHours(7), DayOfWeek.Monday, TimeSpan.FromHours(7)) == monday.AddDays(-7), "Previous Monday-Sunday selected");
 Check(ManagementAuditWeeklyService.ReportingStart(monday.AddDays(2), DayOfWeek.Monday, TimeSpan.FromHours(7)) == monday.AddDays(-7), "Restart catches up within reporting week");
 Check(ManagementAuditWeeklyService.ReportingStart(monday.AddDays(4).AddHours(9), DayOfWeek.Friday, TimeSpan.FromHours(8)) == monday.AddDays(-7), "Configurable schedule");
+var firstRetryCheck = new DateTimeOffset(2026, 9, 28, 2, 0, 0, TimeSpan.Zero);
+var retryPeriod = monday.AddDays(-7);
+Check(ManagementAuditWeeklyService.ShouldCheckPeriod(retryPeriod, null, null, firstRetryCheck) &&
+      !ManagementAuditWeeklyService.ShouldCheckPeriod(retryPeriod, retryPeriod, firstRetryCheck, firstRetryCheck.AddMinutes(14)) &&
+      ManagementAuditWeeklyService.ShouldCheckPeriod(retryPeriod, retryPeriod, firstRetryCheck, firstRetryCheck.AddMinutes(15)),
+    "Failed weekly period becomes eligible for recheck after the retry interval");
+var executionStoreSource = File.ReadAllText(Path.Combine(FindRepoRoot(), "AIS", "Services", "NotificationExecutionStore.cs"));
+Check(executionStoreSource.Contains("STATUS='FAILED'") && executionStoreSource.Contains("RETRY_COUNT<5") &&
+      executionStoreSource.Contains("INTERVAL '15' MINUTE") && !executionStoreSource.Contains("STATUS='RUNNING' AND RETRY_COUNT"),
+    "Weekly retry claim permits only delayed FAILED executions with the existing retry limit");
 
 ManagementAuditWeeklyDivisionSummaryModel WeeklySummary(int divisionId, int settled = 1, int rejected = 0) => new()
 {
@@ -236,6 +246,36 @@ await ManagementAuditWeeklyService.ProcessDivisionQueueAsync(
     CancellationToken.None);
 Check(claimKeys.Count == 2 && claimedDetails.SequenceEqual(new[] { 2 }),
     "Completed or unclaimed Division jobs are not reprocessed");
+
+var retryStates = new Dictionary<int, (string Status, int RetryCount, DateTimeOffset Updated)>
+{
+    [1] = ("FAILED", 0, firstRetryCheck.AddMinutes(-16)),
+    [2] = ("COMPLETE", 0, firstRetryCheck.AddHours(-1)),
+    [3] = ("RUNNING", 0, firstRetryCheck.AddHours(-1)),
+    [4] = ("FAILED", 0, firstRetryCheck.AddMinutes(-5))
+};
+var retriedDivisions = new List<int>();
+bool RetryClaim(string key)
+{
+    var divisionId = int.Parse(key.Split(':').Last());
+    var state = retryStates[divisionId];
+    if (state.Status != "FAILED" || state.RetryCount >= 5 || state.Updated >= firstRetryCheck.AddMinutes(-15))
+        return false;
+    retryStates[divisionId] = ("RUNNING", state.RetryCount + 1, firstRetryCheck);
+    return true;
+}
+await ManagementAuditWeeklyService.ProcessDivisionQueueAsync(
+    queueStart, queueEnd, new[] { WeeklySummary(1), WeeklySummary(2), WeeklySummary(3), WeeklySummary(4) },
+    RetryClaim,
+    divisionId => { retriedDivisions.Add(divisionId); return new[] { WeeklyDetail(divisionId, divisionId, queueStart.AddDays(1)) }; },
+    (_, _) => Task.FromResult(new EmailSendResult { IsSuccess = true }),
+    (key, status, _) => retryStates[int.Parse(key.Split(':').Last())] = (status, 1, firstRetryCheck),
+    (_, _) => { },
+    CancellationToken.None);
+Check(retriedDivisions.SequenceEqual(new[] { 1 }), "Eligible FAILED Division is retried independently");
+Check(!retriedDivisions.Contains(2), "Completed weekly Division is skipped");
+Check(!retriedDivisions.Contains(3), "RUNNING weekly Division is not blindly retried");
+Check(!retriedDivisions.Contains(4), "Weekly retries remain specific to each Division's retry age");
 
 var actionRuns = 0;
 var completed = new Dictionary<string, NotificationExecutionStore.ExecutionRecord>();

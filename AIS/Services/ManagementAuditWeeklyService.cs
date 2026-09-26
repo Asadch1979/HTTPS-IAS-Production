@@ -23,6 +23,8 @@ namespace AIS.Services
         private readonly IServiceScopeFactory scopeFactory;
         private readonly ILogger<ManagementAuditWeeklyService> logger;
         private DateTime? lastObservedReportingStart;
+        private DateTimeOffset? lastPeriodCheckUtc;
+        public static readonly TimeSpan FailedRetryCheckInterval = TimeSpan.FromMinutes(15);
         public ManagementAuditWeeklyService(IConfiguration configuration, NotificationExecutionStore store,
             IServiceScopeFactory scopeFactory,
             ILogger<ManagementAuditWeeklyService> logger)
@@ -40,6 +42,16 @@ namespace AIS.Services
             return localNow >= due ? monday.AddDays(-7) : null;
         }
 
+        public static bool ShouldCheckPeriod(DateTime? reportingStart, DateTime? lastReportingStart,
+            DateTimeOffset? lastCheckUtc, DateTimeOffset nowUtc)
+        {
+            if (!reportingStart.HasValue)
+                return false;
+            if (!lastReportingStart.HasValue || reportingStart.Value != lastReportingStart.Value)
+                return true;
+            return !lastCheckUtc.HasValue || nowUtc - lastCheckUtc.Value >= FailedRetryCheckInterval;
+        }
+
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
             while (!stoppingToken.IsCancellationRequested)
@@ -53,10 +65,12 @@ namespace AIS.Services
                         var time = TimeSpan.Parse(configuration["ManagementAuditWeekly:Time"] ?? "07:00", System.Globalization.CultureInfo.InvariantCulture);
                         if (time < TimeSpan.Zero || time >= TimeSpan.FromDays(1)) throw new InvalidOperationException("Weekly time must be within one day.");
                         var start = ReportingStart(TimeZoneInfo.ConvertTime(DateTimeOffset.UtcNow, zone).DateTime, day, time);
-                        if (start.HasValue && start.Value != lastObservedReportingStart)
+                        var nowUtc = DateTimeOffset.UtcNow;
+                        if (ShouldCheckPeriod(start, lastObservedReportingStart, lastPeriodCheckUtc, nowUtc))
                         {
-                            await RunPeriodAsync(start.Value, stoppingToken);
                             lastObservedReportingStart = start.Value;
+                            lastPeriodCheckUtc = nowUtc;
+                            await RunPeriodAsync(start.Value, stoppingToken);
                         }
                     }
                 }
