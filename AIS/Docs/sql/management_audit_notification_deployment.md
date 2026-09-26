@@ -4,6 +4,15 @@ This is the only supported deployment path for Management Audit notifications.
 The generic Oracle email queue is owned by `PKG_EMAIL`; weekly delivery is owned
 by the ASP.NET `ManagementAuditWeeklyService`.
 
+The supported weekly flow is `ManagementAuditWeeklyService` -> scoped
+`DBConnection` -> `PKG_MGMT_AUDIT_WEEKLY` -> `EmailNotification` ->
+`EmailConfiguration`/SMTP. The Division summary is authoritative for the
+Divisional Head TO address, Reporting Office / Group CC address, and Division
+name. Detail rows supply business and decision data only. The application
+rechecks the active reporting period every 15 minutes; `T_IAS_NOTIFY_EXECUTION`
+and `ClaimWeekly()` determine which independent Division jobs may run or retry.
+Weekly delivery does not use `T_EMAIL_QUEUE`.
+
 ## Required order
 
 1. Keep `ManagementAuditWeekly:Enabled` set to `false`.

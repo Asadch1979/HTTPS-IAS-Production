@@ -100,6 +100,7 @@ Check(weeklyAccess.Contains("PKG_MGMT_AUDIT_WEEKLY.P_GET_MGMT_WEEKLY_DIVISIONS")
       !weeklyAccess.Contains("V_IAS_MGMT_WEEKLY_DATA", StringComparison.OrdinalIgnoreCase),
     "Management Audit weekly DB access uses only the approved stored procedures");
 var weeklyService = File.ReadAllText(Path.Combine(FindRepoRoot(), "AIS", "Services", "ManagementAuditWeeklyService.cs"));
+var weeklyEmail = File.ReadAllText(Path.Combine(FindRepoRoot(), "AIS", "EmailNotification.cs"));
 var summaryCall = weeklyService.IndexOf("GetManagementAuditWeeklyDivisions(fromDate, toDate)", StringComparison.Ordinal);
 var detailCall = weeklyService.IndexOf("GetManagementAuditWeeklyDivisionData(divisionId, fromDate, toDate)", StringComparison.Ordinal);
 Check(!weeklyService.Contains("V_IAS_MGMT_WEEKLY_DATA", StringComparison.OrdinalIgnoreCase) &&
@@ -110,6 +111,23 @@ Check(summaryCall >= 0 && detailCall > summaryCall && weeklyService.Contains("sc
     "Management Audit weekly service resolves scoped DBConnection and loads summaries before details");
 Check(weeklyService.Contains("store.ClaimWeekly") && weeklyService.Contains("WEEKLY:{fromDate:yyyyMMdd}:{division.DivisionId}"),
     "Management Audit weekly service retains per-Division execution claims");
+Check(weeklyEmail.Contains("division.ToEmail") && weeklyEmail.Contains("division.CcEmail") &&
+      weeklyEmail.Contains("division.DivisionName") &&
+      !weeklyEmail.Contains("records.Select(r => r.Cc") &&
+      typeof(ManagementAuditDecision).GetProperty("To") == null &&
+      typeof(ManagementAuditDecision).GetProperty("Cc") == null,
+    "Weekly recipients and Division name come only from the Division summary");
+Check(weeklyEmail.Contains("SETTLED PARAS") && weeklyEmail.Contains("REJECTED PARAS") &&
+      new[] { "Sr.", "Entity", "Audit Year", "Para No.", "Title", "Compliance Submitted On", "Decision On", "Reason" }
+        .All(column => weeklyEmail.Contains(column)),
+    "Weekly email preserves the settled and rejected table format");
+Check(!weeklyService.Contains("T_EMAIL_QUEUE", StringComparison.OrdinalIgnoreCase) &&
+      !weeklyEmail.Contains("T_EMAIL_QUEUE", StringComparison.OrdinalIgnoreCase),
+    "Weekly application delivery does not use T_EMAIL_QUEUE");
+var sourceSettings = File.ReadAllText(Path.Combine(FindRepoRoot(), "AIS", "appsettings.json"));
+Check(Regex.IsMatch(sourceSettings, "\\\"ManagementAuditWeekly\\\"\\s*:\\s*\\{[^}]*\\\"Enabled\\\"\\s*:\\s*false",
+        RegexOptions.IgnoreCase | RegexOptions.Singleline),
+    "Management Audit weekly delivery remains disabled by default");
 
 var genericQueueSql = File.ReadAllText(Path.Combine(sqlRoot, "email_notification_architecture_refactor.sql"));
 Check(genericQueueSql.Contains("T_EMAIL_QUEUE") && genericQueueSql.Contains("UQ_EMAIL_SCHED_NOTIFY") &&
@@ -191,6 +209,7 @@ await ManagementAuditWeeklyService.ProcessDivisionQueueAsync(
     (exception, key) => throw new Exception($"Unexpected queue failure for {key}", exception),
     CancellationToken.None);
 Check(maximumActiveSends == 1 &&
+      queueEvents.Count(item => item.StartsWith("send-start:", StringComparison.Ordinal)) == 2 &&
       queueEvents.IndexOf("send-end:1") < queueEvents.IndexOf("send-start:2") &&
       queueEvents.Contains($"complete:WEEKLY:{queueStart:yyyyMMdd}:1:COMPLETE") &&
       queueEvents.Contains($"complete:WEEKLY:{queueStart:yyyyMMdd}:2:COMPLETE"),
@@ -329,16 +348,35 @@ var config = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<str
 Check(EmailNotification.NotifyManagementAuditParaStatus(config,"2","Rejected","2026","High","Test gist","Decision reason",
     "division@example.test","group@example.test","","Report","Division","Department"), "Rejection SMTP succeeds");
 var records = new List<ManagementAuditDecision> {
-    new(1,"Division","division@example.test","group@example.test","Entity","2026","2","Test",monday.AddDays(-6),monday.AddDays(-5),"",true),
-    new(1,"Division","division@example.test","group@example.test","Entity","2026","3","Test",monday.AddDays(-6),monday.AddDays(-4),"Reason",false)
+    new(1,"Entity","2026","2","Test",monday.AddDays(-6),monday.AddDays(-5),"",true),
+    new(1,"Entity","2026","3","Test",monday.AddDays(-6),monday.AddDays(-4),"Reason",false)
 };
-Check((await EmailNotification.SendManagementAuditWeeklyAsync(config,monday.AddDays(-7),records)).IsSuccess,"Weekly SMTP succeeds");
+var weeklyRecipientSummary = new ManagementAuditWeeklyDivisionSummaryModel
+{
+    DivisionId = 1,
+    DivisionName = "Summary Division",
+    ToEmail = "summary-head@example.test",
+    CcEmail = "summary-group@example.test",
+    SettledCount = 1,
+    RejectedCount = 1,
+    TotalCount = 2
+};
+Check((await EmailNotification.SendManagementAuditWeeklyAsync(config,monday.AddDays(-7),weeklyRecipientSummary,records)).IsSuccess,"Weekly SMTP succeeds");
 await server.WaitAsync(TimeSpan.FromSeconds(15));
 listener.Stop();
 Check(messages.Count==2,"One SMTP message per invocation");
-Check(messages[1].Contains("SETTLED PARAS") && messages[1].Contains("REJECTED PARAS"),"Weekly includes both tables");
+var weeklyMessage = messages.Single(message => message.Contains("Weekly Management Audit Para Decisions"));
+Check(messages.Count(message => message.Contains("Weekly Management Audit Para Decisions")) == 1,
+    "One returned Division produces one weekly email");
+Check(weeklyMessage.Contains("summary-head@example.test", StringComparison.OrdinalIgnoreCase),
+    "Weekly TO comes from DivisionSummary.ToEmail");
+Check(weeklyMessage.Contains("summary-group@example.test", StringComparison.OrdinalIgnoreCase),
+    "Weekly CC comes from DivisionSummary.CcEmail");
+Check(typeof(ManagementAuditDecision).GetProperties().All(property => property.Name != "To" && property.Name != "Cc"),
+    "Weekly detail rows cannot alter recipients");
 Check(messages[0].Contains("Rejected") && messages[0].Contains("Decision reason"),"Rejection content preserved");
 try {
-    await EmailNotification.SendManagementAuditWeeklyAsync(config,monday,records.Append(records[0] with { DivisionId=2 }).ToList());
+    await EmailNotification.SendManagementAuditWeeklyAsync(config,monday,weeklyRecipientSummary,
+        records.Append(records[0] with { DivisionId=2 }).ToList());
     throw new Exception("Mixed divisions accepted");
 } catch (InvalidOperationException) { Console.WriteLine("PASS: mixed divisions rejected"); }

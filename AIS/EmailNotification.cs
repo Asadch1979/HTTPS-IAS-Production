@@ -17,12 +17,13 @@ namespace AIS
         {
         private const string NotificationHeader = "Internal Audit System (IAS)";
         public static Task<EmailSendResult> SendManagementAuditWeeklyAsync(IConfiguration configuration,
-            DateTime start, IReadOnlyList<AIS.Services.ManagementAuditDecision> records)
+            DateTime start, ManagementAuditWeeklyDivisionSummaryModel division,
+            IReadOnlyList<AIS.Services.ManagementAuditDecision> records)
             {
+            if (division == null) throw new ArgumentNullException(nameof(division));
             if (records.Count == 0) throw new ArgumentException("Weekly notification requires decisions.", nameof(records));
-            var division = records[0];
-            if (records.Any(r => r.DivisionId != division.DivisionId || r.To != division.To))
-                throw new InvalidOperationException("Weekly notification must contain one Division and recipient.");
+            if (records.Any(r => r.DivisionId != division.DivisionId))
+                throw new InvalidOperationException("Weekly notification must contain decisions for the requested Division.");
             string Cell(string text) => "<td style=\"padding:8px;border:1px solid #d9e2ec\">" + WebUtility.HtmlEncode(text) + "</td>";
             string Table(bool settled)
                 {
@@ -41,12 +42,11 @@ namespace AIS
                 if (number == 0) html.Append("<tr><td colspan=\"" + (settled ? 7 : 8) + "\">No records.</td></tr>");
                 return html.Append("</table>").ToString();
                 }
-            var reporting = records.Select(r => r.Cc).Where(r => !string.IsNullOrWhiteSpace(r)).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
             var body = "<html><body style=\"font-family:Arial\"><h2 style=\"background:#173f5f;color:white;padding:18px\">" + NotificationHeader
-                + "</h2><h2>Weekly Management Audit Para Decisions</h2><p>" + WebUtility.HtmlEncode(division.Division)
+                + "</h2><h2>Weekly Management Audit Para Decisions</h2><p>" + WebUtility.HtmlEncode(division.DivisionName)
                 + $" | {start:dd-MMM-yyyy} to {start.AddDays(6):dd-MMM-yyyy}</p>" + Table(true) + Table(false) + "<p>" + StandardFooter + "</p></body></html>";
             return new EmailConfiguration(configuration).SendAsync(CreateRequest("Audit", "MGMT_AUDIT_WEEKLY_PARA_STATUS",
-                $"{start:yyyyMMdd}:{division.DivisionId}", division.To, string.Join(";", reporting),
+                $"{start:yyyyMMdd}:{division.DivisionId}", division.ToEmail, division.CcEmail,
                 $"IAS Notification: Weekly Management Audit Para Decisions {start:dd-MMM-yyyy} to {start.AddDays(6):dd-MMM-yyyy}", body));
             }
         private const string StandardFooter = "This is a system-generated notification from Internal Audit System (IAS). Please do not reply to this email unless required under official process.";

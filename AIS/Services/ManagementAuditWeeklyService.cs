@@ -12,8 +12,8 @@ using Microsoft.Extensions.Logging;
 
 namespace AIS.Services
 {
-    public sealed record ManagementAuditDecision(int DivisionId, string Division, string To, string Cc,
-        string Entity, string Year, string Para, string Title, DateTime? Submitted, DateTime Decision,
+    public sealed record ManagementAuditDecision(int DivisionId, string Entity, string Year, string Para,
+        string Title, DateTime? Submitted, DateTime Decision,
         string Reason, bool Settled);
 
     public sealed class ManagementAuditWeeklyService : BackgroundService
@@ -95,7 +95,7 @@ namespace AIS.Services
                 divisions,
                 store.ClaimWeekly,
                 divisionId => db.GetManagementAuditWeeklyDivisionData(divisionId, fromDate, toDate),
-                (_, records) => EmailNotification.SendManagementAuditWeeklyAsync(configuration, fromDate, records),
+                (division, records) => EmailNotification.SendManagementAuditWeeklyAsync(configuration, fromDate, division, records),
                 store.Complete,
                 (exception, key) => logger.LogError(exception, "Management Audit weekly Division processing failed for {Key}.", key),
                 cancellationToken);
@@ -212,9 +212,6 @@ namespace AIS.Services
         {
             return details.Select(item => new ManagementAuditDecision(
                 division.DivisionId,
-                division.DivisionName,
-                division.ToEmail,
-                division.CcEmail,
                 item.EntityName,
                 item.AuditPeriod,
                 item.ParaNo,
