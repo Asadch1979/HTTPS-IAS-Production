@@ -55,6 +55,17 @@ namespace AIS.Services
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
+#if DEBUG
+            var debugZone = TimeZoneInfo.FindSystemTimeZoneById(
+                configuration["ManagementAuditWeekly:TimeZone"] ?? "Asia/Karachi");
+            var debugLocalNow = TimeZoneInfo.ConvertTime(DateTimeOffset.UtcNow, debugZone).DateTime;
+            var debugMonday = debugLocalNow.Date.AddDays(
+                -((7 + (int)debugLocalNow.DayOfWeek - (int)DayOfWeek.Monday) % 7));
+
+            await RunPeriodAsync(debugMonday, stoppingToken);
+            return;
+#endif
+
             while (!stoppingToken.IsCancellationRequested)
             {
                 try
