@@ -419,6 +419,12 @@ var allSectionsRequest = EmailNotification.BuildManagementAuditWeeklyEmail(repor
 Check(new[] { "Department", "Audit Year", "Para No.", "Title of Para", "Risk", "Compliance Submitted On", "Settled On", "Reason for Referral Back", "Last Compliance Submitted On" }
         .All(heading => allSectionsRequest.Body.Contains(heading)),
     "All populated weekly tables contain the approved headings");
+Check(allSectionsRequest.Body.Contains(">Summary</h2>") &&
+      new[] { "Sr.", "Department", "Settled", "Referred Back", "No Compliance", "Total" }
+        .All(heading => allSectionsRequest.Body.Contains(heading)) &&
+      allSectionsRequest.Body.Contains("colspan=\"2\"") &&
+      allSectionsRequest.Body.Contains(">3</td>"),
+    "Weekly email includes a Department summary table with totals");
 Check((await EmailNotification.SendManagementAuditWeeklyAsync(config,monday.AddDays(-7),weeklyRecipientSummary,records)).IsSuccess,"Weekly SMTP succeeds");
 await server.WaitAsync(TimeSpan.FromSeconds(15));
 listener.Stop();

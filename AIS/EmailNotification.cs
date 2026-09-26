@@ -78,6 +78,43 @@ namespace AIS
             body.Append("<p style=\"margin:0 0 14px;line-height:1.55\">This is with reference to the compliance submissions made during the period " + Encode($"{start:dd-MMM-yyyy} to {end:dd-MMM-yyyy}") + " by the department(s) falling under your administrative control.</p>");
             body.Append("<p style=\"margin:0 0 22px;line-height:1.55\">Following due examination and review of the compliances by the Internal Audit Group, we would like to apprise you of the current position of the relevant Management Audit paras, as detailed below.</p>");
 
+            var departmentSummary = records
+                .GroupBy(record => record.Entity ?? string.Empty, StringComparer.Ordinal)
+                .OrderBy(group => group.Key, StringComparer.Ordinal)
+                .Select(group => new
+                {
+                    Department = group.Key,
+                    Settled = group.Count(record => record.Settled && !record.NoCompliance),
+                    ReferredBack = group.Count(record => !record.Settled && !record.NoCompliance),
+                    NoCompliance = group.Count(record => record.NoCompliance),
+                    Total = group.Count()
+                })
+                .ToList();
+            body.Append("<h2 style=\"margin:0 0 8px;color:#173f5f;font-size:16px\">Summary</h2>");
+            body.Append("<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"border-collapse:collapse;width:100%;font-size:13px;margin:0 0 20px\"><thead><tr>");
+            foreach (var header in new[] { ("Sr.", "center", "5%"), ("Department", "left", "55%"), ("Settled", "center", "10%"), ("Referred Back", "center", "10%"), ("No Compliance", "center", "10%"), ("Total", "center", "10%") })
+                body.Append(HeaderCell(header.Item1, header.Item2, header.Item3));
+            body.Append("</tr></thead><tbody>");
+            for (var index = 0; index < departmentSummary.Count; index++)
+                {
+                var item = departmentSummary[index];
+                body.Append("<tr style=\"background:" + (index % 2 == 0 ? "#ffffff" : "#f7f9fb") + "\">");
+                body.Append(Cell((index + 1).ToString(CultureInfo.InvariantCulture), "center"));
+                body.Append(Cell(item.Department, "left"));
+                body.Append(Cell(item.Settled.ToString(CultureInfo.InvariantCulture), "center"));
+                body.Append(Cell(item.ReferredBack.ToString(CultureInfo.InvariantCulture), "center"));
+                body.Append(Cell(item.NoCompliance.ToString(CultureInfo.InvariantCulture), "center"));
+                body.Append(Cell(item.Total.ToString(CultureInfo.InvariantCulture), "center"));
+                body.Append("</tr>");
+                }
+            body.Append("<tr style=\"background:#f4f7f9;font-weight:bold\">");
+            body.Append("<td colspan=\"2\" style=\"padding:9px;border:1px solid #d9e2ec;text-align:right\">Total</td>");
+            body.Append(Cell(departmentSummary.Sum(item => item.Settled).ToString(CultureInfo.InvariantCulture), "center"));
+            body.Append(Cell(departmentSummary.Sum(item => item.ReferredBack).ToString(CultureInfo.InvariantCulture), "center"));
+            body.Append(Cell(departmentSummary.Sum(item => item.NoCompliance).ToString(CultureInfo.InvariantCulture), "center"));
+            body.Append(Cell(departmentSummary.Sum(item => item.Total).ToString(CultureInfo.InvariantCulture), "center"));
+            body.Append("</tr></tbody></table>");
+
             var sectionNumber = 0;
             void SectionHeading(string title, int count, string introduction)
                 {
