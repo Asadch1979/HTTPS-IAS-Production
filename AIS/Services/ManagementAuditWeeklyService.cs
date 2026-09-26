@@ -96,6 +96,7 @@ namespace AIS.Services
                 divisions,
                 store.ClaimWeekly,
                 divisionId => db.GetManagementAuditWeeklyDivisionData(divisionId, fromDate, toDate),
+                divisionId => db.GetManagementAuditWeeklyNoCompliance(divisionId, fromDate, toDate),
                 (division, records) => EmailNotification.SendManagementAuditWeeklyAsync(configuration, fromDate, division, records),
                 store.Complete,
                 (exception, key) => logger.LogError(exception, "Management Audit weekly Division processing failed for {Key}.", key),
@@ -108,6 +109,31 @@ namespace AIS.Services
             IReadOnlyList<ManagementAuditWeeklyDivisionSummaryModel> divisions,
             Func<string, bool> claim,
             Func<int, IReadOnlyList<ManagementAuditWeeklyDivisionDetailModel>> getDivisionData,
+            Func<ManagementAuditWeeklyDivisionSummaryModel, IReadOnlyList<ManagementAuditDecision>, Task<EmailSendResult>> send,
+            Action<string, string, string> complete,
+            Action<Exception, string> logFailure,
+            CancellationToken cancellationToken)
+        {
+            await ProcessDivisionQueueAsync(
+                fromDate,
+                toDate,
+                divisions,
+                claim,
+                getDivisionData,
+                _ => Array.Empty<ManagementAuditWeeklyNoComplianceModel>(),
+                send,
+                complete,
+                logFailure,
+                cancellationToken);
+        }
+
+        public static async Task ProcessDivisionQueueAsync(
+            DateTime fromDate,
+            DateTime toDate,
+            IReadOnlyList<ManagementAuditWeeklyDivisionSummaryModel> divisions,
+            Func<string, bool> claim,
+            Func<int, IReadOnlyList<ManagementAuditWeeklyDivisionDetailModel>> getDivisionData,
+            Func<int, IReadOnlyList<ManagementAuditWeeklyNoComplianceModel>> getNoComplianceData,
             Func<ManagementAuditWeeklyDivisionSummaryModel, IReadOnlyList<ManagementAuditDecision>, Task<EmailSendResult>> send,
             Action<string, string, string> complete,
             Action<Exception, string> logFailure,
@@ -137,9 +163,12 @@ namespace AIS.Services
                 var deliveryStarted = false;
                 try
                 {
-                    var details = getDivisionData(division.DivisionId);
-                    ValidateDivisionData(division, details, fromDate, toDate);
-                    var records = AdaptDivisionData(division, details);
+                    var decisionDetails = getDivisionData(division.DivisionId);
+                    var noComplianceDetails = getNoComplianceData(division.DivisionId);
+                    ValidateDivisionData(division, decisionDetails, noComplianceDetails, fromDate, toDate);
+                    var records = AdaptDivisionData(division, decisionDetails)
+                        .Concat(AdaptNoComplianceData(division, noComplianceDetails))
+                        .ToList();
                     deliveryStarted = true;
                     var result = await send(division, records);
                     var status = result.IsSuccess ? "COMPLETE" : "FAILED";
@@ -179,22 +208,46 @@ namespace AIS.Services
             DateTime fromDate,
             DateTime toDate)
         {
-            if (details == null || details.Count == 0)
+            ValidateDivisionData(
+                summary,
+                details,
+                Array.Empty<ManagementAuditWeeklyNoComplianceModel>(),
+                fromDate,
+                toDate);
+        }
+
+        public static void ValidateDivisionData(
+            ManagementAuditWeeklyDivisionSummaryModel summary,
+            IReadOnlyList<ManagementAuditWeeklyDivisionDetailModel> decisionDetails,
+            IReadOnlyList<ManagementAuditWeeklyNoComplianceModel> noComplianceDetails,
+            DateTime fromDate,
+            DateTime toDate)
+        {
+            if (decisionDetails == null)
+                throw new InvalidOperationException("The Division decision dataset is unavailable.");
+            if (noComplianceDetails == null)
+                throw new InvalidOperationException("The Division no-compliance dataset is unavailable.");
+            if (decisionDetails.Count == 0 && noComplianceDetails.Count == 0)
                 throw new InvalidOperationException("The Division dataset is empty.");
-            if (details.GroupBy(item => item.DecisionHistoryId).Any(group => group.Count() > 1))
+            if (decisionDetails.GroupBy(item => item.DecisionHistoryId).Any(group => group.Count() > 1))
                 throw new InvalidOperationException("The Division dataset contains duplicate decision history IDs.");
-            if (details.Any(item => item.DivisionId != summary.DivisionId))
+            if (decisionDetails.Any(item => item.DivisionId != summary.DivisionId))
                 throw new InvalidOperationException("The Division dataset contains records for another Division.");
-            if (details.Any(item => item.DecisionOn < fromDate || item.DecisionOn >= toDate))
+            if (decisionDetails.Any(item => item.DecisionOn < fromDate || item.DecisionOn >= toDate))
                 throw new InvalidOperationException("The Division dataset contains a decision outside the reporting period.");
-            if (details.Any(item => !IsValidDecisionStatus(item)))
+            if (decisionDetails.Any(item => !IsValidDecisionStatus(item)))
                 throw new InvalidOperationException("The Division dataset contains an invalid decision status.");
-            if (summary.TotalCount != details.Count)
+            if (noComplianceDetails.Any(item => item.DivisionId != summary.DivisionId))
+                throw new InvalidOperationException("The Division no-compliance dataset contains records for another Division.");
+            if (noComplianceDetails.GroupBy(item => new { item.ComId, item.ComCycle }).Any(group => group.Count() > 1))
+                throw new InvalidOperationException("The Division no-compliance dataset contains duplicate compliance records.");
+            if (summary.TotalCount != decisionDetails.Count + noComplianceDetails.Count)
                 throw new InvalidOperationException("The Division summary total does not match the detail count.");
 
-            var settledCount = details.Count(item => item.ComStatus == 16);
-            var rejectedCount = details.Count(item => item.ComStatus == 12 || item.ComStatus == 15 || item.ComStatus == 18);
-            if (summary.SettledCount != settledCount || summary.RejectedCount != rejectedCount)
+            var settledCount = decisionDetails.Count(item => item.ComStatus == 16);
+            var rejectedCount = decisionDetails.Count(item => item.ComStatus == 12 || item.ComStatus == 15 || item.ComStatus == 18);
+            if (summary.SettledCount != settledCount || summary.RejectedCount != rejectedCount ||
+                summary.NoComplianceCount != noComplianceDetails.Count)
                 throw new InvalidOperationException("The Division summary status counts do not match the detail records.");
         }
 
@@ -221,6 +274,25 @@ namespace AIS.Services
                 item.DecisionOn,
                 item.Reason,
                 item.ComStatus == 16)).ToList();
+        }
+
+        private static IReadOnlyList<ManagementAuditDecision> AdaptNoComplianceData(
+            ManagementAuditWeeklyDivisionSummaryModel division,
+            IReadOnlyList<ManagementAuditWeeklyNoComplianceModel> details)
+        {
+            return details.Select(item => new ManagementAuditDecision(
+                division.DivisionId,
+                item.EntityName,
+                item.AuditPeriod,
+                item.ParaNo,
+                item.Title,
+                item.LastComplianceSubmittedOn,
+                DateTime.MinValue,
+                string.Empty,
+                false,
+                item.Risk,
+                true,
+                item.LastComplianceSubmittedOn)).ToList();
         }
     }
 }
