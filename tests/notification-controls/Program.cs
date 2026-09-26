@@ -84,6 +84,16 @@ Check(Directory.GetFiles(Path.Combine(sqlRoot, "management_audit_notification_st
 Check(File.Exists(Path.Combine(FindRepoRoot(), "tests", "notification-controls", "repeated-click.cjs")),
     "Repeated-click executable regression test is retained");
 
+var weeklyAccess = File.ReadAllText(Path.Combine(FindRepoRoot(), "AIS", "DBConnection.ManagementAuditWeekly.cs"));
+Check(weeklyAccess.Contains("PKG_MGMT_AUDIT_WEEKLY.P_GET_MGMT_WEEKLY_DIVISIONS") &&
+      weeklyAccess.Contains("PKG_MGMT_AUDIT_WEEKLY.P_GET_MGMT_WEEKLY_DIVISION_DATA") &&
+      Regex.Matches(weeklyAccess, "CommandType.StoredProcedure").Count == 2 &&
+      Regex.Matches(weeklyAccess, "BindByName = true").Count == 2 &&
+      Regex.Matches(weeklyAccess, "GuardAgainstDynamicSql\\(cmd\\)").Count == 2 &&
+      Regex.Matches(weeklyAccess, "OracleDbType.RefCursor").Count == 2 &&
+      !weeklyAccess.Contains("V_IAS_MGMT_WEEKLY_DATA", StringComparison.OrdinalIgnoreCase),
+    "Management Audit weekly DB access uses only the approved stored procedures");
+
 var genericQueueSql = File.ReadAllText(Path.Combine(sqlRoot, "email_notification_architecture_refactor.sql"));
 Check(genericQueueSql.Contains("T_EMAIL_QUEUE") && genericQueueSql.Contains("UQ_EMAIL_SCHED_NOTIFY") &&
       !genericQueueSql.Contains("MGMT_AUDIT_WEEKLY_PARA_STATUS"),
