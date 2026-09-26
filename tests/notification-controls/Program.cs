@@ -117,10 +117,12 @@ Check(weeklyEmail.Contains("division.ToEmail") && weeklyEmail.Contains("division
       typeof(ManagementAuditDecision).GetProperty("To") == null &&
       typeof(ManagementAuditDecision).GetProperty("Cc") == null,
     "Weekly recipients and Division name come only from the Division summary");
-Check(weeklyEmail.Contains("SETTLED PARAS") && weeklyEmail.Contains("REJECTED PARAS") &&
-      new[] { "Sr.", "Entity", "Audit Year", "Para No.", "Title", "Compliance Submitted On", "Decision On", "Reason" }
+Check(weeklyEmail.Contains("Paras Settled on the Basis of Satisfactory Compliance") &&
+      weeklyEmail.Contains("Paras Referred Back for Further Compliance") &&
+      weeklyEmail.Contains("Paras Where No Compliance Was Submitted During the Reporting Period") &&
+      new[] { "Sr.", "Department", "Audit Year", "Para No.", "Title of Para", "Risk", "Compliance Submitted On", "Settled On", "Reason for Referral Back", "Last Compliance Submitted On" }
         .All(column => weeklyEmail.Contains(column)),
-    "Weekly email preserves the settled and rejected table format");
+    "Weekly email contains all approved section and table headings");
 Check(!weeklyService.Contains("T_EMAIL_QUEUE", StringComparison.OrdinalIgnoreCase) &&
       !weeklyEmail.Contains("T_EMAIL_QUEUE", StringComparison.OrdinalIgnoreCase),
     "Weekly application delivery does not use T_EMAIL_QUEUE");
@@ -348,8 +350,8 @@ var config = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<str
 Check(EmailNotification.NotifyManagementAuditParaStatus(config,"2","Rejected","2026","High","Test gist","Decision reason",
     "division@example.test","group@example.test","","Report","Division","Department"), "Rejection SMTP succeeds");
 var records = new List<ManagementAuditDecision> {
-    new(1,"Entity","2026","2","Test",monday.AddDays(-6),monday.AddDays(-5),"",true),
-    new(1,"Entity","2026","3","Test",monday.AddDays(-6),monday.AddDays(-4),"Reason",false)
+    new(1,"Entity","2026","2","Test",monday.AddDays(-6),monday.AddDays(-5),"",true,"Low"),
+    new(1,"Entity","2026","3","Test",monday.AddDays(-6),monday.AddDays(-4),"Reason",false,"High")
 };
 var weeklyRecipientSummary = new ManagementAuditWeeklyDivisionSummaryModel
 {
@@ -361,6 +363,49 @@ var weeklyRecipientSummary = new ManagementAuditWeeklyDivisionSummaryModel
     RejectedCount = 1,
     TotalCount = 2
 };
+var reportingStart = monday.AddDays(-7);
+var approvedSubject = $"IAS Notification: Weekly Management Audit Para Decisions | Summary Division | {reportingStart:dd-MMM-yyyy} to {reportingStart.AddDays(6):dd-MMM-yyyy}";
+var completeRequest = EmailNotification.BuildManagementAuditWeeklyEmail(reportingStart, weeklyRecipientSummary, records);
+Check(completeRequest.Subject == approvedSubject,
+    "Weekly subject includes Division and reporting period in the approved format");
+var referredOnlyRequest = EmailNotification.BuildManagementAuditWeeklyEmail(reportingStart, weeklyRecipientSummary, new[] { records[1] });
+Check(referredOnlyRequest.Body.Contains("1. Paras Referred Back for Further Compliance (1)") &&
+      !referredOnlyRequest.Body.Contains("Paras Settled on the Basis") &&
+      !referredOnlyRequest.Body.Contains("Paras Where No Compliance") &&
+      !referredOnlyRequest.Body.Contains("No records", StringComparison.OrdinalIgnoreCase),
+    "Empty weekly sections are completely omitted");
+Check(referredOnlyRequest.Body.Contains("Referred Back") &&
+      !referredOnlyRequest.Body.Contains("REJECTED", StringComparison.OrdinalIgnoreCase),
+    "Rejected weekly decisions are presented as Referred Back");
+var noComplianceRecord = records[1] with
+{
+    Para = "4",
+    NoCompliance = true,
+    LastComplianceSubmitted = reportingStart.AddDays(-2),
+    Reason = string.Empty
+};
+var continuousRequest = EmailNotification.BuildManagementAuditWeeklyEmail(reportingStart, weeklyRecipientSummary,
+    new[] { records[1], noComplianceRecord });
+Check(continuousRequest.Body.Contains("1. Paras Referred Back for Further Compliance (1)") &&
+      continuousRequest.Body.Contains("2. Paras Where No Compliance Was Submitted During the Reporting Period (1)") &&
+      !continuousRequest.Body.Contains("3. Paras"),
+    "Weekly section numbering is dynamic and continuous");
+Check(completeRequest.ToRecipients.Single() == weeklyRecipientSummary.ToEmail &&
+      completeRequest.CcRecipients.Single() == weeklyRecipientSummary.CcEmail,
+    "Weekly request recipients come only from Division Summary");
+var encodedRecord = records[1] with { Entity = "<Department & Co>", Title = "Para <Title>", Reason = "Use <evidence> & review" };
+var encodedRequest = EmailNotification.BuildManagementAuditWeeklyEmail(reportingStart,
+    weeklyRecipientSummary, new[] { encodedRecord });
+Check(encodedRequest.Body.Contains("&lt;Department &amp; Co&gt;") &&
+      encodedRequest.Body.Contains("Para &lt;Title&gt;") &&
+      encodedRequest.Body.Contains("Use &lt;evidence&gt; &amp; review") &&
+      !encodedRequest.Body.Contains("<Department & Co>"),
+    "Weekly HTML encodes all business values");
+var allSectionsRequest = EmailNotification.BuildManagementAuditWeeklyEmail(reportingStart,
+    weeklyRecipientSummary, records.Append(noComplianceRecord).ToList());
+Check(new[] { "Department", "Audit Year", "Para No.", "Title of Para", "Risk", "Compliance Submitted On", "Settled On", "Reason for Referral Back", "Last Compliance Submitted On" }
+        .All(heading => allSectionsRequest.Body.Contains(heading)),
+    "All populated weekly tables contain the approved headings");
 Check((await EmailNotification.SendManagementAuditWeeklyAsync(config,monday.AddDays(-7),weeklyRecipientSummary,records)).IsSuccess,"Weekly SMTP succeeds");
 await server.WaitAsync(TimeSpan.FromSeconds(15));
 listener.Stop();

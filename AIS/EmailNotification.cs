@@ -20,34 +20,106 @@ namespace AIS
             DateTime start, ManagementAuditWeeklyDivisionSummaryModel division,
             IReadOnlyList<AIS.Services.ManagementAuditDecision> records)
             {
+            return new EmailConfiguration(configuration).SendAsync(
+                BuildManagementAuditWeeklyEmail(start, division, records));
+            }
+
+        public static EmailMessageRequest BuildManagementAuditWeeklyEmail(DateTime start,
+            ManagementAuditWeeklyDivisionSummaryModel division,
+            IReadOnlyList<AIS.Services.ManagementAuditDecision> records)
+            {
             if (division == null) throw new ArgumentNullException(nameof(division));
+            if (records == null) throw new ArgumentNullException(nameof(records));
             if (records.Count == 0) throw new ArgumentException("Weekly notification requires decisions.", nameof(records));
             if (records.Any(r => r.DivisionId != division.DivisionId))
                 throw new InvalidOperationException("Weekly notification must contain decisions for the requested Division.");
-            string Cell(string text) => "<td style=\"padding:8px;border:1px solid #d9e2ec\">" + WebUtility.HtmlEncode(text) + "</td>";
-            string Table(bool settled)
+
+            var end = start.AddDays(6);
+            var settled = records.Where(record => record.Settled && !record.NoCompliance).ToList();
+            var referredBack = records.Where(record => !record.Settled && !record.NoCompliance).ToList();
+            var noCompliance = records.Where(record => record.NoCompliance).ToList();
+            string Encode(string value) => WebUtility.HtmlEncode(value ?? string.Empty);
+            string Date(DateTime? value) => value?.ToString("dd-MMM-yyyy", CultureInfo.InvariantCulture) ?? string.Empty;
+            string Cell(string value, string align, string width = "") =>
+                "<td style=\"padding:9px;border:1px solid #d9e2ec;vertical-align:top;text-align:" + align +
+                (string.IsNullOrEmpty(width) ? string.Empty : ";width:" + width) + "\">" + Encode(value) + "</td>";
+            string HeaderCell(string value, string align, string width = "") =>
+                "<th style=\"padding:9px;border:1px solid #d9e2ec;background:#173f5f;color:#ffffff;font-weight:bold;" +
+                "vertical-align:middle;text-align:" + align +
+                (string.IsNullOrEmpty(width) ? string.Empty : ";width:" + width) + "\">" + value + "</th>";
+            string Table(IReadOnlyList<AIS.Services.ManagementAuditDecision> rows,
+                (string Label, string Align, string Width)[] columns,
+                Func<AIS.Services.ManagementAuditDecision, string[]> values)
                 {
-                var html = new StringBuilder("<h3>" + (settled ? "SETTLED PARAS" : "REJECTED PARAS") + "</h3><table style=\"border-collapse:collapse;width:100%\"><tr>");
-                foreach (var label in new[] { "Sr.", "Entity", "Audit Year", "Para No.", "Title", "Compliance Submitted On", "Decision On" }) html.Append(Cell(label));
-                if (!settled) html.Append(Cell("Reason"));
-                html.Append("</tr>");
-                var number = 0;
-                foreach (var row in records.Where(r => r.Settled == settled))
+                var html = new StringBuilder("<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"border-collapse:collapse;width:100%;font-size:13px;margin:12px 0 20px\"><thead><tr>");
+                foreach (var column in columns)
+                    html.Append(HeaderCell(column.Label, column.Align, column.Width));
+                html.Append("</tr></thead><tbody>");
+                for (var index = 0; index < rows.Count; index++)
                     {
-                    html.Append("<tr>" + Cell((++number).ToString()) + Cell(row.Entity) + Cell(row.Year) + Cell(row.Para) + Cell(row.Title)
-                        + Cell(row.Submitted?.ToString("dd-MMM-yyyy", CultureInfo.InvariantCulture)) + Cell(row.Decision.ToString("dd-MMM-yyyy", CultureInfo.InvariantCulture)));
-                    if (!settled) html.Append(Cell(row.Reason));
+                    var row = rows[index];
+                    var rowValues = values(row);
+                    html.Append("<tr style=\"background:" + (index % 2 == 0 ? "#ffffff" : "#f7f9fb") + "\">");
+                    html.Append(Cell((index + 1).ToString(CultureInfo.InvariantCulture), "center"));
+                    for (var columnIndex = 1; columnIndex < columns.Length; columnIndex++)
+                        html.Append(Cell(rowValues[columnIndex - 1], columns[columnIndex].Align, columns[columnIndex].Width));
                     html.Append("</tr>");
                     }
-                if (number == 0) html.Append("<tr><td colspan=\"" + (settled ? 7 : 8) + "\">No records.</td></tr>");
-                return html.Append("</table>").ToString();
+                return html.Append("</tbody></table>").ToString();
                 }
-            var body = "<html><body style=\"font-family:Arial\"><h2 style=\"background:#173f5f;color:white;padding:18px\">" + NotificationHeader
-                + "</h2><h2>Weekly Management Audit Para Decisions</h2><p>" + WebUtility.HtmlEncode(division.DivisionName)
-                + $" | {start:dd-MMM-yyyy} to {start.AddDays(6):dd-MMM-yyyy}</p>" + Table(true) + Table(false) + "<p>" + StandardFooter + "</p></body></html>";
-            return new EmailConfiguration(configuration).SendAsync(CreateRequest("Audit", "MGMT_AUDIT_WEEKLY_PARA_STATUS",
-                $"{start:yyyyMMdd}:{division.DivisionId}", division.ToEmail, division.CcEmail,
-                $"IAS Notification: Weekly Management Audit Para Decisions {start:dd-MMM-yyyy} to {start.AddDays(6):dd-MMM-yyyy}", body));
+
+            var body = new StringBuilder("<html><body style=\"margin:0;padding:0;background:#eef2f5;font-family:Arial,'Segoe UI',sans-serif;color:#243447\">");
+            body.Append("<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"width:100%;background:#eef2f5\"><tr><td align=\"center\" style=\"padding:20px 10px\">");
+            body.Append("<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"width:100%;max-width:1100px;background:#ffffff;border:1px solid #d9e2ec\">");
+            body.Append("<tr><td style=\"padding:22px 26px;background:#173f5f;color:#ffffff\"><div style=\"font-size:20px;font-weight:bold\">INTERNAL AUDIT SYSTEM (IAS)</div><div style=\"font-size:16px;font-weight:bold;margin-top:6px\">Weekly Management Audit Para Decisions</div></td></tr>");
+            body.Append("<tr><td style=\"padding:24px 26px\">");
+            body.Append("<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"width:100%;background:#f4f7f9;border:1px solid #d9e2ec;margin-bottom:22px\"><tr><td style=\"padding:9px 12px;width:170px;font-weight:bold\">Division:</td><td style=\"padding:9px 12px\">" + Encode(division.DivisionName) + "</td></tr><tr><td style=\"padding:9px 12px;width:170px;font-weight:bold;border-top:1px solid #d9e2ec\">Reporting Period:</td><td style=\"padding:9px 12px;border-top:1px solid #d9e2ec\">" + Encode($"{start:dd-MMM-yyyy} to {end:dd-MMM-yyyy}") + "</td></tr></table>");
+            body.Append("<p style=\"margin:0 0 14px\">Dear Sir,</p>");
+            body.Append("<p style=\"margin:0 0 14px;line-height:1.55\">This is with reference to the compliance submissions made during the period " + Encode($"{start:dd-MMM-yyyy} to {end:dd-MMM-yyyy}") + " by the department(s) falling under your administrative control.</p>");
+            body.Append("<p style=\"margin:0 0 22px;line-height:1.55\">Following due examination and review of the compliances by the Internal Audit Group, we would like to apprise you of the current position of the relevant Management Audit paras, as detailed below.</p>");
+
+            var sectionNumber = 0;
+            void SectionHeading(string title, int count, string introduction)
+                {
+                sectionNumber++;
+                body.Append("<h2 style=\"margin:24px 0 8px;color:#173f5f;font-size:16px\">" + sectionNumber + ". " + title + " (" + count + ")</h2>");
+                body.Append("<p style=\"margin:0 0 10px;line-height:1.55\">" + introduction + "</p>");
+                }
+
+            if (settled.Count > 0)
+                {
+                SectionHeading("Paras Settled on the Basis of Satisfactory Compliance", settled.Count,
+                    "The following audit paras have been settled after the compliance submitted by the concerned department(s) was found to have adequately addressed the underlying audit observations:");
+                body.Append(Table(settled,
+                    new[] { ("Sr.", "center", "5%"), ("Department", "left", "15%"), ("Audit Year", "center", "9%"), ("Para No.", "center", "8%"), ("Title of Para", "left", "23%"), ("Risk", "center", "8%"), ("Compliance Submitted On", "center", "16%"), ("Settled On", "center", "12%") },
+                    row => new[] { row.Entity, row.Year, row.Para, row.Title, row.Risk, Date(row.Submitted), Date(row.Decision) }));
+                }
+            if (referredBack.Count > 0)
+                {
+                SectionHeading("Paras Referred Back for Further Compliance", referredBack.Count,
+                    "The following audit paras have been referred back as the compliance submitted was considered insufficient, incomplete, or otherwise inadequate to satisfactorily address the respective audit observations:");
+                body.Append(Table(referredBack,
+                    new[] { ("Sr.", "center", "5%"), ("Department", "left", "16%"), ("Audit Year", "center", "9%"), ("Para No.", "center", "8%"), ("Title of Para", "left", "24%"), ("Risk", "center", "8%"), ("Reason for Referral Back", "left", "30%") },
+                    row => new[] { row.Entity, row.Year, row.Para, row.Title, row.Risk, row.Reason }));
+                body.Append("<p style=\"margin:0 0 22px;line-height:1.55\">It is requested that each of the above paras may kindly be reviewed individually and the concerned department(s) advised to take appropriate corrective action. Where any clarification or further discussion with the Internal Audit Group is considered necessary, the matter may be taken up accordingly. Otherwise, a complete, substantive and appropriately supported compliance may please be submitted through the Internal Audit System for further examination.</p>");
+                }
+            if (noCompliance.Count > 0)
+                {
+                SectionHeading("Paras Where No Compliance Was Submitted During the Reporting Period", noCompliance.Count,
+                    "Attention is also invited to the following outstanding audit paras against which no compliance was submitted during the reporting period:");
+                body.Append(Table(noCompliance,
+                    new[] { ("Sr.", "center", "5%"), ("Department", "left", "17%"), ("Audit Year", "center", "9%"), ("Para No.", "center", "8%"), ("Title of Para", "left", "30%"), ("Risk", "center", "9%"), ("Last Compliance Submitted On", "center", "17%") },
+                    row => new[] { row.Entity, row.Year, row.Para, row.Title, row.Risk, Date(row.LastComplianceSubmitted ?? row.Submitted) }));
+                body.Append("<p style=\"margin:0 0 22px;line-height:1.55\">The concerned department(s) may please be advised to review these outstanding matters and submit appropriate and meaningful compliance at the earliest, enabling timely examination and further processing of the audit observations.</p>");
+                }
+
+            body.Append("<p style=\"margin:22px 0 18px;line-height:1.55\">We shall appreciate your continued support in ensuring timely resolution of outstanding audit observations, improvement in the quality of compliance submissions, and effective implementation of the corrective measures identified during audit.</p>");
+            body.Append("<p style=\"margin:0;line-height:1.5\">Regards,<br><strong>Internal Audit Group</strong><br>Zarai Taraqiati Bank Limited</p>");
+            body.Append("</td></tr><tr><td style=\"padding:14px 26px;background:#f4f7f9;border-top:1px solid #d9e2ec;color:#5c6b78;font-size:12px\">This is a system-generated notification from the Internal Audit System (IAS). Please do not reply to this email unless required under the official process.</td></tr></table></td></tr></table></body></html>");
+
+            var subject = $"IAS Notification: Weekly Management Audit Para Decisions | {division.DivisionName} | {start:dd-MMM-yyyy} to {end:dd-MMM-yyyy}";
+            return CreateRequest("Audit", "MGMT_AUDIT_WEEKLY_PARA_STATUS",
+                $"{start:yyyyMMdd}:{division.DivisionId}", division.ToEmail, division.CcEmail, subject, body.ToString());
             }
         private const string StandardFooter = "This is a system-generated notification from Internal Audit System (IAS). Please do not reply to this email unless required under official process.";
         private static readonly Regex HtmlTagRegex = new Regex("<.*?>", RegexOptions.Compiled | RegexOptions.Singleline);

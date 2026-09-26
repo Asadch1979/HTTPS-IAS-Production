@@ -14,7 +14,8 @@ namespace AIS.Services
 {
     public sealed record ManagementAuditDecision(int DivisionId, string Entity, string Year, string Para,
         string Title, DateTime? Submitted, DateTime Decision,
-        string Reason, bool Settled);
+        string Reason, bool Settled, string Risk = "", bool NoCompliance = false,
+        DateTime? LastComplianceSubmitted = null);
 
     public sealed class ManagementAuditWeeklyService : BackgroundService
     {
