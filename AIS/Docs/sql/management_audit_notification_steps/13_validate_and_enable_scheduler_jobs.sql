@@ -1,65 +1,13 @@
 /*
-Step 13 - Validate and enable the remaining Oracle scheduler jobs.
-Run only after Steps 01-12 succeed.
-The ASP.NET weekly service is enabled separately after application deployment.
+RETIRED: legacy IAS notification deployment artifact.
+
+Do not execute this file. It is intentionally non-deployable because it used
+an Inquiry-owned email queue and/or the retired weekly Oracle Scheduler flow.
+Use AIS/Docs/sql/management_audit_notification_deployment.md for the controlled
+generic email architecture and application-service deployment order.
 */
-DECLARE
-  V_MAPPING NUMBER;
-  V_HEALTH NUMBER;
 BEGIN
-  SELECT COUNT(*) INTO V_MAPPING
-    FROM USER_SCHEDULER_JOBS
-   WHERE JOB_NAME='JOB_MGMT_AUDIT_MAPPING_EXCEPT'
-     AND ENABLED='FALSE'
-     AND REPEAT_INTERVAL='FREQ=WEEKLY;BYDAY=FRI;BYHOUR=07;BYMINUTE=00;BYSECOND=00';
-
-  SELECT COUNT(*) INTO V_HEALTH
-    FROM USER_SCHEDULER_JOBS
-   WHERE JOB_NAME='JOB_IAS_NOTIFICATION_HEALTH'
-     AND ENABLED='FALSE'
-     AND REPEAT_INTERVAL='FREQ=DAILY;BYHOUR=08;BYMINUTE=00;BYSECOND=00';
-
-  IF V_MAPPING<>1 OR V_HEALTH<>1 THEN
-    RAISE_APPLICATION_ERROR(-20834,'Scheduler definition validation failed. Jobs remain disabled.');
-  END IF;
-
-  BEGIN
-    DBMS_SCHEDULER.ENABLE('JOB_MGMT_AUDIT_MAPPING_EXCEPT');
-    DBMS_SCHEDULER.ENABLE('JOB_IAS_NOTIFICATION_HEALTH');
-  EXCEPTION
-    WHEN OTHERS THEN
-      FOR R IN (
-        SELECT JOB_NAME,ENABLED
-          FROM USER_SCHEDULER_JOBS
-         WHERE JOB_NAME IN
-           ('JOB_MGMT_AUDIT_MAPPING_EXCEPT',
-            'JOB_IAS_NOTIFICATION_HEALTH')
-      ) LOOP
-        IF R.ENABLED='TRUE' THEN
-          BEGIN
-            DBMS_SCHEDULER.DISABLE(R.JOB_NAME,FORCE=>TRUE);
-          EXCEPTION
-            WHEN OTHERS THEN NULL;
-          END;
-        END IF;
-      END LOOP;
-      RAISE;
-  END;
-END;
-/
-
-DECLARE
-  V_COUNT NUMBER;
-BEGIN
-  SELECT COUNT(*) INTO V_COUNT
-    FROM USER_SCHEDULER_JOBS
-   WHERE JOB_NAME IN
-     ('JOB_MGMT_AUDIT_MAPPING_EXCEPT',
-      'JOB_IAS_NOTIFICATION_HEALTH')
-     AND ENABLED='TRUE';
-
-  IF V_COUNT<>2 THEN
-    RAISE_APPLICATION_ERROR(-20835,'Scheduler enablement failed.');
-  END IF;
+  RAISE_APPLICATION_ERROR(-20998,
+    'Retired notification deployment artifact. Use management_audit_notification_deployment.md.');
 END;
 /

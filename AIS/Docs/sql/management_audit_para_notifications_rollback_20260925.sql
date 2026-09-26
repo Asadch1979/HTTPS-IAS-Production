@@ -1,23 +1,13 @@
-/* Functional rollback for Management Audit notification generation. */
-SET DEFINE OFF;
-WHENEVER SQLERROR EXIT SQL.SQLCODE ROLLBACK;
-BEGIN DBMS_SCHEDULER.DROP_JOB('JOB_MGMT_AUDIT_WEEKLY_NOTIFY',FORCE=>TRUE);
-EXCEPTION WHEN OTHERS THEN IF SQLCODE<>-27475 THEN RAISE; END IF; END;
-/
-BEGIN DBMS_SCHEDULER.DROP_JOB('JOB_MGMT_AUDIT_MAPPING_EXCEPT',FORCE=>TRUE);
-EXCEPTION WHEN OTHERS THEN IF SQLCODE<>-27475 THEN RAISE; END IF; END;
-/
-BEGIN DBMS_SCHEDULER.DROP_JOB('JOB_IAS_NOTIFICATION_HEALTH',FORCE=>TRUE);
-EXCEPTION WHEN OTHERS THEN IF SQLCODE<>-27475 THEN RAISE; END IF; END;
-/
+/*
+RETIRED: legacy IAS notification deployment artifact.
+
+Do not execute this file. It is intentionally non-deployable because it used
+an Inquiry-owned email queue and/or the retired weekly Oracle Scheduler flow.
+Use AIS/Docs/sql/management_audit_notification_deployment.md for the controlled
+generic email architecture and application-service deployment order.
+*/
 BEGIN
-  EXECUTE IMMEDIATE 'DROP INDEX UQ_IID_EMAIL_SCHED_NOTIFY';
-EXCEPTION WHEN OTHERS THEN IF SQLCODE<>-1418 THEN RAISE; END IF;
+  RAISE_APPLICATION_ERROR(-20998,
+    'Retired notification deployment artifact. Use management_audit_notification_deployment.md.');
 END;
 /
-UPDATE IAS_NOTIFICATION_MASTER SET IS_ACTIVE='N',UPDATED_BY=USER,UPDATED_ON=SYSTIMESTAMP
- WHERE NOTIFICATION_CODE IN ('MGMT_AUDIT_PARA_STATUS','MGMT_AUDIT_WEEKLY_PARA_STATUS',
-   'MGMT_AUDIT_MAPPING_EXCEPTION','IAS_NOTIFICATION_HEALTH');
-COMMIT;
-PROMPT Scheduled Management Audit and health generation is disabled; queue rows are retained for audit and retry.
-PROMPT Redeploy the release immediately preceding this change to restore prior package and PKG_INQ source.

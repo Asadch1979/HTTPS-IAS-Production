@@ -1,66 +1,13 @@
 /*
-Step 11 - Queue API state-transition test.
-No SMTP email is sent by this test. The test row is rolled back.
+RETIRED: legacy IAS notification deployment artifact.
+
+Do not execute this file. It is intentionally non-deployable because it used
+an Inquiry-owned email queue and/or the retired weekly Oracle Scheduler flow.
+Use AIS/Docs/sql/management_audit_notification_deployment.md for the controlled
+generic email architecture and application-service deployment order.
 */
-DECLARE
-  V_EMAIL_ID NUMBER;
-  V_TO VARCHAR2(320);
-  V_STATUS VARCHAR2(20);
-  V_RETRY NUMBER;
 BEGIN
-  SELECT MIN(E.EMAIL) INTO V_TO
-    FROM T_USER_MAPING M
-    JOIN T_USER U ON U.USERID=M.USERID
-    JOIN V_SERVICE_EMPLOYEEINFO E ON E.PPNO=U.PPNO
-   WHERE M.ROLE_ID=1
-     AND NVL(U.ISACTIVE,'Y')='Y'
-     AND TRIM(E.EMAIL) IS NOT NULL;
-
-  IF V_TO IS NULL THEN
-    RAISE_APPLICATION_ERROR(-20829,'No active Super User email for queue validation.');
-  END IF;
-
-  SAVEPOINT QUEUE_API_TEST;
-
-  PKG_INQ.P_ENQUEUE_EMAIL(
-    'DEPLOYMENT_QUEUE_VALIDATION',
-    NULL,
-    NULL,
-    V_TO,
-    NULL,
-    'IAS deployment queue validation',
-    'Rolled back after API state-transition validation.',
-    V_EMAIL_ID
-  );
-
-  SELECT STATUS INTO V_STATUS
-    FROM T_AU_IID_EMAIL_QUEUE
-   WHERE EMAIL_ID=V_EMAIL_ID;
-
-  IF V_STATUS<>'PENDING' THEN
-    RAISE_APPLICATION_ERROR(-20830,'Queue PENDING transition failed.');
-  END IF;
-
-  PKG_INQ.P_MARK_EMAIL_FAILED(V_EMAIL_ID,'Deployment retry validation');
-
-  SELECT STATUS,RETRY_COUNT INTO V_STATUS,V_RETRY
-    FROM T_AU_IID_EMAIL_QUEUE
-   WHERE EMAIL_ID=V_EMAIL_ID;
-
-  IF V_STATUS<>'FAILED' OR V_RETRY<1 THEN
-    RAISE_APPLICATION_ERROR(-20831,'Queue FAILED/retry transition failed.');
-  END IF;
-
-  PKG_INQ.P_MARK_EMAIL_SENT(V_EMAIL_ID);
-
-  SELECT STATUS INTO V_STATUS
-    FROM T_AU_IID_EMAIL_QUEUE
-   WHERE EMAIL_ID=V_EMAIL_ID;
-
-  IF V_STATUS<>'SENT' THEN
-    RAISE_APPLICATION_ERROR(-20832,'Queue SENT transition failed.');
-  END IF;
-
-  ROLLBACK TO QUEUE_API_TEST;
+  RAISE_APPLICATION_ERROR(-20998,
+    'Retired notification deployment artifact. Use management_audit_notification_deployment.md.');
 END;
 /

@@ -36,7 +36,8 @@ Check(!Regex.IsMatch(allNotificationSql,
     "No SQL creates or enables the retired weekly Oracle job");
 
 var cutoverSql = File.ReadAllText(Path.Combine(sqlRoot, "management_audit_application_scheduler.sql"));
-Check(!Regex.IsMatch(cutoverSql, @"^\s*(?:SET|WHENEVER|PROMPT|SHOW\s+ERRORS|@@)\b",
+Check(!Regex.IsMatch(cutoverSql,
+        @"^\s*(?:SET\s+(?:DEFINE|SERVEROUTPUT|SQLBLANKLINES|PAGESIZE|LINESIZE|FEEDBACK|VERIFY)|WHENEVER|PROMPT|SHOW\s+ERRORS|@@)",
         RegexOptions.IgnoreCase | RegexOptions.Multiline),
     "Weekly database cutover is plain Oracle SQL/PLSQL");
 Check(!cutoverSql.Contains("DBMS_METADATA", StringComparison.OrdinalIgnoreCase) &&
@@ -55,6 +56,30 @@ Check(packageSql.Contains("CREATE OR REPLACE PACKAGE PKG_IAS_NOTIFICATION AS") &
       packageSql.Contains("Management Audit weekly ASP.NET execution status") &&
       packageSql.Contains("FROM T_IAS_NOTIFY_EXECUTION"),
     "Controlled complete package retires Oracle weekly delivery and reports ASP.NET execution");
+
+var managementAuditSql = Directory.GetFiles(sqlRoot, "management_audit*.sql", SearchOption.TopDirectoryOnly)
+    .Concat(Directory.GetFiles(Path.Combine(sqlRoot, "management_audit_notification_steps"), "*.sql"))
+    .Select(File.ReadAllText);
+Check(managementAuditSql.All(sql =>
+        !sql.Contains("T_AU_IID_EMAIL_QUEUE", StringComparison.OrdinalIgnoreCase) &&
+        !sql.Contains("PKG_INQ.P_ENQUEUE_EMAIL", StringComparison.OrdinalIgnoreCase) &&
+        !sql.Contains("PKG_INQ.P_GET_EMAIL_QUEUE", StringComparison.OrdinalIgnoreCase) &&
+        !sql.Contains("UQ_IID_EMAIL_SCHED_NOTIFY", StringComparison.OrdinalIgnoreCase)),
+    "Management Audit deployment SQL contains no legacy Inquiry email queue references");
+Check(Directory.GetFiles(Path.Combine(sqlRoot, "management_audit_notification_steps"), "*.sql")
+        .All(path => File.ReadAllText(path).Contains("RAISE_APPLICATION_ERROR(-20998")),
+    "Legacy staged Management Audit SQL is fail-fast retired");
+Check(File.Exists(Path.Combine(FindRepoRoot(), "tests", "notification-controls", "repeated-click.cjs")),
+    "Repeated-click executable regression test is retained");
+
+var genericQueueSql = File.ReadAllText(Path.Combine(sqlRoot, "email_notification_architecture_refactor.sql"));
+Check(genericQueueSql.Contains("T_EMAIL_QUEUE") && genericQueueSql.Contains("UQ_EMAIL_SCHED_NOTIFY") &&
+      !genericQueueSql.Contains("MGMT_AUDIT_WEEKLY_PARA_STATUS"),
+    "Generic queue foundation excludes application-owned weekly delivery");
+var inquirySnapshots = new[] { "PKG_INQ.sql", "IID_module_PKG_INQ_full.sql" }
+    .Select(name => File.ReadAllText(Path.Combine(sqlRoot, name)));
+Check(inquirySnapshots.All(sql => !sql.Contains("T_AU_IID_EMAIL_QUEUE", StringComparison.OrdinalIgnoreCase)),
+    "Inquiry package snapshots cannot restore the retired email queue");
 
 var monday = new DateTime(2026, 9, 28);
 Check(ManagementAuditWeeklyService.ReportingStart(monday.AddHours(6), DayOfWeek.Monday, TimeSpan.FromHours(7)) == null, "Not due before Monday 07:00");

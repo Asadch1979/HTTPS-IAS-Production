@@ -1,64 +1,13 @@
 /*
-Step 10 - Create the scheduled-notification queue idempotency index.
+RETIRED: legacy IAS notification deployment artifact.
+
+Do not execute this file. It is intentionally non-deployable because it used
+an Inquiry-owned email queue and/or the retired weekly Oracle Scheduler flow.
+Use AIS/Docs/sql/management_audit_notification_deployment.md for the controlled
+generic email architecture and application-service deployment order.
 */
-DECLARE
-  V_DUPLICATES NUMBER;
 BEGIN
-  SELECT COUNT(*) INTO V_DUPLICATES
-    FROM (
-      SELECT EVENT_CODE,REF_ID1,NVL(REF_ID2,-1) REF_ID2_KEY
-        FROM T_AU_IID_EMAIL_QUEUE
-       WHERE EVENT_CODE IN
-         ('MGMT_AUDIT_WEEKLY_PARA_STATUS',
-          'MGMT_AUDIT_MAPPING_EXCEPTION',
-          'IAS_NOTIFICATION_HEALTH')
-       GROUP BY EVENT_CODE,REF_ID1,NVL(REF_ID2,-1)
-      HAVING COUNT(*)>1
-    );
-
-  IF V_DUPLICATES>0 THEN
-    RAISE_APPLICATION_ERROR(
-      -20827,
-      'Duplicate scheduled-notification queue keys exist. Resolve them before creating the unique index.'
-    );
-  END IF;
-END;
-/
-
-BEGIN
-  EXECUTE IMMEDIATE 'DROP INDEX UQ_IID_EMAIL_MGMT_WEEKLY';
-EXCEPTION
-  WHEN OTHERS THEN
-    IF SQLCODE<>-1418 THEN RAISE; END IF;
-END;
-/
-
-BEGIN
-  EXECUTE IMMEDIATE 'DROP INDEX UQ_IID_EMAIL_SCHED_NOTIFY';
-EXCEPTION
-  WHEN OTHERS THEN
-    IF SQLCODE<>-1418 THEN RAISE; END IF;
-END;
-/
-
-BEGIN
-  EXECUTE IMMEDIATE q'~CREATE UNIQUE INDEX UQ_IID_EMAIL_SCHED_NOTIFY ON T_AU_IID_EMAIL_QUEUE
-    (CASE WHEN EVENT_CODE IN ('MGMT_AUDIT_WEEKLY_PARA_STATUS','MGMT_AUDIT_MAPPING_EXCEPTION','IAS_NOTIFICATION_HEALTH') THEN EVENT_CODE END,
-     CASE WHEN EVENT_CODE IN ('MGMT_AUDIT_WEEKLY_PARA_STATUS','MGMT_AUDIT_MAPPING_EXCEPTION','IAS_NOTIFICATION_HEALTH') THEN REF_ID1 END,
-     CASE WHEN EVENT_CODE IN ('MGMT_AUDIT_WEEKLY_PARA_STATUS','MGMT_AUDIT_MAPPING_EXCEPTION','IAS_NOTIFICATION_HEALTH') THEN NVL(REF_ID2,-1) END)~';
-END;
-/
-
-DECLARE
-  V_COUNT NUMBER;
-BEGIN
-  SELECT COUNT(*) INTO V_COUNT
-    FROM USER_INDEXES
-   WHERE INDEX_NAME='UQ_IID_EMAIL_SCHED_NOTIFY'
-     AND STATUS='VALID';
-
-  IF V_COUNT<>1 THEN
-    RAISE_APPLICATION_ERROR(-20828,'Queue idempotency index validation failed.');
-  END IF;
+  RAISE_APPLICATION_ERROR(-20998,
+    'Retired notification deployment artifact. Use management_audit_notification_deployment.md.');
 END;
 /

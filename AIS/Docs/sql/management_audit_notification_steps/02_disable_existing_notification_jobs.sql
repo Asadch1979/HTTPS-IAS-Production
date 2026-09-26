@@ -1,37 +1,13 @@
 /*
-Step 02 - Safety gate.
-Drops the retired weekly job and disables the two remaining Oracle jobs.
-*/
-/*
-  Deployment safety gate:
-  If these jobs already exist from an earlier deployment, disable them before
-  replacing packages/views. A later compilation failure therefore cannot leave
-  the Management Audit notification jobs running against a partial deployment.
-*/
-DECLARE
-  V_DISABLED NUMBER := 0;
-BEGIN
-  FOR R IN (
-    SELECT JOB_NAME
-      FROM USER_SCHEDULER_JOBS
-     WHERE JOB_NAME='JOB_MGMT_AUDIT_WEEKLY_NOTIFY'
-        OR UPPER(JOB_ACTION) LIKE '%SEND_MGMT_AUDIT_WEEKLY%'
-  ) LOOP
-    DBMS_SCHEDULER.DROP_JOB(R.JOB_NAME,FORCE=>TRUE);
-  END LOOP;
+RETIRED: legacy IAS notification deployment artifact.
 
-  FOR R IN (
-    SELECT JOB_NAME,ENABLED
-     FROM USER_SCHEDULER_JOBS
-     WHERE JOB_NAME IN
-       ('JOB_MGMT_AUDIT_MAPPING_EXCEPT',
-        'JOB_IAS_NOTIFICATION_HEALTH')
-  ) LOOP
-    IF R.ENABLED='TRUE' THEN
-      DBMS_SCHEDULER.DISABLE(R.JOB_NAME,FORCE=>TRUE);
-      V_DISABLED:=V_DISABLED+1;
-    END IF;
-  END LOOP;
-  DBMS_OUTPUT.PUT_LINE('Scheduler safety gate applied; existing target jobs disabled='||V_DISABLED||'.');
+Do not execute this file. It is intentionally non-deployable because it used
+an Inquiry-owned email queue and/or the retired weekly Oracle Scheduler flow.
+Use AIS/Docs/sql/management_audit_notification_deployment.md for the controlled
+generic email architecture and application-service deployment order.
+*/
+BEGIN
+  RAISE_APPLICATION_ERROR(-20998,
+    'Retired notification deployment artifact. Use management_audit_notification_deployment.md.');
 END;
 /

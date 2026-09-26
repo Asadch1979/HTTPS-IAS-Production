@@ -1,96 +1,13 @@
 /*
-Step 12 - Create/update the remaining Oracle scheduler jobs in DISABLED state.
+RETIRED: legacy IAS notification deployment artifact.
 
-The Management Audit weekly digest is owned by ManagementAuditWeeklyService;
-this script never creates JOB_MGMT_AUDIT_WEEKLY_NOTIFY.
-
-Change only these two constants if the approved schedule changes.
-Times are anchored to Asia/Karachi.
-
-Mapping exceptions: Friday 07:00
-Notification health: Daily 08:00
+Do not execute this file. It is intentionally non-deployable because it used
+an Inquiry-owned email queue and/or the retired weekly Oracle Scheduler flow.
+Use AIS/Docs/sql/management_audit_notification_deployment.md for the controlled
+generic email architecture and application-service deployment order.
 */
-DECLARE
-  C_MAPPING_SCHEDULE CONSTANT VARCHAR2(200) :=
-    'FREQ=WEEKLY;BYDAY=FRI;BYHOUR=07;BYMINUTE=00;BYSECOND=00';
-  C_HEALTH_SCHEDULE CONSTANT VARCHAR2(200) :=
-    'FREQ=DAILY;BYHOUR=08;BYMINUTE=00;BYSECOND=00';
-
-  PROCEDURE UPSERT_JOB_DISABLED(
-    P_NAME VARCHAR2,
-    P_ACTION VARCHAR2,
-    P_SCHEDULE VARCHAR2,
-    P_COMMENTS VARCHAR2
-  ) IS
-    V_COUNT NUMBER;
-    V_ENABLED VARCHAR2(5);
-    V_START TIMESTAMP WITH TIME ZONE;
-  BEGIN
-    DBMS_SCHEDULER.EVALUATE_CALENDAR_STRING(
-      P_SCHEDULE,
-      SYSTIMESTAMP AT TIME ZONE 'Asia/Karachi',
-      SYSTIMESTAMP AT TIME ZONE 'Asia/Karachi',
-      V_START
-    );
-
-    SELECT COUNT(*) INTO V_COUNT
-      FROM USER_SCHEDULER_JOBS
-     WHERE JOB_NAME=UPPER(P_NAME);
-
-    IF V_COUNT=0 THEN
-      DBMS_SCHEDULER.CREATE_JOB(
-        JOB_NAME=>P_NAME,
-        JOB_TYPE=>'PLSQL_BLOCK',
-        JOB_ACTION=>P_ACTION,
-        START_DATE=>V_START,
-        REPEAT_INTERVAL=>P_SCHEDULE,
-        ENABLED=>FALSE,
-        AUTO_DROP=>FALSE,
-        COMMENTS=>P_COMMENTS
-      );
-    ELSE
-      SELECT ENABLED INTO V_ENABLED
-        FROM USER_SCHEDULER_JOBS
-       WHERE JOB_NAME=UPPER(P_NAME);
-
-      IF V_ENABLED='TRUE' THEN
-        DBMS_SCHEDULER.DISABLE(P_NAME,FORCE=>TRUE);
-      END IF;
-
-      DBMS_SCHEDULER.SET_ATTRIBUTE(P_NAME,'job_action',P_ACTION);
-      DBMS_SCHEDULER.SET_ATTRIBUTE(P_NAME,'repeat_interval',P_SCHEDULE);
-      DBMS_SCHEDULER.SET_ATTRIBUTE(P_NAME,'comments',P_COMMENTS);
-    END IF;
-  END;
 BEGIN
-  UPSERT_JOB_DISABLED(
-    'JOB_MGMT_AUDIT_MAPPING_EXCEPT',
-    'BEGIN PKG_IAS_NOTIFICATION.SEND_MGMT_AUDIT_MAPPING_EXCEPTIONS; END;',
-    C_MAPPING_SCHEDULE,
-    'Queues Friday mapping exceptions separately for heads 112242 and 112248.'
-  );
-
-  UPSERT_JOB_DISABLED(
-    'JOB_IAS_NOTIFICATION_HEALTH',
-    'BEGIN PKG_IAS_NOTIFICATION.SEND_NOTIFICATION_HEALTH; END;',
-    C_HEALTH_SCHEDULE,
-    'Queues the IAS notification operational health report for Super Admin.'
-  );
-END;
-/
-
-DECLARE
-  V_COUNT NUMBER;
-BEGIN
-  SELECT COUNT(*) INTO V_COUNT
-    FROM USER_SCHEDULER_JOBS
-   WHERE JOB_NAME IN
-     ('JOB_MGMT_AUDIT_MAPPING_EXCEPT',
-      'JOB_IAS_NOTIFICATION_HEALTH')
-     AND ENABLED='FALSE';
-
-  IF V_COUNT<>2 THEN
-    RAISE_APPLICATION_ERROR(-20833,'Both remaining notification scheduler jobs must exist in DISABLED state.');
-  END IF;
+  RAISE_APPLICATION_ERROR(-20998,
+    'Retired notification deployment artifact. Use management_audit_notification_deployment.md.');
 END;
 /

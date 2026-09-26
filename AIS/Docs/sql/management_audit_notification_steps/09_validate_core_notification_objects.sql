@@ -1,65 +1,13 @@
 /*
-Step 09 - Validate all core notification objects.
-No scheduler job is enabled here.
+RETIRED: legacy IAS notification deployment artifact.
+
+Do not execute this file. It is intentionally non-deployable because it used
+an Inquiry-owned email queue and/or the retired weekly Oracle Scheduler flow.
+Use AIS/Docs/sql/management_audit_notification_deployment.md for the controlled
+generic email architecture and application-service deployment order.
 */
-DECLARE
-  V_OBJECT_COUNT NUMBER;
-  V_INVALID NUMBER;
-  V_ERRORS NUMBER;
-  V_STATUS_TYPE VARCHAR2(30);
-  V_ENABLED_JOBS NUMBER;
-  V_WEEKLY_JOBS NUMBER;
 BEGIN
-  SELECT COUNT(*) INTO V_OBJECT_COUNT
-    FROM USER_OBJECTS
-   WHERE OBJECT_NAME IN
-     ('PKG_INQ','PKG_AE','PKG_IAS_NOTIFICATION',
-      'V_IAS_POST_COMPLIANCE_NOTIFY','V_IAS_MGMT_AUDIT_NOTIFY_MAP',
-      'V_IAS_MGMT_WEEKLY_DATA','T_IAS_NOTIFY_EXECUTION')
-     AND OBJECT_TYPE IN ('PACKAGE','PACKAGE BODY','VIEW','TABLE');
-
-  SELECT COUNT(*) INTO V_INVALID
-    FROM USER_OBJECTS
-   WHERE OBJECT_NAME IN
-     ('PKG_INQ','PKG_AE','PKG_IAS_NOTIFICATION',
-      'V_IAS_POST_COMPLIANCE_NOTIFY','V_IAS_MGMT_AUDIT_NOTIFY_MAP',
-      'V_IAS_MGMT_WEEKLY_DATA','T_IAS_NOTIFY_EXECUTION')
-     AND OBJECT_TYPE IN ('PACKAGE','PACKAGE BODY','VIEW','TABLE')
-     AND STATUS<>'VALID';
-
-  SELECT COUNT(*) INTO V_ERRORS
-    FROM USER_ERRORS
-   WHERE NAME IN
-     ('PKG_INQ','PKG_AE','PKG_IAS_NOTIFICATION',
-      'V_IAS_POST_COMPLIANCE_NOTIFY','V_IAS_MGMT_AUDIT_NOTIFY_MAP');
-
-  SELECT DATA_TYPE INTO V_STATUS_TYPE
-    FROM USER_ARGUMENTS
-   WHERE PACKAGE_NAME='PKG_INQ'
-     AND OBJECT_NAME='P_GET_EMAIL_QUEUE'
-     AND ARGUMENT_NAME='P_STATUS'
-     AND DATA_LEVEL=0;
-
-  SELECT COUNT(*) INTO V_ENABLED_JOBS
-    FROM USER_SCHEDULER_JOBS
-   WHERE JOB_NAME IN
-     ('JOB_MGMT_AUDIT_MAPPING_EXCEPT',
-      'JOB_IAS_NOTIFICATION_HEALTH')
-     AND ENABLED='TRUE';
-
-  SELECT COUNT(*) INTO V_WEEKLY_JOBS
-    FROM USER_SCHEDULER_JOBS
-   WHERE JOB_NAME='JOB_MGMT_AUDIT_WEEKLY_NOTIFY'
-      OR UPPER(JOB_ACTION) LIKE '%SEND_MGMT_AUDIT_WEEKLY%';
-
-  IF V_OBJECT_COUNT<>10 OR V_INVALID>0 OR V_ERRORS>0
-     OR V_STATUS_TYPE<>'VARCHAR2' OR V_ENABLED_JOBS<>0 OR V_WEEKLY_JOBS<>0 THEN
-    RAISE_APPLICATION_ERROR(
-      -20826,
-      'Core validation failed: objects='||V_OBJECT_COUNT||'/10, invalid='||V_INVALID||
-      ', errors='||V_ERRORS||', P_STATUS='||V_STATUS_TYPE||
-      ', enabled_target_jobs='||V_ENABLED_JOBS||', retired_weekly_jobs='||V_WEEKLY_JOBS
-    );
-  END IF;
+  RAISE_APPLICATION_ERROR(-20998,
+    'Retired notification deployment artifact. Use management_audit_notification_deployment.md.');
 END;
 /

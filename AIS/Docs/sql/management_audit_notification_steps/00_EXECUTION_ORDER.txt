@@ -1,28 +1,7 @@
-Management Audit Notification Deployment - staged execution order
+RETIRED
 
-Execute one file at a time, in numeric order.
-Do not execute the old all-in-one management_audit_notifications_complete_deployment.sql file.
+The numbered Management Audit notification deployment is intentionally
+non-deployable. Every SQL step fails with Oracle error -20998.
 
-The staged SQL files contain Oracle SQL/PLSQL only. They intentionally do not
-use PROMPT, DEFINE, SET, WHENEVER, @@ include statements, or GitHub diff markers.
-They are written for the current Oracle 18c environment and avoid 19c-only
-DISTINCT aggregation syntax.
-
-Execution order:
-01_preflight.sql
-02_disable_existing_notification_jobs.sql
-03_create_notification_registry.sql
-04_seed_notification_registry.sql
-05_create_notification_views.sql
-06_replace_pkg_inq.sql
-07_replace_pkg_ias_notification.sql
-08_replace_pkg_ae.sql
-09_validate_core_notification_objects.sql
-10_create_queue_idempotency_index.sql
-11_queue_api_smoke_test.sql
-12_create_scheduler_jobs_disabled.sql
-13_validate_and_enable_scheduler_jobs.sql
-14_post_deployment_verification.sql
-
-Stop immediately if any step raises an Oracle error. Do not continue until the
-current step succeeds.
+Use ../management_audit_notification_deployment.md for the supported generic
+email queue and ASP.NET weekly-service deployment order.

@@ -1,3 +1,13 @@
-/* Deployment configuration. Change these values without modifying package code. */
-DEFINE MGMT_MAPPING_EXCEPTION_SCHEDULE = 'FREQ=WEEKLY;BYDAY=FRI;BYHOUR=07;BYMINUTE=00;BYSECOND=00'
-DEFINE IAS_NOTIFICATION_HEALTH_SCHEDULE = 'FREQ=DAILY;BYHOUR=08;BYMINUTE=00;BYSECOND=00'
+/*
+RETIRED: legacy IAS notification deployment artifact.
+
+Do not execute this file. It is intentionally non-deployable because it used
+an Inquiry-owned email queue and/or the retired weekly Oracle Scheduler flow.
+Use AIS/Docs/sql/management_audit_notification_deployment.md for the controlled
+generic email architecture and application-service deployment order.
+*/
+BEGIN
+  RAISE_APPLICATION_ERROR(-20998,
+    'Retired notification deployment artifact. Use management_audit_notification_deployment.md.');
+END;
+/
