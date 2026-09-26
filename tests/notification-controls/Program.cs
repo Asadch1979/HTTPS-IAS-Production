@@ -93,12 +93,25 @@ Check(File.Exists(Path.Combine(FindRepoRoot(), "tests", "notification-controls",
 var weeklyAccess = File.ReadAllText(Path.Combine(FindRepoRoot(), "AIS", "DBConnection.ManagementAuditWeekly.cs"));
 Check(weeklyAccess.Contains("PKG_MGMT_AUDIT_WEEKLY.P_GET_MGMT_WEEKLY_DIVISIONS") &&
       weeklyAccess.Contains("PKG_MGMT_AUDIT_WEEKLY.P_GET_MGMT_WEEKLY_DIVISION_DATA") &&
-      Regex.Matches(weeklyAccess, "CommandType.StoredProcedure").Count == 2 &&
-      Regex.Matches(weeklyAccess, "BindByName = true").Count == 2 &&
-      Regex.Matches(weeklyAccess, "GuardAgainstDynamicSql\\(cmd\\)").Count == 2 &&
-      Regex.Matches(weeklyAccess, "OracleDbType.RefCursor").Count == 2 &&
+      weeklyAccess.Contains("PKG_MGMT_AUDIT_WEEKLY.P_GET_MGMT_WEEKLY_NO_COMPLIANCE") &&
+      Regex.Matches(weeklyAccess, "CommandType.StoredProcedure").Count == 3 &&
+      Regex.Matches(weeklyAccess, "BindByName = true").Count == 3 &&
+      Regex.Matches(weeklyAccess, "GuardAgainstDynamicSql\\(cmd\\)").Count == 3 &&
+      Regex.Matches(weeklyAccess, "OracleDbType.RefCursor").Count == 3 &&
       !weeklyAccess.Contains("V_IAS_MGMT_WEEKLY_DATA", StringComparison.OrdinalIgnoreCase),
-    "Management Audit weekly DB access uses only the approved stored procedures");
+    "Management Audit weekly DB access uses all three approved stored procedures");
+Check(weeklyAccess.Contains("NoComplianceCount = Convert.ToInt32(reader[\"NO_COMPLIANCE_COUNT\"])") &&
+      typeof(ManagementAuditWeeklyDivisionSummaryModel).GetProperty("NoComplianceCount")?.PropertyType == typeof(int),
+    "Management Audit weekly summary maps NO_COMPLIANCE_COUNT");
+var noComplianceMethod = weeklyAccess.Substring(
+    weeklyAccess.IndexOf("GetManagementAuditWeeklyNoCompliance", StringComparison.Ordinal));
+Check(noComplianceMethod.Contains("CommandType.StoredProcedure") &&
+      noComplianceMethod.Contains("BindByName = true") &&
+      noComplianceMethod.Contains("GuardAgainstDynamicSql(cmd)") &&
+      noComplianceMethod.Contains("OracleDbType.Date") &&
+      noComplianceMethod.Contains("OracleDbType.RefCursor") &&
+      !Regex.IsMatch(noComplianceMethod, "CommandText\\s*=\\s*@?\"\\s*SELECT", RegexOptions.IgnoreCase),
+    "Management Audit no-compliance retrieval uses binds and a RefCursor without direct SQL");
 var weeklyService = File.ReadAllText(Path.Combine(FindRepoRoot(), "AIS", "Services", "ManagementAuditWeeklyService.cs"));
 var weeklyEmail = File.ReadAllText(Path.Combine(FindRepoRoot(), "AIS", "EmailNotification.cs"));
 var summaryCall = weeklyService.IndexOf("GetManagementAuditWeeklyDivisions(fromDate, toDate)", StringComparison.Ordinal);

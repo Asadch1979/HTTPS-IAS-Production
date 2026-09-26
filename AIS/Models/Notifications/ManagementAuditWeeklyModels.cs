@@ -10,6 +10,7 @@ namespace AIS.Models.Notifications
         public string CcEmail { get; set; } = string.Empty;
         public int SettledCount { get; set; }
         public int RejectedCount { get; set; }
+        public int NoComplianceCount { get; set; }
         public int TotalCount { get; set; }
         }
 
@@ -31,5 +32,24 @@ namespace AIS.Models.Notifications
         public string DecisionStatus { get; set; } = string.Empty;
         public int ComStatus { get; set; }
         public string Reason { get; set; } = string.Empty;
+        }
+
+    public class ManagementAuditWeeklyNoComplianceModel
+        {
+        public int ComId { get; set; }
+        public int ComCycle { get; set; }
+        public int EntityId { get; set; }
+        public int AuditedBy { get; set; }
+        public int DivisionId { get; set; }
+        public string DivisionName { get; set; } = string.Empty;
+        public string EntityName { get; set; } = string.Empty;
+        public string AuditPeriod { get; set; } = string.Empty;
+        public string ParaNo { get; set; } = string.Empty;
+        public string Title { get; set; } = string.Empty;
+        public string Risk { get; set; } = string.Empty;
+        public DateTime? LastComplianceSubmittedOn { get; set; }
+        public int? ParaStatus { get; set; }
+        public int? ComStatus { get; set; }
+        public int? ComStage { get; set; }
         }
     }

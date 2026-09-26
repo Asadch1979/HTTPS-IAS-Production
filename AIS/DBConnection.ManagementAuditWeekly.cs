@@ -33,6 +33,7 @@ namespace AIS.Controllers
                     CcEmail = reader["CC_EMAIL"]?.ToString() ?? string.Empty,
                     SettledCount = Convert.ToInt32(reader["SETTLED_COUNT"]),
                     RejectedCount = Convert.ToInt32(reader["REJECTED_COUNT"]),
+                    NoComplianceCount = Convert.ToInt32(reader["NO_COMPLIANCE_COUNT"]),
                     TotalCount = Convert.ToInt32(reader["TOTAL_COUNT"])
                     });
                 }
@@ -82,6 +83,67 @@ namespace AIS.Controllers
                 }
 
             return details;
+            }
+
+        public List<ManagementAuditWeeklyNoComplianceModel> GetManagementAuditWeeklyNoCompliance(
+            int divisionId, DateTime fromDate, DateTime toDate)
+            {
+            var details = new List<ManagementAuditWeeklyNoComplianceModel>();
+            using var con = DatabaseConnection(requireActiveSession: false);
+            using var cmd = con.CreateCommand();
+            cmd.CommandText = "PKG_MGMT_AUDIT_WEEKLY.P_GET_MGMT_WEEKLY_NO_COMPLIANCE";
+            cmd.CommandType = CommandType.StoredProcedure;
+            cmd.BindByName = true;
+            GuardAgainstDynamicSql(cmd);
+            cmd.Parameters.Add("P_DIVISION_ID", OracleDbType.Int32).Value = divisionId;
+            cmd.Parameters.Add("P_FROM_DATE", OracleDbType.Date).Value = fromDate;
+            cmd.Parameters.Add("P_TO_DATE", OracleDbType.Date).Value = toDate;
+            cmd.Parameters.Add("IO_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+
+            using var reader = cmd.ExecuteReader();
+            while (reader.Read())
+                {
+                details.Add(new ManagementAuditWeeklyNoComplianceModel
+                    {
+                    ComId = ReadManagementAuditWeeklyInt(reader, "COM_ID"),
+                    ComCycle = ReadManagementAuditWeeklyInt(reader, "COM_CYCLE"),
+                    EntityId = ReadManagementAuditWeeklyInt(reader, "ENTITY_ID"),
+                    AuditedBy = ReadManagementAuditWeeklyInt(reader, "AUDITED_BY"),
+                    DivisionId = ReadManagementAuditWeeklyInt(reader, "DIVISION_ID"),
+                    DivisionName = ReadManagementAuditWeeklyString(reader, "DIVISION_NAME"),
+                    EntityName = ReadManagementAuditWeeklyString(reader, "ENTITY_NAME"),
+                    AuditPeriod = ReadManagementAuditWeeklyString(reader, "AUDIT_PERIOD"),
+                    ParaNo = ReadManagementAuditWeeklyString(reader, "PARA_NO"),
+                    Title = ReadManagementAuditWeeklyString(reader, "TITLE"),
+                    Risk = ReadManagementAuditWeeklyString(reader, "RISK"),
+                    LastComplianceSubmittedOn = ReadManagementAuditWeeklyDate(reader, "LAST_COMPLIANCE_SUBMITTED_ON"),
+                    ParaStatus = ReadManagementAuditWeeklyNullableInt(reader, "PARA_STATUS"),
+                    ComStatus = ReadManagementAuditWeeklyNullableInt(reader, "COM_STATUS"),
+                    ComStage = ReadManagementAuditWeeklyNullableInt(reader, "COM_STAGE")
+                    });
+                }
+
+            return details;
+            }
+
+        private static int ReadManagementAuditWeeklyInt(OracleDataReader reader, string columnName)
+            {
+            return reader[columnName] == DBNull.Value ? 0 : Convert.ToInt32(reader[columnName]);
+            }
+
+        private static int? ReadManagementAuditWeeklyNullableInt(OracleDataReader reader, string columnName)
+            {
+            return reader[columnName] == DBNull.Value ? null : Convert.ToInt32(reader[columnName]);
+            }
+
+        private static DateTime? ReadManagementAuditWeeklyDate(OracleDataReader reader, string columnName)
+            {
+            return reader[columnName] == DBNull.Value ? null : Convert.ToDateTime(reader[columnName]);
+            }
+
+        private static string ReadManagementAuditWeeklyString(OracleDataReader reader, string columnName)
+            {
+            return reader[columnName] == DBNull.Value ? string.Empty : reader[columnName].ToString();
             }
         }
     }
