@@ -48,10 +48,8 @@ namespace AIS.Controllers
             if (tokenService == null)
                 throw new ArgumentNullException(nameof(tokenService));
 
-            var httpContext = httpContextAccessor.HttpContext ?? throw new InvalidOperationException("HTTP context is not available.");
-            var session = httpContext.Session ?? throw new InvalidOperationException("Session has not been configured for the current context.");
-
-            _session = session;
+            var httpContext = httpContextAccessor.HttpContext;
+            _session = httpContext?.Session;
             _httpCon = httpContextAccessor;
             _env = env;
             _configuration = configuration;

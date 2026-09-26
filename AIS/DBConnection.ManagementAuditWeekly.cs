@@ -12,7 +12,7 @@ namespace AIS.Controllers
             DateTime fromDate, DateTime toDate)
             {
             var divisions = new List<ManagementAuditWeeklyDivisionSummaryModel>();
-            using var con = DatabaseConnection();
+            using var con = DatabaseConnection(requireActiveSession: false);
             using var cmd = con.CreateCommand();
             cmd.CommandText = "PKG_MGMT_AUDIT_WEEKLY.P_GET_MGMT_WEEKLY_DIVISIONS";
             cmd.CommandType = CommandType.StoredProcedure;
@@ -44,7 +44,7 @@ namespace AIS.Controllers
             int divisionId, DateTime fromDate, DateTime toDate)
             {
             var details = new List<ManagementAuditWeeklyDivisionDetailModel>();
-            using var con = DatabaseConnection();
+            using var con = DatabaseConnection(requireActiveSession: false);
             using var cmd = con.CreateCommand();
             cmd.CommandText = "PKG_MGMT_AUDIT_WEEKLY.P_GET_MGMT_WEEKLY_DIVISION_DATA";
             cmd.CommandType = CommandType.StoredProcedure;
