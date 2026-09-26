@@ -4,7 +4,8 @@
   Target: Oracle 18c+ / current IAS schema
 
   Run management_audit_application_scheduler.sql first so the ASP.NET weekly
-  execution ledger and data view exist before this complete package compiles.
+  execution ledger exists before this script creates the dependent data view
+  and compiles the complete package.
 
   Reviewed notification inventory and current caller/source
   ---------------------------------------------------------
@@ -164,6 +165,26 @@ SELECT E.ENTITY_ID,
   LEFT JOIN T_AUDITEE_ENTITIES D ON D.ENTITY_ID=M.DIVISION_ID
   LEFT JOIN T_AUDITEE_ENTITIES R ON R.ENTITY_ID=M.REPORTING_ID
  WHERE E.AUDITBY_ID IN (112242,112248);
+
+CREATE OR REPLACE VIEW V_IAS_MGMT_WEEKLY_DATA AS
+SELECT H.HIST_ID,M.DIVISION_ID,M.DIVISION_NAME,M.DIVISION_EMAIL,M.REPORTING_EMAIL,
+       E.NAME ENTITY_NAME,PC.AUDIT_PERIOD,PC.PARA_NO,PC.GIST_OF_PARAS TITLE,
+       (SELECT MAX(S.COMMENT_ON)
+          FROM AIS_T_AU_POST_COMPLIANCE_HISTORY S
+         WHERE S.COM_ID=H.COM_ID
+           AND S.COM_CYCLE=H.COM_CYCLE
+           AND S.COM_STATUS=10
+           AND S.COMMENT_ON<=H.COMMENT_ON
+           AND S.HIST_ID<H.HIST_ID) SUBMITTED_ON,
+       H.COMMENT_ON DECISION_ON,H.COMMENTS REASON,H.COM_STATUS
+  FROM AIS_T_AU_POST_COMPLIANCE PC
+  JOIN AIS_T_AU_POST_COMPLIANCE_HISTORY H ON H.COM_ID=PC.COM_ID
+  JOIN T_AUDITEE_ENTITIES E ON E.ENTITY_ID=PC.ENTITY_ID
+  JOIN V_IAS_MGMT_AUDIT_NOTIFY_MAP M ON M.ENTITY_ID=PC.ENTITY_ID
+ WHERE PC.AUDITED_BY IN (112242,112248)
+   AND H.COM_STATUS IN (16,12,15,18)
+   AND M.DIVISION_ID IS NOT NULL
+   AND TRIM(M.DIVISION_EMAIL) IS NOT NULL;
 
 --------------------------------------------------------------------------------
 -- 2. Initial notification records (repeatable seed; preserves administrator status)
@@ -471,10 +492,14 @@ CREATE OR REPLACE PACKAGE BODY PKG_IAS_NOTIFICATION AS
      WHERE OBJECT_NAME IN ('PKG_INQ','PKG_AE','PKG_IAS_NOTIFICATION','V_IAS_POST_COMPLIANCE_NOTIFY',
                            'V_IAS_MGMT_AUDIT_NOTIFY_MAP','V_IAS_MGMT_WEEKLY_DATA','T_IAS_NOTIFY_EXECUTION')
        AND OBJECT_TYPE IN ('PACKAGE','PACKAGE BODY','VIEW','TABLE');
-    SELECT 'Generated='||COUNT(*)||', Sent='||SUM(CASE WHEN STATUS='SENT' THEN 1 ELSE 0 END)||
-           ', Pending='||SUM(CASE WHEN STATUS='PENDING' THEN 1 ELSE 0 END)||', Failed='||SUM(CASE WHEN STATUS='FAILED' THEN 1 ELSE 0 END)||
-           ', Last sent='||NVL(TO_CHAR(MAX(SENT_ON),'DD-MON-YYYY HH24:MI:SS'),'None')
-      INTO V_IMMEDIATE FROM T_SYS_LOG WHERE ACTION_NAME='NotifyManagementAuditParaStatus';
+    SELECT 'Attempts='||COUNT(*)||
+           ', Sent='||NVL(SUM(CASE WHEN UPPER(LOG_LEVEL)='INFO' AND MESSAGE='Notification sent.' THEN 1 ELSE 0 END),0)||
+           ', Failed='||NVL(SUM(CASE WHEN UPPER(LOG_LEVEL)='ERROR' THEN 1 ELSE 0 END),0)||
+           ', Last event='||NVL(TO_CHAR(MAX(LOG_TIME),'DD-MON-YYYY HH24:MI:SS'),'None')||
+           ', Last message='||NVL(MAX(MESSAGE) KEEP (DENSE_RANK LAST ORDER BY LOG_TIME),'None')
+      INTO V_IMMEDIATE
+      FROM T_SYS_LOG
+     WHERE ACTION='NotifyManagementAuditParaStatus';
     SELECT 'ASP.NET ledger: Complete='||NVL(SUM(CASE WHEN STATUS='COMPLETE' THEN 1 ELSE 0 END),0)||
            ', Failed='||NVL(SUM(CASE WHEN STATUS='FAILED' THEN 1 ELSE 0 END),0)||
            ', Running='||NVL(SUM(CASE WHEN STATUS='RUNNING' THEN 1 ELSE 0 END),0)||

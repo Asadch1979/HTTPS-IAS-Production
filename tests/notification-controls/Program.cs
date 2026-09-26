@@ -56,6 +56,18 @@ Check(packageSql.Contains("CREATE OR REPLACE PACKAGE PKG_IAS_NOTIFICATION AS") &
       packageSql.Contains("Management Audit weekly ASP.NET execution status") &&
       packageSql.Contains("FROM T_IAS_NOTIFY_EXECUTION"),
     "Controlled complete package retires Oracle weekly delivery and reports ASP.NET execution");
+var immediateHealthStart = packageSql.IndexOf("SELECT 'Attempts='", StringComparison.Ordinal);
+var immediateHealthEnd = packageSql.IndexOf(';', immediateHealthStart);
+var immediateHealthSql = packageSql.Substring(immediateHealthStart, immediateHealthEnd - immediateHealthStart);
+Check(immediateHealthSql.Contains("ACTION='NotifyManagementAuditParaStatus'") &&
+      immediateHealthSql.Contains("LOG_LEVEL") && immediateHealthSql.Contains("LOG_TIME") &&
+      immediateHealthSql.Contains("MESSAGE") && !immediateHealthSql.Contains("ACTION_NAME") &&
+      !immediateHealthSql.Contains("SENT_ON"),
+    "Immediate Management Audit health query uses actual T_SYS_LOG columns");
+Check(packageSql.IndexOf("CREATE OR REPLACE VIEW V_IAS_MGMT_AUDIT_NOTIFY_MAP", StringComparison.Ordinal) <
+      packageSql.IndexOf("CREATE OR REPLACE VIEW V_IAS_MGMT_WEEKLY_DATA", StringComparison.Ordinal) &&
+      !cutoverSql.Contains("CREATE OR REPLACE VIEW V_IAS_MGMT_WEEKLY_DATA"),
+    "Management Audit mapping view is created before the dependent weekly data view");
 
 var managementAuditSql = Directory.GetFiles(sqlRoot, "management_audit*.sql", SearchOption.TopDirectoryOnly)
     .Concat(Directory.GetFiles(Path.Combine(sqlRoot, "management_audit_notification_steps"), "*.sql"))

@@ -11,8 +11,10 @@ by the ASP.NET `ManagementAuditWeeklyService`.
    generic `T_EMAIL_QUEUE` foundation.
 3. Run the complete `pkg_email.sql` package specification and body.
 4. Run `management_audit_application_scheduler.sql` to create the application
-   execution ledger/view and drop every retired weekly Oracle Scheduler job.
-5. Run the complete `ias_notification_centralization.sql` package script.
+   execution ledger and drop every retired weekly Oracle Scheduler job.
+5. Run the complete `ias_notification_centralization.sql` script. It creates
+   `V_IAS_MGMT_AUDIT_NOTIFY_MAP` first, then the dependent
+   `V_IAS_MGMT_WEEKLY_DATA` view, and finally the notification package.
 6. Confirm `PKG_EMAIL`, `PKG_IAS_NOTIFICATION`, `T_IAS_NOTIFY_EXECUTION`, and
    `V_IAS_MGMT_WEEKLY_DATA` are valid, and confirm no Oracle job invokes the
    retired weekly procedure.

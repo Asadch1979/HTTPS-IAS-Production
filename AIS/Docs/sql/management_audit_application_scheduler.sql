@@ -2,7 +2,7 @@
 Management Audit weekly notification database cutover (Oracle 18c compatible).
 
 Required deployment order:
-  1. Run this database script, then deploy the complete controlled
+  1. Run this database script to create the execution ledger, then deploy the complete controlled
      PKG_IAS_NOTIFICATION specification/body from
      ias_notification_centralization.sql.
   2. Deploy the ASP.NET application while ManagementAuditWeekly:Enabled=false.
@@ -60,27 +60,6 @@ VALUES
 
 COMMIT;
 
-CREATE OR REPLACE VIEW V_IAS_MGMT_WEEKLY_DATA AS
-SELECT H.HIST_ID,M.DIVISION_ID,M.DIVISION_NAME,M.DIVISION_EMAIL,M.REPORTING_EMAIL,
-       E.NAME ENTITY_NAME,PC.AUDIT_PERIOD,PC.PARA_NO,PC.GIST_OF_PARAS TITLE,
-       (SELECT MAX(S.COMMENT_ON)
-          FROM AIS_T_AU_POST_COMPLIANCE_HISTORY S
-         WHERE S.COM_ID=H.COM_ID
-           AND S.COM_CYCLE=H.COM_CYCLE
-           AND S.COM_STATUS=10
-           AND S.COMMENT_ON<=H.COMMENT_ON
-           AND S.HIST_ID<H.HIST_ID) SUBMITTED_ON,
-       H.COMMENT_ON DECISION_ON,H.COMMENTS REASON,H.COM_STATUS
-  FROM AIS_T_AU_POST_COMPLIANCE PC
-  JOIN AIS_T_AU_POST_COMPLIANCE_HISTORY H ON H.COM_ID=PC.COM_ID
-  JOIN T_AUDITEE_ENTITIES E ON E.ENTITY_ID=PC.ENTITY_ID
-  JOIN V_IAS_MGMT_AUDIT_NOTIFY_MAP M ON M.ENTITY_ID=PC.ENTITY_ID
- WHERE PC.AUDITED_BY IN (112242,112248)
-   AND H.COM_STATUS IN (16,12,15,18)
-   AND M.DIVISION_ID IS NOT NULL
-   AND TRIM(M.DIVISION_EMAIL) IS NOT NULL;
-/
-
 /* Retire every weekly Oracle job. Mapping and health jobs are unchanged. */
 BEGIN
   FOR J IN (
@@ -118,7 +97,7 @@ DECLARE
 BEGIN
   SELECT COUNT(*) INTO INVALID_OBJECTS
     FROM USER_OBJECTS
-   WHERE OBJECT_NAME IN ('V_IAS_MGMT_WEEKLY_DATA','T_IAS_NOTIFY_EXECUTION')
+   WHERE OBJECT_NAME='T_IAS_NOTIFY_EXECUTION'
      AND STATUS<>'VALID';
 
   SELECT COUNT(*) INTO WEEKLY_JOBS
@@ -128,7 +107,7 @@ BEGIN
 
   IF INVALID_OBJECTS>0 THEN
     RAISE_APPLICATION_ERROR(-20811,
-      'Management Audit weekly ledger/view validation failed; inspect USER_ERRORS.');
+      'Management Audit weekly execution ledger validation failed.');
   END IF;
 
   IF WEEKLY_JOBS>0 THEN
@@ -137,11 +116,6 @@ BEGIN
   END IF;
 END;
 /
-
-SELECT NAME,TYPE,LINE,POSITION,TEXT
-  FROM USER_ERRORS
- WHERE NAME='V_IAS_MGMT_WEEKLY_DATA'
- ORDER BY NAME,SEQUENCE;
 
 SELECT EXECUTION_KEY,STATUS,RETRY_COUNT,CREATED_ON,UPDATED_ON
   FROM T_IAS_NOTIFY_EXECUTION
