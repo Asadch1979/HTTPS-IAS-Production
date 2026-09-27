@@ -2,6 +2,7 @@ using AIS;
 using AIS.Models.Notifications;
 using AIS.Services;
 using Microsoft.Extensions.Configuration;
+using System.ComponentModel.DataAnnotations;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
@@ -91,15 +92,17 @@ Check(File.Exists(Path.Combine(FindRepoRoot(), "tests", "notification-controls",
     "Repeated-click executable regression test is retained");
 
 var weeklyAccess = File.ReadAllText(Path.Combine(FindRepoRoot(), "AIS", "DBConnection.ManagementAuditWeekly.cs"));
+var weeklyAdminMethod = weeklyAccess.IndexOf("GetManagementAuditNotificationConfigurations", StringComparison.Ordinal);
+var weeklyDeliveryAccess = weeklyAdminMethod > 0 ? weeklyAccess.Substring(0, weeklyAdminMethod) : weeklyAccess;
 Check(weeklyAccess.Contains("PKG_MGMT_AUDIT_WEEKLY.P_GET_MGMT_WEEKLY_DIVISIONS") &&
       weeklyAccess.Contains("PKG_MGMT_AUDIT_WEEKLY.P_GET_MGMT_WEEKLY_DIVISION_DATA") &&
       weeklyAccess.Contains("PKG_MGMT_AUDIT_WEEKLY.P_GET_MGMT_WEEKLY_NO_COMPLIANCE") &&
-      Regex.Matches(weeklyAccess, "CommandType.StoredProcedure").Count == 3 &&
-      Regex.Matches(weeklyAccess, "BindByName = true").Count == 3 &&
-      Regex.Matches(weeklyAccess, "GuardAgainstDynamicSql\\(cmd\\)").Count == 3 &&
-      Regex.Matches(weeklyAccess, "OracleDbType.RefCursor").Count == 3 &&
-      !weeklyAccess.Contains("V_IAS_MGMT_WEEKLY_DATA", StringComparison.OrdinalIgnoreCase) &&
-      !weeklyAccess.Contains("V_IAS_MGMT_AUDIT_NOTIFY_MAP", StringComparison.OrdinalIgnoreCase),
+      Regex.Matches(weeklyDeliveryAccess, "CommandType.StoredProcedure").Count == 3 &&
+      Regex.Matches(weeklyDeliveryAccess, "BindByName = true").Count == 3 &&
+      Regex.Matches(weeklyDeliveryAccess, "GuardAgainstDynamicSql\\(cmd\\)").Count == 3 &&
+      Regex.Matches(weeklyDeliveryAccess, "OracleDbType.RefCursor").Count == 3 &&
+      !weeklyDeliveryAccess.Contains("V_IAS_MGMT_WEEKLY_DATA", StringComparison.OrdinalIgnoreCase) &&
+      !weeklyDeliveryAccess.Contains("V_IAS_MGMT_AUDIT_NOTIFY_MAP", StringComparison.OrdinalIgnoreCase),
     "Management Audit weekly DB access uses only the approved stored procedures");
 Check(weeklyAccess.Contains("NoComplianceCount = Convert.ToInt32(reader[\"NO_COMPLIANCE_COUNT\"])") &&
       typeof(ManagementAuditWeeklyDivisionSummaryModel).GetProperty("NoComplianceCount")?.PropertyType == typeof(int),
@@ -136,10 +139,52 @@ Check(weeklyEmail.Contains("division.ToEmail") && weeklyEmail.Contains("division
     "Weekly recipients and Division name come only from the Division summary");
 Check(weeklyEmail.Contains("Paras Settled on the Basis of Satisfactory Compliance") &&
       weeklyEmail.Contains("Paras Referred Back for Further Compliance") &&
-      weeklyEmail.Contains("Paras Where No Compliance Was Submitted During the Reporting Period") &&
+      weeklyEmail.Contains("Paras Where No Compliance Was Submitted During the Current Month") &&
+      weeklyEmail.Contains("no compliance was submitted during the current month") &&
       new[] { "Sr.", "Department", "Audit Year", "Para No.", "Title of Para", "Risk", "Compliance Submitted On", "Settled On", "Reason for Referral Back", "Last Compliance Submitted On" }
         .All(column => weeklyEmail.Contains(column)),
     "Weekly email contains all approved section and table headings");
+
+var adminController = File.ReadAllText(Path.Combine(FindRepoRoot(), "AIS", "Controllers", "AdministrationPanelController.ManagementAuditNotifications.cs"));
+var adminView = File.ReadAllText(Path.Combine(FindRepoRoot(), "AIS", "Views", "AdministrationPanel", "management_audit_notifications.cshtml"));
+var adminScript = File.ReadAllText(Path.Combine(FindRepoRoot(), "AIS", "wwwroot", "js", "csp", "Views_AdministrationPanel_management_audit_notifications.js"));
+var adminSql = File.ReadAllText(Path.Combine(sqlRoot, "management_audit_notification_admin.sql"));
+Check(weeklyAccess.Contains("PKG_MGMT_AUDIT_NOTIFY_ADMIN.P_GET_CONFIGURATIONS") &&
+      weeklyAccess.Contains("PKG_MGMT_AUDIT_NOTIFY_ADMIN.P_SAVE_DIVISION") &&
+      weeklyAccess.Contains("PKG_MGMT_AUDIT_NOTIFY_ADMIN.P_SAVE_RECIPIENT") &&
+      weeklyAccess.Contains("PKG_MGMT_AUDIT_NOTIFY_ADMIN.P_REMOVE_RECIPIENT") &&
+      !Regex.IsMatch(weeklyAccess, "CommandType\\s*=\\s*CommandType\\.Text"),
+    "Management Audit notification administration uses stored procedures only");
+Check(adminSql.Contains("T_IAS_MGMT_NOTIFY_DIVISION") &&
+      adminSql.Contains("T_IAS_MGMT_NOTIFY_RECIPIENT") &&
+      adminSql.Contains("SEQ_IAS_MGMT_NOTIFY_RECIPIENT") &&
+      !adminSql.Contains("CREATE TABLE", StringComparison.OrdinalIgnoreCase) &&
+      !adminSql.Contains("PKG_MGMT_AUDIT_WEEKLY", StringComparison.OrdinalIgnoreCase),
+    "Management Audit admin package maintains existing control tables without changing weekly selection");
+Check(adminController.Contains("sessionHandler.IsSuperUser()") &&
+      Regex.Matches(adminController, "ValidateAntiForgeryToken").Count == 3 &&
+      adminController.Contains("IsSingleValidEmailAddress") &&
+      adminController.Contains("Effective To cannot be earlier than Effective From"),
+    "Management Audit notification administration is Super Admin-only and validates writes");
+Check(new[] { "Division ID", "Division Name", "Divisional Head / Line Manager", "Designation", "TO Email", "Reporting Line / Office", "Group Head", "CC Email", "Weekly Email", "Status", "Effective Period", "Last Updated" }
+        .All(label => adminView.Contains(label, StringComparison.OrdinalIgnoreCase)) &&
+      adminView.Contains("Add Division") && adminView.Contains("Add Recipient"),
+    "Management Audit notification view exposes the required Division and recipient controls");
+Check(Regex.Matches(adminScript, "window.confirm").Count >= 3 &&
+      adminScript.Contains("saveDivisionUrl") && adminScript.Contains("saveRecipientUrl") && adminScript.Contains("removeRecipientUrl"),
+    "Management Audit notification UI confirms deactivation and removal operations");
+var invalidRecipient = new SaveManagementAuditNotificationRecipientModel
+    {
+    DivisionId = 0,
+    RecipientType = "BCC",
+    EmailAddress = "not-an-email",
+    EffectiveFrom = DateTime.Today,
+    DisplayOrder = 1
+    };
+var recipientValidation = new List<ValidationResult>();
+Check(!Validator.TryValidateObject(invalidRecipient, new ValidationContext(invalidRecipient), recipientValidation, true) &&
+      recipientValidation.Count >= 3,
+    "Management Audit recipient model requires Division, TO/CC type and valid email");
 Check(!weeklyService.Contains("T_EMAIL_QUEUE", StringComparison.OrdinalIgnoreCase) &&
       !weeklyEmail.Contains("T_EMAIL_QUEUE", StringComparison.OrdinalIgnoreCase),
     "Weekly application delivery does not use T_EMAIL_QUEUE");
@@ -411,7 +456,7 @@ var noComplianceRecord = records[1] with
 var continuousRequest = EmailNotification.BuildManagementAuditWeeklyEmail(reportingStart, weeklyRecipientSummary,
     new[] { records[1], noComplianceRecord });
 Check(continuousRequest.Body.Contains("1. Paras Referred Back for Further Compliance (1)") &&
-      continuousRequest.Body.Contains("2. Paras Where No Compliance Was Submitted During the Reporting Period (1)") &&
+      continuousRequest.Body.Contains("2. Paras Where No Compliance Was Submitted During the Current Month (1)") &&
       !continuousRequest.Body.Contains("3. Paras"),
     "Weekly section numbering is dynamic and continuous");
 Check(completeRequest.ToRecipients.Single() == weeklyRecipientSummary.ToEmail &&

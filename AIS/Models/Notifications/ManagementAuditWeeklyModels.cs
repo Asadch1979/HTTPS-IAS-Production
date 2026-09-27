@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 
 namespace AIS.Models.Notifications
     {
@@ -51,5 +53,106 @@ namespace AIS.Models.Notifications
         public int? ParaStatus { get; set; }
         public int? ComStatus { get; set; }
         public int? ComStage { get; set; }
+        }
+
+    public class ManagementAuditNotificationAdminViewModel
+        {
+        public List<ManagementAuditNotificationDivisionModel> Divisions { get; set; } = new();
+        public List<ManagementAuditNotificationDivisionOptionModel> DivisionOptions { get; set; } = new();
+        }
+
+    public class ManagementAuditNotificationDivisionOptionModel
+        {
+        public int DivisionId { get; set; }
+        public string DivisionName { get; set; } = string.Empty;
+        }
+
+    public class ManagementAuditNotificationDivisionModel
+        {
+        public int DivisionId { get; set; }
+        public string DivisionName { get; set; } = string.Empty;
+        public string ReportingOffice { get; set; } = string.Empty;
+        public bool IsActive { get; set; }
+        public bool WeeklyEmailEnabled { get; set; }
+        public DateTime EffectiveFrom { get; set; }
+        public DateTime? EffectiveTo { get; set; }
+        public string Remarks { get; set; } = string.Empty;
+        public string CreatedBy { get; set; } = string.Empty;
+        public DateTime? CreatedOn { get; set; }
+        public string UpdatedBy { get; set; } = string.Empty;
+        public DateTime? UpdatedOn { get; set; }
+        public List<ManagementAuditNotificationRecipientModel> Recipients { get; set; } = new();
+        }
+
+    public class ManagementAuditNotificationRecipientModel
+        {
+        public int RecipientId { get; set; }
+        public int DivisionId { get; set; }
+        public string RecipientType { get; set; } = string.Empty;
+        public string EmailAddress { get; set; } = string.Empty;
+        public string PersonName { get; set; } = string.Empty;
+        public string Designation { get; set; } = string.Empty;
+        public bool IsActive { get; set; }
+        public DateTime EffectiveFrom { get; set; }
+        public DateTime? EffectiveTo { get; set; }
+        public int DisplayOrder { get; set; }
+        public string CreatedBy { get; set; } = string.Empty;
+        public DateTime? CreatedOn { get; set; }
+        public string UpdatedBy { get; set; } = string.Empty;
+        public DateTime? UpdatedOn { get; set; }
+        }
+
+    public class SaveManagementAuditNotificationDivisionModel
+        {
+        [Range(1, int.MaxValue, ErrorMessage = "Division is required.")]
+        public int DivisionId { get; set; }
+
+        [Required(ErrorMessage = "Division name is required.")]
+        [StringLength(200)]
+        public string DivisionName { get; set; } = string.Empty;
+
+        public bool IsActive { get; set; }
+        public bool WeeklyEmailEnabled { get; set; }
+
+        [Required(ErrorMessage = "Effective From is required.")]
+        public DateTime? EffectiveFrom { get; set; }
+
+        public DateTime? EffectiveTo { get; set; }
+
+        [StringLength(1000)]
+        public string Remarks { get; set; } = string.Empty;
+        }
+
+    public class SaveManagementAuditNotificationRecipientModel
+        {
+        public int? RecipientId { get; set; }
+
+        [Range(1, int.MaxValue, ErrorMessage = "Division is required.")]
+        public int DivisionId { get; set; }
+
+        [Required(ErrorMessage = "Recipient type is required.")]
+        [RegularExpression("^(?i:TO|CC)$", ErrorMessage = "Recipient type must be TO or CC.")]
+        public string RecipientType { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Email address is required.")]
+        [EmailAddress(ErrorMessage = "Enter a valid email address.")]
+        [StringLength(500)]
+        public string EmailAddress { get; set; } = string.Empty;
+
+        [StringLength(200)]
+        public string PersonName { get; set; } = string.Empty;
+
+        [StringLength(200)]
+        public string Designation { get; set; } = string.Empty;
+
+        public bool IsActive { get; set; }
+
+        [Required(ErrorMessage = "Effective From is required.")]
+        public DateTime? EffectiveFrom { get; set; }
+
+        public DateTime? EffectiveTo { get; set; }
+
+        [Range(1, 999, ErrorMessage = "Display order must be between 1 and 999.")]
+        public int DisplayOrder { get; set; } = 1;
         }
     }

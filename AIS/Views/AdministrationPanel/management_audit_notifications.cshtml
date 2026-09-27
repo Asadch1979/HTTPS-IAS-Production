@@ -1,0 +1,266 @@
+@model AIS.Models.Notifications.ManagementAuditNotificationAdminViewModel
+@using System.Text.Json
+@using System.Linq
+@{
+    ViewData["Title"] = "Management Audit Division Notifications";
+    Layout = "_Layout";
+}
+
+<link rel="stylesheet" href="~/css/management-audit-notifications.css" />
+
+<main class="container-fluid py-3 management-notify-page"
+      id="managementNotificationApp"
+      data-save-division-url="@Url.Action("SaveManagementAuditNotificationDivision", "AdministrationPanel")"
+      data-save-recipient-url="@Url.Action("SaveManagementAuditNotificationRecipient", "AdministrationPanel")"
+      data-remove-recipient-url="@Url.Action("RemoveManagementAuditNotificationRecipient", "AdministrationPanel")">
+    <form id="managementNotificationCsrf" class="d-none">@Html.AntiForgeryToken()</form>
+
+    <div class="d-flex align-items-start justify-content-between gap-3 flex-wrap mb-3">
+        <div>
+            <h2 class="mb-1">Management Audit Division Notifications</h2>
+            <p class="text-muted mb-0">Division routing and weekly delivery controls</p>
+        </div>
+        <button type="button" class="btn btn-primary" id="addDivisionConfiguration">
+            <i class="fa-solid fa-plus me-1" aria-hidden="true"></i>Add Division
+        </button>
+    </div>
+
+    <div id="managementNotificationMessage" class="alert d-none" role="alert"></div>
+
+    <div class="management-notify-toolbar mb-3">
+        <div class="row g-2 align-items-end">
+            <div class="col-lg-5 col-md-7">
+                <label class="form-label" for="managementNotificationSearch">Search</label>
+                <div class="input-group">
+                    <span class="input-group-text"><i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i></span>
+                    <input id="managementNotificationSearch" type="search" class="form-control" placeholder="Division, recipient, office or email" />
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-5">
+                <label class="form-label" for="managementNotificationStatus">Status</label>
+                <select id="managementNotificationStatus" class="form-select">
+                    <option value="all">All Divisions</option>
+                    <option value="active">Active</option>
+                    <option value="inactive">Inactive</option>
+                    <option value="weekly">Weekly enabled</option>
+                </select>
+            </div>
+            <div class="col-lg-4 text-lg-end">
+                <span class="text-muted small">@Model.Divisions.Count Division configuration(s)</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="table-responsive management-notify-grid-wrap">
+        <table class="table table-hover align-middle mb-0" id="managementNotificationTable">
+            <thead>
+                <tr>
+                    <th>Division ID</th>
+                    <th>Division Name</th>
+                    <th>Divisional Head / Line Manager</th>
+                    <th>Designation</th>
+                    <th>TO Email</th>
+                    <th>Reporting Line / Office</th>
+                    <th>Group Head</th>
+                    <th>Designation</th>
+                    <th>CC Email</th>
+                    <th>Weekly Email</th>
+                    <th>Status</th>
+                    <th>Effective Period</th>
+                    <th>Last Updated</th>
+                    <th class="text-end">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var division in Model.Divisions)
+                    {
+                    var toRecipients = division.Recipients.Where(item => item.RecipientType == "TO" && item.IsActive).OrderBy(item => item.DisplayOrder).ToList();
+                    var ccRecipients = division.Recipients.Where(item => item.RecipientType == "CC" && item.IsActive).OrderBy(item => item.DisplayOrder).ToList();
+                    var latestRecipient = division.Recipients.OrderByDescending(item => item.UpdatedOn ?? item.CreatedOn).FirstOrDefault();
+                    var divisionUpdatedOn = division.UpdatedOn ?? division.CreatedOn;
+                    var latestUpdatedOn = latestRecipient != null && (latestRecipient.UpdatedOn ?? latestRecipient.CreatedOn) > divisionUpdatedOn
+                        ? latestRecipient.UpdatedOn ?? latestRecipient.CreatedOn
+                        : divisionUpdatedOn;
+                    var latestUpdatedBy = latestRecipient != null && (latestRecipient.UpdatedOn ?? latestRecipient.CreatedOn) > divisionUpdatedOn
+                        ? (!string.IsNullOrWhiteSpace(latestRecipient.UpdatedBy) ? latestRecipient.UpdatedBy : latestRecipient.CreatedBy)
+                        : (!string.IsNullOrWhiteSpace(division.UpdatedBy) ? division.UpdatedBy : division.CreatedBy);
+                    <tr data-search="@($"{division.DivisionId} {division.DivisionName} {division.ReportingOffice} {string.Join(" ", division.Recipients.Select(item => $"{item.PersonName} {item.Designation} {item.EmailAddress}"))}".ToLowerInvariant())"
+                        data-active="@(division.IsActive ? "active" : "inactive")"
+                        data-weekly="@(division.WeeklyEmailEnabled ? "weekly" : "")">
+                        <td class="fw-semibold">@division.DivisionId</td>
+                        <td class="fw-semibold">@division.DivisionName</td>
+                        <td>@(toRecipients.Count == 0 ? "-" : string.Join("; ", toRecipients.Select(item => item.PersonName).Where(value => !string.IsNullOrWhiteSpace(value))))</td>
+                        <td>@(toRecipients.Count == 0 ? "-" : string.Join("; ", toRecipients.Select(item => item.Designation).Where(value => !string.IsNullOrWhiteSpace(value))))</td>
+                        <td class="email-cell">@(toRecipients.Count == 0 ? "-" : string.Join("; ", toRecipients.Select(item => item.EmailAddress)))</td>
+                        <td>@(string.IsNullOrWhiteSpace(division.ReportingOffice) ? "-" : division.ReportingOffice)</td>
+                        <td>@(ccRecipients.Count == 0 ? "-" : string.Join("; ", ccRecipients.Select(item => item.PersonName).Where(value => !string.IsNullOrWhiteSpace(value))))</td>
+                        <td>@(ccRecipients.Count == 0 ? "-" : string.Join("; ", ccRecipients.Select(item => item.Designation).Where(value => !string.IsNullOrWhiteSpace(value))))</td>
+                        <td class="email-cell">@(ccRecipients.Count == 0 ? "-" : string.Join("; ", ccRecipients.Select(item => item.EmailAddress)))</td>
+                        <td><span class="badge @(division.WeeklyEmailEnabled ? "bg-success-subtle text-success-emphasis" : "bg-secondary-subtle text-secondary-emphasis")">@(division.WeeklyEmailEnabled ? "Enabled" : "Disabled")</span></td>
+                        <td><span class="badge @(division.IsActive ? "bg-primary-subtle text-primary-emphasis" : "bg-secondary-subtle text-secondary-emphasis")">@(division.IsActive ? "Active" : "Inactive")</span></td>
+                        <td class="text-nowrap">
+                            <div>@division.EffectiveFrom.ToString("dd-MMM-yyyy")</div>
+                            <div class="text-muted small">to @(division.EffectiveTo?.ToString("dd-MMM-yyyy") ?? "Open ended")</div>
+                        </td>
+                        <td class="text-nowrap">
+                            <div>@(latestUpdatedOn?.ToString("dd-MMM-yyyy HH:mm") ?? "-")</div>
+                            <div class="text-muted small">@(string.IsNullOrWhiteSpace(latestUpdatedBy) ? "-" : latestUpdatedBy)</div>
+                        </td>
+                        <td>
+                            <div class="d-flex justify-content-end gap-1 management-notify-actions">
+                                <button type="button" class="btn btn-sm btn-outline-primary edit-division" data-division-id="@division.DivisionId" title="Edit Division configuration" aria-label="Edit Division configuration">
+                                    <i class="fa-solid fa-pen" aria-hidden="true"></i>
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary manage-recipients" data-division-id="@division.DivisionId" title="Manage recipients" aria-label="Manage recipients">
+                                    <i class="fa-solid fa-users" aria-hidden="true"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    }
+            </tbody>
+        </table>
+        @if (Model.Divisions.Count == 0)
+            {
+            <div class="text-center text-muted py-5">No Division notification configurations have been added.</div>
+            }
+        <div id="managementNotificationEmptyFilter" class="text-center text-muted py-4 d-none">No configurations match the current filters.</div>
+    </div>
+</main>
+
+<div class="modal fade" id="divisionConfigurationModal" tabindex="-1" aria-labelledby="divisionConfigurationModalTitle" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <form id="divisionConfigurationForm" novalidate>
+                <div class="modal-header">
+                    <h5 class="modal-title" id="divisionConfigurationModalTitle">Add Division Notification Configuration</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-danger d-none form-error" role="alert"></div>
+                    <input type="hidden" name="DivisionId" id="divisionIdValue" />
+                    <input type="hidden" name="DivisionName" id="divisionNameValue" />
+                    <div class="row g-3">
+                        <div class="col-md-8">
+                            <label class="form-label" for="divisionOption">Division <span class="text-danger">*</span></label>
+                            <select id="divisionOption" class="form-select" required>
+                                <option value="">Select Division</option>
+                                @foreach (var option in Model.DivisionOptions)
+                                    {
+                                    <option value="@option.DivisionId" data-name="@option.DivisionName">@option.DivisionName (@option.DivisionId)</option>
+                                    }
+                            </select>
+                        </div>
+                        <div class="col-md-4 d-flex align-items-end gap-4 pb-2">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" role="switch" name="IsActive" value="true" id="divisionIsActive" />
+                                <label class="form-check-label" for="divisionIsActive">Active</label>
+                            </div>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" role="switch" name="WeeklyEmailEnabled" value="true" id="divisionWeeklyEnabled" />
+                                <label class="form-check-label" for="divisionWeeklyEnabled">Weekly email</label>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label" for="divisionEffectiveFrom">Effective From <span class="text-danger">*</span></label>
+                            <input id="divisionEffectiveFrom" name="EffectiveFrom" type="date" class="form-control" required />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label" for="divisionEffectiveTo">Effective To</label>
+                            <input id="divisionEffectiveTo" name="EffectiveTo" type="date" class="form-control" />
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label" for="divisionRemarks">Remarks</label>
+                            <textarea id="divisionRemarks" name="Remarks" class="form-control" rows="3" maxlength="1000"></textarea>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary"><i class="fa-solid fa-floppy-disk me-1" aria-hidden="true"></i>Save</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="recipientManagementModal" tabindex="-1" aria-labelledby="recipientManagementModalTitle" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div>
+                    <h5 class="modal-title" id="recipientManagementModalTitle">Manage Recipients</h5>
+                    <div class="text-muted small" id="recipientDivisionName"></div>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row g-4">
+                    <div class="col-lg-7">
+                        <div class="d-flex align-items-center justify-content-between mb-2">
+                            <h6 class="mb-0">Configured recipients</h6>
+                            <button type="button" class="btn btn-sm btn-outline-primary" id="addRecipient"><i class="fa-solid fa-plus me-1" aria-hidden="true"></i>Add Recipient</button>
+                        </div>
+                        <div class="table-responsive recipient-table-wrap">
+                            <table class="table table-sm align-middle mb-0">
+                                <thead><tr><th>Type</th><th>Person / Designation</th><th>Email</th><th>Status</th><th></th></tr></thead>
+                                <tbody id="recipientListBody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="col-lg-5 recipient-editor">
+                        <form id="recipientConfigurationForm" novalidate>
+                            <h6 id="recipientFormTitle">Add Recipient</h6>
+                            <div class="alert alert-danger d-none form-error" role="alert"></div>
+                            <input type="hidden" name="RecipientId" id="recipientId" />
+                            <input type="hidden" name="DivisionId" id="recipientDivisionId" />
+                            <div class="row g-3">
+                                <div class="col-5">
+                                    <label class="form-label" for="recipientType">Type <span class="text-danger">*</span></label>
+                                    <select id="recipientType" name="RecipientType" class="form-select" required><option value="TO">TO</option><option value="CC">CC</option></select>
+                                </div>
+                                <div class="col-7">
+                                    <label class="form-label" for="recipientDisplayOrder">Display Order</label>
+                                    <input id="recipientDisplayOrder" name="DisplayOrder" type="number" class="form-control" min="1" max="999" value="1" required />
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label" for="recipientPersonName">Name</label>
+                                    <input id="recipientPersonName" name="PersonName" class="form-control" maxlength="200" />
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label" for="recipientDesignation">Designation</label>
+                                    <input id="recipientDesignation" name="Designation" class="form-control" maxlength="200" />
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label" for="recipientEmail">Email Address <span class="text-danger">*</span></label>
+                                    <input id="recipientEmail" name="EmailAddress" type="email" class="form-control" maxlength="500" required data-allow-at="true" />
+                                </div>
+                                <div class="col-6">
+                                    <label class="form-label" for="recipientEffectiveFrom">Effective From <span class="text-danger">*</span></label>
+                                    <input id="recipientEffectiveFrom" name="EffectiveFrom" type="date" class="form-control" required />
+                                </div>
+                                <div class="col-6">
+                                    <label class="form-label" for="recipientEffectiveTo">Effective To</label>
+                                    <input id="recipientEffectiveTo" name="EffectiveTo" type="date" class="form-control" />
+                                </div>
+                                <div class="col-12">
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" role="switch" name="IsActive" value="true" id="recipientIsActive" />
+                                        <label class="form-check-label" for="recipientIsActive">Active recipient</label>
+                                    </div>
+                                </div>
+                                <div class="col-12 d-flex justify-content-end gap-2">
+                                    <button type="button" class="btn btn-outline-secondary" id="cancelRecipientEdit">Clear</button>
+                                    <button type="submit" class="btn btn-primary"><i class="fa-solid fa-floppy-disk me-1" aria-hidden="true"></i>Save Recipient</button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script id="managementNotificationData" type="application/json">@Html.Raw(JsonSerializer.Serialize(Model.Divisions))</script>
+<script src="~/js/csp/Views_AdministrationPanel_management_audit_notifications.js?v=1"></script>

@@ -3,6 +3,7 @@ using Oracle.ManagedDataAccess.Client;
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Linq;
 
 namespace AIS.Controllers
     {
@@ -126,6 +127,131 @@ namespace AIS.Controllers
             return details;
             }
 
+        public List<ManagementAuditNotificationDivisionModel> GetManagementAuditNotificationConfigurations()
+            {
+            var divisions = new List<ManagementAuditNotificationDivisionModel>();
+            using var con = DatabaseConnection();
+            using var cmd = con.CreateCommand();
+            cmd.CommandText = "PKG_MGMT_AUDIT_NOTIFY_ADMIN.P_GET_CONFIGURATIONS";
+            cmd.CommandType = CommandType.StoredProcedure;
+            cmd.BindByName = true;
+            GuardAgainstDynamicSql(cmd);
+            cmd.Parameters.Add("IO_DIVISIONS", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+            cmd.Parameters.Add("IO_RECIPIENTS", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+
+            using var reader = cmd.ExecuteReader();
+            while (reader.Read())
+                {
+                divisions.Add(new ManagementAuditNotificationDivisionModel
+                    {
+                    DivisionId = ReadManagementAuditWeeklyInt(reader, "DIVISION_ID"),
+                    DivisionName = ReadManagementAuditWeeklyString(reader, "DIVISION_NAME"),
+                    ReportingOffice = ReadManagementAuditWeeklyString(reader, "REPORTING_OFFICE"),
+                    IsActive = IsManagementAuditNotificationEnabled(reader, "IS_ACTIVE"),
+                    WeeklyEmailEnabled = IsManagementAuditNotificationEnabled(reader, "WEEKLY_EMAIL_ENABLED"),
+                    EffectiveFrom = ReadManagementAuditWeeklyDate(reader, "EFFECTIVE_FROM") ?? DateTime.Today,
+                    EffectiveTo = ReadManagementAuditWeeklyDate(reader, "EFFECTIVE_TO"),
+                    Remarks = ReadManagementAuditWeeklyString(reader, "REMARKS"),
+                    CreatedBy = ReadManagementAuditWeeklyString(reader, "CREATED_BY"),
+                    CreatedOn = ReadManagementAuditWeeklyDate(reader, "CREATED_ON"),
+                    UpdatedBy = ReadManagementAuditWeeklyString(reader, "UPDATED_BY"),
+                    UpdatedOn = ReadManagementAuditWeeklyDate(reader, "UPDATED_ON")
+                    });
+                }
+
+            if (reader.NextResult())
+                {
+                while (reader.Read())
+                    {
+                    var divisionId = ReadManagementAuditWeeklyInt(reader, "DIVISION_ID");
+                    var division = divisions.FirstOrDefault(item => item.DivisionId == divisionId);
+                    if (division == null)
+                        {
+                        continue;
+                        }
+
+                    division.Recipients.Add(new ManagementAuditNotificationRecipientModel
+                        {
+                        RecipientId = ReadManagementAuditWeeklyInt(reader, "RECIPIENT_ID"),
+                        DivisionId = divisionId,
+                        RecipientType = ReadManagementAuditWeeklyString(reader, "RECIPIENT_TYPE"),
+                        EmailAddress = ReadManagementAuditWeeklyString(reader, "EMAIL_ADDRESS"),
+                        PersonName = ReadManagementAuditWeeklyString(reader, "PERSON_NAME"),
+                        Designation = ReadManagementAuditWeeklyString(reader, "DESIGNATION"),
+                        IsActive = IsManagementAuditNotificationEnabled(reader, "IS_ACTIVE"),
+                        EffectiveFrom = ReadManagementAuditWeeklyDate(reader, "EFFECTIVE_FROM") ?? DateTime.Today,
+                        EffectiveTo = ReadManagementAuditWeeklyDate(reader, "EFFECTIVE_TO"),
+                        DisplayOrder = ReadManagementAuditWeeklyInt(reader, "DISPLAY_ORDER"),
+                        CreatedBy = ReadManagementAuditWeeklyString(reader, "CREATED_BY"),
+                        CreatedOn = ReadManagementAuditWeeklyDate(reader, "CREATED_ON"),
+                        UpdatedBy = ReadManagementAuditWeeklyString(reader, "UPDATED_BY"),
+                        UpdatedOn = ReadManagementAuditWeeklyDate(reader, "UPDATED_ON")
+                        });
+                    }
+                }
+
+            return divisions;
+            }
+
+        public void SaveManagementAuditNotificationDivision(
+            SaveManagementAuditNotificationDivisionModel model, string updatedBy)
+            {
+            using var con = DatabaseConnection();
+            using var cmd = con.CreateCommand();
+            cmd.CommandText = "PKG_MGMT_AUDIT_NOTIFY_ADMIN.P_SAVE_DIVISION";
+            cmd.CommandType = CommandType.StoredProcedure;
+            cmd.BindByName = true;
+            GuardAgainstDynamicSql(cmd);
+            cmd.Parameters.Add("P_DIVISION_ID", OracleDbType.Int32).Value = model.DivisionId;
+            cmd.Parameters.Add("P_DIVISION_NAME", OracleDbType.Varchar2, 200).Value = model.DivisionName.Trim();
+            cmd.Parameters.Add("P_IS_ACTIVE", OracleDbType.Char, 1).Value = model.IsActive ? "Y" : "N";
+            cmd.Parameters.Add("P_WEEKLY_EMAIL_ENABLED", OracleDbType.Char, 1).Value = model.WeeklyEmailEnabled ? "Y" : "N";
+            cmd.Parameters.Add("P_EFFECTIVE_FROM", OracleDbType.Date).Value = model.EffectiveFrom.Value;
+            cmd.Parameters.Add("P_EFFECTIVE_TO", OracleDbType.Date).Value = model.EffectiveTo.HasValue ? model.EffectiveTo.Value : DBNull.Value;
+            cmd.Parameters.Add("P_REMARKS", OracleDbType.Varchar2, 1000).Value = string.IsNullOrWhiteSpace(model.Remarks) ? DBNull.Value : model.Remarks.Trim();
+            cmd.Parameters.Add("P_UPDATED_BY", OracleDbType.Varchar2, 100).Value = updatedBy;
+            cmd.ExecuteNonQuery();
+            }
+
+        public int SaveManagementAuditNotificationRecipient(
+            SaveManagementAuditNotificationRecipientModel model, string updatedBy)
+            {
+            using var con = DatabaseConnection();
+            using var cmd = con.CreateCommand();
+            cmd.CommandText = "PKG_MGMT_AUDIT_NOTIFY_ADMIN.P_SAVE_RECIPIENT";
+            cmd.CommandType = CommandType.StoredProcedure;
+            cmd.BindByName = true;
+            GuardAgainstDynamicSql(cmd);
+            cmd.Parameters.Add("P_RECIPIENT_ID", OracleDbType.Int32).Value = model.RecipientId.HasValue ? model.RecipientId.Value : DBNull.Value;
+            cmd.Parameters.Add("P_DIVISION_ID", OracleDbType.Int32).Value = model.DivisionId;
+            cmd.Parameters.Add("P_RECIPIENT_TYPE", OracleDbType.Varchar2, 10).Value = model.RecipientType.Trim().ToUpperInvariant();
+            cmd.Parameters.Add("P_EMAIL_ADDRESS", OracleDbType.Varchar2, 500).Value = model.EmailAddress.Trim();
+            cmd.Parameters.Add("P_PERSON_NAME", OracleDbType.Varchar2, 200).Value = string.IsNullOrWhiteSpace(model.PersonName) ? DBNull.Value : model.PersonName.Trim();
+            cmd.Parameters.Add("P_DESIGNATION", OracleDbType.Varchar2, 200).Value = string.IsNullOrWhiteSpace(model.Designation) ? DBNull.Value : model.Designation.Trim();
+            cmd.Parameters.Add("P_IS_ACTIVE", OracleDbType.Char, 1).Value = model.IsActive ? "Y" : "N";
+            cmd.Parameters.Add("P_EFFECTIVE_FROM", OracleDbType.Date).Value = model.EffectiveFrom.Value;
+            cmd.Parameters.Add("P_EFFECTIVE_TO", OracleDbType.Date).Value = model.EffectiveTo.HasValue ? model.EffectiveTo.Value : DBNull.Value;
+            cmd.Parameters.Add("P_DISPLAY_ORDER", OracleDbType.Int32).Value = model.DisplayOrder;
+            cmd.Parameters.Add("P_UPDATED_BY", OracleDbType.Varchar2, 100).Value = updatedBy;
+            var savedId = cmd.Parameters.Add("P_SAVED_RECIPIENT_ID", OracleDbType.Int32);
+            savedId.Direction = ParameterDirection.Output;
+            cmd.ExecuteNonQuery();
+            return Convert.ToInt32(savedId.Value.ToString());
+            }
+
+        public void RemoveManagementAuditNotificationRecipient(int recipientId, string updatedBy)
+            {
+            using var con = DatabaseConnection();
+            using var cmd = con.CreateCommand();
+            cmd.CommandText = "PKG_MGMT_AUDIT_NOTIFY_ADMIN.P_REMOVE_RECIPIENT";
+            cmd.CommandType = CommandType.StoredProcedure;
+            cmd.BindByName = true;
+            GuardAgainstDynamicSql(cmd);
+            cmd.Parameters.Add("P_RECIPIENT_ID", OracleDbType.Int32).Value = recipientId;
+            cmd.Parameters.Add("P_UPDATED_BY", OracleDbType.Varchar2, 100).Value = updatedBy;
+            cmd.ExecuteNonQuery();
+            }
+
         private static int ReadManagementAuditWeeklyInt(OracleDataReader reader, string columnName)
             {
             return reader[columnName] == DBNull.Value ? 0 : Convert.ToInt32(reader[columnName]);
@@ -144,6 +270,11 @@ namespace AIS.Controllers
         private static string ReadManagementAuditWeeklyString(OracleDataReader reader, string columnName)
             {
             return reader[columnName] == DBNull.Value ? string.Empty : reader[columnName].ToString();
+            }
+
+        private static bool IsManagementAuditNotificationEnabled(OracleDataReader reader, string columnName)
+            {
+            return string.Equals(ReadManagementAuditWeeklyString(reader, columnName), "Y", StringComparison.OrdinalIgnoreCase);
             }
         }
     }

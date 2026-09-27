@@ -19,7 +19,7 @@ using AIS.Services;
 namespace AIS.Controllers
     {
 
-    public class AdministrationPanelController : Controller
+    public partial class AdministrationPanelController : Controller
         {
         private readonly ILogger<AdministrationPanelController> _logger;
         private readonly TopMenus tm;

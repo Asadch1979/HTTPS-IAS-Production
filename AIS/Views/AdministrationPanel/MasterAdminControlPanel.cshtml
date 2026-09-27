@@ -17,6 +17,28 @@
     </div>
 
     <div class="accordion" id="masterAdminControlPanels">
+        @if (ViewData["IsAdvancedUser"] as bool? == true)
+        {
+        <div class="accordion-item">
+            <h2 class="accordion-header" id="managementAuditNotificationHeading">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#managementAuditNotificationPanel" aria-expanded="false" aria-controls="managementAuditNotificationPanel">
+                    Management Audit Notifications
+                </button>
+            </h2>
+            <div id="managementAuditNotificationPanel" class="accordion-collapse collapse" aria-labelledby="managementAuditNotificationHeading" data-bs-parent="#masterAdminControlPanels">
+                <div class="accordion-body d-flex align-items-center justify-content-between gap-3 flex-wrap">
+                    <div>
+                        <div class="fw-semibold">Division notification routing</div>
+                        <div class="text-muted small">Maintain weekly TO and CC recipients, effective dates and delivery status.</div>
+                    </div>
+                    <a class="btn btn-primary" href="@Url.Action("management_audit_notifications", "AdministrationPanel")">
+                        <i class="fa-solid fa-arrow-up-right-from-square me-1" aria-hidden="true"></i>Open Management
+                    </a>
+                </div>
+            </div>
+        </div>
+        }
+
         <div class="accordion-item">
             <h2 class="accordion-header" id="pageMasterHeading">
                 <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#pageMasterPanel" aria-expanded="true" aria-controls="pageMasterPanel">

@@ -1,0 +1,90 @@
+.management-notify-page {
+    color: #263544;
+}
+
+.management-notify-toolbar {
+    padding: 14px 16px;
+    border: 1px solid #d8e0e7;
+    border-radius: 6px;
+    background: #f8fafb;
+}
+
+.management-notify-toolbar .form-label,
+.management-notify-page .form-label {
+    margin-bottom: 4px;
+    color: #465768;
+    font-size: .82rem;
+    font-weight: 600;
+}
+
+.management-notify-grid-wrap {
+    border: 1px solid #d8e0e7;
+    border-radius: 6px;
+    background: #fff;
+}
+
+#managementNotificationTable {
+    min-width: 1820px;
+    font-size: .82rem;
+}
+
+#managementNotificationTable thead th {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    padding: 11px 10px;
+    border-bottom: 2px solid #cbd5df;
+    background: #eef2f5;
+    color: #344554;
+    font-size: .75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    vertical-align: middle;
+}
+
+#managementNotificationTable tbody td {
+    max-width: 220px;
+    padding: 12px 10px;
+    border-color: #e5eaef;
+    vertical-align: top;
+}
+
+#managementNotificationTable .email-cell {
+    overflow-wrap: anywhere;
+}
+
+.management-notify-actions .btn {
+    width: 32px;
+    height: 32px;
+    padding: 0;
+}
+
+.management-notify-page .badge {
+    border: 1px solid currentColor;
+    border-radius: 4px;
+    font-weight: 600;
+}
+
+.recipient-editor {
+    border-left: 1px solid #dfe5eb;
+}
+
+.recipient-table-wrap {
+    max-height: 430px;
+    border: 1px solid #dfe5eb;
+    border-radius: 6px;
+}
+
+.recipient-table-wrap thead th {
+    position: sticky;
+    top: 0;
+    background: #f3f6f8;
+}
+
+@media (max-width: 991.98px) {
+    .recipient-editor {
+        padding-top: 20px;
+        border-top: 1px solid #dfe5eb;
+        border-left: 0;
+    }
+}
