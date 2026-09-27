@@ -120,30 +120,6 @@ namespace AIS.Services
             IReadOnlyList<ManagementAuditWeeklyDivisionSummaryModel> divisions,
             Func<string, bool> claim,
             Func<int, IReadOnlyList<ManagementAuditWeeklyDivisionDetailModel>> getDivisionData,
-            Func<ManagementAuditWeeklyDivisionSummaryModel, IReadOnlyList<ManagementAuditDecision>, Task<EmailSendResult>> send,
-            Action<string, string, string> complete,
-            Action<Exception, string> logFailure,
-            CancellationToken cancellationToken)
-        {
-            await ProcessDivisionQueueAsync(
-                fromDate,
-                toDate,
-                divisions,
-                claim,
-                getDivisionData,
-                _ => Array.Empty<ManagementAuditWeeklyNoComplianceModel>(),
-                send,
-                complete,
-                logFailure,
-                cancellationToken);
-        }
-
-        public static async Task ProcessDivisionQueueAsync(
-            DateTime fromDate,
-            DateTime toDate,
-            IReadOnlyList<ManagementAuditWeeklyDivisionSummaryModel> divisions,
-            Func<string, bool> claim,
-            Func<int, IReadOnlyList<ManagementAuditWeeklyDivisionDetailModel>> getDivisionData,
             Func<int, IReadOnlyList<ManagementAuditWeeklyNoComplianceModel>> getNoComplianceData,
             Func<ManagementAuditWeeklyDivisionSummaryModel, IReadOnlyList<ManagementAuditDecision>, Task<EmailSendResult>> send,
             Action<string, string, string> complete,
@@ -211,20 +187,6 @@ namespace AIS.Services
                     logFailure(e, key);
                 }
             }
-        }
-
-        public static void ValidateDivisionData(
-            ManagementAuditWeeklyDivisionSummaryModel summary,
-            IReadOnlyList<ManagementAuditWeeklyDivisionDetailModel> details,
-            DateTime fromDate,
-            DateTime toDate)
-        {
-            ValidateDivisionData(
-                summary,
-                details,
-                Array.Empty<ManagementAuditWeeklyNoComplianceModel>(),
-                fromDate,
-                toDate);
         }
 
         public static void ValidateDivisionData(

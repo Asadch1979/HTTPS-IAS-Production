@@ -98,8 +98,9 @@ Check(weeklyAccess.Contains("PKG_MGMT_AUDIT_WEEKLY.P_GET_MGMT_WEEKLY_DIVISIONS")
       Regex.Matches(weeklyAccess, "BindByName = true").Count == 3 &&
       Regex.Matches(weeklyAccess, "GuardAgainstDynamicSql\\(cmd\\)").Count == 3 &&
       Regex.Matches(weeklyAccess, "OracleDbType.RefCursor").Count == 3 &&
-      !weeklyAccess.Contains("V_IAS_MGMT_WEEKLY_DATA", StringComparison.OrdinalIgnoreCase),
-    "Management Audit weekly DB access uses all three approved stored procedures");
+      !weeklyAccess.Contains("V_IAS_MGMT_WEEKLY_DATA", StringComparison.OrdinalIgnoreCase) &&
+      !weeklyAccess.Contains("V_IAS_MGMT_AUDIT_NOTIFY_MAP", StringComparison.OrdinalIgnoreCase),
+    "Management Audit weekly DB access uses only the approved stored procedures");
 Check(weeklyAccess.Contains("NoComplianceCount = Convert.ToInt32(reader[\"NO_COMPLIANCE_COUNT\"])") &&
       typeof(ManagementAuditWeeklyDivisionSummaryModel).GetProperty("NoComplianceCount")?.PropertyType == typeof(int),
     "Management Audit weekly summary maps NO_COMPLIANCE_COUNT");
@@ -116,12 +117,15 @@ var weeklyService = File.ReadAllText(Path.Combine(FindRepoRoot(), "AIS", "Servic
 var weeklyEmail = File.ReadAllText(Path.Combine(FindRepoRoot(), "AIS", "EmailNotification.cs"));
 var summaryCall = weeklyService.IndexOf("GetManagementAuditWeeklyDivisions(fromDate, toDate)", StringComparison.Ordinal);
 var detailCall = weeklyService.IndexOf("GetManagementAuditWeeklyDivisionData(divisionId, fromDate, toDate)", StringComparison.Ordinal);
+var noComplianceCall = weeklyService.IndexOf("GetManagementAuditWeeklyNoCompliance(divisionId, fromDate, toDate)", StringComparison.Ordinal);
 Check(!weeklyService.Contains("V_IAS_MGMT_WEEKLY_DATA", StringComparison.OrdinalIgnoreCase) &&
-      !weeklyService.Contains("OracleDbType") && !weeklyService.Contains("SELECT DIVISION_ID", StringComparison.OrdinalIgnoreCase),
-    "Management Audit weekly service contains no direct weekly Oracle SQL");
-Check(summaryCall >= 0 && detailCall > summaryCall && weeklyService.Contains("scopeFactory.CreateScope()") &&
+      !weeklyService.Contains("V_IAS_MGMT_AUDIT_NOTIFY_MAP", StringComparison.OrdinalIgnoreCase) &&
+      !weeklyService.Contains("OracleDbType") && !weeklyService.Contains("SELECT DIVISION_ID", StringComparison.OrdinalIgnoreCase) &&
+      !weeklyService.Contains("string.IsNullOrWhiteSpace(division.ToEmail)", StringComparison.Ordinal),
+    "Management Audit weekly service contains no direct weekly Oracle SQL or recipient eligibility filtering");
+Check(summaryCall >= 0 && detailCall > summaryCall && noComplianceCall > summaryCall && weeklyService.Contains("scopeFactory.CreateScope()") &&
       weeklyService.Contains("GetRequiredService<DBConnection>()"),
-    "Management Audit weekly service resolves scoped DBConnection and loads summaries before details");
+    "Management Audit weekly service resolves scoped DBConnection and loads summaries before all per-Division details");
 Check(weeklyService.Contains("store.ClaimWeekly") && weeklyService.Contains("WEEKLY:{fromDate:yyyyMMdd}:{division.DivisionId}"),
     "Management Audit weekly service retains per-Division execution claims");
 Check(weeklyEmail.Contains("division.ToEmail") && weeklyEmail.Contains("division.CcEmail") &&
@@ -202,6 +206,7 @@ ManagementAuditWeeklyDivisionDetailModel WeeklyDetail(int divisionId, int histor
 
 var queueStart = monday.AddDays(-7);
 var queueEnd = queueStart.AddDays(7);
+IReadOnlyList<ManagementAuditWeeklyNoComplianceModel> NoComplianceNone(int _) => Array.Empty<ManagementAuditWeeklyNoComplianceModel>();
 var queueSummaries = new[] { WeeklySummary(1), WeeklySummary(2) };
 var queueEvents = new List<string>();
 var activeSends = 0;
@@ -210,6 +215,7 @@ await ManagementAuditWeeklyService.ProcessDivisionQueueAsync(
     queueStart, queueEnd, queueSummaries,
     key => { queueEvents.Add("claim:" + key); return true; },
     divisionId => { queueEvents.Add("detail:" + divisionId); return new[] { WeeklyDetail(divisionId, divisionId, queueStart.AddDays(1)) }; },
+    divisionId => { queueEvents.Add("no-compliance:" + divisionId); return Array.Empty<ManagementAuditWeeklyNoComplianceModel>(); },
     async (division, _) =>
     {
         queueEvents.Add("send-start:" + division.DivisionId);
@@ -226,9 +232,11 @@ await ManagementAuditWeeklyService.ProcessDivisionQueueAsync(
 Check(maximumActiveSends == 1 &&
       queueEvents.Count(item => item.StartsWith("send-start:", StringComparison.Ordinal)) == 2 &&
       queueEvents.IndexOf("send-end:1") < queueEvents.IndexOf("send-start:2") &&
+      queueEvents.Contains("no-compliance:1") &&
+      queueEvents.Contains("no-compliance:2") &&
       queueEvents.Contains($"complete:WEEKLY:{queueStart:yyyyMMdd}:1:COMPLETE") &&
       queueEvents.Contains($"complete:WEEKLY:{queueStart:yyyyMMdd}:2:COMPLETE"),
-    "Multiple Management Audit Divisions are processed independently and sequentially");
+    "Multiple Management Audit Divisions are processed independently and sequentially with no-compliance detail loading");
 
 var failureCompletions = new List<string>();
 var sentAfterFailure = new List<int>();
@@ -238,6 +246,7 @@ await ManagementAuditWeeklyService.ProcessDivisionQueueAsync(
     divisionId => divisionId == 1
         ? new[] { WeeklyDetail(1, 10, queueStart.AddDays(1)), WeeklyDetail(1, 10, queueStart.AddDays(2)) }
         : new[] { WeeklyDetail(2, 20, queueStart.AddDays(1)) },
+    NoComplianceNone,
     (division, _) => { sentAfterFailure.Add(division.DivisionId); return Task.FromResult(new EmailSendResult { IsSuccess = true }); },
     (key, status, _) => failureCompletions.Add($"{key}:{status}"),
     (_, _) => { },
@@ -251,21 +260,21 @@ var validSummary = WeeklySummary(1);
 var validDetail = WeeklyDetail(1, 1, queueStart.AddDays(1));
 Check(Rejects(() => ManagementAuditWeeklyService.ValidateDivisionData(
         new ManagementAuditWeeklyDivisionSummaryModel { DivisionId = 1, TotalCount = 2, SettledCount = 2 },
-        new[] { validDetail, WeeklyDetail(1, 1, queueStart.AddDays(2)) }, queueStart, queueEnd)),
+        new[] { validDetail, WeeklyDetail(1, 1, queueStart.AddDays(2)) }, Array.Empty<ManagementAuditWeeklyNoComplianceModel>(), queueStart, queueEnd)),
     "Duplicate Management Audit DecisionHistoryId is rejected");
 Check(Rejects(() => ManagementAuditWeeklyService.ValidateDivisionData(
         new ManagementAuditWeeklyDivisionSummaryModel { DivisionId = 1, TotalCount = 2, SettledCount = 2 },
-        new[] { validDetail }, queueStart, queueEnd)) &&
+        new[] { validDetail }, Array.Empty<ManagementAuditWeeklyNoComplianceModel>(), queueStart, queueEnd)) &&
       Rejects(() => ManagementAuditWeeklyService.ValidateDivisionData(
         new ManagementAuditWeeklyDivisionSummaryModel { DivisionId = 1, TotalCount = 1, RejectedCount = 1 },
-        new[] { validDetail }, queueStart, queueEnd)),
+        new[] { validDetail }, Array.Empty<ManagementAuditWeeklyNoComplianceModel>(), queueStart, queueEnd)),
     "Management Audit summary and detail counts must match");
 Check(Rejects(() => ManagementAuditWeeklyService.ValidateDivisionData(validSummary,
-        new[] { WeeklyDetail(2, 1, queueStart.AddDays(1)) }, queueStart, queueEnd)) &&
+        new[] { WeeklyDetail(2, 1, queueStart.AddDays(1)) }, Array.Empty<ManagementAuditWeeklyNoComplianceModel>(), queueStart, queueEnd)) &&
       Rejects(() => ManagementAuditWeeklyService.ValidateDivisionData(validSummary,
-        new[] { WeeklyDetail(1, 1, queueStart.AddDays(1), 16, "REJECTED") }, queueStart, queueEnd)) &&
+        new[] { WeeklyDetail(1, 1, queueStart.AddDays(1), 16, "REJECTED") }, Array.Empty<ManagementAuditWeeklyNoComplianceModel>(), queueStart, queueEnd)) &&
       Rejects(() => ManagementAuditWeeklyService.ValidateDivisionData(validSummary,
-        new[] { WeeklyDetail(1, 1, queueEnd) }, queueStart, queueEnd)),
+        new[] { WeeklyDetail(1, 1, queueEnd) }, Array.Empty<ManagementAuditWeeklyNoComplianceModel>(), queueStart, queueEnd)),
     "Invalid Management Audit Division, status, and date data is rejected");
 
 var claimKeys = new List<string>();
@@ -274,6 +283,7 @@ await ManagementAuditWeeklyService.ProcessDivisionQueueAsync(
     queueStart, queueEnd, queueSummaries,
     key => { claimKeys.Add(key); return key.EndsWith(":2", StringComparison.Ordinal); },
     divisionId => { claimedDetails.Add(divisionId); return new[] { WeeklyDetail(divisionId, divisionId, queueStart.AddDays(1)) }; },
+    NoComplianceNone,
     (_, _) => Task.FromResult(new EmailSendResult { IsSuccess = true }),
     (_, _, _) => { },
     (_, _) => { },
@@ -302,6 +312,7 @@ await ManagementAuditWeeklyService.ProcessDivisionQueueAsync(
     queueStart, queueEnd, new[] { WeeklySummary(1), WeeklySummary(2), WeeklySummary(3), WeeklySummary(4) },
     RetryClaim,
     divisionId => { retriedDivisions.Add(divisionId); return new[] { WeeklyDetail(divisionId, divisionId, queueStart.AddDays(1)) }; },
+    NoComplianceNone,
     (_, _) => Task.FromResult(new EmailSendResult { IsSuccess = true }),
     (key, status, _) => retryStates[int.Parse(key.Split(':').Last())] = (status, 1, firstRetryCheck),
     (_, _) => { },

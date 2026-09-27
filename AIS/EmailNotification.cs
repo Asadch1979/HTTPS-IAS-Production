@@ -142,7 +142,7 @@ namespace AIS
                 }
             if (noCompliance.Count > 0)
                 {
-                SectionHeading("Paras Where No Compliance Was Submitted During the Current Month", noCompliance.Count,
+                SectionHeading("Paras Where No Compliance Was Submitted During the Reporting Period", noCompliance.Count,
                     "Attention is also invited to the following outstanding audit paras against which no compliance was submitted during the reporting period:");
                 body.Append(Table(noCompliance,
                     new[] { ("Sr.", "center", "5%"), ("Department", "left", "17%"), ("Audit Year", "center", "9%"), ("Para No.", "center", "8%"), ("Title of Para", "left", "30%"), ("Risk", "center", "9%"), ("Last Compliance Submitted On", "center", "17%") },
