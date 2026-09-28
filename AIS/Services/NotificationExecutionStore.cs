@@ -56,9 +56,9 @@ namespace AIS.Services
             transaction.Commit();
         }
 
-        public bool ClaimWeekly(string key)
+        public bool ClaimPeriod(string key, string fingerprint)
         {
-            if (Claim(key, "WEEKLY")) return true;
+            if (Claim(key, fingerprint)) return true;
             using var connection = Open();
             using var transaction = connection.BeginTransaction();
             using var command = connection.CreateCommand();

@@ -1,14 +1,14 @@
 using AIS.Controllers;
 using AIS.Models.Notifications;
+using AIS.Models.Scheduler;
+using AIS.Services.Scheduler;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
 
 namespace AIS.Services
 {
@@ -17,104 +17,70 @@ namespace AIS.Services
         string Reason, bool Settled, string Risk = "", bool NoCompliance = false,
         DateTime? LastComplianceSubmitted = null);
 
-    public sealed class ManagementAuditWeeklyService : BackgroundService
+    public sealed class ManagementAuditWeeklyService : IIasSchedulerJobHandler
     {
+        public const string HandlerName = "MGMT_AUDIT_COMPLIANCE_NOTIFICATION";
+
         private readonly IConfiguration configuration;
         private readonly NotificationExecutionStore store;
-        private readonly IServiceScopeFactory scopeFactory;
+        private readonly DBConnection db;
         private readonly ILogger<ManagementAuditWeeklyService> logger;
-        private DateTime? lastObservedReportingStart;
-        private DateTimeOffset? lastPeriodCheckUtc;
-        public static readonly TimeSpan FailedRetryCheckInterval = TimeSpan.FromMinutes(15);
-        public ManagementAuditWeeklyService(IConfiguration configuration, NotificationExecutionStore store,
-            IServiceScopeFactory scopeFactory,
+
+        public ManagementAuditWeeklyService(
+            IConfiguration configuration,
+            NotificationExecutionStore store,
+            DBConnection db,
             ILogger<ManagementAuditWeeklyService> logger)
         {
             this.configuration = configuration;
             this.store = store;
-            this.scopeFactory = scopeFactory;
+            this.db = db;
             this.logger = logger;
         }
 
-        public static DateTime? ReportingStart(DateTime localNow, DayOfWeek day, TimeSpan time)
+        public string ApplicationHandler => HandlerName;
+
+        public async Task<IasSchedulerJobResult> HandleAsync(IasSchedulerClaimedJob job, CancellationToken cancellationToken)
         {
-            var monday = localNow.Date.AddDays(-((7 + (int)localNow.DayOfWeek - (int)DayOfWeek.Monday) % 7));
-            var due = monday.AddDays((7 + (int)day - (int)DayOfWeek.Monday) % 7).Add(time);
-            return localNow >= due ? monday.AddDays(-7) : null;
+            if (job == null) throw new ArgumentNullException(nameof(job));
+            if (!job.PeriodFrom.HasValue || !job.PeriodTo.HasValue)
+                throw new InvalidOperationException("Management Audit Compliance Review requires PERIOD_FROM and PERIOD_TO from PKG_IAS_SCHEDULER.");
+
+            var result = await RunPeriodAsync(job.PeriodFrom.Value, job.PeriodTo.Value, cancellationToken);
+            if (result.FailedDivisions > 0)
+                throw new InvalidOperationException($"Management Audit Compliance Review failed for {result.FailedDivisions} Division(s).");
+
+            return new IasSchedulerJobResult(
+                result.RecordsProcessed,
+                $"Management Audit Compliance Review completed. Divisions={result.CompletedDivisions}; Records={result.RecordsProcessed}.");
         }
 
-        public static bool ShouldCheckPeriod(DateTime? reportingStart, DateTime? lastReportingStart,
-            DateTimeOffset? lastCheckUtc, DateTimeOffset nowUtc)
+        public async Task<ManagementAuditProcessingResult> RunPeriodAsync(
+            DateTime fromDate,
+            DateTime toDate,
+            CancellationToken cancellationToken)
         {
-            if (!reportingStart.HasValue)
-                return false;
-            if (!lastReportingStart.HasValue || reportingStart.Value != lastReportingStart.Value)
-                return true;
-            return !lastCheckUtc.HasValue || nowUtc - lastCheckUtc.Value >= FailedRetryCheckInterval;
-        }
+            fromDate = fromDate.Date;
+            toDate = toDate.Date;
+            if (toDate <= fromDate)
+                throw new InvalidOperationException("Management Audit Compliance Review PERIOD_TO must be later than PERIOD_FROM.");
 
-        protected override async Task ExecuteAsync(CancellationToken stoppingToken)
-        {
-#if DEBUG
-            var debugZone = TimeZoneInfo.FindSystemTimeZoneById(
-                configuration["ManagementAuditWeekly:TimeZone"] ?? "Asia/Karachi");
-            var debugLocalNow = TimeZoneInfo.ConvertTime(DateTimeOffset.UtcNow, debugZone).DateTime;
-            var debugMonday = debugLocalNow.Date.AddDays(
-                -((7 + (int)debugLocalNow.DayOfWeek - (int)DayOfWeek.Monday) % 7));
-
-            await RunPeriodAsync(debugMonday, stoppingToken);
-            return;
-#endif
-
-            while (!stoppingToken.IsCancellationRequested)
-            {
-                try
-                {
-                    if (configuration.GetValue("ManagementAuditWeekly:Enabled", false))
-                    {
-                        var zone = TimeZoneInfo.FindSystemTimeZoneById(configuration["ManagementAuditWeekly:TimeZone"] ?? "Asia/Karachi");
-                        var day = Enum.Parse<DayOfWeek>(configuration["ManagementAuditWeekly:Day"] ?? "Monday", true);
-                        var time = TimeSpan.Parse(configuration["ManagementAuditWeekly:Time"] ?? "07:00", System.Globalization.CultureInfo.InvariantCulture);
-                        if (time < TimeSpan.Zero || time >= TimeSpan.FromDays(1)) throw new InvalidOperationException("Weekly time must be within one day.");
-                        var start = ReportingStart(TimeZoneInfo.ConvertTime(DateTimeOffset.UtcNow, zone).DateTime, day, time);
-                        var nowUtc = DateTimeOffset.UtcNow;
-                        if (ShouldCheckPeriod(start, lastObservedReportingStart, lastPeriodCheckUtc, nowUtc))
-                        {
-                            lastObservedReportingStart = start.Value;
-                            lastPeriodCheckUtc = nowUtc;
-                            await RunPeriodAsync(start.Value, stoppingToken);
-                        }
-                    }
-                }
-                catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested) { break; }
-                catch (Exception e) { logger.LogError(e, "Management Audit weekly processing failed."); }
-                try { await Task.Delay(TimeSpan.FromMinutes(1), stoppingToken); }
-                catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested) { break; }
-            }
-        }
-
-        public async Task RunPeriodAsync(DateTime reportingStart, CancellationToken cancellationToken)
-        {
-            var fromDate = reportingStart.Date;
-            var toDate = reportingStart.Date.AddDays(7);
-            using var scope = scopeFactory.CreateScope();
-            var db = scope.ServiceProvider.GetRequiredService<DBConnection>();
             var divisions = db.GetManagementAuditWeeklyDivisions(fromDate, toDate);
 
-            await ProcessDivisionQueueAsync(
+            return await ProcessDivisionQueueAsync(
                 fromDate,
                 toDate,
                 divisions,
-                store.ClaimWeekly,
+                key => store.ClaimPeriod(key, "MGMT_AUDIT_COMPLIANCE_NOTIFICATION"),
                 divisionId => db.GetManagementAuditWeeklyDivisionData(divisionId, fromDate, toDate),
                 divisionId => db.GetManagementAuditWeeklyNoCompliance(divisionId, fromDate, toDate),
-                (division, records) => EmailNotification.SendManagementAuditWeeklyAsync(configuration, fromDate, division, records),
+                (division, records) => EmailNotification.SendManagementAuditComplianceReviewAsync(configuration, fromDate, toDate, division, records),
                 store.Complete,
-                (exception, key) => logger.LogError(exception, "Management Audit weekly Division processing failed for {Key}.", key),
+                (exception, key) => logger.LogError(exception, "Management Audit Compliance Review Division processing failed for {Key}.", key),
                 cancellationToken);
         }
 
-        public static async Task ProcessDivisionQueueAsync(
+        public static async Task<ManagementAuditProcessingResult> ProcessDivisionQueueAsync(
             DateTime fromDate,
             DateTime toDate,
             IReadOnlyList<ManagementAuditWeeklyDivisionSummaryModel> divisions,
@@ -126,10 +92,14 @@ namespace AIS.Services
             Action<Exception, string> logFailure,
             CancellationToken cancellationToken)
         {
+            var completedDivisions = 0;
+            var failedDivisions = 0;
+            var recordsProcessed = 0;
+
             foreach (var division in divisions ?? Array.Empty<ManagementAuditWeeklyDivisionSummaryModel>())
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                var key = $"WEEKLY:{fromDate:yyyyMMdd}:{division.DivisionId}";
+                var key = BuildDivisionExecutionKey(fromDate, toDate, division.DivisionId);
 
                 bool claimed;
                 try
@@ -138,6 +108,7 @@ namespace AIS.Services
                 }
                 catch (Exception e)
                 {
+                    failedDivisions++;
                     logFailure(e, key);
                     continue;
                 }
@@ -159,10 +130,16 @@ namespace AIS.Services
                     deliveryStarted = true;
                     var result = await send(division, records);
                     var status = result.IsSuccess ? "COMPLETE" : "FAILED";
-                    var response = result.ErrorMessage ?? "SMTP accepted the weekly notification.";
+                    var response = result.ErrorMessage ?? "SMTP accepted the Management Audit Compliance Review notification.";
                     complete(key, status, response);
-                    if (!result.IsSuccess)
+                    if (result.IsSuccess)
                     {
+                        completedDivisions++;
+                        recordsProcessed += records.Count;
+                    }
+                    else
+                    {
+                        failedDivisions++;
                         logFailure(new InvalidOperationException(response), key);
                     }
                 }
@@ -172,6 +149,7 @@ namespace AIS.Services
                 }
                 catch (Exception e)
                 {
+                    failedDivisions++;
                     if (!deliveryStarted)
                     {
                         try
@@ -187,6 +165,13 @@ namespace AIS.Services
                     logFailure(e, key);
                 }
             }
+
+            return new ManagementAuditProcessingResult(completedDivisions, failedDivisions, recordsProcessed);
+        }
+
+        public static string BuildDivisionExecutionKey(DateTime fromDate, DateTime toDate, int divisionId)
+        {
+            return $"MGMT_AUDIT:{fromDate:yyyyMMdd}:{toDate:yyyyMMdd}:{divisionId}";
         }
 
         public static void ValidateDivisionData(
@@ -207,7 +192,7 @@ namespace AIS.Services
             if (decisionDetails.Any(item => item.DivisionId != summary.DivisionId))
                 throw new InvalidOperationException("The Division dataset contains records for another Division.");
             if (decisionDetails.Any(item => item.DecisionOn < fromDate || item.DecisionOn >= toDate))
-                throw new InvalidOperationException("The Division dataset contains a decision outside the reporting period.");
+                throw new InvalidOperationException("The Division dataset contains a decision outside the Compliance Review Period.");
             if (decisionDetails.Any(item => !IsValidDecisionStatus(item)))
                 throw new InvalidOperationException("The Division dataset contains an invalid decision status.");
             if (noComplianceDetails.Any(item => item.DivisionId != summary.DivisionId))
@@ -268,4 +253,6 @@ namespace AIS.Services
                 item.LastComplianceSubmittedOn)).ToList();
         }
     }
+
+    public sealed record ManagementAuditProcessingResult(int CompletedDivisions, int FailedDivisions, int RecordsProcessed);
 }

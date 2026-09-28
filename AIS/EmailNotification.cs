@@ -16,25 +16,29 @@ namespace AIS
     public static class EmailNotification
         {
         private const string NotificationHeader = "Internal Audit System (IAS)";
-        public static Task<EmailSendResult> SendManagementAuditWeeklyAsync(IConfiguration configuration,
-            DateTime start, ManagementAuditWeeklyDivisionSummaryModel division,
+        public static Task<EmailSendResult> SendManagementAuditComplianceReviewAsync(IConfiguration configuration,
+            DateTime start, DateTime endExclusive, ManagementAuditWeeklyDivisionSummaryModel division,
             IReadOnlyList<AIS.Services.ManagementAuditDecision> records)
             {
             return new EmailConfiguration(configuration).SendAsync(
-                BuildManagementAuditWeeklyEmail(start, division, records));
+                BuildManagementAuditComplianceReviewEmail(start, endExclusive, division, records));
             }
 
-        public static EmailMessageRequest BuildManagementAuditWeeklyEmail(DateTime start,
-            ManagementAuditWeeklyDivisionSummaryModel division,
+        public static EmailMessageRequest BuildManagementAuditComplianceReviewEmail(DateTime start,
+            DateTime endExclusive, ManagementAuditWeeklyDivisionSummaryModel division,
             IReadOnlyList<AIS.Services.ManagementAuditDecision> records)
             {
             if (division == null) throw new ArgumentNullException(nameof(division));
             if (records == null) throw new ArgumentNullException(nameof(records));
-            if (records.Count == 0) throw new ArgumentException("Weekly notification requires decisions.", nameof(records));
+            if (records.Count == 0) throw new ArgumentException("Management Audit Compliance Review notification requires decisions.", nameof(records));
             if (records.Any(r => r.DivisionId != division.DivisionId))
-                throw new InvalidOperationException("Weekly notification must contain decisions for the requested Division.");
+                throw new InvalidOperationException("Management Audit Compliance Review notification must contain decisions for the requested Division.");
 
-            var end = start.AddDays(6);
+            if (endExclusive.Date <= start.Date)
+                throw new ArgumentException("Exclusive period end must be later than the period start.", nameof(endExclusive));
+
+            var inclusiveEnd = endExclusive.Date.AddDays(-1);
+            var periodDisplay = $"{start:dd-MMM-yyyy} to {inclusiveEnd:dd-MMM-yyyy}";
             var settled = records.Where(record => record.Settled && !record.NoCompliance).ToList();
             var referredBack = records.Where(record => !record.Settled && !record.NoCompliance).ToList();
             var noCompliance = records.Where(record => record.NoCompliance).ToList();
@@ -71,11 +75,11 @@ namespace AIS
             var body = new StringBuilder("<html><body style=\"margin:0;padding:0;background:#eef2f5;font-family:Arial,'Segoe UI',sans-serif;color:#243447\">");
             body.Append("<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"width:100%;background:#eef2f5\"><tr><td align=\"center\" style=\"padding:20px 10px\">");
             body.Append("<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"width:100%;max-width:1100px;background:#ffffff;border:1px solid #d9e2ec\">");
-            body.Append("<tr><td style=\"padding:22px 26px;background:#173f5f;color:#ffffff\"><div style=\"font-size:20px;font-weight:bold\">INTERNAL AUDIT SYSTEM (IAS)</div><div style=\"font-size:16px;font-weight:bold;margin-top:6px\">Weekly Management Audit Para Decisions</div></td></tr>");
+            body.Append("<tr><td style=\"padding:22px 26px;background:#173f5f;color:#ffffff\"><div style=\"font-size:20px;font-weight:bold\">INTERNAL AUDIT SYSTEM (IAS)</div><div style=\"font-size:16px;font-weight:bold;margin-top:6px\">Management Audit Compliance Review</div></td></tr>");
             body.Append("<tr><td style=\"padding:24px 26px\">");
-            body.Append("<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"width:100%;background:#f4f7f9;border:1px solid #d9e2ec;margin-bottom:22px\"><tr><td style=\"padding:9px 12px;width:170px;font-weight:bold\">Division:</td><td style=\"padding:9px 12px\">" + Encode(division.DivisionName) + "</td></tr><tr><td style=\"padding:9px 12px;width:170px;font-weight:bold;border-top:1px solid #d9e2ec\">Reporting Period:</td><td style=\"padding:9px 12px;border-top:1px solid #d9e2ec\">" + Encode($"{start:dd-MMM-yyyy} to {end:dd-MMM-yyyy}") + "</td></tr></table>");
+            body.Append("<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"width:100%;background:#f4f7f9;border:1px solid #d9e2ec;margin-bottom:22px\"><tr><td style=\"padding:9px 12px;width:190px;font-weight:bold\">Division:</td><td style=\"padding:9px 12px\">" + Encode(division.DivisionName) + "</td></tr><tr><td style=\"padding:9px 12px;width:190px;font-weight:bold;border-top:1px solid #d9e2ec\">Compliance Review Period:</td><td style=\"padding:9px 12px;border-top:1px solid #d9e2ec\">" + Encode(periodDisplay) + "</td></tr></table>");
             body.Append("<p style=\"margin:0 0 14px\">Dear Sir,</p>");
-            body.Append("<p style=\"margin:0 0 14px;line-height:1.55\">This is with reference to the compliance submissions made during the period " + Encode($"{start:dd-MMM-yyyy} to {end:dd-MMM-yyyy}") + " by the department(s) falling under your administrative control.</p>");
+            body.Append("<p style=\"margin:0 0 14px;line-height:1.55\">This is with reference to the compliance submissions made during the period " + Encode(periodDisplay) + " by the department(s) falling under your administrative control.</p>");
             body.Append("<p style=\"margin:0 0 22px;line-height:1.55\">Following due examination and review of the compliances by the Internal Audit Group, we would like to apprise you of the current position of the relevant Management Audit paras, as detailed below.</p>");
 
             var departmentSummary = records
@@ -142,8 +146,8 @@ namespace AIS
                 }
             if (noCompliance.Count > 0)
                 {
-                SectionHeading("Paras Where No Compliance Was Submitted During the Current Month", noCompliance.Count,
-                    "Attention is also invited to the following outstanding audit paras against which no compliance was submitted during the current month:");
+                SectionHeading("Paras Where No Compliance Was Submitted During the Compliance Review Period", noCompliance.Count,
+                    "Attention is also invited to the following outstanding audit paras against which no compliance was submitted during the Compliance Review Period:");
                 body.Append(Table(noCompliance,
                     new[] { ("Sr.", "center", "5%"), ("Department", "left", "17%"), ("Audit Year", "center", "9%"), ("Para No.", "center", "8%"), ("Title of Para", "left", "30%"), ("Risk", "center", "9%"), ("Last Compliance Submitted On", "center", "17%") },
                     row => new[] { row.Entity, row.Year, row.Para, row.Title, row.Risk, Date(row.LastComplianceSubmitted ?? row.Submitted) }));
@@ -154,9 +158,9 @@ namespace AIS
             body.Append("<p style=\"margin:0;line-height:1.5\">Regards,<br><strong>Internal Audit Group</strong><br>Zarai Taraqiati Bank Limited</p>");
             body.Append("</td></tr><tr><td style=\"padding:14px 26px;background:#f4f7f9;border-top:1px solid #d9e2ec;color:#5c6b78;font-size:12px\">This is a system-generated notification from the Internal Audit System (IAS). Please do not reply to this email unless required under the official process.</td></tr></table></td></tr></table></body></html>");
 
-            var subject = $"IAS Notification: Weekly Management Audit Para Decisions | {division.DivisionName} | {start:dd-MMM-yyyy} to {end:dd-MMM-yyyy}";
-            return CreateRequest("Audit", "MGMT_AUDIT_WEEKLY_PARA_STATUS",
-                $"{start:yyyyMMdd}:{division.DivisionId}", division.ToEmail, division.CcEmail, subject, body.ToString());
+            var subject = $"IAS Notification: Management Audit Compliance Review | {division.DivisionName} | {periodDisplay}";
+            return CreateRequest("Audit", "MGMT_AUDIT_COMPLIANCE_REVIEW",
+                $"{start:yyyyMMdd}:{endExclusive:yyyyMMdd}:{division.DivisionId}", division.ToEmail, division.CcEmail, subject, body.ToString());
             }
         private const string StandardFooter = "This is a system-generated notification from Internal Audit System (IAS). Please do not reply to this email unless required under official process.";
         private static readonly Regex HtmlTagRegex = new Regex("<.*?>", RegexOptions.Compiled | RegexOptions.Singleline);

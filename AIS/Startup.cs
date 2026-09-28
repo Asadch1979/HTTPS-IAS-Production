@@ -5,6 +5,7 @@ using AIS.Security.Cryptography;
 using AIS.Security.PasswordPolicy;
 using AIS.Services;
 using AIS.Services.EmailManagement;
+using AIS.Services.Scheduler;
 using AIS.Session;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Builder;
@@ -112,7 +113,12 @@ namespace AIS
             services.AddSingleton<PasswordChangeStateStore>();
             services.AddHostedService<PageIdRouteValidator>();
             services.AddSingleton<NotificationExecutionStore>();
-            services.AddHostedService<ManagementAuditWeeklyService>();
+            services.AddScoped<ManagementAuditWeeklyService>();
+            services.AddScoped<IIasSchedulerJobHandler>(provider => provider.GetRequiredService<ManagementAuditWeeklyService>());
+            services.AddScoped<IIasSchedulerJobHandlerRegistry, IasSchedulerJobHandlerRegistry>();
+            services.AddScoped<IIasSchedulerStore, DbConnectionIasSchedulerStore>();
+            services.AddScoped<IasSchedulerDispatcher>();
+            services.AddHostedService<IasSchedulerBackgroundService>();
             var mvcBuilder = services.AddControllersWithViews()
                 .AddJsonOptions(options =>
                 {
