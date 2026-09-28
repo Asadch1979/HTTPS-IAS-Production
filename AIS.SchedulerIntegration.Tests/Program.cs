@@ -3,6 +3,9 @@ using AIS.Models.Notifications;
 using AIS.Models.Scheduler;
 using AIS.Services;
 using AIS.Services.Scheduler;
+using AIS.Controllers;
+using AIS.Filters;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using System.Reflection;
 
@@ -19,7 +22,13 @@ var tests = new (string Name, Func<Task> Run)[]
     ("Explicit period passed to handler", ExplicitPeriodPassedToHandlerAsync),
     ("Unknown handler fails safely", UnknownHandlerFailsSafelyAsync),
     ("No legacy autonomous Management Audit trigger", NoLegacyAutonomousTriggerAsync),
-    ("Management Audit email uses Compliance Review period", ManagementAuditEmailWordingAsync)
+    ("Management Audit email uses Compliance Review period", ManagementAuditEmailWordingAsync),
+    ("Scheduler admin mutating actions are protected", SchedulerAdminMutatingActionsProtectedAsync),
+    ("Scheduler Run Now automatic period stays null", SchedulerRunNowAutomaticPeriodAsync),
+    ("Scheduler Run Now custom period uses exclusive end", SchedulerRunNowCustomPeriodAsync),
+    ("Scheduler Run Now custom period validates dates", SchedulerRunNowCustomPeriodValidationAsync),
+    ("Scheduler reconciliation allows controlled resolutions", SchedulerReconciliationResolutionValidationAsync),
+    ("Scheduler browser models do not carry actor fields", SchedulerBrowserModelsDoNotCarryActorFieldsAsync)
 };
 
 foreach (var test in tests)
@@ -197,6 +206,102 @@ static Task ManagementAuditEmailWordingAsync()
     return Task.CompletedTask;
 }
 
+static Task SchedulerAdminMutatingActionsProtectedAsync()
+{
+    var actionNames = new[]
+    {
+        nameof(AdministrationPanelController.SaveIasSchedulerJobDefinition),
+        nameof(AdministrationPanelController.SaveIasSchedulerSchedule),
+        nameof(AdministrationPanelController.SetIasSchedulerScheduleActive),
+        nameof(AdministrationPanelController.RequestIasSchedulerRunNow),
+        nameof(AdministrationPanelController.CancelIasSchedulerRunRequest),
+        nameof(AdministrationPanelController.ResolveIasSchedulerExecution)
+    };
+
+    foreach (var actionName in actionNames)
+    {
+        var method = typeof(AdministrationPanelController).GetMethods()
+            .Single(method => method.Name == actionName);
+        AssertTrue(method.GetCustomAttributes(typeof(ValidateAntiForgeryTokenAttribute), inherit: true).Any(),
+            $"{actionName} anti-forgery attribute");
+        AssertTrue(method.GetCustomAttributes(typeof(ApplicationAuditAttribute), inherit: true).Any(),
+            $"{actionName} application audit attribute");
+    }
+
+    return Task.CompletedTask;
+}
+
+static Task SchedulerRunNowAutomaticPeriodAsync()
+{
+    var request = new IasSchedulerRunNowRequest
+    {
+        ScheduleId = 10,
+        Mode = "AUTO",
+        PeriodFrom = new DateTime(2026, 8, 1),
+        PeriodToInclusive = new DateTime(2026, 8, 31)
+    };
+
+    var errors = AdministrationPanelController.BuildRunNowPeriod(request, out var from, out var toExclusive);
+
+    AssertEqual(0, errors.Count, "automatic errors");
+    AssertNull(from, "automatic from");
+    AssertNull(toExclusive, "automatic to");
+    return Task.CompletedTask;
+}
+
+static Task SchedulerRunNowCustomPeriodAsync()
+{
+    var request = new IasSchedulerRunNowRequest
+    {
+        ScheduleId = 10,
+        Mode = "CUSTOM",
+        PeriodFrom = new DateTime(2026, 8, 1),
+        PeriodToInclusive = new DateTime(2026, 8, 31)
+    };
+
+    var errors = AdministrationPanelController.BuildRunNowPeriod(request, out var from, out var toExclusive);
+
+    AssertEqual(0, errors.Count, "custom errors");
+    AssertEqual(new DateTime(2026, 8, 1), from.Value, "custom from");
+    AssertEqual(new DateTime(2026, 9, 1), toExclusive.Value, "exclusive period to");
+    return Task.CompletedTask;
+}
+
+static Task SchedulerRunNowCustomPeriodValidationAsync()
+{
+    var request = new IasSchedulerRunNowRequest
+    {
+        ScheduleId = 10,
+        Mode = "CUSTOM",
+        PeriodFrom = new DateTime(2026, 8, 31),
+        PeriodToInclusive = new DateTime(2026, 8, 1)
+    };
+
+    var errors = AdministrationPanelController.BuildRunNowPeriod(request, out var from, out var toExclusive);
+
+    AssertTrue(errors.ContainsKey(nameof(IasSchedulerRunNowRequest.PeriodToInclusive)), "custom date validation");
+    AssertNull(from, "invalid custom from");
+    AssertNull(toExclusive, "invalid custom to");
+    return Task.CompletedTask;
+}
+
+static Task SchedulerReconciliationResolutionValidationAsync()
+{
+    AssertTrue(AdministrationPanelController.IsAllowedIasSchedulerResolution("SUCCESS"), "success resolution");
+    AssertTrue(AdministrationPanelController.IsAllowedIasSchedulerResolution("FAILED"), "failed resolution");
+    AssertTrue(AdministrationPanelController.IsAllowedIasSchedulerResolution("SKIPPED"), "skipped resolution");
+    AssertFalse(AdministrationPanelController.IsAllowedIasSchedulerResolution("RUNNING"), "running resolution rejected");
+    return Task.CompletedTask;
+}
+
+static Task SchedulerBrowserModelsDoNotCarryActorFieldsAsync()
+{
+    AssertNull(typeof(IasSchedulerRunNowRequest).GetProperty("RequestedBy"), "Run Now request must not bind RequestedBy");
+    AssertNull(typeof(IasSchedulerRunNowRequest).GetProperty("UpdatedBy"), "Run Now request must not bind UpdatedBy");
+    AssertNull(typeof(IasSchedulerResolveExecutionRequest).GetProperty("UpdatedBy"), "Resolve request must not bind UpdatedBy");
+    return Task.CompletedTask;
+}
+
 static IasSchedulerDispatcher NewDispatcherWithDatabase(
     FakeSchedulerStore store,
     IEnumerable<IIasSchedulerJobHandler> handlers,
@@ -265,6 +370,12 @@ static void AssertContains(string expected, string actual, string message)
 static void AssertFalse(bool condition, string message)
 {
     if (condition)
+        throw new InvalidOperationException(message);
+}
+
+static void AssertTrue(bool condition, string message)
+{
+    if (!condition)
         throw new InvalidOperationException(message);
 }
 

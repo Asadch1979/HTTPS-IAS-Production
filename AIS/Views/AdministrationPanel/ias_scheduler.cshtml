@@ -1,0 +1,374 @@
+@model AIS.Models.Scheduler.IasSchedulerAdminViewModel
+@using System.Text.Json
+@using AIS.Models.Scheduler
+@{
+    ViewData["Title"] = "IAS Scheduler Administration";
+    Layout = "_Layout";
+
+    string DateText(DateTime? value) => value.HasValue ? value.Value.ToString("dd-MMM-yyyy") : "-";
+    string DateTimeText(DateTime? value) => value.HasValue ? value.Value.ToString("dd-MMM-yyyy HH:mm") : "-";
+    string TimeText(int hour, int minute) => $"{hour:00}:{minute:00}";
+    string PeriodText(DateTime? from, DateTime? toExclusive)
+    {
+        if (!from.HasValue && !toExclusive.HasValue) return "Automatic";
+        var toInclusive = toExclusive?.AddDays(-1);
+        return $"{DateText(from)} to {DateText(toInclusive)}";
+    }
+}
+
+<main class="container-fluid py-3"
+      id="iasSchedulerAdminApp"
+      data-save-schedule-url="@Url.Action("SaveIasSchedulerSchedule", "AdministrationPanel")"
+      data-set-active-url="@Url.Action("SetIasSchedulerScheduleActive", "AdministrationPanel")"
+      data-run-now-url="@Url.Action("RequestIasSchedulerRunNow", "AdministrationPanel")"
+      data-cancel-run-url="@Url.Action("CancelIasSchedulerRunRequest", "AdministrationPanel")"
+      data-save-job-url="@Url.Action("SaveIasSchedulerJobDefinition", "AdministrationPanel")"
+      data-resolve-url="@Url.Action("ResolveIasSchedulerExecution", "AdministrationPanel")">
+    <form id="iasSchedulerCsrf" class="d-none">@Html.AntiForgeryToken()</form>
+
+    <div class="d-flex align-items-start justify-content-between gap-3 flex-wrap mb-3">
+        <div>
+            <h2 class="mb-1">IAS Scheduler Administration</h2>
+            <p class="text-muted mb-0">Super Admin controls for approved IAS scheduler definitions, schedules, manual runs and reconciliation.</p>
+        </div>
+        <div class="d-flex gap-2">
+            <button type="button" class="btn btn-outline-primary" id="addSchedulerJob">
+                <i class="fa-solid fa-plus me-1" aria-hidden="true"></i>Job Definition
+            </button>
+            <button type="button" class="btn btn-primary" id="addSchedulerSchedule">
+                <i class="fa-solid fa-calendar-plus me-1" aria-hidden="true"></i>Schedule
+            </button>
+        </div>
+    </div>
+
+    <div id="iasSchedulerMessage" class="alert d-none" role="alert"></div>
+
+    <ul class="nav nav-tabs" id="iasSchedulerTabs" role="tablist">
+        <li class="nav-item" role="presentation"><button class="nav-link active" id="schedules-tab" data-bs-toggle="tab" data-bs-target="#schedulesPane" type="button" role="tab">Schedules</button></li>
+        <li class="nav-item" role="presentation"><button class="nav-link" id="jobs-tab" data-bs-toggle="tab" data-bs-target="#jobsPane" type="button" role="tab">Job Definitions</button></li>
+        <li class="nav-item" role="presentation"><button class="nav-link" id="history-tab" data-bs-toggle="tab" data-bs-target="#historyPane" type="button" role="tab">Execution History</button></li>
+        <li class="nav-item" role="presentation"><button class="nav-link" id="reconciliation-tab" data-bs-toggle="tab" data-bs-target="#reconciliationPane" type="button" role="tab">Reconciliation / Requires Attention</button></li>
+    </ul>
+
+    <div class="tab-content border border-top-0 p-3 bg-white" id="iasSchedulerTabContent">
+        <section class="tab-pane fade show active" id="schedulesPane" role="tabpanel" aria-labelledby="schedules-tab">
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2">
+                <h5 class="mb-0">Schedules</h5>
+                <span class="text-muted small">Run Now queues a manual request and does not alter normal Next Due.</span>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover table-sm align-middle">
+                    <thead>
+                        <tr>
+                            <th>Job</th>
+                            <th>Frequency</th>
+                            <th>Run Time / Day</th>
+                            <th>Period Type</th>
+                            <th>Status</th>
+                            <th>Last Run / Status</th>
+                            <th>Next Due</th>
+                            <th>Retry</th>
+                            <th class="text-end">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var schedule in Model.Schedules)
+                        {
+                            <tr>
+                                <td>
+                                    <div class="fw-semibold">@schedule.JobName</div>
+                                    <div class="text-muted small">@schedule.JobCode</div>
+                                </td>
+                                <td>@schedule.FrequencyType</td>
+                                <td>
+                                    <div>@TimeText(schedule.RunHour, schedule.RunMinute)</div>
+                                    <div class="text-muted small">DOW @(schedule.DayOfWeek?.ToString() ?? "-") / DOM @(schedule.DayOfMonth?.ToString() ?? "-")</div>
+                                </td>
+                                <td>@schedule.PeriodType</td>
+                                <td>
+                                    <span class="badge @(schedule.IsActive ? "bg-success-subtle text-success-emphasis" : "bg-secondary-subtle text-secondary-emphasis")">@(schedule.IsActive ? "Active" : "Inactive")</span>
+                                    @if (schedule.IsDue)
+                                    {
+                                        <span class="badge bg-warning-subtle text-warning-emphasis ms-1">Due</span>
+                                    }
+                                </td>
+                                <td>
+                                    <div>@DateTimeText(schedule.LastRunOn)</div>
+                                    <div class="text-muted small">@(!string.IsNullOrWhiteSpace(schedule.LastStatus) ? schedule.LastStatus : "-")</div>
+                                </td>
+                                <td>@DateTimeText(schedule.NextDueOn)</td>
+                                <td>
+                                    <div>@schedule.RetryCount / @schedule.MaxRetry</div>
+                                    <div class="text-muted small">@schedule.RetryIntervalMinutes min</div>
+                                </td>
+                                <td class="text-end text-nowrap">
+                                    <button type="button" class="btn btn-sm btn-outline-primary edit-schedule" data-schedule-id="@schedule.ScheduleId" title="Edit schedule" aria-label="Edit schedule"><i class="fa-solid fa-pen" aria-hidden="true"></i></button>
+                                    <button type="button" class="btn btn-sm @(schedule.IsActive ? "btn-outline-warning" : "btn-outline-success") toggle-schedule" data-schedule-id="@schedule.ScheduleId" data-active="@(!schedule.IsActive)" title="@(schedule.IsActive ? "Deactivate" : "Activate") schedule" aria-label="@(schedule.IsActive ? "Deactivate" : "Activate") schedule">
+                                        <i class="fa-solid @(schedule.IsActive ? "fa-pause" : "fa-play")" aria-hidden="true"></i>
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary run-now" data-schedule-id="@schedule.ScheduleId" data-job-name="@schedule.JobName" @(schedule.IsActive ? "" : "disabled") title="Run Now" aria-label="Run Now"><i class="fa-solid fa-bolt" aria-hidden="true"></i></button>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+                @if (Model.Schedules.Count == 0)
+                {
+                    <div class="text-center text-muted py-4">No schedules configured.</div>
+                }
+            </div>
+
+            <h5 class="mt-4">Run Now Requests</h5>
+            <div class="table-responsive">
+                <table class="table table-sm align-middle">
+                    <thead><tr><th>Request</th><th>Job</th><th>Period</th><th>Status</th><th>Requested</th><th>Updated</th><th class="text-end">Actions</th></tr></thead>
+                    <tbody>
+                        @foreach (var request in Model.RunRequests)
+                        {
+                            <tr>
+                                <td class="fw-semibold">@request.RequestId</td>
+                                <td>
+                                    <div>@request.JobName</div>
+                                    <div class="text-muted small">@request.JobCode</div>
+                                </td>
+                                <td>@PeriodText(request.PeriodFrom, request.PeriodTo)</td>
+                                <td>@request.Status</td>
+                                <td>
+                                    <div>@request.RequestedBy</div>
+                                    <div class="text-muted small">@DateTimeText(request.RequestedOn)</div>
+                                </td>
+                                <td>
+                                    <div>@request.UpdatedBy</div>
+                                    <div class="text-muted small">@DateTimeText(request.UpdatedOn)</div>
+                                </td>
+                                <td class="text-end">
+                                    @if (string.Equals(request.Status, "PENDING", StringComparison.OrdinalIgnoreCase))
+                                    {
+                                        <button type="button" class="btn btn-sm btn-outline-danger cancel-run-request" data-request-id="@request.RequestId"><i class="fa-solid fa-ban me-1" aria-hidden="true"></i>Cancel</button>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+                @if (Model.RunRequests.Count == 0)
+                {
+                    <div class="text-center text-muted py-4">No Run Now requests found.</div>
+                }
+            </div>
+        </section>
+
+        <section class="tab-pane fade" id="jobsPane" role="tabpanel" aria-labelledby="jobs-tab">
+            <div class="table-responsive">
+                <table class="table table-hover table-sm align-middle">
+                    <thead><tr><th>Code</th><th>Name</th><th>Execution</th><th>Approved Target</th><th>Description</th><th>Schedules</th><th class="text-end">Actions</th></tr></thead>
+                    <tbody>
+                        @foreach (var job in Model.JobDefinitions)
+                        {
+                            <tr>
+                                <td class="fw-semibold">@job.JobCode</td>
+                                <td>@job.JobName</td>
+                                <td>@job.ExecutionType</td>
+                                <td>
+                                    @if (string.Equals(job.ExecutionType, IasSchedulerExecutionTypes.Database, StringComparison.OrdinalIgnoreCase))
+                                    {
+                                        <span>@job.PackageName.@job.ProcedureName</span>
+                                    }
+                                    else
+                                    {
+                                        <span>@job.ApplicationHandler</span>
+                                    }
+                                </td>
+                                <td>@job.Description</td>
+                                <td>@job.ScheduleCount</td>
+                                <td class="text-end"><button type="button" class="btn btn-sm btn-outline-primary edit-job" data-job-id="@job.JobId"><i class="fa-solid fa-pen" aria-hidden="true"></i></button></td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+                @if (Model.JobDefinitions.Count == 0)
+                {
+                    <div class="text-center text-muted py-4">No job definitions configured.</div>
+                }
+            </div>
+        </section>
+
+        <section class="tab-pane fade" id="historyPane" role="tabpanel" aria-labelledby="history-tab">
+            <div class="table-responsive">
+                <table class="table table-sm align-middle">
+                    <thead><tr><th>Execution</th><th>Job</th><th>Run Source</th><th>Period</th><th>Status</th><th>Started / Completed</th><th>Retry</th><th>Records</th><th>Response / Error</th></tr></thead>
+                    <tbody>
+                        @foreach (var execution in Model.ExecutionHistory)
+                        {
+                            <tr>
+                                <td class="fw-semibold">@execution.ExecutionId</td>
+                                <td>
+                                    <div>@execution.JobName</div>
+                                    <div class="text-muted small">@execution.JobCode</div>
+                                </td>
+                                <td>
+                                    <div>@execution.RunSource</div>
+                                    <div class="text-muted small">Request @(execution.RunRequestId?.ToString() ?? "-")</div>
+                                </td>
+                                <td>@PeriodText(execution.PeriodFrom, execution.PeriodTo)</td>
+                                <td>@execution.Status</td>
+                                <td>
+                                    <div>@DateTimeText(execution.StartedOn)</div>
+                                    <div class="text-muted small">@DateTimeText(execution.CompletedOn)</div>
+                                </td>
+                                <td>@execution.RetryNo</td>
+                                <td>@(execution.RecordsProcessed?.ToString() ?? "-")</td>
+                                <td>
+                                    <div>@execution.ResponseMessage</div>
+                                    <div class="text-danger small">@execution.ErrorMessage</div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+                @if (Model.ExecutionHistory.Count == 0)
+                {
+                    <div class="text-center text-muted py-4">No execution history found.</div>
+                }
+            </div>
+        </section>
+
+        <section class="tab-pane fade" id="reconciliationPane" role="tabpanel" aria-labelledby="reconciliation-tab">
+            <div class="table-responsive">
+                <table class="table table-sm align-middle">
+                    <thead><tr><th>Execution</th><th>Job</th><th>Run Source</th><th>Period</th><th>Started</th><th>Error</th><th class="text-end">Resolution</th></tr></thead>
+                    <tbody>
+                        @foreach (var item in Model.ReconciliationRequired)
+                        {
+                            <tr>
+                                <td class="fw-semibold">@item.ExecutionId</td>
+                                <td>
+                                    <div>@item.JobName</div>
+                                    <div class="text-muted small">@item.JobCode</div>
+                                </td>
+                                <td>
+                                    <div>@item.RunSource</div>
+                                    <div class="text-muted small">Request @(item.RunRequestId?.ToString() ?? "-")</div>
+                                </td>
+                                <td>@PeriodText(item.PeriodFrom, item.PeriodTo)</td>
+                                <td>@DateTimeText(item.StartedOn)</td>
+                                <td class="text-danger">@item.ErrorMessage</td>
+                                <td class="text-end"><button type="button" class="btn btn-sm btn-outline-primary resolve-execution" data-execution-id="@item.ExecutionId" data-job-name="@item.JobName"><i class="fa-solid fa-check-double me-1" aria-hidden="true"></i>Resolve</button></td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+                @if (Model.ReconciliationRequired.Count == 0)
+                {
+                    <div class="text-center text-muted py-4">No executions currently require reconciliation.</div>
+                }
+            </div>
+        </section>
+    </div>
+</main>
+
+<div class="modal fade" id="scheduleModal" tabindex="-1" aria-labelledby="scheduleModalTitle" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <form id="scheduleForm" novalidate>
+                <div class="modal-header"><h5 class="modal-title" id="scheduleModalTitle">Add Schedule</h5><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button></div>
+                <div class="modal-body">
+                    <div class="alert alert-danger d-none form-error" role="alert"></div>
+                    <input type="hidden" name="ScheduleId" id="scheduleId" />
+                    <div class="row g-3">
+                        <div class="col-md-6"><label class="form-label" for="scheduleJobId">Job Definition</label><select class="form-select" id="scheduleJobId" name="JobId" required><option value="">Select Job</option>@foreach (var job in Model.JobDefinitions){<option value="@job.JobId">@job.JobName (@job.JobCode)</option>}</select></div>
+                        <div class="col-md-3"><label class="form-label" for="frequencyType">Frequency</label><select class="form-select" id="frequencyType" name="FrequencyType" required><option>DAILY</option><option>WEEKLY</option><option>MONTHLY</option></select></div>
+                        <div class="col-md-3"><label class="form-label" for="periodType">Period Type</label><select class="form-select" id="periodType" name="PeriodType" required><option>DAILY</option><option>WEEKLY</option><option>MONTHLY</option></select></div>
+                        <div class="col-md-2"><label class="form-label" for="runHour">Hour</label><input class="form-control" id="runHour" name="RunHour" type="number" min="0" max="23" required /></div>
+                        <div class="col-md-2"><label class="form-label" for="runMinute">Minute</label><input class="form-control" id="runMinute" name="RunMinute" type="number" min="0" max="59" required /></div>
+                        <div class="col-md-2"><label class="form-label" for="dayOfWeek">Day of Week</label><input class="form-control" id="dayOfWeek" name="DayOfWeek" type="number" min="1" max="7" /></div>
+                        <div class="col-md-2"><label class="form-label" for="dayOfMonth">Day of Month</label><input class="form-control" id="dayOfMonth" name="DayOfMonth" type="number" min="1" max="31" /></div>
+                        <div class="col-md-2"><label class="form-label" for="maxRetry">Max Retry</label><input class="form-control" id="maxRetry" name="MaxRetry" type="number" min="0" required /></div>
+                        <div class="col-md-2"><label class="form-label" for="retryIntervalMinutes">Retry Min</label><input class="form-control" id="retryIntervalMinutes" name="RetryIntervalMinutes" type="number" min="0" required /></div>
+                        <div class="col-md-4"><label class="form-label" for="effectiveFrom">Effective From</label><input class="form-control" id="effectiveFrom" name="EffectiveFrom" type="date" required /></div>
+                        <div class="col-md-4"><label class="form-label" for="effectiveTo">Effective To</label><input class="form-control" id="effectiveTo" name="EffectiveTo" type="date" /></div>
+                        <div class="col-md-4"><label class="form-label" for="nextDueOn">Next Due</label><input class="form-control" id="nextDueOn" name="NextDueOn" type="datetime-local" /></div>
+                        <div class="col-md-6 d-flex align-items-end gap-4 pb-2">
+                            <div class="form-check form-switch"><input class="form-check-input" id="emailRequired" name="EmailRequired" value="true" type="checkbox" /><label class="form-check-label" for="emailRequired">Email Required</label></div>
+                            <div class="form-check form-switch"><input class="form-check-input" id="isActive" name="IsActive" value="true" type="checkbox" /><label class="form-check-label" for="isActive">Active</label></div>
+                        </div>
+                        <div class="col-12"><label class="form-label" for="scheduleRemarks">Remarks</label><textarea class="form-control" id="scheduleRemarks" name="Remarks" rows="2" maxlength="1000"></textarea></div>
+                    </div>
+                </div>
+                <div class="modal-footer"><button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button><button type="submit" class="btn btn-primary"><i class="fa-solid fa-floppy-disk me-1" aria-hidden="true"></i>Save Schedule</button></div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="jobModal" tabindex="-1" aria-labelledby="jobModalTitle" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <form id="jobForm" novalidate>
+                <div class="modal-header"><h5 class="modal-title" id="jobModalTitle">Add Job Definition</h5><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button></div>
+                <div class="modal-body">
+                    <div class="alert alert-danger d-none form-error" role="alert"></div>
+                    <input type="hidden" name="JobId" id="jobId" />
+                    <div class="row g-3">
+                        <div class="col-md-4"><label class="form-label" for="jobCode">Job Code</label><input class="form-control" id="jobCode" name="JobCode" maxlength="100" required /></div>
+                        <div class="col-md-8"><label class="form-label" for="jobName">Job Name</label><input class="form-control" id="jobName" name="JobName" maxlength="200" required /></div>
+                        <div class="col-md-4"><label class="form-label" for="executionType">Execution Type</label><select class="form-select" id="executionType" name="ExecutionType" required><option>APPLICATION</option><option>DATABASE</option></select></div>
+                        <div class="col-md-4"><label class="form-label" for="packageName">Package Name</label><input class="form-control" id="packageName" name="PackageName" maxlength="128" /></div>
+                        <div class="col-md-4"><label class="form-label" for="procedureName">Procedure Name</label><input class="form-control" id="procedureName" name="ProcedureName" maxlength="128" /></div>
+                        <div class="col-12"><label class="form-label" for="applicationHandler">Application Handler</label><input class="form-control" id="applicationHandler" name="ApplicationHandler" maxlength="150" /></div>
+                        <div class="col-12"><label class="form-label" for="jobDescription">Description</label><textarea class="form-control" id="jobDescription" name="Description" rows="3" maxlength="1000"></textarea></div>
+                    </div>
+                </div>
+                <div class="modal-footer"><button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button><button type="submit" class="btn btn-primary"><i class="fa-solid fa-floppy-disk me-1" aria-hidden="true"></i>Save Job</button></div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="runNowModal" tabindex="-1" aria-labelledby="runNowModalTitle" aria-hidden="true">
+    <div class="modal-dialog modal-md modal-dialog-centered">
+        <div class="modal-content">
+            <form id="runNowForm" novalidate>
+                <div class="modal-header"><h5 class="modal-title" id="runNowModalTitle">Run Now</h5><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button></div>
+                <div class="modal-body">
+                    <div class="alert alert-info">Run Now queues a manual execution request and does not alter the normal Next Due value.</div>
+                    <div class="alert alert-danger d-none form-error" role="alert"></div>
+                    <input type="hidden" name="ScheduleId" id="runNowScheduleId" />
+                    <div class="mb-3"><label class="form-label" for="runNowMode">Mode</label><select class="form-select" id="runNowMode" name="Mode"><option value="AUTO">Automatic period from database scheduler</option><option value="CUSTOM">Custom period</option></select></div>
+                    <div class="row g-3 run-now-custom d-none">
+                        <div class="col-md-6"><label class="form-label" for="runNowFrom">Period From</label><input class="form-control" id="runNowFrom" name="PeriodFrom" type="date" /></div>
+                        <div class="col-md-6"><label class="form-label" for="runNowTo">Period To (inclusive)</label><input class="form-control" id="runNowTo" name="PeriodToInclusive" type="date" /></div>
+                    </div>
+                    <div class="mt-3"><label class="form-label" for="runNowRemarks">Remarks</label><textarea class="form-control" id="runNowRemarks" name="Remarks" rows="2" maxlength="1000"></textarea></div>
+                </div>
+                <div class="modal-footer"><button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button><button type="submit" class="btn btn-primary"><i class="fa-solid fa-bolt me-1" aria-hidden="true"></i>Queue Run Now</button></div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="resolveModal" tabindex="-1" aria-labelledby="resolveModalTitle" aria-hidden="true">
+    <div class="modal-dialog modal-md modal-dialog-centered">
+        <div class="modal-content">
+            <form id="resolveForm" novalidate>
+                <div class="modal-header"><h5 class="modal-title" id="resolveModalTitle">Resolve Execution</h5><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button></div>
+                <div class="modal-body">
+                    <div class="alert alert-warning">Confirm the operational result before resolving an execution that requires reconciliation.</div>
+                    <div class="alert alert-danger d-none form-error" role="alert"></div>
+                    <input type="hidden" name="ExecutionId" id="resolveExecutionId" />
+                    <div class="mb-3"><label class="form-label" for="resolution">Resolution</label><select class="form-select" id="resolution" name="Resolution" required><option value="SUCCESS">SUCCESS</option><option value="FAILED">FAILED</option><option value="SKIPPED">SKIPPED</option></select></div>
+                    <div class="mb-3"><label class="form-label" for="recordsProcessed">Records Processed</label><input class="form-control" id="recordsProcessed" name="RecordsProcessed" type="number" min="0" /></div>
+                    <div><label class="form-label" for="resolveRemarks">Remarks</label><textarea class="form-control" id="resolveRemarks" name="Remarks" rows="3" maxlength="4000"></textarea></div>
+                </div>
+                <div class="modal-footer"><button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button><button type="submit" class="btn btn-primary"><i class="fa-solid fa-check-double me-1" aria-hidden="true"></i>Resolve</button></div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script id="iasSchedulerSchedulesData" type="application/json">@Html.Raw(JsonSerializer.Serialize(Model.Schedules))</script>
+<script id="iasSchedulerJobsData" type="application/json">@Html.Raw(JsonSerializer.Serialize(Model.JobDefinitions))</script>
+
+@section Scripts {
+    <script src="~/js/csp/Views_AdministrationPanel_ias_scheduler.js" asp-append-version="true"></script>
+}
