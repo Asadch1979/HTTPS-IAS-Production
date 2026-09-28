@@ -1,261 +1,665 @@
-CREATE OR REPLACE PACKAGE PKG_MGMT_AUDIT_NOTIFY_ADMIN AS
+CREATE OR REPLACE PACKAGE PKG_MGMT_AUDIT_WEEKLY AS
 
-  PROCEDURE P_GET_CONFIGURATIONS(IO_DIVISIONS OUT SYS_REFCURSOR,
-                                 IO_RECIPIENTS OUT SYS_REFCURSOR);
+  PROCEDURE P_GET_MGMT_WEEKLY_DIVISIONS(P_FROM_DATE IN DATE,
+                                        P_TO_DATE   IN DATE,
+                                        IO_CURSOR   OUT SYS_REFCURSOR);
 
-  PROCEDURE P_SAVE_DIVISION(P_DIVISION_ID         IN NUMBER,
-                            P_DIVISION_NAME       IN VARCHAR2,
-                            P_IS_ACTIVE           IN CHAR,
-                            P_WEEKLY_EMAIL_ENABLED IN CHAR,
-                            P_EFFECTIVE_FROM      IN DATE,
-                            P_EFFECTIVE_TO        IN DATE,
-                            P_REMARKS             IN VARCHAR2,
-                            P_UPDATED_BY          IN VARCHAR2);
+  PROCEDURE P_GET_MGMT_WEEKLY_DIVISION_DATA(P_DIVISION_ID IN NUMBER,
+                                            P_FROM_DATE   IN DATE,
+                                            P_TO_DATE     IN DATE,
+                                            IO_CURSOR     OUT SYS_REFCURSOR);
 
-  PROCEDURE P_SAVE_RECIPIENT(P_RECIPIENT_ID       IN NUMBER,
-                             P_DIVISION_ID        IN NUMBER,
-                             P_RECIPIENT_TYPE     IN VARCHAR2,
-                             P_EMAIL_ADDRESS      IN VARCHAR2,
-                             P_PERSON_NAME        IN VARCHAR2,
-                             P_DESIGNATION        IN VARCHAR2,
-                             P_IS_ACTIVE          IN CHAR,
-                             P_EFFECTIVE_FROM     IN DATE,
-                             P_EFFECTIVE_TO       IN DATE,
-                             P_DISPLAY_ORDER      IN NUMBER,
-                             P_UPDATED_BY         IN VARCHAR2,
-                             P_SAVED_RECIPIENT_ID OUT NUMBER);
+  PROCEDURE P_GET_MGMT_WEEKLY_NO_COMPLIANCE(P_DIVISION_ID IN NUMBER,
+                                            P_FROM_DATE   IN DATE,
+                                            P_TO_DATE     IN DATE,
+                                            IO_CURSOR     OUT SYS_REFCURSOR);
 
-  PROCEDURE P_REMOVE_RECIPIENT(P_RECIPIENT_ID IN NUMBER,
-                               P_UPDATED_BY    IN VARCHAR2);
-
-END PKG_MGMT_AUDIT_NOTIFY_ADMIN;
+END PKG_MGMT_AUDIT_WEEKLY;
 /
+CREATE OR REPLACE PACKAGE BODY PKG_MGMT_AUDIT_WEEKLY AS
 
-CREATE OR REPLACE PACKAGE BODY PKG_MGMT_AUDIT_NOTIFY_ADMIN AS
-
-  PROCEDURE VALIDATE_FLAG(P_VALUE IN CHAR, P_FIELD_NAME IN VARCHAR2) IS
+  ------------------------------------------------------------------
+  -- Validate reporting period
+  ------------------------------------------------------------------
+  PROCEDURE VALIDATE_PERIOD(P_FROM_DATE IN DATE, P_TO_DATE IN DATE) IS
   BEGIN
-    IF P_VALUE IS NULL OR P_VALUE NOT IN ('Y', 'N') THEN
-      RAISE_APPLICATION_ERROR(-20140, P_FIELD_NAME || ' must be Y or N.');
+    IF P_FROM_DATE IS NULL OR P_TO_DATE IS NULL THEN
+      RAISE_APPLICATION_ERROR(-20120,
+                              'Management Audit weekly reporting dates cannot be null.');
     END IF;
-  END VALIDATE_FLAG;
-
-  PROCEDURE VALIDATE_DATES(P_EFFECTIVE_FROM IN DATE,
-                           P_EFFECTIVE_TO   IN DATE) IS
-  BEGIN
-    IF P_EFFECTIVE_FROM IS NULL THEN
-      RAISE_APPLICATION_ERROR(-20141, 'Effective From is required.');
+  
+    IF TRUNC(P_TO_DATE) <= TRUNC(P_FROM_DATE) THEN
+      RAISE_APPLICATION_ERROR(-20121,
+                              'Management Audit weekly To Date must be greater than From Date.');
     END IF;
+  END VALIDATE_PERIOD;
 
-    IF P_EFFECTIVE_TO IS NOT NULL AND TRUNC(P_EFFECTIVE_TO) < TRUNC(P_EFFECTIVE_FROM) THEN
-      RAISE_APPLICATION_ERROR(-20142, 'Effective To cannot be earlier than Effective From.');
-    END IF;
-  END VALIDATE_DATES;
+  ------------------------------------------------------------------
+  -- 1. Return only those Divisions for which an email is required.
+  --
+  -- P_FROM_DATE = inclusive
+  -- P_TO_DATE   = exclusive
+  --
+  -- Example:
+  -- 21-Sep-2026 to 28-Sep-2026 means:
+  -- >= 21-Sep-2026 00:00
+  -- <  28-Sep-2026 00:00
+  --
+  -- If only 12 out of 17 Divisions have qualifying decisions,
+  -- exactly 12 rows are returned.
+  ------------------------------------------------------------------
+PROCEDURE P_GET_MGMT_WEEKLY_DIVISIONS
+(
+    P_FROM_DATE IN DATE,
+    P_TO_DATE   IN DATE,
+    IO_CURSOR   OUT SYS_REFCURSOR
+)
+IS
+BEGIN
 
-  PROCEDURE P_GET_CONFIGURATIONS(IO_DIVISIONS OUT SYS_REFCURSOR,
-                                 IO_RECIPIENTS OUT SYS_REFCURSOR) IS
-  BEGIN
-    OPEN IO_DIVISIONS FOR
-      SELECT D.DIVISION_ID,
-             D.DIVISION_NAME,
-             NVL(H.REPORTING_OFFICE, '') AS REPORTING_OFFICE,
-             D.IS_ACTIVE,
-             D.WEEKLY_EMAIL_ENABLED,
-             D.EFFECTIVE_FROM,
-             D.EFFECTIVE_TO,
-             D.REMARKS,
-             D.CREATED_BY,
-             D.CREATED_ON,
-             D.UPDATED_BY,
-             D.UPDATED_ON
-        FROM T_IAS_MGMT_NOTIFY_DIVISION D
-        LEFT JOIN
+    VALIDATE_PERIOD(P_FROM_DATE, P_TO_DATE);
+
+    OPEN IO_CURSOR FOR
+
+        WITH
+        ACTIVE_DIVISIONS AS
         (
-          SELECT X.DIVISION_ID,
-                 LISTAGG(X.REPORTING_OFFICE, '; ')
-                   WITHIN GROUP (ORDER BY X.REPORTING_OFFICE) AS REPORTING_OFFICE
-            FROM
-            (
-              SELECT DISTINCT M.ENTITY_ID AS DIVISION_ID,
-                              R.NAME AS REPORTING_OFFICE
-                FROM T_AUDITEE_ENTITIES_MAPING M
-                JOIN T_AUDITEE_ENTITIES R
-                  ON R.ENTITY_ID = M.PARENT_ID
-               WHERE R.NAME IS NOT NULL
-            ) X
-           GROUP BY X.DIVISION_ID
-        ) H
-          ON H.DIVISION_ID = D.DIVISION_ID
-       ORDER BY D.DIVISION_NAME;
+            SELECT D.DIVISION_ID,
+                   D.DIVISION_NAME
+              FROM T_IAS_MGMT_NOTIFY_DIVISION D
+             WHERE D.IS_ACTIVE = 'Y'
+               AND D.WEEKLY_EMAIL_ENABLED = 'Y'
+               AND D.EFFECTIVE_FROM <= TRUNC(SYSDATE)
+               AND
+               (
+                   D.EFFECTIVE_TO IS NULL
+                   OR D.EFFECTIVE_TO >= TRUNC(SYSDATE)
+               )
+        ),
 
-    OPEN IO_RECIPIENTS FOR
-      SELECT R.RECIPIENT_ID,
-             R.DIVISION_ID,
-             R.RECIPIENT_TYPE,
-             R.EMAIL_ADDRESS,
-             R.PERSON_NAME,
-             R.DESIGNATION,
-             R.IS_ACTIVE,
-             R.EFFECTIVE_FROM,
-             R.EFFECTIVE_TO,
-             NVL(R.DISPLAY_ORDER, 1) AS DISPLAY_ORDER,
-             R.CREATED_BY,
-             R.CREATED_ON,
-             R.UPDATED_BY,
-             R.UPDATED_ON
-        FROM T_IAS_MGMT_NOTIFY_RECIPIENT R
-       ORDER BY R.DIVISION_ID,
-                CASE R.RECIPIENT_TYPE WHEN 'TO' THEN 1 ELSE 2 END,
-                NVL(R.DISPLAY_ORDER, 1),
-                R.EMAIL_ADDRESS;
-  END P_GET_CONFIGURATIONS;
+        ACTIVE_RECIPIENT_ROWS AS
+        (
+            SELECT R.DIVISION_ID,
+                   R.RECIPIENT_TYPE,
+                   TRIM(R.EMAIL_ADDRESS) AS EMAIL_ADDRESS,
+                   NVL(R.DISPLAY_ORDER,1) AS DISPLAY_ORDER
+              FROM T_IAS_MGMT_NOTIFY_RECIPIENT R
+             WHERE R.IS_ACTIVE = 'Y'
+               AND TRIM(R.EMAIL_ADDRESS) IS NOT NULL
+               AND R.EFFECTIVE_FROM <= TRUNC(SYSDATE)
+               AND
+               (
+                   R.EFFECTIVE_TO IS NULL
+                   OR R.EFFECTIVE_TO >= TRUNC(SYSDATE)
+               )
+        ),
 
-  PROCEDURE P_SAVE_DIVISION(P_DIVISION_ID         IN NUMBER,
-                            P_DIVISION_NAME       IN VARCHAR2,
-                            P_IS_ACTIVE           IN CHAR,
-                            P_WEEKLY_EMAIL_ENABLED IN CHAR,
-                            P_EFFECTIVE_FROM      IN DATE,
-                            P_EFFECTIVE_TO        IN DATE,
-                            P_REMARKS             IN VARCHAR2,
-                            P_UPDATED_BY          IN VARCHAR2) IS
-  BEGIN
-    IF P_DIVISION_ID IS NULL OR P_DIVISION_ID <= 0 THEN
-      RAISE_APPLICATION_ERROR(-20143, 'Division is required.');
+        TO_RECIPIENTS AS
+        (
+            SELECT DIVISION_ID,
+                   LISTAGG(EMAIL_ADDRESS, ';')
+                       WITHIN GROUP
+                       (
+                           ORDER BY DISPLAY_ORDER, EMAIL_ADDRESS
+                       ) AS TO_EMAIL
+              FROM
+              (
+                  SELECT DISTINCT
+                         DIVISION_ID,
+                         EMAIL_ADDRESS,
+                         DISPLAY_ORDER
+                    FROM ACTIVE_RECIPIENT_ROWS
+                   WHERE RECIPIENT_TYPE = 'TO'
+              )
+             GROUP BY DIVISION_ID
+        ),
+
+        CC_RECIPIENTS AS
+        (
+            SELECT DIVISION_ID,
+                   LISTAGG(EMAIL_ADDRESS, ';')
+                       WITHIN GROUP
+                       (
+                           ORDER BY DISPLAY_ORDER, EMAIL_ADDRESS
+                       ) AS CC_EMAIL
+              FROM
+              (
+                  SELECT DISTINCT
+                         DIVISION_ID,
+                         EMAIL_ADDRESS,
+                         DISPLAY_ORDER
+                    FROM ACTIVE_RECIPIENT_ROWS
+                   WHERE RECIPIENT_TYPE = 'CC'
+              )
+             GROUP BY DIVISION_ID
+        ),
+
+        DECISION_EVENTS AS
+        (
+            SELECT S.HIST_ID,
+                   S.COM_ID,
+                   S.COM_CYCLE,
+                   S.ENTITY_ID,
+                   S.AUDITED_BY,
+                   S.DECISION_ON,
+                   S.COM_STATUS,
+                   'SETTLED' AS CATEGORY
+              FROM V_IAS_MGMT_SETTLED_EVENTS S
+             WHERE S.DECISION_ON >= TRUNC(P_FROM_DATE)
+               AND S.DECISION_ON < TRUNC(P_TO_DATE)
+
+            UNION ALL
+
+            SELECT R.HIST_ID,
+                   R.COM_ID,
+                   R.COM_CYCLE,
+                   R.ENTITY_ID,
+                   R.AUDITED_BY,
+                   R.DECISION_ON,
+                   R.COM_STATUS,
+                   'REFERRED_BACK' AS CATEGORY
+              FROM V_IAS_MGMT_REFERRED_EVENTS R
+             WHERE R.DECISION_ON >= TRUNC(P_FROM_DATE)
+               AND R.DECISION_ON < TRUNC(P_TO_DATE)
+        ),
+
+        RANKED_DECISIONS AS
+        (
+            SELECT D.HIST_ID,
+                   D.COM_ID,
+                   D.COM_CYCLE,
+                   D.ENTITY_ID,
+                   D.AUDITED_BY,
+                   D.DECISION_ON,
+                   D.COM_STATUS,
+                   D.CATEGORY,
+
+                   ROW_NUMBER() OVER
+                   (
+                       PARTITION BY D.COM_ID
+                       ORDER BY D.DECISION_ON DESC,
+                                D.HIST_ID DESC
+                   ) AS RN
+
+              FROM DECISION_EVENTS D
+        ),
+
+        LATEST_DECISIONS AS
+        (
+            SELECT COM_ID,
+                   ENTITY_ID,
+                   CATEGORY
+              FROM RANKED_DECISIONS
+             WHERE RN = 1
+        ),
+
+        NO_COMPLIANCE AS
+        (
+            SELECT P.COM_ID,
+                   P.ENTITY_ID,
+                   'NO_COMPLIANCE' AS CATEGORY
+
+              FROM V_IAS_MGMT_OPEN_PARAS P
+
+             WHERE
+                   (
+                       P.PARA_ADDED_ON IS NULL
+                       OR P.PARA_ADDED_ON < TRUNC(P_TO_DATE)
+                   )
+
+               AND NOT EXISTS
+               (
+                   SELECT 1
+                     FROM AIS_T_AU_POST_COMPLIANCE_HISTORY H
+                    WHERE H.COM_ID = P.COM_ID
+                      AND H.COM_STATUS = 10
+                      AND H.COMMENT_ON >= TRUNC(P_FROM_DATE)
+                      AND H.COMMENT_ON < TRUNC(P_TO_DATE)
+               )
+
+               AND NOT EXISTS
+               (
+                   SELECT 1
+                     FROM AIS_T_AU_POST_COMPLIANCE_HISTORY H
+                    WHERE H.COM_ID = P.COM_ID
+                      AND H.COM_STATUS IN (16,12,15,18)
+                      AND H.COMMENT_ON >= TRUNC(P_FROM_DATE)
+                      AND H.COMMENT_ON < TRUNC(P_TO_DATE)
+               )
+        ),
+
+        QUALIFYING_PARAS AS
+        (
+            SELECT COM_ID,
+                   ENTITY_ID,
+                   CATEGORY
+              FROM LATEST_DECISIONS
+
+            UNION ALL
+
+            SELECT COM_ID,
+                   ENTITY_ID,
+                   CATEGORY
+              FROM NO_COMPLIANCE
+        ),
+
+        MAPPED_PARAS AS
+        (
+            SELECT Q.COM_ID,
+                   Q.ENTITY_ID,
+                   Q.CATEGORY,
+
+                   M.DIVISION_ID
+
+              FROM QUALIFYING_PARAS Q
+
+              INNER JOIN V_IAS_MGMT_AUDIT_NOTIFY_MAP M
+                      ON M.ENTITY_ID = Q.ENTITY_ID
+
+              INNER JOIN ACTIVE_DIVISIONS D
+                      ON D.DIVISION_ID = M.DIVISION_ID
+
+             WHERE M.DIVISION_ID IS NOT NULL
+        ),
+
+        DIVISION_SUMMARY AS
+        (
+            SELECT M.DIVISION_ID,
+
+                   SUM
+                   (
+                       CASE
+                           WHEN M.CATEGORY = 'SETTLED'
+                           THEN 1
+                           ELSE 0
+                       END
+                   ) AS SETTLED_COUNT,
+
+                   SUM
+                   (
+                       CASE
+                           WHEN M.CATEGORY = 'REFERRED_BACK'
+                           THEN 1
+                           ELSE 0
+                       END
+                   ) AS REJECTED_COUNT,
+
+                   SUM
+                   (
+                       CASE
+                           WHEN M.CATEGORY = 'NO_COMPLIANCE'
+                           THEN 1
+                           ELSE 0
+                       END
+                   ) AS NO_COMPLIANCE_COUNT,
+
+                   COUNT(*) AS TOTAL_COUNT
+
+              FROM MAPPED_PARAS M
+
+             GROUP BY M.DIVISION_ID
+        )
+
+        SELECT S.DIVISION_ID,
+               D.DIVISION_NAME,
+
+               T.TO_EMAIL,
+               C.CC_EMAIL,
+
+               S.SETTLED_COUNT,
+               S.REJECTED_COUNT,
+               S.NO_COMPLIANCE_COUNT,
+               S.TOTAL_COUNT
+
+          FROM DIVISION_SUMMARY S
+
+          INNER JOIN ACTIVE_DIVISIONS D
+                  ON D.DIVISION_ID = S.DIVISION_ID
+
+          INNER JOIN TO_RECIPIENTS T
+                  ON T.DIVISION_ID = S.DIVISION_ID
+
+          LEFT JOIN CC_RECIPIENTS C
+                 ON C.DIVISION_ID = S.DIVISION_ID
+
+         ORDER BY D.DIVISION_NAME;
+
+END P_GET_MGMT_WEEKLY_DIVISIONS;
+
+  ------------------------------------------------------------------
+  -- 2. Return the actual latest Settled / Rejected decisions
+  --    for one selected Division.
+  --
+  -- The same para is returned once only.
+  --
+  -- Example:
+  -- Tuesday = Rejected
+  -- Friday  = Settled
+  --
+  -- Only Friday / Settled will be returned.
+  ------------------------------------------------------------------
+PROCEDURE P_GET_MGMT_WEEKLY_DIVISION_DATA
+(
+    P_DIVISION_ID IN NUMBER,
+    P_FROM_DATE   IN DATE,
+    P_TO_DATE     IN DATE,
+    IO_CURSOR     OUT SYS_REFCURSOR
+)
+IS
+BEGIN
+
+    IF P_DIVISION_ID IS NULL THEN
+        RAISE_APPLICATION_ERROR
+        (
+            -20122,
+            'Management Audit Division ID cannot be null.'
+        );
     END IF;
 
-    IF TRIM(P_DIVISION_NAME) IS NULL THEN
-      RAISE_APPLICATION_ERROR(-20144, 'Division name is required.');
+    VALIDATE_PERIOD(P_FROM_DATE, P_TO_DATE);
+
+    OPEN IO_CURSOR FOR
+
+        WITH
+        ACTIVE_DIVISION AS
+        (
+            SELECT D.DIVISION_ID,
+                   D.DIVISION_NAME
+              FROM T_IAS_MGMT_NOTIFY_DIVISION D
+             WHERE D.DIVISION_ID = P_DIVISION_ID
+               AND D.IS_ACTIVE = 'Y'
+               AND D.WEEKLY_EMAIL_ENABLED = 'Y'
+               AND D.EFFECTIVE_FROM <= TRUNC(SYSDATE)
+               AND
+               (
+                   D.EFFECTIVE_TO IS NULL
+                   OR D.EFFECTIVE_TO >= TRUNC(SYSDATE)
+               )
+        ),
+
+        TO_RECIPIENT AS
+        (
+            SELECT LISTAGG(EMAIL_ADDRESS, ';')
+                       WITHIN GROUP
+                       (
+                           ORDER BY DISPLAY_ORDER,
+                                    EMAIL_ADDRESS
+                       ) AS TO_EMAIL
+              FROM
+              (
+                  SELECT DISTINCT
+                         TRIM(R.EMAIL_ADDRESS) AS EMAIL_ADDRESS,
+                         NVL(R.DISPLAY_ORDER,1) AS DISPLAY_ORDER
+                    FROM T_IAS_MGMT_NOTIFY_RECIPIENT R
+                   WHERE R.DIVISION_ID = P_DIVISION_ID
+                     AND R.RECIPIENT_TYPE = 'TO'
+                     AND R.IS_ACTIVE = 'Y'
+                     AND R.EFFECTIVE_FROM <= TRUNC(SYSDATE)
+                     AND
+                     (
+                         R.EFFECTIVE_TO IS NULL
+                         OR R.EFFECTIVE_TO >= TRUNC(SYSDATE)
+                     )
+                     AND TRIM(R.EMAIL_ADDRESS) IS NOT NULL
+              )
+        ),
+
+        CC_RECIPIENT AS
+        (
+            SELECT LISTAGG(EMAIL_ADDRESS, ';')
+                       WITHIN GROUP
+                       (
+                           ORDER BY DISPLAY_ORDER,
+                                    EMAIL_ADDRESS
+                       ) AS CC_EMAIL
+              FROM
+              (
+                  SELECT DISTINCT
+                         TRIM(R.EMAIL_ADDRESS) AS EMAIL_ADDRESS,
+                         NVL(R.DISPLAY_ORDER,1) AS DISPLAY_ORDER
+                    FROM T_IAS_MGMT_NOTIFY_RECIPIENT R
+                   WHERE R.DIVISION_ID = P_DIVISION_ID
+                     AND R.RECIPIENT_TYPE = 'CC'
+                     AND R.IS_ACTIVE = 'Y'
+                     AND R.EFFECTIVE_FROM <= TRUNC(SYSDATE)
+                     AND
+                     (
+                         R.EFFECTIVE_TO IS NULL
+                         OR R.EFFECTIVE_TO >= TRUNC(SYSDATE)
+                     )
+                     AND TRIM(R.EMAIL_ADDRESS) IS NOT NULL
+              )
+        ),
+
+        DECISION_EVENTS AS
+        (
+            SELECT W.HIST_ID AS DECISION_HISTORY_ID,
+
+                   H.COM_ID,
+                   H.COM_CYCLE,
+
+                   PC.ENTITY_ID,
+                   PC.AUDITED_BY,
+
+                   W.DIVISION_ID,
+                   D.DIVISION_NAME,
+
+                   T.TO_EMAIL,
+                   C.CC_EMAIL,
+
+                   W.ENTITY_NAME,
+                   W.AUDIT_PERIOD,
+                   W.PARA_NO,
+                   W.TITLE,
+
+                   W.SUBMITTED_ON,
+                   W.DECISION_ON,
+
+                   W.COM_STATUS,
+
+                   CASE
+                       WHEN W.COM_STATUS = 16
+                       THEN 'SETTLED'
+
+                       WHEN W.COM_STATUS IN (12,15,18)
+                       THEN 'REJECTED'
+                   END AS DECISION_STATUS,
+
+                   CASE
+                       WHEN W.COM_STATUS IN (12,15,18)
+                       THEN W.REASON
+                       ELSE NULL
+                   END AS REASON,
+
+                   ROW_NUMBER() OVER
+                   (
+                       PARTITION BY H.COM_ID
+                       ORDER BY W.DECISION_ON DESC,
+                                W.HIST_ID DESC
+                   ) AS RN
+
+              FROM V_IAS_MGMT_WEEKLY_DATA W
+
+              INNER JOIN AIS_T_AU_POST_COMPLIANCE_HISTORY H
+                      ON H.HIST_ID = W.HIST_ID
+
+              INNER JOIN AIS_T_AU_POST_COMPLIANCE PC
+                      ON PC.COM_ID = H.COM_ID
+
+              INNER JOIN ACTIVE_DIVISION D
+                      ON D.DIVISION_ID = W.DIVISION_ID
+
+              CROSS JOIN TO_RECIPIENT T
+              CROSS JOIN CC_RECIPIENT C
+
+             WHERE W.DECISION_ON >= TRUNC(P_FROM_DATE)
+               AND W.DECISION_ON < TRUNC(P_TO_DATE)
+
+               AND W.COM_STATUS IN (16,12,15,18)
+
+               AND PC.AUDITED_BY IN (112242,112248)
+
+               AND W.DIVISION_ID = P_DIVISION_ID
+
+               AND T.TO_EMAIL IS NOT NULL
+        )
+
+        SELECT DECISION_HISTORY_ID,
+
+               COM_ID,
+               COM_CYCLE,
+
+               ENTITY_ID,
+               AUDITED_BY,
+
+               DIVISION_ID,
+               DIVISION_NAME,
+
+               TO_EMAIL,
+               CC_EMAIL,
+
+               ENTITY_NAME,
+               AUDIT_PERIOD,
+               PARA_NO,
+               TITLE,
+
+               SUBMITTED_ON,
+               DECISION_ON,
+
+               DECISION_STATUS,
+               COM_STATUS,
+
+               REASON
+
+          FROM DECISION_EVENTS
+
+         WHERE RN = 1
+
+         ORDER BY
+               CASE
+                   WHEN COM_STATUS = 16 THEN 1
+                   ELSE 2
+               END,
+
+               DECISION_ON,
+               ENTITY_NAME,
+               PARA_NO;
+
+END P_GET_MGMT_WEEKLY_DIVISION_DATA;
+
+PROCEDURE P_GET_MGMT_WEEKLY_NO_COMPLIANCE
+(
+    P_DIVISION_ID IN NUMBER,
+    P_FROM_DATE   IN DATE,
+    P_TO_DATE     IN DATE,
+    IO_CURSOR     OUT SYS_REFCURSOR
+)
+IS
+BEGIN
+
+    IF P_DIVISION_ID IS NULL THEN
+        RAISE_APPLICATION_ERROR
+        (
+            -20122,
+            'Management Audit Division ID cannot be null.'
+        );
     END IF;
 
-    VALIDATE_FLAG(P_IS_ACTIVE, 'Active status');
-    VALIDATE_FLAG(P_WEEKLY_EMAIL_ENABLED, 'Weekly Email Enabled');
-    VALIDATE_DATES(P_EFFECTIVE_FROM, P_EFFECTIVE_TO);
+    VALIDATE_PERIOD(P_FROM_DATE, P_TO_DATE);
 
-    MERGE INTO T_IAS_MGMT_NOTIFY_DIVISION D
-    USING (SELECT P_DIVISION_ID AS DIVISION_ID FROM DUAL) S
-       ON (D.DIVISION_ID = S.DIVISION_ID)
-     WHEN MATCHED THEN
-       UPDATE SET D.DIVISION_NAME = TRIM(P_DIVISION_NAME),
-                  D.IS_ACTIVE = P_IS_ACTIVE,
-                  D.WEEKLY_EMAIL_ENABLED = P_WEEKLY_EMAIL_ENABLED,
-                  D.EFFECTIVE_FROM = TRUNC(P_EFFECTIVE_FROM),
-                  D.EFFECTIVE_TO = CASE WHEN P_EFFECTIVE_TO IS NULL THEN NULL ELSE TRUNC(P_EFFECTIVE_TO) END,
-                  D.REMARKS = TRIM(P_REMARKS),
-                  D.UPDATED_BY = NVL(TRIM(P_UPDATED_BY), USER),
-                  D.UPDATED_ON = SYSDATE
-     WHEN NOT MATCHED THEN
-       INSERT (DIVISION_ID, DIVISION_NAME, IS_ACTIVE, WEEKLY_EMAIL_ENABLED,
-               EFFECTIVE_FROM, EFFECTIVE_TO, REMARKS, CREATED_BY, CREATED_ON)
-       VALUES (P_DIVISION_ID, TRIM(P_DIVISION_NAME), P_IS_ACTIVE, P_WEEKLY_EMAIL_ENABLED,
-               TRUNC(P_EFFECTIVE_FROM),
-               CASE WHEN P_EFFECTIVE_TO IS NULL THEN NULL ELSE TRUNC(P_EFFECTIVE_TO) END,
-               TRIM(P_REMARKS), NVL(TRIM(P_UPDATED_BY), USER), SYSDATE);
+    OPEN IO_CURSOR FOR
 
-    COMMIT;
-  END P_SAVE_DIVISION;
+        SELECT PC.COM_ID,
+               PC.COM_CYCLE,
 
-  PROCEDURE P_SAVE_RECIPIENT(P_RECIPIENT_ID       IN NUMBER,
-                             P_DIVISION_ID        IN NUMBER,
-                             P_RECIPIENT_TYPE     IN VARCHAR2,
-                             P_EMAIL_ADDRESS      IN VARCHAR2,
-                             P_PERSON_NAME        IN VARCHAR2,
-                             P_DESIGNATION        IN VARCHAR2,
-                             P_IS_ACTIVE          IN CHAR,
-                             P_EFFECTIVE_FROM     IN DATE,
-                             P_EFFECTIVE_TO       IN DATE,
-                             P_DISPLAY_ORDER      IN NUMBER,
-                             P_UPDATED_BY         IN VARCHAR2,
-                             P_SAVED_RECIPIENT_ID OUT NUMBER) IS
-    V_RECIPIENT_TYPE VARCHAR2(10) := UPPER(TRIM(P_RECIPIENT_TYPE));
-    V_DUPLICATE_COUNT NUMBER;
-  BEGIN
-    IF P_DIVISION_ID IS NULL OR P_DIVISION_ID <= 0 THEN
-      RAISE_APPLICATION_ERROR(-20143, 'Division is required.');
-    END IF;
+               PC.ENTITY_ID,
+               PC.AUDITED_BY,
 
-    IF V_RECIPIENT_TYPE NOT IN ('TO', 'CC') THEN
-      RAISE_APPLICATION_ERROR(-20145, 'Recipient type must be TO or CC.');
-    END IF;
+               D.DIVISION_ID,
+               D.DIVISION_NAME,
 
-    IF TRIM(P_EMAIL_ADDRESS) IS NULL THEN
-      RAISE_APPLICATION_ERROR(-20146, 'Email address is required.');
-    END IF;
+               M.ENTITY_NAME,
 
-    VALIDATE_FLAG(P_IS_ACTIVE, 'Recipient active status');
-    VALIDATE_DATES(P_EFFECTIVE_FROM, P_EFFECTIVE_TO);
+               PC.AUDIT_PERIOD,
+               PC.PARA_NO,
+               PC.GIST_OF_PARAS AS TITLE,
+               PC.RISK,
 
-    SELECT COUNT(*)
-      INTO V_DUPLICATE_COUNT
-      FROM T_IAS_MGMT_NOTIFY_RECIPIENT R
-     WHERE R.DIVISION_ID = P_DIVISION_ID
-       AND R.RECIPIENT_TYPE = V_RECIPIENT_TYPE
-       AND LOWER(TRIM(R.EMAIL_ADDRESS)) = LOWER(TRIM(P_EMAIL_ADDRESS))
-       AND R.RECIPIENT_ID <> NVL(P_RECIPIENT_ID, -1);
+               (
+                   SELECT MAX(H.COMMENT_ON)
+                     FROM AIS_T_AU_POST_COMPLIANCE_HISTORY H
+                    WHERE H.COM_ID = PC.COM_ID
+                      AND H.COM_STATUS = 10
+                      AND H.COMMENT_ON < TRUNC(P_TO_DATE)
+               ) AS LAST_COMPLIANCE_SUBMITTED_ON,
 
-    IF V_DUPLICATE_COUNT > 0 THEN
-      RAISE_APPLICATION_ERROR(-20147, 'This email address is already configured for the selected recipient type.');
-    END IF;
+               PC.PARA_STATUS,
+               PC.COM_STATUS,
+               PC.COM_STAGE
 
-    IF P_RECIPIENT_ID IS NULL THEN
-      P_SAVED_RECIPIENT_ID := SEQ_IAS_MGMT_NOTIFY_RECIPIENT.NEXTVAL;
+          FROM AIS_T_AU_POST_COMPLIANCE PC
 
-      INSERT INTO T_IAS_MGMT_NOTIFY_RECIPIENT
-        (RECIPIENT_ID, DIVISION_ID, RECIPIENT_TYPE, EMAIL_ADDRESS,
-         PERSON_NAME, DESIGNATION, IS_ACTIVE, EFFECTIVE_FROM, EFFECTIVE_TO,
-         DISPLAY_ORDER, CREATED_BY, CREATED_ON)
-      VALUES
-        (P_SAVED_RECIPIENT_ID, P_DIVISION_ID, V_RECIPIENT_TYPE, TRIM(P_EMAIL_ADDRESS),
-         TRIM(P_PERSON_NAME), TRIM(P_DESIGNATION), P_IS_ACTIVE, TRUNC(P_EFFECTIVE_FROM),
-         CASE WHEN P_EFFECTIVE_TO IS NULL THEN NULL ELSE TRUNC(P_EFFECTIVE_TO) END,
-         NVL(P_DISPLAY_ORDER, 1), NVL(TRIM(P_UPDATED_BY), USER), SYSDATE);
-    ELSE
-      UPDATE T_IAS_MGMT_NOTIFY_RECIPIENT R
-         SET R.DIVISION_ID = P_DIVISION_ID,
-             R.RECIPIENT_TYPE = V_RECIPIENT_TYPE,
-             R.EMAIL_ADDRESS = TRIM(P_EMAIL_ADDRESS),
-             R.PERSON_NAME = TRIM(P_PERSON_NAME),
-             R.DESIGNATION = TRIM(P_DESIGNATION),
-             R.IS_ACTIVE = P_IS_ACTIVE,
-             R.EFFECTIVE_FROM = TRUNC(P_EFFECTIVE_FROM),
-             R.EFFECTIVE_TO = CASE WHEN P_EFFECTIVE_TO IS NULL THEN NULL ELSE TRUNC(P_EFFECTIVE_TO) END,
-             R.DISPLAY_ORDER = NVL(P_DISPLAY_ORDER, 1),
-             R.UPDATED_BY = NVL(TRIM(P_UPDATED_BY), USER),
-             R.UPDATED_ON = SYSDATE
-       WHERE R.RECIPIENT_ID = P_RECIPIENT_ID;
+          INNER JOIN V_IAS_MGMT_AUDIT_NOTIFY_MAP M
+                  ON M.ENTITY_ID = PC.ENTITY_ID
 
-      IF SQL%ROWCOUNT = 0 THEN
-        RAISE_APPLICATION_ERROR(-20148, 'Recipient configuration was not found.');
-      END IF;
+          INNER JOIN T_IAS_MGMT_NOTIFY_DIVISION D
+                  ON D.DIVISION_ID = M.DIVISION_ID
 
-      P_SAVED_RECIPIENT_ID := P_RECIPIENT_ID;
-    END IF;
+         WHERE PC.AUDITED_BY IN (112242,112248)
 
-    COMMIT;
-  END P_SAVE_RECIPIENT;
+           AND PC.PARA_STATUS = 8
 
-  PROCEDURE P_REMOVE_RECIPIENT(P_RECIPIENT_ID IN NUMBER,
-                               P_UPDATED_BY    IN VARCHAR2) IS
-  BEGIN
-    IF P_RECIPIENT_ID IS NULL OR P_RECIPIENT_ID <= 0 THEN
-      RAISE_APPLICATION_ERROR(-20149, 'Recipient is required.');
-    END IF;
+           AND D.DIVISION_ID = P_DIVISION_ID
 
-    UPDATE T_IAS_MGMT_NOTIFY_RECIPIENT R
-       SET R.IS_ACTIVE = 'N',
-           R.EFFECTIVE_TO = CASE
-                              WHEN R.EFFECTIVE_FROM > TRUNC(SYSDATE) THEN R.EFFECTIVE_FROM
-                              ELSE TRUNC(SYSDATE)
-                            END,
-           R.UPDATED_BY = NVL(TRIM(P_UPDATED_BY), USER),
-           R.UPDATED_ON = SYSDATE
-     WHERE R.RECIPIENT_ID = P_RECIPIENT_ID;
+           AND D.IS_ACTIVE = 'Y'
+           AND D.WEEKLY_EMAIL_ENABLED = 'Y'
 
-    IF SQL%ROWCOUNT = 0 THEN
-      RAISE_APPLICATION_ERROR(-20148, 'Recipient configuration was not found.');
-    END IF;
+           AND D.EFFECTIVE_FROM <= TRUNC(SYSDATE)
 
-    COMMIT;
-  END P_REMOVE_RECIPIENT;
+           AND
+           (
+               D.EFFECTIVE_TO IS NULL
+               OR D.EFFECTIVE_TO >= TRUNC(SYSDATE)
+           )
 
-END PKG_MGMT_AUDIT_NOTIFY_ADMIN;
-/
+           AND EXISTS
+           (
+               SELECT 1
+                 FROM T_IAS_MGMT_NOTIFY_RECIPIENT R
+                WHERE R.DIVISION_ID = D.DIVISION_ID
+                  AND R.RECIPIENT_TYPE = 'TO'
+                  AND R.IS_ACTIVE = 'Y'
+                  AND R.EFFECTIVE_FROM <= TRUNC(SYSDATE)
+                  AND
+                  (
+                      R.EFFECTIVE_TO IS NULL
+                      OR R.EFFECTIVE_TO >= TRUNC(SYSDATE)
+                  )
+                  AND TRIM(R.EMAIL_ADDRESS) IS NOT NULL
+           )
+
+           AND
+           (
+               PC.PARA_ADDED_ON IS NULL
+               OR PC.PARA_ADDED_ON < TRUNC(P_TO_DATE)
+           )
+
+           AND NOT EXISTS
+           (
+               SELECT 1
+                 FROM AIS_T_AU_POST_COMPLIANCE_HISTORY H
+                WHERE H.COM_ID = PC.COM_ID
+                  AND H.COM_STATUS = 10
+                  AND H.COMMENT_ON >= TRUNC(P_FROM_DATE)
+                  AND H.COMMENT_ON < TRUNC(P_TO_DATE)
+           )
+
+         ORDER BY
+               M.ENTITY_NAME,
+               PC.AUDIT_PERIOD,
+               PC.PARA_NO;
+
+END P_GET_MGMT_WEEKLY_NO_COMPLIANCE;
+
+
+END PKG_MGMT_AUDIT_WEEKLY;
