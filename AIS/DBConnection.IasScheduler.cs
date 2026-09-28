@@ -38,7 +38,7 @@ namespace AIS.Controllers
             return ReadIasSchedulerCursor(cmd, MapIasSchedulerExecutionHistory);
         }
 
-        public List<IasSchedulerRunRequest> GetIasSchedulerRunRequests(long? scheduleId = null, string status = null)
+        public List<IasSchedulerRunRequest> GetIasSchedulerRunRequests(long? scheduleId = null)
         {
             using var con = DatabaseConnection(requireActiveSession: false);
             using var cmd = con.CreateCommand();
@@ -47,7 +47,6 @@ namespace AIS.Controllers
             cmd.BindByName = true;
             GuardAgainstDynamicSql(cmd);
             cmd.Parameters.Add("P_SCHEDULE_ID", OracleDbType.Int64).Value = scheduleId ?? (object)DBNull.Value;
-            cmd.Parameters.Add("P_STATUS", OracleDbType.Varchar2, 30).Value = IasSchedulerDbValue(status, 30);
             cmd.Parameters.Add("IO_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
 
             return ReadIasSchedulerCursor(cmd, MapIasSchedulerRunRequest);
@@ -135,7 +134,12 @@ namespace AIS.Controllers
             cmd.ExecuteNonQuery();
         }
 
-        public long RequestIasSchedulerRunNow(long scheduleId, string requestedBy, string requestReason)
+        public long RequestIasSchedulerRunNow(
+            long scheduleId,
+            DateTime? periodFrom,
+            DateTime? periodTo,
+            string requestedBy,
+            string remarks = null)
         {
             using var con = DatabaseConnection(requireActiveSession: false);
             using var cmd = con.CreateCommand();
@@ -144,16 +148,18 @@ namespace AIS.Controllers
             cmd.BindByName = true;
             GuardAgainstDynamicSql(cmd);
             cmd.Parameters.Add("P_SCHEDULE_ID", OracleDbType.Int64).Value = scheduleId;
+            cmd.Parameters.Add("P_PERIOD_FROM", OracleDbType.Date).Value = periodFrom ?? (object)DBNull.Value;
+            cmd.Parameters.Add("P_PERIOD_TO", OracleDbType.Date).Value = periodTo ?? (object)DBNull.Value;
             cmd.Parameters.Add("P_REQUESTED_BY", OracleDbType.Varchar2, 100).Value = IasSchedulerDbValue(requestedBy, 100);
-            cmd.Parameters.Add("P_REQUEST_REASON", OracleDbType.Varchar2, 1000).Value = IasSchedulerDbValue(requestReason, 1000);
-            var requestId = cmd.Parameters.Add("P_RUN_REQUEST_ID", OracleDbType.Int64);
+            cmd.Parameters.Add("P_REMARKS", OracleDbType.Varchar2, 1000).Value = IasSchedulerDbValue(remarks, 1000);
+            var requestId = cmd.Parameters.Add("P_REQUEST_ID", OracleDbType.Int64);
             requestId.Direction = ParameterDirection.Output;
             cmd.ExecuteNonQuery();
 
             return ReadIasSchedulerOutputInt64(requestId);
         }
 
-        public void CancelIasSchedulerRunRequest(long runRequestId, string cancelledBy, string cancelReason)
+        public void CancelIasSchedulerRunRequest(long requestId, string updatedBy)
         {
             using var con = DatabaseConnection(requireActiveSession: false);
             using var cmd = con.CreateCommand();
@@ -161,13 +167,12 @@ namespace AIS.Controllers
             cmd.CommandType = CommandType.StoredProcedure;
             cmd.BindByName = true;
             GuardAgainstDynamicSql(cmd);
-            cmd.Parameters.Add("P_RUN_REQUEST_ID", OracleDbType.Int64).Value = runRequestId;
-            cmd.Parameters.Add("P_CANCELLED_BY", OracleDbType.Varchar2, 100).Value = IasSchedulerDbValue(cancelledBy, 100);
-            cmd.Parameters.Add("P_CANCEL_REASON", OracleDbType.Varchar2, 1000).Value = IasSchedulerDbValue(cancelReason, 1000);
+            cmd.Parameters.Add("P_REQUEST_ID", OracleDbType.Int64).Value = requestId;
+            cmd.Parameters.Add("P_UPDATED_BY", OracleDbType.Varchar2, 100).Value = IasSchedulerDbValue(updatedBy, 100);
             cmd.ExecuteNonQuery();
         }
 
-        public int FlagStaleIasSchedulerExecutions(int staleAfterMinutes, string updatedBy)
+        public void FlagStaleIasSchedulerExecutions(int staleMinutes)
         {
             using var con = DatabaseConnection(requireActiveSession: false);
             using var cmd = con.CreateCommand();
@@ -175,21 +180,15 @@ namespace AIS.Controllers
             cmd.CommandType = CommandType.StoredProcedure;
             cmd.BindByName = true;
             GuardAgainstDynamicSql(cmd);
-            cmd.Parameters.Add("P_STALE_AFTER_MINUTES", OracleDbType.Int32).Value = staleAfterMinutes;
-            cmd.Parameters.Add("P_UPDATED_BY", OracleDbType.Varchar2, 100).Value = IasSchedulerDbValue(updatedBy, 100);
-            var flaggedCount = cmd.Parameters.Add("P_FLAGGED_COUNT", OracleDbType.Int32);
-            flaggedCount.Direction = ParameterDirection.Output;
+            cmd.Parameters.Add("P_STALE_MINUTES", OracleDbType.Int32).Value = staleMinutes;
             cmd.ExecuteNonQuery();
-
-            return Convert.ToInt32(flaggedCount.Value.ToString());
         }
 
         public void ResolveIasSchedulerExecution(
             long executionId,
-            string resolutionStatus,
+            string resolution,
             int? recordsProcessed,
-            string responseMessage,
-            string errorMessage,
+            string message,
             string updatedBy)
         {
             using var con = DatabaseConnection(requireActiveSession: false);
@@ -199,10 +198,9 @@ namespace AIS.Controllers
             cmd.BindByName = true;
             GuardAgainstDynamicSql(cmd);
             cmd.Parameters.Add("P_EXECUTION_ID", OracleDbType.Int64).Value = executionId;
-            cmd.Parameters.Add("P_RESOLUTION_STATUS", OracleDbType.Varchar2, 20).Value = IasSchedulerDbValue(resolutionStatus, 20);
+            cmd.Parameters.Add("P_RESOLUTION", OracleDbType.Varchar2, 20).Value = IasSchedulerDbValue(resolution, 20);
             cmd.Parameters.Add("P_RECORDS_PROCESSED", OracleDbType.Int32).Value = recordsProcessed ?? (object)DBNull.Value;
-            cmd.Parameters.Add("P_RESPONSE_MESSAGE", OracleDbType.Varchar2, 2000).Value = IasSchedulerDbValue(responseMessage, 2000);
-            cmd.Parameters.Add("P_ERROR_MESSAGE", OracleDbType.Varchar2, 4000).Value = IasSchedulerDbValue(errorMessage, 4000);
+            cmd.Parameters.Add("P_MESSAGE", OracleDbType.Varchar2, 4000).Value = IasSchedulerDbValue(message, 4000);
             cmd.Parameters.Add("P_UPDATED_BY", OracleDbType.Varchar2, 100).Value = IasSchedulerDbValue(updatedBy, 100);
             cmd.ExecuteNonQuery();
         }
@@ -314,7 +312,8 @@ namespace AIS.Controllers
                 CreatedBy = ReadIasSchedulerString(reader, "CREATED_BY"),
                 CreatedOn = ReadIasSchedulerNullableDate(reader, "CREATED_ON"),
                 UpdatedBy = ReadIasSchedulerString(reader, "UPDATED_BY"),
-                UpdatedOn = ReadIasSchedulerNullableDate(reader, "UPDATED_ON")
+                UpdatedOn = ReadIasSchedulerNullableDate(reader, "UPDATED_ON"),
+                ScheduleCount = ReadIasSchedulerInt32(reader, "SCHEDULE_COUNT")
             };
         }
 
@@ -355,7 +354,8 @@ namespace AIS.Controllers
                 CreatedOn = ReadIasSchedulerNullableDate(reader, "CREATED_ON"),
                 UpdatedBy = ReadIasSchedulerString(reader, "UPDATED_BY"),
                 UpdatedOn = ReadIasSchedulerNullableDate(reader, "UPDATED_ON"),
-                IsDue = ReadIasSchedulerFlag(reader, "IS_DUE")
+                IsDue = ReadIasSchedulerFlag(reader, "IS_DUE"),
+                OpenRunRequests = ReadIasSchedulerInt32(reader, "OPEN_RUN_REQUESTS")
             };
         }
 
@@ -368,6 +368,9 @@ namespace AIS.Controllers
                 JobId = ReadIasSchedulerInt64(reader, "JOB_ID"),
                 JobCode = ReadIasSchedulerString(reader, "JOB_CODE"),
                 JobName = ReadIasSchedulerString(reader, "JOB_NAME"),
+                ExecutionType = ReadIasSchedulerString(reader, "EXECUTION_TYPE"),
+                RunSource = ReadIasSchedulerString(reader, "RUN_SOURCE"),
+                RunRequestId = ReadIasSchedulerNullableInt64(reader, "RUN_REQUEST_ID"),
                 ExecutionKey = ReadIasSchedulerString(reader, "EXECUTION_KEY"),
                 ScheduledFor = ReadIasSchedulerNullableTimestampTz(reader, "SCHEDULED_FOR"),
                 PeriodFrom = ReadIasSchedulerNullableDate(reader, "PERIOD_FROM"),
@@ -379,9 +382,7 @@ namespace AIS.Controllers
                 RecordsProcessed = ReadIasSchedulerNullableInt32(reader, "RECORDS_PROCESSED"),
                 ResponseMessage = ReadIasSchedulerString(reader, "RESPONSE_MESSAGE"),
                 ErrorMessage = ReadIasSchedulerString(reader, "ERROR_MESSAGE"),
-                CreatedOn = ReadIasSchedulerNullableTimestampTz(reader, "CREATED_ON"),
-                RunSource = ReadIasSchedulerString(reader, "RUN_SOURCE"),
-                RunRequestId = ReadIasSchedulerNullableInt64(reader, "RUN_REQUEST_ID")
+                CreatedOn = ReadIasSchedulerNullableTimestampTz(reader, "CREATED_ON")
             };
         }
 
@@ -389,22 +390,21 @@ namespace AIS.Controllers
         {
             return new IasSchedulerRunRequest
             {
-                RunRequestId = ReadIasSchedulerInt64(reader, "RUN_REQUEST_ID"),
+                RequestId = ReadIasSchedulerInt64(reader, "REQUEST_ID"),
+                RunRequestId = ReadIasSchedulerInt64(reader, "REQUEST_ID"),
                 ScheduleId = ReadIasSchedulerInt64(reader, "SCHEDULE_ID"),
                 JobId = ReadIasSchedulerInt64(reader, "JOB_ID"),
                 JobCode = ReadIasSchedulerString(reader, "JOB_CODE"),
                 JobName = ReadIasSchedulerString(reader, "JOB_NAME"),
-                Status = ReadIasSchedulerString(reader, "STATUS"),
                 RequestedBy = ReadIasSchedulerString(reader, "REQUESTED_BY"),
                 RequestedOn = ReadIasSchedulerNullableTimestampTz(reader, "REQUESTED_ON"),
-                RequestReason = ReadIasSchedulerString(reader, "REQUEST_REASON"),
-                CancelledBy = ReadIasSchedulerString(reader, "CANCELLED_BY"),
-                CancelledOn = ReadIasSchedulerNullableTimestampTz(reader, "CANCELLED_ON"),
-                CancelReason = ReadIasSchedulerString(reader, "CANCEL_REASON"),
+                PeriodFrom = ReadIasSchedulerNullableDate(reader, "PERIOD_FROM"),
+                PeriodTo = ReadIasSchedulerNullableDate(reader, "PERIOD_TO"),
+                Status = ReadIasSchedulerString(reader, "STATUS"),
                 ExecutionId = ReadIasSchedulerNullableInt64(reader, "EXECUTION_ID"),
-                ClaimedOn = ReadIasSchedulerNullableTimestampTz(reader, "CLAIMED_ON"),
-                ResponseMessage = ReadIasSchedulerString(reader, "RESPONSE_MESSAGE"),
-                ErrorMessage = ReadIasSchedulerString(reader, "ERROR_MESSAGE")
+                Remarks = ReadIasSchedulerString(reader, "REMARKS"),
+                UpdatedBy = ReadIasSchedulerString(reader, "UPDATED_BY"),
+                UpdatedOn = ReadIasSchedulerNullableDate(reader, "UPDATED_ON")
             };
         }
 
@@ -417,16 +417,15 @@ namespace AIS.Controllers
                 JobId = ReadIasSchedulerInt64(reader, "JOB_ID"),
                 JobCode = ReadIasSchedulerString(reader, "JOB_CODE"),
                 JobName = ReadIasSchedulerString(reader, "JOB_NAME"),
+                RunSource = ReadIasSchedulerString(reader, "RUN_SOURCE"),
+                RunRequestId = ReadIasSchedulerNullableInt64(reader, "RUN_REQUEST_ID"),
                 ExecutionKey = ReadIasSchedulerString(reader, "EXECUTION_KEY"),
                 ScheduledFor = ReadIasSchedulerNullableTimestampTz(reader, "SCHEDULED_FOR"),
                 PeriodFrom = ReadIasSchedulerNullableDate(reader, "PERIOD_FROM"),
                 PeriodTo = ReadIasSchedulerNullableDate(reader, "PERIOD_TO"),
-                Status = ReadIasSchedulerString(reader, "STATUS"),
                 StartedOn = ReadIasSchedulerNullableTimestampTz(reader, "STARTED_ON"),
-                RetryNo = ReadIasSchedulerInt32(reader, "RETRY_NO"),
-                RunSource = ReadIasSchedulerString(reader, "RUN_SOURCE"),
-                RunRequestId = ReadIasSchedulerNullableInt64(reader, "RUN_REQUEST_ID"),
-                LastError = ReadIasSchedulerString(reader, "LAST_ERROR")
+                ErrorMessage = ReadIasSchedulerString(reader, "ERROR_MESSAGE"),
+                LastError = ReadIasSchedulerString(reader, "ERROR_MESSAGE")
             };
         }
 

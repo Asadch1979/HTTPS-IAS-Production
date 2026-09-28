@@ -55,6 +55,7 @@ namespace AIS.Models.Scheduler
         public DateTime? CreatedOn { get; set; }
         public string UpdatedBy { get; set; } = string.Empty;
         public DateTime? UpdatedOn { get; set; }
+        public int ScheduleCount { get; set; }
     }
 
     public sealed class IasSchedulerSchedule
@@ -93,6 +94,7 @@ namespace AIS.Models.Scheduler
         public string UpdatedBy { get; set; } = string.Empty;
         public DateTime? UpdatedOn { get; set; }
         public bool IsDue { get; set; }
+        public int OpenRunRequests { get; set; }
     }
 
     public sealed class IasSchedulerExecutionHistory
@@ -102,6 +104,7 @@ namespace AIS.Models.Scheduler
         public long JobId { get; set; }
         public string JobCode { get; set; } = string.Empty;
         public string JobName { get; set; } = string.Empty;
+        public string ExecutionType { get; set; } = string.Empty;
         public string ExecutionKey { get; set; } = string.Empty;
         public DateTime? ScheduledFor { get; set; }
         public DateTime? PeriodFrom { get; set; }
@@ -120,6 +123,7 @@ namespace AIS.Models.Scheduler
 
     public sealed class IasSchedulerRunRequest
     {
+        public long RequestId { get; set; }
         public long RunRequestId { get; set; }
         public long ScheduleId { get; set; }
         public long JobId { get; set; }
@@ -128,6 +132,11 @@ namespace AIS.Models.Scheduler
         public string Status { get; set; } = string.Empty;
         public string RequestedBy { get; set; } = string.Empty;
         public DateTime? RequestedOn { get; set; }
+        public DateTime? PeriodFrom { get; set; }
+        public DateTime? PeriodTo { get; set; }
+        public string Remarks { get; set; } = string.Empty;
+        public string UpdatedBy { get; set; } = string.Empty;
+        public DateTime? UpdatedOn { get; set; }
         public string RequestReason { get; set; } = string.Empty;
         public string CancelledBy { get; set; } = string.Empty;
         public DateTime? CancelledOn { get; set; }
@@ -154,6 +163,7 @@ namespace AIS.Models.Scheduler
         public int RetryNo { get; set; }
         public string RunSource { get; set; } = string.Empty;
         public long? RunRequestId { get; set; }
+        public string ErrorMessage { get; set; } = string.Empty;
         public string LastError { get; set; } = string.Empty;
     }
 

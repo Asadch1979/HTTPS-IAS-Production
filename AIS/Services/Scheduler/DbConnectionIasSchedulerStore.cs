@@ -29,7 +29,8 @@ namespace AIS.Services.Scheduler
 
         public int FlagStaleExecutions(int staleAfterMinutes, string updatedBy)
         {
-            return dbConnection.FlagStaleIasSchedulerExecutions(staleAfterMinutes, updatedBy);
+            dbConnection.FlagStaleIasSchedulerExecutions(staleAfterMinutes);
+            return 0;
         }
     }
 }
