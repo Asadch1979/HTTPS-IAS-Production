@@ -26,5 +26,10 @@ namespace AIS.Services.Scheduler
         {
             dbConnection.FailIasSchedulerJob(executionId, errorMessage);
         }
+
+        public int FlagStaleExecutions(int staleAfterMinutes, string updatedBy)
+        {
+            return dbConnection.FlagStaleIasSchedulerExecutions(staleAfterMinutes, updatedBy);
+        }
     }
 }

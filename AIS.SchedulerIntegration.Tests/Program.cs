@@ -12,6 +12,10 @@ var tests = new (string Name, Func<Task> Run)[]
     ("Successful claim dispatch complete", SuccessfulClaimDispatchCompleteAsync),
     ("Failure calls fail job", FailureCallsFailJobAsync),
     ("Multiple due jobs processed sequentially", MultipleDueJobsSequentialAsync),
+    ("Manual run now jobs are dispatched", ManualRunNowDispatchedAsync),
+    ("Registered database job completes", RegisteredDatabaseJobCompletesAsync),
+    ("Unknown database job fails safely", UnknownDatabaseJobFailsSafelyAsync),
+    ("Stale running executions are flagged", StaleRunningExecutionsFlaggedAsync),
     ("Explicit period passed to handler", ExplicitPeriodPassedToHandlerAsync),
     ("Unknown handler fails safely", UnknownHandlerFailsSafelyAsync),
     ("No legacy autonomous Management Audit trigger", NoLegacyAutonomousTriggerAsync),
@@ -82,6 +86,58 @@ static async Task MultipleDueJobsSequentialAsync()
     AssertEqual("3,4,5", string.Join(",", store.Completed.Select(job => job.ExecutionId)), "complete order");
 }
 
+static async Task ManualRunNowDispatchedAsync()
+{
+    var store = new FakeSchedulerStore(Job(8, "APP_HANDLER", runSource: "MANUAL", runRequestId: 501));
+    var handler = new RecordingHandler("APP_HANDLER");
+    var dispatcher = NewDispatcher(store, handler);
+
+    var processed = await dispatcher.RunDueJobsAsync(CancellationToken.None);
+
+    AssertEqual(1, processed, "processed count");
+    AssertEqual("MANUAL", handler.Seen[0].RunSource, "run source");
+    AssertEqual(501L, handler.Seen[0].RunRequestId.Value, "run request id");
+    AssertEqual(1, store.Completed.Count, "complete calls");
+}
+
+static async Task RegisteredDatabaseJobCompletesAsync()
+{
+    var store = new FakeSchedulerStore(DatabaseJob(9, "PKG_APPROVED", "P_APPROVED"));
+    var executor = new RecordingDatabaseExecutor("PKG_APPROVED", "P_APPROVED", new IasSchedulerJobResult(4, "database ok"));
+    var dispatcher = NewDispatcherWithDatabase(store, Array.Empty<IIasSchedulerJobHandler>(), executor);
+
+    var processed = await dispatcher.RunDueJobsAsync(CancellationToken.None);
+
+    AssertEqual(1, processed, "processed count");
+    AssertEqual(1, executor.Seen.Count, "executor call count");
+    AssertEqual(1, store.Completed.Count, "complete calls");
+    AssertEqual(4, store.Completed[0].RecordsProcessed, "records processed");
+    AssertEqual(0, store.Failed.Count, "fail calls");
+}
+
+static async Task UnknownDatabaseJobFailsSafelyAsync()
+{
+    var store = new FakeSchedulerStore(DatabaseJob(10, "PKG_NOT_APPROVED", "P_NOT_APPROVED"));
+    var dispatcher = NewDispatcher(store, Array.Empty<IIasSchedulerJobHandler>());
+
+    await dispatcher.RunDueJobsAsync(CancellationToken.None);
+
+    AssertEqual(0, store.Completed.Count, "complete calls");
+    AssertEqual(1, store.Failed.Count, "fail calls");
+    AssertContains("not registered", store.Failed[0].ErrorMessage, "database target message");
+}
+
+static async Task StaleRunningExecutionsFlaggedAsync()
+{
+    var store = new FakeSchedulerStore();
+    var dispatcher = NewDispatcher(store, new RecordingHandler("APP_HANDLER"));
+
+    await dispatcher.RunDueJobsAsync(CancellationToken.None, flagStaleExecutions: true, staleAfterMinutes: 42);
+
+    AssertEqual(1, store.FlagStaleCalls.Count, "flag stale calls");
+    AssertEqual(42, store.FlagStaleCalls[0].StaleAfterMinutes, "stale minutes");
+}
+
 static async Task ExplicitPeriodPassedToHandlerAsync()
 {
     var from = new DateTime(2026, 8, 1);
@@ -141,15 +197,30 @@ static Task ManagementAuditEmailWordingAsync()
     return Task.CompletedTask;
 }
 
-static IasSchedulerDispatcher NewDispatcher(FakeSchedulerStore store, params IIasSchedulerJobHandler[] handlers)
+static IasSchedulerDispatcher NewDispatcherWithDatabase(
+    FakeSchedulerStore store,
+    IEnumerable<IIasSchedulerJobHandler> handlers,
+    params IIasSchedulerDatabaseJobExecutor[] databaseExecutors)
 {
     return new IasSchedulerDispatcher(
         store,
         new IasSchedulerJobHandlerRegistry(handlers),
+        new IasSchedulerDatabaseJobExecutorRegistry(databaseExecutors),
         new TestLogger<IasSchedulerDispatcher>());
 }
 
-static IasSchedulerClaimedJob Job(long executionId, string handler, DateTime? periodFrom = null, DateTime? periodTo = null)
+static IasSchedulerDispatcher NewDispatcher(FakeSchedulerStore store, params IIasSchedulerJobHandler[] handlers)
+{
+    return NewDispatcherWithDatabase(store, handlers, Array.Empty<IIasSchedulerDatabaseJobExecutor>());
+}
+
+static IasSchedulerClaimedJob Job(
+    long executionId,
+    string handler,
+    DateTime? periodFrom = null,
+    DateTime? periodTo = null,
+    string runSource = "SCHEDULED",
+    long? runRequestId = null)
 {
     return new IasSchedulerClaimedJob
     {
@@ -164,8 +235,19 @@ static IasSchedulerClaimedJob Job(long executionId, string handler, DateTime? pe
         ScheduledFor = new DateTime(2026, 8, 3, 7, 0, 0),
         PeriodFrom = periodFrom ?? new DateTime(2026, 8, 3),
         PeriodTo = periodTo ?? new DateTime(2026, 8, 10),
-        RetryNo = 0
+        RetryNo = 0,
+        RunSource = runSource,
+        RunRequestId = runRequestId
     };
+}
+
+static IasSchedulerClaimedJob DatabaseJob(long executionId, string packageName, string procedureName)
+{
+    var job = Job(executionId, string.Empty);
+    job.ExecutionType = IasSchedulerExecutionTypes.Database;
+    job.PackageName = packageName;
+    job.ProcedureName = procedureName;
+    return job;
 }
 
 static void AssertEqual<T>(T expected, T actual, string message)
@@ -203,6 +285,7 @@ sealed class FakeSchedulerStore : IIasSchedulerStore
 
     public List<(long ExecutionId, int RecordsProcessed, string ResponseMessage)> Completed { get; } = new();
     public List<(long ExecutionId, string ErrorMessage)> Failed { get; } = new();
+    public List<(int StaleAfterMinutes, string UpdatedBy)> FlagStaleCalls { get; } = new();
 
     public IasSchedulerClaimedJob ClaimDueJob()
     {
@@ -217,6 +300,12 @@ sealed class FakeSchedulerStore : IIasSchedulerStore
     public void FailJob(long executionId, string errorMessage)
     {
         Failed.Add((executionId, errorMessage));
+    }
+
+    public int FlagStaleExecutions(int staleAfterMinutes, string updatedBy)
+    {
+        FlagStaleCalls.Add((staleAfterMinutes, updatedBy));
+        return 0;
     }
 }
 
@@ -240,6 +329,28 @@ sealed class RecordingHandler : IIasSchedulerJobHandler
         Seen.Add(job);
         if (exception != null)
             throw exception;
+        return Task.FromResult(result);
+    }
+}
+
+sealed class RecordingDatabaseExecutor : IIasSchedulerDatabaseJobExecutor
+{
+    private readonly IasSchedulerJobResult result;
+
+    public RecordingDatabaseExecutor(string packageName, string procedureName, IasSchedulerJobResult result = null)
+    {
+        PackageName = packageName;
+        ProcedureName = procedureName;
+        this.result = result ?? new IasSchedulerJobResult(1, "database ok");
+    }
+
+    public string PackageName { get; }
+    public string ProcedureName { get; }
+    public List<IasSchedulerClaimedJob> Seen { get; } = new();
+
+    public Task<IasSchedulerJobResult> ExecuteAsync(IasSchedulerClaimedJob job, CancellationToken cancellationToken)
+    {
+        Seen.Add(job);
         return Task.FromResult(result);
     }
 }

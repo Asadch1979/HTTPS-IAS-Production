@@ -1,4 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using System;
@@ -12,13 +13,16 @@ namespace AIS.Services.Scheduler
         private static readonly TimeSpan PollInterval = TimeSpan.FromMinutes(1);
 
         private readonly IServiceScopeFactory scopeFactory;
+        private readonly IConfiguration configuration;
         private readonly ILogger<IasSchedulerBackgroundService> logger;
 
         public IasSchedulerBackgroundService(
             IServiceScopeFactory scopeFactory,
+            IConfiguration configuration,
             ILogger<IasSchedulerBackgroundService> logger)
         {
             this.scopeFactory = scopeFactory;
+            this.configuration = configuration;
             this.logger = logger;
         }
 
@@ -30,7 +34,8 @@ namespace AIS.Services.Scheduler
                 {
                     using var scope = scopeFactory.CreateScope();
                     var dispatcher = scope.ServiceProvider.GetRequiredService<IasSchedulerDispatcher>();
-                    await dispatcher.RunDueJobsAsync(stoppingToken);
+                    var staleMinutes = Math.Max(5, configuration.GetValue("IasScheduler:StaleExecutionMinutes", 180));
+                    await dispatcher.RunDueJobsAsync(stoppingToken, flagStaleExecutions: true, staleAfterMinutes: staleMinutes);
                 }
                 catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
                 {
