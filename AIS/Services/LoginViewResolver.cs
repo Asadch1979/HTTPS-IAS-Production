@@ -6,15 +6,51 @@ namespace AIS.Services
     {
     public class LoginViewResolver
         {
-        public LoginViewResolver(IConfiguration configuration, ILogger<LoginViewResolver> logger)
+        private const string DevDataSourceMarker =
+            "10.1.100.112:1521/qadb18c.ztbl.com.pk";
+
+        public LoginViewResolver(
+            IConfiguration configuration,
+            ILogger<LoginViewResolver> logger)
             {
-            IsDevLoginMode = configuration.GetValue<bool>("Security:UseDevelopmentLoginView");
-            ResolvedViewName = IsDevLoginMode ? "index_dev" : "index";
+            var dataSource =
+                configuration.GetConnectionString("DBDataSource");
 
             logger.LogInformation(
-                "Login view resolved to {ViewName}. Mode={LoginMode}.",
+                "LoginViewResolver detected DBDataSource: {DataSource}",
+                dataSource);
+
+            if (string.IsNullOrWhiteSpace(dataSource))
+                {
+                throw new InvalidOperationException(
+                    "ConnectionStrings:DBDataSource must be configured to resolve the login view.");
+                }
+
+            var trimmedDataSource = dataSource.Trim();
+
+            var isDevDatabase =
+                trimmedDataSource.IndexOf(
+                    DevDataSourceMarker,
+                    StringComparison.OrdinalIgnoreCase) >= 0;
+
+            var configuredDevLogin =
+                configuration.GetValue<bool?>(
+                    "Security:UseDevelopmentLoginView");
+
+            IsDevLoginMode =
+                configuredDevLogin ?? isDevDatabase;
+
+            ResolvedViewName =
+                IsDevLoginMode ? "index_dev" : "index";
+
+            logger.LogInformation(
+                "Login view resolved to {ViewName}. " +
+                "Mode={LoginMode}; DevDatabase={DevDatabase}; " +
+                "ConfiguredOverride={ConfiguredOverride}.",
                 ResolvedViewName,
-                IsDevLoginMode ? "DEV" : "STANDARD");
+                IsDevLoginMode ? "DEV" : "STANDARD",
+                isDevDatabase,
+                configuredDevLogin);
             }
 
         public bool IsDevLoginMode { get; }
