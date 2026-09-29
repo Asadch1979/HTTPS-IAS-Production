@@ -28,7 +28,9 @@ var tests = new (string Name, Func<Task> Run)[]
     ("Scheduler Run Now custom period uses exclusive end", SchedulerRunNowCustomPeriodAsync),
     ("Scheduler Run Now custom period validates dates", SchedulerRunNowCustomPeriodValidationAsync),
     ("Scheduler reconciliation allows controlled resolutions", SchedulerReconciliationResolutionValidationAsync),
-    ("Scheduler browser models do not carry actor fields", SchedulerBrowserModelsDoNotCarryActorFieldsAsync)
+    ("Scheduler browser models do not carry actor fields", SchedulerBrowserModelsDoNotCarryActorFieldsAsync),
+    ("Scheduler schedule modal has exact frequency and period options", SchedulerScheduleModalOptionsAsync),
+    ("Scheduler schedule modal controls Next Due by frequency", SchedulerScheduleModalNextDueFrequencyAsync)
 };
 
 foreach (var test in tests)
@@ -299,6 +301,33 @@ static Task SchedulerBrowserModelsDoNotCarryActorFieldsAsync()
     AssertNull(typeof(IasSchedulerRunNowRequest).GetProperty("RequestedBy"), "Run Now request must not bind RequestedBy");
     AssertNull(typeof(IasSchedulerRunNowRequest).GetProperty("UpdatedBy"), "Run Now request must not bind UpdatedBy");
     AssertNull(typeof(IasSchedulerResolveExecutionRequest).GetProperty("UpdatedBy"), "Resolve request must not bind UpdatedBy");
+    return Task.CompletedTask;
+}
+
+static Task SchedulerScheduleModalOptionsAsync()
+{
+    var view = File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "AIS", "Views", "AdministrationPanel", "ias_scheduler.cshtml"));
+
+    AssertContains("<option>MANUAL</option>", view, "manual frequency option");
+    AssertContains("<option>NONE</option>", view, "none period option");
+    AssertContains("<option>PREVIOUS_DAY</option>", view, "previous day period option");
+    AssertContains("<option>PREVIOUS_WEEK</option>", view, "previous week period option");
+    AssertContains("<option>PREVIOUS_MONTH</option>", view, "previous month period option");
+    AssertFalse(view.Contains("<option>DAILY</option><option>WEEKLY</option><option>MONTHLY</option></select></div>\r\n                        <div class=\"col-md-3\"><label class=\"form-label\" for=\"periodType\"", StringComparison.OrdinalIgnoreCase),
+        "period type options must not be frequency labels");
+    return Task.CompletedTask;
+}
+
+static Task SchedulerScheduleModalNextDueFrequencyAsync()
+{
+    var script = File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "AIS", "wwwroot", "js", "csp", "Views_AdministrationPanel_ias_scheduler.js"));
+
+    AssertContains("frequency === 'WEEKLY'", script, "weekly day of week behavior");
+    AssertContains("frequency === 'MONTHLY'", script, "monthly day of month behavior");
+    AssertContains("frequency === 'MANUAL'", script, "manual next due behavior");
+    AssertContains("input.disabled = !visible;", script, "hidden fields disabled");
+    AssertContains("input.required = !!required && visible;", script, "manual required behavior");
+    AssertContains("match[1] + 'T' + match[2]", script, "datetime-local minute format");
     return Task.CompletedTask;
 }
 

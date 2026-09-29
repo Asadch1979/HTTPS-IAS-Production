@@ -3,7 +3,6 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Linq;
-using System.Net.Mail;
 
 namespace AIS.Controllers
     {
@@ -25,17 +24,27 @@ namespace AIS.Controllers
                 return RedirectToAction("Index", "PageNotFound");
                 }
 
+            var configurations = dBConnection.GetManagementAuditNotificationConfigurations();
+            var divisionOptions = dBConnection.GetManagementAuditNotificationDivisionOptions();
+            foreach (var option in divisionOptions)
+                {
+                option.IsConfigured = configurations.Any(config => config.DivisionId == option.DivisionId);
+                }
+
+            foreach (var configuration in configurations.Where(config => divisionOptions.All(option => option.DivisionId != config.DivisionId)))
+                {
+                divisionOptions.Add(new ManagementAuditNotificationDivisionOptionModel
+                    {
+                    DivisionId = configuration.DivisionId,
+                    DivisionName = configuration.DivisionName,
+                    IsConfigured = true
+                    });
+                }
+
             var model = new ManagementAuditNotificationAdminViewModel
                 {
-                Divisions = dBConnection.GetManagementAuditNotificationConfigurations(),
-                DivisionOptions = dBConnection.GetDivisions(false)
-                    .OrderBy(item => item.NAME)
-                    .Select(item => new ManagementAuditNotificationDivisionOptionModel
-                        {
-                        DivisionId = item.DIVISIONID,
-                        DivisionName = item.NAME
-                        })
-                    .ToList()
+                Divisions = configurations,
+                DivisionOptions = divisionOptions.OrderBy(item => item.DivisionName).ToList()
                 };
 
             return View(model);
@@ -51,19 +60,15 @@ namespace AIS.Controllers
                 return Forbid();
                 }
 
-            if (model.EffectiveFrom.HasValue && model.EffectiveTo.HasValue && model.EffectiveTo.Value.Date < model.EffectiveFrom.Value.Date)
-                {
-                ModelState.AddModelError(nameof(model.EffectiveTo), "Effective To cannot be earlier than Effective From.");
-                }
-
-            var division = dBConnection.GetDivisions(false).FirstOrDefault(item => item.DIVISIONID == model.DivisionId);
+            var division = dBConnection.GetManagementAuditNotificationDivisionOptions()
+                .FirstOrDefault(item => item.DivisionId == model.DivisionId);
             if (division == null)
                 {
                 ModelState.AddModelError(nameof(model.DivisionId), "Select a valid Division.");
                 }
             else
                 {
-                model.DivisionName = division.NAME?.Trim() ?? string.Empty;
+                model.DivisionName = division.DivisionName;
                 }
 
             if (!ModelState.IsValid)
@@ -94,21 +99,24 @@ namespace AIS.Controllers
                 }
 
             model.RecipientType = model.RecipientType?.Trim().ToUpperInvariant() ?? string.Empty;
-            model.EmailAddress = model.EmailAddress?.Trim() ?? string.Empty;
-
-            if (!IsSingleValidEmailAddress(model.EmailAddress))
+            if (!ManagementAuditRecipientEmailList.TryNormalize(model.EmailAddress, out var normalizedEmailAddresses))
                 {
-                ModelState.AddModelError(nameof(model.EmailAddress), "Enter one valid email address for this recipient.");
+                ModelState.AddModelError(nameof(model.EmailAddress), "Enter valid email addresses separated by semicolons. Empty entries are not allowed.");
+                }
+            else
+                {
+                model.EmailAddress = normalizedEmailAddresses;
                 }
 
-            if (model.EffectiveFrom.HasValue && model.EffectiveTo.HasValue && model.EffectiveTo.Value.Date < model.EffectiveFrom.Value.Date)
-                {
-                ModelState.AddModelError(nameof(model.EffectiveTo), "Effective To cannot be earlier than Effective From.");
-                }
-
-            if (!dBConnection.GetManagementAuditNotificationConfigurations().Any(item => item.DivisionId == model.DivisionId))
+            var divisionConfiguration = dBConnection.GetManagementAuditNotificationConfigurations()
+                .FirstOrDefault(item => item.DivisionId == model.DivisionId);
+            if (divisionConfiguration == null)
                 {
                 ModelState.AddModelError(nameof(model.DivisionId), "Save the Division notification configuration before adding recipients.");
+                }
+            else if (model.RecipientId.HasValue && divisionConfiguration.Recipients.All(item => item.RecipientId != model.RecipientId.Value))
+                {
+                ModelState.AddModelError(nameof(model.RecipientId), "The recipient configuration was not found for this Division.");
                 }
 
             if (!ModelState.IsValid)
@@ -168,22 +176,5 @@ namespace AIS.Controllers
             return string.IsNullOrWhiteSpace(user?.PPNumber) ? user?.ID.ToString() ?? "IAS" : user.PPNumber.Trim();
             }
 
-        internal static bool IsSingleValidEmailAddress(string value)
-            {
-            if (string.IsNullOrWhiteSpace(value) || value.Contains(';') || value.Contains(','))
-                {
-                return false;
-                }
-
-            try
-                {
-                var trimmed = value.Trim();
-                return string.Equals(new MailAddress(trimmed).Address, trimmed, StringComparison.OrdinalIgnoreCase);
-                }
-            catch (FormatException)
-                {
-                return false;
-                }
-            }
         }
     }

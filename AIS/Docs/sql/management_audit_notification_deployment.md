@@ -24,13 +24,15 @@ Weekly delivery does not use `T_EMAIL_QUEUE`.
 5. Run the complete `ias_notification_centralization.sql` script. It creates
    `V_IAS_MGMT_AUDIT_NOTIFY_MAP` first, then the dependent
    `V_IAS_MGMT_WEEKLY_DATA` view, and finally the notification package.
-6. Run the complete `pkg_mgmt_audit_weekly.sql` package specification and body.
-7. Confirm `PKG_EMAIL`, `PKG_IAS_NOTIFICATION`, `PKG_MGMT_AUDIT_WEEKLY`,
+6. Run `management_audit_notification_admin.sql` to advance the existing
+   recipient sequence safely and replace `PKG_MGMT_AUDIT_NOTIFY_ADMIN`.
+7. Run the complete `pkg_mgmt_audit_weekly.sql` package specification and body.
+8. Confirm `PKG_EMAIL`, `PKG_IAS_NOTIFICATION`, `PKG_MGMT_AUDIT_NOTIFY_ADMIN`, `PKG_MGMT_AUDIT_WEEKLY`,
    `T_IAS_NOTIFY_EXECUTION`, and `V_IAS_MGMT_WEEKLY_DATA` are `VALID`, and
    confirm no Oracle job invokes the retired weekly procedure.
-8. Deploy the ASP.NET application and complete its notification-control tests
+9. Deploy the ASP.NET application and complete its notification-control tests
    and build while weekly execution remains disabled.
-9. Set `ManagementAuditWeekly:Enabled` to `true`, restart the application, and
+10. Set `ManagementAuditWeekly:Enabled` to `true`, restart the application, and
    keep the application host running for the configured weekly schedule.
 
 The files under `management_audit_notification_steps` and the dated Management

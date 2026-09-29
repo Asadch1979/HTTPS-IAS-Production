@@ -57,7 +57,54 @@ CREATE OR REPLACE PACKAGE BODY PKG_MGMT_AUDIT_WEEKLY AS
   
     OPEN IO_CURSOR FOR
     
-      WITH DECISION_EVENTS AS
+      WITH ACTIVE_DIVISIONS AS
+       (SELECT D.DIVISION_ID,
+               D.DIVISION_NAME
+          FROM T_IAS_MGMT_NOTIFY_DIVISION D
+         WHERE D.IS_ACTIVE = 'Y'
+           AND D.WEEKLY_EMAIL_ENABLED = 'Y'
+           AND D.EFFECTIVE_FROM <= TRUNC(SYSDATE)
+           AND (D.EFFECTIVE_TO IS NULL OR D.EFFECTIVE_TO >= TRUNC(SYSDATE))),
+
+      ACTIVE_RECIPIENT_ROWS AS
+       (SELECT R.DIVISION_ID,
+               R.RECIPIENT_TYPE,
+               TRIM(R.EMAIL_ADDRESS) AS EMAIL_ADDRESS,
+               NVL(R.DISPLAY_ORDER, 1) AS DISPLAY_ORDER
+          FROM T_IAS_MGMT_NOTIFY_RECIPIENT R
+         WHERE R.IS_ACTIVE = 'Y'
+           AND TRIM(R.EMAIL_ADDRESS) IS NOT NULL
+           AND R.EFFECTIVE_FROM <= TRUNC(SYSDATE)
+           AND (R.EFFECTIVE_TO IS NULL OR R.EFFECTIVE_TO >= TRUNC(SYSDATE))),
+
+      TO_RECIPIENTS AS
+       (SELECT DIVISION_ID,
+               LISTAGG(EMAIL_ADDRESS, ';')
+                 WITHIN GROUP (ORDER BY DISPLAY_ORDER, EMAIL_ADDRESS) AS TO_EMAIL
+          FROM (SELECT DISTINCT DIVISION_ID, EMAIL_ADDRESS, DISPLAY_ORDER
+                  FROM ACTIVE_RECIPIENT_ROWS
+                 WHERE RECIPIENT_TYPE = 'TO')
+         GROUP BY DIVISION_ID),
+
+      CC_RECIPIENTS AS
+       (SELECT DIVISION_ID,
+               LISTAGG(EMAIL_ADDRESS, ';')
+                 WITHIN GROUP (ORDER BY DISPLAY_ORDER, EMAIL_ADDRESS) AS CC_EMAIL
+          FROM (SELECT DISTINCT DIVISION_ID, EMAIL_ADDRESS, DISPLAY_ORDER
+                  FROM ACTIVE_RECIPIENT_ROWS
+                 WHERE RECIPIENT_TYPE = 'CC')
+         GROUP BY DIVISION_ID),
+
+      BCC_RECIPIENTS AS
+       (SELECT DIVISION_ID,
+               LISTAGG(EMAIL_ADDRESS, ';')
+                 WITHIN GROUP (ORDER BY DISPLAY_ORDER, EMAIL_ADDRESS) AS BCC_EMAIL
+          FROM (SELECT DISTINCT DIVISION_ID, EMAIL_ADDRESS, DISPLAY_ORDER
+                  FROM ACTIVE_RECIPIENT_ROWS
+                 WHERE RECIPIENT_TYPE = 'BCC')
+         GROUP BY DIVISION_ID),
+
+      DECISION_EVENTS AS
        (
         ----------------------------------------------------------
         -- Settled decisions falling within the reporting period
@@ -181,18 +228,17 @@ CREATE OR REPLACE PACKAGE BODY PKG_MGMT_AUDIT_WEEKLY AS
                Q.CATEGORY,
                
                M.DIVISION_ID,
-               M.DIVISION_NAME,
-               
-               TRIM(M.DIVISION_EMAIL) AS TO_EMAIL,
-               TRIM(M.REPORTING_EMAIL) AS CC_EMAIL
+               D.DIVISION_NAME
         
           FROM QUALIFYING_PARAS Q
         
          INNER JOIN V_IAS_MGMT_AUDIT_NOTIFY_MAP M
             ON M.ENTITY_ID = Q.ENTITY_ID
+
+         INNER JOIN ACTIVE_DIVISIONS D
+            ON D.DIVISION_ID = M.DIVISION_ID
         
-         WHERE M.DIVISION_ID IS NOT NULL
-           AND TRIM(M.DIVISION_EMAIL) IS NOT NULL),
+         WHERE M.DIVISION_ID IS NOT NULL),
       
       --------------------------------------------------------------
       -- One summary record per Division
@@ -201,8 +247,6 @@ CREATE OR REPLACE PACKAGE BODY PKG_MGMT_AUDIT_WEEKLY AS
        (SELECT DIVISION_ID,
                
                MAX(DIVISION_NAME) AS DIVISION_NAME,
-               
-               MAX(TO_EMAIL) AS TO_EMAIL,
                
                SUM(CASE
                      WHEN CATEGORY = 'SETTLED' THEN
@@ -229,20 +273,6 @@ CREATE OR REPLACE PACKAGE BODY PKG_MGMT_AUDIT_WEEKLY AS
         
           FROM MAPPED_PARAS
         
-         GROUP BY DIVISION_ID),
-      
-      --------------------------------------------------------------
-      -- Oracle 18c compatible distinct CC aggregation
-      --------------------------------------------------------------
-      DIVISION_CC AS
-       (SELECT DIVISION_ID,
-               
-               LISTAGG(CC_EMAIL, ';') WITHIN GROUP(ORDER BY CC_EMAIL) AS CC_EMAIL
-        
-          FROM (SELECT DISTINCT DIVISION_ID, CC_EMAIL
-                  FROM MAPPED_PARAS
-                 WHERE CC_EMAIL IS NOT NULL)
-        
          GROUP BY DIVISION_ID)
       
       --------------------------------------------------------------
@@ -251,8 +281,9 @@ CREATE OR REPLACE PACKAGE BODY PKG_MGMT_AUDIT_WEEKLY AS
       SELECT D.DIVISION_ID,
              D.DIVISION_NAME,
              
-             D.TO_EMAIL,
+             T.TO_EMAIL,
              C.CC_EMAIL,
+             B.BCC_EMAIL,
              
              D.SETTLED_COUNT,
              D.REJECTED_COUNT,
@@ -261,9 +292,15 @@ CREATE OR REPLACE PACKAGE BODY PKG_MGMT_AUDIT_WEEKLY AS
              D.TOTAL_COUNT
       
         FROM DIVISION_SUMMARY D
-      
-        LEFT JOIN DIVISION_CC C
+
+        INNER JOIN TO_RECIPIENTS T
+          ON T.DIVISION_ID = D.DIVISION_ID
+
+        LEFT JOIN CC_RECIPIENTS C
           ON C.DIVISION_ID = D.DIVISION_ID
+
+        LEFT JOIN BCC_RECIPIENTS B
+          ON B.DIVISION_ID = D.DIVISION_ID
       
        ORDER BY D.DIVISION_NAME;
   

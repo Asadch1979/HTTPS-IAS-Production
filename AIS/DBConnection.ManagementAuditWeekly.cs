@@ -32,6 +32,7 @@ namespace AIS.Controllers
                     DivisionName = reader["DIVISION_NAME"]?.ToString() ?? string.Empty,
                     ToEmail = reader["TO_EMAIL"]?.ToString() ?? string.Empty,
                     CcEmail = reader["CC_EMAIL"]?.ToString() ?? string.Empty,
+                    BccEmail = reader["BCC_EMAIL"]?.ToString() ?? string.Empty,
                     SettledCount = Convert.ToInt32(reader["SETTLED_COUNT"]),
                     RejectedCount = Convert.ToInt32(reader["REJECTED_COUNT"]),
                     NoComplianceCount = Convert.ToInt32(reader["NO_COMPLIANCE_COUNT"]),
@@ -188,6 +189,30 @@ namespace AIS.Controllers
                         UpdatedOn = ReadManagementAuditWeeklyDate(reader, "UPDATED_ON")
                         });
                     }
+                }
+
+            return divisions;
+            }
+
+        public List<ManagementAuditNotificationDivisionOptionModel> GetManagementAuditNotificationDivisionOptions()
+            {
+            var divisions = new List<ManagementAuditNotificationDivisionOptionModel>();
+            using var con = DatabaseConnection();
+            using var cmd = con.CreateCommand();
+            cmd.CommandText = "PKG_MGMT_AUDIT_NOTIFY_ADMIN.P_GET_DIVISION_OPTIONS";
+            cmd.CommandType = CommandType.StoredProcedure;
+            cmd.BindByName = true;
+            GuardAgainstDynamicSql(cmd);
+            cmd.Parameters.Add("IO_DIVISIONS", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+
+            using var reader = cmd.ExecuteReader();
+            while (reader.Read())
+                {
+                divisions.Add(new ManagementAuditNotificationDivisionOptionModel
+                    {
+                    DivisionId = ReadManagementAuditWeeklyInt(reader, "DIVISION_ID"),
+                    DivisionName = ReadManagementAuditWeeklyString(reader, "DIVISION_NAME").Trim()
+                    });
                 }
 
             return divisions;

@@ -107,6 +107,7 @@ public class EmailConfiguration
                     Status = "CONFIGURATION_MISSING",
                     ToRecipients = preparedRequest.ToRecipients,
                     CcRecipients = preparedRequest.CcRecipients,
+                    BccRecipients = preparedRequest.BccRecipients,
                     ErrorMessage = "Email is disabled because credentials are not configured."
                     };
                 }
@@ -120,11 +121,12 @@ public class EmailConfiguration
                     Status = "RECIPIENT_MISSING",
                     ToRecipients = preparedRequest.ToRecipients,
                     CcRecipients = preparedRequest.CcRecipients,
+                    BccRecipients = preparedRequest.BccRecipients,
                     ErrorMessage = "No valid recipient email addresses were supplied."
                     };
                 }
 
-            LogInfo($"Preparing email send. From={em.EMAIL}; To={string.Join(";", preparedRequest.ToRecipients)}; Cc={string.Join(";", preparedRequest.CcRecipients)}; Subject={preparedRequest.Subject}; BodyLength={preparedRequest.Body.Length}; Host={em.Host}; Port={em.Port}; Html={preparedRequest.IsBodyHtml}; Attachments={preparedRequest.Attachments.Count}");
+            LogInfo($"Preparing email send. From={em.EMAIL}; To={string.Join(";", preparedRequest.ToRecipients)}; Cc={string.Join(";", preparedRequest.CcRecipients)}; BccCount={preparedRequest.BccRecipients.Count}; Subject={preparedRequest.Subject}; BodyLength={preparedRequest.Body.Length}; Host={em.Host}; Port={em.Port}; Html={preparedRequest.IsBodyHtml}; Attachments={preparedRequest.Attachments.Count}");
 
             using (var mail = CreateMailMessage(em, preparedRequest))
             using (var smtp = CreateSmtpClient(em))
@@ -138,7 +140,8 @@ public class EmailConfiguration
                 IsSuccess = true,
                 Status = "SENT",
                 ToRecipients = preparedRequest.ToRecipients,
-                CcRecipients = preparedRequest.CcRecipients
+                CcRecipients = preparedRequest.CcRecipients,
+                BccRecipients = preparedRequest.BccRecipients
                 };
             }
         catch (SmtpException ex)
@@ -173,6 +176,7 @@ public class EmailConfiguration
                     Status = "CONFIGURATION_MISSING",
                     ToRecipients = preparedRequest.ToRecipients,
                     CcRecipients = preparedRequest.CcRecipients,
+                    BccRecipients = preparedRequest.BccRecipients,
                     ErrorMessage = "Email is disabled because credentials are not configured."
                     };
                 }
@@ -186,11 +190,12 @@ public class EmailConfiguration
                     Status = "RECIPIENT_MISSING",
                     ToRecipients = preparedRequest.ToRecipients,
                     CcRecipients = preparedRequest.CcRecipients,
+                    BccRecipients = preparedRequest.BccRecipients,
                     ErrorMessage = "No valid recipient email addresses were supplied."
                     };
                 }
 
-            LogInfo($"Preparing async email send. From={em.EMAIL}; To={string.Join(";", preparedRequest.ToRecipients)}; Cc={string.Join(";", preparedRequest.CcRecipients)}; Subject={preparedRequest.Subject}; BodyLength={preparedRequest.Body.Length}; Host={em.Host}; Port={em.Port}; Html={preparedRequest.IsBodyHtml}; Attachments={preparedRequest.Attachments.Count}");
+            LogInfo($"Preparing async email send. From={em.EMAIL}; To={string.Join(";", preparedRequest.ToRecipients)}; Cc={string.Join(";", preparedRequest.CcRecipients)}; BccCount={preparedRequest.BccRecipients.Count}; Subject={preparedRequest.Subject}; BodyLength={preparedRequest.Body.Length}; Host={em.Host}; Port={em.Port}; Html={preparedRequest.IsBodyHtml}; Attachments={preparedRequest.Attachments.Count}");
 
             using (var mail = CreateMailMessage(em, preparedRequest))
             using (var smtp = CreateSmtpClient(em))
@@ -204,7 +209,8 @@ public class EmailConfiguration
                 IsSuccess = true,
                 Status = "SENT",
                 ToRecipients = preparedRequest.ToRecipients,
-                CcRecipients = preparedRequest.CcRecipients
+                CcRecipients = preparedRequest.CcRecipients,
+                BccRecipients = preparedRequest.BccRecipients
                 };
             }
         catch (SmtpException ex)
@@ -277,6 +283,10 @@ public class EmailConfiguration
         var ccRecipients = NormalizeRecipients(request.CcRecipients)
             .Where(address => !toRecipients.Contains(address, StringComparer.OrdinalIgnoreCase))
             .ToList();
+        var bccRecipients = NormalizeRecipients(request.BccRecipients)
+            .Where(address => !toRecipients.Contains(address, StringComparer.OrdinalIgnoreCase)
+                && !ccRecipients.Contains(address, StringComparer.OrdinalIgnoreCase))
+            .ToList();
         var attachments = (request.Attachments ?? Array.Empty<NotificationEmailAttachmentData>())
             .Where(attachment => attachment != null
                 && !string.IsNullOrWhiteSpace(attachment.FileName)
@@ -294,6 +304,7 @@ public class EmailConfiguration
             {
             ToRecipients = toRecipients,
             CcRecipients = ccRecipients,
+            BccRecipients = bccRecipients,
             Subject = subject,
             Body = body,
             IsBodyHtml = request.IsBodyHtml,
@@ -347,6 +358,7 @@ public class EmailConfiguration
 
         AddRecipients(mail.To, request.ToRecipients, nameof(request.ToRecipients));
         AddRecipients(mail.CC, request.CcRecipients, nameof(request.CcRecipients));
+        AddRecipients(mail.Bcc, request.BccRecipients, nameof(request.BccRecipients));
         foreach (var attachment in request.Attachments)
             {
             var stream = new MemoryStream(attachment.ContentBytes, writable: false);
@@ -424,6 +436,7 @@ public class EmailConfiguration
         {
         public List<string> ToRecipients { get; set; } = new List<string>();
         public List<string> CcRecipients { get; set; } = new List<string>();
+        public List<string> BccRecipients { get; set; } = new List<string>();
         public string Subject { get; set; } = string.Empty;
         public string Body { get; set; } = string.Empty;
         public bool IsBodyHtml { get; set; }

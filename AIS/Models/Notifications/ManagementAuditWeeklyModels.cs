@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.Linq;
+using System.Net.Mail;
 
 namespace AIS.Models.Notifications
     {
@@ -10,6 +12,7 @@ namespace AIS.Models.Notifications
         public string DivisionName { get; set; } = string.Empty;
         public string ToEmail { get; set; } = string.Empty;
         public string CcEmail { get; set; } = string.Empty;
+        public string BccEmail { get; set; } = string.Empty;
         public int SettledCount { get; set; }
         public int RejectedCount { get; set; }
         public int NoComplianceCount { get; set; }
@@ -65,6 +68,7 @@ namespace AIS.Models.Notifications
         {
         public int DivisionId { get; set; }
         public string DivisionName { get; set; } = string.Empty;
+        public bool IsConfigured { get; set; }
         }
 
     public class ManagementAuditNotificationDivisionModel
@@ -102,7 +106,7 @@ namespace AIS.Models.Notifications
         public DateTime? UpdatedOn { get; set; }
         }
 
-    public class SaveManagementAuditNotificationDivisionModel
+    public class SaveManagementAuditNotificationDivisionModel : IValidatableObject
         {
         [Range(1, int.MaxValue, ErrorMessage = "Division is required.")]
         public int DivisionId { get; set; }
@@ -121,9 +125,19 @@ namespace AIS.Models.Notifications
 
         [StringLength(1000)]
         public string Remarks { get; set; } = string.Empty;
+
+        public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
+            {
+            if (EffectiveFrom.HasValue && EffectiveTo.HasValue && EffectiveTo.Value.Date < EffectiveFrom.Value.Date)
+                {
+                yield return new ValidationResult(
+                    "Effective To cannot be earlier than Effective From.",
+                    new[] { nameof(EffectiveTo) });
+                }
+            }
         }
 
-    public class SaveManagementAuditNotificationRecipientModel
+    public class SaveManagementAuditNotificationRecipientModel : IValidatableObject
         {
         public int? RecipientId { get; set; }
 
@@ -131,11 +145,11 @@ namespace AIS.Models.Notifications
         public int DivisionId { get; set; }
 
         [Required(ErrorMessage = "Recipient type is required.")]
-        [RegularExpression("^(?i:TO|CC)$", ErrorMessage = "Recipient type must be TO or CC.")]
+        [RegularExpression("^(?i:TO|CC|BCC)$", ErrorMessage = "Recipient type must be TO, CC or BCC.")]
         public string RecipientType { get; set; } = string.Empty;
 
         [Required(ErrorMessage = "Email address is required.")]
-        [EmailAddress(ErrorMessage = "Enter a valid email address.")]
+        [SemicolonSeparatedEmailList]
         [StringLength(500)]
         public string EmailAddress { get; set; } = string.Empty;
 
@@ -154,5 +168,72 @@ namespace AIS.Models.Notifications
 
         [Range(1, 999, ErrorMessage = "Display order must be between 1 and 999.")]
         public int DisplayOrder { get; set; } = 1;
+
+        public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
+            {
+            if (EffectiveFrom.HasValue && EffectiveTo.HasValue && EffectiveTo.Value.Date < EffectiveFrom.Value.Date)
+                {
+                yield return new ValidationResult(
+                    "Effective To cannot be earlier than Effective From.",
+                    new[] { nameof(EffectiveTo) });
+                }
+            }
+        }
+
+    public sealed class SemicolonSeparatedEmailListAttribute : ValidationAttribute
+        {
+        public SemicolonSeparatedEmailListAttribute()
+            : base("Enter valid email addresses separated by semicolons. Empty entries are not allowed.")
+            {
+            }
+
+        public override bool IsValid(object value)
+            {
+            return value == null || ManagementAuditRecipientEmailList.TryNormalize(value.ToString(), out _);
+            }
+        }
+
+    public static class ManagementAuditRecipientEmailList
+        {
+        public static bool TryNormalize(string value, out string normalized)
+            {
+            normalized = string.Empty;
+            if (string.IsNullOrWhiteSpace(value) || value.Contains(',') || value.Contains('\r') || value.Contains('\n'))
+                {
+                return false;
+                }
+
+            var parts = value.Split(new[] { ';' }, StringSplitOptions.None);
+            if (parts.Any(part => string.IsNullOrWhiteSpace(part)))
+                {
+                return false;
+                }
+
+            var addresses = new List<string>();
+            foreach (var part in parts)
+                {
+                var address = part.Trim();
+                try
+                    {
+                    var parsed = new MailAddress(address);
+                    if (!string.Equals(parsed.Address, address, StringComparison.OrdinalIgnoreCase))
+                        {
+                        return false;
+                        }
+                    }
+                catch (FormatException)
+                    {
+                    return false;
+                    }
+
+                if (!addresses.Contains(address, StringComparer.OrdinalIgnoreCase))
+                    {
+                    addresses.Add(address);
+                    }
+                }
+
+            normalized = string.Join("; ", addresses);
+            return normalized.Length <= 500;
+            }
         }
     }

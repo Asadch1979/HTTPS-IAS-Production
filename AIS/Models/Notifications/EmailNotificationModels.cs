@@ -7,6 +7,7 @@ namespace AIS.Models.Notifications
         {
         public IEnumerable<string> ToRecipients { get; set; } = Array.Empty<string>();
         public IEnumerable<string> CcRecipients { get; set; } = Array.Empty<string>();
+        public IEnumerable<string> BccRecipients { get; set; } = Array.Empty<string>();
         public string Subject { get; set; } = string.Empty;
         public string Body { get; set; } = string.Empty;
         public bool IsBodyHtml { get; set; } = true;
@@ -21,6 +22,7 @@ namespace AIS.Models.Notifications
         public bool IsSuccess { get; set; }
         public List<string> ToRecipients { get; set; } = new List<string>();
         public List<string> CcRecipients { get; set; } = new List<string>();
+        public List<string> BccRecipients { get; set; } = new List<string>();
         public string ErrorMessage { get; set; } = string.Empty;
         public string Status { get; set; } = string.Empty;
         }

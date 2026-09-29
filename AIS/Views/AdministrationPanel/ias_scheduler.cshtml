@@ -16,6 +16,12 @@
     }
 }
 
+<style>
+    .ias-scheduler-actions-column { min-width: 260px; }
+    .ias-scheduler-actions { display: flex; justify-content: flex-end; gap: 6px; flex-wrap: wrap; }
+    .ias-scheduler-actions .btn { white-space: nowrap; }
+</style>
+
 <main class="container-fluid py-3"
       id="iasSchedulerAdminApp"
       data-save-schedule-url="@Url.Action("SaveIasSchedulerSchedule", "AdministrationPanel")"
@@ -68,7 +74,7 @@
                             <th>Last Run / Status</th>
                             <th>Next Due</th>
                             <th>Retry</th>
-                            <th class="text-end">Actions</th>
+                            <th class="text-end ias-scheduler-actions-column">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -101,12 +107,12 @@
                                     <div>@schedule.RetryCount / @schedule.MaxRetry</div>
                                     <div class="text-muted small">@schedule.RetryIntervalMinutes min</div>
                                 </td>
-                                <td class="text-end text-nowrap">
-                                    <button type="button" class="btn btn-sm btn-outline-primary edit-schedule" data-schedule-id="@schedule.ScheduleId" title="Edit schedule" aria-label="Edit schedule"><i class="fa-solid fa-pen" aria-hidden="true"></i></button>
+                                <td class="ias-scheduler-actions">
+                                    <button type="button" class="btn btn-sm btn-outline-secondary run-now" data-schedule-id="@schedule.ScheduleId" data-job-name="@schedule.JobName" @(schedule.IsActive ? "" : "disabled") title="Run Now" aria-label="Run Now"><i class="fa-solid fa-bolt me-1" aria-hidden="true"></i>Run Now</button>
+                                    <button type="button" class="btn btn-sm btn-outline-primary edit-schedule" data-schedule-id="@schedule.ScheduleId" title="Edit schedule" aria-label="Edit schedule"><i class="fa-solid fa-pen me-1" aria-hidden="true"></i>Edit</button>
                                     <button type="button" class="btn btn-sm @(schedule.IsActive ? "btn-outline-warning" : "btn-outline-success") toggle-schedule" data-schedule-id="@schedule.ScheduleId" data-active="@(!schedule.IsActive)" title="@(schedule.IsActive ? "Deactivate" : "Activate") schedule" aria-label="@(schedule.IsActive ? "Deactivate" : "Activate") schedule">
-                                        <i class="fa-solid @(schedule.IsActive ? "fa-pause" : "fa-play")" aria-hidden="true"></i>
+                                        <i class="fa-solid @(schedule.IsActive ? "fa-pause" : "fa-play") me-1" aria-hidden="true"></i>@(schedule.IsActive ? "Disable" : "Enable")
                                     </button>
-                                    <button type="button" class="btn btn-sm btn-outline-secondary run-now" data-schedule-id="@schedule.ScheduleId" data-job-name="@schedule.JobName" @(schedule.IsActive ? "" : "disabled") title="Run Now" aria-label="Run Now"><i class="fa-solid fa-bolt" aria-hidden="true"></i></button>
                                 </td>
                             </tr>
                         }
@@ -161,7 +167,7 @@
         <section class="tab-pane fade" id="jobsPane" role="tabpanel" aria-labelledby="jobs-tab">
             <div class="table-responsive">
                 <table class="table table-hover table-sm align-middle">
-                    <thead><tr><th>Code</th><th>Name</th><th>Execution</th><th>Approved Target</th><th>Description</th><th>Schedules</th><th class="text-end">Actions</th></tr></thead>
+                    <thead><tr><th>Code</th><th>Name</th><th>Execution</th><th>Approved Target</th><th>Description</th><th>Schedules</th><th class="text-end" style="min-width: 90px;">Actions</th></tr></thead>
                     <tbody>
                         @foreach (var job in Model.JobDefinitions)
                         {
@@ -181,7 +187,7 @@
                                 </td>
                                 <td>@job.Description</td>
                                 <td>@job.ScheduleCount</td>
-                                <td class="text-end"><button type="button" class="btn btn-sm btn-outline-primary edit-job" data-job-id="@job.JobId"><i class="fa-solid fa-pen" aria-hidden="true"></i></button></td>
+                                <td class="text-end"><button type="button" class="btn btn-sm btn-outline-primary edit-job" data-job-id="@job.JobId" title="Edit job definition" aria-label="Edit job definition"><i class="fa-solid fa-pen me-1" aria-hidden="true"></i>Edit</button></td>
                             </tr>
                         }
                     </tbody>

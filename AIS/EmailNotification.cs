@@ -160,7 +160,8 @@ namespace AIS
 
             var subject = $"IAS Notification: Management Audit Compliance Review | {division.DivisionName} | {periodDisplay}";
             return CreateRequest("Audit", "MGMT_AUDIT_COMPLIANCE_REVIEW",
-                $"{start:yyyyMMdd}:{endExclusive:yyyyMMdd}:{division.DivisionId}", division.ToEmail, division.CcEmail, subject, body.ToString());
+                $"{start:yyyyMMdd}:{endExclusive:yyyyMMdd}:{division.DivisionId}", division.ToEmail, division.CcEmail,
+                division.BccEmail, subject, body.ToString());
             }
         private const string StandardFooter = "This is a system-generated notification from Internal Audit System (IAS). Please do not reply to this email unless required under official process.";
         private static readonly Regex HtmlTagRegex = new Regex("<.*?>", RegexOptions.Compiled | RegexOptions.Singleline);
@@ -290,6 +291,11 @@ namespace AIS
 
         private static EmailMessageRequest CreateRequest(string module, string triggerPoint, string referenceId, string toEmail, string ccEmail, string subject, string body, bool isBodyHtml = true)
             {
+            return CreateRequest(module, triggerPoint, referenceId, toEmail, ccEmail, string.Empty, subject, body, isBodyHtml);
+            }
+
+        private static EmailMessageRequest CreateRequest(string module, string triggerPoint, string referenceId, string toEmail, string ccEmail, string bccEmail, string subject, string body, bool isBodyHtml = true)
+            {
             return new EmailMessageRequest
                 {
                 Module = module,
@@ -297,6 +303,7 @@ namespace AIS
                 ReferenceId = referenceId,
                 ToRecipients = new[] { toEmail },
                 CcRecipients = new[] { ccEmail },
+                BccRecipients = new[] { bccEmail },
                 Subject = subject,
                 Body = body,
                 IsBodyHtml = isBodyHtml

@@ -2,7 +2,7 @@
 @using System.Text.Json
 @using System.Linq
 @{
-    ViewData["Title"] = "Management Audit Division Notifications";
+    ViewData["Title"] = "Management Audit Compliance Review Notifications";
     Layout = "_Layout";
 }
 
@@ -17,8 +17,8 @@
 
     <div class="d-flex align-items-start justify-content-between gap-3 flex-wrap mb-3">
         <div>
-            <h2 class="mb-1">Management Audit Division Notifications</h2>
-            <p class="text-muted mb-0">Division routing and weekly delivery controls</p>
+            <h2 class="mb-1">Management Audit Compliance Review Notifications</h2>
+            <p class="text-muted mb-0">Division and recipient routing configuration</p>
         </div>
         <button type="button" class="btn btn-primary" id="addDivisionConfiguration">
             <i class="fa-solid fa-plus me-1" aria-hidden="true"></i>Add Division
@@ -42,7 +42,7 @@
                     <option value="all">All Divisions</option>
                     <option value="active">Active</option>
                     <option value="inactive">Inactive</option>
-                    <option value="weekly">Weekly enabled</option>
+                    <option value="weekly">Notifications enabled</option>
                 </select>
             </div>
             <div class="col-lg-4 text-lg-end">
@@ -64,7 +64,8 @@
                     <th>Group Head</th>
                     <th>Designation</th>
                     <th>CC Email</th>
-                    <th>Weekly Email</th>
+                    <th>BCC Email</th>
+                    <th>Notification Enabled</th>
                     <th>Status</th>
                     <th>Effective Period</th>
                     <th>Last Updated</th>
@@ -76,6 +77,7 @@
                     {
                     var toRecipients = division.Recipients.Where(item => item.RecipientType == "TO" && item.IsActive).OrderBy(item => item.DisplayOrder).ToList();
                     var ccRecipients = division.Recipients.Where(item => item.RecipientType == "CC" && item.IsActive).OrderBy(item => item.DisplayOrder).ToList();
+                    var bccRecipients = division.Recipients.Where(item => item.RecipientType == "BCC" && item.IsActive).OrderBy(item => item.DisplayOrder).ToList();
                     var latestRecipient = division.Recipients.OrderByDescending(item => item.UpdatedOn ?? item.CreatedOn).FirstOrDefault();
                     var divisionUpdatedOn = division.UpdatedOn ?? division.CreatedOn;
                     var latestUpdatedOn = latestRecipient != null && (latestRecipient.UpdatedOn ?? latestRecipient.CreatedOn) > divisionUpdatedOn
@@ -96,6 +98,7 @@
                         <td>@(ccRecipients.Count == 0 ? "-" : string.Join("; ", ccRecipients.Select(item => item.PersonName).Where(value => !string.IsNullOrWhiteSpace(value))))</td>
                         <td>@(ccRecipients.Count == 0 ? "-" : string.Join("; ", ccRecipients.Select(item => item.Designation).Where(value => !string.IsNullOrWhiteSpace(value))))</td>
                         <td class="email-cell">@(ccRecipients.Count == 0 ? "-" : string.Join("; ", ccRecipients.Select(item => item.EmailAddress)))</td>
+                        <td class="email-cell">@(bccRecipients.Count == 0 ? "-" : string.Join("; ", bccRecipients.Select(item => item.EmailAddress)))</td>
                         <td><span class="badge @(division.WeeklyEmailEnabled ? "bg-success-subtle text-success-emphasis" : "bg-secondary-subtle text-secondary-emphasis")">@(division.WeeklyEmailEnabled ? "Enabled" : "Disabled")</span></td>
                         <td><span class="badge @(division.IsActive ? "bg-primary-subtle text-primary-emphasis" : "bg-secondary-subtle text-secondary-emphasis")">@(division.IsActive ? "Active" : "Inactive")</span></td>
                         <td class="text-nowrap">
@@ -141,24 +144,24 @@
                     <input type="hidden" name="DivisionId" id="divisionIdValue" />
                     <input type="hidden" name="DivisionName" id="divisionNameValue" />
                     <div class="row g-3">
-                        <div class="col-md-8">
+                        <div class="col-12">
                             <label class="form-label" for="divisionOption">Division <span class="text-danger">*</span></label>
                             <select id="divisionOption" class="form-select" required>
                                 <option value="">Select Division</option>
                                 @foreach (var option in Model.DivisionOptions)
                                     {
-                                    <option value="@option.DivisionId" data-name="@option.DivisionName">@option.DivisionName (@option.DivisionId)</option>
+                                    <option value="@option.DivisionId" data-name="@option.DivisionName" data-configured="@option.IsConfigured.ToString().ToLowerInvariant()">@option.DivisionName (@option.DivisionId)</option>
                                     }
                             </select>
                         </div>
-                        <div class="col-md-4 d-flex align-items-end gap-4 pb-2">
+                        <div class="col-12 division-toggle-row">
                             <div class="form-check form-switch">
                                 <input class="form-check-input" type="checkbox" role="switch" name="IsActive" value="true" id="divisionIsActive" />
                                 <label class="form-check-label" for="divisionIsActive">Active</label>
                             </div>
                             <div class="form-check form-switch">
                                 <input class="form-check-input" type="checkbox" role="switch" name="WeeklyEmailEnabled" value="true" id="divisionWeeklyEnabled" />
-                                <label class="form-check-label" for="divisionWeeklyEnabled">Weekly email</label>
+                                <label class="form-check-label" for="divisionWeeklyEnabled">Notification Enabled</label>
                             </div>
                         </div>
                         <div class="col-md-6">
@@ -167,7 +170,7 @@
                         </div>
                         <div class="col-md-6">
                             <label class="form-label" for="divisionEffectiveTo">Effective To</label>
-                            <input id="divisionEffectiveTo" name="EffectiveTo" type="date" class="form-control" />
+                            <input id="divisionEffectiveTo" name="EffectiveTo" type="date" class="form-control" data-allow-future="true" />
                         </div>
                         <div class="col-12">
                             <label class="form-label" for="divisionRemarks">Remarks</label>
@@ -217,7 +220,7 @@
                             <div class="row g-3">
                                 <div class="col-5">
                                     <label class="form-label" for="recipientType">Type <span class="text-danger">*</span></label>
-                                    <select id="recipientType" name="RecipientType" class="form-select" required><option value="TO">TO</option><option value="CC">CC</option></select>
+                                    <select id="recipientType" name="RecipientType" class="form-select" required><option value="TO">TO</option><option value="CC">CC</option><option value="BCC">BCC</option></select>
                                 </div>
                                 <div class="col-7">
                                     <label class="form-label" for="recipientDisplayOrder">Display Order</label>
@@ -232,8 +235,8 @@
                                     <input id="recipientDesignation" name="Designation" class="form-control" maxlength="200" />
                                 </div>
                                 <div class="col-12">
-                                    <label class="form-label" for="recipientEmail">Email Address <span class="text-danger">*</span></label>
-                                    <input id="recipientEmail" name="EmailAddress" type="email" class="form-control" maxlength="500" required data-allow-at="true" />
+                                    <label class="form-label" for="recipientEmail">Email Address(es) <span class="text-danger">*</span></label>
+                                    <input id="recipientEmail" name="EmailAddress" type="text" class="form-control" maxlength="500" required data-allow-at="true" placeholder="user1@ztbl.com.pk; user2@ztbl.com.pk" />
                                 </div>
                                 <div class="col-6">
                                     <label class="form-label" for="recipientEffectiveFrom">Effective From <span class="text-danger">*</span></label>
@@ -241,7 +244,7 @@
                                 </div>
                                 <div class="col-6">
                                     <label class="form-label" for="recipientEffectiveTo">Effective To</label>
-                                    <input id="recipientEffectiveTo" name="EffectiveTo" type="date" class="form-control" />
+                                    <input id="recipientEffectiveTo" name="EffectiveTo" type="date" class="form-control" data-allow-future="true" />
                                 </div>
                                 <div class="col-12">
                                     <div class="form-check form-switch">
@@ -263,9 +266,7 @@
 </div>
 
 <script id="managementNotificationData" type="application/json">@Html.Raw(JsonSerializer.Serialize(Model.Divisions))</script>
-<script id="managementNotificationData"
-        type="application/json">@Html.Raw(JsonSerializer.Serialize(Model.Divisions))</script>
 
 @section Scripts {
-    <script src="~/js/csp/Views_AdministrationPanel_management_audit_notifications.js?v=2"></script>
+    <script src="~/js/csp/Views_AdministrationPanel_management_audit_notifications.js" asp-append-version="true"></script>
 }

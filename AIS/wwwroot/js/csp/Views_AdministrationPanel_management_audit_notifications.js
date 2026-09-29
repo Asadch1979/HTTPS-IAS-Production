@@ -3,6 +3,10 @@
 
     var app = document.getElementById('managementNotificationApp');
     if (!app) return;
+    if (!window.bootstrap || typeof window.bootstrap.Modal !== 'function') {
+        console.error('Bootstrap Modal is unavailable on the Management Audit notification administration page.');
+        return;
+    }
 
     var dataNode = document.getElementById('managementNotificationData');
     var divisions = dataNode ? JSON.parse(dataNode.textContent || '[]') : [];
@@ -26,6 +30,33 @@
         var now = new Date();
         var local = new Date(now.getTime() - now.getTimezoneOffset() * 60000);
         return local.toISOString().slice(0, 10);
+    }
+
+    function validateDateRange(fromId, toId) {
+        var from = document.getElementById(fromId);
+        var to = document.getElementById(toId);
+        var invalid = !!(from.value && to.value && to.value < from.value);
+        to.setCustomValidity(invalid ? 'Effective To cannot be earlier than Effective From.' : '');
+        return !invalid;
+    }
+
+    function normalizeEmailList(input) {
+        var raw = input.value || '';
+        var parts = raw.split(';');
+        var emailPattern = /^[^\s@;,]+@[^\s@;,]+\.[^\s@;,]+$/;
+        var normalized = [];
+        var valid = parts.length > 0 && parts.every(function (part) {
+            var address = part.trim();
+            if (!address || !emailPattern.test(address)) return false;
+            if (!normalized.some(function (item) { return item.toLowerCase() === address.toLowerCase(); })) {
+                normalized.push(address);
+            }
+            return true;
+        });
+
+        input.setCustomValidity(valid ? '' : 'Enter valid email addresses separated by semicolons. Empty entries are not allowed.');
+        if (valid) input.value = normalized.join('; ');
+        return valid;
     }
 
     function csrfToken() {
@@ -86,10 +117,15 @@
 
     function resetDivisionForm() {
         var form = document.getElementById('divisionConfigurationForm');
+        var divisionOption = document.getElementById('divisionOption');
         form.reset();
         clearFormError(form);
         document.getElementById('divisionConfigurationModalTitle').textContent = 'Add Division Notification Configuration';
-        document.getElementById('divisionOption').disabled = false;
+        divisionOption.disabled = false;
+        Array.from(divisionOption.options).forEach(function (option) {
+            option.disabled = !!option.value && option.dataset.configured === 'true';
+        });
+        divisionOption.value = '';
         document.getElementById('divisionIdValue').value = '';
         document.getElementById('divisionNameValue').value = '';
         document.getElementById('divisionIsActive').checked = true;
@@ -102,9 +138,18 @@
         resetDivisionForm();
         var division = findDivision(divisionId);
         if (!division) return;
+        var divisionOption = document.getElementById('divisionOption');
+        var selectedOption = Array.from(divisionOption.options).find(function (option) {
+            return Number(option.value) === Number(value(division, 'DivisionId'));
+        });
+        if (!selectedOption) {
+            showMessage('The configured Division is not available in the Division reference list.', false);
+            return;
+        }
         document.getElementById('divisionConfigurationModalTitle').textContent = 'Edit Division Notification Configuration';
-        document.getElementById('divisionOption').value = value(division, 'DivisionId');
-        document.getElementById('divisionOption').disabled = true;
+        selectedOption.disabled = false;
+        divisionOption.value = selectedOption.value;
+        divisionOption.disabled = true;
         document.getElementById('divisionIdValue').value = value(division, 'DivisionId');
         document.getElementById('divisionNameValue').value = value(division, 'DivisionName') || '';
         document.getElementById('divisionIsActive').checked = !!value(division, 'IsActive');
@@ -248,9 +293,10 @@
     document.getElementById('divisionConfigurationForm').addEventListener('submit', async function (event) {
         event.preventDefault();
         clearFormError(event.target);
+        validateDateRange('divisionEffectiveFrom', 'divisionEffectiveTo');
         if (!event.target.reportValidity()) return;
         if (editingDivisionWasActive && !document.getElementById('divisionIsActive').checked &&
-            !window.confirm('Deactivate this Division notification configuration? Weekly emails for it will stop.')) return;
+            !window.confirm('Deactivate this Division notification configuration? Notifications for it will stop.')) return;
         try {
             await postForm(app.dataset.saveDivisionUrl, new FormData(event.target));
             window.location.reload();
@@ -262,9 +308,11 @@
     document.getElementById('recipientConfigurationForm').addEventListener('submit', async function (event) {
         event.preventDefault();
         clearFormError(event.target);
+        normalizeEmailList(document.getElementById('recipientEmail'));
+        validateDateRange('recipientEffectiveFrom', 'recipientEffectiveTo');
         if (!event.target.reportValidity()) return;
         if (editingRecipientWasActive && !document.getElementById('recipientIsActive').checked &&
-            !window.confirm('Deactivate this recipient? The address will no longer be used for weekly notifications.')) return;
+            !window.confirm('Deactivate this recipient? The address will no longer receive notifications.')) return;
         try {
             await postForm(app.dataset.saveRecipientUrl, new FormData(event.target));
             window.location.reload();
@@ -275,6 +323,18 @@
 
     document.getElementById('addRecipient').addEventListener('click', resetRecipientForm);
     document.getElementById('cancelRecipientEdit').addEventListener('click', resetRecipientForm);
+
+    [['divisionEffectiveFrom', 'divisionEffectiveTo'], ['recipientEffectiveFrom', 'recipientEffectiveTo']]
+        .forEach(function (ids) {
+            ids.forEach(function (id) {
+                document.getElementById(id).addEventListener('input', function () {
+                    validateDateRange(ids[0], ids[1]);
+                });
+            });
+        });
+    document.getElementById('recipientEmail').addEventListener('input', function (event) {
+        event.target.setCustomValidity('');
+    });
 
     function filterRows() {
         var search = document.getElementById('managementNotificationSearch').value.trim().toLowerCase();

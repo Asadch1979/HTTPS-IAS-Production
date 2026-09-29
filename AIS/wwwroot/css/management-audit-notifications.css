@@ -24,7 +24,7 @@
 }
 
 #managementNotificationTable {
-    min-width: 1820px;
+    min-width: 1980px;
     font-size: .82rem;
 }
 
@@ -59,6 +59,20 @@
     padding: 0;
 }
 
+.division-toggle-row {
+    display: flex;
+    align-items: center;
+    min-height: 38px;
+    gap: 32px;
+    padding-top: 4px;
+}
+
+.division-toggle-row .form-check {
+    min-width: 104px;
+    margin: 0;
+    white-space: nowrap;
+}
+
 .management-notify-page .badge {
     border: 1px solid currentColor;
     border-radius: 4px;
@@ -86,5 +100,13 @@
         padding-top: 20px;
         border-top: 1px solid #dfe5eb;
         border-left: 0;
+    }
+}
+
+@media (max-width: 575.98px) {
+    .division-toggle-row {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 12px;
     }
 }
