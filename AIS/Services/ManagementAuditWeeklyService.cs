@@ -22,6 +22,7 @@ namespace AIS.Services
         public const string HandlerName = "MGMT_AUDIT_COMPLIANCE_NOTIFICATION";
 
         private readonly IConfiguration configuration;
+        private readonly IServiceProvider serviceProvider;
         private readonly NotificationExecutionStore store;
         private readonly DBConnection db;
         private readonly ILogger<ManagementAuditWeeklyService> logger;
@@ -74,7 +75,7 @@ namespace AIS.Services
                 key => store.ClaimPeriod(key, "MGMT_AUDIT_COMPLIANCE_NOTIFICATION"),
                 divisionId => db.GetManagementAuditWeeklyDivisionData(divisionId, fromDate, toDate),
                 divisionId => db.GetManagementAuditWeeklyNoCompliance(divisionId, fromDate, toDate),
-                (division, records) => EmailNotification.SendManagementAuditComplianceReviewAsync(configuration, fromDate, toDate, division, records),
+                (division, records) => EmailNotification.SendManagementAuditComplianceReviewAsync(configuration, serviceProvider, fromDate, toDate, division, records),
                 store.Complete,
                 (exception, key) => logger.LogError(exception, "Management Audit Compliance Review Division processing failed for {Key}.", key),
                 cancellationToken);

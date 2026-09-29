@@ -117,8 +117,7 @@ namespace AIS.Controllers
                     AuditPeriod = ReadManagementAuditWeeklyString(reader, "AUDIT_PERIOD"),
                     ParaNo = ReadManagementAuditWeeklyString(reader, "PARA_NO"),
                     Title = ReadManagementAuditWeeklyString(reader, "TITLE"),
-                    Risk = ReadManagementAuditWeeklyString(reader, "RISK"),
-                    LastComplianceSubmittedOn = ReadManagementAuditWeeklyDate(reader, "LAST_COMPLIANCE_SUBMITTED_ON"),
+                    Risk = ReadManagementAuditWeeklyString(reader, "RISK"),                    
                     ParaStatus = ReadManagementAuditWeeklyNullableInt(reader, "PARA_STATUS"),
                     ComStatus = ReadManagementAuditWeeklyNullableInt(reader, "COM_STATUS"),
                     ComStage = ReadManagementAuditWeeklyNullableInt(reader, "COM_STAGE")

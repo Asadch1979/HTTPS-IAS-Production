@@ -16,14 +16,26 @@ namespace AIS
     public static class EmailNotification
         {
         private const string NotificationHeader = "Internal Audit System (IAS)";
-        public static Task<EmailSendResult> SendManagementAuditComplianceReviewAsync(IConfiguration configuration,
-            DateTime start, DateTime endExclusive, ManagementAuditWeeklyDivisionSummaryModel division,
+        public static Task<EmailSendResult> SendManagementAuditComplianceReviewAsync(
+            IConfiguration configuration,
+            IServiceProvider serviceProvider,
+            DateTime start,
+            DateTime endExclusive,
+            ManagementAuditWeeklyDivisionSummaryModel division,
             IReadOnlyList<AIS.Services.ManagementAuditDecision> records)
             {
-            return new EmailConfiguration(configuration).SendAsync(
-                BuildManagementAuditComplianceReviewEmail(start, endExclusive, division, records));
+            return new EmailConfiguration(
+                configuration,
+                serviceProvider
+            ).SendAsync(
+                BuildManagementAuditComplianceReviewEmail(
+                    start,
+                    endExclusive,
+                    division,
+                    records
+                )
+            );
             }
-
         public static EmailMessageRequest BuildManagementAuditComplianceReviewEmail(DateTime start,
             DateTime endExclusive, ManagementAuditWeeklyDivisionSummaryModel division,
             IReadOnlyList<AIS.Services.ManagementAuditDecision> records)
@@ -37,7 +49,7 @@ namespace AIS
             if (endExclusive.Date <= start.Date)
                 throw new ArgumentException("Exclusive period end must be later than the period start.", nameof(endExclusive));
 
-            var inclusiveEnd = endExclusive.Date.AddDays(-1);
+            var inclusiveEnd = endExclusive.Date;
             var periodDisplay = $"{start:dd-MMM-yyyy} to {inclusiveEnd:dd-MMM-yyyy}";
             var settled = records.Where(record => record.Settled && !record.NoCompliance).ToList();
             var referredBack = records.Where(record => !record.Settled && !record.NoCompliance).ToList();
@@ -79,7 +91,7 @@ namespace AIS
             body.Append("<tr><td style=\"padding:24px 26px\">");
             body.Append("<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"width:100%;background:#f4f7f9;border:1px solid #d9e2ec;margin-bottom:22px\"><tr><td style=\"padding:9px 12px;width:190px;font-weight:bold\">Division:</td><td style=\"padding:9px 12px\">" + Encode(division.DivisionName) + "</td></tr><tr><td style=\"padding:9px 12px;width:190px;font-weight:bold;border-top:1px solid #d9e2ec\">Compliance Review Period:</td><td style=\"padding:9px 12px;border-top:1px solid #d9e2ec\">" + Encode(periodDisplay) + "</td></tr></table>");
             body.Append("<p style=\"margin:0 0 14px\">Dear Sir,</p>");
-            body.Append("<p style=\"margin:0 0 14px;line-height:1.55\">This is with reference to the compliance submissions made during the period " + Encode(periodDisplay) + " by the department(s) falling under your administrative control.</p>");
+            body.Append("<p style=\"margin:0 0 14px;line-height:1.55\">This notification provides the consolidated position of Management Audit paras pertaining to the department(s) under your administrative control for the Compliance Review Period " + Encode(periodDisplay) + ".</p>");
             body.Append("<p style=\"margin:0 0 22px;line-height:1.55\">Following due examination and review of the compliances by the Internal Audit Group, we would like to apprise you of the current position of the relevant Management Audit paras, as detailed below.</p>");
 
             var departmentSummary = records
@@ -149,9 +161,9 @@ namespace AIS
                 SectionHeading("Paras Where No Compliance Was Submitted During the Compliance Review Period", noCompliance.Count,
                     "Attention is also invited to the following outstanding audit paras against which no compliance was submitted during the Compliance Review Period:");
                 body.Append(Table(noCompliance,
-                    new[] { ("Sr.", "center", "5%"), ("Department", "left", "17%"), ("Audit Year", "center", "9%"), ("Para No.", "center", "8%"), ("Title of Para", "left", "30%"), ("Risk", "center", "9%"), ("Last Compliance Submitted On", "center", "17%") },
-                    row => new[] { row.Entity, row.Year, row.Para, row.Title, row.Risk, Date(row.LastComplianceSubmitted ?? row.Submitted) }));
-                body.Append("<p style=\"margin:0 0 22px;line-height:1.55\">The concerned department(s) may please be advised to review these outstanding matters and submit appropriate and meaningful compliance at the earliest, enabling timely examination and further processing of the audit observations.</p>");
+                    new[] { ("Sr.", "center", "5%"), ("Department", "left", "17%"), ("Audit Year", "center", "9%"), ("Para No.", "center", "8%"), ("Title of Para", "left", "30%"), ("Risk", "center", "9%") },
+                    row => new[] { row.Entity, row.Year, row.Para, row.Title, row.Risk}));
+                body.Append("<p style=\"margin:0 0 22px;line-height:1.55\">The concerned department(s) may please be advised to review the outstanding audit paras and submit appropriate and meaningful compliance through IAS at the earliest for examination and further processing.</p>");
                 }
 
             body.Append("<p style=\"margin:22px 0 18px;line-height:1.55\">We shall appreciate your continued support in ensuring timely resolution of outstanding audit observations, improvement in the quality of compliance submissions, and effective implementation of the corrective measures identified during audit.</p>");
