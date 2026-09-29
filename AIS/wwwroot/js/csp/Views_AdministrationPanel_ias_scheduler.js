@@ -26,7 +26,10 @@
     }
 
     function dateTimeLocalValue(input) {
-        return input ? String(input).slice(0, 16) : '';
+        if (!input) return '';
+        var value = String(input);
+        var match = value.match(/^(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2})/);
+        return match ? match[1] + 'T' + match[2] : '';
     }
 
     function csrfToken() {
@@ -113,6 +116,7 @@
         document.getElementById('effectiveFrom').value = today();
         document.getElementById('emailRequired').checked = false;
         document.getElementById('isActive').checked = true;
+        updateScheduleFrequencyFields();
     }
 
     function openScheduleEditor(scheduleId) {
@@ -136,7 +140,24 @@
         document.getElementById('emailRequired').checked = !!value(schedule, 'EmailRequired');
         document.getElementById('isActive').checked = !!value(schedule, 'IsActive');
         document.getElementById('scheduleRemarks').value = value(schedule, 'Remarks') || '';
+        updateScheduleFrequencyFields();
         scheduleModal.show();
+    }
+
+    function setGroupVisible(groupId, inputId, visible, required) {
+        var group = document.getElementById(groupId);
+        var input = document.getElementById(inputId);
+        group.classList.toggle('d-none', !visible);
+        input.disabled = !visible;
+        input.required = !!required && visible;
+        if (!visible) input.value = '';
+    }
+
+    function updateScheduleFrequencyFields() {
+        var frequency = (document.getElementById('frequencyType').value || '').toUpperCase();
+        setGroupVisible('dayOfWeekGroup', 'dayOfWeek', frequency === 'WEEKLY', false);
+        setGroupVisible('dayOfMonthGroup', 'dayOfMonth', frequency === 'MONTHLY', false);
+        setGroupVisible('nextDueOnGroup', 'nextDueOn', frequency === 'MANUAL', true);
     }
 
     function resetJobForm() {
@@ -247,10 +268,12 @@
     });
 
     document.getElementById('runNowMode').addEventListener('change', toggleRunNowCustom);
+    document.getElementById('frequencyType').addEventListener('change', updateScheduleFrequencyFields);
 
     document.getElementById('scheduleForm').addEventListener('submit', async function (event) {
         event.preventDefault();
         clearFormError(event.target);
+        updateScheduleFrequencyFields();
         if (!event.target.reportValidity()) return;
         try {
             await postForm(app.dataset.saveScheduleUrl, new FormData(event.target));

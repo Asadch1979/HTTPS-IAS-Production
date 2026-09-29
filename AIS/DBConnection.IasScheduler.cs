@@ -479,12 +479,26 @@ namespace AIS.Controllers
         }
 
         private static DateTime? ReadIasSchedulerNullableDate(OracleDataReader reader, string columnName)
-        {
-            return !HasIasSchedulerColumn(reader, columnName) || reader[columnName] == DBNull.Value
-                ? null
-                : Convert.ToDateTime(reader[columnName]);
-        }
+            {
+            if (!HasIasSchedulerColumn(reader, columnName) || reader[columnName] == DBNull.Value)
+                {
+                return null;
+                }
 
+            var value = reader[columnName];
+
+            if (value is DateTime dateTime)
+                {
+                return dateTime;
+                }
+
+            if (value is DateTimeOffset dateTimeOffset)
+                {
+                return dateTimeOffset.DateTime;
+                }
+
+            return Convert.ToDateTime(value);
+            }
         private static DateTime ReadIasSchedulerTimestampTz(OracleDataReader reader, string columnName)
         {
             return ReadIasSchedulerNullableTimestampTz(reader, columnName) ?? DateTime.MinValue;

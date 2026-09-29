@@ -263,4 +263,9 @@
 </div>
 
 <script id="managementNotificationData" type="application/json">@Html.Raw(JsonSerializer.Serialize(Model.Divisions))</script>
-<script src="~/js/csp/Views_AdministrationPanel_management_audit_notifications.js?v=1"></script>
+<script id="managementNotificationData"
+        type="application/json">@Html.Raw(JsonSerializer.Serialize(Model.Divisions))</script>
+
+@section Scripts {
+    <script src="~/js/csp/Views_AdministrationPanel_management_audit_notifications.js?v=2"></script>
+}
