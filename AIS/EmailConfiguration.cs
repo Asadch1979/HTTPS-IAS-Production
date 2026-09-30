@@ -148,13 +148,13 @@ public class EmailConfiguration
             {
             LogError("SMTP error while sending email.", ex);
             CompleteAttemptLog(logId, "SMTP_FAILED", ex.Message, false);
-            return new EmailSendResult { IsSuccess = false, Status = "SMTP_FAILED", ErrorMessage = ex.Message };
+            return new EmailSendResult { IsSuccess = false, Status = "SMTP_FAILED", ErrorMessage = ex.ToString() };
             }
         catch (Exception ex)
             {
             LogError("General error while sending email.", ex);
             CompleteAttemptLog(logId, "FAILED", ex.Message, false);
-            return new EmailSendResult { IsSuccess = false, Status = "FAILED", ErrorMessage = ex.Message };
+            return new EmailSendResult { IsSuccess = false, Status = "FAILED", ErrorMessage = ex.ToString() };
             }
         }
 
@@ -217,13 +217,13 @@ public class EmailConfiguration
             {
             LogError("SMTP error while sending async email.", ex);
             CompleteAttemptLog(logId, "SMTP_FAILED", ex.Message, false);
-            return new EmailSendResult { IsSuccess = false, Status = "SMTP_FAILED", ErrorMessage = ex.Message };
+            return new EmailSendResult { IsSuccess = false, Status = "SMTP_FAILED", ErrorMessage = ex.ToString() };
             }
         catch (Exception ex)
             {
             LogError("General error while sending async email.", ex);
             CompleteAttemptLog(logId, "FAILED", ex.Message, false);
-            return new EmailSendResult { IsSuccess = false, Status = "FAILED", ErrorMessage = ex.Message };
+            return new EmailSendResult { IsSuccess = false, Status = "FAILED", ErrorMessage = ex.ToString() };
             }
         }
 

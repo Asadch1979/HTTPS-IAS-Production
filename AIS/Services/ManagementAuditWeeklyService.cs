@@ -155,7 +155,7 @@ namespace AIS.Services
                     {
                         try
                         {
-                            complete(key, "FAILED", e.Message);
+                            complete(key, "FAILED", e.ToString());
                         }
                         catch (Exception trackingException)
                         {
@@ -192,8 +192,6 @@ namespace AIS.Services
                 throw new InvalidOperationException("The Division dataset contains duplicate decision history IDs.");
             if (decisionDetails.Any(item => item.DivisionId != summary.DivisionId))
                 throw new InvalidOperationException("The Division dataset contains records for another Division.");
-            if (decisionDetails.Any(item => item.DecisionOn < fromDate || item.DecisionOn >= toDate))
-                throw new InvalidOperationException("The Division dataset contains a decision outside the Compliance Review Period.");
             if (decisionDetails.Any(item => !IsValidDecisionStatus(item)))
                 throw new InvalidOperationException("The Division dataset contains an invalid decision status.");
             if (noComplianceDetails.Any(item => item.DivisionId != summary.DivisionId))
@@ -232,7 +230,8 @@ namespace AIS.Services
                 item.SubmittedOn,
                 item.DecisionOn,
                 item.Reason,
-                item.ComStatus == 16)).ToList();
+                item.ComStatus == 16,
+                item.Risk)).ToList();
         }
 
         private static IReadOnlyList<ManagementAuditDecision> AdaptNoComplianceData(

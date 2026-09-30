@@ -74,6 +74,7 @@ namespace AIS.Controllers
                     AuditPeriod = reader["AUDIT_PERIOD"]?.ToString() ?? string.Empty,
                     ParaNo = reader["PARA_NO"]?.ToString() ?? string.Empty,
                     Title = reader["TITLE"]?.ToString() ?? string.Empty,
+                    Risk = reader["RISK"]?.ToString() ?? string.Empty,
                     SubmittedOn = reader["SUBMITTED_ON"] == DBNull.Value
                         ? null
                         : Convert.ToDateTime(reader["SUBMITTED_ON"]),

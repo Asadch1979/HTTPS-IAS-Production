@@ -32,6 +32,7 @@ namespace AIS.Models.Notifications
         public string AuditPeriod { get; set; } = string.Empty;
         public string ParaNo { get; set; } = string.Empty;
         public string Title { get; set; } = string.Empty;
+        public string Risk { get; set; } = string.Empty;
         public DateTime? SubmittedOn { get; set; }
         public DateTime DecisionOn { get; set; }
         public string DecisionStatus { get; set; } = string.Empty;

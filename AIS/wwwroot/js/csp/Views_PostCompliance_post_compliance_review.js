@@ -210,6 +210,15 @@
         deleteImageObjectByFileName(fileName);
     }
 
+    function setReviewButtonAvailability(selector, label) {
+        var button = $(selector);
+        var isAvailable = $.trim(label || '') !== '';
+        button
+            .toggleClass('d-none', !isAvailable)
+            .prop('disabled', !isAvailable)
+            .html(isAvailable ? label : '');
+    }
+
     function getReivewParasForCompliance() {
         
         destroyDatatable('manageObsPanel2');
@@ -237,6 +246,7 @@
 
         g_newParaId = newParaId;
         g_oldParaId = oldParaId;
+        g_reviewPending = false;
         g_reviewRequestId = createReviewRequestId();
         g_prevRole = prevRole;
         g_nextRole = nextRole;
@@ -414,15 +424,8 @@
                     $('#viewMemo_paraGist').val(data.gisT_OF_PARA);
                     $('#viewMemo_memo').html(data.parA_TEXT);
                     $('#viewMemo_compliance').val('').trigger('change');
-                    if (g_prevRole == "")
-                        $('#prevRoleButtonHandler').remove();
-                    else
-                        $('#prevRoleButtonHandler').html(g_prevRole);
-
-                    if (g_nextRole == "")
-                        $('#nextRoleButtonHandler').remove();
-                    else
-                        $('#nextRoleButtonHandler').html(g_nextRole);
+                    setReviewButtonAvailability('#prevRoleButtonHandler', g_prevRole);
+                    setReviewButtonAvailability('#nextRoleButtonHandler', g_nextRole);
 
                     $('#listofRespPersons tbody').empty();
                     if (data.responsiblE_PPs.length > 0) {
@@ -480,15 +483,8 @@
                     $('#viewMemo_paraGist_rep').val(data.gisT_OF_PARA);
                     $('#viewMemo_memo_rep').html(data.parA_TEXT);
                     $('#viewMemo_compliance_rep').val('');
-                    if (g_prevRole == "")
-                        $('#prevRoleButtonHandler_rep').remove();
-                    else
-                        $('#prevRoleButtonHandler_rep').html(g_prevRole);
-
-                    if (g_nextRole == "")
-                        $('#nextRoleButtonHandler_rep').remove();
-                    else
-                        $('#nextRoleButtonHandler_rep').html(g_nextRole);
+                    setReviewButtonAvailability('#prevRoleButtonHandler_rep', g_prevRole);
+                    setReviewButtonAvailability('#nextRoleButtonHandler_rep', g_nextRole);
 
 
                     if (g_maxCycle != parseInt(cycle)) {
