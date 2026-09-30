@@ -283,7 +283,10 @@ namespace AIS
                     ("Risk", risk),
                     ("Status", normalizedStatus),
                     ("Gist of Para", paraGist),
-                    ("Reason for Rejection", normalizedStatus == "Rejected" ? rejectionReason : string.Empty)));
+                    ("Reason for Rejection", normalizedStatus == "Rejected" ? rejectionReason : string.Empty)),
+                headerBackground: normalizedStatus == "Settled" ? "#dcfce7" : "#fee2e2",
+                headerColor: normalizedStatus == "Settled" ? "#166534" : "#991b1b",
+                titleColor: normalizedStatus == "Settled" ? "#166534" : "#991b1b");
             string ccCombined = string.Join(";", new[] { ccEmail, cc2Email }.Where(e => !string.IsNullOrWhiteSpace(e)));
 
             try
@@ -514,7 +517,8 @@ namespace AIS
                 }
             }
 
-        private static string BuildHtmlBody(string title, string summary, IEnumerable<KeyValuePair<string, string>> details)
+        private static string BuildHtmlBody(string title, string summary, IEnumerable<KeyValuePair<string, string>> details,
+            string headerBackground = "#173f5f", string headerColor = "#ffffff", string titleColor = "#102a43")
             {
             var detailRows = (details ?? Enumerable.Empty<KeyValuePair<string, string>>())
                 .Where(item => !string.IsNullOrWhiteSpace(item.Key) && !string.IsNullOrWhiteSpace(item.Value))
@@ -526,8 +530,8 @@ namespace AIS
             builder.AppendLine("<body style=\"margin:0;padding:0;background-color:#f4f6f8;font-family:Arial,Helvetica,sans-serif;color:#1f2933;\">");
             builder.AppendLine("<table role=\"presentation\" width=\"100%\" cellspacing=\"0\" cellpadding=\"0\" style=\"background-color:#f4f6f8;padding:24px 0;\"><tr><td align=\"center\">");
             builder.AppendLine("<table role=\"presentation\" width=\"680\" cellspacing=\"0\" cellpadding=\"0\" style=\"width:680px;max-width:680px;background-color:#ffffff;border-collapse:collapse;border:1px solid #d9e2ec;\">");
-            builder.AppendLine($"<tr><td style=\"padding:18px 28px;background-color:#173f5f;color:#ffffff;font-size:20px;font-weight:bold;letter-spacing:0.2px;\">{Encode(NotificationHeader)}</td></tr>");
-            builder.AppendLine($"<tr><td style=\"padding:28px 28px 16px 28px;font-size:24px;font-weight:bold;color:#102a43;\">{Encode(title)}</td></tr>");
+            builder.AppendLine($"<tr><td style=\"padding:18px 28px;background-color:{headerBackground};color:{headerColor};font-size:20px;font-weight:bold;letter-spacing:0.2px;\">{Encode(NotificationHeader)}</td></tr>");
+            builder.AppendLine($"<tr><td style=\"padding:28px 28px 16px 28px;font-size:24px;font-weight:bold;color:{titleColor};\">{Encode(title)}</td></tr>");
             if (!string.IsNullOrWhiteSpace(summary))
                 {
                 builder.AppendLine($"<tr><td style=\"padding:0 28px 20px 28px;font-size:15px;line-height:1.7;color:#334e68;\">{Encode(summary)}</td></tr>");
