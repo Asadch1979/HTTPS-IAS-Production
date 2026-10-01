@@ -28,6 +28,7 @@
       data-set-active-url="@Url.Action("SetIasSchedulerScheduleActive", "AdministrationPanel")"
       data-run-now-url="@Url.Action("RequestIasSchedulerRunNow", "AdministrationPanel")"
       data-cancel-run-url="@Url.Action("CancelIasSchedulerRunRequest", "AdministrationPanel")"
+      data-retry-run-url="@Url.Action("RetryIasSchedulerRunRequest", "AdministrationPanel")"
       data-save-job-url="@Url.Action("SaveIasSchedulerJobDefinition", "AdministrationPanel")"
       data-resolve-url="@Url.Action("ResolveIasSchedulerExecution", "AdministrationPanel")">
     <form id="iasSchedulerCsrf" class="d-none">@Html.AntiForgeryToken()</form>
@@ -148,6 +149,10 @@
                                     <div class="text-muted small">@DateTimeText(request.UpdatedOn)</div>
                                 </td>
                                 <td class="text-end">
+                                    @if (string.Equals(request.Status, "FAILED", StringComparison.OrdinalIgnoreCase))
+                                    {
+                                        <button type="button" class="btn btn-sm btn-outline-primary retry-run-request" data-request-id="@request.RequestId">Retry</button>
+                                    }
                                     @if (string.Equals(request.Status, "PENDING", StringComparison.OrdinalIgnoreCase))
                                     {
                                         <button type="button" class="btn btn-sm btn-outline-danger cancel-run-request" data-request-id="@request.RequestId"><i class="fa-solid fa-ban me-1" aria-hidden="true"></i>Cancel</button>

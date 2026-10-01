@@ -236,6 +236,32 @@ namespace AIS.Controllers
             }
         }
 
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [AIS.Filters.ApplicationAudit("RETRY_IAS_SCHEDULER_RUN_NOW", "ADMINISTRATION", "IAS SCHEDULER", "PKG_IAS_SCHEDULER", "P_RETRY_RUN_REQUEST", ObjectType = "IAS_SCHEDULER_RUN_REQUEST")]
+        public IActionResult RetryIasSchedulerRunRequest(long requestId)
+        {
+            if (!CanManageIasScheduler()) return Forbid();
+            if (!ModelState.IsValid || requestId <= 0)
+                return BadRequest(new { status = false, message = "Select a valid Run Now request." });
+
+            try
+            {
+                dBConnection.RetryIasSchedulerRunRequest(requestId, GetIasSchedulerActor());
+                return Json(new { status = true, message = "Retry queued for the same Run Now request and period. Normal Next Due is unchanged.", requestId });
+            }
+            catch (Oracle.ManagedDataAccess.Client.OracleException ex) when (ex.Number >= 20250 && ex.Number <= 20254)
+            {
+                _logger.LogWarning(ex, "IAS scheduler retry rejected for request {RequestId}.", requestId);
+                return Conflict(new { status = false, message = "Retry was not accepted. Refresh the requests; only a failed request without an active execution can be retried." });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Unable to retry IAS scheduler run request {RequestId}.", requestId);
+                return StatusCode(500, new { status = false, message = "Unable to retry the Run Now request." });
+            }
+        }
+
         private bool CanManageIasScheduler()
         {
             return User?.Identity?.IsAuthenticated == true

@@ -47,7 +47,9 @@ namespace AIS.Services
             if (!job.PeriodFrom.HasValue || !job.PeriodTo.HasValue)
                 throw new InvalidOperationException("Management Audit Compliance Review requires PERIOD_FROM and PERIOD_TO from PKG_IAS_SCHEDULER.");
 
-            var result = await RunPeriodAsync(job.PeriodFrom.Value, job.PeriodTo.Value, cancellationToken);
+            var explicitManualRetry = string.Equals(job.RunSource, "MANUAL", StringComparison.OrdinalIgnoreCase)
+                && job.RunRequestId.HasValue && job.RetryNo > 0;
+            var result = await RunPeriodCoreAsync(job.PeriodFrom.Value, job.PeriodTo.Value, cancellationToken, explicitManualRetry);
             if (result.FailedDivisions > 0)
                 throw new InvalidOperationException($"Management Audit Compliance Review failed for {result.FailedDivisions} Division(s).");
 
@@ -60,6 +62,13 @@ namespace AIS.Services
             DateTime fromDate,
             DateTime toDate,
             CancellationToken cancellationToken)
+            => await RunPeriodCoreAsync(fromDate, toDate, cancellationToken, false);
+
+        private async Task<ManagementAuditProcessingResult> RunPeriodCoreAsync(
+            DateTime fromDate,
+            DateTime toDate,
+            CancellationToken cancellationToken,
+            bool explicitManualRetry)
         {
             fromDate = fromDate.Date;
             toDate = toDate.Date;
@@ -72,7 +81,9 @@ namespace AIS.Services
                 fromDate,
                 toDate,
                 divisions,
-                key => store.ClaimPeriod(key, "MGMT_AUDIT_COMPLIANCE_NOTIFICATION"),
+                key => explicitManualRetry
+                    ? store.ClaimManagementAuditManualRetry(key)
+                    : store.ClaimPeriod(key, "MGMT_AUDIT_COMPLIANCE_NOTIFICATION"),
                 divisionId => db.GetManagementAuditWeeklyDivisionData(divisionId, fromDate, toDate),
                 divisionId => db.GetManagementAuditWeeklyNoCompliance(divisionId, fromDate, toDate),
                 (division, records) => EmailNotification.SendManagementAuditComplianceReviewAsync(configuration, serviceProvider, fromDate, toDate, division, records),
