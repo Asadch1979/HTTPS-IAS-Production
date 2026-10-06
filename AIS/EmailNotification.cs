@@ -49,7 +49,7 @@ namespace AIS
             if (endExclusive.Date <= start.Date)
                 throw new ArgumentException("Exclusive period end must be later than the period start.", nameof(endExclusive));
 
-            var inclusiveEnd = endExclusive.Date.AddDays(-1);
+            var inclusiveEnd = endExclusive.Date;
             var periodDisplay = $"{start:dd-MMM-yyyy} to {inclusiveEnd:dd-MMM-yyyy}";
             var settled = records.Where(record => record.Settled && !record.NoCompliance).ToList();
             var referredBack = records.Where(record => !record.Settled && !record.NoCompliance).ToList();

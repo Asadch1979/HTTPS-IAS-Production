@@ -1622,7 +1622,8 @@ namespace AIS.Controllers
             var response = dBConnection.UpdateAuditObservationStatus(request.OBS_ID, 4, null, request.AUDITOR_COMMENT);
             return Ok(new { Status = !string.IsNullOrWhiteSpace(response), Message = response ?? string.Empty });
 
-            }        [HttpPost]
+            }        
+        [HttpPost]
         [ApplicationAudit("OBSERVATION_ADDED_TO_DRAFT_REPORT", "AUDIT_REPORT", "Reporting", "pkg_ar", "P_Add_Observation_To_Draft", ObjectType = "OBSERVATION", ObjectId = "request.ObservationId")]
         public IActionResult AddObservationToDraft(AddObservationToDraftRequest request)
             {
