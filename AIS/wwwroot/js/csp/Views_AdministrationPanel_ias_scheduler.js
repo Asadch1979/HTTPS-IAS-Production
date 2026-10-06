@@ -253,6 +253,22 @@
         });
     });
 
+    document.querySelectorAll('.retry-run-request').forEach(function (button) {
+        button.addEventListener('click', async function () {
+            if (!window.confirm('Retry this failed Run Now request? Completed work will not be repeated; only eligible failed work will be processed.')) return;
+            button.disabled = true;
+            var data = new FormData();
+            data.append('requestId', button.dataset.requestId);
+            try {
+                await postForm(app.dataset.retryRunUrl, data);
+                window.location.reload();
+            } catch (error) {
+                showMessage(error.message, false);
+                button.disabled = false;
+            }
+        });
+    });
+
     document.querySelectorAll('.cancel-run-request').forEach(function (button) {
         button.addEventListener('click', async function () {
             if (!window.confirm('Cancel this pending Run Now request?')) return;

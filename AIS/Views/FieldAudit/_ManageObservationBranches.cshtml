@@ -31,7 +31,7 @@
     }
 </style>
 
-<div class="row" id="fieldAuditManageObservationBranchesReplica" data-eng-id="@Model.EngagementId">
+<div class="row" id="fieldAuditManageObservationBranchesReplica" data-eng-id="@Model.EngagementId" data-can-add-to-draft="@(Model.CanAddToDraft ? "true" : "false")">
     <input type="hidden" id="engIdHidden" value="@Model.EngagementId" />
 
     <div class="row col-md-12">
@@ -439,4 +439,4 @@
 </script>
 <script src="~/js/responsibilitySectionUpdate.js"></script>
     <script src="~/js/obsreference.js?v=4"></script>
-<script src="~/js/fieldAudit/manageObservationBranchesReplica.js?v=9"></script>
+<script src="~/js/fieldAudit/manageObservationBranchesReplica.js?v=10"></script>

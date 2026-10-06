@@ -57,6 +57,29 @@ namespace AIS.Services
         }
 
         public bool ClaimPeriod(string key, string fingerprint)
+            => ClaimPeriodCore(key, fingerprint, false);
+
+        internal bool ClaimManagementAuditPeriod(string key)
+        {
+            if (ClaimPeriod(key, "MGMT_AUDIT_COMPLIANCE_NOTIFICATION")) return true;
+            if (ReadExecution(key)?.Status == "COMPLETE") return false;
+            throw new InvalidOperationException($"Management Audit Division execution {key} remains outstanding or requires reconciliation.");
+        }
+
+        // Only the Management Audit scheduler handler selects this path for a
+        // claimed MANUAL attempt with RETRY_NO > 0. Never reclaim an uncertain
+        // SMTP outcome or completed delivery, even for an explicit retry.
+        internal bool ClaimManagementAuditManualRetry(string key)
+        {
+            if (!key.StartsWith("MGMT_AUDIT:", StringComparison.Ordinal))
+                throw new ArgumentException("A Management Audit Division key is required.", nameof(key));
+            if (ClaimPeriodCore(key, "MGMT_AUDIT_COMPLIANCE_NOTIFICATION", true)) return true;
+            var existing = ReadExecution(key);
+            if (existing?.Status == "COMPLETE") return false;
+            throw new InvalidOperationException($"Management Audit Division execution {key} remains outstanding or requires reconciliation.");
+        }
+
+        private bool ClaimPeriodCore(string key, string fingerprint, bool explicitManualRetry)
         {
             if (Claim(key, fingerprint)) return true;
             using var connection = Open();
@@ -66,9 +89,11 @@ namespace AIS.Services
             command.BindByName = true;
             command.CommandText = @"UPDATE T_IAS_NOTIFY_EXECUTION SET STATUS='RUNNING',
                 RETRY_COUNT=RETRY_COUNT+1,UPDATED_ON=SYSTIMESTAMP WHERE EXECUTION_KEY=:k
-                AND STATUS='FAILED' AND RETRY_COUNT<5
-                AND UPDATED_ON<SYSTIMESTAMP-INTERVAL '15' MINUTE";
+                AND STATUS='FAILED'
+                AND (:manualRetry=1 OR (RETRY_COUNT<5
+                AND UPDATED_ON<SYSTIMESTAMP-INTERVAL '15' MINUTE))";
             command.Parameters.Add("k", OracleDbType.Varchar2).Value = key;
+            command.Parameters.Add("manualRetry", OracleDbType.Int32).Value = explicitManualRetry ? 1 : 0;
             var claimed = command.ExecuteNonQuery() == 1;
             transaction.Commit();
             return claimed;

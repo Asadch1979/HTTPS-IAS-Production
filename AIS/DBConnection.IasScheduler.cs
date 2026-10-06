@@ -159,6 +159,19 @@ namespace AIS.Controllers
             return ReadIasSchedulerOutputInt64(requestId);
         }
 
+        public void RetryIasSchedulerRunRequest(long requestId, string updatedBy)
+        {
+            using var con = DatabaseConnection(requireActiveSession: false);
+            using var cmd = con.CreateCommand();
+            cmd.CommandText = "PKG_IAS_SCHEDULER.P_RETRY_RUN_REQUEST";
+            cmd.CommandType = CommandType.StoredProcedure;
+            cmd.BindByName = true;
+            GuardAgainstDynamicSql(cmd);
+            cmd.Parameters.Add("P_REQUEST_ID", OracleDbType.Int64).Value = requestId;
+            cmd.Parameters.Add("P_UPDATED_BY", OracleDbType.Varchar2, 100).Value = IasSchedulerDbValue(updatedBy, 100);
+            cmd.ExecuteNonQuery();
+        }
+
         public void CancelIasSchedulerRunRequest(long requestId, string updatedBy)
         {
             using var con = DatabaseConnection(requireActiveSession: false);

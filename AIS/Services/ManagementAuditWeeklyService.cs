@@ -31,11 +31,13 @@ namespace AIS.Services
             IConfiguration configuration,
             NotificationExecutionStore store,
             DBConnection db,
+            IServiceProvider serviceProvider,
             ILogger<ManagementAuditWeeklyService> logger)
         {
             this.configuration = configuration;
             this.store = store;
             this.db = db;
+            this.serviceProvider = serviceProvider;
             this.logger = logger;
         }
 
@@ -47,7 +49,9 @@ namespace AIS.Services
             if (!job.PeriodFrom.HasValue || !job.PeriodTo.HasValue)
                 throw new InvalidOperationException("Management Audit Compliance Review requires PERIOD_FROM and PERIOD_TO from PKG_IAS_SCHEDULER.");
 
-            var result = await RunPeriodAsync(job.PeriodFrom.Value, job.PeriodTo.Value, cancellationToken);
+            var explicitManualRetry = string.Equals(job.RunSource, "MANUAL", StringComparison.OrdinalIgnoreCase)
+                && job.RunRequestId.HasValue && job.RetryNo > 0;
+            var result = await RunPeriodCoreAsync(job.PeriodFrom.Value, job.PeriodTo.Value, cancellationToken, explicitManualRetry);
             if (result.FailedDivisions > 0)
                 throw new InvalidOperationException($"Management Audit Compliance Review failed for {result.FailedDivisions} Division(s).");
 
@@ -60,6 +64,13 @@ namespace AIS.Services
             DateTime fromDate,
             DateTime toDate,
             CancellationToken cancellationToken)
+            => await RunPeriodCoreAsync(fromDate, toDate, cancellationToken, false);
+
+        private async Task<ManagementAuditProcessingResult> RunPeriodCoreAsync(
+            DateTime fromDate,
+            DateTime toDate,
+            CancellationToken cancellationToken,
+            bool explicitManualRetry)
         {
             fromDate = fromDate.Date;
             toDate = toDate.Date;
@@ -72,7 +83,9 @@ namespace AIS.Services
                 fromDate,
                 toDate,
                 divisions,
-                key => store.ClaimPeriod(key, "MGMT_AUDIT_COMPLIANCE_NOTIFICATION"),
+                key => explicitManualRetry
+                    ? store.ClaimManagementAuditManualRetry(key)
+                    : store.ClaimManagementAuditPeriod(key),
                 divisionId => db.GetManagementAuditWeeklyDivisionData(divisionId, fromDate, toDate),
                 divisionId => db.GetManagementAuditWeeklyNoCompliance(divisionId, fromDate, toDate),
                 (division, records) => EmailNotification.SendManagementAuditComplianceReviewAsync(configuration, serviceProvider, fromDate, toDate, division, records),
@@ -194,6 +207,8 @@ namespace AIS.Services
                 throw new InvalidOperationException("The Division dataset contains records for another Division.");
             if (decisionDetails.Any(item => !IsValidDecisionStatus(item)))
                 throw new InvalidOperationException("The Division dataset contains an invalid decision status.");
+            if (decisionDetails.Any(item => item.DecisionOn < fromDate || item.DecisionOn >= toDate))
+                throw new InvalidOperationException("The Division dataset contains a decision outside the reporting period.");
             if (noComplianceDetails.Any(item => item.DivisionId != summary.DivisionId))
                 throw new InvalidOperationException("The Division no-compliance dataset contains records for another Division.");
             if (noComplianceDetails.GroupBy(item => new { item.ComId, item.ComCycle }).Any(group => group.Count() > 1))

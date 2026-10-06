@@ -49,7 +49,7 @@ namespace AIS
             if (endExclusive.Date <= start.Date)
                 throw new ArgumentException("Exclusive period end must be later than the period start.", nameof(endExclusive));
 
-            var inclusiveEnd = endExclusive.Date;
+            var inclusiveEnd = endExclusive.Date.AddDays(-1);
             var periodDisplay = $"{start:dd-MMM-yyyy} to {inclusiveEnd:dd-MMM-yyyy}";
             var settled = records.Where(record => record.Settled && !record.NoCompliance).ToList();
             var referredBack = records.Where(record => !record.Settled && !record.NoCompliance).ToList();
@@ -161,8 +161,8 @@ namespace AIS
                 SectionHeading("Paras Where No Compliance Was Submitted During the Compliance Review Period", noCompliance.Count,
                     "Attention is also invited to the following outstanding audit paras against which no compliance was submitted during the Compliance Review Period:");
                 body.Append(Table(noCompliance,
-                    new[] { ("Sr.", "center", "5%"), ("Department", "left", "17%"), ("Audit Year", "center", "9%"), ("Para No.", "center", "8%"), ("Title of Para", "left", "30%"), ("Risk", "center", "9%") },
-                    row => new[] { row.Entity, row.Year, row.Para, row.Title, row.Risk}));
+                    new[] { ("Sr.", "center", "5%"), ("Department", "left", "17%"), ("Audit Year", "center", "9%"), ("Para No.", "center", "8%"), ("Title of Para", "left", "30%"), ("Risk", "center", "9%"), ("Last Compliance Submitted On", "center", "12%") },
+                    row => new[] { row.Entity, row.Year, row.Para, row.Title, row.Risk, Date(row.LastComplianceSubmitted) }));
                 body.Append("<p style=\"margin:0 0 22px;line-height:1.55\">The concerned department(s) may please be advised to review the outstanding audit paras and submit appropriate and meaningful compliance through IAS at the earliest for examination and further processing.</p>");
                 }
 
@@ -269,7 +269,13 @@ namespace AIS
 
         public static bool NotifyManagementAuditParaStatus(IConfiguration configuration, string paraNo, string paraStatus, string auditYear, string risk, string paraGist, string rejectionReason, string toEmail, string ccEmail, string cc2Email, string rpt, string div, string dept, IServiceProvider serviceProvider = null)
             {
-            string normalizedStatus = string.Equals(paraStatus, "Settled", StringComparison.OrdinalIgnoreCase) ? "Settled" : "Rejected";
+            var status = (paraStatus ?? string.Empty).Trim();
+            var settled = string.Equals(status, "Settled", StringComparison.OrdinalIgnoreCase);
+            if (!settled && !string.Equals(status, "Rejected", StringComparison.OrdinalIgnoreCase)
+                && !string.Equals(status, "Rejected/Referred Back", StringComparison.OrdinalIgnoreCase)
+                && !string.Equals(status, "Referred Back", StringComparison.OrdinalIgnoreCase))
+                return false;
+            string normalizedStatus = settled ? "Settled" : "Referred Back";
             string subject = $"IAS Notification: Audit Para No. {paraNo} {normalizedStatus}";
             string body = BuildHtmlBody(
                 $"Audit Para No. {paraNo} {normalizedStatus}",
@@ -283,7 +289,7 @@ namespace AIS
                     ("Risk", risk),
                     ("Status", normalizedStatus),
                     ("Gist of Para", paraGist),
-                    ("Reason for Rejection", normalizedStatus == "Rejected" ? rejectionReason : string.Empty)),
+                    ("Reason for Referral Back", !settled ? rejectionReason : string.Empty)),
                 headerBackground: normalizedStatus == "Settled" ? "#dcfce7" : "#fee2e2",
                 headerColor: normalizedStatus == "Settled" ? "#166534" : "#991b1b",
                 titleColor: normalizedStatus == "Settled" ? "#166534" : "#991b1b");

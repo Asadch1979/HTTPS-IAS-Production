@@ -105,38 +105,23 @@ CREATE OR REPLACE PACKAGE BODY PKG_MGMT_AUDIT_WEEKLY AS
          GROUP BY DIVISION_ID),
 
       DECISION_EVENTS AS
-       (
-        ----------------------------------------------------------
-        -- Settled decisions falling within the reporting period
-        ----------------------------------------------------------
-        SELECT S.HIST_ID,
-                S.COM_ID,
-                S.COM_CYCLE,
-                S.ENTITY_ID,
-                S.AUDITED_BY,
-                S.DECISION_ON,
-                S.COM_STATUS,
-                'SETTLED' AS CATEGORY
-          FROM V_IAS_MGMT_SETTLED_EVENTS S
-         WHERE S.DECISION_ON >= TRUNC(P_FROM_DATE)
-           AND S.DECISION_ON < TRUNC(P_TO_DATE)
-        
-        UNION ALL
-        
-        ----------------------------------------------------------
-        -- Referred Back decisions within the reporting period
-        ----------------------------------------------------------
-        SELECT R.HIST_ID,
-                R.COM_ID,
-                R.COM_CYCLE,
-                R.ENTITY_ID,
-                R.AUDITED_BY,
-                R.DECISION_ON,
-                R.COM_STATUS,
-                'REFERRED_BACK' AS CATEGORY
-          FROM V_IAS_MGMT_REFERRED_EVENTS R
-         WHERE R.DECISION_ON >= TRUNC(P_FROM_DATE)
-           AND R.DECISION_ON < TRUNC(P_TO_DATE)),
+       (SELECT W.HIST_ID,
+               H.COM_ID,
+               H.COM_CYCLE,
+               PC.ENTITY_ID,
+               PC.AUDITED_BY,
+               W.DECISION_ON,
+               W.COM_STATUS,
+               CASE WHEN W.COM_STATUS = 16 THEN 'SETTLED'
+                    ELSE 'REFERRED_BACK' END AS CATEGORY
+          FROM V_IAS_MGMT_WEEKLY_DATA W
+          JOIN AIS_T_AU_POST_COMPLIANCE_HISTORY H ON H.HIST_ID = W.HIST_ID
+          JOIN AIS_T_AU_POST_COMPLIANCE PC ON PC.COM_ID = H.COM_ID
+         WHERE W.DECISION_ON >= TRUNC(P_FROM_DATE)
+           AND W.DECISION_ON < TRUNC(P_TO_DATE)
+           AND W.COM_STATUS IN (16, 12, 15, 18)
+           AND PC.AUDITED_BY IN (112242, 112248)
+           AND W.DIVISION_ID IS NOT NULL),
       
       --------------------------------------------------------------
       -- Rank Settled and Referred Back events together.
@@ -177,8 +162,10 @@ CREATE OR REPLACE PACKAGE BODY PKG_MGMT_AUDIT_WEEKLY AS
       --------------------------------------------------------------
       NO_COMPLIANCE AS
        (SELECT P.COM_ID, P.ENTITY_ID, 'NO_COMPLIANCE' AS CATEGORY
-          FROM V_IAS_MGMT_OPEN_PARAS P
-         WHERE
+          FROM AIS_T_AU_POST_COMPLIANCE P
+         WHERE P.AUDITED_BY IN (112242, 112248)
+           AND P.PARA_STATUS = 8
+           AND
         ------------------------------------------------------
         -- Para must have existed before end of reporting
         -- period
@@ -351,6 +338,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_MGMT_AUDIT_WEEKLY AS
                W.AUDIT_PERIOD,
                W.PARA_NO,
                W.TITLE,
+               PC.RISK,
                
                W.SUBMITTED_ON,
                W.DECISION_ON,
@@ -389,9 +377,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_MGMT_AUDIT_WEEKLY AS
               
            AND PC.AUDITED_BY IN (112242, 112248)
               
-           AND W.DIVISION_ID IS NOT NULL
-              
-           AND TRIM(W.DIVISION_EMAIL) IS NOT NULL)
+           AND W.DIVISION_ID IS NOT NULL)
       
       SELECT DECISION_HISTORY_ID,
              
@@ -411,6 +397,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_MGMT_AUDIT_WEEKLY AS
              AUDIT_PERIOD,
              PARA_NO,
              TITLE,
+             RISK,
              
              SUBMITTED_ON,
              DECISION_ON,
@@ -495,7 +482,6 @@ CREATE OR REPLACE PACKAGE BODY PKG_MGMT_AUDIT_WEEKLY AS
             
             /* Valid Division notification mapping */
          AND M.DIVISION_ID IS NOT NULL
-         AND TRIM(M.DIVISION_EMAIL) IS NOT NULL
             
             /* Para must have existed by the end of the reporting period */
          AND (PC.PARA_ADDED_ON IS NULL OR
@@ -509,7 +495,16 @@ CREATE OR REPLACE PACKAGE BODY PKG_MGMT_AUDIT_WEEKLY AS
                  AND H.COM_STATUS = 10
                  AND H.COMMENT_ON >= TRUNC(P_FROM_DATE)
                  AND H.COMMENT_ON < TRUNC(P_TO_DATE))
-      
+
+            /* Match summary: a decision belongs in its decision section only. */
+         AND NOT EXISTS
+       (SELECT 1
+                FROM AIS_T_AU_POST_COMPLIANCE_HISTORY H
+               WHERE H.COM_ID = PC.COM_ID
+                 AND H.COM_STATUS IN (16, 12, 15, 18)
+                 AND H.COMMENT_ON >= TRUNC(P_FROM_DATE)
+                 AND H.COMMENT_ON < TRUNC(P_TO_DATE))
+
        ORDER BY M.ENTITY_NAME, PC.AUDIT_PERIOD, PC.PARA_NO;
   
   END P_GET_MGMT_WEEKLY_NO_COMPLIANCE;

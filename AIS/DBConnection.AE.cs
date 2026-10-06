@@ -1366,9 +1366,10 @@ namespace AIS.Controllers
                 while (rdr.Read())
                     {
                     resp = rdr["remarks"].ToString();
-                    rpt = rdr["report"].ToString();
-                    dept = rdr["DEPT"].ToString();
-                    div = rdr["DIV"].ToString();
+                    // Older deployed review cursors omit these display-only columns.
+                    rpt = HasColumn(rdr, "report") ? rdr["report"].ToString() : string.Empty;
+                    dept = HasColumn(rdr, "DEPT") ? rdr["DEPT"].ToString() : string.Empty;
+                    div = HasColumn(rdr, "DIV") ? rdr["DIV"].ToString() : string.Empty;
                     para_no = rdr["PARA_NO"].ToString();
                     para_gist = rdr["GIST_OF_PARAS"].ToString();
                     to_email = rdr["TO_EMAIL"].ToString();
