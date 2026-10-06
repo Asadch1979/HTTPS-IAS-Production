@@ -6,8 +6,7 @@ namespace AIS.Services
     {
     public class LoginViewResolver
         {
-        private const string DevDataSourceMarker =
-            "10.1.100.112:1521/qadb18c.ztbl.com.pk";
+        private const string DevDataSource = "ZTBLAIS_PROD";
 
         public LoginViewResolver(
             IConfiguration configuration,
@@ -15,10 +14,13 @@ namespace AIS.Services
             {
             var dataSource =
                 configuration.GetConnectionString("DBDataSource");
+            var dbUser = configuration.GetConnectionString("DBUserName");
 
-            logger.LogInformation(
-                "LoginViewResolver detected DBDataSource: {DataSource}",
-                dataSource);
+            if (string.IsNullOrWhiteSpace(dbUser))
+                {
+                throw new InvalidOperationException(
+                    "ConnectionStrings:DBUserName must be configured to resolve the login view.");
+                }
 
             if (string.IsNullOrWhiteSpace(dataSource))
                 {
@@ -28,29 +30,18 @@ namespace AIS.Services
 
             var trimmedDataSource = dataSource.Trim();
 
-            var isDevDatabase =
-                trimmedDataSource.IndexOf(
-                    DevDataSourceMarker,
-                    StringComparison.OrdinalIgnoreCase) >= 0;
-
-            var configuredDevLogin =
-                configuration.GetValue<bool?>(
-                    "Security:UseDevelopmentLoginView");
-
             IsDevLoginMode =
-                configuredDevLogin ?? isDevDatabase;
+                string.Equals(trimmedDataSource, DevDataSource,
+                    StringComparison.OrdinalIgnoreCase);
 
             ResolvedViewName =
                 IsDevLoginMode ? "index_dev" : "index";
 
             logger.LogInformation(
-                "Login view resolved to {ViewName}. " +
-                "Mode={LoginMode}; DevDatabase={DevDatabase}; " +
-                "ConfiguredOverride={ConfiguredOverride}.",
+                "DBUserName={DBUserName}; LoginView={ViewName}; Mode={LoginMode}",
+                dbUser.Trim(),
                 ResolvedViewName,
-                IsDevLoginMode ? "DEV" : "STANDARD",
-                isDevDatabase,
-                configuredDevLogin);
+                IsDevLoginMode ? "DEV_LOGIN" : "STANDARD_LOGIN");
             }
 
         public bool IsDevLoginMode { get; }
