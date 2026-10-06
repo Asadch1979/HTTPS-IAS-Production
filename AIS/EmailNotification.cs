@@ -152,7 +152,7 @@ namespace AIS
                 SectionHeading("Paras Referred Back for Further Compliance", referredBack.Count,
                     "The following audit paras have been referred back as the compliance submitted was considered insufficient, incomplete, or otherwise inadequate to satisfactorily address the respective audit observations:");
                 body.Append(Table(referredBack,
-                    new[] { ("Sr.", "center", "5%"), ("Department", "left", "16%"), ("Audit Year", "center", "9%"), ("Para No.", "center", "8%"), ("Title of Para", "left", "24%"), ("Risk", "center", "8%"), ("Reason for Referral Back", "left", "30%") },
+                    new[] { ("Sr.", "center", "5%"), ("Department", "left", "16%"), ("Audit Year", "center", "9%"), ("Para No.", "center", "8%"), ("Title of Para", "left", "24%"), ("Risk", "center", "8%"), ("Reason for Referred Back", "left", "30%") },
                     row => new[] { row.Entity, row.Year, row.Para, row.Title, row.Risk, row.Reason }));
                 body.Append("<p style=\"margin:0 0 22px;line-height:1.55\">It is requested that each of the above paras may kindly be reviewed individually and the concerned department(s) advised to take appropriate corrective action. Where any clarification or further discussion with the Internal Audit Group is considered necessary, the matter may be taken up accordingly. Otherwise, a complete, substantive and appropriately supported compliance may please be submitted through the Internal Audit System for further examination.</p>");
                 }
@@ -161,8 +161,8 @@ namespace AIS
                 SectionHeading("Paras Where No Compliance Was Submitted During the Compliance Review Period", noCompliance.Count,
                     "Attention is also invited to the following outstanding audit paras against which no compliance was submitted during the Compliance Review Period:");
                 body.Append(Table(noCompliance,
-                    new[] { ("Sr.", "center", "5%"), ("Department", "left", "17%"), ("Audit Year", "center", "9%"), ("Para No.", "center", "8%"), ("Title of Para", "left", "30%"), ("Risk", "center", "9%"), ("Last Compliance Submitted On", "center", "12%") },
-                    row => new[] { row.Entity, row.Year, row.Para, row.Title, row.Risk, Date(row.LastComplianceSubmitted) }));
+                    new[] { ("Sr.", "center", "5%"), ("Department", "left", "17%"), ("Audit Year", "center", "9%"), ("Para No.", "center", "8%"), ("Title of Para", "left", "30%"), ("Risk", "center", "9%") },
+                    row => new[] { row.Entity, row.Year, row.Para, row.Title, row.Risk }));
                 body.Append("<p style=\"margin:0 0 22px;line-height:1.55\">The concerned department(s) may please be advised to review the outstanding audit paras and submit appropriate and meaningful compliance through IAS at the earliest for examination and further processing.</p>");
                 }
 
@@ -289,7 +289,7 @@ namespace AIS
                     ("Risk", risk),
                     ("Status", normalizedStatus),
                     ("Gist of Para", paraGist),
-                    ("Reason for Referral Back", !settled ? rejectionReason : string.Empty)),
+                    ("Reason for Referred Back", !settled ? rejectionReason : string.Empty)),
                 headerBackground: normalizedStatus == "Settled" ? "#dcfce7" : "#fee2e2",
                 headerColor: normalizedStatus == "Settled" ? "#166534" : "#991b1b",
                 titleColor: normalizedStatus == "Settled" ? "#166534" : "#991b1b");
