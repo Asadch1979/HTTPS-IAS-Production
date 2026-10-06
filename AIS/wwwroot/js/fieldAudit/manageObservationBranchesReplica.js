@@ -150,6 +150,11 @@ function getPageData() {
         return isSelectedEngagementTeamLead();
     }
 
+    function canAddSelectedObservationToDraft() {
+        return g_currentStatus == 3 &&
+            $('#fieldAuditManageObservationBranchesReplica').attr('data-can-add-to-draft') === 'true';
+    }
+
     function preserveTablePosition() {
         g_scrollPos = $('html').scrollTop();
         if ($.fn.DataTable.isDataTable('#manageObsPanel')) {
@@ -639,7 +644,7 @@ function getPageData() {
                 $('#submitAuditeeButton_update').removeClass('d-none');
             }
         } else if (g_currentStatus == 3) {
-            if (isSelectedEngagementTeamLead()) {
+            if (canAddSelectedObservationToDraft()) {
                 $('#addDraftButton_update').removeClass('d-none');
             }
             if (isSelectedEngagementTeamLead() && g_riskId == 3) {
@@ -648,7 +653,7 @@ function getPageData() {
         }
     }
     function finalCommentsButtonSave() {
-        if (!canModifySelectedObservation()) {
+        if (g_newStatusId == 5 ? !canAddSelectedObservationToDraft() : !canModifySelectedObservation()) {
             return;
         }
 
@@ -692,7 +697,7 @@ function getPageData() {
         });
     }
     function updateObservationStatus(obs_id, new_status_id, risk_id) {
-        if (!canModifySelectedObservation()) {
+        if (new_status_id == 5 ? !canAddSelectedObservationToDraft() : !canModifySelectedObservation()) {
             return;
         }
 

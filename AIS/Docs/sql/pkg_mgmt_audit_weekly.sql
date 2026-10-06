@@ -177,8 +177,10 @@ CREATE OR REPLACE PACKAGE BODY PKG_MGMT_AUDIT_WEEKLY AS
       --------------------------------------------------------------
       NO_COMPLIANCE AS
        (SELECT P.COM_ID, P.ENTITY_ID, 'NO_COMPLIANCE' AS CATEGORY
-          FROM V_IAS_MGMT_OPEN_PARAS P
-         WHERE
+          FROM AIS_T_AU_POST_COMPLIANCE P
+         WHERE P.AUDITED_BY IN (112242, 112248)
+           AND P.PARA_STATUS = 8
+           AND
         ------------------------------------------------------
         -- Para must have existed before end of reporting
         -- period
@@ -495,7 +497,6 @@ CREATE OR REPLACE PACKAGE BODY PKG_MGMT_AUDIT_WEEKLY AS
             
             /* Valid Division notification mapping */
          AND M.DIVISION_ID IS NOT NULL
-         AND TRIM(M.DIVISION_EMAIL) IS NOT NULL
             
             /* Para must have existed by the end of the reporting period */
          AND (PC.PARA_ADDED_ON IS NULL OR
@@ -509,7 +510,16 @@ CREATE OR REPLACE PACKAGE BODY PKG_MGMT_AUDIT_WEEKLY AS
                  AND H.COM_STATUS = 10
                  AND H.COMMENT_ON >= TRUNC(P_FROM_DATE)
                  AND H.COMMENT_ON < TRUNC(P_TO_DATE))
-      
+
+            /* Match summary: a decision belongs in its decision section only. */
+         AND NOT EXISTS
+       (SELECT 1
+                FROM AIS_T_AU_POST_COMPLIANCE_HISTORY H
+               WHERE H.COM_ID = PC.COM_ID
+                 AND H.COM_STATUS IN (16, 12, 15, 18)
+                 AND H.COMMENT_ON >= TRUNC(P_FROM_DATE)
+                 AND H.COMMENT_ON < TRUNC(P_TO_DATE))
+
        ORDER BY M.ENTITY_NAME, PC.AUDIT_PERIOD, PC.PARA_NO;
   
   END P_GET_MGMT_WEEKLY_NO_COMPLIANCE;

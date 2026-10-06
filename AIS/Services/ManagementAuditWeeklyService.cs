@@ -31,11 +31,13 @@ namespace AIS.Services
             IConfiguration configuration,
             NotificationExecutionStore store,
             DBConnection db,
+            IServiceProvider serviceProvider,
             ILogger<ManagementAuditWeeklyService> logger)
         {
             this.configuration = configuration;
             this.store = store;
             this.db = db;
+            this.serviceProvider = serviceProvider;
             this.logger = logger;
         }
 
@@ -83,7 +85,7 @@ namespace AIS.Services
                 divisions,
                 key => explicitManualRetry
                     ? store.ClaimManagementAuditManualRetry(key)
-                    : store.ClaimPeriod(key, "MGMT_AUDIT_COMPLIANCE_NOTIFICATION"),
+                    : store.ClaimManagementAuditPeriod(key),
                 divisionId => db.GetManagementAuditWeeklyDivisionData(divisionId, fromDate, toDate),
                 divisionId => db.GetManagementAuditWeeklyNoCompliance(divisionId, fromDate, toDate),
                 (division, records) => EmailNotification.SendManagementAuditComplianceReviewAsync(configuration, serviceProvider, fromDate, toDate, division, records),
@@ -205,6 +207,8 @@ namespace AIS.Services
                 throw new InvalidOperationException("The Division dataset contains records for another Division.");
             if (decisionDetails.Any(item => !IsValidDecisionStatus(item)))
                 throw new InvalidOperationException("The Division dataset contains an invalid decision status.");
+            if (decisionDetails.Any(item => item.DecisionOn < fromDate || item.DecisionOn >= toDate))
+                throw new InvalidOperationException("The Division dataset contains a decision outside the reporting period.");
             if (noComplianceDetails.Any(item => item.DivisionId != summary.DivisionId))
                 throw new InvalidOperationException("The Division no-compliance dataset contains records for another Division.");
             if (noComplianceDetails.GroupBy(item => new { item.ComId, item.ComCycle }).Any(group => group.Count() > 1))

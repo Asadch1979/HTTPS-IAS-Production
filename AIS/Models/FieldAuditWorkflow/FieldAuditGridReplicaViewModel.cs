@@ -5,5 +5,6 @@ namespace AIS.Models.FieldAuditWorkflow
         public int EngagementId { get; set; }
         public bool IsReadOnly { get; set; }
         public string IsTeamLead { get; set; }
+        public bool CanAddToDraft { get; set; }
         }
     }

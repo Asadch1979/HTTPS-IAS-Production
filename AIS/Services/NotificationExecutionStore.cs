@@ -59,6 +59,13 @@ namespace AIS.Services
         public bool ClaimPeriod(string key, string fingerprint)
             => ClaimPeriodCore(key, fingerprint, false);
 
+        internal bool ClaimManagementAuditPeriod(string key)
+        {
+            if (ClaimPeriod(key, "MGMT_AUDIT_COMPLIANCE_NOTIFICATION")) return true;
+            if (ReadExecution(key)?.Status == "COMPLETE") return false;
+            throw new InvalidOperationException($"Management Audit Division execution {key} remains outstanding or requires reconciliation.");
+        }
+
         // Only the Management Audit scheduler handler selects this path for a
         // claimed MANUAL attempt with RETRY_NO > 0. Never reclaim an uncertain
         // SMTP outcome or completed delivery, even for an explicit retry.

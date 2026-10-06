@@ -6937,7 +6937,8 @@ create or replace package body PKG_AR is
                                        P_NO            IN NUMBER,
                                        P_R_ID          IN NUMBER,
                                        IO_CURSOR       OUT T_CURSOR) IS
-    V_IS_TEAM_LEAD VARCHAR2(1);
+    V_ASSIGNED_MEMBERS NUMBER;
+    V_STATUS NUMBER;
     V_ENGPLAN_ID   NUMBER;
     V_DUP_COUNT    NUMBER := 0;
   BEGIN
@@ -6954,24 +6955,31 @@ create or replace package body PKG_AR is
                               'Draft Para Number must contain digits only.');
     END IF;
   
-    SELECT O.ENGPLANID
-      INTO V_ENGPLAN_ID
+    SELECT O.ENGPLANID, O.STATUS
+      INTO V_ENGPLAN_ID, V_STATUS
       FROM T_AU_OBSERVATION O
      WHERE O.ID = P_OBS_ID
        FOR UPDATE;
   
-    SELECT NVL(MAX(M.ISTEAMLEAD), 'N')
-      INTO V_IS_TEAM_LEAD
+    SELECT COUNT(*)
+      INTO V_ASSIGNED_MEMBERS
       FROM T_AU_TEAM_MEMBERS M
       JOIN T_AU_AUDIT_TEAM_TASKLIST T
         ON T.TEAM_ID = M.T_ID
        AND T.TEAMMEMBER_PPNO = M.MEMBER_PPNO
+      JOIN T_AU_PLAN_ENG P ON P.ENG_ID = T.ENG_PLAN_ID
      WHERE M.MEMBER_PPNO = P_NO
+       AND P.STATUS BETWEEN 4 AND 12
        AND T.ENG_PLAN_ID = V_ENGPLAN_ID;
   
-    IF V_IS_TEAM_LEAD <> 'Y' THEN
+    IF V_ASSIGNED_MEMBERS = 0 THEN
       RAISE_APPLICATION_ERROR(-20003,
-                              'Only the assigned Team Lead can add a para to the Draft Report.');
+                              'Only an assigned Team Lead or Team Member can add a para to the Draft Report.');
+    END IF;
+
+    IF V_STATUS IS NULL OR V_STATUS <> 3 THEN
+      RAISE_APPLICATION_ERROR(-20006,
+                              'Only observations awaiting auditor review can be added to the Draft Report.');
     END IF;
   
     SELECT COUNT(*)

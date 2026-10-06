@@ -49,7 +49,7 @@ namespace AIS
             if (endExclusive.Date <= start.Date)
                 throw new ArgumentException("Exclusive period end must be later than the period start.", nameof(endExclusive));
 
-            var inclusiveEnd = endExclusive.Date;
+            var inclusiveEnd = endExclusive.Date.AddDays(-1);
             var periodDisplay = $"{start:dd-MMM-yyyy} to {inclusiveEnd:dd-MMM-yyyy}";
             var settled = records.Where(record => record.Settled && !record.NoCompliance).ToList();
             var referredBack = records.Where(record => !record.Settled && !record.NoCompliance).ToList();
@@ -269,7 +269,13 @@ namespace AIS
 
         public static bool NotifyManagementAuditParaStatus(IConfiguration configuration, string paraNo, string paraStatus, string auditYear, string risk, string paraGist, string rejectionReason, string toEmail, string ccEmail, string cc2Email, string rpt, string div, string dept, IServiceProvider serviceProvider = null)
             {
-            string normalizedStatus = string.Equals(paraStatus, "Settled", StringComparison.OrdinalIgnoreCase) ? "Settled" : "Rejected";
+            var status = (paraStatus ?? string.Empty).Trim();
+            var settled = string.Equals(status, "Settled", StringComparison.OrdinalIgnoreCase);
+            if (!settled && !string.Equals(status, "Rejected", StringComparison.OrdinalIgnoreCase)
+                && !string.Equals(status, "Rejected/Referred Back", StringComparison.OrdinalIgnoreCase)
+                && !string.Equals(status, "Referred Back", StringComparison.OrdinalIgnoreCase))
+                return false;
+            string normalizedStatus = settled ? "Settled" : "Referred Back";
             string subject = $"IAS Notification: Audit Para No. {paraNo} {normalizedStatus}";
             string body = BuildHtmlBody(
                 $"Audit Para No. {paraNo} {normalizedStatus}",
@@ -283,7 +289,7 @@ namespace AIS
                     ("Risk", risk),
                     ("Status", normalizedStatus),
                     ("Gist of Para", paraGist),
-                    ("Reason for Rejection", normalizedStatus == "Rejected" ? rejectionReason : string.Empty)),
+                    ("Reason for Referral Back", !settled ? rejectionReason : string.Empty)),
                 headerBackground: normalizedStatus == "Settled" ? "#dcfce7" : "#fee2e2",
                 headerColor: normalizedStatus == "Settled" ? "#166534" : "#991b1b",
                 titleColor: normalizedStatus == "Settled" ? "#166534" : "#991b1b");

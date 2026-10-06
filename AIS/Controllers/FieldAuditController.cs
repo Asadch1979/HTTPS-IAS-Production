@@ -795,7 +795,9 @@ namespace AIS.Controllers
 
             return new FieldAuditGridReplicaViewModel
                 {
-                EngagementId = engId
+                EngagementId = engId,
+                CanAddToDraft = _dbConnection.GetArDashboardDropdownOptions(engId)
+                    .Any(item => item.EngagementId == engId)
                 };
             }
 
