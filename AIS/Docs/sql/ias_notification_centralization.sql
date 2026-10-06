@@ -183,8 +183,7 @@ SELECT H.HIST_ID,M.DIVISION_ID,M.DIVISION_NAME,M.DIVISION_EMAIL,M.REPORTING_EMAI
   JOIN V_IAS_MGMT_AUDIT_NOTIFY_MAP M ON M.ENTITY_ID=PC.ENTITY_ID
  WHERE PC.AUDITED_BY IN (112242,112248)
    AND H.COM_STATUS IN (16,12,15,18)
-   AND M.DIVISION_ID IS NOT NULL
-   AND TRIM(M.DIVISION_EMAIL) IS NOT NULL;
+   AND M.DIVISION_ID IS NOT NULL;
 
 --------------------------------------------------------------------------------
 -- 2. Initial notification records (repeatable seed; preserves administrator status)

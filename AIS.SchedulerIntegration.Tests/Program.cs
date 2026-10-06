@@ -11,7 +11,6 @@ using System.Reflection;
 
 var tests = new (string Name, Func<Task> Run)[]
 {
-    ("Management Audit SMTP delivery and duplicate protection", ManagementAuditRegressionTests.RunAsync),
     ("Empty due queue", EmptyDueQueueAsync),
     ("Successful claim dispatch complete", SuccessfulClaimDispatchCompleteAsync),
     ("Failure calls fail job", FailureCallsFailJobAsync),

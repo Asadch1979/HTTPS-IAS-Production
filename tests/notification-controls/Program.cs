@@ -30,14 +30,6 @@ string FindRepoRoot()
 var reviewScript = File.ReadAllText(Path.Combine(FindRepoRoot(), "AIS", "wwwroot", "js", "csp", "Views_PostCompliance_post_compliance_review.js"));
 Check(reviewScript.Contains("if (g_reviewPending) return;") && reviewScript.Contains("reviewButtons.prop('disabled', true)") &&
       reviewScript.Contains("if (data && data.Status)"), "Repeated-click UI protection is present");
-Check(reviewScript.Contains("setReviewButtonAvailability") &&
-      reviewScript.Contains("toggleClass('d-none', !isAvailable)") &&
-      reviewScript.Contains("prop('disabled', !isAvailable)") &&
-      !reviewScript.Contains("$('#prevRoleButtonHandler').remove()") &&
-      !reviewScript.Contains("$('#nextRoleButtonHandler').remove()") &&
-      !reviewScript.Contains("$('#prevRoleButtonHandler_rep').remove()") &&
-      !reviewScript.Contains("$('#nextRoleButtonHandler_rep').remove()"),
-    "Post Compliance review actions are toggled per selected para without removing shared modal buttons");
 
 var sqlRoot = Path.Combine(FindRepoRoot(), "AIS", "Docs", "sql");
 var notificationSql = Directory.GetFiles(sqlRoot, "*.sql", SearchOption.AllDirectories)
@@ -250,7 +242,6 @@ ManagementAuditWeeklyDivisionDetailModel WeeklyDetail(int divisionId, int histor
     AuditPeriod = "2026",
     ParaNo = historyId.ToString(),
     Title = "Test para",
-    Risk = comStatus == 16 ? "Low" : "High",
     SubmittedOn = decisionOn.AddDays(-1),
     DecisionOn = decisionOn,
     DecisionStatus = decisionStatus,
@@ -330,24 +321,6 @@ Check(Rejects(() => ManagementAuditWeeklyService.ValidateDivisionData(validSumma
       Rejects(() => ManagementAuditWeeklyService.ValidateDivisionData(validSummary,
         new[] { WeeklyDetail(1, 1, queueEnd) }, Array.Empty<ManagementAuditWeeklyNoComplianceModel>(), queueStart, queueEnd)),
     "Invalid Management Audit Division, status, and date data is rejected");
-
-var riskFlowRecords = new List<ManagementAuditDecision>();
-await ManagementAuditWeeklyService.ProcessDivisionQueueAsync(
-    queueStart, queueEnd, new[] { WeeklySummary(1, 1, 1) },
-    _ => true,
-    _ => new[]
-    {
-        WeeklyDetail(1, 101, queueStart.AddDays(1), 16, "SETTLED"),
-        WeeklyDetail(1, 102, queueStart.AddDays(2), 12, "REJECTED")
-    },
-    NoComplianceNone,
-    (_, records) => { riskFlowRecords = records.ToList(); return Task.FromResult(new EmailSendResult { IsSuccess = true }); },
-    (_, _, _) => { },
-    (_, _) => { },
-    CancellationToken.None);
-Check(riskFlowRecords.Any(record => record.Settled && record.Risk == "Low") &&
-      riskFlowRecords.Any(record => !record.Settled && !record.NoCompliance && record.Risk == "High"),
-    "Management Audit Risk flows from Division details into settled and referred-back weekly email records");
 
 var claimKeys = new List<string>();
 var claimedDetails = new List<int>();

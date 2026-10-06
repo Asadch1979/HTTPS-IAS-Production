@@ -161,8 +161,8 @@ namespace AIS
                 SectionHeading("Paras Where No Compliance Was Submitted During the Compliance Review Period", noCompliance.Count,
                     "Attention is also invited to the following outstanding audit paras against which no compliance was submitted during the Compliance Review Period:");
                 body.Append(Table(noCompliance,
-                    new[] { ("Sr.", "center", "5%"), ("Department", "left", "17%"), ("Audit Year", "center", "9%"), ("Para No.", "center", "8%"), ("Title of Para", "left", "30%"), ("Risk", "center", "9%") },
-                    row => new[] { row.Entity, row.Year, row.Para, row.Title, row.Risk}));
+                    new[] { ("Sr.", "center", "5%"), ("Department", "left", "17%"), ("Audit Year", "center", "9%"), ("Para No.", "center", "8%"), ("Title of Para", "left", "30%"), ("Risk", "center", "9%"), ("Last Compliance Submitted On", "center", "12%") },
+                    row => new[] { row.Entity, row.Year, row.Para, row.Title, row.Risk, Date(row.LastComplianceSubmitted) }));
                 body.Append("<p style=\"margin:0 0 22px;line-height:1.55\">The concerned department(s) may please be advised to review the outstanding audit paras and submit appropriate and meaningful compliance through IAS at the earliest for examination and further processing.</p>");
                 }
 
