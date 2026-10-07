@@ -601,6 +601,49 @@ namespace AIS.Controllers
                 .ToList();
             }
 
+        public string DeleteUserContextAssignment(int userId, int assignmentId, out bool userRemoved)
+            {
+            userRemoved = false;
+            var actor = CreateSessionHandler().GetUser();
+            if (actor == null || string.IsNullOrWhiteSpace(actor.PPNumber))
+                {
+                return "An active administrator session is required.";
+                }
+            using var con = DatabaseConnection();
+            using var tx = con.BeginTransaction();
+            try
+                {
+                using var cmd = con.CreateCommand();
+                cmd.Transaction = tx;
+                cmd.CommandText = "pkg_user_context.p_delete_user_context_assignment";
+                cmd.CommandType = CommandType.StoredProcedure;
+                cmd.BindByName = true;
+                cmd.Parameters.Add("P_USER_ID", OracleDbType.Int32).Value = userId;
+                cmd.Parameters.Add("P_USER_CONTEXT_ID", OracleDbType.Int32).Value = assignmentId;
+                cmd.Parameters.Add("P_ACTION_BY", OracleDbType.Varchar2).Value = actor.PPNumber.Trim();
+                var removed = cmd.Parameters.Add("O_USER_REMOVED", OracleDbType.Int32);
+                removed.Direction = ParameterDirection.Output;
+                var status = cmd.Parameters.Add("O_STATUS", OracleDbType.Varchar2, 100);
+                status.Direction = ParameterDirection.Output;
+                var message = cmd.Parameters.Add("O_MESSAGE", OracleDbType.Varchar2, 4000);
+                message.Direction = ParameterDirection.Output;
+                cmd.ExecuteNonQuery();
+                if (!string.Equals(ReadOutputString(status), "OK", StringComparison.OrdinalIgnoreCase))
+                    {
+                    tx.Rollback();
+                    return ReadOutputString(message) ?? "Unable to remove assignment.";
+                    }
+                userRemoved = ReadOutputInt(removed).GetValueOrDefault() == 1;
+                tx.Commit();
+                return null;
+                }
+            catch (Exception ex)
+                {
+                tx.Rollback();
+                return ex.Message;
+                }
+            }
+
         public string SaveUserContextAssignments(SaveUserContextsPostModel user)
             {
             var sessionHandler = CreateSessionHandler();

@@ -1072,6 +1072,39 @@ namespace AIS.Controllers
             return SaveUserContextsInternal(user, "save_user_contexts");
             }
 
+        [HttpPost]
+        [IgnoreAntiforgeryToken]
+        [Consumes("application/x-www-form-urlencoded")]
+        [AIS.Filters.ApplicationAudit("DELETE_USER_CONTEXT", "ADMINISTRATION", "ADMINISTRATION", "PKG_USER_CONTEXT", "P_DELETE_USER_CONTEXT_ASSIGNMENT", ObjectType = "USER_CONTEXT_ASSIGNMENT")]
+        public IActionResult delete_user_context_assignment([FromForm] int userId, [FromForm] int assignmentId)
+            {
+            if (!User.Identity.IsAuthenticated || !sessionHandler.TryGetUser(out var actor) || actor == null)
+                {
+                return Unauthorized();
+                }
+            if (!HasPageAccess(actor, "/AdministrationPanel/manage_user"))
+                {
+                return Forbid();
+                }
+            if (userId <= 0 || assignmentId <= 0)
+                {
+                return BadRequest(new { status = false, message = "A saved user assignment is required." });
+                }
+
+            var error = dBConnection.DeleteUserContextAssignment(userId, assignmentId, out var userRemoved);
+            if (!string.IsNullOrWhiteSpace(error))
+                {
+                return BadRequest(new { status = false, message = error });
+                }
+            return Json(new
+                {
+                status = true,
+                message = userRemoved ? "Assignment removed and IAS access revoked." : "Assignment removed successfully.",
+                userRemoved,
+                assignments = dBConnection.GetUserContextAssignments(userId)
+                });
+            }
+
         private IActionResult SaveUserContextsInternal(SaveUserContextsPostModel user, string source)
             {
             if (user == null)

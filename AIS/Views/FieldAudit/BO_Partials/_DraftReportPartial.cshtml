@@ -27,7 +27,8 @@
 
 
 <div class="row">
-    <div class="row col-md-12 mt-3 d-none">
+    <!-- Legacy Draft Report selectors remain internal to the selected BO engagement. -->
+    <div hidden style="display:none !important" aria-hidden="true">
         <input id="entityNameField" disabled="disabled" class="form-control ml-1 d-none" type="text" />
         <select id="entitySelectField" class="form-control form-select">
             <option value="@Model.EngagementId" selected>@Model.EngagementId</option>

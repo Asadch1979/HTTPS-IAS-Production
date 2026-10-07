@@ -45,6 +45,13 @@ CREATE OR REPLACE PACKAGE PKG_USER_CONTEXT AS
                                        O_STATUS          OUT VARCHAR2,
                                        O_MESSAGE         OUT VARCHAR2);
 
+  PROCEDURE P_DELETE_USER_CONTEXT_ASSIGNMENT(P_USER_ID IN NUMBER,
+                                              P_USER_CONTEXT_ID IN NUMBER,
+                                              P_ACTION_BY IN VARCHAR2,
+                                              O_USER_REMOVED OUT NUMBER,
+                                              O_STATUS OUT VARCHAR2,
+                                              O_MESSAGE OUT VARCHAR2);
+
   PROCEDURE P_DISABLE_USER_CONTEXT_ASSIGNMENT(P_USER_CONTEXT_ID IN NUMBER,
                                               P_ACTION_BY       IN VARCHAR2,
                                               O_STATUS          OUT VARCHAR2,
@@ -444,6 +451,81 @@ CREATE OR REPLACE PACKAGE BODY PKG_USER_CONTEXT AS
             O_STATUS := 'FAIL';
             O_MESSAGE := SQLERRM;
     END P_SET_DEFAULT_USER_CONTEXT;
+
+    -- The caller owns the transaction; failures must roll back history and deletion together.
+    PROCEDURE P_DELETE_USER_CONTEXT_ASSIGNMENT
+    (
+        P_USER_ID IN NUMBER,
+        P_USER_CONTEXT_ID IN NUMBER,
+        P_ACTION_BY IN VARCHAR2,
+        O_USER_REMOVED OUT NUMBER,
+        O_STATUS OUT VARCHAR2,
+        O_MESSAGE OUT VARCHAR2
+    )
+    IS
+        V_PPNO NUMBER;
+        V_ASSIGNMENT_ID NUMBER;
+        V_REMAINING NUMBER;
+        V_ACTIVE NUMBER;
+        V_DEFAULT_ID NUMBER;
+    BEGIN
+        O_USER_REMOVED := 0;
+        -- Serialize removals for this account and verify assignment ownership.
+        SELECT PPNO INTO V_PPNO FROM T_USER WHERE USERID = P_USER_ID FOR UPDATE;
+        SELECT USER_CONTEXT_ID INTO V_ASSIGNMENT_ID
+          FROM T_USER_CONTEXT_ASSIGNMENT
+         WHERE USER_ID = P_USER_ID AND USER_CONTEXT_ID = P_USER_CONTEXT_ID
+           FOR UPDATE;
+
+        P_WRITE_HISTORY(V_ASSIGNMENT_ID, 'DELETE', P_ACTION_BY);
+        DELETE FROM T_USER_CONTEXT_ASSIGNMENT
+         WHERE USER_ID = P_USER_ID AND USER_CONTEXT_ID = V_ASSIGNMENT_ID;
+
+        SELECT COUNT(*) INTO V_REMAINING
+          FROM T_USER_CONTEXT_ASSIGNMENT WHERE USER_ID = P_USER_ID;
+        SELECT COUNT(*) INTO V_ACTIVE
+          FROM T_USER_CONTEXT_ASSIGNMENT
+         WHERE USER_ID = P_USER_ID AND IS_ACTIVE = 'Y'
+           AND (EFFECTIVE_FROM IS NULL OR EFFECTIVE_FROM <= TRUNC(SYSDATE))
+           AND (EFFECTIVE_TO IS NULL OR EFFECTIVE_TO >= TRUNC(SYSDATE));
+
+        IF V_ACTIVE > 0 THEN
+            SELECT USER_CONTEXT_ID INTO V_DEFAULT_ID
+              FROM (SELECT USER_CONTEXT_ID FROM T_USER_CONTEXT_ASSIGNMENT
+                     WHERE USER_ID = P_USER_ID AND IS_ACTIVE = 'Y'
+                       AND (EFFECTIVE_FROM IS NULL OR EFFECTIVE_FROM <= TRUNC(SYSDATE))
+                       AND (EFFECTIVE_TO IS NULL OR EFFECTIVE_TO >= TRUNC(SYSDATE))
+                     ORDER BY CASE WHEN IS_DEFAULT = 'Y' THEN 0 ELSE 1 END, USER_CONTEXT_ID)
+             WHERE ROWNUM = 1;
+            P_SET_DEFAULT_USER_CONTEXT(P_USER_ID, V_DEFAULT_ID, P_ACTION_BY, O_STATUS, O_MESSAGE);
+            IF O_STATUS <> 'OK' OR O_STATUS IS NULL THEN
+                RETURN;
+            END IF;
+        ELSE
+            -- Retain the identity and all history, but remove current IAS access.
+            DELETE FROM T_USER_MAPING WHERE USERID = P_USER_ID;
+            UPDATE T_USER SET ISACTIVE = 'N', ENTITY_ID = NULL WHERE USERID = P_USER_ID;
+            UPDATE T_USER_CONTEXT_ASSIGNMENT SET IS_DEFAULT = 'N'
+             WHERE USER_ID = P_USER_ID;
+        END IF;
+
+        -- Revoke sessions carrying the deleted context; retain session history.
+        UPDATE T_USER_SESSION SET SESSION_ACTIVE = 'N', LOGGED_OUT_DATE = SYSDATE
+         WHERE USER_PP_NUMBER = V_PPNO AND SESSION_ACTIVE = 'Y'
+           AND (V_ACTIVE = 0 OR USER_CONTEXT_ID = V_ASSIGNMENT_ID OR USER_CONTEXT_ID IS NULL);
+        IF V_REMAINING = 0 THEN
+            O_USER_REMOVED := 1;
+        END IF;
+        O_STATUS := 'OK';
+        O_MESSAGE := 'User context assignment deleted successfully.';
+    EXCEPTION
+        WHEN NO_DATA_FOUND THEN
+            O_STATUS := 'FAIL';
+            O_MESSAGE := 'User assignment not found.';
+        WHEN OTHERS THEN
+            O_STATUS := 'FAIL';
+            O_MESSAGE := SQLERRM;
+    END P_DELETE_USER_CONTEXT_ASSIGNMENT;
 
     PROCEDURE P_DISABLE_USER_CONTEXT_ASSIGNMENT
     (

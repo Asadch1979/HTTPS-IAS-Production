@@ -1,4 +1,5 @@
 var g_userList = [];
+var g_removingUserContext = false;
 var g_userId = 0;
 var g_userContexts = [];
 var g_editingContextIndex = null;
@@ -393,27 +394,79 @@ function removeUserContextClickHandler(event) {
 }
 
 function removeUserContext(index) {
-    if (!g_userContexts[index]) {
+    var context = g_userContexts[index];
+    if (!context || g_removingUserContext) {
+        return;
+    }
+    var savedAssignment = context.assignmentId > 0;
+    var confirmation = savedAssignment
+        ? 'Remove this assignment immediately? If this is the final assignment, the user will lose IAS access. This does not require Save.'
+        : 'Remove this unsaved assignment?';
+    if (!window.confirm(confirmation)) {
+        return;
+    }
+    if (!savedAssignment) {
+        g_userContexts.splice(index, 1);
+        normalizeContextCollection();
+        renderUserContexts();
+        resetAssignmentEditMode();
         return;
     }
 
-    var removedUnsavedRow = !(g_userContexts[index].assignmentId > 0);
-    if (g_userContexts[index].assignmentId > 0) {
-        g_userContexts[index].isDeleted = true;
-        g_userContexts[index].isDefault = 'N';
-        g_userContexts[index].isActive = 'N';
-    } else {
-        g_userContexts.splice(index, 1);
-    }
-
-    normalizeContextCollection();
-    renderUserContexts();
-
-    if (g_editingContextIndex === index) {
-        resetAssignmentEditMode();
-    } else if (removedUnsavedRow && typeof g_editingContextIndex === 'number' && index < g_editingContextIndex) {
-        g_editingContextIndex--;
-    }
+    var userId = g_userId;
+    g_removingUserContext = true;
+    $('#saveChangesButton, #addNewUserChangesButton').prop('disabled', true);
+    $.ajax({
+        url: g_asiBaseURL + '/AdministrationPanel/delete_user_context_assignment',
+        type: 'POST',
+        data: { userId: userId, assignmentId: context.assignmentId },
+        cache: false,
+        dataType: 'json',
+        success: function (data) {
+            if (!data || !data.status) {
+                showApiAlert(data, 'Unable to remove assignment.');
+                return;
+            }
+            // Refresh persisted rows/default flags without sending pending edits to Save.
+            if (g_userId === userId) {
+                g_userContexts = $.map(data.assignments || [], mapApiContext);
+                normalizeContextCollection();
+                renderUserContexts();
+                resetAssignmentEditMode();
+                applyContextToBuilder(g_userContexts.filter(function (item) { return item.isDefault === 'Y'; })[0] || g_userContexts[0]);
+                if (data.userRemoved) {
+                    cancelEditUserDetails(userId);
+                }
+            }
+            if (!data.userRemoved) {
+                $.each(g_userList, function (_, user) {
+                    if (user.id !== userId) { return; }
+                    var contexts = $.map(data.assignments || [], mapApiContext);
+                    user.assignmentCount = contexts.length;
+                    user.userRole = uniqueJoin(contexts.map(function (item) { return item.roleName; }));
+                    user.userEntityName = uniqueJoin(contexts.map(function (item) { return item.entityName; }));
+                    user.userParentEntityName = uniqueJoin(contexts.map(function (item) { return item.parentEntityName; }));
+                });
+                renderUserList(g_userList);
+                if (g_userId === userId) {
+                    $('#userrecordrow_' + userId + ' .editmode').addClass('d-none');
+                    $('#userrecordrow_' + userId + ' .cancelmode').removeClass('d-none');
+                }
+            }
+            if (data.userRemoved) {
+                g_userList = g_userList.filter(function (user) { return user.id !== userId; });
+                renderUserList(g_userList);
+            }
+            showApiAlert(data, 'Assignment removed successfully.');
+        },
+        error: function (xhr) {
+            showApiAlertFromXhr(xhr, xhr ? xhr.status : null, getErrorReferenceIdFromXhr(xhr), 'Unable to remove assignment.');
+        },
+        complete: function () {
+            g_removingUserContext = false;
+            $('#saveChangesButton, #addNewUserChangesButton').prop('disabled', false);
+        }
+    });
 }
 
 function defaultContextChangeHandler() {
