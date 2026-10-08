@@ -4,8 +4,13 @@
     if (!app) return;
     const $ = id => document.getElementById(`org-${id}`);
     const PAGE_SIZE = 6, CARD_LIMIT = 40;
+    const typeOrder = new Map([[18, 0], [3, 1], [4, 2], [21, 3]]);
+    const compareEntities = (a, b) => (typeOrder.get(a.entityTypeId) ?? 4) - (typeOrder.get(b.entityTypeId) ?? 4) ||
+        a.entityName.localeCompare(b.entityName) || a.entityId - b.entityId;
+    const compareRoots = (a, b) => Number(b.entityTypeId === 2) - Number(a.entityTypeId === 2) || compareEntities(a, b);
     let nodes = new Map(), children = new Map(), roots = [], selected = null, home = null;
     let snapshot, scale = 1, pathVersion = 0, searchTimer, resultLimit = 50;
+    let narrow = null, activeDrawer = null, fitted = false, layoutFrame = 0, panelState = null;
     const expanded = new Set(), navExpanded = new Set(), pages = new Map(), trail = [], paths = new Map();
     const statsCache = new Map();
     const el = (tag, className, text) => {
@@ -57,9 +62,8 @@
                     children.get(node.parentEntityId).push(node);
                 }
             }
-            const compare = (a, b) => a.entityName.localeCompare(b.entityName) || a.entityId - b.entityId;
-            for (const entries of children.values()) entries.sort(compare);
-            roots = [...nodes.values()].filter(node => !nodes.has(node.parentEntityId) || node.parentEntityId === node.entityId).sort(compare);
+            for (const entries of children.values()) entries.sort(compareEntities);
+            roots = [...nodes.values()].filter(node => !nodes.has(node.parentEntityId) || node.parentEntityId === node.entityId).sort(compareRoots);
             // Keep disconnected cyclic components discoverable without inventing a parent.
             const reached = new Set();
             function mark(start) {
@@ -73,7 +77,8 @@
             }
             roots.forEach(mark);
             for (const node of nodes.values()) if (!reached.has(node.entityId)) { roots.push(node); mark(node); }
-            $('entity-count').textContent = nodes.size.toLocaleString();
+            roots.sort(compareRoots);
+            $('entity-count').textContent = `Entities in scope: ${nodes.size.toLocaleString()}`;
             $('scope').textContent = snapshot.isRestricted ? 'Your authorized organizational scope' : 'Full organizational directory';
             if (!nodes.size) { notify('No organizational entities are available in your permitted scope.'); return; }
             home = snapshot.rootEntityId ?? roots.find(n => n.isRoot && n.entityTypeId === 2)?.entityId ?? roots[0].entityId;
@@ -81,6 +86,7 @@
             selected = null;
             $('workspace').hidden = false;
             notify('');
+            updateLayout();
             select(nodes.has(hashId) ? hashId : home, false);
         } catch (error) {
             notify(error.message);
@@ -90,6 +96,7 @@
 
     function select(id, remember = true) {
         if (!nodes.has(id)) return;
+        const changed = selected !== id;
         if (remember && selected !== null && selected !== id) trail.push(selected);
         selected = id;
         const selectedNode = nodes.get(id), query = $('search').value.trim().toLocaleLowerCase();
@@ -107,17 +114,18 @@
         const parent = nodes.get(nodes.get(id).parentEntityId);
         $('up').disabled = !parent || parent.entityId === id;
         $('chart-title').textContent = nodes.get(id).entityName;
-        renderNavigator(); renderChart(true); renderDetails(); renderPath(id);
-        if (matchMedia('(max-width:760px)').matches) toggleNavigator(false);
+        scale = 1; fitted = false;
+        if (activeDrawer) closeDrawer();
+        renderNavigator(changed); renderChart(true); renderDetails(); renderPath(id);
     }
 
-    function renderNavigator() {
-        const host = $('tree'); host.replaceChildren();
+    function renderNavigator(selectionChanged = false) {
+        const host = $('tree'), scrollTop = host.scrollTop; host.replaceChildren();
         const query = $('search').value.trim().toLocaleLowerCase();
         const filter = Number($('filter').value);
         if (query || filter) {
             const matches = [...nodes.values()].filter(n => (!filter || n.entityTypeId === filter) &&
-                (!query || n.entityName.toLocaleLowerCase().includes(query) || String(n.entityId).includes(query)));
+                (!query || n.entityName.toLocaleLowerCase().includes(query) || String(n.entityId).includes(query))).sort(compareEntities);
             host.append(el('p', 'org-empty', `${matches.length} matching entities`));
             const list = el('ul');
             matches.slice(0, resultLimit).forEach(node => list.append(navItem(node, new Set(), false)));
@@ -128,8 +136,14 @@
             const visited = new Set();
             roots.forEach(node => { const item = navItem(node, visited, true); if (item) list.append(item); });
             host.append(list);
-            const active = host.querySelector('.is-selected');
-            if (active) host.scrollTop += active.getBoundingClientRect().top - host.getBoundingClientRect().top - host.clientHeight / 2;
+        }
+        host.scrollTop = scrollTop;
+        const active = host.querySelector('.is-selected');
+        if (active && host.clientHeight) {
+            const row = active.getBoundingClientRect(), bounds = host.getBoundingClientRect();
+            if (selectionChanged || row.top < bounds.top || row.bottom > bounds.bottom) {
+                host.scrollTop += row.top < bounds.top || selectionChanged ? row.top - bounds.top : row.bottom - bounds.bottom;
+            }
         }
     }
 
@@ -158,7 +172,7 @@
         return item;
     }
 
-    function renderChart(center = false) {
+    function renderChart(center = false, anchor = null) {
         const host = $('chart'); host.replaceChildren();
         const rendered = new Set(); let limited = false, cyclic = false;
         const current = nodes.get(selected), parent = nodes.get(current.parentEntityId);
@@ -167,22 +181,32 @@
             if (rendered.size >= CARD_LIMIT) { limited = true; return null; }
             rendered.add(node.entityId);
             const item = el('li', 'org-branch');
-            item.append(card(node, authority));
+            const parentStack = el('div', 'org-parent');
+            parentStack.append(card(node, authority));
+            item.append(parentStack);
             const entries = authority ? [current] : childrenOf(node.entityId);
             if (authority || (expanded.has(node.entityId) && entries.length)) {
                 const page = pages.get(node.entityId) || 0;
                 const visible = authority ? entries : entries.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
                 const list = el('ul', 'org-children');
                 visible.forEach(child => { const nested = branch(child); if (nested) list.append(nested); });
-                if (list.childElementCount) item.append(list);
                 if (!authority && entries.length > PAGE_SIZE) {
                     const pager = el('div', 'org-pager');
-                    const previous = button('←', '', () => { pages.set(node.entityId, page - 1); renderChart(); }, `Previous subordinates of ${node.entityName}`);
-                    const next = button('→', '', () => { pages.set(node.entityId, page + 1); renderChart(); }, `Next subordinates of ${node.entityName}`);
+                    pager.setAttribute('aria-label', `Direct offices of ${node.entityName}`);
+                    pager.setAttribute('role', 'group');
+                    const changePage = (nextPage, control) => {
+                        const position = captureCard(node.entityId, control);
+                        childrenOf(node.entityId).forEach(child => collapseBranch(child.entityId));
+                        pages.set(node.entityId, nextPage); renderChart(false, position);
+                    };
+                    const previous = button('←', '', () => changePage(page - 1, 'previous'), `Previous direct offices of ${node.entityName}`);
+                    const next = button('→', '', () => changePage(page + 1, 'next'), `Next direct offices of ${node.entityName}`);
+                    previous.dataset.control = 'previous'; next.dataset.control = 'next';
                     previous.disabled = page === 0; next.disabled = (page + 1) * PAGE_SIZE >= entries.length;
-                    pager.append(previous, el('span', '', `${page * PAGE_SIZE + 1}–${Math.min((page + 1) * PAGE_SIZE, entries.length)} of ${entries.length}`), next);
-                    item.append(pager);
+                    pager.append(previous, el('span', '', `Direct offices: ${page * PAGE_SIZE + 1}–${Math.min((page + 1) * PAGE_SIZE, entries.length)} of ${entries.length}`), next);
+                    parentStack.classList.add('has-pager'); parentStack.append(pager);
                 }
+                if (list.childElementCount) item.append(list);
             }
             return item;
         }
@@ -192,31 +216,72 @@
         $('chart-note').textContent = limited ? 'View limit reached. Select a deeper office to explore its subordinates.' :
             cyclic ? 'A repeated reporting relationship was omitted from this view.' :
                 `${rendered.size} entities in view · Expand to reveal the next level`;
-        requestAnimationFrame(() => { sizeCanvas(); if (center) centerSelected(); });
+        requestAnimationFrame(() => {
+            if (fitted) fitChart(); else sizeCanvas();
+            if (anchor) restoreCard(anchor); else if (center) centerSelected();
+        });
+    }
+
+    function collapseBranch(id) {
+        const pending = [id], visited = new Set();
+        while (pending.length) {
+            const next = pending.pop();
+            if (visited.has(next) || next === selected) continue;
+            visited.add(next); expanded.delete(next); pages.delete(next);
+            childrenOf(next).forEach(child => pending.push(child.entityId));
+        }
+    }
+
+    function captureCard(id, control = 'expand') {
+        const card = $('chart').querySelector(`[data-entity-id="${id}"]`);
+        const rect = card?.getBoundingClientRect();
+        return rect ? { id, x: rect.left, y: rect.top, control } : null;
+    }
+
+    function restoreCard(anchor) {
+        const card = $('chart').querySelector(`[data-entity-id="${anchor.id}"]`);
+        if (!card) return;
+        const rect = card.getBoundingClientRect(), viewport = $('viewport');
+        viewport.scrollLeft += rect.left - anchor.x;
+        viewport.scrollTop += rect.top - anchor.y;
+        const control = card.parentElement.querySelector(`[data-control="${anchor.control}"]:not(:disabled)`);
+        (control || card.querySelector('button'))?.focus({ preventScroll: true });
     }
 
     function card(node, authority) {
         const item = el('article', `org-card org-card--${categoryStyle(node)}${node.entityId === selected ? ' is-selected' : ''}`);
+        item.dataset.entityId = node.entityId;
         if (node.entityId === selected) item.dataset.selected = 'true';
         const main = button('', 'org-card-main', () => select(node.entityId), `Explore ${node.entityName}, entity ${node.entityId}`);
+        main.title = `Select office: ${node.entityName}`;
         const category = el('span', 'org-card-category');
         const icon = el('i', `fa ${node.entityTypeId === 6 ? 'fa-building' : 'fa-sitemap'}`); icon.setAttribute('aria-hidden', 'true');
         category.append(icon, el('span', '', node.entityCategory));
         main.append(category, el('span', 'org-card-name', node.entityName), el('span', 'org-card-id', `ENTITY ${node.entityId}`));
         item.append(main);
         const footer = el('div', 'org-card-footer');
-        footer.append(el('span', '', `${authority ? 'Authority · ' : ''}${node.directChildCount} direct subordinate${node.directChildCount === 1 ? '' : 's'}`));
+        footer.append(el('span', '', `${node.directChildCount} direct offices`));
         if (!authority && childrenOf(node.entityId).length) {
-            const toggle = button(expanded.has(node.entityId) ? '−' : '+', 'org-expand', () => {
-                if (expanded.has(node.entityId)) expanded.delete(node.entityId); else expanded.add(node.entityId);
-                renderChart();
-            }, `Expand or collapse subordinates of ${node.entityName}`);
+            const toggle = button(expanded.has(node.entityId) ? '− Collapse' : '+ Expand', 'org-expand', () => {
+                const anchor = captureCard(node.entityId);
+                if (expanded.has(node.entityId)) {
+                    expanded.delete(node.entityId);
+                    childrenOf(node.entityId).forEach(child => collapseBranch(child.entityId));
+                } else {
+                    const siblings = nodes.has(node.parentEntityId) ? childrenOf(node.parentEntityId) : roots;
+                    siblings.filter(sibling => sibling.entityId !== node.entityId).forEach(sibling => collapseBranch(sibling.entityId));
+                    expanded.add(node.entityId);
+                }
+                fitted = false; renderChart(false, anchor);
+            }, `${expanded.has(node.entityId) ? 'Collapse' : 'Expand'} direct offices of ${node.entityName}`);
+            toggle.dataset.control = 'expand';
             toggle.setAttribute('aria-expanded', String(expanded.has(node.entityId))); footer.append(toggle);
-        } else if (!authority) footer.append(el('span', '', 'Leaf office'));
+        } else footer.append(el('span', '', authority ? 'Authority' : 'Leaf office'));
         item.append(footer);
         if (node.isOrphan || node.isMissingName || node.hasTypeConflict || node.parentEntityId === node.entityId) {
-            const note = el('div', 'org-record-note', '◦ Record note');
+            const note = el('span', 'org-record-note', '◦');
             note.title = [node.isOrphan && 'Reporting parent unavailable', node.isMissingName && 'Name supplied by directory fallback', node.hasTypeConflict && 'Conflicting office types', node.parentEntityId === node.entityId && 'Self-reporting record'].filter(Boolean).join(' · ');
+            note.setAttribute('aria-label', note.title);
             item.append(note);
         }
         return item;
@@ -237,11 +302,11 @@
     }
 
     function renderDetails() {
-        const node = nodes.get(selected), host = $('details'), stats = statistics(selected);
-        host.replaceChildren(el('p', 'org-eyebrow', 'ENTITY PROFILE'), el('h2', '', node.entityName),
+        const node = nodes.get(selected), host = $('detail-content'), stats = statistics(selected);
+        host.replaceChildren(el('h2', '', node.entityName),
             el('div', 'org-details-id', `ENTITY ID ${node.entityId}`), el('span', 'org-category-pill', node.entityCategory));
         const grid = el('div', 'org-stats');
-        for (const [value, label] of [[node.directChildCount, 'Direct subordinates'], [stats.descendants, 'Total descendants']]) {
+        for (const [value, label] of [[node.directChildCount, 'Direct offices'], [stats.descendants, 'All subordinate offices']]) {
             const stat = el('div', 'org-stat'); stat.append(el('strong', '', value.toLocaleString()), el('span', '', label)); grid.append(stat);
         }
         host.append(grid, el('div', 'org-depth', stats.cycle ? 'Hierarchy depth unavailable · circular reporting record' : `${stats.depth} level${stats.depth === 1 ? '' : 's'} below this entity`));
