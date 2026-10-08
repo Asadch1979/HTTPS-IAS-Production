@@ -313,6 +313,10 @@ namespace AIS.Services
                 }
 
             AddAlias(updated, "/FieldAudit/OpenAuditReport", "/FieldAuditReport/ReportOverview");
+            AddAlias(updated, "/OrganizationStructure/Index", "/Dashboard/entity_wise_obs");
+            AddAlias(updated, "/OrganizationStructure", "/Dashboard/entity_wise_obs");
+            AddAlias(updated, "/OrganizationStructure/Data", "/Dashboard/entity_wise_obs");
+            AddAlias(updated, "/OrganizationStructure/EntityPath", "/Dashboard/entity_wise_obs");
             AddAlias(updated, "/CAU/om", "/CAU/workflow");
             AddAlias(updated, "/CAU/pdp", "/CAU/workflow");
             AddAlias(updated, "/CAU/arpse", "/CAU/workflow");

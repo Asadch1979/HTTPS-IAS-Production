@@ -96,6 +96,7 @@ namespace AIS
             services.AddScoped<ObservationPdfBuilder>();
             services.AddScoped<IMenuPagesReader, MenuPagesReader>();
             services.AddScoped<TopMenus>();
+            services.AddScoped<OrganizationStructureService>();
             services.AddScoped<IPermissionService, PermissionService>();
             services.AddSingleton<FieldAuditDashboardProgressStore>();
             services.AddSingleton<IPageIdResolver, PageIdResolver>();

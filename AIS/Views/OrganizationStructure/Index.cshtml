@@ -1,0 +1,40 @@
+@{
+    ViewData["Title"] = "ZTBL Organization Structure";
+    Layout = "_Layout";
+}
+<link rel="stylesheet" href="~/css/organization-structure.css" asp-append-version="true" />
+<section id="organization-structure" class="org" data-nodes-url="@Url.Action("Data", "OrganizationStructure")" data-path-url="@Url.Action("EntityPath", "OrganizationStructure")" aria-label="ZTBL Organization Structure">
+    <header class="org-header">
+        <div class="org-brand"><span class="org-emblem" aria-hidden="true"><i class="fa fa-sitemap"></i></span><div><p class="org-eyebrow">ZTBL · EXECUTIVE DASHBOARD</p><h1>Organization Structure</h1><p class="org-subtitle">A clear perspective on our people, offices and reporting relationships.</p></div></div>
+        <span class="org-scope" id="org-scope">Organizational directory</span>
+    </header>
+    <div class="org-topbar">
+        <button type="button" id="org-nav-toggle" class="org-button" aria-expanded="true" aria-controls="org-navigator"><i class="fa fa-bars" aria-hidden="true"></i> Navigator</button>
+        <nav id="org-breadcrumbs" class="org-breadcrumbs" aria-label="Reporting path"></nav>
+    </div>
+    <div id="org-status" class="org-status" role="status" aria-live="polite">Loading your organizational directory…</div>
+    <button type="button" id="org-retry" class="org-button" hidden>Try again</button>
+    <div class="org-workspace" id="org-workspace" hidden>
+        <aside id="org-navigator" class="org-navigator" aria-label="Organization navigator">
+            <div class="org-panel-heading"><div><p class="org-eyebrow">EXPLORE</p><h2>Organization navigator</h2></div><span id="org-entity-count" class="org-count"></span></div>
+            <label for="org-search" class="org-label">Find an entity</label>
+            <div class="org-search"><i class="fa fa-search" aria-hidden="true"></i><input id="org-search" type="search" placeholder="Search name or entity ID" autocomplete="off" /></div>
+            <label for="org-filter" class="org-label">Quick filter</label>
+            <select id="org-filter"><option value="">All organizational levels</option><option value="18">Group Heads</option><option value="3">Divisions</option><option value="21">GM Offices</option><option value="5">Regional Offices</option></select>
+            <div id="org-tree" class="org-nav-tree" aria-label="Entities"></div>
+            <div class="org-nav-footer"><span class="org-dot"></span> Select an office to explore its structure</div>
+        </aside>
+        <main class="org-main" aria-label="Interactive organization chart">
+            <div class="org-chart-toolbar"><div class="org-navigation"><button id="org-back" type="button" class="org-icon-button" title="Back" aria-label="Back"><i class="fa fa-arrow-left" aria-hidden="true"></i></button><button id="org-home" type="button" class="org-button"><i class="fa fa-home" aria-hidden="true"></i> Home</button><button id="org-up" type="button" class="org-button">↑ Reporting authority</button></div><div class="org-zoom"><button id="org-zoom-out" type="button" class="org-icon-button" aria-label="Zoom out">−</button><output id="org-zoom-value">100%</output><button id="org-zoom-in" type="button" class="org-icon-button" aria-label="Zoom in">+</button><button id="org-fit" type="button" class="org-button">Fit view</button></div></div>
+            <div class="org-chart-caption"><div><p class="org-eyebrow">REPORTING STRUCTURE</p><h2 id="org-chart-title"></h2></div><span class="org-selected-key"><span class="org-dot"></span> Selected entity</span></div>
+            <div id="org-viewport" class="org-viewport" tabindex="0" aria-label="Organization chart. Scroll to explore; use zoom controls to resize."><div id="org-chart-space"><div id="org-chart" class="org-chart"></div></div></div>
+            <div class="org-chart-footer"><span id="org-chart-note">Expand cards to reveal the next level.</span><span>Drag canvas to pan · Select a card to focus</span></div>
+            <div class="org-legend" aria-label="Card categories"><span class="org-legend-executive">Institution</span><span class="org-legend-group">Group</span><span class="org-legend-division">Division</span><span class="org-legend-office">GM / Region</span><span>Department / Branch</span></div>
+        </main>
+        <aside id="org-details" class="org-details" aria-label="Selected entity information" aria-live="polite"></aside>
+    </div>
+    <noscript><p class="org-status">Enable JavaScript to explore the organization structure.</p></noscript>
+</section>
+@section Scripts {
+    <script src="~/js/organization-structure.js" asp-append-version="true"></script>
+}

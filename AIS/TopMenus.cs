@@ -71,6 +71,28 @@ namespace AIS
                 {
                 var menus = dBConnection.GetTopMenuPages();
                 sessionHandler.CacheMenuPages(menus);
+                // Inherit the existing Executive Dashboard entity-view permission and menu.
+                var organizationParent = menus.FirstOrDefault(p => string.Equals(
+                    (p.Page_Path ?? string.Empty).Trim('/'), "Dashboard/entity_wise_obs", StringComparison.OrdinalIgnoreCase));
+                if (organizationParent != null && !menus.Any(p => string.Equals(
+                    (p.Page_Path ?? string.Empty).Trim('/'), "OrganizationStructure/Index", StringComparison.OrdinalIgnoreCase)))
+                    {
+                    menuList.Add(new MenuPagesModel
+                        {
+                        Id = organizationParent.Id,
+                        PageId = organizationParent.PageId,
+                        Menu_Id = organizationParent.Menu_Id,
+                        Page_Name = "Organization Structure",
+                        Page_Path = "OrganizationStructure/Index",
+                        Page_URL = "OrganizationStructure/Index",
+                        Page_Order = organizationParent.Page_Order + 1,
+                        Status = organizationParent.Status,
+                        Hide_Menu = organizationParent.Hide_Menu,
+                        Sub_Menu = organizationParent.Sub_Menu,
+                        Sub_Menu_Id = organizationParent.Sub_Menu_Id,
+                        Sub_Menu_Name = organizationParent.Sub_Menu_Name
+                        });
+                    }
                 foreach (var item in menus)
                     {
                     menuList.Add(item);
