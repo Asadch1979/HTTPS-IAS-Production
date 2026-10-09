@@ -5,3 +5,13 @@
 @media(max-width:760px){.org{padding:8px 0 20px}.org-header{display:block;margin-bottom:18px}.org h1{font-size:23px}.org-subtitle{font-size:12px}.org-scope{display:inline-block;margin-top:14px}.org-workspace{grid-template-columns:minmax(0,1fr);position:relative}.org-navigator{position:absolute;top:0;left:0;width:min(310px,95%);z-index:10;box-shadow:8px 12px 35px #153f3340}.org-nav-tree{height:360px}.org-details{grid-column:1}.org-chart-toolbar{gap:10px}.org-chart-caption{padding:18px 14px 4px}.org-viewport{height:470px}.org-chart-footer{flex-direction:column;gap:5px}.org-topbar{align-items:flex-start}.org-breadcrumbs{font-size:10px}.org-breadcrumbs button{max-width:160px}.org-chart-toolbar .org-button{padding:8px;font-size:11px}.org-legend{gap:9px}.org-chart-caption h2{font-size:16px}}
 .org-card-count{display:block;font-size:14px;font-weight:700;margin-top:10px;white-space:nowrap;min-height:21px}.org-counts-feedback{display:flex;align-items:center;gap:10px;font-size:12px;min-height:34px;margin-bottom:12px;color:var(--muted)}.org-para-stat{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:11px;padding:8px 0;border-bottom:1px solid #e4ebde}.org-para-stat strong{font-size:13px;white-space:nowrap}
 @media(prefers-reduced-motion:reduce){.org *{transition:none!important;scroll-behavior:auto!important}}
+
+.org-topbar,.org-panel-controls{flex-wrap:wrap}.org-panel-controls{display:flex;gap:6px}
+.org.details-collapsed .org-workspace{grid-template-columns:242px minmax(0,1fr)}
+.org.nav-collapsed.details-collapsed .org-workspace{grid-template-columns:minmax(0,1fr)}
+.org.chart-maximized .org-viewport{height:calc(100vh - 260px);min-height:470px}
+.org-drawer-close{display:none}
+.org dialog{width:min(620px,95vw);max-height:90vh;overflow:auto;border:1px solid var(--line);border-radius:16px;padding:24px;color:var(--forest)}
+.org dialog::backdrop{background:#153f3377}.org dialog input,.org dialog textarea{width:100%;padding:10px;border:1px solid var(--line);border-radius:8px;font:inherit}
+.org dialog p{line-height:1.6;overflow-wrap:anywhere}
+@media(max-width:760px){.org.details-collapsed .org-workspace{grid-template-columns:minmax(0,1fr)}.org-drawer-close{display:block}}

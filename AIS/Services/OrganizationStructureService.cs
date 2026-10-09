@@ -1,6 +1,9 @@
 using AIS.Controllers;
 using AIS.Models;
 using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Primitives;
+using System.Threading;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -12,24 +15,59 @@ namespace AIS.Services
         private readonly DBConnection database;
         private readonly SessionHandler session;
         private readonly IMemoryCache cache;
+        private readonly int cacheSeconds;
+        private static readonly object HierarchyLock = new object();
+        private static CancellationTokenSource hierarchyChange = new CancellationTokenSource();
 
-        public OrganizationStructureService(DBConnection database, SessionHandler session, IMemoryCache cache)
+        public OrganizationStructureService(DBConnection database, SessionHandler session, IMemoryCache cache, IConfiguration configuration)
         {
             this.database = database;
             this.session = session;
             this.cache = cache;
+            cacheSeconds = Math.Clamp(configuration.GetValue<int?>("OrganizationStructure:CacheSeconds") ?? 15, 1, 15);
         }
 
-        public OrganizationSnapshot GetSnapshot()
+        public OrganizationMovePreview PreviewMove(int entityId, int newParentId)
+        {
+            RequireSuperUser();
+            return database.PreviewOrganizationMove(entityId, newParentId);
+        }
+
+        public string Move(OrganizationMoveRequest move)
+        {
+            RequireSuperUser();
+            var moveId = database.MoveOrganizationEntity(move, session.GetUserOrThrow().PPNumber);
+            // The procedure has committed before invalidating every user's scoped entry.
+            lock (HierarchyLock)
+            {
+                var previous = hierarchyChange;
+                hierarchyChange = new CancellationTokenSource();
+                previous.Cancel();
+                previous.Dispose();
+            }
+            return moveId;
+        }
+
+        private void RequireSuperUser()
+        {
+            session.GetUserOrThrow();
+            if (!session.IsSuperUser()) throw new UnauthorizedAccessException();
+        }
+
+        public OrganizationSnapshot GetSnapshot(bool refresh = false)
         {
             var user = session.GetUserOrThrow();
             var fullAccess = session.IsSuperUser();
             // No client-supplied root or role can widen this scope. Non-super users
             // are limited to their active IAS posting and its package-defined descendants.
             var key = $"org:{user.SessionId}:{user.ID}:{user.UserRoleID}:{user.UserEntityID}:{user.UserContextAssignmentId}:{fullAccess}";
+            CancellationToken changeToken;
+            lock (HierarchyLock) changeToken = hierarchyChange.Token;
+            if (refresh) cache.Remove(key);
             return cache.GetOrCreate(key, entry =>
             {
-                entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(10);
+                entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromSeconds(cacheSeconds);
+                entry.AddExpirationToken(new CancellationChangeToken(changeToken));
                 int? root = fullAccess ? null : user.UserEntityID;
                 var nodes = database.GetOrganizationNodes(root).GroupBy(n => n.EntityId).Select(g => g.First()).ToList();
                 var permitted = nodes.Select(n => n.EntityId).ToHashSet();

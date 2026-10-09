@@ -2,6 +2,27 @@ using System.Collections.Generic;
 
 namespace AIS.Models
 {
+    public class OrganizationMoveRequest
+    {
+        public int EntityId { get; set; }
+        public int ExpectedParentId { get; set; }
+        public int NewParentId { get; set; }
+        public string Reason { get; set; }
+    }
+
+    public class OrganizationMovePreview
+    {
+        public int EntityId { get; set; }
+        public string EntityName { get; set; }
+        public int CurrentParentId { get; set; }
+        public string CurrentParentName { get; set; }
+        public int NewParentId { get; set; }
+        public string NewParentName { get; set; }
+        public string NewParentCode { get; set; }
+        public int? NewParentTypeId { get; set; }
+        public int? NewRelationTypeId { get; set; }
+        public int DescendantEntities { get; set; }
+    }
     public class OrganizationOpenParaCounts
     {
         public int EntityId { get; set; }

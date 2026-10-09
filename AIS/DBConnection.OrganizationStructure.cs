@@ -8,6 +8,64 @@ namespace AIS.Controllers
 {
     public partial class DBConnection
     {
+        public OrganizationMovePreview PreviewOrganizationMove(int entityId, int newParentId)
+        {
+            using var connection = DatabaseConnection();
+            using var command = connection.CreateCommand();
+            command.CommandText = "PKG_ORG_STRUCTURE.P_PREVIEW_ENTITY_MOVE";
+            command.CommandType = CommandType.StoredProcedure;
+            command.BindByName = true;
+            command.Parameters.Add("P_ENTITY_ID", OracleDbType.Int32).Value = entityId;
+            command.Parameters.Add("P_NEW_PARENT_ID", OracleDbType.Int32).Value = newParentId;
+            command.Parameters.Add("O_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+            using var reader = command.ExecuteReader();
+            if (!reader.Read()) throw new InvalidOperationException("Move preview returned no row.");
+            return new OrganizationMovePreview
+            {
+                EntityId = OrgNumber(reader, "ENTITY_ID").Value,
+                EntityName = OrgText(reader, "ENTITY_NAME"),
+                CurrentParentId = OrgNumber(reader, "CURRENT_PARENT_ID").Value,
+                CurrentParentName = OrgText(reader, "CURRENT_PARENT_NAME"),
+                NewParentId = OrgNumber(reader, "NEW_PARENT_ID").Value,
+                NewParentName = OrgText(reader, "NEW_PARENT_NAME"),
+                NewParentCode = OrgText(reader, "NEW_PARENT_CODE"),
+                NewParentTypeId = OrgNumber(reader, "NEW_PARENT_TYPE_ID"),
+                NewRelationTypeId = OrgNumber(reader, "NEW_RELATION_TYPE_ID"),
+                DescendantEntities = OrgNumber(reader, "DESCENDANT_ENTITIES") ?? 0
+            };
+        }
+
+        public string MoveOrganizationEntity(OrganizationMoveRequest move, string changedBy)
+        {
+            using var connection = DatabaseConnection();
+            using var transaction = connection.BeginTransaction();
+            try
+            {
+                using var command = connection.CreateCommand();
+                command.Transaction = transaction;
+                command.CommandText = "PKG_ORG_STRUCTURE.P_MOVE_ENTITY";
+                command.CommandType = CommandType.StoredProcedure;
+                command.BindByName = true;
+                command.Parameters.Add("P_ENTITY_ID", OracleDbType.Int32).Value = move.EntityId;
+                command.Parameters.Add("P_EXPECTED_PARENT_ID", OracleDbType.Int32).Value = move.ExpectedParentId;
+                command.Parameters.Add("P_NEW_PARENT_ID", OracleDbType.Int32).Value = move.NewParentId;
+                command.Parameters.Add("P_CHANGED_BY", OracleDbType.Varchar2).Value = changedBy;
+                command.Parameters.Add("P_REASON", OracleDbType.Varchar2).Value = move.Reason.Trim();
+                var output = command.Parameters.Add("O_MOVE_ID", OracleDbType.Varchar2, 100);
+                output.Direction = ParameterDirection.Output;
+                command.ExecuteNonQuery();
+                var moveId = output.Value.ToString();
+                transaction.Commit();
+                return moveId;
+            }
+            catch
+            {
+                // Preserve the original exception if the connection also failed during rollback.
+                try { transaction.Rollback(); } catch { }
+                throw;
+            }
+        }
+
         public List<OrganizationOpenParaCounts> GetOrganizationOpenParaCounts(int? rootEntityId)
         {
             var results = new List<OrganizationOpenParaCounts>();

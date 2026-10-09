@@ -10,13 +10,16 @@ class Element {
         this.tagName = tag; this.children = []; this.dataset = {}; this.style = {};
         this.textContent = ''; this.value = ''; this.hidden = false; this.disabled = false;
         this.scrollTop = 0; this.scrollLeft = 0; this.clientHeight = 0; this.clientWidth = 800;
-        this.offsetWidth = 1000; this.offsetHeight = 500; this.className = ''; this.listeners = {};
-        this.classList = { contains: name => this.className.split(' ').includes(name), toggle: () => {}, add: () => {}, remove: () => {} };
+        this.attributes = {}; this.offsetWidth = 1000; this.offsetHeight = 500; this.className = ''; this.listeners = {};
+        this.classList = { contains: name => this.className.split(' ').includes(name), toggle: (name, force) => { const names = new Set(this.className.split(' ').filter(Boolean)); if (force ?? !names.has(name)) names.add(name); else names.delete(name); this.className = [...names].join(' '); }, add: () => {}, remove: () => {} };
     }
     set id(value) { elements.set(value, this); }
     append(...items) { items.forEach(item => { item.parentElement = this; this.children.push(item); }); }
     replaceChildren(...items) { this.children = []; this.append(...items); }
-    setAttribute() {}
+    showModal() { this.open = true; }
+    close() { this.open = false; }
+    setAttribute(name, value) { this.attributes[name] = value; }
+    getBoundingClientRect() { return { left: 0, top: 0, width: 228, height: 153 }; }
     addEventListener(name, handler) { this.listeners[name] = handler; }
     get childElementCount() { return this.children.length; }
     querySelectorAll(selector) {
@@ -31,7 +34,7 @@ class Element {
     querySelector(selector) { return this.querySelectorAll(selector)[0] || null; }
 }
 const app = new Element();
-app.dataset = { nodesUrl: '/nodes', countsUrl: '/counts', pathUrl: '/path' };
+app.dataset = { nodesUrl: '/nodes', countsUrl: '/counts', pathUrl: '/path', canMove: 'true', previewUrl: '/preview', moveUrl: '/move' };
 elements.set('organization-structure', app);
 const get = id => {
     if (!elements.has(id)) elements.set(id, new Element());
@@ -48,17 +51,25 @@ const fixture = [
     { entityId: 112250, ownOpenParas: 5, subordinateOpenParas: 0, totalOpenParas: 5 },
     { entityId: 112267, ownOpenParas: 5, subordinateOpenParas: 0, totalOpenParas: 5 }
 ];
-let nextCounts = fixture, countsCalls = 0, releaseCounts;
+let nextCounts = fixture, countsCalls = 0, releaseCounts, moveCalls = 0, releaseMove, postedMove;
 const context = vm.createContext({
     document: { getElementById: get, createElement: tag => new Element(tag) },
     location: { href: 'https://example.test/org', pathname: '/org', search: '', hash: '' },
     history: { replaceState() {} }, URL, URLSearchParams,
-    requestAnimationFrame() {}, ResizeObserver: class { observe() {} },
+    FormData: class extends Map { constructor() { super([['__RequestVerificationToken', 'test-token']]); } },
+    requestAnimationFrame() {}, cancelAnimationFrame() {}, ResizeObserver: class { observe() {} },
     matchMedia: () => ({ matches: false }), setTimeout, clearTimeout,
-    fetch: async url => {
+    fetch: async (url, options) => {
         let result;
-        if (url === '/nodes') result = { nodes, rootEntityId: 112222, isRestricted: true };
-        else if (url === '/counts') {
+        if (new URL(url, 'https://example.test').pathname === '/nodes') result = { nodes, rootEntityId: 112222, isRestricted: true };
+        else if (new URL(url, 'https://example.test').pathname === '/preview') {
+            result = { entityId: 112250, entityName: 'Recovery Department', currentParentId: 112222,
+                currentParentName: 'Recovery and SAM Division', newParentId: 112267,
+                newParentName: 'Non Performing Loans Department', descendantEntities: 0 };
+        } else if (url === '/move') {
+            moveCalls++; postedMove = options;
+            await new Promise(resolve => { releaseMove = resolve; }); result = { moveId: 'test-move' };
+        } else if (url === '/counts') {
             countsCalls++;
             if (releaseCounts) await new Promise(resolve => { releaseCounts.resolve = resolve; });
             if (nextCounts instanceof Error) throw nextCounts;
@@ -70,7 +81,8 @@ const context = vm.createContext({
 let source = fs.readFileSync(path.join(__dirname, '../../AIS/wwwroot/js/organization-structure.js'), 'utf8');
 source = source.replace(/    load\(\);\s*\}\)\(\);\s*$/, `
     globalThis.testApi = {
-        load, loadCounts, select,
+        load, loadCounts, select, fitChart, zoom, openMove,
+        scale() { return scale; },
         seedView() { scale = 1.3; expanded.add(112250); pages.set(112222, 1); },
         state() { return JSON.stringify({ selected, scale, expanded: [...expanded], pages: [...pages], navExpanded: [...navExpanded] }); }
     };
@@ -83,10 +95,10 @@ const details = () => get('org-detail-counts').children.map(row => row.children.
 
 (async () => {
     releaseCounts = {};
-    await api.load();
+    const loading = api.load(); await tick();
     assert.equal(countsCalls, 1, 'one scoped request on page load');
     assert(labels().every(label => label === 'Open paras: Loading…'));
-    releaseCounts.resolve(); releaseCounts = null; await tick();
+    releaseCounts.resolve(); releaseCounts = null; await loading;
     assert.deepEqual(labels().sort(), ['Open paras: 10', 'Open paras: 5', 'Open paras: 5'].sort());
     assert.deepEqual(details(), [['Own open paras', '0'], ['Subordinate open paras', '10'], ['Total open paras', '10']]);
     assert.equal(get('org-retry').hidden, true, 'chart initialization succeeds');
@@ -126,5 +138,55 @@ const details = () => get('org-detail-counts').children.map(row => row.children.
     const running = api.loadCounts(), calls = countsCalls;
     await api.loadCounts(); assert.equal(countsCalls, calls, 'duplicate refresh is suppressed');
     releaseCounts.resolve(); releaseCounts = null; await running;
-    console.log('PASS: scoped request, totals, details, loading, zero, missing result, failure, retry and preserved view');
+    get('org-viewport').clientHeight = 500;
+    get('org-chart').offsetWidth = 4000;
+    api.fitChart();
+    assert(api.scale() < .25, 'fit can go below 75 percent');
+    const overview = api.scale();
+    get('org-zoom-in').listeners.click();
+    assert(api.scale() > overview && api.scale() < .3, 'manual zoom does not jump from overview');
+    get('org-actual').listeners.click(); assert.equal(api.scale(), 1);
+    api.fitChart(); get('org-focus').listeners.click(); assert.equal(api.scale(), 1);
+    get('org-details-toggle').listeners.click();
+    assert.equal(get('org-details').hidden, true);
+    assert.equal(get('org-details-toggle').attributes['aria-expanded'], 'false');
+    get('org-expand-chart').listeners.click(); assert.equal(get('org-navigator').hidden, true);
+    assert.equal(get('org-expand-chart').attributes['aria-pressed'], 'true');
+    get('org-expand-chart').listeners.click();
+    assert.equal(get('org-navigator').hidden, false);
+    assert.equal(get('org-details').hidden, true, 'expansion restores prior panels');
+    get('org-reset').listeners.click();
+    assert.equal(JSON.parse(api.state()).selected, 112222);
+    assert.equal(get('org-search').value, ''); assert.equal(get('org-filter').value, '');
+    assert.equal(get('org-back').disabled, true);
+    assert.equal(api.scale(), 1);
+    // A response from the previous hierarchy must never overwrite refreshed counts.
+    nextCounts = fixture; releaseCounts = {};
+    const stale = api.loadCounts(); const releaseOld = releaseCounts.resolve; releaseCounts = null;
+    await api.load(true);
+    nextCounts = fixture.map(row => ({ ...row, totalOpenParas: 999 }));
+    releaseOld(); await stale;
+    assert(!labels().includes('Open paras: 999'), 'late count response is ignored');
+    nextCounts = fixture;
+    api.select(112250); api.openMove();
+    assert.equal(get('org-move-confirm').disabled, true);
+    get('org-move-destination').value = '112267';
+    await get('org-move-preview').listeners.click();
+    assert.equal(get('org-move-confirm').disabled, true, 'reason is mandatory');
+    get('org-move-reason').value = 'Fixture reason'; get('org-move-reason').listeners.input();
+    assert.equal(get('org-move-confirm').disabled, false);
+    get('org-move-destination').listeners.change();
+    assert.equal(get('org-move-confirm').disabled, true, 'destination invalidates preview');
+    await get('org-move-preview').listeners.click();
+    const moving = get('org-move-form').listeners.submit({ preventDefault() {} });
+    await get('org-move-form').listeners.submit({ preventDefault() {} });
+    assert.equal(moveCalls, 1, 'duplicate move suppressed');
+    assert.equal(postedMove.method, 'POST');
+    assert.equal(postedMove.body.get('ExpectedParentId'), 112222);
+    assert.equal(postedMove.body.get('__RequestVerificationToken'), 'test-token');
+    assert.equal(get('org-move-cancel').disabled, true);
+    releaseMove(); await moving;
+    assert.equal(get('org-move-dialog').open, false);
+    assert.equal(JSON.parse(api.state()).selected, 112250, 'moved selection preserved');
+    console.log('PASS: move preview, mandatory reason, stale preview, duplicate suppression, authenticated POST token; controls, overview zoom, reset, panel restoration, late response protection;  scoped request, totals, details, loading, zero, missing result, failure, retry and preserved view');
 })().catch(error => { console.error(error); process.exitCode = 1; });

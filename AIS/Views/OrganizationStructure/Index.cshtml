@@ -3,7 +3,7 @@
     Layout = "_Layout";
 }
 <link rel="stylesheet" href="~/css/organization-structure.css" asp-append-version="true" />
-<section id="organization-structure" class="org" data-nodes-url="@Url.Action("Data", "OrganizationStructure")" data-path-url="@Url.Action("EntityPath", "OrganizationStructure")" data-counts-url="@Url.Action("OpenParaCounts", "OrganizationStructure")" aria-label="ZTBL Organization Structure">
+<section id="organization-structure" class="org" data-nodes-url="@Url.Action("Data", "OrganizationStructure")" data-path-url="@Url.Action("EntityPath", "OrganizationStructure")" data-counts-url="@Url.Action("OpenParaCounts", "OrganizationStructure")" data-preview-url="@Url.Action("PreviewMove", "OrganizationStructure")" data-move-url="@Url.Action("Move", "OrganizationStructure")" data-can-move="@((ViewData["CanMoveEntity"] as bool? == true).ToString().ToLowerInvariant())" aria-label="ZTBL Organization Structure">
     <header class="org-header">
         <div class="org-brand"><span class="org-emblem" aria-hidden="true"><i class="fa fa-sitemap"></i></span><div><p class="org-eyebrow">ZTBL · EXECUTIVE DASHBOARD</p><h1>Organization Structure</h1><p class="org-subtitle">Explore offices and reporting relationships.</p></div></div>
         <span class="org-scope" id="org-scope">Organizational directory</span>
@@ -22,13 +22,13 @@
         <button type="button" id="org-nav-toggle" class="org-button" aria-expanded="true" aria-controls="org-navigator"><i class="fa fa-bars" aria-hidden="true"></i> Navigator</button>
         <button type="button" id="org-details-toggle" class="org-button" aria-expanded="true" aria-controls="org-details">Details</button>
         <button type="button" id="org-expand-chart" class="org-button" aria-pressed="false">Expand chart</button>
-        <button type="button" id="org-refresh-counts" class="org-button" disabled>Refresh counts</button>
+        <button type="button" id="org-refresh-counts" class="org-button" disabled>Refresh structure &amp; counts</button>
         </div>
     </div>
     <nav id="org-breadcrumbs" class="org-breadcrumbs" aria-label="Reporting path"></nav>
     <div id="org-status" class="org-status" role="status" aria-live="polite">Loading your organizational directory…</div>
     <button type="button" id="org-retry" class="org-button" hidden>Try again</button>
-    <div class="org-counts-feedback"><span id="org-counts-status" role="status" aria-live="polite"></span><button type="button" id="org-counts-retry" class="org-button" hidden>Retry counts</button></div>
+    <div class="org-counts-feedback"><span id="org-counts-status" role="status" aria-live="polite"></span><button type="button" id="org-counts-retry" class="org-button" hidden>Retry structure &amp; counts</button></div>
     <div class="org-workspace" id="org-workspace" hidden>
         <button id="org-drawer-backdrop" class="org-drawer-backdrop" type="button" aria-label="Close panel" tabindex="-1" hidden></button>
         <aside id="org-navigator" class="org-navigator" aria-label="Organization navigator" tabindex="-1">
@@ -49,6 +49,26 @@
         </main>
         <aside id="org-details" class="org-details" aria-label="Selected entity information" tabindex="-1"><div class="org-panel-heading"><p class="org-eyebrow">ENTITY PROFILE</p><button type="button" class="org-icon-button org-drawer-close" data-close-panel="details" aria-label="Close details">×</button></div><div id="org-detail-content" aria-live="polite"></div></aside>
     </div>
+    @if (ViewData["CanMoveEntity"] as bool? == true)
+    {
+        <dialog id="org-move-dialog" aria-labelledby="org-move-title">
+            <form id="org-move-form">
+                @Html.AntiForgeryToken()
+                <h2 id="org-move-title">Move entity</h2>
+                <p id="org-move-entity"></p><p id="org-move-current"></p>
+                <label class="org-label" for="org-move-search">Search destinations by name or ID</label>
+                <input id="org-move-search" type="search" autocomplete="off" />
+                <label class="org-label" for="org-move-destination">Destination</label>
+                <select id="org-move-destination" required></select>
+                <label class="org-label" for="org-move-reason">Change reason (required, up to 1000 bytes)</label>
+                <textarea id="org-move-reason" required maxlength="1000" rows="3"></textarea>
+                <p id="org-move-feedback" role="status" aria-live="polite"></p>
+                <button id="org-move-preview" type="button" class="org-button">Preview move</button>
+                <button id="org-move-confirm" type="submit" class="org-button" disabled>Confirm move</button>
+                <button id="org-move-cancel" type="button" class="org-button">Cancel</button>
+            </form>
+        </dialog>
+    }
     <noscript><p class="org-status">Enable JavaScript to explore the organization structure.</p></noscript>
 </section>
 @section Scripts {

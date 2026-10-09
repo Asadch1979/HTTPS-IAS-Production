@@ -10,7 +10,7 @@
     const compareRoots = (a, b) => Number(b.entityTypeId === 2) - Number(a.entityTypeId === 2) || compareEntities(a, b);
     let nodes = new Map(), children = new Map(), roots = [], selected = null, home = null;
     let snapshot, scale = 1, pathVersion = 0, searchTimer, resultLimit = 50;
-    let narrow = null, activeDrawer = null, fitted = false, layoutFrame = 0, panelState = null;
+    let fitted = false, layoutFrame = 0, panelState = null, loadVersion = 0;
     const expanded = new Set(), navExpanded = new Set(), pages = new Map(), trail = [], paths = new Map();
     const statsCache = new Map();
     let counts = new Map(), countsLoading = true, countsRequestActive = false;
@@ -40,20 +40,31 @@
             default: return 'department';
         }
     };
-    async function request(url) {
-        const response = await fetch(url, { credentials: 'same-origin', cache: 'no-store', headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' } });
+    async function request(url, options = {}) {
+        const response = await fetch(url, { credentials: 'same-origin', cache: 'no-store', headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' }, ...options });
         if (response.status === 401 || response.status === 403 || response.redirected) throw new Error('Your session or access has changed. Reload the page or sign in again.');
-        if (!response.ok) throw new Error('The organizational directory is temporarily unavailable. Please try again.');
+        if (!response.ok) {
+            const error = await response.json().catch(() => null);
+            throw new Error(error?.message || 'The organizational directory is temporarily unavailable. Please try again.');
+        }
         if (!(response.headers.get('content-type') || '').includes('application/json')) throw new Error('Your session may have expired. Reload the page to continue.');
         return response.json();
     }
 
-    async function load() {
+    async function load(refresh = false) {
+        const version = ++loadVersion, previousSelection = selected;
+        ++pathVersion;
+        counts.clear(); countsLoading = true; countsRequestActive = false;
+        $('refresh-counts').disabled = true;
         $('retry').hidden = true;
         $('workspace').hidden = true;
         notify('Loading your organizational directory…');
         try {
-            snapshot = await request(app.dataset.nodesUrl);
+            const url = new URL(app.dataset.nodesUrl, location.href);
+            if (refresh === true) url.searchParams.set('refresh', 'true');
+            const result = await request(url);
+            if (version !== loadVersion) return;
+            snapshot = result;
             nodes = new Map(snapshot.nodes.map(node => [node.entityId, node]));
             children = new Map();
             paths.clear(); statsCache.clear(); navExpanded.clear(); trail.length = 0;
@@ -87,11 +98,14 @@
             selected = null;
             $('workspace').hidden = false;
             notify('');
-            select(nodes.has(hashId) ? hashId : home, false);
-            loadCounts();
+            select(nodes.has(previousSelection) ? previousSelection : nodes.has(hashId) ? hashId : home, false);
+            await loadCounts(version);
         } catch (error) {
+            if (version !== loadVersion) return;
             notify(error.message);
             $('retry').hidden = false;
+        } finally {
+            if (version === loadVersion) $('refresh-counts').disabled = false;
         }
     }
 
@@ -110,7 +124,7 @@
         if (host && selected !== null) renderDetailCounts(host);
     }
 
-    async function loadCounts() {
+    async function loadCounts(version = loadVersion) {
         if (!nodes.size || countsRequestActive) return;
         countsRequestActive = true;
         countsLoading = true;
@@ -120,16 +134,19 @@
         updateCounts();
         try {
             const rows = await request(app.dataset.countsUrl);
+            if (version !== loadVersion) return;
             counts = new Map(rows.filter(row => nodes.has(row.entityId)).map(row => [row.entityId, row]));
             const missing = [...nodes.keys()].some(id => ['ownOpenParas', 'subordinateOpenParas', 'totalOpenParas']
                 .some(field => !Number.isSafeInteger(counts.get(id)?.[field]) || counts.get(id)[field] < 0));
             $('counts-status').textContent = missing ? 'Some open para counts are unavailable.' : '';
             $('counts-retry').hidden = !missing;
         } catch (error) {
+            if (version !== loadVersion) return;
             counts.clear();
             $('counts-status').textContent = `Open para counts unavailable. ${error.message}`;
             $('counts-retry').hidden = false;
         } finally {
+            if (version !== loadVersion) return;
             countsRequestActive = false;
             countsLoading = false;
             $('refresh-counts').disabled = false;
@@ -168,7 +185,6 @@
         $('up').disabled = !parent || parent.entityId === id;
         $('chart-title').textContent = nodes.get(id).entityName;
         scale = 1; fitted = false;
-        if (activeDrawer) closeDrawer();
         renderNavigator(changed); renderChart(true); renderDetails(); renderPath(id);
     }
 
@@ -382,6 +398,7 @@
         if (node.parentEntityId === node.entityId) notes.push('This record reports to itself.');
         notes.push(snapshot.isRestricted ? 'Relationships and counts reflect your authorized organizational scope.' : 'Reporting relationships are provided by the organizational directory.');
         host.append(el('p', 'org-detail-note', notes.join(' ')));
+        if (app.dataset.canMove === 'true') host.append(button('Move entity', 'org-button', openMove));
     }
 
     async function renderPath(id) {
@@ -391,7 +408,9 @@
             let chain = paths.get(id);
             if (!chain) {
                 const url = new URL(app.dataset.pathUrl, location.href); url.searchParams.set('entityId', id);
-                chain = await request(url); paths.set(id, chain);
+                chain = await request(url);
+                if (version !== pathVersion || selected !== id) return;
+                paths.set(id, chain);
             }
             if (version !== pathVersion || selected !== id) return;
             const crumbs = $('breadcrumbs'), details = $('detail-path'); crumbs.replaceChildren(); details.replaceChildren();
@@ -413,6 +432,90 @@
         }
     }
 
+    let moveEntity = null, movePreview = null, moveVersion = 0, moveBusy = false;
+    function invalidateMovePreview() {
+        ++moveVersion; movePreview = null;
+        $('move-confirm').disabled = true;
+        $('move-feedback').textContent = 'Preview the destination before confirming.';
+    }
+    function moveDestinations() {
+        invalidateMovePreview();
+        const query = $('move-search').value.trim().toLocaleLowerCase();
+        const select = $('move-destination');
+        select.replaceChildren(el('option', '', 'Choose a destination'));
+        select.children[0].value = '';
+        const descendants = new Set([moveEntity]), pending = [moveEntity];
+        while (pending.length) {
+            for (const child of childrenOf(pending.pop())) {
+                if (!descendants.has(child.entityId)) { descendants.add(child.entityId); pending.push(child.entityId); }
+            }
+        }
+        [...nodes.values()].filter(node => !descendants.has(node.entityId) &&
+            node.entityId !== nodes.get(moveEntity).parentEntityId &&
+            (!query || node.entityName.toLocaleLowerCase().includes(query) || String(node.entityId).includes(query)))
+            .sort(compareEntities).forEach(node => {
+                const option = el('option', '', `${node.entityName} (ID ${node.entityId})`);
+                option.value = node.entityId; select.append(option);
+            });
+    }
+    function openMove() {
+        moveEntity = selected;
+        const node = nodes.get(moveEntity);
+        $('move-entity').textContent = `${node.entityName} (ID ${node.entityId})`;
+        $('move-current').textContent = `Current reporting parent: ${node.parentEntityName || nodes.get(node.parentEntityId)?.entityName || 'None'} (ID ${node.parentEntityId ?? '—'})`;
+        $('move-search').value = ''; $('move-reason').value = '';
+        moveDestinations(); $('move-dialog').showModal();
+    }
+    function moveProcessing(busy) {
+        moveBusy = busy;
+        for (const id of ['move-search', 'move-destination', 'move-reason', 'move-preview', 'move-cancel']) $(id).disabled = busy;
+        $('move-confirm').disabled = busy || !movePreview || !$('move-reason').value.trim();
+        $('move-form').setAttribute('aria-busy', String(busy));
+    }
+    if (app.dataset.canMove === 'true') {
+        $('move-search').addEventListener('input', moveDestinations);
+        $('move-destination').addEventListener('change', invalidateMovePreview);
+        $('move-reason').addEventListener('input', () => moveProcessing(moveBusy));
+        $('move-cancel').addEventListener('click', () => { invalidateMovePreview(); $('move-dialog').close(); });
+        $('move-dialog').addEventListener('cancel', event => { if (moveBusy) event.preventDefault(); else invalidateMovePreview(); });
+        $('move-preview').addEventListener('click', async () => {
+            if (moveBusy) return;
+            invalidateMovePreview();
+            const destination = Number($('move-destination').value), version = moveVersion;
+            if (!destination) { $('move-feedback').textContent = 'Choose a destination.'; return; }
+            const url = new URL(app.dataset.previewUrl, location.href);
+            url.searchParams.set('entityId', moveEntity); url.searchParams.set('newParentId', destination);
+            moveProcessing(true);
+            try {
+                const preview = await request(url);
+                if (version !== moveVersion) return;
+                movePreview = preview;
+                $('move-feedback').textContent = `${preview.entityName} (ID ${preview.entityId}): ${preview.currentParentName} (ID ${preview.currentParentId}) → ${preview.newParentName} (ID ${preview.newParentId}, code ${preview.newParentCode}, type ${preview.newParentTypeId}, relation ${preview.newRelationTypeId}). ${preview.descendantEntities} existing descendant entities move with this parent. Entity IDs, assigned paras and AUDITEDBY remain unchanged.`;
+            } catch (error) {
+                if (version === moveVersion) $('move-feedback').textContent = error.message;
+            } finally { moveProcessing(false); }
+        });
+        $('move-form').addEventListener('submit', async event => {
+            event.preventDefault();
+            if (moveBusy || !movePreview || !$('move-reason').value.trim() ||
+                movePreview.newParentId !== Number($('move-destination').value)) return;
+            const body = new FormData($('move-form'));
+            body.set('EntityId', movePreview.entityId);
+            body.set('ExpectedParentId', movePreview.currentParentId);
+            body.set('NewParentId', movePreview.newParentId);
+            body.set('Reason', $('move-reason').value.trim());
+            moveProcessing(true);
+            try {
+                const result = await request(app.dataset.moveUrl, { method: 'POST', body });
+                $('move-dialog').close(); invalidateMovePreview();
+                await load(true);
+                notify(`Move completed. Reference: ${result.moveId}. ${$('retry').hidden ? '' : 'Reload the structure to see the updated relationships.'}`);
+            } catch (error) {
+                invalidateMovePreview(); $('move-feedback').textContent = error.message;
+            } finally { moveProcessing(false); }
+        });
+    }
+
     function sizeCanvas() {
         const chart = $('chart'), viewport = $('viewport'), space = $('chart-space');
         chart.style.minWidth = '0';
@@ -422,36 +525,80 @@
         space.style.width = `${Math.max(viewport.clientWidth, width * scale)}px`;
         space.style.height = `${Math.max(viewport.clientHeight, height * scale)}px`;
         $('zoom-value').textContent = `${Math.round(scale * 100)}%`;
-        $('zoom-out').disabled = scale <= .75; $('zoom-in').disabled = scale >= 1.5;
+        $('zoom-out').disabled = scale <= .01; $('zoom-in').disabled = scale >= 1.5;
     }
     function centerSelected() {
         const card = $('chart').querySelector('[data-selected]');
         if (!card) return;
         const bounds = card.getBoundingClientRect(), viewport = $('viewport'), frame = viewport.getBoundingClientRect();
         viewport.scrollLeft += bounds.left - frame.left - (viewport.clientWidth - bounds.width) / 2;
-        viewport.scrollTop += bounds.top - frame.top - Math.min(110, (viewport.clientHeight - bounds.height) / 2);
+        viewport.scrollTop += bounds.top - frame.top - (viewport.clientHeight - bounds.height) / 2;
     }
-    function zoom(value) { scale = Math.max(.75, Math.min(1.5, value)); sizeCanvas(); centerSelected(); }
+    function zoom(value) { fitted = false; scale = Math.max(Math.min(.01, scale), Math.min(1.5, value)); sizeCanvas(); centerSelected(); }
+    function fitChart() {
+        const chart = $('chart'), viewport = $('viewport');
+        chart.style.minWidth = '0';
+        if (!chart.offsetWidth || !chart.offsetHeight || !viewport.clientHeight) return;
+        fitted = true;
+        scale = Math.min(Math.max(1, viewport.clientWidth - 24) / chart.offsetWidth,
+            Math.max(1, viewport.clientHeight - 24) / chart.offsetHeight, 1);
+        sizeCanvas(); viewport.scrollLeft = 0; viewport.scrollTop = 0;
+    }
+    function relayout() {
+        cancelAnimationFrame(layoutFrame);
+        layoutFrame = requestAnimationFrame(() => {
+            if (selected === null) return;
+            if (fitted) fitChart(); else { sizeCanvas(); centerSelected(); }
+        });
+    }
     function toggleNavigator(show) {
         app.classList.toggle('nav-collapsed', !show);
         $('nav-toggle').setAttribute('aria-expanded', String(show));
-        requestAnimationFrame(sizeCanvas);
+        $('navigator').hidden = !show;
+        relayout();
     }
+    function toggleDetails(show) {
+        app.classList.toggle('details-collapsed', !show);
+        $('details').hidden = !show;
+        $('details-toggle').setAttribute('aria-expanded', String(show));
+        relayout();
+    }
+    $('details-toggle').addEventListener('click', () => toggleDetails($('details').hidden));
+    app.querySelectorAll('[data-close-panel]').forEach(control => control.addEventListener('click', () => {
+        if (control.dataset.closePanel === 'navigator') toggleNavigator(false); else toggleDetails(false);
+    }));
+    $('expand-chart').addEventListener('click', () => {
+        if (!panelState) {
+            panelState = { navigator: !$('navigator').hidden, details: !$('details').hidden };
+            toggleNavigator(false); toggleDetails(false);
+        } else {
+            toggleNavigator(panelState.navigator); toggleDetails(panelState.details); panelState = null;
+        }
+        app.classList.toggle('chart-maximized', !!panelState);
+        $('expand-chart').setAttribute('aria-pressed', String(!!panelState));
+        $('expand-chart').textContent = panelState ? 'Restore chart' : 'Expand chart';
+        relayout();
+    });
+    $('actual').addEventListener('click', () => zoom(1));
+    $('focus').addEventListener('click', () => zoom(scale < .75 ? 1 : scale));
+    $('reset').addEventListener('click', () => {
+        clearTimeout(searchTimer); $('search').value = ''; $('filter').value = ''; resultLimit = 50;
+        trail.length = 0; navExpanded.clear(); expanded.clear(); pages.clear();
+        select(home, false);
+        requestAnimationFrame(() => { $('tree').scrollTop = 0; $('viewport').scrollTop = 0; $('viewport').scrollLeft = 0; });
+    });
     $('nav-toggle').addEventListener('click', () => toggleNavigator(app.classList.contains('nav-collapsed')));
     $('retry').addEventListener('click', load);
-    $('refresh-counts').addEventListener('click', loadCounts);
-    $('counts-retry').addEventListener('click', loadCounts);
+    $('refresh-counts').addEventListener('click', () => load(true));
+    $('counts-retry').addEventListener('click', () => load(true));
     $('search').addEventListener('input', () => { clearTimeout(searchTimer); searchTimer = setTimeout(() => { resultLimit = 50; renderNavigator(); }, 150); });
     $('filter').addEventListener('change', () => { resultLimit = 50; renderNavigator(); });
     $('home').addEventListener('click', () => { $('search').value = ''; $('filter').value = ''; select(home); });
     $('back').addEventListener('click', () => { if (trail.length) select(trail.pop(), false); });
     $('up').addEventListener('click', () => { const id = nodes.get(selected)?.parentEntityId; if (nodes.has(id)) select(id); });
-    $('zoom-in').addEventListener('click', () => zoom(scale + .1));
-    $('zoom-out').addEventListener('click', () => zoom(scale - .1));
-    $('fit').addEventListener('click', () => {
-        zoom(Math.min(($('viewport').clientWidth - 24) / $('chart').offsetWidth, ($('viewport').clientHeight - 24) / $('chart').offsetHeight, 1));
-        if (scale === .75) $('chart-note').textContent = 'Readable fit · Scroll or drag to explore the wider structure.';
-    });
+    $('zoom-in').addEventListener('click', () => zoom(scale < .75 ? scale * 1.2 : scale + .1));
+    $('zoom-out').addEventListener('click', () => zoom(scale < .75 ? scale / 1.2 : scale - .1));
+    $('fit').addEventListener('click', fitChart);
     const viewport = $('viewport'); let drag = null;
     viewport.addEventListener('pointerdown', event => {
         if (event.pointerType === 'touch' || event.button !== 0 || event.target.closest('button')) return;
@@ -464,7 +611,7 @@
     });
     const stopDrag = () => { drag = null; viewport.classList.remove('is-panning'); };
     viewport.addEventListener('pointerup', stopDrag); viewport.addEventListener('pointercancel', stopDrag); viewport.addEventListener('lostpointercapture', stopDrag);
-    new ResizeObserver(() => { if (selected !== null) sizeCanvas(); }).observe(viewport);
+    new ResizeObserver(relayout).observe(viewport);
     if (matchMedia('(max-width:760px)').matches) toggleNavigator(false);
     load();
 })();
