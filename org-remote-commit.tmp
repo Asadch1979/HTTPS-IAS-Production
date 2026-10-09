@@ -1,8 +1,0 @@
-tree 306d0bc034131434f98362e251271318f0f0c97c
-parent 404eef271b20aac6a03b993358df20e2f1831d78
-author Asadch1979 <asadali3000@hotmail.com> 1791527511 +0500
-committer Asadch1979 <asadali3000@hotmail.com> 1791527511 +0500
-
-Add Super User entity moves and repair organization chart controls
-
-Use compiled move procedures with session authorization and atomic transactions. Refresh hierarchy and counts together, invalidate scoped caches, and retain existing mapping corrections and open-para behavior.
