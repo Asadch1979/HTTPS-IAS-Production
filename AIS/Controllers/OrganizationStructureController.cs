@@ -54,6 +54,18 @@ namespace AIS.Controllers
         }
 
         [HttpGet]
+        public IActionResult OpenParaCounts()
+        {
+            if (!CanView()) return StatusCode(403);
+            try { return Json(organization.GetOpenParaCounts()); }
+            catch (Exception exception)
+            {
+                logger.LogError(exception, "Unable to load organizational open para counts.");
+                return StatusCode(503, new { message = "Open para counts are temporarily unavailable. Please retry." });
+            }
+        }
+
+        [HttpGet]
         public IActionResult EntityPath(int entityId)
         {
             if (!CanView()) return StatusCode(403);

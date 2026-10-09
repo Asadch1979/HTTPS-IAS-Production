@@ -8,6 +8,31 @@ namespace AIS.Controllers
 {
     public partial class DBConnection
     {
+        public List<OrganizationOpenParaCounts> GetOrganizationOpenParaCounts(int? rootEntityId)
+        {
+            var results = new List<OrganizationOpenParaCounts>();
+            using var connection = DatabaseConnection();
+            using var command = connection.CreateCommand();
+            command.CommandText = "PKG_ORG_STRUCTURE.P_GET_ORG_OPEN_PARA_COUNTS";
+            command.CommandType = CommandType.StoredProcedure;
+            command.BindByName = true;
+            command.Parameters.Add("P_ROOT_ENTITY_ID", OracleDbType.Int32).Value = (object)rootEntityId ?? DBNull.Value;
+            command.Parameters.Add("O_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+            using var reader = command.ExecuteReader();
+            while (reader.Read())
+            {
+                results.Add(new OrganizationOpenParaCounts
+                {
+                    EntityId = OrgNumber(reader, "ENTITY_ID").Value,
+                    EntityName = OrgText(reader, "ENTITY_NAME"),
+                    OwnOpenParas = OrgCount(reader, "OWN_OPEN_PARAS"),
+                    SubordinateOpenParas = OrgCount(reader, "SUBORDINATE_OPEN_PARAS"),
+                    TotalOpenParas = OrgCount(reader, "TOTAL_OPEN_PARAS")
+                });
+            }
+            return results;
+        }
+
         public List<OrganizationNode> GetOrganizationNodes(int? rootEntityId)
         {
             var results = new List<OrganizationNode>();
@@ -72,6 +97,8 @@ namespace AIS.Controllers
 
         private static int? OrgNumber(OracleDataReader reader, string column) =>
             reader[column] == DBNull.Value ? (int?)null : Convert.ToInt32(reader[column]);
+        private static long? OrgCount(OracleDataReader reader, string column) =>
+            reader[column] == DBNull.Value ? (long?)null : Convert.ToInt64(reader[column]);
         private static string OrgText(OracleDataReader reader, string column) =>
             reader[column] == DBNull.Value ? null : Convert.ToString(reader[column]);
     }

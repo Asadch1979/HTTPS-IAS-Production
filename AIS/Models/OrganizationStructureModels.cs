@@ -2,6 +2,15 @@ using System.Collections.Generic;
 
 namespace AIS.Models
 {
+    public class OrganizationOpenParaCounts
+    {
+        public int EntityId { get; set; }
+        public string EntityName { get; set; }
+        public long? OwnOpenParas { get; set; }
+        public long? SubordinateOpenParas { get; set; }
+        public long? TotalOpenParas { get; set; }
+    }
+
     public class OrganizationNode
     {
         public int EntityId { get; set; }

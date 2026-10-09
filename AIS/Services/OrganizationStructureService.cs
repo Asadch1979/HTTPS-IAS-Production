@@ -54,6 +54,17 @@ namespace AIS.Services
             });
         }
 
+        public List<OrganizationOpenParaCounts> GetOpenParaCounts()
+        {
+            // GetSnapshot validates the active session and derives the server-only scope.
+            // Only the hierarchy is cached; every request executes the counts procedure once.
+            var snapshot = GetSnapshot();
+            var permitted = snapshot.Nodes.Select(n => n.EntityId).ToHashSet();
+            return database.GetOrganizationOpenParaCounts(snapshot.RootEntityId)
+                .Where(count => permitted.Contains(count.EntityId))
+                .GroupBy(count => count.EntityId).Select(group => group.First()).ToList();
+        }
+
         public List<OrganizationPathEntry> GetPath(int entityId)
         {
             var snapshot = GetSnapshot();

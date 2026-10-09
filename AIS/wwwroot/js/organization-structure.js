@@ -13,6 +13,7 @@
     let narrow = null, activeDrawer = null, fitted = false, layoutFrame = 0, panelState = null;
     const expanded = new Set(), navExpanded = new Set(), pages = new Map(), trail = [], paths = new Map();
     const statsCache = new Map();
+    let counts = new Map(), countsLoading = true, countsRequestActive = false;
     const el = (tag, className, text) => {
         const item = document.createElement(tag);
         if (className) item.className = className;
@@ -86,11 +87,63 @@
             selected = null;
             $('workspace').hidden = false;
             notify('');
-            updateLayout();
             select(nodes.has(hashId) ? hashId : home, false);
+            loadCounts();
         } catch (error) {
             notify(error.message);
             $('retry').hidden = false;
+        }
+    }
+
+    function countValue(id, field) {
+        if (countsLoading) return 'Loading…';
+        const value = counts.get(id)?.[field];
+        return Number.isSafeInteger(value) && value >= 0 ? value.toLocaleString() : 'Unavailable';
+    }
+
+    function updateCounts() {
+        // Replace only count text: selection, branches, pagination, zoom and scroll stay intact.
+        $('chart').querySelectorAll('.org-card-count').forEach(item => {
+            item.textContent = `Open paras: ${countValue(Number(item.dataset.entityId), 'totalOpenParas')}`;
+        });
+        const host = $('detail-counts');
+        if (host && selected !== null) renderDetailCounts(host);
+    }
+
+    async function loadCounts() {
+        if (!nodes.size || countsRequestActive) return;
+        countsRequestActive = true;
+        countsLoading = true;
+        $('refresh-counts').disabled = true;
+        $('counts-retry').hidden = true;
+        $('counts-status').textContent = 'Loading open para counts…';
+        updateCounts();
+        try {
+            const rows = await request(app.dataset.countsUrl);
+            counts = new Map(rows.filter(row => nodes.has(row.entityId)).map(row => [row.entityId, row]));
+            const missing = [...nodes.keys()].some(id => ['ownOpenParas', 'subordinateOpenParas', 'totalOpenParas']
+                .some(field => !Number.isSafeInteger(counts.get(id)?.[field]) || counts.get(id)[field] < 0));
+            $('counts-status').textContent = missing ? 'Some open para counts are unavailable.' : '';
+            $('counts-retry').hidden = !missing;
+        } catch (error) {
+            counts.clear();
+            $('counts-status').textContent = `Open para counts unavailable. ${error.message}`;
+            $('counts-retry').hidden = false;
+        } finally {
+            countsRequestActive = false;
+            countsLoading = false;
+            $('refresh-counts').disabled = false;
+            updateCounts();
+        }
+    }
+
+    function renderDetailCounts(host) {
+        host.replaceChildren();
+        for (const [field, label] of [['ownOpenParas', 'Own open paras'],
+            ['subordinateOpenParas', 'Subordinate open paras'], ['totalOpenParas', 'Total open paras']]) {
+            const row = el('div', 'org-para-stat');
+            row.append(el('span', '', label), el('strong', '', countValue(selected, field)));
+            host.append(row);
         }
     }
 
@@ -258,6 +311,9 @@
         const icon = el('i', `fa ${node.entityTypeId === 6 ? 'fa-building' : 'fa-sitemap'}`); icon.setAttribute('aria-hidden', 'true');
         category.append(icon, el('span', '', node.entityCategory));
         main.append(category, el('span', 'org-card-name', node.entityName), el('span', 'org-card-id', `ENTITY ${node.entityId}`));
+        const count = el('span', 'org-card-count', `Open paras: ${countValue(node.entityId, 'totalOpenParas')}`);
+        count.dataset.entityId = node.entityId;
+        main.append(count);
         item.append(main);
         const footer = el('div', 'org-card-footer');
         footer.append(el('span', '', `${node.directChildCount} direct offices`));
@@ -310,6 +366,9 @@
             const stat = el('div', 'org-stat'); stat.append(el('strong', '', value.toLocaleString()), el('span', '', label)); grid.append(stat);
         }
         host.append(grid, el('div', 'org-depth', stats.cycle ? 'Hierarchy depth unavailable · circular reporting record' : `${stats.depth} level${stats.depth === 1 ? '' : 's'} below this entity`));
+        host.append(el('h3', '', 'Open paras'));
+        const paraCounts = el('div', 'org-para-counts'); paraCounts.id = 'org-detail-counts';
+        renderDetailCounts(paraCounts); host.append(paraCounts);
         host.append(el('h3', '', 'Reports to'));
         const parent = nodes.get(node.parentEntityId);
         if (parent && parent.entityId !== selected) host.append(button(parent.entityName, 'org-authority', () => select(parent.entityId)));
@@ -380,6 +439,8 @@
     }
     $('nav-toggle').addEventListener('click', () => toggleNavigator(app.classList.contains('nav-collapsed')));
     $('retry').addEventListener('click', load);
+    $('refresh-counts').addEventListener('click', loadCounts);
+    $('counts-retry').addEventListener('click', loadCounts);
     $('search').addEventListener('input', () => { clearTimeout(searchTimer); searchTimer = setTimeout(() => { resultLimit = 50; renderNavigator(); }, 150); });
     $('filter').addEventListener('change', () => { resultLimit = 50; renderNavigator(); });
     $('home').addEventListener('click', () => { $('search').value = ''; $('filter').value = ''; select(home); });

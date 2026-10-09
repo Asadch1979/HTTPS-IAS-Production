@@ -8,6 +8,7 @@
   P_GET_NODES(NULL, cursor)      : all nodes, including detached roots/orphans.
   P_GET_NODES(entity_id, cursor) : that entity and all its descendants, any depth.
   P_GET_ENTITY_PATH(entity_id, cursor) : reporting chain, highest known parent first.
+  P_GET_ORG_OPEN_PARA_COUNTS(root, cursor) : current own/descendant totals for scope.
 
   Source relationships are never changed by this package.
   EXECUTE permission should be granted to the IAS application's database user
@@ -23,6 +24,11 @@ CREATE OR REPLACE PACKAGE PKG_ORG_STRUCTURE AUTHID DEFINER AS
     PROCEDURE P_GET_ENTITY_PATH(
         P_ENTITY_ID IN NUMBER,
         O_CURSOR    OUT SYS_REFCURSOR
+    );
+
+    PROCEDURE P_GET_ORG_OPEN_PARA_COUNTS(
+        P_ROOT_ENTITY_ID IN NUMBER,
+        O_CURSOR        OUT SYS_REFCURSOR
     );
 END PKG_ORG_STRUCTURE;
 /
@@ -149,6 +155,86 @@ CREATE OR REPLACE PACKAGE BODY PKG_ORG_STRUCTURE AS
             CONNECT BY NOCYCLE PRIOR h.reporting_1 = h.entity_id
             ORDER BY level_from_entity DESC;
     END P_GET_ENTITY_PATH;
+
+    PROCEDURE P_GET_ORG_OPEN_PARA_COUNTS(
+        P_ROOT_ENTITY_ID IN NUMBER,
+        O_CURSOR        OUT SYS_REFCURSOR
+    ) AS
+    BEGIN
+        IF P_ROOT_ENTITY_ID IS NOT NULL AND
+           (P_ROOT_ENTITY_ID <= 0 OR
+            P_ROOT_ENTITY_ID <> TRUNC(P_ROOT_ENTITY_ID)) THEN
+            RAISE_APPLICATION_ERROR(-20001,
+                'Root entity ID must be a positive integer.');
+        END IF;
+
+        OPEN O_CURSOR FOR
+            WITH
+            /* Use the chart's reporting relationships.
+               Treat self-reporting entries as roots. */
+            org_edges AS (
+                SELECT DISTINCT h.entity_id,
+                    CASE WHEN h.reporting_1 = h.entity_id THEN NULL
+                         ELSE h.reporting_1 END AS parent_entity_id
+                FROM V_IAS_ENTITY_REPORTING_NAMES h
+                WHERE h.entity_id IS NOT NULL
+            ),
+            org_names AS (
+                SELECT h.entity_id,
+                    NVL(MAX(TRIM(h.entity_name)),
+                        'Entity ' || TO_CHAR(h.entity_id)) AS entity_name
+                FROM V_IAS_ENTITY_REPORTING_NAMES h
+                WHERE h.entity_id IS NOT NULL
+                GROUP BY h.entity_id
+            ),
+            /* NULL requests the entire directory.
+               Otherwise include the specified root and its descendants. */
+            scope_ids AS (
+                SELECT DISTINCT entity_id
+                FROM org_edges
+                START WITH P_ROOT_ENTITY_ID IS NULL OR entity_id = P_ROOT_ENTITY_ID
+                CONNECT BY NOCYCLE PRIOR entity_id = parent_entity_id
+            ),
+            scoped_org AS (
+                SELECT e.entity_id, e.parent_entity_id
+                FROM org_edges e
+                WHERE EXISTS (SELECT 1 FROM scope_ids s WHERE s.entity_id = e.entity_id)
+            ),
+            /* Calculate each entity's own open paras once.
+               Compliance history is deliberately not joined. */
+            own_counts AS (
+                SELECT p.entity_id, COUNT(DISTINCT p.com_id) AS own_open_paras
+                FROM AIS_T_AU_POST_COMPLIANCE p
+                WHERE p.para_status = 8
+                  AND EXISTS (SELECT 1 FROM scope_ids s WHERE s.entity_id = p.entity_id)
+                GROUP BY p.entity_id
+            ),
+            /* Every ancestor/descendant pair, including the entity itself.
+               DISTINCT prevents repeated paths from inflating totals. */
+            hierarchy_pairs AS (
+                SELECT DISTINCT CONNECT_BY_ROOT entity_id AS ancestor_entity_id,
+                    entity_id AS descendant_entity_id
+                FROM scoped_org
+                CONNECT BY NOCYCLE PRIOR entity_id = parent_entity_id
+            ),
+            rolled_counts AS (
+                SELECT h.ancestor_entity_id AS entity_id,
+                    SUM(NVL(c.own_open_paras, 0)) AS total_open_paras
+                FROM hierarchy_pairs h
+                LEFT JOIN own_counts c ON c.entity_id = h.descendant_entity_id
+                GROUP BY h.ancestor_entity_id
+            )
+            SELECT s.entity_id,
+                n.entity_name,
+                NVL(c.own_open_paras, 0) AS own_open_paras,
+                NVL(r.total_open_paras, 0) - NVL(c.own_open_paras, 0) AS subordinate_open_paras,
+                NVL(r.total_open_paras, 0) AS total_open_paras
+            FROM scope_ids s
+            LEFT JOIN org_names n ON n.entity_id = s.entity_id
+            LEFT JOIN own_counts c ON c.entity_id = s.entity_id
+            LEFT JOIN rolled_counts r ON r.entity_id = s.entity_id
+            ORDER BY s.entity_id;
+    END P_GET_ORG_OPEN_PARA_COUNTS;
 
 END PKG_ORG_STRUCTURE;
 /
