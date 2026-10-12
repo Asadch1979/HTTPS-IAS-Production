@@ -197,6 +197,25 @@
                                        P_DETAILS           IN CLOB DEFAULT NULL);
 
 
+  /*
+    Central entity selectors, enabled initially for Manage Users (PAGE_ID 43).
+    Identity parameters MUST be derived from the authenticated IAS context.
+  */
+  PROCEDURE P_Get_Entity_type(
+    P_NO      IN NUMBER, R_ID IN NUMBER, ENT_ID IN NUMBER,
+    PAGE_ID   IN NUMBER, io_cursor OUT t_cursor);
+
+  PROCEDURE P_Get_Reporting_Office(
+    ENT_TYP_ID IN NUMBER, P_NO IN NUMBER, R_ID IN NUMBER,
+    ENT_ID     IN NUMBER, PAGE_ID IN NUMBER, io_cursor OUT t_cursor);
+
+  PROCEDURE P_Get_Posting(
+    Reporting_ID IN NUMBER, ENT_TYP_ID IN NUMBER, P_NO IN NUMBER,
+    R_ID         IN NUMBER, ENT_ID IN NUMBER, PAGE_ID IN NUMBER,
+    io_cursor    OUT t_cursor);
+
+
+
 end PKG_LG;
 /
 create or replace package body PKG_LG is
@@ -1255,4 +1274,110 @@ create or replace package body PKG_LG is
       RAISE;
   END P_LOG_APPLICATION_ACTIVITY;
 
+
+  /*
+    Selector PAGE_ID controls display policy, not authorization.
+    MVC must authorize the page and supply session-derived P_NO/R_ID/ENT_ID.
+    Role scoping mirrors the existing PKG_AD.P_Getparentrepoffice behavior:
+    roles 1,2,41 see all mapped offices; other roles are scoped to AUDITEDBY.
+    Legacy PKG_AD procedures and endpoints are unchanged.
+  */
+  PROCEDURE Assert_Entity_Selector_Context(
+    P_NO IN NUMBER, R_ID IN NUMBER, ENT_ID IN NUMBER, PAGE_ID IN NUMBER) IS
+  BEGIN
+    IF P_NO IS NULL OR P_NO <= 0 OR
+       R_ID IS NULL OR R_ID <= 0 OR
+       ENT_ID IS NULL OR ENT_ID <= 0 THEN
+      RAISE_APPLICATION_ERROR(-20051,
+        'A valid authenticated IAS context is required.');
+    END IF;
+    -- PAGE_ID 43 = AdministrationPanel/manage_user in repository page inventory.
+    -- Other pages must be explicitly enabled with their own scope rules.
+    IF PAGE_ID IS NULL OR PAGE_ID <> 43 THEN
+      RAISE_APPLICATION_ERROR(-20052,
+        'Entity selectors are not configured for this page.');
+    END IF;
+  END Assert_Entity_Selector_Context;
+
+  PROCEDURE P_Get_Entity_type(
+    P_NO IN NUMBER, R_ID IN NUMBER, ENT_ID IN NUMBER,
+    PAGE_ID IN NUMBER, io_cursor OUT t_cursor) IS
+  BEGIN
+    Assert_Entity_Selector_Context(P_NO, R_ID, ENT_ID, PAGE_ID);
+    OPEN io_cursor FOR
+      SELECT t.AUTID, t.ENTITYCODE, t.ENTITYTYPEDESC, t.DISPLAY_ORDER
+        FROM T_AUDITEE_ENT_TYPES t
+       WHERE EXISTS (
+             SELECT 1 FROM T_AUDITEE_ENTITIES_MAPING m
+              WHERE m.C_TYPE_ID = t.AUTID
+                AND UPPER(TRIM(m.STATUS)) = 'Y'
+                AND m.PARENT_ID IS NOT NULL
+                AND m.PARENT_ID <> m.ENTITY_ID
+                AND (R_ID IN (1,2,41) OR m.AUDITEDBY = ENT_ID))
+       ORDER BY t.DISPLAY_ORDER NULLS LAST,
+                UPPER(t.ENTITYTYPEDESC), t.AUTID;
+  END P_Get_Entity_type;
+
+  PROCEDURE P_Get_Reporting_Office(
+    ENT_TYP_ID IN NUMBER, P_NO IN NUMBER, R_ID IN NUMBER,
+    ENT_ID IN NUMBER, PAGE_ID IN NUMBER, io_cursor OUT t_cursor) IS
+  BEGIN
+    Assert_Entity_Selector_Context(P_NO, R_ID, ENT_ID, PAGE_ID);
+    IF ENT_TYP_ID IS NULL OR ENT_TYP_ID <= 0 OR
+       ENT_TYP_ID <> TRUNC(ENT_TYP_ID) THEN
+      RAISE_APPLICATION_ERROR(-20053, 'Select a valid entity type.');
+    END IF;
+    OPEN io_cursor FOR
+      SELECT DISTINCT
+             m.PARENT_ID AS ENTITY_ID,
+             p.NAME AS DESCRIPTION,
+             pm.C_TYPE_ID AS PARENT_TYPE_ID
+        FROM T_AUDITEE_ENTITIES_MAPING m
+        JOIN T_AUDITEE_ENTITIES_MAPING pm
+          ON pm.ENTITY_ID = m.PARENT_ID
+        JOIN T_AUDITEE_ENTITIES p
+          ON p.ENTITY_ID = m.PARENT_ID
+       WHERE m.C_TYPE_ID = ENT_TYP_ID
+         AND UPPER(TRIM(m.STATUS)) = 'Y'
+         AND UPPER(TRIM(pm.STATUS)) = 'Y'
+         AND m.PARENT_ID IS NOT NULL
+         AND m.PARENT_ID <> m.ENTITY_ID
+         AND (R_ID IN (1,2,41) OR m.AUDITEDBY = ENT_ID)
+       ORDER BY DESCRIPTION, ENTITY_ID;
+  END P_Get_Reporting_Office;
+
+  PROCEDURE P_Get_Posting(
+    Reporting_ID IN NUMBER, ENT_TYP_ID IN NUMBER, P_NO IN NUMBER,
+    R_ID IN NUMBER, ENT_ID IN NUMBER, PAGE_ID IN NUMBER,
+    io_cursor OUT t_cursor) IS
+  BEGIN
+    Assert_Entity_Selector_Context(P_NO, R_ID, ENT_ID, PAGE_ID);
+    IF Reporting_ID IS NULL OR Reporting_ID <= 0 OR
+       Reporting_ID <> TRUNC(Reporting_ID) OR
+       ENT_TYP_ID IS NULL OR ENT_TYP_ID <= 0 OR
+       ENT_TYP_ID <> TRUNC(ENT_TYP_ID) THEN
+      RAISE_APPLICATION_ERROR(-20054,
+        'Select a valid reporting office and entity type.');
+    END IF;
+    OPEN io_cursor FOR
+      SELECT DISTINCT
+             m.ENTITY_ID,
+             c.NAME AS C_NAME,
+             m.C_TYPE_ID AS TYPEID,
+             m.PARENT_ID
+        FROM T_AUDITEE_ENTITIES_MAPING m
+        JOIN T_AUDITEE_ENTITIES_MAPING pm
+          ON pm.ENTITY_ID = m.PARENT_ID
+        JOIN T_AUDITEE_ENTITIES c
+          ON c.ENTITY_ID = m.ENTITY_ID
+       WHERE m.PARENT_ID = Reporting_ID
+         AND m.C_TYPE_ID = ENT_TYP_ID
+         AND UPPER(TRIM(m.STATUS)) = 'Y'
+         AND UPPER(TRIM(pm.STATUS)) = 'Y'
+         AND (R_ID IN (1,2,41) OR m.AUDITEDBY = ENT_ID)
+       ORDER BY C_NAME, ENTITY_ID;
+  END P_Get_Posting;
+
+
 end PKG_LG;
+/
