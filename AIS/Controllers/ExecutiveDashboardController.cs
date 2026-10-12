@@ -48,12 +48,20 @@ namespace AIS.Controllers
         public IActionResult GetCycleSummary([FromQuery] int? entityId = null, [FromQuery] string auditPeriod = null)
             => ExecuteSummary(entityId, auditPeriod, scope => database.GetExecutiveCycleSummary(scope, auditPeriod));
 
+        [HttpGet]
+        public IActionResult GetSettlementTrend([FromQuery] int? entityId = null, [FromQuery] string auditPeriod = null)
+            => ExecuteSummary(entityId, auditPeriod, scope => database.GetExecutiveSettlementTrend(scope, auditPeriod));
+
+        [HttpGet]
+        public IActionResult GetCriticalItems([FromQuery] int? entityId = null, [FromQuery] string auditPeriod = null, [FromQuery] int maxRows = 100)
+            => ExecuteSummary(entityId, auditPeriod, scope => database.GetExecutiveCriticalItems(scope, auditPeriod, maxRows));
+
         private IActionResult ExecuteSummary<T>(int? entityId, string auditPeriod, Func<ExecutiveDashboardScope, T> query)
         {
             var user = session.GetUser();
             if (User.Identity?.IsAuthenticated != true || user == null || session.IsSessionRevoked(user))
                 return Error(401, "unauthenticated", "An active authenticated IAS session is required.");
-            if (!ModelState.IsValid || entityId <= 0 || (auditPeriod?.Length > 4000) || auditPeriod?.IndexOf('\0') >= 0)
+            if (!ModelState.IsValid || entityId <= 0 || (auditPeriod != null && System.Text.Encoding.UTF8.GetByteCount(auditPeriod) > 4000) || auditPeriod?.IndexOf('\0') >= 0)
                 return Error(400, "invalid_request", "Provide a positive entity ID and a valid audit period.");
             try
             {
@@ -61,12 +69,11 @@ namespace AIS.Controllers
                 // permission infrastructure applies its Super User bypass.
                 var scope = database.ResolveExecutiveDashboardScope();
                 var pageId = pageIds.ResolvePageId(scope.PermissionPagePath);
-                if (pageId <= 0 || !permissions.HasViewPermission(user, pageId))
+                permissions.EnsurePermissionsCached(user);
+                if (pageId <= 0 || !session.TryGetAllowedViewIds(out var allowedPages) || !allowedPages.Contains(pageId))
                     return Error(403, "forbidden", "The executive dashboard page is not authorized or mapped.");
-                if (scope.DashboardType == "CIA")
-                    throw new NotSupportedException("PKG_EXEC_DASHBOARD does not support CIA reporting.");
-                if (entityId.HasValue && scope.DashboardType != "GROUP")
-                    return Error(400, "unsupported_filter", "PKG_EXEC_DASHBOARD does not support entity filters for bank-wide dashboards.");
+                if (!session.HasApiPermissionForPath(Request.Method, Request.PathBase.Value, Request.Path.Value))
+                    return Error(403, "forbidden", "The executive API is not authorized or registered.");
                 scope = database.NarrowExecutiveDashboardScope(scope, entityId);
                 return Ok(new { success = true, data = query(scope) });
             }
@@ -79,10 +86,9 @@ namespace AIS.Controllers
                 logger.LogWarning(exception, "Executive dashboard access denied for user {UserId}, role {RoleId}.", user.ID, user.UserRoleID);
                 return Error(403, "forbidden", "A verified executive role and permitted organizational scope are required.");
             }
-            catch (NotSupportedException exception)
+            catch (ArgumentException)
             {
-                logger.LogWarning(exception, "Executive dashboard package compatibility gap for role {RoleId}.", user.UserRoleID);
-                return Error(501, "unsupported_dashboard", "PKG_EXEC_DASHBOARD supports TOP, GROUP and CCO; CIA is not supported.");
+                return Error(400, "invalid_request", "Provide valid dashboard parameters; maxRows must be between 1 and 500.");
             }
             catch (DatabaseUnavailableException exception)
             {

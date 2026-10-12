@@ -38,6 +38,32 @@ namespace AIS.Models
         public long HighRiskCount { get; set; }
     }
 
+    public sealed class ExecutiveSettlementTrend
+    {
+        public string SettlementMonth { get; set; }
+        public long SettledParas { get; set; }
+        public long HighRiskSettled { get; set; }
+    }
+    public sealed class ExecutiveCriticalItem
+    {
+        public long ComId { get; set; }
+        public int? EntityId { get; set; }
+        public string EntityName { get; set; }
+        public int? DivisionId { get; set; }
+        public string DivisionName { get; set; }
+        public int? BusinessGroupId { get; set; }
+        public string BusinessGroupName { get; set; }
+        public string AuditPeriod { get; set; }
+        public string ParaNo { get; set; }
+        public string GistOfParas { get; set; }
+        public int? RiskId { get; set; }
+        public string RiskName { get; set; }
+        public int? ComCycle { get; set; }
+        public System.DateTime? ParaAddedOn { get; set; }
+        public int? AgingDays { get; set; }
+        public int? DaysSinceLastMovement { get; set; }
+    }
+
     // Server configuration only: ExecutiveDashboard:RoleMappings is an array
     // of verified IAS RoleId, DashboardType (TOP/GROUP/CCO/CIA), and PagePath.
     // No default role IDs or page grants are supplied. Missing/ambiguous mappings deny access.
@@ -46,6 +72,7 @@ namespace AIS.Models
         public int RoleId { get; set; }
         public string DashboardType { get; set; }
         public string PagePath { get; set; }
+        public bool AllowBankWide { get; set; }
     }
 
     internal sealed class ExecutiveDashboardScope
@@ -53,16 +80,20 @@ namespace AIS.Models
         internal ExecutiveDashboardScope(SessionUser user, string dashboardType, string pagePath, int? entityId)
         {
             UserId = user.ID;
+            SessionId = user.SessionId;
+            ContextAssignmentId = user.UserContextAssignmentId;
             RoleId = user.UserRoleID;
-            SessionEntityId = user.UserEntityID.Value;
+            SessionEntityId = user.UserEntityID;
             DashboardType = dashboardType;
             PermissionPagePath = pagePath;
             EntityId = entityId;
         }
 
+        internal string SessionId { get; }
+        internal int? ContextAssignmentId { get; }
         internal int UserId { get; }
         internal int RoleId { get; }
-        internal int SessionEntityId { get; }
+        internal int? SessionEntityId { get; }
         internal string DashboardType { get; }
         internal string PermissionPagePath { get; }
         internal int? EntityId { get; }
