@@ -1638,7 +1638,9 @@ namespace AIS.Controllers
             var hasDashboardAccess = HasPageAccess(user, dashboardPath);
             foreach (var step in steps)
                 {
-                step.IsVisible = hasDashboardAccess;
+                step.IsVisible = hasDashboardAccess &&
+                    (!string.Equals(step.StepKey, "MANAGE_USER", StringComparison.OrdinalIgnoreCase) ||
+                     _permissionService.HasViewPermission(user, DBConnection.ManageUsersSelectionPageId));
                 step.IsEnabled = step.IsVisible;
                 step.IsCompleted = false;
                 step.IsSaved = true;

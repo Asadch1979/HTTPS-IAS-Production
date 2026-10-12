@@ -554,7 +554,7 @@ function loadUserContexts(user) {
             (async function () {
                 for (var i = 0; i < contextsToResolve.length; i++) {
                     if (requestedUserId !== g_userId || contextsToResolve !== g_userContexts) return;
-                    try { await resolveContextEntityType(contextsToResolve[i]); } catch (_) { /* Preserve unresolved assignments. */ }
+                    try { await resolveContextEntityType(contextsToResolve[i], false, g_selectionVersion); } catch (_) { /* Preserve unresolved assignments. */ }
                 }
                 if (requestedUserId === g_userId && contextsToResolve === g_userContexts) renderUserContexts();
             })();
@@ -887,6 +887,7 @@ var g_selectionReady = false;
 var g_entityTypes = [];
 var g_entityTypesPromise;
 var g_selectionCache = {};
+var g_selectionCacheLifetimeMs = 15000;
 
 function selectionStatus(message) {
     $('#manageUsersSelectionStatus').text(message);
@@ -909,15 +910,24 @@ function selectionRequest(action, data) {
     });
 }
 
-function selectionMapping(action, data) {
+function selectionMapping(action, data, forceFresh) {
     var key = action + ':' + JSON.stringify(data);
-    if (!g_selectionCache[key]) {
-        g_selectionCache[key] = selectionRequest(action, data).catch(function (error) {
-            delete g_selectionCache[key];
-            throw error;
-        });
+    var entry = g_selectionCache[key];
+    if (!forceFresh && entry && entry.expiresAt > Date.now()) {
+        return entry.promise;
     }
-    return g_selectionCache[key];
+    entry = { expiresAt: Date.now() + g_selectionCacheLifetimeMs };
+    g_selectionCache[key] = entry;
+    entry.promise = selectionRequest(action, data).catch(function (error) {
+        if (g_selectionCache[key] === entry) delete g_selectionCache[key];
+        throw error;
+    });
+    // Identity checks keep an expired or rejected older request from evicting
+    // a newer forced lookup. Pending requests expire as well as completed ones.
+    setTimeout(function () {
+        if (g_selectionCache[key] === entry) delete g_selectionCache[key];
+    }, g_selectionCacheLifetimeMs);
+    return entry.promise;
 }
 
 function fillSelection(selector, rows, idField, textField, placeholder, selected) {
@@ -955,7 +965,7 @@ function initializeEntitySelection() {
     });
 }
 
-async function loadReportingSelection(parentId, postingId, version) {
+async function loadReportingSelection(parentId, postingId, version, forceFresh) {
     version = version === undefined ? ++g_selectionVersion : version;
     g_selectionReady = false;
     resetSelection('#controlingsearch', 'Loading reporting offices...');
@@ -967,13 +977,13 @@ async function loadReportingSelection(parentId, postingId, version) {
         return;
     }
     try {
-        var rows = await selectionMapping('GetReportingOfficesForSelection', { entityTypeId: typeId });
+        var rows = await selectionMapping('GetReportingOfficesForSelection', { entityTypeId: typeId }, forceFresh);
         if (version !== g_selectionVersion) return;
         fillSelection('#controlingsearch', rows, 'entitY_ID', 'description', '--Select Controlling/Reporting Office--', parentId);
         selectionStatus(rows.length ? '' : 'No reporting offices are available for this entity type.');
         if (parentId) {
             if (!rows.some(function (row) { return toInt(row.entitY_ID) === parentId; })) throw new Error('unresolved');
-            await loadPostingSelection(postingId, version);
+            await loadPostingSelection(postingId, version, forceFresh);
         }
     } catch (_) {
         if (version !== g_selectionVersion) return;
@@ -981,7 +991,7 @@ async function loadReportingSelection(parentId, postingId, version) {
     }
 }
 
-async function loadPostingSelection(postingId, version) {
+async function loadPostingSelection(postingId, version, forceFresh) {
     version = version === undefined ? ++g_selectionVersion : version;
     g_selectionReady = false;
     resetSelection('#childposting', 'Loading postings...');
@@ -992,7 +1002,7 @@ async function loadPostingSelection(postingId, version) {
         return;
     }
     try {
-        var rows = await selectionMapping('GetPostingsForSelection', { reportingId: parentId, entityTypeId: toInt($('#EntityTypeField').val()) });
+        var rows = await selectionMapping('GetPostingsForSelection', { reportingId: parentId, entityTypeId: toInt($('#EntityTypeField').val()) }, forceFresh);
         if (version !== g_selectionVersion) return;
         fillSelection('#childposting', rows, 'entitY_ID', 'c_NAME', '--Select Place of Posting--', postingId);
         if (postingId && !rows.some(function (row) { return toInt(row.entitY_ID) === postingId; })) throw new Error('unresolved');
@@ -1005,19 +1015,22 @@ async function loadPostingSelection(postingId, version) {
 }
 
 // Resolve missing context types only from the authoritative posting cursor TYPEID.
-async function resolveContextEntityType(context) {
+async function resolveContextEntityType(context, forceFresh, version) {
     if (context.entityTypeId > 0 && context.parentEntityId > 0) return context.entityTypeId;
     await g_entityTypesPromise;
+    if (version !== undefined && version !== g_selectionVersion) return 0;
     for (var i = 0; i < g_entityTypes.length; i++) {
         var typeId = toInt(g_entityTypes[i].autid);
         if (context.entityTypeId > 0 && context.entityTypeId !== typeId) continue;
-        var offices = await selectionMapping('GetReportingOfficesForSelection', { entityTypeId: typeId });
+        var offices = await selectionMapping('GetReportingOfficesForSelection', { entityTypeId: typeId }, forceFresh);
+        if (version !== undefined && version !== g_selectionVersion) return 0;
         var candidates = offices.filter(function (office) {
             return !context.parentEntityId || toInt(office.entitY_ID) === context.parentEntityId;
         });
         for (var j = 0; j < candidates.length; j++) {
             var parentId = toInt(candidates[j].entitY_ID);
-            var postings = await selectionMapping('GetPostingsForSelection', { reportingId: parentId, entityTypeId: typeId });
+            var postings = await selectionMapping('GetPostingsForSelection', { reportingId: parentId, entityTypeId: typeId }, forceFresh);
+            if (version !== undefined && version !== g_selectionVersion) return 0;
             var posting = postings.filter(function (row) { return toInt(row.entitY_ID) === context.entityId; })[0];
             if (posting) {
                 context.entityTypeId = toInt(posting.typeid);
@@ -1039,12 +1052,12 @@ async function restoreEntitySelection(context) {
     selectionStatus('Resolving existing assignment...');
     try {
         await g_entityTypesPromise;
-        var typeId = await resolveContextEntityType(context);
+        var typeId = await resolveContextEntityType(context, true, version);
         if (version !== g_selectionVersion) return;
         renderUserContexts();
         if (!typeId || !entityTypeLabel(typeId)) throw new Error('unresolved');
         $('#EntityTypeField').val(typeId);
-        await loadReportingSelection(context.selectionParentId || context.parentEntityId, context.entityId, version);
+        await loadReportingSelection(context.selectionParentId || context.parentEntityId, context.entityId, version, true);
     } catch (_) {
         if (version !== g_selectionVersion) return;
         selectionStatus('Existing assignment could not be resolved. It remains unchanged in the grid.');
