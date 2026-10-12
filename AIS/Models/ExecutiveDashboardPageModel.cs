@@ -7,6 +7,9 @@ namespace AIS.Models
         public string DashboardType { get; set; }
         public string ScopeLabel { get; set; }
         public int? SelectedEntityId { get; set; }
+        public bool IsSuperUser { get; set; }
+        public int? GroupRootId { get; set; }
+        public List<OrganizationNode> Groups { get; set; }
         public bool CanViewOrganization { get; set; }
         public List<OrganizationNode> Entities { get; set; }
         public List<AuditPeriodModel> AuditPeriods { get; set; }

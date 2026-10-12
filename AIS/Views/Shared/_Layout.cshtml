@@ -571,6 +571,25 @@
                     </div>
 
                     <div class="ias-sidebar__body" id="iasSideMenu">
+                        @if (User.Identity?.IsAuthenticated == true && sessionUser?.UserRoleID == 1 &&
+                            SessionHandler.IsSuperUser() && !SessionHandler.IsSessionRevoked(sessionUser))
+                        {
+                            var missingPerspectives = new[] { "TOP", "GROUP", "CCO", "CIA" }.Where(type =>
+                                !visiblePages.Any(p => string.Equals(((string)p.Page_Path).Trim('/'),
+                                    "ExecutiveOverview/" + type, StringComparison.OrdinalIgnoreCase))).ToList();
+                            if (missingPerspectives.Count > 0)
+                            {
+                                <div class="ias-nav-group" aria-label="Executive Dashboards">
+                                    <div class="ias-nav-title">Executive Dashboards</div>
+                                    @foreach (var perspective in missingPerspectives)
+                                    {
+                                        <a class="ias-page-link" data-link href="@Url.Action(perspective, "ExecutiveOverview")" title="Executive Dashboard @perspective">
+                                            <span class="ias-nav-bullet"></span><span>Executive Dashboard @perspective</span>
+                                        </a>
+                                    }
+                                </div>
+                            }
+                        }
                         @if (menus.Count == 0 || visiblePages.Count == 0)
                         {
                             <div class="p-3" style="color:rgba(255,255,255,.75); font-size:12px;">

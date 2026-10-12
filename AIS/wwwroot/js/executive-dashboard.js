@@ -129,10 +129,19 @@
     }
     let activeRequest, version = 0;
     async function refresh() {
+        if (app.dataset.dashboardType === 'GROUP' && !app.dataset.groupRootId) {
+            $('status').textContent = 'Select a Group Head entity and choose Load Group to view its dashboard.';
+            $('results').hidden = true;
+            return;
+        }
         const current = ++version;
         activeRequest?.abort(); activeRequest = new AbortController();
         const signal = activeRequest.signal;
         const query = new URLSearchParams();
+        // Only Super User pages carry a route-derived perspective. Ordinary
+        // accounts continue deriving their perspective/root from the IAS session.
+        if (app.dataset.dashboardType) query.set('dashboardType', app.dataset.dashboardType);
+        if (app.dataset.groupRootId) query.set('groupRootId', app.dataset.groupRootId);
         if ($('entity').value) query.set('entityId', $('entity').value);
         if ($('period').value) query.set('auditPeriod', $('period').value);
         $('results').hidden = true; app.setAttribute('aria-busy', 'true');

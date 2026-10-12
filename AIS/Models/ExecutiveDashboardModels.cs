@@ -77,7 +77,7 @@ namespace AIS.Models
 
     internal sealed class ExecutiveDashboardScope
     {
-        internal ExecutiveDashboardScope(SessionUser user, string dashboardType, string pagePath, int? entityId)
+        internal ExecutiveDashboardScope(SessionUser user, string dashboardType, string pagePath, int? entityId, int? groupRootId = null)
         {
             UserId = user.ID;
             SessionId = user.SessionId;
@@ -87,6 +87,7 @@ namespace AIS.Models
             DashboardType = dashboardType;
             PermissionPagePath = pagePath;
             EntityId = entityId;
+            GroupRootId = groupRootId;
         }
 
         internal string SessionId { get; }
@@ -97,5 +98,16 @@ namespace AIS.Models
         internal string DashboardType { get; }
         internal string PermissionPagePath { get; }
         internal int? EntityId { get; }
+        internal int? GroupRootId { get; }
+    }
+
+    internal sealed class ExecutiveDashboardAccessException : System.UnauthorizedAccessException
+    {
+        internal ExecutiveDashboardAccessException(string reason, string message) : base(message)
+        {
+            Reason = reason;
+        }
+
+        internal string Reason { get; }
     }
 }

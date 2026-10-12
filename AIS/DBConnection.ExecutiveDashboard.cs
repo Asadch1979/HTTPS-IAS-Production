@@ -11,54 +11,103 @@ namespace AIS.Controllers
 {
     public partial class DBConnection
     {
-        internal ExecutiveDashboardScope ResolveExecutiveDashboardScope()
+        internal ExecutiveDashboardScope ResolveExecutiveDashboardScope(string requestedType = null, int? groupRootId = null,
+            bool allowGroupSelection = false)
         {
             var session = CreateSessionHandler();
             var user = session.GetUserOrThrow();
             if (session.IsSessionRevoked(user)) throw new UnauthenticatedException();
+            var requested = requestedType?.Trim().ToUpperInvariant();
+            if (user.UserRoleID == 1 && session.IsSuperUser())
+            {
+                if (!IsExecutiveDashboardType(requested))
+                    throw new ExecutiveDashboardAccessException("RoleMapping", "Super User must request TOP, GROUP, CCO or CIA.");
+                if (requested != "GROUP" && groupRootId.HasValue)
+                    throw new ExecutiveDashboardAccessException("EntityScope", "A Group root is valid only for GROUP.");
+                if (requested == "GROUP")
+                {
+                    if (!groupRootId.HasValue && !allowGroupSelection)
+                        throw new ExecutiveDashboardAccessException("EntityScope", "Select a valid Group Head entity before loading GROUP data.");
+                    if (groupRootId.HasValue) RequireExecutiveGroupRoot(groupRootId.Value);
+                }
+                // Perspective is independent of the actual IAS role and posting.
+                return new ExecutiveDashboardScope(user, requested, "/ExecutiveOverview/" + requested,
+                    requested == "GROUP" ? groupRootId : null, requested == "GROUP" ? groupRootId : null);
+            }
+            if (user.UserRoleID == 1)
+                throw new ExecutiveDashboardAccessException("SessionValidation", "The Super User session flag does not match the active IAS role.");
             var mappings = _configuration.GetSection("ExecutiveDashboard:RoleMappings")
                 .Get<List<ExecutiveDashboardRoleMapping>>() ?? new List<ExecutiveDashboardRoleMapping>();
-            var matches = mappings.Where(mapping => mapping.RoleId > 0 && mapping.RoleId == user.UserRoleID).ToList();
+            var matches = mappings.Where(mapping => mapping != null && mapping.RoleId > 0 && mapping.RoleId == user.UserRoleID).ToList();
             if (matches.Count != 1)
-                throw new UnauthorizedAccessException("A unique verified executive role mapping is required.");
+                throw new ExecutiveDashboardAccessException("RoleMapping", "A unique verified executive role mapping is required.");
             var mapping = matches[0];
             var type = mapping.DashboardType?.Trim().ToUpperInvariant();
-            if (type != "TOP" && type != "GROUP" && type != "CCO" && type != "CIA")
-                throw new UnauthorizedAccessException("The executive role mapping is not supported.");
+            if (!IsExecutiveDashboardType(type))
+                throw new ExecutiveDashboardAccessException("RoleMapping", "The executive role mapping is not supported.");
+            if (requested != null && requested != type)
+                throw new ExecutiveDashboardAccessException("RoleMapping", "The requested perspective does not match the authenticated IAS role.");
+            if (groupRootId.HasValue && (type != "GROUP" || groupRootId != user.UserEntityID))
+                throw new ExecutiveDashboardAccessException("EntityScope", "An ordinary user cannot override the authenticated Group root.");
             if (!string.Equals(mapping.PagePath, "/ExecutiveOverview/" + type, StringComparison.Ordinal))
-                throw new UnauthorizedAccessException("A dedicated role permission page is required.");
-            if (mappings.Where(m => m.RoleId > 0).GroupBy(m => m.PagePath).Any(g => g.Count() > 1))
-                throw new UnauthorizedAccessException("Executive permission pages must be separately mapped.");
+                throw new ExecutiveDashboardAccessException("RoleMapping", "A dedicated role permission page is required.");
+            if (mappings.Where(m => m != null && m.RoleId > 0).GroupBy(m => m.PagePath).Any(g => g.Count() > 1))
+                throw new ExecutiveDashboardAccessException("RoleMapping", "Executive permission pages must be separately mapped.");
             if (type == "GROUP" && (user.UserEntityID.GetValueOrDefault() <= 0 || mapping.AllowBankWide))
-                throw new UnauthorizedAccessException("GROUP requires an active entity and restricted scope.");
+                throw new ExecutiveDashboardAccessException("EntityScope", "GROUP requires an active entity and restricted scope.");
             if (type != "GROUP" && !mapping.AllowBankWide)
-                throw new UnauthorizedAccessException("Bank-wide access requires explicit configuration approval.");
+                throw new ExecutiveDashboardAccessException("RoleMapping", "Bank-wide access requires explicit configuration approval.");
             if ((type == "CIA" && mapping.RoleId != 3) || (type == "CCO" && mapping.RoleId != 38) ||
                 (type != "CIA" && mapping.RoleId == 3) || (type != "CCO" && mapping.RoleId == 38))
-                throw new UnauthorizedAccessException("The verified IAS role does not match the dashboard type.");
-            if (type == "GROUP" && !GetOrganizationNodes(user.UserEntityID).Any(n => n.EntityId == user.UserEntityID && n.EntityTypeId == 18 && !n.HasTypeConflict))
-                throw new UnauthorizedAccessException("GROUP requires a verified business group posting.");
-            return new ExecutiveDashboardScope(user, type, mapping.PagePath.Trim(), type == "GROUP" ? user.UserEntityID : null);
+                throw new ExecutiveDashboardAccessException("RoleMapping", "The verified IAS role does not match the dashboard type.");
+            if (type == "GROUP") RequireExecutiveGroupRoot(user.UserEntityID.Value);
+            return new ExecutiveDashboardScope(user, type, mapping.PagePath.Trim(), type == "GROUP" ? user.UserEntityID : null,
+                type == "GROUP" ? user.UserEntityID : null);
+        }
+
+        private static bool IsExecutiveDashboardType(string type)
+            => type == "TOP" || type == "GROUP" || type == "CCO" || type == "CIA";
+
+        private void RequireExecutiveGroupRoot(int rootId)
+        {
+            if (rootId <= 0 || !GetOrganizationNodes(rootId).Any(n => n.EntityId == rootId && n.EntityTypeId == 18 && !n.HasTypeConflict))
+                throw new ExecutiveDashboardAccessException("EntityScope", "GROUP requires a valid Group Head entity (category 18).");
+        }
+
+        internal List<OrganizationNode> GetExecutiveDashboardGroups(ExecutiveDashboardScope scope)
+        {
+            var user = ValidateExecutiveDashboardSession(scope);
+            if (user.UserRoleID != 1 || !CreateSessionHandler().IsSuperUser())
+                throw new ExecutiveDashboardAccessException("RoleMapping", "Only Super User may select a Group root.");
+            return GetOrganizationNodes(null).Where(n => n.EntityTypeId == 18 && !n.HasTypeConflict).ToList();
+        }
+
+        private static void RequireExecutiveGroupScope(ExecutiveDashboardScope scope)
+        {
+            if (scope.DashboardType == "GROUP" && (scope.GroupRootId.GetValueOrDefault() <= 0 || scope.EntityId.GetValueOrDefault() <= 0))
+                throw new ExecutiveDashboardAccessException("EntityScope", "GROUP data always requires a selected Group root.");
         }
 
         internal ExecutiveDashboardScope NarrowExecutiveDashboardScope(ExecutiveDashboardScope scope, int? entityId)
         {
             var user = ValidateExecutiveDashboardSession(scope);
+            RequireExecutiveGroupScope(scope);
             if (!entityId.HasValue) return scope;
             if (entityId.Value <= 0) throw new ArgumentException("Entity ID must be positive.");
             if (!GetExecutiveDashboardEntities(scope).Any(node => node.EntityId == entityId.Value))
-                throw new UnauthorizedAccessException("The requested entity is outside the authenticated reporting hierarchy.");
-            return new ExecutiveDashboardScope(user, scope.DashboardType, scope.PermissionPagePath, entityId);
+                throw new ExecutiveDashboardAccessException("EntityScope", "The requested entity is outside the authenticated reporting hierarchy.");
+            return new ExecutiveDashboardScope(user, scope.DashboardType, scope.PermissionPagePath, entityId, scope.GroupRootId);
         }
 
         internal List<OrganizationNode> GetExecutiveDashboardEntities(ExecutiveDashboardScope scope)
         {
             ValidateExecutiveDashboardSession(scope);
-            var nodes = GetOrganizationNodes(scope.DashboardType == "GROUP" ? scope.SessionEntityId : null);
-            return scope.DashboardType != "GROUP" ? nodes : nodes.Where(n => n.EntityId == scope.SessionEntityId ||
-                n.Reporting1 == scope.SessionEntityId || n.Reporting2 == scope.SessionEntityId ||
-                n.Reporting3 == scope.SessionEntityId || n.Reporting4 == scope.SessionEntityId ||
-                n.Reporting5 == scope.SessionEntityId || n.Reporting6 == scope.SessionEntityId).ToList();
+            RequireExecutiveGroupScope(scope);
+            var nodes = GetOrganizationNodes(scope.DashboardType == "GROUP" ? scope.GroupRootId : null);
+            return scope.DashboardType != "GROUP" ? nodes : nodes.Where(n => n.EntityId == scope.GroupRootId ||
+                n.Reporting1 == scope.GroupRootId || n.Reporting2 == scope.GroupRootId ||
+                n.Reporting3 == scope.GroupRootId || n.Reporting4 == scope.GroupRootId ||
+                n.Reporting5 == scope.GroupRootId || n.Reporting6 == scope.GroupRootId).ToList();
         }
 
         internal List<ExecutiveSettlementTrend> GetExecutiveSettlementTrend(ExecutiveDashboardScope scope, string auditPeriod)
@@ -149,7 +198,7 @@ namespace AIS.Controllers
         private List<T> ReadExecutiveSummary<T>(string procedure, ExecutiveDashboardScope scope, string auditPeriod, Func<OracleDataReader, T> map, int? maxRows = null)
         {
             ValidateExecutiveDashboardSession(scope);
-
+            RequireExecutiveGroupScope(scope);
             var rows = new List<T>();
             using (var connection = DatabaseConnection())
             using (var command = connection.CreateCommand())

@@ -33,57 +33,76 @@ namespace AIS.Controllers
         }
 
         [HttpGet]
-        public IActionResult GetKpiSummary([FromQuery] int? entityId = null, [FromQuery] string auditPeriod = null)
-            => ExecuteSummary(entityId, auditPeriod, scope => database.GetExecutiveKpiSummary(scope, auditPeriod));
+        public IActionResult GetKpiSummary([FromQuery] int? entityId = null, [FromQuery] string auditPeriod = null,
+            [FromQuery] string dashboardType = null, [FromQuery] int? groupRootId = null)
+            => ExecuteSummary(entityId, auditPeriod, dashboardType, groupRootId, scope => database.GetExecutiveKpiSummary(scope, auditPeriod));
 
         [HttpGet]
-        public IActionResult GetRiskSummary([FromQuery] int? entityId = null, [FromQuery] string auditPeriod = null)
-            => ExecuteSummary(entityId, auditPeriod, scope => database.GetExecutiveRiskSummary(scope, auditPeriod));
+        public IActionResult GetRiskSummary([FromQuery] int? entityId = null, [FromQuery] string auditPeriod = null,
+            [FromQuery] string dashboardType = null, [FromQuery] int? groupRootId = null)
+            => ExecuteSummary(entityId, auditPeriod, dashboardType, groupRootId, scope => database.GetExecutiveRiskSummary(scope, auditPeriod));
 
         [HttpGet]
-        public IActionResult GetAgingSummary([FromQuery] int? entityId = null, [FromQuery] string auditPeriod = null)
-            => ExecuteSummary(entityId, auditPeriod, scope => database.GetExecutiveAgingSummary(scope, auditPeriod));
+        public IActionResult GetAgingSummary([FromQuery] int? entityId = null, [FromQuery] string auditPeriod = null,
+            [FromQuery] string dashboardType = null, [FromQuery] int? groupRootId = null)
+            => ExecuteSummary(entityId, auditPeriod, dashboardType, groupRootId, scope => database.GetExecutiveAgingSummary(scope, auditPeriod));
 
         [HttpGet]
-        public IActionResult GetCycleSummary([FromQuery] int? entityId = null, [FromQuery] string auditPeriod = null)
-            => ExecuteSummary(entityId, auditPeriod, scope => database.GetExecutiveCycleSummary(scope, auditPeriod));
+        public IActionResult GetCycleSummary([FromQuery] int? entityId = null, [FromQuery] string auditPeriod = null,
+            [FromQuery] string dashboardType = null, [FromQuery] int? groupRootId = null)
+            => ExecuteSummary(entityId, auditPeriod, dashboardType, groupRootId, scope => database.GetExecutiveCycleSummary(scope, auditPeriod));
 
         [HttpGet]
-        public IActionResult GetSettlementTrend([FromQuery] int? entityId = null, [FromQuery] string auditPeriod = null)
-            => ExecuteSummary(entityId, auditPeriod, scope => database.GetExecutiveSettlementTrend(scope, auditPeriod));
+        public IActionResult GetSettlementTrend([FromQuery] int? entityId = null, [FromQuery] string auditPeriod = null,
+            [FromQuery] string dashboardType = null, [FromQuery] int? groupRootId = null)
+            => ExecuteSummary(entityId, auditPeriod, dashboardType, groupRootId, scope => database.GetExecutiveSettlementTrend(scope, auditPeriod));
 
         [HttpGet]
-        public IActionResult GetCriticalItems([FromQuery] int? entityId = null, [FromQuery] string auditPeriod = null, [FromQuery] int maxRows = 100)
-            => ExecuteSummary(entityId, auditPeriod, scope => database.GetExecutiveCriticalItems(scope, auditPeriod, maxRows));
+        public IActionResult GetCriticalItems([FromQuery] int? entityId = null, [FromQuery] string auditPeriod = null, [FromQuery] int maxRows = 100,
+            [FromQuery] string dashboardType = null, [FromQuery] int? groupRootId = null)
+            => ExecuteSummary(entityId, auditPeriod, dashboardType, groupRootId, scope => database.GetExecutiveCriticalItems(scope, auditPeriod, maxRows));
 
-        private IActionResult ExecuteSummary<T>(int? entityId, string auditPeriod, Func<ExecutiveDashboardScope, T> query)
+        private IActionResult ExecuteSummary<T>(int? entityId, string auditPeriod, string dashboardType, int? groupRootId,
+            Func<ExecutiveDashboardScope, T> query)
         {
             var user = session.GetUser();
             if (User.Identity?.IsAuthenticated != true || user == null || session.IsSessionRevoked(user))
+            {
+                LogDenial("SessionValidation", user, dashboardType);
                 return Error(401, "unauthenticated", "An active authenticated IAS session is required.");
-            if (!ModelState.IsValid || entityId <= 0 || (auditPeriod != null && System.Text.Encoding.UTF8.GetByteCount(auditPeriod) > 4000) || auditPeriod?.IndexOf('\0') >= 0)
+            }
+            if (!ModelState.IsValid || entityId <= 0 || groupRootId <= 0 || dashboardType?.Length > 20 ||
+                (auditPeriod != null && System.Text.Encoding.UTF8.GetByteCount(auditPeriod) > 4000) || auditPeriod?.IndexOf('\0') >= 0)
                 return Error(400, "invalid_request", "Provide a positive entity ID and a valid audit period.");
             try
             {
-                // This additional role gate is mandatory even when the common
-                // permission infrastructure applies its Super User bypass.
-                var scope = database.ResolveExecutiveDashboardScope();
+                var scope = database.ResolveExecutiveDashboardScope(dashboardType, groupRootId);
                 var pageId = pageIds.ResolvePageId(scope.PermissionPagePath);
-                permissions.EnsurePermissionsCached(user);
-                if (pageId <= 0 || !session.TryGetAllowedViewIds(out var allowedPages) || !allowedPages.Contains(pageId))
+                var superUser = user.UserRoleID == 1 && session.IsSuperUser();
+                if (!superUser) permissions.EnsurePermissionsCached(user);
+                if (pageId <= 0 || (superUser ? !permissions.HasViewPermission(user, pageId) :
+                    !session.TryGetAllowedViewIds(out var allowedPages) || !allowedPages.Contains(pageId)))
+                {
+                    LogDenial("PagePermission", user, scope.DashboardType);
                     return Error(403, "forbidden", "The executive dashboard page is not authorized or mapped.");
-                if (!session.HasApiPermissionForPath(Request.Method, Request.PathBase.Value, Request.Path.Value))
+                }
+                if (superUser ? !permissions.HasApiPermissionForPath(user, Request.Method, Request.PathBase.Value, Request.Path.Value) :
+                    !session.HasApiPermissionForPath(Request.Method, Request.PathBase.Value, Request.Path.Value))
+                {
+                    LogDenial("ApiPermission", user, scope.DashboardType);
                     return Error(403, "forbidden", "The executive API is not authorized or registered.");
+                }
                 scope = database.NarrowExecutiveDashboardScope(scope, entityId);
                 return Ok(new { success = true, data = query(scope) });
             }
             catch (UnauthenticatedException)
             {
+                LogDenial("SessionValidation", user, dashboardType);
                 return Error(401, "unauthenticated", "The IAS session is no longer valid.");
             }
             catch (UnauthorizedAccessException exception)
             {
-                logger.LogWarning(exception, "Executive dashboard access denied for user {UserId}, role {RoleId}.", user.ID, user.UserRoleID);
+                LogDenial((exception as ExecutiveDashboardAccessException)?.Reason ?? "RoleMapping", user, dashboardType);
                 return Error(403, "forbidden", "A verified executive role and permitted organizational scope are required.");
             }
             catch (ArgumentException)
@@ -101,6 +120,10 @@ namespace AIS.Controllers
                 return Error(500, "server_error", "Unable to retrieve the executive dashboard summary.");
             }
         }
+
+        private void LogDenial(string reason, SessionUser user, string perspective)
+            => logger.LogWarning("Executive dashboard denied: {Reason}; user {UserId}, role {RoleId}, perspective {Perspective}, route {Route}.",
+                reason, user?.ID, user?.UserRoleID, perspective, Request.Path.Value);
 
         private IActionResult Error(int statusCode, string error, string message)
             => StatusCode(statusCode, new { success = false, error, message });
